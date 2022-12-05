@@ -61,6 +61,7 @@ func TestCgroupNotifyOnReleaseModification(t *testing.T) {
 						ID:          "TRC-106",
 						Version:     "1",
 						Name:        "Cgroups notify_on_release file modification",
+						EventName:   "cgroup_notify_on_release",
 						Description: "An attempt to modify Cgroup notify_on_release file was detected. Cgroups are a Linux kernel feature which limits the resource usage of a set of processes. Adversaries may use this feature for container escaping.",
 						Properties: map[string]interface{}{
 							"Severity":             3,

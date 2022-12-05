@@ -63,6 +63,7 @@ func TestK8SServiceAccountToken(t *testing.T) {
 						ID:          "TRC-108",
 						Version:     "1",
 						Name:        "K8s service account token file read",
+						EventName:   "k8s_service_account_token",
 						Description: "The Kubernetes service account token file was read on your container. This token is used to communicate with the Kubernetes API Server. Adversaries may try to communicate with the API Server to steal information and/or credentials, or even run more containers and laterally extend their grip on the systems.",
 						Properties: map[string]interface{}{
 							"Severity":             0,

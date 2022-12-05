@@ -61,6 +61,7 @@ func TestRcdModification(t *testing.T) {
 						ID:          "TRC-1026",
 						Version:     "1",
 						Name:        "Rcd modification detected",
+						EventName:   "rcd_modification",
 						Description: "The rcd files were modified. rcd files are scripts executed on boot and runlevel switch. Those scripts are responsible for service control in runlevel switch. Adversaries may add or modify rcd files in order to persist a reboot, thus maintaining malicious execution on the affected host.",
 						Properties: map[string]interface{}{
 							"Severity":             2,
@@ -119,6 +120,7 @@ func TestRcdModification(t *testing.T) {
 						ID:          "TRC-1026",
 						Version:     "1",
 						Name:        "Rcd modification detected",
+						EventName:   "rcd_modification",
 						Description: "The rcd files were modified. rcd files are scripts executed on boot and runlevel switch. Those scripts are responsible for service control in runlevel switch. Adversaries may add or modify rcd files in order to persist a reboot, thus maintaining malicious execution on the affected host.",
 						Properties: map[string]interface{}{
 							"Severity":             2,
@@ -165,6 +167,7 @@ func TestRcdModification(t *testing.T) {
 						ID:          "TRC-1026",
 						Version:     "1",
 						Name:        "Rcd modification detected",
+						EventName:   "rcd_modification",
 						Description: "The rcd files were modified. rcd files are scripts executed on boot and runlevel switch. Those scripts are responsible for service control in runlevel switch. Adversaries may add or modify rcd files in order to persist a reboot, thus maintaining malicious execution on the affected host.",
 						Properties: map[string]interface{}{
 							"Severity":             2,
@@ -211,6 +214,7 @@ func TestRcdModification(t *testing.T) {
 						ID:          "TRC-1026",
 						Version:     "1",
 						Name:        "Rcd modification detected",
+						EventName:   "rcd_modification",
 						Description: "The rcd files were modified. rcd files are scripts executed on boot and runlevel switch. Those scripts are responsible for service control in runlevel switch. Adversaries may add or modify rcd files in order to persist a reboot, thus maintaining malicious execution on the affected host.",
 						Properties: map[string]interface{}{
 							"Severity":             2,
@@ -257,6 +261,7 @@ func TestRcdModification(t *testing.T) {
 						ID:          "TRC-1026",
 						Version:     "1",
 						Name:        "Rcd modification detected",
+						EventName:   "rcd_modification",
 						Description: "The rcd files were modified. rcd files are scripts executed on boot and runlevel switch. Those scripts are responsible for service control in runlevel switch. Adversaries may add or modify rcd files in order to persist a reboot, thus maintaining malicious execution on the affected host.",
 						Properties: map[string]interface{}{
 							"Severity":             2,

@@ -61,6 +61,7 @@ func TestDroppedExecutable(t *testing.T) {
 						ID:          "TRC-1022",
 						Version:     "1",
 						Name:        "New executable dropped",
+						EventName:   "dropped_executable",
 						Description: "An Executable file was dropped in the system during runtime. Container images are usually built with all binaries needed inside. A dropped binary may indicate that an adversary infiltrated your container.",
 						Properties: map[string]interface{}{
 							"Severity":             2,

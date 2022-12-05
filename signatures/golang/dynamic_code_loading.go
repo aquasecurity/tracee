@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -24,6 +25,7 @@ func (sig *DynamicCodeLoading) GetMetadata() (detect.SignatureMetadata, error) {
 		ID:          "TRC-104",
 		Version:     "1",
 		Name:        "Dynamic code loading detected",
+		EventName:   "dynamic_code_loading",
 		Description: "Possible dynamic code loading was detected as the binary's memory is both writable and executable. Writing to an executable allocated memory region could be a technique used by adversaries to run code undetected and without dropping executables.",
 		Properties: map[string]interface{}{
 			"Severity":             2,

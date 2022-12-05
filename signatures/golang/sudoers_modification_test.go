@@ -61,6 +61,7 @@ func TestSudoersModification(t *testing.T) {
 						ID:          "TRC-1028",
 						Version:     "1",
 						Name:        "Sudoers file modification detected",
+						EventName:   "sudoers_modification",
 						Description: "The sudoers file was modified. The sudoers file is a configuration file which controls the permissions and options of the sudo feature. Adversaries may alter the sudoers file to elevate privileges, execute commands as other users or spawn processes with higher privileges.",
 						Properties: map[string]interface{}{
 							"Severity":             2,
@@ -119,6 +120,7 @@ func TestSudoersModification(t *testing.T) {
 						ID:          "TRC-1028",
 						Version:     "1",
 						Name:        "Sudoers file modification detected",
+						EventName:   "sudoers_modification",
 						Description: "The sudoers file was modified. The sudoers file is a configuration file which controls the permissions and options of the sudo feature. Adversaries may alter the sudoers file to elevate privileges, execute commands as other users or spawn processes with higher privileges.",
 						Properties: map[string]interface{}{
 							"Severity":             2,
@@ -165,6 +167,7 @@ func TestSudoersModification(t *testing.T) {
 						ID:          "TRC-1028",
 						Version:     "1",
 						Name:        "Sudoers file modification detected",
+						EventName:   "sudoers_modification",
 						Description: "The sudoers file was modified. The sudoers file is a configuration file which controls the permissions and options of the sudo feature. Adversaries may alter the sudoers file to elevate privileges, execute commands as other users or spawn processes with higher privileges.",
 						Properties: map[string]interface{}{
 							"Severity":             2,
@@ -211,6 +214,7 @@ func TestSudoersModification(t *testing.T) {
 						ID:          "TRC-1028",
 						Version:     "1",
 						Name:        "Sudoers file modification detected",
+						EventName:   "sudoers_modification",
 						Description: "The sudoers file was modified. The sudoers file is a configuration file which controls the permissions and options of the sudo feature. Adversaries may alter the sudoers file to elevate privileges, execute commands as other users or spawn processes with higher privileges.",
 						Properties: map[string]interface{}{
 							"Severity":             2,

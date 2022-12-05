@@ -26,6 +26,7 @@ func (sig *ProcKcoreRead) GetMetadata() (detect.SignatureMetadata, error) {
 		ID:          "TRC-1021",
 		Version:     "1",
 		Name:        "Kcore memory file read",
+		EventName:   "proc_kcore_read",
 		Description: "An attempt to read /proc/kcore file was detected. KCore provides a full dump of the physical memory of the system in the core file format. Adversaries may read this file to get all of the host memory and use this information for container escape.",
 		Properties: map[string]interface{}{
 			"Severity":             2,

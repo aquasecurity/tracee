@@ -23,6 +23,7 @@ func (sig *FilelessExecution) GetMetadata() (detect.SignatureMetadata, error) {
 		ID:          "TRC-105",
 		Version:     "1",
 		Name:        "Fileless execution detected",
+		EventName:   "fileless_execution",
 		Description: "Fileless execution was detected. Executing a process from memory instead from a file in the filesystem may indicate that an adversary is trying to avoid execution detection.",
 		Properties: map[string]interface{}{
 			"Severity":             3,

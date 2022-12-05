@@ -49,6 +49,7 @@ func TestAntiDebuggingPtraceme(t *testing.T) {
 						ID:          "TRC-102",
 						Version:     "1",
 						Name:        "Anti-Debugging detected",
+						EventName:   "anti_debugging",
 						Description: "A process used anti-debugging techniques to block a debugger. Malware use anti-debugging to stay invisible and inhibit analysis of their behavior.",
 						Properties: map[string]interface{}{
 							"Severity":             1,

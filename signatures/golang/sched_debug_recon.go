@@ -25,6 +25,7 @@ func (sig *SchedDebugRecon) GetMetadata() (detect.SignatureMetadata, error) {
 		ID:          "TRC-1029",
 		Version:     "1",
 		Name:        "sched_debug CPU file was read",
+		EventName:   "sched_debug_recon",
 		Description: "The sched_debug file was read. This file contains information about your CPU and processes. Adversaries may read this file in order to gather that information for their use.",
 		Properties: map[string]interface{}{
 			"Severity":             1,

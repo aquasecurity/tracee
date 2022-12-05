@@ -26,6 +26,7 @@ func (sig *DockerAbuse) GetMetadata() (detect.SignatureMetadata, error) {
 		ID:          "TRC-1019",
 		Version:     "1",
 		Name:        "Docker socket abuse detected",
+		EventName:   "docker_abuse",
 		Description: "An attempt to abuse the Docker UNIX socket inside a container was detected. docker.sock is the UNIX socket that Docker uses as the entry point to the Docker API. Adversaries may attempt to abuse this socket to compromise the system.",
 		Properties: map[string]interface{}{
 			"Severity":             2,

@@ -61,6 +61,7 @@ func TestDefaultLoaderModification(t *testing.T) {
 						ID:          "TRC-1012",
 						Version:     "1",
 						Name:        "Default dynamic loader modification detected",
+						EventName:   "default_loader_mod",
 						Description: "The default dynamic loader has been modified. The dynamic loader is an executable file loaded to process memory and run before the executable to load dynamic libraries to the process. An attacker might use this technique to hijack the execution context of each new process and bypass defenses.",
 						Properties: map[string]interface{}{
 							"Severity":             3,
@@ -107,6 +108,7 @@ func TestDefaultLoaderModification(t *testing.T) {
 						ID:          "TRC-1012",
 						Version:     "1",
 						Name:        "Default dynamic loader modification detected",
+						EventName:   "default_loader_mod",
 						Description: "The default dynamic loader has been modified. The dynamic loader is an executable file loaded to process memory and run before the executable to load dynamic libraries to the process. An attacker might use this technique to hijack the execution context of each new process and bypass defenses.",
 						Properties: map[string]interface{}{
 							"Severity":             3,

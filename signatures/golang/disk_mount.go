@@ -26,6 +26,7 @@ func (sig *DiskMount) GetMetadata() (detect.SignatureMetadata, error) {
 		ID:          "TRC-1014",
 		Version:     "1",
 		Name:        "Container device mount detected",
+		EventName:   "disk_mount",
 		Description: "Container device filesystem mount detected. A mount of a host device filesystem can be exploited by adversaries to perform container escape.",
 		Properties: map[string]interface{}{
 			"Severity":             3,
