@@ -119,6 +119,8 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		CgroupBPFRunFilterSKBRet:   &traceProbe{eventName: "__cgroup_bpf_run_filter_skb", probeType: kretprobe, programName: "ret_cgroup_bpf_run_filter_skb"},
 		CgroupSKBIngress:           &cgroupProbe{programName: "cgroup_skb_ingress", attachType: bpf.BPFAttachTypeCgroupInetIngress},
 		CgroupSKBEgress:            &cgroupProbe{programName: "cgroup_skb_egress", attachType: bpf.BPFAttachTypeCgroupInetEgress},
+		DoMmap:                     &traceProbe{eventName: "do_mmap", probeType: kprobe, programName: "trace_do_mmap"},
+		DoMmapRet:                  &traceProbe{eventName: "do_mmap", probeType: kretprobe, programName: "trace_ret_do_mmap"},
 	}
 
 	// disable autoload for tcProbes if network is disabled
@@ -287,4 +289,6 @@ const (
 	CgroupBPFRunFilterSKBRet
 	CgroupSKBIngress
 	CgroupSKBEgress
+	DoMmap
+	DoMmapRet
 )
