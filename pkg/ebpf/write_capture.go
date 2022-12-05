@@ -154,7 +154,7 @@ func (t *Tracee) processFileWrites() {
 			// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:
 			// https://github.com/aquasecurity/libbpfgo/issues/122
 			if lost > 0 {
-				t.stats.LostWrCount.Increment(int(lost))
+				t.stats.LostWrCount.Increment(lost)
 				t.config.ChanErrors <- fmt.Errorf("lost %d write events", lost)
 			}
 		}
