@@ -2040,7 +2040,9 @@ static __always_inline int do_should_trace(event_data_t *data)
         bool filter_out = (config & FILTER_PID_OUT) == FILTER_PID_OUT;
         u64 max = data->config->pid_max;
         u64 min = data->config->pid_min;
-        if (!uint_filter_matches(filter_out, &pid_filter, context->host_tid, max, min))
+        // the user might have given us a tid - check for it too
+        if ((!uint_filter_matches(filter_out, &pid_filter, context->host_pid, max, min)) &&
+            (!uint_filter_matches(filter_out, &pid_filter, context->host_tid, max, min)))
             return 0;
     }
 
