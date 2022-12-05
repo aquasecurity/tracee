@@ -38,7 +38,7 @@ type Filter struct {
 	ArgFilter         *filters.ArgFilter
 	ContextFilter     *filters.ContextFilter
 	ProcessTreeFilter *filters.ProcessTreeFilter
-	BinaryFilter      *filters.BPFStringFilter
+	BinaryFilter      *filters.BPFBinaryFilter
 	Follow            bool
 	NetFilter         *NetIfaces
 }
