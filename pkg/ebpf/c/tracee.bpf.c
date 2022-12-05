@@ -1941,7 +1941,7 @@ static __always_inline int do_should_trace(event_data_t *data)
 
     if (config & FILTER_PROC_TREE_ENABLED) {
         bool filter_out = (config & FILTER_PROC_TREE_OUT) == FILTER_PROC_TREE_OUT;
-        if (!equality_filter_matches(filter_out, &process_tree_map, &context->pid))
+        if (!equality_filter_matches(filter_out, &process_tree_map, &context->host_pid))
             return 0;
     }
 
