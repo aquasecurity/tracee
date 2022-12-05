@@ -159,6 +159,11 @@ expected.
     4) --trace pid=2578238 --trace event=openat --trace openat.pathname=/etc/shadow --trace follow
     ```
 
+    !!! Note
+        This filter can be used to trace a specific process or thread:
+        1. Providing a tgid (aka pid) will trace all threads of the process.
+        2. Providing a tid (where tid != tgid) will only trace the specific thread.
+
 1. **Process Tree**
 
     ```text
