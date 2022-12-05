@@ -793,10 +793,16 @@ typedef struct file_info {
     u64 ctime;
 } file_info_t;
 
+typedef struct binary {
+    u32 mnt_id;
+    char path[MAX_BIN_PATH_SIZE];
+} binary_t;
+
 typedef struct proc_info {
     bool new_proc; // set if this process was started after tracee. Used with new_pid filter
     bool follow;   // set if this process was traced before. Used with the follow filter
-    char binary[MAX_BIN_PATH_SIZE];
+    struct binary binary;
+    u32 binary_no_mnt; // used in binary lookup when we don't care about mount ns. always 0.
     file_info_t interpreter;
 } proc_info_t;
 
@@ -822,10 +828,6 @@ typedef struct path_filter {
 typedef struct string_filter {
     char str[MAX_STR_FILTER_SIZE];
 } string_filter_t;
-
-typedef struct binary_filter {
-    char str[MAX_BIN_PATH_SIZE];
-} binary_filter_t;
 
 typedef struct ksym_name {
     char str[MAX_KSYM_NAME_SIZE];
@@ -1031,7 +1033,7 @@ BPF_HASH(pid_ns_filter, u64, u32, 256);                            // filter eve
 BPF_HASH(uts_ns_filter, string_filter_t, u32, 256);                // filter events by uts namespace name
 BPF_HASH(comm_filter, string_filter_t, u32, 256);                  // filter events by command name
 BPF_HASH(cgroup_id_filter, u32, u32, 256);                         // filter events by cgroup id
-BPF_HASH(binary_filter, binary_filter_t, u32, 256);                // filter events by binary path
+BPF_HASH(binary_filter, binary_t, u32, 256);                       // filter events by binary path and mount namespace
 BPF_HASH(bin_args_map, u64, bin_args_t, 256);                      // persist args for send_bin funtion
 BPF_HASH(sys_32_to_64_map, u32, u32, 1024);                        // map 32bit to 64bit syscalls
 BPF_HASH(params_types_map, u32, u64, 1024);                        // encoded parameters types for event
@@ -1883,7 +1885,9 @@ static __always_inline task_info_t *init_task_info(u32 tid, u32 pid)
     if (proc_info == NULL) {
         scratch->proc_info.new_proc = false;
         scratch->proc_info.follow = false;
-        __builtin_memset(scratch->proc_info.binary, 0, MAX_BIN_PATH_SIZE);
+        scratch->proc_info.binary.mnt_id = 0;
+        scratch->proc_info.binary_no_mnt = 0;
+        __builtin_memset(scratch->proc_info.binary.path, 0, MAX_BIN_PATH_SIZE);
         bpf_map_update_elem(&proc_info_map, &pid, &scratch->proc_info, BPF_NOEXIST);
     }
 
@@ -2133,7 +2137,16 @@ static __always_inline int do_should_trace(program_data_t *p)
 
     if (config & FILTER_BIN_PATH_ENABLED) {
         bool filter_out = (config & FILTER_BIN_PATH_OUT) == FILTER_BIN_PATH_OUT;
-        if (!equality_filter_matches(filter_out, &binary_filter, proc_info->binary))
+        // lookup by binary path only
+        u32 *equality = bpf_map_lookup_elem(&binary_filter, proc_info->binary.path);
+        if (equality != NULL)
+            return *equality;
+        // lookup by binary path and mount namespace
+        equality = bpf_map_lookup_elem(&binary_filter, &proc_info->binary);
+        if (equality != NULL)
+            return *equality;
+
+        if (!filter_out)
             return 0;
     }
 
@@ -3736,8 +3749,9 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     proc_info->new_proc = true;
 
     // extract the binary name to be used in should_trace
-    __builtin_memset(proc_info->binary, 0, MAX_BIN_PATH_SIZE);
-    bpf_probe_read_str(proc_info->binary, MAX_BIN_PATH_SIZE, file_path);
+    __builtin_memset(proc_info->binary.path, 0, MAX_BIN_PATH_SIZE);
+    bpf_probe_read_str(proc_info->binary.path, MAX_BIN_PATH_SIZE, file_path);
+    proc_info->binary.mnt_id = data.context.task.mnt_id;
 
     if (!should_trace(&p))
         return 0;
