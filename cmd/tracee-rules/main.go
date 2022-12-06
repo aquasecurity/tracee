@@ -131,8 +131,9 @@ func main() {
 
 			config := engine.Config{
 				SignatureBufferSize: c.Uint(signatureBufferFlag),
+				Signatures:          sigs,
 			}
-			e, err := engine.NewEngine(sigs, inputs, output, config)
+			e, err := engine.NewEngine(config, inputs, output)
 			if err != nil {
 				return fmt.Errorf("constructing engine: %w", err)
 			}

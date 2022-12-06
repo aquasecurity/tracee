@@ -19,6 +19,7 @@ const ALL_EVENT_TYPES = "*"
 // Config defines the engine's configurable values
 type Config struct {
 	SignatureBufferSize uint
+	Signatures          []detect.Signature
 }
 
 // Engine is a rule-engine that can process events coming from a set of input sources against a set of loaded signatures, and report the signatures' findings
@@ -44,7 +45,7 @@ func (engine *Engine) Stats() *metrics.Stats {
 
 // NewEngine creates a new rules-engine with the given arguments
 // inputs and outputs are given as channels created by the consumer
-func NewEngine(sigs []detect.Signature, sources EventSources, output chan detect.Finding, config Config) (*Engine, error) {
+func NewEngine(config Config, sources EventSources, output chan detect.Finding) (*Engine, error) {
 	if sources.Tracee == nil || output == nil {
 		return nil, fmt.Errorf("nil input received")
 	}
@@ -58,7 +59,7 @@ func NewEngine(sigs []detect.Signature, sources EventSources, output chan detect
 	engine.signatures = make(map[detect.Signature]chan protocol.Event)
 	engine.signaturesIndex = make(map[detect.SignatureEventSelector][]detect.Signature)
 	engine.signaturesMutex.Unlock()
-	for _, sig := range sigs {
+	for _, sig := range config.Signatures {
 		_, err := engine.loadSignature(sig)
 		if err != nil {
 			logger.Error("loading signature: " + err.Error())
