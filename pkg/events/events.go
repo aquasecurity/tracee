@@ -1,6 +1,8 @@
 package events
 
 import (
+	"fmt"
+
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -76,8 +78,44 @@ type Event struct {
 	Params       []trace.ArgMeta
 }
 
+// NewEventDefinition creates a new event definition
+func NewEventDefinition(name string, sets []string, depsID []ID) Event {
+	evt := Event{
+		ID32Bit: sys32undefined,
+		Name:    name,
+		Sets:    sets,
+	}
+
+	d := dependencies{
+		Events: make([]eventDependency, 0, len(depsID)),
+	}
+
+	for _, id := range depsID {
+		d.Events = append(d.Events, eventDependency{EventID: id})
+	}
+
+	evt.Dependencies = d
+
+	return evt
+}
+
 type eventDefinitions struct {
 	events map[ID]Event
+}
+
+// Add add event to defitions
+func (e *eventDefinitions) Add(eventId ID, evt Event) error {
+	if _, ok := e.events[eventId]; ok {
+		return fmt.Errorf("error event id already exist: %v", eventId)
+	}
+
+	if _, ok := e.GetID(evt.Name); ok {
+		return fmt.Errorf("error event name already exist: %v", evt.Name)
+	}
+
+	e.events[eventId] = evt
+
+	return nil
 }
 
 // Get without checking for Event existance
@@ -226,6 +264,12 @@ const (
 	CaptureMem
 	CaptureProfile
 	CapturePcap
+)
+
+// Rules events
+const (
+	StartRulesID ID = 6000
+	MaxRulesID   ID = 6999
 )
 
 const (
