@@ -40,6 +40,7 @@ nav:
         - Rego: docs/detecting/rego.md
         - Go-Cel: docs/detecting/go-cel.md
       - Available Rules: docs/detecting/rules.md
+      - AVD: docs/detecting/avd.md
     - Integrating:
         - Container Engines: docs/integrating/container-engines.md
         - Detected Events:
