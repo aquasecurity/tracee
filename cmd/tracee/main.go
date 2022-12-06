@@ -3,12 +3,17 @@ package main
 import (
 	"context"
 	"os"
+	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/cmd"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/urfave"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/rules/engine"
+	"github.com/aquasecurity/tracee/pkg/rules/signature"
+	"github.com/aquasecurity/tracee/types/detect"
 
 	cli "github.com/urfave/cli/v2"
 )
@@ -37,12 +42,35 @@ func main() {
 		Usage:   "Trace OS events and syscalls using eBPF",
 		Version: version,
 		Action: func(c *cli.Context) error {
-
 			if c.NArg() > 0 {
 				return cli.ShowAppHelp(c) // no args, only flags supported
 			}
 
 			flags.PrintAndExitIfHelp(c)
+
+			// Rego command line flags
+
+			rego, err := flags.PrepareRego(c.StringSlice("rego"))
+			if err != nil {
+				return err
+			}
+
+			// event names are parsed here because we need to know which signatures to load
+			eventNames := getEventNames(c)
+
+			sigs, err := signature.Find(
+				rego.RuntimeTarget,
+				rego.PartialEval,
+				c.String("rules-dir"),
+				eventNames,
+				rego.AIO,
+			)
+
+			if err != nil {
+				return err
+			}
+
+			createEventsFromSignatures(events.StartRulesID, sigs)
 
 			if c.Bool("list") {
 				cmd.PrintEventList() // list events
@@ -52,6 +80,15 @@ func main() {
 			runner, err := urfave.GetTraceeRunner(c, version)
 			if err != nil {
 				return err
+			}
+
+			// parse arguments must be enabled if the rule engine is part of the pipeline
+			runner.TraceeConfig.Output.ParseArguments = true
+
+			runner.TraceeConfig.EngineConfig = engine.Config{
+				Enabled:             true,
+				Signatures:          sigs,
+				SignatureBufferSize: c.Uint("sig-buffer"),
 			}
 
 			ctx := context.Background()
@@ -146,6 +183,24 @@ func main() {
 				Name:  "containers",
 				Usage: "enable container info enrichment to events. this feature is experimental and may cause unexpected behavior in the pipeline",
 			},
+
+			// TODO: add webhook
+
+			// rules
+			&cli.StringFlag{
+				Name:  "rules-dir",
+				Usage: "directory where to search for rules in CEL (.yaml), OPA (.rego), and Go plugin (.so) formats",
+			},
+			&cli.StringSliceFlag{
+				Name:  "rego",
+				Usage: "Control event rego settings. run '--rego help' for more info.",
+				Value: cli.NewStringSlice(),
+			},
+			&cli.UintFlag{
+				Name:  "sig-buffer", // TODO: rename to rules-buffer?
+				Usage: "size of the event channel's buffer consumed by signatures",
+				Value: 1000,
+			},
 		},
 	}
 
@@ -153,4 +208,58 @@ func main() {
 	if err != nil {
 		logger.Fatal("app", "error", err)
 	}
+}
+
+func createEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
+	id := startId
+
+	for _, s := range sigs {
+		m, err := s.GetMetadata()
+		if err != nil {
+			logger.Error("failed to load event", "error", err)
+			continue
+		}
+
+		selectedEvents, err := s.GetSelectedEvents()
+		if err != nil {
+			logger.Error("failed to load event", "error", err)
+			continue
+		}
+
+		dependencies := make([]events.ID, 0)
+
+		for _, s := range selectedEvents {
+			eventID, found := events.Definitions.GetID(s.Name)
+			if !found {
+				logger.Error("failed to load event depedency", "event", s.Name)
+				continue
+			}
+
+			dependencies = append(dependencies, eventID)
+		}
+
+		event := events.NewEventDefinition(m.EventName, []string{"rules"}, dependencies)
+
+		err = events.Definitions.Add(events.ID(id), event)
+		if err != nil {
+			logger.Error("failed to add event definition", "error", err)
+			continue
+		}
+
+		id++
+	}
+
+}
+
+func getEventNames(c *cli.Context) []string {
+	// TODO: --trace event= will become --events
+	traceArgs := c.StringSlice("trace")
+	for _, optValue := range traceArgs {
+		if strings.HasPrefix(optValue, "event=") {
+			values := strings.Split(optValue, "=")
+			return strings.Split(values[1], ",")
+		}
+	}
+
+	return []string{}
 }
