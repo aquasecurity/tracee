@@ -146,6 +146,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/detecting/avd/</loc>
+         <lastmod>2022-12-06</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/detecting/go-cel/</loc>
          <lastmod>2022-12-06</lastmod>
          <changefreq>daily</changefreq>
