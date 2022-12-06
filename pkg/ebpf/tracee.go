@@ -37,6 +37,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
+	"github.com/aquasecurity/tracee/pkg/rules/engine"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
@@ -70,6 +71,7 @@ type Config struct {
 	OSInfo             *helpers.OSInfo
 	Sockets            runtime.Sockets
 	ContainersEnrich   bool
+	EngineConfig       engine.Config
 }
 
 type CaptureConfig struct {
