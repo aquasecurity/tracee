@@ -45,7 +45,7 @@ func main() {
 			flags.PrintAndExitIfHelp(c)
 
 			if c.Bool("list") {
-				cmd.PrintEventList() // list events
+				cmd.PrintEventList(false) // list events
 				return nil
 			}
 

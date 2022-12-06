@@ -103,7 +103,7 @@ type eventDefinitions struct {
 	events map[ID]Event
 }
 
-// Add add event to definitions
+// Add adds an event to definitions
 func (e *eventDefinitions) Add(eventId ID, evt Event) error {
 	if _, ok := e.events[eventId]; ok {
 		return fmt.Errorf("error event id already exist: %v", eventId)
@@ -118,7 +118,7 @@ func (e *eventDefinitions) Add(eventId ID, evt Event) error {
 	return nil
 }
 
-// Get without checking for Event existance
+// Get gets the event without checking for Event existance
 func (e *eventDefinitions) Get(eventId ID) Event {
 	evt := e.events[eventId]
 	return evt
