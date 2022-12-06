@@ -19,7 +19,7 @@ type Signature interface {
 	OnSignal(signal Signal) error
 }
 
-//SignatureMetadata represents information about the signature
+// SignatureMetadata represents information about the signature
 type SignatureMetadata struct {
 	ID          string
 	Version     string
@@ -30,23 +30,23 @@ type SignatureMetadata struct {
 	Properties  map[string]interface{}
 }
 
-//SignatureEventSelector represents events the signature is subscribed to
+// SignatureEventSelector represents events the signature is subscribed to
 type SignatureEventSelector struct {
 	Source string
 	Name   string
 	Origin string
 }
 
-//SignatureHandler is a callback function that reports a finding
+// SignatureHandler is a callback function that reports a finding
 type SignatureHandler func(found Finding)
 
-//Signal is a generic lifecycle event for a signature
+// Signal is a generic lifecycle event for a signature
 type Signal interface{}
 
-//SignalSourceComplete signals that an input source the signature was subscribed to had ended
+// SignalSourceComplete signals that an input source the signature was subscribed to had ended
 type SignalSourceComplete string
 
-//Finding is the main output of a signature. It represents a match result for the signature business logic
+// Finding is the main output of a signature. It represents a match result for the signature business logic
 type Finding struct {
 	Data        map[string]interface{}
 	Event       protocol.Event //Event is the causal event of the Finding

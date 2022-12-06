@@ -13,6 +13,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/google/gopacket"
@@ -305,7 +306,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 			// https://github.com/aquasecurity/libbpfgo/issues/122
 			if lost > 0 {
 				t.stats.LostNtCount.Increment(lost)
-				t.config.ChanErrors <- fmt.Errorf("lost %d network events", lost)
+				logger.Warn(fmt.Sprintf("lost %d network events", lost))
 			}
 		}
 	}

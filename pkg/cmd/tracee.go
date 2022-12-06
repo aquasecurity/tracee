@@ -73,8 +73,6 @@ func (r Runner) Run(ctx context.Context) error {
 			select {
 			case event := <-r.TraceeConfig.ChanEvents:
 				printer.Print(event)
-			case err := <-r.TraceeConfig.ChanErrors:
-				printer.Error(err)
 			case <-ctx.Done():
 				return
 			}

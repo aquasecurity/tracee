@@ -283,6 +283,21 @@ func (l *Logger) Sync() error {
 	return l.l.Sync()
 }
 
+// Setters
+// TODO: add SetWriter and Setlogger to the struct level?
+
+func SetWriter(w io.Writer) {
+	newConfig := (*pkgLogger.cfg)
+	newConfig.Writer = w
+	Init(&newConfig)
+}
+
+func SetLevel(lvl Level) {
+	newConfig := (*pkgLogger.cfg)
+	newConfig.Level = lvl
+	Init(&newConfig)
+}
+
 const (
 	TRACEE_LOGGER_LVL       = "TRACEE_LOGGER_LVL"
 	TRACEE_LOGGER_ENCODER   = "TRACEE_LOGGER_ENCODER"
