@@ -97,12 +97,20 @@ func (r Runner) Run(ctx context.Context) error {
 	return t.Run(ctx) // return when context is cancelled by signal
 }
 
-func PrintEventList() {
+func PrintEventList(printRulesSet bool) {
 	padChar, firstPadLen, secondPadLen := " ", 9, 36
 	titleHeaderPadFirst := getPad(padChar, firstPadLen)
 	titleHeaderPadSecond := getPad(padChar, secondPadLen)
 
 	var b strings.Builder
+
+	if printRulesSet {
+		b.WriteString("Rules: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
+		b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________" + "\n\n")
+		printEventGroup(&b, events.StartRulesID, events.MaxRulesID)
+		b.WriteString("\n")
+	}
+
 	b.WriteString("System Calls: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________" + "\n\n")
 	printEventGroup(&b, 0, events.MaxSyscallID)

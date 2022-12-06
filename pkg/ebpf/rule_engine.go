@@ -32,7 +32,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 			case event := <-in:
 				id := events.ID(event.EventID)
 
-				// if the even is marked as submit, we pass it to the engine
+				// if the event is marked as submit, we pass it to the engine
 				if t.events[id].submit {
 					err := t.parseArguments(event)
 					if err != nil {

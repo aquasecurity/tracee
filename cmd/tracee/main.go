@@ -58,6 +58,12 @@ func main() {
 			// event names are parsed here because we need to know which signatures to load
 			eventNames := getEventNames(c)
 
+			// if list is enabled we set eventNames to nil, so every rule is loaded,
+			// and displayed on the list
+			if c.Bool("list") {
+				eventNames = nil
+			}
+
 			sigs, err := signature.Find(
 				rego.RuntimeTarget,
 				rego.PartialEval,
@@ -65,7 +71,6 @@ func main() {
 				eventNames,
 				rego.AIO,
 			)
-
 			if err != nil {
 				return err
 			}
@@ -73,7 +78,7 @@ func main() {
 			createEventsFromSignatures(events.StartRulesID, sigs)
 
 			if c.Bool("list") {
-				cmd.PrintEventList() // list events
+				cmd.PrintEventList(true) // list events
 				return nil
 			}
 
@@ -94,7 +99,6 @@ func main() {
 			ctx := context.Background()
 
 			return runner.Run(ctx)
-
 		},
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
@@ -240,7 +244,7 @@ func createEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 
 		event := events.NewEventDefinition(m.EventName, []string{"rules"}, dependencies)
 
-		err = events.Definitions.Add(events.ID(id), event)
+		err = events.Definitions.Add(id, event)
 		if err != nil {
 			logger.Error("failed to add event definition", "error", err)
 			continue
@@ -248,7 +252,6 @@ func createEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 
 		id++
 	}
-
 }
 
 func getEventNames(c *cli.Context) []string {
