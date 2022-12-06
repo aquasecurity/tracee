@@ -612,6 +612,10 @@ enum kconfig_key_e
 
 #endif // CORE
 
+// FUNCTIONS DECLARATIONS --------------------------------------------------------------------------
+
+static __always_inline void *get_path_str(struct path *path);
+
 // EBPF MACRO HELPERS ------------------------------------------------------------------------------
 
 #ifndef CORE
@@ -908,7 +912,10 @@ typedef struct kmod_data {
 } kmod_data_t;
 
 typedef struct file_info {
-    char pathname[MAX_CACHED_PATH_SIZE];
+    union {
+        char pathname[MAX_CACHED_PATH_SIZE];
+        char *pathname_p;
+    };
     dev_t device;
     unsigned long inode;
     u64 ctime;
@@ -1458,6 +1465,18 @@ static __always_inline u64 get_ctime_nanosec_from_dentry(struct dentry *dentry)
 {
     struct inode *d_inode = READ_KERN(dentry->d_inode);
     return get_ctime_nanosec_from_inode(d_inode);
+}
+
+static __always_inline file_info_t get_file_info(struct file *file)
+{
+    file_info_t file_info = {};
+    if (file != NULL) {
+        file_info.pathname_p = get_path_str(GET_FIELD_ADDR(file->f_path));
+        file_info.ctime = get_ctime_nanosec_from_file(file);
+        file_info.device = get_dev_from_file(file);
+        file_info.inode = get_inode_nr_from_file(file);
+    }
+    return file_info;
 }
 
 // HELPERS: MEMORY ---------------------------------------------------------------------------------
@@ -2909,24 +2928,18 @@ static __always_inline struct pipe_inode_info *get_file_pipe_info(struct file *f
 // HELPERS: SUBMIT SPECIFIC EVENT ------------------------------------------------------------------
 
 // Used macro because of problem with verifier in NONCORE kinetic519
-#define submit_mem_prot_alert_event(data, alert, addr, len, prot, previous_prot, file)             \
+#define submit_mem_prot_alert_event(data, alert, addr, len, prot, previous_prot, file_info)        \
     {                                                                                              \
         save_to_submit_buf(&data, &alert, sizeof(u32), 0);                                         \
         save_to_submit_buf(&data, &addr, sizeof(void *), 1);                                       \
         save_to_submit_buf(&data, &len, sizeof(size_t), 2);                                        \
         save_to_submit_buf(&data, &prot, sizeof(int), 3);                                          \
         save_to_submit_buf(&data, &previous_prot, sizeof(int), 4);                                 \
-                                                                                                   \
-        if (file != NULL) {                                                                        \
-            void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));                          \
-            u64 ctime = get_ctime_nanosec_from_file(file);                                         \
-            dev_t s_dev = get_dev_from_file(file);                                                 \
-            unsigned long inode_nr = get_inode_nr_from_file(file);                                 \
-                                                                                                   \
-            save_str_to_buf(&data, file_path, 5);                                                  \
-            save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 6);                                   \
-            save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 7);                        \
-            save_to_submit_buf(&data, &ctime, sizeof(u64), 8);                                     \
+        if (file_info.pathname_p != NULL) {                                                        \
+            save_str_to_buf(&data, file_info.pathname_p, 5);                                       \
+            save_to_submit_buf(&data, &file_info.device, sizeof(dev_t), 6);                        \
+            save_to_submit_buf(&data, &file_info.inode, sizeof(unsigned long), 7);                 \
+            save_to_submit_buf(&data, &file_info.ctime, sizeof(u64), 8);                           \
         }                                                                                          \
         events_perf_submit(&data, MEM_PROT_ALERT, 0);                                              \
     }
@@ -5631,7 +5644,8 @@ int BPF_KPROBE(trace_mmap_alert)
         size_t len = sys->args.args[1];
         struct file *file = get_struct_file_from_fd(fd);
         int prev_prot = 0;
-        submit_mem_prot_alert_event(data, alert, addr, len, prot, prev_prot, file);
+        file_info_t file_info = get_file_info(file);
+        submit_mem_prot_alert_event(data, alert, addr, len, prot, prev_prot, file_info);
     }
 
     return 0;
@@ -5704,20 +5718,27 @@ int BPF_KPROBE(trace_security_file_mprotect)
         (sys->id != SYSCALL_MPROTECT && sys->id != SYSCALL_PKEY_MPROTECT))
         return 0;
 
+    int should_submit_mprotect = should_submit(SECURITY_FILE_MPROTECT, data.config);
+    int should_submit_mem_prot_alert = should_submit(MEM_PROT_ALERT, data.config);
+
+    if (!should_submit_mprotect && !should_submit_mem_prot_alert) {
+        return 0;
+    }
+
     struct vm_area_struct *vma = (struct vm_area_struct *) PT_REGS_PARM1(ctx);
     unsigned long reqprot = PT_REGS_PARM2(ctx);
     unsigned long prev_prot = get_vma_flags(vma);
 
-    if (should_submit(SECURITY_FILE_MPROTECT, data.config)) {
-        struct file *file = (struct file *) READ_KERN(vma->vm_file);
-        void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
-        u64 ctime = get_ctime_nanosec_from_file(file);
+    struct file *file = (struct file *) READ_KERN(vma->vm_file);
+    file_info_t file_info = get_file_info(file);
+
+    if (should_submit_mprotect) {
         void *addr = (void *) sys->args.args[0];
         size_t len = sys->args.args[1];
 
-        save_str_to_buf(&data, file_path, 0);
+        save_str_to_buf(&data, file_info.pathname_p, 0);
         save_to_submit_buf(&data, &reqprot, sizeof(int), 1);
-        save_to_submit_buf(&data, &ctime, sizeof(u64), 2);
+        save_to_submit_buf(&data, &file_info.ctime, sizeof(u64), 2);
         save_to_submit_buf(&data, &prev_prot, sizeof(int), 3);
         save_to_submit_buf(&data, &addr, sizeof(void *), 4);
         save_to_submit_buf(&data, &len, sizeof(size_t), 5);
@@ -5768,8 +5789,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
             }
         }
         if (should_alert) {
-            struct file *file = (struct file *) READ_KERN(vma->vm_file);
-            submit_mem_prot_alert_event(data, alert, addr, len, reqprot, prev_prot, file);
+            submit_mem_prot_alert_event(data, alert, addr, len, reqprot, prev_prot, file_info);
         }
         if (should_extract_code) {
             bin_args.type = SEND_MPROTECT;
