@@ -183,7 +183,7 @@ func (t *Tracee) processBPFErrors() {
 			// https://github.com/aquasecurity/libbpfgo/issues/122
 			if lost > 0 {
 				t.stats.LostBPFErrCount.Increment(lost)
-				t.config.ChanErrors <- fmt.Errorf("lost %d ebpf error events", lost)
+				logger.Warn(fmt.Sprintf("lost %d ebpf error events", lost))
 			}
 		}
 	}
