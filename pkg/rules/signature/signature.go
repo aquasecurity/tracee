@@ -49,7 +49,8 @@ func Find(target string, partialEval bool, rulesDir string, rules []string, aioE
 	} else {
 		for _, s := range sigs {
 			for _, r := range rules {
-				if m, err := s.GetMetadata(); err == nil && m.ID == r {
+				if m, err := s.GetMetadata(); err == nil &&
+					(m.ID == r || m.EventName == r) {
 					res = append(res, s)
 				}
 			}
