@@ -41,8 +41,6 @@ those events by communicating with the relevant container's runtime and SDK.
 
 ## Supported Container Runtime Engines
 
-
-
 Currently, tracee will look in the following paths for autodiscovering the
 listed runtimes:
 
@@ -58,4 +56,30 @@ listed runtimes:
     nesting and so sockets must be appropriately mounted and set up for tracee
     to enrich all containers correctly.
 
+## Viewing enrichment output
 
+As a user, when container enrichment is enabled the event output will include enriched fields in these cases:
+
+1. Running **tracee-ebpf** with a json format will include all container enriched fields 
+    text```
+    $ docker run \
+        --name tracee --rm -it \
+        --pid=host --cgroupns=host --privileged \
+        -v /etc/os-release:/etc/os-release-host:ro \
+        -v /var/run/docker.sock:/var/run/docker.sock \
+        -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+        aquasec/tracee:{{ git.tag }} \
+        trace --output json --containers
+    ```
+
+2. Running in container tracing mode and with enrichment enabled will add the image name to the table printer
+    text```
+    $ docker run \
+        --name tracee --rm -it \
+        --pid=host --cgroupns=host --privileged \
+        -v /etc/os-release:/etc/os-release-host:ro \
+        -v /var/run/containerd:/var/run/containerd \
+        -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+        aquasec/tracee:{{ git.tag }} \
+        trace --trace containers --containers
+    ```

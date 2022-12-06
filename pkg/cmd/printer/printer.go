@@ -29,13 +29,21 @@ type EventPrinter interface {
 	Close()
 }
 
+type ContainerMode int
+
+const (
+	ContainerModeDisabled ContainerMode = iota
+	ContainerModeEnabled
+	ContainerModeEnriched
+)
+
 type Config struct {
 	Kind          string
 	OutPath       string
 	OutFile       io.WriteCloser
 	ErrPath       string
 	ErrFile       io.WriteCloser
-	ContainerMode bool
+	ContainerMode ContainerMode
 	RelativeTS    bool
 }
 
@@ -83,10 +91,9 @@ func New(config Config) (EventPrinter, error) {
 		}
 	case strings.HasPrefix(kind, "gotemplate="):
 		res = &templateEventPrinter{
-			out:           config.OutFile,
-			err:           config.ErrFile,
-			containerMode: config.ContainerMode,
-			templatePath:  strings.Split(kind, "=")[1],
+			out:          config.OutFile,
+			err:          config.ErrFile,
+			templatePath: strings.Split(kind, "=")[1],
 		}
 	}
 	err := res.Init()
@@ -100,7 +107,7 @@ type tableEventPrinter struct {
 	out           io.WriteCloser
 	err           io.WriteCloser
 	verbose       bool
-	containerMode bool
+	containerMode ContainerMode
 	relativeTS    bool
 }
 
@@ -108,16 +115,22 @@ func (p tableEventPrinter) Init() error { return nil }
 
 func (p tableEventPrinter) Preamble() {
 	if p.verbose {
-		if p.containerMode {
-			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-20s %s", "TIME", "UTS_NAME", "CONTAINER_ID", "MNT_NS", "PID_NS", "UID", "COMM", "PID/host", "TID/host", "PPID/host", "RET", "EVENT", "ARGS")
-		} else {
+		switch p.containerMode {
+		case ContainerModeDisabled:
 			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-12s %-12s %-6s %-16s %-7s %-7s %-7s %-16s %-20s %s", "TIME", "UTS_NAME", "CONTAINER_ID", "MNT_NS", "PID_NS", "UID", "COMM", "PID", "TID", "PPID", "RET", "EVENT", "ARGS")
+		case ContainerModeEnabled:
+			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-20s %s", "TIME", "UTS_NAME", "CONTAINER_ID", "MNT_NS", "PID_NS", "UID", "COMM", "PID/host", "TID/host", "PPID/host", "RET", "EVENT", "ARGS")
+		case ContainerModeEnriched:
+			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-16s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-20s %s", "TIME", "UTS_NAME", "CONTAINER_ID", "IMAGE", "MNT_NS", "PID_NS", "UID", "COMM", "PID/host", "TID/host", "PPID/host", "RET", "EVENT", "ARGS")
 		}
 	} else {
-		if p.containerMode {
-			fmt.Fprintf(p.out, "%-16s %-13s %-6s %-16s %-15s %-15s %-16s %-20s %s", "TIME", "CONTAINER_ID", "UID", "COMM", "PID/host", "TID/host", "RET", "EVENT", "ARGS")
-		} else {
+		switch p.containerMode {
+		case ContainerModeDisabled:
 			fmt.Fprintf(p.out, "%-16s %-6s %-16s %-7s %-7s %-16s %-20s %s", "TIME", "UID", "COMM", "PID", "TID", "RET", "EVENT", "ARGS")
+		case ContainerModeEnabled:
+			fmt.Fprintf(p.out, "%-16s %-13s %-6s %-16s %-15s %-15s %-16s %-20s %s", "TIME", "CONTAINER_ID", "UID", "COMM", "PID/host", "TID/host", "RET", "EVENT", "ARGS")
+		case ContainerModeEnriched:
+			fmt.Fprintf(p.out, "%-16s %-13s %-16s %-6s %-16s %-15s %-15s %-16s %-20s %s", "TIME", "CONTAINER_ID", "IMAGE", "UID", "COMM", "PID/host", "TID/host", "RET", "EVENT", "ARGS")
 		}
 	}
 	fmt.Fprintln(p.out)
@@ -134,18 +147,28 @@ func (p tableEventPrinter) Print(event trace.Event) {
 	if len(containerId) > 12 {
 		containerId = containerId[:12]
 	}
+	containerImage := event.ContainerImage
+	if len(containerImage) > 16 {
+		containerImage = containerImage[:16]
+	}
 
 	if p.verbose {
-		if p.containerMode {
-			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, event.HostName, containerId, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ParentProcessID, event.HostParentProcessID, event.ReturnValue, event.EventName)
-		} else {
+		switch p.containerMode {
+		case ContainerModeDisabled:
 			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-20s ", timestamp, event.HostName, containerId, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue, event.EventName)
+		case ContainerModeEnabled:
+			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, event.HostName, containerId, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ParentProcessID, event.HostParentProcessID, event.ReturnValue, event.EventName)
+		case ContainerModeEnriched:
+			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, event.HostName, containerId, event.ContainerImage, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ParentProcessID, event.HostParentProcessID, event.ReturnValue, event.EventName)
 		}
 	} else {
-		if p.containerMode {
-			fmt.Fprintf(p.out, "%-16s %-13s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, containerId, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ReturnValue, event.EventName)
-		} else {
+		switch p.containerMode {
+		case ContainerModeDisabled:
 			fmt.Fprintf(p.out, "%-16s %-6d %-16s %-7d %-7d %-16d %-20s ", timestamp, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ReturnValue, event.EventName)
+		case ContainerModeEnabled:
+			fmt.Fprintf(p.out, "%-16s %-13s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, containerId, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ReturnValue, event.EventName)
+		case ContainerModeEnriched:
+			fmt.Fprintf(p.out, "%-16s %-13s %-16s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, containerId, containerImage, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ReturnValue, event.EventName)
 		}
 	}
 	for i, arg := range event.Args {
@@ -172,11 +195,10 @@ func (p tableEventPrinter) Close() {
 }
 
 type templateEventPrinter struct {
-	out           io.WriteCloser
-	err           io.WriteCloser
-	containerMode bool
-	templatePath  string
-	templateObj   **template.Template
+	out          io.WriteCloser
+	err          io.WriteCloser
+	templatePath string
+	templateObj  **template.Template
 }
 
 func (p *templateEventPrinter) Init() error {
