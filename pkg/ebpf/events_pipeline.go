@@ -58,6 +58,13 @@ func (t *Tracee) handleEvents(ctx context.Context) {
 	eventsChan, errc = t.deriveEvents(ctx, eventsChan)
 	errcList = append(errcList, errc)
 
+	// Engine events stage
+	// In this stage events go through a signatures match
+	if t.config.EngineConfig.Enabled {
+		eventsChan, errc = t.engineEvents(ctx, eventsChan)
+		errcList = append(errcList, errc)
+	}
+
 	// Sink pipeline stage.
 	errc = t.sinkEvents(ctx, eventsChan)
 	errcList = append(errcList, errc)
@@ -327,30 +334,27 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 	go func() {
 		defer close(errc)
 		for event := range in {
-			// Only emit events requested by the user
+			//Only emit events requested by the user
 			id := events.ID(event.EventID)
-			if t.events[id].emit {
-				if t.config.Output.ParseArguments {
-					err := events.ParseArgs(event)
-					if err != nil {
-						t.handleError(err)
-						continue
-					}
-					if t.config.Output.ParseArgumentsFDs {
-						err := events.ParseArgsFDs(event, t.FDArgPathMap)
-						if err != nil {
-							t.handleError(err)
-							continue
-						}
-					}
+			if !t.events[id].emit {
+				continue
+			}
+
+			// if the rule engine is not enabled, we parse arguments here before sending
+			// the output to the printers
+			if !t.config.EngineConfig.Enabled {
+				err := t.parseArguments(event)
+				if err != nil {
+					t.handleError(err)
 				}
-				select {
-				case t.config.ChanEvents <- *event:
-					t.stats.EventCount.Increment()
-					event = nil
-				case <-ctx.Done():
-					return
-				}
+			}
+
+			select {
+			case t.config.ChanEvents <- *event:
+				t.stats.EventCount.Increment()
+				event = nil
+			case <-ctx.Done():
+				return
 			}
 		}
 	}()
@@ -431,4 +435,22 @@ func MergeErrors(cs ...<-chan error) <-chan error {
 func (t *Tracee) handleError(err error) {
 	t.stats.ErrorCount.Increment()
 	logger.Error("tracee encountered an error", "error", err)
+}
+
+// parseArguments is required by the rules engine,
+// if the rule engine staged is enabled, parseArguments will happen there,
+// before sending an event to be processed, if the rule engine is disabled,
+// parseArgumnets happens on the sink stage (because anyone pipeing the output to tracee-rules will need it)
+func (t *Tracee) parseArguments(e *trace.Event) error {
+	if t.config.Output.ParseArguments {
+		err := events.ParseArgs(e)
+		if err != nil {
+			return err
+		}
+		if t.config.Output.ParseArgumentsFDs {
+			return events.ParseArgsFDs(e, t.FDArgPathMap)
+		}
+	}
+
+	return nil
 }
