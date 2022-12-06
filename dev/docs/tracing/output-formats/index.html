@@ -2143,8 +2143,8 @@ $ cat /tmp/tracee.log | jq -c
 </li>
 <li>
 <p>Error file</p>
-<p>Redirect errors to your log files if needed:</p>
-<div class="highlight"><pre><span></span><code>$ sudo TRACEE_BPF_FILE=do-not-exist ./dist/tracee-ebpf --output json --trace comm=bash --trace follow --trace event=openat --output out-file:/tmp/tracee.log --output err-file:/tmp/tracee.err
+<p>Redirect logs to a file if needed:</p>
+<div class="highlight"><pre><span></span><code>$ sudo TRACEE_BPF_FILE=do-not-exist ./dist/tracee-ebpf --output json --trace comm=bash --trace follow --trace event=openat --output out-file:/tmp/tracee.events --output log-file:/tmp/tracee.log
 </code></pre></div>
 </li>
 </ol>
