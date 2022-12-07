@@ -112,11 +112,6 @@ func main() {
 				Value: 1024, // 4 MB of contigous pages
 				Usage: "size, in pages, of the internal perf ring buffer used to send blobs from the kernel",
 			},
-			&cli.BoolFlag{
-				Name:  "debug",
-				Value: false,
-				Usage: "write verbose debug messages to standard output and retain intermediate artifacts. enabling will output debug messages to stdout, which will likely break consumers which expect to receive machine-readable events from stdout",
-			},
 			&cli.StringFlag{
 				Name:  "install-path",
 				Value: "/tmp/tracee",
@@ -145,6 +140,11 @@ func main() {
 			&cli.BoolFlag{
 				Name:  "containers",
 				Usage: "enable container info enrichment to events. this feature is experimental and may cause unexpected behavior in the pipeline",
+			},
+			&cli.StringFlag{
+				Name:  "log",
+				Usage: "logger level. run '--log help' for more info.",
+				Value: "info",
 			},
 		},
 	}

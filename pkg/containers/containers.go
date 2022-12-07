@@ -17,6 +17,7 @@ import (
 	"github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/tracee/pkg/cgroup"
 	cruntime "github.com/aquasecurity/tracee/pkg/containers/runtime"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 // Containers contains information about running containers in the host.
@@ -44,7 +45,6 @@ func New(
 	cgroups *cgroup.Cgroups,
 	sockets cruntime.Sockets,
 	mapName string,
-	debug bool,
 ) (
 	*Containers,
 	error,
@@ -60,16 +60,16 @@ func New(
 
 	//attempt to register for all supported runtimes
 	err := runtimeService.Register(cruntime.Containerd, cruntime.ContainerdEnricher)
-	if err != nil && debug {
-		fmt.Fprintf(os.Stderr, "Enricher: %v\n", err)
+	if err != nil {
+		logger.Debug("Enricher", "error", err)
 	}
 	err = runtimeService.Register(cruntime.Crio, cruntime.CrioEnricher)
-	if err != nil && debug {
-		fmt.Fprintf(os.Stderr, "Enricher: %v\n", err)
+	if err != nil {
+		logger.Debug("Enricher", "error", err)
 	}
 	err = runtimeService.Register(cruntime.Docker, cruntime.DockerEnricher)
-	if err != nil && debug {
-		fmt.Fprintf(os.Stderr, "Enricher: %v\n", err)
+	if err != nil {
+		logger.Debug("Enricher", "error", err)
 	}
 
 	containers.enricher = runtimeService
