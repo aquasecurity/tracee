@@ -206,7 +206,7 @@ func TestHostSharedObjectSymbolsLoader_loadSOSymbols(t *testing.T) {
 	})
 }
 
-func TestLoadSharedObjectDynamicSymbols(t *testing.T) {
+func TestParseDynamicSymbols(t *testing.T) {
 	testCases := []struct {
 		Name          string
 		Input         []elf.Symbol
