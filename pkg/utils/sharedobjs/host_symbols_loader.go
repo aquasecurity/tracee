@@ -102,11 +102,14 @@ func (soCache *dynamicSymbolsLRUCache) Add(obj ObjInfo, dynamicSymbols *dynamicS
 func loadSharedObjectDynamicSymbols(path string) (*dynamicSymbols, error) {
 	var loadedObject *elf.File
 
-	capabilities.GetInstance().Required(func() error {
+	err := capabilities.GetInstance().Required(func() error {
 		var e error
 		loadedObject, e = elf.Open(path)
 		return e
 	})
+	if err != nil {
+		return nil, err
+	}
 	defer loadedObject.Close()
 
 	dynamicSymbols, err := loadedObject.DynamicSymbols()
