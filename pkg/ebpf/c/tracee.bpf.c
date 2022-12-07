@@ -3821,7 +3821,8 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
     if (bpf_map_lookup_elem(&syscalls_to_check_map, (void *) &key) == NULL)
         return 0;
 
-    u64 *syscall_table_addr = (u64 *) get_symbol_addr("sys_call_table");
+    char syscall_table_sym[15] = "sys_call_table";
+    u64 *syscall_table_addr = (u64 *) get_symbol_addr(syscall_table_sym);
     if (syscall_table_addr == 0)
         return 0;
 
@@ -4272,7 +4273,8 @@ int BPF_KPROBE(trace_security_file_open)
     u64 ctime = get_ctime_nanosec_from_file(file);
 
     // Load the arguments given to the open syscall (which eventually invokes this function)
-    void *syscall_pathname = "";
+    char empty_string[1] = "";
+    void *syscall_pathname = &empty_string;
     syscall_data_t *sys;
     bool syscall_traced = data.task_info->syscall_traced;
     if (syscall_traced) {
