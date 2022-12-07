@@ -105,10 +105,15 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	// Check kernel lockdown
 
 	lockdown, err := helpers.Lockdown()
+	if err != nil {
+		logger.Error("osinfo", "error", err)
+	}
+
 	if err == nil && lockdown == helpers.CONFIDENTIALITY {
 		return runner, fmt.Errorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
 
 	}
+
 	logger.Debug("osinfo", "security_lockdown", lockdown)
 
 	// Check if ftrace is enabled
