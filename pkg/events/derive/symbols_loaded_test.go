@@ -2,8 +2,9 @@ package derive
 
 import (
 	"errors"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"testing"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -171,7 +172,7 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 
 				mockLoader := initLoaderMock(false)
 				mockLoader.addSOSymbols(testCase.loadingSO)
-				gen := initSymbolsLoadedEventGenerator(mockLoader, testCase.watchedSymbols, testCase.whitelistedLibs, true)
+				gen := initSymbolsLoadedEventGenerator(mockLoader, testCase.watchedSymbols, testCase.whitelistedLibs)
 				eventArgs, err := gen.deriveArgs(generateSOLoadedEvent(pid, testCase.loadingSO.info))
 				assert.Empty(t, errChan)
 				require.NoError(t, err)
@@ -195,7 +196,7 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 			errChan := setMockLogger(logger.DebugLevel)
 			defer logger.SetBase(baseLogger)
 			mockLoader := initLoaderMock(true)
-			gen := initSymbolsLoadedEventGenerator(mockLoader, nil, nil, true)
+			gen := initSymbolsLoadedEventGenerator(mockLoader, nil, nil)
 
 			// First error should be always returned
 			eventArgs, err := gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
@@ -215,7 +216,7 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 			errChan := setMockLogger(logger.WarnLevel)
 			defer logger.SetBase(baseLogger)
 			mockLoader := initLoaderMock(true)
-			gen := initSymbolsLoadedEventGenerator(mockLoader, nil, nil, false)
+			gen := initSymbolsLoadedEventGenerator(mockLoader, nil, nil)
 
 			// First error should create warning
 			eventArgs, err := gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))

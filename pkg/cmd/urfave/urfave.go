@@ -5,7 +5,6 @@ import (
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/pkg/cmd"
-	"github.com/aquasecurity/tracee/pkg/cmd/debug"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
@@ -26,13 +25,18 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 		ContainersEnrich:   c.Bool("containers"),
 	}
 
-	if c.Bool("debug") {
-		err := debug.Enable()
-		if err != nil {
-			return runner, fmt.Errorf("failed to start debug mode: %v", err)
-		}
+	// Output command line flags
 
-		cfg.Debug = debug.Enabled()
+	output, printerConfig, err := flags.PrepareOutput(c.StringSlice("output"))
+	if err != nil {
+		return runner, err
+	}
+
+	// Log command line flags
+
+	err = flags.PrepareLogger(c.String("log"), output.LogFile)
+	if err != nil {
+		return runner, err
 	}
 
 	// OS release information
@@ -91,13 +95,6 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 	cfg.Filter = &filter
-
-	// Output command line flags
-
-	output, printerConfig, err := flags.PrepareOutput(c.StringSlice("output"))
-	if err != nil {
-		return runner, err
-	}
 
 	printerConfig.ContainerMode = cmd.GetContainerMode(cfg)
 	cfg.Output = &output.OutputConfig

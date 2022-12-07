@@ -1,9 +1,8 @@
 package initialization
 
 import (
-	"fmt"
 	"github.com/aquasecurity/libbpfgo/helpers"
-	"os"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 // Custom KernelConfigOption's to extend kernel_config helper support
@@ -17,7 +16,7 @@ var kconfigUsed = map[helpers.KernelConfigOption]string{
 }
 
 // LoadKconfigValues load all kconfig variables used within tracee.bpf.c
-func LoadKconfigValues(kc *helpers.KernelConfig, isDebug bool) (map[helpers.KernelConfigOption]helpers.KernelConfigOptionValue, error) {
+func LoadKconfigValues(kc *helpers.KernelConfig) (map[helpers.KernelConfigOption]helpers.KernelConfigOptionValue, error) {
 	values := make(map[helpers.KernelConfigOption]helpers.KernelConfigOptionValue)
 	var err error
 	for key, keyString := range kconfigUsed {
@@ -28,9 +27,7 @@ func LoadKconfigValues(kc *helpers.KernelConfig, isDebug bool) (map[helpers.Kern
 
 	// re-load kconfig and get just added kconfig option values
 	if err = kc.LoadKernelConfig(); err != nil { // invalid kconfig file: assume values then
-		if isDebug {
-			fmt.Fprintf(os.Stderr, "KConfig: warning: assuming kconfig values, might have unexpected behavior\n")
-		}
+		logger.Debug("KConfig: warning: assuming kconfig values, might have unexpected behavior")
 		for key := range kconfigUsed {
 			values[key] = helpers.UNDEFINED
 		}

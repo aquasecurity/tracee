@@ -287,6 +287,10 @@ func (l *Logger) Sync() error {
 // TODO: add SetWriter and Setlogger to the struct level?
 
 func SetWriter(w io.Writer) {
+	if w == nil {
+		panic("logger writer cannot be nil")
+	}
+
 	newConfig := (*pkgLogger.cfg)
 	newConfig.Writer = w
 	Init(&newConfig)
@@ -448,4 +452,14 @@ func Init(cfg *LoggerConfig) {
 	}
 
 	SetBase(NewLogger(cfg))
+}
+
+// GetLevel returns the logger level
+func GetLevel() Level {
+	return pkgLogger.cfg.Level
+}
+
+// HasDebugLevel returns true if logger has debug level
+func HasDebugLevel() bool {
+	return pkgLogger.cfg.Level == DebugLevel
 }

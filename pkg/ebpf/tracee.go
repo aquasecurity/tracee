@@ -60,7 +60,6 @@ type Config struct {
 	Cache              queue.CacheConfig
 	PerfBufferSize     int
 	BlobPerfBufferSize int
-	Debug              bool
 	maxPidsCache       int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
 	BTFObjPath         string
 	BPFObjPath         string
@@ -243,7 +242,7 @@ func GetCaptureEventsList(cfg Config) map[events.ID]eventConfig {
 	if cfg.Capture.NetIfaces != nil {
 		captureEvents[events.CapturePcap] = eventConfig{}
 	}
-	if len(cfg.Filter.NetFilter.Ifaces) > 0 || cfg.Debug {
+	if len(cfg.Filter.NetFilter.Ifaces) > 0 || logger.HasDebugLevel() {
 		captureEvents[events.SecuritySocketBind] = eventConfig{}
 	}
 
@@ -432,7 +431,6 @@ func (t *Tracee) Init() error {
 		t.cgroups,
 		t.config.Sockets,
 		"containers_map",
-		t.config.Debug,
 	)
 	if err != nil {
 		return fmt.Errorf("error initializing containers: %w", err)
@@ -694,7 +692,6 @@ func (t *Tracee) initDerivationTable() error {
 					soLoader,
 					watchedSymbols,
 					whitelistedLibs,
-					t.config.Debug,
 				),
 			},
 		},
@@ -819,7 +816,10 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	case *cgroup.CgroupV1:
 		cOptVal = cOptVal | optCgroupV1
 	}
-	if t.config.Capture.NetIfaces != nil || len(t.config.Filter.NetFilter.Interfaces()) > 0 || t.config.Debug {
+	if t.config.Capture.NetIfaces != nil ||
+		len(t.config.Filter.NetFilter.Interfaces()) > 0 ||
+		logger.HasDebugLevel() {
+
 		cOptVal = cOptVal | optProcessInfo
 		t.config.ProcessInfo = true
 	}
@@ -995,7 +995,7 @@ func (t *Tracee) populateBPFMaps() error {
 		return err
 	}
 
-	kconfigValues, err := initialization.LoadKconfigValues(t.config.KernelConfig, t.config.Debug)
+	kconfigValues, err := initialization.LoadKconfigValues(t.config.KernelConfig)
 	if err != nil {
 		return err
 	}

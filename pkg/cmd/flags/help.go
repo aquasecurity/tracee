@@ -16,22 +16,28 @@ func PrintAndExitIfHelp(ctx *cli.Context) {
 		"output",
 		"capabilities",
 		"rego",
+		"log",
 	}
 
 	for _, k := range keys {
-		stringSlice := ctx.StringSlice(k)
-		if checkIsHelp(stringSlice) {
+		if checkIsHelp(ctx, k) {
 			fmt.Print(getHelpString(k))
 			os.Exit(0)
 		}
 	}
 }
 
-func checkIsHelp(s []string) bool {
-	if len(s) == 1 && s[0] == "help" {
-		return true
+// checkIsHelp checks if a flag value is set as "help"
+func checkIsHelp(ctx *cli.Context, k string) bool {
+	values := ctx.StringSlice(k)
+	v := ""
+	if len(values) == 1 {
+		v = values[0]
+	} else {
+		v = ctx.String(k)
 	}
-	return false
+
+	return v == "help"
 }
 
 func getHelpString(key string) string {
@@ -50,6 +56,8 @@ func getHelpString(key string) string {
 		return capabilitiesHelp()
 	case "rego":
 		return regoHelp()
+	case "log":
+		return logHelp()
 	}
 	return ""
 }

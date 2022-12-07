@@ -11,8 +11,8 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-func SymbolsLoaded(soLoader sharedobjs.DynamicSymbolsLoader, watchedSymbols []string, whitelistedLibsPrefixes []string, isDebug bool) deriveFunction {
-	gen := initSymbolsLoadedEventGenerator(soLoader, watchedSymbols, whitelistedLibsPrefixes, isDebug)
+func SymbolsLoaded(soLoader sharedobjs.DynamicSymbolsLoader, watchedSymbols []string, whitelistedLibsPrefixes []string) deriveFunction {
+	gen := initSymbolsLoadedEventGenerator(soLoader, watchedSymbols, whitelistedLibsPrefixes)
 	return deriveSingleEvent(events.SymbolsLoaded, gen.deriveArgs)
 }
 
@@ -39,15 +39,14 @@ type symbolsLoadedEventGenerator struct {
 	watchedSymbols      map[string]bool
 	pathPrefixWhitelist []string
 	librariesWhitelist  []string
-	isDebug             bool
 	returnedErrors      map[string]bool
 }
 
 func initSymbolsLoadedEventGenerator(
 	soLoader sharedobjs.DynamicSymbolsLoader,
 	watchedSymbols []string,
-	whitelistedLibsPrefixes []string,
-	isDebug bool) *symbolsLoadedEventGenerator {
+	whitelistedLibsPrefixes []string) *symbolsLoadedEventGenerator {
+
 	watchedSymbolsMap := make(map[string]bool)
 	for _, sym := range watchedSymbols {
 		watchedSymbolsMap[sym] = true
@@ -65,7 +64,6 @@ func initSymbolsLoadedEventGenerator(
 		watchedSymbols:      watchedSymbolsMap,
 		pathPrefixWhitelist: prefixes,
 		librariesWhitelist:  libraries,
-		isDebug:             isDebug,
 		returnedErrors:      make(map[string]bool),
 	}
 }
