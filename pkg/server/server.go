@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/pprof"
-	"os"
 
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -40,10 +39,10 @@ func (s *Server) EnableHealthzEndpoint() {
 
 // Start starts the http server on the listen addr
 func (s *Server) Start() {
-	logger.Debug(fmt.Sprintf("Serving metrics endpoint at %s\n", s.listenAddr))
+	logger.Debug("serving metrics endpoint", "address", s.listenAddr)
 
 	if err := http.ListenAndServe(s.listenAddr, s.mux); err != http.ErrServerClosed {
-		fmt.Fprintf(os.Stderr, "Error serving metrics endpoint: %v\n", err)
+		logger.Error("serving metrics endpoint", "error", err)
 	}
 }
 

@@ -1496,12 +1496,12 @@ func (t *Tracee) Close() {
 		},
 	)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v", err)
+		logger.Error("capabilities", "error", err)
 	}
 
 	err = t.cgroups.Destroy()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v", err)
+		logger.Error("cgroups destroy", "error", err)
 	}
 }
 

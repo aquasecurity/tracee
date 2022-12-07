@@ -109,11 +109,9 @@ func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSInfo *hel
 	logger.Debug("BPF: trying non CO-RE eBPF", "file", bpfFilePath)
 	if bpfBytes, err = ioutil.ReadFile(bpfFilePath); err != nil {
 		// tell entrypoint that eBPF non CO-RE obj compilation is needed
-		fmt.Printf("BPF: %v\n", err)
-		fmt.Printf("BPF: ATTENTION:\n")
-		fmt.Printf("BPF: It seems tracee-ebpf can't load CO-RE eBPF obj and could not find\n")
-		fmt.Printf("BPF: the non CO-RE object in %s. You may build a non CO-RE eBPF\n", installPath)
-		fmt.Printf("BPF: obj by using the source tree and executing \"make install-bpf-nocore\".\n")
+		logger.Error("BPF", "error", err)
+		logger.Error("BPF: could not load CO-RE eBPF object and could not find non CO-RE object", "installPath", installPath)
+		logger.Warn("BPF: you may build a non CO-RE eBPF object by executing \"make install-bpf-nocore\" in the source tree")
 		os.Exit(2)
 	}
 

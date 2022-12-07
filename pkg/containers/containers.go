@@ -119,7 +119,7 @@ func GetContainerIdFromTaskDir(taskPath string) (string, error) {
 func (c *Containers) populate() error {
 	fn := func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			logger.Error("WalkDir func", "error", err)
 			return nil
 		}
 		if !d.IsDir() {

@@ -2,17 +2,17 @@ package initialize
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 func KernelConfig() (*helpers.KernelConfig, error) {
 	kernelConfig, err := helpers.InitKernelConfig()
 	if err != nil {
 		// do not fail if we cannot init kconfig - print out warning messages
-		fmt.Fprintf(os.Stderr, "KConfig: warning: could not check enabled kconfig features\n(%v)\n", err)
-		fmt.Fprintf(os.Stderr, "KConfig: warning: assuming kconfig values, might have unexpected behavior\n")
+		logger.Warn("KConfig: could not check enabled kconfig features", "error", err)
+		logger.Warn("KConfig: assuming kconfig values, might have unexpected behavior")
 		return kernelConfig, nil
 	}
 

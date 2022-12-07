@@ -2,10 +2,10 @@ package wrapper
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"time"
 
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -91,7 +91,13 @@ var (
 func toArg(event trace.Event, source trace.Argument) (*Argument, error) {
 	valueType, ok := typesMapping[source.Type]
 	if !ok {
-		fmt.Fprintf(os.Stderr, "\tUnrecognized event arg: eventName: %q name: %q type: %q valueType: %T value: %v\n", event.EventName, source.Name, source.Type, source.Value, source.Value)
+		logger.Error("unrecognized event arg",
+			"eventName", event.EventName,
+			"name", source.Name,
+			"type", source.Type,
+			"valueType", fmt.Sprintf("%T", source.Value),
+			"value", source.Value,
+		)
 		valueType = ValueType_UNKNOWN_VALUE_TYPE
 	}
 
@@ -121,7 +127,7 @@ func toArg(event trace.Event, source trace.Argument) (*Argument, error) {
 				Uint32Value: &v,
 			}
 		default:
-			fmt.Fprintf(os.Stderr, "Unhandled unsigned integer type: %T", source.Value)
+			logger.Error("unhandled unsigned integer type", "type", fmt.Sprintf("%T", source.Value))
 		}
 	case ValueType_UINT64:
 		v := source.Value.(uint64)
