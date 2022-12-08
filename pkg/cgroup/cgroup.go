@@ -164,6 +164,7 @@ type Cgroup interface {
 	destroy() error
 	GetMountPoint() string
 	getDefaultHierarchyID() int
+	GetVersion() CgroupVersion
 }
 
 func NewCgroup(ver CgroupVersion) (Cgroup, error) {
@@ -227,6 +228,10 @@ func (c *CgroupV1) getDefaultHierarchyID() int {
 	return c.hid
 }
 
+func (c *CgroupV1) GetVersion() CgroupVersion {
+	return CgroupVersion1
+}
+
 // cgroupv2
 
 type CgroupV2 struct {
@@ -272,6 +277,10 @@ func (c *CgroupV2) GetMountPoint() string {
 
 func (c *CgroupV2) getDefaultHierarchyID() int {
 	return c.hid
+}
+
+func (c *CgroupV2) GetVersion() CgroupVersion {
+	return CgroupVersion2
 }
 
 //
