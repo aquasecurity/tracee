@@ -6,6 +6,7 @@ __rego_metadoc__ := {
 	"id": "TRC-16",
 	"version": "0.1.0",
 	"name": "Hooking proc file system file operations by overriding the function pointers",
+	"eventName": "proc_fops_hooking",
 	"description": "Usage of kernel modules to hook file operations",
 	"tags": ["linux"],
 	"properties": {

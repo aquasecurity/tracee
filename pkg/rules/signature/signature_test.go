@@ -30,6 +30,7 @@ func TestFind(t *testing.T) {
 		ID:          "TRC-2",
 		Version:     "0.1.0",
 		Name:        "Anti-Debugging",
+		EventName:   "anti_debugging",
 		Description: "Process uses anti-debugging technique to block debugger",
 		Tags:        []string{"linux", "container"},
 		Properties: map[string]interface{}{
@@ -93,6 +94,7 @@ func Test_findRegoSigs(t *testing.T) {
 			ID:          "TRC-2",
 			Version:     "0.1.0",
 			Name:        "Anti-Debugging",
+			EventName:   "anti_debugging",
 			Description: "Process uses anti-debugging technique to block debugger",
 			Tags:        []string{"linux", "container"},
 			Properties: map[string]interface{}{

@@ -6,6 +6,7 @@ __rego_metadoc__ := {
 	"id": "TRC-11",
 	"version": "0.1.0",
 	"name": "Container Device Mount Detected",
+	"eventName": "disk_mount",
 	"description": "Container device filesystem mount detected. A mount of a host device filesystem can be exploited by adversaries to perform container escape.",
 	"tags": ["container"],
 	"properties": {

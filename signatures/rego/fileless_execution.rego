@@ -6,6 +6,7 @@ __rego_metadoc__ := {
 	"id": "TRC-5",
 	"version": "0.1.0",
 	"name": "Fileless Execution",
+	"eventName": "fileless_execution",
 	"description": "Executing a process from memory, without a file in the disk",
 	"tags": ["linux", "container"],
 	"properties": {

@@ -6,6 +6,7 @@ __rego_metadoc__ := {
 	"id": "TRC-6",
 	"version": "0.1.0",
 	"name": "kernel module loading",
+	"eventName": "kernel_module_loading",
 	"description": "Attempt to load a kernel module detection",
 	"tags": ["linux", "container"],
 	"properties": {

@@ -6,6 +6,7 @@ __rego_metadoc__ := {
 	"id": "TRC-9",
 	"version": "0.1.0",
 	"name": "New Executable Was Dropped During Runtime",
+	"eventName": "dropped_executable",
 	"description": "An Executable file was dropped in your system during runtime. Usually container images are built with all binaries needed inside, a dropped binary may indicate an adversary infiltrated into your container.",
 	"tags": ["linux", "container"],
 	"properties": {
