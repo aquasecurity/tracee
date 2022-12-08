@@ -86,6 +86,10 @@ func (c *Containers) GetDefaultCgroupHierarchyID() int {
 	return c.cgroups.GetDefaultCgroupHierarchyID()
 }
 
+func (c *Containers) GetCgroupVersion() cgroup.CgroupVersion {
+	return c.cgroups.GetDefaultCgroup().GetVersion()
+}
+
 // Populate populates Containers struct by reading mounted proc and cgroups fs.
 func (c *Containers) Populate() error {
 	return c.populate()
