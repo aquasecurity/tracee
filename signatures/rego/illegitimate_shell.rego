@@ -6,6 +6,7 @@ __rego_metadoc__ := {
 	"id": "TRC-12",
 	"version": "0.1.0",
 	"name": "Illegitimate Shell",
+	"eventName":  "illegitimate_shell",
 	"description": "A program on your server spawned a shell program. Shell is the linux command-line program, server programs usually don't run shell programs, so this alert might indicate an adversary is exploiting a server program to spawn a shell on your server.",
 	"tags": ["linux", "container"],
 	"properties": {

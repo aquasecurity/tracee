@@ -6,6 +6,7 @@ __rego_metadoc__ := {
 	"id": "TRC-4",
 	"version": "0.1.0",
 	"name": "Dynamic Code Loading",
+	"eventName": "dynamic_code_loading",
 	"description": "Writing to executable allocated memory region",
 	"tags": ["linux", "container"],
 	"properties": {

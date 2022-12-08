@@ -6,6 +6,7 @@ __rego_metadoc__ := {
 	"id": "TRC-10",
 	"version": "0.1.0",
 	"name": "K8S TLS Certificate Theft Detected",
+	"eventName": "k8s_cert_theft",
 	"description": "Kubernetes TLS certificate theft was detected. TLS certificates are used to establish trust between systems, the kubernetes certificate is used to to enable secured communication between kubernetes components, like the kubelet, scheduler, controller and API server. An adversary may steal a kubernetes certificate on a compromised system to impersonate kuberentes components within the cluster.",
 	"tags": ["linux", "container"],
 	"properties": {

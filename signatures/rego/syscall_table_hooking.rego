@@ -6,6 +6,7 @@ __rego_metadoc__ := {
 	"id": "TRC-15",
 	"version": "0.1.0",
 	"name": "Hooking system calls by overriding the system call table entries",
+	"eventName": "syscall_hooking",
 	"description": "Usage of kernel modules to hook system calls",
 	"tags": ["linux"],
 	"properties": {

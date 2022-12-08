@@ -6,6 +6,7 @@ __rego_metadoc__ := {
 	"id": "TRC-7",
 	"version": "0.1.0",
 	"name": "LD_PRELOAD",
+	"eventName": "ld_preload",
 	"description": "Usage of LD_PRELOAD to allow hooks on process",
 	"tags": ["linux", "container"],
 	"properties": {
