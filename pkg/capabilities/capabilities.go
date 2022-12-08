@@ -209,9 +209,12 @@ func (c *Capabilities) Requested(cb func() error, values ...cap.Value) error {
 	}
 
 	errCb := cb()
+	if errCb != nil {
+		logger.Debug("caps Requested cb func", "error", errCb)
+	}
 
 	if !c.bypass {
-		err := c.apply(Unprivileged)
+		err = c.apply(Unprivileged)
 		if err != nil {
 			return err
 		}
