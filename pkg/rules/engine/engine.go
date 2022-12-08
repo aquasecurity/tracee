@@ -78,7 +78,7 @@ func StartPipeline(cfg Config, input chan protocol.Event, done chan bool) <-chan
 	source := EventSources{Tracee: input}
 	engine, err := NewEngine(cfg, source, output)
 	if err != nil {
-		logger.Error("error creating engine: " + err.Error())
+		logger.Fatal("error creating engine: " + err.Error())
 	}
 
 	go func() {

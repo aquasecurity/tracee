@@ -103,7 +103,7 @@ type eventDefinitions struct {
 	events map[ID]Event
 }
 
-// Add add event to defitions
+// Add add event to definitions
 func (e *eventDefinitions) Add(eventId ID, evt Event) error {
 	if _, ok := e.events[eventId]; ok {
 		return fmt.Errorf("error event id already exist: %v", eventId)

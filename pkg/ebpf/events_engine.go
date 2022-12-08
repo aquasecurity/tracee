@@ -20,7 +20,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 
 	// TODO: in the upcoming releases, the rule engine should be changed to receive trace.Event,
 	// and return a trace.Event, which should remove the necessity of converting trace.Event to protocol.Event,
-	// and coverting detect.Finding into trace.Event
+	// and converting detect.Finding into trace.Event
 
 	go func() {
 		defer close(out)

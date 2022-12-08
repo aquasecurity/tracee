@@ -334,7 +334,7 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 	go func() {
 		defer close(errc)
 		for event := range in {
-			//Only emit events requested by the user
+			// Only emit events requested by the user
 			id := events.ID(event.EventID)
 			if !t.events[id].emit {
 				continue
@@ -437,10 +437,9 @@ func (t *Tracee) handleError(err error) {
 	logger.Error("tracee encountered an error", "error", err)
 }
 
-// parseArguments is required by the rules engine,
-// if the rule engine staged is enabled, parseArguments will happen there,
-// before sending an event to be processed, if the rule engine is disabled,
-// parseArgumnets happens on the sink stage (because anyone pipeing the output to tracee-rules will need it)
+// parseArguments must happen before rules are evaluated.
+// For the new experience (cmd/tracee), it needs to happen in the the events_engine stage of the pipeline.
+// For the old experience (cmd/tracee-ebpf && cmd/tracee-rules), it happens on the sink stage of the pipeline.
 func (t *Tracee) parseArguments(e *trace.Event) error {
 	if t.config.Output.ParseArguments {
 		err := events.ParseArgs(e)

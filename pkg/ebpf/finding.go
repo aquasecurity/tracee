@@ -8,7 +8,7 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-// FindingToEvent converts a detect.Fcingin into a trace.Event
+// FindingToEvent converts a detect.Finding into a trace.Event
 // This is used because the pipeline expects trace.Event, but the rule engine returns detect.Finding
 func FindingToEvent(f detect.Finding) (*trace.Event, error) {
 	s, ok := f.Event.Payload.(trace.Event)
