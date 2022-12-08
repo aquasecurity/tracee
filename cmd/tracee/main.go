@@ -231,7 +231,7 @@ func createEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 		for _, s := range selectedEvents {
 			eventID, found := events.Definitions.GetID(s.Name)
 			if !found {
-				logger.Error("failed to load event depedency", "event", s.Name)
+				logger.Error("failed to load event dependency", "event", s.Name)
 				continue
 			}
 
