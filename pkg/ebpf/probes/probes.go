@@ -4,8 +4,6 @@ import (
 	"fmt"
 
 	bpf "github.com/aquasecurity/libbpfgo"
-	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 //
@@ -123,15 +121,14 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		CgroupSKBEgress:            &cgroupProbe{programName: "cgroup_skb_egress", attachType: bpf.BPFAttachTypeCgroupInetEgress},
 	}
 
-	// disable autoload for network related eBPF programs in network is disabled
+	// disable autoload for tcProbes if network is disabled
+	// TODO: remove this once tcProbes are gone
 	if !netEnabled {
 		for _, p := range allProbes {
 			if tc, ok := p.(*tcProbe); ok {
 				tc.autoload(module, false)
 			}
 		}
-	} else {
-		capabilities.GetInstance().Require(cap.NET_ADMIN) // add to required
 	}
 
 	return &probes{

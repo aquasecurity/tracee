@@ -1256,8 +1256,14 @@ func (t *Tracee) attachProbes() error {
 }
 
 func (t *Tracee) initBPF() error {
-
 	var err error
+
+	if t.netEnabled() {
+		// TODO: NET_ADMIN is needed by tcProbes, which are not declared as
+		// events so they don't have required capabilities. Once tcProbes gone
+		// we can remove this from the required capabilities set.
+		capabilities.GetInstance().Require(cap.NET_ADMIN)
+	}
 
 	// Execute code with higher privileges: ring1 (required)
 
