@@ -4,18 +4,17 @@
 # This test is executed by github workflows inside the action runners
 #
 
-error_info() {
+info_exit() {
     echo -n "INFO: "
     echo $@
-    exit 1
+    exit 0
 }
 
 KERNEL=$(uname -r)
 KERNEL_MAJ=$(echo $KERNEL | cut -d'.' -f1)
 
 if [[ $KERNEL_MAJ -lt 5 && "$KERNEL" != *"el8"* ]]; then
-	error_info "skip test in kernels < 5.0 (and not RHEL)"
-	exit 0
+	info_exit "skip test in kernels < 5.0 (and not RHEL)"
 fi
 
 TRACEE_STARTUP_TIMEOUT=5
