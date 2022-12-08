@@ -483,6 +483,8 @@ func (t *Tracee) Init() error {
 		for mountNS, pid := range mntNSProcs {
 			t.pidsInMntns.AddBucketItem(uint32(mountNS), uint32(pid))
 		}
+	} else {
+		logger.Debug("caps Requested", "error", err)
 	}
 
 	// Initialize capture directory
