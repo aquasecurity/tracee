@@ -59,6 +59,8 @@ const (
 	tailSendBin
 	tailSendBinTP
 	tailKernelWrite
+	tailSchedProcessExecEventSubmit
+	MaxTail
 )
 
 // Event is a struct describing an event configuration
@@ -4956,24 +4958,29 @@ var Definitions = eventDefinitions{
 				{Handle: probes.SchedProcessExec, Required: true},
 				{Handle: probes.LoadElfPhdrs, Required: false},
 			},
+			Dependencies: dependencies{
+				TailCalls: []TailCall{
+					{MapName: "prog_array_tp", MapIndexes: []uint32{tailSchedProcessExecEventSubmit}, ProgName: "sched_process_exec_event_submit_tail"},
+				},
+			},
 			Sets: []string{"default", "proc"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "cmdpath"},
 				{Type: "const char*", Name: "pathname"},
-				{Type: "const char**", Name: "argv"},
-				{Type: "const char**", Name: "env"},
 				{Type: "dev_t", Name: "dev"},
 				{Type: "unsigned long", Name: "inode"},
-				{Type: "int", Name: "invoked_from_kernel"},
 				{Type: "unsigned long", Name: "ctime"},
-				{Type: "umode_t", Name: "stdin_type"},
-				{Type: "char*", Name: "stdin_path"},
 				{Type: "umode_t", Name: "inode_mode"},
-				{Type: "const char*", Name: "interp"},
 				{Type: "const char*", Name: "interpreter_pathname"},
 				{Type: "dev_t", Name: "interpreter_dev"},
 				{Type: "unsigned long", Name: "interpreter_inode"},
 				{Type: "unsigned long", Name: "interpreter_ctime"},
+				{Type: "const char**", Name: "argv"},
+				{Type: "const char*", Name: "interp"},
+				{Type: "umode_t", Name: "stdin_type"},
+				{Type: "char*", Name: "stdin_path"},
+				{Type: "int", Name: "invoked_from_kernel"},
+				{Type: "const char**", Name: "env"},
 			},
 		},
 		SchedProcessExit: {

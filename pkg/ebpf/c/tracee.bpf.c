@@ -146,6 +146,7 @@ enum tail_call_id_e
     TAIL_SEND_BIN,
     TAIL_SEND_BIN_TP,
     TAIL_KERNEL_WRITE,
+    TAIL_SCHED_PROCESS_EXEC_EVENT_SUBMIT,
     MAX_TAIL_CALL
 };
 
@@ -612,10 +613,6 @@ enum kconfig_key_e
 
 #endif // CORE
 
-// FUNCTIONS DECLARATIONS --------------------------------------------------------------------------
-
-static __always_inline void *get_path_str(struct path *path);
-
 // EBPF MACRO HELPERS ------------------------------------------------------------------------------
 
 #ifndef CORE
@@ -993,6 +990,7 @@ BPF_HASH(module_init_map, u32, kmod_data_t, 256);                  // holds modu
 BPF_LRU_HASH(fd_arg_path_map, fd_arg_task_t, fd_arg_path_t, 1024); // store fds paths by task
 BPF_LRU_HASH(bpf_attach_map, u32, bpf_attach_t, 1024);             // holds bpf prog info
 BPF_LRU_HASH(bpf_attach_tmp_map, u32, bpf_attach_t, 1024);         // temporarily hold bpf_attach_t
+BPF_PERCPU_ARRAY(cached_event_data_map, event_data_t, 1);          // cached event data between chained tail calls
 
 // clang-format on
 
@@ -1001,6 +999,10 @@ BPF_LRU_HASH(bpf_attach_tmp_map, u32, bpf_attach_t, 1024);         // temporaril
 BPF_PERF_OUTPUT(events, 1024);      // events submission
 BPF_PERF_OUTPUT(file_writes, 1024); // file writes events submission
 BPF_PERF_OUTPUT(net_events, 1024);  // network events submission
+
+// FUNCTIONS DECLARATIONS --------------------------------------------------------------------------
+
+static __always_inline void *get_path_str(struct path *path);
 
 // HELPERS: DEVICES --------------------------------------------------------------------------------
 
@@ -1977,6 +1979,48 @@ static __always_inline int should_submit(u32 event_id, config_entry_t *config)
 }
 
 // INTERNAL: BUFFERS -------------------------------------------------------------------------------
+
+static __always_inline int cache_event_data(event_data_t *data)
+{
+    u32 zero = 0;
+    event_data_t *presv_data = bpf_map_lookup_elem(&cached_event_data_map, &zero);
+    if (presv_data == NULL)
+        return -1;
+
+    return bpf_probe_read(presv_data, sizeof(event_data_t), data);
+}
+
+static __always_inline int get_cached_event_data(event_data_t *data, void *ctx)
+{
+    if (data == NULL) {
+        return -1;
+    }
+    u32 zero = 0;
+    event_data_t *presv_data = bpf_map_lookup_elem(&cached_event_data_map, &zero);
+    if (presv_data == NULL)
+        return -2;
+    int read_ret = bpf_probe_read(data, sizeof(event_data_t), presv_data);
+    if (read_ret)
+        return -3;
+
+    data->ctx = ctx;
+
+    data->config = bpf_map_lookup_elem(&config_map, &zero);
+    if (unlikely(data->config == NULL))
+        return -4;
+
+    int buf_idx = SUBMIT_BUF_IDX;
+    data->submit_p = bpf_map_lookup_elem(&bufs, &buf_idx);
+    if (unlikely(data->submit_p == NULL))
+        return -5;
+
+    data->task_info = bpf_map_lookup_elem(&task_info_map, &data->context.task.host_tid);
+    if (unlikely(data->task_info == NULL)) {
+        return -6;
+    }
+
+    return 0;
+}
 
 static __always_inline buf_t *get_buf(int idx)
 {
@@ -3486,27 +3530,70 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     // We passed all filters (in should_trace()) - add this pid to traced pids set
     data.task_info->follow = true;
 
-    struct task_struct *task = (struct task_struct *) ctx->args[0];
+    if (!should_submit(SCHED_PROCESS_EXEC, data.config) &&
+        (data.config->options & OPT_PROCESS_INFO) != OPT_PROCESS_INFO)
+        return 0;
+
+    // Note: Starting from kernel 5.9, there are two new interesting fields in bprm that we
+    // should consider adding:
+    // 1. struct file *executable - can be used to get the executable name passed to an
+    // interpreter
+    // 2. fdpath                  - generated filename for execveat (after resolving dirfd)
     struct linux_binprm *bprm = (struct linux_binprm *) ctx->args[2];
 
     if (bprm == NULL) {
         return -1;
     }
 
-    int invoked_from_kernel = 0;
-    if (get_task_parent_flags(task) & PF_KTHREAD) {
-        invoked_from_kernel = 1;
-    }
-
-    const char *interp = get_binprm_interp(bprm);
-
+    struct file *file = get_file_ptr_from_bprm(bprm);
+    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
     const char *filename = get_binprm_filename(bprm);
 
-    struct file *file = get_file_ptr_from_bprm(bprm);
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
     u64 ctime = get_ctime_nanosec_from_file(file);
     umode_t inode_mode = get_inode_mode_from_file(file);
+
+    // The map of the interpreter will be updated for any loading of an elf, both for the elf
+    // and for the interpreter. Because the interpreter is loaded only after the executed elf is
+    // loaded, the map value of the executed elf should be overridden by the interpreter.
+    file_info_t *elf_interpreter =
+        bpf_map_lookup_elem(&interpreter_map, &data.context.task.host_tid);
+
+    save_str_to_buf(&data, (void *) filename, 0);
+    save_str_to_buf(&data, file_path, 1);
+    save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 2);
+    save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 3);
+    save_to_submit_buf(&data, &ctime, sizeof(u64), 4);
+    save_to_submit_buf(&data, &inode_mode, sizeof(umode_t), 5);
+    // If the interpreter file is the same as executed one, it means that there is no
+    // interpreter. For more information, look at how the 'interpreter_map' works.
+    if (elf_interpreter != NULL &&
+        (elf_interpreter->device != s_dev || elf_interpreter->inode != inode_nr)) {
+        save_str_to_buf(&data, &elf_interpreter->pathname, 6);
+        save_to_submit_buf(&data, &elf_interpreter->device, sizeof(dev_t), 7);
+        save_to_submit_buf(&data, &elf_interpreter->inode, sizeof(unsigned long), 8);
+        save_to_submit_buf(&data, &elf_interpreter->ctime, sizeof(u64), 9);
+    }
+
+    cache_event_data(&data);
+    bpf_tail_call(ctx, &prog_array_tp, TAIL_SCHED_PROCESS_EXEC_EVENT_SUBMIT);
+    return -1;
+}
+
+SEC("raw_tracepoint/sched_process_exec_event_submit_tail")
+int sched_process_exec_event_submit_tail(struct bpf_raw_tracepoint_args *ctx)
+{
+    event_data_t data = {};
+    if (get_cached_event_data(&data, ctx) != 0) {
+        return -1;
+    }
+
+    struct task_struct *task = (struct task_struct *) ctx->args[0];
+    struct linux_binprm *bprm = (struct linux_binprm *) ctx->args[2];
+
+    if (bprm == NULL)
+        return -1;
 
     // bprm->mm is null at this point (set by begin_new_exec()), and task->mm is already initialized
     struct mm_struct *mm = get_mm_from_task(task);
@@ -3516,58 +3603,30 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     arg_end = get_arg_end_from_mm(mm);
     int argc = get_argc_from_bprm(bprm);
 
-    unsigned long env_start, env_end;
-    env_start = get_env_start_from_mm(mm);
-    env_end = get_env_end_from_mm(mm);
-    int envc = get_envc_from_bprm(bprm);
-
-    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
-
-    // The map of the interpreter will be updated for any loading of an elf, both for the elf and
-    // for the interpreter. Because the interpreter is loaded only after the executed elf is loaded,
-    // the map value of the executed elf should be overridden by the interpreter.
-    file_info_t *elf_interpreter =
-        bpf_map_lookup_elem(&interpreter_map, &data.context.task.host_tid);
-
     struct file *stdin_file = get_struct_file_from_fd(0);
     unsigned short stdin_type = get_inode_mode_from_file(stdin_file) & S_IFMT;
+    void *stdin_path = get_path_str(GET_FIELD_ADDR(stdin_file->f_path));
+    const char *interp = get_binprm_interp(bprm);
 
-    // Note: Starting from kernel 5.9, there are two new interesting fields in bprm that we should
-    // consider adding:
-    // 1. struct file *executable - can be used to get the executable name passed to an interpreter
-    // 2. fdpath                  - generated filename for execveat (after resolving dirfd)
+    int invoked_from_kernel = 0;
+    if (get_task_parent_flags(task) & PF_KTHREAD) {
+        invoked_from_kernel = 1;
+    }
+    save_args_str_arr_to_buf(&data, (void *) arg_start, (void *) arg_end, argc, 10);
+    save_str_to_buf(&data, (void *) interp, 11);
+    save_to_submit_buf(&data, &stdin_type, sizeof(unsigned short), 12);
+    save_str_to_buf(&data, stdin_path, 13);
+    save_to_submit_buf(&data, &invoked_from_kernel, sizeof(int), 14);
+    if (data.config->options & OPT_EXEC_ENV) {
+        unsigned long env_start, env_end;
+        env_start = get_env_start_from_mm(mm);
+        env_end = get_env_end_from_mm(mm);
+        int envc = get_envc_from_bprm(bprm);
 
-    if (should_submit(SCHED_PROCESS_EXEC, data.config) || data.config->options & OPT_PROCESS_INFO) {
-        save_str_to_buf(&data, (void *) filename, 0);
-        save_str_to_buf(&data, file_path, 1);
-        save_args_str_arr_to_buf(&data, (void *) arg_start, (void *) arg_end, argc, 2);
-        if (data.config->options & OPT_EXEC_ENV) {
-            save_args_str_arr_to_buf(&data, (void *) env_start, (void *) env_end, envc, 3);
-        }
-        save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 4);
-        save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 5);
-        save_to_submit_buf(&data, &invoked_from_kernel, sizeof(int), 6);
-        save_to_submit_buf(&data, &ctime, sizeof(u64), 7);
-        save_to_submit_buf(&data, &stdin_type, sizeof(unsigned short), 8);
-
-        void *stdin_path = get_path_str(GET_FIELD_ADDR(stdin_file->f_path));
-        save_str_to_buf(&data, stdin_path, 9);
-        save_to_submit_buf(&data, &inode_mode, sizeof(umode_t), 10);
-        save_str_to_buf(&data, (void *) interp, 11);
-
-        // If the interpreter file is the same as executed one, it means that there is no
-        // interpreter. For more information, look at how the 'interpreter_map' works.
-        if (elf_interpreter != NULL &&
-            (elf_interpreter->device != s_dev || elf_interpreter->inode != inode_nr)) {
-            save_str_to_buf(&data, &elf_interpreter->pathname, 12);
-            save_to_submit_buf(&data, &elf_interpreter->device, sizeof(dev_t), 13);
-            save_to_submit_buf(&data, &elf_interpreter->inode, sizeof(unsigned long), 14);
-            save_to_submit_buf(&data, &elf_interpreter->ctime, sizeof(u64), 15);
-        }
-
-        events_perf_submit(&data, SCHED_PROCESS_EXEC, 0);
+        save_args_str_arr_to_buf(&data, (void *) env_start, (void *) env_end, envc, 15);
     }
 
+    events_perf_submit(&data, SCHED_PROCESS_EXEC, 0);
     return 0;
 }
 
