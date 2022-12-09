@@ -85,5 +85,5 @@ as an introspection tool.
     Tracee-ebpf arguments are passed through the `ARG` variable:
 
     ```text
-    $ make -f builder/Makefile.tracee-container run-tracee-ebpf ARG="--debug"
+    $ make -f builder/Makefile.tracee-container run-tracee-ebpf ARG="--log debug"
     ```
