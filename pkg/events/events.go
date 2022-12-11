@@ -5725,9 +5725,6 @@ var Definitions = eventDefinitions{
 				{Type: "mode_t", Name: "mode"},
 				{Type: "void*", Name: "proc_ops_addr"},
 			},
-			Dependencies: dependencies{
-				Capabilities: []cap.Value{cap.NET_ADMIN},
-			},
 		},
 		PrintSyscallTable: {
 			ID32Bit:  sys32undefined,
