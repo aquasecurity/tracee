@@ -305,6 +305,10 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 				}
 
 				for _, derivative := range derivatives {
+					// derived events also might have filters
+					if !t.shouldProcessEvent(derivative) {
+						continue
+					}
 					out <- &derivative
 				}
 
