@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/Masterminds/sprig/v3 v3.2.2
-	github.com/aquasecurity/libbpfgo v0.4.4-libbpf-1.0.1
+	github.com/aquasecurity/libbpfgo v0.4.5-libbpf-1.0.1
 	github.com/aquasecurity/libbpfgo/helpers v0.4.4
 	github.com/aquasecurity/tracee/types v0.0.0-20221129174415-d09e5bd8f16b
 	github.com/containerd/containerd v1.6.12

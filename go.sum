@@ -98,6 +98,8 @@ github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220418222510-f25a4f6275ed h1:u
 github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220418222510-f25a4f6275ed/go.mod h1:F7bn7fEU90QkQ3tnmaTx3LTKLEDqnwWODIYppRQ5hnY=
 github.com/aquasecurity/libbpfgo v0.4.4-libbpf-1.0.1 h1:cjdRq/YhQ5ZVU0jm6H3VXVcHgMzAAslrlexPq8acgSk=
 github.com/aquasecurity/libbpfgo v0.4.4-libbpf-1.0.1/go.mod h1:v+Nk+v6BtHLfdT4kVdsp+fYt4AeUa3cIG2P0y+nBuuY=
+github.com/aquasecurity/libbpfgo v0.4.5-libbpf-1.0.1 h1:Et7WT8CEpaO03v7FIVk85GMRRbwjF7sgoBgQhH5T30k=
+github.com/aquasecurity/libbpfgo v0.4.5-libbpf-1.0.1/go.mod h1:v+Nk+v6BtHLfdT4kVdsp+fYt4AeUa3cIG2P0y+nBuuY=
 github.com/aquasecurity/libbpfgo/helpers v0.4.4 h1:a8RnY90e0O9Du8MIEJfHOsLb/AiLP6McKndIUfrSdZM=
 github.com/aquasecurity/libbpfgo/helpers v0.4.4/go.mod h1:H72+/tC8b1bqeylP1n7c+AfC18ksK9/7Z16ECafVRhM=
 github.com/aquasecurity/tracee/types v0.0.0-20221129174415-d09e5bd8f16b h1:FpqFAj6z3KHlhl89oHxcFlQ8X8/lhj5A/F1cQHfcNGQ=
