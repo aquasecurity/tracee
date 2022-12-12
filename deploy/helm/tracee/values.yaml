@@ -59,6 +59,11 @@ postee:
   # threat detections to the Postee webhook endpoint.
   enabled: false
 
+# This flags enable the new tracee experience. It is a single binary, where every rule is
+# part of the events pipeline.
+everythingIsAnEvent: false
+events: anti_debugging,aslr_inspection,cgroup_notify_on_release,cgroup_release_agent,core_pattern_modification,default_loader_mod,disk_mount,docker_abuse,dynamic_code_loading,fileless_execution,hidden_file_created,illegitimate_shell,k8s_api_connection,k8s_cert_theft,kernel_module_loading,ld_preload,process_vm_write_inject,proc_fops_hooking,proc_kcore_read,proc_mem_access,proc_mem_code_injection,ptrace_code_injection,rcd_modification,sched_debug_recon,scheduled_task_mod,stdio_over_socket,sudoers_modification,syscall_hooking,system_request_key_mod
+
 signatures:
   # config defines Common Expression Language (CEL) signatures that are loaded
   # by Tracee-Rules from the --rules-dir directory. If the config object is not
