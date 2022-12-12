@@ -1071,7 +1071,12 @@ static __always_inline void do_tracee_error(
     err_output->err.ret = ret;
     err_output->err.cpu = bpf_get_smp_processor_id();
     err_output->err.line = line;
-    READ_KERN_STR_INTO(err_output->err.file, file);
+
+    u64 fsize = __builtin_strlen(file);
+    if (unlikely(fsize >= BPF_MAX_ERR_FILE_LEN))
+        fsize = BPF_MAX_ERR_FILE_LEN - 1;
+    __builtin_memcpy(err_output->err.file, file, fsize);
+    err_output->err.file[fsize] = '\0';
 
     bpf_error_count_t counter_buf = {};
     counter_buf.count = 1;
