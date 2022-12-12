@@ -96,8 +96,6 @@ github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883 h1:bvNMNQO63//z+xNg
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220418222510-f25a4f6275ed h1:ue9pVfIcP+QMEjfgo/Ez4ZjNZfonGgR6NgjMaJMu1Cg=
 github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220418222510-f25a4f6275ed/go.mod h1:F7bn7fEU90QkQ3tnmaTx3LTKLEDqnwWODIYppRQ5hnY=
-github.com/aquasecurity/libbpfgo v0.4.4-libbpf-1.0.1 h1:cjdRq/YhQ5ZVU0jm6H3VXVcHgMzAAslrlexPq8acgSk=
-github.com/aquasecurity/libbpfgo v0.4.4-libbpf-1.0.1/go.mod h1:v+Nk+v6BtHLfdT4kVdsp+fYt4AeUa3cIG2P0y+nBuuY=
 github.com/aquasecurity/libbpfgo v0.4.5-libbpf-1.0.1 h1:Et7WT8CEpaO03v7FIVk85GMRRbwjF7sgoBgQhH5T30k=
 github.com/aquasecurity/libbpfgo v0.4.5-libbpf-1.0.1/go.mod h1:v+Nk+v6BtHLfdT4kVdsp+fYt4AeUa3cIG2P0y+nBuuY=
 github.com/aquasecurity/libbpfgo/helpers v0.4.4 h1:a8RnY90e0O9Du8MIEJfHOsLb/AiLP6McKndIUfrSdZM=
