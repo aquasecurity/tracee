@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+	"unsafe"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -313,6 +314,9 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 
 	case events.HookedProcFops:
+		const (
+			addrWhiteList = "fops_addrs_whitelists"
+		)
 		fopsAddresses, err := parse.ArgVal[[]uint64](event, "hooked_fops_pointers")
 		if err != nil || fopsAddresses == nil {
 			return fmt.Errorf("error parsing hooked_proc_fops args: %w", err)
@@ -339,6 +343,15 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 					functionName = "iterate"
 				}
 				hookedFops = append(hookedFops, trace.HookedSymbolData{SymbolName: functionName, ModuleOwner: hookingFunction.Owner})
+			} else { // if no hooked data is found, mark the pointer as safe
+				whitelistMap, err := t.bpfModule.GetMap(addrWhiteList)
+				if err != nil {
+					logger.Error("error getting hooked_proc_fops whitelist map", "error", err)
+					continue
+				}
+				pair := [2]uint64{fopsAddresses[0], fopsAddresses[1]}
+				slot := 1 // value to place in map
+				whitelistMap.Update(unsafe.Pointer(&pair), unsafe.Pointer(&slot))
 			}
 		}
 		event.Args[0].Value = hookedFops

@@ -1050,6 +1050,7 @@ BPF_LRU_HASH(bpf_attach_tmp_map, u32, bpf_attach_t, 1024);         // temporaril
 BPF_PERCPU_ARRAY(cached_event_data_map, event_data_t, 1);          // cached event data between chained tail calls
 BPF_HASH(logs_count, bpf_log_t, bpf_log_count_t, 4096);            // logs count
 BPF_PERCPU_ARRAY(log_output_scratch, bpf_log_output_t, 1);         // log output scratch
+BPF_HASH(fops_addrs_whitelists, u64[2], u8, 10240);                // stores whitelisted non hooked fops address pairs
 // clang-format on
 
 // EBPF PERF BUFFERS -------------------------------------------------------------------------------
@@ -6810,14 +6811,14 @@ int BPF_KPROBE(trace_security_file_permission)
 
     unsigned long iterate_shared_addr = (unsigned long) READ_KERN(fops->iterate_shared);
     unsigned long iterate_addr = (unsigned long) READ_KERN(fops->iterate);
-    if (iterate_addr == 0 && iterate_shared_addr == 0)
-        return 0;
 
     unsigned long fops_addresses[2] = {iterate_shared_addr, iterate_addr};
+    bool whitelisted = (bpf_map_lookup_elem(&fops_addrs_whitelists, &fops_addresses) != NULL);
+    if (whitelisted)
+        return 0;
 
     save_u64_arr_to_buf(&data, (const u64 *) fops_addresses, 2, 0);
-    events_perf_submit(&data, HOOKED_PROC_FOPS, 0);
-    return 0;
+    return events_perf_submit(&data, HOOKED_PROC_FOPS, 0);
 }
 
 SEC("raw_tracepoint/task_rename")

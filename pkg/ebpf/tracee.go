@@ -1163,6 +1163,27 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
+	// initialize hooked_proc_fops whitelist
+	// we set the address pair [0, 0] whitelisted
+	if t.events[events.HookedProcFops].submit {
+		const (
+			addrWhitelist = "fops_addrs_whitelists"
+		)
+		addrWhitelistMap, err := t.bpfModule.GetMap(addrWhitelist)
+		if err != nil {
+			return err
+		}
+		var (
+			// zero = 0
+			one  = 1
+			pair = [2]uint64{0, 0}
+		)
+		err = addrWhitelistMap.Update(unsafe.Pointer(&pair), unsafe.Pointer(&one))
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
