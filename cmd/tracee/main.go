@@ -91,9 +91,11 @@ func main() {
 			runner.TraceeConfig.Output.ParseArguments = true
 
 			runner.TraceeConfig.EngineConfig = engine.Config{
-				Enabled:             true,
-				Signatures:          sigs,
-				SignatureBufferSize: c.Uint("sig-buffer"),
+				Enabled:    true,
+				Signatures: sigs,
+				// This used to be a flag, we have removed the flag from this binary to test
+				// if users do use it or not.
+				SignatureBufferSize: 1000,
 			}
 
 			ctx := context.Background()
@@ -199,11 +201,6 @@ func main() {
 				Name:  "rego",
 				Usage: "Control event rego settings. run '--rego help' for more info.",
 				Value: cli.NewStringSlice(),
-			},
-			&cli.UintFlag{
-				Name:  "sig-buffer", // TODO: rename to rules-buffer?
-				Usage: "size of the event channel's buffer consumed by signatures",
-				Value: 1000,
 			},
 		},
 	}
