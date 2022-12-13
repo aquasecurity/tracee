@@ -233,9 +233,7 @@ func debugw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	}
 
 	pkg, file, line := getCallerInfo(skip + 1)
-	var originInfoKVs []interface{}
-	originInfoKVs = append(originInfoKVs, "pkg", pkg, "file", filepath.Base(file), "line", line)
-	keysAndValues = append(originInfoKVs, keysAndValues...)
+	keysAndValues = append(keysAndValues, "pkg", pkg, "file", filepath.Base(file), "line", line)
 
 	l.l.Debugw(msg, keysAndValues...)
 }
