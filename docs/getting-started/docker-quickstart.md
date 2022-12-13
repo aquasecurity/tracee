@@ -28,7 +28,7 @@ Before you proceed, make sure you follow the [prerequiresites].
         -v /usr/src:/usr/src:ro \
         -v /lib/modules:/lib/modules:ro \
         -v /tmp/tracee:/tmp/tracee:rw \
-    aquasec/tracee:full
+        aquasec/tracee:full
    ```
 
 !!! Notes
