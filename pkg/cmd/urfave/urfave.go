@@ -43,12 +43,14 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	OSInfo, err := helpers.GetOSInfo()
 	if err != nil {
-		logger.Debug("osinfo: warning: os-release file could not be found", "error", err) // only to be enforced when BTF needs to be downloaded, later on
+		logger.Debug("osinfo", "warning: os-release file could not be found", "error", err) // only to be enforced when BTF needs to be downloaded, later on
 		logger.Debug("osinfo", "os_realease_field", helpers.OS_KERNEL_RELEASE, "OS_KERNEL_RELEASE", OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
 	} else {
+		osInfoSlice := make([]interface{}, 0)
 		for k, v := range OSInfo.GetOSReleaseAllFieldValues() {
-			logger.Debug("osinfo", "OSReleaseField", k, "OS_KERNEL_RELEASE", v)
+			osInfoSlice = append(osInfoSlice, k.String(), v)
 		}
+		logger.Debug("osinfo", osInfoSlice...)
 	}
 
 	cfg.OSInfo = OSInfo
