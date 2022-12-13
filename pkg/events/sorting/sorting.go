@@ -106,6 +106,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -196,8 +197,8 @@ func (sorter *EventsChronologicalSorter) sendEvents(outputChan chan<- *trace.Eve
 	sorter.outputChanMutex.Lock()
 	defer sorter.outputChanMutex.Unlock()
 	for {
-		mostDelayingQueue, err := sorter.getMostDelayingEventCPUQueue()
-		if err != nil || mostDelayingQueue.PeekHead().Timestamp > extractionMaxTimestamp {
+		mostDelayingQueue, eventTimestamp, err := sorter.getMostDelayingEventCPUQueue()
+		if err != nil || eventTimestamp > extractionMaxTimestamp {
 			break
 		}
 		extractionEvent, err := mostDelayingQueue.Get()
@@ -208,7 +209,15 @@ func (sorter *EventsChronologicalSorter) sendEvents(outputChan chan<- *trace.Eve
 				continue
 			}
 		}
-		outputChan <- extractionEvent
+		if extractionEvent.Timestamp != eventTimestamp {
+			logger.Warn("event queue changed while extracting events")
+			err := mostDelayingQueue.InsertByTimestamp(extractionEvent)
+			if err != nil {
+				sorter.errorChan <- err
+			}
+		} else {
+			outputChan <- extractionEvent
+		}
 	}
 }
 
@@ -230,43 +239,49 @@ func (sorter *EventsChronologicalSorter) updateSavedTimestamps() {
 	sorter.extractionSavedTimestamps = append(sorter.extractionSavedTimestamps, mostDelayingLastEventTimestamp)
 }
 
-// getMostDelayingEventCPUQueue search for the CPU queue which contains the oldest event
-// Return nil if no valid queue found
-func (sorter *EventsChronologicalSorter) getMostDelayingEventCPUQueue() (*cpuEventsQueue, error) {
+// getMostDelayingEventCPUQueue search for the CPU queue which contains the oldest event.
+// It also returns the timestamp of its head event, to be used for race condition checks.
+// Return nil and timestamp of 0 if no valid queue found.
+func (sorter *EventsChronologicalSorter) getMostDelayingEventCPUQueue() (*cpuEventsQueue, int, error) {
 	var mostDelayingEventQueue *cpuEventsQueue = nil
+	mostDelayingEventQueueHeadTimestamp := 0
 	for i := 0; i < len(sorter.cpuEventsQueues); i++ {
 		cq := &sorter.cpuEventsQueues[i]
-		if cq.PeekHead() != nil &&
+		cqHead := cq.PeekHead()
+		if cqHead != nil &&
 			(mostDelayingEventQueue == nil ||
-				cq.PeekHead().Timestamp < mostDelayingEventQueue.PeekHead().Timestamp) {
+				cqHead.Timestamp < mostDelayingEventQueueHeadTimestamp) {
 			mostDelayingEventQueue = cq
+			mostDelayingEventQueueHeadTimestamp = cqHead.Timestamp
 		}
 	}
 	if mostDelayingEventQueue == nil {
-		return nil, fmt.Errorf("no queue with events found")
+		return nil, 0, fmt.Errorf("no queue with events found")
 	}
-	return mostDelayingEventQueue, nil
+	return mostDelayingEventQueue, mostDelayingEventQueueHeadTimestamp, nil
 }
 
 // getUpdatedMostDelayedLastCPUEventTimestamp search for the CPU queue with the oldest last inserted event which was updated since
 // last check
 // Queues which were not updated since last check are ignored to prevent events starvation if a CPU is not active
 func (sorter *EventsChronologicalSorter) getUpdatedMostDelayedLastCPUEventTimestamp() (int, error) {
-	var mostDelayingEventQueue *cpuEventsQueue = nil
+	var newMostDelayedEventTimestamp int
+	foundUpdatedQueue := false
 	for i := 0; i < len(sorter.cpuEventsQueues); i++ {
 		cq := &sorter.cpuEventsQueues[i]
 		queueTail := cq.PeekTail()
 		if queueTail != nil && cq.IsUpdated &&
-			(mostDelayingEventQueue == nil ||
-				queueTail.Timestamp < mostDelayingEventQueue.PeekTail().Timestamp) {
-			mostDelayingEventQueue = &sorter.cpuEventsQueues[i]
+			(!foundUpdatedQueue ||
+				queueTail.Timestamp < newMostDelayedEventTimestamp) {
+			newMostDelayedEventTimestamp = queueTail.Timestamp
+			foundUpdatedQueue = true
 		}
 		cq.IsUpdated = false // Mark that the values of the queue were checked from previous time
 	}
-	if mostDelayingEventQueue == nil {
+	if !foundUpdatedQueue {
 		return 0, fmt.Errorf("no valid CPU events queue was updated since last interval")
 	}
-	return mostDelayingEventQueue.PeekTail().Timestamp, nil
+	return newMostDelayedEventTimestamp, nil
 }
 
 // getMostRecentEventTimestamp get the timestamp of the most recent event received from all CPUs.
