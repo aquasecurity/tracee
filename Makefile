@@ -813,9 +813,3 @@ clean:
 	$(CMD_RM) -f .*.md5
 	$(CMD_RM) -f .check*
 	$(CMD_RM) -f .*-pkgs*
-
-# Run MkDocs development server to preview the documentation page
-.PHONY: mkdocs-serve
-mkdocs-serve:
-	docker build -t aquasec/mkdocs-material:dev -f builder/Dockerfile.mkdocs docs
-	docker run --name mkdocs-serve --rm -v $(PWD):/docs -p 8000:8000 aquasec/mkdocs-material:dev
