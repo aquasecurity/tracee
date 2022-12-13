@@ -9,7 +9,7 @@ Before you proceed, make sure you follow the [prerequiresites].
 1. Running **tracee:{{ git.tag }}**
 
    ```text
-   $ docker run \
+   docker run \
         --name tracee --rm -it \
         --pid=host --cgroupns=host --privileged \
         -v /etc/os-release:/etc/os-release-host:ro \
@@ -20,7 +20,7 @@ Before you proceed, make sure you follow the [prerequiresites].
 2. Running **tracee:full**
 
    ```text
-   $ docker run \
+   docker run \
         --name tracee --rm -it \
         --pid=host --cgroupns=host --privileged \
         -v /etc/os-release:/etc/os-release-host:ro \
@@ -29,7 +29,7 @@ Before you proceed, make sure you follow the [prerequiresites].
         -v /lib/modules:/lib/modules:ro \
         -v /tmp/tracee:/tmp/tracee:rw \
     aquasec/tracee:full
-  ```
+   ```
 
 !!! Notes
 
@@ -53,7 +53,7 @@ These docker commands run Tracee with **default settings** and start
 suspicious behavior, you can simply run:
 
 ```text
-$ strace ls
+strace ls
 ```
 
 in another terminal. This will trigger the **Anti-Debugging** signature, which

@@ -16,7 +16,7 @@ minikube start
 ```
 
 ```
-[*] kubectl get po -A
+kubectl get po -A
 
 NAMESPACE     NAME                               READY   STATUS    RESTARTS   AGE 
 kube-system   coredns-565d847f94-kd9xx           1/1     Running   0          15s 
@@ -39,17 +39,17 @@ You can find the full manifest on the [tracee repository](https://github.com/aqu
 We can install the DaemonSet directly from the Tracee repository through the following command:
 
 ```
-[*] kubectl apply -f https://raw.githubusercontent.com/aquasecurity/tracee/{{ git.tag }}/deploy/kubernetes/tracee/tracee.yaml
+kubectl apply -f https://raw.githubusercontent.com/aquasecurity/tracee/{{ git.tag }}/deploy/kubernetes/tracee/tracee.yaml
 ```
 
 You can verify that the tracee daemon set is running via:
 
 ``` 
-[*] kubectl get nodes 
+kubectl get nodes 
 NAME       STATUS   ROLES           AGE   VERSION 
 minikube   Ready    control-plane   17m   v1.25.2 
 
-[*] kubectl get pods  
+kubectl get pods  
 NAME           READY   STATUS    RESTARTS   AGE 
 tracee-fcjmp   1/1     Running   0          4m11s 
 ```
@@ -58,16 +58,18 @@ You can see that we have a single pod running in our cluster, which has just a s
  
 ## Tracee in action 
 
-At this point tracee is running with default behavior. You can see this at the top of the pod’s logs: 
+At this point tracee is running with default behaviour. You can see this at the top of the pod’s logs: 
 
 ``` 
-[*] kubectl logs tracee-fcjmp 
+kubectl logs tracee-fcjmp 
 
 INFO: probing tracee-ebpf capabilities... 
 INFO: starting tracee-ebpf... 
 INFO: starting tracee-rules... 
 Loaded 15 signature(s): [TRC-1 TRC-13 TRC-2 TRC-14 TRC-3 TRC-11 TRC-9 TRC-4 TRC-5 TRC-12 TRC-6 TRC-10 TRC-7 TRC-16 TRC-15]
 ``` 
+
+Note that the pod-name has been taken from the previous command.
 
 Each of the signatures listed above represent potentially malicious behaviors for tracee to detect and alert you on. You can see signature definitions [here](https://github.com/aquasecurity/tracee/tree/main/signatures). Tracee comes with these default signatures but also allows for you to write custom ones as well. More information can be found [here](../docs/detecting/rules.md)
 
@@ -76,19 +78,19 @@ Let’s trigger one of the default signatures to see tracee in action.
 We can start by launching a shell on the same node as tracee, and install `strace`, a debugging tool that should trigger the TRC-2 signature which detects use of PTRACE, and should not be running in your kubernetes cluster.
 
 ```
-[*] kubectl create deployment nginx --image=nginx  # creates a deployment
+kubectl create deployment nginx --image=nginx  # creates a deployment
 
-[*] kubectl exec -ti deployment/nginx -- bash  # get a bash into it
+kubectl exec -ti deployment/nginx -- bash  # get a bash into it
 
 $~ apt update && apt install -y strace
 $~ strace ls
 ...
 ```
 
-Now to confirm that tracee caught this malicious behavior we can check the logs of the pod:
+Now to confirm that tracee caught this malicious behavior we can check the logs of the pod again:
 
 ```
-[*] kubectl logs tracee-fcjmp –follow
+kubectl logs tracee-fcjmp –follow
 
 *** Detection ***
 Time: 2022-10-20T17:08:13Z
