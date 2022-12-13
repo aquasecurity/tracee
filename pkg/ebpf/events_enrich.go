@@ -85,11 +85,11 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 				cgroupId := uint64(event.CgroupID)
 				// CgroupMkdir: pick EventID from the event itself
 				if eventID == events.CgroupMkdir {
-					cgroupId, _ = parse.ArgUint64Val(event, "cgroup_id")
+					cgroupId, _ = parse.ArgVal[uint64](event, "cgroup_id")
 				}
 				// CgroupRmdir: clean up remaining events and maps
 				if eventID == events.CgroupRmdir {
-					cgroupId, _ = parse.ArgUint64Val(event, "cgroup_id")
+					cgroupId, _ = parse.ArgVal[uint64](event, "cgroup_id")
 					queueClean <- cgroupId
 					out <- event
 					continue

@@ -20,7 +20,7 @@ func deriveContainerCreateArgs(containers *containers.Containers) func(event tra
 		if check, err := isCgroupEventInHid(&event, containers); !check {
 			return nil, err
 		}
-		cgroupId, err := parse.ArgUint64Val(&event, "cgroup_id")
+		cgroupId, err := parse.ArgVal[uint64](&event, "cgroup_id")
 		if err != nil {
 			return nil, err
 		}
@@ -48,7 +48,7 @@ func isCgroupEventInHid(event *trace.Event, containers *containers.Containers) (
 	if containers.GetCgroupVersion() == cgroup.CgroupVersion2 {
 		return true, nil
 	}
-	hierarchyID, err := parse.ArgUint32Val(event, "hierarchy_id")
+	hierarchyID, err := parse.ArgVal[uint32](event, "hierarchy_id")
 	if err != nil {
 		return false, err
 	}

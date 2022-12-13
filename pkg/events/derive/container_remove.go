@@ -19,7 +19,7 @@ func deriveContainerRemoveArgs(containers *containers.Containers) deriveArgsFunc
 		if check, err := isCgroupEventInHid(&event, containers); !check {
 			return nil, err
 		}
-		cgroupId, err := parse.ArgUint64Val(&event, "cgroup_id")
+		cgroupId, err := parse.ArgVal[uint64](&event, "cgroup_id")
 		if err != nil {
 			return nil, err
 		}
