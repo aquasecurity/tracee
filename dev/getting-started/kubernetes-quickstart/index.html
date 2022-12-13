@@ -25,7 +25,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.e9638a90.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.9b35cbb9.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.2505c338.min.css">
@@ -2122,7 +2122,7 @@
 <p>Start minikube and ensure that it is running correctly:</p>
 <div class="highlight"><pre><span></span><code>minikube start
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>[*] kubectl get po -A
+<div class="highlight"><pre><span></span><code>kubectl get po -A
 
 NAMESPACE     NAME                               READY   STATUS    RESTARTS   AGE 
 kube-system   coredns-565d847f94-kd9xx           1/1     Running   0          15s 
@@ -2138,40 +2138,41 @@ kube-system   storage-provisioner                1/1     Running   0          15
 <p>Tracee can be installed through a Kubernetes <a href="https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/">DaemonSet</a>. This tells Kubernetes to have a single tracee process on each node.</p>
 <p>You can find the full manifest on the <a href="https://github.com/aquasecurity/tracee/blob/main/deploy/kubernetes/tracee/tracee.yaml">tracee repository</a>.</p>
 <p>We can install the DaemonSet directly from the Tracee repository through the following command:</p>
-<div class="highlight"><pre><span></span><code>[*] kubectl apply -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.9.3/deploy/kubernetes/tracee/tracee.yaml
+<div class="highlight"><pre><span></span><code>kubectl apply -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.9.3/deploy/kubernetes/tracee/tracee.yaml
 </code></pre></div>
 <p>You can verify that the tracee daemon set is running via:</p>
-<div class="highlight"><pre><span></span><code>[*] kubectl get nodes 
+<div class="highlight"><pre><span></span><code>kubectl get nodes 
 NAME       STATUS   ROLES           AGE   VERSION 
 minikube   Ready    control-plane   17m   v1.25.2 
 
-[*] kubectl get pods  
+kubectl get pods  
 NAME           READY   STATUS    RESTARTS   AGE 
 tracee-fcjmp   1/1     Running   0          4m11s 
 </code></pre></div>
 <p>You can see that we have a single pod running in our cluster, which has just a single node.  </p>
 <h2 id="tracee-in-action">Tracee in action<a class="headerlink" href="#tracee-in-action" title="Permanent link">&para;</a></h2>
-<p>At this point tracee is running with default behavior. You can see this at the top of the pod’s logs: </p>
-<div class="highlight"><pre><span></span><code>[*] kubectl logs tracee-fcjmp 
+<p>At this point tracee is running with default behaviour. You can see this at the top of the pod’s logs: </p>
+<div class="highlight"><pre><span></span><code>kubectl logs tracee-fcjmp 
 
 INFO: probing tracee-ebpf capabilities... 
 INFO: starting tracee-ebpf... 
 INFO: starting tracee-rules... 
 Loaded 15 signature(s): [TRC-1 TRC-13 TRC-2 TRC-14 TRC-3 TRC-11 TRC-9 TRC-4 TRC-5 TRC-12 TRC-6 TRC-10 TRC-7 TRC-16 TRC-15]
 </code></pre></div>
+<p>Note that the pod-name has been taken from the previous command.</p>
 <p>Each of the signatures listed above represent potentially malicious behaviors for tracee to detect and alert you on. You can see signature definitions <a href="https://github.com/aquasecurity/tracee/tree/main/signatures">here</a>. Tracee comes with these default signatures but also allows for you to write custom ones as well. More information can be found <a href="../../docs/detecting/rules/">here</a></p>
 <p>Let’s trigger one of the default signatures to see tracee in action.</p>
 <p>We can start by launching a shell on the same node as tracee, and install <code>strace</code>, a debugging tool that should trigger the TRC-2 signature which detects use of PTRACE, and should not be running in your kubernetes cluster.</p>
-<div class="highlight"><pre><span></span><code>[*] kubectl create deployment nginx --image=nginx  # creates a deployment
+<div class="highlight"><pre><span></span><code>kubectl create deployment nginx --image=nginx  # creates a deployment
 
-[*] kubectl exec -ti deployment/nginx -- bash  # get a bash into it
+kubectl exec -ti deployment/nginx -- bash  # get a bash into it
 
 $~ apt update &amp;&amp; apt install -y strace
 $~ strace ls
 ...
 </code></pre></div>
-<p>Now to confirm that tracee caught this malicious behavior we can check the logs of the pod:</p>
-<div class="highlight"><pre><span></span><code>[*] kubectl logs tracee-fcjmp –follow
+<p>Now to confirm that tracee caught this malicious behavior we can check the logs of the pod again:</p>
+<div class="highlight"><pre><span></span><code>kubectl logs tracee-fcjmp –follow
 
 *** Detection ***
 Time: 2022-10-20T17:08:13Z

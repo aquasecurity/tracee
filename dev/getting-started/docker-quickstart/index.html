@@ -25,7 +25,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.e9638a90.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.9b35cbb9.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.2505c338.min.css">
@@ -2026,7 +2026,7 @@
 <ol>
 <li>Running <strong>tracee:v0.9.3</strong></li>
 </ol>
-<div class="highlight"><pre><span></span><code>$ docker run \
+<div class="highlight"><pre><span></span><code>docker run \
      --name tracee --rm -it \
      --pid=host --cgroupns=host --privileged \
      -v /etc/os-release:/etc/os-release-host:ro \
@@ -2036,16 +2036,16 @@
 <ol>
 <li>Running <strong>tracee:full</strong></li>
 </ol>
-<p><code>text
-   $ docker run \
-        --name tracee --rm -it \
-        --pid=host --cgroupns=host --privileged \
-        -v /etc/os-release:/etc/os-release-host:ro \
-        -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-        -v /usr/src:/usr/src:ro \
-        -v /lib/modules:/lib/modules:ro \
-        -v /tmp/tracee:/tmp/tracee:rw \
-    aquasec/tracee:full</code></p>
+<div class="highlight"><pre><span></span><code>docker run \
+     --name tracee --rm -it \
+     --pid=host --cgroupns=host --privileged \
+     -v /etc/os-release:/etc/os-release-host:ro \
+     -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+     -v /usr/src:/usr/src:ro \
+     -v /lib/modules:/lib/modules:ro \
+     -v /tmp/tracee:/tmp/tracee:rw \
+     aquasec/tracee:full
+</code></pre></div>
 <div class="admonition notes">
 <p class="admonition-title">Notes</p>
 <ol>
@@ -2072,7 +2072,7 @@
 <p>These docker commands run Tracee with <strong>default settings</strong> and start
 <strong>reporting detections</strong> to <strong>standard output</strong>. In order to simulate a
 suspicious behavior, you can simply run:</p>
-<div class="highlight"><pre><span></span><code>$ strace ls
+<div class="highlight"><pre><span></span><code>strace ls
 </code></pre></div>
 <p>in another terminal. This will trigger the <strong>Anti-Debugging</strong> signature, which
 is loaded by default, and you will get a warning:</p>
