@@ -7,7 +7,7 @@ repo_url: https://github.com/aquasecurity/tracee
 edit_uri: ""
 
 nav:
-  - Getting Started: 
+  - Getting Started:
     - Overview: index.md
     - Kubernetes - Quick Start: getting-started/kubernetes-quickstart.md
     - Docker - Quick Start: getting-started/docker-quickstart.md
@@ -24,13 +24,14 @@ nav:
   - Tutorials:
     - Setup Development Machine with Vagrant: tutorials/setup-development-machine-with-vagrant.md
     - Deploy Tracee Grafana Dashboard: tutorials/deploy-grafana-dashboard.md
-  - Docs: 
+  - Docs:
     - Overview: docs/overview.md
     - Tracing:
       - Getting Started: docs/tracing/index.md
       - Output Formats: docs/tracing/output-formats.md
       - Output Options: docs/tracing/output-options.md
       - Event Filtering: docs/tracing/event-filtering.md
+      - Network Events: docs/tracing/network-events.md
     - Capturing:
       - Getting Started: docs/capturing/index.md
     - Detecting:
@@ -68,7 +69,7 @@ nav:
       - Building Containers: contributing/building/containers.md
       - Building non CO-RE: contributing/building/nocore-ebpf.md
       - OS Packaging: contributing/building/packaging.md
-      - Building on OSX: contributing/building/macosx.md      
+      - Building on OSX: contributing/building/macosx.md
 theme:
     name: material
     language: 'en'
