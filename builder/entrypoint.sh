@@ -13,6 +13,7 @@ TRACEE_OUT="${TRACEE_TMP}/out"
 TRACEE_EBPF_SRC=${TRACEE_EBPF_SRC:="/tracee/src"}
 TRACEE_EBPF_EXE=${TRACEE_EBPF_EXE:="/tracee/tracee-ebpf"}
 TRACEE_RULES_EXE=${TRACEE_RULES_EXE:="/tracee/tracee-rules"}
+TRACEE_RULES=${TRACEE_RULES:="/tracee/rules"}
 LIBBPFGO_OSRELEASE_FILE=${LIBBPFGO_OSRELEASE_FILE:=""}
 
 TRACEE_EBPF_ONLY=${TRACEE_EBPF_ONLY:=0} # used by both container images
@@ -62,7 +63,11 @@ run_tracee_rules() {
 
     # start tracee-ebpf
 
-    events=$($TRACEE_RULES_EXE --list-events)
+    events=$($TRACEE_RULES_EXE --list-events --rules-dir $TRACEE_RULES)
+    if [ -z $events ]; then
+        echo "ERROR: cannot list events via '$TRACEE_RULES_EXE --list-events --rules-dir $TRACEE_RULES'"
+        exit 1
+    fi
 
     echo "INFO: starting tracee-ebpf..."
     ${TRACEE_EBPF_EXE} \
@@ -87,9 +92,10 @@ run_tracee_rules() {
     fi
 
     echo "INFO: starting tracee-rules..."
-    $TRACEE_RULES_EXE\
-        --metrics --input-tracee=file:${TRACEE_PIPE}\
-        --input-tracee=format:gob\
+    $TRACEE_RULES_EXE \
+        --metrics --input-tracee=file:${TRACEE_PIPE} \
+        --input-tracee=format:gob \
+        --rules-dir $TRACEE_RULES \
         $allcaps \
         $@
     TRACEE_RET=$?
@@ -112,6 +118,18 @@ fi
 # docker 1st argument might be "trace" only (so tracee-ebpf is executed)
 if [ "${1}" == "trace" ]; then
     TRACEE_EBPF_ONLY=1
+    shift
+elif [ "${1}" == "custom-rules" ]; then
+    TRACEE_RULES="/custom-rules"
+    if [ ! -d "$TRACEE_RULES" ]; then
+        echo "ERROR:"
+        echo "ERROR: "$TRACEE_RULES" doesn't exist"
+        echo "ERROR: Mount a volume for it:"
+        echo "ERROR:     host: /your/custom/rules/dir"
+        echo "ERROR:     guest: /custom-rules"
+        echo "ERROR:"
+        exit 1
+    fi
     shift
 fi
 
