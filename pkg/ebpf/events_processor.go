@@ -50,7 +50,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 	case events.VfsWrite, events.VfsWritev, events.KernelWrite:
 		// capture written files
 		if t.config.Capture.FileWrite {
-			filePath, err := parse.ArgStringVal(event, "pathname")
+			filePath, err := parse.ArgVal[string](event, "pathname")
 			if err != nil {
 				return fmt.Errorf("error parsing vfs_write args: %v", err)
 			}
@@ -58,11 +58,11 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			if filePath == "" || filePath[0] != '/' {
 				return nil
 			}
-			dev, err := parse.ArgUint32Val(event, "dev")
+			dev, err := parse.ArgVal[uint32](event, "dev")
 			if err != nil {
 				return fmt.Errorf("error parsing vfs_write args: %v", err)
 			}
-			inode, err := parse.ArgUint64Val(event, "inode")
+			inode, err := parse.ArgVal[uint64](event, "inode")
 			if err != nil {
 				return fmt.Errorf("error parsing vfs_write args: %v", err)
 			}
@@ -99,7 +99,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 		// capture executed files
 		if t.config.Capture.Exec || t.config.Output.ExecHash {
-			filePath, err := parse.ArgStringVal(event, "pathname")
+			filePath, err := parse.ArgVal[string](event, "pathname")
 			if err != nil {
 				return fmt.Errorf("error parsing sched_process_exec args: %v", err)
 			}
@@ -114,7 +114,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			for _, pid := range pids { // will break on success
 				err = nil
 				sourceFilePath := fmt.Sprintf("/proc/%s/root%s", strconv.Itoa(int(pid)), filePath)
-				sourceFileCtime, err := parse.ArgUint64Val(event, "ctime")
+				sourceFileCtime, err := parse.ArgVal[uint64](event, "ctime")
 				if err != nil {
 					return fmt.Errorf("error parsing sched_process_exec args: %v", err)
 				}
@@ -211,31 +211,31 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			return err
 		}
 		if t.config.ProcessInfo {
-			hostTid, err := parse.ArgInt32Val(event, "child_tid")
+			hostTid, err := parse.ArgVal[int32](event, "child_tid")
 			if err != nil {
 				return err
 			}
-			hostPid, err := parse.ArgInt32Val(event, "child_pid")
+			hostPid, err := parse.ArgVal[int32](event, "child_pid")
 			if err != nil {
 				return err
 			}
-			pid, err := parse.ArgInt32Val(event, "child_ns_pid")
+			pid, err := parse.ArgVal[int32](event, "child_ns_pid")
 			if err != nil {
 				return err
 			}
-			ppid, err := parse.ArgInt32Val(event, "parent_ns_pid")
+			ppid, err := parse.ArgVal[int32](event, "parent_ns_pid")
 			if err != nil {
 				return err
 			}
-			hostPpid, err := parse.ArgInt32Val(event, "parent_pid")
+			hostPpid, err := parse.ArgVal[int32](event, "parent_pid")
 			if err != nil {
 				return err
 			}
-			tid, err := parse.ArgInt32Val(event, "child_ns_tid")
+			tid, err := parse.ArgVal[int32](event, "child_ns_tid")
 			if err != nil {
 				return err
 			}
-			startTime, err := parse.ArgUint64Val(event, "start_time")
+			startTime, err := parse.ArgVal[uint64](event, "start_time")
 			if err != nil {
 				return err
 			}
@@ -257,15 +257,15 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 
 	case events.CgroupMkdir:
-		cgroupId, err := parse.ArgUint64Val(event, "cgroup_id")
+		cgroupId, err := parse.ArgVal[uint64](event, "cgroup_id")
 		if err != nil {
 			return fmt.Errorf("error parsing cgroup_mkdir args: %w", err)
 		}
-		path, err := parse.ArgStringVal(event, "cgroup_path")
+		path, err := parse.ArgVal[string](event, "cgroup_path")
 		if err != nil {
 			return fmt.Errorf("error parsing cgroup_mkdir args: %w", err)
 		}
-		hId, err := parse.ArgUint32Val(event, "hierarchy_id")
+		hId, err := parse.ArgVal[uint32](event, "hierarchy_id")
 		if err != nil {
 			return fmt.Errorf("error parsing cgroup_mkdir args: %w", err)
 		}
@@ -278,7 +278,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 
 	case events.CgroupRmdir:
-		cgroupId, err := parse.ArgUint64Val(event, "cgroup_id")
+		cgroupId, err := parse.ArgVal[uint64](event, "cgroup_id")
 		if err != nil {
 			return fmt.Errorf("error parsing cgroup_rmdir args: %w", err)
 		}
@@ -290,7 +290,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			}
 		}
 
-		hId, err := parse.ArgUint32Val(event, "hierarchy_id")
+		hId, err := parse.ArgVal[uint32](event, "hierarchy_id")
 		if err != nil {
 			return fmt.Errorf("error parsing cgroup_mkdir args: %w", err)
 		}
@@ -313,7 +313,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 
 	case events.HookedProcFops:
-		fopsAddresses, err := parse.ArgUlongArrVal(event, "hooked_fops_pointers")
+		fopsAddresses, err := parse.ArgVal[[]uint64](event, "hooked_fops_pointers")
 		if err != nil || fopsAddresses == nil {
 			return fmt.Errorf("error parsing hooked_proc_fops args: %w", err)
 		}

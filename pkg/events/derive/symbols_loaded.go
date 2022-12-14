@@ -143,19 +143,19 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) isWhitelist(soPath string) bo
 // getSharedObjectInfo extract from SO loading event the information available about the SO
 func getSharedObjectInfo(event trace.Event) (sharedobjs.ObjInfo, error) {
 	var objInfo sharedobjs.ObjInfo
-	loadedObjectInode, err := parse.ArgUint64Val(&event, "inode")
+	loadedObjectInode, err := parse.ArgVal[uint64](&event, "inode")
 	if err != nil {
 		return objInfo, err
 	}
-	loadedObjectDevice, err := parse.ArgUint32Val(&event, "dev")
+	loadedObjectDevice, err := parse.ArgVal[uint32](&event, "dev")
 	if err != nil {
 		return objInfo, err
 	}
-	loadedObjectCtime, err := parse.ArgUint64Val(&event, "ctime")
+	loadedObjectCtime, err := parse.ArgVal[uint64](&event, "ctime")
 	if err != nil {
 		return objInfo, err
 	}
-	loadedObjectPath, err := parse.ArgStringVal(&event, "pathname")
+	loadedObjectPath, err := parse.ArgVal[string](&event, "pathname")
 	if err != nil {
 		return objInfo, err
 	}
