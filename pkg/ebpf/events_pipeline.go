@@ -312,9 +312,17 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 				}
 
 				for _, derivative := range derivatives {
-					// derived events also might have filters
-					if !t.shouldProcessEvent(derivative) {
-						continue
+					// Skip events that don't work well with filtering due
+					// to missing types being handled and similar reasons.
+					// https://github.com/aquasecurity/tracee/issues/2486
+					switch events.ID(derivative.EventID) {
+					case events.SymbolsLoaded:
+					case events.SharedObjectLoaded:
+					default:
+						// Derived events might need filtering as well
+						if !t.shouldProcessEvent(derivative) {
+							continue
+						}
 					}
 					out <- &derivative
 				}
