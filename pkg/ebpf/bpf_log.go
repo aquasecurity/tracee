@@ -169,7 +169,8 @@ func (t *Tracee) processBPFLogs() {
 			}
 			// This logger timestamp in no way reflects the bpf log original time
 			// since bpf logs channel is populated with aggregated logs
-			logger.BPFError(bpfLog.Error(), logger.Level(bpfLog.LogLevel()),
+			logger.Log(logger.Level(bpfLog.LogLevel()), false,
+				bpfLog.Error(),
 				"id", bpfLog.ID(),
 				"type", bpfLog.Type().String(),
 				"ret", bpfLog.Return(),

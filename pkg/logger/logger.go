@@ -188,22 +188,41 @@ func isAggregateSetAndIsLogNotNew(skip int, l *Logger) bool {
 
 // Log functions
 
-// BPFError logs errors from bpf programs
-// It does not use the aggregation logic as the bpf errors are already aggregated on the bpf side
-func BPFError(msg string, logLevel Level, keysAndValues ...interface{}) {
-	switch logLevel {
-	case DebugLevel:
-		pkgLogger.l.Debugw(msg, keysAndValues...)
-	case InfoLevel:
-		pkgLogger.l.Infow(msg, keysAndValues...)
-	case WarnLevel:
-		pkgLogger.l.Warnw(msg, keysAndValues...)
-	case ErrorLevel:
-		pkgLogger.l.Errorw(msg, keysAndValues...)
-	default:
-		bpfInfoKVs := append(make([]interface{}, 0), "bpfLevel", int(logLevel), "bpfMsg", msg)
-		keysAndValues = append(bpfInfoKVs, keysAndValues...)
-		pkgLogger.l.Errorw("unspecified bpf error log level", keysAndValues...)
+// Log is a generic helper that allows logging by choosing the desired level and if the aggregation should be done.
+// It does NOT override those options.
+// For the case where innerAggregation is set to true, it will only aggregate if pkg logger's aggregation config is also set to true.
+func Log(lvl Level, innerAggregation bool, msg string, keysAndValues ...interface{}) {
+	if innerAggregation {
+		switch lvl {
+		case DebugLevel:
+			debugw(1, pkgLogger, msg, keysAndValues...)
+		case InfoLevel:
+			infow(1, pkgLogger, msg, keysAndValues...)
+		case WarnLevel:
+			warnw(1, pkgLogger, msg, keysAndValues...)
+		case ErrorLevel:
+			errorw(1, pkgLogger, msg, keysAndValues...)
+		default:
+			infoKVs := append(make([]interface{}, 0), "level", int(lvl), "msg", msg)
+			keysAndValues = append(infoKVs, keysAndValues...)
+			errorw(1, pkgLogger, "unspecified log level", keysAndValues...)
+		}
+	} else {
+		// skip pkg aggregation logic calling inner logger directly
+		switch lvl {
+		case DebugLevel:
+			pkgLogger.l.Debugw(msg, keysAndValues...)
+		case InfoLevel:
+			pkgLogger.l.Infow(msg, keysAndValues...)
+		case WarnLevel:
+			pkgLogger.l.Warnw(msg, keysAndValues...)
+		case ErrorLevel:
+			pkgLogger.l.Errorw(msg, keysAndValues...)
+		default:
+			infoKVs := append(make([]interface{}, 0), "level", int(lvl), "msg", msg)
+			keysAndValues = append(infoKVs, keysAndValues...)
+			pkgLogger.l.Errorw("unspecified log level", keysAndValues...)
+		}
 	}
 }
 
