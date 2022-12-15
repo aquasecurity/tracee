@@ -188,6 +188,25 @@ func isAggregateSetAndIsLogNotNew(skip int, l *Logger) bool {
 
 // Log functions
 
+// BPFError logs errors from bpf programs
+// It does not use the aggregation logic as the bpf errors are already aggregated on the bpf side
+func BPFError(msg string, logLevel Level, keysAndValues ...interface{}) {
+	switch logLevel {
+	case DebugLevel:
+		pkgLogger.l.Debugw(msg, keysAndValues...)
+	case InfoLevel:
+		pkgLogger.l.Infow(msg, keysAndValues...)
+	case WarnLevel:
+		pkgLogger.l.Warnw(msg, keysAndValues...)
+	case ErrorLevel:
+		pkgLogger.l.Errorw(msg, keysAndValues...)
+	default:
+		bpfInfoKVs := append(make([]interface{}, 0), "bpfLevel", int(logLevel), "bpfMsg", msg)
+		keysAndValues = append(bpfInfoKVs, keysAndValues...)
+		pkgLogger.l.Errorw("unspecified bpf error log level", keysAndValues...)
+	}
+}
+
 // Debug
 func debugw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	if isAggregateSetAndIsLogNotNew(skip+1, l) {

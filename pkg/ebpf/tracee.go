@@ -177,12 +177,15 @@ type Tracee struct {
 	eventsPerfMap     *bpf.PerfBuffer
 	fileWrPerfMap     *bpf.PerfBuffer
 	netPerfMap        *bpf.PerfBuffer
+	bpfErrorsPerfMap  *bpf.PerfBuffer
 	eventsChannel     chan []byte
 	fileWrChannel     chan []byte
 	netChannel        chan []byte
+	bpfErrorsChannel  chan []byte
 	lostEvChannel     chan uint64
 	lostWrChannel     chan uint64
 	lostNetChannel    chan uint64
+	lostBPFErrChannel chan uint64
 	bootTime          uint64
 	startTime         uint64
 	stats             metrics.Stats
@@ -1365,6 +1368,18 @@ func (t *Tracee) initBPF() error {
 			}
 		}
 
+		t.bpfErrorsChannel = make(chan []byte, 1000)
+		t.lostBPFErrChannel = make(chan uint64)
+		t.bpfErrorsPerfMap, err = t.bpfModule.InitPerfBuf(
+			"errors",
+			t.bpfErrorsChannel,
+			t.lostBPFErrChannel,
+			t.config.PerfBufferSize,
+		)
+		if err != nil {
+			return fmt.Errorf("error initializing errors perf map: %v", err)
+		}
+
 		return nil
 	})
 
@@ -1417,6 +1432,8 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 		t.netPerfMap.Start()
 		go t.processNetEvents(ctx)
 	}
+	t.bpfErrorsPerfMap.Start()
+	go t.processBPFErrors()
 	t.running = true
 	// block until ctx is cancelled elsewhere
 	<-ctx.Done()
@@ -1427,6 +1444,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	if t.netEnabled() {
 		t.netPerfMap.Stop()
 	}
+	t.bpfErrorsPerfMap.Stop()
 	// capture profiler stats
 	if t.config.Capture.Profile {
 		f, err := utils.CreateAt(t.outDir, "tracee.profile")
