@@ -80,6 +80,8 @@ func deriveNetPacketUDPArgs() deriveArgsFunction {
 			return []interface{}{
 				srcIP,
 				dstIP,
+				udp.SrcPort,
+				udp.DstPort,
 				udp,
 			}, nil
 		}
