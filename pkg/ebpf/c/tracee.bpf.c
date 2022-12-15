@@ -942,48 +942,50 @@ typedef struct bpf_attach {
     enum bpf_write_user_e write_user;
 } bpf_attach_t;
 
-enum bpf_error_level
+enum bpf_log_level
 {
-    BPF_ERR_LOG_LVL_DEBUG = -1,
-    BPF_ERR_LOG_LVL_INFO,
-    BPF_ERR_LOG_LVL_WARN,
-    BPF_ERR_LOG_LVL_ERROR,
+    BPF_LOG_LVL_DEBUG = -1,
+    BPF_LOG_LVL_INFO,
+    BPF_LOG_LVL_WARN,
+    BPF_LOG_LVL_ERROR,
 };
 
-enum bpf_error_id
+enum bpf_log_id
 {
-    BPF_ERR_UNSPEC = 0U, // enforce enum to u32
+    BPF_LOG_ID_UNSPEC = 0U, // enforce enum to u32
 
-    BPF_ERR_INIT_CONTEXT,
+    // tracee functions
+    BPF_LOG_ID_INIT_CONTEXT,
 
-    BPF_ERR_MAP_LOOKUP_ELEM,
-    BPF_ERR_MAP_UPDATE_ELEM,
-    BPF_ERR_MAP_DELETE_ELEM,
-    BPF_ERR_GET_CURRENT_COMM,
-    BPF_ERR_TAIL_CALL,
+    // bpf helpers functions
+    BPF_LOG_ID_MAP_LOOKUP_ELEM,
+    BPF_LOG_ID_MAP_UPDATE_ELEM,
+    BPF_LOG_ID_MAP_DELETE_ELEM,
+    BPF_LOG_ID_GET_CURRENT_COMM,
+    BPF_LOG_ID_TAIL_CALL,
 };
 
-#define BPF_MAX_ERR_FILE_LEN 72
+#define BPF_MAX_LOG_FILE_LEN 72
 
-typedef struct bpf_error {
+typedef struct bpf_log {
     s64 ret; // return value
     u32 cpu;
     u32 line;                        // line number
-    char file[BPF_MAX_ERR_FILE_LEN]; // filename
-} bpf_error_t;
+    char file[BPF_MAX_LOG_FILE_LEN]; // filename
+} bpf_log_t;
 
-typedef struct bpf_error_count {
+typedef struct bpf_log_count {
     u32 count;
     u64 ts; // timestamp
-} bpf_error_count_t;
+} bpf_log_count_t;
 
-typedef struct bpf_error_output {
-    enum bpf_error_id id; // type
-    enum bpf_error_level level;
+typedef struct bpf_log_output {
+    enum bpf_log_id id; // type
+    enum bpf_log_level level;
     u32 count;
     u32 padding;
-    struct bpf_error err;
-} bpf_error_output_t;
+    struct bpf_log log;
+} bpf_log_output_t;
 
 // KERNEL STRUCTS ----------------------------------------------------------------------------------
 
@@ -1051,13 +1053,13 @@ BPF_LRU_HASH(fd_arg_path_map, fd_arg_task_t, fd_arg_path_t, 1024); // store fds 
 BPF_LRU_HASH(bpf_attach_map, u32, bpf_attach_t, 1024);             // holds bpf prog info
 BPF_LRU_HASH(bpf_attach_tmp_map, u32, bpf_attach_t, 1024);         // temporarily hold bpf_attach_t
 BPF_PERCPU_ARRAY(cached_event_data_map, event_data_t, 1);          // cached event data between chained tail calls
-BPF_HASH(errors_count, bpf_error_t, bpf_error_count_t, 4096);      // errors count
-BPF_PERCPU_ARRAY(error_output_scratch, bpf_error_output_t, 1);     // error output scratch
+BPF_HASH(logs_count, bpf_log_t, bpf_log_count_t, 4096);            // logs count
+BPF_PERCPU_ARRAY(log_output_scratch, bpf_log_output_t, 1);         // log output scratch
 // clang-format on
 
 // EBPF PERF BUFFERS -------------------------------------------------------------------------------
 
-BPF_PERF_OUTPUT(errors, 1024);      // errors submission
+BPF_PERF_OUTPUT(logs, 1024);        // logs submission
 BPF_PERF_OUTPUT(events, 1024);      // events submission
 BPF_PERF_OUTPUT(file_writes, 1024); // file writes events submission
 BPF_PERF_OUTPUT(net_events, 1024);  // network events submission
@@ -1066,38 +1068,38 @@ BPF_PERF_OUTPUT(net_events, 1024);  // network events submission
 
 static __always_inline void *get_path_str(struct path *path);
 
-// HELPERS: ERRORS ---------------------------------------------------------------------------------
+// HELPERS: LOGS -----------------------------------------------------------------------------------
 
-static __always_inline void do_tracee_error(
-    void *ctx, enum bpf_error_level level, enum bpf_error_id id, s64 ret, u32 line, void *file)
+static __always_inline void do_tracee_log(
+    void *ctx, enum bpf_log_level level, enum bpf_log_id id, s64 ret, u32 line, void *file)
 {
     if (!ctx || !file)
         return;
 
     u32 zero = 0;
-    bpf_error_output_t *err_output = bpf_map_lookup_elem(&error_output_scratch, &zero);
-    if (unlikely(err_output == NULL))
+    bpf_log_output_t *log_output = bpf_map_lookup_elem(&log_output_scratch, &zero);
+    if (unlikely(log_output == NULL))
         return;
 
-    err_output->level = level;
-    err_output->id = id;
+    log_output->level = level;
+    log_output->id = id;
 
-    err_output->err.ret = ret;
-    err_output->err.cpu = bpf_get_smp_processor_id();
-    err_output->err.line = line;
+    log_output->log.ret = ret;
+    log_output->log.cpu = bpf_get_smp_processor_id();
+    log_output->log.line = line;
 
     u64 fsize = __builtin_strlen(file);
-    if (unlikely(fsize >= BPF_MAX_ERR_FILE_LEN))
-        fsize = BPF_MAX_ERR_FILE_LEN - 1;
-    __builtin_memcpy(err_output->err.file, file, fsize);
-    err_output->err.file[fsize] = '\0';
+    if (unlikely(fsize >= BPF_MAX_LOG_FILE_LEN))
+        fsize = BPF_MAX_LOG_FILE_LEN - 1;
+    __builtin_memcpy(log_output->log.file, file, fsize);
+    log_output->log.file[fsize] = '\0';
 
-    bpf_error_count_t counter_buf = {};
+    bpf_log_count_t counter_buf = {};
     counter_buf.count = 1;
     counter_buf.ts = bpf_ktime_get_ns(); // store the current ts
     u64 ts_prev = 0;
 
-    bpf_error_count_t *counter = bpf_map_lookup_elem(&errors_count, &err_output->err);
+    bpf_log_count_t *counter = bpf_map_lookup_elem(&logs_count, &log_output->log);
     if (likely(counter != NULL)) {
         ts_prev = counter->ts; // store previous ts
 
@@ -1105,18 +1107,18 @@ static __always_inline void do_tracee_error(
         counter->ts = counter_buf.ts; // set to current ts
     } else {
         counter = &counter_buf;
-        bpf_map_update_elem(&errors_count, &err_output->err, counter, BPF_ANY);
+        bpf_map_update_elem(&logs_count, &log_output->log, counter, BPF_ANY);
     }
 
-    // submit error when its cpu occurrence time diff is greater than 2s
+    // submit log when its cpu occurrence time diff is greater than 2s
     if ((counter->ts - ts_prev) > (u64) 2000000000) {
-        err_output->count = counter->count;
-        bpf_perf_event_output(ctx, &errors, BPF_F_CURRENT_CPU, err_output, sizeof(*err_output));
+        log_output->count = counter->count;
+        bpf_perf_event_output(ctx, &logs, BPF_F_CURRENT_CPU, log_output, sizeof(*log_output));
         counter->count = 0; // reset, assuming that the consumer is incrementing
     }
 }
 
-#define tracee_error(ctx, level, id, ret) do_tracee_error(ctx, level, id, ret, __LINE__, __FILE__);
+#define tracee_log(ctx, level, id, ret) do_tracee_log(ctx, level, id, ret, __LINE__, __FILE__);
 
 // HELPERS: DEVICES --------------------------------------------------------------------------------
 
@@ -1826,7 +1828,7 @@ init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 
     ret = bpf_get_current_comm(&context->task.comm, sizeof(context->task.comm));
     if (unlikely(ret < 0)) {
         // disable logging as a workaround for instruction limit verifier error on kernel 4.19
-        // tracee_error(ctx, BPF_ERR_LOG_LVL_ERROR, BPF_ERR_GET_CURRENT_COMM, ret);
+        // tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_GET_CURRENT_COMM, ret);
         return -1;
     }
 
@@ -1905,7 +1907,7 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
     ret = init_context(ctx, &data->context, data->task, data->config->options);
     if (unlikely(ret < 0)) {
         // disable logging as a workaround for instruction limit verifier error on kernel 4.19
-        // tracee_error(ctx, BPF_ERR_LOG_LVL_ERROR, BPF_ERR_INIT_CONTEXT, ret);
+        // tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_INIT_CONTEXT, ret);
         return 0;
     }
     data->ctx = ctx;
@@ -2003,7 +2005,7 @@ static __always_inline int do_should_trace(event_data_t *data)
     if (proc_info == NULL) {
         // entry should exist in proc_map (init_event_data should have set it otherwise)
         // disable logging as a workaround for instruction limit verifier error on kernel 4.19
-        // tracee_error(data->ctx, BPF_ERR_LOG_LVL_WARN, BPF_ERR_MAP_LOOKUP_ELEM, 0);
+        // tracee_log(data->ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
         return 0;
     }
 
@@ -3604,7 +3606,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     task.context.start_time = start_time;
     ret = bpf_map_update_elem(&task_info_map, &task.context.host_tid, &task, BPF_ANY);
     if (ret < 0)
-        tracee_error(ctx, BPF_ERR_LOG_LVL_DEBUG, BPF_ERR_MAP_UPDATE_ELEM, ret);
+        tracee_log(ctx, BPF_LOG_LVL_DEBUG, BPF_LOG_ID_MAP_UPDATE_ELEM, ret);
 
     int parent_pid = get_task_host_pid(parent);
     int child_pid = get_task_host_pid(child);
@@ -3619,7 +3621,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         proc_info_t *p_proc_info = bpf_map_lookup_elem(&proc_info_map, &parent_tgid);
         if (unlikely(p_proc_info == NULL)) {
             // parent proc should exist in proc_map (init_event_data should have set it otherwise)
-            tracee_error(ctx, BPF_ERR_LOG_LVL_WARN, BPF_ERR_MAP_LOOKUP_ELEM, 0);
+            tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
             return 0;
         }
 
@@ -3627,7 +3629,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         c_proc_info = bpf_map_lookup_elem(&proc_info_map, &child_tgid);
         // appease the verifier
         if (unlikely(c_proc_info == NULL)) {
-            tracee_error(ctx, BPF_ERR_LOG_LVL_WARN, BPF_ERR_MAP_LOOKUP_ELEM, 0);
+            tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
             return 0;
         }
 
@@ -3641,7 +3643,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         if (tgid_filtered) {
             ret = bpf_map_update_elem(&process_tree_map, &child_tgid, tgid_filtered, BPF_ANY);
             if (ret < 0)
-                tracee_error(ctx, BPF_ERR_LOG_LVL_DEBUG, BPF_ERR_MAP_UPDATE_ELEM, ret);
+                tracee_log(ctx, BPF_LOG_LVL_DEBUG, BPF_LOG_ID_MAP_UPDATE_ELEM, ret);
         }
     }
 
@@ -3711,7 +3713,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &data.context.task.host_pid);
     if (proc_info == NULL) {
         // entry should exist in proc_map (init_event_data should have set it otherwise)
-        tracee_error(ctx, BPF_ERR_LOG_LVL_WARN, BPF_ERR_MAP_LOOKUP_ELEM, 0);
+        tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
         return 0;
     }
 
@@ -5135,7 +5137,7 @@ static __always_inline int net_map_update_or_delete_sock(void *ctx, struct sock 
             net_ctx.host_tid = tid;
             ret = bpf_get_current_comm(&net_ctx.comm, sizeof(net_ctx.comm));
             if (ret < 0)
-                tracee_error(ctx, BPF_ERR_LOG_LVL_DEBUG, BPF_ERR_GET_CURRENT_COMM, ret);
+                tracee_log(ctx, BPF_LOG_LVL_DEBUG, BPF_LOG_ID_GET_CURRENT_COMM, ret);
 
             bpf_map_update_elem(&network_map, &connect_id, &net_ctx, BPF_ANY);
         } else {
@@ -5261,7 +5263,7 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
                     net_ctx_ext.host_tid = data.context.task.host_tid;
                     ret = bpf_get_current_comm(&net_ctx_ext.comm, sizeof(net_ctx_ext.comm));
                     if (ret < 0)
-                        tracee_error(ctx, BPF_ERR_LOG_LVL_DEBUG, BPF_ERR_GET_CURRENT_COMM, ret);
+                        tracee_log(ctx, BPF_LOG_LVL_DEBUG, BPF_LOG_ID_GET_CURRENT_COMM, ret);
 
                     net_ctx_ext.local_port = connect_id.port;
                     bpf_map_update_elem(&sock_ctx_map, &sk, &net_ctx_ext, BPF_ANY);
@@ -5318,7 +5320,7 @@ int BPF_KPROBE(trace_tcp_connect)
     net_ctx_ext.host_tid = data.context.task.host_tid;
     ret = bpf_get_current_comm(&net_ctx_ext.comm, sizeof(net_ctx_ext.comm));
     if (ret < 0)
-        tracee_error(ctx, BPF_ERR_LOG_LVL_DEBUG, BPF_ERR_GET_CURRENT_COMM, ret);
+        tracee_log(ctx, BPF_LOG_LVL_DEBUG, BPF_LOG_ID_GET_CURRENT_COMM, ret);
 
     net_ctx_ext.local_port = connect_id.port;
     bpf_map_update_elem(&sock_ctx_map, &sk, &net_ctx_ext, BPF_ANY);
