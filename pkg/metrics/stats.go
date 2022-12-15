@@ -7,15 +7,15 @@ import (
 
 // When updating this struct, please make sure to update the relevant exporting functions
 type Stats struct {
-	EventCount      counter.Counter
-	EventsFiltered  counter.Counter
-	NetEvCount      counter.Counter
-	BPFErrorsCount  counter.Counter
-	ErrorCount      counter.Counter
-	LostEvCount     counter.Counter
-	LostWrCount     counter.Counter
-	LostNtCount     counter.Counter
-	LostBPFErrCount counter.Counter
+	EventCount       counter.Counter
+	EventsFiltered   counter.Counter
+	NetEvCount       counter.Counter
+	BPFLogsCount     counter.Counter
+	ErrorCount       counter.Counter
+	LostEvCount      counter.Counter
+	LostWrCount      counter.Counter
+	LostNtCount      counter.Counter
+	LostBPFLogsCount counter.Counter
 }
 
 // Register Stats to prometheus metrics exporter
@@ -82,9 +82,9 @@ func (stats *Stats) RegisterPrometheus() error {
 
 	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
 		Namespace: "tracee_ebpf",
-		Name:      "bpf_errors_total",
-		Help:      "errors collected by tracee-ebpf during ebpf execution",
-	}, func() float64 { return float64(stats.BPFErrorsCount.Read()) }))
+		Name:      "bpf_logs_total",
+		Help:      "logs collected by tracee-ebpf during ebpf execution",
+	}, func() float64 { return float64(stats.BPFLogsCount.Read()) }))
 
 	if err != nil {
 		return err
