@@ -80,6 +80,8 @@ func deriveNetPacketTCPArgs() deriveArgsFunction {
 			return []interface{}{
 				srcIP,
 				dstIP,
+				tcp.SrcPort,
+				tcp.DstPort,
 				tcp,
 			}, nil
 		}

@@ -6205,8 +6205,8 @@ var Definitions = eventDefinitions{
 			},
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
-				{Type: "const char*", Name: "src"},
-				{Type: "const char*", Name: "dst"},
+				{Type: "const char*", Name: "src"}, // TODO: remove after filter supports ProtoIPv4
+				{Type: "const char*", Name: "dst"}, // TODO: remove after filter supports ProtoIPv4
 				{Type: "trace.ProtoIPv4", Name: "proto_ipv4"},
 			},
 		},
@@ -6220,8 +6220,8 @@ var Definitions = eventDefinitions{
 			},
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
-				{Type: "const char*", Name: "src"},
-				{Type: "const char*", Name: "dst"},
+				{Type: "const char*", Name: "src"}, // TODO: remove after filter supports ProtoIPv6
+				{Type: "const char*", Name: "dst"}, // TODO: remove after filter supports ProtoIPv6
 				{Type: "trace.ProtoIPv6", Name: "proto_ipv6"},
 			},
 		},
@@ -6251,6 +6251,8 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "src"},
 				{Type: "const char*", Name: "dst"},
+				{Type: "u16", Name: "src_port"}, // TODO: remove after filter supports ProtoTCP
+				{Type: "u16", Name: "dst_port"}, // TODO: remove after filter supports ProtoTCP
 				{Type: "trace.ProtoTCP", Name: "proto_tcp"},
 			},
 		},
@@ -6280,6 +6282,8 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "src"},
 				{Type: "const char*", Name: "dst"},
+				{Type: "u16", Name: "src_port"}, // TODO: remove after filter supports ProtoUDP
+				{Type: "u16", Name: "dst_port"}, // TODO: remove after filter supports ProtoUDP
 				{Type: "trace.ProtoUDP", Name: "proto_udp"},
 			},
 		},
