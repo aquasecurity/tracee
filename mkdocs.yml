@@ -22,6 +22,7 @@ nav:
         - NixOS: getting-started/installing/distros/nix-nixos.md
       - Linux Headers: getting-started/installing/headers.md
   - Tutorials:
+    - Everything is an event: tutorials/everything-is-an-event.md
     - Setup Development Machine with Vagrant: tutorials/setup-development-machine-with-vagrant.md
     - Deploy Tracee Grafana Dashboard: tutorials/deploy-grafana-dashboard.md
   - Docs:
