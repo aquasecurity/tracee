@@ -17,7 +17,7 @@ spec:
       name: tracee
     spec:
       containers:
-      - image: docker.io/aquasec/tracee:0.9.3
+      - image: docker.io/aquasec/tracee:0.10.0
         imagePullPolicy: IfNotPresent
         args:
           - --webhook http://tracee-webhook:2801 --webhook-template ./templates/falcosidekick.tmpl --webhook-content-type application/json
