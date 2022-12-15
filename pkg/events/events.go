@@ -6113,6 +6113,7 @@ var Definitions = eventDefinitions{
 		BpfAttach: {
 			ID32Bit: sys32undefined,
 			Name:    "bpf_attach",
+			DocPath: "security_alerts/bpf_attach.md",
 			Probes: []probeDependency{
 				{Handle: probes.SecurityFileIoctl, Required: true},
 				{Handle: probes.SecurityBpfProg, Required: true},
