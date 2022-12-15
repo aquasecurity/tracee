@@ -2278,6 +2278,16 @@ by command name as well.</p>
 </div>
 </li>
 <li>
+<p><strong>Binary Path</strong> <code>(Operators: =, !=)</code></p>
+<div class="highlight"><pre><span></span><code>1) --trace binary=/usr/bin/ls
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Given path must be of an ELF binary, meaning that providing the path
+of a symbolic link won't work</p>
+</div>
+</li>
+<li>
 <p><strong>PID</strong> <code>(Operators: =, !=, &lt;, &gt; and "new")</code></p>
 <div class="highlight"><pre><span></span><code>1) --trace pid=new # newly created events (after tracee-ebpf execution)
 2) --trace pid=510,1709 # # pids 510 and 1709
