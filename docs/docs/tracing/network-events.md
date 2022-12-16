@@ -222,7 +222,22 @@ arguments).
 
 1. **How to filter network events**
 
-    Let's say you're are interested in all DNS packets received ONLY from Google DNS server '8.8.8.8'. You could execute the command below:
+    Let's say you're interested in all TCP packets sent to port 80 anywhere, from any process:
+
+    ```txt
+    --output format:json --trace event=net_packet_tcp --trace net_packet_tcp.args.dst_port=80
+    ```
+
+    you can trace all commands talking to any other peer using TCP to port 80.
+
+    ```json
+    {"timestamp":1671149983169847976,"threadStartTime":450930828307685,"processorId":22,"processId":1284215,"cgroupId":27149,"threadId":1284215,"parentProcessId":1268815,"hostProcessId":1284215,"hostThreadId":1284215,"hostParentProcessId":1268815,"userId":1000,"mountNamespace":4026531841,"pidNamespace":4026531836,"processName":"w3m","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"2009","eventName":"net_packet_tcp","argsNum":5,"returnValue":0,"stackAddresses":[0],"contextFlags":{"containerStarted":false},"args":[{"name":"src","type":"const char*","value":"192.168.100.2"},{"name":"dst","type":"const char*","value":"200.147.3.157"},{"name":"src_port","type":"u16","value":46594},{"name":"dst_port","type":"u16","value":80},{"name":"proto_tcp","type":"trace.ProtoTCP","value":{"srcPort":46594,"dstPort":80,"seq":3415564579,"ack":0,"dataOffset":10,"FIN":0,"SYN":1,"RST":0,"PSH":0,"ACK":0,"URG":0,"ECE":0,"CWR":0,"NS":0,"window":64240,"checksum":61705,"urgent":0}}]}
+    {"timestamp":1671149983178147951,"threadStartTime":450930828307685,"processorId":23,"processId":1284215,"cgroupId":27149,"threadId":1284215,"parentProcessId":1268815,"hostProcessId":1284215,"hostThreadId":1284215,"hostParentProcessId":1268815,"userId":1000,"mountNamespace":4026531841,"pidNamespace":4026531836,"processName":"w3m","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"2009","eventName":"net_packet_tcp","argsNum":5,"returnValue":0,"stackAddresses":[0],"contextFlags":{"containerStarted":false},"args":[{"name":"src","type":"const char*","value":"192.168.100.2"},{"name":"dst","type":"const char*","value":"200.147.3.157"},{"name":"src_port","type":"u16","value":46594},{"name":"dst_port","type":"u16","value":80},{"name":"proto_tcp","type":"trace.ProtoTCP","value":{"srcPort":46594,"dstPort":80,"seq":3415564580,"ack":1519583696,"dataOffset":8,"FIN":0,"SYN":0,"RST":0,"PSH":0,"ACK":1,"URG":0,"ECE":0,"CWR":0,"NS":0,"window":502,"checksum":61697,"urgent":0}}]}
+    {"timestamp":1671149983178263829,"threadStartTime":450930828307685,"processorId":22,"processId":1284215,"cgroupId":27149,"threadId":1284215,"parentProcessId":1268815,"hostProcessId":1284215,"hostThreadId":1284215,"hostParentProcessId":1268815,"userId":1000,"mountNamespace":4026531841,"pidNamespace":4026531836,"processName":"w3m","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"2009","eventName":"net_packet_tcp","argsNum":5,"returnValue":0,"stackAddresses":[0],"contextFlags":{"containerStarted":false},"args":[{"name":"src","type":"const char*","value":"192.168.100.2"},{"name":"dst","type":"const char*","value":"200.147.3.157"},{"name":"src_port","type":"u16","value":46594},{"name":"dst_port","type":"u16","value":80},{"name":"proto_tcp","type":"trace.ProtoTCP","value":{"srcPort":46594,"dstPort":80,"seq":3415564580,"ack":1519583696,"dataOffset":8,"FIN":0,"SYN":0,"RST":0,"PSH":1,"ACK":1,"URG":0,"ECE":0,"CWR":0,"NS":0,"window":502,"checksum":61907,"urgent":0}}]}
+    ```
+
+    OR you're interested in all DNS packets received ONLY from Google DNS server '8.8.8.8'. You could execute the command below:
+
 
     ```txt
     --output format:json --trace event=net_packet_dns --trace net_packet_dns.args.src=8.8.8.8
