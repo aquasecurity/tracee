@@ -71,6 +71,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/contributing/events/security_alerts/bpf_attach/</loc>
+         <lastmod>2022-12-18</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/events/security_alerts/magic_write/</loc>
          <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
