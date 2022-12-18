@@ -933,11 +933,6 @@ typedef struct file_info {
     u64 ctime;
 } file_info_t;
 
-typedef struct bpf_attach_key {
-    u32 host_tid;
-    u32 prog_id;
-} bpf_attach_key_t;
-
 typedef struct bpf_attach {
     enum bpf_write_user_e write_user;
 } bpf_attach_t;
