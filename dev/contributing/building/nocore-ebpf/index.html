@@ -2311,33 +2311,26 @@ without an env variable.</p>
 <h2 id="run-non-co-re-tracee-ebpf">Run non CO-RE tracee-ebpf<a class="headerlink" href="#run-non-co-re-tracee-ebpf" title="Permanent link">&para;</a></h2>
 <p>If you install the non CO-RE eBPF object and run <strong>tracee-ebpf</strong> in an
 environment that needs it, then the debug output will look like:</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --debug
-
-OSInfo: ARCH: x86_64
-OSInfo: VERSION: &quot;20.04.3 LTS (Focal Fossa)&quot;
-OSInfo: ID: ubuntu
-OSInfo: ID_LIKE: debian
-OSInfo: PRETTY_NAME: &quot;Ubuntu 20.04.3 LTS&quot;
-OSInfo: VERSION_ID: &quot;20.04&quot;
-OSInfo: VERSION_CODENAME: focal
-OSInfo: KERNEL_RELEASE: 5.8.0-63-generic
-BTF: bpfenv = false, btfenv = false, vmlinux = false
-BPF: no BTF file was found or provided, trying non CO-RE eBPF at
-     /tmp/tracee/tracee.bpf.5_8_0-63-generic.v0_6_5-20-g3353501.o
+<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --log debug
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670972052.3996286,&quot;msg&quot;:&quot;osinfo&quot;,&quot;VERSION_CODENAME&quot;:&quot;focal&quot;,&quot;KERNEL_RELEASE&quot;:&quot;5.4.0-91-generic&quot;,&quot;ARCH&quot;:&quot;x86_64&quot;,&quot;VERSION&quot;:&quot;\&quot;20.04.5 LTS (Focal Fossa)\&quot;&quot;,&quot;ID&quot;:&quot;ubuntu&quot;,&quot;ID_LIKE&quot;:&quot;debian&quot;,&quot;PRETTY_NAME&quot;:&quot;\&quot;Ubuntu 20.04.5 LTS\&quot;&quot;,&quot;VERSION_ID&quot;:&quot;\&quot;20.04\&quot;&quot;,&quot;pkg&quot;:&quot;urfave&quot;,&quot;file&quot;:&quot;urfave.go&quot;,&quot;line&quot;:53}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670972052.3996587,&quot;msg&quot;:&quot;RuntimeSockets: failed to register default&quot;,&quot;socket&quot;:&quot;crio&quot;,&quot;error&quot;:&quot;failed to register runtime socket stat /var/run/crio/crio.sock: no such file or directory&quot;,&quot;pkg&quot;:&quot;flags&quot;,&quot;file&quot;:&quot;containers.go&quot;,&quot;line&quot;:45}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670972052.3996656,&quot;msg&quot;:&quot;RuntimeSockets: failed to register default&quot;,&quot;socket&quot;:&quot;podman&quot;,&quot;error&quot;:&quot;failed to register runtime socket stat /var/run/podman/podman.sock: no such file or directory&quot;,&quot;pkg&quot;:&quot;flags&quot;,&quot;file&quot;:&quot;containers.go&quot;,&quot;line&quot;:45}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670972052.3998134,&quot;msg&quot;:&quot;osinfo&quot;,&quot;security_lockdown&quot;:&quot;none&quot;,&quot;pkg&quot;:&quot;urfave&quot;,&quot;file&quot;:&quot;urfave.go&quot;,&quot;line&quot;:116}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670972052.400891,&quot;msg&quot;:&quot;BTF&quot;,&quot;bpfenv&quot;:false,&quot;btfenv&quot;:false,&quot;vmlinux&quot;:false,&quot;pkg&quot;:&quot;initialize&quot;,&quot;file&quot;:&quot;bpfobject.go&quot;,&quot;line&quot;:40}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670972052.4009123,&quot;msg&quot;:&quot;BPF: no BTF file was found or provided&quot;,&quot;pkg&quot;:&quot;initialize&quot;,&quot;file&quot;:&quot;bpfobject.go&quot;,&quot;line&quot;:108}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670972052.4009168,&quot;msg&quot;:&quot;BPF: trying non CO-RE eBPF&quot;,&quot;file&quot;:&quot;/tmp/tracee/tracee.bpf.5_4_0-91-generic.v0_8_0-rc-2-363-g3e73eeb1.o&quot;,&quot;pkg&quot;:&quot;initialize&quot;,&quot;file&quot;:&quot;bpfobject.go&quot;,&quot;line&quot;:109}
+TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
+...
 </code></pre></div>
 <p>One way of forcing <strong>tracee-ebpf</strong> to use non CO-RE eBPF object, even in a kernel
 that supports CO-RE, is by setting the <code>TRACEE_BPF_FILE</code> environment, like this:</p>
-<div class="highlight"><pre><span></span><code>$ sudo TRACEE_BPF_FILE=/tmp/tracee/tracee.bpf.5_4_0-91-generic.v0_6_5-80-ge723a22.o ./dist/tracee-ebpf --debug -o option:parse-arguments --trace comm=bash --trace follow
-OSInfo: PRETTY_NAME: &quot;Ubuntu 20.04.3 LTS&quot;
-OSInfo: VERSION_ID: &quot;20.04&quot;
-OSInfo: VERSION_CODENAME: focal
-OSInfo: KERNEL_RELEASE: 5.4.0-91-generic
-OSInfo: ARCH: x86_64
-OSInfo: VERSION: &quot;20.04.3 LTS (Focal Fossa)&quot;
-OSInfo: ID: ubuntu
-OSInfo: ID_LIKE: debian
-BTF: bpfenv = true, btfenv = false, vmlinux = false
-BPF: using BPF object from environment: /tmp/tracee/tracee.bpf.5_4_0-91-generic.v0_6_5-80-ge723a22.o
+<div class="highlight"><pre><span></span><code>$ sudo TRACEE_BPF_FILE=/tmp/tracee/tracee.bpf.5_4_0-91-generic.v0_8_0-rc-2-363-g3e73eeb1.o ./dist/tracee-ebpf --log debug -o option:parse-arguments --trace comm=bash --trace follow
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670972956.7201664,&quot;msg&quot;:&quot;osinfo&quot;,&quot;VERSION_CODENAME&quot;:&quot;focal&quot;,&quot;KERNEL_RELEASE&quot;:&quot;5.4.0-91-generic&quot;,&quot;ARCH&quot;:&quot;x86_64&quot;,&quot;VERSION&quot;:&quot;\&quot;20.04.5 LTS (Focal Fossa)\&quot;&quot;,&quot;ID&quot;:&quot;ubuntu&quot;,&quot;ID_LIKE&quot;:&quot;debian&quot;,&quot;PRETTY_NAME&quot;:&quot;\&quot;Ubuntu 20.04.5 LTS\&quot;&quot;,&quot;VERSION_ID&quot;:&quot;\&quot;20.04\&quot;&quot;,&quot;pkg&quot;:&quot;urfave&quot;,&quot;file&quot;:&quot;urfave.go&quot;,&quot;line&quot;:53}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670972956.7202075,&quot;msg&quot;:&quot;RuntimeSockets: failed to register default&quot;,&quot;socket&quot;:&quot;crio&quot;,&quot;error&quot;:&quot;failed to register runtime socket stat /var/run/crio/crio.sock: no such file or directory&quot;,&quot;pkg&quot;:&quot;flags&quot;,&quot;file&quot;:&quot;containers.go&quot;,&quot;line&quot;:45}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670972956.7202215,&quot;msg&quot;:&quot;RuntimeSockets: failed to register default&quot;,&quot;socket&quot;:&quot;podman&quot;,&quot;error&quot;:&quot;failed to register runtime socket stat /var/run/podman/podman.sock: no such file or directory&quot;,&quot;pkg&quot;:&quot;flags&quot;,&quot;file&quot;:&quot;containers.go&quot;,&quot;line&quot;:45}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670972956.7203856,&quot;msg&quot;:&quot;osinfo&quot;,&quot;security_lockdown&quot;:&quot;none&quot;,&quot;pkg&quot;:&quot;urfave&quot;,&quot;file&quot;:&quot;urfave.go&quot;,&quot;line&quot;:116}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670972956.7215962,&quot;msg&quot;:&quot;BTF&quot;,&quot;bpfenv&quot;:true,&quot;btfenv&quot;:false,&quot;vmlinux&quot;:false,&quot;pkg&quot;:&quot;initialize&quot;,&quot;file&quot;:&quot;bpfobject.go&quot;,&quot;line&quot;:40}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670972956.7216172,&quot;msg&quot;:&quot;BPF: using BPF object from environment&quot;,&quot;file&quot;:&quot;/tmp/tracee/tracee.bpf.5_4_0-91-generic.v0_8_0-rc-2-363-g3e73eeb1.o&quot;,&quot;pkg&quot;:&quot;initialize&quot;,&quot;file&quot;:&quot;bpfobject.go&quot;,&quot;line&quot;:52}
 TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
 ...
 </code></pre></div>
@@ -2356,23 +2349,24 @@ $ make -f builder/Makefile.tracee-make ubuntu-shell
 tracee@f65bab137305[/tracee]$ make tracee-ebpf
 tracee@f65bab137305[/tracee]$ make install-bpf-nocore
 
-tracee@f65bab137305[/tracee]$ sudo ./dist/tracee-ebpf --debug
-KConfig: warning: could not check enabled kconfig features
-(could not read /boot/config-5.8.0-63-generic: ...)
-KConfig: warning: assuming kconfig values, might have unexpected behavior
-OSInfo: KERNEL_RELEASE: 5.8.0-63-generic
-OSInfo: ARCH: x86_64
-OSInfo: VERSION: &quot;21.04 (Hirsute Hippo)&quot;
-OSInfo: ID: ubuntu
-OSInfo: ID_LIKE: debian
-OSInfo: PRETTY_NAME: &quot;Ubuntu 21.04&quot;
-OSInfo: VERSION_ID: &quot;21.04&quot;
-OSInfo: VERSION_CODENAME: hirsute
-BTF: bpfenv = false, btfenv = false, vmlinux = false
-BPF: no BTF file was found or provided
-BPF: trying non CO-RE eBPF at /tmp/tracee/tracee.bpf.5_8_0-63-generic.v0_6_5-20-g0b921b1.o
-KConfig: warning: assuming kconfig values, might have unexpected behavior
-TIME             UID    COMM             PID     TID     RET ...
+tracee@f65bab137305[/tracee]$ sudo ./dist/tracee-ebpf --log debug
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670973357.226559,&quot;msg&quot;:&quot;osinfo&quot;,&quot;VERSION_CODENAME&quot;:&quot;focal&quot;,&quot;KERNEL_RELEASE&quot;:&quot;5.4.0-91-generic&quot;,&quot;ARCH&quot;:&quot;x86_64&quot;,&quot;VERSION&quot;:&quot;\&quot;20.04.5 LTS (Focal Fossa)\&quot;&quot;,&quot;ID&quot;:&quot;ubuntu&quot;,&quot;ID_LIKE&quot;:&quot;debian&quot;,&quot;PRETTY_NAME&quot;:&quot;\&quot;Ubuntu 20.04.5 LTS\&quot;&quot;,&quot;VERSION_ID&quot;:&quot;\&quot;20.04\&quot;&quot;,&quot;pkg&quot;:&quot;urfave&quot;,&quot;file&quot;:&quot;urfave.go&quot;,&quot;line&quot;:53}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670973357.2265916,&quot;msg&quot;:&quot;RuntimeSockets: failed to register default&quot;,&quot;socket&quot;:&quot;containerd&quot;,&quot;error&quot;:&quot;failed to register runtime socket stat /var/run/containerd/containerd.sock: no such file or directory&quot;,&quot;pkg&quot;:&quot;flags&quot;,&quot;file&quot;:&quot;containers.go&quot;,&quot;line&quot;:45}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670973357.2266004,&quot;msg&quot;:&quot;RuntimeSockets: failed to register default&quot;,&quot;socket&quot;:&quot;docker&quot;,&quot;error&quot;:&quot;failed to register runtime socket stat /var/run/docker.sock: no such file or directory&quot;,&quot;pkg&quot;:&quot;flags&quot;,&quot;file&quot;:&quot;containers.go&quot;,&quot;line&quot;:45}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670973357.226606,&quot;msg&quot;:&quot;RuntimeSockets: failed to register default&quot;,&quot;socket&quot;:&quot;crio&quot;,&quot;error&quot;:&quot;failed to register runtime socket stat /var/run/crio/crio.sock: no such file or directory&quot;,&quot;pkg&quot;:&quot;flags&quot;,&quot;file&quot;:&quot;containers.go&quot;,&quot;line&quot;:45}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670973357.2266123,&quot;msg&quot;:&quot;RuntimeSockets: failed to register default&quot;,&quot;socket&quot;:&quot;podman&quot;,&quot;error&quot;:&quot;failed to register runtime socket stat /var/run/podman/podman.sock: no such file or directory&quot;,&quot;pkg&quot;:&quot;flags&quot;,&quot;file&quot;:&quot;containers.go&quot;,&quot;line&quot;:45}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670973357.2268527,&quot;msg&quot;:&quot;osinfo&quot;,&quot;security_lockdown&quot;:&quot;none&quot;,&quot;pkg&quot;:&quot;urfave&quot;,&quot;file&quot;:&quot;urfave.go&quot;,&quot;line&quot;:116}
+{&quot;level&quot;:&quot;warn&quot;,&quot;ts&quot;:1670973357.2268791,&quot;msg&quot;:&quot;KConfig: could not check enabled kconfig features&quot;,&quot;error&quot;:&quot;could not read /boot/config-5.4.0-91-generic: stat /boot/config-5.4.0-91-generic: no such file or directory&quot;}
+{&quot;level&quot;:&quot;warn&quot;,&quot;ts&quot;:1670973357.2268848,&quot;msg&quot;:&quot;KConfig: assuming kconfig values, might have unexpected behavior&quot;}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670973357.2268941,&quot;msg&quot;:&quot;BTF&quot;,&quot;bpfenv&quot;:false,&quot;btfenv&quot;:false,&quot;vmlinux&quot;:false,&quot;pkg&quot;:&quot;initialize&quot;,&quot;file&quot;:&quot;bpfobject.go&quot;,&quot;line&quot;:40}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670973357.2269084,&quot;msg&quot;:&quot;BPF: no BTF file was found or provided&quot;,&quot;pkg&quot;:&quot;initialize&quot;,&quot;file&quot;:&quot;bpfobject.go&quot;,&quot;line&quot;:108}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670973357.2269146,&quot;msg&quot;:&quot;BPF: trying non CO-RE eBPF&quot;,&quot;file&quot;:&quot;/tmp/tracee/tracee.bpf.5_4_0-91-generic.v0_8_0-rc-2-363-g3e73eeb1.o&quot;,&quot;pkg&quot;:&quot;initialize&quot;,&quot;file&quot;:&quot;bpfobject.go&quot;,&quot;line&quot;:109}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670973357.3408191,&quot;msg&quot;:&quot;Enricher&quot;,&quot;error&quot;:&quot;error registering enricher: unsupported runtime containerd&quot;,&quot;pkg&quot;:&quot;containers&quot;,&quot;file&quot;:&quot;containers.go&quot;,&quot;line&quot;:64}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670973357.3408432,&quot;msg&quot;:&quot;Enricher&quot;,&quot;error&quot;:&quot;error registering enricher: unsupported runtime crio&quot;,&quot;pkg&quot;:&quot;containers&quot;,&quot;file&quot;:&quot;containers.go&quot;,&quot;line&quot;:68}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670973357.340847,&quot;msg&quot;:&quot;Enricher&quot;,&quot;error&quot;:&quot;error registering enricher: unsupported runtime docker&quot;,&quot;pkg&quot;:&quot;containers&quot;,&quot;file&quot;:&quot;containers.go&quot;,&quot;line&quot;:72}
+{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670973357.561575,&quot;msg&quot;:&quot;KConfig: warning: assuming kconfig values, might have unexpected behavior&quot;,&quot;pkg&quot;:&quot;initialization&quot;,&quot;file&quot;:&quot;kconfig.go&quot;,&quot;line&quot;:30}
+TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
+...
 </code></pre></div>
 
 
