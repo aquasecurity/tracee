@@ -2294,6 +2294,12 @@ of a symbolic link won't work</p>
 3) --trace &#39;pid&gt;0&#39; --trace pid &#39;pid&lt;1000&#39;
 4) --trace pid=2578238 --trace event=openat --trace openat.pathname=/etc/shadow --trace follow
 </code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This filter can be used to trace a specific process or thread:
+1. Providing a tgid (aka pid) will trace all threads of the process.
+2. Providing a tid (where tid != tgid) will only trace the specific thread.</p>
+</div>
 </li>
 <li>
 <p><strong>Process Tree</strong></p>

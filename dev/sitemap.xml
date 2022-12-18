@@ -2,292 +2,292 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/guidelines/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/overview/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/building/building/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/building/containers/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/building/environment/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/building/macosx/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/building/nocore-ebpf/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/building/packaging/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/events/format/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/events/kprobes/do_sigaction/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/events/kprobes/kallsyms_lookup_name/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/events/lsm_hooks/security_file_mprotect/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/events/lsm_hooks/security_socket_setsockopt/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/events/security_alerts/magic_write/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/events/security_alerts/mem_prot_alert/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/events/security_alerts/symbols_loaded/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/overview/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/capturing/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/deep-dive/architecture/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/deep-dive/caching-events/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/deep-dive/dropping-capabilities/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/deep-dive/healthz/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/deep-dive/ordering-events/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/deep-dive/override-os-files/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/deep-dive/overview/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/deep-dive/performance/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/deep-dive/secure-tracing/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/detecting/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/detecting/avd/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/detecting/go-cel/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/detecting/golang/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/detecting/rego/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/detecting/rules/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/integrating/container-engines/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/integrating/falcosidekick/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/integrating/go-templates/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/integrating/postee/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/integrating/prometheus/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/integrating/webhook/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/tracing/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/tracing/event-filtering/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/tracing/network-events/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/tracing/output-formats/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/tracing/output-options/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/getting-started/docker-quickstart/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/getting-started/kubernetes-quickstart/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/getting-started/installing/docker/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/getting-started/installing/getting/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/getting-started/installing/headers/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/getting-started/installing/kubernetes/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/getting-started/installing/prerequisites/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/getting-started/installing/distros/fedora/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/getting-started/installing/distros/nix-nixos/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/getting-started/installing/distros/ubuntu/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/tutorials/deploy-grafana-dashboard/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/tutorials/everything-is-an-event/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/tutorials/setup-development-machine-with-vagrant/</loc>
-         <lastmod>2022-12-16</lastmod>
+         <lastmod>2022-12-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>

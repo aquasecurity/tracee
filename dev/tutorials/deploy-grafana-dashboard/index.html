@@ -2199,7 +2199,7 @@
 used alongside prometheus.</p>
 <p>Since version 0.7.0, tracee exports useful runtime metrics to prometheus.</p>
 <p>These metrics exports are enabled by default in all docker images and can be
-enabled using the <code>--metrics</code> flag in both <a href="https://github.com/aquasecurity/tracee/tree/v0.9.3/cmd/tracee-ebpf">tracee-ebpf</a> and <a href="https://github.com/aquasecurity/tracee/tree/v0.9.3/cmd/tracee-rules">tracee-rules</a>.</p>
+enabled using the <code>--metrics</code> flag in both <a href="https://github.com/aquasecurity/tracee/tree/v0.10.0/cmd/tracee-ebpf">tracee-ebpf</a> and <a href="https://github.com/aquasecurity/tracee/tree/v0.10.0/cmd/tracee-rules">tracee-rules</a>.</p>
 <p>By using grafana and the new metrics from tracee, we can deploy a simple
 dashboard which tracks your tracee's instance performance and outputs.</p>
 <h2 id="prequisites">Prequisites<a class="headerlink" href="#prequisites" title="Permanent link">&para;</a></h2>
@@ -2219,7 +2219,7 @@ forwarded through the following commands:</p>
     -v /tmp/tracee:/tmp/tracee  \
     -v /etc/os-release:/etc/os-release-host:ro \
     -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-    -it -p 3366:3366 -p 4466:4466 aquasec/tracee:v0.9.3
+    -it -p 3366:3366 -p 4466:4466 aquasec/tracee:v0.10.0
 </code></pre></div>
 <p>Of course, the forwarded metrics ports can be changed, but you should note that
 some of the later instructions depend on these ports.</p>

@@ -2182,7 +2182,7 @@ kube-system   storage-provisioner                1/1     Running   0          15
 <p>Tracee can be installed through a Kubernetes <a href="https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/">DaemonSet</a>. This tells Kubernetes to have a single tracee process on each node.</p>
 <p>You can find the full manifest on the <a href="https://github.com/aquasecurity/tracee/blob/main/deploy/kubernetes/tracee/tracee.yaml">tracee repository</a>.</p>
 <p>We can install the DaemonSet directly from the Tracee repository through the following command:</p>
-<div class="highlight"><pre><span></span><code>kubectl apply -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.9.3/deploy/kubernetes/tracee/tracee.yaml
+<div class="highlight"><pre><span></span><code>kubectl apply -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.10.0/deploy/kubernetes/tracee/tracee.yaml
 </code></pre></div>
 <p>You can verify that the tracee daemon set is running via:</p>
 <div class="highlight"><pre><span></span><code>kubectl get nodes 
