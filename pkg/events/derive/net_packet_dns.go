@@ -70,7 +70,7 @@ func deriveDNSRequestEvents(event trace.Event) ([]interface{}, error) {
 
 	// discover if it is a request or response
 
-	if dns.OpCode != "query" && dns.ANCount != 0 { // number of answers to expect
+	if dns.QR != 0 {
 		return nil, nil // not a dns request
 	}
 
@@ -87,7 +87,7 @@ func deriveDNSRequestEvents(event trace.Event) ([]interface{}, error) {
 	}
 
 	return []interface{}{
-		meta,
+		*meta,
 		requests,
 	}, nil
 }
@@ -118,7 +118,7 @@ func deriveDNSResponseEvents(event trace.Event) ([]interface{}, error) {
 
 	// discover if it is a request or response
 
-	if dns.OpCode != "query" || dns.ANCount == 0 { // number of answers to expect
+	if dns.QR != 1 {
 		return nil, nil // not a dns response
 	}
 
@@ -142,7 +142,7 @@ func deriveDNSResponseEvents(event trace.Event) ([]interface{}, error) {
 	}
 
 	return []interface{}{
-		meta,
+		*meta,
 		responses,
 	}, nil
 }
