@@ -10,6 +10,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -127,6 +128,9 @@ func (p tableEventPrinter) Print(event trace.Event) {
 	if p.relativeTS {
 		ut = ut.UTC()
 	}
+
+	isRule := event.EventID >= int(events.StartRulesID) && event.EventID < int(events.MaxRulesID)
+
 	timestamp := fmt.Sprintf("%02d:%02d:%02d:%06d", ut.Hour(), ut.Minute(), ut.Second(), ut.Nanosecond()/1000)
 
 	containerId := event.ContainerID
@@ -142,34 +146,35 @@ func (p tableEventPrinter) Print(event trace.Event) {
 	if len(eventName) > 20 {
 		eventName = eventName[:17] + "..."
 	}
-
+	var formatString string
 	if p.verbose {
 		switch p.containerMode {
 		case ContainerModeDisabled:
-			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-20s ", timestamp, event.HostName, containerId, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue, eventName)
+			formatString = fmt.Sprintf("%-16s %-16s %-13s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-20s ", timestamp, event.HostName, containerId, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue, eventName)
 		case ContainerModeEnabled:
-			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, event.HostName, containerId, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ParentProcessID, event.HostParentProcessID, event.ReturnValue, eventName)
+			formatString = fmt.Sprintf("%-16s %-16s %-13s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, event.HostName, containerId, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ParentProcessID, event.HostParentProcessID, event.ReturnValue, eventName)
 		case ContainerModeEnriched:
-			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, event.HostName, containerId, event.ContainerImage, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ParentProcessID, event.HostParentProcessID, event.ReturnValue, eventName)
+			formatString = fmt.Sprintf("%-16s %-16s %-13s %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, event.HostName, containerId, event.ContainerImage, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ParentProcessID, event.HostParentProcessID, event.ReturnValue, eventName)
 		}
 	} else {
 		switch p.containerMode {
 		case ContainerModeDisabled:
-			fmt.Fprintf(p.out, "%-16s %-6d %-16s %-7d %-7d %-16d %-20s ", timestamp, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ReturnValue, eventName)
+			formatString = fmt.Sprintf("%-16s %-6d %-16s %-7d %-7d %-16d %-20s ", timestamp, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ReturnValue, eventName)
 		case ContainerModeEnabled:
-			fmt.Fprintf(p.out, "%-16s %-13s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, containerId, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ReturnValue, eventName)
+			formatString = fmt.Sprintf("%-16s %-13s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, containerId, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ReturnValue, eventName)
 		case ContainerModeEnriched:
-			fmt.Fprintf(p.out, "%-16s %-13s %-16s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, containerId, containerImage, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ReturnValue, eventName)
+			formatString = fmt.Sprintf("%-16s %-13s %-16s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, containerId, containerImage, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ReturnValue, eventName)
 		}
 	}
+
 	for i, arg := range event.Args {
 		if i == 0 {
-			fmt.Fprintf(p.out, "%s: %v", arg.Name, arg.Value)
+			formatString = fmt.Sprintf(formatString+"%s: %v", arg.Name, arg.Value)
 		} else {
-			fmt.Fprintf(p.out, ", %s: %v", arg.Name, arg.Value)
+			formatString = fmt.Sprintf(formatString+", %s: %v", arg.Name, arg.Value)
 		}
 	}
-	fmt.Fprintln(p.out)
+	fmt.Fprintln(p.out, colorSprintf(formatString, isRule))
 }
 
 func (p tableEventPrinter) Epilogue(stats metrics.Stats) {
@@ -315,3 +320,11 @@ func (p *ignoreEventPrinter) Print(event trace.Event) {}
 func (p *ignoreEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p ignoreEventPrinter) Close() {}
+
+func colorSprintf(line string, isRule bool) string {
+	if !isRule {
+		return line
+	}
+	return fmt.Sprintf("\033[31m%s\033[0m", line)
+
+}
