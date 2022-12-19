@@ -7343,6 +7343,7 @@ static __always_inline u64 sizeof_net_event_context_t(void)
 static __always_inline void set_net_task_context(event_data_t *data, net_task_context_t *netctx)
 {
     netctx->task = data->task;
+    __builtin_memset(&netctx->taskctx, 0, sizeof(task_context_t));
     __builtin_memcpy(&netctx->taskctx, &data->context.task, sizeof(task_context_t));
 }
 
