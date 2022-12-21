@@ -2388,7 +2388,7 @@ out:
 static __always_inline int save_args_str_arr_to_buf(
     event_data_t *data, const char *start, const char *end, int elem_num, u8 index)
 {
-    // Data saved to submit buf: [index][len][arg #][null delimited string array]
+    // Data saved to submit buf: [index][len][arg_len][arg #][null delimited string array]
     // Note: This helper saves null (0x00) delimited string array into buf
 
     if (start >= end)
