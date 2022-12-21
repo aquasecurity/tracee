@@ -198,6 +198,7 @@ type Tracee struct {
 	containers        *containers.Containers
 	procInfo          *procinfo.ProcInfo
 	eventsSorter      *sorting.EventsChronologicalSorter
+	eventProcessor    map[events.ID][]func(evt *trace.Event) error
 	eventDerivations  derive.Table
 	kernelSymbols     *helpers.KernelSymbolTable
 	triggerContexts   trigger.Context
@@ -334,6 +335,9 @@ func New(cfg Config) (*Tracee, error) {
 	if err != nil {
 		return t, err
 	}
+
+	// Register default event processors
+	t.registerEventProcessors()
 
 	// Configure network interfaces map (TODO: remove this with cgroup/skb code)
 

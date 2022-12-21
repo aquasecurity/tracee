@@ -263,9 +263,11 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (<-c
 		defer close(out)
 		defer close(errc)
 		for event := range in {
-			err := t.processEvent(event)
-			if err != nil {
-				t.handleError(err)
+			errs := t.processEvent(event)
+			if len(errs) > 0 {
+				for _, err := range errs {
+					t.handleError(err)
+				}
 				continue
 			}
 
