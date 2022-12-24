@@ -2140,36 +2140,30 @@ static __always_inline int cache_event_data(event_data_t *data)
     return bpf_probe_read(presv_data, sizeof(event_data_t), data);
 }
 
-static __always_inline int get_cached_event_data(event_data_t *data, void *ctx)
+static __always_inline event_data_t *get_cached_event_data(void *ctx)
 {
-    if (data == NULL) {
-        return -1;
-    }
     u32 zero = 0;
-    event_data_t *presv_data = bpf_map_lookup_elem(&cached_event_data_map, &zero);
-    if (presv_data == NULL)
-        return -2;
-    int read_ret = bpf_probe_read(data, sizeof(event_data_t), presv_data);
-    if (read_ret)
-        return -3;
+    event_data_t *data = bpf_map_lookup_elem(&cached_event_data_map, &zero);
+    if (data == NULL)
+        return NULL;
 
     data->ctx = ctx;
 
     data->config = bpf_map_lookup_elem(&config_map, &zero);
     if (unlikely(data->config == NULL))
-        return -4;
+        return NULL;
 
     int buf_idx = SUBMIT_BUF_IDX;
     data->submit_p = bpf_map_lookup_elem(&bufs, &buf_idx);
     if (unlikely(data->submit_p == NULL))
-        return -5;
+        return NULL;
 
     data->task_info = bpf_map_lookup_elem(&task_info_map, &data->context.task.host_tid);
     if (unlikely(data->task_info == NULL)) {
-        return -6;
+        return NULL;
     }
 
-    return 0;
+    return data;
 }
 
 static __always_inline buf_t *get_buf(int idx)
@@ -3770,8 +3764,8 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 SEC("raw_tracepoint/sched_process_exec_event_submit_tail")
 int sched_process_exec_event_submit_tail(struct bpf_raw_tracepoint_args *ctx)
 {
-    event_data_t data = {};
-    if (get_cached_event_data(&data, ctx) != 0) {
+    event_data_t *data = get_cached_event_data(ctx);
+    if (data == NULL) {
         return -1;
     }
 
@@ -3798,21 +3792,21 @@ int sched_process_exec_event_submit_tail(struct bpf_raw_tracepoint_args *ctx)
     if (get_task_parent_flags(task) & PF_KTHREAD) {
         invoked_from_kernel = 1;
     }
-    save_args_str_arr_to_buf(&data, (void *) arg_start, (void *) arg_end, argc, 10);
-    save_str_to_buf(&data, (void *) interp, 11);
-    save_to_submit_buf(&data, &stdin_type, sizeof(unsigned short), 12);
-    save_str_to_buf(&data, stdin_path, 13);
-    save_to_submit_buf(&data, &invoked_from_kernel, sizeof(int), 14);
-    if (data.config->options & OPT_EXEC_ENV) {
+    save_args_str_arr_to_buf(data, (void *) arg_start, (void *) arg_end, argc, 10);
+    save_str_to_buf(data, (void *) interp, 11);
+    save_to_submit_buf(data, &stdin_type, sizeof(unsigned short), 12);
+    save_str_to_buf(data, stdin_path, 13);
+    save_to_submit_buf(data, &invoked_from_kernel, sizeof(int), 14);
+    if (data->config->options & OPT_EXEC_ENV) {
         unsigned long env_start, env_end;
         env_start = get_env_start_from_mm(mm);
         env_end = get_env_end_from_mm(mm);
         int envc = get_envc_from_bprm(bprm);
 
-        save_args_str_arr_to_buf(&data, (void *) env_start, (void *) env_end, envc, 15);
+        save_args_str_arr_to_buf(data, (void *) env_start, (void *) env_end, envc, 15);
     }
 
-    events_perf_submit(&data, SCHED_PROCESS_EXEC, 0);
+    events_perf_submit(data, SCHED_PROCESS_EXEC, 0);
     return 0;
 }
 
