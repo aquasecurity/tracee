@@ -409,7 +409,6 @@ enum event_id_e
     SCHED_PROCESS_FORK,
     SCHED_PROCESS_EXEC,
     SCHED_PROCESS_EXIT,
-    SCHED_PROCESS_FREE,
     SCHED_SWITCH,
     DO_EXIT,
     CAP_CAPABLE,
@@ -3872,20 +3871,6 @@ int tracepoint__sched__sched_process_free(struct bpf_raw_tracepoint_args *ctx)
         // so we can safely remove it from the process map
         bpf_map_delete_elem(&proc_info_map, &tgid);
         bpf_map_delete_elem(&process_tree_map, &tgid);
-    }
-
-    event_data_t data = {};
-    if (!init_event_data(&data, ctx))
-        return 0;
-
-    if (!should_trace(&data))
-        return 0;
-
-    if (should_submit(SCHED_PROCESS_FREE, data.config) || data.config->options & OPT_PROCESS_INFO) {
-        save_to_submit_buf(&data, (void *) &pid, sizeof(int), 0);
-        save_to_submit_buf(&data, (void *) &tgid, sizeof(int), 1);
-
-        events_perf_submit(&data, SCHED_PROCESS_FREE, 0);
     }
 
     return 0;

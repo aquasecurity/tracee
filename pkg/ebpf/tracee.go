@@ -218,7 +218,6 @@ func GetEssentialEventsList() map[events.ID]eventConfig {
 		events.SchedProcessExec: {},
 		events.SchedProcessExit: {},
 		events.SchedProcessFork: {},
-		events.SchedProcessFree: {},
 		events.CgroupMkdir:      {submit: true},
 		events.CgroupRmdir:      {submit: true},
 	}
