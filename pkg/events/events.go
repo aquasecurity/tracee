@@ -172,7 +172,6 @@ const (
 	SchedProcessFork
 	SchedProcessExec
 	SchedProcessExit
-	SchedProcessFree
 	SchedSwitch
 	DoExit
 	CapCapable
@@ -5033,6 +5032,7 @@ var Definitions = eventDefinitions{
 			Name:    "sched_process_exit",
 			Probes: []probeDependency{
 				{Handle: probes.SchedProcessExit, Required: true},
+				{Handle: probes.SchedProcessFree, Required: true},
 			},
 			Sets: []string{"default", "proc", "proc_life"},
 			Params: []trace.ArgMeta{
@@ -5041,18 +5041,6 @@ var Definitions = eventDefinitions{
 				// Multiple exits of threads of the same process group at the same time could result that all threads exit
 				// events would have 'true' value in this field altogether.
 				{Type: "bool", Name: "process_group_exit"},
-			},
-		},
-		SchedProcessFree: {
-			ID32Bit: sys32undefined,
-			Name:    "sched_process_free",
-			Probes: []probeDependency{
-				{Handle: probes.SchedProcessFree, Required: true},
-			},
-			Sets: []string{"proc", "proc_life"},
-			Params: []trace.ArgMeta{
-				{Type: "int", Name: "tid"},
-				{Type: "int", Name: "pid"},
 			},
 		},
 		SchedSwitch: {
