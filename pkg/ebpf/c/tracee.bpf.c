@@ -2260,16 +2260,17 @@ static __always_inline int save_str_to_buf(event_data_t *data, void *ptr, u8 ind
         // Read into buffer
         int sz = bpf_probe_read_str(
             &(data->submit_p->buf[data->buf_off + 1 + sizeof(int)]), MAX_STRING_SIZE, ptr);
-        if (sz > 0) {
-            // Satisfy validator for probe read
-            if ((data->buf_off + 1) > MAX_PERCPU_BUFSIZE - sizeof(int)) {
-                return 0;
-            }
-            __builtin_memcpy(&(data->submit_p->buf[data->buf_off + 1]), &sz, sizeof(int));
-            data->buf_off += sz + sizeof(int) + 1;
-            data->context.argnum++;
-            return 1;
+        if (sz < 0) {
+            sz = 0; // save empty string if failed to read a proper one
         }
+        // Satisfy validator for probe read
+        if ((data->buf_off + 1) > MAX_PERCPU_BUFSIZE - sizeof(int)) {
+            return 0;
+        }
+        __builtin_memcpy(&(data->submit_p->buf[data->buf_off + 1]), &sz, sizeof(int));
+        data->buf_off += sz + sizeof(int) + 1;
+        data->context.argnum++;
+        return 1;
     }
 
     return 0;
@@ -2744,6 +2745,8 @@ static __always_inline int save_args_to_submit_buf(event_data_t *data, u64 types
                 size = sizeof(int[2]);
                 rc = save_to_submit_buf(data, (void *) (args->args[i]), size, index);
                 break;
+            case STR_ARR_T:
+                save_str_arr_to_buf(data, (void *) args->args[i], index);
         }
         if ((type != NONE_T) && (type != STR_T) && (type != SOCKADDR_T) && (type != INT_ARR_2_T)) {
             rc = save_to_submit_buf(data, (void *) &(args->args[i]), size, index);

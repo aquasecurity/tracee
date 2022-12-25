@@ -340,6 +340,9 @@ func readStringFromBuff(ebpfMsgDecoder *EbpfDecoder) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error reading string size: %v", err)
 	}
+	if size == 0 {
+		return "", nil
+	}
 	if size > 4096 {
 		return "", fmt.Errorf("string size too big: %d", size)
 	}
