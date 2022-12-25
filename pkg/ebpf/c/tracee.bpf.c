@@ -982,6 +982,12 @@ typedef struct bpf_log_output {
     struct bpf_log log;
 } bpf_log_output_t;
 
+typedef union scratch {
+    bpf_log_output_t log_output;
+    proc_info_t proc_info;
+    task_info_t task_info;
+} scratch_t;
+
 // KERNEL STRUCTS ----------------------------------------------------------------------------------
 
 #ifndef CORE
@@ -1049,7 +1055,7 @@ BPF_LRU_HASH(bpf_attach_map, u32, bpf_attach_t, 1024);             // holds bpf 
 BPF_LRU_HASH(bpf_attach_tmp_map, u32, bpf_attach_t, 1024);         // temporarily hold bpf_attach_t
 BPF_PERCPU_ARRAY(cached_event_data_map, event_data_t, 1);          // cached event data between chained tail calls
 BPF_HASH(logs_count, bpf_log_t, bpf_log_count_t, 4096);            // logs count
-BPF_PERCPU_ARRAY(log_output_scratch, bpf_log_output_t, 1);         // log output scratch
+BPF_PERCPU_ARRAY(scratch_map, scratch_t, 1);                       // scratch space to avoid allocating stuff on the stack
 // clang-format on
 
 // EBPF PERF BUFFERS -------------------------------------------------------------------------------
@@ -1072,7 +1078,7 @@ static __always_inline void do_tracee_log(
         return;
 
     u32 zero = 0;
-    bpf_log_output_t *log_output = bpf_map_lookup_elem(&log_output_scratch, &zero);
+    bpf_log_output_t *log_output = bpf_map_lookup_elem(&scratch_map, &zero);
     if (unlikely(log_output == NULL))
         return;
 
@@ -1854,38 +1860,27 @@ static __always_inline task_info_t *init_task_info(u32 tid, u32 pid, bool *initi
         *initialized = task_info == NULL;
     }
     if (unlikely(task_info == NULL)) {
-        // get the submit buffer to fill the task_info_t in the map
-        // this is done because allocating the stack space for task_info_t usually
-        // crosses the verifier limit.
-        // todo: use scratch map both for proc_info and thread_info to avoid using submit_buffer
-        int buf_idx = SUBMIT_BUF_IDX;
-        void *submit_buffer = bpf_map_lookup_elem(&bufs, &buf_idx);
-        if (unlikely(submit_buffer == NULL))
+        int zero = 0;
+
+        scratch_t *scratch = bpf_map_lookup_elem(&scratch_map, &zero);
+        if (unlikely(scratch == NULL))
             return NULL;
 
-        bpf_map_update_elem(&task_info_map, &tid, submit_buffer, BPF_NOEXIST);
-        task_info = bpf_map_lookup_elem(&task_info_map, &tid);
-        // appease the verifier
-        if (unlikely(task_info == NULL)) {
-            return NULL;
-        }
         proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &pid);
         if (proc_info == NULL) {
-            bpf_map_update_elem(&proc_info_map, &pid, submit_buffer, BPF_NOEXIST);
-            proc_info = bpf_map_lookup_elem(&proc_info_map, &pid);
-            // appease the verifier
-            if (unlikely(proc_info == NULL)) {
-                return NULL;
-            }
+            scratch->proc_info.new_proc = false;
+            scratch->proc_info.follow = false;
+            __builtin_memset(scratch->proc_info.binary, 0, MAX_BIN_PATH_SIZE);
 
-            proc_info->new_proc = false;
-            proc_info->follow = false;
-            __builtin_memset(proc_info->binary, 0, MAX_BIN_PATH_SIZE);
+            bpf_map_update_elem(&proc_info_map, &pid, &scratch->proc_info, BPF_NOEXIST);
         }
 
-        task_info->syscall_traced = false;
-        task_info->recompute_scope = true;
-        task_info->container_state = CONTAINER_UNKNOWN;
+        scratch->task_info.syscall_traced = false;
+        scratch->task_info.recompute_scope = true;
+        scratch->task_info.container_state = CONTAINER_UNKNOWN;
+
+        bpf_map_update_elem(&task_info_map, &tid, &scratch->task_info, BPF_NOEXIST);
+        task_info = bpf_map_lookup_elem(&task_info_map, &tid);
     }
     return task_info;
 }
