@@ -2179,23 +2179,23 @@ static __always_inline int save_to_submit_buf(event_data_t *data, void *ptr, u32
     if (size == 0)
         return 0;
 
-    // If we don't have enough space - return
-    if (data->buf_off > MAX_PERCPU_BUFSIZE - (size + 1))
+    barrier();
+    if (data->buf_off > MAX_PERCPU_BUFSIZE - 1)
         return 0;
 
     // Save argument index
-    volatile int buf_off = data->buf_off;
-    data->submit_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)] = index;
+    data->submit_p->buf[data->buf_off] = index;
 
-    // Satisfy validator for probe read
-    if ((data->buf_off + 1) <= MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE) {
-        // Read into buffer
-        if (bpf_probe_read(&(data->submit_p->buf[data->buf_off + 1]), size, ptr) == 0) {
-            // We update buf_off only if all writes were successful
-            data->buf_off += size + 1;
-            data->context.argnum++;
-            return 1;
-        }
+    // Satisfy verifier
+    if (data->buf_off > MAX_PERCPU_BUFSIZE - (MAX_ELEMENT_SIZE + 1))
+        return 0;
+
+    // Read into buffer
+    if (bpf_probe_read(&(data->submit_p->buf[data->buf_off + 1]), size, ptr) == 0) {
+        // We update buf_off only if all writes were successful
+        data->buf_off += size + 1;
+        data->context.argnum++;
+        return 1;
     }
 
     return 0;
@@ -2208,30 +2208,31 @@ static __always_inline int save_bytes_to_buf(event_data_t *data, void *ptr, u32 
     if (size == 0)
         return 0;
 
-    // If we don't have enough space - return
-    if (data->buf_off > MAX_PERCPU_BUFSIZE - (size + 1 + sizeof(int)))
+    if (data->buf_off > MAX_PERCPU_BUFSIZE - 1)
         return 0;
 
     // Save argument index
-    data->submit_p->buf[(data->buf_off) & (MAX_PERCPU_BUFSIZE - 1)] = index;
+    data->submit_p->buf[data->buf_off] = index;
 
-    if ((data->buf_off + 1) <= MAX_PERCPU_BUFSIZE - MAX_BYTES_ARR_SIZE - sizeof(int)) {
-        // Save size to buffer
-        if (bpf_probe_read(&(data->submit_p->buf[data->buf_off + 1]), sizeof(int), &size) != 0) {
-            return 0;
-        }
+    if (data->buf_off > MAX_PERCPU_BUFSIZE - (sizeof(int) + 1))
+        return 0;
+
+    // Save size to buffer
+    if (bpf_probe_read(&(data->submit_p->buf[data->buf_off + 1]), sizeof(int), &size) != 0) {
+        return 0;
     }
 
-    if ((data->buf_off + 1 + sizeof(int)) <= MAX_PERCPU_BUFSIZE - MAX_BYTES_ARR_SIZE) {
-        // Read bytes into buffer
-        if (bpf_probe_read(&(data->submit_p->buf[data->buf_off + 1 + sizeof(int)]),
-                           size & (MAX_BYTES_ARR_SIZE - 1),
-                           ptr) == 0) {
-            // We update buf_off only if all writes were successful
-            data->buf_off += size + 1 + sizeof(int);
-            data->context.argnum++;
-            return 1;
-        }
+    if (data->buf_off > MAX_PERCPU_BUFSIZE - (MAX_BYTES_ARR_SIZE + 1 + sizeof(int)))
+        return 0;
+
+    // Read bytes into buffer
+    if (bpf_probe_read(&(data->submit_p->buf[data->buf_off + 1 + sizeof(int)]),
+                       size & (MAX_BYTES_ARR_SIZE - 1),
+                       ptr) == 0) {
+        // We update buf_off only if all writes were successful
+        data->buf_off += size + 1 + sizeof(int);
+        data->context.argnum++;
+        return 1;
     }
 
     return 0;
@@ -2240,28 +2241,29 @@ static __always_inline int save_bytes_to_buf(event_data_t *data, void *ptr, u32 
 static __always_inline int save_str_to_buf(event_data_t *data, void *ptr, u8 index)
 {
     // Data saved to submit buf: [index][size][ ... string ... ]
-    // Note: If we don't have enough space - return
-    if (data->buf_off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
+
+    if (data->buf_off > MAX_PERCPU_BUFSIZE - 1)
         return 0;
 
     // Save argument index
-    data->submit_p->buf[(data->buf_off) & (MAX_PERCPU_BUFSIZE - 1)] = index;
+    data->submit_p->buf[data->buf_off] = index;
 
-    // Satisfy validator for probe read
-    if ((data->buf_off + 1) <= MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int)) {
-        // Read into buffer
-        int sz = bpf_probe_read_str(
-            &(data->submit_p->buf[data->buf_off + 1 + sizeof(int)]), MAX_STRING_SIZE, ptr);
-        if (sz > 0) {
-            // Satisfy validator for probe read
-            if ((data->buf_off + 1) > MAX_PERCPU_BUFSIZE - sizeof(int)) {
-                return 0;
-            }
-            __builtin_memcpy(&(data->submit_p->buf[data->buf_off + 1]), &sz, sizeof(int));
-            data->buf_off += sz + sizeof(int) + 1;
-            data->context.argnum++;
-            return 1;
-        }
+    // Satisfy verifier for probe read
+    if (data->buf_off > MAX_PERCPU_BUFSIZE - (MAX_STRING_SIZE + 1 + sizeof(int)))
+        return 0;
+
+    // Read into buffer
+    int sz = bpf_probe_read_str(
+        &(data->submit_p->buf[data->buf_off + 1 + sizeof(int)]), MAX_STRING_SIZE, ptr);
+    if (sz > 0) {
+        // Satisfy verifier for probe read
+        if (data->buf_off > MAX_PERCPU_BUFSIZE - (MAX_STRING_SIZE + 1 + sizeof(int)))
+            return 0;
+
+        __builtin_memcpy(&(data->submit_p->buf[data->buf_off + 1]), &sz, sizeof(int));
+        data->buf_off += sz + sizeof(int) + 1;
+        data->context.argnum++;
+        return 1;
     }
 
     return 0;
@@ -2270,6 +2272,8 @@ static __always_inline int save_str_to_buf(event_data_t *data, void *ptr, u8 ind
 static __always_inline int
 add_u64_elements_to_buf(event_data_t *data, const u64 __user *ptr, int len, volatile u32 count_off)
 {
+    // save count_off into a new variable to avoid verifier errors
+    u32 off = count_off;
     u8 elem_num = 0;
 #pragma unroll
     for (int i = 0; i < len; i++) {
@@ -2284,12 +2288,11 @@ add_u64_elements_to_buf(event_data_t *data, const u64 __user *ptr, int len, vola
     }
 out:
     // save number of elements in the array
-    if (count_off > (MAX_PERCPU_BUFSIZE - 1))
+    if (off > (MAX_PERCPU_BUFSIZE - 1))
         return 0;
-    if (count_off < 0)
-        return 0;
-    u8 current_elem_num = data->submit_p->buf[count_off & (MAX_PERCPU_BUFSIZE - 1)];
-    data->submit_p->buf[count_off & (MAX_PERCPU_BUFSIZE - 1)] = current_elem_num + elem_num;
+
+    u8 current_elem_num = data->submit_p->buf[off];
+    data->submit_p->buf[off] = current_elem_num + elem_num;
 
     return 1;
 }
