@@ -1852,36 +1852,41 @@ init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 
     return 0;
 }
 
-static __always_inline task_info_t *init_task_info(u32 tid, u32 pid, bool *initialized)
+static __always_inline task_info_t *init_task_info(u32 tid, u32 pid)
 {
     task_info_t *task_info = bpf_map_lookup_elem(&task_info_map, &tid);
-    if (initialized != NULL) {
-        *initialized = task_info == NULL;
+    if (likely(task_info != NULL))
+        return task_info;
+
+    int zero = 0;
+    scratch_t *scratch = bpf_map_lookup_elem(&scratch_map, &zero);
+    if (unlikely(scratch == NULL))
+        return NULL;
+
+    proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &pid);
+    if (proc_info == NULL) {
+        scratch->proc_info.new_proc = false;
+        scratch->proc_info.follow = false;
+        __builtin_memset(scratch->proc_info.binary, 0, MAX_BIN_PATH_SIZE);
+        bpf_map_update_elem(&proc_info_map, &pid, &scratch->proc_info, BPF_NOEXIST);
     }
-    if (unlikely(task_info == NULL)) {
-        int zero = 0;
 
-        scratch_t *scratch = bpf_map_lookup_elem(&scratch_map, &zero);
-        if (unlikely(scratch == NULL))
-            return NULL;
+    scratch->task_info.syscall_traced = false;
+    scratch->task_info.recompute_scope = true;
+    scratch->task_info.container_state = CONTAINER_UNKNOWN;
+    bpf_map_update_elem(&task_info_map, &tid, &scratch->task_info, BPF_NOEXIST);
 
-        proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &pid);
-        if (proc_info == NULL) {
-            scratch->proc_info.new_proc = false;
-            scratch->proc_info.follow = false;
-            __builtin_memset(scratch->proc_info.binary, 0, MAX_BIN_PATH_SIZE);
+    return bpf_map_lookup_elem(&task_info_map, &tid);
+}
 
-            bpf_map_update_elem(&proc_info_map, &pid, &scratch->proc_info, BPF_NOEXIST);
-        }
-
-        scratch->task_info.syscall_traced = false;
-        scratch->task_info.recompute_scope = true;
-        scratch->task_info.container_state = CONTAINER_UNKNOWN;
-
-        bpf_map_update_elem(&task_info_map, &tid, &scratch->task_info, BPF_NOEXIST);
-        task_info = bpf_map_lookup_elem(&task_info_map, &tid);
-    }
-    return task_info;
+static __always_inline bool context_changed(task_context_t *old, task_context_t *new)
+{
+    return (old->cgroup_id != new->cgroup_id) || old->uid != new->uid ||
+           old->mnt_id != new->mnt_id || old->pid_id != new->pid_id ||
+           *(u64 *) old->comm != *(u64 *) new->comm ||
+           *(u64 *) &old->comm[8] != *(u64 *) &new->comm[8] ||
+           *(u64 *) old->uts_name != *(u64 *) new->uts_name ||
+           *(u64 *) &old->uts_name[8] != *(u64 *) &new->uts_name[8];
 }
 
 static __always_inline int init_event_data(event_data_t *data, void *ctx)
@@ -1906,36 +1911,29 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
     if (unlikely(data->submit_p == NULL))
         return 0;
 
-    // check if task_info was initialized in this call
-    bool task_info_initalized = false;
-    data->task_info = init_task_info(
-        data->context.task.host_tid, data->context.task.host_pid, &task_info_initalized);
-    if (unlikely(data->task_info == NULL)) {
-        return 0;
-    }
     bool container_lookup_required = true;
-    if (!task_info_initalized) {
-        // check if we need to recompute scope due to context change
-        task_context_t *old_context = &data->task_info->context;
-        task_context_t *new_context = &data->context.task;
-
-        if ((old_context->cgroup_id != new_context->cgroup_id) ||
-            old_context->uid != new_context->uid || old_context->mnt_id != new_context->mnt_id ||
-            old_context->pid_id != new_context->pid_id ||
-            *(u64 *) old_context->comm != *(u64 *) new_context->comm ||
-            *(u64 *) &old_context->comm[8] != *(u64 *) &new_context->comm[8] ||
-            *(u64 *) old_context->uts_name != *(u64 *) new_context->uts_name ||
-            *(u64 *) &old_context->uts_name[8] != *(u64 *) &new_context->uts_name[8])
-            data->task_info->recompute_scope = true;
-
-        // If task is already part of a container, there is no need to check if state changed
-        if (data->task_info->container_state == CONTAINER_STARTED ||
-            data->task_info->container_state == CONTAINER_EXISTED) {
-            data->context.task.flags |= CONTAINER_STARTED_FLAG;
-            container_lookup_required = false;
+    data->task_info = bpf_map_lookup_elem(&task_info_map, &data->context.task.host_tid);
+    if (unlikely(data->task_info == NULL)) {
+        data->task_info = init_task_info(data->context.task.host_tid, data->context.task.host_pid);
+        if (unlikely(data->task_info == NULL)) {
+            return 0;
         }
+        // we just initialized task info so we know that recompute_scope is already set to true
+        goto out;
     }
 
+    // check if we need to recompute scope due to context change
+    if (context_changed(&data->task_info->context, &data->context.task))
+        data->task_info->recompute_scope = true;
+
+    // If task is already part of a container, there is no need to check if state changed
+    u8 container_state = data->task_info->container_state;
+    if (container_state == CONTAINER_STARTED || container_state == CONTAINER_EXISTED) {
+        data->context.task.flags |= CONTAINER_STARTED_FLAG;
+        container_lookup_required = false;
+    }
+
+out:
     if (container_lookup_required) {
         u32 cgroup_id_lsb = data->context.task.cgroup_id;
         u8 *state = bpf_map_lookup_elem(&containers_map, &cgroup_id_lsb);
@@ -3164,9 +3162,14 @@ int sys_enter_init(struct bpf_raw_tracepoint_args *ctx)
     struct task_struct *task = (struct task_struct *) bpf_get_current_task();
 
     u64 pid_tgid = bpf_get_current_pid_tgid();
-    task_info_t *task_info = init_task_info(pid_tgid, pid_tgid >> 32, NULL);
+    u32 tid = pid_tgid;
+    task_info_t *task_info = bpf_map_lookup_elem(&task_info_map, &tid);
     if (unlikely(task_info == NULL)) {
-        return 0;
+        u32 pid = pid_tgid >> 32;
+        task_info = init_task_info(tid, pid);
+        if (unlikely(task_info == NULL)) {
+            return 0;
+        }
     }
 
     syscall_data_t *sys = &(task_info->syscall_data);
@@ -3302,9 +3305,14 @@ int sys_exit_init(struct bpf_raw_tracepoint_args *ctx)
     struct task_struct *task = (struct task_struct *) bpf_get_current_task();
 
     u64 pid_tgid = bpf_get_current_pid_tgid();
-    task_info_t *task_info = init_task_info(pid_tgid, pid_tgid >> 32, NULL);
+    u32 tid = pid_tgid;
+    task_info_t *task_info = bpf_map_lookup_elem(&task_info_map, &tid);
     if (unlikely(task_info == NULL)) {
-        return 0;
+        u32 pid = pid_tgid >> 32;
+        task_info = init_task_info(tid, pid);
+        if (unlikely(task_info == NULL)) {
+            return 0;
+        }
     }
 
     // check if syscall is being traced and mark that it finished
