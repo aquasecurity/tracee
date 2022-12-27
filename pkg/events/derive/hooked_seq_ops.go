@@ -1,7 +1,6 @@
 package derive
 
 import (
-	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -26,12 +25,12 @@ var NetSeqOpsFuncs = [4]string{
 	"stop",
 }
 
-func HookedSeqOps(kernelSymbols *helpers.KernelSymbolTable) deriveFunction {
-	return deriveSingleEvent(events.HookedSeqOps, deriveHookedSeqOpsArgs(kernelSymbols))
+func HookedSeqOps() deriveFunction {
+	return deriveSingleEvent(events.HookedSeqOps, deriveHookedSeqOpsArgs())
 
 }
 
-func deriveHookedSeqOpsArgs(kernelSymbols *helpers.KernelSymbolTable) deriveArgsFunction {
+func deriveHookedSeqOpsArgs() deriveArgsFunction {
 	return func(event trace.Event) ([]interface{}, error) {
 		seqOpsArr, err := parse.ArgVal[[]uint64](&event, "net_seq_ops")
 		if err != nil || len(seqOpsArr) < 1 {
@@ -39,12 +38,12 @@ func deriveHookedSeqOpsArgs(kernelSymbols *helpers.KernelSymbolTable) deriveArgs
 		}
 		hookedSeqOps := make(map[string]trace.HookedSymbolData, 0)
 		for i, addr := range seqOpsArr {
-			inTextSegment, err := kernelSymbols.TextSegmentContains(addr)
+			inTextSegment, err := KernelSymbols.TextSegmentContains(addr)
 			if err != nil {
 				continue
 			}
 			if !inTextSegment {
-				hookingFunction := utils.ParseSymbol(addr, kernelSymbols)
+				hookingFunction := utils.ParseSymbol(addr, KernelSymbols)
 				seqOpsStruct := NetSeqOps[i/4]
 				seqOpsFunc := NetSeqOpsFuncs[i%4]
 				hookedSeqOps[seqOpsStruct+"_"+seqOpsFunc] =

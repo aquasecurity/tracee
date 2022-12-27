@@ -1,9 +1,12 @@
 package derive
 
 import (
+	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 )
+
+var KernelSymbols *helpers.KernelSymbolTable
 
 // deriveFunction is a function prototype for a function that receives an event as
 // argument and may produce a new event if relevant.

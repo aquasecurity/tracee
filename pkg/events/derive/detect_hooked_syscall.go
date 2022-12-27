@@ -10,17 +10,17 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-func DetectHookedSyscall(kernelSymbols *helpers.KernelSymbolTable) deriveFunction {
-	return deriveSingleEvent(events.HookedSyscalls, deriveDetectHookedSyscallArgs(kernelSymbols))
+func DetectHookedSyscall() deriveFunction {
+	return deriveSingleEvent(events.HookedSyscalls, deriveDetectHookedSyscallArgs())
 }
 
-func deriveDetectHookedSyscallArgs(kernelSymbols *helpers.KernelSymbolTable) deriveArgsFunction {
+func deriveDetectHookedSyscallArgs() deriveArgsFunction {
 	return func(event trace.Event) ([]interface{}, error) {
 		syscallAddresses, err := parse.ArgVal[[]uint64](&event, "syscalls_addresses")
 		if err != nil {
 			return nil, fmt.Errorf("error parsing syscalls_numbers arg: %v", err)
 		}
-		hookedSyscall, err := analyzeHookedAddresses(syscallAddresses, kernelSymbols)
+		hookedSyscall, err := analyzeHookedAddresses(syscallAddresses, KernelSymbols)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing analyzing hooked syscalls addresses arg: %v", err)
 		}

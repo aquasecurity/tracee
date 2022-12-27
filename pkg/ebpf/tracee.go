@@ -395,6 +395,7 @@ func (t *Tracee) Init() error {
 			if !initialization.ValidateKsymbolsTable(t.kernelSymbols) {
 				return fmt.Errorf("kernel symbols were not loaded currectly")
 			}
+			derive.KernelSymbols = t.kernelSymbols
 			return nil
 
 		}, cap.SYSLOG)
@@ -667,7 +668,7 @@ func (t *Tracee) initDerivationTable() error {
 		events.PrintSyscallTable: {
 			events.HookedSyscalls: {
 				Enabled:        t.events[events.PrintSyscallTable].submit,
-				DeriveFunction: derive.DetectHookedSyscall(t.kernelSymbols),
+				DeriveFunction: derive.DetectHookedSyscall(),
 			},
 		},
 		events.DnsRequest: {
@@ -685,7 +686,7 @@ func (t *Tracee) initDerivationTable() error {
 		events.PrintNetSeqOps: {
 			events.HookedSeqOps: {
 				Enabled:        t.events[events.HookedSeqOps].submit,
-				DeriveFunction: derive.HookedSeqOps(t.kernelSymbols),
+				DeriveFunction: derive.HookedSeqOps(),
 			},
 		},
 		events.SharedObjectLoaded: {
@@ -1678,6 +1679,7 @@ func (t *Tracee) updateKallsyms() error {
 			return errors.New("invalid ksymbol table")
 		}
 		t.kernelSymbols = kernelSymbols
+		derive.KernelSymbols = kernelSymbols
 
 		return nil
 
