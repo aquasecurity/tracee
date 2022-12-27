@@ -5845,8 +5845,8 @@ var Definitions = eventDefinitions{
 		SharedObjectLoaded: {
 			ID32Bit: sys32undefined,
 			Name:    "shared_object_loaded",
-			Dependencies: dependencies{
-				Events: []eventDependency{{EventID: SecurityMmapFile}},
+			Probes: []probeDependency{
+				{Handle: probes.SecurityMmapFile, Required: true},
 			},
 			Sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
 			Params: []trace.ArgMeta{
