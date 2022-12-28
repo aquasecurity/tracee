@@ -304,7 +304,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		_, ok2 := t.events[events.HookedSeqOps]
 		_, ok3 := t.events[events.HookedProcFops]
 		if ok1 || ok2 || ok3 {
-			err := t.updateKallsyms()
+			err := t.UpdateKallsyms()
 			if err != nil {
 				return err
 			}

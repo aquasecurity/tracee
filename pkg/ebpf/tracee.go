@@ -11,7 +11,6 @@ import (
 	"io"
 	"net"
 	"os"
-	"runtime/debug"
 	"strconv"
 	"strings"
 	"syscall"
@@ -385,22 +384,10 @@ func (t *Tracee) Init() error {
 	// Init kernel symbols map
 
 	if initReq.kallsyms {
-		err = capabilities.GetInstance().Requested(func() error { // ring2
-
-			t.kernelSymbols, err = helpers.NewKernelSymbolsMap()
-			if err != nil {
-				t.Close()
-				return fmt.Errorf("error creating symbols map: %v", err)
-			}
-			if !initialization.ValidateKsymbolsTable(t.kernelSymbols) {
-				return fmt.Errorf("kernel symbols were not loaded currectly")
-			}
-			return nil
-
-		}, cap.SYSLOG)
-	}
-	if err != nil {
-		return err
+		err = t.UpdateKernelSymbols()
+		if err != nil {
+			return err
+		}
 	}
 
 	// Canceling events missing kernel symbols
@@ -937,7 +924,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 		}
 	}
 
-	kallsymsValues := initialization.LoadKallsymsValues(t.kernelSymbols, reqKsyms)
+	kallsymsValues := LoadKallsymsValues(t.kernelSymbols, reqKsyms)
 
 	// Figuring out for each event if it has missing required symbols and which
 	missingSymsPerEvent := make(map[events.ID][]string)
@@ -979,23 +966,10 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	if t.kernelSymbols != nil {
-		// Initialize map for global symbols of the kernel
-		bpfKsymsMap, err := t.bpfModule.GetMap("ksymbols_map") // u32, u64
+		err = t.UpdateBPFKsymbolsMap()
 		if err != nil {
 			return err
 		}
-
-		var reqKsyms []string
-		for id := range t.events {
-			event := events.Definitions.Get(id)
-			for _, symDependency := range event.Dependencies.KSymbols {
-				reqKsyms = append(reqKsyms, symDependency.Symbol)
-			}
-		}
-
-		kallsymsValues := initialization.LoadKallsymsValues(t.kernelSymbols, reqKsyms)
-
-		initialization.SendKsymbolsToMap(bpfKsymsMap, kallsymsValues)
 	}
 
 	// Initialize kconfig variables (map used instead of relying in libbpf's .kconfig automated maps)
@@ -1664,22 +1638,4 @@ func (t *Tracee) triggerSeqOpsIntegrityCheckCall(
 	eventHandle uint64,
 	seqOpsStruct [len(derive.NetSeqOps)]uint64) error {
 	return nil
-}
-
-func (t *Tracee) updateKallsyms() error {
-	return capabilities.GetInstance().Requested(func() error { // ring2
-
-		kernelSymbols, err := helpers.NewKernelSymbolsMap()
-		if err != nil {
-			return err
-		}
-		if !initialization.ValidateKsymbolsTable(kernelSymbols) {
-			debug.PrintStack()
-			return errors.New("invalid ksymbol table")
-		}
-		t.kernelSymbols = kernelSymbols
-
-		return nil
-
-	}, cap.SYSLOG)
 }
