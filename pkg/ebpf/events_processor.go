@@ -319,27 +319,21 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 		hookedFops := make([]trace.HookedSymbolData, 0)
 		for idx, addr := range fopsAddresses {
-			if addr == 0 {
+			if addr == 0 { // address is in text segment, marked as 0
 				continue
 			}
-			inTextSeg, err := t.kernelSymbols.TextSegmentContains(addr)
-			if err != nil {
-				return fmt.Errorf("error checking kernel address: %v", err)
+			hookingFunction := utils.ParseSymbol(addr, t.kernelSymbols)
+			if hookingFunction.Owner == "system" {
+				continue
 			}
-			if !inTextSeg {
-				hookingFunction := utils.ParseSymbol(addr, t.kernelSymbols)
-				if hookingFunction.Owner == "system" {
-					continue
-				}
-				functionName := "unknown"
-				switch idx {
-				case IterateShared:
-					functionName = "iterate_shared"
-				case Iterate:
-					functionName = "iterate"
-				}
-				hookedFops = append(hookedFops, trace.HookedSymbolData{SymbolName: functionName, ModuleOwner: hookingFunction.Owner})
+			functionName := "unknown"
+			switch idx {
+			case IterateShared:
+				functionName = "iterate_shared"
+			case Iterate:
+				functionName = "iterate"
 			}
+			hookedFops = append(hookedFops, trace.HookedSymbolData{SymbolName: functionName, ModuleOwner: hookingFunction.Owner})
 		}
 		event.Args[0].Value = hookedFops
 

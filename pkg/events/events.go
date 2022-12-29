@@ -5793,6 +5793,10 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32undefined,
 			Name:    "hooked_syscalls",
 			Dependencies: dependencies{
+				KSymbols: []kSymbolDependency{
+					{Symbol: "_stext", Required: true},
+					{Symbol: "_etext", Required: true},
+				},
 				Events: []eventDependency{
 					{EventID: DoInitModule},
 					{EventID: PrintSyscallTable},
@@ -6055,6 +6059,10 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32undefined,
 			Name:    "hooked_seq_ops",
 			Dependencies: dependencies{
+				KSymbols: []kSymbolDependency{
+					{Symbol: "_stext", Required: true},
+					{Symbol: "_etext", Required: true},
+				},
 				Events: []eventDependency{
 					{EventID: PrintNetSeqOps},
 					{EventID: DoInitModule},

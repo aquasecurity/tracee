@@ -1798,6 +1798,18 @@ static __always_inline void *get_symbol_addr(char *symbol_name)
     return *sym;
 }
 
+static __always_inline void *get_stext_addr()
+{
+    char start_text_sym[7] = "_stext";
+    return get_symbol_addr(start_text_sym);
+}
+
+static __always_inline void *get_etext_addr()
+{
+    char end_text_sym[7] = "_etext";
+    return get_symbol_addr(end_text_sym);
+}
+
 static __always_inline int get_iface_config(int ifindex)
 {
     int *config = bpf_map_lookup_elem(&network_config, &ifindex);
@@ -4076,7 +4088,13 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
 
     char syscall_table_sym[15] = "sys_call_table";
     u64 *syscall_table_addr = (u64 *) get_symbol_addr(syscall_table_sym);
-    if (syscall_table_addr == 0)
+    if (unlikely(syscall_table_addr == 0))
+        return 0;
+    void *stext_addr = get_stext_addr();
+    if (unlikely(stext_addr == NULL))
+        return 0;
+    void *etext_addr = get_etext_addr();
+    if (unlikely(etext_addr == NULL))
         return 0;
 
     u64 idx;
@@ -4096,6 +4114,12 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
         syscall_addr = READ_KERN(syscall_table_addr[*syscall_num_p]);
         if (syscall_addr == 0) {
             return 0;
+        }
+
+        // skip if in text segment range
+        if (syscall_addr >= (u64) stext_addr && syscall_addr < (u64) etext_addr) {
+            syscall_address[i] = 0;
+            continue;
         }
 
         syscall_address[i] = syscall_addr;
@@ -4150,6 +4174,13 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
     if (data.config->tracee_pid != trigger_pid)
         return 0;
 
+    void *stext_addr = get_stext_addr();
+    if (unlikely(stext_addr == NULL))
+        return 0;
+    void *etext_addr = get_etext_addr();
+    if (unlikely(etext_addr == NULL))
+        return 0;
+
     u32 count_off = data.buf_off + 1;
     save_u64_arr_to_buf(&data, NULL, 0, 0); // init u64 array with size 0
 
@@ -4161,18 +4192,26 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
         u64 show_addr = (u64) READ_KERN(seq_ops->show);
         if (show_addr == 0)
             return 0;
+        if (show_addr >= (u64) stext_addr && show_addr < (u64) etext_addr)
+            show_addr = 0;
 
         u64 start_addr = (u64) READ_KERN(seq_ops->start);
         if (start_addr == 0)
             return 0;
+        if (start_addr >= (u64) stext_addr && start_addr < (u64) etext_addr)
+            start_addr = 0;
 
         u64 next_addr = (u64) READ_KERN(seq_ops->next);
         if (next_addr == 0)
             return 0;
+        if (next_addr >= (u64) stext_addr && next_addr < (u64) etext_addr)
+            next_addr = 0;
 
         u64 stop_addr = (u64) READ_KERN(seq_ops->stop);
         if (stop_addr == 0)
             return 0;
+        if (stop_addr >= (u64) stext_addr && stop_addr < (u64) etext_addr)
+            stop_addr = 0;
 
         u64 seq_ops_addresses[NET_SEQ_OPS_SIZE + 1] = {show_addr, start_addr, next_addr, stop_addr};
 
@@ -6798,6 +6837,24 @@ int BPF_KPROBE(trace_security_file_permission)
 
     unsigned long iterate_shared_addr = (unsigned long) READ_KERN(fops->iterate_shared);
     unsigned long iterate_addr = (unsigned long) READ_KERN(fops->iterate);
+    if (iterate_addr == 0 && iterate_shared_addr == 0)
+        return 0;
+
+    // get text segment bounds
+    void *stext_addr = get_stext_addr();
+    if (unlikely(stext_addr == NULL))
+        return 0;
+    void *etext_addr = get_etext_addr();
+    if (unlikely(etext_addr == NULL))
+        return 0;
+
+    // mark as 0 if in bounds
+    if (iterate_shared_addr >= (u64) stext_addr && iterate_shared_addr < (u64) etext_addr)
+        iterate_shared_addr = 0;
+    if (iterate_addr >= (u64) stext_addr && iterate_addr < (u64) etext_addr)
+        iterate_addr = 0;
+
+    // now check again, if both are in text bounds, return
     if (iterate_addr == 0 && iterate_shared_addr == 0)
         return 0;
 
