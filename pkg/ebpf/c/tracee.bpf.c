@@ -2297,13 +2297,18 @@ static __always_inline int
 save_u64_arr_to_buf(event_data_t *data, const u64 __user *ptr, int len, u8 index)
 {
     // Data saved to submit buf: [index][u8 count][u64 1][u64 2][u64 3]...
+    if (data->buf_off > MAX_PERCPU_BUFSIZE - 1)
+        return 0;
+
     // Save argument index
-    data->submit_p->buf[(data->buf_off) & (MAX_PERCPU_BUFSIZE - 1)] = index;
+    data->submit_p->buf[data->buf_off] = index;
 
     // Save space for number of elements (1 byte)
     data->buf_off += 1;
     volatile u32 orig_off = data->buf_off;
-    data->submit_p->buf[(data->buf_off) & (MAX_PERCPU_BUFSIZE - 1)] = 0;
+    if (data->buf_off > MAX_PERCPU_BUFSIZE - 1)
+        return 0;
+    data->submit_p->buf[data->buf_off] = 0;
     data->buf_off += 1;
     data->context.argnum++;
 
@@ -2317,8 +2322,11 @@ save_str_arr_to_buf(event_data_t *data, const char __user *const __user *ptr, u8
 
     u8 elem_num = 0;
 
+    if (data->buf_off > MAX_PERCPU_BUFSIZE - 1)
+        return 0;
+
     // Save argument index
-    data->submit_p->buf[(data->buf_off) & (MAX_PERCPU_BUFSIZE - 1)] = index;
+    data->submit_p->buf[data->buf_off] = index;
 
     // Save space for number of elements (1 byte)
     u32 orig_off = data->buf_off + 1;
@@ -2369,7 +2377,9 @@ save_str_arr_to_buf(event_data_t *data, const char __user *const __user *ptr, u8
     }
 out:
     // save number of elements in the array
-    data->submit_p->buf[orig_off & (MAX_PERCPU_BUFSIZE - 1)] = elem_num;
+    if (orig_off > MAX_PERCPU_BUFSIZE - 1)
+        return 0;
+    data->submit_p->buf[orig_off] = elem_num;
     data->context.argnum++;
     return 1;
 }
@@ -2390,7 +2400,9 @@ static __always_inline int save_args_str_arr_to_buf(
         len = MAX_ARR_LEN - 1;
 
     // Save argument index
-    data->submit_p->buf[(data->buf_off) & (MAX_PERCPU_BUFSIZE - 1)] = index;
+    if (data->buf_off > MAX_PERCPU_BUFSIZE - 1)
+        return 0;
+    data->submit_p->buf[data->buf_off] = index;
 
     // Satisfy validator for probe read
     if ((data->buf_off + 1) > MAX_PERCPU_BUFSIZE - sizeof(int))
@@ -2440,7 +2452,10 @@ static __always_inline int events_perf_submit(event_data_t *data, u32 id, long r
     bpf_probe_read(&(data->submit_p->buf[0]), sizeof(event_context_t), &data->context);
 
     // satisfy validator by setting buffer bounds
-    int size = data->buf_off & (MAX_PERCPU_BUFSIZE - 1);
+    u32 size = data->buf_off;
+    if (size > MAX_PERCPU_BUFSIZE)
+        size = MAX_PERCPU_BUFSIZE;
+
     void *output_data = data->submit_p->buf;
     return bpf_perf_event_output(data->ctx, &events, BPF_F_CURRENT_CPU, output_data, size);
 }
