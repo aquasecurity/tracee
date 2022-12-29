@@ -1798,6 +1798,18 @@ static __always_inline void *get_symbol_addr(char *symbol_name)
     return *sym;
 }
 
+static __always_inline void *get_stext_addr()
+{
+    char start_text_sym[7] = "_stext";
+    return get_symbol_addr(start_text_sym);
+}
+
+static __always_inline void *get_etext_addr()
+{
+    char end_text_sym[7] = "_etext";
+    return get_symbol_addr(end_text_sym);
+}
+
 static __always_inline int get_iface_config(int ifindex)
 {
     int *config = bpf_map_lookup_elem(&network_config, &ifindex);
@@ -4070,12 +4082,10 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
     u64 *syscall_table_addr = (u64 *) get_symbol_addr(syscall_table_sym);
     if (unlikely(syscall_table_addr == 0))
         return 0;
-    char start_text[7] = "_stext";
-    char end_text[7] = "_etext";
-    void *stext_addr = get_symbol_addr(start_text);
+    void *stext_addr = get_stext_addr();
     if (unlikely(stext_addr == NULL))
         return 0;
-    void *etext_addr = get_symbol_addr(end_text);
+    void *etext_addr = get_etext_addr();
     if (unlikely(etext_addr == NULL))
         return 0;
 
@@ -4156,12 +4166,10 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
     if (data.config->tracee_pid != trigger_pid)
         return 0;
 
-    char start_text[7] = "_stext";
-    char end_text[7] = "_etext";
-    void *stext_addr = get_symbol_addr(start_text);
+    void *stext_addr = get_stext_addr();
     if (unlikely(stext_addr == NULL))
         return 0;
-    void *etext_addr = get_symbol_addr(end_text);
+    void *etext_addr = get_etext_addr();
     if (unlikely(etext_addr == NULL))
         return 0;
 
@@ -6825,12 +6833,10 @@ int BPF_KPROBE(trace_security_file_permission)
         return 0;
 
     // get text segment bounds
-    char start_text[7] = "_stext";
-    char end_text[7] = "_etext";
-    void *stext_addr = get_symbol_addr(start_text);
+    void *stext_addr = get_stext_addr();
     if (unlikely(stext_addr == NULL))
         return 0;
-    void *etext_addr = get_symbol_addr(end_text);
+    void *etext_addr = get_etext_addr();
     if (unlikely(etext_addr == NULL))
         return 0;
 
