@@ -1,10 +1,15 @@
-package initialization
+package ebpf
 
 import (
+	"errors"
+	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/pkg/events"
+	"runtime/debug"
 	"unsafe"
 
 	"github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
+	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 var maxKsymNameLen = 64 // Most match the constant in the bpf code
@@ -45,4 +50,51 @@ func ValidateKsymbolsTable(ksyms *helpers.KernelSymbolTable) bool {
 		return false
 	}
 	return true
+}
+
+func (t *Tracee) UpdateKernelSymbols() error {
+	return capabilities.GetInstance().Requested(func() error { // ring2
+
+		kernelSymbols, err := helpers.NewKernelSymbolsMap()
+		if err != nil {
+			return err
+		}
+		if !ValidateKsymbolsTable(kernelSymbols) {
+			debug.PrintStack()
+			return errors.New("invalid ksymbol table")
+		}
+		t.kernelSymbols = kernelSymbols
+
+		return nil
+
+	}, cap.SYSLOG)
+}
+
+func (t *Tracee) UpdateBPFKsymbolsMap() error {
+	bpfKsymsMap, err := t.bpfModule.GetMap("ksymbols_map") // u32, u64
+	if err != nil {
+		return err
+	}
+
+	// get required symbols by chosen events
+	var reqKsyms []string
+	for id := range t.events {
+		event := events.Definitions.Get(id)
+		for _, symDependency := range event.Dependencies.KSymbols {
+			reqKsyms = append(reqKsyms, symDependency.Symbol)
+		}
+	}
+
+	kallsymsValues := LoadKallsymsValues(t.kernelSymbols, reqKsyms)
+
+	return SendKsymbolsToMap(bpfKsymsMap, kallsymsValues)
+}
+
+func (t *Tracee) UpdateKallsyms() error {
+	err := t.UpdateKernelSymbols()
+	if err != nil {
+		return err
+	}
+
+	return t.UpdateBPFKsymbolsMap()
 }
