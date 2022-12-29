@@ -6824,6 +6824,26 @@ int BPF_KPROBE(trace_security_file_permission)
     if (iterate_addr == 0 && iterate_shared_addr == 0)
         return 0;
 
+    // get text segment bounds
+    char start_text[7] = "_stext";
+    char end_text[7] = "_etext";
+    void *stext_addr = get_symbol_addr(start_text);
+    if (unlikely(stext_addr == NULL))
+        return 0;
+    void *etext_addr = get_symbol_addr(end_text);
+    if (unlikely(etext_addr == NULL))
+        return 0;
+
+    // mark as 0 if in bounds
+    if (iterate_shared_addr >= (u64) stext_addr && iterate_shared_addr < (u64) etext_addr)
+        iterate_shared_addr = 0;
+    if (iterate_addr >= (u64) stext_addr && iterate_addr < (u64) etext_addr)
+        iterate_addr = 0;
+
+    // now check again, if both are in text bounds, return
+    if (iterate_addr == 0 && iterate_shared_addr == 0)
+        return 0;
+
     unsigned long fops_addresses[2] = {iterate_shared_addr, iterate_addr};
 
     save_u64_arr_to_buf(&data, (const u64 *) fops_addresses, 2, 0);
