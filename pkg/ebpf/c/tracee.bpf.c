@@ -4156,6 +4156,15 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
     if (data.config->tracee_pid != trigger_pid)
         return 0;
 
+    char start_text[7] = "_stext";
+    char end_text[7] = "_etext";
+    void *stext_addr = get_symbol_addr(start_text);
+    if (unlikely(stext_addr == NULL))
+        return 0;
+    void *etext_addr = get_symbol_addr(end_text);
+    if (unlikely(etext_addr == NULL))
+        return 0;
+
     u32 count_off = data.buf_off + 1;
     save_u64_arr_to_buf(&data, NULL, 0, 0); // init u64 array with size 0
 
@@ -4167,18 +4176,26 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
         u64 show_addr = (u64) READ_KERN(seq_ops->show);
         if (show_addr == 0)
             return 0;
+        if (show_addr >= (u64) stext_addr && show_addr < (u64) etext_addr)
+            show_addr = 0;
 
         u64 start_addr = (u64) READ_KERN(seq_ops->start);
         if (start_addr == 0)
             return 0;
+        if (start_addr >= (u64) stext_addr && start_addr < (u64) etext_addr)
+            start_addr = 0;
 
         u64 next_addr = (u64) READ_KERN(seq_ops->next);
         if (next_addr == 0)
             return 0;
+        if (next_addr >= (u64) stext_addr && next_addr < (u64) etext_addr)
+            next_addr = 0;
 
         u64 stop_addr = (u64) READ_KERN(seq_ops->stop);
         if (stop_addr == 0)
             return 0;
+        if (stop_addr >= (u64) stext_addr && stop_addr < (u64) etext_addr)
+            stop_addr = 0;
 
         u64 seq_ops_addresses[NET_SEQ_OPS_SIZE + 1] = {show_addr, start_addr, next_addr, stop_addr};
 

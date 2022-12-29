@@ -39,17 +39,15 @@ func deriveHookedSeqOpsArgs(kernelSymbols *helpers.KernelSymbolTable) deriveArgs
 		}
 		hookedSeqOps := make(map[string]trace.HookedSymbolData, 0)
 		for i, addr := range seqOpsArr {
-			inTextSegment, err := kernelSymbols.TextSegmentContains(addr)
-			if err != nil {
+			// text segment check is done in kernel, marked as 0
+			if addr == 0 {
 				continue
 			}
-			if !inTextSegment {
-				hookingFunction := utils.ParseSymbol(addr, kernelSymbols)
-				seqOpsStruct := NetSeqOps[i/4]
-				seqOpsFunc := NetSeqOpsFuncs[i%4]
-				hookedSeqOps[seqOpsStruct+"_"+seqOpsFunc] =
-					trace.HookedSymbolData{SymbolName: hookingFunction.Name, ModuleOwner: hookingFunction.Owner}
-			}
+			hookingFunction := utils.ParseSymbol(addr, kernelSymbols)
+			seqOpsStruct := NetSeqOps[i/4]
+			seqOpsFunc := NetSeqOpsFuncs[i%4]
+			hookedSeqOps[seqOpsStruct+"_"+seqOpsFunc] =
+				trace.HookedSymbolData{SymbolName: hookingFunction.Name, ModuleOwner: hookingFunction.Owner}
 		}
 		return []interface{}{hookedSeqOps}, nil
 	}
