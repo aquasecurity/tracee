@@ -4068,7 +4068,15 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
 
     char syscall_table_sym[15] = "sys_call_table";
     u64 *syscall_table_addr = (u64 *) get_symbol_addr(syscall_table_sym);
-    if (syscall_table_addr == 0)
+    if (unlikely(syscall_table_addr == 0))
+        return 0;
+    char start_text[7] = "_stext";
+    char end_text[7] = "_etext";
+    void *stext_addr = get_symbol_addr(start_text);
+    if (unlikely(stext_addr == NULL))
+        return 0;
+    void *etext_addr = get_symbol_addr(end_text);
+    if (unlikely(etext_addr == NULL))
         return 0;
 
     u64 idx;
@@ -4088,6 +4096,12 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
         syscall_addr = READ_KERN(syscall_table_addr[*syscall_num_p]);
         if (syscall_addr == 0) {
             return 0;
+        }
+
+        // skip if in text segment range
+        if (syscall_addr >= (u64) stext_addr && syscall_addr < (u64) etext_addr) {
+            syscall_address[i] = 0;
+            continue;
         }
 
         syscall_address[i] = syscall_addr;
