@@ -1866,10 +1866,6 @@ init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 
 
 static __always_inline task_info_t *init_task_info(u32 tid, u32 pid)
 {
-    task_info_t *task_info = bpf_map_lookup_elem(&task_info_map, &tid);
-    if (likely(task_info != NULL))
-        return task_info;
-
     int zero = 0;
     scratch_t *scratch = bpf_map_lookup_elem(&scratch_map, &zero);
     if (unlikely(scratch == NULL))
