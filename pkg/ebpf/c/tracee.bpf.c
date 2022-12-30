@@ -846,6 +846,13 @@ typedef struct config_entry {
     u8 events_to_submit[128]; // use 8*128 bits to describe up to 1024 events
 } config_entry_t;
 
+// todo:
+// 1. add maps_store which will store the maps per bpf program (and not per event).
+//    this maps_store can then be stored as a reference in event_data_t (or better not - since this will cause the error in config_map value size)
+// 2. move submit buffer into event_data_t (in step 1 it was on a dedicated maps struct) - name it simply "buf" or "args".
+// note: this step also implies the creation of event_data as a pointer on a new event_data_map (renamed from Alon's map)
+// note: event_data_t should start with what we want to submit (ctx+buf) and then all private fields
+// 3. rename data to event (can be done at another PR)
 typedef struct event_data {
     event_context_t context;
     struct task_struct *task;
