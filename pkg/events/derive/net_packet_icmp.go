@@ -36,7 +36,8 @@ func deriveNetPacketICMPArgs() deriveArgsFunction {
 
 		// initial header type
 
-		if event.ReturnValue != AF_INET {
+		// event retval encodes layer type
+		if event.ReturnValue&familyIpv4 != familyIpv4 {
 			return nil, nil
 		}
 

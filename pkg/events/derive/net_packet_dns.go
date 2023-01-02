@@ -2,12 +2,9 @@ package derive
 
 import (
 	"fmt"
-	"net"
-
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 
-	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 )
 
@@ -147,127 +144,28 @@ func deriveDNSResponseEvents(event trace.Event) ([]interface{}, error) {
 	}, nil
 }
 
-//
-// Helper Functions
-//
-
-type netPair struct {
-	srcIP   net.IP
-	dstIP   net.IP
-	srcPort uint16
-	dstPort uint16
-	proto   uint8
-	length  uint32
-}
-
-const (
-	IPPROTO_TCP uint8 = 6
-	IPPROTO_UDP uint8 = 17
-)
-
 // eventToProtoDNS turns a trace event into a ProtoDNS type, a type used by the
 // new network code for DNS events
 func eventToProtoDNS(event *trace.Event) (*netPair, *trace.ProtoDNS, error) {
-	var ok bool
-	var payload []byte
-	var layerType gopacket.LayerType
-	var net netPair
+	var DnsNetPair netPair
 
-	// sanity checks
-
-	payloadArg := events.GetArg(event, "payload")
-	if payloadArg == nil {
-		return nil, nil, noPayloadError()
+	layer7, err := parseUntilLayer7(event, &DnsNetPair)
+	if err != nil {
+		return nil, nil, err
 	}
-	if payload, ok = payloadArg.Value.([]byte); !ok {
-		return nil, nil, nonByteArgError()
-	}
-	payloadSize := len(payload)
-	if payloadSize < 1 {
-		return nil, nil, emptyPayloadError()
-	}
-
-	// initial header type
-
-	switch event.ReturnValue { // event retval tells layer type
-	case AF_INET:
-		layerType = layers.LayerTypeIPv4
-	case AF_INET6:
-		layerType = layers.LayerTypeIPv6
-	default:
-		return nil, nil, nil
-	}
-
-	// parse packet
-
-	packet := gopacket.NewPacket(
-		payload[4:payloadSize], // base event argument is: |sizeof|[]byte|
-		layerType,
-		gopacket.Default,
-	)
-	if packet == nil {
-		return nil, nil, parsePacketError()
-	}
-
-	layer3 := packet.NetworkLayer()
-
-	switch v := layer3.(type) {
-	case (*layers.IPv4):
-		net.srcIP = v.SrcIP
-		net.dstIP = v.DstIP
-		net.length = uint32(v.Length)
-	case (*layers.IPv6):
-		net.srcIP = v.SrcIP
-		net.dstIP = v.DstIP
-		net.length = uint32(v.Length)
-	default:
-		return nil, nil, nil
-	}
-
-	layer4 := packet.TransportLayer()
-
-	switch v := layer4.(type) {
-	case (*layers.TCP):
-		net.srcPort = uint16(v.SrcPort)
-		net.dstPort = uint16(v.DstPort)
-		net.proto = IPPROTO_TCP
-	case (*layers.UDP):
-		net.srcPort = uint16(v.SrcPort)
-		net.dstPort = uint16(v.DstPort)
-		net.proto = IPPROTO_UDP
-	default:
-		return nil, nil, nil
-	}
-
-	layer7 := packet.ApplicationLayer()
 
 	switch l7 := layer7.(type) {
 	case (*layers.DNS):
 		var dns trace.ProtoDNS
 		copyDNSToProtoDNS(l7, &dns)
-		return &net, &dns, nil
+		return &DnsNetPair, &dns, nil
 	default:
-		if net.srcPort != 53 && net.dstPort != 53 {
-			return &net, nil, notProtoPacketError("DNS") // TCP packets (connection related), no event
+		if DnsNetPair.srcPort != 53 && DnsNetPair.dstPort != 53 {
+			return &DnsNetPair, nil, notProtoPacketError("DNS") // TCP packets (connection related), no event
 		}
 	}
 
-	return &net, nil, nil
-}
-
-// convertNetPairToPktMeta converts the local netPair type, used by this code,
-// to PktMeta type, expected by the old dns events, which, for now, we want the
-// new network packet simple dns events to be compatible with.
-func convertNetPairToPktMeta(net *netPair) *trace.PktMeta {
-	return &trace.PktMeta{
-		SrcIP:     net.srcIP.String(),
-		DstIP:     net.dstIP.String(),
-		SrcPort:   net.srcPort,
-		DstPort:   net.dstPort,
-		Protocol:  net.proto,
-		PacketLen: net.length,
-		Iface:     "any", // TODO: pick iface from network events
-	}
+	return &DnsNetPair, nil, nil
 }
 
 // convertProtoDNSQuestionToDnsRequest converts the network packet dns event

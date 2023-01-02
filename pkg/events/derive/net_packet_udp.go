@@ -37,12 +37,12 @@ func deriveNetPacketUDPArgs() deriveArgsFunction {
 
 		// initial header type
 
-		switch event.ReturnValue { // event retval tells layer type
-		case 2:
+		// event retval encodes layer type
+		if event.ReturnValue&familyIpv4 == familyIpv4 {
 			layerType = layers.LayerTypeIPv4
-		case 10:
+		} else if event.ReturnValue&familyIpv6 == familyIpv6 {
 			layerType = layers.LayerTypeIPv6
-		default:
+		} else {
 			return nil, nil
 		}
 

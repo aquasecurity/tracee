@@ -36,7 +36,8 @@ func deriveNetPacketICMPv6Args() deriveArgsFunction {
 
 		// initial header type
 
-		if event.ReturnValue != AF_INET6 {
+		// event retval encodes layer type
+		if event.ReturnValue&familyIpv6 != familyIpv6 {
 			return nil, nil
 		}
 
