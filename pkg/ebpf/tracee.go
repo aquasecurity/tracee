@@ -740,6 +740,20 @@ func (t *Tracee) initDerivationTable() error {
 				DeriveFunction: derive.NetPacketDNSResponse(),
 			},
 		},
+		events.NetPacketHTTPBase: {
+			events.NetPacketHTTP: {
+				Enabled:        t.events[events.NetPacketHTTP].submit,
+				DeriveFunction: derive.NetPacketHTTP(),
+			},
+			events.NetPacketHTTPRequest: {
+				Enabled:        t.events[events.NetPacketHTTPRequest].submit,
+				DeriveFunction: derive.NetPacketHTTPRequest(),
+			},
+			events.NetPacketHTTPResponse: {
+				Enabled:        t.events[events.NetPacketHTTPResponse].submit,
+				DeriveFunction: derive.NetPacketHTTPResponse(),
+			},
+		},
 	}
 
 	return nil

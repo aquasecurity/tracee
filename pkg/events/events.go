@@ -233,6 +233,7 @@ const (
 	NetPacketICMPv6Base // TODO: move this event into range for network events
 	NetPacketDNSBase    // TODO: move this event into range for network events
 	DoMmap
+	NetPacketHTTPBase // TODO: move this event into range for network events
 	MaxCommonID
 )
 
@@ -254,6 +255,9 @@ const (
 	NetPacketDNS
 	NetPacketDNSRequest
 	NetPacketDNSResponse
+	NetPacketHTTP
+	NetPacketHTTPRequest
+	NetPacketHTTPResponse
 	MaxUserSpace
 )
 
@@ -6422,6 +6426,65 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "trace.PktMeta", Name: "metadata"},
 				{Type: "[]trace.DnsResponseData", Name: "dns_response"},
+			},
+		},
+		NetPacketHTTPBase: {
+			ID32Bit:  sys32undefined,
+			Name:     "net_packet_http_base",
+			Internal: true,
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "bytes", Name: "payload"},
+			},
+		},
+		NetPacketHTTP: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_http", // preferred event to write signatures
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketHTTPBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "src"},
+				{Type: "const char*", Name: "dst"},
+				{Type: "u16", Name: "src_port"},
+				{Type: "u16", Name: "dst_port"},
+				{Type: "trace.ProtoHTTP", Name: "proto_http"},
+			},
+		},
+		NetPacketHTTPRequest: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_http_request",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketHTTPBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "trace.PktMeta", Name: "metadata"},
+				{Type: "trace.ProtoHTTPRequest", Name: "http_request"},
+			},
+		},
+		NetPacketHTTPResponse: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_http_response",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketHTTPBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "trace.PktMeta", Name: "metadata"},
+				{Type: "trace.ProtoHTTPResponse", Name: "http_response"},
 			},
 		},
 	},
