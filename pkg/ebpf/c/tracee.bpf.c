@@ -470,6 +470,7 @@ enum event_id_e
     NET_PACKET_ICMPV6,
     NET_PACKET_DNS,
     DO_MMAP,
+    NET_PACKET_HTTP,
     MAX_EVENT_ID,
 };
 
@@ -7395,11 +7396,12 @@ static __always_inline bool is_socket_supported(struct socket *sock)
 #define SUB_NET_PACKET_ICMP    (1 << 3) // submit net_packet_icmp_base
 #define SUB_NET_PACKET_ICMPV6  (1 << 4) // submit net_packet_icmpv6_base
 #define SUB_NET_PACKET_DNS     (1 << 5) // submit net_packet_dns_base
+#define SUB_NET_PACKET_HTTP    (1 << 6) // submit net_packet_http_base
 
 #define SUB_NET_PACKET_L3      (SUB_NET_PACKET_IP)
 #define SUB_NET_PACKET_L4      (SUB_NET_PACKET_TCP | SUB_NET_PACKET_UDP | \
                                 SUB_NET_PACKET_ICMP | SUB_NET_PACKET_ICMPV6)
-#define SUB_NET_PACKET_L7      (SUB_NET_PACKET_DNS)
+#define SUB_NET_PACKET_L7      (SUB_NET_PACKET_DNS | SUB_NET_PACKET_HTTP)
 
 typedef struct net_event_contextmd {
     u8 submit;
@@ -7492,6 +7494,9 @@ static __always_inline void should_submit_net_event(net_event_context_t *neteven
 
     if (should_submit(NET_PACKET_DNS, config))
         neteventctx->md.submit |= SUB_NET_PACKET_DNS;
+
+    if (should_submit(NET_PACKET_HTTP, config))
+        neteventctx->md.submit |= SUB_NET_PACKET_HTTP;
 }
 
 //
@@ -7625,6 +7630,12 @@ int BPF_KPROBE(trace_security_socket_sendmsg)
     return security_socket_send_recv_msg(sock, p.event);
 }
 
+    // network retval values
+    #define family_ipv4     (1 << 0)
+    #define family_ipv6     (1 << 1)
+    #define proto_http_req  (1 << 2)
+    #define proto_http_resp (1 << 3)
+
 //
 // Socket Ingress/Egress eBPF program loader (right before and right after eBPF)
 //
@@ -7692,7 +7703,13 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     // inform userland about protocol family (for correct L3 header parsing)...
     struct sock_common *common = (void *) sk;
     u8 family = BPF_READ(common, skc_family);
-    eventctx->retval = family; // ... through event ctx ret val
+    switch (family) {
+        case AF_INET:
+            eventctx->retval |= family_ipv4;
+        case AF_INET6:
+            eventctx->retval |= family_ipv6;
+    }
+    // ... through event ctx ret val
 
     // set event arguments
     neteventctx.bytes = 0; // no payload by default (changed inside skb prog)
@@ -7788,6 +7805,7 @@ CGROUP_SKB_HANDLE_FUNCTION(family);
 CGROUP_SKB_HANDLE_FUNCTION(proto);
 CGROUP_SKB_HANDLE_FUNCTION(proto_tcp);
 CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_dns);
+CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_http);
 CGROUP_SKB_HANDLE_FUNCTION(proto_udp);
 CGROUP_SKB_HANDLE_FUNCTION(proto_udp_dns);
 CGROUP_SKB_HANDLE_FUNCTION(proto_icmp);
@@ -7875,8 +7893,43 @@ int cgroup_skb_egress(struct __sk_buff *ctx)
 // Network Protocol Events Logic
 //
 
+// when guessing by src/dst ports, declare here
+
     #define UDP_PORT_DNS 53
     #define TCP_PORT_DNS 53
+
+// when guessing through l7 layer, here
+
+static __always_inline int net_l7_is_http(struct __sk_buff *skb, u32 l7_off)
+{
+    #define http_min_len 7 // longest http command is "DELETE "
+
+    char http_min_str[http_min_len];
+    __builtin_memset((void *) &http_min_str, 0, sizeof(char) * http_min_len);
+
+    // load first http_min_len bytes from layer 7 in packet.
+    if (bpf_skb_load_bytes(skb, l7_off, http_min_str, http_min_len) < 0) {
+        return 0; // failed loading data into http_min_str - return.
+    }
+
+    // check if HTTP response
+    if (has_prefix("HTTP/", http_min_str, 6)) {
+        return proto_http_resp;
+    }
+
+    // clang-format off
+    // check if HTTP request
+    if (has_prefix("GET ", http_min_str, 5)    ||
+        has_prefix("POST ", http_min_str, 6)   ||
+        has_prefix("PUT ", http_min_str, 5)    ||
+        has_prefix("DELETE ", http_min_str, 8) ||
+        has_prefix("HEAD ", http_min_str, 6)) {
+        return proto_http_req;
+    }
+    // clang-format on
+
+    return 0;
+}
 
 //
 // SUPPORTED SOCKET FAMILY TYPES (inet, inet6)
@@ -8039,18 +8092,30 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp)
 
     // fastpath: return if no other L7 network events
 
-    if (!(neteventctx->md.submit & (SUB_NET_PACKET_DNS)))
+    if (!(neteventctx->md.submit & (SUB_NET_PACKET_L7)))
         return 1;
 
-    // guess layer 7 protocols from service ports
+    // guess layer 7 protocols
 
     u16 source = bpf_ntohs(nethdrs->protohdrs.tcphdr.source);
     u16 dest = bpf_ntohs(nethdrs->protohdrs.tcphdr.dest);
+
+    // guess by src/dst ports
 
     switch (source < dest ? source : dest) {
         case TCP_PORT_DNS:
             return CGROUP_SKB_HANDLE(proto_tcp_dns);
     }
+
+    // guess by analyzing payload
+
+    int http_proto = net_l7_is_http(ctx, neteventctx->md.header_size);
+    if (http_proto) {
+        neteventctx->eventctx.retval |= http_proto;
+        return CGROUP_SKB_HANDLE(proto_tcp_http);
+    }
+
+    // continue with net_l7_is_protocol_xxx
 
     // NOTE: might block TCP here if needed (return 0)
 
@@ -8069,13 +8134,22 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_udp)
     if (!(neteventctx->md.submit & (SUB_NET_PACKET_DNS)))
         return 1;
 
+    // guess layer 7 protocols
+
     u16 source = bpf_ntohs(nethdrs->protohdrs.udphdr.source);
     u16 dest = bpf_ntohs(nethdrs->protohdrs.udphdr.dest);
 
+    // guess by src/dst ports
+
     switch (source < dest ? source : dest) {
-        case UDP_PORT_DNS:
+        case TCP_PORT_DNS:
             return CGROUP_SKB_HANDLE(proto_udp_dns);
     }
+
+    // guess by analyzing payload
+    // ...
+
+    // continue with net_l7_is_protocol_xxx
 
     // NOTE: might block UDP here if needed (return 0)
 
@@ -8124,6 +8198,16 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_udp_dns)
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS, FULL);
 
     return 1; // NOTE: might block DNS here if needed (return 0)
+}
+
+CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_http)
+{
+    // submit HTTP base event if needed (full packet)
+
+    if (neteventctx->md.submit & SUB_NET_PACKET_HTTP)
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_HTTP, FULL);
+
+    return 1; // NOTE: might block HTTP here if needed (return 0)
 }
 
 #endif
