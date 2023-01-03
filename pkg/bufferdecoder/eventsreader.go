@@ -149,7 +149,9 @@ func ReadArgFromBuff(ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta) (trace
 		if err != nil {
 			return argMeta, nil, fmt.Errorf("error reading byte array size: %v", err)
 		}
-		if size > 4096 {
+		// error if byte buffer is too big (and not a network event)
+		// TODO: check for network event IDs range isntead of arg name
+		if size > 4096 && argMeta.Name != "payload" {
 			return argMeta, nil, fmt.Errorf("byte array size too big: %d", size)
 		}
 		res, err = ReadByteSliceFromBuff(ebpfMsgDecoder, int(size))

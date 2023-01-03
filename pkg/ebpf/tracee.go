@@ -35,6 +35,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
+	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/pkg/rules/engine"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -79,6 +80,7 @@ type CaptureConfig struct {
 	FilterFileWrite []string
 	Exec            bool
 	Mem             bool
+	Net             pcaps.Config
 	Profile         bool
 	NetIfaces       *NetIfaces
 	NetPerContainer bool
@@ -175,14 +177,17 @@ type Tracee struct {
 	eventsPerfMap     *bpf.PerfBuffer
 	fileWrPerfMap     *bpf.PerfBuffer
 	netPerfMap        *bpf.PerfBuffer
+	netCapPerfMap     *bpf.PerfBuffer
 	bpfLogsPerfMap    *bpf.PerfBuffer
 	eventsChannel     chan []byte
 	fileWrChannel     chan []byte
 	netChannel        chan []byte
+	netCapChannel     chan []byte
 	bpfLogsChannel    chan []byte
 	lostEvChannel     chan uint64
 	lostWrChannel     chan uint64
 	lostNetChannel    chan uint64
+	lostNetCapChannel chan uint64
 	lostBPFLogChannel chan uint64
 	bootTime          uint64
 	startTime         uint64
@@ -195,6 +200,7 @@ type Tracee struct {
 	StackAddressesMap *bpf.BPFMap
 	FDArgPathMap      *bpf.BPFMap
 	netInfo           netInfo
+	netCapturePcap    *pcaps.Pcaps
 	containers        *containers.Containers
 	procInfo          *procinfo.ProcInfo
 	eventsSorter      *sorting.EventsChronologicalSorter
@@ -247,6 +253,9 @@ func GetCaptureEventsList(cfg Config) map[events.ID]eventConfig {
 	}
 	if len(cfg.Filter.NetFilter.Ifaces) > 0 || logger.HasDebugLevel() {
 		captureEvents[events.SecuritySocketBind] = eventConfig{}
+	}
+	if pcaps.PcapsEnabled(cfg.Capture.Net) {
+		captureEvents[events.CaptureNetPacket] = eventConfig{}
 	}
 
 	return captureEvents
@@ -492,6 +501,14 @@ func (t *Tracee) Init() error {
 	if err != nil {
 		t.Close()
 		return fmt.Errorf("error opening out directory: %w", err)
+	}
+
+	// Initialize network capture (all needed pcap files)
+
+	t.netCapturePcap, err = pcaps.New(t.config.Capture.Net, t.outDir)
+	if err != nil {
+		t.Close()
+		return fmt.Errorf("error initializing network capture: %w", err)
 	}
 
 	// Initialize PID file
@@ -1355,6 +1372,7 @@ func (t *Tracee) initBPF() error {
 			}
 		}
 
+		// TODO: remove netChannel (deprecated)
 		if t.netEnabled() {
 			t.netChannel = make(chan []byte, 1000)
 			t.lostNetChannel = make(chan uint64)
@@ -1366,6 +1384,20 @@ func (t *Tracee) initBPF() error {
 			)
 			if err != nil {
 				return fmt.Errorf("error initializing net perf map: %v", err)
+			}
+		}
+
+		if pcaps.PcapsEnabled(t.config.Capture.Net) {
+			t.netCapChannel = make(chan []byte, 1000)
+			t.lostNetCapChannel = make(chan uint64)
+			t.netCapPerfMap, err = t.bpfModule.InitPerfBuf(
+				"net_cap_events",
+				t.netCapChannel,
+				t.lostNetCapChannel,
+				t.config.PerfBufferSize,
+			)
+			if err != nil {
+				return fmt.Errorf("error initializing net capture perf map: %v", err)
 			}
 		}
 
@@ -1433,6 +1465,10 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 		t.netPerfMap.Start()
 		go t.processNetEvents(ctx)
 	}
+	if pcaps.PcapsEnabled(t.config.Capture.Net) {
+		t.netCapPerfMap.Start()
+		go t.processNetCaptureEvents(ctx)
+	}
 	t.bpfLogsPerfMap.Start()
 	go t.processBPFLogs()
 	t.running = true
@@ -1444,6 +1480,9 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	}
 	if t.netEnabled() {
 		t.netPerfMap.Stop()
+	}
+	if pcaps.PcapsEnabled(t.config.Capture.Net) {
+		t.netCapPerfMap.Stop()
 	}
 	t.bpfLogsPerfMap.Stop()
 	// capture profiler stats
@@ -1586,6 +1625,7 @@ func (t *Tracee) invokeInitEvents() {
 func (t *Tracee) netEnabled() bool {
 	isCaptureNetSet := t.config.Capture.NetIfaces != nil
 	isFilterNetSet := len(t.config.Filter.NetFilter.Interfaces()) != 0
+
 	return isCaptureNetSet || isFilterNetSet
 
 }
