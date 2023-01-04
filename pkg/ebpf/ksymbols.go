@@ -15,7 +15,7 @@ import (
 var maxKsymNameLen = 64 // Most match the constant in the bpf code
 var globalSymbolOwner = "system"
 
-func LoadKallsymsValues(ksymsTable *helpers.KernelSymbolTable, ksymbols []string) map[string]*helpers.KernelSymbol {
+func LoadKallsymsValues(ksymsTable helpers.KernelSymbolTable, ksymbols []string) map[string]*helpers.KernelSymbol {
 	kallsymsMap := make(map[string]*helpers.KernelSymbol)
 	for _, name := range ksymbols {
 		symbol, err := ksymsTable.GetSymbolByName(globalSymbolOwner, name)
@@ -44,7 +44,7 @@ func SendKsymbolsToMap(bpfKsymsMap *libbpfgo.BPFMap, ksymbols map[string]*helper
 // invalid is if the capabilities required to read the kallsyms file are not
 // given. The chosen symbol used here is "security_file_open" because it is a
 // must-have symbol for tracee to run.
-func ValidateKsymbolsTable(ksyms *helpers.KernelSymbolTable) bool {
+func ValidateKsymbolsTable(ksyms helpers.KernelSymbolTable) bool {
 	sym, err := ksyms.GetSymbolByName(globalSymbolOwner, "security_file_open")
 	if err != nil || sym.Address == 0 {
 		return false
@@ -52,10 +52,10 @@ func ValidateKsymbolsTable(ksyms *helpers.KernelSymbolTable) bool {
 	return true
 }
 
-func (t *Tracee) UpdateKernelSymbols() error {
+func (t *Tracee) NewKernelSymbols() error {
 	return capabilities.GetInstance().Requested(func() error { // ring2
 
-		kernelSymbols, err := helpers.NewKernelSymbolsMap()
+		kernelSymbols, err := helpers.NewLazyKernelSymbolsMap()
 		if err != nil {
 			return err
 		}
@@ -68,6 +68,10 @@ func (t *Tracee) UpdateKernelSymbols() error {
 		return nil
 
 	}, cap.SYSLOG)
+}
+
+func (t *Tracee) UpdateKernelSymbols() error {
+	return t.kernelSymbols.Refresh()
 }
 
 func (t *Tracee) UpdateBPFKsymbolsMap() error {

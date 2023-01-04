@@ -6,7 +6,7 @@ import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 )
 
-func ParseSymbol(address uint64, table *helpers.KernelSymbolTable) *helpers.KernelSymbol {
+func ParseSymbol(address uint64, table helpers.KernelSymbolTable) *helpers.KernelSymbol {
 	hookingFunction, err := table.GetSymbolByAddr(address)
 	if err != nil {
 		hookingFunction = &helpers.KernelSymbol{}

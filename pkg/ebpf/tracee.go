@@ -200,7 +200,7 @@ type Tracee struct {
 	eventsSorter      *sorting.EventsChronologicalSorter
 	eventProcessor    map[events.ID][]func(evt *trace.Event) error
 	eventDerivations  derive.Table
-	kernelSymbols     *helpers.KernelSymbolTable
+	kernelSymbols     helpers.KernelSymbolTable
 	triggerContexts   trigger.Context
 	running           bool
 	outDir            *os.File // All file operations to output dir should be through the utils package file operations (like utils.OpenAt) using this directory file.
@@ -388,7 +388,7 @@ func (t *Tracee) Init() error {
 	// Init kernel symbols map
 
 	if initReq.kallsyms {
-		err = t.UpdateKernelSymbols()
+		err = t.NewKernelSymbols()
 		if err != nil {
 			return err
 		}
