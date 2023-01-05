@@ -6449,6 +6449,7 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "void*", Name: "address"},
 				{Type: "bytes", Name: "bytes"},
+				{Type: "u64", Name: "length"},
 				{Type: "char*", Name: "arch"},
 				{Type: "char*", Name: "symbol_name"},
 				{Type: "char*", Name: "symbol_owner"},

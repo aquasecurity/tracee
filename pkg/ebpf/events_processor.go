@@ -2,6 +2,7 @@ package ebpf
 
 import (
 	"fmt"
+	"golang.org/x/sys/unix"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -458,6 +459,13 @@ func (t *Tracee) processTriggeredEvent(event *trace.Event) error {
 		}
 		addressUint64 := uint64(address)
 		symbol := utils.ParseSymbol(addressUint64, t.kernelSymbols)
+		var utsname unix.Utsname
+		arch := ""
+		unix.Uname(&utsname)
+		if err == nil {
+			arch = string(utsname.Machine[:])
+		}
+		event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "arch", Type: "char*"}, Value: arch})
 		event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "symbol_name", Type: "char*"}, Value: symbol.Name})
 		event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "symbol_owner", Type: "char*"}, Value: symbol.Owner})
 

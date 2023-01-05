@@ -106,7 +106,7 @@ int KERNEL_VERSION SEC("version") = LINUX_VERSION_CODE;
 #define MAX_KSYM_NAME_SIZE  64
 #define UPROBE_MAGIC_NUMBER 20220829
 #define ARGS_BUF_SIZE       32000
-#define MEM_DUMP_SIZE       100
+#define MEM_DUMP_SIZE       127
 // clang-format on
 
 // helper macros for branch prediction
@@ -969,6 +969,7 @@ enum bpf_log_id
     BPF_LOG_ID_MAP_DELETE_ELEM,
     BPF_LOG_ID_GET_CURRENT_COMM,
     BPF_LOG_ID_TAIL_CALL,
+    BPF_LOG_ID_MEM_READ,
 };
 
 #define BPF_MAX_LOG_FILE_LEN 72
@@ -4249,14 +4250,15 @@ SEC("uprobe/trigger_mem_dump_event")
 int uprobe_mem_dump_trigger(struct pt_regs *ctx)
 {
     u64 address = 0;
+    u64 size = 0;
     u32 trigger_pid = bpf_get_current_pid_tgid() >> 32;
 
 #if defined(bpf_target_x86)
-    address = ctx->bx; // 1nd arg
-    char arch[] = "x86_64";
+    address = ctx->bx; // 1st arg
+    size = ctx->cx;    // 2nd arg
 #elif defined(bpf_target_arm64)
-    address = ctx->user_regs.regs[1]; // 1nd arg
-    char arch[] = "arm64";
+    address = ctx->user_regs.regs[1]; // 1st arg
+    size = ctx->user_regs.regs[2];    // 2nd arg
 #else
     return 0;
 #endif
@@ -4269,9 +4271,18 @@ int uprobe_mem_dump_trigger(struct pt_regs *ctx)
     if (data.config->tracee_pid != trigger_pid)
         return 0;
 
+    if (size <= 0)
+        return 0;
+
+    int ret = save_bytes_to_buf(&data, (void *) address, size & MAX_MEM_DUMP_SIZE, 1);
+    // return in case of failed pointer read
+    if (ret == 0) {
+        tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_MEM_READ, ret);
+        return 0;
+    }
     save_to_submit_buf(&data, (void *) &address, sizeof(void *), 0);
-    save_bytes_to_buf(&data, (void *) address, MEM_DUMP_SIZE, 1);
-    save_str_to_buf(&data, (void *) arch, 2);
+    save_to_submit_buf(&data, &size, sizeof(u64), 2);
+
     return events_perf_submit(&data, PRINT_MEM_DUMP, 0);
 }
 

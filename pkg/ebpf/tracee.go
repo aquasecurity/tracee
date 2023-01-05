@@ -47,7 +47,8 @@ import (
 )
 
 const (
-	pkgName = "tracee"
+	pkgName          = "tracee"
+	maxMemDumpLength = 127
 )
 
 // Config is a struct containing user defined configuration of tracee
@@ -1649,10 +1650,9 @@ func (t *Tracee) triggerSeqOpsIntegrityCheckCall(
 }
 
 // triggerMemDump is used by a Uprobe to trigger an eBPF program
-// that prints the seq ops pointers
+// that prints the first bytes of requested symbols or addresses
 func (t *Tracee) triggerMemDump() error {
-	_, ok := t.events[events.PrintMemDump]
-	if !ok {
+	if _, ok := t.events[events.PrintMemDump]; !ok {
 		return nil
 	}
 
@@ -1664,6 +1664,21 @@ func (t *Tracee) triggerMemDump() error {
 			"-t print_mem_dump.args.symbol_name=<symbol> if specifying a system owned symbol")
 	}
 
+	lengthFilter, ok := printMemDumpFilters["length"].(*filters.StringFilter)
+	var length uint64
+	var err error
+	if lengthFilter == nil || !ok || len(lengthFilter.Equal()) == 0 {
+		length = maxMemDumpLength // default mem dump length
+	} else {
+		for _, field := range lengthFilter.Equal() {
+			length, err = strconv.ParseUint(field, 10, 64)
+			if err != nil {
+				return err
+			}
+			break
+		}
+	}
+
 	addressFilter, ok := printMemDumpFilters["address"].(*filters.StringFilter)
 	if addressFilter != nil && ok {
 		for _, field := range addressFilter.Equal() {
@@ -1671,7 +1686,7 @@ func (t *Tracee) triggerMemDump() error {
 			if err != nil {
 				return err
 			}
-			t.triggerMemDumpCall(address)
+			t.triggerMemDumpCall(address, length)
 		}
 	}
 
@@ -1695,7 +1710,7 @@ func (t *Tracee) triggerMemDump() error {
 			if err != nil {
 				return err
 			}
-			t.triggerMemDumpCall(symbol.Address)
+			t.triggerMemDumpCall(symbol.Address, length)
 		}
 	}
 
@@ -1703,6 +1718,6 @@ func (t *Tracee) triggerMemDump() error {
 }
 
 //go:noinline
-func (t *Tracee) triggerMemDumpCall(address uint64) error {
+func (t *Tracee) triggerMemDumpCall(address uint64, length uint64) error {
 	return nil
 }
