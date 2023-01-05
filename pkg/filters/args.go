@@ -42,7 +42,8 @@ func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
 			}
 		}
 		if !found {
-			return false // always filter if argument does not exist
+			// TODO: remove once events arguments are introduced
+			return eventID == events.PrintMemDump // filter if argument does not exist
 		}
 		// TODO: use type assertion instead of string conversion
 		if argName != "syscall" {
