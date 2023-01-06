@@ -2,6 +2,7 @@ package engine
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"sync/atomic"
 	"testing"
@@ -405,7 +406,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		inputs := EventSources{}
 		inputs.Tracee = make(chan protocol.Event, 1)
 		outputChan := make(chan detect.Finding, 1)
-		done := make(chan bool, 1)
+		ctx, cancel := context.WithCancel(context.Background())
 		var logBuf []byte
 		loggerBuf := bytes.NewBuffer(logBuf)
 		if !logger.IsSetFromEnv() {
@@ -422,10 +423,9 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			defer func() {
 				// signal the end
-				done <- true
+				cancel()
 
 				// cleanup
-				close(done)
 				close(outputChan)
 				close(inputs.Tracee)
 			}()
@@ -450,7 +450,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			e, err := NewEngine(tc.config, inputs, outputChan)
 			require.NoError(t, err, "constructing engine")
 			go func() {
-				e.Start(done)
+				e.Start(ctx)
 			}()
 
 			// send a test event

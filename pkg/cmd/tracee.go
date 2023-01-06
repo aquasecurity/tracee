@@ -3,10 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
@@ -48,22 +45,6 @@ func (r Runner) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
-	// Create a context (cancelled by SIGINT/SIGTERM)
-	ctx, cancel := context.WithCancel(ctx)
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	defer func() {
-		signal.Stop(sig)
-		cancel()
-	}()
-	go func() {
-		select {
-		case <-sig:
-			cancel()
-		case <-ctx.Done():
-		}
-	}()
 
 	// Print statistics at the end
 

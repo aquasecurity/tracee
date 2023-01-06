@@ -13,10 +13,9 @@ import (
 func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-chan *trace.Event, <-chan error) {
 	out := make(chan *trace.Event)
 	errc := make(chan error, 1)
-	done := make(chan bool)
 	engineInput := make(chan protocol.Event)
 
-	engineOutput := engine.StartPipeline(t.config.EngineConfig, engineInput, done)
+	engineOutput := engine.StartPipeline(ctx, t.config.EngineConfig, engineInput)
 
 	// TODO: in the upcoming releases, the rule engine should be changed to receive trace.Event,
 	// and return a trace.Event, which should remove the necessity of converting trace.Event to protocol.Event,
@@ -68,13 +67,6 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 				return
 			}
 		}
-	}()
-
-	go func() {
-		defer close(done)
-
-		<-ctx.Done()
-		done <- true
 	}()
 
 	return out, errc
