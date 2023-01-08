@@ -95,7 +95,7 @@ func main() {
 				return nil
 			}
 
-			fmt.Printf("Loaded %d signature(s): %s\n", len(loadedSigIDs), loadedSigIDs)
+			logger.Info("Signatures loaded", "total", len(loadedSigIDs), "signatures", loadedSigIDs)
 
 			if c.Bool("list") {
 				listSigs(os.Stdout, sigs)
