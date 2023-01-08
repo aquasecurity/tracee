@@ -221,7 +221,7 @@ func Log(lvl Level, innerAggregation bool, msg string, keysAndValues ...interfac
 		default:
 			infoKVs := append(make([]interface{}, 0), "level", int(lvl), "msg", msg)
 			keysAndValues = append(infoKVs, keysAndValues...)
-			pkgLogger.l.Errorw("unspecified log level", keysAndValues...)
+			pkgLogger.l.Errorw("Unspecified log level", keysAndValues...)
 		}
 	}
 }

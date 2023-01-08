@@ -26,7 +26,7 @@ func Find(target string, partialEval bool, rulesDir string, rules []string, aioE
 	if rulesDir == "" {
 		exePath, err := os.Executable()
 		if err != nil {
-			logger.Error("getting executable path: " + err.Error())
+			logger.Error("Getting executable path: " + err.Error())
 		}
 		rulesDir = filepath.Join(filepath.Dir(exePath), "rules")
 	}
@@ -111,7 +111,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 			filepath.WalkDir(dir,
 				func(path string, d fs.DirEntry, err error) error {
 					if err != nil {
-						logger.Error("finding rego sigs", "error", err)
+						logger.Error("Finding rego sigs", "error", err)
 						return err
 					}
 					if d.IsDir() || d.Name() == "helpers.rego" {
@@ -122,7 +122,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 					}
 					helperCode, err := ioutil.ReadFile(path)
 					if err != nil {
-						logger.Error("reading file " + path + ": " + err.Error())
+						logger.Error("Reading file " + path + ": " + err.Error())
 						return nil
 					}
 
@@ -133,7 +133,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 			filepath.WalkDir(dir, func(
 				path string, d fs.DirEntry, err error) error {
 				if err != nil {
-					logger.Error("finding rego sigs", "error", err)
+					logger.Error("Finding rego sigs", "error", err)
 					return err
 				}
 				if d.IsDir() || !isRegoFile(d.Name()) || isHelper(d.Name()) {
@@ -141,7 +141,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 				}
 				regoCode, err := ioutil.ReadFile(path)
 				if err != nil {
-					logger.Error("reading file " + path + ": " + err.Error())
+					logger.Error("Reading file " + path + ": " + err.Error())
 					return nil
 				}
 				modules[path] = string(regoCode)
@@ -159,7 +159,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 							newlineOffset = 22
 						}
 					}
-					logger.Error("creating rego signature with: " + string(regoCode[0:newlineOffset]) + ": " + err.Error())
+					logger.Error("Creating rego signature with: " + string(regoCode[0:newlineOffset]) + ": " + err.Error())
 					return nil
 				}
 				res = append(res, sig)

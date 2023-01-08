@@ -190,7 +190,7 @@ func (t *Tracee) processBPFLogs() {
 			// https://github.com/aquasecurity/libbpfgo/issues/122
 			if lost > 0 {
 				t.stats.LostBPFLogsCount.Increment(lost)
-				logger.Warn(fmt.Sprintf("lost %d ebpf logs events", lost))
+				logger.Warn(fmt.Sprintf("Lost %d ebpf logs events", lost))
 			}
 		}
 	}

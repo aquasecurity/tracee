@@ -106,7 +106,7 @@ type InitValues struct {
 // Validate does static validation of the configuration
 func (tc Config) Validate() error {
 	if tc.Filter == nil || tc.Filter.EventsToTrace == nil {
-		return fmt.Errorf("Filter or EventsToTrace is nil")
+		return fmt.Errorf("filter or EventsToTrace is nil")
 	}
 
 	for _, e := range tc.Filter.EventsToTrace {
@@ -422,7 +422,7 @@ func (t *Tracee) Init() error {
 			t.pidsInMntns.AddBucketItem(uint32(mountNS), uint32(pid))
 		}
 	} else {
-		logger.Debug("caps Requested", "error", err)
+		logger.Debug("Capabilities Requested", "error", err)
 	}
 
 	// Initialize capture directory
@@ -887,7 +887,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 
 	// Cancel events with missing symbols dependencies
 	for eventToCancel, missingDepSyms := range missingSymsPerEvent {
-		logger.Error("event canceled because of missing kernel symbol dependency", "missing symbols", missingDepSyms, "event", events.Definitions.Get(eventToCancel).Name)
+		logger.Error("Event canceled because of missing kernel symbol dependency", "missing symbols", missingDepSyms, "event", events.Definitions.Get(eventToCancel).Name)
 		delete(t.events, eventToCancel)
 	}
 }
@@ -1097,7 +1097,7 @@ func getTailCalls(eventConfigs map[events.ID]eventConfig) ([]events.TailCall, er
 			}
 			for _, index := range tailCall.MapIndexes {
 				if index >= uint32(events.MaxCommonID) { // remove undefined syscalls (check arm64.go) and events
-					logger.Debug("removing index from tail call (over max event id)", "tail_call_map", tailCall.MapName, "index", index,
+					logger.Debug("Removing index from tail call (over max event id)", "tail_call_map", tailCall.MapName, "index", index,
 						"max_event_id", events.MaxCommonID, "pkgName", pkgName)
 					tailCall.RemoveIndex(index)
 				}
@@ -1390,12 +1390,12 @@ func (t *Tracee) Close() {
 		},
 	)
 	if err != nil {
-		logger.Error("capabilities", "error", err)
+		logger.Error("Capabilities", "error", err)
 	}
 
 	err = t.cgroups.Destroy()
 	if err != nil {
-		logger.Error("cgroups destroy", "error", err)
+		logger.Error("Cgroups destroy", "error", err)
 	}
 }
 

@@ -210,7 +210,7 @@ func (sorter *EventsChronologicalSorter) sendEvents(outputChan chan<- *trace.Eve
 			}
 		}
 		if extractionEvent.Timestamp != eventTimestamp {
-			logger.Warn("event queue changed while extracting events")
+			logger.Warn("Event queue changed while extracting events")
 			err := mostDelayingQueue.InsertByTimestamp(extractionEvent)
 			if err != nil {
 				sorter.errorChan <- err

@@ -39,10 +39,10 @@ func (s *Server) EnableHealthzEndpoint() {
 
 // Start starts the http server on the listen addr
 func (s *Server) Start() {
-	logger.Debug("serving metrics endpoint", "address", s.listenAddr)
+	logger.Debug("Serving metrics endpoint", "address", s.listenAddr)
 
 	if err := http.ListenAndServe(s.listenAddr, s.mux); err != http.ErrServerClosed {
-		logger.Error("serving metrics endpoint", "error", err)
+		logger.Error("Serving metrics endpoint", "error", err)
 	}
 }
 

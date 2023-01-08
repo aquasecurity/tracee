@@ -452,7 +452,7 @@ func MergeErrors(cs ...<-chan error) <-chan error {
 
 func (t *Tracee) handleError(err error) {
 	t.stats.ErrorCount.Increment()
-	logger.Error("tracee encountered an error", "error", err)
+	logger.Error("Tracee encountered an error", "error", err)
 }
 
 // parseArguments must happen before rules are evaluated.

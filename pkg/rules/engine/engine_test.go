@@ -221,7 +221,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 					}, nil
 				},
 			},
-			expectedError: "signature Fake Signature doesn't declare an input source",
+			expectedError: "Signature Fake Signature doesn't declare an input source",
 		},
 		{
 			name: "sad path - signature init fails",

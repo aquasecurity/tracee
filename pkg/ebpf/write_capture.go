@@ -156,7 +156,7 @@ func (t *Tracee) processFileWrites() {
 			// https://github.com/aquasecurity/libbpfgo/issues/122
 			if lost > 0 {
 				t.stats.LostWrCount.Increment(lost)
-				logger.Warn(fmt.Sprintf("lost %d write events", lost))
+				logger.Warn(fmt.Sprintf("Lost %d write events", lost))
 			}
 		}
 	}

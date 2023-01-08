@@ -42,23 +42,23 @@ func (eq *eventsQueue) Get() (*trace.Event, error) {
 	defer eq.mutex.Unlock()
 	if eq.head == nil {
 		if eq.tail != nil {
-			return nil, fmt.Errorf("BUG: TAIL without a HEAD")
+			return nil, fmt.Errorf("bug: TAIL without a HEAD")
 		}
 		return nil, nil
 	}
 	headNode := eq.head
 	if headNode == eq.tail {
 		if headNode.next != nil || headNode.previous != nil {
-			return nil, fmt.Errorf("BUG: last existing node still conneced")
+			return nil, fmt.Errorf("bug: last existing node still conneced")
 		}
 		eq.tail = nil
 		eq.head = nil
 	} else {
 		if headNode.previous == nil {
-			return nil, fmt.Errorf("BUG: not TAIL lacking previous")
+			return nil, fmt.Errorf("bug: not TAIL lacking previous")
 		}
 		if headNode.next != nil {
-			return nil, fmt.Errorf("BUG: HEAD has next")
+			return nil, fmt.Errorf("bug: HEAD has next")
 		}
 		headNode.previous.next = nil
 		eq.head = headNode.previous

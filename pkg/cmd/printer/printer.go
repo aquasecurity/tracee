@@ -207,7 +207,7 @@ func (p templateEventPrinter) Print(event trace.Event) {
 	if p.templateObj != nil {
 		err := (*p.templateObj).Execute(p.out, event)
 		if err != nil {
-			logger.Error("error executing template", "error", err)
+			logger.Error("Executing template", "error", err)
 		}
 	} else {
 		fmt.Fprintf(p.out, "Template Obj is nil")
@@ -230,7 +230,7 @@ func (p jsonEventPrinter) Preamble() {}
 func (p jsonEventPrinter) Print(event trace.Event) {
 	eBytes, err := json.Marshal(event)
 	if err != nil {
-		logger.Error("error marshaling event to json", "error", err)
+		logger.Error("Marshaling event to json", "error", err)
 	}
 	fmt.Fprintln(p.out, string(eBytes))
 }
@@ -296,7 +296,7 @@ func (p *gobEventPrinter) Preamble() {}
 func (p *gobEventPrinter) Print(event trace.Event) {
 	err := p.outEnc.Encode(event)
 	if err != nil {
-		logger.Error("error encoding event to gob", "error", err)
+		logger.Error("Encoding event to gob", "error", err)
 	}
 }
 

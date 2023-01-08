@@ -33,7 +33,7 @@ func (t *Tracee) processLostEvents() {
 		// https://github.com/aquasecurity/libbpfgo/issues/122
 		if lost > 0 {
 			t.stats.LostEvCount.Increment(lost)
-			logger.Warn(fmt.Sprintf("lost %d events", lost))
+			logger.Warn(fmt.Sprintf("Lost %d events", lost))
 		}
 	}
 }
@@ -50,7 +50,7 @@ func (t *Tracee) processEvent(event *trace.Event) []error {
 	for _, procFunc := range processors {
 		err := procFunc(event)
 		if err != nil {
-			logger.Error("error processing event", "event", event.EventName, "error", err)
+			logger.Error("Processing event", "event", event.EventName, "error", err)
 			errs = append(errs, err)
 		}
 	}
