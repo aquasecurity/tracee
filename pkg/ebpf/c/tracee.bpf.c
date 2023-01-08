@@ -469,6 +469,7 @@ enum event_id_e
     NET_PACKET_ICMP,
     NET_PACKET_ICMPV6,
     NET_PACKET_DNS,
+    DO_MMAP,
     MAX_EVENT_ID,
 };
 
@@ -5957,6 +5958,61 @@ int BPF_KPROBE(trace_mmap_alert)
     return 0;
 }
 
+SEC("kprobe/do_mmap")
+TRACE_ENT_FUNC(do_mmap, DO_MMAP)
+
+SEC("kretprobe/do_mmap")
+int BPF_KPROBE(trace_ret_do_mmap)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    args_t saved_args;
+    if (load_args(&saved_args, DO_MMAP) != 0) {
+        // missed entry or not traced
+        return 0;
+    }
+
+    dev_t s_dev;
+    unsigned long inode_nr;
+    void *file_path;
+    u64 ctime;
+    unsigned int flags;
+
+    struct file *file = (struct file *) saved_args.args[0];
+    if (file != NULL) {
+        s_dev = get_dev_from_file(file);
+        inode_nr = get_inode_nr_from_file(file);
+        file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+        ctime = get_ctime_nanosec_from_file(file);
+    }
+    unsigned long len = (unsigned long) saved_args.args[2];
+    unsigned long prot = (unsigned long) saved_args.args[3];
+    unsigned long mmap_flags = (unsigned long) saved_args.args[4];
+    unsigned long pgoff = (unsigned long) saved_args.args[5];
+    unsigned long addr = (unsigned long) PT_REGS_RC(ctx);
+
+    save_to_submit_buf(&data, &addr, sizeof(void *), 0);
+    if (file != NULL) {
+        save_str_to_buf(&data, file_path, 1);
+        save_to_submit_buf(&data, &flags, sizeof(unsigned int), 2);
+        save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 3);
+        save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 4);
+        save_to_submit_buf(&data, &ctime, sizeof(u64), 5);
+    }
+    save_to_submit_buf(&data, &pgoff, sizeof(unsigned long), 6);
+    save_to_submit_buf(&data, &len, sizeof(unsigned long), 7);
+    save_to_submit_buf(&data, &prot, sizeof(unsigned long), 8);
+    save_to_submit_buf(&data, &mmap_flags, sizeof(unsigned long), 9);
+
+    if (data.config->options & OPT_SHOW_SYSCALL) {
+        int id = get_task_syscall_id(data.task);
+        save_to_submit_buf(&data, (void *) &id, sizeof(int), 10);
+    }
+    return events_perf_submit(&data, DO_MMAP, 0);
+}
+
 SEC("kprobe/security_mmap_file")
 int BPF_KPROBE(trace_security_mmap_file)
 {
@@ -5992,8 +6048,8 @@ int BPF_KPROBE(trace_security_mmap_file)
     }
 
     if (should_submit(SECURITY_MMAP_FILE, data.config)) {
-        save_to_submit_buf(&data, &prot, sizeof(int), 5);
-        save_to_submit_buf(&data, &mmap_flags, sizeof(int), 6);
+        save_to_submit_buf(&data, &prot, sizeof(unsigned long), 5);
+        save_to_submit_buf(&data, &mmap_flags, sizeof(unsigned long), 6);
         if (data.config->options & OPT_SHOW_SYSCALL) {
             if (id == -1) { // if id wasn't checked yet, do so now.
                 id = get_task_syscall_id(data.task);

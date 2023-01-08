@@ -232,7 +232,8 @@ const (
 	NetPacketICMPBase   // TODO: move this event into range for network events
 	NetPacketICMPv6Base // TODO: move this event into range for network events
 	NetPacketDNSBase    // TODO: move this event into range for network events
-	MaxCommonID         // TODO: move this event into range for network events
+	DoMmap
+	MaxCommonID
 )
 
 // Events originated from user-space
@@ -5490,8 +5491,30 @@ var Definitions = eventDefinitions{
 				{Type: "dev_t", Name: "dev"},
 				{Type: "unsigned long", Name: "inode"},
 				{Type: "unsigned long", Name: "ctime"},
-				{Type: "int", Name: "prot"},
-				{Type: "int", Name: "mmap_flags"},
+				{Type: "unsigned long", Name: "prot"},
+				{Type: "unsigned long", Name: "mmap_flags"},
+				{Type: "int", Name: "syscall"},
+			},
+		},
+		DoMmap: {
+			ID32Bit: sys32undefined,
+			Name:    "do_mmap",
+			Probes: []probeDependency{
+				{Handle: probes.DoMmap, Required: true},
+				{Handle: probes.DoMmapRet, Required: true},
+			},
+			Sets: []string{"fs", "fs_file_ops", "proc", "proc_mem"},
+			Params: []trace.ArgMeta{
+				{Type: "void*", Name: "addr"},
+				{Type: "const char*", Name: "pathname"},
+				{Type: "unsigned int", Name: "flags"},
+				{Type: "dev_t", Name: "dev"},
+				{Type: "unsigned long", Name: "inode"},
+				{Type: "unsigned long", Name: "ctime"},
+				{Type: "unsigned long", Name: "pgoff"},
+				{Type: "unsigned long", Name: "len"},
+				{Type: "unsigned long", Name: "prot"},
+				{Type: "unsigned long", Name: "mmap_flags"},
 				{Type: "int", Name: "syscall"},
 			},
 		},
