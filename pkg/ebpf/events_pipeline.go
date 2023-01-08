@@ -182,9 +182,11 @@ func (t *Tracee) decodeEvents(outerCtx context.Context) (<-chan *trace.Event, <-
 			if t.config.Output.RelativeTime {
 				// To get the monotonic time since tracee was started, we have to subtract the start time from the timestamp.
 				ctx.Ts -= t.startTime
+				ctx.StartTime -= t.startTime
 			} else {
 				// To get the current ("wall") time, we add the boot time into it.
 				ctx.Ts += t.bootTime
+				ctx.StartTime += t.bootTime
 			}
 
 			containerInfo := t.containers.GetCgroupInfo(ctx.CgroupID).Container
