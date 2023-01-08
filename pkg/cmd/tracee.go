@@ -65,20 +65,6 @@ func (r Runner) Run(ctx context.Context) error {
 		}
 	}()
 
-	// Print the preamble
-
-	go func() {
-		printer.Preamble()
-		for {
-			select {
-			case event := <-r.TraceeConfig.ChanEvents:
-				printer.Print(event)
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
 	// Print statistics at the end
 
 	defer func() {
@@ -93,6 +79,20 @@ func (r Runner) Run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("error initializing Tracee: %v", err)
 	}
+
+	// Print the preamble and start event channel reception
+
+	go func() {
+		printer.Preamble()
+		for {
+			select {
+			case event := <-r.TraceeConfig.ChanEvents:
+				printer.Print(event)
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
 
 	return t.Run(ctx) // return when context is cancelled by signal
 }
