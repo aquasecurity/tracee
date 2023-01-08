@@ -16,7 +16,7 @@ const httpMinLen int = 7 // longest http command is "DELETE "
 // NetPacketHTTP
 //
 
-func NetPacketHTTP() deriveFunction {
+func NetPacketHTTP() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketHTTP, deriveHTTP())
 }
 
@@ -49,7 +49,7 @@ func deriveHTTPEvents(event trace.Event) ([]interface{}, error) {
 // NetPacketHTTPRequest
 //
 
-func NetPacketHTTPRequest() deriveFunction {
+func NetPacketHTTPRequest() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketHTTPRequest, deriveHTTPRequest())
 }
 
@@ -81,7 +81,7 @@ func deriveHTTPRequestEvents(event trace.Event) ([]interface{}, error) {
 // NetPacketHTTPResponse
 //
 
-func NetPacketHTTPResponse() deriveFunction {
+func NetPacketHTTPResponse() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketHTTPResponse, deriveHTTPResponse())
 }
 

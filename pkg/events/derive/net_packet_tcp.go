@@ -9,7 +9,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-func NetPacketTCP() deriveFunction {
+func NetPacketTCP() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketTCP, deriveNetPacketTCPArgs())
 }
 

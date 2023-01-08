@@ -7,7 +7,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-func NetPacketIPv6() deriveFunction {
+func NetPacketIPv6() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketIPv6, deriveNetPacketIPv6Args())
 }
 
