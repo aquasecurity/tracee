@@ -404,7 +404,7 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 		if okMemDump {
 			err := t.triggerMemDump()
 			if err != nil {
-				return err
+				logger.Warn("memory dump", "error", err)
 			}
 		}
 	}

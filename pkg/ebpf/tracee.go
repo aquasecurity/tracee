@@ -1411,7 +1411,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.triggerSeqOpsIntegrityCheck(trace.Event{})
 	err := t.triggerMemDump()
 	if err != nil {
-		return err
+		logger.Warn("memory dump", "error", err)
 	}
 	t.eventsPerfMap.Start()
 	go t.processLostEvents()
