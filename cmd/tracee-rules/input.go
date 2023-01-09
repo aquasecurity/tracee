@@ -102,7 +102,10 @@ func setupTraceeGobInputSource(opts *traceeInputOptions) (chan protocol.Event, e
 				res <- event.ToProtocol()
 			}
 		}
-		opts.inputFile.Close()
+		err := opts.inputFile.Close()
+		if err != nil {
+			logger.Error("Closing input file", "error", err)
+		}
 		close(res)
 	}()
 	return res, nil
@@ -122,7 +125,10 @@ func setupTraceeJSONInputSource(opts *traceeInputOptions) (chan protocol.Event, 
 				res <- e.ToProtocol()
 			}
 		}
-		opts.inputFile.Close()
+		err := opts.inputFile.Close()
+		if err != nil {
+			logger.Error("Closing input file", "error", err)
+		}
 		close(res)
 	}()
 	return res, nil

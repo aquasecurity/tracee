@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"golang.org/x/sys/unix"
 )
 
@@ -77,12 +78,22 @@ func CopyRegularFileByPath(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer source.Close()
+	defer func() {
+		err := source.Close()
+		if err != nil {
+			logger.Error("Closing file", "error", err)
+		}
+	}()
 	destination, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer destination.Close()
+	defer func() {
+		err := destination.Close()
+		if err != nil {
+			logger.Error("Closing file", "error", err)
+		}
+	}()
 	_, err = io.Copy(destination, source)
 	if err != nil {
 		return err
@@ -103,12 +114,22 @@ func CopyRegularFileByRelativePath(srcName string, dstDir *os.File, dstName stri
 	if err != nil {
 		return err
 	}
-	defer source.Close()
+	defer func() {
+		err := source.Close()
+		if err != nil {
+			logger.Error("Closing file", "error", err)
+		}
+	}()
 	destination, err := CreateAt(dstDir, dstName)
 	if err != nil {
 		return err
 	}
-	defer destination.Close()
+	defer func() {
+		err := destination.Close()
+		if err != nil {
+			logger.Error("Closing file", "error", err)
+		}
+	}()
 	_, err = io.Copy(destination, source)
 	if err != nil {
 		return err
@@ -122,7 +143,12 @@ func IsDirEmpty(pathname string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer dir.Close()
+	defer func() {
+		err := dir.Close()
+		if err != nil {
+			logger.Error("Closing file", "error", err)
+		}
+	}()
 
 	_, err = dir.Readdirnames(1)
 	if err == io.EOF {

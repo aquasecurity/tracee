@@ -68,7 +68,7 @@ func findGoSigs(dir string) ([]detect.Signature, error) {
 			err := filepath.WalkDir(dir,
 				func(path string, d fs.DirEntry, err error) error {
 					if err != nil {
-						logger.Error("finding golang sigs", "error", err)
+						logger.Error("Finding golang sigs", "error", err)
 						return err
 					}
 
@@ -78,12 +78,12 @@ func findGoSigs(dir string) ([]detect.Signature, error) {
 
 					p, err := plugin.Open(path)
 					if err != nil {
-						logger.Error("opening plugin " + path + ": " + err.Error())
+						logger.Error("Opening plugin " + path + ": " + err.Error())
 						return err
 					}
 					export, err := p.Lookup("ExportedSignatures")
 					if err != nil {
-						logger.Error("missing Export symbol in plugin " + d.Name())
+						logger.Error("Missing Export symbol in plugin " + d.Name())
 						return err
 					}
 					sigs := *export.(*[]detect.Signature)

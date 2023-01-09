@@ -8,6 +8,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/bucketscache"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 // PathResolver generates an accessible absolute path from the root mount namespace to a relative
@@ -44,6 +45,8 @@ func (cPathRes PathResolver) ResolveAbsolutePath(mountNSAbsolutePath string, mou
 		})
 		if err == nil {
 			return fmt.Sprintf("%s%s", procRootPath, mountNSAbsolutePath), nil
+		} else {
+			logger.Debug("Requiring capabilities", "error", err)
 		}
 	}
 	return "", fmt.Errorf("has no access to container fs - no recorded living process of mount namespace %d", mountNS)

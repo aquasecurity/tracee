@@ -39,7 +39,10 @@ func (t *Tracee) processNetCaptureEvents(ctx gocontext.Context) {
 	errChanList = append(errChanList, errChan)
 
 	// pipeline started, wait for completion.
-	t.WaitForPipeline(errChanList...)
+	err := t.WaitForPipeline(errChanList...)
+	if err != nil {
+		logger.Error("Pipeline", "error", err)
+	}
 }
 
 func (t *Tracee) processNetCapEvents(ctx gocontext.Context, in <-chan *trace.Event) <-chan error {
@@ -52,12 +55,15 @@ func (t *Tracee) processNetCapEvents(ctx gocontext.Context, in <-chan *trace.Eve
 			select {
 			case event := <-in:
 				t.processNetCapEvent(event)
-				t.stats.NetCapCount.Increment()
+				_ = t.stats.NetCapCount.Increment()
 
 			case lost := <-t.lostNetCapChannel:
 				if lost > 0 {
 					// https://github.com/aquasecurity/libbpfgo/issues/122
-					t.stats.LostNtCapCount.Increment(lost)
+					err := t.stats.LostNtCapCount.Increment(lost)
+					if err != nil {
+						logger.Error("Incrementing lost network events count", "error", err)
+					}
 					logger.Warn(fmt.Sprintf("lost %d network capture events", lost))
 				}
 

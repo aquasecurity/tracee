@@ -57,8 +57,12 @@ func main() {
 			}
 
 			if c.NumFlags() == 0 {
-				cli.ShowAppHelp(c)
-				return errors.New("no flags specified")
+				noFlagsErr := errors.New("no flags specified")
+				err = cli.ShowAppHelp(c)
+				if err != nil {
+					return fmt.Errorf("%s - %s", noFlagsErr, err.Error())
+				}
+				return noFlagsErr
 			}
 
 			var target string

@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 type ProcessTreeFilter struct {
@@ -89,7 +90,12 @@ func (filter *ProcessTreeFilter) InitBPF(bpfModule *bpf.Module) error {
 	if err != nil {
 		return fmt.Errorf("could not open proc dir: %v", err)
 	}
-	defer procDir.Close()
+	defer func() {
+		err := procDir.Close()
+		if err != nil {
+			logger.Error("Closing file", "error", err)
+		}
+	}()
 
 	entries, err := procDir.Readdirnames(-1)
 	if err != nil {
@@ -123,7 +129,10 @@ func (filter *ProcessTreeFilter) InitBPF(bpfModule *bpf.Module) error {
 
 			if shouldBeTraced, ok := filter.PIDs[uint32(ppid)]; ok {
 				trace := boolToUInt32(shouldBeTraced)
-				processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&trace))
+				err = processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&trace))
+				if err != nil {
+					logger.Error("Updating processTreeBPFMap", "error", err)
+				}
 				return
 			}
 			fn(uint32(ppid))
@@ -133,7 +142,10 @@ func (filter *ProcessTreeFilter) InitBPF(bpfModule *bpf.Module) error {
 
 	for pid, shouldBeTraced := range filter.PIDs {
 		trace := boolToUInt32(shouldBeTraced)
-		processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&trace))
+		err := processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&trace))
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

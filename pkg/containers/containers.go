@@ -110,7 +110,12 @@ func GetContainerIdFromTaskDir(taskPath string) (string, error) {
 	if err != nil {
 		return containerId, err
 	}
-	defer cgroupFile.Close()
+	defer func() {
+		err := cgroupFile.Close()
+		if err != nil {
+			logger.Error("Closing file", "error", err)
+		}
+	}()
 	scanner := bufio.NewScanner(cgroupFile)
 	for scanner.Scan() {
 		containerId, _ := getContainerIdFromCgroup(scanner.Text())

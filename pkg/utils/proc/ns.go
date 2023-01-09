@@ -17,7 +17,12 @@ func GetMountNSFirstProcesses() (map[int]int, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not open proc dir: %v", err)
 	}
-	defer procDir.Close()
+	defer func() {
+		err := procDir.Close()
+		if err != nil {
+			logger.Error("Closing file", "error", err)
+		}
+	}()
 
 	entries, err := procDir.Readdirnames(-1)
 	if err != nil {
@@ -104,7 +109,12 @@ func GetAllProcNS(pid uint) (*ProcNS, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not open ns dir: %v", err)
 	}
-	defer nsDir.Close()
+	defer func() {
+		err := nsDir.Close()
+		if err != nil {
+			logger.Error("Closing file", "error", err)
+		}
+	}()
 
 	entries, err := nsDir.Readdirnames(-1)
 	if err != nil {

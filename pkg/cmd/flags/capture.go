@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 func captureHelp() string {
@@ -110,7 +111,10 @@ func PrepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 
 	capture.OutputPath = filepath.Join(outDir, "out")
 	if clearDir {
-		os.RemoveAll(capture.OutputPath)
+		err := os.RemoveAll(capture.OutputPath)
+		if err != nil {
+			logger.Warn("Removing all", "path", "error", err)
+		}
 	}
 
 	return capture, nil

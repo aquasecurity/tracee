@@ -32,7 +32,10 @@ func (t *Tracee) processLostEvents() {
 		// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:
 		// https://github.com/aquasecurity/libbpfgo/issues/122
 		if lost > 0 {
-			t.stats.LostEvCount.Increment(lost)
+			err := t.stats.LostEvCount.Increment(lost)
+			if err != nil {
+				logger.Error("Incrementing lost events count", "error", err)
+			}
 			logger.Warn(fmt.Sprintf("Lost %d events", lost))
 		}
 	}
@@ -239,7 +242,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 				} else {
 
 					// ring1
-					capabilities.GetInstance().Required(func() error {
+					err = capabilities.GetInstance().Required(func() error {
 						currentHash, err = computeFileHashAtPath(sourceFilePath)
 						if err == nil {
 							hashInfoObj = fileExecInfo{castedSourceFileCtime, currentHash}
@@ -247,6 +250,9 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 						}
 						return nil
 					})
+					if err != nil {
+						logger.Error("Requiring capabilities", "error", err)
+					}
 
 				}
 				event.Args = append(event.Args, trace.Argument{
@@ -471,10 +477,11 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 	symbol := utils.ParseSymbol(addressUint64, t.kernelSymbols)
 	var utsName unix.Utsname
 	arch := ""
-	unix.Uname(&utsName)
-	if err == nil {
-		arch = string(bytes.TrimRight(utsName.Machine[:], "\x00"))
+	err = unix.Uname(&utsName)
+	if err != nil {
+		return err
 	}
+	arch = string(bytes.TrimRight(utsName.Machine[:], "\x00"))
 	event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "arch", Type: "char*"}, Value: arch})
 	event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "symbol_name", Type: "char*"}, Value: symbol.Name})
 	event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "symbol_owner", Type: "char*"}, Value: symbol.Owner})

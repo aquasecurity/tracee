@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 // GetMEMAmountInMBs reads meminfo file and returns MemTotal in megabytes
@@ -13,7 +15,12 @@ func GetMEMAmountInMBs() int {
 	if err != nil {
 		return 0
 	}
-	defer file.Close()
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			logger.Error("Closing file", "error", err)
+		}
+	}()
 	scanner := bufio.NewScanner(file)
 
 	var value int

@@ -3,6 +3,8 @@ package probes
 import (
 	"fmt"
 
+	"github.com/aquasecurity/tracee/pkg/logger"
+
 	bpf "github.com/aquasecurity/libbpfgo"
 )
 
@@ -113,8 +115,15 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 
 	if !netEnabled {
 		// disable network cgroup probes (avoid effective CAP_NET_ADMIN if not needed)
-		allProbes[CgroupSKBIngress].autoload(module, false)
-		allProbes[CgroupSKBEgress].autoload(module, false)
+		var err error
+		err = allProbes[CgroupSKBIngress].autoload(module, false)
+		if err != nil {
+			logger.Error("CgroupSKBIngress probe autoload", "error", err)
+		}
+		err = allProbes[CgroupSKBEgress].autoload(module, false)
+		if err != nil {
+			logger.Error("CgroupSKBEgress probe autoload", "error", err)
+		}
 	}
 
 	return &probes{

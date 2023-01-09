@@ -82,7 +82,10 @@ func (c *Capabilities) initialize(bypass bool) error {
 	}
 
 	for c := range c.all {
-		cap.DropBound(c) // drop all capabilities from bound
+		err = cap.DropBound(c) // drop all capabilities from bound
+		if err != nil {
+			logger.Debug("Dropping capability from bound", "cap", c, "error", err)
+		}
 	}
 
 	err = c.setProc()
@@ -92,10 +95,13 @@ func (c *Capabilities) initialize(bypass bool) error {
 
 	// The base for required capabilities (ring1) depends on the following:
 
-	c.Require(
+	err = c.Require(
 		cap.IPC_LOCK,
 		cap.SYS_RESOURCE,
 	)
+	if err != nil {
+		logger.Fatal("Requiring capabilities", "error", err)
+	}
 
 	// Kernels bellow v5.8 do not support cap.BPF + cap.PERFMON (instead of
 	// having to have cap.SYS_ADMIN), nevertheless, some kernels, like RHEL8
@@ -103,26 +109,38 @@ func (c *Capabilities) initialize(bypass bool) error {
 
 	paranoid, err := getKernelPerfEventParanoidValue()
 	if err != nil {
-		logger.Debug("Could not get perf_event_paranoid, assuming highest")
+		logger.Debug("Could not get perf_event_paranoid, assuming highest", "error", err)
 	}
 
 	if paranoid > 2 {
 		logger.Debug("Paranoid: Value in /proc/sys/kernel/perf_event_paranoid is > 2")
 		logger.Debug("Paranoid: Tracee needs CAP_SYS_ADMIN instead of CAP_BPF + CAP_PERFMON")
 		logger.Debug("Paranoid: To change that behavior set perf_event_paranoid to 2 or less.")
-		c.Require(cap.SYS_ADMIN)
+		err = c.Require(cap.SYS_ADMIN)
+		if err != nil {
+			logger.Fatal("Requiring capabilities", "error", err)
+		}
 	}
 
-	hasBPF, _ := c.have.GetFlag(cap.Permitted, cap.BPF)
+	hasBPF, err := c.have.GetFlag(cap.Permitted, cap.BPF)
+	if err != nil {
+		logger.Error("Getting capability flag", "error", err)
+	}
 	if hasBPF {
-		c.Require(
+		err = c.Require(
 			cap.BPF,
 			cap.PERFMON,
 		)
+		if err != nil {
+			logger.Fatal("Requiring capabilities", "error", err)
+		}
 	} else {
-		c.Require(
+		err = c.Require(
 			cap.SYS_ADMIN,
 		)
+		if err != nil {
+			logger.Fatal("Requiring capabilities", "error", err)
+		}
 	}
 
 	return c.apply(Unprivileged) // ring3 as effective

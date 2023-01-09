@@ -164,17 +164,26 @@ func unpackBTFHub(outFilePath string, OSInfo *helpers.OSInfo) error {
 	if err != nil {
 		return fmt.Errorf("error opening embedded btfhub file: %s", err.Error())
 	}
-	defer btfFile.Close()
+	defer func() {
+		err := btfFile.Close()
+		if err != nil {
+			logger.Error("Closing file", "error", err)
+		}
+	}()
 
 	outFile, err := os.Create(outFilePath)
 	if err != nil {
 		return fmt.Errorf("could not create btf file: %s", err.Error())
 	}
-	defer outFile.Close()
+	defer func() {
+		err := outFile.Close()
+		if err != nil {
+			logger.Error("Closing file", "error", err)
+		}
+	}()
 
 	if _, err := io.Copy(outFile, btfFile); err != nil {
 		return fmt.Errorf("error copying embedded btfhub file: %s", err.Error())
-
 	}
 
 	return nil

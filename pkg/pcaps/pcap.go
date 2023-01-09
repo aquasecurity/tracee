@@ -4,6 +4,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/google/gopacket"
@@ -76,10 +77,16 @@ func (p *Pcap) write(event *trace.Event, payload []byte) error {
 
 	p.writtenPkts++
 
-	p.pcapWriter.WritePacket(info, payload)
+	err := p.pcapWriter.WritePacket(info, payload)
+	if err != nil {
+		return utils.ErrorFuncName(err)
+	}
 
 	if p.writtenPkts >= flushAtPackets {
-		p.flush()
+		err = p.flush()
+		if err != nil {
+			logger.Error("Flushing pcap", "error", err)
+		}
 	}
 
 	return nil
@@ -87,11 +94,14 @@ func (p *Pcap) write(event *trace.Event, payload []byte) error {
 
 func (p *Pcap) flush() error {
 	p.writtenPkts = 0
-	p.pcapWriter.Flush()
-	return nil
+	return p.pcapWriter.Flush()
 }
 
 func (p *Pcap) close() error {
-	p.flush()
+	err := p.flush()
+	if err != nil {
+		logger.Error("Flushing pcap", "error", err)
+	}
+
 	return p.pcapFile.Close()
 }

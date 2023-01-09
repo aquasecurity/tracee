@@ -264,11 +264,17 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 
 		if strings.HasPrefix("pid", filterName) {
 			if operatorAndValues == "=new" {
-				filter.NewPidFilter.Parse("new")
+				err := filter.NewPidFilter.Parse("new")
+				if err != nil {
+					return tracee.Filter{}, err
+				}
 				continue
 			}
 			if operatorAndValues == "!=new" {
-				filter.NewPidFilter.Parse("!new")
+				err := filter.NewPidFilter.Parse("!new")
+				if err != nil {
+					return tracee.Filter{}, err
+				}
 				continue
 			}
 			err := filter.PIDFilter.Parse(operatorAndValues)

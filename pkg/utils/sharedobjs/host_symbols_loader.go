@@ -4,6 +4,7 @@ import (
 	"debug/elf"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/hashicorp/golang-lru/simplelru"
 )
 
@@ -110,7 +111,12 @@ func loadSharedObjectDynamicSymbols(path string) (*dynamicSymbols, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer loadedObject.Close()
+	defer func() {
+		err := loadedObject.Close()
+		if err != nil {
+			logger.Error("Closing file", "error", err)
+		}
+	}()
 
 	dynamicSymbols, err := loadedObject.DynamicSymbols()
 	if err != nil {

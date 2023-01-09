@@ -190,7 +190,10 @@ func (filter *ArgFilter) parseSyscallFilter(id events.ID, operatorAndValues stri
 		if !def.Syscall {
 			return InvalidValue(syscall)
 		}
-		syscallFilter.Parse(fmt.Sprintf("%s%d", operatorString, id))
+		err := syscallFilter.Parse(fmt.Sprintf("%s%d", operatorString, id))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

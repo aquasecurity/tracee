@@ -116,7 +116,10 @@ func PrepareOutput(outputSlice []string) (OutputConfig, printer.Config, error) {
 			return outcfg, printcfg, fmt.Errorf("cannot use a path of existing directory %s", outPath)
 		}
 		dir := filepath.Dir(outPath)
-		os.MkdirAll(dir, 0755)
+		err = os.MkdirAll(dir, 0755)
+		if err != nil {
+			return OutputConfig{}, printer.Config{}, err
+		}
 		printcfg.OutFile, err = os.Create(outPath)
 		if err != nil {
 			return outcfg, printcfg, fmt.Errorf("failed to create output path: %v", err)
@@ -132,7 +135,10 @@ func PrepareOutput(outputSlice []string) (OutputConfig, printer.Config, error) {
 			return outcfg, printcfg, fmt.Errorf("cannot use a path of existing directory %s", errPath)
 		}
 		dir := filepath.Dir(errPath)
-		os.MkdirAll(dir, 0755)
+		err = os.MkdirAll(dir, 0755)
+		if err != nil {
+			return outcfg, printcfg, err
+		}
 		outcfg.LogFile, err = os.Create(errPath)
 		if err != nil {
 			return outcfg, printcfg, fmt.Errorf("failed to create output path: %v", err)

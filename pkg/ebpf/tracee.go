@@ -299,7 +299,10 @@ func New(cfg Config) (*Tracee, error) {
 			return t, fmt.Errorf("could not get event")
 		}
 		for _, capArray := range evt.Dependencies.Capabilities {
-			caps.Require(capArray)
+			err = caps.Require(capArray)
+			if err != nil {
+				logger.Fatal("Requiring capabilities", "error", err)
+			}
 		}
 	}
 
@@ -422,7 +425,7 @@ func (t *Tracee) Init() error {
 			t.pidsInMntns.AddBucketItem(uint32(mountNS), uint32(pid))
 		}
 	} else {
-		logger.Debug("Capabilities Requested", "error", err)
+		logger.Debug("Requesting capabilities", "error", err)
 	}
 
 	// Initialize capture directory
@@ -491,7 +494,10 @@ func (t *Tracee) Init() error {
 	// monotonic clock so tracee can calculate event timestamps relative to it.
 
 	var ts unix.Timespec
-	unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts)
+	err = unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts)
+	if err != nil {
+		return fmt.Errorf("getting clock time %v", err)
+	}
 	startTime := ts.Nano()
 
 	// Calculate the boot time using the monotonic time (since this is the clock
@@ -1343,7 +1349,12 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 		if err != nil {
 			return fmt.Errorf("error logging written files")
 		}
-		defer f.Close()
+		defer func() {
+			err := f.Close()
+			if err != nil {
+				logger.Error("Closing file", "error", err)
+			}
+		}()
 		for fileName, filePath := range t.writtenFiles {
 			writeFiltered := false
 			for _, filterPrefix := range t.config.Capture.FilterFileWrite {
@@ -1408,7 +1419,12 @@ func (t *Tracee) computeOutFileHash(fileName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() {
+		err := f.Close()
+		if err != nil {
+			logger.Error("Closing file", "error", err)
+		}
+	}()
 	return computeFileHash(f)
 }
 
@@ -1417,7 +1433,12 @@ func computeFileHashAtPath(fileName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() {
+		err := f.Close()
+		if err != nil {
+			logger.Error("Closing file", "error", err)
+		}
+	}()
 	return computeFileHash(f)
 }
 
@@ -1443,17 +1464,20 @@ func (t *Tracee) updateFileSHA() {
 
 func (t *Tracee) invokeInitEvents() {
 	if t.events[events.InitNamespaces].emit {
-		capabilities.GetInstance().Requested(func() error { // ring2
+		err := capabilities.GetInstance().Requested(func() error { // ring2
 			systemInfoEvent := events.InitNamespacesEvent()
 			t.config.ChanEvents <- systemInfoEvent
 			return nil
 		}, cap.SYS_PTRACE)
-		t.stats.EventCount.Increment()
+		if err != nil {
+			logger.Debug("Requesting capabilities", "error", err)
+		}
+		_ = t.stats.EventCount.Increment()
 	}
 	if t.events[events.ExistingContainer].emit {
 		for _, e := range events.ExistingContainersEvents(t.containers, t.config.ContainersEnrich) {
 			t.config.ChanEvents <- e
-			t.stats.EventCount.Increment()
+			_ = t.stats.EventCount.Increment()
 		}
 	}
 }
@@ -1512,7 +1536,7 @@ func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
 		seqOpsPointers[i] = seqOpsStruct.Address
 	}
 	eventHandle := t.triggerContexts.Store(event)
-	t.triggerSeqOpsIntegrityCheckCall(
+	_ = t.triggerSeqOpsIntegrityCheckCall(
 		uProbeMagicNumber,
 		uint64(eventHandle),
 		seqOpsPointers,
@@ -1567,7 +1591,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 			if err != nil {
 				return err
 			}
-			t.triggerMemDumpCall(address, length, uint64(eventHandle))
+			_ = t.triggerMemDumpCall(address, length, uint64(eventHandle))
 		}
 	}
 
@@ -1591,7 +1615,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 			if err != nil {
 				return err
 			}
-			t.triggerMemDumpCall(symbol.Address, length, uint64(eventHandle))
+			_ = t.triggerMemDumpCall(symbol.Address, length, uint64(eventHandle))
 		}
 	}
 

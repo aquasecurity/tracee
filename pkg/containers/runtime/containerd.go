@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/containers"
 	"github.com/containerd/containerd/namespaces"
@@ -30,7 +31,10 @@ func ContainerdEnricher(socket string) (ContainerEnricher, error) {
 
 	conn, err := grpc.Dial(unixSocket, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		client.Close()
+		errClose := client.Close()
+		if errClose != nil {
+			logger.Error("Closing containerd connection", "error", err)
+		}
 		return nil, err
 	}
 

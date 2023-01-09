@@ -249,7 +249,10 @@ func (f *eventCtxFilter) addContainer(filter Filter, operatorAndValues string) e
 	if err != nil {
 		return err
 	}
-	f.containerFilter.add(true, Equal)
+	err = f.containerFilter.add(true, Equal)
+	if err != nil {
+		return err
+	}
 	f.containerFilter.Enable()
 	return nil
 }

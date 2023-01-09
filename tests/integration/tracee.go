@@ -10,6 +10,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/types/trace"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -56,7 +57,10 @@ func startTracee(t *testing.T, config tracee.Config, output *tracee.OutputConfig
 	require.NoError(t, err)
 
 	t.Logf("started tracee...\n")
-	go trc.Run(ctx)
+	go func() {
+		err := trc.Run(ctx)
+		assert.Nil(t, err)
+	}()
 
 	return trc
 }

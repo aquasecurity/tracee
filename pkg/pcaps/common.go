@@ -132,22 +132,40 @@ func mkdirForPcapType(o *os.File, c string, t PcapType) error {
 
 	s := "pcap"
 
-	utils.MkdirAtExist(o, s, os.ModePerm)
+	e = utils.MkdirAtExist(o, s, os.ModePerm)
+	if e != nil {
+		return utils.ErrorFuncName(e)
+	}
 
 	switch t {
 	case Process:
-		utils.MkdirAtExist(o, pcapProcDir, os.ModePerm)
+		e = utils.MkdirAtExist(o, pcapProcDir, os.ModePerm)
+		if e != nil {
+			return utils.ErrorFuncName(e)
+		}
 		e = utils.MkdirAtExist(o, pcapProcDir+c, os.ModePerm)
+		if e != nil {
+			return utils.ErrorFuncName(e)
+		}
 
 	case Container:
-		utils.MkdirAtExist(o, pcapContDir, os.ModePerm)
+		e = utils.MkdirAtExist(o, pcapContDir, os.ModePerm)
+		if e != nil {
+			return utils.ErrorFuncName(e)
+		}
 
 	case Command:
-		utils.MkdirAtExist(o, pcapCommDir, os.ModePerm)
+		e = utils.MkdirAtExist(o, pcapCommDir, os.ModePerm)
+		if e != nil {
+			return utils.ErrorFuncName(e)
+		}
 		e = utils.MkdirAtExist(o, pcapCommDir+c, os.ModePerm)
+		if e != nil {
+			return utils.ErrorFuncName(e)
+		}
 	}
 
-	return utils.ErrorFuncName(e)
+	return nil
 }
 
 // getPcapFileAndWriter returns a file descriptor and and its associated pcap

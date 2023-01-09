@@ -7,10 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"github.com/aquasecurity/tracee/types/detect"
 	"gopkg.in/yaml.v2"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
+
+	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/types/detect"
 )
 
 var (
@@ -59,7 +61,12 @@ func NewConfigFromFile(filePath string) (SignaturesConfig, error) {
 	if err != nil {
 		return SignaturesConfig{}, fmt.Errorf("failed opening CEL signature config file: %s: %w", filePath, err)
 	}
-	defer file.Close()
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			logger.Error("Closing file", "error", err)
+		}
+	}()
 	decoder := yaml.NewDecoder(file)
 
 	err = decoder.Decode(&config)
