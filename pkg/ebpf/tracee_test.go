@@ -10,9 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/pkg/events"
 )
 
 func Test_updateProfile(t *testing.T) {

@@ -3,11 +3,12 @@ package celsig
 import (
 	"fmt"
 
+	"github.com/google/cel-go/cel"
+	"github.com/google/cel-go/common/types"
+
 	"github.com/aquasecurity/tracee/pkg/rules/celsig/wrapper"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
-	"github.com/google/cel-go/cel"
-	"github.com/google/cel-go/common/types"
 )
 
 type signature struct {

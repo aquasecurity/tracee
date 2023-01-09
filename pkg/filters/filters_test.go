@@ -3,9 +3,10 @@ package filters_test
 import (
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/pkg/filters"
 )
 
 func TestBoolFilter(t *testing.T) {

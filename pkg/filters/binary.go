@@ -6,10 +6,12 @@ import (
 	"strings"
 	"unsafe"
 
+	"kernel.org/pub/linux/libs/security/libcap/cap"
+
 	bpf "github.com/aquasecurity/libbpfgo"
+
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 type nsBinary struct {

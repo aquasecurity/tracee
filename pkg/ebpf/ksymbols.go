@@ -2,14 +2,16 @@ package ebpf
 
 import (
 	"errors"
-	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"github.com/aquasecurity/tracee/pkg/events"
 	"runtime/debug"
 	"unsafe"
 
+	"kernel.org/pub/linux/libs/security/libcap/cap"
+
 	"github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
+
+	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/pkg/events"
 )
 
 var maxKsymNameLen = 64 // Most match the constant in the bpf code

@@ -3,9 +3,10 @@ package sharedobjs
 import (
 	"debug/elf"
 
+	"github.com/hashicorp/golang-lru/simplelru"
+
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/hashicorp/golang-lru/simplelru"
 )
 
 // HostSymbolsLoader is responsible for efficient reading of shared object's symbols.

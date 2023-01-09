@@ -5,9 +5,10 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/aquasecurity/tracee/pkg/bucketscache"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestPathResolver_ResolveAbsolutePath(t *testing.T) {

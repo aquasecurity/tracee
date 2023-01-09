@@ -3,9 +3,10 @@ package bucketscache_test
 import (
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/bucketscache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/pkg/bucketscache"
 )
 
 func TestBucketsCache(t *testing.T) {

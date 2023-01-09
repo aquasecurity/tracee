@@ -10,11 +10,12 @@ import (
 	"os"
 	"strings"
 
+	"kernel.org/pub/linux/libs/security/libcap/cap"
+
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 var errHelp = errors.New("user has requested help text")

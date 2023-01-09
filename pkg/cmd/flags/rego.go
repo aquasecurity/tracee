@@ -4,8 +4,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/rules/rego"
 	"github.com/open-policy-agent/opa/compile"
+
+	"github.com/aquasecurity/tracee/pkg/rules/rego"
 )
 
 func regoHelp() string {

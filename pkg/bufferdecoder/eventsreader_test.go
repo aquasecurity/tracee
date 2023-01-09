@@ -4,8 +4,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func TestReadArgFromBuff(t *testing.T) {

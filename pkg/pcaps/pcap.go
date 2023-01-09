@@ -4,11 +4,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/gopacket"
+	"github.com/google/gopacket/pcapgo"
+
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/pcapgo"
 )
 
 // Check pcaps.go for package description.

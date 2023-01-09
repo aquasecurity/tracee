@@ -3,10 +3,11 @@ package pcaps
 import (
 	"fmt"
 
+	lru "github.com/hashicorp/golang-lru"
+
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
-	lru "github.com/hashicorp/golang-lru"
 )
 
 // PcapCache is an intermediate LRU cache in between Pcap and Pcaps

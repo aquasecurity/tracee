@@ -3,9 +3,9 @@ package probes
 import (
 	"fmt"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
-
 	bpf "github.com/aquasecurity/libbpfgo"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 //

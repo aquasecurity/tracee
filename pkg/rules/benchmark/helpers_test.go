@@ -2,7 +2,6 @@ package benchmark
 
 import (
 	_ "embed"
-
 	"encoding/gob"
 	"fmt"
 	"io"

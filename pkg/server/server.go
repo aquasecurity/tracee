@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"net/http/pprof"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 // Server represents a http server

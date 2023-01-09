@@ -7,8 +7,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 var once sync.Once

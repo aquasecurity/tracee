@@ -7,8 +7,9 @@ import (
 	"strings"
 	"unsafe"
 
-	bpf "github.com/aquasecurity/libbpfgo"
 	"golang.org/x/exp/constraints"
+
+	bpf "github.com/aquasecurity/libbpfgo"
 )
 
 const (

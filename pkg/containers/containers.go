@@ -15,6 +15,7 @@ import (
 	"unsafe"
 
 	"github.com/aquasecurity/libbpfgo"
+
 	"github.com/aquasecurity/tracee/pkg/cgroup"
 	cruntime "github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/logger"

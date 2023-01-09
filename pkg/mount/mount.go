@@ -7,10 +7,11 @@ import (
 	"strings"
 	"syscall"
 
+	"kernel.org/pub/linux/libs/security/libcap/cap"
+
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 // Constants

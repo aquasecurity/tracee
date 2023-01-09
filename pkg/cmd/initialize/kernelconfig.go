@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
+
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 

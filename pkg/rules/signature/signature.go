@@ -1,9 +1,8 @@
 package signature
 
 import (
-	_ "embed"
-
 	"bytes"
+	_ "embed"
 	"fmt"
 	"io/fs"
 	"io/ioutil"
@@ -12,14 +11,14 @@ import (
 	"plugin"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	embedded "github.com/aquasecurity/tracee"
+	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/rules/celsig"
 	"github.com/aquasecurity/tracee/pkg/rules/regosig"
 	"github.com/aquasecurity/tracee/types/detect"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 func Find(target string, partialEval bool, rulesDir string, rules []string, aioEnabled bool) ([]detect.Signature, error) {

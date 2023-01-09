@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+
 	"github.com/aquasecurity/tracee/pkg/cgroup"
 )
 

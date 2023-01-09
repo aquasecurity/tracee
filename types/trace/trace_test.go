@@ -7,8 +7,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/aquasecurity/tracee/types/protocol"
 )
 
 func TestEventUnmarshalJSON(t *testing.T) {
