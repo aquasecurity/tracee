@@ -3751,7 +3751,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     // extract the binary name to be used in should_trace
     __builtin_memset(proc_info->binary.path, 0, MAX_BIN_PATH_SIZE);
     bpf_probe_read_str(proc_info->binary.path, MAX_BIN_PATH_SIZE, file_path);
-    proc_info->binary.mnt_id = data.context.task.mnt_id;
+    proc_info->binary.mnt_id = p.event->context.task.mnt_id;
 
     if (!should_trace(&p))
         return 0;
