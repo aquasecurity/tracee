@@ -30,6 +30,7 @@ CMD_MKDIR ?= mkdir
 CMD_TOUCH ?= touch
 CMD_PKGCONFIG ?= pkg-config
 CMD_GO ?= go
+CMD_ERRCHECK ?= errcheck
 CMD_GREP ?= grep
 CMD_CAT ?= cat
 CMD_MD5 ?= md5sum
@@ -753,6 +754,21 @@ check-code:: \
 #
 	@$(MAKE) -f builder/Makefile.checkers code-check
 
+
+.PHONY: check-err
+check-err: \
+	.checkver_$(CMD_GO) \
+	tracee-ebpf \
+	| .check_$(CMD_ERRCHECK)
+#
+	@$(CMD_ERRCHECK) \
+		-tags $(GO_TAGS_EBPF) \
+		-ignoretests \
+		-ignore 'fmt:[FS]?[Pp]rint*|[wW]rite' \
+		-ignore '[rR]ead|[wW]rite' \
+		-ignore 'RegisterEventProcessor' \
+		./...
+
 .PHONY: check-vet
 check-vet: \
 	.checkver_$(CMD_GO) \
@@ -770,7 +786,7 @@ check-staticcheck: \
 	| .check_$(CMD_STATICCHECK)
 #
 	@$(GO_ENV_EBPF) \
-	staticcheck -f stylish \
+	$(CMD_STATICCHECK) -f stylish \
 		-tags $(GO_TAGS_EBPF) \
 		./...
 

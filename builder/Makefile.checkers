@@ -122,7 +122,7 @@ fmt-fix: | \
 	rm /tmp/patch.$$
 
 #
-# check code (go vet, static checkers)
+# check code (go vet, static checkers, errcheck)
 #
 
 .PHONY: code-check
@@ -133,6 +133,8 @@ code-check: | \
 	$(GENERAL_MAKE) check-vet
 	echo "Checking Golang with StaticChecker..."
 	$(GENERAL_MAKE) -j1 check-staticcheck
+	echo "Checking Golang with errcheck..."
+	$(GENERAL_MAKE) -j1 check-err
 
 #
 # clean

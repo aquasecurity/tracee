@@ -44,10 +44,10 @@ changes, you run the following command:
 3. Static Check Go and C source files
 
 
-!!! code-check Example
+!!! check-code Example
 
     ```
-    $ make code-check
+    $ make check-code
     
     Checking Golang vet...
     make[2]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
@@ -63,4 +63,6 @@ changes, you run the following command:
     	-tags core,ebpf \
     	./...
      ✖ 0 problems (0 errors, 0 warnings, 0 ignored)
+
+     Checking Golang with errcheck...
     ```

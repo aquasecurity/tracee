@@ -41,6 +41,10 @@ runs:
       run: |
         go install honnef.co/go/tools/cmd/staticcheck@latest
       shell: bash
+    - name: Install errcheck
+      run: |
+        go install github.com/kisielk/errcheck@latest
+      shell: bash
     - name: Install docker
       run: |
         sudo apt-get install --yes ca-certificates curl gnupg lsb-release

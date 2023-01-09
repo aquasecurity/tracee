@@ -56,6 +56,9 @@ jobs:
       - name: Check with StaticCheck
         run: |
           make check-staticcheck
+      - name: Check with errcheck
+        run: |
+          make check-err
   UNIT-TESTS:
     name: Unit Tests
     runs-on: ubuntu-20.04
