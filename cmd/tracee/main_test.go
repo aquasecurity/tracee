@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/rules/signature"
 	"github.com/aquasecurity/tracee/types/detect"
-	"github.com/aquasecurity/tracee/types/protocol"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -60,14 +60,14 @@ func Test_createEventsFromSigs(t *testing.T) {
 }
 
 func newFakeSignature(name string, deps []string) detect.Signature {
-	return fakeSignature{
-		getMetadata: func() (detect.SignatureMetadata, error) {
+	return &signature.FakeSignature{
+		FakeGetMetadata: func() (detect.SignatureMetadata, error) {
 			return detect.SignatureMetadata{
 				EventName: name,
 			}, nil
 
 		},
-		getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+		FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 			selectedEvents := make([]detect.SignatureEventSelector, 0, len(deps))
 
 			for _, d := range deps {
@@ -79,29 +79,3 @@ func newFakeSignature(name string, deps []string) detect.Signature {
 		},
 	}
 }
-
-type fakeSignature struct {
-	getMetadata       func() (detect.SignatureMetadata, error)
-	getSelectedEvents func() ([]detect.SignatureEventSelector, error)
-}
-
-func (fs fakeSignature) GetMetadata() (detect.SignatureMetadata, error) {
-	return fs.getMetadata()
-}
-
-func (fs fakeSignature) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
-	return fs.getSelectedEvents()
-}
-
-func (fs fakeSignature) Init(cb detect.SignatureHandler) error {
-	return nil
-}
-
-func (fs fakeSignature) OnEvent(event protocol.Event) error {
-	return nil
-}
-
-func (fs fakeSignature) OnSignal(signal detect.Signal) error {
-	return nil
-}
-func (fs fakeSignature) Close() {}

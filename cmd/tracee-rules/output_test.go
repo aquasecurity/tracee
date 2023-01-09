@@ -11,49 +11,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aquasecurity/tracee/pkg/rules/signature"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-type fakeSignature struct {
-	detect.Signature
-	getMetadata       func() (detect.SignatureMetadata, error)
-	getSelectedEvents func() ([]detect.SignatureEventSelector, error)
-}
-
-func (f fakeSignature) GetMetadata() (detect.SignatureMetadata, error) {
-	if f.getMetadata != nil {
-		return f.getMetadata()
-	}
-
-	return detect.SignatureMetadata{
-		ID:          "FOO-666",
-		Name:        "foo bar signature",
-		Description: "the most evil",
-	}, nil
-}
-
-func (f fakeSignature) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
-	if f.getSelectedEvents != nil {
-		return f.getSelectedEvents()
-	}
-
-	return []detect.SignatureEventSelector{
-		{
-			Source: "tracee",
-			Name:   "execve",
-			Origin: "foobar",
-		},
-		{
-			Source: "tracee",
-			Name:   "ptrace",
-			Origin: "bazfoo",
-		},
-	}, nil
-}
 
 func Test_setupOutput(t *testing.T) {
 	var testCases = []struct {
@@ -71,8 +35,8 @@ func Test_setupOutput(t *testing.T) {
 			expectedOutput: `
 *** Detection ***
 Time: 2021-02-23T01:54:57Z
-Signature ID: FOO-666
-Signature: foo bar signature
+Signature ID: TRC-FAKE
+Signature: Fake Signature
 Data: map[foo1:bar1, baz1 foo2:[bar2 baz2]]
 Command: foobar.exe
 Hostname: foobar.local
@@ -121,7 +85,7 @@ HostName: foobar.local
 			findingCh, err := setupOutput(actualOutput, "", "", "", tc.outputFormat)
 			require.NoError(t, err, tc.name)
 
-			sm, err := fakeSignature{}.GetMetadata()
+			sm, err := signature.FakeSignature{}.GetMetadata()
 			require.NoError(t, err)
 
 			findingCh <- detect.Finding{
@@ -163,7 +127,7 @@ func Test_sendToWebhook(t *testing.T) {
 	var testCases = []struct {
 		name               string
 		inputTemplateFile  string
-		inputSignature     fakeSignature
+		inputSignature     signature.FakeSignature
 		inputTestServerURL string
 		contentType        string
 		expectedOutput     string

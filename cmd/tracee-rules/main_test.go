@@ -5,14 +5,15 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/aquasecurity/tracee/pkg/rules/signature"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_listSigs(t *testing.T) {
-	fakeSigs := []fakeSignature{
+	fakeSigs := []*signature.FakeSignature{
 		{
-			getMetadata: func() (detect.SignatureMetadata, error) {
+			FakeGetMetadata: func() (detect.SignatureMetadata, error) {
 				return detect.SignatureMetadata{
 					ID:          "FOO-1",
 					Version:     "1.2.3",
@@ -22,7 +23,7 @@ func Test_listSigs(t *testing.T) {
 			},
 		},
 		{
-			getMetadata: func() (detect.SignatureMetadata, error) {
+			FakeGetMetadata: func() (detect.SignatureMetadata, error) {
 				return detect.SignatureMetadata{
 					ID:          "BAR-1",
 					Version:     "4.5.6",
@@ -32,7 +33,7 @@ func Test_listSigs(t *testing.T) {
 			},
 		},
 		{
-			getMetadata: func() (detect.SignatureMetadata, error) {
+			FakeGetMetadata: func() (detect.SignatureMetadata, error) {
 				return detect.SignatureMetadata{}, errors.New("baz failed")
 			},
 		},
@@ -52,9 +53,9 @@ BAR-1      bar signature                       4.5.6   bar signature helps with 
 }
 
 func Test_listEvents(t *testing.T) {
-	fakeSigs := []fakeSignature{
+	fakeSigs := []*signature.FakeSignature{
 		{
-			getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+			FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 				return []detect.SignatureEventSelector{
 					{
 						Source: "tracee",
@@ -70,7 +71,7 @@ func Test_listEvents(t *testing.T) {
 			},
 		},
 		{
-			getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+			FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 				return nil, errors.New("failed to list sigs")
 			},
 		},
