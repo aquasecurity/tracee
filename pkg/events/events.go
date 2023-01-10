@@ -6447,8 +6447,8 @@ var Definitions = eventDefinitions{
 			Name:    "print_mem_dump",
 			Sets:    []string{},
 			Params: []trace.ArgMeta{
-				{Type: "void*", Name: "address"},
 				{Type: "bytes", Name: "bytes"},
+				{Type: "void*", Name: "address"},
 				{Type: "u64", Name: "length"},
 				{Type: "char*", Name: "arch"},
 				{Type: "char*", Name: "symbol_name"},

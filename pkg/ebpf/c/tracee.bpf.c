@@ -4274,13 +4274,13 @@ int uprobe_mem_dump_trigger(struct pt_regs *ctx)
     if (size <= 0)
         return 0;
 
-    int ret = save_bytes_to_buf(&data, (void *) address, size & MAX_MEM_DUMP_SIZE, 1);
+    int ret = save_bytes_to_buf(&data, (void *) address, size & MAX_MEM_DUMP_SIZE, 0);
     // return in case of failed pointer read
     if (ret == 0) {
         tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_MEM_READ, ret);
         return 0;
     }
-    save_to_submit_buf(&data, (void *) &address, sizeof(void *), 0);
+    save_to_submit_buf(&data, (void *) &address, sizeof(void *), 1);
     save_to_submit_buf(&data, &size, sizeof(u64), 2);
 
     return events_perf_submit(&data, PRINT_MEM_DUMP, 0);
