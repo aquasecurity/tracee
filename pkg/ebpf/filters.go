@@ -19,6 +19,7 @@ const (
 	CgroupIdFilterMap    = "cgroup_id_filter"
 	ContIdFilter         = "cont_id_filter"
 	BinaryFilterMap      = "binary_filter"
+	ProcInfoMap          = "proc_info_map"
 )
 
 type FilterScope struct {
@@ -60,7 +61,7 @@ func NewFilterScope() *FilterScope {
 		ArgFilter:         filters.NewArgFilter(),
 		ContextFilter:     filters.NewContextFilter(),
 		ProcessTreeFilter: filters.NewProcessTreeFilter(ProcessTreeFilterMap),
-		BinaryFilter:      filters.NewBPFBinaryFilter(BinaryFilterMap),
+		BinaryFilter:      filters.NewBPFBinaryFilter(BinaryFilterMap, ProcInfoMap),
 		Follow:            false,
 	}
 }

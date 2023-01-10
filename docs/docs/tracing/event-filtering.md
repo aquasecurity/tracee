@@ -153,8 +153,7 @@ expected.
     !!! Note
         1. Mount namespace id or the special "host:" prefix can be used for finer filtering
         2. Given path must be absolute; i.e starts with "/"
-        3. Only binaries that were executed after Tracee will be filtered
-        4. Symbolic link paths are not supported
+        3. Symbolic link paths are not supported
 
 1. **PID** `(Operators: =, !=, <, > and "new")`
 
