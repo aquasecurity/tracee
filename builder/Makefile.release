@@ -136,6 +136,7 @@ endif
 RELEASE_FILES = LICENSE
 RELEASE_FILES += $(OUTPUT_DIR)/tracee-ebpf
 RELEASE_FILES += $(OUTPUT_DIR)/tracee-rules
+RELEASE_FILES += $(OUTPUT_DIR)/tracee
 RELEASE_FILES += $(OUTPUT_DIR)/rules
 RELEASE_FILES += $(OUTPUT_DIR)/tracee.bpf.core.o
 
