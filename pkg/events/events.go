@@ -6087,6 +6087,7 @@ var Definitions = eventDefinitions{
 				{Type: "const char*", Name: "perf_symbol"},
 				{Type: "u64", Name: "perf_addr"},
 				{Type: "int", Name: "prog_write_user"},
+				{Type: "int", Name: "prog_override_return"},
 				{Type: "int", Name: "perf_type"},
 			},
 		},

@@ -1435,7 +1435,7 @@ send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf
     char prog_name[BPF_OBJ_NAME_LEN];
     bpf_probe_read_str(&prog_name, BPF_OBJ_NAME_LEN, READ_KERN(prog_aux->name));
 
-    // get usage of helper bpf_probe_write_user
+    // get usage of helpers
     bpf_attach_t *val = bpf_map_lookup_elem(&bpf_attach_map, &prog_id);
     if (val == NULL)
         return 0;
@@ -1447,7 +1447,8 @@ send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf
     save_str_to_buf(p->event, (void *) &event_name, 2);
     save_to_submit_buf(p->event, &probe_addr, sizeof(u64), 3);
     save_to_submit_buf(p->event, &val->write_user, sizeof(int), 4);
-    save_to_submit_buf(p->event, &perf_type, sizeof(int), 5);
+    save_to_submit_buf(p->event, &val->override_return, sizeof(int), 5);
+    save_to_submit_buf(p->event, &perf_type, sizeof(int), 6);
 
     events_perf_submit(p, BPF_ATTACH, 0);
 
@@ -3110,15 +3111,18 @@ int BPF_KPROBE(trace_security_bpf_prog)
     bpf_attach_t val = {};
     // In some systems, the 'check_map_func_compatibility' and 'check_helper_call' symbols are not
     // available. For these cases, the temporary map 'bpf_attach_tmp_map' will not hold any
-    // information (WRITE_USER_FALSE/WRITE_USER_TRUE). nevertheless, we always want to output the
-    // 'bpf_attach' event to the user, so using the WRITE_USER_UNKNOWN value instead of returning,
-    // just so the map would be filled.
-    val.write_user = WRITE_USER_UNKNOWN;
+    // information about the usage of bpf_probe_write_user and bpf_override_return. nevertheless,
+    // we always want to output the 'bpf_attach' event to the user, so using the UNKNOWN values
+    // instead of returning, just so the map would be filled.
+    val.write_user = HELPER_USAGE_UNKNOWN;
+    val.override_return = HELPER_USAGE_UNKNOWN;
 
     bpf_attach_t *existing_val;
     existing_val = bpf_map_lookup_elem(&bpf_attach_tmp_map, &p.event->context.task.host_tid);
-    if (existing_val != NULL)
+    if (existing_val != NULL) {
         val.write_user = existing_val->write_user;
+        val.override_return = existing_val->override_return;
+    }
 
     bpf_map_update_elem(&bpf_attach_map, &prog_id, &val, BPF_ANY);
 
@@ -3127,10 +3131,10 @@ int BPF_KPROBE(trace_security_bpf_prog)
     return 0;
 }
 
-// Save in the temporary map 'bpf_attach_tmp_map' whether or not bpf_probe_write_user is used in the
-// bpf program. Get this information in the verifier phase of the bpf program load lifecycle, before
-// a prog_id is set for the bpf program. Save this information in a temporary map which includes the
-// host_tid as key instead of the prog_id.
+// Save in the temporary map 'bpf_attach_tmp_map' whether bpf_probe_write_user and
+// bpf_override_return are used in the bpf program. Get this information in the verifier phase of
+// the bpf program load lifecycle, before a prog_id is set for the bpf program. Save this
+// information in a temporary map which includes the host_tid as key instead of the prog_id.
 //
 // Later on, in security_bpf_prog, save this information in the stable map 'bpf_attach_map', which
 // contains the prog_id in its key.
@@ -3138,16 +3142,33 @@ int BPF_KPROBE(trace_security_bpf_prog)
 static __always_inline int handle_bpf_helper_func_id(u32 host_tid, int func_id)
 {
     bpf_attach_t val = {};
-    val.write_user = WRITE_USER_FALSE;
+    val.write_user = HELPER_USAGE_FALSE;
+    val.override_return = HELPER_USAGE_FALSE;
 
+    // we want the map to contain value, event if we didn't see the BPF helper functions we looked
+    // for. if there is a value, use it - because this program is invoked for each BPF helper
+    // function.
     bpf_attach_t *existing_val = bpf_map_lookup_elem(&bpf_attach_tmp_map, &host_tid);
-    if (existing_val == NULL)
+    if (existing_val == NULL) {
         bpf_map_update_elem(&bpf_attach_tmp_map, &host_tid, &val, BPF_ANY);
-
-    if (func_id == BPF_FUNC_probe_write_user) {
-        val.write_user = WRITE_USER_TRUE;
-        bpf_map_update_elem(&bpf_attach_tmp_map, &host_tid, &val, BPF_ANY);
+    } else {
+        val.write_user = existing_val->write_user;
+        val.override_return = existing_val->override_return;
     }
+
+    // update the map if the BPF helper function is one that we look for
+    switch (func_id) {
+        case BPF_FUNC_probe_write_user:
+            val.write_user = HELPER_USAGE_TRUE;
+            break;
+        case BPF_FUNC_override_return:
+            val.override_return = HELPER_USAGE_TRUE;
+            break;
+        default:
+            return 0;
+    }
+
+    bpf_map_update_elem(&bpf_attach_tmp_map, &host_tid, &val, BPF_ANY);
 
     return 0;
 }

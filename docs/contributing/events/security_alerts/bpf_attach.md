@@ -16,6 +16,7 @@ as well as information about the probe itself.
 * `perf_symbol`:`const char*`[K] - name/path of the symbol the BPF program is being attached to.
 * `perf_addr`:`u64`[K] - address/offset of the symbol the BPF program is being attached to.
 * `prog_write_user`:`int`[K] - whether the BPF program uses the bpf_probe_write_user() helper function.
+* `prog_override_return`:`int`[K] - whether the BPF program uses the bpf_override_return() helper function.
 * `perf_type`:`int`[K] - the probe's type.
 
 ## Hooks
@@ -41,13 +42,13 @@ save data of the BPF program for when we output the event
 #### Type
 kprobe
 #### Purpose
-check whether the BPF program uses the bpf_probe_write_user() helper function
+check whether the BPF program uses helper functions of interest
 
 ### check_map_func_compatibility
 #### Type
 kprobe
 #### Purpose
-check whether the BPF program uses the bpf_probe_write_user() helper function
+check whether the BPF program uses helper functions of interest
 
 ## Example Use Case
 ./tracee-ebpf -t e=bpf_attach

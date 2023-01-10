@@ -240,10 +240,19 @@ func ParseArgs(event *trace.Event) error {
 		}
 		if writeUserArg := GetArg(event, "prog_write_user"); writeUserArg != nil {
 			if writeUser, isInt := writeUserArg.Value.(int32); isInt {
-				perfTypestr, err := parseBpfAttachWriteUser(writeUser)
+				perfTypestr, err := parseBpfAttachHelperUsage(writeUser)
 				EmptyString(writeUserArg)
 				if err == nil {
 					writeUserArg.Value = perfTypestr
+				}
+			}
+		}
+		if overrideReturnArg := GetArg(event, "prog_override_return"); overrideReturnArg != nil {
+			if overrideReturn, isInt := overrideReturnArg.Value.(int32); isInt {
+				perfTypestr, err := parseBpfAttachHelperUsage(overrideReturn)
+				EmptyString(overrideReturnArg)
+				if err == nil {
+					overrideReturnArg.Value = perfTypestr
 				}
 			}
 		}
@@ -303,8 +312,8 @@ func (arg CustomFunctionArgument) Value() uint64 {
 	return arg.val
 }
 
-func parseBpfAttachWriteUser(writeUser int32) (string, error) {
-	switch writeUser {
+func parseBpfAttachHelperUsage(helperArg int32) (string, error) {
+	switch helperArg {
 	case 0:
 		return "false", nil
 	case 1:
@@ -312,7 +321,7 @@ func parseBpfAttachWriteUser(writeUser int32) (string, error) {
 	case 2:
 		return "unknown", nil
 	default:
-		return "", fmt.Errorf("unknown prog_write_user value got from bpf_attach event")
+		return "", fmt.Errorf("unknown value got from bpf_attach event for helper usage arg")
 	}
 }
 
