@@ -6450,6 +6450,7 @@ var Definitions = eventDefinitions{
 				{Type: "bytes", Name: "bytes"},
 				{Type: "void*", Name: "address"},
 				{Type: "u64", Name: "length"},
+				{Type: "u64", Name: "caller_context_id"},
 				{Type: "char*", Name: "arch"},
 				{Type: "char*", Name: "symbol_name"},
 				{Type: "char*", Name: "symbol_owner"},

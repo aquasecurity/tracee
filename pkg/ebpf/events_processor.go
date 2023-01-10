@@ -88,6 +88,7 @@ func (t *Tracee) registerEventProcessors() {
 	t.RegisterEventProcessor(events.HookedProcFops, t.processHookedProcFops)
 	t.RegisterEventProcessor(events.PrintNetSeqOps, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintSyscallTable, t.processTriggeredEvent)
+	t.RegisterEventProcessor(events.PrintMemDump, t.processTriggeredEvent)
 }
 
 func (t *Tracee) updateProfile(sourceFilePath string, executionTs uint64) {
@@ -402,7 +403,7 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 			t.triggerSeqOpsIntegrityCheck(*event)
 		}
 		if okMemDump {
-			err := t.triggerMemDump()
+			err := t.triggerMemDump(*event)
 			if err != nil {
 				logger.Warn("memory dump", "error", err)
 			}

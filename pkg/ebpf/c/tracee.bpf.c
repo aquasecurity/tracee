@@ -106,7 +106,7 @@ int KERNEL_VERSION SEC("version") = LINUX_VERSION_CODE;
 #define MAX_KSYM_NAME_SIZE  64
 #define UPROBE_MAGIC_NUMBER 20220829
 #define ARGS_BUF_SIZE       32000
-#define MEM_DUMP_SIZE       127
+#define MAX_MEM_DUMP_SIZE   127
 // clang-format on
 
 // helper macros for branch prediction
@@ -4251,39 +4251,43 @@ int uprobe_mem_dump_trigger(struct pt_regs *ctx)
 {
     u64 address = 0;
     u64 size = 0;
+    u64 caller_ctx_id = 0;
     u32 trigger_pid = bpf_get_current_pid_tgid() >> 32;
 
 #if defined(bpf_target_x86)
-    address = ctx->bx; // 1st arg
-    size = ctx->cx;    // 2nd arg
+    address = ctx->bx;       // 1st arg
+    size = ctx->cx;          // 2nd arg
+    caller_ctx_id = ctx->di; // 3rd arg
 #elif defined(bpf_target_arm64)
-    address = ctx->user_regs.regs[1]; // 1st arg
-    size = ctx->user_regs.regs[2];    // 2nd arg
+    address = ctx->user_regs.regs[1];       // 1st arg
+    size = ctx->user_regs.regs[2];          // 2nd arg
+    caller_ctx_id = ctx->user_regs.regs[3]; // 3rd arg
 #else
     return 0;
 #endif
 
-    event_data_t data = {};
-    if (!init_event_data(&data, ctx))
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
         return 0;
 
     // uprobe was triggered from other tracee instance
-    if (data.config->tracee_pid != trigger_pid)
+    if (p.config->tracee_pid != trigger_pid)
         return 0;
 
     if (size <= 0)
         return 0;
 
-    int ret = save_bytes_to_buf(&data, (void *) address, size & MAX_MEM_DUMP_SIZE, 0);
+    int ret = save_bytes_to_buf(p.event, (void *) address, size & MAX_MEM_DUMP_SIZE, 0);
     // return in case of failed pointer read
     if (ret == 0) {
         tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_MEM_READ, ret);
         return 0;
     }
-    save_to_submit_buf(&data, (void *) &address, sizeof(void *), 1);
-    save_to_submit_buf(&data, &size, sizeof(u64), 2);
+    save_to_submit_buf(p.event, (void *) &address, sizeof(void *), 1);
+    save_to_submit_buf(p.event, &size, sizeof(u64), 2);
+    save_to_submit_buf(p.event, &caller_ctx_id, sizeof(u64), 3);
 
-    return events_perf_submit(&data, PRINT_MEM_DUMP, 0);
+    return events_perf_submit(&p, PRINT_MEM_DUMP, 0);
 }
 
 static __always_inline struct trace_kprobe *get_trace_kprobe_from_trace_probe(void *tracep)

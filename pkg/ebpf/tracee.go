@@ -1409,7 +1409,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.invokeInitEvents()
 	t.triggerSyscallsIntegrityCheck(trace.Event{})
 	t.triggerSeqOpsIntegrityCheck(trace.Event{})
-	err := t.triggerMemDump()
+	err := t.triggerMemDump(trace.Event{})
 	if err != nil {
 		logger.Warn("memory dump", "error", err)
 	}
@@ -1651,7 +1651,7 @@ func (t *Tracee) triggerSeqOpsIntegrityCheckCall(
 
 // triggerMemDump is used by a Uprobe to trigger an eBPF program
 // that prints the first bytes of requested symbols or addresses
-func (t *Tracee) triggerMemDump() error {
+func (t *Tracee) triggerMemDump(event trace.Event) error {
 	if _, ok := t.events[events.PrintMemDump]; !ok {
 		return nil
 	}
@@ -1663,6 +1663,8 @@ func (t *Tracee) triggerMemDump() error {
 			", -t print_mem_dump.args.symbol_name=<owner>:<symbol> or " +
 			"-t print_mem_dump.args.symbol_name=<symbol> if specifying a system owned symbol")
 	}
+
+	eventHandle := t.triggerContexts.Store(event)
 
 	lengthFilter, ok := printMemDumpFilters["length"].(*filters.StringFilter)
 	var length uint64
@@ -1686,7 +1688,7 @@ func (t *Tracee) triggerMemDump() error {
 			if err != nil {
 				return err
 			}
-			t.triggerMemDumpCall(address, length)
+			t.triggerMemDumpCall(address, length, uint64(eventHandle))
 		}
 	}
 
@@ -1710,7 +1712,7 @@ func (t *Tracee) triggerMemDump() error {
 			if err != nil {
 				return err
 			}
-			t.triggerMemDumpCall(symbol.Address, length)
+			t.triggerMemDumpCall(symbol.Address, length, uint64(eventHandle))
 		}
 	}
 
@@ -1718,6 +1720,6 @@ func (t *Tracee) triggerMemDump() error {
 }
 
 //go:noinline
-func (t *Tracee) triggerMemDumpCall(address uint64, length uint64) error {
+func (t *Tracee) triggerMemDumpCall(address uint64, length uint64, eventHandle uint64) error {
 	return nil
 }
