@@ -1677,6 +1677,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 			if err != nil {
 				return err
 			}
+			//lint:ignore SA4004 we only want the first argument
 			break
 		}
 	}
