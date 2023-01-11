@@ -234,3 +234,35 @@ func (alert MemProtAlert) String() string {
 		return "Unknown alert"
 	}
 }
+
+type KernelReadType int
+
+const (
+	KernelReadUnknown KernelReadType = iota
+	KernelReadFirmware
+	KernelReadKernelModule
+	KernelReadKExecImage
+	KernelReadKExecInitRAMFS
+	KernelReadSecurityPolicy
+	KernelReadx509Certificate
+)
+
+func (readType KernelReadType) String() string {
+	switch readType {
+	case KernelReadUnknown:
+		return "unknown"
+	case KernelReadFirmware:
+		return "firmware"
+	case KernelReadKernelModule:
+		return "kernel-module"
+	case KernelReadKExecImage:
+		return "kexec-image"
+	case KernelReadKExecInitRAMFS:
+		return "kexec-initramfs"
+	case KernelReadSecurityPolicy:
+		return "security-policy"
+	case KernelReadx509Certificate:
+		return "x509-certificate"
+	}
+	return "unknown"
+}
