@@ -9,6 +9,10 @@ do_ls() {
     ls > /dev/null
 }
 
+do_which_ls() {
+    which ls > /dev/nul
+}
+
 do_ls_uname() {
     # run on the same core to ensure event order
     taskset -c 0 ls; uname
@@ -17,6 +21,12 @@ do_ls_uname() {
 do_docker_run() {
     outputFileName=$1
     output=$(docker run -d --rm alpine)
+    $(echo $output > $outputFileName)
+}
+
+get_dockerd_pid() {
+    outputFileName=$1
+    output=$(pidof dockerd)
     $(echo $output > $outputFileName)
 }
 
