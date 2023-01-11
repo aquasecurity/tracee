@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
@@ -229,6 +230,41 @@ func checkExecveOnScopes4And2(t *testing.T, gotOutput *[]trace.Event) {
 	assert.Equal(t, uint64(1<<1), evts[1].MatchedScopes, "MatchedScopes")
 }
 
+func checkDockerdBinaryFilter(t *testing.T, gotOutput *[]trace.Event) {
+	dockerdPidBytes, err := forkAndExecFunction(getDockerdPid)
+	require.NoError(t, err)
+	dockerdPidString := strings.TrimSuffix(string(dockerdPidBytes), "\n")
+	dockerdPid, err := strconv.ParseInt(dockerdPidString, 10, 64)
+	require.NoError(t, err)
+	_, err = forkAndExecFunction(doDockerRun)
+	require.NoError(t, err)
+
+	waitForTraceeOutput(t, gotOutput, time.Now(), true)
+
+	processIds := []int{}
+	for _, evt := range *gotOutput {
+		processIds = append(processIds, evt.ProcessID)
+	}
+	assert.Contains(t, processIds, int(dockerdPid))
+}
+
+func checkLsAndWhichBinaryFilterWithScopes(t *testing.T, gotOutput *[]trace.Event) {
+	var err error
+	_, err = forkAndExecFunction(doLs)
+	require.NoError(t, err)
+	_, err = forkAndExecFunction(doWhichLs)
+	require.NoError(t, err)
+
+	waitForTraceeOutput(t, gotOutput, time.Now(), true)
+
+	for _, evt := range *gotOutput {
+		procName := evt.ProcessName
+		if procName != "ls" && procName != "which" {
+			t.Fail()
+		}
+	}
+}
+
 func Test_EventFilters(t *testing.T) {
 	testCases := []struct {
 		name       string
@@ -308,6 +344,16 @@ func Test_EventFilters(t *testing.T) {
 			filterArgs: []string{"event=security_file_open", "security_file_open.args.syscall=execve"},
 			eventFunc:  checkSecurityFileOpenExecve,
 		},
+		{
+			name:       "trace only events from \"/usr/bin/dockerd\" binary and contain it's pid",
+			filterArgs: []string{"bin=/usr/bin/dockerd"},
+			eventFunc:  checkDockerdBinaryFilter,
+		},
+		{
+			name:       "trace events from ls and which binary in separate scopes",
+			filterArgs: []string{"1:bin=/usr/bin/ls", "2:bin=/usr/bin/which"},
+			eventFunc:  checkLsAndWhichBinaryFilterWithScopes,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -346,11 +392,13 @@ func Test_EventFilters(t *testing.T) {
 type testFunc string
 
 const (
-	doMagicWrite testFunc = "do_magic_write"
-	doLs         testFunc = "do_ls"
-	doLsUname    testFunc = "do_ls_uname"
-	doDockerRun  testFunc = "do_docker_run"
-	doFileOpen   testFunc = "do_file_open"
+	doMagicWrite  testFunc = "do_magic_write"
+	doLs          testFunc = "do_ls"
+	doLsUname     testFunc = "do_ls_uname"
+	doDockerRun   testFunc = "do_docker_run"
+	doFileOpen    testFunc = "do_file_open"
+	getDockerdPid testFunc = "get_dockerd_pid"
+	doWhichLs     testFunc = "do_which_ls"
 )
 
 //go:embed tester.sh
