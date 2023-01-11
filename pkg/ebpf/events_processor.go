@@ -89,6 +89,7 @@ func (t *Tracee) registerEventProcessors() {
 	t.RegisterEventProcessor(events.PrintNetSeqOps, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintSyscallTable, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processTriggeredEvent)
+	t.RegisterEventProcessor(events.PrintMemDump, t.processPrintMemDump)
 }
 
 func (t *Tracee) updateProfile(sourceFilePath string, executionTs uint64) {
@@ -453,23 +454,24 @@ func (t *Tracee) processTriggeredEvent(event *trace.Event) error {
 	// will be moved back as such we apply the value internally and not
 	// through a referene switch
 	(*event) = withInvokingContext
-	if event.EventID == int(events.PrintMemDump) {
-		address, err := parse.ArgVal[uintptr](event, "address")
-		if err != nil || address == 0 {
-			return fmt.Errorf("error parsing print_mem_dump args: %w", err)
-		}
-		addressUint64 := uint64(address)
-		symbol := utils.ParseSymbol(addressUint64, t.kernelSymbols)
-		var utsname unix.Utsname
-		arch := ""
-		unix.Uname(&utsname)
-		if err == nil {
-			arch = string(utsname.Machine[:])
-		}
-		event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "arch", Type: "char*"}, Value: arch})
-		event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "symbol_name", Type: "char*"}, Value: symbol.Name})
-		event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "symbol_owner", Type: "char*"}, Value: symbol.Owner})
+	return nil
+}
 
+func (t *Tracee) processPrintMemDump(event *trace.Event) error {
+	address, err := parse.ArgVal[uintptr](event, "address")
+	if err != nil || address == 0 {
+		return fmt.Errorf("error parsing print_mem_dump args: %w", err)
 	}
+	addressUint64 := uint64(address)
+	symbol := utils.ParseSymbol(addressUint64, t.kernelSymbols)
+	var utsName unix.Utsname
+	arch := ""
+	unix.Uname(&utsName)
+	if err == nil {
+		arch = string(utsName.Machine[:])
+	}
+	event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "arch", Type: "char*"}, Value: arch})
+	event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "symbol_name", Type: "char*"}, Value: symbol.Name})
+	event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "symbol_owner", Type: "char*"}, Value: symbol.Owner})
 	return nil
 }
