@@ -134,7 +134,9 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 					destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", event.Timestamp, filepath.Base(filePath)))
 					// create an in-memory profile
 					if t.config.Capture.Profile {
-						t.updateProfile(fmt.Sprintf("%s:%d", filepath.Join(destinationDirPath, fmt.Sprintf("exec.%s", filepath.Base(filePath))), castedSourceFileCtime), uint64(event.Timestamp))
+						eventArgs, _ := parse.ArgVal[[]string](event, "argv") //on error ArgVal returns zero value so safe to ignore error
+						eventEnv, _ := parse.ArgVal[[]string](event, "env")
+						t.updateProfile(fmt.Sprintf("%s:%d", filepath.Join(destinationDirPath, fmt.Sprintf("exec.%s", filepath.Base(filePath))), castedSourceFileCtime), uint64(event.Timestamp), eventArgs, eventEnv)
 					}
 					// don't capture same file twice unless it was modified
 					lastCtime, ok := t.capturedFiles[capturedFileID]
@@ -356,15 +358,15 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 	return nil
 }
 
-func (t *Tracee) updateProfile(sourceFilePath string, executionTs uint64) {
-	if pf, ok := t.profiledFiles[sourceFilePath]; !ok {
+func (t *Tracee) updateProfile(sourceFilePath string, executionTs uint64, exectutionArgs []string, executionEnv []string) {
+	if pf, ok := t.profiledFiles[sourceFilePath]; !ok { // encountered new file
 		t.profiledFiles[sourceFilePath] = profilerInfo{
-			Times:            1,
 			FirstExecutionTs: executionTs,
+			Execution:        []profilerExecution{{Args: exectutionArgs, Env: executionEnv}},
 		}
-	} else {
-		pf.Times = pf.Times + 1              // bump execution count
-		t.profiledFiles[sourceFilePath] = pf // update
+	} else { // encountered known file
+		pf.Execution = append(pf.Execution, profilerExecution{Args: exectutionArgs, Env: executionEnv})
+		t.profiledFiles[sourceFilePath] = pf
 	}
 }
 

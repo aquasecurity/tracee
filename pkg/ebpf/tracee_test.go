@@ -20,30 +20,64 @@ func Test_updateProfile(t *testing.T) {
 		profiledFiles: make(map[string]profilerInfo),
 	}
 
-	d, err := ioutil.TempDir("", "Test_updateProfile_dir-*")
-	require.NoError(t, err)
-
-	f, err := ioutil.TempFile(d, "Test_updateProfile-*")
-	require.NoError(t, err)
-	defer os.RemoveAll(f.Name())
-
-	captureFileID := fmt.Sprintf("%s.%s", d, filepath.Base(f.Name()))
+	captureFileID := "host/exec.ls:123456789"
 
 	// first run
-	trc.updateProfile(captureFileID, 123)
+	trc.updateProfile(captureFileID, 1, []string{"x", "y"}, []string{"FOO=bar"})
 
 	require.Equal(t, profilerInfo{
-		Times:            1,
-		FirstExecutionTs: 123,
+		FirstExecutionTs: 1,
+		Execution: []profilerExecution{
+			{
+				Args: []string{"x", "y"},
+				Env:  []string{"FOO=bar"},
+			},
+		},
 	}, trc.profiledFiles[captureFileID])
 
-	// second update run
-	trc.updateProfile(captureFileID, 456)
+	// second run same bin
+	trc.updateProfile(captureFileID, 2, []string{"xx", "yy"}, []string{"FOO=baz"})
 
 	require.Equal(t, profilerInfo{
-		Times:            2,   // should be execute twice
-		FirstExecutionTs: 123, // first execution should remain constant
+		FirstExecutionTs: 1,
+		Execution: []profilerExecution{
+			{
+				Args: []string{"x", "y"},
+				Env:  []string{"FOO=bar"},
+			},
+			{
+				Args: []string{"xx", "yy"},
+				Env:  []string{"FOO=baz"},
+			},
+		},
 	}, trc.profiledFiles[captureFileID])
+
+	// third run different bin
+	trc.updateProfile(captureFileID+"123", 3, []string{"x", "y"}, []string{"FOO=bar"})
+
+	require.Equal(t, profilerInfo{
+		FirstExecutionTs: 1,
+		Execution: []profilerExecution{
+			{
+				Args: []string{"x", "y"},
+				Env:  []string{"FOO=bar"},
+			},
+			{
+				Args: []string{"xx", "yy"},
+				Env:  []string{"FOO=baz"},
+			},
+		},
+	}, trc.profiledFiles[captureFileID])
+
+	require.Equal(t, profilerInfo{
+		FirstExecutionTs: 3,
+		Execution: []profilerExecution{
+			{
+				Args: []string{"x", "y"},
+				Env:  []string{"FOO=bar"},
+			},
+		},
+	}, trc.profiledFiles[captureFileID+"123"])
 
 	// should only create one entry
 	require.Equal(t, 1, len(trc.profiledFiles))
@@ -53,15 +87,18 @@ func Test_writeProfilerStats(t *testing.T) {
 	trc := Tracee{
 		profiledFiles: map[string]profilerInfo{
 			"bar": {
-				Times:    3,
 				FileHash: "4567",
+				Execution: []profilerExecution{
+					{
+						Args: []string{"x", "y"},
+						Env:  []string{"FOO=bar"},
+					},
+				},
 			},
 			"baz": {
-				Times:    5,
 				FileHash: "8901",
 			},
 			"foo": {
-				Times:    1,
 				FileHash: "1234",
 			},
 		},
@@ -71,15 +108,18 @@ func Test_writeProfilerStats(t *testing.T) {
 	trc.writeProfilerStats(&wr)
 	assert.JSONEq(t, `{
   "bar": {
-    "times": 3,
-    "file_hash": "4567"
+    "file_hash": "4567",
+		"execution": [
+				{
+					"args": ["x", "y"],
+					"env":  ["FOO=bar"]
+				}
+		]
   },
   "baz": {
-    "times": 5,
     "file_hash": "8901"
   },
   "foo": {
-    "times": 1,
     "file_hash": "1234"
   }
 }
@@ -104,7 +144,6 @@ func Test_updateFileSHA(t *testing.T) {
 	trc := Tracee{
 		profiledFiles: map[string]profilerInfo{
 			fmt.Sprintf("%s/.%s:%d", d, strings.TrimPrefix(filepath.Base(f.Name()), fmt.Sprintf(".%d.", ts)), 1234): {
-				Times:            123,
 				FirstExecutionTs: 456,
 				// no file sha
 			},
@@ -118,7 +157,6 @@ func Test_updateFileSHA(t *testing.T) {
 	// check
 	assert.Equal(t, map[string]profilerInfo{
 		fmt.Sprintf("%s/.%s:1234", d, strings.TrimPrefix(filepath.Base(f.Name()), fmt.Sprintf(".%d.", ts))): {
-			Times:            123,
 			FirstExecutionTs: 456,
 			FileHash:         "dbd318c1c462aee872f41109a4dfd3048871a03dedd0fe0e757ced57dad6f2d7",
 		},

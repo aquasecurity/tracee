@@ -151,9 +151,14 @@ func (tc Config) Validate() error {
 }
 
 type profilerInfo struct {
-	Times            int64  `json:"times,omitempty"`
-	FileHash         string `json:"file_hash,omitempty"`
-	FirstExecutionTs uint64 `json:"-"`
+	FileHash         string              `json:"file_hash,omitempty"`
+	FirstExecutionTs uint64              `json:"-"`
+	Execution        []profilerExecution `json:"execution,omitempty"`
+}
+
+type profilerExecution struct {
+	Args []string `json:"args,omitempty"`
+	Env  []string `json:"env,omitempty"`
 }
 
 type fileExecInfo struct {
