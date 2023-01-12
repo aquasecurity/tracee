@@ -11,7 +11,7 @@ import (
 
 type dependencies struct {
 	Events       []eventDependency // Events required to be loaded and/or submitted for the event to happen
-	KSymbols     kSymbolsDependencies
+	KSymbols     []kSymbolDependency
 	TailCalls    []TailCall
 	Capabilities []cap.Value
 }
@@ -19,11 +19,6 @@ type dependencies struct {
 type probeDependency struct {
 	Handle   probes.Handle
 	Required bool // should tracee fail if probe fails to attach
-}
-
-type kSymbolsDependencies struct {
-	RequireDynamicSymbols bool
-	StaticSymbols         []kSymbolDependency
 }
 
 type kSymbolDependency struct {
@@ -5621,10 +5616,8 @@ var Definitions = eventDefinitions{
 			},
 			Sets: []string{},
 			Dependencies: dependencies{
-				KSymbols: kSymbolsDependencies{
-					StaticSymbols: []kSymbolDependency{
-						{Symbol: "pipefifo_fops", Required: true},
-					},
+				KSymbols: []kSymbolDependency{
+					{Symbol: "pipefifo_fops", Required: true},
 				},
 			},
 			Params: []trace.ArgMeta{
@@ -5810,10 +5803,8 @@ var Definitions = eventDefinitions{
 				{Handle: probes.PrintSyscallTable, Required: true},
 			},
 			Dependencies: dependencies{
-				KSymbols: kSymbolsDependencies{
-					StaticSymbols: []kSymbolDependency{
-						{Symbol: "sys_call_table", Required: true},
-					},
+				KSymbols: []kSymbolDependency{
+					{Symbol: "sys_call_table", Required: true},
 				},
 			},
 			Sets: []string{},
@@ -5826,11 +5817,9 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32undefined,
 			Name:    "hooked_syscalls",
 			Dependencies: dependencies{
-				KSymbols: kSymbolsDependencies{
-					StaticSymbols: []kSymbolDependency{
-						{Symbol: "_stext", Required: true},
-						{Symbol: "_etext", Required: true},
-					},
+				KSymbols: []kSymbolDependency{
+					{Symbol: "_stext", Required: true},
+					{Symbol: "_etext", Required: true},
 				},
 				Events: []eventDependency{
 					{EventID: DoInitModule},
@@ -6054,11 +6043,9 @@ var Definitions = eventDefinitions{
 				{Handle: probes.SecurityFilePermission, Required: true},
 			},
 			Dependencies: dependencies{
-				KSymbols: kSymbolsDependencies{
-					StaticSymbols: []kSymbolDependency{
-						{Symbol: "_stext", Required: true},
-						{Symbol: "_etext", Required: true},
-					},
+				KSymbols: []kSymbolDependency{
+					{Symbol: "_stext", Required: true},
+					{Symbol: "_etext", Required: true},
 				},
 				Events: []eventDependency{
 					{EventID: DoInitModule},
@@ -6076,15 +6063,13 @@ var Definitions = eventDefinitions{
 				{Handle: probes.PrintNetSeqOps, Required: true},
 			},
 			Dependencies: dependencies{
-				KSymbols: kSymbolsDependencies{
-					StaticSymbols: []kSymbolDependency{
-						{Symbol: "tcp4_seq_ops", Required: true},
-						{Symbol: "tcp6_seq_ops", Required: true},
-						{Symbol: "udp_seq_ops", Required: true},
-						{Symbol: "udp6_seq_ops", Required: true},
-						{Symbol: "raw_seq_ops", Required: true},
-						{Symbol: "raw6_seq_ops", Required: true},
-					},
+				KSymbols: []kSymbolDependency{
+					{Symbol: "tcp4_seq_ops", Required: true},
+					{Symbol: "tcp6_seq_ops", Required: true},
+					{Symbol: "udp_seq_ops", Required: true},
+					{Symbol: "udp6_seq_ops", Required: true},
+					{Symbol: "raw_seq_ops", Required: true},
+					{Symbol: "raw6_seq_ops", Required: true},
 				},
 			},
 			Internal: true,
@@ -6098,11 +6083,9 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32undefined,
 			Name:    "hooked_seq_ops",
 			Dependencies: dependencies{
-				KSymbols: kSymbolsDependencies{
-					StaticSymbols: []kSymbolDependency{
-						{Symbol: "_stext", Required: true},
-						{Symbol: "_etext", Required: true},
-					},
+				KSymbols: []kSymbolDependency{
+					{Symbol: "_stext", Required: true},
+					{Symbol: "_etext", Required: true},
 				},
 				Events: []eventDependency{
 					{EventID: PrintNetSeqOps},
@@ -6462,8 +6445,8 @@ var Definitions = eventDefinitions{
 				Events: []eventDependency{
 					{EventID: DoInitModule},
 				},
-				KSymbols: kSymbolsDependencies{
-					RequireDynamicSymbols: true,
+				KSymbols: []kSymbolDependency{
+					{Symbol: "sys_call_table", Required: true},
 				},
 			},
 		},

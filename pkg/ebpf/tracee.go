@@ -572,7 +572,7 @@ func (t *Tracee) generateInitValues() (InitValues, error) {
 		if !exists {
 			return initVals, fmt.Errorf("event with id %d doesn't exist", evt)
 		}
-		if len(def.Dependencies.KSymbols.StaticSymbols) > 0 || def.Dependencies.KSymbols.RequireDynamicSymbols {
+		if len(def.Dependencies.KSymbols) > 0 {
 			initVals.kallsyms = true
 		}
 	}
@@ -915,7 +915,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 	symsToDependentEvents := make(map[string][]events.ID)
 	for id := range t.events {
 		event := events.Definitions.Get(id)
-		for _, symDep := range event.Dependencies.KSymbols.StaticSymbols {
+		for _, symDep := range event.Dependencies.KSymbols {
 			reqKsyms = append(reqKsyms, symDep.Symbol)
 			if symDep.Required {
 				symEvents, ok := symsToDependentEvents[symDep.Symbol]
