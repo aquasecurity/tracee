@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -45,7 +46,10 @@ const (
 	boolT
 )
 
-func ReadArgFromBuff(ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta) (trace.ArgMeta, interface{}, error) {
+func ReadArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta,
+) (
+	trace.ArgMeta, interface{}, error,
+) {
 	var err error
 	var res interface{}
 	var argIdx uint8
@@ -150,8 +154,7 @@ func ReadArgFromBuff(ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta) (trace
 			return argMeta, nil, fmt.Errorf("error reading byte array size: %v", err)
 		}
 		// error if byte buffer is too big (and not a network event)
-		// TODO: check for network event IDs range isntead of arg name
-		if size > 4096 && argMeta.Name != "payload" {
+		if size > 4096 && (id < events.NetPacketBase || id > events.MaxNetID) {
 			return argMeta, nil, fmt.Errorf("byte array size too big: %d", size)
 		}
 		res, err = ReadByteSliceFromBuff(ebpfMsgDecoder, int(size))

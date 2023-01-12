@@ -101,7 +101,7 @@ func PrintEventList(printRulesSet bool) {
 	printEventGroup(&b, events.InitNamespaces, events.MaxUserSpace)
 	b.WriteString("\n\nNetwork Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
-	printEventGroup(&b, events.NetPacket, events.MaxNetID)
+	printEventGroup(&b, events.NetPacketIPv4, events.MaxUserNetID)
 	fmt.Println(b.String())
 }
 

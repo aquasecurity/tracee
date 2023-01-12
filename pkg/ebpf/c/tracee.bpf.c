@@ -400,9 +400,15 @@ enum argument_type_e
 enum event_id_e
 {
     // Net events IDs
-    NET_PACKET = 700,
-    DNS_REQUEST,
-    DNS_RESPONSE,
+    NET_PACKET_BASE = 700,
+    NET_PACKET_IP,
+    NET_PACKET_TCP,
+    NET_PACKET_UDP,
+    NET_PACKET_ICMP,
+    NET_PACKET_ICMPV6,
+    NET_PACKET_DNS,
+    NET_PACKET_HTTP,
+    NET_PACKET_CAP_BASE,
     MAX_NET_EVENT_ID,
     // Common event IDs
     RAW_SYS_ENTER,
@@ -463,15 +469,6 @@ enum event_id_e
     DO_SIGACTION,
     BPF_ATTACH,
     KALLSYMS_LOOKUP_NAME,
-    NET_PACKET_BASE,
-    NET_PACKET_IP,
-    NET_PACKET_TCP,
-    NET_PACKET_UDP,
-    NET_PACKET_ICMP,
-    NET_PACKET_ICMPV6,
-    NET_PACKET_DNS,
-    NET_PACKET_HTTP,
-    NET_PACKET_CAP_BASE,
     DO_MMAP,
     PRINT_MEM_DUMP,
     MAX_EVENT_ID,
@@ -910,18 +907,6 @@ typedef struct net_id {
     u16 protocol;
 } net_id_t;
 
-typedef struct net_packet {
-    uint64_t ts;
-    u32 event_id;
-    u32 host_tid;
-    char comm[TASK_COMM_LEN];
-    u32 len;
-    u32 ifindex;
-    struct in6_addr src_addr, dst_addr;
-    __be16 src_port, dst_port;
-    u8 protocol;
-} net_packet_t;
-
 typedef struct net_ctx {
     u32 host_tid;
     char comm[TASK_COMM_LEN];
@@ -1045,11 +1030,8 @@ BPF_HASH(params_types_map, u32, u64, 1024);                        // encoded pa
 BPF_HASH(process_tree_map, u32, u32, 10240);                       // filter events by the ancestry of the traced process
 BPF_LRU_HASH(proc_info_map, u32, proc_info_t, 10240);              // holds data for every process
 BPF_LRU_HASH(task_info_map, u32, task_info_t, 10240);              // holds data for every task
-BPF_HASH(network_config, u32, int, 1024);                          // holds the network config for each iface
 BPF_HASH(ksymbols_map, ksym_name_t, u64, 1024);                    // holds the addresses of some kernel symbols
 BPF_HASH(syscalls_to_check_map, int, u64, 256);                    // syscalls to discover
-BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t, 10240);             // socket address to process context
-BPF_LRU_HASH(network_map, net_id_t, net_ctx_t, 10240);             // network identifier to process context
 BPF_ARRAY(config_map, config_entry_t, 1);                          // various configurations
 BPF_ARRAY(file_filter, path_filter_t, 3);                          // filter vfs_write events
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);                        // percpu global buffer variables
@@ -1732,19 +1714,9 @@ static __always_inline struct in6_addr get_ipv6_pinfo_saddr(struct ipv6_pinfo *n
     return READ_KERN(np->saddr);
 }
 
-static __always_inline u32 get_ipv6_pinfo_flow_label(struct ipv6_pinfo *np)
-{
-    return READ_KERN(np->flow_label);
-}
-
 static __always_inline struct in6_addr get_sock_v6_daddr(struct sock *sock)
 {
     return READ_KERN(sock->sk_v6_daddr);
-}
-
-static __always_inline int get_sock_bound_dev_if(struct sock *sock)
-{
-    return READ_KERN(sock->sk_bound_dev_if);
 }
 
 static __always_inline volatile unsigned char get_sock_state(struct sock *sock)
@@ -1822,15 +1794,6 @@ static __always_inline void *get_etext_addr()
 {
     char end_text_sym[7] = "_etext";
     return get_symbol_addr(end_text_sym);
-}
-
-static __always_inline int get_iface_config(int ifindex)
-{
-    int *config = bpf_map_lookup_elem(&network_config, &ifindex);
-    if (config == NULL)
-        return 0;
-
-    return *config;
 }
 
 // INTERNAL: CONTEXT -------------------------------------------------------------------------------
@@ -5187,13 +5150,6 @@ int BPF_KPROBE(trace_security_socket_bind)
             save_to_submit_buf(p.event, (void *) address, sizeof(struct sockaddr_un), 1);
     }
 
-    if (connect_id.port) {
-        net_ctx_t net_ctx;
-        net_ctx.host_tid = p.event->context.task.host_tid;
-        __builtin_memcpy(net_ctx.comm, p.event->context.task.comm, TASK_COMM_LEN);
-        bpf_map_update_elem(&network_map, &connect_id, &net_ctx, BPF_ANY);
-    }
-
     return events_perf_submit(&p, SECURITY_SOCKET_BIND, 0);
 }
 
@@ -5226,393 +5182,6 @@ int BPF_KPROBE(trace_security_socket_setsockopt)
     save_sockaddr_to_buf(p.event, sock, 3);
 
     return events_perf_submit(&p, SECURITY_SOCKET_SETSOCKOPT, 0);
-}
-
-// To delete socket from net map use tid==0, otherwise, update
-static __always_inline int net_map_update_or_delete_sock(void *ctx, struct sock *sk, u32 tid)
-{
-    long ret = 0;
-    net_id_t connect_id = {0};
-    u16 family = get_sock_family(sk);
-
-    if (family == AF_INET) {
-        net_conn_v4_t net_details = {};
-        get_network_details_from_sock_v4(sk, &net_details, 0);
-        if (net_details.local_port)
-            get_local_net_id_from_network_details_v4(sk, &connect_id, &net_details, family);
-    } else if (family == AF_INET6) {
-        net_conn_v6_t net_details = {};
-        get_network_details_from_sock_v6(sk, &net_details, 0);
-        if (net_details.local_port)
-            get_local_net_id_from_network_details_v6(sk, &connect_id, &net_details, family);
-    }
-
-    if (connect_id.port) {
-        if (tid != 0) {
-            net_ctx_t net_ctx;
-            net_ctx.host_tid = tid;
-            ret = bpf_get_current_comm(&net_ctx.comm, sizeof(net_ctx.comm));
-            if (ret < 0)
-                tracee_log(ctx, BPF_LOG_LVL_DEBUG, BPF_LOG_ID_GET_CURRENT_COMM, ret);
-
-            bpf_map_update_elem(&network_map, &connect_id, &net_ctx, BPF_ANY);
-        } else {
-            bpf_map_delete_elem(&network_map, &connect_id);
-        }
-    }
-
-    int zero = 0;
-    config_entry_t *config = bpf_map_lookup_elem(&config_map, &zero);
-    if (config == NULL)
-        return 0;
-
-    return 0;
-}
-
-SEC("kprobe/udp_sendmsg")
-int BPF_KPROBE(trace_udp_sendmsg)
-{
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
-        return 0;
-
-    if (!should_trace(&p))
-        return 0;
-
-    struct sock *sk = (struct sock *) PT_REGS_PARM1(ctx);
-
-    return net_map_update_or_delete_sock(ctx, sk, p.event->context.task.host_tid);
-}
-
-SEC("kprobe/__udp_disconnect")
-int BPF_KPROBE(trace_udp_disconnect)
-{
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
-        return 0;
-
-    if (!should_trace(&p))
-        return 0;
-
-    struct sock *sk = (struct sock *) PT_REGS_PARM1(ctx);
-
-    return net_map_update_or_delete_sock(ctx, sk, 0);
-}
-
-SEC("kprobe/udp_destroy_sock")
-int BPF_KPROBE(trace_udp_destroy_sock)
-{
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
-        return 0;
-
-    if (!should_trace(&p))
-        return 0;
-
-    struct sock *sk = (struct sock *) PT_REGS_PARM1(ctx);
-
-    return net_map_update_or_delete_sock(ctx, sk, 0);
-}
-
-SEC("kprobe/udpv6_destroy_sock")
-int BPF_KPROBE(trace_udpv6_destroy_sock)
-{
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
-        return 0;
-
-    if (!should_trace(&p))
-        return 0;
-
-    struct sock *sk = (struct sock *) PT_REGS_PARM1(ctx);
-
-    return net_map_update_or_delete_sock(ctx, sk, 0);
-}
-
-// trace/events/sock.h: TP_PROTO(const struct sock *sk, const int oldstate, const int newstate)
-SEC("raw_tracepoint/inet_sock_set_state")
-int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
-{
-    long ret = 0;
-    net_id_t connect_id = {0};
-    net_ctx_ext_t net_ctx_ext = {0};
-
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
-        return 0;
-
-    struct sock *sk = (struct sock *) ctx->args[0];
-    // int old_state = ctx->args[1];
-    int new_state = ctx->args[2];
-
-    // Sometimes the socket state may be changed by other contexts that handle the tcp network stack
-    // (e.g. network driver). In these cases, we won't pass the should_trace() check. To overcome
-    // this problem, we save the socket pointer in sock_ctx_map in states that we observed to have
-    // the correct context. We can then check for the existence of a socket in the map, and continue
-    // if it was traced before.
-
-    net_ctx_ext_t *sock_ctx_p = bpf_map_lookup_elem(&sock_ctx_map, &sk);
-    if (!sock_ctx_p) {
-        if (!should_trace(&p)) {
-            return 0;
-        }
-    }
-
-    u16 family = get_sock_family(sk);
-
-    if (family == AF_INET) {
-        net_conn_v4_t net_details = {};
-        get_network_details_from_sock_v4(sk, &net_details, 0);
-        get_local_net_id_from_network_details_v4(sk, &connect_id, &net_details, family);
-    } else if (family == AF_INET6) {
-        net_conn_v6_t net_details = {};
-        get_network_details_from_sock_v6(sk, &net_details, 0);
-        get_local_net_id_from_network_details_v6(sk, &connect_id, &net_details, family);
-    } else {
-        return 0;
-    }
-
-    switch (new_state) {
-        case TCP_LISTEN:
-            if (connect_id.port) {
-                if (!sock_ctx_p) {
-                    net_ctx_ext.host_tid = p.event->context.task.host_tid;
-                    ret = bpf_get_current_comm(&net_ctx_ext.comm, sizeof(net_ctx_ext.comm));
-                    if (ret < 0)
-                        tracee_log(ctx, BPF_LOG_LVL_DEBUG, BPF_LOG_ID_GET_CURRENT_COMM, ret);
-
-                    net_ctx_ext.local_port = connect_id.port;
-                    bpf_map_update_elem(&sock_ctx_map, &sk, &net_ctx_ext, BPF_ANY);
-                    bpf_map_update_elem(&network_map, &connect_id, &net_ctx_ext, BPF_ANY);
-                } else {
-                    sock_ctx_p->local_port = connect_id.port;
-                    bpf_map_update_elem(&network_map, &connect_id, sock_ctx_p, BPF_ANY);
-                }
-            }
-            break;
-        case TCP_CLOSE:
-            // At this point, port equals 0, so we will not be able to use current connect_id as a
-            // key to network map.  We used the value saved in sock_ctx_map instead.
-            if (sock_ctx_p) {
-                connect_id.port = sock_ctx_p->local_port;
-            }
-            bpf_map_delete_elem(&sock_ctx_map, &sk);
-            bpf_map_delete_elem(&network_map, &connect_id);
-            break;
-    }
-
-    return 0;
-}
-
-SEC("kprobe/tcp_connect")
-int BPF_KPROBE(trace_tcp_connect)
-{
-    long ret = 0;
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
-        return 0;
-
-    if (!should_trace(&p))
-        return 0;
-
-    net_id_t connect_id = {0};
-    net_ctx_ext_t net_ctx_ext = {0};
-
-    struct sock *sk = (struct sock *) PT_REGS_PARM1(ctx);
-
-    u16 family = get_sock_family(sk);
-    if (family == AF_INET) {
-        net_conn_v4_t net_details = {};
-        get_network_details_from_sock_v4(sk, &net_details, 0);
-        get_local_net_id_from_network_details_v4(sk, &connect_id, &net_details, family);
-    } else if (family == AF_INET6) {
-        net_conn_v6_t net_details = {};
-        get_network_details_from_sock_v6(sk, &net_details, 0);
-        get_local_net_id_from_network_details_v6(sk, &connect_id, &net_details, family);
-    } else {
-        return 0;
-    }
-
-    net_ctx_ext.host_tid = p.event->context.task.host_tid;
-    ret = bpf_get_current_comm(&net_ctx_ext.comm, sizeof(net_ctx_ext.comm));
-    if (ret < 0)
-        tracee_log(ctx, BPF_LOG_LVL_DEBUG, BPF_LOG_ID_GET_CURRENT_COMM, ret);
-
-    net_ctx_ext.local_port = connect_id.port;
-    bpf_map_update_elem(&sock_ctx_map, &sk, &net_ctx_ext, BPF_ANY);
-
-    return net_map_update_or_delete_sock(ctx, sk, p.event->context.task.host_tid);
-}
-
-static __always_inline int icmp_delete_network_map(struct sk_buff *skb, int send, int ipv6)
-{
-    net_id_t connect_id = {0};
-    __u8 icmp_type;
-
-    if (ipv6) {
-        connect_id.protocol = IPPROTO_ICMPV6;
-
-        struct ipv6hdr *ip_header =
-            (struct ipv6hdr *) (READ_KERN(skb->head) + READ_KERN(skb->network_header));
-        struct in6_addr daddr = READ_KERN(ip_header->daddr);
-        struct in6_addr saddr = READ_KERN(ip_header->saddr);
-
-        struct icmp6hdr *icmph =
-            (struct icmp6hdr *) (READ_KERN(skb->head) + READ_KERN(skb->transport_header));
-        icmp_type = READ_KERN(icmph->icmp6_type);
-
-        connect_id.port = READ_KERN(icmph->icmp6_dataun.u_echo.identifier);
-
-        if (send) {
-            connect_id.address = daddr;
-        } else {
-            if (icmp_type == ICMPV6_ECHO_REQUEST) {
-                return 0;
-            }
-
-            connect_id.address = saddr;
-        }
-    } else {
-        connect_id.protocol = IPPROTO_ICMP;
-
-        struct iphdr *ip_header =
-            (struct iphdr *) (READ_KERN(skb->head) + READ_KERN(skb->network_header));
-        __be32 daddr = READ_KERN(ip_header->daddr);
-        __be32 saddr = READ_KERN(ip_header->saddr);
-
-        struct icmphdr *icmph =
-            (struct icmphdr *) (READ_KERN(skb->head) + READ_KERN(skb->transport_header));
-        icmp_type = READ_KERN(icmph->type);
-
-        connect_id.port = READ_KERN(icmph->un.echo.id);
-
-        if (send) {
-            connect_id.address.s6_addr32[3] = daddr;
-        } else {
-            if (icmp_type == ICMP_ECHO) {
-                return 0;
-            }
-#ifdef ICMP_EXT_ECHO
-            if (icmp_type == ICMP_EXT_ECHO) {
-                return 0;
-            }
-#endif
-
-            connect_id.address.s6_addr32[3] = saddr;
-        }
-        connect_id.address.s6_addr16[5] = 0xffff;
-    }
-
-    bpf_map_delete_elem(&network_map, &connect_id);
-
-    return 0;
-}
-
-SEC("kprobe/icmp_send")
-int BPF_KPROBE(trace_icmp_send)
-{
-    struct sk_buff *skb = (struct sk_buff *) PT_REGS_PARM1(ctx);
-    icmp_delete_network_map(skb, 1, 0);
-
-    return 0;
-}
-
-SEC("kprobe/icmp6_send")
-int BPF_KPROBE(trace_icmp6_send)
-{
-    struct sk_buff *skb = (struct sk_buff *) PT_REGS_PARM1(ctx);
-    icmp_delete_network_map(skb, 1, 1);
-
-    return 0;
-}
-
-SEC("kprobe/icmp_rcv")
-int BPF_KPROBE(trace_icmp_rcv)
-{
-    struct sk_buff *skb = (struct sk_buff *) PT_REGS_PARM1(ctx);
-    icmp_delete_network_map(skb, 0, 0);
-
-    return 0;
-}
-
-SEC("kprobe/icmpv6_rcv")
-int BPF_KPROBE(trace_icmpv6_rcv)
-{
-    struct sk_buff *skb = (struct sk_buff *) PT_REGS_PARM1(ctx);
-    icmp_delete_network_map(skb, 0, 1);
-
-    return 0;
-}
-
-SEC("kprobe/ping_v4_sendmsg")
-int BPF_KPROBE(trace_ping_v4_sendmsg)
-{
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
-        return 0;
-
-    if (!should_trace(&p))
-        return 0;
-
-    net_id_t connect_id = {0};
-
-    // this is v4 function
-    connect_id.protocol = IPPROTO_ICMP;
-
-    // get the icmp id
-    struct sock *sk = (struct sock *) PT_REGS_PARM1(ctx);
-    struct inet_sock *inet = inet_sk(sk);
-    u16 sport = get_inet_sport(inet);
-    connect_id.port = sport;
-
-    // get the address
-    struct msghdr *msg = (struct msghdr *) PT_REGS_PARM2(ctx);
-    struct sockaddr_in *addr = (struct sockaddr_in *) READ_KERN(msg->msg_name);
-    connect_id.address.s6_addr32[3] = READ_KERN(addr->sin_addr).s_addr;
-    connect_id.address.s6_addr16[5] = 0xffff;
-
-    // update the map
-    net_ctx_t net_ctx;
-    net_ctx.host_tid = p.event->context.task.host_tid;
-    __builtin_memcpy(net_ctx.comm, p.event->context.task.comm, TASK_COMM_LEN);
-    bpf_map_update_elem(&network_map, &connect_id, &net_ctx, BPF_ANY);
-
-    return 0;
-}
-
-SEC("kprobe/ping_v6_sendmsg")
-int BPF_KPROBE(trace_ping_v6_sendmsg)
-{
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
-        return 0;
-
-    if (!should_trace(&p))
-        return 0;
-
-    net_id_t connect_id = {0};
-
-    // this is v6 function
-    connect_id.protocol = IPPROTO_ICMPV6;
-
-    // get the icmp id
-    struct sock *sk = (struct sock *) PT_REGS_PARM1(ctx);
-    struct inet_sock *inet = inet_sk(sk);
-    u16 sport = get_inet_sport(inet);
-    connect_id.port = sport;
-
-    // get the address
-    struct msghdr *msg = (struct msghdr *) PT_REGS_PARM2(ctx);
-    struct sockaddr_in6 *addr = (struct sockaddr_in6 *) READ_KERN(msg->msg_name);
-    connect_id.address = READ_KERN(addr->sin6_addr);
-
-    // update the map
-    net_ctx_t net_ctx;
-    net_ctx.host_tid = p.event->context.task.host_tid;
-    __builtin_memcpy(net_ctx.comm, p.event->context.task.comm, TASK_COMM_LEN);
-    bpf_map_update_elem(&network_map, &connect_id, &net_ctx, BPF_ANY);
-
-    return 0;
 }
 
 static __always_inline u32 send_bin_helper(void *ctx, void *prog_array, int tail_call)
@@ -7182,229 +6751,9 @@ int BPF_KPROBE(trace_do_sigaction)
     return events_perf_submit(&p, DO_SIGACTION, 0);
 }
 
-static __always_inline bool
-skb_revalidate_data(struct __sk_buff *skb, uint8_t **head, uint8_t **tail, const u32 offset)
-{
-    if (*head + offset > *tail) {
-        if (bpf_skb_pull_data(skb, offset) < 0) {
-            return false;
-        }
-
-        *head = (uint8_t *) (long) skb->data;
-        *tail = (uint8_t *) (long) skb->data_end;
-
-        if (*head + offset > *tail) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-// decide network event_id based on created net_packet_t
-static __always_inline void set_net_event_id(net_packet_t *pkt)
-{
-    enum ports
-    {
-        DNS = 53,
-    };
-
-    switch (pkt->protocol) {
-        case IPPROTO_UDP:
-            if (pkt->dst_port == DNS)
-                pkt->event_id = DNS_REQUEST;
-            if (pkt->src_port == DNS)
-                pkt->event_id = DNS_RESPONSE;
-            break;
-        default:
-            pkt->event_id = NET_PACKET;
-    }
-}
-
-// some network events might need payload (even without capture)
-static __always_inline bool should_submit_payload(net_packet_t *pkt)
-{
-    switch (pkt->event_id) {
-        case DNS_REQUEST:
-        case DNS_RESPONSE:
-            return true;
-        default:
-            return false;
-    }
-}
-
-static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress)
-{
-    // Note: if we are attaching to docker0 bridge, the ingress bool argument is actually egress
-    uint8_t *head = (uint8_t *) (long) skb->data;
-    uint8_t *tail = (uint8_t *) (long) skb->data_end;
-
-    if (head + sizeof(struct ethhdr) > tail)
-        return TC_ACT_UNSPEC;
-
-    struct ethhdr *eth = (void *) head;
-    net_packet_t pkt = {0};
-    pkt.event_id = NET_PACKET;
-    pkt.ts = bpf_ktime_get_ns();
-    pkt.len = skb->len;
-    pkt.ifindex = skb->ifindex;
-    net_id_t connect_id = {0};
-
-    uint32_t l4_hdr_off;
-
-    switch (bpf_ntohs(eth->h_proto)) {
-        case ETH_P_IP:
-            l4_hdr_off = sizeof(struct ethhdr) + sizeof(struct iphdr);
-            if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off))
-                return TC_ACT_UNSPEC;
-
-            // create a IPv4-Mapped IPv6 Address
-            struct iphdr *ip = (void *) head + sizeof(struct ethhdr);
-            pkt.src_addr.s6_addr32[3] = ip->saddr;
-            pkt.dst_addr.s6_addr32[3] = ip->daddr;
-            pkt.src_addr.s6_addr16[5] = 0xffff;
-            pkt.dst_addr.s6_addr16[5] = 0xffff;
-            pkt.protocol = ip->protocol;
-            break;
-
-        case ETH_P_IPV6:
-            l4_hdr_off = sizeof(struct ethhdr) + sizeof(struct ipv6hdr);
-            if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off))
-                return TC_ACT_UNSPEC;
-
-            struct ipv6hdr *ip6 = (void *) head + sizeof(struct ethhdr);
-            pkt.src_addr = ip6->saddr;
-            pkt.dst_addr = ip6->daddr;
-            pkt.protocol = ip6->nexthdr;
-            break;
-
-        default:
-            return TC_ACT_UNSPEC;
-    }
-
-    switch (pkt.protocol) {
-        case IPPROTO_TCP:
-            if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off + sizeof(struct tcphdr)))
-                return TC_ACT_UNSPEC;
-
-            struct tcphdr *tcp = (void *) head + l4_hdr_off;
-            pkt.src_port = tcp->source;
-            pkt.dst_port = tcp->dest;
-            break;
-
-        case IPPROTO_UDP:
-            if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off + sizeof(struct udphdr)))
-                return TC_ACT_UNSPEC;
-
-            struct udphdr *udp = (void *) head + l4_hdr_off;
-            pkt.src_port = udp->source;
-            pkt.dst_port = udp->dest;
-            break;
-
-        case IPPROTO_ICMP:
-            if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off + sizeof(struct icmphdr)))
-                return TC_ACT_UNSPEC;
-
-            struct icmphdr *icmph = (void *) head + l4_hdr_off;
-            u16 icmp_id = icmph->un.echo.id;
-            pkt.src_port = icmp_id; // icmp_id so connect_id can be found
-            pkt.dst_port = icmp_id; // icmp_id so connect_id can be found
-            break;
-
-        case IPPROTO_ICMPV6:
-            if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off + sizeof(struct icmp6hdr)))
-                return TC_ACT_UNSPEC;
-
-            struct icmp6hdr *icmp6h = (void *) head + l4_hdr_off;
-            u16 icmp6_id = icmp6h->icmp6_dataun.u_echo.identifier;
-            pkt.src_port = icmp6_id; // icmp6_id so connect_id can be found
-            pkt.dst_port = icmp6_id; // icmp6_id so connect_id can be found
-            break;
-
-        default:
-            return TC_ACT_UNSPEC; // TODO: support more protocols
-    }
-
-    connect_id.protocol = pkt.protocol;
-    connect_id.address = pkt.src_addr;
-    connect_id.port = pkt.src_port;
-    net_ctx_t *net_ctx = bpf_map_lookup_elem(&network_map, &connect_id);
-    if (net_ctx == NULL) {
-        // We could have used traffic direction (ingress bool) to know if we should look for src or
-        // dst, however, if we attach to a bridge interface, src and dst are switched. For this
-        // reason, we look in the network map for both src and dst
-        connect_id.address = pkt.dst_addr;
-        connect_id.port = pkt.dst_port;
-        net_ctx = bpf_map_lookup_elem(&network_map, &connect_id);
-        if (net_ctx == NULL) {
-            // Check if network_map has an ip of 0.0.0.0. Note: A conflict might occur between
-            // processes in different namespace that bind to 0.0.0.0
-            // TODO: handle network namespaces conflicts
-            __builtin_memset(connect_id.address.s6_addr, 0, sizeof(connect_id.address.s6_addr));
-            eth = (void *) head;
-            if (bpf_ntohs(eth->h_proto) == ETH_P_IP)
-                connect_id.address.s6_addr16[5] = 0xffff;
-            net_ctx = bpf_map_lookup_elem(&network_map, &connect_id);
-            if (net_ctx == NULL) {
-                connect_id.port = pkt.src_port;
-                net_ctx = bpf_map_lookup_elem(&network_map, &connect_id);
-                if (net_ctx == NULL) {
-                    return TC_ACT_UNSPEC;
-                }
-            }
-        }
-    }
-
-    pkt.host_tid = net_ctx->host_tid;
-    __builtin_memcpy(pkt.comm, net_ctx->comm, TASK_COMM_LEN);
-
-    // if net_packet event not chosen, send minimal data only:
-    //     timestamp (u64)      8 bytes
-    //     net event_id (u32)   4 bytes
-    //     host_id (u32)        4 bytes
-    //     comm (char[])       16 bytes
-    //     packet len (u32)     4 bytes
-    //     ifindex (u32)        4 bytes
-    size_t pkt_size = PACKET_MIN_SIZE;
-
-    int iface_conf = get_iface_config(skb->ifindex);
-    if (iface_conf & TRACE_IFACE) {
-        pkt_size = sizeof(pkt);
-        pkt.src_port = __bpf_ntohs(pkt.src_port);
-        pkt.dst_port = __bpf_ntohs(pkt.dst_port);
-        set_net_event_id(&pkt);
-    }
-
-    // The tc perf_event_output handler will use the upper 32 bits of the flags argument as a number
-    // of bytes to include of the packet payload in the event data. If the size is too big, the call
-    // to bpf_perf_event_output will fail and return -EFAULT.
-    //
-    // See bpf_skb_event_output in net/core/filter.c.
-    u64 flags = BPF_F_CURRENT_CPU;
-
-    if (iface_conf & CAPTURE_IFACE || should_submit_payload(&pkt))
-        flags |= (u64) skb->len << 32;
-
-    bpf_perf_event_output(skb, &net_events, flags, &pkt, pkt_size);
-
-    return TC_ACT_UNSPEC;
-}
-
-SEC("tc")
-int tc_egress(struct __sk_buff *skb)
-{
-    return tc_probe(skb, false);
-}
-
-SEC("tc")
-int tc_ingress(struct __sk_buff *skb)
-{
-    return tc_probe(skb, true);
-}
-
 #if (LINUX_VERSION_CODE > KERNEL_VERSION(5, 1, 0) || defined(CORE)) || defined(RHEL_RELEASE_CODE)
 
-// NOTE: new network code (works in <= 5.6 and > 5.1)
+// Network Packets (works from ~5.2 and beyond)
 
 // There are multiple ways to follow ingress/egress for a task. One way is to
 // try to track all flows within network interfaces and keep a map of addresses
