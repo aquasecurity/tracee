@@ -186,6 +186,52 @@ func checkSecurityFileOpenExecve(t *testing.T, gotOutput *[]trace.Event) {
 		assert.Equal(t, events.Execve, syscall)
 	}
 }
+
+func checkScope42SecurityFileOpenLs(t *testing.T, gotOutput *[]trace.Event) {
+	_, err := forkAndExecFunction(doLs)
+	require.NoError(t, err)
+
+	waitForTraceeOutput(t, gotOutput, time.Now(), true)
+
+	for _, evt := range *gotOutput {
+		// ls - scope 42
+		assert.Equal(t, "ls", evt.ProcessName)
+		assert.Equal(t, uint64(1<<41), evt.MatchedScopes)
+		arg, err := helpers.GetTraceeArgumentByName(evt, "pathname")
+		require.NoError(t, err)
+		assert.Contains(t, arg.Value, "integration")
+	}
+}
+
+func checkExecveOnScopes4And2(t *testing.T, gotOutput *[]trace.Event) {
+	_, err := forkAndExecFunction(doLsUname)
+	require.NoError(t, err)
+
+	waitForTraceeOutput(t, gotOutput, time.Now(), true)
+
+	// check output length
+	require.Len(t, *gotOutput, 2)
+	var evts [2]trace.Event
+
+	// output should only have events with event name of execve
+	for i, evt := range *gotOutput {
+		assert.Equal(t, "execve", evt.EventName)
+		evts[i] = evt
+	}
+
+	// ls - scope 4
+	arg, err := helpers.GetTraceeArgumentByName(evts[0], "pathname")
+	require.NoError(t, err)
+	assert.Contains(t, arg.Value, "ls")
+	assert.Equal(t, uint64(1<<3), evts[0].MatchedScopes, "MatchedScopes")
+
+	// uname - scope 2
+	arg, err = helpers.GetTraceeArgumentByName(evts[1], "pathname")
+	require.NoError(t, err)
+	assert.Contains(t, arg.Value, "uname")
+	assert.Equal(t, uint64(1<<1), evts[1].MatchedScopes, "MatchedScopes")
+}
+
 func Test_EventFilters(t *testing.T) {
 	testCases := []struct {
 		name       string
@@ -248,6 +294,19 @@ func Test_EventFilters(t *testing.T) {
 			eventFunc:  checkNewContainers,
 		},
 		{
+			name:       "trace event set in a specific scope",
+			filterArgs: []string{"42:comm=ls", "42:event=security_file_open", "42:security_file_open.args.pathname=*integration"},
+			eventFunc:  checkScope42SecurityFileOpenLs,
+		},
+		{
+			name: "trace events set in two specific scope",
+			filterArgs: []string{
+				"4:event=execve", "4:execve.args.pathname=*ls",
+				"2:event=execve", "2:execve.args.pathname=*uname",
+			},
+			eventFunc: checkExecveOnScopes4And2,
+		},
+		{
 			name:       "trace only security_file_open from \"execve\" syscall",
 			filterArgs: []string{"event=security_file_open", "security_file_open.args.syscall=execve"},
 			eventFunc:  checkSecurityFileOpenExecve,
@@ -257,17 +316,17 @@ func Test_EventFilters(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
-			filter, err := flags.PrepareFilter(tc.filterArgs)
+			filterScopes, err := flags.PrepareFilterScopes(tc.filterArgs)
 			require.NoError(t, err)
 
 			eventChan := make(chan trace.Event, 1000)
 			config := tracee.Config{
-				Filter:     &filter,
 				ChanEvents: eventChan,
 				Capabilities: &tracee.CapabilitiesConfig{
 					BypassCaps: true,
 				},
 			}
+			config.FilterScopes = filterScopes
 			eventOutput := []trace.Event{}
 
 			go func() {
@@ -292,6 +351,7 @@ type testFunc string
 const (
 	doMagicWrite testFunc = "do_magic_write"
 	doLs         testFunc = "do_ls"
+	doLsUname    testFunc = "do_ls_uname"
 	doDockerRun  testFunc = "do_docker_run"
 	doFileOpen   testFunc = "do_file_open"
 )

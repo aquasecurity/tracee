@@ -92,11 +92,13 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	// Filtering (trace) command line flags
 
-	filter, err := flags.PrepareFilter(c.StringSlice("trace"))
+	filterScopes, err := flags.PrepareFilterScopes(c.StringSlice("trace"))
 	if err != nil {
 		return runner, err
 	}
-	cfg.Filter = &filter
+	cfg.FilterScopes = filterScopes
+
+	// Container information printer flag
 
 	printerConfig.ContainerMode = cmd.GetContainerMode(cfg)
 	cfg.Output = &output.OutputConfig

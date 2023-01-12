@@ -13,7 +13,7 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 		name        string
 		eventFilter cliFilter
 		setFilter   cliFilter
-		expected    []events.ID
+		expected    map[events.ID]string
 		expectedErr error
 	}{
 		{
@@ -21,18 +21,21 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 			eventFilter: cliFilter{
 				Equal: []string{"ptrace", "openat"},
 			},
-			expected: []events.ID{events.Ptrace, events.Openat},
+			expected: map[events.ID]string{
+				events.Ptrace: "ptrace",
+				events.Openat: "openat",
+			},
 		},
 		{
 			name: "happy path - sched_proc*",
 			eventFilter: cliFilter{
 				Equal: []string{"sched_proc*", "openat"},
 			},
-			expected: []events.ID{
-				events.SchedProcessExec,
-				events.SchedProcessExit,
-				events.SchedProcessFork,
-				events.Openat,
+			expected: map[events.ID]string{
+				events.SchedProcessExec: "sched_process_exec",
+				events.SchedProcessExit: "sched_process_exit",
+				events.SchedProcessFork: "sched_process_fork",
+				events.Openat:           "openat",
 			},
 		},
 		{
@@ -41,10 +44,10 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 				Equal:    []string{"sched_proc*", "openat"},
 				NotEqual: []string{"sched_process_exec"},
 			},
-			expected: []events.ID{
-				events.SchedProcessExit,
-				events.SchedProcessFork,
-				events.Openat,
+			expected: map[events.ID]string{
+				events.SchedProcessExit: "sched_process_exit",
+				events.SchedProcessFork: "sched_process_fork",
+				events.Openat:           "openat",
 			},
 		},
 		{
@@ -52,7 +55,11 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 			setFilter: cliFilter{
 				Equal: []string{"containers"},
 			},
-			expected: []events.ID{events.ContainerCreate, events.ContainerRemove, events.ExistingContainer},
+			expected: map[events.ID]string{
+				events.ContainerCreate:   "container_create",
+				events.ContainerRemove:   "container_remove",
+				events.ExistingContainer: "existing_container",
+			},
 		},
 		{
 			name: "sad path - event doesn't exist",
@@ -97,7 +104,7 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 				assert.Equal(t, err.Error(), tc.expectedErr.Error())
 			} else {
 				require.NoError(t, err)
-				assert.ElementsMatch(t, res, tc.expected)
+				assert.Equal(t, tc.expected, res)
 			}
 		})
 	}

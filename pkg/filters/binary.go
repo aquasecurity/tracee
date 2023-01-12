@@ -6,9 +6,12 @@ import (
 	"strings"
 	"unsafe"
 
-	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
+
+	bpf "github.com/aquasecurity/libbpfgo"
+
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
@@ -154,7 +157,7 @@ func NewBPFBinaryFilter(binaryMapName string) *BPFBinaryFilter {
 	}
 }
 
-func (f *BPFBinaryFilter) InitBPF(bpfModule *bpf.Module) error {
+func (f *BPFBinaryFilter) UpdateBPF(bpfModule *bpf.Module, filterScopeID uint) error {
 	const (
 		maxBpfBinPathSize = 256 // maximum binary path size supported by BPF (MAX_BIN_PATH_SIZE)
 		bpfBinFilterSize  = 264 // the key size of the BPF binary filter map entry
@@ -182,7 +185,26 @@ func (f *BPFBinaryFilter) InitBPF(bpfModule *bpf.Module) error {
 			binary.LittleEndian.PutUint32(binBytes, bin.mntNS)
 			copy(binBytes[4:], bin.path)
 		}
-		return binMap.Update(unsafe.Pointer(&binBytes[0]), unsafe.Pointer(&eqVal))
+
+		var equalInScopes, equalitySetInScopes uint64
+		curVal, err := binMap.GetValue(unsafe.Pointer(&binBytes[0]))
+		if err == nil {
+			equalInScopes = binary.LittleEndian.Uint64(curVal[0:8])
+			equalitySetInScopes = binary.LittleEndian.Uint64(curVal[8:16])
+		}
+
+		filterVal := make([]byte, 16)
+
+		if eqVal == filterNotEqual {
+			utils.ClearBit(&equalInScopes, filterScopeID)
+		} else {
+			utils.SetBit(&equalInScopes, filterScopeID)
+		}
+		utils.SetBit(&equalitySetInScopes, filterScopeID)
+		binary.LittleEndian.PutUint64(filterVal[0:8], equalInScopes)
+		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
+
+		return binMap.Update(unsafe.Pointer(&binBytes[0]), unsafe.Pointer(&filterVal[0]))
 	}
 
 	// first initialize notEqual values since equality should take precedence

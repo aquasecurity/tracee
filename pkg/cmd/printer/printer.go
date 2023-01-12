@@ -103,20 +103,102 @@ func (p tableEventPrinter) Preamble() {
 	if p.verbose {
 		switch p.containerMode {
 		case ContainerModeDisabled:
-			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-12s %-12s %-6s %-16s %-7s %-7s %-7s %-16s %-20s %s", "TIME", "UTS_NAME", "CONTAINER_ID", "MNT_NS", "PID_NS", "UID", "COMM", "PID", "TID", "PPID", "RET", "EVENT", "ARGS")
+			fmt.Fprintf(p.out,
+				"%-16s %-17s %-17s %-13s %-12s %-12s %-6s %-16s %-7s %-7s %-7s %-16s %-20s %s",
+				"TIME",
+				"SCOPES",
+				"UTS_NAME",
+				"CONTAINER_ID",
+				"MNT_NS",
+				"PID_NS",
+				"UID",
+				"COMM",
+				"PID",
+				"TID",
+				"PPID",
+				"RET",
+				"EVENT",
+				"ARGS",
+			)
 		case ContainerModeEnabled:
-			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-20s %s", "TIME", "UTS_NAME", "CONTAINER_ID", "MNT_NS", "PID_NS", "UID", "COMM", "PID/host", "TID/host", "PPID/host", "RET", "EVENT", "ARGS")
+			fmt.Fprintf(p.out,
+				"%-16s %-17s %-17s %-13s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-20s %s",
+				"TIME",
+				"SCOPES",
+				"UTS_NAME",
+				"CONTAINER_ID",
+				"MNT_NS",
+				"PID_NS",
+				"UID",
+				"COMM",
+				"PID/host",
+				"TID/host",
+				"PPID/host",
+				"RET",
+				"EVENT",
+				"ARGS",
+			)
 		case ContainerModeEnriched:
-			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-16s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-20s %s", "TIME", "UTS_NAME", "CONTAINER_ID", "IMAGE", "MNT_NS", "PID_NS", "UID", "COMM", "PID/host", "TID/host", "PPID/host", "RET", "EVENT", "ARGS")
+			fmt.Fprintf(p.out,
+				"%-16s %-17s %-17s %-13s %-16s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-20s %s",
+				"TIME",
+				"SCOPES",
+				"UTS_NAME",
+				"CONTAINER_ID",
+				"IMAGE",
+				"MNT_NS",
+				"PID_NS",
+				"UID",
+				"COMM",
+				"PID/host",
+				"TID/host",
+				"PPID/host",
+				"RET",
+				"EVENT",
+				"ARGS",
+			)
 		}
 	} else {
 		switch p.containerMode {
 		case ContainerModeDisabled:
-			fmt.Fprintf(p.out, "%-16s %-6s %-16s %-7s %-7s %-16s %-20s %s", "TIME", "UID", "COMM", "PID", "TID", "RET", "EVENT", "ARGS")
+			fmt.Fprintf(p.out,
+				"%-16s %-6s %-16s %-7s %-7s %-16s %-20s %s",
+				"TIME",
+				"UID",
+				"COMM",
+				"PID",
+				"TID",
+				"RET",
+				"EVENT",
+				"ARGS",
+			)
 		case ContainerModeEnabled:
-			fmt.Fprintf(p.out, "%-16s %-13s %-6s %-16s %-15s %-15s %-16s %-20s %s", "TIME", "CONTAINER_ID", "UID", "COMM", "PID/host", "TID/host", "RET", "EVENT", "ARGS")
+			fmt.Fprintf(p.out,
+				"%-16s %-13s %-6s %-16s %-15s %-15s %-16s %-20s %s",
+				"TIME",
+				"CONTAINER_ID",
+				"UID",
+				"COMM",
+				"PID/host",
+				"TID/host",
+				"RET",
+				"EVENT",
+				"ARGS",
+			)
 		case ContainerModeEnriched:
-			fmt.Fprintf(p.out, "%-16s %-13s %-16s %-6s %-16s %-15s %-15s %-16s %-20s %s", "TIME", "CONTAINER_ID", "IMAGE", "UID", "COMM", "PID/host", "TID/host", "RET", "EVENT", "ARGS")
+			fmt.Fprintf(p.out,
+				"%-16s %-13s %-16s %-6s %-16s %-15s %-15s %-16s %-20s %s",
+				"TIME",
+				"CONTAINER_ID",
+				"IMAGE",
+				"UID",
+				"COMM",
+				"PID/host",
+				"TID/host",
+				"RET",
+				"EVENT",
+				"ARGS",
+			)
 		}
 	}
 	fmt.Fprintln(p.out)
@@ -146,20 +228,106 @@ func (p tableEventPrinter) Print(event trace.Event) {
 	if p.verbose {
 		switch p.containerMode {
 		case ContainerModeDisabled:
-			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-20s ", timestamp, event.HostName, containerId, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue, eventName)
+			fmt.Fprintf(p.out,
+				"%-16s %016x  %-16s %-13s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-20s ",
+				timestamp,
+				event.MatchedScopes,
+				event.HostName,
+				containerId,
+				event.MountNS,
+				event.PIDNS,
+				event.UserID,
+				event.ProcessName,
+				event.ProcessID,
+				event.ThreadID,
+				event.ParentProcessID,
+				event.ReturnValue,
+				event.EventName,
+			)
 		case ContainerModeEnabled:
-			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, event.HostName, containerId, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ParentProcessID, event.HostParentProcessID, event.ReturnValue, eventName)
+			fmt.Fprintf(p.out,
+				"%-16s %016x  %-16s %-13s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ",
+				timestamp,
+				event.MatchedScopes,
+				event.HostName,
+				containerId,
+				event.MountNS,
+				event.PIDNS,
+				event.UserID,
+				event.ProcessName,
+				event.ProcessID,
+				event.HostProcessID,
+				event.ThreadID,
+				event.HostThreadID,
+				event.ParentProcessID,
+				event.HostParentProcessID,
+				event.ReturnValue,
+				event.EventName,
+			)
 		case ContainerModeEnriched:
-			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, event.HostName, containerId, event.ContainerImage, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ParentProcessID, event.HostParentProcessID, event.ReturnValue, eventName)
+			fmt.Fprintf(p.out,
+				"%-16s %016x  %-16s %-13s %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ",
+				timestamp,
+				event.MatchedScopes,
+				event.HostName,
+				containerId,
+				event.ContainerImage,
+				event.MountNS,
+				event.PIDNS,
+				event.UserID,
+				event.ProcessName,
+				event.ProcessID,
+				event.HostProcessID,
+				event.ThreadID,
+				event.HostThreadID,
+				event.ParentProcessID,
+				event.HostParentProcessID,
+				event.ReturnValue,
+				event.EventName,
+			)
 		}
 	} else {
 		switch p.containerMode {
 		case ContainerModeDisabled:
-			fmt.Fprintf(p.out, "%-16s %-6d %-16s %-7d %-7d %-16d %-20s ", timestamp, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ReturnValue, eventName)
+			fmt.Fprintf(p.out,
+				"%-16s %-6d %-16s %-7d %-7d %-16d %-20s ",
+				timestamp,
+				event.UserID,
+				event.ProcessName,
+				event.ProcessID,
+				event.ThreadID,
+				event.ReturnValue,
+				eventName,
+			)
 		case ContainerModeEnabled:
-			fmt.Fprintf(p.out, "%-16s %-13s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, containerId, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ReturnValue, eventName)
+			fmt.Fprintf(p.out,
+				"%-16s %-13s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ",
+				timestamp,
+				containerId,
+				event.UserID,
+				event.ProcessName,
+				event.ProcessID,
+				event.HostProcessID,
+				event.ThreadID,
+				event.HostThreadID,
+				event.ReturnValue,
+				eventName,
+			)
 		case ContainerModeEnriched:
-			fmt.Fprintf(p.out, "%-16s %-13s %-16s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, containerId, containerImage, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ReturnValue, eventName)
+			fmt.Fprintf(p.out,
+				"%-16s %-13s %-16s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ",
+				timestamp,
+				containerId,
+				containerImage,
+				event.UserID,
+				event.ProcessName,
+				event.ProcessID,
+				event.HostProcessID,
+				event.ThreadID,
+				event.HostThreadID,
+				event.ReturnValue,
+				eventName,
+			)
 		}
 	}
 	for i, arg := range event.Args {

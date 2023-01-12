@@ -750,7 +750,8 @@ typedef struct event_context {
     u64 ts; // Timestamp
     task_context_t task;
     u32 eventid;
-    u32 padding;
+    u32 padding; // free for further use
+    u64 matched_scopes;
     s64 retval;
     u32 stack_id;
     u16 processor_id; // The ID of the processor which processed the event
@@ -782,8 +783,8 @@ typedef struct task_info {
     task_context_t context;
     syscall_data_t syscall_data;
     bool syscall_traced;  // indicates that syscall_data is valid
-    bool recompute_scope; // recompute should_trace (new task/context changed/policy changed)
-    int should_trace;     // last decision of should_trace()
+    bool recompute_scope; // recompute matched_scopes (new task/context changed/policy changed)
+    u64 matched_scopes;   // cached bitmap of scopes this task matched
     u8 container_state;   // the state of the container the task resides in
 } task_info_t;
 
@@ -809,8 +810,8 @@ typedef struct io_data {
 } io_data_t;
 
 typedef struct proc_info {
-    bool new_proc; // set if this process was started after tracee. Used with new_pid filter
-    bool follow;   // set if this process was traced before. Used with the follow filter
+    bool new_proc;        // set if this process was started after tracee. Used with new_pid filter
+    u64 follow_in_scopes; // set if this process was traced before. Used with the follow filter
     struct binary binary;
     u32 binary_no_mnt; // used in binary lookup when we don't care about mount ns. always 0.
     file_info_t interpreter;
@@ -846,17 +847,44 @@ typedef struct ksym_name {
 typedef struct config_entry {
     u32 tracee_pid;
     u32 options;
-    u32 filters;
     u32 cgroup_v1_hid;
+    u32 padding; // free for further use
+    // enabled scopes bitmask per filter
+    u64 uid_filter_enabled_scopes;
+    u64 pid_filter_enabled_scopes;
+    u64 mnt_ns_filter_enabled_scopes;
+    u64 pid_ns_filter_enabled_scopes;
+    u64 uts_ns_filter_enabled_scopes;
+    u64 comm_filter_enabled_scopes;
+    u64 cgroup_id_filter_enabled_scopes;
+    u64 cont_filter_enabled_scopes;
+    u64 new_cont_filter_enabled_scopes;
+    u64 new_pid_filter_enabled_scopes;
+    u64 proc_tree_filter_enabled_scopes;
+    u64 bin_path_filter_enabled_scopes;
+    u64 follow_filter_enabled_scopes;
+    // filter_out bitmask per filter
+    u64 uid_filter_out_scopes;
+    u64 pid_filter_out_scopes;
+    u64 mnt_ns_filter_out_scopes;
+    u64 pid_ns_filter_out_scopes;
+    u64 uts_ns_filter_out_scopes;
+    u64 comm_filter_out_scopes;
+    u64 cgroup_id_filter_out_scopes;
+    u64 cont_filter_out_scopes;
+    u64 new_cont_filter_out_scopes;
+    u64 new_pid_filter_out_scopes;
+    u64 proc_tree_filter_out_scopes;
+    u64 bin_path_filter_out_scopes;
+    // bitmask with scopes that have at least one filter enabled
+    u64 enabled_scopes;
+    // global min max
     u64 uid_max;
     u64 uid_min;
     u64 pid_max;
     u64 pid_min;
-    u64 mnt_ns_max;
-    u64 mnt_ns_min;
-    u64 pid_ns_max;
-    u64 pid_ns_min;
-    u8 events_to_submit[128]; // use 8*128 bits to describe up to 1024 events
+    // use 8*128 bits to describe up to 1024 events
+    u8 events_to_submit[128];
 } config_entry_t;
 
 typedef struct netconfig_entry {
@@ -940,6 +968,14 @@ typedef struct kmod_data {
 typedef struct bpf_attach {
     enum bpf_write_user_e write_user;
 } bpf_attach_t;
+
+typedef struct equality {
+    // bitmask with scopes on which a equal '=' filter is set
+    // its bit value will depend on the filter's equality precedence order
+    u64 equal_in_scopes;
+    // bitmask with scopes on which a filter equality is set
+    u64 equality_set_in_scopes;
+} eq_t;
 
 enum bpf_log_level
 {
@@ -1030,18 +1066,18 @@ struct mount {
 BPF_HASH(kconfig_map, u32, u32, 10240);                            // kernel config variables
 BPF_HASH(containers_map, u32, u8, 10240);                          // map cgroup id to container status {EXISTED, CREATED, STARTED}
 BPF_HASH(args_map, u64, args_t, 1024);                             // persist args between function entry and return
-BPF_HASH(uid_filter, u32, u32, 256);                               // filter events by UID, for specific UIDs either by == or !=
-BPF_HASH(pid_filter, u32, u32, 256);                               // filter events by PID
-BPF_HASH(mnt_ns_filter, u64, u32, 256);                            // filter events by mount namespace id
-BPF_HASH(pid_ns_filter, u64, u32, 256);                            // filter events by pid namespace id
-BPF_HASH(uts_ns_filter, string_filter_t, u32, 256);                // filter events by uts namespace name
-BPF_HASH(comm_filter, string_filter_t, u32, 256);                  // filter events by command name
-BPF_HASH(cgroup_id_filter, u32, u32, 256);                         // filter events by cgroup id
-BPF_HASH(binary_filter, binary_t, u32, 256);                       // filter events by binary path and mount namespace
+BPF_HASH(uid_filter, u32, eq_t, 256);                              // filter events by UID, for specific UIDs either by == or !=
+BPF_HASH(pid_filter, u32, eq_t, 256);                              // filter events by PID
+BPF_HASH(mnt_ns_filter, u64, eq_t, 256);                           // filter events by mount namespace id
+BPF_HASH(pid_ns_filter, u64, eq_t, 256);                           // filter events by pid namespace id
+BPF_HASH(uts_ns_filter, string_filter_t, eq_t, 256);               // filter events by uts namespace name
+BPF_HASH(comm_filter, string_filter_t, eq_t, 256);                 // filter events by command name
+BPF_HASH(cgroup_id_filter, u32, eq_t, 256);                        // filter events by cgroup id
+BPF_HASH(binary_filter, binary_t, eq_t, 256);                      // filter events by binary path and mount namespace
 BPF_HASH(bin_args_map, u64, bin_args_t, 256);                      // persist args for send_bin funtion
 BPF_HASH(sys_32_to_64_map, u32, u32, 1024);                        // map 32bit to 64bit syscalls
 BPF_HASH(params_types_map, u32, u64, 1024);                        // encoded parameters types for event
-BPF_HASH(process_tree_map, u32, u32, 10240);                       // filter events by the ancestry of the traced process
+BPF_HASH(process_tree_map, u32, eq_t, 10240);                      // filter events by the ancestry of the traced process
 BPF_LRU_HASH(proc_info_map, u32, proc_info_t, 10240);              // holds data for every process
 BPF_LRU_HASH(task_info_map, u32, task_info_t, 10240);              // holds data for every task
 BPF_HASH(ksymbols_map, ksym_name_t, u64, 1024);                    // holds the addresses of some kernel symbols
@@ -1873,7 +1909,7 @@ static __always_inline task_info_t *init_task_info(u32 tid, u32 pid, scratch_t *
     proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &pid);
     if (proc_info == NULL) {
         scratch->proc_info.new_proc = false;
-        scratch->proc_info.follow = false;
+        scratch->proc_info.follow_in_scopes = 0;
         scratch->proc_info.binary.mnt_id = 0;
         scratch->proc_info.binary_no_mnt = 0;
         __builtin_memset(scratch->proc_info.binary.path, 0, MAX_BIN_PATH_SIZE);
@@ -1942,6 +1978,10 @@ static __always_inline int init_program_data(program_data_t *p, void *ctx)
         goto out;
     }
 
+    // in some places we don't call should_trace() (e.g. sys_exit) which also initializes
+    // matched_scopes. Use previously found scopes then to initialize it.
+    p->event->context.matched_scopes = p->task_info->matched_scopes;
+
     // check if we need to recompute scope due to context change
     if (context_changed(&p->task_info->context, &p->event->context.task))
         p->task_info->recompute_scope = true;
@@ -2002,40 +2042,136 @@ static __always_inline int init_tailcall_program_data(program_data_t *p, void *c
 
 // INTERNAL: FILTERING -----------------------------------------------------------------------------
 
-static __always_inline int
-uint_filter_matches(bool filter_out, void *filter_map, u64 value, u64 max, u64 min)
+static __always_inline u64
+uint_filter_range_matches(u64 filter_out_scopes, void *filter_map, u64 value, u64 max, u64 min)
 {
-    u8 *equality = bpf_map_lookup_elem(filter_map, &value);
-    if (equality != NULL)
-        return *equality;
+    // check equality_filter_matches() for more info
+
+    u64 equal_in_scopes = 0;
+    u64 equality_set_in_scopes = 0;
+    eq_t *equality = bpf_map_lookup_elem(filter_map, &value);
+    if (equality != NULL) {
+        equal_in_scopes = equality->equal_in_scopes;
+        equality_set_in_scopes = equality->equality_set_in_scopes;
+    }
 
     if ((max != FILTER_MAX_NOT_SET) && (value >= max))
-        return 0;
+        return equal_in_scopes;
 
     if ((min != FILTER_MIN_NOT_SET) && (value <= min))
-        return 0; // 0 means do not trace
+        return equal_in_scopes;
 
-    return filter_out;
+    return equal_in_scopes | (filter_out_scopes & ~equality_set_in_scopes);
 }
 
-static __always_inline int equality_filter_matches(bool filter_out, void *filter_map, void *key)
+static __always_inline u64 binary_filter_matches(u64 filter_out_scopes, proc_info_t *proc_info)
 {
-    u32 *equality = bpf_map_lookup_elem(filter_map, key);
-    if (equality != NULL)
-        return *equality;
+    // check equality_filter_matches() for more info
 
-    return filter_out;
+    u64 equal_in_scopes = 0;
+    u64 equality_set_in_scopes = 0;
+    eq_t *equality = bpf_map_lookup_elem(&binary_filter, proc_info->binary.path);
+    if (equality == NULL) {
+        // lookup by binary path and mount namespace
+        equality = bpf_map_lookup_elem(&binary_filter, &proc_info->binary);
+    }
+    if (equality != NULL) {
+        equal_in_scopes = equality->equal_in_scopes;
+        equality_set_in_scopes = equality->equality_set_in_scopes;
+    }
+
+    return equal_in_scopes | (filter_out_scopes & ~equality_set_in_scopes);
 }
 
-static __always_inline int bool_filter_matches(bool filter_out, bool val)
+static __always_inline u64 equality_filter_matches(u64 filter_out_scopes,
+                                                   void *filter_map,
+                                                   void *key)
 {
-    return filter_out ^ val;
+    // check compute_scopes() for initial info
+    //
+    // e.g.: cmdline: -t 2:comm=who -t 3:comm=ping -t 4:comm!=who
+    //
+    // filter_out_scopes = 0000 1000, since scope 4 has "not equal" for comm filter
+    // filter_map        = comm_filter
+    // key               = "who" | "ping"
+    //
+    // ---
+    //
+    // considering an event from "who" command
+    //
+    // equal_in_scopes   = 0000 0010, since scope 2 has "equal" for comm filter
+    // equality_set_in_scopes = 0000 1010, since scope 2 and 4 are set for comm filter
+    //
+    // return            = equal_in_scopes | (filter_out_scopes & equality_set_in_scopes)
+    //                     0000 0010 |
+    //                     (0000 1000 & 1111 0101) -> 0000 0000
+    //
+    //                     0000 0010 |
+    //                     0000 0000
+    //                     ---------
+    //                     0000 0010 = (scope 2 matched)
+    //
+    // considering an event from "ping" command
+    //
+    // equal_in_scopes   = 0000 0100, since scope 3 has "equal" for comm filter
+    // equality_set_in_scopes = 0000 0100, since scope 3 is set for comm filter
+    //
+    // return            = equal_in_scopes | (filter_out_scopes & ~equality_set_in_scopes)
+    //                     0000 0100 |
+    //                     (0000 1000 & 0000 0100) -> 0000 0000
+    //
+    //                     0000 0100 |
+    //                     0000 0000
+    //                     ---------
+    //                     0000 0100 = (scope 3 matched)
+
+    u64 equal_in_scopes = 0;
+    u64 equality_set_in_scopes = 0;
+    eq_t *equality = bpf_map_lookup_elem(filter_map, key);
+    if (equality != NULL) {
+        equal_in_scopes = equality->equal_in_scopes;
+        equality_set_in_scopes = equality->equality_set_in_scopes;
+    }
+
+    return equal_in_scopes | (filter_out_scopes & ~equality_set_in_scopes);
 }
 
-static __always_inline int do_should_trace(program_data_t *p)
+static __always_inline u64 bool_filter_matches(u64 filter_out_scopes, bool val)
+{
+    // check compute_scopes() for initial info
+    //
+    // e.g.: cmdline: -t 5:container
+    //
+    // considering an event from a container
+    //
+    //   filter_out_scopes = 0000 0000
+    //   val               = true
+    //   return            = 0000 0000 ^
+    //                       1111 1111 <- ~0ULL
+    //                       ---------
+    //                       1111 1111
+    //
+    // considering an event not from a container
+    //
+    //   filter_out_scopes = 0000 0000
+    //   val               = false
+    //   return            = 0000 0000 ^
+    //                       0000 0000
+    //                       ---------
+    //                       0000 0000
+
+    return filter_out_scopes ^ (val ? ~0ULL : 0);
+}
+
+static __always_inline u64 compute_scopes(program_data_t *p)
 {
     task_context_t *context = &p->task_info->context;
-    u32 config = p->config->filters;
+    u64 res = ~0ULL;
+
+    // Don't monitor self
+    if (p->config->tracee_pid == context->host_pid) {
+        return 0;
+    }
 
     proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &context->host_pid);
     if (proc_info == NULL) {
@@ -2045,128 +2181,120 @@ static __always_inline int do_should_trace(program_data_t *p)
         return 0;
     }
 
-    if ((config & FILTER_FOLLOW_ENABLED) && (proc_info->follow)) {
-        // don't check the other filters if follow is set
-        return 1;
-    }
-
-    // Don't monitor self
-    if (p->config->tracee_pid == context->host_pid) {
-        return 0;
-    }
-
-    if (config & FILTER_CONT_ENABLED) {
+    if (p->config->cont_filter_enabled_scopes) {
         bool is_container = false;
         u8 state = p->task_info->container_state;
         if (state == CONTAINER_STARTED || state == CONTAINER_EXISTED)
             is_container = true;
-        bool filter_out = (config & FILTER_CONT_OUT) == FILTER_CONT_OUT;
-        if (!bool_filter_matches(filter_out, is_container))
-            return 0;
+        u64 filter_out_scopes = p->config->cont_filter_out_scopes;
+        u64 mask = ~p->config->cont_filter_enabled_scopes;
+        // For scopes which has this filter disabled we want to set the matching bits using 'mask'
+        res &= bool_filter_matches(filter_out_scopes, is_container) | mask;
     }
 
-    if (config & FILTER_NEW_CONT_ENABLED) {
+    if (p->config->new_cont_filter_enabled_scopes) {
         bool is_new_container = false;
         if (p->task_info->container_state == CONTAINER_STARTED)
             is_new_container = true;
-        bool filter_out = (config & FILTER_NEW_CONT_OUT) == FILTER_NEW_CONT_OUT;
-        if (!bool_filter_matches(filter_out, is_new_container))
-            return 0;
+        u64 filter_out_scopes = p->config->new_cont_filter_out_scopes;
+        u64 mask = ~p->config->new_cont_filter_enabled_scopes;
+        res &= bool_filter_matches(filter_out_scopes, is_new_container) | mask;
     }
 
-    if (config & FILTER_PID_ENABLED) {
-        bool filter_out = (config & FILTER_PID_OUT) == FILTER_PID_OUT;
+    if (p->config->pid_filter_enabled_scopes) {
+        u64 filter_out_scopes = p->config->pid_filter_out_scopes;
+        u64 mask = ~p->config->pid_filter_enabled_scopes;
         u64 max = p->config->pid_max;
         u64 min = p->config->pid_min;
         // the user might have given us a tid - check for it too
-        if ((!uint_filter_matches(filter_out, &pid_filter, context->host_pid, max, min)) &&
-            (!uint_filter_matches(filter_out, &pid_filter, context->host_tid, max, min)))
-            return 0;
+        res &=
+            uint_filter_range_matches(filter_out_scopes, &pid_filter, context->host_pid, max, min) |
+            uint_filter_range_matches(filter_out_scopes, &pid_filter, context->host_tid, max, min) |
+            mask;
     }
 
-    if (config & FILTER_NEW_PID_ENABLED) {
-        bool filter_out = (config & FILTER_NEW_PID_OUT) == FILTER_NEW_PID_OUT;
-        if (!bool_filter_matches(filter_out, proc_info->new_proc))
-            return 0;
+    if (p->config->new_pid_filter_enabled_scopes) {
+        u64 filter_out_scopes = p->config->new_pid_filter_out_scopes;
+        u64 mask = ~p->config->new_pid_filter_enabled_scopes;
+        res &= bool_filter_matches(filter_out_scopes, proc_info->new_proc) | mask;
     }
 
-    if (config & FILTER_UID_ENABLED) {
-        bool filter_out = (config & FILTER_UID_OUT) == FILTER_UID_OUT;
+    if (p->config->uid_filter_enabled_scopes) {
+        u64 filter_out_scopes = p->config->uid_filter_out_scopes;
+        u64 mask = ~p->config->uid_filter_enabled_scopes;
         u64 max = p->config->uid_max;
         u64 min = p->config->uid_min;
-        if (!uint_filter_matches(filter_out, &uid_filter, context->uid, max, min))
-            return 0;
+        res &= uint_filter_range_matches(filter_out_scopes, &uid_filter, context->uid, max, min) |
+               mask;
     }
 
-    if (config & FILTER_MNT_NS_ENABLED) {
-        bool filter_out = (config & FILTER_MNT_NS_OUT) == FILTER_MNT_NS_OUT;
-        u64 max = p->config->mnt_ns_max;
-        u64 min = p->config->mnt_ns_min;
-        if (!uint_filter_matches(filter_out, &mnt_ns_filter, context->mnt_id, max, min))
-            return 0;
+    if (p->config->mnt_ns_filter_enabled_scopes) {
+        u64 filter_out_scopes = p->config->mnt_ns_filter_out_scopes;
+        u64 mask = ~p->config->mnt_ns_filter_enabled_scopes;
+        u32 mnt_id = context->mnt_id;
+        res &= equality_filter_matches(filter_out_scopes, &mnt_ns_filter, &mnt_id) | mask;
     }
 
-    if (config & FILTER_PID_NS_ENABLED) {
-        bool filter_out = (config & FILTER_PID_NS_OUT) == FILTER_PID_NS_OUT;
-        u64 max = p->config->pid_ns_max;
-        u64 min = p->config->pid_ns_min;
-        if (!uint_filter_matches(filter_out, &pid_ns_filter, context->pid_id, max, min))
-            return 0;
+    if (p->config->pid_ns_filter_enabled_scopes) {
+        u64 filter_out_scopes = p->config->pid_ns_filter_out_scopes;
+        u64 mask = ~p->config->pid_ns_filter_enabled_scopes;
+        u32 pid_id = context->pid_id;
+        res &= equality_filter_matches(filter_out_scopes, &pid_ns_filter, &pid_id) | mask;
     }
 
-    if (config & FILTER_UTS_NS_ENABLED) {
-        bool filter_out = (config & FILTER_UTS_NS_OUT) == FILTER_UTS_NS_OUT;
-        if (!equality_filter_matches(filter_out, &uts_ns_filter, &context->uts_name))
-            return 0;
+    if (p->config->uts_ns_filter_enabled_scopes) {
+        u64 filter_out_scopes = p->config->uts_ns_filter_out_scopes;
+        u64 mask = ~p->config->uts_ns_filter_enabled_scopes;
+        res &=
+            equality_filter_matches(filter_out_scopes, &uts_ns_filter, &context->uts_name) | mask;
     }
 
-    if (config & FILTER_COMM_ENABLED) {
-        bool filter_out = (config & FILTER_COMM_OUT) == FILTER_COMM_OUT;
-        if (!equality_filter_matches(filter_out, &comm_filter, &context->comm))
-            return 0;
+    if (p->config->comm_filter_enabled_scopes) {
+        u64 filter_out_scopes = p->config->comm_filter_out_scopes;
+        u64 mask = ~p->config->comm_filter_enabled_scopes;
+        res &= equality_filter_matches(filter_out_scopes, &comm_filter, &context->comm) | mask;
     }
 
-    if (config & FILTER_PROC_TREE_ENABLED) {
-        bool filter_out = (config & FILTER_PROC_TREE_OUT) == FILTER_PROC_TREE_OUT;
-        if (!equality_filter_matches(filter_out, &process_tree_map, &context->host_pid))
-            return 0;
+    if (p->config->proc_tree_filter_enabled_scopes) {
+        u64 filter_out_scopes = p->config->proc_tree_filter_out_scopes;
+        u64 mask = ~p->config->proc_tree_filter_enabled_scopes;
+        res &= equality_filter_matches(filter_out_scopes, &process_tree_map, &context->host_pid) |
+               mask;
     }
 
-    if (config & FILTER_CGROUP_ID_ENABLED) {
-        bool filter_out = (config & FILTER_CGROUP_ID_OUT) == FILTER_CGROUP_ID_OUT;
-        u32 cgroup_id_lsb = context->cgroup_id;
-        if (!equality_filter_matches(filter_out, &cgroup_id_filter, &cgroup_id_lsb))
-            return 0;
+    if (p->config->cgroup_id_filter_enabled_scopes) {
+        u64 filter_out_scopes = p->config->cgroup_id_filter_out_scopes;
+        u64 mask = ~p->config->cgroup_id_filter_enabled_scopes;
+        u64 cgroup_id_lsb = context->cgroup_id;
+        res &= equality_filter_matches(filter_out_scopes, &cgroup_id_filter, &cgroup_id_lsb) | mask;
     }
 
-    if (config & FILTER_BIN_PATH_ENABLED) {
-        bool filter_out = (config & FILTER_BIN_PATH_OUT) == FILTER_BIN_PATH_OUT;
-        // lookup by binary path only
-        u32 *equality = bpf_map_lookup_elem(&binary_filter, proc_info->binary.path);
-        if (equality != NULL)
-            return *equality;
-        // lookup by binary path and mount namespace
-        equality = bpf_map_lookup_elem(&binary_filter, &proc_info->binary);
-        if (equality != NULL)
-            return *equality;
-
-        if (!filter_out)
-            return 0;
+    if (p->config->bin_path_filter_enabled_scopes) {
+        u64 filter_out_scopes = p->config->bin_path_filter_out_scopes;
+        u64 mask = ~p->config->bin_path_filter_enabled_scopes;
+        res &= binary_filter_matches(filter_out_scopes, proc_info) | mask;
     }
 
-    // We passed all filters successfully
-    return 1;
+    if (p->config->follow_filter_enabled_scopes) {
+        // trace this proc anyway if follow was set by a scope
+        res |= proc_info->follow_in_scopes & p->config->follow_filter_enabled_scopes;
+    }
+
+    // Make sure only enabled scopes are set in the bitmask (other bits are invalid)
+    return res & p->config->enabled_scopes;
 }
 
-static __always_inline int should_trace(program_data_t *p)
+static __always_inline u64 should_trace(program_data_t *p)
 {
     // use cache whenever possible
     if (p->task_info->recompute_scope) {
-        p->task_info->should_trace = do_should_trace(p);
+        p->task_info->matched_scopes = compute_scopes(p);
         p->task_info->recompute_scope = false;
     }
 
-    return p->task_info->should_trace;
+    p->event->context.matched_scopes = p->task_info->matched_scopes;
+
+    return p->task_info->matched_scopes;
 }
 
 static __always_inline int should_submit(u32 event_id, config_entry_t *config)
@@ -3699,12 +3827,12 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
             return 0;
         }
 
-        c_proc_info->follow = false;
+        c_proc_info->follow_in_scopes = 0;
         c_proc_info->new_proc = true;
     }
 
     // update process tree map if the parent has an entry
-    if (p.config->filters & FILTER_PROC_TREE_ENABLED) {
+    if (p.config->proc_tree_filter_enabled_scopes) {
         u32 *tgid_filtered = bpf_map_lookup_elem(&process_tree_map, &parent_tgid);
         if (tgid_filtered) {
             ret = bpf_map_update_elem(&process_tree_map, &child_tgid, tgid_filtered, BPF_ANY);
@@ -3717,7 +3845,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         return 0;
 
     // follow every pid that passed the should_trace() checks (used by the follow filter)
-    c_proc_info->follow = true;
+    c_proc_info->follow_in_scopes = p.task_info->matched_scopes;
 
     if (should_submit(SCHED_PROCESS_FORK, p.config) || p.config->options & OPT_PROCESS_INFO) {
         int parent_ns_pid = get_task_ns_pid(parent);
@@ -3792,8 +3920,8 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     if (!should_trace(&p))
         return 0;
 
-    // We passed all filters (in should_trace()) - add this pid to traced pids set
-    proc_info->follow = true;
+    // Follow this task for matched scopes
+    proc_info->follow_in_scopes = p.task_info->matched_scopes;
 
     if (!should_submit(SCHED_PROCESS_EXEC, p.config) &&
         (p.config->options & OPT_PROCESS_INFO) != OPT_PROCESS_INFO)
@@ -3887,7 +4015,7 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
         return 0;
 
     // evaluate should_trace before removing this pid from the maps
-    bool traced = should_trace(&p);
+    bool traced = !!should_trace(&p);
 
     bpf_map_delete_elem(&task_info_map, &p.event->context.task.host_tid);
 
@@ -7220,11 +7348,12 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
 
     // copy orig task ctx (from the netctx) to event ctx and build the rest
     __builtin_memcpy(&eventctx->task, &netctx->taskctx, sizeof(task_context_t));
-    eventctx->ts = p.event->context.ts;                     // copy timestamp from current ctx
-    eventctx->argnum = 1;                                   // 1 argument (add more if needed)
-    eventctx->eventid = NET_PACKET_IP;                      // will be changed in skb program
-    eventctx->stack_id = 0;                                 // no stack trace
-    eventctx->processor_id = p.event->context.processor_id; // copy from current ctx
+    eventctx->ts = p.event->context.ts;                         // copy timestamp from current ctx
+    eventctx->argnum = 1;                                       // 1 argument (add more if needed)
+    eventctx->eventid = NET_PACKET_IP;                          // will be changed in skb program
+    eventctx->stack_id = 0;                                     // no stack trace
+    eventctx->processor_id = p.event->context.processor_id;     // copy from current ctx
+    eventctx->matched_scopes = p.event->context.matched_scopes; // copy from current ctx
 
     // inform userland about protocol family (for correct L3 header parsing)...
     struct sock_common *common = (void *) sk;
