@@ -35,9 +35,8 @@ func deriveNetPacketUDPArgs() deriveArgsFunction {
 			return nil, emptyPayloadError()
 		}
 
-		// initial header type
+		// event retval encodes layer 3 protocol type
 
-		// event retval encodes layer type
 		if event.ReturnValue&familyIpv4 == familyIpv4 {
 			layerType = layers.LayerTypeIPv4
 		} else if event.ReturnValue&familyIpv6 == familyIpv6 {

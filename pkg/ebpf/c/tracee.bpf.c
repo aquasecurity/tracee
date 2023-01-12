@@ -469,8 +469,9 @@ enum event_id_e
     NET_PACKET_ICMP,
     NET_PACKET_ICMPV6,
     NET_PACKET_DNS,
-    DO_MMAP,
     NET_PACKET_HTTP,
+    NET_PACKET_CAP_BASE,
+    DO_MMAP,
     MAX_EVENT_ID,
 };
 
@@ -7390,13 +7391,14 @@ static __always_inline bool is_socket_supported(struct socket *sock)
 
 // cgroupctxmap
 
-#define SUB_NET_PACKET_IP      (1 << 0) // submit net_packet_ip_base
-#define SUB_NET_PACKET_TCP     (1 << 1) // submit net_packet_tcp_base
-#define SUB_NET_PACKET_UDP     (1 << 2) // submit net_packet_udp_base
-#define SUB_NET_PACKET_ICMP    (1 << 3) // submit net_packet_icmp_base
-#define SUB_NET_PACKET_ICMPV6  (1 << 4) // submit net_packet_icmpv6_base
-#define SUB_NET_PACKET_DNS     (1 << 5) // submit net_packet_dns_base
-#define SUB_NET_PACKET_HTTP    (1 << 6) // submit net_packet_http_base
+#define CAP_NET_PACKET         (1 << 0) // capture net_packet_base
+#define SUB_NET_PACKET_IP      (1 << 1) // submit net_packet_ip_base
+#define SUB_NET_PACKET_TCP     (1 << 2) // submit net_packet_tcp_base
+#define SUB_NET_PACKET_UDP     (1 << 3) // submit net_packet_udp_base
+#define SUB_NET_PACKET_ICMP    (1 << 4) // submit net_packet_icmp_base
+#define SUB_NET_PACKET_ICMPV6  (1 << 5) // submit net_packet_icmpv6_base
+#define SUB_NET_PACKET_DNS     (1 << 6) // submit net_packet_dns_base
+#define SUB_NET_PACKET_HTTP    (1 << 7) // submit net_packet_http_base
 
 #define SUB_NET_PACKET_L3      (SUB_NET_PACKET_IP)
 #define SUB_NET_PACKET_L4      (SUB_NET_PACKET_TCP | SUB_NET_PACKET_UDP | \
@@ -7454,6 +7456,15 @@ struct {
     __type(value, struct entry);     // ... linked to entry ctx->args
 } entrymap SEC(".maps");             // can't use args_map (indexed by existing events only)
 
+// network capture events
+
+struct {
+    __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
+    __uint(max_entries, 1024);
+    __type(key, u32);
+    __type(value, u32);
+} net_cap_events SEC(".maps");
+
 // clang-format on
 
 //
@@ -7476,6 +7487,9 @@ static __always_inline void should_submit_net_event(net_event_context_t *neteven
                                                     config_entry_t *config)
 {
     // configure network events that should be sent to userland
+
+    if (should_submit(NET_PACKET_CAP_BASE, config))
+        neteventctx->md.submit |= CAP_NET_PACKET;
 
     if (should_submit(NET_PACKET_IP, config))
         neteventctx->md.submit |= SUB_NET_PACKET_IP;
@@ -7820,10 +7834,11 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6);
 #define FULL    1
 #define HEADERS 0
 
-static __always_inline u32 cgroup_skb_submit_event(struct __sk_buff *ctx,
-                                                   net_event_context_t *neteventctx,
-                                                   u32 event_type,
-                                                   bool full)
+static __always_inline u32 cgroup_skb_submit(void *map,
+                                             struct __sk_buff *ctx,
+                                             net_event_context_t *neteventctx,
+                                             u32 event_type,
+                                             bool full)
 {
     u64 flags = BPF_F_CURRENT_CPU;
 
@@ -7842,11 +7857,14 @@ static __always_inline u32 cgroup_skb_submit_event(struct __sk_buff *ctx,
     neteventctx->eventctx.eventid = event_type;
 
     return bpf_perf_event_output(ctx,
-                                 &events,
+                                 map,
                                  flags,
                                  neteventctx,
                                  sizeof_net_event_context_t());
 }
+
+#define cgroup_skb_submit_event(a,b,c,d) cgroup_skb_submit(&events,a,b,c,d)
+#define cgroup_skb_capture_event(a,b,c,d) cgroup_skb_submit(&net_cap_events,a,b,c,d)
 
 // clang-format on
 
@@ -7966,11 +7984,6 @@ CGROUP_SKB_HANDLE_FUNCTION(family)
     if (neteventctx->md.submit & SUB_NET_PACKET_IP)
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_IP, HEADERS);
 
-    // fastpath: return if no other L4 or L7 network events
-
-    if (!(neteventctx->md.submit & (SUB_NET_PACKET_L4 | SUB_NET_PACKET_L7)))
-        return 1;
-
     return CGROUP_SKB_HANDLE(proto);
 }
 
@@ -8018,6 +8031,9 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
 
         case PF_INET6:
 
+            // TODO: dual-stack IP implementation unsupported for now
+            // https://en.wikipedia.org/wiki/IPv6_transition_mechanism
+
             if (nethdrs->iphdrs.ipv6hdr.version != 6) // IPv6
                 return 1;
 
@@ -8052,6 +8068,12 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
 
     if (bpf_skb_load_bytes_relative(ctx, prev_hdr_size, dest, size, BPF_HDR_START_NET))
         return 1;
+
+    // submit FULL packet in net capture buffer IF needed
+    // note: placed here to avoid dual-stack packets (for now)
+
+    if (neteventctx->md.submit & CAP_NET_PACKET)
+        cgroup_skb_capture_event(ctx, neteventctx, NET_PACKET_CAP_BASE, FULL);
 
    // call protocol handlers (for more base events to be sent)
 
