@@ -6,6 +6,10 @@ func UnsupportedOperator(op Operator) error {
 	return fmt.Errorf("failed to add filter: unsupported operator %s", op.String())
 }
 
+func InvalidScope(filterScope string) error {
+	return fmt.Errorf("invalid filter scope: %s", filterScope)
+}
+
 func InvalidExpression(expression string) error {
 	return fmt.Errorf("invalid filter expression: %s", expression)
 }

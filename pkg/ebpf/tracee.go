@@ -40,7 +40,9 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 	"github.com/aquasecurity/tracee/types/trace"
+
 	lru "github.com/hashicorp/golang-lru"
+	"golang.org/x/exp/maps"
 	"golang.org/x/sys/unix"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
@@ -52,7 +54,7 @@ const (
 
 // Config is a struct containing user defined configuration of tracee
 type Config struct {
-	Filter             *Filter
+	FilterScopes       *FilterScopes
 	Capture            *CaptureConfig
 	Capabilities       *CapabilitiesConfig
 	Output             *OutputConfig
@@ -105,14 +107,16 @@ type InitValues struct {
 
 // Validate does static validation of the configuration
 func (tc Config) Validate() error {
-	if tc.Filter == nil || tc.Filter.EventsToTrace == nil {
-		return fmt.Errorf("Filter or EventsToTrace is nil")
-	}
+	for filterScope := range tc.FilterScopes.Map() {
+		if filterScope == nil || filterScope.EventsToTrace == nil {
+			return fmt.Errorf("FilterScope or EventsToTrace is nil")
+		}
 
-	for _, e := range tc.Filter.EventsToTrace {
-		_, exists := events.Definitions.GetSafe(e)
-		if !exists {
-			return fmt.Errorf("invalid event to trace: %d", e)
+		for e := range filterScope.EventsToTrace {
+			_, exists := events.Definitions.GetSafe(e)
+			if !exists {
+				return fmt.Errorf("invalid event [%d] to trace in filter scope [%d]", e, filterScope.ID)
+			}
 		}
 	}
 	if (tc.PerfBufferSize & (tc.PerfBufferSize - 1)) != 0 {
@@ -282,8 +286,10 @@ func New(cfg Config) (*Tracee, error) {
 	}
 
 	// Events chosen by the user
-	for _, e := range t.config.Filter.EventsToTrace {
-		t.events[e] = eventConfig{submit: true, emit: true}
+	for filterScope := range t.config.FilterScopes.Map() {
+		for e := range filterScope.EventsToTrace {
+			t.events[e] = eventConfig{submit: true, emit: true}
+		}
 	}
 
 	// Handles all essential events dependencies
@@ -571,11 +577,14 @@ func (t *Tracee) initDerivationTable() error {
 	pathResolver := containers.InitPathResolver(&t.pidsInMntns)
 	soLoader := sharedobjs.InitContainersSymbolsLoader(&pathResolver, 1024)
 
-	symbolsLoadedFilters := t.config.Filter.ArgFilter.GetEventFilters(events.SymbolsLoaded)
+	symbolsLoadedFilters := map[string]filters.Filter{}
+	for filterScope := range t.config.FilterScopes.Map() {
+		maps.Copy(symbolsLoadedFilters, filterScope.ArgFilter.GetEventFilters(events.SymbolsLoaded))
+	}
 	watchedSymbols := []string{}
 	whitelistedLibs := []string{}
 
-	if symbolsLoadedFilters != nil {
+	if len(symbolsLoadedFilters) > 0 {
 		watchedSymbolsFilter, ok := symbolsLoadedFilters["symbols"].(*filters.StringFilter)
 		if watchedSymbolsFilter != nil && ok {
 			watchedSymbols = watchedSymbolsFilter.Equal()
@@ -703,35 +712,6 @@ const (
 	optTranslateFDFilePath
 )
 
-// filters config should match defined values in ebpf code
-const (
-	filterUIDEnabled uint32 = 1 << iota
-	filterUIDOut
-	filterMntNsEnabled
-	filterMntNsOut
-	filterPidNsEnabled
-	filterPidNsOut
-	filterUTSNsEnabled
-	filterUTSNsOut
-	filterCommEnabled
-	filterCommOut
-	filterPidEnabled
-	filterPidOut
-	filterContEnabled
-	filterContOut
-	filterFollowEnabled
-	filterNewPidEnabled
-	filterNewPidOut
-	filterNewContEnabled
-	filterNewContOut
-	filterProcTreeEnabled
-	filterProcTreeOut
-	filterCgroupIdEnabled
-	filterCgroupIdOut
-	filterBinaryEnabled
-	filterBinaryOut
-)
-
 func (t *Tracee) getOptionsConfig() uint32 {
 	var cOptVal uint32
 
@@ -761,85 +741,157 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	return cOptVal
 }
 
-func (t *Tracee) getFiltersConfig() uint32 {
-	var cFilterVal uint32
-	if t.config.Filter.UIDFilter.Enabled() {
-		cFilterVal = cFilterVal | filterUIDEnabled
-		if t.config.Filter.UIDFilter.FilterOut() {
-			cFilterVal = cFilterVal | filterUIDOut
+func (t *Tracee) computeConfigValues() []byte {
+	// config_entry
+	configVal := make([]byte, 384)
+
+	// tracee_pid
+	binary.LittleEndian.PutUint32(configVal[0:4], uint32(os.Getpid()))
+	// options
+	binary.LittleEndian.PutUint32(configVal[4:8], t.getOptionsConfig())
+	// cgroup_v1_hid
+	binary.LittleEndian.PutUint32(configVal[8:12], uint32(t.containers.GetDefaultCgroupHierarchyID()))
+	// padding
+	binary.LittleEndian.PutUint32(configVal[12:16], 0)
+
+	for filterScope := range t.config.FilterScopes.Map() {
+		byteIndex := filterScope.ID / 8
+		bitOffset := filterScope.ID % 8
+
+		// filter enabled scopes bitmask
+		if filterScope.UIDFilter.Enabled() {
+			// uid_filter_enabled_scopes
+			configVal[16+byteIndex] |= 1 << bitOffset
 		}
-	}
-	if t.config.Filter.PIDFilter.Enabled() {
-		cFilterVal = cFilterVal | filterPidEnabled
-		if t.config.Filter.PIDFilter.FilterOut() {
-			cFilterVal = cFilterVal | filterPidOut
+		if filterScope.PIDFilter.Enabled() {
+			// pid_filter_enabled_scopes
+			configVal[24+byteIndex] |= 1 << bitOffset
 		}
-	}
-	if t.config.Filter.NewPidFilter.Enabled() {
-		cFilterVal = cFilterVal | filterNewPidEnabled
-		if t.config.Filter.NewPidFilter.FilterOut() {
-			cFilterVal = cFilterVal | filterNewPidOut
+		if filterScope.MntNSFilter.Enabled() {
+			// mnt_ns_filter_enabled_scopes
+			configVal[32+byteIndex] |= 1 << bitOffset
 		}
-	}
-	if t.config.Filter.MntNSFilter.Enabled() {
-		cFilterVal = cFilterVal | filterMntNsEnabled
-		if t.config.Filter.MntNSFilter.FilterOut() {
-			cFilterVal = cFilterVal | filterMntNsOut
+		if filterScope.PidNSFilter.Enabled() {
+			// pid_ns_filter_enabled_scopes
+			configVal[40+byteIndex] |= 1 << bitOffset
 		}
-	}
-	if t.config.Filter.PidNSFilter.Enabled() {
-		cFilterVal = cFilterVal | filterPidNsEnabled
-		if t.config.Filter.PidNSFilter.FilterOut() {
-			cFilterVal = cFilterVal | filterPidNsOut
+		if filterScope.UTSFilter.Enabled() {
+			// uts_ns_filter_enabled_scopes
+			configVal[48+byteIndex] |= 1 << bitOffset
 		}
-	}
-	if t.config.Filter.UTSFilter.Enabled() {
-		cFilterVal = cFilterVal | filterUTSNsEnabled
-		if t.config.Filter.UTSFilter.FilterOut() {
-			cFilterVal = cFilterVal | filterUTSNsOut
+		if filterScope.CommFilter.Enabled() {
+			// comm_filter_enabled_scopes
+			configVal[56+byteIndex] |= 1 << bitOffset
 		}
-	}
-	if t.config.Filter.CommFilter.Enabled() {
-		cFilterVal = cFilterVal | filterCommEnabled
-		if t.config.Filter.CommFilter.FilterOut() {
-			cFilterVal = cFilterVal | filterCommOut
+		if filterScope.ContIDFilter.Enabled() {
+			// cgroup_id_filter_enabled_scopes
+			configVal[64+byteIndex] |= 1 << bitOffset
 		}
-	}
-	if t.config.Filter.ContFilter.Enabled() {
-		cFilterVal = cFilterVal | filterContEnabled
-		if t.config.Filter.ContFilter.FilterOut() {
-			cFilterVal = cFilterVal | filterContOut
+		if filterScope.ContFilter.Enabled() {
+			// cont_filter_enabled_scopes
+			configVal[72+byteIndex] |= 1 << bitOffset
 		}
-	}
-	if t.config.Filter.NewContFilter.Enabled() {
-		cFilterVal = cFilterVal | filterNewContEnabled
-		if t.config.Filter.NewContFilter.FilterOut() {
-			cFilterVal = cFilterVal | filterNewContOut
+		if filterScope.NewContFilter.Enabled() {
+			// new_cont_filter_enabled_scopes
+			configVal[80+byteIndex] |= 1 << bitOffset
 		}
-	}
-	if t.config.Filter.ContIDFilter.Enabled() {
-		cFilterVal = cFilterVal | filterCgroupIdEnabled
-		if t.config.Filter.ContIDFilter.FilterOut() {
-			cFilterVal = cFilterVal | filterCgroupIdOut
+		if filterScope.NewPidFilter.Enabled() {
+			// new_pid_filter_enabled_scopes
+			configVal[88+byteIndex] |= 1 << bitOffset
 		}
-	}
-	if t.config.Filter.ProcessTreeFilter.Enabled() {
-		cFilterVal = cFilterVal | filterProcTreeEnabled
-		if t.config.Filter.ProcessTreeFilter.FilterOut() {
-			cFilterVal = cFilterVal | filterProcTreeOut
+		if filterScope.ProcessTreeFilter.Enabled() {
+			// proc_tree_filter_enabled_scopes
+			configVal[96+byteIndex] |= 1 << bitOffset
 		}
-	}
-	if t.config.Filter.BinaryFilter.Enabled() {
-		cFilterVal = cFilterVal | filterBinaryEnabled
-		if t.config.Filter.BinaryFilter.FilterOut() {
-			cFilterVal = cFilterVal | filterBinaryOut
+		if filterScope.BinaryFilter.Enabled() {
+			// bin_path_filter_enabled_scopes
+			configVal[104+byteIndex] |= 1 << bitOffset
 		}
-	}
-	if t.config.Filter.Follow {
-		cFilterVal = cFilterVal | filterFollowEnabled
+		if filterScope.Follow {
+			// follow_filter_enabled_scopes
+			configVal[112+byteIndex] |= 1 << bitOffset
+		}
+
+		// filter out scopes bitmask
+		if filterScope.UIDFilter.FilterOut() {
+			// uid_filter_out_scopes
+			configVal[120+byteIndex] |= 1 << bitOffset
+		}
+		if filterScope.PIDFilter.FilterOut() {
+			// pid_filter_out_scopes
+			configVal[128+byteIndex] |= 1 << bitOffset
+		}
+		if filterScope.MntNSFilter.FilterOut() {
+			// mnt_ns_filter_out_scopes
+			configVal[136+byteIndex] |= 1 << bitOffset
+		}
+		if filterScope.PidNSFilter.FilterOut() {
+			// pid_ns_filter_out_scopes
+			configVal[144+byteIndex] |= 1 << bitOffset
+		}
+		if filterScope.UTSFilter.FilterOut() {
+			// uts_ns_filter_out_scopes
+			configVal[152+byteIndex] |= 1 << bitOffset
+		}
+		if filterScope.CommFilter.FilterOut() {
+			// comm_filter_out_scopes
+			configVal[160+byteIndex] |= 1 << bitOffset
+		}
+		if filterScope.ContIDFilter.FilterOut() {
+			// cgroup_id_filter_out_scopes
+			configVal[168+byteIndex] |= 1 << bitOffset
+		}
+		if filterScope.ContFilter.FilterOut() {
+			// cont_filter_out_scopes
+			configVal[176+byteIndex] |= 1 << bitOffset
+		}
+		if filterScope.NewContFilter.FilterOut() {
+			// new_cont_filter_out_scopes
+			configVal[184+byteIndex] |= 1 << bitOffset
+		}
+		if filterScope.NewPidFilter.FilterOut() {
+			// new_pid_filter_out_scopes
+			configVal[192+byteIndex] |= 1 << bitOffset
+		}
+		if filterScope.ProcessTreeFilter.FilterOut() {
+			// proc_tree_filter_out_scopes
+			configVal[200+byteIndex] |= 1 << bitOffset
+		}
+		if filterScope.BinaryFilter.FilterOut() {
+			// bin_path_filter_out_scopes
+			configVal[208+byteIndex] |= 1 << bitOffset
+		}
+
+		// enabled_scopes
+		configVal[216+byteIndex] |= 1 << bitOffset
 	}
 
-	return cFilterVal
+	// Compute all filter scopes internals
+	t.config.FilterScopes.Compute()
+	// uid_max
+	binary.LittleEndian.PutUint64(configVal[224:232], t.config.FilterScopes.UIDFilterMax())
+	// uid_min
+	binary.LittleEndian.PutUint64(configVal[232:240], t.config.FilterScopes.UIDFilterMin())
+	// pid_max
+	binary.LittleEndian.PutUint64(configVal[240:248], t.config.FilterScopes.PIDFilterMax())
+	// pid_min
+	binary.LittleEndian.PutUint64(configVal[248:256], t.config.FilterScopes.PIDFilterMin())
+
+	// Next 128 bytes (1024 bits) are used for events_to_submit configuration
+	// Set according to events chosen by the user
+	for id, e := range t.events {
+		if id >= 1024 {
+			// we support up to 1024 events shared with bpf code
+			continue
+		}
+		if e.submit {
+			index := id / 8
+			offset := id % 8
+			configVal[256+index] |= 1 << offset
+		}
+	}
+
+	return configVal
 }
 
 // validateKallsymsDependencies load all symbols required by events' dependencies from the kallsyms file to check for missing symbols.
@@ -959,49 +1011,28 @@ func (t *Tracee) populateBPFMaps() error {
 		return err
 	}
 
-	configVal := make([]byte, 208)
-	binary.LittleEndian.PutUint32(configVal[0:4], uint32(os.Getpid()))
-	binary.LittleEndian.PutUint32(configVal[4:8], t.getOptionsConfig())
-	binary.LittleEndian.PutUint32(configVal[8:12], t.getFiltersConfig())
-	binary.LittleEndian.PutUint32(configVal[12:16], uint32(t.containers.GetDefaultCgroupHierarchyID()))
-	binary.LittleEndian.PutUint64(configVal[16:24], t.config.Filter.UIDFilter.Maximum())
-	binary.LittleEndian.PutUint64(configVal[24:32], t.config.Filter.UIDFilter.Minimum())
-	binary.LittleEndian.PutUint64(configVal[32:40], t.config.Filter.PIDFilter.Maximum())
-	binary.LittleEndian.PutUint64(configVal[40:48], t.config.Filter.PIDFilter.Minimum())
-	binary.LittleEndian.PutUint64(configVal[48:56], t.config.Filter.MntNSFilter.Maximum())
-	binary.LittleEndian.PutUint64(configVal[56:64], t.config.Filter.MntNSFilter.Minimum())
-	binary.LittleEndian.PutUint64(configVal[64:72], t.config.Filter.PidNSFilter.Maximum())
-	binary.LittleEndian.PutUint64(configVal[72:80], t.config.Filter.PidNSFilter.Minimum())
-	// Next 128 bytes (1024 bits) are used for events_to_submit configuration
-	// Set according to events chosen by the user
-	for id, e := range t.events {
-		if id >= 1024 {
-			// we support up to 1024 events shared with bpf code
-			continue
-		}
-		if e.submit {
-			index := id / 8
-			offset := id % 8
-			configVal[80+index] = configVal[80+index] | (1 << offset)
-		}
-	}
+	configVal := t.computeConfigValues()
 	if err = bpfConfigMap.Update(unsafe.Pointer(&cZero), unsafe.Pointer(&configVal[0])); err != nil {
 		return err
 	}
 
-	errmap := make(map[string]error, 0)
-	errmap[UIDFilterMap] = t.config.Filter.UIDFilter.InitBPF(t.bpfModule)
-	errmap[PIDFilterMap] = t.config.Filter.PIDFilter.InitBPF(t.bpfModule)
-	errmap[MntNSFilterMap] = t.config.Filter.MntNSFilter.InitBPF(t.bpfModule)
-	errmap[PidNSFilterMap] = t.config.Filter.PidNSFilter.InitBPF(t.bpfModule)
-	errmap[UTSFilterMap] = t.config.Filter.UTSFilter.InitBPF(t.bpfModule)
-	errmap[CommFilterMap] = t.config.Filter.CommFilter.InitBPF(t.bpfModule)
-	errmap[ContIdFilter] = t.config.Filter.ContIDFilter.InitBPF(t.bpfModule, t.containers)
-	errmap[BinaryFilterMap] = t.config.Filter.BinaryFilter.InitBPF(t.bpfModule)
+	for filterScope := range t.config.FilterScopes.Map() {
+		scopeID := uint(filterScope.ID)
+		errMap := make(map[string]error, 0)
 
-	for k, v := range errmap {
-		if v != nil {
-			return fmt.Errorf("error setting %v filter: %v", k, v)
+		errMap[UIDFilterMap] = filterScope.UIDFilter.UpdateBPF(t.bpfModule, scopeID)
+		errMap[PIDFilterMap] = filterScope.PIDFilter.UpdateBPF(t.bpfModule, scopeID)
+		errMap[MntNSFilterMap] = filterScope.MntNSFilter.UpdateBPF(t.bpfModule, scopeID)
+		errMap[PidNSFilterMap] = filterScope.PidNSFilter.UpdateBPF(t.bpfModule, scopeID)
+		errMap[UTSFilterMap] = filterScope.UTSFilter.UpdateBPF(t.bpfModule, scopeID)
+		errMap[CommFilterMap] = filterScope.CommFilter.UpdateBPF(t.bpfModule, scopeID)
+		errMap[ContIdFilter] = filterScope.ContIDFilter.UpdateBPF(t.bpfModule, t.containers, scopeID)
+		errMap[BinaryFilterMap] = filterScope.BinaryFilter.UpdateBPF(t.bpfModule, scopeID)
+
+		for k, v := range errMap {
+			if v != nil {
+				return fmt.Errorf("error setting %v filter: %v", k, v)
+			}
 		}
 	}
 
@@ -1226,9 +1257,11 @@ func (t *Tracee) initBPF() error {
 			return err
 		}
 
-		err = t.config.Filter.ProcessTreeFilter.InitBPF(t.bpfModule)
-		if err != nil {
-			return fmt.Errorf("error building process tree: %v", err)
+		for filterScope := range t.config.FilterScopes.Map() {
+			err = filterScope.ProcessTreeFilter.UpdateBPF(t.bpfModule, uint(filterScope.ID))
+			if err != nil {
+				return fmt.Errorf("error building process tree: %v", err)
+			}
 		}
 
 		// Initialize perf buffers
@@ -1551,64 +1584,76 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 		return nil
 	}
 
-	printMemDumpFilters := t.config.Filter.ArgFilter.GetEventFilters(events.PrintMemDump)
-	if printMemDumpFilters == nil {
-		return fmt.Errorf("no address or symbols were provided to print_mem_dump event. " +
-			"please provide it via -t print_mem_dump.args.address=<hex address>" +
-			", -t print_mem_dump.args.symbol_name=<owner>:<symbol> or " +
-			"-t print_mem_dump.args.symbol_name=<symbol> if specifying a system owned symbol")
-	}
+	errArgFilter := make(map[int]error, 0)
 
-	eventHandle := t.triggerContexts.Store(event)
+	for filterScope := range t.config.FilterScopes.Map() {
+		printMemDumpFilters := filterScope.ArgFilter.GetEventFilters(events.PrintMemDump)
+		if printMemDumpFilters == nil {
+			errArgFilter[filterScope.ID] = fmt.Errorf("scope %d: no address or symbols were provided to print_mem_dump event. "+
+				"please provide it via -t print_mem_dump.args.address=<hex address>"+
+				", -t print_mem_dump.args.symbol_name=<owner>:<symbol> or "+
+				"-t print_mem_dump.args.symbol_name=<symbol> if specifying a system owned symbol", filterScope.ID)
 
-	lengthFilter, ok := printMemDumpFilters["length"].(*filters.StringFilter)
-	var length uint64
-	var err error
-	if lengthFilter == nil || !ok || len(lengthFilter.Equal()) == 0 {
-		length = maxMemDumpLength // default mem dump length
-	} else {
-		for _, field := range lengthFilter.Equal() {
-			length, err = strconv.ParseUint(field, 10, 64)
-			if err != nil {
-				return err
+			continue
+		}
+
+		eventHandle := t.triggerContexts.Store(event)
+
+		lengthFilter, ok := printMemDumpFilters["length"].(*filters.StringFilter)
+		var length uint64
+		var err error
+		if lengthFilter == nil || !ok || len(lengthFilter.Equal()) == 0 {
+			length = maxMemDumpLength // default mem dump length
+		} else {
+			for _, field := range lengthFilter.Equal() {
+				length, err = strconv.ParseUint(field, 10, 64)
+				if err != nil {
+					return err
+				}
+				//lint:ignore SA4004 we only want the first argument
+				break
 			}
-			//lint:ignore SA4004 we only want the first argument
-			break
+		}
+
+		addressFilter, ok := printMemDumpFilters["address"].(*filters.StringFilter)
+		if addressFilter != nil && ok {
+			for _, field := range addressFilter.Equal() {
+				address, err := strconv.ParseUint(field, 16, 64)
+				if err != nil {
+					return err
+				}
+				t.triggerMemDumpCall(address, length, uint64(eventHandle))
+			}
+		}
+
+		symbolsFilter, ok := printMemDumpFilters["symbol_name"].(*filters.StringFilter)
+		if symbolsFilter != nil && ok {
+			for _, field := range symbolsFilter.Equal() {
+				symbolSlice := strings.Split(field, ":")
+				splittedLen := len(symbolSlice)
+				var owner string
+				var name string
+				if splittedLen == 1 {
+					owner = "system"
+					name = symbolSlice[0]
+				} else if splittedLen == 2 {
+					owner = symbolSlice[0]
+					name = symbolSlice[1]
+				} else {
+					return fmt.Errorf("invalid symbols provided %s - more than one ':' provided", field)
+				}
+				symbol, err := t.kernelSymbols.GetSymbolByName(owner, name)
+				if err != nil {
+					return err
+				}
+				t.triggerMemDumpCall(symbol.Address, length, uint64(eventHandle))
+			}
 		}
 	}
 
-	addressFilter, ok := printMemDumpFilters["address"].(*filters.StringFilter)
-	if addressFilter != nil && ok {
-		for _, field := range addressFilter.Equal() {
-			address, err := strconv.ParseUint(field, 16, 64)
-			if err != nil {
-				return err
-			}
-			t.triggerMemDumpCall(address, length, uint64(eventHandle))
-		}
-	}
-
-	symbolsFilter, ok := printMemDumpFilters["symbol_name"].(*filters.StringFilter)
-	if symbolsFilter != nil && ok {
-		for _, field := range symbolsFilter.Equal() {
-			symbolSlice := strings.Split(field, ":")
-			splittedLen := len(symbolSlice)
-			var owner string
-			var name string
-			if splittedLen == 1 {
-				owner = "system"
-				name = symbolSlice[0]
-			} else if splittedLen == 2 {
-				owner = symbolSlice[0]
-				name = symbolSlice[1]
-			} else {
-				return fmt.Errorf("invalid symbols provided %s - more than one ':' provided", field)
-			}
-			symbol, err := t.kernelSymbols.GetSymbolByName(owner, name)
-			if err != nil {
-				return err
-			}
-			t.triggerMemDumpCall(symbol.Address, length, uint64(eventHandle))
+	for k, v := range errArgFilter {
+		if v != nil {
+			return fmt.Errorf("error setting %v filter: %v", k, v)
 		}
 	}
 

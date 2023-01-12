@@ -13,6 +13,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -220,6 +221,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				PodSandbox:          containerInfo.Pod.Sandbox,
 				EventID:             int(ctx.EventID),
 				EventName:           eventDefinition.Name,
+				MatchedScopes:       ctx.MatchedScopes,
 				ArgsNum:             int(ctx.Argnum),
 				ReturnValue:         int(ctx.Retval),
 				Args:                args,
@@ -227,9 +229,12 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				ContextFlags:        parseContextFlags(ctx.Flags),
 			}
 
-			if !t.shouldProcessEvent(evt) {
-				t.stats.EventsFiltered.Increment()
-				continue
+			// base events for derived ones should be filtered in later stage
+			if _, ok := t.eventDerivations[eventId]; !ok {
+				if !t.shouldProcessEvent(&evt) {
+					t.stats.EventsFiltered.Increment()
+					continue
+				}
 			}
 
 			select {
@@ -242,14 +247,78 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 	return out, errc
 }
 
-// shouldProcessEvent decides whether or not to drop an event before further processing it
-func (t *Tracee) shouldProcessEvent(event trace.Event) bool {
+// computeScopes iterates through the scopes that do the filtering in user space, checking whether an event should be considered.
+// If it should not, it sets the respective offset to 0.
+// Finally it returns the bitmask of computed scopes.
+func (t *Tracee) computeScopes(event *trace.Event) uint64 {
 	eventID := events.ID(event.EventID)
+	origMatchedScopes := event.MatchedScopes
+	matchedScopes := event.MatchedScopes
 
-	// short circuit by most performant and critical
-	return t.config.Filter.ContextFilter.Filter(event) &&
-		t.config.Filter.RetFilter.Filter(eventID, int64(event.ReturnValue)) &&
-		t.config.Filter.ArgFilter.Filter(eventID, event.Args)
+	for filterScope := range t.config.FilterScopes.Map() {
+		bitOffset := uint(filterScope.ID)
+
+		// Events submitted with matching scopes.
+		// The scope must have its bit cleared when it does not match.
+		if !utils.HasBit(origMatchedScopes, bitOffset) {
+			continue
+		}
+
+		// TODO: check if the event is traceable to some scope using a BPF map
+		if !filterScope.IsEventTraceable(eventID) {
+			utils.ClearBit(&matchedScopes, bitOffset)
+			continue
+		}
+
+		if !filterScope.ContextFilter.Filter(*event) {
+			utils.ClearBit(&matchedScopes, bitOffset)
+			continue
+		}
+
+		if !filterScope.RetFilter.Filter(eventID, int64(event.ReturnValue)) {
+			utils.ClearBit(&matchedScopes, bitOffset)
+			continue
+		}
+
+		if !filterScope.ArgFilter.Filter(eventID, event.Args) {
+			utils.ClearBit(&matchedScopes, bitOffset)
+			continue
+		}
+
+		// An event with a matched scope for global min/max range might not match
+		// all scopes with UID and PID filters with different min/max ranges.
+		//
+		// e.g.: -t 59:comm=who -t '59:pid>100' -t '59:pid<1257738' \
+		//       -t 30:comm=who -t '30:pid>502000' -t '30:pid<505000'
+		//
+		// For kernel filtering the flags above would compute
+		//
+		// pid_max = 1257738
+		// pid_min = 100
+		//
+		// So a who command with pid 150 is a match only for the scope 59
+
+		if filterScope.UIDFilter.Enabled() &&
+			!filterScope.UIDFilter.InMinMaxRange(uint32(event.UserID)) {
+			utils.ClearBit(&matchedScopes, bitOffset)
+			continue
+		}
+
+		if filterScope.PIDFilter.Enabled() &&
+			!filterScope.PIDFilter.InMinMaxRange(uint32(event.HostProcessID)) {
+			utils.ClearBit(&matchedScopes, bitOffset)
+			continue
+		}
+	}
+
+	return matchedScopes
+}
+
+// shouldProcessEvent decides whether or not to drop an event before further processing it
+func (t *Tracee) shouldProcessEvent(event *trace.Event) bool {
+	// As we don't do all the filtering on the ebpf side, we have to update MatchedScopes
+	event.MatchedScopes = t.computeScopes(event)
+	return event.MatchedScopes != 0
 }
 
 func parseContextFlags(flags uint32) trace.ContextFlags {
@@ -276,15 +345,17 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (<-c
 				continue
 			}
 
-			if (t.config.Filter.ContFilter.Value() || t.config.Filter.NewContFilter.Enabled()) && event.ContainerID == "" {
+			if t.config.FilterScopes.HasContainerFilterEnabled() && event.ContainerID == "" {
 				// Don't trace false container positives -
 				// a container filter is set by the user, but this event wasn't originated in a container.
 				// Although kernel filters shouldn't submit such events, we do this check to be on the safe side.
 				// For example, it might be that a new cgroup was created, and not by a container runtime,
 				// while we still didn't processed the cgroup_mkdir event and removed the cgroupid from the bpf container map.
-				id := events.ID(event.EventID)
+				eventId := events.ID(event.EventID)
+
 				// don't skip cgroup_mkdir and cgroup_rmdir so we can derive container_create and container_remove events
-				if id != events.CgroupMkdir && id != events.CgroupRmdir {
+				if eventId != events.CgroupMkdir && eventId != events.CgroupRmdir {
+					logger.Debug("false container positive", "event.Timestamp", event.Timestamp, "eventId", eventId)
 					continue
 				}
 			}
@@ -330,7 +401,7 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 					case events.PrintMemDump:
 					default:
 						// Derived events might need filtering as well
-						if !t.shouldProcessEvent(derivative) {
+						if !t.shouldProcessEvent(&derivative) {
 							continue
 						}
 					}

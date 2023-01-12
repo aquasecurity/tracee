@@ -21,32 +21,33 @@ const (
 // NOTE: Integers want to be aligned in memory, so if changing the format of this struct
 // keep the 1-byte 'Argnum' as the final parameter before the padding (if padding is needed).
 type Context struct {
-	Ts          uint64
-	StartTime   uint64
-	CgroupID    uint64
-	Pid         uint32
-	Tid         uint32
-	Ppid        uint32
-	HostPid     uint32
-	HostTid     uint32
-	HostPpid    uint32
-	Uid         uint32
-	MntID       uint32
-	PidID       uint32
-	Comm        [16]byte
-	UtsName     [16]byte
-	Flags       uint32
-	EventID     events.ID //int32
-	Pad2        [4]byte
-	Retval      int64
-	StackID     uint32
-	ProcessorId uint16
-	Argnum      uint8
-	_           [1]byte //padding
+	Ts            uint64
+	StartTime     uint64
+	CgroupID      uint64
+	Pid           uint32
+	Tid           uint32
+	Ppid          uint32
+	HostPid       uint32
+	HostTid       uint32
+	HostPpid      uint32
+	Uid           uint32
+	MntID         uint32
+	PidID         uint32
+	Comm          [16]byte
+	UtsName       [16]byte
+	Flags         uint32
+	EventID       events.ID //int32
+	_             [4]byte   // padding
+	MatchedScopes uint64
+	Retval        int64
+	StackID       uint32
+	ProcessorId   uint16
+	Argnum        uint8
+	_             [1]byte //padding
 }
 
 func (Context) GetSizeBytes() uint32 {
-	return 120
+	return 128
 }
 
 type ChunkMeta struct {

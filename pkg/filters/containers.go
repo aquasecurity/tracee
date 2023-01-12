@@ -1,11 +1,13 @@
 package filters
 
 import (
+	"encoding/binary"
 	"fmt"
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 type ContainerFilter struct {
@@ -18,18 +20,17 @@ func NewContainerFilter(mapName string) *ContainerFilter {
 	}
 }
 
-func (f *ContainerFilter) InitBPF(bpfModule *bpf.Module, containers *containers.Containers) error {
+func (f *ContainerFilter) UpdateBPF(bpfModule *bpf.Module, containers *containers.Containers, filterScopeID uint) error {
 	if !f.Enabled() {
 		return nil
 	}
-
-	bpfFilterEqual := uint32(filterEqual) // const need local var for bpfMap.Update()
-	bpfFilterNotEqual := uint32(filterNotEqual)
 
 	filterMap, err := bpfModule.GetMap(f.mapName)
 	if err != nil {
 		return err
 	}
+
+	filterVal := make([]byte, 16)
 
 	for _, equalFilter := range f.Equal() {
 		cgroupIDs := containers.FindContainerCgroupID32LSB(equalFilter)
@@ -39,7 +40,21 @@ func (f *ContainerFilter) InitBPF(bpfModule *bpf.Module, containers *containers.
 		if len(cgroupIDs) > 1 {
 			return fmt.Errorf("container id is ambiguous: %s", equalFilter)
 		}
-		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&bpfFilterEqual)); err != nil {
+
+		var equalInScopes, equalitySetInScopes uint64
+		curVal, err := filterMap.GetValue(unsafe.Pointer(&cgroupIDs[0]))
+		if err == nil {
+			equalInScopes = binary.LittleEndian.Uint64(curVal[0:8])
+			equalitySetInScopes = binary.LittleEndian.Uint64(curVal[8:16])
+		}
+
+		// filterEqual == 1, so set n bitmask bit
+		utils.SetBit(&equalInScopes, filterScopeID)
+		utils.SetBit(&equalitySetInScopes, filterScopeID)
+
+		binary.LittleEndian.PutUint64(filterVal[0:8], equalInScopes)
+		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
+		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&filterVal[0])); err != nil {
 			return err
 		}
 	}
@@ -52,7 +67,21 @@ func (f *ContainerFilter) InitBPF(bpfModule *bpf.Module, containers *containers.
 		if len(cgroupIDs) > 1 {
 			return fmt.Errorf("container id is ambiguous: %s", notEqualFilter)
 		}
-		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&bpfFilterNotEqual)); err != nil {
+
+		var equalInScopes, equalitySetInScopes uint64
+		curVal, err := filterMap.GetValue(unsafe.Pointer(&cgroupIDs[0]))
+		if err == nil {
+			equalInScopes = binary.LittleEndian.Uint64(curVal[0:8])
+			equalitySetInScopes = binary.LittleEndian.Uint64(curVal[8:16])
+		}
+
+		// filterNotEqual == 0, so clear n bitmask bit
+		utils.ClearBit(&equalInScopes, filterScopeID)
+		utils.SetBit(&equalitySetInScopes, filterScopeID)
+
+		binary.LittleEndian.PutUint64(filterVal[0:8], equalInScopes)
+		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
+		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&filterVal[0])); err != nil {
 			return err
 		}
 	}

@@ -1,6 +1,7 @@
 package filters
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math"
 	"strconv"
@@ -8,12 +9,13 @@ import (
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/tracee/pkg/utils"
 	"golang.org/x/exp/constraints"
 )
 
 const (
-	maxNotSetUInt uint64 = 0
-	minNotSetUInt uint64 = math.MaxUint64
+	MaxNotSetUInt uint64 = 0
+	MinNotSetUInt uint64 = math.MaxUint64
 )
 
 type UIntFilter[T constraints.Unsigned] struct {
@@ -39,8 +41,8 @@ func newUIntFilter[T constraints.Unsigned](is32Bit bool) *UIntFilter[T] {
 	return &UIntFilter[T]{
 		equal:    map[uint64]bool{},
 		notEqual: map[uint64]bool{},
-		min:      minNotSetUInt,
-		max:      maxNotSetUInt,
+		min:      MinNotSetUInt,
+		max:      MaxNotSetUInt,
 		is32Bit:  is32Bit,
 	}
 }
@@ -71,6 +73,22 @@ func (f *UIntFilter[T]) Filter(val interface{}) bool {
 		return false
 	}
 	return f.filter(filterable)
+}
+
+func (f UIntFilter[T]) InMinMaxRange(val T) bool {
+	if f.min == MinNotSetUInt && f.max == MaxNotSetUInt {
+		return true
+	}
+
+	v := uint64(val)
+	if f.min == MinNotSetUInt {
+		return v < f.max
+	}
+	if f.max == MaxNotSetUInt {
+		return v > f.min
+	}
+
+	return v > f.min && v < f.max
 }
 
 // priority goes by (from most significant):
@@ -203,42 +221,72 @@ func NewBPFUInt32Filter(mapName string) *BPFUIntFilter[uint32] {
 	}
 }
 
-func (filter *BPFUIntFilter[T]) InitBPF(bpfModule *bpf.Module) error {
+func (filter *BPFUIntFilter[T]) UpdateBPF(bpfModule *bpf.Module, filterScopeID uint) error {
 	if !filter.Enabled() {
 		return nil
 	}
 
-	bpfFilterEqual := uint32(filterEqual) // const need local var for bpfMap.Update()
-	bpfFilterNotEqual := uint32(filterNotEqual)
-
 	// equalityFilter filters events for given maps:
-	// 1. uid_filter        u32, u32
-	// 2. pid_filter        u32, u32
-	// 3. mnt_ns_filter     u64, u32
-	// 4. pid_ns_filter     u64, u32
+	// 1. uid_filter        u32, eq_t
+	// 2. pid_filter        u32, eq_t
+	// 3. mnt_ns_filter     u64, eq_t
+	// 4. pid_ns_filter     u64, eq_t
 	equalityFilterMap, err := bpfModule.GetMap(filter.mapName)
 	if err != nil {
 		return err
 	}
 
+	var keyPointer unsafe.Pointer
+	filterVal := make([]byte, 16)
+
 	for equalFilter := range filter.equal {
+		equalU32 := uint32(equalFilter)
 		if filter.is32Bit {
-			equalU32 := uint32(equalFilter)
-			err = equalityFilterMap.Update(unsafe.Pointer(&equalU32), unsafe.Pointer(&bpfFilterEqual))
+			keyPointer = unsafe.Pointer(&equalU32)
 		} else {
-			err = equalityFilterMap.Update(unsafe.Pointer(&equalFilter), unsafe.Pointer(&bpfFilterEqual))
+			keyPointer = unsafe.Pointer(&equalFilter)
 		}
+
+		var equalInScopes, equalitySetInScopes uint64
+		curVal, err := equalityFilterMap.GetValue(keyPointer)
+		if err == nil {
+			equalInScopes = binary.LittleEndian.Uint64(curVal[0:8])
+			equalitySetInScopes = binary.LittleEndian.Uint64(curVal[8:16])
+		}
+
+		// filterEqual == 1, so set n bitmask bit
+		utils.SetBit(&equalInScopes, filterScopeID)
+		utils.SetBit(&equalitySetInScopes, filterScopeID)
+
+		binary.LittleEndian.PutUint64(filterVal[0:8], equalInScopes)
+		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
+		err = equalityFilterMap.Update(unsafe.Pointer(keyPointer), unsafe.Pointer(&filterVal[0]))
 		if err != nil {
 			return err
 		}
 	}
 	for notEqualFilter := range filter.notEqual {
+		notEqualU32 := uint32(notEqualFilter)
 		if filter.is32Bit {
-			notEqualU32 := uint32(notEqualFilter)
-			err = equalityFilterMap.Update(unsafe.Pointer(&notEqualU32), unsafe.Pointer(&bpfFilterNotEqual))
+			keyPointer = unsafe.Pointer(&notEqualU32)
 		} else {
-			err = equalityFilterMap.Update(unsafe.Pointer(&notEqualFilter), unsafe.Pointer(&bpfFilterNotEqual))
+			keyPointer = unsafe.Pointer(&notEqualFilter)
 		}
+
+		var equalInScopes, equalitySetInScopes uint64
+		curVal, err := equalityFilterMap.GetValue(keyPointer)
+		if err == nil {
+			equalInScopes = binary.LittleEndian.Uint64(curVal[0:8])
+			equalitySetInScopes = binary.LittleEndian.Uint64(curVal[8:16])
+		}
+
+		// filterNotEqual == 0, so clear n bitmask bit
+		utils.ClearBit(&equalInScopes, filterScopeID)
+		utils.SetBit(&equalitySetInScopes, filterScopeID)
+
+		binary.LittleEndian.PutUint64(filterVal[0:8], equalInScopes)
+		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
+		err = equalityFilterMap.Update(unsafe.Pointer(keyPointer), unsafe.Pointer(&filterVal[0]))
 		if err != nil {
 			return err
 		}
@@ -248,7 +296,7 @@ func (filter *BPFUIntFilter[T]) InitBPF(bpfModule *bpf.Module) error {
 }
 
 func (filter *UIntFilter[T]) FilterOut() bool {
-	if len(filter.equal) > 0 && len(filter.notEqual) == 0 && filter.min == minNotSetUInt && filter.max == maxNotSetUInt {
+	if len(filter.equal) > 0 && len(filter.notEqual) == 0 && filter.min == MinNotSetUInt && filter.max == MaxNotSetUInt {
 		return false
 	} else {
 		return true

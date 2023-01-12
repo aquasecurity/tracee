@@ -2,6 +2,7 @@ package filters
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 type ProcessTreeFilter struct {
@@ -75,7 +77,7 @@ func (filter *ProcessTreeFilter) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (filter *ProcessTreeFilter) InitBPF(bpfModule *bpf.Module) error {
+func (filter *ProcessTreeFilter) UpdateBPF(bpfModule *bpf.Module, filterScopeID uint) error {
 	if !filter.Enabled() {
 		return nil
 	}
@@ -94,6 +96,27 @@ func (filter *ProcessTreeFilter) InitBPF(bpfModule *bpf.Module) error {
 	entries, err := procDir.Readdirnames(-1)
 	if err != nil {
 		return fmt.Errorf("could not read proc dir: %v", err)
+	}
+
+	updateBPF := func(shouldBeTraced bool, pid uint64) {
+		filterVal := make([]byte, 16)
+		var equalInScopes, equalitySetInScopes uint64
+		curVal, err := processTreeBPFMap.GetValue(unsafe.Pointer(&pid))
+		if err == nil {
+			equalInScopes = binary.LittleEndian.Uint64(curVal[0:8])
+			equalitySetInScopes = binary.LittleEndian.Uint64(curVal[8:16])
+		}
+
+		if shouldBeTraced {
+			utils.SetBit(&equalInScopes, filterScopeID)
+		} else {
+			utils.ClearBit(&equalInScopes, filterScopeID)
+		}
+		utils.SetBit(&equalitySetInScopes, filterScopeID)
+
+		binary.LittleEndian.PutUint64(filterVal[0:8], equalInScopes)
+		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
+		processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&filterVal[0]))
 	}
 
 	// Iterate over each pid
@@ -122,8 +145,7 @@ func (filter *ProcessTreeFilter) InitBPF(bpfModule *bpf.Module) error {
 			}
 
 			if shouldBeTraced, ok := filter.PIDs[uint32(ppid)]; ok {
-				trace := boolToUInt32(shouldBeTraced)
-				processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&trace))
+				updateBPF(shouldBeTraced, pid)
 				return
 			}
 			fn(uint32(ppid))
@@ -132,8 +154,7 @@ func (filter *ProcessTreeFilter) InitBPF(bpfModule *bpf.Module) error {
 	}
 
 	for pid, shouldBeTraced := range filter.PIDs {
-		trace := boolToUInt32(shouldBeTraced)
-		processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&trace))
+		updateBPF(shouldBeTraced, uint64(pid))
 	}
 
 	return nil
@@ -149,11 +170,4 @@ func (filter *ProcessTreeFilter) FilterOut() bool {
 		filterIn = filterIn && v
 	}
 	return !filterIn
-}
-
-func boolToUInt32(b bool) uint32 {
-	if b {
-		return uint32(1)
-	}
-	return uint32(0)
 }
