@@ -90,7 +90,6 @@ type CapabilitiesConfig struct {
 
 type OutputConfig struct {
 	StackAddresses    bool
-	DetectSyscall     bool
 	ExecEnv           bool
 	RelativeTime      bool
 	ExecHash          bool
@@ -697,8 +696,7 @@ func (t *Tracee) initDerivationTable() error {
 
 // options config should match defined values in ebpf code
 const (
-	optDetectOrigSyscall uint32 = 1 << iota
-	optExecEnv
+	optExecEnv uint32 = 1 << iota
 	optCaptureFiles
 	optExtractDynCode
 	optStackAddresses
@@ -740,9 +738,6 @@ const (
 func (t *Tracee) getOptionsConfig() uint32 {
 	var cOptVal uint32
 
-	if t.config.Output.DetectSyscall {
-		cOptVal = cOptVal | optDetectOrigSyscall
-	}
 	if t.config.Output.ExecEnv {
 		cOptVal = cOptVal | optExecEnv
 	}

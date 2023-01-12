@@ -69,7 +69,6 @@ generated the event:
 $ sudo ./dist/tracee-ebpf \
     --containers -o format:json \
     -o option:parse-arguments \
-    -o option:detect-syscall \
     -trace container \
     --crs docker:/var/run/docker.sock
 ```

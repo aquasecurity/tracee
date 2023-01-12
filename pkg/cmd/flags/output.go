@@ -21,10 +21,9 @@ Possible options:
 out-file:/path/to/file                             write the output to a specified file. create/trim the file if exists (default: stdout)
 log-file:/path/to/file                             write the logs to a specified file. create/trim the file if exists (default: stderr)
 none                                               ignore stream of events output, usually used with --capture
-option:{stack-addresses,detect-syscall,exec-env,relative-time,exec-hash,parse-arguments,sort-events}
+option:{stack-addresses,exec-env,relative-time,exec-hash,parse-arguments,sort-events}
                                                    augment output according to given options (default: none)
   stack-addresses                                  include stack memory addresses for each event
-  detect-syscall                                   when tracing kernel functions which are not syscalls, detect and show the original syscall that called that function
   exec-env                                         when tracing execve/execveat, show the environment variables that were used for execution
   relative-time                                    use relative timestamp instead of wall timestamp for events
   exec-hash                                        when tracing sched_process_exec, show the file hash(sha256) and ctime
@@ -80,8 +79,6 @@ func PrepareOutput(outputSlice []string) (OutputConfig, printer.Config, error) {
 			switch outputParts[1] {
 			case "stack-addresses":
 				outcfg.StackAddresses = true
-			case "detect-syscall":
-				outcfg.DetectSyscall = true
 			case "exec-env":
 				outcfg.ExecEnv = true
 			case "relative-time":

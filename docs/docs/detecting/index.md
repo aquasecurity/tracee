@@ -81,7 +81,6 @@ Check [getting tracee] in order to understand how to obtain **tracee-rules**.
          --output json \
          --trace comm=bash \
          --trace follow \
-         --output option:detect-syscall \
          --output option:parse-arguments \
          --trace event=$(./dist/tracee-rules --list-events) \
          | ./dist/tracee-rules \
@@ -154,7 +153,7 @@ meaningful events (for the loaded signature(s)) you may request from
     new processes happening as childs of all running `bash` processes.
 
     ```text
-    $ sudo ./dist/tracee-ebpf --output json --trace comm=bash --trace follow --output option:detect-syscall --output option:parse-arguments --output option:exec-env --trace event=$(./dist/tracee-rules --rules TRC-2 --list-events) | ./dist/tracee-rules --input-tracee format:json --input-tracee file:stdin --rules TRC-2
+    $ sudo ./dist/tracee-ebpf --output json --trace comm=bash --trace follow --output option:parse-arguments --output option:exec-env --trace event=$(./dist/tracee-rules --rules TRC-2 --list-events) | ./dist/tracee-rules --input-tracee format:json --input-tracee file:stdin --rules TRC-2
     Loaded 1 signature(s): [TRC-2]
     
     *** Detection ***

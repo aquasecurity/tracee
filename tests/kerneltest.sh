@@ -99,7 +99,6 @@ for TEST in $TESTS; do
         --cache mem-cache-size=512 \
         --output format:gob \
         --output option:parse-arguments \
-        --output option:detect-syscall \
         --trace container=new \
         --trace event=$events \
         2>$SCRIPT_TMP_DIR/ebpf-$$ \

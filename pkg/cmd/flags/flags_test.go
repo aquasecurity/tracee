@@ -105,8 +105,8 @@ func TestPrepareFilter(t *testing.T) {
 			expectedError: filters.InvalidValue("-1"),
 		},
 		{
-			testName: "invalid uid 1",
-			filters: []string{"uid=	"},
+			testName:      "invalid uid 1",
+			filters:       []string{"uid=\t"},
 			expectedError: filters.InvalidValue("\t"),
 		},
 		{
@@ -489,17 +489,6 @@ func TestPrepareOutput(t *testing.T) {
 			},
 		},
 		{
-			testName:    "option detect-syscall",
-			outputSlice: []string{"option:detect-syscall"},
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-				OutputConfig: tracee.OutputConfig{
-					DetectSyscall:  true,
-					ParseArguments: true,
-				},
-			},
-		},
-		{
 			testName:    "option exec-env",
 			outputSlice: []string{"option:exec-env"},
 			expectedOutput: flags.OutputConfig{
@@ -534,12 +523,11 @@ func TestPrepareOutput(t *testing.T) {
 		},
 		{
 			testName:    "all options",
-			outputSlice: []string{"option:stack-addresses", "option:detect-syscall", "option:exec-env", "option:exec-hash", "option:sort-events"},
+			outputSlice: []string{"option:stack-addresses", "option:exec-env", "option:exec-hash", "option:sort-events"},
 			expectedOutput: flags.OutputConfig{
 				LogFile: os.Stderr,
 				OutputConfig: tracee.OutputConfig{
 					StackAddresses: true,
-					DetectSyscall:  true,
 					ExecEnv:        true,
 					ExecHash:       true,
 					ParseArguments: true,
