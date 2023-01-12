@@ -1,6 +1,7 @@
 package ebpf
 
 import (
+	"bytes"
 	"fmt"
 	"golang.org/x/sys/unix"
 	"path/filepath"
@@ -468,7 +469,7 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 	arch := ""
 	unix.Uname(&utsName)
 	if err == nil {
-		arch = string(utsName.Machine[:])
+		arch = string(bytes.TrimRight(utsName.Machine[:], "\x00"))
 	}
 	event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "arch", Type: "char*"}, Value: arch})
 	event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "symbol_name", Type: "char*"}, Value: symbol.Name})

@@ -43,9 +43,9 @@ func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
 		}
 		if !found {
 			// TODO: remove once events arguments are introduced
-			// filter if argument does not exist unless the event is originating
-			// from the kernel and uses filters as arguments
-			// issue #2546
+			// filter if argument does not exist
+			// the events.PrintMemDump bypass was added due to issue #2546
+			// because it uses usermode applied filters as parameters for the event, which occurs after filtering
 			return eventID == events.PrintMemDump
 		}
 		// TODO: use type assertion instead of string conversion
