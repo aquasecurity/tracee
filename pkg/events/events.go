@@ -10,8 +10,8 @@ import (
 )
 
 type dependencies struct {
-	Events       []eventDependency // Events required to be loaded and/or submitted for the event to happen
-	KSymbols     []kSymbolDependency
+	Events       []eventDependency    // Events required to be loaded and/or submitted for the event to happen
+	KSymbols     *[]kSymbolDependency // nil pointer means no symbols needed, empty slice indicates for dynamic symbols which their names aren't known at the time of compilation
 	TailCalls    []TailCall
 	Capabilities []cap.Value
 }
@@ -5616,7 +5616,7 @@ var Definitions = eventDefinitions{
 			},
 			Sets: []string{},
 			Dependencies: dependencies{
-				KSymbols: []kSymbolDependency{
+				KSymbols: &[]kSymbolDependency{
 					{Symbol: "pipefifo_fops", Required: true},
 				},
 			},
@@ -5803,7 +5803,7 @@ var Definitions = eventDefinitions{
 				{Handle: probes.PrintSyscallTable, Required: true},
 			},
 			Dependencies: dependencies{
-				KSymbols: []kSymbolDependency{
+				KSymbols: &[]kSymbolDependency{
 					{Symbol: "sys_call_table", Required: true},
 				},
 			},
@@ -5817,7 +5817,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32undefined,
 			Name:    "hooked_syscalls",
 			Dependencies: dependencies{
-				KSymbols: []kSymbolDependency{
+				KSymbols: &[]kSymbolDependency{
 					{Symbol: "_stext", Required: true},
 					{Symbol: "_etext", Required: true},
 				},
@@ -6043,7 +6043,7 @@ var Definitions = eventDefinitions{
 				{Handle: probes.SecurityFilePermission, Required: true},
 			},
 			Dependencies: dependencies{
-				KSymbols: []kSymbolDependency{
+				KSymbols: &[]kSymbolDependency{
 					{Symbol: "_stext", Required: true},
 					{Symbol: "_etext", Required: true},
 				},
@@ -6063,7 +6063,7 @@ var Definitions = eventDefinitions{
 				{Handle: probes.PrintNetSeqOps, Required: true},
 			},
 			Dependencies: dependencies{
-				KSymbols: []kSymbolDependency{
+				KSymbols: &[]kSymbolDependency{
 					{Symbol: "tcp4_seq_ops", Required: true},
 					{Symbol: "tcp6_seq_ops", Required: true},
 					{Symbol: "udp_seq_ops", Required: true},
@@ -6083,7 +6083,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32undefined,
 			Name:    "hooked_seq_ops",
 			Dependencies: dependencies{
-				KSymbols: []kSymbolDependency{
+				KSymbols: &[]kSymbolDependency{
 					{Symbol: "_stext", Required: true},
 					{Symbol: "_etext", Required: true},
 				},
@@ -6445,9 +6445,7 @@ var Definitions = eventDefinitions{
 				Events: []eventDependency{
 					{EventID: DoInitModule},
 				},
-				KSymbols: []kSymbolDependency{
-					{Symbol: "sys_call_table", Required: true},
-				},
+				KSymbols: &[]kSymbolDependency{},
 			},
 		},
 	},

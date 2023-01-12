@@ -572,7 +572,7 @@ func (t *Tracee) generateInitValues() (InitValues, error) {
 		if !exists {
 			return initVals, fmt.Errorf("event with id %d doesn't exist", evt)
 		}
-		if len(def.Dependencies.KSymbols) > 0 {
+		if def.Dependencies.KSymbols != nil {
 			initVals.kallsyms = true
 		}
 	}
@@ -915,16 +915,18 @@ func (t *Tracee) validateKallsymsDependencies() {
 	symsToDependentEvents := make(map[string][]events.ID)
 	for id := range t.events {
 		event := events.Definitions.Get(id)
-		for _, symDep := range event.Dependencies.KSymbols {
-			reqKsyms = append(reqKsyms, symDep.Symbol)
-			if symDep.Required {
-				symEvents, ok := symsToDependentEvents[symDep.Symbol]
-				if ok {
-					symEvents = append(symEvents, id)
-				} else {
-					symEvents = []events.ID{id}
+		if event.Dependencies.KSymbols != nil {
+			for _, symDep := range *event.Dependencies.KSymbols {
+				reqKsyms = append(reqKsyms, symDep.Symbol)
+				if symDep.Required {
+					symEvents, ok := symsToDependentEvents[symDep.Symbol]
+					if ok {
+						symEvents = append(symEvents, id)
+					} else {
+						symEvents = []events.ID{id}
+					}
+					symsToDependentEvents[symDep.Symbol] = symEvents
 				}
-				symsToDependentEvents[symDep.Symbol] = symEvents
 			}
 		}
 	}
