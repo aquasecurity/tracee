@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -36,7 +35,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
-	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/pkg/rules/engine"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
@@ -67,7 +65,6 @@ type Config struct {
 	BPFObjBytes        []byte
 	KernelConfig       *helpers.KernelConfig
 	ChanEvents         chan trace.Event
-	ProcessInfo        bool
 	OSInfo             *helpers.OSInfo
 	Sockets            runtime.Sockets
 	ContainersEnrich   bool
@@ -83,9 +80,6 @@ type CaptureConfig struct {
 	Mem             bool
 	Net             pcaps.Config
 	Profile         bool
-	NetIfaces       *NetIfaces
-	NetPerContainer bool
-	NetPerProcess   bool
 }
 
 type CapabilitiesConfig struct {
@@ -117,14 +111,9 @@ func (tc Config) Validate() error {
 	}
 
 	for _, e := range tc.Filter.EventsToTrace {
-		def, exists := events.Definitions.GetSafe(e)
+		_, exists := events.Definitions.GetSafe(e)
 		if !exists {
 			return fmt.Errorf("invalid event to trace: %d", e)
-		}
-		if isNetEvent(e) {
-			if len(tc.Filter.NetFilter.Interfaces()) == 0 {
-				return fmt.Errorf("missing interface for net event: %s, please add -t net=<iface>", def.Name)
-			}
 		}
 	}
 	if (tc.PerfBufferSize & (tc.PerfBufferSize - 1)) != 0 {
@@ -177,17 +166,14 @@ type Tracee struct {
 	bpfModule         *bpf.Module
 	eventsPerfMap     *bpf.PerfBuffer
 	fileWrPerfMap     *bpf.PerfBuffer
-	netPerfMap        *bpf.PerfBuffer
 	netCapPerfMap     *bpf.PerfBuffer
 	bpfLogsPerfMap    *bpf.PerfBuffer
 	eventsChannel     chan []byte
 	fileWrChannel     chan []byte
-	netChannel        chan []byte
 	netCapChannel     chan []byte
 	bpfLogsChannel    chan []byte
 	lostEvChannel     chan uint64
 	lostWrChannel     chan uint64
-	lostNetChannel    chan uint64
 	lostNetCapChannel chan uint64
 	lostBPFLogChannel chan uint64
 	bootTime          uint64
@@ -200,10 +186,8 @@ type Tracee struct {
 	pidsInMntns       bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
 	FDArgPathMap      *bpf.BPFMap
-	netInfo           netInfo
 	netCapturePcap    *pcaps.Pcaps
 	containers        *containers.Containers
-	procInfo          *procinfo.ProcInfo
 	eventsSorter      *sorting.EventsChronologicalSorter
 	eventProcessor    map[events.ID][]func(evt *trace.Event) error
 	eventDerivations  derive.Table
@@ -248,9 +232,6 @@ func GetCaptureEventsList(cfg Config) map[events.ID]eventConfig {
 	}
 	if cfg.Capture.Profile {
 		captureEvents[events.CaptureProfile] = eventConfig{}
-	}
-	if cfg.Capture.NetIfaces != nil {
-		captureEvents[events.CapturePcap] = eventConfig{}
 	}
 	if len(cfg.Filter.NetFilter.Ifaces) > 0 || logger.HasDebugLevel() {
 		captureEvents[events.SecuritySocketBind] = eventConfig{}
@@ -349,34 +330,6 @@ func New(cfg Config) (*Tracee, error) {
 	// Register default event processors
 	t.registerEventProcessors()
 
-	// Configure network interfaces map (TODO: remove this with cgroup/skb code)
-
-	t.netInfo.ifaces = make(map[int]*net.Interface)
-	t.netInfo.ifacesConfig = make(map[string]int32)
-	for _, iface := range t.config.Filter.NetFilter.Ifaces {
-		netIface, err := net.InterfaceByName(iface)
-		if err != nil {
-			return nil, fmt.Errorf("invalid network interface: %s", iface)
-		}
-		// Map real network interface index to interface object
-		t.netInfo.ifaces[netIface.Index] = netIface
-		t.netInfo.ifacesConfig[netIface.Name] |= events.TraceIface
-	}
-
-	if t.config.Capture.NetIfaces != nil {
-		for _, iface := range t.config.Capture.NetIfaces.Interfaces() {
-			netIface, err := net.InterfaceByName(iface)
-			if err != nil {
-				return nil, fmt.Errorf("invalid network interface: %s", iface)
-			}
-			if !t.netInfo.hasIface(netIface.Name) {
-				// Map real network interface index to interface object
-				t.netInfo.ifaces[netIface.Index] = netIface
-			}
-			t.netInfo.ifacesConfig[netIface.Name] |= events.CaptureIface
-		}
-	}
-
 	t.triggerContexts = trigger.NewContext()
 
 	return t, nil
@@ -407,21 +360,6 @@ func (t *Tracee) Init() error {
 	// Canceling events missing kernel symbols
 	t.validateKallsymsDependencies()
 
-	// Initialize process tree before receiving events (will use it)
-
-	err = capabilities.GetInstance().Requested(func() error {
-		t.procInfo, err = procinfo.NewProcessInfo()
-		return err
-	},
-		cap.DAC_READ_SEARCH,
-		cap.SYS_PTRACE,
-	)
-
-	if err != nil {
-		t.Close()
-		return fmt.Errorf("error creating process tree: %v", err)
-	}
-
 	// Initialize cgroups filesystems
 
 	t.cgroups, err = cgroup.NewCgroups()
@@ -448,7 +386,7 @@ func (t *Tracee) Init() error {
 
 	err = t.initDerivationTable()
 	if err != nil {
-		return fmt.Errorf("error intitalizing event derivation map: %w", err)
+		return fmt.Errorf("error initializing event derivation map: %w", err)
 	}
 
 	// Initialize eBPF programs and maps
@@ -526,20 +464,12 @@ func (t *Tracee) Init() error {
 		return fmt.Errorf("error writing to readiness file: %w", err)
 	}
 
-	// Initialize pcap LRU cache
-
-	t.netInfo.pcapWriters, err = lru.NewWithEvict(openPcapsLimit, t.netInfo.PcapWriterOnEvict)
-	if err != nil {
-		t.Close()
-		return err
-	}
-
 	// Get reference to stack trace addresses map
 
 	stackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")
 	if err != nil {
 		t.Close()
-		return fmt.Errorf("error getting acces to 'stack_addresses' eBPF Map %v", err)
+		return fmt.Errorf("error getting access to 'stack_addresses' eBPF Map %v", err)
 	}
 	t.StackAddressesMap = stackAddressesMap
 
@@ -677,18 +607,6 @@ func (t *Tracee) initDerivationTable() error {
 			events.HookedSyscalls: {
 				Enabled:        t.events[events.PrintSyscallTable].submit,
 				DeriveFunction: derive.DetectHookedSyscall(t.kernelSymbols),
-			},
-		},
-		events.DnsRequest: {
-			events.NetPacket: {
-				Enabled:        t.events[events.NetPacket].submit,
-				DeriveFunction: derive.NetPacket(),
-			},
-		},
-		events.DnsResponse: {
-			events.NetPacket: {
-				Enabled:        t.events[events.NetPacket].submit,
-				DeriveFunction: derive.NetPacket(),
 			},
 		},
 		events.PrintNetSeqOps: {
@@ -843,13 +761,6 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	switch t.cgroups.GetDefaultCgroup().(type) {
 	case *cgroup.CgroupV1:
 		cOptVal = cOptVal | optCgroupV1
-	}
-	if t.config.Capture.NetIfaces != nil ||
-		len(t.config.Filter.NetFilter.Interfaces()) > 0 ||
-		logger.HasDebugLevel() {
-
-		cOptVal = cOptVal | optProcessInfo
-		t.config.ProcessInfo = true
 	}
 	if t.config.Output.ParseArgumentsFDs {
 		cOptVal = cOptVal | optTranslateFDFilePath
@@ -1159,21 +1070,6 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	if len(t.netInfo.ifaces) > 0 {
-		networkConfingMap, err := t.bpfModule.GetMap("network_config") // u32, int
-		if err != nil {
-			return err
-		}
-		for _, iface := range t.netInfo.ifaces {
-			ifaceIdx := iface.Index
-			ifaceConf := t.netInfo.ifacesConfig[iface.Name]
-			if err := networkConfingMap.Update(unsafe.Pointer(&ifaceIdx), unsafe.Pointer(&ifaceConf)); err != nil {
-				return err
-			}
-
-		}
-	}
-
 	return nil
 }
 
@@ -1240,13 +1136,15 @@ func (t *Tracee) GetTailCalls() ([]events.TailCall, error) {
 func (t *Tracee) attachProbes() error {
 	var err error
 
-	// attach selected tracing events
+	// attach selected tracing events probes
 
 	for tr := range t.events {
 		event, ok := events.Definitions.GetSafe(tr)
 		if !ok {
 			continue
 		}
+
+		// attach internal syscall probes for selected syscall events, if any
 		if event.Syscall {
 			err := t.probes.Attach(probes.SyscallEnter__Internal)
 			if err != nil {
@@ -1257,25 +1155,12 @@ func (t *Tracee) attachProbes() error {
 				return err
 			}
 		}
+
+		// attach probes for selected events
 		for _, dep := range event.Probes {
 			err = t.probes.Attach(dep.Handle, t.cgroups)
 			if err != nil && dep.Required {
-				// TODO: https://github.com/aquasecurity/tracee/issues/1787
 				return fmt.Errorf("failed to attach required probe: %v", err)
-			}
-		}
-	}
-
-	// TODO: remove all tc programs (being attached to specific interfaces)
-
-	for _, iface := range t.netInfo.ifaces {
-		for _, tc := range []probes.Handle{
-			probes.DefaultTcIngress,
-			probes.DefaultTcEgress,
-		} {
-			err = t.probes.Attach(tc, iface)
-			if err != nil {
-				return err
 			}
 		}
 	}
@@ -1285,13 +1170,6 @@ func (t *Tracee) attachProbes() error {
 
 func (t *Tracee) initBPF() error {
 	var err error
-
-	if t.netEnabled() {
-		// TODO: NET_ADMIN is needed by tcProbes, which are not declared as
-		// events so they don't have required capabilities. Once tcProbes gone
-		// we can remove this from the required capabilities set.
-		capabilities.GetInstance().Require(cap.NET_ADMIN)
-	}
 
 	// Execute code with higher privileges: ring1 (required)
 
@@ -1375,21 +1253,6 @@ func (t *Tracee) initBPF() error {
 			}
 		}
 
-		// TODO: remove netChannel (deprecated)
-		if t.netEnabled() {
-			t.netChannel = make(chan []byte, 1000)
-			t.lostNetChannel = make(chan uint64)
-			t.netPerfMap, err = t.bpfModule.InitPerfBuf(
-				"net_events",
-				t.netChannel,
-				t.lostNetChannel,
-				t.config.PerfBufferSize,
-			)
-			if err != nil {
-				return fmt.Errorf("error initializing net perf map: %v", err)
-			}
-		}
-
 		if pcaps.PcapsEnabled(t.config.Capture.Net) {
 			t.netCapChannel = make(chan []byte, 1000)
 			t.lostNetCapChannel = make(chan uint64)
@@ -1433,25 +1296,6 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 	return err
 }
 
-func (t *Tracee) getProcessCtx(hostTid uint32) (procinfo.ProcessCtx, error) {
-	processCtx, err := t.procInfo.GetElement(int(hostTid))
-	if err == nil {
-		return processCtx, nil
-	} else {
-		processContextMap, err := t.bpfModule.GetMap("task_info_map")
-		if err != nil {
-			return processCtx, err
-		}
-		processCtxBpfMap, err := processContextMap.GetValue(unsafe.Pointer(&hostTid))
-		if err != nil {
-			return processCtx, err
-		}
-		processCtx, err = procinfo.ParseProcessContext(processCtxBpfMap, t.containers)
-		t.procInfo.UpdateElement(int(hostTid), processCtx)
-		return processCtx, err
-	}
-}
-
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.invokeInitEvents()
@@ -1468,10 +1312,6 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 		t.fileWrPerfMap.Start()
 		go t.processFileWrites()
 	}
-	if t.netEnabled() {
-		t.netPerfMap.Start()
-		go t.processNetEvents(ctx)
-	}
 	if pcaps.PcapsEnabled(t.config.Capture.Net) {
 		t.netCapPerfMap.Start()
 		go t.processNetCaptureEvents(ctx)
@@ -1484,9 +1324,6 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.eventsPerfMap.Stop()
 	if t.config.BlobPerfBufferSize > 0 {
 		t.fileWrPerfMap.Stop()
-	}
-	if t.netEnabled() {
-		t.netPerfMap.Stop()
 	}
 	if pcaps.PcapsEnabled(t.config.Capture.Net) {
 		t.netCapPerfMap.Stop()
@@ -1629,23 +1466,16 @@ func (t *Tracee) invokeInitEvents() {
 	}
 }
 
+// netEnabled returns true if any base network event is to be traced
 func (t *Tracee) netEnabled() bool {
-	isCaptureNetSet := t.config.Capture.NetIfaces != nil
-	isFilterNetSet := len(t.config.Filter.NetFilter.Interfaces()) != 0
-
-	return isCaptureNetSet || isFilterNetSet
-
-}
-
-func (t *Tracee) getTracedIfaceIdx(ifaceName string) (int, bool) {
-	return t.config.Filter.NetFilter.Find(ifaceName)
-}
-
-func (t *Tracee) getCapturedIfaceIdx(ifaceName string) (int, bool) {
-	if t.config.Capture.NetIfaces == nil {
-		return -1, false
+	for k := range t.events {
+		if k >= events.NetPacketBase && k <= events.MaxNetID {
+			return true
+		}
 	}
-	return t.config.Capture.NetIfaces.Find(ifaceName)
+
+	// if called before capture meta-events are set to be traced:
+	return pcaps.PcapsEnabled(t.config.Capture.Net)
 }
 
 //

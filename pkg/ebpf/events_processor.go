@@ -3,10 +3,10 @@ package ebpf
 import (
 	"bytes"
 	"fmt"
-	"golang.org/x/sys/unix"
 	"path/filepath"
 	"strconv"
-	"time"
+
+	"golang.org/x/sys/unix"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
@@ -15,7 +15,6 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
-	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -37,14 +36,6 @@ func (t *Tracee) processLostEvents() {
 			logger.Warn(fmt.Sprintf("lost %d events", lost))
 		}
 	}
-}
-
-func (t *Tracee) deleteProcInfoDelayed(hostTid int) {
-	// wait 5 seconds before deleting from the map - because there might events coming in the context of this process,
-	// after we receive its sched_process_exit. this mainly happens from network events, because these events come from
-	// the netChannel, and there might be a race condition between this channel and the eventsChannel.
-	time.Sleep(time.Second * 5)
-	t.procInfo.DeleteElement(hostTid)
 }
 
 const (
@@ -69,7 +60,7 @@ func (t *Tracee) processEvent(event *trace.Event) []error {
 // RegisterEventProcessor registers a pipeline processing handler for an event
 func (t *Tracee) RegisterEventProcessor(id events.ID, proc func(evt *trace.Event) error) error {
 	if t.eventProcessor == nil {
-		return fmt.Errorf("tracee not initalized yet")
+		return fmt.Errorf("tracee not initialized yet")
 	}
 	if t.eventProcessor[id] == nil {
 		t.eventProcessor[id] = make([]func(evt *trace.Event) error, 0)
@@ -84,12 +75,11 @@ func (t *Tracee) registerEventProcessors() {
 		t.eventProcessor = make(map[events.ID][]func(evt *trace.Event) error)
 	}
 
-	// no need to error check since we know the error is initalization related
+	// no need to error check since we know the error is initialization related
 	t.RegisterEventProcessor(events.VfsWrite, t.processWriteEvent)
 	t.RegisterEventProcessor(events.VfsWritev, t.processWriteEvent)
 	t.RegisterEventProcessor(events.KernelWrite, t.processWriteEvent)
 	t.RegisterEventProcessor(events.SchedProcessExec, t.processSchedProcessExec)
-	t.RegisterEventProcessor(events.SchedProcessExit, t.processSchedProcessExit)
 	t.RegisterEventProcessor(events.SchedProcessFork, t.processSchedProcessFork)
 	t.RegisterEventProcessor(events.CgroupMkdir, t.processCgroupMkdir)
 	t.RegisterEventProcessor(events.CgroupRmdir, t.processCgroupRmdir)
@@ -170,14 +160,6 @@ func (t *Tracee) processWriteEvent(event *trace.Event) error {
 }
 
 func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
-	// update the process tree with correct command name
-	if t.config.ProcessInfo {
-		processData, err := t.procInfo.GetElement(event.HostProcessID)
-		if err == nil {
-			processData.Comm = event.ProcessName
-			t.procInfo.UpdateElement(event.HostProcessID, processData)
-		}
-	}
 	// cache this pid by it's mnt ns
 	if event.ProcessID == 1 {
 		t.pidsInMntns.ForceAddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
@@ -282,73 +264,8 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 	return nil
 }
 
-func (t *Tracee) processSchedProcessExit(event *trace.Event) error {
-	if !t.config.ProcessInfo {
-		return nil
-	}
-	if t.config.Capture.NetPerProcess {
-		pcapContext, _, err := t.getPcapContextFromTid(uint32(event.HostThreadID))
-		if err == nil {
-			go t.netExit(pcapContext)
-		}
-	}
-
-	go t.deleteProcInfoDelayed(event.HostThreadID)
-	return nil
-}
-
 func (t *Tracee) processSchedProcessFork(event *trace.Event) error {
-	err := t.convertArgMonotonicToEpochTime(event, "start_time")
-	if err != nil {
-		return err
-	}
-	if !t.config.ProcessInfo {
-		return nil
-	}
-	hostTid, err := parse.ArgVal[int32](event, "child_tid")
-	if err != nil {
-		return err
-	}
-	hostPid, err := parse.ArgVal[int32](event, "child_pid")
-	if err != nil {
-		return err
-	}
-	pid, err := parse.ArgVal[int32](event, "child_ns_pid")
-	if err != nil {
-		return err
-	}
-	ppid, err := parse.ArgVal[int32](event, "parent_ns_pid")
-	if err != nil {
-		return err
-	}
-	hostPpid, err := parse.ArgVal[int32](event, "parent_pid")
-	if err != nil {
-		return err
-	}
-	tid, err := parse.ArgVal[int32](event, "child_ns_tid")
-	if err != nil {
-		return err
-	}
-	startTime, err := parse.ArgVal[uint64](event, "start_time")
-	if err != nil {
-		return err
-	}
-	processData := procinfo.ProcessCtx{
-		StartTime:   int(startTime),
-		ContainerID: event.ContainerID,
-		Pid:         uint32(pid),
-		Tid:         uint32(tid),
-		Ppid:        uint32(ppid),
-		HostTid:     uint32(hostTid),
-		HostPid:     uint32(hostPid),
-		HostPpid:    uint32(hostPpid),
-		Uid:         uint32(event.UserID),
-		MntId:       uint32(event.MountNS),
-		PidId:       uint32(event.PIDNS),
-		Comm:        event.ProcessName,
-	}
-	t.procInfo.UpdateElement(int(hostTid), processData)
-	return nil
+	return t.convertArgMonotonicToEpochTime(event, "start_time")
 }
 
 func (t *Tracee) processCgroupMkdir(event *trace.Event) error {
@@ -378,13 +295,6 @@ func (t *Tracee) processCgroupRmdir(event *trace.Event) error {
 	cgroupId, err := parse.ArgVal[uint64](event, "cgroup_id")
 	if err != nil {
 		return fmt.Errorf("error parsing cgroup_rmdir args: %w", err)
-	}
-
-	if t.config.Capture.NetPerContainer {
-		if info := t.containers.GetCgroupInfo(cgroupId); info.Container.ContainerId != "" {
-			pcapContext := t.getContainerPcapContext(info.Container.ContainerId)
-			go t.netExit(pcapContext)
-		}
 	}
 
 	hId, err := parse.ArgVal[uint32](event, "hierarchy_id")
@@ -463,7 +373,7 @@ func (t *Tracee) processTriggeredEvent(event *trace.Event) error {
 	// This was previously event = &withInvokingContext. However, if applied
 	// as such, withInvokingContext will go out of scope and the reference
 	// will be moved back as such we apply the value internally and not
-	// through a referene switch
+	// through a reference switch
 	(*event) = withInvokingContext
 	return nil
 }

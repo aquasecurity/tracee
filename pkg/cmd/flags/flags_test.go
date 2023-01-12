@@ -11,6 +11,7 @@ import (
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/filters"
+	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/pkg/rules/rego"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -290,11 +291,6 @@ func TestPrepareCapture(t *testing.T) {
 				expectedError: errors.New("capture output dir cannot be empty"),
 			},
 			{
-				testName:      "invalid network interface",
-				captureSlice:  []string{"net=invalidnetinterface"},
-				expectedError: errors.New("invalid network interface: invalidnetinterface"),
-			},
-			{
 				testName:        "invalid capture write filter",
 				captureSlice:    []string{"write="},
 				expectedCapture: tracee.CaptureConfig{},
@@ -345,6 +341,40 @@ func TestPrepareCapture(t *testing.T) {
 				},
 			},
 			{
+				testName:     "capture network with default pcap type",
+				captureSlice: []string{"network"},
+				expectedCapture: tracee.CaptureConfig{
+					OutputPath: "/tmp/tracee/out",
+					Net: pcaps.Config{
+						CaptureProcess: true,
+					},
+				},
+			},
+			{
+				testName:     "capture network with all pcap types",
+				captureSlice: []string{"network", "pcap:process,command,container"},
+				expectedCapture: tracee.CaptureConfig{
+					OutputPath: "/tmp/tracee/out",
+					Net: pcaps.Config{
+						CaptureProcess:   true,
+						CaptureContainer: true,
+						CaptureCommand:   true,
+					},
+				},
+			},
+			{
+				testName:     "capture network with multiple pcap types",
+				captureSlice: []string{"network", "pcap:command,container"},
+				expectedCapture: tracee.CaptureConfig{
+					OutputPath: "/tmp/tracee/out",
+					Net: pcaps.Config{
+						CaptureProcess:   false,
+						CaptureContainer: true,
+						CaptureCommand:   true,
+					},
+				},
+			},
+			{
 				testName:     "capture write filtered",
 				captureSlice: []string{"write=/tmp*"},
 				expectedCapture: tracee.CaptureConfig{
@@ -380,22 +410,6 @@ func TestPrepareCapture(t *testing.T) {
 					OutputPath: "/tmp/tracee/out",
 					Exec:       true,
 					Profile:    true,
-				},
-			},
-			{
-				testName:     "network interface",
-				captureSlice: []string{"net=lo"},
-				expectedCapture: tracee.CaptureConfig{
-					OutputPath: "/tmp/tracee/out",
-					NetIfaces:  &tracee.NetIfaces{Ifaces: []string{"lo"}},
-				},
-			},
-			{
-				testName:     "network interface, but repeated",
-				captureSlice: []string{"net=lo", "net=lo"},
-				expectedCapture: tracee.CaptureConfig{
-					OutputPath: "/tmp/tracee/out",
-					NetIfaces:  &tracee.NetIfaces{Ifaces: []string{"lo"}},
 				},
 			},
 		}

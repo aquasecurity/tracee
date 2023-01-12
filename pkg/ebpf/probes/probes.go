@@ -88,20 +88,6 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		LoadElfPhdrs:               &traceProbe{eventName: "load_elf_phdrs", probeType: kprobe, programName: "trace_load_elf_phdrs"},
 		Filldir64:                  &traceProbe{eventName: "filldir64", probeType: kprobe, programName: "trace_filldir64"},
 		TaskRename:                 &traceProbe{eventName: "task:task_rename", probeType: rawTracepoint, programName: "tracepoint__task__task_rename"},
-		UDPSendmsg:                 &traceProbe{eventName: "udp_sendmsg", probeType: kprobe, programName: "trace_udp_sendmsg"},
-		UDPDisconnect:              &traceProbe{eventName: "__udp_disconnect", probeType: kprobe, programName: "trace_udp_disconnect"},
-		UDPDestroySock:             &traceProbe{eventName: "udp_destroy_sock", probeType: kprobe, programName: "trace_udp_destroy_sock"},
-		UDPv6DestroySock:           &traceProbe{eventName: "udpv6_destroy_sock", probeType: kprobe, programName: "trace_udpv6_destroy_sock"},
-		InetSockSetState:           &traceProbe{eventName: "sock:inet_sock_set_state", probeType: rawTracepoint, programName: "tracepoint__inet_sock_set_state"},
-		TCPConnect:                 &traceProbe{eventName: "tcp_connect", probeType: kprobe, programName: "trace_tcp_connect"},
-		ICMPRecv:                   &traceProbe{eventName: "icmp_rcv", probeType: kprobe, programName: "trace_icmp_rcv"},
-		ICMPSend:                   &traceProbe{eventName: "__icmp_send", probeType: kprobe, programName: "trace_icmp_send"},
-		ICMPv6Recv:                 &traceProbe{eventName: "icmpv6_rcv", probeType: kprobe, programName: "trace_icmpv6_rcv"},
-		ICMPv6Send:                 &traceProbe{eventName: "icmp6_send", probeType: kprobe, programName: "trace_icmp6_send"},
-		Pingv4Sendmsg:              &traceProbe{eventName: "ping_v4_sendmsg", probeType: kprobe, programName: "trace_ping_v4_sendmsg"},
-		Pingv6Sendmsg:              &traceProbe{eventName: "ping_v6_sendmsg", probeType: kprobe, programName: "trace_ping_v6_sendmsg"},
-		DefaultTcIngress:           &tcProbe{programName: "tc_ingress", tcAttachPoint: bpf.BPFTcIngress},
-		DefaultTcEgress:            &tcProbe{programName: "tc_egress", tcAttachPoint: bpf.BPFTcEgress, skipLoopback: true},
 		PrintSyscallTable:          &uProbe{eventName: "print_syscall_table", binaryPath: binaryPath, symbolName: "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerSyscallsIntegrityCheckCall", programName: "uprobe_syscall_trigger"},
 		PrintNetSeqOps:             &uProbe{eventName: "print_net_seq_ops", binaryPath: binaryPath, symbolName: "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerSeqOpsIntegrityCheckCall", programName: "uprobe_seq_ops_trigger"},
 		PrintMemDump:               &uProbe{eventName: "print_mem_dump", binaryPath: binaryPath, symbolName: "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerMemDumpCall", programName: "uprobe_mem_dump_trigger"},
@@ -125,14 +111,10 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		DoMmapRet:                  &traceProbe{eventName: "do_mmap", probeType: kretprobe, programName: "trace_ret_do_mmap"},
 	}
 
-	// disable autoload for tcProbes if network is disabled
-	// TODO: remove this once tcProbes are gone
 	if !netEnabled {
-		for _, p := range allProbes {
-			if tc, ok := p.(*tcProbe); ok {
-				tc.autoload(module, false)
-			}
-		}
+		// disable network cgroup probes (avoid effective CAP_NET_ADMIN if not needed)
+		allProbes[CgroupSKBIngress].autoload(module, false)
+		allProbes[CgroupSKBEgress].autoload(module, false)
 	}
 
 	return &probes{
@@ -260,20 +242,6 @@ const (
 	Filldir64
 	SecurityFilePermission
 	TaskRename
-	UDPSendmsg
-	UDPDisconnect
-	UDPDestroySock
-	UDPv6DestroySock
-	InetSockSetState
-	TCPConnect
-	ICMPRecv
-	ICMPSend
-	ICMPv6Recv
-	ICMPv6Send
-	Pingv4Sendmsg
-	Pingv6Sendmsg
-	DefaultTcIngress
-	DefaultTcEgress
 	PrintSyscallTable
 	PrintNetSeqOps
 	SecurityInodeRename

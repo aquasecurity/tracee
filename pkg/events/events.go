@@ -160,13 +160,19 @@ func (e *eventDefinitions) GetID(eventName string) (ID, bool) {
 
 type ID int32
 
-// Common events (used by all architectures)
-// events should match defined values in ebpf code
+// Common events (used by all architectures).
+// Events should match defined values in ebpf code.
 const (
-	NetPacket   ID = iota + 700 // TODO: deprecated, remove this event
-	DnsRequest                  // TODO: deprecated, remove this event
-	DnsResponse                 // TODO: deprecated, remove this event
-	MaxNetID
+	NetPacketBase ID = iota + 700
+	NetPacketIPBase
+	NetPacketTCPBase
+	NetPacketUDPBase
+	NetPacketICMPBase
+	NetPacketICMPv6Base
+	NetPacketDNSBase
+	NetPacketHTTPBase
+	NetPacketCapture
+	MaxNetID // network base events go ABOVE this item
 	SysEnter
 	SysExit
 	SchedProcessFork
@@ -225,15 +231,6 @@ const (
 	DoSigaction
 	BpfAttach
 	KallsymsLookupName
-	NetPacketBase       // TODO: move this event into range for network events
-	NetPacketIPBase     // ...
-	NetPacketTCPBase    // ...
-	NetPacketUDPBase    // ...
-	NetPacketICMPBase   // ...
-	NetPacketICMPv6Base // ...
-	NetPacketDNSBase    // ...
-	NetPacketHTTPBase   // ...
-	NetPacketCapture    // TODO: move this event into range for network events
 	DoMmap
 	PrintMemDump
 	MaxCommonID
@@ -241,14 +238,7 @@ const (
 
 // Events originated from user-space
 const (
-	InitNamespaces ID = iota + 2000
-	ContainerCreate
-	ContainerRemove
-	ExistingContainer
-	HookedSyscalls
-	HookedSeqOps
-	SymbolsLoaded
-	NetPacketIPv4
+	NetPacketIPv4 ID = iota + 2000
 	NetPacketIPv6
 	NetPacketTCP
 	NetPacketUDP
@@ -260,6 +250,14 @@ const (
 	NetPacketHTTP
 	NetPacketHTTPRequest
 	NetPacketHTTPResponse
+	MaxUserNetID
+	InitNamespaces
+	ContainerCreate
+	ContainerRemove
+	ExistingContainer
+	HookedSyscalls
+	HookedSeqOps
+	SymbolsLoaded
 	MaxUserSpace
 )
 
@@ -5681,72 +5679,6 @@ var Definitions = eventDefinitions{
 				{Type: "const char*", Name: "pod_uid"},
 			},
 		},
-		NetPacket: { // TODO: deprecated, use net_packet_{ipv4,ipv6,tcp,udp,icmp,icmpv6}
-			ID32Bit: sys32undefined,
-			Name:    "net_packet",
-			Probes: []probeDependency{
-				{Handle: probes.UDPSendmsg, Required: true},
-				{Handle: probes.UDPDisconnect, Required: true},
-				{Handle: probes.UDPDestroySock, Required: true},
-				{Handle: probes.UDPv6DestroySock, Required: true},
-				{Handle: probes.InetSockSetState, Required: true},
-				{Handle: probes.TCPConnect, Required: true},
-				{Handle: probes.ICMPRecv, Required: true},
-				{Handle: probes.ICMPSend, Required: true},
-				{Handle: probes.ICMPv6Recv, Required: true},
-				{Handle: probes.ICMPv6Send, Required: true},
-				{Handle: probes.Pingv4Sendmsg, Required: true},
-				{Handle: probes.Pingv6Sendmsg, Required: true},
-				{Handle: probes.SecuritySocketBind, Required: true},
-			},
-			Dependencies: dependencies{
-				Capabilities: []cap.Value{cap.NET_ADMIN},
-			},
-			Sets: []string{"network_events"},
-			Params: []trace.ArgMeta{
-				{Type: "trace.PktMeta", Name: "metadata"},
-			},
-		},
-		DnsRequest: { // TODO: deprecated, use net_packet_dns or net_packet_dns_request
-			ID32Bit: sys32undefined,
-			Name:    "dns_request",
-			Probes: []probeDependency{
-				{Handle: probes.UDPSendmsg, Required: true},
-				{Handle: probes.UDPDisconnect, Required: true},
-				{Handle: probes.UDPDestroySock, Required: true},
-				{Handle: probes.UDPv6DestroySock, Required: true},
-				{Handle: probes.InetSockSetState, Required: true},
-				{Handle: probes.TCPConnect, Required: true},
-			},
-			Dependencies: dependencies{
-				Capabilities: []cap.Value{cap.NET_ADMIN},
-			},
-			Sets: []string{"network_events"},
-			Params: []trace.ArgMeta{
-				{Type: "trace.PktMeta", Name: "metadata"},
-				{Type: "[]trace.DnsQueryData", Name: "dns_questions"},
-			},
-		},
-		DnsResponse: { // TODO: deprecated, use net_packet_dns or net_packet_dns_response
-			ID32Bit: sys32undefined,
-			Name:    "dns_response",
-			Probes: []probeDependency{
-				{Handle: probes.UDPSendmsg, Required: true},
-				{Handle: probes.UDPDisconnect, Required: true},
-				{Handle: probes.UDPDestroySock, Required: true},
-				{Handle: probes.UDPv6DestroySock, Required: true},
-				{Handle: probes.InetSockSetState, Required: true},
-				{Handle: probes.TCPConnect, Required: true},
-			},
-			Dependencies: dependencies{
-				Capabilities: []cap.Value{cap.NET_ADMIN},
-			},
-			Sets: []string{"network_events"},
-			Params: []trace.ArgMeta{
-				{Type: "trace.PktMeta", Name: "metadata"},
-				{Type: "[]trace.DnsResponseData", Name: "dns_response"},
-			},
-		},
 		ProcCreate: {
 			ID32Bit: sys32undefined,
 			Name:    "proc_create",
@@ -5979,15 +5911,6 @@ var Definitions = eventDefinitions{
 			Internal: true,
 			Dependencies: dependencies{
 				Events: []eventDependency{{EventID: SchedProcessExec}},
-			},
-		},
-		CapturePcap: {
-			ID32Bit:  sys32undefined,
-			Name:     "capture_pcap",
-			Internal: true,
-			Dependencies: dependencies{
-				Events:       []eventDependency{{EventID: NetPacket}},
-				Capabilities: []cap.Value{cap.NET_ADMIN},
 			},
 		},
 		DoInitModule: {
