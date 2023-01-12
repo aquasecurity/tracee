@@ -9,6 +9,11 @@ do_ls() {
     ls > /dev/null
 }
 
+do_ls_uname() {
+    ls > /dev/null
+    uname > /dev/null
+}
+
 do_docker_run() {
     outputFileName=$1
     output=$(docker run -d --rm alpine)

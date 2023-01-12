@@ -255,14 +255,17 @@ func createEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 }
 
 func getEventNames(c *cli.Context) []string {
-	// TODO: --trace event= will become --events
 	traceArgs := c.StringSlice("trace")
+	events := make([]string, 0)
 	for _, optValue := range traceArgs {
-		if strings.HasPrefix(optValue, "event=") {
+		if strings.Contains(optValue, "event=") {
 			values := strings.Split(optValue, "=")
-			return strings.Split(values[1], ",")
+			if len(values[1]) == 0 {
+				continue
+			}
+			events = append(events, strings.Split(values[1], ",")...)
 		}
 	}
 
-	return []string{}
+	return events
 }
