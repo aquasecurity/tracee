@@ -271,7 +271,6 @@ const (
 	CaptureExec
 	CaptureModule
 	CaptureMem
-	CaptureProfile
 	CapturePcap
 	CaptureNetPacket
 )
@@ -5904,14 +5903,6 @@ var Definitions = eventDefinitions{
 				TailCalls: []TailCall{
 					{MapName: "prog_array", MapIndexes: []uint32{tailSendBin}, ProgName: "send_bin"},
 				},
-			},
-		},
-		CaptureProfile: {
-			ID32Bit:  sys32undefined,
-			Name:     "capture_profile",
-			Internal: true,
-			Dependencies: dependencies{
-				Events: []eventDependency{{EventID: SchedProcessExec}},
 			},
 		},
 		DoInitModule: {

@@ -22,7 +22,6 @@ Possible options:
 [artifact:]network                            capture network traffic. Only TCP/UDP/ICMP protocols are currently supported.
 
 dir:/path/to/dir                              path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).
-profile                                       creates a runtime profile of program executions and their metadata for forensics use.
 clear-dir                                     clear the captured artifacts output dir before starting (default: false).
 
 Network:
@@ -39,7 +38,6 @@ Examples:
   --capture exec                                           | capture executed files into the default output directory
   --capture exec --capture dir:/my/dir --capture clear-dir | delete /my/dir/out and then capture executed files into it
   --capture write=/usr/bin/* --capture write=/etc/*        | capture files that were written into anywhere under /usr/bin/ or /etc/
-  --capture profile                                        | capture executed files and create a runtime profile in the output directory
   --capture net (or network)                               | capture network traffic. default: single pcap file containing all traced packets
   --capture net --capture pcap:process,command             | capture network traffic, save pcap files for processes and commands
   --capture net --capture pcap-snaplen:1kb                 | capture network traffic, single pcap file (default), capture up to 1kb from each packet payload
@@ -143,9 +141,6 @@ func PrepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 			if len(outDir) == 0 {
 				return tracee.CaptureConfig{}, fmt.Errorf("capture output dir cannot be empty")
 			}
-		} else if cap == "profile" {
-			capture.Exec = true
-			capture.Profile = true
 		} else {
 			return tracee.CaptureConfig{}, fmt.Errorf("invalid capture option specified, use '--capture help' for more info")
 		}
