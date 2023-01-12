@@ -26,12 +26,12 @@ var NetSeqOpsFuncs = [4]string{
 	"stop",
 }
 
-func HookedSeqOps(kernelSymbols *helpers.KernelSymbolTable) deriveFunction {
+func HookedSeqOps(kernelSymbols helpers.KernelSymbolTable) deriveFunction {
 	return deriveSingleEvent(events.HookedSeqOps, deriveHookedSeqOpsArgs(kernelSymbols))
 
 }
 
-func deriveHookedSeqOpsArgs(kernelSymbols *helpers.KernelSymbolTable) deriveArgsFunction {
+func deriveHookedSeqOpsArgs(kernelSymbols helpers.KernelSymbolTable) deriveArgsFunction {
 	return func(event trace.Event) ([]interface{}, error) {
 		seqOpsArr, err := parse.ArgVal[[]uint64](&event, "net_seq_ops")
 		if err != nil || len(seqOpsArr) < 1 {

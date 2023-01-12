@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -17,6 +18,13 @@ import (
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/types/trace"
 )
+
+// initializing kernelReadFileTypes once at init.
+var kernelReadFileTypes map[int32]trace.KernelReadType
+
+func init() {
+	initKernelReadFileTypes()
+}
 
 func (t *Tracee) processLostEvents() {
 	for {
@@ -89,6 +97,8 @@ func (t *Tracee) registerEventProcessors() {
 	t.RegisterEventProcessor(events.HookedProcFops, t.processHookedProcFops)
 	t.RegisterEventProcessor(events.PrintNetSeqOps, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintSyscallTable, t.processTriggeredEvent)
+	t.RegisterEventProcessor(events.SecurityKernelReadFile, processKernelReadFile)
+	t.RegisterEventProcessor(events.SecurityPostReadFile, processKernelReadFile)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processPrintMemDump)
 }
@@ -455,6 +465,90 @@ func (t *Tracee) processTriggeredEvent(event *trace.Event) error {
 	// will be moved back as such we apply the value internally and not
 	// through a referene switch
 	(*event) = withInvokingContext
+	return nil
+}
+
+func initKernelReadFileTypes() {
+	osInfo, err := helpers.GetOSInfo()
+	if err != nil {
+		return
+	}
+
+	kernel593ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("5.9.3")
+	if err != nil {
+		return
+	}
+	kernel570ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("5.7.0")
+	if err != nil {
+		return
+	}
+	kernel592ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("5.9.2")
+	if err != nil {
+		return
+	}
+	kernel5818ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("5.8.18")
+	if err != nil {
+		return
+	}
+	kernel4180ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("4.18.0")
+	if err != nil {
+		return
+	}
+
+	if kernel593ComparedToRunningKernel == helpers.KernelVersionOlder {
+		// running kernel version: >=5.9.3
+		kernelReadFileTypes = map[int32]trace.KernelReadType{
+			0: trace.KernelReadUnknown,
+			1: trace.KernelReadFirmware,
+			2: trace.KernelReadKernelModule,
+			3: trace.KernelReadKExecImage,
+			4: trace.KernelReadKExecInitRAMFS,
+			5: trace.KernelReadSecurityPolicy,
+			6: trace.KernelReadx509Certificate,
+		}
+	} else if kernel570ComparedToRunningKernel == helpers.KernelVersionOlder /* Running kernel is newer than 5.7.0 */ &&
+		kernel592ComparedToRunningKernel != helpers.KernelVersionOlder /* Running kernel is equal or older than 5.9.2*/ &&
+		kernel5818ComparedToRunningKernel != helpers.KernelVersionEqual /* Running kernel is not 5.8.18 */ {
+		// running kernel version: >=5.7 && <=5.9.2 && !=5.8.18
+		kernelReadFileTypes = map[int32]trace.KernelReadType{
+			0: trace.KernelReadUnknown,
+			1: trace.KernelReadFirmware,
+			2: trace.KernelReadFirmware,
+			3: trace.KernelReadFirmware,
+			4: trace.KernelReadKernelModule,
+			5: trace.KernelReadKExecImage,
+			6: trace.KernelReadKExecInitRAMFS,
+			7: trace.KernelReadSecurityPolicy,
+			8: trace.KernelReadx509Certificate,
+		}
+	} else if kernel5818ComparedToRunningKernel == helpers.KernelVersionEqual /* Running kernel is 5.8.18*/ &&
+		(kernel570ComparedToRunningKernel == helpers.KernelVersionNewer && /* Running kernel is older than 5.7.0*/
+			kernel4180ComparedToRunningKernel != helpers.KernelVersionOlder) /* Running kernel is 4.18 or newer */ {
+		// running kernel version: ==5.8.18 || (<5.7 && >=4.18)
+		kernelReadFileTypes = map[int32]trace.KernelReadType{
+			0: trace.KernelReadUnknown,
+			1: trace.KernelReadFirmware,
+			2: trace.KernelReadFirmware,
+			3: trace.KernelReadKernelModule,
+			4: trace.KernelReadKExecImage,
+			5: trace.KernelReadKExecInitRAMFS,
+			6: trace.KernelReadSecurityPolicy,
+			7: trace.KernelReadx509Certificate,
+		}
+	}
+}
+
+func processKernelReadFile(event *trace.Event) error {
+	readTypeArg := events.GetArg(event, "type")
+	readTypeInt, ok := readTypeArg.Value.(int32)
+	if !ok {
+		return fmt.Errorf("missing argument %s in event %s", "type", event.EventName)
+	}
+	readType, idExists := kernelReadFileTypes[readTypeInt]
+	if !idExists {
+		return fmt.Errorf("kernelReadFileId doesn't exist in kernelReadFileType map")
+	}
+	readTypeArg.Value = readType
 	return nil
 }
 

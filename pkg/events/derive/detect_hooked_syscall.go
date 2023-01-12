@@ -10,11 +10,11 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-func DetectHookedSyscall(kernelSymbols *helpers.KernelSymbolTable) deriveFunction {
+func DetectHookedSyscall(kernelSymbols helpers.KernelSymbolTable) deriveFunction {
 	return deriveSingleEvent(events.HookedSyscalls, deriveDetectHookedSyscallArgs(kernelSymbols))
 }
 
-func deriveDetectHookedSyscallArgs(kernelSymbols *helpers.KernelSymbolTable) deriveArgsFunction {
+func deriveDetectHookedSyscallArgs(kernelSymbols helpers.KernelSymbolTable) deriveArgsFunction {
 	return func(event trace.Event) ([]interface{}, error) {
 		syscallAddresses, err := parse.ArgVal[[]uint64](&event, "syscalls_addresses")
 		if err != nil {
@@ -28,7 +28,7 @@ func deriveDetectHookedSyscallArgs(kernelSymbols *helpers.KernelSymbolTable) der
 	}
 }
 
-func analyzeHookedAddresses(addresses []uint64, kernelSymbols *helpers.KernelSymbolTable) ([]trace.HookedSymbolData, error) {
+func analyzeHookedAddresses(addresses []uint64, kernelSymbols helpers.KernelSymbolTable) ([]trace.HookedSymbolData, error) {
 	hookedSyscalls := make([]trace.HookedSymbolData, 0)
 	for idx, syscallAddress := range addresses {
 		// text segment check is done in kernel, marked as 0
