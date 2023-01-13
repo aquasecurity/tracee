@@ -10,9 +10,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
+	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 var errHelp = errors.New("user has requested help text")
@@ -167,20 +169,31 @@ func parseTraceeInputOptions(inputOptions []string) (*traceeInputOptions, error)
 }
 
 func parseTraceeInputFile(option *traceeInputOptions, fileOpt string) error {
+	var f *os.File
 
 	if fileOpt == "stdin" {
 		option.inputFile = os.Stdin
 		return nil
 	}
-	_, err := os.Stat(fileOpt)
+	err := capabilities.GetInstance().Requested(
+		func() error {
+			_, err := os.Stat(fileOpt)
+			if err != nil {
+				return fmt.Errorf("invalid Tracee input file: %s", fileOpt)
+			}
+			f, err = os.Open(fileOpt)
+			if err != nil {
+				return fmt.Errorf("invalid file: %s", fileOpt)
+			}
+			return nil
+		},
+		cap.DAC_OVERRIDE,
+	)
 	if err != nil {
-		return fmt.Errorf("invalid Tracee input file: %s", fileOpt)
-	}
-	f, err := os.Open(fileOpt)
-	if err != nil {
-		return fmt.Errorf("invalid file: %s", fileOpt)
+		return err
 	}
 	option.inputFile = f
+
 	return nil
 }
 

@@ -20,6 +20,7 @@ import (
 
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/urfave/cli/v2"
+	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 func init() {
@@ -82,15 +83,20 @@ func main() {
 			}
 
 			var loadedSigIDs []string
-			for _, s := range sigs {
-				m, err := s.GetMetadata()
-				if err != nil {
-					logger.Error("failed to load signature", "error", err)
-					continue
-				}
-				loadedSigIDs = append(loadedSigIDs, m.ID)
-			}
-
+			capabilities.GetInstance().Requested(
+				func() error {
+					for _, s := range sigs {
+						m, err := s.GetMetadata()
+						if err != nil {
+							logger.Error("Failed to load signature", "error", err)
+							continue
+						}
+						loadedSigIDs = append(loadedSigIDs, m.ID)
+					}
+					return nil
+				},
+				cap.DAC_OVERRIDE,
+			)
 			if c.Bool("list-events") {
 				listEvents(os.Stdout, sigs)
 				return nil
