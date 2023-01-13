@@ -8222,7 +8222,6 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_udp_dns)
     return 1; // NOTE: might block DNS here if needed (return 0)
 }
 
-
 CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_http)
 {
     // submit HTTP base event if needed (full packet)
@@ -8234,4 +8233,3 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_http)
 }
 
 #endif
-
