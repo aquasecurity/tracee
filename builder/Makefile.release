@@ -136,6 +136,7 @@ endif
 RELEASE_FILES = LICENSE
 RELEASE_FILES += $(OUTPUT_DIR)/tracee-ebpf
 RELEASE_FILES += $(OUTPUT_DIR)/tracee-rules
+RELEASE_FILES += $(OUTPUT_DIR)/tracee
 RELEASE_FILES += $(OUTPUT_DIR)/rules
 RELEASE_FILES += $(OUTPUT_DIR)/tracee.bpf.core.o
 
@@ -157,7 +158,7 @@ release: \
 	$(MAKE) -f builder/Makefile.tracee-make ubuntu-prepare
 	BTFHUB=1 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="all"
 	# create the tar ball and checksum files
-	$(CMD_TAR) --exclude="*.so" -czf $(OUT_ARCHIVE) $(RELEASE_FILES)
+	$(CMD_TAR) -czf $(OUT_ARCHIVE) $(RELEASE_FILES)
 	$(CMD_CHECKSUM) $(OUT_ARCHIVE) > $(OUT_CHECKSUMS)
 	# build official slim container image (CO-RE + BTFHUB)
 	BTFHUB=1 $(MAKE) -f builder/Makefile.tracee-container build-tracee

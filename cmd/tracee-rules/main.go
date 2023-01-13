@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -95,7 +96,7 @@ func main() {
 				return nil
 			}
 
-			fmt.Printf("Loaded %d signature(s): %s\n", len(loadedSigIDs), loadedSigIDs)
+			logger.Info("Signatures loaded", "total", len(loadedSigIDs), "signatures", loadedSigIDs)
 
 			if c.Bool("list") {
 				listSigs(os.Stdout, sigs)
@@ -153,7 +154,10 @@ func main() {
 				go httpServer.Start()
 			}
 
-			e.Start(sigHandler())
+			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+			defer stop()
+
+			e.Start(ctx)
 
 			return nil
 		},
@@ -274,15 +278,4 @@ func listEvents(w io.Writer, sigs []detect.Signature) {
 
 	sort.Slice(events, func(i, j int) bool { return events[i] < events[j] })
 	fmt.Fprintln(w, strings.Join(events, ","))
-}
-
-func sigHandler() chan bool {
-	sigs := make(chan os.Signal, 1)
-	done := make(chan bool, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		<-sigs
-		done <- true
-	}()
-	return done
 }

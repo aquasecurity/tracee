@@ -74,6 +74,8 @@ Examples:
   --trace uts!=ab356bc4dd554                                   | don't trace events from uts name ab356bc4dd554
   --trace comm=ls                                              | only trace events from ls command
   --trace binary=/usr/bin/ls                                   | only trace events from /usr/bin/ls binary
+  --trace binary=host:/usr/bin/ls                              | only trace events from /usr/bin/ls binary in the host mount namespace
+  --trace binary=4026532448:/usr/bin/ls                        | only trace events from /usr/bin/ls binary in 4026532448 mount namespace
   --trace close.fd=5                                           | only trace 'close' events that have 'fd' equals 5
   --trace openat.args.pathname=/tmp*                           | only trace 'openat' events that have 'pathname' prefixed by "/tmp"
   --trace openat.args.pathname!=/tmp/1,/bin/ls                 | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
@@ -97,7 +99,7 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 		PidNSFilter:       filters.NewBPFUIntFilter(tracee.PidNSFilterMap),
 		UTSFilter:         filters.NewBPFStringFilter(tracee.UTSFilterMap),
 		CommFilter:        filters.NewBPFStringFilter(tracee.CommFilterMap),
-		BinaryFilter:      filters.NewBPFStringFilter(tracee.BinaryFilterMap),
+		BinaryFilter:      filters.NewBPFBinaryFilter(tracee.BinaryFilterMap),
 		ContFilter:        filters.NewBoolFilter(),
 		NewContFilter:     filters.NewBoolFilter(),
 		ContIDFilter:      filters.NewContainerFilter(tracee.CgroupIdFilterMap),
@@ -176,7 +178,7 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 			continue
 		}
 
-		if filterName == "binary" {
+		if filterName == "binary" || filterName == "bin" {
 			err := filter.BinaryFilter.Parse(operatorAndValues)
 			if err != nil {
 				return tracee.Filter{}, err

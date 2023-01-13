@@ -56,7 +56,7 @@ func ParseArgs(event *trace.Event) error {
 				ParseOrEmptyString(prevProtArg, mmapProtArgument, nil)
 			}
 		}
-	case SysEnter, SysExit, CapCapable, CommitCreds, SecurityFileOpen, TaskRename, SecurityMmapFile, KallsymsLookupName:
+	case SysEnter, SysExit, CapCapable, CommitCreds, SecurityFileOpen, TaskRename, SecurityMmapFile, KallsymsLookupName, DoMmap:
 		if syscallArg := GetArg(event, "syscall"); syscallArg != nil {
 			if id, isInt32 := syscallArg.Value.(int32); isInt32 {
 				if event, isKnown := Definitions.GetSafe(ID(id)); isKnown {
@@ -83,10 +83,10 @@ func ParseArgs(event *trace.Event) error {
 				}
 			}
 		}
-		if ID(event.EventID) == SecurityMmapFile {
+		if ID(event.EventID) == SecurityMmapFile || ID(event.EventID) == DoMmap {
 			if protArg := GetArg(event, "prot"); protArg != nil {
-				if prot, isInt32 := protArg.Value.(int32); isInt32 {
-					mmapProtArgument := helpers.ParseMmapProt(uint64(prot))
+				if prot, isUint64 := protArg.Value.(uint64); isUint64 {
+					mmapProtArgument := helpers.ParseMmapProt(prot)
 					ParseOrEmptyString(protArg, mmapProtArgument, nil)
 				}
 			}
@@ -202,11 +202,9 @@ func ParseArgs(event *trace.Event) error {
 		}
 	case SecurityKernelReadFile, SecurityPostReadFile:
 		if typeArg := GetArg(event, "type"); typeArg != nil {
-			if readFileId, isInt32 := typeArg.Value.(int32); isInt32 {
+			if readFileId, isInt32 := typeArg.Value.(trace.KernelReadType); isInt32 {
 				EmptyString(typeArg)
-				if typeIdStr, err := parseKernelReadFileId(readFileId); err == nil {
-					typeArg.Value = typeIdStr
-				}
+				typeArg.Value = readFileId.String()
 			}
 		}
 	case SchedProcessExec:
@@ -300,87 +298,6 @@ func GetArg(event *trace.Event, argName string) *trace.Argument {
 		}
 	}
 	return nil
-}
-
-// initializing kernelReadFileIdStrs once at init.
-var kernelReadFileIdStrs map[int32]string
-
-func init() {
-	osInfo, err := helpers.GetOSInfo()
-	if err != nil {
-		return
-	}
-
-	kernel593ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("5.9.3")
-	if err != nil {
-		return
-	}
-	kernel570ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("5.7.0")
-	if err != nil {
-		return
-	}
-	kernel592ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("5.9.2")
-	if err != nil {
-		return
-	}
-	kernel5818ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("5.8.18")
-	if err != nil {
-		return
-	}
-	kernel4180ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("4.18.0")
-	if err != nil {
-		return
-	}
-
-	if kernel593ComparedToRunningKernel == helpers.KernelVersionOlder {
-		// running kernel version: >=5.9.3
-		kernelReadFileIdStrs = map[int32]string{
-			0: "unknown",
-			1: "firmware",
-			2: "kernel-module",
-			3: "kexec-image",
-			4: "kexec-initramfs",
-			5: "security-policy",
-			6: "x509-certificate",
-		}
-	} else if kernel570ComparedToRunningKernel == helpers.KernelVersionOlder /* Running kernel is newer than 5.7.0 */ &&
-		kernel592ComparedToRunningKernel != helpers.KernelVersionOlder /* Running kernel is equal or older than 5.9.2*/ &&
-		kernel5818ComparedToRunningKernel != helpers.KernelVersionEqual /* Running kernel is not 5.8.18 */ {
-		// running kernel version: >=5.7 && <=5.9.2 && !=5.8.18
-		kernelReadFileIdStrs = map[int32]string{
-			0: "unknown",
-			1: "firmware",
-			2: "firmware",
-			3: "firmware",
-			4: "kernel-module",
-			5: "kexec-image",
-			6: "kexec-initramfs",
-			7: "security-policy",
-			8: "x509-certificate",
-		}
-	} else if kernel5818ComparedToRunningKernel == helpers.KernelVersionEqual /* Running kernel is 5.8.18*/ &&
-		(kernel570ComparedToRunningKernel == helpers.KernelVersionNewer && /* Running kernel is older than 5.7.0*/
-			kernel4180ComparedToRunningKernel != helpers.KernelVersionOlder) /* Running kernel is 4.18 or newer */ {
-		// running kernel version: ==5.8.18 || (<5.7 && >=4.18)
-		kernelReadFileIdStrs = map[int32]string{
-			0: "unknown",
-			1: "firmware",
-			2: "firmware",
-			3: "kernel-module",
-			4: "kexec-image",
-			5: "kexec-initramfs",
-			6: "security-policy",
-			7: "x509-certificate",
-		}
-	}
-}
-
-func parseKernelReadFileId(id int32) (string, error) {
-	kernelReadFileIdStr, idExists := kernelReadFileIdStrs[id]
-	if !idExists {
-		return "", fmt.Errorf("kernelReadFileId doesn't exist in kernelReadFileIdStrs map")
-	}
-	return kernelReadFileIdStr, nil
 }
 
 type CustomFunctionArgument struct {

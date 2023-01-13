@@ -35,7 +35,7 @@ func GetMountNSFirstProcesses() (map[int]int, error) {
 		if err != nil {
 			continue
 		}
-		procNS, err := GetProcNS(uint(pid))
+		procNS, err := GetAllProcNS(uint(pid))
 		if err != nil {
 			logger.Debug("Failed in fetching process mount namespace", "pid", pid, "error", err.Error())
 			continue
@@ -97,9 +97,9 @@ type ProcNS struct {
 	Uts             int
 }
 
-// GetProcNS return all the namespaces of a given process.
+// GetAllProcNS return all the namespaces of a given process.
 // To do so, it requires access to the /proc file system of the host, and CAP_SYS_PTRACE capability.
-func GetProcNS(pid uint) (*ProcNS, error) {
+func GetAllProcNS(pid uint) (*ProcNS, error) {
 	nsDir, err := os.Open(fmt.Sprintf("/proc/%d/ns", pid))
 	if err != nil {
 		return nil, fmt.Errorf("could not open ns dir: %v", err)
@@ -147,6 +147,20 @@ func GetProcNS(pid uint) (*ProcNS, error) {
 		}
 	}
 	return &procNS, nil
+}
+
+// GetProcNS returns the namespace ID of a given namespace and process.
+// To do so, it requires access to the /proc file system of the host, and CAP_SYS_PTRACE capability.
+func GetProcNS(pid uint, nsName string) (int, error) {
+	nsLink, err := os.Readlink(fmt.Sprintf("/proc/%d/ns/%s", pid, nsName))
+	if err != nil {
+		return 0, fmt.Errorf("could not read ns file: %v", err)
+	}
+	ns, err := extractNSFromLink(nsLink)
+	if err != nil {
+		return 0, fmt.Errorf("could not extract ns id: %v", err)
+	}
+	return ns, nil
 }
 
 func extractNSFromLink(link string) (int, error) {

@@ -32,7 +32,6 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 				events.SchedProcessExec,
 				events.SchedProcessExit,
 				events.SchedProcessFork,
-				events.SchedProcessFree,
 				events.Openat,
 			},
 		},
@@ -45,7 +44,6 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 			expected: []events.ID{
 				events.SchedProcessExit,
 				events.SchedProcessFork,
-				events.SchedProcessFree,
 				events.Openat,
 			},
 		},

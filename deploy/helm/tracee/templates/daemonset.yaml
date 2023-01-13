@@ -40,7 +40,7 @@ spec:
           {{- end }}
           {{- if .Values.postee.enabled }}
           args:
-            - --webhook=http://{{ include "tracee.fullname" . }}-postee:8082
+            - --webhook={{ .Values.postee.webhook }}
             - --webhook-template=./templates/rawjson.tmpl
             - --webhook-content-type=application/json
           {{- end }}

@@ -172,7 +172,6 @@ const (
 	SchedProcessFork
 	SchedProcessExec
 	SchedProcessExit
-	SchedProcessFree
 	SchedSwitch
 	DoExit
 	CapCapable
@@ -227,13 +226,16 @@ const (
 	BpfAttach
 	KallsymsLookupName
 	NetPacketBase       // TODO: move this event into range for network events
-	NetPacketIPBase     // TODO: move this event into range for network events
-	NetPacketTCPBase    // TODO: move this event into range for network events
-	NetPacketUDPBase    // TODO: move this event into range for network events
-	NetPacketICMPBase   // TODO: move this event into range for network events
-	NetPacketICMPv6Base // TODO: move this event into range for network events
-	NetPacketDNSBase    // TODO: move this event into range for network events
-	MaxCommonID         // TODO: move this event into range for network events
+	NetPacketIPBase     // ...
+	NetPacketTCPBase    // ...
+	NetPacketUDPBase    // ...
+	NetPacketICMPBase   // ...
+	NetPacketICMPv6Base // ...
+	NetPacketDNSBase    // ...
+	NetPacketHTTPBase   // ...
+	NetPacketCapture    // TODO: move this event into range for network events
+	DoMmap
+	MaxCommonID
 )
 
 // Events originated from user-space
@@ -254,6 +256,9 @@ const (
 	NetPacketDNS
 	NetPacketDNSRequest
 	NetPacketDNSResponse
+	NetPacketHTTP
+	NetPacketHTTPRequest
+	NetPacketHTTPResponse
 	MaxUserSpace
 )
 
@@ -265,6 +270,7 @@ const (
 	CaptureMem
 	CaptureProfile
 	CapturePcap
+	CaptureNetPacket
 )
 
 // Rules events
@@ -5033,6 +5039,7 @@ var Definitions = eventDefinitions{
 			Name:    "sched_process_exit",
 			Probes: []probeDependency{
 				{Handle: probes.SchedProcessExit, Required: true},
+				{Handle: probes.SchedProcessFree, Required: true},
 			},
 			Sets: []string{"default", "proc", "proc_life"},
 			Params: []trace.ArgMeta{
@@ -5041,18 +5048,6 @@ var Definitions = eventDefinitions{
 				// Multiple exits of threads of the same process group at the same time could result that all threads exit
 				// events would have 'true' value in this field altogether.
 				{Type: "bool", Name: "process_group_exit"},
-			},
-		},
-		SchedProcessFree: {
-			ID32Bit: sys32undefined,
-			Name:    "sched_process_free",
-			Probes: []probeDependency{
-				{Handle: probes.SchedProcessFree, Required: true},
-			},
-			Sets: []string{"proc", "proc_life"},
-			Params: []trace.ArgMeta{
-				{Type: "int", Name: "tid"},
-				{Type: "int", Name: "pid"},
 			},
 		},
 		SchedSwitch: {
@@ -5502,8 +5497,30 @@ var Definitions = eventDefinitions{
 				{Type: "dev_t", Name: "dev"},
 				{Type: "unsigned long", Name: "inode"},
 				{Type: "unsigned long", Name: "ctime"},
-				{Type: "int", Name: "prot"},
-				{Type: "int", Name: "mmap_flags"},
+				{Type: "unsigned long", Name: "prot"},
+				{Type: "unsigned long", Name: "mmap_flags"},
+				{Type: "int", Name: "syscall"},
+			},
+		},
+		DoMmap: {
+			ID32Bit: sys32undefined,
+			Name:    "do_mmap",
+			Probes: []probeDependency{
+				{Handle: probes.DoMmap, Required: true},
+				{Handle: probes.DoMmapRet, Required: true},
+			},
+			Sets: []string{"fs", "fs_file_ops", "proc", "proc_mem"},
+			Params: []trace.ArgMeta{
+				{Type: "void*", Name: "addr"},
+				{Type: "const char*", Name: "pathname"},
+				{Type: "unsigned int", Name: "flags"},
+				{Type: "dev_t", Name: "dev"},
+				{Type: "unsigned long", Name: "inode"},
+				{Type: "unsigned long", Name: "ctime"},
+				{Type: "unsigned long", Name: "pgoff"},
+				{Type: "unsigned long", Name: "len"},
+				{Type: "unsigned long", Name: "prot"},
+				{Type: "unsigned long", Name: "mmap_flags"},
 				{Type: "int", Name: "syscall"},
 			},
 		},
@@ -5805,6 +5822,10 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32undefined,
 			Name:    "hooked_syscalls",
 			Dependencies: dependencies{
+				KSymbols: []kSymbolDependency{
+					{Symbol: "_stext", Required: true},
+					{Symbol: "_etext", Required: true},
+				},
 				Events: []eventDependency{
 					{EventID: DoInitModule},
 					{EventID: PrintSyscallTable},
@@ -5857,8 +5878,8 @@ var Definitions = eventDefinitions{
 		SharedObjectLoaded: {
 			ID32Bit: sys32undefined,
 			Name:    "shared_object_loaded",
-			Dependencies: dependencies{
-				Events: []eventDependency{{EventID: SecurityMmapFile}},
+			Probes: []probeDependency{
+				{Handle: probes.SecurityMmapFile, Required: true},
 			},
 			Sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
 			Params: []trace.ArgMeta{
@@ -6067,6 +6088,10 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32undefined,
 			Name:    "hooked_seq_ops",
 			Dependencies: dependencies{
+				KSymbols: []kSymbolDependency{
+					{Symbol: "_stext", Required: true},
+					{Symbol: "_etext", Required: true},
+				},
 				Events: []eventDependency{
 					{EventID: PrintNetSeqOps},
 					{EventID: DoInitModule},
@@ -6403,6 +6428,88 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "trace.PktMeta", Name: "metadata"},
 				{Type: "[]trace.DnsResponseData", Name: "dns_response"},
+			},
+		},
+		NetPacketHTTPBase: {
+			ID32Bit:  sys32undefined,
+			Name:     "net_packet_http_base",
+			Internal: true,
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "bytes", Name: "payload"},
+			},
+		},
+		NetPacketHTTP: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_http", // preferred event to write signatures
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketHTTPBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "src"},
+				{Type: "const char*", Name: "dst"},
+				{Type: "u16", Name: "src_port"},
+				{Type: "u16", Name: "dst_port"},
+				{Type: "trace.ProtoHTTP", Name: "proto_http"},
+			},
+		},
+		NetPacketHTTPRequest: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_http_request",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketHTTPBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "trace.PktMeta", Name: "metadata"},
+				{Type: "trace.ProtoHTTPRequest", Name: "http_request"},
+			},
+		},
+		NetPacketHTTPResponse: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_http_response",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketHTTPBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "trace.PktMeta", Name: "metadata"},
+				{Type: "trace.ProtoHTTPResponse", Name: "http_response"},
+			},
+		},
+		NetPacketCapture: { // all packets have full payload (sent in a dedicated perfbuffer)
+			ID32Bit:  sys32undefined,
+			Name:     "net_packet_capture",
+			Internal: true,
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketBase},
+				},
+			},
+			Params: []trace.ArgMeta{
+				{Type: "bytes", Name: "payload"},
+			},
+		},
+		CaptureNetPacket: { // network packet capture pseudo event
+			ID32Bit:  sys32undefined,
+			Name:     "capture_net_packet",
+			Internal: true,
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketCapture},
+				},
 			},
 		},
 	},

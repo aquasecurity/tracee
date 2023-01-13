@@ -10,11 +10,11 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-func DetectHookedSyscall(kernelSymbols *helpers.KernelSymbolTable) deriveFunction {
+func DetectHookedSyscall(kernelSymbols helpers.KernelSymbolTable) deriveFunction {
 	return deriveSingleEvent(events.HookedSyscalls, deriveDetectHookedSyscallArgs(kernelSymbols))
 }
 
-func deriveDetectHookedSyscallArgs(kernelSymbols *helpers.KernelSymbolTable) deriveArgsFunction {
+func deriveDetectHookedSyscallArgs(kernelSymbols helpers.KernelSymbolTable) deriveArgsFunction {
 	return func(event trace.Event) ([]interface{}, error) {
 		syscallAddresses, err := parse.ArgVal[[]uint64](&event, "syscalls_addresses")
 		if err != nil {
@@ -28,30 +28,27 @@ func deriveDetectHookedSyscallArgs(kernelSymbols *helpers.KernelSymbolTable) der
 	}
 }
 
-func analyzeHookedAddresses(addresses []uint64, kernelSymbols *helpers.KernelSymbolTable) ([]trace.HookedSymbolData, error) {
+func analyzeHookedAddresses(addresses []uint64, kernelSymbols helpers.KernelSymbolTable) ([]trace.HookedSymbolData, error) {
 	hookedSyscalls := make([]trace.HookedSymbolData, 0)
-	for idx, syscallsAddress := range addresses {
-		InTextSegment, err := kernelSymbols.TextSegmentContains(syscallsAddress)
-		if err != nil {
+	for idx, syscallAddress := range addresses {
+		// text segment check is done in kernel, marked as 0
+		if syscallAddress == 0 {
 			continue
 		}
-		if !InTextSegment {
-			syscallsToCheck := events.SyscallsToCheck()
-			hookingFunction := utils.ParseSymbol(syscallsAddress, kernelSymbols)
-			if idx > len(syscallsToCheck) {
-				return nil, fmt.Errorf("syscall inedx out of the syscalls to check list %v", err)
-			}
-			syscallNumber := syscallsToCheck[idx]
-			event, found := events.Definitions.GetSafe(syscallNumber)
-			var hookedSyscallName string
-			if found {
-				hookedSyscallName = event.Name
-			} else {
-				hookedSyscallName = fmt.Sprint(syscallNumber)
-			}
-			hookedSyscalls = append(hookedSyscalls, trace.HookedSymbolData{SymbolName: hookedSyscallName, ModuleOwner: hookingFunction.Owner})
-
+		syscallsToCheck := events.SyscallsToCheck()
+		if idx > len(syscallsToCheck) {
+			return nil, fmt.Errorf("syscall inedx out of the syscalls to check list")
 		}
+		hookingFunction := utils.ParseSymbol(syscallAddress, kernelSymbols)
+		syscallNumber := syscallsToCheck[idx]
+		event, found := events.Definitions.GetSafe(syscallNumber)
+		var hookedSyscallName string
+		if found {
+			hookedSyscallName = event.Name
+		} else {
+			hookedSyscallName = fmt.Sprint(syscallNumber)
+		}
+		hookedSyscalls = append(hookedSyscalls, trace.HookedSymbolData{SymbolName: hookedSyscallName, ModuleOwner: hookingFunction.Owner})
 	}
 	return hookedSyscalls, nil
 }

@@ -1,6 +1,7 @@
 package benchmark
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -238,18 +239,18 @@ func BenchmarkEngineWithNSignatures(b *testing.B) {
 	}
 }
 
-func waitForEventsProcessed(eventsCh chan protocol.Event) chan bool {
-	done := make(chan bool, 1)
+func waitForEventsProcessed(eventsCh chan protocol.Event) context.Context {
+	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
 		for {
 			if len(eventsCh) == 0 {
-				done <- true
+				cancel()
 				return
 			}
 			time.Sleep(1 * time.Millisecond)
 		}
 	}()
-	return done
+	return ctx
 }
 
 func ignoreFinding(_ detect.Finding) {

@@ -30,9 +30,9 @@ func deriveNetPacketIPv6Args() deriveArgsFunction {
 			return nil, emptyPayloadError()
 		}
 
-		// initial header type
+		// event retval encodes layer 3 protocol type
 
-		if event.ReturnValue != AF_INET6 {
+		if event.ReturnValue&familyIpv6 != familyIpv6 {
 			return nil, nil
 		}
 

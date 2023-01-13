@@ -25,7 +25,7 @@ func (t *Tracee) handleEvents(ctx context.Context) {
 	var errcList []<-chan error
 
 	// Source pipeline stage.
-	eventsChan, errc := t.decodeEvents(ctx)
+	eventsChan, errc := t.decodeEvents(ctx, t.eventsChannel)
 	errcList = append(errcList, errc)
 
 	if t.config.Cache != nil {
@@ -138,13 +138,13 @@ func (t *Tracee) queueEvents(ctx context.Context, in <-chan *trace.Event) (chan 
 }
 
 // decodeEvents read the events received from the BPF programs and parse it into trace.Event type
-func (t *Tracee) decodeEvents(outerCtx context.Context) (<-chan *trace.Event, <-chan error) {
+func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) (<-chan *trace.Event, <-chan error) {
 	out := make(chan *trace.Event, 10000)
 	errc := make(chan error, 1)
 	go func() {
 		defer close(out)
 		defer close(errc)
-		for dataRaw := range t.eventsChannel {
+		for dataRaw := range sourceChan {
 			ebpfMsgDecoder := bufferdecoder.New(dataRaw)
 			var ctx bufferdecoder.Context
 			if err := ebpfMsgDecoder.DecodeContext(&ctx); err != nil {
@@ -182,9 +182,11 @@ func (t *Tracee) decodeEvents(outerCtx context.Context) (<-chan *trace.Event, <-
 			if t.config.Output.RelativeTime {
 				// To get the monotonic time since tracee was started, we have to subtract the start time from the timestamp.
 				ctx.Ts -= t.startTime
+				ctx.StartTime -= t.startTime
 			} else {
 				// To get the current ("wall") time, we add the boot time into it.
 				ctx.Ts += t.bootTime
+				ctx.StartTime += t.bootTime
 			}
 
 			containerInfo := t.containers.GetCgroupInfo(ctx.CgroupID).Container
@@ -261,9 +263,11 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (<-c
 		defer close(out)
 		defer close(errc)
 		for event := range in {
-			err := t.processEvent(event)
-			if err != nil {
-				t.handleError(err)
+			errs := t.processEvent(event)
+			if len(errs) > 0 {
+				for _, err := range errs {
+					t.handleError(err)
+				}
 				continue
 			}
 

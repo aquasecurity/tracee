@@ -58,6 +58,7 @@ postee:
   # enabled is a flag to install Postee subchart and configure Tracee to forward
   # threat detections to the Postee webhook endpoint.
   enabled: false
+  webhook: http://tracee-postee:8082
 
 # This flags enable the new tracee experience. It is a single binary, where every rule is
 # part of the events pipeline.

@@ -1,6 +1,10 @@
 // Package trace defines the public types exported through the EBPF code and produced outwards from tracee-ebpf
 package trace
 
+import (
+	"net/http"
+)
+
 type PktMeta struct {
 	SrcIP     string `json:"src_ip"`
 	DstIP     string `json:"dst_ip"`
@@ -188,4 +192,33 @@ type ProtoDNSURI struct {
 type ProtoDNSOPT struct {
 	Code string `json:"code"`
 	Data string `json:"data"`
+}
+
+type ProtoHTTP struct {
+	Direction     string      `json:"direction"`
+	Method        string      `json:"method"`
+	Protocol      string      `json:"protocol"`
+	Host          string      `json:"host"`
+	URIPath       string      `json:"uri_path"`
+	Status        string      `json:"status"`
+	StatusCode    int         `json:"status_code"`
+	Headers       http.Header `json:"headers"`
+	ContentLength int64       `json:"content_length"`
+}
+
+type ProtoHTTPRequest struct {
+	Method        string      `json:"method"`
+	Protocol      string      `json:"protocol"`
+	Host          string      `json:"host"`
+	URIPath       string      `json:"uri_path"`
+	Headers       http.Header `json:"headers"`
+	ContentLength int64       `json:"content_length"`
+}
+
+type ProtoHTTPResponse struct {
+	Status        string      `json:"status"`
+	StatusCode    int         `json:"status_code"`
+	Protocol      string      `json:"protocol"`
+	Headers       http.Header `json:"headers"`
+	ContentLength int64       `json:"content_length"`
 }
