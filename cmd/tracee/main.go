@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/aquasecurity/tracee/pkg/cmd"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
@@ -98,7 +100,8 @@ func main() {
 				SignatureBufferSize: 1000,
 			}
 
-			ctx := context.Background()
+			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+			defer stop()
 
 			return runner.Run(ctx)
 		},

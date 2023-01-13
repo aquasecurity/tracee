@@ -25,3 +25,7 @@ func InvalidEventArgument(argument string) error {
 func InvalidContextField(field string) error {
 	return fmt.Errorf("invalid event context field: %s", field)
 }
+
+func FailedToRetreiveHostNS() error {
+	return fmt.Errorf("failed to retreive host mount namespace")
+}

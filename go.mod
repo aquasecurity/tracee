@@ -5,8 +5,8 @@ go 1.18
 require (
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/aquasecurity/libbpfgo v0.4.5-libbpf-1.0.1
-	github.com/aquasecurity/libbpfgo/helpers v0.4.4
-	github.com/aquasecurity/tracee/types v0.0.0-20221129174415-d09e5bd8f16b
+	github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230109115933-5ede01b209e1
+	github.com/aquasecurity/tracee/types v0.0.0-20230112144556-188803b23e14
 	github.com/containerd/containerd v1.6.12
 	github.com/docker/docker v20.10.17+incompatible
 	github.com/golang/protobuf v1.5.2
@@ -19,7 +19,7 @@ require (
 	github.com/stretchr/testify v1.8.0
 	github.com/urfave/cli/v2 v2.3.0
 	go.uber.org/zap v1.23.0
-	golang.org/x/sys v0.0.0-20220928140112-f11e5e49a4ec
+	golang.org/x/sys v0.1.0
 	google.golang.org/genproto v0.0.0-20220502173005-c8bf987b8c21
 	google.golang.org/grpc v1.49.0
 	google.golang.org/protobuf v1.28.1

@@ -3,6 +3,7 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"reflect"
 	"strings"
 
@@ -1323,4 +1324,89 @@ func GetProtoDNSOPT(
 	// NOTE: couldn't find a domain example to query OPT from
 
 	return dnsOPTs, nil
+}
+
+func GetProtoHTTPByName(
+	event trace.Event,
+	argName string,
+) (
+	trace.ProtoHTTP, error,
+) {
+	var httpProto trace.ProtoHTTP
+
+	arg, err := GetTraceeArgumentByName(event, argName)
+	if err != nil {
+		return trace.ProtoHTTP{}, err
+	}
+
+	// if type is already correct, return right away
+	argProtoHTTP, ok := arg.Value.(trace.ProtoHTTP)
+	if ok {
+		return argProtoHTTP, nil
+	}
+
+	// if type comes from json, deal with it
+	argProtoHTTPMap, ok := arg.Value.(map[string]interface{})
+	if !ok {
+		return trace.ProtoHTTP{}, fmt.Errorf("ProtoHTTP: type error")
+	}
+
+	// string conversion
+	stringTypes := map[string]string{
+		"direction": "",
+		"method":    "",
+		"protocol":  "",
+		"host":      "",
+		"uri_path":  "",
+		"status":    "",
+	}
+	for key := range stringTypes {
+		val, ok := argProtoHTTPMap[key].(string)
+		if !ok {
+			return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v", key)
+		}
+		stringTypes[key] = val
+	}
+
+	// int conversion
+	intTypes := map[string]int{
+		"status_code": 0,
+	}
+	for key := range intTypes {
+		val, ok := argProtoHTTPMap[key].(int)
+		if !ok {
+			return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v", key)
+		}
+		intTypes[key] = val
+	}
+
+	// int64 conversion
+	int64Types := map[string]int64{
+		"content_length": 0,
+	}
+	for key := range int64Types {
+		val, ok := argProtoHTTPMap[key].(int64)
+		if !ok {
+			return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v", key)
+		}
+		int64Types[key] = val
+	}
+
+	// headers conversion
+	headers, ok := argProtoHTTPMap["headers"].(http.Header)
+	if !ok {
+		return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v", "headers")
+	}
+
+	return trace.ProtoHTTP{
+		Direction:     stringTypes["direction"],
+		Method:        stringTypes["method"],
+		Protocol:      stringTypes["protocol"],
+		Host:          stringTypes["host"],
+		URIPath:       stringTypes["uri_path"],
+		Status:        stringTypes["status"],
+		StatusCode:    intTypes["status_code"],
+		Headers:       headers,
+		ContentLength: int64Types["content_length"],
+	}, nil
 }

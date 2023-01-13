@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -72,7 +73,7 @@ func NewEngine(config Config, sources EventSources, output chan detect.Finding) 
 
 // StartPipeline receives an input channel, and returns an output channel
 // allowing the rule engine to be used in the events pipeline
-func StartPipeline(cfg Config, input chan protocol.Event, done chan bool) <-chan detect.Finding {
+func StartPipeline(ctx context.Context, cfg Config, input chan protocol.Event) <-chan detect.Finding {
 	output := make(chan detect.Finding)
 
 	source := EventSources{Tracee: input}
@@ -83,7 +84,7 @@ func StartPipeline(cfg Config, input chan protocol.Event, done chan bool) <-chan
 
 	go func() {
 		defer close(output)
-		engine.Start(done)
+		engine.Start(ctx)
 	}()
 
 	return output
@@ -105,14 +106,14 @@ func signatureStart(signature detect.Signature, c chan protocol.Event, wg *sync.
 // it runs continuously until stopped by the done channel
 // once done, it cleans all internal resources, which means the engine is not reusable
 // note that the input and output channels are created by the consumer and therefore are not closed
-func (engine *Engine) Start(done chan bool) {
+func (engine *Engine) Start(ctx context.Context) {
 	defer engine.unloadAllSignatures()
 	engine.signaturesMutex.RLock()
 	for s, c := range engine.signatures {
 		go signatureStart(s, c, &engine.waitGroup)
 	}
 	engine.signaturesMutex.RUnlock()
-	engine.consumeSources(done)
+	engine.consumeSources(ctx)
 }
 
 func (engine *Engine) unloadAllSignatures() {
@@ -145,7 +146,7 @@ func (engine *Engine) checkCompletion() bool {
 
 // consumeSources starts consuming the input sources
 // it runs continuously until stopped by the done channel
-func (engine *Engine) consumeSources(done <-chan bool) {
+func (engine *Engine) consumeSources(ctx context.Context) {
 	for {
 		select {
 		case event, ok := <-engine.inputs.Tracee:
@@ -202,7 +203,7 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 				}
 				engine.signaturesMutex.RUnlock()
 			}
-		case <-done:
+		case <-ctx.Done():
 			return
 		}
 	}

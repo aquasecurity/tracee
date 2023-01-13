@@ -116,6 +116,120 @@ Tracee can capture the following types of artifacts:
 
 1. **Network PCAP Files**
 
+     Anytime a **network packet** is delivered to a process, traced by tracee,
+     this packet might be captured into one or multiple pcap files.
+
+     A good way to test this behavior is to execute:
+
+     ```text
+     $ sudo ./dist/tracee-ebpf \
+         --capture network
+     ```
+
+     and observe **pcap files** for all processes being created:
+
+     ```text
+     $ cd /tmp/tracee/out
+     $ find pcap
+     pcap
+     pcap/processes
+     pcap/processes/host
+     pcap/processes/host/node_186708_1573567360495399.pcap
+     pcap/processes/host/node_1196826_1662656211119567.pcap
+     pcap/processes/host/zerotier-one_7882_137007714376.pcap
+     pcap/processes/host/sshd_1196773_1662654999660718.pcap
+     ```
+
+     You can also select how the pcap files will be divided:
+
+     1. per process
+     1. per container
+     1. per-command
+
+     and you can even have multiple divisions at the same time. Example: a ping
+     command is executed inside a container. You want to summarize captured
+     traffic per container and per command. You will find the same captured
+     data for that ping command inside `commands/container_id/ping.pcap` and
+     inside `containers/container_id.pcap`.
+
+     ```text
+     $ sudo ./dist/tracee-ebpf \
+         --capture network \
+         --capture netpcap:process,container,command
+     ```
+
+     ```text
+     $ cd /tmp/tracee/out
+     $ find pcap
+     pcap
+     pcap/commands
+     pcap/commands/b86533d11f3
+     pcap/commands/b86533d11f3/ping.pcap
+     pcap/commands/host
+     pcap/commands/host/sshd.pcap
+     pcap/commands/host/zerotier-one.pcap
+     pcap/commands/host/node.pcap
+     pcap/commands/fd95a035ce5
+     pcap/commands/fd95a035ce5/ping.pcap
+     pcap/processes
+     pcap/processes/b86533d11f3
+     pcap/processes/b86533d11f3/ping_1261180_1663772450241192.pcap
+     pcap/processes/host
+     pcap/processes/host/node_186708_1573567360495399.pcap
+     pcap/processes/host/node_1196826_1662656211119567.pcap
+     pcap/processes/host/zerotier-one_7882_137007714376.pcap
+     pcap/processes/host/sshd_1196773_1662654999660718.pcap
+     pcap/processes/fd95a035ce5
+     pcap/processes/fd95a035ce5/ping_1261163_1663769383806467.pcap
+     pcap/containers
+     pcap/containers/host.pcap
+     pcap/containers/b86533d11f3.pcap
+     pcap/containers/fd95a035ce5.pcap
+     ```
+
+     you can see the packets by executing tcpdump on any pcap file:
+
+     ```text
+     $ tcpdump -r pcap/containers/b86533d11f3.pcap
+     reading from file pcap/containers/b86533d11f3.pcap, link-type NULL (BSD loopback), snapshot length 65535
+     02:52:00.524035 IP 172.17.0.3 > dns.google: ICMP echo request, id 5, seq 476, length 64
+     02:52:00.533145 IP dns.google > 172.17.0.3: ICMP echo reply, id 5, seq 476, length 64
+     02:52:01.525455 IP 172.17.0.3 > dns.google: ICMP echo request, id 5, seq 477, length 64
+     02:52:01.535414 IP dns.google > 172.17.0.3: ICMP echo reply, id 5, seq 477, length 64
+     02:52:02.526715 IP 172.17.0.3 > dns.google: ICMP echo request, id 5, seq 478, length 64
+     02:52:02.536444 IP dns.google > 172.17.0.3: ICMP echo reply, id 5, seq 478, length 64
+     02:52:03.528739 IP 172.17.0.3 > dns.google: ICMP echo request, id 5, seq 479, length 64
+     02:52:03.538622 IP dns.google > 172.17.0.3: ICMP echo reply, id 5, seq 479, length 64
+
+     $ tcpdump -r pcap/commands/b86533d11f3/ping.pcap
+     reading from file pcap/commands/b86533d11f3/ping.pcap, link-type NULL (BSD loopback), snapshot length 65535
+     02:52:00.524035 IP 172.17.0.3 > dns.google: ICMP echo request, id 5, seq 476, length 64
+     02:52:00.533145 IP dns.google > 172.17.0.3: ICMP echo reply, id 5, seq 476, length 64
+     02:52:01.525455 IP 172.17.0.3 > dns.google: ICMP echo request, id 5, seq 477, length 64
+     02:52:01.535414 IP dns.google > 172.17.0.3: ICMP echo reply, id 5, seq 477, length 64
+     02:52:02.526715 IP 172.17.0.3 > dns.google: ICMP echo request, id 5, seq 478, length 64
+     02:52:02.536444 IP dns.google > 172.17.0.3: ICMP echo reply, id 5, seq 478, length 64
+     02:52:03.528739 IP 172.17.0.3 > dns.google: ICMP echo request, id 5, seq 479, length 64
+     02:52:03.538622 IP dns.google > 172.17.0.3: ICMP echo reply, id 5, seq 479, length 64
+     ```
+
+    !!! Note
+        Note that the same packets were written to 2 different pcap files: the
+        pcap file describing the container `b86533d11f3` (because it was
+        executing a single process: ping) and the pcap file describing ANY ping
+        command executed in that container (commands/b86533d11f3/ping.pcap).
+
+    The format for the pcap filenames inside `output_dir` is the following:
+
+    1. **processes**:  
+       ./pcap/processes/`container_id`/`process_comm`/`host_tid`/`task_starttime`.pcap
+    1. **containers**:  
+       ./pcap/containers/`container_id`.pcap
+    1. **commands**:  
+       ./pcap/commands/`container_id`/`process_comm`.pcap
+
+1. **Network PCAP Files (deprecated)**
+
      Anytime a **packet** goes through the **network interface**, the **packet
      is captured into the pcap file**. Only packets that are generated by traced
      processes are being captured.
@@ -132,16 +246,16 @@ Tracee can capture the following types of artifacts:
      ```
 
      and execute on the host:
-     
+
      ```text
-     $ ping 127.0.0.1
+      $ ping 127.0.0.1
      ```
-     
+
      and observe **pcap file**:
-     
+
      ```text
      $ tcpdump -n -r /tmp/tracee/out/host/capture.pcap
-     
+
      15:48:33.109392 IP 127.0.0.1 > 127.0.0.1: ICMP echo request, id 74, seq 1, length 64
      15:48:33.109440 IP 127.0.0.1 > 127.0.0.1: ICMP echo reply, id 74, seq 1, length 64
      15:48:34.138680 IP 127.0.0.1 > 127.0.0.1: ICMP echo request, id 74, seq 2, length 64

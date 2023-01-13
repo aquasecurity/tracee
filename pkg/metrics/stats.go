@@ -9,12 +9,14 @@ import (
 type Stats struct {
 	EventCount       counter.Counter
 	EventsFiltered   counter.Counter
-	NetEvCount       counter.Counter
+	NetEvCount       counter.Counter // TODO: remove (deprecated)
+	NetCapCount      counter.Counter // network capture events
 	BPFLogsCount     counter.Counter
 	ErrorCount       counter.Counter
 	LostEvCount      counter.Counter
 	LostWrCount      counter.Counter
-	LostNtCount      counter.Counter
+	LostNtCount      counter.Counter // TODO: remove (deprecated)
+	LostNtCapCount   counter.Counter // lost network capture events
 	LostBPFLogsCount counter.Counter
 }
 
@@ -52,6 +54,16 @@ func (stats *Stats) RegisterPrometheus() error {
 
 	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
 		Namespace: "tracee_ebpf",
+		Name:      "network_capture_events_total",
+		Help:      "network capture events collected by tracee-ebpf",
+	}, func() float64 { return float64(stats.NetCapCount.Read()) }))
+
+	if err != nil {
+		return err
+	}
+
+	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
+		Namespace: "tracee_ebpf",
 		Name:      "lostevents_total",
 		Help:      "events lost in the submission buffer",
 	}, func() float64 { return float64(stats.LostEvCount.Read()) }))
@@ -75,6 +87,16 @@ func (stats *Stats) RegisterPrometheus() error {
 		Name:      "network_lostevents_total",
 		Help:      "events lost in the network buffer",
 	}, func() float64 { return float64(stats.LostNtCount.Read()) }))
+
+	if err != nil {
+		return err
+	}
+
+	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
+		Namespace: "tracee_ebpf",
+		Name:      "network_capture_lostevents_total",
+		Help:      "network capture lost events in network capture buffer",
+	}, func() float64 { return float64(stats.LostNtCapCount.Read()) }))
 
 	if err != nil {
 		return err

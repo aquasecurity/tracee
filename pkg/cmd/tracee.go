@@ -3,10 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
@@ -49,36 +46,6 @@ func (r Runner) Run(ctx context.Context) error {
 		return err
 	}
 
-	// Create a context (cancelled by SIGINT/SIGTERM)
-	ctx, cancel := context.WithCancel(ctx)
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	defer func() {
-		signal.Stop(sig)
-		cancel()
-	}()
-	go func() {
-		select {
-		case <-sig:
-			cancel()
-		case <-ctx.Done():
-		}
-	}()
-
-	// Print the preamble
-
-	go func() {
-		printer.Preamble()
-		for {
-			select {
-			case event := <-r.TraceeConfig.ChanEvents:
-				printer.Print(event)
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
 	// Print statistics at the end
 
 	defer func() {
@@ -93,6 +60,20 @@ func (r Runner) Run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("error initializing Tracee: %v", err)
 	}
+
+	// Print the preamble and start event channel reception
+
+	go func() {
+		printer.Preamble()
+		for {
+			select {
+			case event := <-r.TraceeConfig.ChanEvents:
+				printer.Print(event)
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
 
 	return t.Run(ctx) // return when context is cancelled by signal
 }

@@ -2,12 +2,14 @@ package engine
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/rules/signature"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -15,109 +17,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type regoFakeSignature struct {
-	getMetadata       func() (detect.SignatureMetadata, error)
-	getSelectedEvents func() ([]detect.SignatureEventSelector, error)
-	init              func(detect.SignatureHandler) error
-	onEvent           func(protocol.Event) error
-	onSignal          func(signal detect.Signal) error
-}
-
-func (fs regoFakeSignature) GetMetadata() (detect.SignatureMetadata, error) {
-	if fs.getMetadata != nil {
-		return fs.getMetadata()
-	}
-
-	return detect.SignatureMetadata{
-		ID:   "TRC-FAKE",
-		Name: "Fake Signature",
-	}, nil
-}
-
-func (fs regoFakeSignature) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
-	if fs.getSelectedEvents != nil {
-		return fs.getSelectedEvents()
-	}
-
-	return []detect.SignatureEventSelector{}, nil
-}
-
-func (fs regoFakeSignature) Init(cb detect.SignatureHandler) error {
-	if fs.init != nil {
-		return fs.init(cb)
-	}
-	return nil
-}
-
-func (fs regoFakeSignature) OnEvent(event protocol.Event) error {
-	if fs.onEvent != nil {
-		return fs.onEvent(event)
-	}
-	return nil
-}
-
-func (fs regoFakeSignature) OnSignal(signal detect.Signal) error {
-	if fs.onSignal != nil {
-		return fs.onSignal(signal)
-	}
-	return nil
-}
-func (fs *regoFakeSignature) Close() {}
-
-type fakeSignature struct {
-	getMetadata       func() (detect.SignatureMetadata, error)
-	getSelectedEvents func() ([]detect.SignatureEventSelector, error)
-	init              func(detect.SignatureHandler) error
-	onEvent           func(protocol.Event) error
-	onSignal          func(signal detect.Signal) error
-}
-
-func (fs fakeSignature) GetMetadata() (detect.SignatureMetadata, error) {
-	if fs.getMetadata != nil {
-		return fs.getMetadata()
-	}
-
-	return detect.SignatureMetadata{
-		ID:   "TRC-FAKE2",
-		Name: "Another Fake Signature",
-	}, nil
-}
-
-func (fs fakeSignature) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
-	if fs.getSelectedEvents != nil {
-		return fs.getSelectedEvents()
-	}
-
-	return []detect.SignatureEventSelector{}, nil
-}
-
-func (fs fakeSignature) Init(cb detect.SignatureHandler) error {
-	if fs.init != nil {
-		return fs.init(cb)
-	}
-	return nil
-}
-
-func (fs fakeSignature) OnEvent(event protocol.Event) error {
-	if fs.onEvent != nil {
-		return fs.onEvent(event)
-	}
-	return nil
-}
-
-func (fs fakeSignature) OnSignal(signal detect.Signal) error {
-	if fs.onSignal != nil {
-		return fs.onSignal(signal)
-	}
-	return nil
-}
-func (fs *fakeSignature) Close() {}
-
 func TestEngine_ConsumeSources(t *testing.T) {
 	testCases := []struct {
 		name              string
 		inputEvent        protocol.Event
-		inputSignature    regoFakeSignature
+		inputSignature    signature.FakeSignature
 		expectedNumEvents int
 		expectedError     string
 		expectedEvent     interface{}
@@ -138,8 +42,8 @@ func TestEngine_ConsumeSources(t *testing.T) {
 					},
 				},
 			}.ToProtocol(),
-			inputSignature: regoFakeSignature{
-				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+			inputSignature: signature.FakeSignature{
+				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
 							Name:   "test_event",
@@ -159,8 +63,8 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			inputEvent: trace.Event{
 				EventName: "execve",
 			}.ToProtocol(),
-			inputSignature: regoFakeSignature{
-				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+			inputSignature: signature.FakeSignature{
+				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
 							Name:   "not execve",
@@ -176,8 +80,8 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			inputEvent: trace.Event{
 				EventName: "execve",
 			}.ToProtocol(),
-			inputSignature: regoFakeSignature{
-				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+			inputSignature: signature.FakeSignature{
+				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
 							Name:   "*",
@@ -194,8 +98,8 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		{
 			name:       "happy path - with all events selector, no name",
 			inputEvent: trace.Event{EventName: "execve"}.ToProtocol(),
-			inputSignature: regoFakeSignature{
-				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+			inputSignature: signature.FakeSignature{
+				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
 							Source: "tracee",
@@ -224,8 +128,8 @@ func TestEngine_ConsumeSources(t *testing.T) {
 					},
 				},
 			}.ToProtocol(),
-			inputSignature: regoFakeSignature{
-				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+			inputSignature: signature.FakeSignature{
+				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
 							Name:   "test_event",
@@ -259,8 +163,8 @@ func TestEngine_ConsumeSources(t *testing.T) {
 					},
 				},
 			}.ToProtocol(),
-			inputSignature: regoFakeSignature{
-				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+			inputSignature: signature.FakeSignature{
+				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
 							Name:   "test_event",
@@ -289,8 +193,8 @@ func TestEngine_ConsumeSources(t *testing.T) {
 					},
 				},
 			}.ToProtocol(),
-			inputSignature: regoFakeSignature{
-				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+			inputSignature: signature.FakeSignature{
+				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
 							Name:   "test_event",
@@ -308,8 +212,8 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		},
 		{
 			name: "sad path - with all events selector, no source",
-			inputSignature: regoFakeSignature{
-				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+			inputSignature: signature.FakeSignature{
+				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
 							Name: "*",
@@ -321,8 +225,8 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		},
 		{
 			name: "sad path - signature init fails",
-			inputSignature: regoFakeSignature{
-				init: func(handler detect.SignatureHandler) error {
+			inputSignature: signature.FakeSignature{
+				FakeInit: func(handler detect.SignatureHandler) error {
 					return errors.New("init failed")
 				},
 			},
@@ -331,8 +235,8 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		},
 		{
 			name: "sad path - getSelectedEvents returns an error",
-			inputSignature: regoFakeSignature{
-				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+			inputSignature: signature.FakeSignature{
+				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return nil, errors.New("getSelectedEvents error")
 				},
 			},
@@ -340,8 +244,8 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		},
 		{
 			name: "sad path - getMetadata returns an error",
-			inputSignature: regoFakeSignature{
-				getMetadata: func() (detect.SignatureMetadata, error) {
+			inputSignature: signature.FakeSignature{
+				FakeGetMetadata: func() (detect.SignatureMetadata, error) {
 					return detect.SignatureMetadata{}, errors.New("getMetadata error")
 				},
 			},
@@ -359,8 +263,8 @@ func TestEngine_ConsumeSources(t *testing.T) {
 				},
 				Payload: "a great payload",
 			},
-			inputSignature: regoFakeSignature{
-				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+			inputSignature: signature.FakeSignature{
+				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
 							Name:   "happy_event",
@@ -384,8 +288,8 @@ func TestEngine_ConsumeSources(t *testing.T) {
 				},
 				Payload: "a great payload",
 			},
-			inputSignature: regoFakeSignature{
-				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+			inputSignature: signature.FakeSignature{
+				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
 							Name:   "foobar",
@@ -405,7 +309,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		inputs := EventSources{}
 		inputs.Tracee = make(chan protocol.Event, 1)
 		outputChan := make(chan detect.Finding, 1)
-		done := make(chan bool, 1)
+		ctx, cancel := context.WithCancel(context.Background())
 		var logBuf []byte
 		loggerBuf := bytes.NewBuffer(logBuf)
 		if !logger.IsSetFromEnv() {
@@ -422,10 +326,9 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			defer func() {
 				// signal the end
-				done <- true
+				cancel()
 
 				// cleanup
-				close(done)
 				close(outputChan)
 				close(inputs.Tracee)
 			}()
@@ -439,7 +342,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			//       use atomic.AddUint32 and atomic.LoadUint32 methods.
 			//       go test -v -run=TestConsumeSources -race ./pkg/rules/engine/...
 			var gotNumEvents uint32
-			tc.inputSignature.onEvent = func(event protocol.Event) error {
+			tc.inputSignature.FakeOnEvent = func(event protocol.Event) error {
 				assert.Equal(t, tc.expectedEvent, event.Payload, tc.name)
 				atomic.AddUint32(&gotNumEvents, 1)
 				return nil
@@ -450,7 +353,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			e, err := NewEngine(tc.config, inputs, outputChan)
 			require.NoError(t, err, "constructing engine")
 			go func() {
-				e.Start(done)
+				e.Start(ctx)
 			}()
 
 			// send a test event
@@ -477,8 +380,8 @@ func TestEngine_ConsumeSources(t *testing.T) {
 
 func TestEngine_GetSelectedEvents(t *testing.T) {
 	sigs := []detect.Signature{
-		&regoFakeSignature{
-			getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+		&signature.FakeSignature{
+			FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 				return []detect.SignatureEventSelector{
 					{
 						Name:   "test_event",
@@ -491,8 +394,8 @@ func TestEngine_GetSelectedEvents(t *testing.T) {
 				}, nil
 			},
 		},
-		&regoFakeSignature{
-			getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+		&signature.FakeSignature{
+			FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 				return []detect.SignatureEventSelector{
 					{
 						Name:   "test_event",
@@ -540,12 +443,12 @@ func TestEngine_LoadSignature(t *testing.T) {
 	}{
 		{
 			name:          "load one signature",
-			signatures:    []detect.Signature{&regoFakeSignature{}},
+			signatures:    []detect.Signature{&signature.FakeSignature{}},
 			expectedCount: 1,
 		},
 		{
 			name:          "load two signatures",
-			signatures:    []detect.Signature{&regoFakeSignature{}, &fakeSignature{}},
+			signatures:    []detect.Signature{&signature.FakeSignature{}, &signature.FakeSignature{}},
 			expectedCount: 2,
 		},
 	}

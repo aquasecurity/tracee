@@ -16,9 +16,9 @@ func deriveNetPacketIPv4Args() deriveArgsFunction {
 		var ok bool
 		var payload []byte
 
-		// initial header type
+		// event retval encodes layer 3 protocol type
 
-		if event.ReturnValue != AF_INET {
+		if event.ReturnValue&familyIpv4 != familyIpv4 {
 			return nil, nil
 		}
 

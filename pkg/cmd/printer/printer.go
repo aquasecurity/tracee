@@ -283,6 +283,10 @@ func (p *gobEventPrinter) Init() error {
 	gob.Register(trace.ProtoDNSMX{})
 	gob.Register(trace.ProtoDNSURI{})
 	gob.Register(trace.ProtoDNSOPT{})
+	// HTTP
+	gob.Register(trace.ProtoHTTP{})
+	gob.Register(trace.ProtoHTTPRequest{})
+	gob.Register(trace.ProtoHTTPResponse{})
 
 	return nil
 }

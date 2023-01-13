@@ -144,11 +144,15 @@ expected.
 
     ```text
     1) --trace binary=/usr/bin/ls
+    2) --trace binary=host:/usr/bin/ls
+    3) --trace binary=4026532448:/usr/bin/ls
     ```
 
     !!! Note
-        Given path must be of an ELF binary, meaning that providing the path
-        of a symbolic link won't work
+        1. Mount namespace id or the special "host:" prefix can be used for finer filtering
+        2. Given path must be absolute; i.e starts with "/"
+        3. Only binaries that were executed after Tracee will be filtered
+        4. Symbolic link paths are not supported
 
 1. **PID** `(Operators: =, !=, <, > and "new")`
 
