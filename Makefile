@@ -33,7 +33,7 @@ CMD_GO ?= go
 CMD_GREP ?= grep
 CMD_CAT ?= cat
 CMD_MD5 ?= md5sum
-CMD_OPA ?= opa # https://github.com/open-policy-agent/opa/releases/download/v0.44.0/opa_linux_amd64_static
+CMD_OPA ?= opa
 CMD_STATICCHECK ?= staticcheck
 
 .check_%:

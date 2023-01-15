@@ -4,8 +4,8 @@
 Vagrant.configure("2") do |config|
   # config.vm.box = "ubuntu/focal64"     # Ubuntu 20.04 Focal Fossa (non CO-RE)
   # config.vm.box = "ubuntu/hirsute64"   # Ubuntu 21.04 Hirsute Hippo (CO-RE)
-  # config.vm.box = "ubuntu/impish64"    #  Ubuntu 21.10 Impish Indri (CO-RE)
-  config.vm.box = "ubuntu/jammy64"       #  Ubuntu 22.04 Jammy Jellyfish (CO-RE)
+  # config.vm.box = "ubuntu/impish64"    # Ubuntu 21.10 Impish Indri (CO-RE)
+  config.vm.box = "ubuntu/jammy64"       # Ubuntu 22.04 Jammy Jellyfish (CO-RE)
 
   config.ssh.extra_args = ["-t", "cd /vagrant; bash --login"]
 
@@ -32,7 +32,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", inline: <<-SHELL
     VAGRANT_HOME="/home/vagrant"
     GO_VERSION="1.18"
-    OPA_VERSION="v0.44.0"
+    OPA_VERSION="v0.48.0"
 
     apt-get update
     apt-get install --yes bsdutils
