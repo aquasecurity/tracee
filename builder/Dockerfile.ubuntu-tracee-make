@@ -11,18 +11,37 @@ FROM ubuntu:jammy
 ARG uid=1000
 ARG gid=1000
 
+# ubuntu has been extremely slow with the default archive
+
+RUN echo "deb http://br.archive.ubuntu.com/ubuntu jammy main restricted universe multiverse" > /etc/apt/sources.list && \
+    echo "deb http://br.archive.ubuntu.com/ubuntu jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list
+
 # install needed environment
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get update && \
     apt-get install -y sudo coreutils findutils && \
     apt-get install -y bash git curl rsync && \
-    apt-get install -y llvm clang golang make gcc && \
+    apt-get install -y llvm clang clangd clang-format golang make gcc && \
+    apt-get install -y llvm-12 clang-12 clangd-12 clang-format-12 && \
+    apt-get install -y llvm-13 clang-13 clangd-13 clang-format-13 && \
     apt-get install -y linux-headers-generic && \
     apt-get install -y libelf-dev && \
     apt-get install -y zlib1g-dev && \
-    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.44.0/opa_linux_amd64_static && \
+    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-12 130 --slave /usr/bin/clang++ clang++ /usr/bin/clang++-12 --slave /usr/bin/llc llc /usr/bin/llc-12 --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-12 --slave /usr/bin/clangd clangd /usr/bin/clangd-12 && \
+    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-13 130 --slave /usr/bin/clang++ clang++ /usr/bin/clang++-13 --slave /usr/bin/llc llc /usr/bin/llc-13 --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-13 --slave /usr/bin/clangd clangd /usr/bin/clangd-13 && \
+    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 140 --slave /usr/bin/clang++ clang++ /usr/bin/clang++-14 --slave /usr/bin/llc llc /usr/bin/llc-14 --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-14 --slave /usr/bin/clangd clangd /usr/bin/clangd-14 && \
+    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.48.0/opa_linux_amd64_static && \
     chmod 755 /usr/bin/opa
+
+# extra tools for testing things
+
+RUN export DEBIAN_FRONTEND=noninteractive && \
+    apt-get install -y man bash-completion vim && \
+    apt-get install -y iproute2 vlan bridge-utils net-tools && \
+    apt-get install -y netcat-openbsd iputils-ping && \
+    apt-get install -y wget lynx w3m && \
+    apt-get install -y stress
 
 # allow TRACEE* and LIBBPFGO* environment variables through sudo
 
@@ -42,6 +61,7 @@ RUN export uid=$uid gid=$gid && \
     chown ${uid}:${gid} -R /home/tracee && \
     echo "export PS1=\"\u@\h[\w]$ \"" > /home/tracee/.bashrc && \
     echo "alias ls=\"ls --color\"" >> /home/tracee/.bashrc && \
+    echo "set -o vi" >> /home/tracee/.bashrc && \
     ln -s /home/tracee/.bashrc /home/tracee/.profile
 
 USER tracee
