@@ -24,7 +24,15 @@ func deriveContainerRemoveArgs(containers *containers.Containers) deriveArgsFunc
 			return nil, err
 		}
 		if info := containers.GetCgroupInfo(cgroupId); info.Container.ContainerId != "" {
-			return []interface{}{info.Runtime.String(), info.Container.ContainerId}, nil
+			return []interface{}{
+				info.Runtime.String(),
+				info.Container.ContainerId,
+				info.Container.Image,
+				info.Container.Name,
+				info.Container.Pod.Name,
+				info.Container.Pod.Namespace,
+				info.Container.Pod.UID,
+			}, nil
 		}
 		return nil, nil
 	}
