@@ -48,7 +48,8 @@ import (
 )
 
 const (
-	pkgName = "tracee"
+	pkgName          = "tracee"
+	maxMemDumpLength = 127
 )
 
 // Config is a struct containing user defined configuration of tracee
@@ -588,7 +589,7 @@ func (t *Tracee) generateInitValues() (InitValues, error) {
 		if !exists {
 			return initVals, fmt.Errorf("event with id %d doesn't exist", evt)
 		}
-		if len(def.Dependencies.KSymbols) > 0 {
+		if def.Dependencies.KSymbols != nil {
 			initVals.kallsyms = true
 		}
 	}
@@ -945,16 +946,18 @@ func (t *Tracee) validateKallsymsDependencies() {
 	symsToDependentEvents := make(map[string][]events.ID)
 	for id := range t.events {
 		event := events.Definitions.Get(id)
-		for _, symDep := range event.Dependencies.KSymbols {
-			reqKsyms = append(reqKsyms, symDep.Symbol)
-			if symDep.Required {
-				symEvents, ok := symsToDependentEvents[symDep.Symbol]
-				if ok {
-					symEvents = append(symEvents, id)
-				} else {
-					symEvents = []events.ID{id}
+		if event.Dependencies.KSymbols != nil {
+			for _, symDep := range *event.Dependencies.KSymbols {
+				reqKsyms = append(reqKsyms, symDep.Symbol)
+				if symDep.Required {
+					symEvents, ok := symsToDependentEvents[symDep.Symbol]
+					if ok {
+						symEvents = append(symEvents, id)
+					} else {
+						symEvents = []events.ID{id}
+					}
+					symsToDependentEvents[symDep.Symbol] = symEvents
 				}
-				symsToDependentEvents[symDep.Symbol] = symEvents
 			}
 		}
 	}
@@ -1454,6 +1457,10 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.invokeInitEvents()
 	t.triggerSyscallsIntegrityCheck(trace.Event{})
 	t.triggerSeqOpsIntegrityCheck(trace.Event{})
+	err := t.triggerMemDump(trace.Event{})
+	if err != nil {
+		logger.Warn("memory dump", "error", err)
+	}
 	t.eventsPerfMap.Start()
 	go t.processLostEvents()
 	go t.handleEvents(ctx)
@@ -1695,5 +1702,81 @@ func (t *Tracee) triggerSeqOpsIntegrityCheckCall(
 	magicNumber uint64, // 1st arg: allow handler to detect calling convention
 	eventHandle uint64,
 	seqOpsStruct [len(derive.NetSeqOps)]uint64) error {
+	return nil
+}
+
+// triggerMemDump is used by a Uprobe to trigger an eBPF program
+// that prints the first bytes of requested symbols or addresses
+func (t *Tracee) triggerMemDump(event trace.Event) error {
+	if _, ok := t.events[events.PrintMemDump]; !ok {
+		return nil
+	}
+
+	printMemDumpFilters := t.config.Filter.ArgFilter.GetEventFilters(events.PrintMemDump)
+	if printMemDumpFilters == nil {
+		return fmt.Errorf("no address or symbols were provided to print_mem_dump event. " +
+			"please provide it via -t print_mem_dump.args.address=<hex address>" +
+			", -t print_mem_dump.args.symbol_name=<owner>:<symbol> or " +
+			"-t print_mem_dump.args.symbol_name=<symbol> if specifying a system owned symbol")
+	}
+
+	eventHandle := t.triggerContexts.Store(event)
+
+	lengthFilter, ok := printMemDumpFilters["length"].(*filters.StringFilter)
+	var length uint64
+	var err error
+	if lengthFilter == nil || !ok || len(lengthFilter.Equal()) == 0 {
+		length = maxMemDumpLength // default mem dump length
+	} else {
+		for _, field := range lengthFilter.Equal() {
+			length, err = strconv.ParseUint(field, 10, 64)
+			if err != nil {
+				return err
+			}
+			//lint:ignore SA4004 we only want the first argument
+			break
+		}
+	}
+
+	addressFilter, ok := printMemDumpFilters["address"].(*filters.StringFilter)
+	if addressFilter != nil && ok {
+		for _, field := range addressFilter.Equal() {
+			address, err := strconv.ParseUint(field, 16, 64)
+			if err != nil {
+				return err
+			}
+			t.triggerMemDumpCall(address, length, uint64(eventHandle))
+		}
+	}
+
+	symbolsFilter, ok := printMemDumpFilters["symbol_name"].(*filters.StringFilter)
+	if symbolsFilter != nil && ok {
+		for _, field := range symbolsFilter.Equal() {
+			symbolSlice := strings.Split(field, ":")
+			splittedLen := len(symbolSlice)
+			var owner string
+			var name string
+			if splittedLen == 1 {
+				owner = "system"
+				name = symbolSlice[0]
+			} else if splittedLen == 2 {
+				owner = symbolSlice[0]
+				name = symbolSlice[1]
+			} else {
+				return fmt.Errorf("invalid symbols provided %s - more than one ':' provided", field)
+			}
+			symbol, err := t.kernelSymbols.GetSymbolByName(owner, name)
+			if err != nil {
+				return err
+			}
+			t.triggerMemDumpCall(symbol.Address, length, uint64(eventHandle))
+		}
+	}
+
+	return nil
+}
+
+//go:noinline
+func (t *Tracee) triggerMemDumpCall(address uint64, length uint64, eventHandle uint64) error {
 	return nil
 }

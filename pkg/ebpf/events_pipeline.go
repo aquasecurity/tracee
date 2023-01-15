@@ -322,6 +322,7 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 					switch events.ID(derivative.EventID) {
 					case events.SymbolsLoaded:
 					case events.SharedObjectLoaded:
+					case events.PrintMemDump:
 					default:
 						// Derived events might need filtering as well
 						if !t.shouldProcessEvent(derivative) {

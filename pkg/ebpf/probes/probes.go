@@ -104,6 +104,7 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		DefaultTcEgress:            &tcProbe{programName: "tc_egress", tcAttachPoint: bpf.BPFTcEgress, skipLoopback: true},
 		PrintSyscallTable:          &uProbe{eventName: "print_syscall_table", binaryPath: binaryPath, symbolName: "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerSyscallsIntegrityCheckCall", programName: "uprobe_syscall_trigger"},
 		PrintNetSeqOps:             &uProbe{eventName: "print_net_seq_ops", binaryPath: binaryPath, symbolName: "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerSeqOpsIntegrityCheckCall", programName: "uprobe_seq_ops_trigger"},
+		PrintMemDump:               &uProbe{eventName: "print_mem_dump", binaryPath: binaryPath, symbolName: "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerMemDumpCall", programName: "uprobe_mem_dump_trigger"},
 		SecurityInodeRename:        &traceProbe{eventName: "security_inode_rename", probeType: kprobe, programName: "trace_security_inode_rename"},
 		DoSigaction:                &traceProbe{eventName: "do_sigaction", probeType: kprobe, programName: "trace_do_sigaction"},
 		SecurityBpfProg:            &traceProbe{eventName: "security_bpf_prog", probeType: kprobe, programName: "trace_security_bpf_prog"},
@@ -293,4 +294,5 @@ const (
 	CgroupSKBEgress
 	DoMmap
 	DoMmapRet
+	PrintMemDump
 )

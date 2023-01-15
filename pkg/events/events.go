@@ -10,8 +10,8 @@ import (
 )
 
 type dependencies struct {
-	Events       []eventDependency // Events required to be loaded and/or submitted for the event to happen
-	KSymbols     []kSymbolDependency
+	Events       []eventDependency    // Events required to be loaded and/or submitted for the event to happen
+	KSymbols     *[]kSymbolDependency // nil pointer means no symbols needed, empty slice indicates for dynamic symbols which their names aren't known at the time of compilation
 	TailCalls    []TailCall
 	Capabilities []cap.Value
 }
@@ -235,6 +235,7 @@ const (
 	NetPacketHTTPBase   // ...
 	NetPacketCapture    // TODO: move this event into range for network events
 	DoMmap
+	PrintMemDump
 	MaxCommonID
 )
 
@@ -5621,7 +5622,7 @@ var Definitions = eventDefinitions{
 			},
 			Sets: []string{},
 			Dependencies: dependencies{
-				KSymbols: []kSymbolDependency{
+				KSymbols: &[]kSymbolDependency{
 					{Symbol: "pipefifo_fops", Required: true},
 				},
 			},
@@ -5808,7 +5809,7 @@ var Definitions = eventDefinitions{
 				{Handle: probes.PrintSyscallTable, Required: true},
 			},
 			Dependencies: dependencies{
-				KSymbols: []kSymbolDependency{
+				KSymbols: &[]kSymbolDependency{
 					{Symbol: "sys_call_table", Required: true},
 				},
 			},
@@ -5822,7 +5823,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32undefined,
 			Name:    "hooked_syscalls",
 			Dependencies: dependencies{
-				KSymbols: []kSymbolDependency{
+				KSymbols: &[]kSymbolDependency{
 					{Symbol: "_stext", Required: true},
 					{Symbol: "_etext", Required: true},
 				},
@@ -6048,7 +6049,7 @@ var Definitions = eventDefinitions{
 				{Handle: probes.SecurityFilePermission, Required: true},
 			},
 			Dependencies: dependencies{
-				KSymbols: []kSymbolDependency{
+				KSymbols: &[]kSymbolDependency{
 					{Symbol: "_stext", Required: true},
 					{Symbol: "_etext", Required: true},
 				},
@@ -6068,7 +6069,7 @@ var Definitions = eventDefinitions{
 				{Handle: probes.PrintNetSeqOps, Required: true},
 			},
 			Dependencies: dependencies{
-				KSymbols: []kSymbolDependency{
+				KSymbols: &[]kSymbolDependency{
 					{Symbol: "tcp4_seq_ops", Required: true},
 					{Symbol: "tcp6_seq_ops", Required: true},
 					{Symbol: "udp_seq_ops", Required: true},
@@ -6088,7 +6089,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32undefined,
 			Name:    "hooked_seq_ops",
 			Dependencies: dependencies{
-				KSymbols: []kSymbolDependency{
+				KSymbols: &[]kSymbolDependency{
 					{Symbol: "_stext", Required: true},
 					{Symbol: "_etext", Required: true},
 				},
@@ -6510,6 +6511,29 @@ var Definitions = eventDefinitions{
 				Events: []eventDependency{
 					{EventID: NetPacketCapture},
 				},
+			},
+		},
+		PrintMemDump: {
+			ID32Bit: sys32undefined,
+			Name:    "print_mem_dump",
+			Sets:    []string{},
+			Params: []trace.ArgMeta{
+				{Type: "bytes", Name: "bytes"},
+				{Type: "void*", Name: "address"},
+				{Type: "u64", Name: "length"},
+				{Type: "u64", Name: "caller_context_id"},
+				{Type: "char*", Name: "arch"},
+				{Type: "char*", Name: "symbol_name"},
+				{Type: "char*", Name: "symbol_owner"},
+			},
+			Probes: []probeDependency{
+				{Handle: probes.PrintMemDump, Required: true},
+			},
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: DoInitModule},
+				},
+				KSymbols: &[]kSymbolDependency{},
 			},
 		},
 	},

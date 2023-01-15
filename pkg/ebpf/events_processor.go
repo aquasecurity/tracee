@@ -1,7 +1,9 @@
 package ebpf
 
 import (
+	"bytes"
 	"fmt"
+	"golang.org/x/sys/unix"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -97,6 +99,8 @@ func (t *Tracee) registerEventProcessors() {
 	t.RegisterEventProcessor(events.PrintSyscallTable, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.SecurityKernelReadFile, processKernelReadFile)
 	t.RegisterEventProcessor(events.SecurityPostReadFile, processKernelReadFile)
+	t.RegisterEventProcessor(events.PrintMemDump, t.processTriggeredEvent)
+	t.RegisterEventProcessor(events.PrintMemDump, t.processPrintMemDump)
 }
 
 func (t *Tracee) updateProfile(sourceFilePath string, executionTs uint64) {
@@ -395,16 +399,27 @@ func (t *Tracee) processCgroupRmdir(event *trace.Event) error {
 // was loaded and tracee needs to check if it hooked the syscall table and
 // seq_ops
 func (t *Tracee) processDoInitModule(event *trace.Event) error {
-	_, ok1 := t.events[events.HookedSyscalls]
-	_, ok2 := t.events[events.HookedSeqOps]
-	_, ok3 := t.events[events.HookedProcFops]
-	if ok1 || ok2 || ok3 {
+	_, okSyscalls := t.events[events.HookedSyscalls]
+	_, okSeqOps := t.events[events.HookedSeqOps]
+	_, okProcFops := t.events[events.HookedProcFops]
+	_, okMemDump := t.events[events.PrintMemDump]
+	if okSyscalls || okSeqOps || okProcFops {
 		err := t.UpdateKallsyms()
 		if err != nil {
 			return err
 		}
-		t.triggerSyscallsIntegrityCheck(*event)
-		t.triggerSeqOpsIntegrityCheck(*event)
+		if okSyscalls {
+			t.triggerSyscallsIntegrityCheck(*event)
+		}
+		if okSeqOps {
+			t.triggerSeqOpsIntegrityCheck(*event)
+		}
+		if okMemDump {
+			err := t.triggerMemDump(*event)
+			if err != nil {
+				logger.Warn("memory dump", "error", err)
+			}
+		}
 	}
 	return nil
 }
@@ -534,5 +549,24 @@ func processKernelReadFile(event *trace.Event) error {
 		return fmt.Errorf("kernelReadFileId doesn't exist in kernelReadFileType map")
 	}
 	readTypeArg.Value = readType
+	return nil
+}
+
+func (t *Tracee) processPrintMemDump(event *trace.Event) error {
+	address, err := parse.ArgVal[uintptr](event, "address")
+	if err != nil || address == 0 {
+		return fmt.Errorf("error parsing print_mem_dump args: %w", err)
+	}
+	addressUint64 := uint64(address)
+	symbol := utils.ParseSymbol(addressUint64, t.kernelSymbols)
+	var utsName unix.Utsname
+	arch := ""
+	unix.Uname(&utsName)
+	if err == nil {
+		arch = string(bytes.TrimRight(utsName.Machine[:], "\x00"))
+	}
+	event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "arch", Type: "char*"}, Value: arch})
+	event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "symbol_name", Type: "char*"}, Value: symbol.Name})
+	event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "symbol_owner", Type: "char*"}, Value: symbol.Owner})
 	return nil
 }
