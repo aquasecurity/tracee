@@ -40,6 +40,7 @@ type Event struct {
 	MatchedScopes       uint64       `json:"matchedScopes"`
 	ArgsNum             int          `json:"argsNum"`
 	ReturnValue         int          `json:"returnValue"`
+	Syscall             string       `json:"syscall"`
 	StackAddresses      []uint64     `json:"stackAddresses"`
 	ContextFlags        ContextFlags `json:"contextFlags"`
 	Args                []Argument   `json:"args"` //Arguments are ordered according their appearance in the original event
