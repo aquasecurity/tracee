@@ -1,12 +1,6 @@
-.vscode
-.idea
-/dist
-coverage.txt
-.vagrant/
-
-# .check* files are needed so .PHONY dependencies in makefile
-# aren't built each time you try to make the target (only if
-# the target dependencies, like source files, changed)
+# .check* files are needed so .PHONY dependencies in makefile aren't
+# built each time you try to make the target (only if the target
+# dependencies, like source files, changed)
 .check*
 
 # needed for the makefile btfhub building logic
@@ -18,3 +12,15 @@ debian
 
 # ignore Helm subcharts
 deploy/helm/tracee/charts/
+
+# dev related files
+.vscode
+.idea
+coverage.txt
+compile_commands.json
+.cache*
+.trunk*
+.vagrant
+
+# binaries and build files
+dist
