@@ -67,7 +67,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 	queues := make(map[uint64]chan *trace.Event)
 	// scheduler queues
 	queueReady := make(chan uint64, queueReadySize)
-	queueClean := make(chan uint64, queueReadySize)
+	queueClean := make(chan *trace.Event, queueReadySize)
 
 	// queues map writer
 	go func() {
@@ -89,9 +89,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 				}
 				// CgroupRmdir: clean up remaining events and maps
 				if eventID == events.CgroupRmdir {
-					cgroupId, _ = parse.ArgVal[uint64](event, "cgroup_id")
-					queueClean <- cgroupId
-					out <- event
+					queueClean <- event
 					continue
 				}
 				// make sure a queue channel exists for this cgroupId
@@ -156,18 +154,20 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 	go func() {
 		for {
 			select {
-			case cgroupId := <-queueClean:
+			case event := <-queueClean:
 				bLock.Lock()
+				cgroupId, _ := parse.ArgVal[uint64](event, "cgroup_id")
 				if queue, ok := queues[cgroupId]; ok {
 					// if queue is still full reschedule cleanup
 					if len(queue) > 0 {
-						queueClean <- cgroupId
+						queueClean <- event
 					} else {
 						close(queue)
 						// start queue cleanup
 						delete(enrichDone, cgroupId)
 						delete(enrichInfo, cgroupId)
 						delete(queues, cgroupId)
+						out <- event
 					}
 				}
 				bLock.Unlock()
