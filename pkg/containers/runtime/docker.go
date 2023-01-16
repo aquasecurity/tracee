@@ -53,6 +53,7 @@ func (e *dockerEnricher) Get(containerId string, ctx context.Context) (Container
 				Name:      labels[PodNameLabel],
 				Namespace: labels[PodNamespaceLabel],
 				UID:       labels[PodUIDLabel],
+				Sandbox:   e.isSandbox(labels),
 			}
 		}
 
@@ -73,4 +74,8 @@ func (e *dockerEnricher) Get(containerId string, ctx context.Context) (Container
 	metadata.Image = imageName
 
 	return metadata, nil
+}
+
+func (e *dockerEnricher) isSandbox(labels map[string]string) bool {
+	return labels[ContainerTypeDockerLabel] == "sandbox"
 }

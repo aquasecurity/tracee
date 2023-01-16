@@ -217,6 +217,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				PodName:             containerInfo.Pod.Name,
 				PodNamespace:        containerInfo.Pod.Namespace,
 				PodUID:              containerInfo.Pod.UID,
+				PodSandbox:          containerInfo.Pod.Sandbox,
 				EventID:             int(ctx.EventID),
 				EventName:           eventDefinition.Name,
 				ArgsNum:             int(ctx.Argnum),

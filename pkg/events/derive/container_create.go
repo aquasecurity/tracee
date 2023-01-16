@@ -34,6 +34,7 @@ func deriveContainerCreateArgs(containers *containers.Containers) func(event tra
 				info.Container.Pod.Name,
 				info.Container.Pod.Namespace,
 				info.Container.Pod.UID,
+				info.Container.Pod.Sandbox,
 			}
 			return args, nil
 		}

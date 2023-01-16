@@ -82,6 +82,7 @@ func (e *containerdEnricher) Get(containerId string, ctx context.Context) (Conta
 					Name:      labels[PodNameLabel],
 					Namespace: labels[PodNamespaceLabel],
 					UID:       labels[PodUIDLabel],
+					Sandbox:   e.isSandbox(labels),
 				}
 
 				//containerd containers normally have no names unless set from k8s
@@ -94,4 +95,8 @@ func (e *containerdEnricher) Get(containerId string, ctx context.Context) (Conta
 	}
 
 	return metadata, fmt.Errorf("failed to find container in any namespace")
+}
+
+func (e *containerdEnricher) isSandbox(labels map[string]string) bool {
+	return labels[ContainerTypeContainerdLabel] == "sandbox"
 }

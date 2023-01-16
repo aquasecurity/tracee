@@ -15,14 +15,18 @@ type PodMetadata struct {
 	Name      string
 	Namespace string
 	UID       string
+	Sandbox   bool
 }
 
 // These labels are injected by kubelet on container creation, we can use them to gather additional data in a k8s context
 const (
-	PodNameLabel       = "io.kubernetes.pod.name"
-	PodNamespaceLabel  = "io.kubernetes.pod.namespace"
-	PodUIDLabel        = "io.kubernetes.pod.uid"
-	ContainerNameLabel = "io.kubernetes.container.name"
+	PodNameLabel                 = "io.kubernetes.pod.name"
+	PodNamespaceLabel            = "io.kubernetes.pod.namespace"
+	PodUIDLabel                  = "io.kubernetes.pod.uid"
+	ContainerNameLabel           = "io.kubernetes.container.name"
+	ContainerTypeDockerLabel     = "io.kubernetes.docker.type"
+	ContainerTypeContainerdLabel = "io.cri-containerd.kind"
+	ContainerTypeCrioAnnotation  = "io.kubernetes.cri-o.ContainerType"
 )
 
 type ContainerEnricher interface {

@@ -84,6 +84,7 @@ func ExistingContainersEvents(containers *containers.Containers, enrich bool) []
 			{ArgMeta: def.Params[5], Value: container.Pod.Name},
 			{ArgMeta: def.Params[6], Value: container.Pod.Namespace},
 			{ArgMeta: def.Params[7], Value: container.Pod.UID},
+			{ArgMeta: def.Params[8], Value: container.Pod.Sandbox},
 		}
 		existingContainerEvent := trace.Event{
 			Timestamp:   int(time.Now().UnixNano()),
