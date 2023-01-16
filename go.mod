@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/aquasecurity/libbpfgo v0.4.5-libbpf-1.0.1
 	github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230109115933-5ede01b209e1
-	github.com/aquasecurity/tracee/types v0.0.0-20230112144556-188803b23e14
+	github.com/aquasecurity/tracee/types v0.0.0-20230117125404-1384189de6c4
 	github.com/containerd/containerd v1.6.12
 	github.com/docker/docker v20.10.17+incompatible
 	github.com/golang/protobuf v1.5.2
@@ -25,7 +25,6 @@ require (
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
-	inet.af/netaddr v0.0.0-20220811202034-502d2d690317
 	kernel.org/pub/linux/libs/security/libcap/cap v1.2.64
 )
 
@@ -92,8 +91,6 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	go4.org/intern v0.0.0-20211027215823-ae77deb06f29 // indirect
-	go4.org/unsafe/assume-no-moving-gc v0.0.0-20220617031537-928513b29760 // indirect
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
 	golang.org/x/exp v0.0.0-20221002003631-540bb7301a08
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
