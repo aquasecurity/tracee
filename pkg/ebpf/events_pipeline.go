@@ -317,9 +317,11 @@ func (t *Tracee) shouldProcessEvent(event *trace.Event) bool {
 func parseContextFlags(flags uint32) trace.ContextFlags {
 	const (
 		ContainerStartFlag = 1 << iota
+		IsCompatFlag
 	)
 	return trace.ContextFlags{
 		ContainerStarted: (flags & ContainerStartFlag) != 0,
+		IsCompat:         (flags & IsCompatFlag) != 0,
 	}
 }
 

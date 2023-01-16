@@ -524,9 +524,11 @@ enum event_id_e
 #define CONT_ID_LEN          12
 #define CONT_ID_MIN_FULL_LEN 64
 
+// Flags in each task's context
 enum context_flags_e
 {
-    CONTAINER_STARTED_FLAG = (1 << 0)
+    CONTAINER_STARTED_FLAG = (1 << 0), // mark the task's container have started
+    IS_COMPAT_FLAG = (1 << 1)          // is the task running in compatible mode
 };
 
 enum container_state_e
@@ -1864,6 +1866,8 @@ init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 
     context->task.pid_id = get_task_pid_ns_id(task);
     context->task.uid = bpf_get_current_uid_gid();
     context->task.flags = 0;
+    if (is_compat(task))
+        context->task.flags |= IS_COMPAT_FLAG;
     __builtin_memset(context->task.comm, 0, sizeof(context->task.comm));
     ret = bpf_get_current_comm(&context->task.comm, sizeof(context->task.comm));
     if (unlikely(ret < 0)) {
