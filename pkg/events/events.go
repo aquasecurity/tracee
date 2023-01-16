@@ -5650,6 +5650,7 @@ var Definitions = eventDefinitions{
 				{Type: "const char*", Name: "pod_name"},
 				{Type: "const char*", Name: "pod_namespace"},
 				{Type: "const char*", Name: "pod_uid"},
+				{Type: "bool", Name: "pod_sandbox"},
 			},
 		},
 		ContainerRemove: {
@@ -5677,6 +5678,7 @@ var Definitions = eventDefinitions{
 				{Type: "const char*", Name: "pod_name"},
 				{Type: "const char*", Name: "pod_namespace"},
 				{Type: "const char*", Name: "pod_uid"},
+				{Type: "bool", Name: "pod_sandbox"},
 			},
 		},
 		ProcCreate: {

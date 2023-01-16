@@ -49,8 +49,16 @@ func (e *crioEnricher) Get(containerId string, ctx context.Context) (ContainerMe
 			UID:       labels[PodUIDLabel],
 		}
 	}
+	annotations := resp.Status.Annotations
+	if annotations != nil {
+		metadata.Pod.Sandbox = e.isSandbox(annotations)
+	}
 	metadata.Name = resp.Status.Metadata.Name
 	metadata.Image = resp.Status.Image.Image
 
 	return metadata, nil
+}
+
+func (e *crioEnricher) isSandbox(annotations map[string]string) bool {
+	return annotations[ContainerTypeCrioAnnotation] == "sandbox"
 }
