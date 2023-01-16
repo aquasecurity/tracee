@@ -177,14 +177,8 @@ func checkSecurityFileOpenExecve(t *testing.T, gotOutput *[]trace.Event) {
 	_, err := forkAndExecFunction(doFileOpen)
 	require.NoError(t, err)
 
-	syscallArgs := []events.ID{}
 	for _, evt := range *gotOutput {
-		arg, err := helpers.GetTraceeArgumentByName(evt, "syscall", helpers.GetArgOps{DefaultArgs: false})
-		require.NoError(t, err)
-		syscallArgs = append(syscallArgs, events.ID(arg.Value.(int32)))
-	}
-	for _, syscall := range syscallArgs {
-		assert.Equal(t, events.Execve, syscall)
+		assert.Equal(t, "execve", evt.Syscall)
 	}
 }
 
@@ -341,7 +335,7 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name:       "trace only security_file_open from \"execve\" syscall",
-			filterArgs: []string{"event=security_file_open", "security_file_open.args.syscall=execve"},
+			filterArgs: []string{"event=security_file_open", "security_file_open.context.syscall=execve"},
 			eventFunc:  checkSecurityFileOpenExecve,
 		},
 		{

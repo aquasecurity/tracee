@@ -93,6 +93,7 @@ func (filter *ContextFilter) Parse(filterName string, operatorAndValues string) 
 			podNameFilter:        NewStringFilter(),
 			podNSFilter:          NewStringFilter(),
 			podUIDFilter:         NewStringFilter(),
+			syscallFilter:        NewStringFilter(),
 		}
 		filter.filters[id] = eventFilter
 	}
@@ -129,6 +130,7 @@ type eventCtxFilter struct {
 	podNameFilter        *StringFilter
 	podNSFilter          *StringFilter
 	podUIDFilter         *StringFilter
+	syscallFilter        *StringFilter
 }
 
 func (f *eventCtxFilter) Enable() {
@@ -157,6 +159,7 @@ func (filter *eventCtxFilter) Filter(evt trace.Event) bool {
 		filter.hostNameFilter.Filter(evt.HostName) &&
 		filter.hostPidFilter.Filter(int64(evt.HostProcessID)) &&
 		filter.hostPpidFilter.Filter(int64(evt.HostParentProcessID)) &&
+		filter.syscallFilter.Filter(evt.Syscall) &&
 		filter.hostTidFilter.Filter(int64(evt.HostThreadID)) &&
 		filter.mntNSFilter.Filter(int64(evt.MountNS)) &&
 		filter.pidFilter.Filter(int64(evt.ProcessID)) &&
@@ -240,6 +243,9 @@ func (f *eventCtxFilter) Parse(field string, operatorAndValues string) error {
 	case "podUid":
 		filter := f.podUIDFilter
 		return f.addContainer(filter, operatorAndValues)
+	case "syscall":
+		filter := f.syscallFilter
+		return filter.Parse(operatorAndValues)
 	}
 	return InvalidContextField(field)
 }

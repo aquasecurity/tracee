@@ -399,6 +399,8 @@ enum argument_type_e
     #define SYSCALL_PROCESS_MRELEASE       448
 #endif
 
+#define NO_SYSCALL -1
+
 enum event_id_e
 {
     // Net events IDs
@@ -752,7 +754,7 @@ typedef struct event_context {
     u64 ts; // Timestamp
     task_context_t task;
     u32 eventid;
-    u32 padding; // free for further use
+    s32 syscall; // The syscall which triggered the event
     u64 matched_scopes;
     s64 retval;
     u32 stack_id;
@@ -1351,10 +1353,15 @@ static __always_inline u32 get_task_exit_code(struct task_struct *task)
     return READ_KERN(task->exit_code);
 }
 
+static __always_inline int get_task_flags(struct task_struct *task)
+{
+    return READ_KERN(task->flags);
+}
+
 static __always_inline int get_task_parent_flags(struct task_struct *task)
 {
     struct task_struct *parent = READ_KERN(task->real_parent);
-    return READ_KERN(parent->flags);
+    return get_task_flags(parent);
 }
 
 static __always_inline const struct cred *get_task_real_cred(struct task_struct *task)
@@ -1505,6 +1512,10 @@ static __always_inline struct pt_regs *get_task_pt_regs(struct task_struct *task
 
 static __always_inline int get_task_syscall_id(struct task_struct *task)
 {
+    // There is no originated syscall in kernel thread context
+    if (get_task_flags(task) & PF_KTHREAD) {
+        return NO_SYSCALL;
+    }
     struct pt_regs *regs = get_task_pt_regs(task);
     return get_syscall_id_from_regs(regs);
 }
@@ -1894,6 +1905,8 @@ init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 
     context->stack_id = 0;
 
     context->processor_id = (u16) bpf_get_smp_processor_id();
+
+    context->syscall = get_task_syscall_id(task);
 
     return 0;
 }
@@ -4295,6 +4308,8 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
     if (!init_program_data(&p, ctx))
         return 0;
 
+    // Uprobes are not triggered by syscalls, so we need to override the false value.
+    p.event->context.syscall = NO_SYSCALL;
     p.event->context.matched_scopes = 0xFFFFFFFFFFFFFFFF;
 
     // uprobe was triggered from other tracee instance
@@ -4390,6 +4405,8 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
     if (!init_program_data(&p, ctx))
         return 0;
 
+    // Uprobes are not triggered by syscalls, so we need to override the false value.
+    p.event->context.syscall = NO_SYSCALL;
     p.event->context.matched_scopes = 0xFFFFFFFFFFFFFFFF;
 
     // uprobe was triggered from other tracee instance
@@ -4469,6 +4486,8 @@ int uprobe_mem_dump_trigger(struct pt_regs *ctx)
     if (!init_program_data(&p, ctx))
         return 0;
 
+    // Uprobes are not triggered by syscalls, so we need to override the false value.
+    p.event->context.syscall = NO_SYSCALL;
     p.event->context.matched_scopes = 0xFFFFFFFFFFFFFFFF;
 
     // uprobe was triggered from other tracee instance
@@ -4866,8 +4885,6 @@ int BPF_KPROBE(trace_security_file_open)
     save_to_submit_buf(p.event, &inode_nr, sizeof(unsigned long), 3);
     save_to_submit_buf(p.event, &ctime, sizeof(u64), 4);
     save_str_to_buf(p.event, syscall_pathname, 5);
-    if (sys)
-        save_to_submit_buf(p.event, (void *) &sys->id, sizeof(int), 6);
 
     return events_perf_submit(&p, SECURITY_FILE_OPEN, 0);
 }
@@ -5011,9 +5028,6 @@ int BPF_KPROBE(trace_commit_creds)
         (old_slim.cap_effective != new_slim.cap_effective) ||
         (old_slim.cap_bset != new_slim.cap_bset) ||
         (old_slim.cap_ambient != new_slim.cap_ambient)) {
-        int id = get_task_syscall_id(p.event->task);
-        save_to_submit_buf(p.event, (void *) &id, sizeof(int), 2);
-
         events_perf_submit(&p, COMMIT_CREDS, 0);
     }
 
@@ -5093,8 +5107,6 @@ int BPF_KPROBE(trace_cap_capable)
         return 0;
 
     save_to_submit_buf(p.event, (void *) &cap, sizeof(int), 0);
-    int id = get_task_syscall_id(p.event->task);
-    save_to_submit_buf(p.event, (void *) &id, sizeof(int), 1);
 
     return events_perf_submit(&p, CAP_CAPABLE, 0);
 }
@@ -5971,8 +5983,6 @@ int BPF_KPROBE(trace_ret_do_mmap)
     save_to_submit_buf(p.event, &len, sizeof(unsigned long), 7);
     save_to_submit_buf(p.event, &prot, sizeof(unsigned long), 8);
     save_to_submit_buf(p.event, &mmap_flags, sizeof(unsigned long), 9);
-    int id = get_task_syscall_id(p.event->task);
-    save_to_submit_buf(p.event, (void *) &id, sizeof(int), 10);
 
     return events_perf_submit(&p, DO_MMAP, 0);
 }
@@ -6011,8 +6021,7 @@ int BPF_KPROBE(trace_security_mmap_file)
 
     int id = -1;
     if (submit_shared_object_loaded) {
-        id = get_task_syscall_id(p.event->task);
-        if ((prot & VM_EXEC) == VM_EXEC && id == SYSCALL_MMAP) {
+        if ((prot & VM_EXEC) == VM_EXEC && p.event->context.syscall == SYSCALL_MMAP) {
             events_perf_submit(&p, SHARED_OBJECT_LOADED, 0);
         }
     }
@@ -6020,10 +6029,6 @@ int BPF_KPROBE(trace_security_mmap_file)
     if (submit_sec_mmap_file) {
         save_to_submit_buf(p.event, &prot, sizeof(unsigned long), 5);
         save_to_submit_buf(p.event, &mmap_flags, sizeof(unsigned long), 6);
-        if (id == -1) { // if id wasn't checked yet, do so now.
-            id = get_task_syscall_id(p.event->task);
-        }
-        save_to_submit_buf(p.event, (void *) &id, sizeof(int), 7);
         return events_perf_submit(&p, SECURITY_MMAP_FILE, 0);
     }
 
@@ -6925,8 +6930,6 @@ int tracepoint__task__task_rename(struct bpf_raw_tracepoint_args *ctx)
 
     save_str_to_buf(p.event, (void *) old_name, 0);
     save_str_to_buf(p.event, (void *) new_name, 1);
-    int id = get_task_syscall_id(tsk);
-    save_to_submit_buf(p.event, (void *) &id, sizeof(int), 2);
 
     return events_perf_submit(&p, TASK_RENAME, 0);
 }
@@ -6980,8 +6983,6 @@ int BPF_KPROBE(trace_ret_kallsyms_lookup_name)
 
     save_str_to_buf(p.event, name, 0);
     save_to_submit_buf(p.event, &address, sizeof(unsigned long), 1);
-    int id = get_task_syscall_id(p.event->task);
-    save_to_submit_buf(p.event, &id, sizeof(int), 2);
 
     return events_perf_submit(&p, KALLSYMS_LOOKUP_NAME, 0);
 }
@@ -7176,6 +7177,7 @@ typedef struct net_task_context {
     struct task_struct *task;
     task_context_t taskctx;
     u64 matched_scopes;
+    int syscall;
 } net_task_context_t;
 
 struct {
@@ -7238,6 +7240,7 @@ static __always_inline void set_net_task_context(event_data_t *event, net_task_c
 {
     netctx->task = event->task;
     netctx->matched_scopes = event->context.matched_scopes;
+    netctx->syscall = event->context.syscall;
     __builtin_memset(&netctx->taskctx, 0, sizeof(task_context_t));
     __builtin_memcpy(&netctx->taskctx, &event->context.task, sizeof(task_context_t));
 }
@@ -7425,7 +7428,6 @@ SEC("kprobe/__cgroup_bpf_run_filter_skb")
 int BPF_KPROBE(cgroup_bpf_run_filter_skb)
 {
     // runs BEFORE the CGROUP/SKB eBPF program
-
     int type = PT_REGS_PARM3(ctx);
     switch (type) {
         case BPF_CGROUP_INET_INGRESS:
@@ -7491,6 +7493,12 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     eventctx->stack_id = 0;                                 // no stack trace
     eventctx->processor_id = p.event->context.processor_id; // copy from current ctx
     eventctx->matched_scopes = netctx->matched_scopes;      // pick matched-scopes from net ctx
+    if (type == BPF_CGROUP_INET_EGRESS) {
+        eventctx->syscall = netctx->syscall;
+    } else {
+        // During ingress there is no real originated syscall
+        eventctx->syscall = NO_SYSCALL;
+    }
 
     // inform userland about protocol family (for correct L3 header parsing)...
     struct sock_common *common = (void *) sk;

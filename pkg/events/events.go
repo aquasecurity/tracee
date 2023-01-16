@@ -151,6 +151,17 @@ func (e *eventDefinitions) NamesToIDs() map[string]ID {
 	return namesToIds
 }
 
+func (e *eventDefinitions) IDs32ToIDs() map[ID]ID {
+	IDs32ToIDs := make(map[ID]ID, len(e.events))
+
+	for id, evt := range e.events {
+		if evt.ID32Bit != sys32undefined {
+			IDs32ToIDs[evt.ID32Bit] = id
+		}
+	}
+	return IDs32ToIDs
+}
+
 func (e *eventDefinitions) GetID(eventName string) (ID, bool) {
 	for id, evt := range e.events {
 		if evt.Name == eventName {
@@ -5080,7 +5091,6 @@ var Definitions = eventDefinitions{
 			Sets: []string{},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "cap"},
-				{Type: "int", Name: "syscall"},
 			},
 		},
 		VfsWrite: {
@@ -5151,7 +5161,6 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "slim_cred_t", Name: "old_cred"},
 				{Type: "slim_cred_t", Name: "new_cred"},
-				{Type: "int", Name: "syscall"},
 			},
 		},
 		SwitchTaskNS: {
@@ -5266,7 +5275,6 @@ var Definitions = eventDefinitions{
 				{Type: "unsigned long", Name: "inode"},
 				{Type: "unsigned long", Name: "ctime"},
 				{Type: "const char*", Name: "syscall_pathname"},
-				{Type: "int", Name: "syscall"},
 			},
 		},
 		SecurityInodeUnlink: {
@@ -5496,7 +5504,6 @@ var Definitions = eventDefinitions{
 				{Type: "unsigned long", Name: "ctime"},
 				{Type: "unsigned long", Name: "prot"},
 				{Type: "unsigned long", Name: "mmap_flags"},
-				{Type: "int", Name: "syscall"},
 			},
 		},
 		DoMmap: {
@@ -5518,7 +5525,6 @@ var Definitions = eventDefinitions{
 				{Type: "unsigned long", Name: "len"},
 				{Type: "unsigned long", Name: "prot"},
 				{Type: "unsigned long", Name: "mmap_flags"},
-				{Type: "int", Name: "syscall"},
 			},
 		},
 		SecurityFileMprotect: {
@@ -6028,7 +6034,6 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "old_name"},
 				{Type: "const char*", Name: "new_name"},
-				{Type: "int", Name: "syscall"},
 			},
 		},
 		SecurityInodeRename: {
@@ -6097,7 +6102,6 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "symbol_name"},
 				{Type: "void*", Name: "symbol_address"},
-				{Type: "int", Name: "syscall"},
 			},
 		},
 		//

@@ -20,6 +20,9 @@ import (
 // Matches 'MAX_STACK_DEPTH' in eBPF code
 const maxStackDepth int = 20
 
+// Matches 'NO_SYSCALL' in eBPF code
+const noSyscall int32 = -1
+
 // handleEvents is a high-level function that starts all operations related to events processing
 func (t *Tracee) handleEvents(ctx context.Context) {
 	var errcList []<-chan error
@@ -141,6 +144,7 @@ func (t *Tracee) queueEvents(ctx context.Context, in <-chan *trace.Event) (chan 
 func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) (<-chan *trace.Event, <-chan error) {
 	out := make(chan *trace.Event, 10000)
 	errc := make(chan error, 1)
+	sysCompatTranslation := events.Definitions.IDs32ToIDs()
 	go func() {
 		defer close(out)
 		defer close(errc)
@@ -202,6 +206,16 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 
 			containerInfo := t.containers.GetCgroupInfo(ctx.CgroupID).Container
 
+			flags := parseContextFlags(ctx.Flags)
+			syscall := ""
+			if ctx.Syscall != noSyscall {
+				var err error
+				syscall, err = parseSyscallID(int(ctx.Syscall), flags.IsCompat, sysCompatTranslation)
+				if err != nil {
+					logger.Debug("Originated syscall parsing", "error", err)
+				}
+			}
+
 			evt := trace.Event{
 				Timestamp:           int(ctx.Ts),
 				ThreadStartTime:     int(ctx.StartTime),
@@ -232,7 +246,8 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				ReturnValue:         int(ctx.Retval),
 				Args:                args,
 				StackAddresses:      StackAddresses,
-				ContextFlags:        parseContextFlags(ctx.Flags),
+				ContextFlags:        flags,
+				Syscall:             syscall,
 			}
 
 			// base events for derived ones should be filtered in later stage
@@ -329,6 +344,30 @@ func parseContextFlags(flags uint32) trace.ContextFlags {
 	return trace.ContextFlags{
 		ContainerStarted: (flags & ContainerStartFlag) != 0,
 		IsCompat:         (flags & IsCompatFlag) != 0,
+	}
+}
+
+// Get the syscall name from its ID, taking into account architecture and 32bit/64bit modes
+func parseSyscallID(syscallID int, isCompat bool, compatTranslationMap map[events.ID]events.ID) (string, error) {
+	if !isCompat {
+		def, ok := events.Definitions.GetSafe(events.ID(syscallID))
+		if ok {
+			return def.Name, nil
+		} else {
+			return "", fmt.Errorf("no syscall event with syscall id %d", syscallID)
+		}
+	} else {
+		id, ok := compatTranslationMap[events.ID(syscallID)]
+		if ok {
+			def, ok := events.Definitions.GetSafe(id)
+			if ok {
+				return def.Name, nil
+			} else { // Should never happen, as the translation map should be initialized from events.Definition
+				return "", fmt.Errorf("no syscall event with compat syscall id %d, translated to ID %d", syscallID, id)
+			}
+		} else {
+			return "", fmt.Errorf("no syscall event with compat syscall id %d", syscallID)
+		}
 	}
 }
 
