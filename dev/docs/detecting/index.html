@@ -2613,7 +2613,6 @@ and pipe them to <strong>tracee-rules</strong> so detections occur:</p>
     --output json \
     --trace comm=bash \
     --trace follow \
-    --output option:detect-syscall \
     --output option:parse-arguments \
     --trace event=$(./dist/tracee-rules --list-events) \
     | ./dist/tracee-rules \
@@ -2682,7 +2681,7 @@ process_vm_writev,ptrace,security_file_open
 <p class="admonition-title">Example</p>
 <p>Let's pretend we would like to pick TRC-2 signature only and monitor all
 new processes happening as childs of all running <code>bash</code> processes.</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --output json --trace comm=bash --trace follow --output option:detect-syscall --output option:parse-arguments --output option:exec-env --trace event=$(./dist/tracee-rules --rules TRC-2 --list-events) | ./dist/tracee-rules --input-tracee format:json --input-tracee file:stdin --rules TRC-2
+<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --output json --trace comm=bash --trace follow --output option:parse-arguments --output option:exec-env --trace event=$(./dist/tracee-rules --rules TRC-2 --list-events) | ./dist/tracee-rules --input-tracee format:json --input-tracee file:stdin --rules TRC-2
 Loaded 1 signature(s): [TRC-2]
 
 *** Detection ***

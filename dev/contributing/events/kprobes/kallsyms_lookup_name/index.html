@@ -2489,7 +2489,7 @@ It might be interesting in cases where a sensitive kernel symbol is looked-up.</
 <ul>
 <li><code>symbol_name</code>:<code>const char*</code>[K] - the symbol that is being looked-up.</li>
 <li><code>symbol_address</code>:<code>void*</code>[K] - the address of the symbol returned by the function. 0 if not found.</li>
-<li><code>syscall</code>:<code>int</code>[K,OPT] - the id of the syscall that invoked this lookup. present only if <code>detect-syscall</code> output option is on. If output option <code>parse-arguments</code> was chosen as well, the value will be transformed to the syscall name as a string type.</li>
+<li><code>syscall</code>:<code>int</code>[K] - the id of the syscall that invoked this lookup. If output option <code>parse-arguments</code> was chosen, the value will be transformed to the syscall name as a string type.</li>
 </ul>
 <h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
 <h3 id="kallsyms_lookup_name_1">kallsyms_lookup_name<a class="headerlink" href="#kallsyms_lookup_name_1" title="Permanent link">&para;</a></h3>
@@ -2498,7 +2498,7 @@ It might be interesting in cases where a sensitive kernel symbol is looked-up.</
 <h4 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h4>
 <p>tracing the kallsyms_lookup_name event</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
-<p><code>./dist/tracee-ebpf -t e=kallsyms_lookup_name -o option:detect-syscall</code></p>
+<p><code>./dist/tracee-ebpf -t e=kallsyms_lookup_name</code></p>
 
 
 
