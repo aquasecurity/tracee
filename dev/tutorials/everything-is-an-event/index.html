@@ -2521,7 +2521,13 @@ kube-system   storage-provisioner                1/1     Running   0          15
 <h2 id="running-tracee-as-a-daemonset">Running Tracee as a DaemonSet<a class="headerlink" href="#running-tracee-as-a-daemonset" title="Permanent link">&para;</a></h2>
 <p>Tracee is installed as a DaemonSet and the new experience we are trying is not enabled by default.
 To install it we can use Helm and pass a custom flag <code>everythingIsAnEvent</code>.</p>
-<div class="highlight"><pre><span></span><code>helm install tracee aqua/tracee  --namespace tracee-system --create-namespace  -set everythingIsAnEvent=true
+<p>First, add the Aqua Security Helm Repository to your Helm CLI:
+<div class="highlight"><pre><span></span><code>helm repo add aqua https://aquasecurity.github.io/helm-charts/
+
+helm repo update
+</code></pre></div></p>
+<p>Next, we can install the Helm Chart, with the new experience enabled, through the following command:</p>
+<div class="highlight"><pre><span></span><code>helm install tracee aqua/tracee  --namespace tracee-system --create-namespace  --set everythingIsAnEvent=true
 </code></pre></div>
 <p>You can verify that the Tracee DaemonSet is running via:</p>
 <div class="highlight"><pre><span></span><code>kubectl get pods
