@@ -34,6 +34,7 @@ type Event struct {
 	PodName             string       `json:"podName"`
 	PodNamespace        string       `json:"podNamespace"`
 	PodUID              string       `json:"podUID"`
+	PodSandbox          bool         `json:"podSandbox"`
 	EventID             int          `json:"eventId,string"`
 	EventName           string       `json:"eventName"`
 	ArgsNum             int          `json:"argsNum"`
