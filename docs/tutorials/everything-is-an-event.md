@@ -35,9 +35,18 @@ kube-system   storage-provisioner                1/1     Running   0          15
 
 Tracee is installed as a DaemonSet and the new experience we are trying is not enabled by default.
 To install it we can use Helm and pass a custom flag `everythingIsAnEvent`.
+
+First, add the Aqua Security Helm Repository to your Helm CLI:
+```
+helm repo add aqua https://aquasecurity.github.io/helm-charts/
+
+helm repo update
+```
+
+Next, we can install the Helm Chart, with the new experience enabled, through the following command:
  
 ```
-helm install tracee aqua/tracee  --namespace tracee-system --create-namespace  -set everythingIsAnEvent=true
+helm install tracee aqua/tracee  --namespace tracee-system --create-namespace  --set everythingIsAnEvent=true
 ``` 
  
 You can verify that the Tracee DaemonSet is running via:
