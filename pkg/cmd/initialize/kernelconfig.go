@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/logger"
 )
 
 func KernelConfig() (*helpers.KernelConfig, error) {

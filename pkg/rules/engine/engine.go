@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/logger"
 
 	"github.com/aquasecurity/tracee/pkg/rules/metrics"
 	"github.com/aquasecurity/tracee/types/detect"

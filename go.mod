@@ -18,7 +18,7 @@ require (
 	github.com/prometheus/client_golang v1.13.0
 	github.com/stretchr/testify v1.8.0
 	github.com/urfave/cli/v2 v2.3.0
-	go.uber.org/zap v1.23.0
+	go.uber.org/zap v1.24.0
 	golang.org/x/sys v0.1.0
 	google.golang.org/genproto v0.0.0-20220502173005-c8bf987b8c21
 	google.golang.org/grpc v1.49.0
@@ -27,6 +27,8 @@ require (
 	gotest.tools v2.2.0+incompatible
 	kernel.org/pub/linux/libs/security/libcap/cap v1.2.64
 )
+
+require github.com/aquasecurity/tracee/logger v0.0.0-00010101000000-000000000000 // indirect
 
 require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
@@ -101,3 +103,5 @@ require (
 )
 
 replace github.com/kubernetes/cri-api => k8s.io/cri-api v0.23.5-rc.0
+
+replace github.com/aquasecurity/tracee/logger => ./logger

@@ -12,7 +12,7 @@ import (
 	"plugin"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/logger"
 
 	embedded "github.com/aquasecurity/tracee"
 	"github.com/aquasecurity/tracee/pkg/rules/celsig"

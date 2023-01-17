@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/aquasecurity/tracee/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )

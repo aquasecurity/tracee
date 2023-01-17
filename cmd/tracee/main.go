@@ -7,12 +7,12 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/aquasecurity/tracee/logger"
 	"github.com/aquasecurity/tracee/pkg/cmd"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/urfave"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/rules/engine"
 	"github.com/aquasecurity/tracee/pkg/rules/signature"
 	"github.com/aquasecurity/tracee/types/detect"

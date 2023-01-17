@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/aquasecurity/tracee/logger"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/server"
 )
 

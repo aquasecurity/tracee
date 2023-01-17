@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/logger"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 

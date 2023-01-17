@@ -2,7 +2,7 @@ package initialization
 
 import (
 	"github.com/aquasecurity/libbpfgo/helpers"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/logger"
 )
 
 // Custom KernelConfigOption's to extend kernel_config helper support

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/logger"
 )
 
 func logHelp() string {

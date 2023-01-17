@@ -6,11 +6,11 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/aquasecurity/tracee/logger"
 	"github.com/aquasecurity/tracee/pkg/cmd"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/urfave"
-	"github.com/aquasecurity/tracee/pkg/logger"
 
 	cli "github.com/urfave/cli/v2"
 )

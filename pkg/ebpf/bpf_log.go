@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/logger"
 )
 
 const BPFMaxLogFileLen = 72 // BPF_MAX_LOG_FILE_LEN

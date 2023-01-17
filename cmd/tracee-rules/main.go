@@ -11,9 +11,9 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/aquasecurity/tracee/logger"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/rules/engine"
 	"github.com/aquasecurity/tracee/pkg/rules/signature"
 	"github.com/aquasecurity/tracee/types/detect"

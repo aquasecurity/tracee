@@ -10,8 +10,8 @@ import (
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 	embed "github.com/aquasecurity/tracee"
+	"github.com/aquasecurity/tracee/logger"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSInfo *helpers.OSInfo, installPath string, version string) error {

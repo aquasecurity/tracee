@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/logger"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
 	"google.golang.org/protobuf/types/known/timestamppb"
