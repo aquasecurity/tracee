@@ -50,9 +50,9 @@ Tracee supports different output formats for detected events:
         A good tip is to pipe **tracee-ebpf** json output to [jq]() tool, this way
         you can select fields, rename them, filter values, and many other things:
         > ```text
-        > sudo ./dist/tracee-ebpf -o format:json -o option:parse-arguments -o
-        > option:detect-syscall -trace comm=ping -capture net=lo | jq -c '. |
-        > {eventId, hostName,processName,hostProcessId,UserId}'
+        > sudo ./dist/tracee-ebpf -o format:json -o option:parse-arguments
+        > -trace comm=ping -capture net=lo | jq -c '. | {eventId, hostName
+        > ,processName,hostProcessId,UserId}'
         > ```
 
 4. **GOB**

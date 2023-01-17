@@ -12,7 +12,7 @@ It might be interesting in cases where a sensitive kernel symbol is looked-up.
 ## Arguments
 * `symbol_name`:`const char*`[K] - the symbol that is being looked-up.
 * `symbol_address`:`void*`[K] - the address of the symbol returned by the function. 0 if not found.
-* `syscall`:`int`[K,OPT] - the id of the syscall that invoked this lookup. present only if `detect-syscall` output option is on. If output option `parse-arguments` was chosen as well, the value will be transformed to the syscall name as a string type.
+* `syscall`:`int`[K] - the id of the syscall that invoked this lookup. If output option `parse-arguments` was chosen, the value will be transformed to the syscall name as a string type.
 
 ## Hooks
 ### kallsyms_lookup_name
@@ -22,4 +22,4 @@ kprobe + kretprobe
 tracing the kallsyms_lookup_name event
 
 ## Example Use Case
-`./dist/tracee-ebpf -t e=kallsyms_lookup_name -o option:detect-syscall`
+`./dist/tracee-ebpf -t e=kallsyms_lookup_name`

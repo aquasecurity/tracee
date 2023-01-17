@@ -119,7 +119,6 @@ There are 2 ways you can get your own golang signatures working with tracee.
         --output json \
         --trace comm=bash \
         --trace follow \
-        --output option:detect-syscall \
         --output option:parse-arguments \
         -trace event=$(./dist/tracee-rules --rules Mine-0.1.0 --list-events) \
         | ./dist/tracee-rules \

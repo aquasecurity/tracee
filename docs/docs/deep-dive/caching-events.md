@@ -48,7 +48,6 @@ $ sudo ./dist/tracee-ebpf \
     --cache mem-cache-size=1024 \
     --containers -o format:json \
     -o option:parse-arguments \
-    -o option:detect-syscall \
     -trace container \
     --crs docker:/var/run/docker.sock
 ```

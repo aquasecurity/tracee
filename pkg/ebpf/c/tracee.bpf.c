@@ -477,15 +477,14 @@ enum event_id_e
 #define CAPTURE_IFACE (1 << 0)
 #define TRACE_IFACE   (1 << 1)
 
-#define OPT_SHOW_SYSCALL          (1 << 0)
-#define OPT_EXEC_ENV              (1 << 1)
-#define OPT_CAPTURE_FILES         (1 << 2)
-#define OPT_EXTRACT_DYN_CODE      (1 << 3)
-#define OPT_CAPTURE_STACK_TRACES  (1 << 4)
-#define OPT_CAPTURE_MODULES       (1 << 5)
-#define OPT_CGROUP_V1             (1 << 6)
-#define OPT_PROCESS_INFO          (1 << 7)
-#define OPT_TRANSLATE_FD_FILEPATH (1 << 8)
+#define OPT_EXEC_ENV              (1 << 0)
+#define OPT_CAPTURE_FILES         (1 << 1)
+#define OPT_EXTRACT_DYN_CODE      (1 << 2)
+#define OPT_CAPTURE_STACK_TRACES  (1 << 3)
+#define OPT_CAPTURE_MODULES       (1 << 4)
+#define OPT_CGROUP_V1             (1 << 5)
+#define OPT_PROCESS_INFO          (1 << 6)
+#define OPT_TRANSLATE_FD_FILEPATH (1 << 7)
 
 #define FILTER_UID_ENABLED       (1 << 0)
 #define FILTER_UID_OUT           (1 << 1)
@@ -4652,9 +4651,7 @@ int BPF_KPROBE(trace_security_file_open)
     save_to_submit_buf(p.event, &inode_nr, sizeof(unsigned long), 3);
     save_to_submit_buf(p.event, &ctime, sizeof(u64), 4);
     save_str_to_buf(p.event, syscall_pathname, 5);
-    if (syscall_traced && (p.config->options & OPT_SHOW_SYSCALL)) {
-        save_to_submit_buf(p.event, (void *) &sys->id, sizeof(int), 6);
-    }
+    save_to_submit_buf(p.event, (void *) &sys->id, sizeof(int), 6);
 
     return events_perf_submit(&p, SECURITY_FILE_OPEN, 0);
 }
@@ -4789,10 +4786,8 @@ int BPF_KPROBE(trace_commit_creds)
         (old_slim.cap_effective != new_slim.cap_effective) ||
         (old_slim.cap_bset != new_slim.cap_bset) ||
         (old_slim.cap_ambient != new_slim.cap_ambient)) {
-        if (p.config->options & OPT_SHOW_SYSCALL) {
-            int id = get_task_syscall_id(p.event->task);
-            save_to_submit_buf(p.event, (void *) &id, sizeof(int), 2);
-        }
+        int id = get_task_syscall_id(p.event->task);
+        save_to_submit_buf(p.event, (void *) &id, sizeof(int), 2);
 
         events_perf_submit(&p, COMMIT_CREDS, 0);
     }
@@ -4867,10 +4862,8 @@ int BPF_KPROBE(trace_cap_capable)
         return 0;
 
     save_to_submit_buf(p.event, (void *) &cap, sizeof(int), 0);
-    if (p.config->options & OPT_SHOW_SYSCALL) {
-        int id = get_task_syscall_id(p.event->task);
-        save_to_submit_buf(p.event, (void *) &id, sizeof(int), 1);
-    }
+    int id = get_task_syscall_id(p.event->task);
+    save_to_submit_buf(p.event, (void *) &id, sizeof(int), 1);
 
     return events_perf_submit(&p, CAP_CAPABLE, 0);
 }
@@ -5680,11 +5673,9 @@ int BPF_KPROBE(trace_ret_do_mmap)
     save_to_submit_buf(p.event, &len, sizeof(unsigned long), 7);
     save_to_submit_buf(p.event, &prot, sizeof(unsigned long), 8);
     save_to_submit_buf(p.event, &mmap_flags, sizeof(unsigned long), 9);
+    int id = get_task_syscall_id(p.event->task);
+    save_to_submit_buf(p.event, (void *) &id, sizeof(int), 10);
 
-    if (p.config->options & OPT_SHOW_SYSCALL) {
-        int id = get_task_syscall_id(p.event->task);
-        save_to_submit_buf(p.event, (void *) &id, sizeof(int), 10);
-    }
     return events_perf_submit(&p, DO_MMAP, 0);
 }
 
@@ -5725,12 +5716,10 @@ int BPF_KPROBE(trace_security_mmap_file)
     if (should_submit(SECURITY_MMAP_FILE, p.config)) {
         save_to_submit_buf(p.event, &prot, sizeof(unsigned long), 5);
         save_to_submit_buf(p.event, &mmap_flags, sizeof(unsigned long), 6);
-        if (p.config->options & OPT_SHOW_SYSCALL) {
-            if (id == -1) { // if id wasn't checked yet, do so now.
-                id = get_task_syscall_id(p.event->task);
-            }
-            save_to_submit_buf(p.event, (void *) &id, sizeof(int), 7);
+        if (id == -1) { // if id wasn't checked yet, do so now.
+            id = get_task_syscall_id(p.event->task);
         }
+        save_to_submit_buf(p.event, (void *) &id, sizeof(int), 7);
         return events_perf_submit(&p, SECURITY_MMAP_FILE, 0);
     }
 
@@ -6609,10 +6598,8 @@ int tracepoint__task__task_rename(struct bpf_raw_tracepoint_args *ctx)
 
     save_str_to_buf(p.event, (void *) old_name, 0);
     save_str_to_buf(p.event, (void *) new_name, 1);
-    if ((p.config->options & OPT_SHOW_SYSCALL)) {
-        int id = get_task_syscall_id(tsk);
-        save_to_submit_buf(p.event, (void *) &id, sizeof(int), 2);
-    }
+    int id = get_task_syscall_id(tsk);
+    save_to_submit_buf(p.event, (void *) &id, sizeof(int), 2);
 
     return events_perf_submit(&p, TASK_RENAME, 0);
 }
@@ -6667,10 +6654,8 @@ int BPF_KPROBE(trace_ret_kallsyms_lookup_name)
     if (should_submit(KALLSYMS_LOOKUP_NAME, p.config)) {
         save_str_to_buf(p.event, name, 0);
         save_to_submit_buf(p.event, &address, sizeof(unsigned long), 1);
-        if (p.config->options & OPT_SHOW_SYSCALL) {
-            int id = get_task_syscall_id(p.event->task);
-            save_to_submit_buf(p.event, &id, sizeof(int), 2);
-        }
+        int id = get_task_syscall_id(p.event->task);
+        save_to_submit_buf(p.event, &id, sizeof(int), 2);
 
         events_perf_submit(&p, KALLSYMS_LOOKUP_NAME, 0);
     }

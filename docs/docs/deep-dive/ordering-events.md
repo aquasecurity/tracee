@@ -7,7 +7,6 @@ programs chronologically.
 sudo ./dist/tracee-ebpf \
     -o format:json \
     -o option:parse-arguments \
-    -o option:detect-syscall \
     -o option:sort-events
 ```
 
