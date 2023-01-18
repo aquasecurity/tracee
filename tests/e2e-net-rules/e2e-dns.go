@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
@@ -13,27 +12,24 @@ import (
 //
 // HOWTO: The way to trigger this test signature is to execute:
 //
-//        nslookup -type=mx uol.com.br      and then
-//        nslookup -type=ns uol.com.br      and then
-//        nslookup -type=soa uol.com.br     and then
-//        nslookup -type=txt uol.com.br
+//        nslookup -type=mx    google.com   and then
+//        nslookup -type=ns    google.com   and then
+//        nslookup -type=soa   google.com
 //
 //        This will cause it trigger once and reset it status.
 
 type e2eDNS struct {
-	foundMX   bool
-	foundNS   bool
-	foundSOA  bool
-	foundTXTs bool
-	cb        detect.SignatureHandler
+	foundMX  bool
+	foundNS  bool
+	foundSOA bool
+	cb       detect.SignatureHandler
 }
 
 func (sig *e2eDNS) Init(cb detect.SignatureHandler) error {
 	sig.cb = cb
-	sig.foundMX = false   // proforma
-	sig.foundNS = false   // proforma
-	sig.foundSOA = false  // proforma
-	sig.foundTXTs = false // proforma
+	sig.foundMX = false  // proforma
+	sig.foundNS = false  // proforma
+	sig.foundSOA = false // proforma
 	return nil
 }
 
@@ -68,37 +64,29 @@ func (sig *e2eDNS) OnEvent(event protocol.Event) error {
 		if len(dns.Answers) > 0 {
 			for _, answer := range dns.Answers {
 				// check if MX works
-				if answer.MX.Name == "mx.uol.com.br" && answer.MX.Preference == 10 {
+				if answer.MX.Name == "smtp.google.com" &&
+					answer.MX.Preference == 10 {
 					sig.foundMX = true
 				}
 				// check if NS works
-				if answer.NS == "eliot.uol.com.br" {
+				if answer.NS == "ns1.google.com" {
 					sig.foundNS = true
 				}
 				// check if SOA works
-				if answer.SOA.RName == "root.uol.com.br" {
+				if answer.SOA.RName == "dns-admin.google.com" {
 					sig.foundSOA = true
-				}
-				// check if TXTs works
-				if answer.TXTs != nil && len(answer.TXTs) > 0 {
-					for _, txt := range answer.TXTs {
-						if strings.Contains(txt, "spf.uol.com.br") {
-							sig.foundTXTs = true
-						}
-					}
 				}
 			}
 		}
 
-		if !sig.foundMX || !sig.foundNS || !sig.foundSOA || !sig.foundTXTs {
+		if !sig.foundMX || !sig.foundNS || !sig.foundSOA {
 			return nil
 		}
 
-		if sig.foundMX && sig.foundNS && sig.foundSOA && sig.foundTXTs { // reset signature state
+		if sig.foundMX && sig.foundNS && sig.foundSOA { // reset signature state
 			sig.foundMX = false
 			sig.foundNS = false
 			sig.foundSOA = false
-			sig.foundTXTs = false
 		}
 
 		m, _ := sig.GetMetadata()
