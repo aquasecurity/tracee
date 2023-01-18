@@ -76,7 +76,7 @@ func convertNetPairToPktMeta(net *netPair) *trace.PktMeta {
 		DstPort:   net.dstPort,
 		Protocol:  net.proto,
 		PacketLen: net.length,
-		Iface:     "any", // TODO: pick iface from network events
+		Iface:     "any", // TODO: pick iface index from the kernel ?
 	}
 }
 

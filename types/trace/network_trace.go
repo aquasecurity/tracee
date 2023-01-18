@@ -12,7 +12,7 @@ type PktMeta struct {
 	DstPort   uint16 `json:"dst_port"`
 	Protocol  uint8  `json:"protocol"`
 	PacketLen uint32 `json:"packet_len"`
-	Iface     string `json:"iface"`
+	Iface     string `json:"iface"` // TODO: currently it is always "any"
 }
 
 type DnsQueryData struct {
