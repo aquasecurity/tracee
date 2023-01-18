@@ -50,6 +50,8 @@ listed runtimes:
 
 3. CRI-O:      `/var/run/crio/crio.sock`
 
+4. Podman:     `/var/run/podman/podman.sock`
+
 !!! Tip
     **Nested environments** are somewhat tricky with this feature as evidenced
     by the docker mounting instructions. Tracee does not auto-discover this

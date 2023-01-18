@@ -16,6 +16,7 @@ Tracee will look for the following paths:
 1. Docker:     /var/run/docker.sock
 2. Containerd: /var/run/containerd/containerd.sock
 3. CRI-O:      /var/run/crio/crio.sock
+4. Podman:     /var/run/podman/podman.sock
 
 If runtimes are specified, only the ones passed through flags will be connected to through the provided socket file path.
 Supported runtimes are:
@@ -23,6 +24,7 @@ Supported runtimes are:
 1. CRI-O      (crio, cri-o)
 2. Containerd (containerd)
 3. Docker     (docker)
+4. Podman     (podman)
 
 Example:
   --crs crio:/var/run/crio/crio.sock
@@ -49,7 +51,7 @@ func PrepareContainers(containerFlags []string) (runtime.Sockets, error) {
 		}), nil
 	}
 
-	supportedRuntimes := []string{"crio", "cri-o", "containerd", "docker"}
+	supportedRuntimes := []string{"crio", "cri-o", "containerd", "docker", "podman"}
 
 	sockets := runtime.Sockets{}
 
