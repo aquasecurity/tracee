@@ -7,8 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/types/detect"
 	"gopkg.in/yaml.v2"
+	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 var (
@@ -96,23 +98,33 @@ func NewConfigsFromDir(dirPath string) ([]SignaturesConfig, error) {
 // paths of files with the specified extensions.
 func walkFilesWithExtensions(rootDir string, extensions []string) ([]string, error) {
 	var files []string
-	err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
+
+	err := capabilities.GetInstance().Requested(
+		func() error {
+			err := filepath.WalkDir(rootDir,
+				func(path string, d fs.DirEntry, err error) error {
+					if err != nil {
+						return err
+					}
+
+					if d.IsDir() {
+						return nil
+					}
+
+					for _, s := range extensions {
+						if strings.HasSuffix(strings.ToLower(path), "."+s) {
+							files = append(files, path)
+							return nil
+						}
+					}
+
+					return nil
+				})
 			return err
-		}
+		},
+		cap.DAC_OVERRIDE,
+	)
 
-		if d.IsDir() {
-			return nil
-		}
-
-		for _, s := range extensions {
-			if strings.HasSuffix(strings.ToLower(path), "."+s) {
-				files = append(files, path)
-				return nil
-			}
-		}
-
-		return nil
-	})
 	return files, err
+
 }
