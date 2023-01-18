@@ -108,9 +108,6 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 		ContextFilter:     filters.NewContextFilter(),
 		ProcessTreeFilter: filters.NewProcessTreeFilter(tracee.ProcessTreeFilterMap),
 		EventsToTrace:     []events.ID{},
-		NetFilter: &tracee.NetIfaces{
-			Ifaces: []string{},
-		},
 	}
 
 	eventFilter := cliFilter{
@@ -229,14 +226,6 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 
 		if strings.HasPrefix("event", filterName) {
 			err := eventFilter.Parse(operatorAndValues)
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
-		}
-
-		if strings.HasPrefix(filterName, "net") {
-			err := filter.NetFilter.Parse(strings.TrimPrefix(operatorAndValues, "="))
 			if err != nil {
 				return tracee.Filter{}, err
 			}

@@ -232,9 +232,6 @@ func GetCaptureEventsList(cfg Config) map[events.ID]eventConfig {
 	if cfg.Capture.Profile {
 		captureEvents[events.CaptureProfile] = eventConfig{}
 	}
-	if len(cfg.Filter.NetFilter.Ifaces) > 0 || logger.HasDebugLevel() {
-		captureEvents[events.SecuritySocketBind] = eventConfig{}
-	}
 	if pcaps.PcapsEnabled(cfg.Capture.Net) {
 		captureEvents[events.CaptureNetPacket] = eventConfig{}
 	}

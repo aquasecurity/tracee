@@ -278,11 +278,6 @@ const (
 	MaxRulesID   ID = 6999
 )
 
-const (
-	CaptureIface int32 = 1 << iota
-	TraceIface
-)
-
 var Definitions = eventDefinitions{
 	events: map[ID]Event{
 		Read: {
