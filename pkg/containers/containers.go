@@ -71,6 +71,12 @@ func New(
 	if err != nil {
 		logger.Debug("Enricher", "error", err)
 	}
+	// podman and docker use compatible http apis, therefore the docker enricher
+	// works for podman.
+	err = runtimeService.Register(cruntime.Podman, cruntime.DockerEnricher)
+	if err != nil {
+		logger.Debug("Enricher", "error", err)
+	}
 
 	containers.enricher = runtimeService
 
