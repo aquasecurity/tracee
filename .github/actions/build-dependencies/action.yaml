@@ -45,6 +45,10 @@ runs:
       run: |
         go install github.com/kisielk/errcheck@latest
       shell: bash
+    - name: Install goimports-reviser
+      run: |
+        go install github.com/incu6us/goimports-reviser/v3@latest
+      shell: bash
     - name: Install docker
       run: |
         sudo apt-get install --yes ca-certificates curl gnupg lsb-release
