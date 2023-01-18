@@ -87,7 +87,7 @@ func main() {
 			}
 
 			var loadedSigIDs []string
-			capabilities.GetInstance().Requested(
+			err = capabilities.GetInstance().Requested(
 				func() error {
 					for _, s := range sigs {
 						m, err := s.GetMetadata()
@@ -101,6 +101,10 @@ func main() {
 				},
 				cap.DAC_OVERRIDE,
 			)
+			if err != nil {
+				logger.Error("Requesting capabilities", "error", err)
+			}
+
 			if c.Bool("list-events") {
 				listEvents(os.Stdout, sigs)
 				return nil

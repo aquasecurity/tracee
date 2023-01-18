@@ -62,7 +62,7 @@ func Find(target string, partialEval bool, rulesDir string, rules []string, aioE
 
 func findGoSigs(dir string) ([]detect.Signature, error) {
 	var res []detect.Signature
-	capabilities.GetInstance().Requested(
+	err := capabilities.GetInstance().Requested(
 		func() error {
 			err := filepath.WalkDir(dir,
 				func(path string, d fs.DirEntry, err error) error {
@@ -94,7 +94,7 @@ func findGoSigs(dir string) ([]detect.Signature, error) {
 		cap.DAC_OVERRIDE,
 	)
 
-	return res, nil
+	return res, err
 }
 
 func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) ([]detect.Signature, error) {
@@ -105,9 +105,9 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 
 	regoHelpers := []string{embedded.RegoHelpersCode}
 
-	capabilities.GetInstance().Requested(
+	err := capabilities.GetInstance().Requested(
 		func() error {
-			filepath.WalkDir(dir,
+			err := filepath.WalkDir(dir,
 				func(path string, d fs.DirEntry, err error) error {
 					if err != nil {
 						logger.Error("Finding rego sigs", "error", err)
@@ -129,7 +129,11 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 					modules[path] = string(helperCode)
 					return nil
 				})
-			filepath.WalkDir(dir, func(
+			if err != nil {
+				return err
+			}
+
+			err = filepath.WalkDir(dir, func(
 				path string, d fs.DirEntry, err error) error {
 				if err != nil {
 					logger.Error("Finding rego sigs", "error", err)
@@ -164,10 +168,15 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 				res = append(res, sig)
 				return nil
 			})
-			return nil
+
+			return err
 		},
 		cap.DAC_OVERRIDE,
 	)
+	if err != nil {
+		logger.Error("Requesting capabilities", "error", err)
+	}
+
 	if aioEnabled {
 		aio, err := regosig.NewAIO(modules,
 			regosig.OPATarget(target),
