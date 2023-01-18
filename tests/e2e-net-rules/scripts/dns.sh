@@ -1,6 +1,7 @@
 #!/bin/bash
 
-HOST="uol.com.br"
+HOST="google.com"
+SERVER="8.8.8.8"
 
 exit_err() {
     echo -n "ERROR: "
@@ -13,11 +14,10 @@ command -v nslookup > /dev/null || exit_err "missing nslookup tool"
 # start dns test
 
 test() {
+    nslookup -type=mx $HOST $SERVER
+    nslookup -type=ns $HOST $SERVER
+    nslookup -type=soa $HOST $SERVER
     sleep 1
-    nslookup -type=mx $HOST
-    nslookup -type=ns $HOST
-    nslookup -type=soa $HOST
-    nslookup -type=txt $HOST
 }
 
 test
