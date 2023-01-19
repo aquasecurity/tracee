@@ -28,13 +28,13 @@ type Event struct {
 	PIDNS               int          `json:"pidNamespace"`
 	ProcessName         string       `json:"processName"`
 	HostName            string       `json:"hostName"`
-	ContainerID         string       `json:"containerId"`
-	ContainerImage      string       `json:"containerImage"`
-	ContainerName       string       `json:"containerName"`
-	PodName             string       `json:"podName"`
-	PodNamespace        string       `json:"podNamespace"`
-	PodUID              string       `json:"podUID"`
-	PodSandbox          bool         `json:"podSandbox"`
+	ContainerID         string       `json:"containerId,omitempty"`
+	ContainerImage      string       `json:"containerImage,omitempty"`
+	ContainerName       string       `json:"containerName,omitempty"`
+	PodName             string       `json:"podName,omitempty"`
+	PodNamespace        string       `json:"podNamespace,omitempty"`
+	PodUID              string       `json:"podUID,omitempty"`
+	PodSandbox          bool         `json:"podSandbox,omitempty"`
 	EventID             int          `json:"eventId,string"`
 	EventName           string       `json:"eventName"`
 	ArgsNum             int          `json:"argsNum"`
