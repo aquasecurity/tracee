@@ -7048,6 +7048,7 @@ struct {
 typedef struct net_task_context {
     struct task_struct *task;
     task_context_t taskctx;
+    u64 matched_scopes;
 } net_task_context_t;
 
 struct {
@@ -7109,6 +7110,7 @@ static __always_inline u64 sizeof_net_event_context_t(void)
 static __always_inline void set_net_task_context(event_data_t *event, net_task_context_t *netctx)
 {
     netctx->task = event->task;
+    netctx->matched_scopes = event->context.matched_scopes;
     __builtin_memset(&netctx->taskctx, 0, sizeof(task_context_t));
     __builtin_memcpy(&netctx->taskctx, &event->context.task, sizeof(task_context_t));
 }
@@ -7348,12 +7350,12 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
 
     // copy orig task ctx (from the netctx) to event ctx and build the rest
     __builtin_memcpy(&eventctx->task, &netctx->taskctx, sizeof(task_context_t));
-    eventctx->ts = p.event->context.ts;                         // copy timestamp from current ctx
-    eventctx->argnum = 1;                                       // 1 argument (add more if needed)
-    eventctx->eventid = NET_PACKET_IP;                          // will be changed in skb program
-    eventctx->stack_id = 0;                                     // no stack trace
-    eventctx->processor_id = p.event->context.processor_id;     // copy from current ctx
-    eventctx->matched_scopes = p.event->context.matched_scopes; // copy from current ctx
+    eventctx->ts = p.event->context.ts;                     // copy timestamp from current ctx
+    eventctx->argnum = 1;                                   // 1 argument (add more if needed)
+    eventctx->eventid = NET_PACKET_IP;                      // will be changed in skb program
+    eventctx->stack_id = 0;                                 // no stack trace
+    eventctx->processor_id = p.event->context.processor_id; // copy from current ctx
+    eventctx->matched_scopes = netctx->matched_scopes;      // pick matched-scopes from net ctx
 
     // inform userland about protocol family (for correct L3 header parsing)...
     struct sock_common *common = (void *) sk;
