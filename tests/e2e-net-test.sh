@@ -69,11 +69,11 @@ info "GO: $(go version)"
 info
 info "= SETUP NETWORK TESTING ENV  =================================="
 info
-# timeout --preserve-status 20 ./tests/e2e-net-rules/scripts/setup.sh
-# ret=$?
-# if [[ $ret -ne 0 ]]; then
-#     error_exit "could not setup network namespaces: error $ret"
-# fi
+timeout --preserve-status 20 ./tests/e2e-net-rules/scripts/setup.sh
+ret=$?
+if [[ $ret -ne 0 ]]; then
+    error_exit "could not setup network namespaces: error $ret"
+fi
 info
 info "= COMPILING TRACEE ============================================"
 info
