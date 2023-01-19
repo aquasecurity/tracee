@@ -62,6 +62,8 @@ const (
 	tailSendBinTP
 	tailKernelWrite
 	tailSchedProcessExecEventSubmit
+	tailVfsRead
+	tailVfsReadv
 	MaxTail
 )
 
@@ -183,6 +185,8 @@ const (
 	CapCapable
 	VfsWrite
 	VfsWritev
+	VfsRead
+	VfsReadv
 	MemProtAlert
 	CommitCreds
 	SwitchTaskNS
@@ -6454,6 +6458,38 @@ var Definitions = eventDefinitions{
 					{EventID: DoInitModule},
 				},
 				KSymbols: &[]kSymbolDependency{},
+			},
+		},
+		VfsRead: {
+			ID32Bit: sys32undefined,
+			Name:    "vfs_read",
+			Probes: []probeDependency{
+				{Handle: probes.VfsRead, Required: true},
+				{Handle: probes.VfsReadRet, Required: true},
+			},
+			Sets: []string{},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "pathname"},
+				{Type: "dev_t", Name: "dev"},
+				{Type: "unsigned long", Name: "inode"},
+				{Type: "size_t", Name: "count"},
+				{Type: "off_t", Name: "pos"},
+			},
+		},
+		VfsReadv: {
+			ID32Bit: sys32undefined,
+			Name:    "vfs_readv",
+			Probes: []probeDependency{
+				{Handle: probes.VfsReadV, Required: true},
+				{Handle: probes.VfsReadVRet, Required: true},
+			},
+			Sets: []string{},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "pathname"},
+				{Type: "dev_t", Name: "dev"},
+				{Type: "unsigned long", Name: "inode"},
+				{Type: "unsigned long", Name: "vlen"},
+				{Type: "off_t", Name: "pos"},
 			},
 		},
 	},

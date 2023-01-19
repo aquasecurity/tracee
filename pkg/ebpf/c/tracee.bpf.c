@@ -149,6 +149,8 @@ enum tail_call_id_e
     TAIL_SEND_BIN_TP,
     TAIL_KERNEL_WRITE,
     TAIL_SCHED_PROCESS_EXEC_EVENT_SUBMIT,
+    TAIL_VFS_READ,
+    TAIL_VFS_READV,
     MAX_TAIL_CALL
 };
 
@@ -421,6 +423,8 @@ enum event_id_e
     CAP_CAPABLE,
     VFS_WRITE,
     VFS_WRITEV,
+    VFS_READ,
+    VFS_READV,
     MEM_PROT_ALERT,
     COMMIT_CREDS,
     SWITCH_TASK_NS,
@@ -797,6 +801,12 @@ typedef struct binary {
     u32 mnt_id;
     char path[MAX_BIN_PATH_SIZE];
 } binary_t;
+
+typedef struct io_data {
+    void *ptr;
+    unsigned long len;
+    bool is_buf;
+} io_data_t;
 
 typedef struct proc_info {
     bool new_proc; // set if this process was started after tracee. Used with new_pid filter
@@ -5323,7 +5333,58 @@ int send_bin_tp(void *ctx)
 }
 
 static __always_inline int
-do_file_write_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
+submit_magic_write(program_data_t *p, file_info_t *file_info, io_data_t io_data, u32 bytes_written)
+{
+    u32 header_bytes = FILE_MAGIC_HDR_SIZE;
+    if (header_bytes > bytes_written)
+        header_bytes = bytes_written;
+
+    p->event->buf_off = 0;
+    p->event->context.argnum = 0;
+
+    u8 header[FILE_MAGIC_HDR_SIZE];
+
+    save_str_to_buf(p->event, file_info->pathname_p, 0);
+
+    if (io_data.is_buf) {
+        if (header_bytes < FILE_MAGIC_HDR_SIZE)
+            bpf_probe_read(header, header_bytes & FILE_MAGIC_MASK, io_data.ptr);
+        else
+            bpf_probe_read(header, FILE_MAGIC_HDR_SIZE, io_data.ptr);
+    } else {
+        struct iovec io_vec;
+        bpf_probe_read(&io_vec, sizeof(struct iovec), io_data.ptr);
+        if (header_bytes < FILE_MAGIC_HDR_SIZE)
+            bpf_probe_read(header, header_bytes & FILE_MAGIC_MASK, io_vec.iov_base);
+        else
+            bpf_probe_read(header, FILE_MAGIC_HDR_SIZE, io_vec.iov_base);
+    }
+
+    save_bytes_to_buf(p->event, header, header_bytes, 1);
+    save_to_submit_buf(p->event, &file_info->device, sizeof(dev_t), 2);
+    save_to_submit_buf(p->event, &file_info->inode, sizeof(unsigned long), 3);
+
+    // Submit magic_write event
+    return events_perf_submit(p, MAGIC_WRITE, bytes_written);
+}
+
+static __always_inline bool should_submit_io_event(u32 event_id, config_entry_t *config)
+{
+    return ((event_id == VFS_READ || event_id == VFS_READV || event_id == VFS_WRITE ||
+             event_id == VFS_WRITEV || event_id == __KERNEL_WRITE) &&
+            should_submit(event_id, config));
+}
+
+/** do_file_io_operation - generic file IO (read and write) event creator.
+ *
+ * @ctx:            the state of the registers prior the hook.
+ * @event_id:       the ID of the event to be created.
+ * @tail_call_id:   the ID of the tail call to be called before function return.
+ * @is_read:        true if the operation is read. False if write.
+ * @is_buf:         true if the non-file side of the operation is a buffer. False if io_vector.
+ */
+static __always_inline int
+do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool is_read, bool is_buf)
 {
     args_t saved_args;
     if (load_args(&saved_args, event_id) != 0) {
@@ -5338,45 +5399,35 @@ do_file_write_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
         return 0;
     }
 
-    if (!should_submit(VFS_WRITE, config) && !should_submit(VFS_WRITEV, config) &&
-        !should_submit(__KERNEL_WRITE, config) && !should_submit(MAGIC_WRITE, config)) {
+    if (!should_submit_io_event(event_id, config) && !should_submit(MAGIC_WRITE, config)) {
         bpf_tail_call(ctx, &prog_array, tail_call_id);
         del_args(event_id);
         return 0;
     }
 
     loff_t start_pos;
-    void *ptr;
-    struct iovec *vec;
-    size_t count;
-    unsigned long vlen;
+    io_data_t io_data;
+    file_info_t file_info;
 
     struct file *file = (struct file *) saved_args.args[0];
-    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+    file_info.pathname_p = get_path_str(GET_FIELD_ADDR(file->f_path));
 
-    if (event_id == VFS_WRITE || event_id == __KERNEL_WRITE) {
-        ptr = (void *) saved_args.args[1];
-        count = (size_t) saved_args.args[2];
-    } else {
-        vec = (struct iovec *) saved_args.args[1];
-        vlen = saved_args.args[2];
-    }
+    io_data.is_buf = is_buf;
+    io_data.ptr = (void *) saved_args.args[1];
+    io_data.len = (unsigned long) saved_args.args[2];
     loff_t *pos = (loff_t *) saved_args.args[3];
 
     // Extract device id, inode number, and pos (offset)
-    dev_t s_dev = get_dev_from_file(file);
-    unsigned long inode_nr = get_inode_nr_from_file(file);
+    file_info.device = get_dev_from_file(file);
+    file_info.inode = get_inode_nr_from_file(file);
     bpf_probe_read(&start_pos, sizeof(off_t), pos);
 
     bool char_dev = (start_pos == 0);
-    u32 bytes_written = PT_REGS_RC(ctx);
-    u32 header_bytes = FILE_MAGIC_HDR_SIZE;
-    if (header_bytes > bytes_written)
-        header_bytes = bytes_written;
+    u32 io_bytes_amount = PT_REGS_RC(ctx);
 
     // Calculate write start offset
     if (start_pos != 0)
-        start_pos -= bytes_written;
+        start_pos -= io_bytes_amount;
 
     program_data_t p = {};
     if (!init_program_data(&p, ctx)) {
@@ -5384,51 +5435,20 @@ do_file_write_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
         return 0;
     }
 
-    if (should_submit(VFS_WRITE, p.config) || should_submit(VFS_WRITEV, p.config) ||
-        should_submit(__KERNEL_WRITE, p.config)) {
-        save_str_to_buf(p.event, file_path, 0);
-        save_to_submit_buf(p.event, &s_dev, sizeof(dev_t), 1);
-        save_to_submit_buf(p.event, &inode_nr, sizeof(unsigned long), 2);
-
-        if (event_id == VFS_WRITE || event_id == __KERNEL_WRITE)
-            save_to_submit_buf(p.event, &count, sizeof(size_t), 3);
-        else
-            save_to_submit_buf(p.event, &vlen, sizeof(unsigned long), 3);
+    if (should_submit_io_event(event_id, p.config)) {
+        save_str_to_buf(p.event, file_info.pathname_p, 0);
+        save_to_submit_buf(p.event, &file_info.device, sizeof(dev_t), 1);
+        save_to_submit_buf(p.event, &file_info.inode, sizeof(unsigned long), 2);
+        save_to_submit_buf(p.event, &io_data.len, sizeof(unsigned long), 3);
         save_to_submit_buf(p.event, &start_pos, sizeof(off_t), 4);
 
-        // Submit vfs_write(v) event
+        // Submit io event
         events_perf_submit(&p, event_id, PT_REGS_RC(ctx));
     }
 
     // magic_write event checks if the header of some file is changed
-    if (should_submit(MAGIC_WRITE, p.config) && !char_dev && (start_pos == 0)) {
-        p.event->buf_off = 0;
-        p.event->context.argnum = 0;
-
-        u8 header[FILE_MAGIC_HDR_SIZE];
-
-        save_str_to_buf(p.event, file_path, 0);
-
-        if (event_id == VFS_WRITE || event_id == __KERNEL_WRITE) {
-            if (header_bytes < FILE_MAGIC_HDR_SIZE)
-                bpf_probe_read(header, header_bytes & FILE_MAGIC_MASK, ptr);
-            else
-                bpf_probe_read(header, FILE_MAGIC_HDR_SIZE, ptr);
-        } else {
-            struct iovec io_vec;
-            bpf_probe_read(&io_vec, sizeof(struct iovec), &vec[0]);
-            if (header_bytes < FILE_MAGIC_HDR_SIZE)
-                bpf_probe_read(header, header_bytes & FILE_MAGIC_MASK, io_vec.iov_base);
-            else
-                bpf_probe_read(header, FILE_MAGIC_HDR_SIZE, io_vec.iov_base);
-        }
-
-        save_bytes_to_buf(p.event, header, header_bytes, 1);
-        save_to_submit_buf(p.event, &s_dev, sizeof(dev_t), 2);
-        save_to_submit_buf(p.event, &inode_nr, sizeof(unsigned long), 3);
-
-        // Submit magic_write event
-        events_perf_submit(&p, MAGIC_WRITE, PT_REGS_RC(ctx));
+    if (!is_read && should_submit(MAGIC_WRITE, config) && !char_dev && (start_pos == 0)) {
+        submit_magic_write(&p, &file_info, io_data, io_bytes_amount);
     }
 
     bpf_tail_call(ctx, &prog_array, tail_call_id);
@@ -5436,8 +5456,23 @@ do_file_write_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
     return 0;
 }
 
-static __always_inline int do_file_write_operation_tail(struct pt_regs *ctx, u32 event_id)
+// Capture file write
+// Will only capture if:
+// 1. File write capture was configured
+// 2. File matches the filters given
+static __always_inline int capture_file_write(struct pt_regs *ctx, u32 event_id)
 {
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx)) {
+        del_args(event_id);
+        return 0;
+    }
+
+    if ((p.config->options & OPT_CAPTURE_FILES) == 0) {
+        del_args(event_id);
+        return 0;
+    }
+
     args_t saved_args;
     bin_args_t bin_args = {};
     loff_t start_pos;
@@ -5447,12 +5482,6 @@ static __always_inline int do_file_write_operation_tail(struct pt_regs *ctx, u32
     unsigned long vlen;
     bool has_filter = false;
     bool filter_match = false;
-
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx)) {
-        del_args(event_id);
-        return 0;
-    }
 
     if (load_args(&saved_args, event_id) != 0)
         return 0;
@@ -5521,32 +5550,30 @@ static __always_inline int do_file_write_operation_tail(struct pt_regs *ctx, u32
     if (!has_prefix("/dev/null", (char *) &p.event->args[p.event->buf_off], 10))
         pid = 0;
 
-    if (p.config->options & OPT_CAPTURE_FILES) {
-        bin_args.type = SEND_VFS_WRITE;
-        bpf_probe_read(bin_args.metadata, 4, &s_dev);
-        bpf_probe_read(&bin_args.metadata[4], 8, &inode_nr);
-        bpf_probe_read(&bin_args.metadata[12], 4, &i_mode);
-        bpf_probe_read(&bin_args.metadata[16], 4, &pid);
-        bin_args.start_off = start_pos;
-        if (event_id == VFS_WRITE || event_id == __KERNEL_WRITE) {
-            bin_args.ptr = ptr;
-            bin_args.full_size = PT_REGS_RC(ctx);
-        } else {
-            bin_args.vec = vec;
-            bin_args.iov_idx = 0;
-            bin_args.iov_len = vlen;
-            if (vlen > 0) {
-                struct iovec io_vec;
-                bpf_probe_read(&io_vec, sizeof(struct iovec), &vec[0]);
-                bin_args.ptr = io_vec.iov_base;
-                bin_args.full_size = io_vec.iov_len;
-            }
+    bin_args.type = SEND_VFS_WRITE;
+    bpf_probe_read(bin_args.metadata, 4, &s_dev);
+    bpf_probe_read(&bin_args.metadata[4], 8, &inode_nr);
+    bpf_probe_read(&bin_args.metadata[12], 4, &i_mode);
+    bpf_probe_read(&bin_args.metadata[16], 4, &pid);
+    bin_args.start_off = start_pos;
+    if (event_id == VFS_WRITE || event_id == __KERNEL_WRITE) {
+        bin_args.ptr = ptr;
+        bin_args.full_size = PT_REGS_RC(ctx);
+    } else {
+        bin_args.vec = vec;
+        bin_args.iov_idx = 0;
+        bin_args.iov_len = vlen;
+        if (vlen > 0) {
+            struct iovec io_vec;
+            bpf_probe_read(&io_vec, sizeof(struct iovec), &vec[0]);
+            bin_args.ptr = io_vec.iov_base;
+            bin_args.full_size = io_vec.iov_len;
         }
-        bpf_map_update_elem(&bin_args_map, &id, &bin_args, BPF_ANY);
-
-        // Send file data
-        bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
     }
+    bpf_map_update_elem(&bin_args_map, &id, &bin_args, BPF_ANY);
+
+    // Send file data
+    bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
     return 0;
 }
 
@@ -5556,13 +5583,13 @@ TRACE_ENT_FUNC(vfs_write, VFS_WRITE);
 SEC("kretprobe/vfs_write")
 int BPF_KPROBE(trace_ret_vfs_write)
 {
-    return do_file_write_operation(ctx, VFS_WRITE, TAIL_VFS_WRITE);
+    return do_file_io_operation(ctx, VFS_WRITE, TAIL_VFS_WRITE, false, true);
 }
 
 SEC("kretprobe/vfs_write_tail")
 int BPF_KPROBE(trace_ret_vfs_write_tail)
 {
-    return do_file_write_operation_tail(ctx, VFS_WRITE);
+    return capture_file_write(ctx, VFS_WRITE);
 }
 
 SEC("kprobe/vfs_writev")
@@ -5571,13 +5598,13 @@ TRACE_ENT_FUNC(vfs_writev, VFS_WRITEV);
 SEC("kretprobe/vfs_writev")
 int BPF_KPROBE(trace_ret_vfs_writev)
 {
-    return do_file_write_operation(ctx, VFS_WRITEV, TAIL_VFS_WRITEV);
+    return do_file_io_operation(ctx, VFS_WRITEV, TAIL_VFS_WRITEV, false, false);
 }
 
 SEC("kretprobe/vfs_writev_tail")
 int BPF_KPROBE(trace_ret_vfs_writev_tail)
 {
-    return do_file_write_operation_tail(ctx, VFS_WRITEV);
+    return capture_file_write(ctx, VFS_WRITEV);
 }
 
 SEC("kprobe/__kernel_write")
@@ -5586,13 +5613,31 @@ TRACE_ENT_FUNC(kernel_write, __KERNEL_WRITE);
 SEC("kretprobe/__kernel_write")
 int BPF_KPROBE(trace_ret_kernel_write)
 {
-    return do_file_write_operation(ctx, __KERNEL_WRITE, TAIL_KERNEL_WRITE);
+    return do_file_io_operation(ctx, __KERNEL_WRITE, TAIL_KERNEL_WRITE, false, true);
 }
 
 SEC("kretprobe/__kernel_write_tail")
 int BPF_KPROBE(trace_ret_kernel_write_tail)
 {
-    return do_file_write_operation_tail(ctx, __KERNEL_WRITE);
+    return capture_file_write(ctx, __KERNEL_WRITE);
+}
+
+SEC("kprobe/vfs_read")
+TRACE_ENT_FUNC(vfs_read, VFS_READ);
+
+SEC("kretprobe/vfs_read")
+int BPF_KPROBE(trace_ret_vfs_read)
+{
+    return do_file_io_operation(ctx, VFS_READ, TAIL_VFS_READ, true, true);
+}
+
+SEC("kprobe/vfs_readv")
+TRACE_ENT_FUNC(vfs_readv, VFS_READV);
+
+SEC("kretprobe/vfs_readv")
+int BPF_KPROBE(trace_ret_vfs_readv)
+{
+    return do_file_io_operation(ctx, VFS_READV, TAIL_VFS_READV, true, false);
 }
 
 SEC("kprobe/security_mmap_addr")
