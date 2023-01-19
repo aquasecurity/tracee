@@ -14,24 +14,23 @@ func captureHelp() string {
 Captured artifacts will appear in the 'output-path' directory.
 Possible options:
 
-[artifact:]write[=/path/prefix*]   capture written files. A filter can be given to only capture file writes whose path starts with some prefix (up to 50 characters). Up to 3 filters can be given.
-[artifact:]exec                    capture executed files.
-[artifact:]module                  capture loaded kernel modules.
-[artifact:]mem                     capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.
-[artifact:]network                 capture network traffic. Only TCP/UDP/ICMP protocols are currently supported.
+[artifact:]write[=/path/prefix*]         capture written files. A filter can be given to only capture file writes whose path starts with some prefix (up to 50 characters). Up to 3 filters can be given.
+[artifact:]exec                          capture executed files.
+[artifact:]module                        capture loaded kernel modules.
+[artifact:]mem                           capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.
+[artifact:]network                       capture network traffic. Only TCP/UDP/ICMP protocols are currently supported.
 
-dir:/path/to/dir                    path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).
-profile                             creates a runtime profile of program executions and their metadata for forensics use.
-clear-dir                           clear the captured artifacts output dir before starting (default: false).
-pcap:[process,container,command]    capture separate pcap files organized by processes, containers and/or commands
+dir:/path/to/dir                         path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).
+profile                                  creates a runtime profile of program executions and their metadata for forensics use.
+clear-dir                                clear the captured artifacts output dir before starting (default: false).
+pcap:[single,process,container,command]  capture separate pcap files organized by single file, files per processes, containers and/or commands
 
 Examples:
   --capture exec                                           | capture executed files into the default output directory
   --capture exec --capture dir:/my/dir --capture clear-dir | delete /my/dir/out and then capture executed files into it
   --capture write=/usr/bin/* --capture write=/etc/*        | capture files that were written into anywhere under /usr/bin/ or /etc/
   --capture profile                                        | capture executed files and create a runtime profile in the output directory
-  --capture net                                            | capture network traffic. default: pcap for processes only (check pcap options)
-  --capture network                                        | capture network traffic. default: pcap for processes only (check pcap options)
+  --capture net (or network)                               | capture network traffic. default: single pcap file containing all traced packets
   --capture net --capture pcap:process,command             | capture network traffic, save pcap files for processes and commands
   --capture network --capture pcap:container,command       | capture network traffic, save pcap files for containers and commands
   --capture exec --output none                             | capture executed files into the default output directory not printing the stream of events
@@ -70,17 +69,19 @@ func PrepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 			capture.Module = true
 		} else if cap == "mem" {
 			capture.Mem = true
-		} else if cap == "network" || cap == "net" {
-			capture.Net.CaptureProcess = true
+		} else if cap == "network" || cap == "net" || cap == "pcap" {
+			// default capture mode: a single pcap file with all traffic
+			capture.Net.CaptureSingle = true
 		} else if strings.HasPrefix(cap, "pcap:") {
-			// TODO: turn default capture mode to a single pcap file like it was
-			capture.Net.CaptureProcess = true // process is default capture mode
+			capture.Net.CaptureSingle = false // remove default mode
 			context := strings.TrimPrefix(cap, "pcap:")
 			fields := strings.Split(context, ",")
-			found := false
 			for _, field := range fields {
+				if field == "single" {
+					capture.Net.CaptureSingle = true
+				}
 				if field == "process" {
-					found = true
+					capture.Net.CaptureProcess = true
 				}
 				if field == "container" {
 					capture.Net.CaptureContainer = true
@@ -88,9 +89,6 @@ func PrepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 				if field == "command" {
 					capture.Net.CaptureCommand = true
 				}
-			}
-			if !found {
-				capture.Net.CaptureProcess = false
 			}
 		} else if cap == "clear-dir" {
 			clearDir = true

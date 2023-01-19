@@ -7103,7 +7103,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     u32 host_tid = p.event->context.task.host_tid;
     bpf_map_update_elem(&entrymap, &host_tid, &entry, BPF_ANY);
 
-    // TODO: https://github.com/aquasecurity/tracee/issues/2221
+    // pick network context from the inodemap (inode <=> task)
     net_task_context_t *netctx = bpf_map_lookup_elem(&inodemap, &inode);
     if (!netctx)
         return 0;

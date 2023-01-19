@@ -15,6 +15,7 @@ import (
 //
 // User chooses through config/cmdline how to capture pcap files:
 //
+// - single file
 // - per process
 // - per container
 // - per command
@@ -161,7 +162,7 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 
 		err := t.netCapturePcap.Write(event, payload)
 		if err != nil {
-			logger.Error("could not write pcap data")
+			logger.Error("could not write pcap data", "err", err)
 		}
 
 	default:

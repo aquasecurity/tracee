@@ -22,6 +22,8 @@ func (t *PcapType) String() string {
 		return "Container"
 	case Command:
 		return "Command"
+	case Single:
+		return "Single"
 	}
 
 	return "None"
@@ -29,21 +31,23 @@ func (t *PcapType) String() string {
 
 const (
 	//
-	// 1 (001): process:   1 pcap file per process (default)
-	// 2 (010): container: 1 pcap file per container
-	// 4 (011): command:   1 pcap file per command
+	// 1 (0001): process:   1 pcap file per process (default)
+	// 2 (0010): container: 1 pcap file per container
+	// 4 (0011): command:   1 pcap file per command
+	// 8 (1000): single:    1 single pcap file for all
 	//
 	// or a combination:
 	//
-	// 3 (011): process + container
-	// 5 (010): process + command
-	// 6 (110): container + command
-	// 7 (111): process + container + command
+	// 3 (0011): process + container
+	// 5 (0010): process + command
+	// 6 (0110): container + command
+	// 7 (0111): process + container + command
 	//
 	None      PcapType = 0x0
 	Process   PcapType = 0x1
 	Container PcapType = 0x2
 	Command   PcapType = 0x4
+	Single    PcapType = 0x8
 )
 
 // Pcap is a representation of a pcap file
@@ -67,7 +71,6 @@ func NewPcap(e *trace.Event, t PcapType) (*Pcap, error) {
 }
 
 func (p *Pcap) write(event *trace.Event, payload []byte) error {
-
 	info := gopacket.CaptureInfo{
 		Timestamp:     time.Unix(0, int64(event.Timestamp)),
 		CaptureLength: int(len(payload)),

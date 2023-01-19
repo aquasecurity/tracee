@@ -346,7 +346,7 @@ func TestPrepareCapture(t *testing.T) {
 				expectedCapture: tracee.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
 					Net: pcaps.Config{
-						CaptureProcess: true,
+						CaptureSingle: true,
 					},
 				},
 			},
@@ -356,6 +356,7 @@ func TestPrepareCapture(t *testing.T) {
 				expectedCapture: tracee.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
 					Net: pcaps.Config{
+						CaptureSingle:    false,
 						CaptureProcess:   true,
 						CaptureContainer: true,
 						CaptureCommand:   true,
@@ -368,6 +369,7 @@ func TestPrepareCapture(t *testing.T) {
 				expectedCapture: tracee.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
 					Net: pcaps.Config{
+						CaptureSingle:    false,
 						CaptureProcess:   false,
 						CaptureContainer: true,
 						CaptureCommand:   true,
