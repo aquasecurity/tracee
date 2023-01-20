@@ -140,11 +140,12 @@ Tracee can capture the following types of artifacts:
      pcap/processes/host/sshd_1196773_1662654999660718.pcap
      ```
 
-     You can also select how the pcap files will be divided:
+     You can also select how the pcap files will be divided per:
 
-     1. per process
-     1. per container
-     1. per-command
+     1. single: a single pcap file containing all packets
+     1. process: one file per process executed, ordered by host and container
+     1. container: one file for the host and one pcap file per container
+     1. per-command: one file per command executed (even if multiple times)
 
      and you can even have multiple divisions at the same time. Example: a ping
      command is executed inside a container. You want to summarize captured
@@ -221,6 +222,8 @@ Tracee can capture the following types of artifacts:
 
     The format for the pcap filenames inside `output_dir` is the following:
 
+    1. **single**:  
+       ./pcap/single.pcap
     1. **processes**:  
        ./pcap/processes/`container_id`/`process_comm`/`host_tid`/`task_starttime`.pcap
     1. **containers**:  

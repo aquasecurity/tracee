@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -16,10 +17,11 @@ var outputDirectory *os.File
 var fake pcapgo.NgInterface
 
 const (
-	pcapDir     string = "pcap/"
-	pcapProcDir string = pcapDir + "processes/"
-	pcapContDir string = pcapDir + "containers/"
-	pcapCommDir string = pcapDir + "commands/"
+	pcapDir       string = "pcap/"
+	pcapSingleDir string = pcapDir
+	pcapProcDir   string = pcapDir + "processes/"
+	pcapContDir   string = pcapDir + "containers/"
+	pcapCommDir   string = pcapDir + "commands/"
 )
 
 const (
@@ -45,7 +47,7 @@ func initializeGlobalVars(output *os.File) {
 		Comment:     "trace fake interface",
 		Description: "non-existing interface",
 		LinkType:    layers.LinkTypeNull, // layer2 is 4 bytes (or 32bit)
-		SnapLength:  uint32(math.MaxUint16),
+		SnapLength:  uint32(math.MaxUint32),
 	}
 }
 
@@ -53,6 +55,8 @@ func initializeGlobalVars(output *os.File) {
 // given PcapType
 func getItemIndexFromEvent(event *trace.Event, itemType PcapType) interface{} {
 	switch itemType {
+	case Single:
+		return itemType.String()
 	case Process:
 		return event.HostThreadID
 	case Container:
@@ -102,6 +106,12 @@ func getFileStringFormat(e *trace.Event, c string, t PcapType) string {
 	var format string
 
 	switch t {
+	case Single:
+		format = fmt.Sprintf(
+			"%s%s.pcap", // single.pcap
+			pcapSingleDir,
+			strings.ToLower(t.String()),
+		)
 	case Process:
 		format = fmt.Sprintf(
 			pcapProcDir+"%v/%v_%v_%v.pcap",
@@ -135,13 +145,13 @@ func mkdirForPcapType(o *os.File, c string, t PcapType) error {
 	utils.MkdirAtExist(o, s, os.ModePerm)
 
 	switch t {
+	case Single:
+		e = utils.MkdirAtExist(o, pcapSingleDir, os.ModePerm)
 	case Process:
 		utils.MkdirAtExist(o, pcapProcDir, os.ModePerm)
 		e = utils.MkdirAtExist(o, pcapProcDir+c, os.ModePerm)
-
 	case Container:
 		utils.MkdirAtExist(o, pcapContDir, os.ModePerm)
-
 	case Command:
 		utils.MkdirAtExist(o, pcapCommDir, os.ModePerm)
 		e = utils.MkdirAtExist(o, pcapCommDir+c, os.ModePerm)
@@ -193,6 +203,9 @@ func getPcapFileAndWriter(event *trace.Event, t PcapType) (
 func configToPcapType(simple Config) PcapType {
 	var config PcapType
 
+	if simple.CaptureSingle {
+		config |= Single
+	}
 	if simple.CaptureProcess {
 		config |= Process
 	}

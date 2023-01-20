@@ -26,6 +26,7 @@ import (
 //
 
 type Config struct {
+	CaptureSingle    bool
 	CaptureProcess   bool
 	CaptureContainer bool
 	CaptureCommand   bool
@@ -43,6 +44,7 @@ func New(simple Config, output *os.File) (*Pcaps, error) {
 
 	// initialize all keys first
 	caches := map[PcapType]*PcapCache{
+		Single:    nil,
 		Process:   nil,
 		Container: nil,
 		Command:   nil,
@@ -58,7 +60,7 @@ func New(simple Config, output *os.File) (*Pcaps, error) {
 				return nil, utils.ErrorFuncName(err)
 			}
 		} else {
-			// remove unrequested keys
+			// remove keys that were not requested
 			delete(caches, t)
 		}
 	}
