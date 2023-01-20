@@ -1,6 +1,8 @@
 package ebpf
 
 import (
+	"sync/atomic"
+
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -90,21 +92,21 @@ type FilterScopes struct {
 	uidFilterableInUserSpace bool
 	pidFilterableInUserSpace bool
 
-	hasContainerFilterEnabled bool
+	containerFiltersEnabled uint64
 }
 
 func NewFilterScopes() *FilterScopes {
 	return &FilterScopes{
-		filterScopesArray:         [MaxFilterScopes]*FilterScope{},
-		filterScopesMap:           map[*FilterScope]int{},
-		filterScopesUserSpaceMap:  map[*FilterScope]int{},
-		uidFilterMin:              filters.MinNotSetUInt,
-		uidFilterMax:              filters.MaxNotSetUInt,
-		pidFilterMin:              filters.MinNotSetUInt,
-		pidFilterMax:              filters.MaxNotSetUInt,
-		uidFilterableInUserSpace:  false,
-		pidFilterableInUserSpace:  false,
-		hasContainerFilterEnabled: false,
+		filterScopesArray:        [MaxFilterScopes]*FilterScope{},
+		filterScopesMap:          map[*FilterScope]int{},
+		filterScopesUserSpaceMap: map[*FilterScope]int{},
+		uidFilterMin:             filters.MinNotSetUInt,
+		uidFilterMax:             filters.MaxNotSetUInt,
+		pidFilterMin:             filters.MinNotSetUInt,
+		pidFilterMax:             filters.MaxNotSetUInt,
+		uidFilterableInUserSpace: false,
+		pidFilterableInUserSpace: false,
+		containerFiltersEnabled:  0,
 	}
 }
 
@@ -136,8 +138,9 @@ func (fs FilterScopes) PIDFilterableInUserSpace() bool {
 	return fs.pidFilterableInUserSpace
 }
 
-func (fs FilterScopes) HasContainerFilterEnabled() bool {
-	return fs.hasContainerFilterEnabled
+// ContainerFilterEnabled returns a bitmask of scopes that have at least one container filter type enabled
+func (fs FilterScopes) ContainerFilterEnabled() uint64 {
+	return atomic.LoadUint64(&fs.containerFiltersEnabled)
 }
 
 // Compute recalculates values, updates flags and fills the reduced user space map
@@ -244,14 +247,13 @@ func (fs FilterScopes) Map() map[*FilterScope]int {
 }
 
 func (fs *FilterScopes) updateContainerFilterEnabled() {
+	fs.containerFiltersEnabled = 0
+
 	for filterScope := range fs.Map() {
 		if filterScope.ContainerFilterEnabled() {
-			fs.hasContainerFilterEnabled = true
-			return
+			utils.SetBit(&fs.containerFiltersEnabled, uint(filterScope.ID))
 		}
 	}
-
-	fs.hasContainerFilterEnabled = false
 }
 
 // UserSpaceMap returns a reduced scopes map which must be filtered in
@@ -348,6 +350,7 @@ func (fs *FilterScopes) calculateGlobalMinMax() {
 	}
 }
 
+// ContainerFilterEnabled returns true when the scope has at least one container filter type enabled
 func (fs FilterScope) ContainerFilterEnabled() bool {
 	return (fs.ContFilter.Enabled() && fs.ContFilter.Value()) ||
 		(fs.NewContFilter.Enabled() && fs.NewContFilter.Value()) ||
