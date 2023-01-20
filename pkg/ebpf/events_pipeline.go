@@ -345,7 +345,9 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (<-c
 				continue
 			}
 
-			if t.config.FilterScopes.HasContainerFilterEnabled() && event.ContainerID == "" {
+			// store the atomic read
+			scopesWithContainerFilter := t.config.FilterScopes.ContainerFilterEnabled()
+			if scopesWithContainerFilter > 0 && event.ContainerID == "" {
 				// Don't trace false container positives -
 				// a container filter is set by the user, but this event wasn't originated in a container.
 				// Although kernel filters shouldn't submit such events, we do this check to be on the safe side.
@@ -356,7 +358,12 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (<-c
 				// don't skip cgroup_mkdir and cgroup_rmdir so we can derive container_create and container_remove events
 				if eventId != events.CgroupMkdir && eventId != events.CgroupRmdir {
 					logger.Debug("false container positive", "event.Timestamp", event.Timestamp, "eventId", eventId)
-					continue
+
+					// filter container scopes out
+					utils.ClearBits(&event.MatchedScopes, scopesWithContainerFilter)
+					if event.MatchedScopes == 0 {
+						continue
+					}
 				}
 			}
 
