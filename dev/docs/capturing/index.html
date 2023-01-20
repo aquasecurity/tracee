@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.5+insiders-4.28.1">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.6+insiders-4.28.1">
     
     
       
@@ -2579,11 +2579,12 @@ pcap/processes/host/node_1196826_1662656211119567.pcap
 pcap/processes/host/zerotier-one_7882_137007714376.pcap
 pcap/processes/host/sshd_1196773_1662654999660718.pcap
 </code></pre></div>
-<p>You can also select how the pcap files will be divided:</p>
+<p>You can also select how the pcap files will be divided per:</p>
 <ol>
-<li>per process</li>
-<li>per container</li>
-<li>per-command</li>
+<li>single: a single pcap file containing all packets</li>
+<li>process: one file per process executed, ordered by host and container</li>
+<li>container: one file for the host and one pcap file per container</li>
+<li>per-command: one file per command executed (even if multiple times)</li>
 </ol>
 <p>and you can even have multiple divisions at the same time. Example: a ping
  command is executed inside a container. You want to summarize captured
@@ -2653,6 +2654,8 @@ command executed in that container (commands/b86533d11f3/ping.pcap).</p>
 </div>
 <p>The format for the pcap filenames inside <code>output_dir</code> is the following:</p>
 <ol>
+<li><strong>single</strong>:<br />
+   ./pcap/single.pcap</li>
 <li><strong>processes</strong>:<br />
    ./pcap/processes/<code>container_id</code>/<code>process_comm</code>/<code>host_tid</code>/<code>task_starttime</code>.pcap</li>
 <li><strong>containers</strong>:<br />

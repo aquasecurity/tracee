@@ -10,31 +10,27 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/tracing/output-formats/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/contributing/events/kprobes/vfs_readv/">
       
       
-        <link rel="prev" href="../">
-      
-      
-        <link rel="next" href="../output-options/">
       
       
         
       
       
-      <link rel="icon" href="../../../assets/images/favicon.png">
+      <link rel="icon" href="../../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.6+insiders-4.28.1">
     
     
       
-        <title>Output Formats - Tracee</title>
+        <title>vfs_readv - Tracee</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.c97aee8c.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.c97aee8c.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.2505c338.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.2505c338.min.css">
       
       
 
@@ -50,7 +46,7 @@
       
     
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -74,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#tracing-output-formats" class="md-skip">
+        <a href="#vfs_readv" class="md-skip">
           Skip to content
         </a>
       
@@ -94,9 +90,9 @@
 
 <header class="md-header md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href="../../../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="../../../images/tracee_logo_only.png" alt="logo">
+  <img src="../../../../images/tracee_logo_only.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -112,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Output Formats
+              vfs_readv
             
           </span>
         </div>
@@ -183,7 +179,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../.." class="md-tabs__link">
+        <a href="../../../.." class="md-tabs__link">
           
   
     
@@ -203,7 +199,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../tutorials/everything-is-an-event/" class="md-tabs__link">
+        <a href="../../../../tutorials/everything-is-an-event/" class="md-tabs__link">
           
   
   Tutorials
@@ -217,13 +213,11 @@
         
   
   
-    
-  
   
     
     
       <li class="md-tabs__item">
-        <a href="../../overview/" class="md-tabs__link md-tabs__link--active">
+        <a href="../../../../docs/overview/" class="md-tabs__link">
           
   
   Docs
@@ -241,7 +235,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../contributing/overview/" class="md-tabs__link">
+        <a href="../../../overview/" class="md-tabs__link">
           
   
   Contributing
@@ -280,9 +274,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href="../../../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="../../../images/tracee_logo_only.png" alt="logo">
+  <img src="../../../../images/tracee_logo_only.png" alt="logo">
 
     </a>
     Tracee
@@ -352,7 +346,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href="../../../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -378,7 +372,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/kubernetes-quickstart/" class="md-nav__link">
+      <a href="../../../../getting-started/kubernetes-quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -404,7 +398,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/docker-quickstart/" class="md-nav__link">
+      <a href="../../../../getting-started/docker-quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -476,7 +470,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/installing/getting/" class="md-nav__link">
+      <a href="../../../../getting-started/installing/getting/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -502,7 +496,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/installing/prerequisites/" class="md-nav__link">
+      <a href="../../../../getting-started/installing/prerequisites/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -528,7 +522,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/installing/docker/" class="md-nav__link">
+      <a href="../../../../getting-started/installing/docker/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -554,7 +548,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/installing/kubernetes/" class="md-nav__link">
+      <a href="../../../../getting-started/installing/kubernetes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -624,7 +618,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/installing/distros/ubuntu/" class="md-nav__link">
+      <a href="../../../../getting-started/installing/distros/ubuntu/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -650,7 +644,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/installing/distros/fedora/" class="md-nav__link">
+      <a href="../../../../getting-started/installing/distros/fedora/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -676,7 +670,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/installing/distros/nix-nixos/" class="md-nav__link">
+      <a href="../../../../getting-started/installing/distros/nix-nixos/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -710,7 +704,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/installing/headers/" class="md-nav__link">
+      <a href="../../../../getting-started/installing/headers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -795,7 +789,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/everything-is-an-event/" class="md-nav__link">
+      <a href="../../../../tutorials/everything-is-an-event/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -821,7 +815,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/setup-development-machine-with-vagrant/" class="md-nav__link">
+      <a href="../../../../tutorials/setup-development-machine-with-vagrant/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -847,7 +841,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/deploy-grafana-dashboard/" class="md-nav__link">
+      <a href="../../../../tutorials/deploy-grafana-dashboard/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -878,21 +872,19 @@
       
   
   
-    
-  
   
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
         
         
-        <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
         
-          <label class="md-nav__link" for="__nav_3" tabindex="0" aria-expanded="true">
+          <label class="md-nav__link" for="__nav_3" tabindex="0" aria-expanded="false">
             
   
   <span class="md-ellipsis">
@@ -926,7 +918,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../overview/" class="md-nav__link">
+      <a href="../../../../docs/overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -950,23 +942,21 @@
                 
   
   
-    
-  
   
     
     
     
       
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
         
         
-        <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_3_2" type="checkbox" id="__nav_3_2" checked>
+        <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_3_2" type="checkbox" id="__nav_3_2" >
         
-          <label class="md-nav__link" for="__nav_3_2" tabindex="0" aria-expanded="true">
+          <label class="md-nav__link" for="__nav_3_2" tabindex="0" aria-expanded="false">
             
   
   <span class="md-ellipsis">
@@ -1000,7 +990,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../" class="md-nav__link">
+      <a href="../../../../docs/tracing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1024,35 +1014,9 @@
                 
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    
-  
-    Output Formats
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../../docs/tracing/output-formats/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1067,37 +1031,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#output-files" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Output Files
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1109,7 +1042,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../output-options/" class="md-nav__link">
+      <a href="../../../../docs/tracing/output-options/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1135,7 +1068,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../event-filtering/" class="md-nav__link">
+      <a href="../../../../docs/tracing/event-filtering/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1161,7 +1094,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../network-events/" class="md-nav__link">
+      <a href="../../../../docs/tracing/network-events/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1241,7 +1174,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../capturing/" class="md-nav__link">
+      <a href="../../../../docs/capturing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1321,7 +1254,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../detecting/" class="md-nav__link">
+      <a href="../../../../docs/detecting/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1391,7 +1324,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../detecting/golang/" class="md-nav__link">
+      <a href="../../../../docs/detecting/golang/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1417,7 +1350,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../detecting/rego/" class="md-nav__link">
+      <a href="../../../../docs/detecting/rego/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1443,7 +1376,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../detecting/go-cel/" class="md-nav__link">
+      <a href="../../../../docs/detecting/go-cel/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1477,7 +1410,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../detecting/rules/" class="md-nav__link">
+      <a href="../../../../docs/detecting/rules/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1503,7 +1436,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../detecting/avd/" class="md-nav__link">
+      <a href="../../../../docs/detecting/avd/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1583,7 +1516,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../integrating/container-engines/" class="md-nav__link">
+      <a href="../../../../docs/integrating/container-engines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1653,7 +1586,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../integrating/go-templates/" class="md-nav__link">
+      <a href="../../../../docs/integrating/go-templates/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1723,7 +1656,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../integrating/webhook/" class="md-nav__link">
+      <a href="../../../../docs/integrating/webhook/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1749,7 +1682,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../integrating/postee/" class="md-nav__link">
+      <a href="../../../../docs/integrating/postee/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1775,7 +1708,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../integrating/falcosidekick/" class="md-nav__link">
+      <a href="../../../../docs/integrating/falcosidekick/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1817,7 +1750,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../integrating/prometheus/" class="md-nav__link">
+      <a href="../../../../docs/integrating/prometheus/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1897,7 +1830,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../deep-dive/architecture/" class="md-nav__link">
+      <a href="../../../../docs/deep-dive/architecture/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1923,7 +1856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../deep-dive/secure-tracing/" class="md-nav__link">
+      <a href="../../../../docs/deep-dive/secure-tracing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1949,7 +1882,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../deep-dive/performance/" class="md-nav__link">
+      <a href="../../../../docs/deep-dive/performance/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1975,7 +1908,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../deep-dive/caching-events/" class="md-nav__link">
+      <a href="../../../../docs/deep-dive/caching-events/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2001,7 +1934,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../deep-dive/ordering-events/" class="md-nav__link">
+      <a href="../../../../docs/deep-dive/ordering-events/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2027,7 +1960,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../deep-dive/override-os-files/" class="md-nav__link">
+      <a href="../../../../docs/deep-dive/override-os-files/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2053,7 +1986,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../deep-dive/healthz/" class="md-nav__link">
+      <a href="../../../../docs/deep-dive/healthz/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2138,7 +2071,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/overview/" class="md-nav__link">
+      <a href="../../../overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2164,7 +2097,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/guidelines/" class="md-nav__link">
+      <a href="../../../guidelines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2236,7 +2169,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/building/building/" class="md-nav__link">
+      <a href="../../../building/building/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2262,7 +2195,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/building/environment/" class="md-nav__link">
+      <a href="../../../building/environment/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2288,7 +2221,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/building/containers/" class="md-nav__link">
+      <a href="../../../building/containers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2314,7 +2247,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/building/nocore-ebpf/" class="md-nav__link">
+      <a href="../../../building/nocore-ebpf/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2340,7 +2273,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/building/packaging/" class="md-nav__link">
+      <a href="../../../building/packaging/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2366,7 +2299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/building/macosx/" class="md-nav__link">
+      <a href="../../../building/macosx/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2428,10 +2361,99 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#output-files" class="md-nav__link">
+  <a href="#intro" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Output Files
+        Intro
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#description" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Description
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Arguments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hooks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hooks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vfs_readv_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        vfs_readv
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="vfs_readv">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Events
       
     </span>
   </a>
@@ -2455,96 +2477,29 @@
 
 
 
-<h1 id="tracing-output-formats">Tracing Output Formats<a class="headerlink" href="#tracing-output-formats" title="Permanent link">&para;</a></h1>
-<p>In order to check latest output options you may execute:</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --output help
-$ sudo ./dist/tracee-ebpf --output format:xxx
-</code></pre></div>
-<p>Tracee supports different output formats for detected events:</p>
-<ol>
-<li>
-<p><strong>Table</strong></p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --output table --trace comm=bash --trace follow --trace event=openat
-TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
-11:21:51:254199  1000   exa              1639459 1639459 3                openat               dirfd: -100, pathname: /etc/ld.so.cache, flags: O_RDONLY|O_CLOEXEC, mode: 0
-11:21:51:254285  1000   exa              1639459 1639459 3                openat               dirfd: -100, pathname: /lib/x86_64-linux-gnu/libgcc_s.so.1, flags: O_RDONLY|O_CLOEXEC, mode: 0
-11:21:51:254418  1000   exa              1639459 1639459 3                openat               dirfd: -100, pathname: /lib/x86_64-linux-gnu/libm.so.6, flags: O_RDONLY|O_CLOEXEC, mode: 0
-
-End of events stream
-Stats: {EventCount:6 EventsFiltered:0 NetEvCount:0 ErrorCount:0 LostEvCount:0 LostWrCount:0 LostNtCount:0}
-</code></pre></div>
-</li>
-<li>
-<p><strong>Table (Verbose)</strong></p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --output table-verbose --trace comm=bash --trace follow --trace event=openat
-TIME             UTS_NAME         CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
-11:22:16:970700  fujitsu                        4026531840   4026531836   1000   exa              1643836 1643836 3795408 3                openat               dirfd: -100, pathname: /etc/ld.so.cache, flags: 524288, mode: 0
-11:22:16:970783  fujitsu                        4026531840   4026531836   1000   exa              1643836 1643836 3795408 3                openat               dirfd: -100, pathname: /lib/x86_64-linux-gnu/libgcc_s.so.1, flags: 524288, mode: 0
-11:22:16:970913  fujitsu                        4026531840   4026531836   1000   exa              1643836 1643836 3795408 3                openat               dirfd: -100, pathname: /lib/x86_64-linux-gnu/libm.so.6, flags: 524288, mode: 0
-
-End of events stream
-Stats: {EventCount:6 EventsFiltered:0 NetEvCount:0 ErrorCount:0 LostEvCount:0 LostWrCount:0 LostNtCount:0}
-</code></pre></div>
-</li>
-<li>
-<p><strong>JSON</strong></p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --output json --trace comm=bash --trace follow --trace event=openat
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="mi">1657290245020855990</span><span class="p">,</span><span class="nt">&quot;threadStartTime&quot;</span><span class="p">:</span><span class="mi">615325807626168</span><span class="p">,</span><span class="nt">&quot;processorId&quot;</span><span class="p">:</span><span class="mi">22</span><span class="p">,</span><span class="nt">&quot;processId&quot;</span><span class="p">:</span><span class="mi">1664936</span><span class="p">,</span><span class="nt">&quot;cgroupId&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;threadId&quot;</span><span class="p">:</span><span class="mi">1664936</span><span class="p">,</span><span class="nt">&quot;parentProcessId&quot;</span><span class="p">:</span><span class="mi">3795408</span><span class="p">,</span><span class="nt">&quot;hostProcessId&quot;</span><span class="p">:</span><span class="mi">1664936</span><span class="p">,</span><span class="nt">&quot;hostThreadId&quot;</span><span class="p">:</span><span class="mi">1664936</span><span class="p">,</span><span class="nt">&quot;hostParentProcessId&quot;</span><span class="p">:</span><span class="mi">3795408</span><span class="p">,</span><span class="nt">&quot;userId&quot;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span><span class="nt">&quot;mountNamespace&quot;</span><span class="p">:</span><span class="mi">4026531840</span><span class="p">,</span><span class="nt">&quot;pidNamespace&quot;</span><span class="p">:</span><span class="mi">4026531836</span><span class="p">,</span><span class="nt">&quot;processName&quot;</span><span class="p">:</span><span class="s2">&quot;exa&quot;</span><span class="p">,</span><span class="nt">&quot;hostName&quot;</span><span class="p">:</span><span class="s2">&quot;fujitsu&quot;</span><span class="p">,</span><span class="nt">&quot;containerId&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerImage&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podUID&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;eventId&quot;</span><span class="p">:</span><span class="s2">&quot;257&quot;</span><span class="p">,</span><span class="nt">&quot;eventName&quot;</span><span class="p">:</span><span class="s2">&quot;openat&quot;</span><span class="p">,</span><span class="nt">&quot;argsNum&quot;</span><span class="p">:</span><span class="mi">4</span><span class="p">,</span><span class="nt">&quot;returnValue&quot;</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="nt">&quot;stackAddresses&quot;</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">&quot;args&quot;</span><span class="p">:[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;dirfd&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;int&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">-100</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;pathname&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;const char*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;/etc/ld.so.cache&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;flags&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;int&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">524288</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;mode_t&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">}]}</span>
-<span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="mi">1657290245020940791</span><span class="p">,</span><span class="nt">&quot;threadStartTime&quot;</span><span class="p">:</span><span class="mi">615325807626168</span><span class="p">,</span><span class="nt">&quot;processorId&quot;</span><span class="p">:</span><span class="mi">22</span><span class="p">,</span><span class="nt">&quot;processId&quot;</span><span class="p">:</span><span class="mi">1664936</span><span class="p">,</span><span class="nt">&quot;cgroupId&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;threadId&quot;</span><span class="p">:</span><span class="mi">1664936</span><span class="p">,</span><span class="nt">&quot;parentProcessId&quot;</span><span class="p">:</span><span class="mi">3795408</span><span class="p">,</span><span class="nt">&quot;hostProcessId&quot;</span><span class="p">:</span><span class="mi">1664936</span><span class="p">,</span><span class="nt">&quot;hostThreadId&quot;</span><span class="p">:</span><span class="mi">1664936</span><span class="p">,</span><span class="nt">&quot;hostParentProcessId&quot;</span><span class="p">:</span><span class="mi">3795408</span><span class="p">,</span><span class="nt">&quot;userId&quot;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span><span class="nt">&quot;mountNamespace&quot;</span><span class="p">:</span><span class="mi">4026531840</span><span class="p">,</span><span class="nt">&quot;pidNamespace&quot;</span><span class="p">:</span><span class="mi">4026531836</span><span class="p">,</span><span class="nt">&quot;processName&quot;</span><span class="p">:</span><span class="s2">&quot;exa&quot;</span><span class="p">,</span><span class="nt">&quot;hostName&quot;</span><span class="p">:</span><span class="s2">&quot;fujitsu&quot;</span><span class="p">,</span><span class="nt">&quot;containerId&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerImage&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podUID&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;eventId&quot;</span><span class="p">:</span><span class="s2">&quot;257&quot;</span><span class="p">,</span><span class="nt">&quot;eventName&quot;</span><span class="p">:</span><span class="s2">&quot;openat&quot;</span><span class="p">,</span><span class="nt">&quot;argsNum&quot;</span><span class="p">:</span><span class="mi">4</span><span class="p">,</span><span class="nt">&quot;returnValue&quot;</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="nt">&quot;stackAddresses&quot;</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">&quot;args&quot;</span><span class="p">:[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;dirfd&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;int&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">-100</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;pathname&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;const char*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;/lib/x86_64-linux-gnu/libgcc_s.so.1&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;flags&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;int&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">524288</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;mode_t&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">}]}</span>
-</code></pre></div>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>A good tip is to pipe <strong>tracee-ebpf</strong> json output to <a href="">jq</a> tool, this way
-you can select fields, rename them, filter values, and many other things:</p>
-<blockquote>
-<div class="highlight"><pre><span></span><code>sudo ./dist/tracee-ebpf -o format:json -o option:parse-arguments
--trace comm=ping -capture net=lo | jq -c &#39;. | {eventId, hostName
-,processName,hostProcessId,UserId}&#39;
-</code></pre></div>
-</blockquote>
-</div>
-</li>
-<li>
-<p><strong>GOB</strong></p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --output json --trace comm=bash --trace follow --trace event=openat
-</code></pre></div>
-<blockquote>
-<p>The output is <strong>binary</strong> (optimizes performance when piping
-<strong>tracee-ebpf</strong> events to <strong>tracee-rules</strong>, for signature patterns
-detections).</p>
-</blockquote>
-</li>
-<li>
-<p><strong>GOTEMPLATE</strong></p>
-<p>Check <a href="../../integrating/go-templates/">integrations page</a> for more info.</p>
-</li>
-</ol>
-<h2 id="output-files">Output Files<a class="headerlink" href="#output-files" title="Permanent link">&para;</a></h2>
-<p>Tracee gives user the option to select which files they want to use as standard
-output and standard error:</p>
-<ol>
-<li>
-<p>Output file</p>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>User might use different output formats combined with output file option</p>
-</div>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --output json --trace comm=bash --trace follow --trace event=openat --output out-file:/tmp/tracee.log
-
-$ cat /tmp/tracee.log | jq -c
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="mi">1657291487418386000</span><span class="p">,</span><span class="nt">&quot;threadStartTime&quot;</span><span class="p">:</span><span class="mi">616568205378363</span><span class="p">,</span><span class="nt">&quot;processorId&quot;</span><span class="p">:</span><span class="mi">11</span><span class="p">,</span><span class="nt">&quot;processId&quot;</span><span class="p">:</span><span class="mi">1893369</span><span class="p">,</span><span class="nt">&quot;cgroupId&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;threadId&quot;</span><span class="p">:</span><span class="mi">1893369</span><span class="p">,</span><span class="nt">&quot;parentProcessId&quot;</span><span class="p">:</span><span class="mi">3795408</span><span class="p">,</span><span class="nt">&quot;hostProcessId&quot;</span><span class="p">:</span><span class="mi">1893369</span><span class="p">,</span><span class="nt">&quot;hostThreadId&quot;</span><span class="p">:</span><span class="mi">1893369</span><span class="p">,</span><span class="nt">&quot;hostParentProcessId&quot;</span><span class="p">:</span><span class="mi">3795408</span><span class="p">,</span><span class="nt">&quot;userId&quot;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span><span class="nt">&quot;mountNamespace&quot;</span><span class="p">:</span><span class="mi">4026531840</span><span class="p">,</span><span class="nt">&quot;pidNamespace&quot;</span><span class="p">:</span><span class="mi">4026531836</span><span class="p">,</span><span class="nt">&quot;processName&quot;</span><span class="p">:</span><span class="s2">&quot;exa&quot;</span><span class="p">,</span><span class="nt">&quot;hostName&quot;</span><span class="p">:</span><span class="s2">&quot;fujitsu&quot;</span><span class="p">,</span><span class="nt">&quot;containerId&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerImage&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podUID&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;eventId&quot;</span><span class="p">:</span><span class="s2">&quot;257&quot;</span><span class="p">,</span><span class="nt">&quot;eventName&quot;</span><span class="p">:</span><span class="s2">&quot;openat&quot;</span><span class="p">,</span><span class="nt">&quot;argsNum&quot;</span><span class="p">:</span><span class="mi">4</span><span class="p">,</span><span class="nt">&quot;returnValue&quot;</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="nt">&quot;stackAddresses&quot;</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">&quot;args&quot;</span><span class="p">:[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;dirfd&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;int&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">-100</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;pathname&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;const char*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;/etc/ld.so.cache&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;flags&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;int&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">524288</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;mode_t&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">}]}</span>
-<span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="mi">1657291487418510000</span><span class="p">,</span><span class="nt">&quot;threadStartTime&quot;</span><span class="p">:</span><span class="mi">616568205378363</span><span class="p">,</span><span class="nt">&quot;processorId&quot;</span><span class="p">:</span><span class="mi">11</span><span class="p">,</span><span class="nt">&quot;processId&quot;</span><span class="p">:</span><span class="mi">1893369</span><span class="p">,</span><span class="nt">&quot;cgroupId&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;threadId&quot;</span><span class="p">:</span><span class="mi">1893369</span><span class="p">,</span><span class="nt">&quot;parentProcessId&quot;</span><span class="p">:</span><span class="mi">3795408</span><span class="p">,</span><span class="nt">&quot;hostProcessId&quot;</span><span class="p">:</span><span class="mi">1893369</span><span class="p">,</span><span class="nt">&quot;hostThreadId&quot;</span><span class="p">:</span><span class="mi">1893369</span><span class="p">,</span><span class="nt">&quot;hostParentProcessId&quot;</span><span class="p">:</span><span class="mi">3795408</span><span class="p">,</span><span class="nt">&quot;userId&quot;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span><span class="nt">&quot;mountNamespace&quot;</span><span class="p">:</span><span class="mi">4026531840</span><span class="p">,</span><span class="nt">&quot;pidNamespace&quot;</span><span class="p">:</span><span class="mi">4026531836</span><span class="p">,</span><span class="nt">&quot;processName&quot;</span><span class="p">:</span><span class="s2">&quot;exa&quot;</span><span class="p">,</span><span class="nt">&quot;hostName&quot;</span><span class="p">:</span><span class="s2">&quot;fujitsu&quot;</span><span class="p">,</span><span class="nt">&quot;containerId&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerImage&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podUID&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;eventId&quot;</span><span class="p">:</span><span class="s2">&quot;257&quot;</span><span class="p">,</span><span class="nt">&quot;eventName&quot;</span><span class="p">:</span><span class="s2">&quot;openat&quot;</span><span class="p">,</span><span class="nt">&quot;argsNum&quot;</span><span class="p">:</span><span class="mi">4</span><span class="p">,</span><span class="nt">&quot;returnValue&quot;</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="nt">&quot;stackAddresses&quot;</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">&quot;args&quot;</span><span class="p">:[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;dirfd&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;int&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">-100</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;pathname&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;const char*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;/lib/x86_64-linux-gnu/libgcc_s.so.1&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;flags&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;int&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">524288</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;mode_t&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">}]}</span>
-</code></pre></div>
-</li>
-<li>
-<p>Error file</p>
-<p>Redirect logs to a file if needed:</p>
-<div class="highlight"><pre><span></span><code>$ sudo TRACEE_BPF_FILE=do-not-exist ./dist/tracee-ebpf --output json --trace comm=bash --trace follow --trace event=openat --output out-file:/tmp/tracee.events --output log-file:/tmp/tracee.log
-</code></pre></div>
-</li>
-</ol>
+<h1 id="vfs_readv">vfs_readv<a class="headerlink" href="#vfs_readv" title="Permanent link">&para;</a></h1>
+<h2 id="intro">Intro<a class="headerlink" href="#intro" title="Permanent link">&para;</a></h2>
+<p>vfs_readv - generic FS file read to a vector</p>
+<h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
+<p>An event indicating that a read from a file to a vector was done.
+The event is not FS specific, and the hook is on the inner implementation of the <code>readv</code> and other vector read syscalls.
+Notice that there are more methods for file reading other than this, like <code>vfs_read</code>, file mapping, etc.</p>
+<h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>pathname</code>:<code>const char*</code>[K] - the path of the file read</li>
+<li><code>dev</code>:<code>dev_t</code>[K] - the device the file resides in</li>
+<li><code>inode</code>:<code>unsigned long</code>[K] - the inode of the file in the device</li>
+<li><code>vlen</code>:<code>unsigned long</code>[K] - the amount of buffers requested to be read by this operation to the vector</li>
+<li><code>pos</code>:<code>off_t</code>[K] - the start position for the read</li>
+</ul>
+<h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
+<h3 id="vfs_readv_1">vfs_readv<a class="headerlink" href="#vfs_readv_1" title="Permanent link">&para;</a></h3>
+<h4 id="type">Type<a class="headerlink" href="#type" title="Permanent link">&para;</a></h4>
+<p>kprobe + kretprobe</p>
+<h4 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h4>
+<p>The implementation of the <code>readv</code>, <code>preadv</code> and <code>preadv2</code> syscall after fd resolving.</p>
+<h2 id="related-events">Related Events<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
+<p><code>readv</code>,<code>vfs_read</code>,<code>vfs_writev</code></p>
 
 
 
@@ -2581,10 +2536,10 @@ $ cat /tmp/tracee.log | jq -c
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../assets/javascripts/workers/search.f236eb64.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../../assets/javascripts/workers/search.f236eb64.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.b5a861c9.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.b5a861c9.min.js"></script>
       
     
   </body>
