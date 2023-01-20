@@ -41,6 +41,10 @@ func ClearBit(n *uint64, offset uint) {
 	*n &= ^(1 << offset)
 }
 
+func ClearBits(n *uint64, mask uint64) {
+	*n &= ^mask
+}
+
 func SetBit(n *uint64, offset uint) {
 	*n |= (1 << offset)
 }
