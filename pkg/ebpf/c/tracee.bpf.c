@@ -1832,8 +1832,10 @@ init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 
     }
 
     char *uts_name = get_task_uts_name(task);
-    if (uts_name)
+    if (uts_name) {
+        __builtin_memset(context->task.uts_name, 0, sizeof(context->task.uts_name));
         bpf_probe_read_str(&context->task.uts_name, TASK_COMM_LEN, uts_name);
+    }
     if (options & OPT_CGROUP_V1) {
         context->task.cgroup_id = get_cgroup_v1_subsys0_id(task);
     } else {
