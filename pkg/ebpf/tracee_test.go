@@ -135,11 +135,11 @@ func Test_getTailCalls(t *testing.T) {
 		{
 			name: "happy path - some direct syscalls and syscall requiring events",
 			events: map[events.ID]eventConfig{
-				events.Ptrace:           {submit: true, emit: true},
-				events.ClockSettime:     {submit: true, emit: true},
-				events.SecurityFileOpen: {submit: true, emit: true},
-				events.MemProtAlert:     {submit: true, emit: true},
-				events.SocketDup:        {submit: true, emit: true},
+				events.Ptrace:           {submit: ^uint64(0), emit: ^uint64(0)},
+				events.ClockSettime:     {submit: ^uint64(0), emit: ^uint64(0)},
+				events.SecurityFileOpen: {submit: ^uint64(0), emit: ^uint64(0)},
+				events.MemProtAlert:     {submit: ^uint64(0), emit: ^uint64(0)},
+				events.SocketDup:        {submit: ^uint64(0), emit: ^uint64(0)},
 			},
 			expectedTailCalls: []events.TailCall{
 				{MapName: "sys_exit_tails", MapIndexes: []uint32{uint32(events.Dup), uint32(events.Dup2), uint32(events.Dup3)}, ProgName: "sys_dup_exit_tail"},

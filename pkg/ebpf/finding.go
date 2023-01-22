@@ -54,6 +54,7 @@ func newEvent(id int, name string, s trace.Event) *trace.Event {
 		ReturnValue:         s.ReturnValue,
 		StackAddresses:      s.StackAddresses,
 		ContextFlags:        s.ContextFlags,
+		MatchedScopes:       s.MatchedScopes,
 		Args:                s.Args,
 	}
 }

@@ -264,12 +264,6 @@ func (t *Tracee) computeScopes(event *trace.Event) uint64 {
 			continue
 		}
 
-		// TODO: check if the event is traceable to some scope using a BPF map
-		if !filterScope.IsEventTraceable(eventID) {
-			utils.ClearBit(&matchedScopes, bitOffset)
-			continue
-		}
-
 		if !filterScope.ContextFilter.Filter(*event) {
 			utils.ClearBit(&matchedScopes, bitOffset)
 			continue
@@ -433,7 +427,7 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 		for event := range in {
 			// Only emit events requested by the user
 			id := events.ID(event.EventID)
-			if !t.events[id].emit {
+			if (t.events[id].emit & event.MatchedScopes) == 0 {
 				continue
 			}
 

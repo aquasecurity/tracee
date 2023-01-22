@@ -157,8 +157,8 @@ type fileExecInfo struct {
 }
 
 type eventConfig struct {
-	submit bool // event should be submitted to userspace
-	emit   bool // event should be emitted to the user
+	submit uint64 // event should be submitted to userspace (by scopes bitmap)
+	emit   uint64 // event should be emitted to the user (by scopes bitmap)
 }
 
 // Tracee traces system calls and system events using eBPF
@@ -212,8 +212,8 @@ func GetEssentialEventsList() map[events.ID]eventConfig {
 		events.SchedProcessExec: {},
 		events.SchedProcessExit: {},
 		events.SchedProcessFork: {},
-		events.CgroupMkdir:      {submit: true},
-		events.CgroupRmdir:      {submit: true},
+		events.CgroupMkdir:      {submit: 0xFFFFFFFFFFFFFFFF},
+		events.CgroupRmdir:      {submit: 0xFFFFFFFFFFFFFFFF},
 	}
 }
 
@@ -243,16 +243,16 @@ func GetCaptureEventsList(cfg Config) map[events.ID]eventConfig {
 	return captureEvents
 }
 
-func (t *Tracee) handleEventsDependencies(eventId events.ID) {
+func (t *Tracee) handleEventsDependencies(eventId events.ID, submitMap uint64) {
 	definition := events.Definitions.Get(eventId)
 	eDependencies := definition.Dependencies
 	for _, dependentEvent := range eDependencies.Events {
 		ec, ok := t.events[dependentEvent.EventID]
 		if !ok {
 			ec = eventConfig{}
-			t.handleEventsDependencies(dependentEvent.EventID)
+			t.handleEventsDependencies(dependentEvent.EventID, submitMap)
 		}
-		ec.submit = true
+		ec.submit = submitMap
 		t.events[dependentEvent.EventID] = ec
 	}
 }
@@ -288,13 +288,20 @@ func New(cfg Config) (*Tracee, error) {
 	// Events chosen by the user
 	for filterScope := range t.config.FilterScopes.Map() {
 		for e := range filterScope.EventsToTrace {
-			t.events[e] = eventConfig{submit: true, emit: true}
+			var submit, emit uint64
+			if _, ok := t.events[e]; ok {
+				submit = t.events[e].submit
+				emit = t.events[e].emit
+			}
+			utils.SetBit(&submit, uint(filterScope.ID))
+			utils.SetBit(&emit, uint(filterScope.ID))
+			t.events[e] = eventConfig{submit: submit, emit: emit}
 		}
 	}
 
 	// Handles all essential events dependencies
-	for id := range t.events {
-		t.handleEventsDependencies(id)
+	for id, evt := range t.events {
+		t.handleEventsDependencies(id, evt.submit)
 	}
 
 	// Add Required (by enabled events) capabilities to its ring
@@ -598,31 +605,31 @@ func (t *Tracee) initDerivationTable() error {
 	t.eventDerivations = derive.Table{
 		events.CgroupMkdir: {
 			events.ContainerCreate: {
-				Enabled:        t.events[events.ContainerCreate].submit,
+				Enabled:        t.events[events.ContainerCreate].submit > 0,
 				DeriveFunction: derive.ContainerCreate(t.containers),
 			},
 		},
 		events.CgroupRmdir: {
 			events.ContainerRemove: {
-				Enabled:        t.events[events.ContainerRemove].submit,
+				Enabled:        t.events[events.ContainerRemove].submit > 0,
 				DeriveFunction: derive.ContainerRemove(t.containers),
 			},
 		},
 		events.PrintSyscallTable: {
 			events.HookedSyscalls: {
-				Enabled:        t.events[events.PrintSyscallTable].submit,
+				Enabled:        t.events[events.PrintSyscallTable].submit > 0,
 				DeriveFunction: derive.DetectHookedSyscall(t.kernelSymbols),
 			},
 		},
 		events.PrintNetSeqOps: {
 			events.HookedSeqOps: {
-				Enabled:        t.events[events.HookedSeqOps].submit,
+				Enabled:        t.events[events.HookedSeqOps].submit > 0,
 				DeriveFunction: derive.HookedSeqOps(t.kernelSymbols),
 			},
 		},
 		events.SharedObjectLoaded: {
 			events.SymbolsLoaded: {
-				Enabled: t.events[events.SymbolsLoaded].submit,
+				Enabled: t.events[events.SymbolsLoaded].submit > 0,
 				DeriveFunction: derive.SymbolsLoaded(
 					soLoader,
 					watchedSymbols,
@@ -635,63 +642,63 @@ func (t *Tracee) initDerivationTable() error {
 		//
 		events.NetPacketIPBase: {
 			events.NetPacketIPv4: {
-				Enabled:        t.events[events.NetPacketIPv4].submit,
+				Enabled:        t.events[events.NetPacketIPv4].submit > 0,
 				DeriveFunction: derive.NetPacketIPv4(),
 			},
 			events.NetPacketIPv6: {
-				Enabled:        t.events[events.NetPacketIPv6].submit,
+				Enabled:        t.events[events.NetPacketIPv6].submit > 0,
 				DeriveFunction: derive.NetPacketIPv6(),
 			},
 		},
 		events.NetPacketTCPBase: {
 			events.NetPacketTCP: {
-				Enabled:        t.events[events.NetPacketTCP].submit,
+				Enabled:        t.events[events.NetPacketTCP].submit > 0,
 				DeriveFunction: derive.NetPacketTCP(),
 			},
 		},
 		events.NetPacketUDPBase: {
 			events.NetPacketUDP: {
-				Enabled:        t.events[events.NetPacketUDP].submit,
+				Enabled:        t.events[events.NetPacketUDP].submit > 0,
 				DeriveFunction: derive.NetPacketUDP(),
 			},
 		},
 		events.NetPacketICMPBase: {
 			events.NetPacketICMP: {
-				Enabled:        t.events[events.NetPacketICMP].submit,
+				Enabled:        t.events[events.NetPacketICMP].submit > 0,
 				DeriveFunction: derive.NetPacketICMP(),
 			},
 		},
 		events.NetPacketICMPv6Base: {
 			events.NetPacketICMPv6: {
-				Enabled:        t.events[events.NetPacketICMPv6].submit,
+				Enabled:        t.events[events.NetPacketICMPv6].submit > 0,
 				DeriveFunction: derive.NetPacketICMPv6(),
 			},
 		},
 		events.NetPacketDNSBase: {
 			events.NetPacketDNS: {
-				Enabled:        t.events[events.NetPacketDNS].submit,
+				Enabled:        t.events[events.NetPacketDNS].submit > 0,
 				DeriveFunction: derive.NetPacketDNS(),
 			},
 			events.NetPacketDNSRequest: {
-				Enabled:        t.events[events.NetPacketDNSRequest].submit,
+				Enabled:        t.events[events.NetPacketDNSRequest].submit > 0,
 				DeriveFunction: derive.NetPacketDNSRequest(),
 			},
 			events.NetPacketDNSResponse: {
-				Enabled:        t.events[events.NetPacketDNSResponse].submit,
+				Enabled:        t.events[events.NetPacketDNSResponse].submit > 0,
 				DeriveFunction: derive.NetPacketDNSResponse(),
 			},
 		},
 		events.NetPacketHTTPBase: {
 			events.NetPacketHTTP: {
-				Enabled:        t.events[events.NetPacketHTTP].submit,
+				Enabled:        t.events[events.NetPacketHTTP].submit > 0,
 				DeriveFunction: derive.NetPacketHTTP(),
 			},
 			events.NetPacketHTTPRequest: {
-				Enabled:        t.events[events.NetPacketHTTPRequest].submit,
+				Enabled:        t.events[events.NetPacketHTTPRequest].submit > 0,
 				DeriveFunction: derive.NetPacketHTTPRequest(),
 			},
 			events.NetPacketHTTPResponse: {
-				Enabled:        t.events[events.NetPacketHTTPResponse].submit,
+				Enabled:        t.events[events.NetPacketHTTPResponse].submit > 0,
 				DeriveFunction: derive.NetPacketHTTPResponse(),
 			},
 		},
@@ -743,7 +750,7 @@ func (t *Tracee) getOptionsConfig() uint32 {
 
 func (t *Tracee) computeConfigValues() []byte {
 	// config_entry
-	configVal := make([]byte, 384)
+	configVal := make([]byte, 256)
 
 	// tracee_pid
 	binary.LittleEndian.PutUint32(configVal[0:4], uint32(os.Getpid()))
@@ -877,20 +884,6 @@ func (t *Tracee) computeConfigValues() []byte {
 	// pid_min
 	binary.LittleEndian.PutUint64(configVal[248:256], t.config.FilterScopes.PIDFilterMin())
 
-	// Next 128 bytes (1024 bits) are used for events_to_submit configuration
-	// Set according to events chosen by the user
-	for id, e := range t.events {
-		if id >= 1024 {
-			// we support up to 1024 events shared with bpf code
-			continue
-		}
-		if e.submit {
-			index := id / 8
-			offset := id % 8
-			configVal[256+index] |= 1 << offset
-		}
-	}
-
 	return configVal
 }
 
@@ -945,6 +938,19 @@ func (t *Tracee) validateKallsymsDependencies() {
 }
 
 func (t *Tracee) populateBPFMaps() error {
+	// Prepare events map
+	eventsMap, err := t.bpfModule.GetMap("events_map")
+	if err != nil {
+		return err
+	}
+	for id, ecfg := range t.events {
+		submit := ecfg.submit
+		err := eventsMap.Update(unsafe.Pointer(&id), unsafe.Pointer(&submit))
+		if err != nil {
+			return err
+		}
+	}
+
 	// Prepare 32bit to 64bit syscall number mapping
 	sys32to64BPFMap, err := t.bpfModule.GetMap("sys_32_to_64_map") // u32, u32
 	if err != nil {
@@ -1157,7 +1163,7 @@ func getTailCalls(eventConfigs map[events.ID]eventConfig) ([]events.TailCall, er
 			tailCallProgs[tailCallStr] = true
 		}
 		// validate the event and add to the syscall tail calls
-		if def.Syscall && cfg.submit && e < events.MaxSyscallID {
+		if def.Syscall && cfg.submit > 0 && e < events.MaxSyscallID {
 			enterInitTailCall.AddIndex(uint32(e))
 			enterSubmitTailCall.AddIndex(uint32(e))
 			exitInitTailCall.AddIndex(uint32(e))
@@ -1492,7 +1498,7 @@ func (t *Tracee) updateFileSHA() {
 }
 
 func (t *Tracee) invokeInitEvents() {
-	if t.events[events.InitNamespaces].emit {
+	if t.events[events.InitNamespaces].emit > 0 {
 		capabilities.GetInstance().Requested(func() error { // ring2
 			systemInfoEvent := events.InitNamespacesEvent()
 			t.config.ChanEvents <- systemInfoEvent
@@ -1500,7 +1506,7 @@ func (t *Tracee) invokeInitEvents() {
 		}, cap.SYS_PTRACE)
 		t.stats.EventCount.Increment()
 	}
-	if t.events[events.ExistingContainer].emit {
+	if t.events[events.ExistingContainer].emit > 0 {
 		for _, e := range events.ExistingContainersEvents(t.containers, t.config.ContainersEnrich) {
 			t.config.ChanEvents <- e
 			t.stats.EventCount.Increment()
