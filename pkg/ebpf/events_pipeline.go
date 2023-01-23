@@ -409,6 +409,7 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 					default:
 						// Derived events might need filtering as well
 						if !t.shouldProcessEvent(&derivative) {
+							_ = t.stats.EventsFiltered.Increment()
 							continue
 						}
 					}
