@@ -65,12 +65,12 @@ func (sig *codeInjection) OnEvent(event protocol.Event) error {
 	}
 	switch ee.EventName {
 	case "open", "openat":
-		flags, err := helpers.GetTraceeArgumentByName(ee, "flags")
+		flags, err := helpers.GetTraceeArgumentByName(ee, "flags", helpers.GetArgOps{DefaultArgs: false})
 		if err != nil {
 			return fmt.Errorf("%v %#v", err, ee)
 		}
 		if helpers.IsFileWrite(flags.Value.(string)) {
-			pathname, err := helpers.GetTraceeArgumentByName(ee, "pathname")
+			pathname, err := helpers.GetTraceeArgumentByName(ee, "pathname", helpers.GetArgOps{DefaultArgs: false})
 			if err != nil {
 				return err
 			}
@@ -87,7 +87,7 @@ func (sig *codeInjection) OnEvent(event protocol.Event) error {
 			}
 		}
 	case "ptrace":
-		request, err := helpers.GetTraceeArgumentByName(ee, "request")
+		request, err := helpers.GetTraceeArgumentByName(ee, "request", helpers.GetArgOps{DefaultArgs: false})
 		if err != nil {
 			return err
 		}
@@ -104,14 +104,14 @@ func (sig *codeInjection) OnEvent(event protocol.Event) error {
 		}
 		// TODO Commenting out the execve case to make it equivalent to Rego signature
 		//case "execve":
-		//	envs, err := helpers.GetTraceeArgumentByName(ee, "envp")
+		//	envs, err := helpers.GetTraceeArgumentByName(ee, "envp", helpers.GetArgOps{DefaultArgs: false})
 		//	if err != nil {
 		//		break
 		//	}
 		//	envsSlice := envs.Value.([]string)
 		//	for _, env := range envsSlice {
 		//		if strings.HasPrefix(env, "LD_PRELOAD") || strings.HasPrefix(env, "LD_LIBRARY_PATH") {
-		//			cmd, err := helpers.GetTraceeArgumentByName(ee, "argv")
+		//			cmd, err := helpers.GetTraceeArgumentByName(ee, "argv", helpers.GetArgOps{DefaultArgs: false})
 		//			if err != nil {
 		//				return err
 		//			}

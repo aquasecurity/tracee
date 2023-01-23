@@ -46,24 +46,26 @@ const (
 	boolT
 )
 
+// ReadArgFromBuff read the next argument from the buffer.
+// Return the index of the argument and the parsed argument.
 func ReadArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta,
 ) (
-	trace.ArgMeta, interface{}, error,
+	uint, trace.Argument, error,
 ) {
 	var err error
 	var res interface{}
 	var argIdx uint8
-	var argMeta trace.ArgMeta
+	var arg trace.Argument
 
 	err = ebpfMsgDecoder.DecodeUint8(&argIdx)
 	if err != nil {
-		return argMeta, nil, fmt.Errorf("error reading arg index: %v", err)
+		return 0, arg, fmt.Errorf("error reading arg index: %v", err)
 	}
 	if int(argIdx) >= len(params) {
-		return argMeta, nil, fmt.Errorf("invalid arg index %d", argIdx)
+		return 0, arg, fmt.Errorf("invalid arg index %d", argIdx)
 	}
-	argMeta = params[argIdx]
-	argType := GetParamType(argMeta.Type)
+	arg.ArgMeta = params[argIdx]
+	argType := GetParamType(arg.Type)
 
 	switch argType {
 	case u8T:
@@ -112,12 +114,12 @@ func ReadArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.A
 		var arrLen uint8
 		err = ebpfMsgDecoder.DecodeUint8(&arrLen)
 		if err != nil {
-			return argMeta, nil, fmt.Errorf("error reading string array number of elements: %v", err)
+			return uint(argIdx), arg, fmt.Errorf("error reading string array number of elements: %v", err)
 		}
 		for i := 0; i < int(arrLen); i++ {
 			s, err := readStringFromBuff(ebpfMsgDecoder)
 			if err != nil {
-				return argMeta, nil, fmt.Errorf("error reading string element: %v", err)
+				return uint(argIdx), arg, fmt.Errorf("error reading string element: %v", err)
 			}
 			ss = append(ss, s)
 		}
@@ -129,15 +131,15 @@ func ReadArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.A
 
 		err = ebpfMsgDecoder.DecodeUint32(&arrLen)
 		if err != nil {
-			return argMeta, nil, fmt.Errorf("error reading args array length: %v", err)
+			return uint(argIdx), arg, fmt.Errorf("error reading args array length: %v", err)
 		}
 		err = ebpfMsgDecoder.DecodeUint32(&argNum)
 		if err != nil {
-			return argMeta, nil, fmt.Errorf("error reading args number: %v", err)
+			return uint(argIdx), arg, fmt.Errorf("error reading args number: %v", err)
 		}
 		resBytes, err := ReadByteSliceFromBuff(ebpfMsgDecoder, int(arrLen))
 		if err != nil {
-			return argMeta, nil, fmt.Errorf("error reading args array: %v", err)
+			return uint(argIdx), arg, fmt.Errorf("error reading args array: %v", err)
 		}
 		ss = strings.Split(string(resBytes), "\x00")
 		if ss[len(ss)-1] == "" {
@@ -151,36 +153,37 @@ func ReadArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.A
 		var size uint32
 		err = ebpfMsgDecoder.DecodeUint32(&size)
 		if err != nil {
-			return argMeta, nil, fmt.Errorf("error reading byte array size: %v", err)
+			return uint(argIdx), arg, fmt.Errorf("error reading byte array size: %v", err)
 		}
 		// error if byte buffer is too big (and not a network event)
 		if size > 4096 && (id < events.NetPacketBase || id > events.MaxNetID) {
-			return argMeta, nil, fmt.Errorf("byte array size too big: %d", size)
+			return uint(argIdx), arg, fmt.Errorf("byte array size too big: %d", size)
 		}
 		res, err = ReadByteSliceFromBuff(ebpfMsgDecoder, int(size))
 	case intArr2T:
 		var intArray [2]int32
 		err = ebpfMsgDecoder.DecodeIntArray(intArray[:], 2)
 		if err != nil {
-			return argMeta, nil, fmt.Errorf("error reading int elements: %v", err)
+			return uint(argIdx), arg, fmt.Errorf("error reading int elements: %v", err)
 		}
 		res = intArray
 	case uint64ArrT:
 		ulongArray := make([]uint64, 0)
 		err := ebpfMsgDecoder.DecodeUint64Array(&ulongArray)
 		if err != nil {
-			return argMeta, nil, fmt.Errorf("error reading ulong elements: %v", err)
+			return uint(argIdx), arg, fmt.Errorf("error reading ulong elements: %v", err)
 		}
 		res = ulongArray
 
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
-		return argMeta, nil, fmt.Errorf("error unknown arg type %v", argType)
+		return uint(argIdx), arg, fmt.Errorf("error unknown arg type %v", argType)
 	}
 	if err != nil {
-		return argMeta, nil, err
+		return uint(argIdx), arg, err
 	}
-	return argMeta, res, nil
+	arg.Value = res
+	return uint(argIdx), arg, nil
 }
 
 func GetParamType(paramType string) ArgType {

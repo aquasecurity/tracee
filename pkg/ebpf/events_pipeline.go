@@ -158,10 +158,9 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				continue
 			}
 
-			args := make([]trace.Argument, 0, ctx.Argnum)
-
+			args := make([]trace.Argument, len(eventDefinition.Params))
 			for i := 0; i < int(ctx.Argnum); i++ {
-				argMeta, argVal, err := bufferdecoder.ReadArgFromBuff(
+				idx, arg, err := bufferdecoder.ReadArgFromBuff(
 					eventId,
 					ebpfMsgDecoder,
 					eventDefinition.Params,
@@ -170,8 +169,16 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 					t.handleError(fmt.Errorf("failed to read argument %d of event %s: %v", i, eventDefinition.Name, err))
 					continue
 				}
-
-				args = append(args, trace.Argument{ArgMeta: argMeta, Value: argVal})
+				if args[idx].Value != nil {
+					t.handleError(fmt.Errorf("read more than one instance of argument %s of event %s. Saved value: %v. New value: %v", arg.Name, eventDefinition.Name, args[idx].Value, arg.Value))
+				}
+				args[idx] = arg
+			}
+			// Fill missing arguments metadata
+			for i := 0; i < len(eventDefinition.Params); i++ {
+				if args[i].Value == nil {
+					args[i].ArgMeta = eventDefinition.Params[i]
+				}
 			}
 
 			// Add stack trace if needed

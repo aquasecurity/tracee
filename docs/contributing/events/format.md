@@ -16,7 +16,7 @@ Detailed description of the event. Should include:
 * K - Originated from kernel-space.
 * U - Originated from user space (for example, pointer to user space memory used to get it)
 * TOCTOU - Vulnerable to TOCTOU (time of check, time of use)
-* OPT - Optional argument - might not always be available
+* OPT - Optional argument - might not always be available (passed with null value)
 
 ## Hooks
 ### <hooked_func#1>

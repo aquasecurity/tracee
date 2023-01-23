@@ -209,7 +209,7 @@ func GetProtoIPv4ByName(
 	//
 	var ipv4 trace.ProtoIPv4
 
-	arg, err := GetTraceeArgumentByName(event, argName)
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
 		return trace.ProtoIPv4{}, err
 	}
@@ -305,7 +305,7 @@ func GetProtoIPv6ByName(
 
 	var ipv4 trace.ProtoIPv6
 
-	arg, err := GetTraceeArgumentByName(event, argName)
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
 		return trace.ProtoIPv6{}, err
 	}
@@ -407,7 +407,7 @@ func GetProtoUDPByName(
 
 	var icmp trace.ProtoUDP
 
-	arg, err := GetTraceeArgumentByName(event, argName)
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
 		return trace.ProtoUDP{}, err
 	}
@@ -475,7 +475,7 @@ func GetProtoTCPByName(
 
 	var icmp trace.ProtoTCP
 
-	arg, err := GetTraceeArgumentByName(event, argName)
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
 		return trace.ProtoTCP{}, err
 	}
@@ -595,7 +595,7 @@ func GetProtoICMPByName(
 
 	var icmp trace.ProtoICMP
 
-	arg, err := GetTraceeArgumentByName(event, argName)
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
 		return trace.ProtoICMP{}, err
 	}
@@ -655,7 +655,7 @@ func GetProtoICMPv6ByName(
 
 	var icmpv6 trace.ProtoICMPv6
 
-	arg, err := GetTraceeArgumentByName(event, argName)
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
 		return trace.ProtoICMPv6{}, err
 	}
@@ -729,7 +729,7 @@ func GetProtoDNSByName(
 	//
 	var dns trace.ProtoDNS
 
-	arg, err := GetTraceeArgumentByName(event, argName)
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
 		return trace.ProtoDNS{}, err
 	}
@@ -1334,7 +1334,7 @@ func GetProtoHTTPByName(
 ) {
 	var httpProto trace.ProtoHTTP
 
-	arg, err := GetTraceeArgumentByName(event, argName)
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
 		return trace.ProtoHTTP{}, err
 	}
