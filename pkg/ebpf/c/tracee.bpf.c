@@ -873,6 +873,7 @@ typedef struct program_data {
     task_info_t *task_info;
     event_data_t *event;
     void *ctx;
+    bool kthread; // this is kernel thread (bottom halves: e.g. network ctx)
 } program_data_t;
 
 // For a good summary about capabilities, see https://lwn.net/Articles/636533/
@@ -1057,9 +1058,9 @@ BPF_HASH(module_init_map, u32, kmod_data_t, 256);                  // holds modu
 BPF_LRU_HASH(fd_arg_path_map, fd_arg_task_t, fd_arg_path_t, 1024); // store fds paths by task
 BPF_LRU_HASH(bpf_attach_map, u32, bpf_attach_t, 1024);             // holds bpf prog info
 BPF_LRU_HASH(bpf_attach_tmp_map, u32, bpf_attach_t, 1024);         // temporarily hold bpf_attach_t
-BPF_PERCPU_ARRAY(event_data_map, event_data_t, 1);                 // persist event related data
+BPF_PERCPU_ARRAY(event_data_map, event_data_t, 2);                 // persist event related data
 BPF_HASH(logs_count, bpf_log_t, bpf_log_count_t, 4096);            // logs count
-BPF_PERCPU_ARRAY(scratch_map, scratch_t, 1);                       // scratch space to avoid allocating stuff on the stack
+BPF_PERCPU_ARRAY(scratch_map, scratch_t, 2);                       // scratch space to avoid allocating stuff on the stack
 // clang-format on
 
 // EBPF PERF BUFFERS -------------------------------------------------------------------------------
@@ -1853,10 +1854,11 @@ init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 
     return 0;
 }
 
-static __always_inline task_info_t *init_task_info(u32 tid, u32 pid)
+static __always_inline task_info_t *init_task_info(u32 tid, u32 pid, bool kthread)
 {
-    int zero = 0;
-    scratch_t *scratch = bpf_map_lookup_elem(&scratch_map, &zero);
+    int scratch_map_idx = kthread ? 1 : 0; // second buffer for kthread ctx
+
+    scratch_t *scratch = bpf_map_lookup_elem(&scratch_map, &scratch_map_idx);
     if (unlikely(scratch == NULL))
         return NULL;
 
@@ -1888,12 +1890,14 @@ static __always_inline bool context_changed(task_context_t *old, task_context_t 
            *(u64 *) &old->uts_name[8] != *(u64 *) &new->uts_name[8];
 }
 
+// clang-format off
 static __always_inline int init_program_data(program_data_t *p, void *ctx)
 {
     long ret = 0;
     int zero = 0;
+    int evt_buf_idx = p->kthread ? 1 : 0; // second buffer for kthread ctx
 
-    p->event = bpf_map_lookup_elem(&event_data_map, &zero);
+    p->event = bpf_map_lookup_elem(&event_data_map, &evt_buf_idx);
     if (unlikely(p->event == NULL))
         return 0;
 
@@ -1913,14 +1917,18 @@ static __always_inline int init_program_data(program_data_t *p, void *ctx)
     p->event->buf_off = 0;
 
     bool container_lookup_required = true;
+
     p->task_info = bpf_map_lookup_elem(&task_info_map, &p->event->context.task.host_tid);
     if (unlikely(p->task_info == NULL)) {
-        p->task_info =
-            init_task_info(p->event->context.task.host_tid, p->event->context.task.host_pid);
+        p->task_info = init_task_info(
+            p->event->context.task.host_tid,
+            p->event->context.task.host_pid,
+            p->kthread
+        );
         if (unlikely(p->task_info == NULL)) {
             return 0;
         }
-        // we just initialized task info so we know that recompute_scope is already set to true
+        // just initialized task info: recompute_scope is already set to true
         goto out;
     }
 
@@ -1928,21 +1936,27 @@ static __always_inline int init_program_data(program_data_t *p, void *ctx)
     if (context_changed(&p->task_info->context, &p->event->context.task))
         p->task_info->recompute_scope = true;
 
-    // If task is already part of a container, there is no need to check if state changed
     u8 container_state = p->task_info->container_state;
-    if (container_state == CONTAINER_STARTED || container_state == CONTAINER_EXISTED) {
-        p->event->context.task.flags |= CONTAINER_STARTED_FLAG;
-        container_lookup_required = false;
+
+    // if task is already part of a container: no need to check if state changed
+    switch (container_state) {
+        case CONTAINER_STARTED:
+        case CONTAINER_EXISTED:
+            p->event->context.task.flags |= CONTAINER_STARTED_FLAG;
+            container_lookup_required = false;
     }
 
 out:
     if (container_lookup_required) {
         u32 cgroup_id_lsb = p->event->context.task.cgroup_id;
         u8 *state = bpf_map_lookup_elem(&containers_map, &cgroup_id_lsb);
+
         if (state != NULL) {
             p->task_info->container_state = *state;
-            if (*state == CONTAINER_STARTED || *state == CONTAINER_EXISTED) {
-                p->event->context.task.flags |= CONTAINER_STARTED_FLAG;
+            switch (*state) {
+                case CONTAINER_STARTED:
+                case CONTAINER_EXISTED:
+                    p->event->context.task.flags |= CONTAINER_STARTED_FLAG;
             }
         }
     }
@@ -1952,6 +1966,7 @@ out:
 
     return 1;
 }
+// clang-format on
 
 static __always_inline int init_tailcall_program_data(program_data_t *p, void *ctx)
 {
@@ -3207,7 +3222,7 @@ int sys_enter_init(struct bpf_raw_tracepoint_args *ctx)
     task_info_t *task_info = bpf_map_lookup_elem(&task_info_map, &tid);
     if (unlikely(task_info == NULL)) {
         u32 pid = pid_tgid >> 32;
-        task_info = init_task_info(tid, pid);
+        task_info = init_task_info(tid, pid, false);
         if (unlikely(task_info == NULL)) {
             return 0;
         }
@@ -3351,7 +3366,7 @@ int sys_exit_init(struct bpf_raw_tracepoint_args *ctx)
     task_info_t *task_info = bpf_map_lookup_elem(&task_info_map, &tid);
     if (unlikely(task_info == NULL)) {
         u32 pid = pid_tgid >> 32;
-        task_info = init_task_info(tid, pid);
+        task_info = init_task_info(tid, pid, false);
         if (unlikely(task_info == NULL)) {
             return 0;
         }
@@ -7119,7 +7134,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
 {
     // runs BEFORE the CGROUP/SKB eBPF program
 
-    program_data_t p = {};
+    program_data_t p = { .kthread = true };
     if (!init_program_data(&p, ctx))
         return 0;
 
