@@ -118,6 +118,7 @@ enum event_id_e
     PRINT_MEM_DUMP,
     VFS_UTIMES,
     DO_TRUNCATE,
+    FILE_MODIFICATION,
     MAX_EVENT_ID,
 };
 
@@ -465,6 +466,18 @@ typedef struct bpf_attach {
     enum bpf_helper_usage_e write_user;
     enum bpf_helper_usage_e override_return;
 } bpf_attach_t;
+
+typedef struct file_mod_key {
+    u32 host_pid;
+    dev_t device;
+    unsigned long inode;
+} file_mod_key_t;
+
+enum file_modification_op
+{
+    FILE_MODIFICATION_SUBMIT = 0,
+    FILE_MODIFICATION_DONE,
+};
 
 // KERNEL STRUCTS ----------------------------------------------------------------------------------
 

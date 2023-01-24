@@ -114,6 +114,12 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		VfsUtimes:                  &traceProbe{eventName: "vfs_utimes", probeType: kprobe, programName: "trace_vfs_utimes"},
 		UtimesCommon:               &traceProbe{eventName: "utimes_common", probeType: kprobe, programName: "trace_utimes_common"},
 		DoTruncate:                 &traceProbe{eventName: "do_truncate", probeType: kprobe, programName: "trace_do_truncate"},
+		FileUpdateTime:             &traceProbe{eventName: "file_update_time", probeType: kprobe, programName: "trace_file_update_time"},
+		FileUpdateTimeRet:          &traceProbe{eventName: "file_update_time", probeType: kretprobe, programName: "trace_ret_file_update_time"},
+		FileModified:               &traceProbe{eventName: "file_modified", probeType: kprobe, programName: "trace_file_modified"},
+		FileModifiedRet:            &traceProbe{eventName: "file_modified", probeType: kretprobe, programName: "trace_ret_file_modified"},
+		FdInstall:                  &traceProbe{eventName: "fd_install", probeType: kprobe, programName: "trace_fd_install"},
+		FilpClose:                  &traceProbe{eventName: "filp_close", probeType: kprobe, programName: "trace_filp_close"},
 	}
 
 	if !netEnabled {
@@ -274,4 +280,10 @@ const (
 	VfsUtimes
 	UtimesCommon
 	DoTruncate
+	FileUpdateTime
+	FileUpdateTimeRet
+	FileModified
+	FileModifiedRet
+	FdInstall
+	FilpClose
 )
