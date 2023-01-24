@@ -3876,6 +3876,188 @@ int BPF_KPROBE(trace_do_sigaction)
     return events_perf_submit(&p, DO_SIGACTION, 0);
 }
 
+SEC("kprobe/fd_install")
+int BPF_KPROBE(trace_fd_install)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    if (!should_trace(&p))
+        return 0;
+
+    struct file *file = (struct file *) PT_REGS_PARM2(ctx);
+
+    // check if regular file. otherwise don't save the file_mod_key_t in file_modification_map.
+    unsigned short file_mode = get_inode_mode_from_file(file);
+    if ((file_mode & S_IFMT) != S_IFREG) {
+        return 0;
+    }
+
+    file_info_t file_info = get_file_info(file);
+
+    file_mod_key_t file_mod_key = {
+        p.task_info->context.host_pid, file_info.device, file_info.inode};
+    int op = FILE_MODIFICATION_SUBMIT;
+
+    bpf_map_update_elem(&file_modification_map, &file_mod_key, &op, BPF_ANY);
+
+    return 0;
+}
+
+SEC("kprobe/filp_close")
+int BPF_KPROBE(trace_filp_close)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    if (!should_trace(&p))
+        return 0;
+
+    struct file *file = (struct file *) PT_REGS_PARM1(ctx);
+    file_info_t file_info = get_file_info(file);
+
+    file_mod_key_t file_mod_key = {
+        p.task_info->context.host_pid, file_info.device, file_info.inode};
+
+    bpf_map_delete_elem(&file_modification_map, &file_mod_key);
+
+    return 0;
+}
+
+static __always_inline int common_file_modification_ent(struct pt_regs *ctx)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    if (!should_trace(&p))
+        return 0;
+
+    if (!should_submit(FILE_MODIFICATION, &(p.event->context)))
+        return 0;
+
+    struct file *file = (struct file *) PT_REGS_PARM1(ctx);
+
+    // check if regular file. otherwise don't output the event.
+    unsigned short file_mode = get_inode_mode_from_file(file);
+    if ((file_mode & S_IFMT) != S_IFREG) {
+        return 0;
+    }
+
+    u64 ctime = get_ctime_nanosec_from_file(file);
+
+    args_t args = {};
+    args.args[0] = (unsigned long) file;
+    args.args[1] = ctime;
+    save_args(&args, FILE_MODIFICATION);
+
+    return 0;
+}
+
+static __always_inline int common_file_modification_ret(struct pt_regs *ctx)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    args_t saved_args;
+    if (load_args(&saved_args, FILE_MODIFICATION) != 0)
+        return 0;
+    del_args(FILE_MODIFICATION);
+
+    struct file *file = (struct file *) saved_args.args[0];
+    u64 old_ctime = saved_args.args[1];
+
+    file_info_t file_info = get_file_info(file);
+
+    file_mod_key_t file_mod_key = {
+        p.task_info->context.host_pid, file_info.device, file_info.inode};
+
+    int *op = bpf_map_lookup_elem(&file_modification_map, &file_mod_key);
+    if (op == NULL || *op == FILE_MODIFICATION_SUBMIT) {
+        // we should submit the event once and mark as done.
+        int op = FILE_MODIFICATION_DONE;
+        bpf_map_update_elem(&file_modification_map, &file_mod_key, &op, BPF_ANY);
+    } else {
+        // no need to submit. return.
+        return 0;
+    }
+
+    save_str_to_buf(p.event, file_info.pathname_p, 0);
+    save_to_submit_buf(p.event, &file_info.device, sizeof(dev_t), 1);
+    save_to_submit_buf(p.event, &file_info.inode, sizeof(unsigned long), 2);
+    save_to_submit_buf(p.event, &old_ctime, sizeof(u64), 3);
+    save_to_submit_buf(p.event, &file_info.ctime, sizeof(u64), 4);
+
+    events_perf_submit(&p, FILE_MODIFICATION, 0);
+
+    return 0;
+}
+
+SEC("kprobe/file_update_time")
+int BPF_KPROBE(trace_file_update_time)
+{
+    return common_file_modification_ent(ctx);
+}
+
+SEC("kretprobe/file_update_time")
+int BPF_KPROBE(trace_ret_file_update_time)
+{
+    return common_file_modification_ret(ctx);
+}
+
+SEC("kprobe/file_modified")
+int BPF_KPROBE(trace_file_modified)
+{
+/*
+ * we want this probe to run only on kernel versions >= 6.
+ * this is because on older kernels the file_modified() function calls the file_update_time()
+ * function. in those cases, we don't need this probe active.
+ */
+#ifndef CORE
+    #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+    return common_file_modification_ent(ctx);
+    #endif
+#else /* CORE */
+    struct file *file = (struct file *) PT_REGS_PARM1(ctx);
+    if (bpf_core_field_exists(file->f_iocb_flags)) {
+        /* kernel version >= 6 */
+        return common_file_modification_ent(ctx);
+    }
+#endif
+
+    return 0;
+}
+
+SEC("kretprobe/file_modified")
+int BPF_KPROBE(trace_ret_file_modified)
+{
+/*
+ * we want this probe to run only on kernel versions >= 6.
+ * this is because on older kernels the file_modified() function calls the file_update_time()
+ * function. in those cases, we don't need this probe active.
+ */
+#ifndef CORE
+    #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+    return common_file_modification_ent(ctx);
+    #endif
+#else /* CORE */
+    args_t saved_args;
+    if (load_args(&saved_args, FILE_MODIFICATION) != 0)
+        return 0;
+
+    struct file *file = (struct file *) saved_args.args[0];
+    if (bpf_core_field_exists(file->f_iocb_flags)) {
+        /* kernel version >= 6 */
+        return common_file_modification_ent(ctx);
+    }
+#endif
+
+    return 0;
+}
+
 // clang-format off
 
 // Network Packets (works from ~5.2 and beyond)
