@@ -347,6 +347,7 @@ func TestPrepareCapture(t *testing.T) {
 					OutputPath: "/tmp/tracee/out",
 					Net: pcaps.Config{
 						CaptureSingle: true,
+						CaptureLength: 96,
 					},
 				},
 			},
@@ -360,6 +361,7 @@ func TestPrepareCapture(t *testing.T) {
 						CaptureProcess:   true,
 						CaptureContainer: true,
 						CaptureCommand:   true,
+						CaptureLength:    96,
 					},
 				},
 			},
@@ -373,6 +375,21 @@ func TestPrepareCapture(t *testing.T) {
 						CaptureProcess:   false,
 						CaptureContainer: true,
 						CaptureCommand:   true,
+						CaptureLength:    96,
+					},
+				},
+			},
+			{
+				testName:     "capture network with multiple pcap types and snaplen",
+				captureSlice: []string{"network", "pcap:command,container", "pcap-snaplen:120b"},
+				expectedCapture: tracee.CaptureConfig{
+					OutputPath: "/tmp/tracee/out",
+					Net: pcaps.Config{
+						CaptureSingle:    false,
+						CaptureProcess:   false,
+						CaptureContainer: true,
+						CaptureCommand:   true,
+						CaptureLength:    120,
 					},
 				},
 			},
