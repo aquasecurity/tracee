@@ -252,7 +252,7 @@ func (t *Tracee) handleEventsDependencies(eventId events.ID, submitMap uint64) {
 			ec = eventConfig{}
 			t.handleEventsDependencies(dependentEvent.EventID, submitMap)
 		}
-		ec.submit = submitMap
+		ec.submit |= submitMap
 		t.events[dependentEvent.EventID] = ec
 	}
 }

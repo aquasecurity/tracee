@@ -427,7 +427,8 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 		for event := range in {
 			// Only emit events requested by the user
 			id := events.ID(event.EventID)
-			if (t.events[id].emit & event.MatchedScopes) == 0 {
+			event.MatchedScopes &= t.events[id].emit
+			if event.MatchedScopes == 0 {
 				continue
 			}
 
