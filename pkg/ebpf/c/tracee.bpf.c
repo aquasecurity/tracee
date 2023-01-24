@@ -859,6 +859,10 @@ typedef struct config_entry {
     u8 events_to_submit[128]; // use 8*128 bits to describe up to 1024 events
 } config_entry_t;
 
+typedef struct netconfig_entry {
+    u32 capture_length; // amount of network packet payload to capture (pcap)
+} netconfig_entry_t;
+
 typedef struct event_data {
     event_context_t context;
     char args[ARGS_BUF_SIZE];
@@ -1043,6 +1047,7 @@ BPF_LRU_HASH(task_info_map, u32, task_info_t, 10240);              // holds data
 BPF_HASH(ksymbols_map, ksym_name_t, u64, 1024);                    // holds the addresses of some kernel symbols
 BPF_HASH(syscalls_to_check_map, int, u64, 256);                    // syscalls to discover
 BPF_ARRAY(config_map, config_entry_t, 1);                          // various configurations
+BPF_ARRAY(netconfig_map, netconfig_entry_t, 1);                    // network related configurations
 BPF_ARRAY(file_filter, path_filter_t, 3);                          // filter vfs_write events
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);                        // percpu global buffer variables
 BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);                         // store programs for tail calls
@@ -6888,7 +6893,8 @@ static __always_inline bool is_socket_supported(struct socket *sock)
 typedef struct net_event_contextmd {
     u8 submit;
     u32 header_size;
-    u16 padding;
+    u8 captured;
+    u8 padding;
 } __attribute__((__packed__)) net_event_contextmd_t;
 
 typedef struct net_event_context {
@@ -7337,27 +7343,33 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6);
 // Network submission functions
 //
 
-#define FULL    1
-#define HEADERS 0
+#define FULL    65536 // 1 << 16
+#define HEADERS 0     // no payload
 
 static __always_inline u32 cgroup_skb_submit(void *map,
                                              struct __sk_buff *ctx,
                                              net_event_context_t *neteventctx,
                                              u32 event_type,
-                                             bool full)
+                                             u32 size)
 {
     u64 flags = BPF_F_CURRENT_CPU;
 
-    if (full) { // submit full packet to userland
-
-        flags |= (u64) ctx->len << 32; // size of payload as a flag
-        neteventctx->bytes = ctx->len + sizeof(u32); // [u32 size][payload]
-
-    } else { // submit only protocol headers
-
-        flags |= (u64) neteventctx->md.header_size << 32;
-        neteventctx->bytes = neteventctx->md.header_size + sizeof(u32);
+    size = size > FULL ? FULL : size;
+    switch (size) {
+        case HEADERS:
+            size = neteventctx->md.header_size;
+            break;
+        case FULL:
+            size = ctx->len;
+            break;
+        default:
+            size += neteventctx->md.header_size;       // add headers size
+            size = size > ctx->len ? ctx->len : size;  // check limits
+            break;
     }
+
+    flags |= (u64) size << 32;
+    neteventctx->bytes = size + sizeof(u32);
 
     // set the event type before submitting event
     neteventctx->eventctx.eventid = event_type;
@@ -7370,7 +7382,33 @@ static __always_inline u32 cgroup_skb_submit(void *map,
 }
 
 #define cgroup_skb_submit_event(a,b,c,d) cgroup_skb_submit(&events,a,b,c,d)
-#define cgroup_skb_capture_event(a,b,c,d) cgroup_skb_submit(&net_cap_events,a,b,c,d)
+
+static __always_inline u32 cgroup_skb_capture_event(struct __sk_buff *ctx,
+                                                    net_event_context_t *neteventctx,
+                                                    u32 event_type)
+{
+    int zero = 0;
+
+    // pick network config map to know requested capture length
+    netconfig_entry_t *nc = bpf_map_lookup_elem(&netconfig_map, &zero);
+    if (nc == NULL)
+        return 0;
+
+    return cgroup_skb_submit(&net_cap_events,
+                             ctx,
+                             neteventctx,
+                             event_type,
+                             nc->capture_length);
+}
+
+// capture packet a single time (if passing through multiple protocols being submitted to userland)
+
+#define cgroup_skb_capture() {                                                                     \
+    if ((neteventctx->md.submit & CAP_NET_PACKET) && neteventctx->md.captured == 0) {              \
+        cgroup_skb_capture_event(ctx, neteventctx, NET_PACKET_CAP_BASE);                           \
+        neteventctx->md.captured = 1;                                                              \
+    }                                                                                              \
+}
 
 // clang-format on
 
@@ -7463,11 +7501,11 @@ CGROUP_SKB_HANDLE_FUNCTION(family)
 {
     void *dest;
     u32 size = 0;
+    u32 family = ctx->family;
 
-    switch (ctx->family) {
+    switch (family) {
         case PF_INET:
             dest = &nethdrs->iphdrs.iphdr;
-            // size of IP header when IHL flag < 5 (TODO: IFL flag)
             size = get_type_size(struct iphdr);
             break;
         case PF_INET6:
@@ -7482,6 +7520,21 @@ CGROUP_SKB_HANDLE_FUNCTION(family)
 
     if (bpf_skb_load_bytes_relative(ctx, 0, dest, size, BPF_HDR_START_NET))
         return 1;
+
+    // recalculate IPv4 header after first load with read IHL field
+
+    u32 ihl = 0;
+    switch (family) {
+        case PF_INET:
+            ihl = nethdrs->iphdrs.iphdr.ihl;
+            if (ihl > 5) { // IP header is bigger than 20 bytes (old compat mode)
+                size -= get_type_size(struct iphdr);
+                size += ihl * 4; // ihl * 32bit words = IP header size in bytes
+                // load bytes again with the new header size in place
+                if (bpf_skb_load_bytes_relative(ctx, 0, dest, size, BPF_HDR_START_NET))
+                    return 1;
+            }
+    }
 
     neteventctx->md.header_size = size; // add header size to offset
 
@@ -7561,8 +7614,10 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
                 default:
                     return 1; // other protocols are not an error
             }
-
             break;
+
+        default: // do not handle other protocol families
+            return 1;
     }
 
     if (!dest)
@@ -7575,12 +7630,6 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
     if (bpf_skb_load_bytes_relative(ctx, prev_hdr_size, dest, size, BPF_HDR_START_NET))
         return 1;
 
-    // submit FULL packet in net capture buffer IF needed
-    // note: placed here to avoid dual-stack packets (for now)
-
-    if (neteventctx->md.submit & CAP_NET_PACKET)
-        cgroup_skb_capture_event(ctx, neteventctx, NET_PACKET_CAP_BASE, FULL);
-
    // call protocol handlers (for more base events to be sent)
 
     switch (next_proto) {
@@ -7592,7 +7641,17 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
             return CGROUP_SKB_HANDLE(proto_icmp);
         case IPPROTO_ICMPV6:
             return CGROUP_SKB_HANDLE(proto_icmpv6);
+        default:
+            return 1; // shouldn't ever happen here
     }
+
+    // TODO: If cmdline is tracing net_packet_ipv6 only, then the ipv4 packets
+    //       shouldn't be added to the pcap file. Filters will have to be
+    //       applied to the capture pipeline to obey derived events only
+    //       filters + capture.
+
+    if (neteventctx->md.submit & SUB_NET_PACKET_L3)
+        cgroup_skb_capture(); // capture ipv4/ipv6 only packets
 
     return 1;
 }
@@ -7621,7 +7680,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp)
     // fastpath: return if no other L7 network events
 
     if (!(neteventctx->md.submit & (SUB_NET_PACKET_L7)))
-        return 1;
+        goto capture;
 
     // guess layer 7 protocols
 
@@ -7644,10 +7703,13 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp)
     }
 
     // continue with net_l7_is_protocol_xxx
+    // ...
 
-    // NOTE: might block TCP here if needed (return 0)
+capture:
+    if (neteventctx->md.submit & (SUB_NET_PACKET_L3 | SUB_NET_PACKET_TCP))
+        cgroup_skb_capture(); // capture tcp packets
 
-    return 1;
+    return 1; // NOTE: might block TCP here if needed (return 0)
 }
 
 CGROUP_SKB_HANDLE_FUNCTION(proto_udp)
@@ -7659,8 +7721,8 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_udp)
 
     // fastpath: return if no other L7 network events
 
-    if (!(neteventctx->md.submit & (SUB_NET_PACKET_DNS)))
-        return 1;
+    if (!(neteventctx->md.submit & (SUB_NET_PACKET_L7)))
+        goto capture; // might still need to capture packet
 
     // guess layer 7 protocols
 
@@ -7670,7 +7732,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_udp)
     // guess by src/dst ports
 
     switch (source < dest ? source : dest) {
-        case TCP_PORT_DNS:
+        case UDP_PORT_DNS:
             return CGROUP_SKB_HANDLE(proto_udp_dns);
     }
 
@@ -7678,18 +7740,23 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_udp)
     // ...
 
     // continue with net_l7_is_protocol_xxx
+    // ...
 
-    // NOTE: might block UDP here if needed (return 0)
+capture:
+    if (neteventctx->md.submit & (SUB_NET_PACKET_L3 | SUB_NET_PACKET_UDP))
+        cgroup_skb_capture(); // capture udp packets
 
-    return 1;
+    return 1; // NOTE: might block UDP here if needed (return 0)
 }
 
 CGROUP_SKB_HANDLE_FUNCTION(proto_icmp)
 {
     // submit ICMP base event if needed (full packet)
 
-    if (neteventctx->md.submit & SUB_NET_PACKET_ICMP)
+    if (neteventctx->md.submit & SUB_NET_PACKET_ICMP) {
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_ICMP, FULL);
+        cgroup_skb_capture(); // capture icmp packets
+    }
 
     return 1; // NOTE: might block ICMP here if needed (return 0)
 }
@@ -7698,8 +7765,10 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6)
 {
     // submit ICMPv6 base event if needed (full packet)
 
-    if (neteventctx->md.submit & SUB_NET_PACKET_ICMPV6)
+    if (neteventctx->md.submit & SUB_NET_PACKET_ICMPV6) {
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_ICMPV6, FULL);
+        cgroup_skb_capture(); // capture icmpv6 packets
+    }
 
     return 1; // NOTE: might block ICMPv6 here if needed (return 0)
 }
@@ -7712,8 +7781,10 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_dns)
 {
     // submit DNS base event if needed (full packet)
 
-    if (neteventctx->md.submit & SUB_NET_PACKET_DNS)
+    if (neteventctx->md.submit & SUB_NET_PACKET_DNS) {
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS, FULL);
+        cgroup_skb_capture(); // capture tcp dns packets
+    }
 
     return 1; // NOTE: might block DNS here if needed (return 0)
 }
@@ -7722,8 +7793,10 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_udp_dns)
 {
     // submit DNS base event if needed (full packet)
 
-    if (neteventctx->md.submit & SUB_NET_PACKET_DNS)
+    if (neteventctx->md.submit & SUB_NET_PACKET_DNS) {
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS, FULL);
+        cgroup_skb_capture(); // capture udp dns packets
+    }
 
     return 1; // NOTE: might block DNS here if needed (return 0)
 }
@@ -7732,8 +7805,10 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_http)
 {
     // submit HTTP base event if needed (full packet)
 
-    if (neteventctx->md.submit & SUB_NET_PACKET_HTTP)
+    if (neteventctx->md.submit & SUB_NET_PACKET_HTTP) {
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_HTTP, FULL);
+        cgroup_skb_capture(); // capture http packets
+    }
 
     return 1; // NOTE: might block HTTP here if needed (return 0)
 }

@@ -30,6 +30,7 @@ type Config struct {
 	CaptureProcess   bool
 	CaptureContainer bool
 	CaptureCommand   bool
+	CaptureLength    uint32
 }
 
 // Pcaps holds all Pcap for different PcapTypes

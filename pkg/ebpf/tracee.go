@@ -935,13 +935,30 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
+	cZero := uint32(0)
+
+	// net_packet configuration map
+	if pcaps.PcapsEnabled(t.config.Capture.Net) {
+		bpfNetConfigMap, err := t.bpfModule.GetMap("netconfig_map")
+		if err != nil {
+			return err
+		}
+		netConfigVal := make([]byte, 4)
+		binary.LittleEndian.PutUint32(netConfigVal[0:4], t.config.Capture.Net.CaptureLength)
+		if err = bpfNetConfigMap.Update(
+			unsafe.Pointer(&cZero),
+			unsafe.Pointer(&netConfigVal[0]),
+		); err != nil {
+			return fmt.Errorf("error updating net config eBPF map: %v", err)
+		}
+	}
+
 	// Initialize config map
-	bpfConfigMap, err := t.bpfModule.GetMap("config_map") // u32, u32
+	bpfConfigMap, err := t.bpfModule.GetMap("config_map")
 	if err != nil {
 		return err
 	}
 
-	cZero := uint32(0)
 	configVal := make([]byte, 208)
 	binary.LittleEndian.PutUint32(configVal[0:4], uint32(os.Getpid()))
 	binary.LittleEndian.PutUint32(configVal[4:8], t.getOptionsConfig())

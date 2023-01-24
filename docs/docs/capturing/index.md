@@ -123,31 +123,47 @@ Tracee can capture the following types of artifacts:
 
      ```text
      $ sudo ./dist/tracee-ebpf \
+         --trace event=net_packet_ipv4 \
          --capture network
      ```
 
-     and observe **pcap files** for all processes being created:
+     and observe a single **pcap file** for all ipv4 packets created:
 
      ```text
-     $ cd /tmp/tracee/out
-     $ find pcap
-     pcap
-     pcap/processes
-     pcap/processes/host
-     pcap/processes/host/node_186708_1573567360495399.pcap
-     pcap/processes/host/node_1196826_1662656211119567.pcap
-     pcap/processes/host/zerotier-one_7882_137007714376.pcap
-     pcap/processes/host/sshd_1196773_1662654999660718.pcap
+     $ find /tmp/tracee/out/pcap/
+     /tmp/tracee/out/pcap/
+     /tmp/tracee/out/pcap/single.pcap
      ```
 
-     You can also select how the pcap files will be divided per:
+     You can select only dns packets, for example:
 
-     1. single: a single pcap file containing all packets
+     ```text
+     $ sudo ./dist/tracee-ebpf \
+         --trace event=net_packet_dns \
+         --capture network
+     ```
+
+     and the file `/tmp/tracee/out/pcap/single.pcap` would only contain DNS
+     related packets:
+
+     ```text
+     $ find /tmp/tracee/out/pcap/
+     /tmp/tracee/out/pcap/
+     /tmp/tracee/out/pcap/single.pcap
+
+     $ sudo tcpdump -n -r /tmp/tracee/out/pcap/single.pcap | head -2
+     reading from file /tmp/tracee/out/pcap/single.pcap, link-type NULL (BSD loopback), snapshot length 262144
+     16:53:48.870629 IP 127.0.0.1.55569 > 127.0.0.53.53: 33361+ [1au] A? www.uol.com.br. (43)
+     16:53:48.870690 IP 127.0.0.1.55569 > 127.0.0.53.53: 25943+ [1au] AAAA? www.uol.com.br. (43) ```
+
+     A great thing is that you may have multiple pcap files, divided by:
+
+     1. single: a single pcap file containing all packets (the default)
      1. process: one file per process executed, ordered by host and container
      1. container: one file for the host and one pcap file per container
      1. per-command: one file per command executed (even if multiple times)
 
-     and you can even have multiple divisions at the same time. Example: a ping
+     and you can even have multiple ways at the same time. Example: a ping
      command is executed inside a container. You want to summarize captured
      traffic per container and per command. You will find the same captured
      data for that ping command inside `commands/container_id/ping.pcap` and
@@ -155,6 +171,7 @@ Tracee can capture the following types of artifacts:
 
      ```text
      $ sudo ./dist/tracee-ebpf \
+         --trace event=net_packet_icmp \
          --capture network \
          --capture pcap:process,container,command
      ```
@@ -230,6 +247,32 @@ Tracee can capture the following types of artifacts:
        ./pcap/containers/`container_id`.pcap
     1. **commands**:  
        ./pcap/commands/`container_id`/`process_comm`.pcap
+
+    !!! Attention
+        By default, all pcap files will contain packets with headers only. That
+        might too little for introspection, since sometimes one might be
+        interested in a few bytes of the captured packet (or event it all). Next
+        item shows how to capture a specific packet payload size.
+
+     In order to capture a specific payload size you may specify:
+
+     ```
+      $ sudo ./dist/tracee-ebpf \
+          --trace event=net_packet_tcp \
+          --capture network \
+          --capture pcap:single,command \
+          --capture pcap-snaplen:default
+     ```
+
+     To capture packet headers + 96 bytes of payload. Or replace `default` by:
+
+     1. headers: capture up to L4 headers only
+     1. max: full sized packets into pcap. WARNING: big pcap files.
+     1. **256b**, **512b**, **1024b**, ... (any number plus "b")
+     1. **16kb**, **32kb**, **64kb**,  ... (any number plus "kb")
+
+     > when specifying a payload size, it refers to the payload AFTER the layer4
+     > headers (and not the entire packet length).
 
 1. **Loaded Kernel Modules**
 
