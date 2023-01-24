@@ -868,14 +868,6 @@ typedef struct event_data {
 
 #define MAX_EVENT_SIZE sizeof(event_context_t) + ARGS_BUF_SIZE
 
-typedef struct program_data {
-    config_entry_t *config;
-    task_info_t *task_info;
-    event_data_t *event;
-    void *ctx;
-    bool kthread; // this is kernel thread (bottom halves: e.g. network ctx)
-} program_data_t;
-
 // For a good summary about capabilities, see https://lwn.net/Articles/636533/
 typedef struct slim_cred {
     uid_t uid;           // real UID of the task
@@ -997,6 +989,14 @@ typedef union scratch {
     task_info_t task_info;
 } scratch_t;
 
+typedef struct program_data {
+    config_entry_t *config;
+    task_info_t *task_info;
+    event_data_t *event;
+    scratch_t *scratch;
+    void *ctx;
+} program_data_t;
+
 // KERNEL STRUCTS ----------------------------------------------------------------------------------
 
 #ifndef CORE
@@ -1058,9 +1058,9 @@ BPF_HASH(module_init_map, u32, kmod_data_t, 256);                  // holds modu
 BPF_LRU_HASH(fd_arg_path_map, fd_arg_task_t, fd_arg_path_t, 1024); // store fds paths by task
 BPF_LRU_HASH(bpf_attach_map, u32, bpf_attach_t, 1024);             // holds bpf prog info
 BPF_LRU_HASH(bpf_attach_tmp_map, u32, bpf_attach_t, 1024);         // temporarily hold bpf_attach_t
-BPF_PERCPU_ARRAY(event_data_map, event_data_t, 2);                 // persist event related data
+BPF_PERCPU_ARRAY(event_data_map, event_data_t, 1);                 // persist event related data
 BPF_HASH(logs_count, bpf_log_t, bpf_log_count_t, 4096);            // logs count
-BPF_PERCPU_ARRAY(scratch_map, scratch_t, 2);                       // scratch space to avoid allocating stuff on the stack
+BPF_PERCPU_ARRAY(scratch_map, scratch_t, 1);                       // scratch space to avoid allocating stuff on the stack
 // clang-format on
 
 // EBPF PERF BUFFERS -------------------------------------------------------------------------------
@@ -1854,13 +1854,16 @@ init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 
     return 0;
 }
 
-static __always_inline task_info_t *init_task_info(u32 tid, u32 pid, bool kthread)
+static __always_inline task_info_t *init_task_info(u32 tid, u32 pid, scratch_t *scratch)
 {
-    int scratch_map_idx = kthread ? 1 : 0; // second buffer for kthread ctx
+    int zero = 0;
 
-    scratch_t *scratch = bpf_map_lookup_elem(&scratch_map, &scratch_map_idx);
-    if (unlikely(scratch == NULL))
-        return NULL;
+    // allow caller to specify a stack/map based scratch_t pointer
+    if (scratch == NULL) {
+        scratch = bpf_map_lookup_elem(&scratch_map, &zero);
+        if (unlikely(scratch == NULL))
+            return NULL;
+    }
 
     proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &pid);
     if (proc_info == NULL) {
@@ -1895,11 +1898,13 @@ static __always_inline int init_program_data(program_data_t *p, void *ctx)
 {
     long ret = 0;
     int zero = 0;
-    int evt_buf_idx = p->kthread ? 1 : 0; // second buffer for kthread ctx
 
-    p->event = bpf_map_lookup_elem(&event_data_map, &evt_buf_idx);
-    if (unlikely(p->event == NULL))
-        return 0;
+    // allow caller to specify a stack/map based event_data_t pointer
+    if (p->event == NULL) {
+        p->event = bpf_map_lookup_elem(&event_data_map, &zero);
+        if (unlikely(p->event == NULL))
+            return 0;
+    }
 
     p->config = bpf_map_lookup_elem(&config_map, &zero);
     if (unlikely(p->config == NULL))
@@ -1923,7 +1928,7 @@ static __always_inline int init_program_data(program_data_t *p, void *ctx)
         p->task_info = init_task_info(
             p->event->context.task.host_tid,
             p->event->context.task.host_pid,
-            p->kthread
+            p->scratch
         );
         if (unlikely(p->task_info == NULL)) {
             return 0;
@@ -3222,7 +3227,7 @@ int sys_enter_init(struct bpf_raw_tracepoint_args *ctx)
     task_info_t *task_info = bpf_map_lookup_elem(&task_info_map, &tid);
     if (unlikely(task_info == NULL)) {
         u32 pid = pid_tgid >> 32;
-        task_info = init_task_info(tid, pid, false);
+        task_info = init_task_info(tid, pid, NULL);
         if (unlikely(task_info == NULL)) {
             return 0;
         }
@@ -3366,7 +3371,7 @@ int sys_exit_init(struct bpf_raw_tracepoint_args *ctx)
     task_info_t *task_info = bpf_map_lookup_elem(&task_info_map, &tid);
     if (unlikely(task_info == NULL)) {
         u32 pid = pid_tgid >> 32;
-        task_info = init_task_info(tid, pid, false);
+        task_info = init_task_info(tid, pid, NULL);
         if (unlikely(task_info == NULL)) {
             return 0;
         }
@@ -6940,6 +6945,22 @@ struct {
     __type(value, u32);
 } net_cap_events SEC(".maps");
 
+// scratch area
+
+struct {
+    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
+    __uint(max_entries, 1);                    // simultaneous softirqs running per CPU (?)
+    __type(key, u32);                          // per cpu index ... (always zero)
+    __type(value, scratch_t);                  // ... linked to a scratch area
+} net_heap_scratch SEC(".maps");
+
+struct {
+    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
+    __uint(max_entries, 1);                    // simultaneous softirqs running per CPU (?)
+    __type(key, u32);                          // per cpu index ... (always zero)
+    __type(value, event_data_t);               // ... linked to a scratch area
+} net_heap_event SEC(".maps");
+
 // clang-format on
 
 //
@@ -7134,12 +7155,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
 {
     // runs BEFORE the CGROUP/SKB eBPF program
 
-    program_data_t p = { .kthread = true };
-    if (!init_program_data(&p, ctx))
-        return 0;
-
     int type = PT_REGS_PARM3(ctx);
-
     switch (type) {
         case BPF_CGROUP_INET_INGRESS:
         case BPF_CGROUP_INET_EGRESS:
@@ -7147,6 +7163,21 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
         default:
             return 0; // wrong attachment type, return fast
     }
+
+    u32 zero = 0;
+    event_data_t *e = bpf_map_lookup_elem(&net_heap_event, &zero);
+    if (unlikely(e == NULL))
+        return 0;
+    scratch_t *s = bpf_map_lookup_elem(&net_heap_scratch, &zero);
+    if (unlikely(s == NULL))
+        return 0;
+
+    program_data_t p = {
+        .event = e,
+        .scratch = s,
+    };
+    if (!init_program_data(&p, ctx))
+        return 0;
 
     struct sock *sk = (void *) PT_REGS_PARM1(ctx);
     struct sk_buff *skb = (void *) PT_REGS_PARM2(ctx);
