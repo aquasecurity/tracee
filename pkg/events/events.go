@@ -260,6 +260,7 @@ const (
 	PrintMemDump
 	VfsUtimes
 	DoTruncate
+	FileModification
 	MaxCommonID
 )
 
@@ -6550,6 +6551,27 @@ var Definitions = eventDefinitions{
 				{Type: "unsigned long", Name: "inode"},
 				{Type: "dev_t", Name: "dev"},
 				{Type: "u64", Name: "length"},
+			},
+		},
+		FileModification: {
+			ID32Bit: sys32undefined,
+			Name:    "file_modification",
+			DocPath: "kprobes/file_modification.md",
+			Sets:    []string{},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "file_path"},
+				{Type: "dev_t", Name: "dev"},
+				{Type: "unsigned long", Name: "inode"},
+				{Type: "unsigned long", Name: "old_ctime"},
+				{Type: "unsigned long", Name: "new_ctime"},
+			},
+			Probes: []probeDependency{
+				{Handle: probes.FdInstall, Required: true},
+				{Handle: probes.FilpClose, Required: true},
+				{Handle: probes.FileUpdateTime, Required: true},
+				{Handle: probes.FileUpdateTimeRet, Required: true},
+				{Handle: probes.FileModified, Required: false},    // not required because doesn't ...
+				{Handle: probes.FileModifiedRet, Required: false}, // ... exist in kernels < 5.3
 			},
 		},
 	},

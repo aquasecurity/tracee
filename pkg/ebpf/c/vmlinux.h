@@ -431,6 +431,9 @@ struct file_operations {
 };
 
 struct file {
+    union {
+        unsigned int f_iocb_flags;
+    };
     struct path f_path;
     struct inode *f_inode;
     const struct file_operations *f_op;

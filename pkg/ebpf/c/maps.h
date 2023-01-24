@@ -114,6 +114,7 @@ BPF_LRU_HASH(bpf_attach_tmp_map, u32, bpf_attach_t, 1024);         // temporaril
 BPF_PERCPU_ARRAY(event_data_map, event_data_t, 1);                 // persist event related data
 BPF_HASH(logs_count, bpf_log_t, bpf_log_count_t, 4096);            // logs count
 BPF_PERCPU_ARRAY(scratch_map, scratch_t, 1);                       // scratch space to avoid allocating stuff on the stack
+BPF_LRU_HASH(file_modification_map, file_mod_key_t, int, 10240);   // hold file data to decide if should submit file modification event
 // clang-format on
 
 BPF_PERF_OUTPUT(logs, 1024);        // logs submission
