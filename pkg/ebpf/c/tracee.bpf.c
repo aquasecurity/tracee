@@ -4727,6 +4727,8 @@ int tracepoint__cgroup__cgroup_mkdir(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx))
         return 0;
 
+    p.event->context.matched_scopes = 0xFFFFFFFFFFFFFFFF; // see tracee.GetEssentialEvents
+
     struct cgroup *dst_cgrp = (struct cgroup *) ctx->args[0];
     char *path = (char *) ctx->args[1];
 
@@ -4760,6 +4762,8 @@ int tracepoint__cgroup__cgroup_rmdir(struct bpf_raw_tracepoint_args *ctx)
     program_data_t p = {};
     if (!init_program_data(&p, ctx))
         return 0;
+
+    p.event->context.matched_scopes = 0xFFFFFFFFFFFFFFFF; // see tracee.GetEssentialEvents
 
     struct cgroup *dst_cgrp = (struct cgroup *) ctx->args[0];
     char *path = (char *) ctx->args[1];
