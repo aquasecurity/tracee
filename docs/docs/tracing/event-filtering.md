@@ -47,15 +47,15 @@ expected.
      ```
 
     !!! Note
-        The "follow" operator will make tracee to follow all newly created
-        processes, that are being filtered for, childs.
+        The "follow" operator will make tracee follow all newly created
+        child processes of the parents being filtered.
 
 1. **Event Arguments** `(Operators: =, !=. Prefix/Suffix: *)`
 
      ```text
-     1) --trace event=openat --trace openat.pathname=/etc/shadow
-     2) --trace event=openat --trace openat.pathname=/tmp*
-     3) --trace event=openat --trace openat.pathname!=/tmp/1,/bin/ls
+     1) --trace event=openat --trace openat.args.pathname=/etc/shadow
+     2) --trace event=openat --trace openat.args.pathname=/tmp*
+     3) --trace event=openat --trace openat.args.pathname!=/tmp/1,/bin/ls
      ```
 
     !!! Note
@@ -65,8 +65,8 @@ expected.
 1. **Event Return Code** `(Operators: =, !=, <, >)`
 
     ```text
-    1) --trace event=openat --trace openat.pathname=/etc/shadow --trace "openat.retval>0"
-    2) --trace event=openat --trace openat.pathname=/etc/shadow --trace "openat.retval<0"
+    1) --trace event=openat --trace openat.args.pathname=/etc/shadow --trace "openat.retval>0"
+    2) --trace event=openat --trace openat.args.pathname=/etc/shadow --trace "openat.retval<0"
     ```
 
     !!! Tip
@@ -75,8 +75,8 @@ expected.
 1. **Event Context** `(Operators: vary by field)`
 
     ```text
-    1) --trace openat.context.container --trace openat.pathname=/etc/shadow
-    2) --trace event=openat --trace openat.context.container --trace openat.pathname=/etc/shadow
+    1) --trace openat.context.container --trace openat.args.pathname=/etc/shadow
+    2) --trace event=openat --trace openat.context.container --trace openat.args.pathname=/etc/shadow
     ```
 
     !!! Note
@@ -123,7 +123,7 @@ expected.
     2) --trace '!container' # events from the host only
     3) --trace container=new # containers created after tracee-ebf execution
     4) --trace container=3f93da58be3c --trace event=openat
-    5) --trace container=new --trace event=openat --trace openat.pathname="/etc/shadow"
+    5) --trace container=new --trace event=openat --trace openat.args.pathname="/etc/shadow"
     ```
 
     !!! Note
@@ -182,16 +182,6 @@ expected.
     2) --trace 'uid>0'
     3) --trace 'uid>0' --trace uid!=1000 # do not trace root and uid=1000
     ```
-
-1. **Network Interface**
-
-    ```text
-    1) -trace comm=nc,ping -trace event=net_packet -trace net=docker0
-    2) -trace event=dns_request,dns_response -trace net=docker0
-    ```
-
-    !!! Attention
-        Do not forget to provide the interface to be traced with "net=name"
 
 1. **UTS Namespace (hostnames)** `(Operators: =, !=)`
 
