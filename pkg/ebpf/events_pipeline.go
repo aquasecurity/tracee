@@ -383,10 +383,18 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 		for {
 			select {
 			case event := <-in:
+
+				// Get a copy of our event before sending it down the
+				// pipeline.
+				// This is needed because later modification of the event
+				// (in particular of the matched scopes) can affect
+				// the derivation and later pipeline logic acting on the derived
+				// event.
+				eventCopy := *event
 				out <- event
 
 				// Derive event before parse its arguments
-				derivatives, errors := derive.DeriveEvent(*event, t.eventDerivations)
+				derivatives, errors := derive.DeriveEvent(eventCopy, t.eventDerivations)
 
 				for _, err := range errors {
 					t.handleError(err)
