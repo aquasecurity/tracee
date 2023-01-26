@@ -157,8 +157,8 @@ type fileExecInfo struct {
 }
 
 type eventConfig struct {
-	submit uint64 // event should be submitted to userspace (by scopes bitmap)
-	emit   uint64 // event should be emitted to the user (by scopes bitmap)
+	submit uint64 // event that should be submitted to userspace (by scopes bitmap)
+	emit   uint64 // event that should be emitted to the user (by scopes bitmap)
 }
 
 // Tracee traces system calls and system events using eBPF
@@ -221,23 +221,40 @@ func GetEssentialEventsList() map[events.ID]eventConfig {
 func GetCaptureEventsList(cfg Config) map[events.ID]eventConfig {
 	captureEvents := make(map[events.ID]eventConfig)
 
+	// All capture events should be placed, at least for now, to
+	// all matched scopes, or else the event won't be set to
+	// matched scope in eBPF and should_submit() won't submit
+	// the capture event to userland.
+
 	if cfg.Capture.Exec {
-		captureEvents[events.CaptureExec] = eventConfig{}
+		captureEvents[events.CaptureExec] = eventConfig{
+			submit: 0xFFFFFFFFFFFFFFFF,
+		}
 	}
 	if cfg.Capture.FileWrite {
-		captureEvents[events.CaptureFileWrite] = eventConfig{}
+		captureEvents[events.CaptureFileWrite] = eventConfig{
+			submit: 0xFFFFFFFFFFFFFFFF,
+		}
 	}
 	if cfg.Capture.Module {
-		captureEvents[events.CaptureModule] = eventConfig{}
+		captureEvents[events.CaptureModule] = eventConfig{
+			submit: 0xFFFFFFFFFFFFFFFF,
+		}
 	}
 	if cfg.Capture.Mem {
-		captureEvents[events.CaptureMem] = eventConfig{}
+		captureEvents[events.CaptureMem] = eventConfig{
+			submit: 0xFFFFFFFFFFFFFFFF,
+		}
 	}
 	if cfg.Capture.Profile {
-		captureEvents[events.CaptureProfile] = eventConfig{}
+		captureEvents[events.CaptureProfile] = eventConfig{
+			submit: 0xFFFFFFFFFFFFFFFF,
+		}
 	}
 	if pcaps.PcapsEnabled(cfg.Capture.Net) {
-		captureEvents[events.CaptureNetPacket] = eventConfig{}
+		captureEvents[events.CaptureNetPacket] = eventConfig{
+			submit: 0xFFFFFFFFFFFFFFFF,
+		}
 	}
 
 	return captureEvents
@@ -875,6 +892,7 @@ func (t *Tracee) computeConfigValues() []byte {
 
 	// Compute all filter scopes internals
 	t.config.FilterScopes.Compute()
+
 	// uid_max
 	binary.LittleEndian.PutUint64(configVal[224:232], t.config.FilterScopes.UIDFilterMax())
 	// uid_min
@@ -1263,6 +1281,9 @@ func (t *Tracee) initBPF() error {
 			return err
 		}
 
+		// Update all ProcessTreeFilters after probes are attached: reduce the
+		// possible race window between the bpf programs updating the maps and
+		// userland reading procfs and also dealing with same maps.
 		for filterScope := range t.config.FilterScopes.Map() {
 			err = filterScope.ProcessTreeFilter.UpdateBPF(t.bpfModule, uint(filterScope.ID))
 			if err != nil {
