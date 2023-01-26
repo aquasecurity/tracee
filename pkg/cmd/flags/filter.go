@@ -92,16 +92,20 @@ To find out which scopes an event is related to, read the bitmask in one of thes
 - using '-o format:table-verbose', SCOPES collumn (in hexadecimal)
 
 Examples:
+
   -t 42:event=sched_process_exec -t 42:binary=/usr/bin/ls      | trace in scope 42 sched_process_exec event from /usr/bin/ls binary
-  -t 3:event=openat -t 3:comm=id -t 9:event=close -t 9:comm=ls | trace in scope 3 only openat event from id command
-                                                                 and
-                                                                 trace in scope 9 only close event from ls command
-  -t 6:event=openat -t 6:comm=id -t 7:event=close -t 7:comm=id | trace in scope 6 only openat event from id command
-                                                                 and
-                                                                 trace in scope 7 only close event from id command
-  -t 3:event=openat -t 3:comm=id -t 9:event=close              | trace in scope 3 only openat event from id command
-                                                                 and
-                                                                 trace in scope 9 only close event from all
+
+  -t 3:event=openat -t 3:comm=id -t 9:event=close -t 9:comm=ls - trace in scope 3 only openat event from id command
+                                                               | and
+                                                               - trace in scope 9 only close event from ls command
+
+  -t 6:event=openat -t 6:comm=id -t 7:event=close -t 7:comm=id - trace in scope 6 only openat event from id command
+                                                               | and
+                                                               _ trace in scope 7 only close event from id command
+
+  -t 3:event=openat -t 3:comm=id -t 9:event=close              - trace in scope 3 only openat event from id command
+                                                               | and
+                                                               - trace in scope 9 only close event from all
 
 Note: some of the above operators have special meanings in different shells.
 To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
