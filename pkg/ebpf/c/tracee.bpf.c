@@ -5972,7 +5972,10 @@ int BPF_KPROBE(trace_security_mmap_file)
     if (!should_trace(&p))
         return 0;
 
-    if (!should_submit(SECURITY_MMAP_FILE, &(p.event->context)))
+    bool submit_sec_mmap_file = should_submit(SECURITY_MMAP_FILE, &(p.event->context));
+    bool submit_shared_object_loaded = should_submit(SHARED_OBJECT_LOADED, &(p.event->context));
+
+    if (!submit_sec_mmap_file && !submit_shared_object_loaded)
         return 0;
 
     struct file *file = (struct file *) PT_REGS_PARM1(ctx);
@@ -5992,14 +5995,14 @@ int BPF_KPROBE(trace_security_mmap_file)
     save_to_submit_buf(p.event, &ctime, sizeof(u64), 4);
 
     int id = -1;
-    if (should_submit(SHARED_OBJECT_LOADED, &(p.event->context))) {
+    if (submit_shared_object_loaded) {
         id = get_task_syscall_id(p.event->task);
         if ((prot & VM_EXEC) == VM_EXEC && id == SYSCALL_MMAP) {
             events_perf_submit(&p, SHARED_OBJECT_LOADED, 0);
         }
     }
 
-    if (should_submit(SECURITY_MMAP_FILE, &(p.event->context))) {
+    if (submit_sec_mmap_file) {
         save_to_submit_buf(p.event, &prot, sizeof(unsigned long), 5);
         save_to_submit_buf(p.event, &mmap_flags, sizeof(unsigned long), 6);
         if (id == -1) { // if id wasn't checked yet, do so now.
