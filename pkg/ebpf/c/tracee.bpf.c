@@ -7114,18 +7114,18 @@ static __always_inline bool is_socket_supported(struct socket *sock)
 
 typedef enum net_packet {
     CAP_NET_PACKET = 1 << 0,
+    // Layer 3
     SUB_NET_PACKET_IP = 1 << 1,
+    // Layer 4
     SUB_NET_PACKET_TCP = 1 << 2,
     SUB_NET_PACKET_UDP = 1<<3,
     SUB_NET_PACKET_ICMP = 1 <<4,
     SUB_NET_PACKET_ICMPV6 = 1<<5,
+    // Layer 7
     SUB_NET_PACKET_DNS = 1<< 6,
     SUB_NET_PACKET_HTTP = 1<<7,
 } net_packet_t;
 
-#define SUB_NET_PACKET_L3 (SUB_NET_PACKET_IP)
-#define SUB_NET_PACKET_L4 (SUB_NET_PACKET_TCP | SUB_NET_PACKET_UDP | SUB_NET_PACKET_ICMP | SUB_NET_PACKET_ICMPV6)
-#define SUB_NET_PACKET_L7 (SUB_NET_PACKET_DNS | SUB_NET_PACKET_HTTP)
 
 typedef struct net_event_contextmd {
     u8 submit;
@@ -7239,10 +7239,10 @@ static __always_inline enum event_id_e net_packet_to_net_event(net_packet_t pack
             return NET_PACKET_ICMP;
         case SUB_NET_PACKET_ICMPV6:
             return NET_PACKET_ICMPV6;
-        case SUB_NET_PACKET_HTTP:
-            return NET_PACKET_HTTP;
         case SUB_NET_PACKET_DNS:
             return NET_PACKET_DNS;
+        case SUB_NET_PACKET_HTTP:
+            return NET_PACKET_HTTP;
     };
     return MAX_EVENT_ID;
 }
@@ -7253,6 +7253,7 @@ static __always_inline int should_submit_net_event(net_event_context_t *netevent
     // configure network events that should be sent to userland
     if (neteventctx->md.submit & packet_type)
         return 1;
+
     if (should_submit(net_packet_to_net_event(packet_type), &(neteventctx->eventctx))) {
         neteventctx->md.submit |= packet_type;
         // done, result cached for later.
@@ -7648,7 +7649,7 @@ static __always_inline u32 cgroup_skb_capture_event(struct __sk_buff *ctx,
 // capture packet a single time (if passing through multiple protocols being submitted to userland)
 
 #define cgroup_skb_capture() {                                                                     \
-    if ((neteventctx->md.submit & CAP_NET_PACKET) && neteventctx->md.captured == 0) {              \
+    if (should_submit_net_event(neteventctx, CAP_NET_PACKET) && neteventctx->md.captured == 0) {   \
         cgroup_skb_capture_event(ctx, neteventctx, NET_PACKET_CAP_BASE);                           \
         neteventctx->md.captured = 1;                                                              \
     }                                                                                              \
@@ -7894,8 +7895,8 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
     //       applied to the capture pipeline to obey derived events only
     //       filters + capture.
 
-    if (neteventctx->md.submit & SUB_NET_PACKET_L3)
-        cgroup_skb_capture(); // capture ipv4/ipv6 only packets
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP))
+        cgroup_skb_capture(); // capture tcp packets
 
     return 1;
 }
@@ -7921,7 +7922,10 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp)
     if (should_submit_net_event(neteventctx, SUB_NET_PACKET_TCP))
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_TCP, HEADERS);
 
-    if (!(neteventctx->md.submit & (SUB_NET_PACKET_L7)))
+    // fastpath: return if no other L7 network events
+
+    if (!should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS) &&
+        !should_submit_net_event(neteventctx, SUB_NET_PACKET_HTTP))
         goto capture;
 
     // guess layer 7 protocols
@@ -7948,7 +7952,8 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp)
     // ...
 
 capture:
-    if (neteventctx->md.submit & (SUB_NET_PACKET_L3 | SUB_NET_PACKET_TCP))
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP) ||
+        should_submit_net_event(neteventctx, SUB_NET_PACKET_TCP))
         cgroup_skb_capture(); // capture tcp packets
 
     return 1; // NOTE: might block TCP here if needed (return 0)
@@ -7963,8 +7968,9 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_udp)
 
     // fastpath: return if no other L7 network events
 
-    if (!(neteventctx->md.submit & (SUB_NET_PACKET_L7)))
-        goto capture; // might still need to capture packet
+    if (!should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS) &&
+        !should_submit_net_event(neteventctx, SUB_NET_PACKET_HTTP))
+        goto capture;
 
     // guess layer 7 protocols
 
@@ -7985,8 +7991,9 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_udp)
     // ...
 
 capture:
-    if (neteventctx->md.submit & (SUB_NET_PACKET_L3 | SUB_NET_PACKET_UDP))
-        cgroup_skb_capture(); // capture udp packets
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP) ||
+        should_submit_net_event(neteventctx, SUB_NET_PACKET_UDP))
+        cgroup_skb_capture(); // capture tcp packets
 
     return 1; // NOTE: might block UDP here if needed (return 0)
 }
