@@ -82,8 +82,8 @@ func (fs FilterScope) IsEventTraceable(event events.ID) bool {
 // TODO: add locking mechanism as scopes will change at runtime
 type FilterScopes struct {
 	filterScopesArray        [MaxFilterScopes]*FilterScope // underlying filter scopes array
-	filterScopesMap          map[*FilterScope]int          // stores only enabled scopes
-	filterScopesUserSpaceMap map[*FilterScope]int          // stores a reduced map with only user space filtered scopes
+	filterEnabledScopesMap   map[*FilterScope]int          // stores only enabled scopes
+	filterUserSpaceScopesMap map[*FilterScope]int          // stores a reduced map with only user space filtered scopes
 
 	uidFilterMin             uint64
 	uidFilterMax             uint64
@@ -98,8 +98,8 @@ type FilterScopes struct {
 func NewFilterScopes() *FilterScopes {
 	return &FilterScopes{
 		filterScopesArray:        [MaxFilterScopes]*FilterScope{},
-		filterScopesMap:          map[*FilterScope]int{},
-		filterScopesUserSpaceMap: map[*FilterScope]int{},
+		filterEnabledScopesMap:   map[*FilterScope]int{},
+		filterUserSpaceScopesMap: map[*FilterScope]int{},
 		uidFilterMin:             filters.MinNotSetUInt,
 		uidFilterMax:             filters.MaxNotSetUInt,
 		pidFilterMin:             filters.MinNotSetUInt,
@@ -111,7 +111,7 @@ func NewFilterScopes() *FilterScopes {
 }
 
 func (fs FilterScopes) Count() int {
-	return len(fs.filterScopesMap)
+	return len(fs.filterEnabledScopesMap)
 }
 
 func (fs FilterScopes) UIDFilterMin() uint64 {
@@ -154,7 +154,7 @@ func (fs *FilterScopes) Compute() {
 
 	userSpaceMap := make(map[*FilterScope]int)
 
-	for filterScope := range fs.filterScopesMap {
+	for filterScope := range fs.filterEnabledScopesMap {
 		if filterScope.ArgFilter.Enabled() ||
 			filterScope.RetFilter.Enabled() ||
 			filterScope.ContextFilter.Enabled() ||
@@ -165,7 +165,7 @@ func (fs *FilterScopes) Compute() {
 		}
 	}
 
-	fs.filterScopesUserSpaceMap = userSpaceMap
+	fs.filterUserSpaceScopesMap = userSpaceMap
 }
 
 // set, if not err, always reassign values
@@ -176,7 +176,7 @@ func (fs *FilterScopes) set(id int, scope *FilterScope) error {
 	if !isIDInRange(id) {
 		return FilterScopesOutOfRangeError(id)
 	}
-	if _, found := fs.filterScopesMap[scope]; found {
+	if _, found := fs.filterEnabledScopesMap[scope]; found {
 		if scope.ID != id {
 			return FilterScopeAlreadySetWithDifferentIDError(scope, id)
 		}
@@ -184,7 +184,7 @@ func (fs *FilterScopes) set(id int, scope *FilterScope) error {
 
 	scope.ID = id
 	fs.filterScopesArray[id] = scope
-	fs.filterScopesMap[scope] = id
+	fs.filterEnabledScopesMap[scope] = id
 
 	fs.Compute()
 
@@ -195,7 +195,7 @@ func (fs *FilterScopes) set(id int, scope *FilterScope) error {
 // Its ID (index) is set to the first room found.
 // Returns nil if scope is already inserted.
 func (fs *FilterScopes) Add(scope *FilterScope) error {
-	if len(fs.filterScopesMap) == MaxFilterScopes {
+	if len(fs.filterEnabledScopesMap) == MaxFilterScopes {
 		return FilterScopesMaxExceededError()
 	}
 
@@ -217,12 +217,12 @@ func (fs *FilterScopes) Delete(id int) error {
 	if !isIDInRange(id) {
 		return FilterScopesOutOfRangeError(id)
 	}
-	if len(fs.filterScopesMap) == 0 {
+	if len(fs.filterEnabledScopesMap) == 0 {
 		return nil
 	}
 
-	delete(fs.filterScopesMap, fs.filterScopesArray[id])
-	delete(fs.filterScopesUserSpaceMap, fs.filterScopesArray[id])
+	delete(fs.filterEnabledScopesMap, fs.filterScopesArray[id])
+	delete(fs.filterUserSpaceScopesMap, fs.filterScopesArray[id])
 	fs.filterScopesArray[id] = nil
 
 	fs.Compute()
@@ -243,7 +243,7 @@ func (fs FilterScopes) Lookup(id int) (*FilterScope, error) {
 }
 
 func (fs FilterScopes) Map() map[*FilterScope]int {
-	return fs.filterScopesMap
+	return fs.filterEnabledScopesMap
 }
 
 func (fs *FilterScopes) updateContainerFilterEnabled() {
@@ -259,7 +259,7 @@ func (fs *FilterScopes) updateContainerFilterEnabled() {
 // UserSpaceMap returns a reduced scopes map which must be filtered in
 // user space (ArgFilter, RetFilter, ContextFilter, UIDFilter and PIDFilter).
 func (fs FilterScopes) UserSpaceMap() map[*FilterScope]int {
-	return fs.filterScopesUserSpaceMap
+	return fs.filterUserSpaceScopesMap
 }
 
 // calculateGlobalMinMax sets the global min and max, to be checked in kernel space,
@@ -308,6 +308,7 @@ func (fs *FilterScopes) calculateGlobalMinMax() {
 			}
 		}
 	}
+
 	uidMinFilterableInUserSpace = scopeCount > 1 && (uidMinFilterCount != uidFilterCount)
 	uidMaxFilterableInUserSpace = scopeCount > 1 && (uidMaxFilterCount != uidFilterCount)
 	pidMinFilterableInUserSpace = scopeCount > 1 && (pidMinFilterCount != pidFilterCount)
@@ -330,7 +331,7 @@ func (fs *FilterScopes) calculateGlobalMinMax() {
 	}
 
 	// set a reduced range of uint values to be filtered in ebpf
-	for filterScope := range fs.filterScopesMap {
+	for filterScope := range fs.filterEnabledScopesMap {
 		if filterScope.UIDFilter.Enabled() {
 			if !uidMinFilterableInUserSpace {
 				fs.uidFilterMin = utils.Min(fs.uidFilterMin, filterScope.UIDFilter.Minimum())
