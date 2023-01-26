@@ -58,7 +58,7 @@ help:
 	@echo "    $$ make -f builder/Makefile.tracee-container build-tracee"
 	@echo ""
 	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee-ebpf-full \ "
-	@echo "          ARG=\"--debug -trace comm=bash --trace follow'\" "
+	@echo "          ARG=\"--log debug --trace comm=bash --trace follow\" "
 	@echo ""
 
 #
