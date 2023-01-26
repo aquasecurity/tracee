@@ -203,6 +203,7 @@ func checkScope42SecurityFileOpenLs(t *testing.T, gotOutput *[]trace.Event) {
 	}
 }
 
+// checkExecveOnScopes4And2 demands an ordered events submission
 func checkExecveOnScopes4And2(t *testing.T, gotOutput *[]trace.Event) {
 	_, err := forkAndExecFunction(doLsUname)
 	require.NoError(t, err)
@@ -215,20 +216,16 @@ func checkExecveOnScopes4And2(t *testing.T, gotOutput *[]trace.Event) {
 
 	// output should only have events with event name of execve
 	for i, evt := range *gotOutput {
-		assert.Equal(t, "execve", evt.EventName)
+		assert.Equal(t, "sched_process_exit", evt.EventName)
 		evts[i] = evt
 	}
 
 	// ls - scope 4
-	arg, err := helpers.GetTraceeArgumentByName(evts[0], "pathname")
-	require.NoError(t, err)
-	assert.Contains(t, arg.Value, "ls")
+	assert.Equal(t, evts[0].ProcessName, "ls")
 	assert.Equal(t, uint64(1<<3), evts[0].MatchedScopes, "MatchedScopes")
 
 	// uname - scope 2
-	arg, err = helpers.GetTraceeArgumentByName(evts[1], "pathname")
-	require.NoError(t, err)
-	assert.Contains(t, arg.Value, "uname")
+	assert.Equal(t, evts[1].ProcessName, "uname")
 	assert.Equal(t, uint64(1<<1), evts[1].MatchedScopes, "MatchedScopes")
 }
 
@@ -301,8 +298,8 @@ func Test_EventFilters(t *testing.T) {
 		{
 			name: "trace events set in two specific scope",
 			filterArgs: []string{
-				"4:event=execve", "4:execve.args.pathname=*ls",
-				"2:event=execve", "2:execve.args.pathname=*uname",
+				"4:event=sched_process_exit", "4:comm=ls",
+				"2:event=sched_process_exit", "2:comm=uname",
 			},
 			eventFunc: checkExecveOnScopes4And2,
 		},
