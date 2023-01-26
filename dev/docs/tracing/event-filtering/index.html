@@ -2516,15 +2516,15 @@ expected.</p>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The "follow" operator will make tracee to follow all newly created
-processes, that are being filtered for, childs.</p>
+<p>The "follow" operator will make tracee follow all newly created
+child processes of the parents being filtered.</p>
 </div>
 </li>
 <li>
 <p><strong>Event Arguments</strong> <code>(Operators: =, !=. Prefix/Suffix: *)</code></p>
-<div class="highlight"><pre><span></span><code>1) --trace event=openat --trace openat.pathname=/etc/shadow
-2) --trace event=openat --trace openat.pathname=/tmp*
-3) --trace event=openat --trace openat.pathname!=/tmp/1,/bin/ls
+<div class="highlight"><pre><span></span><code>1) --trace event=openat --trace openat.args.pathname=/etc/shadow
+2) --trace event=openat --trace openat.args.pathname=/tmp*
+3) --trace event=openat --trace openat.args.pathname!=/tmp/1,/bin/ls
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2534,8 +2534,8 @@ But ANDed if used with any other operator.</p>
 </li>
 <li>
 <p><strong>Event Return Code</strong> <code>(Operators: =, !=, &lt;, &gt;)</code></p>
-<div class="highlight"><pre><span></span><code>1) --trace event=openat --trace openat.pathname=/etc/shadow --trace &quot;openat.retval&gt;0&quot;
-2) --trace event=openat --trace openat.pathname=/etc/shadow --trace &quot;openat.retval&lt;0&quot;
+<div class="highlight"><pre><span></span><code>1) --trace event=openat --trace openat.args.pathname=/etc/shadow --trace &quot;openat.retval&gt;0&quot;
+2) --trace event=openat --trace openat.args.pathname=/etc/shadow --trace &quot;openat.retval&lt;0&quot;
 </code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
@@ -2544,8 +2544,8 @@ But ANDed if used with any other operator.</p>
 </li>
 <li>
 <p><strong>Event Context</strong> <code>(Operators: vary by field)</code></p>
-<div class="highlight"><pre><span></span><code>1) --trace openat.context.container --trace openat.pathname=/etc/shadow
-2) --trace event=openat --trace openat.context.container --trace openat.pathname=/etc/shadow
+<div class="highlight"><pre><span></span><code>1) --trace openat.context.container --trace openat.args.pathname=/etc/shadow
+2) --trace event=openat --trace openat.context.container --trace openat.args.pathname=/etc/shadow
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2594,7 +2594,7 @@ can be listed by using <code>--list</code> command line argument.</p>
 2) --trace &#39;!container&#39; # events from the host only
 3) --trace container=new # containers created after tracee-ebf execution
 4) --trace container=3f93da58be3c --trace event=openat
-5) --trace container=new --trace event=openat --trace openat.pathname=&quot;/etc/shadow&quot;
+5) --trace container=new --trace event=openat --trace openat.args.pathname=&quot;/etc/shadow&quot;
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2654,16 +2654,6 @@ by command name as well.</p>
 2) --trace &#39;uid&gt;0&#39;
 3) --trace &#39;uid&gt;0&#39; --trace uid!=1000 # do not trace root and uid=1000
 </code></pre></div>
-</li>
-<li>
-<p><strong>Network Interface</strong></p>
-<div class="highlight"><pre><span></span><code>1) -trace comm=nc,ping -trace event=net_packet -trace net=docker0
-2) -trace event=dns_request,dns_response -trace net=docker0
-</code></pre></div>
-<div class="admonition attention">
-<p class="admonition-title">Attention</p>
-<p>Do not forget to provide the interface to be traced with "net=name"</p>
-</div>
 </li>
 <li>
 <p><strong>UTS Namespace (hostnames)</strong> <code>(Operators: =, !=)</code></p>

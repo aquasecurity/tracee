@@ -2499,8 +2499,8 @@ Stats: {EventCount:6 EventsFiltered:0 NetEvCount:0 ErrorCount:0 LostEvCount:0 Lo
 you can select fields, rename them, filter values, and many other things:</p>
 <blockquote>
 <div class="highlight"><pre><span></span><code>sudo ./dist/tracee-ebpf -o format:json -o option:parse-arguments
--trace comm=ping -capture net=lo | jq -c &#39;. | {eventId, hostName
-,processName,hostProcessId,UserId}&#39;
+-trace comm=ping | jq -c &#39;. | {eventId, hostName, processName,
+hostProcessId,UserId}&#39;
 </code></pre></div>
 </blockquote>
 </div>
