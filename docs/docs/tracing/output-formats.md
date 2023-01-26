@@ -51,8 +51,8 @@ Tracee supports different output formats for detected events:
         you can select fields, rename them, filter values, and many other things:
         > ```text
         > sudo ./dist/tracee-ebpf -o format:json -o option:parse-arguments
-        > -trace comm=ping -capture net=lo | jq -c '. | {eventId, hostName
-        > ,processName,hostProcessId,UserId}'
+        > -trace comm=ping | jq -c '. | {eventId, hostName, processName,
+        > hostProcessId,UserId}'
         > ```
 
 4. **GOB**
