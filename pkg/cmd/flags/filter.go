@@ -8,6 +8,7 @@ import (
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 func filterHelp() string {
@@ -421,8 +422,9 @@ func PrepareFilterScopes(filtersArr []string) (*tracee.FilterScopes, error) {
 			return nil, err
 		}
 
-		if err := filterScopes.Set(scopeIdx, filterScope); err != nil {
-			return nil, err
+		err = filterScopes.Set(scopeIdx, filterScope)
+		if err != nil {
+			logger.Warn("Setting scope", "error", err)
 		}
 	}
 
@@ -444,7 +446,10 @@ func PrepareFilterScopes(filtersArr []string) (*tracee.FilterScopes, error) {
 			return nil, err
 		}
 
-		filterScopes.Add(newScope)
+		err = filterScopes.Add(newScope)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return filterScopes, nil

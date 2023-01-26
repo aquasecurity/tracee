@@ -18,6 +18,6 @@ func FilterScopesOutOfRangeError(idx int) error {
 	return fmt.Errorf("filter scopes index [%d] out-of-range [0-%d]", idx, MaxFilterScopes-1)
 }
 
-func FilterScopeAlreadySetWithDifferentIDError(scope *FilterScope, id int) error {
+func FilterScopeAlreadyExists(scope *FilterScope, id int) error {
 	return fmt.Errorf("filter scope [%+v] already set with different id [%d]", scope, id)
 }
