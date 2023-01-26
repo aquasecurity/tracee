@@ -71,14 +71,6 @@ func isIDInRange(id int) bool {
 	return id >= 0 && id < MaxFilterScopes
 }
 
-func (fs FilterScope) IsEventTraceable(event events.ID) bool {
-	if _, found := fs.EventsToTrace[event]; found {
-		return true
-	}
-
-	return false
-}
-
 // TODO: add locking mechanism as scopes will change at runtime
 type FilterScopes struct {
 	filterScopesArray        [MaxFilterScopes]*FilterScope // underlying filter scopes array
@@ -143,9 +135,9 @@ func (fs FilterScopes) ContainerFilterEnabled() uint64 {
 	return atomic.LoadUint64(&fs.containerFiltersEnabled)
 }
 
-// Compute recalculates values, updates flags and fills the reduced user space map
+// compute recalculates values, updates flags and fills the reduced user space map
 // It must be called at initialization and at every runtime scopes changes
-func (fs *FilterScopes) Compute() {
+func (fs *FilterScopes) compute() {
 	// update global min and max
 	fs.calculateGlobalMinMax()
 
@@ -178,7 +170,7 @@ func (fs *FilterScopes) set(id int, scope *FilterScope) error {
 	}
 	if _, found := fs.filterEnabledScopesMap[scope]; found {
 		if scope.ID != id {
-			return FilterScopeAlreadySetWithDifferentIDError(scope, id)
+			return FilterScopeAlreadyExists(scope, id)
 		}
 	}
 
@@ -186,7 +178,7 @@ func (fs *FilterScopes) set(id int, scope *FilterScope) error {
 	fs.filterScopesArray[id] = scope
 	fs.filterEnabledScopesMap[scope] = id
 
-	fs.Compute()
+	fs.compute()
 
 	return nil
 }
@@ -225,7 +217,7 @@ func (fs *FilterScopes) Delete(id int) error {
 	delete(fs.filterUserSpaceScopesMap, fs.filterScopesArray[id])
 	fs.filterScopesArray[id] = nil
 
-	fs.Compute()
+	fs.compute()
 
 	return nil
 }
