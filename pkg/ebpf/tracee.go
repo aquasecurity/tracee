@@ -890,8 +890,8 @@ func (t *Tracee) computeConfigValues() []byte {
 		configVal[216+byteIndex] |= 1 << bitOffset
 	}
 
-	// Compute all filter scopes internals
-	t.config.FilterScopes.Compute()
+	// compute all filter scopes internals
+	t.config.FilterScopes.compute()
 
 	// uid_max
 	binary.LittleEndian.PutUint64(configVal[224:232], t.config.FilterScopes.UIDFilterMax())
