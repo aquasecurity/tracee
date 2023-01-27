@@ -7903,7 +7903,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
     //       filters + capture.
 
     if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP))
-        cgroup_skb_capture(); // capture tcp packets
+        cgroup_skb_capture(); // capture ipv4/ipv6 only packets
 
     return 1;
 }
@@ -7961,7 +7961,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp)
 capture:
     if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP) ||
         should_submit_net_event(neteventctx, SUB_NET_PACKET_TCP))
-        cgroup_skb_capture(); // capture tcp packets
+        cgroup_skb_capture(); // capture ip or tcp packets
 
     return 1; // NOTE: might block TCP here if needed (return 0)
 }
@@ -8000,7 +8000,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_udp)
 capture:
     if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP) ||
         should_submit_net_event(neteventctx, SUB_NET_PACKET_UDP))
-        cgroup_skb_capture(); // capture tcp packets
+        cgroup_skb_capture(); // capture ip or udp packets
 
     return 1; // NOTE: might block UDP here if needed (return 0)
 }
@@ -8009,10 +8009,12 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmp)
 {
     // submit ICMP base event if needed (full packet)
 
-    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_ICMP)) {
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_ICMP))
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_ICMP, FULL);
-        cgroup_skb_capture(); // capture icmp packets
-    }
+
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP) ||
+        should_submit_net_event(neteventctx, SUB_NET_PACKET_ICMP))
+        cgroup_skb_capture(); // capture ip or icmp packets
 
     return 1; // NOTE: might block ICMP here if needed (return 0)
 }
@@ -8021,10 +8023,13 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6)
 {
     // submit ICMPv6 base event if needed (full packet)
 
-    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_ICMPV6)) {
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_ICMPV6))
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_ICMPV6, FULL);
-        cgroup_skb_capture(); // capture icmpv6 packets
-    }
+
+
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP) ||
+        should_submit_net_event(neteventctx, SUB_NET_PACKET_ICMPV6))
+        cgroup_skb_capture(); // capture ip or icmpv6 packets
 
     return 1; // NOTE: might block ICMPv6 here if needed (return 0)
 }
@@ -8036,10 +8041,14 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6)
 CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_dns)
 {
     // submit DNS base event if needed (full packet)
-    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS)) {
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS))
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS, FULL);
-        cgroup_skb_capture(); // capture tcp dns packets
-    }
+
+
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP)  ||
+        should_submit_net_event(neteventctx, SUB_NET_PACKET_TCP) ||
+        should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS))
+        cgroup_skb_capture(); // capture dns-tcp, tcp or ip packets
 
     return 1; // NOTE: might block DNS here if needed (return 0)
 }
@@ -8047,10 +8056,13 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_dns)
 CGROUP_SKB_HANDLE_FUNCTION(proto_udp_dns)
 {
     // submit DNS base event if needed (full packet)
-    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS)) {
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS))
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS, FULL);
-        cgroup_skb_capture(); // capture udp dns packets
-    }
+
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP)  ||
+        should_submit_net_event(neteventctx, SUB_NET_PACKET_UDP) ||
+        should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS))
+        cgroup_skb_capture(); // capture dns-udp, udp or ip packets
 
     return 1; // NOTE: might block DNS here if needed (return 0)
 }
@@ -8059,10 +8071,13 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_http)
 {
     // submit HTTP base event if needed (full packet)
 
-    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_HTTP)) {
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_HTTP))
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_HTTP, FULL);
-        cgroup_skb_capture(); // capture http packets
-    }
+
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP)  ||
+        should_submit_net_event(neteventctx, SUB_NET_PACKET_TCP) ||
+        should_submit_net_event(neteventctx, SUB_NET_PACKET_HTTP))
+        cgroup_skb_capture(); // capture http-tcp, tcp or ip packets
 
     return 1; // NOTE: might block HTTP here if needed (return 0)
 }
