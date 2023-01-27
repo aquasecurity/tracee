@@ -9,6 +9,8 @@
 # ignore local and temporary packaging files
 debian
 .ubuntu*
+.package*
+tracee.spec
 
 # ignore Helm subcharts
 deploy/helm/tracee/charts/

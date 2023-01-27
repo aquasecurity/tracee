@@ -13,11 +13,23 @@ Build-Depends: debhelper,
                llvm,
                libelf-dev,
                zlib1g-dev,
-	       golang
+               golang
 Standards-Version: 4.5.0
 Vcs-Git: https://github.com/aquasecurity/tracee.git
 Homepage: https://www.aquasec.com/products/tracee/
 Rules-Requires-Root: no
+
+Package: tracee
+Architecture: amd64 arm64
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+         libelf1,
+         zlib1g
+Conflicts: tracee-rules
+Description: Tracee: Security and Forensics Tool
+ Tracee is a Runtime Security and forensics tool for Linux. It uses Linux eBPF
+ technology to trace your system and applications at runtime, and analyze
+ collected events to detect suspicious behavioral patterns.
 
 Package: tracee-ebpf
 Architecture: amd64 arm64
@@ -36,6 +48,7 @@ Architecture: amd64 arm64
 Depends: ${misc:Depends},
          ${shlibs:Depends},
          tracee-ebpf (= ${binary:Version})
+Conflicts: tracee
 Description: Tracee Rules: Tracee Runtime Security Detection Engine
  Tracee is a Runtime Security and forensics tool for Linux. It uses Linux eBPF
  technology, to trace your system and applications at runtime, and analyzes

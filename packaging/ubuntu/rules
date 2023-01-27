@@ -6,7 +6,7 @@ export DH_VERBOSE = 1
 include /etc/os-release
 
 STATIC := 0 # can't use golang tracee-rules if enabled
-BTFHUB := 1 # will include tailored BTF files from btfhub
+BTFHUB := 0 # will include tailored BTF files from btfhub
 
 TRACEE_MAKE = BTFHUB=$(BTFHUB) STATIC=$(STATIC) make
 
@@ -30,6 +30,13 @@ override_dh_auto_build:
 	$(TRACEE_MAKE) all
 
 override_dh_auto_install:
+	# tracee
+	mkdir -m 0755 -p ./debian/tracee/usr/bin/
+	mkdir -m 0755 -p ./debian/tracee/usr/lib/tracee/
+	install -m 0755 ./dist/tracee ./debian/tracee/usr/lib/tracee/
+	ln -s /usr/lib/tracee/tracee ./debian/tracee/usr/bin/tracee
+	mkdir -m 0755 -p ./debian/tracee/usr/lib/tracee/rules/
+	install -m 0644 ./dist/rules/* ./debian/tracee/usr/lib/tracee/rules/
 	# tracee-ebpf
 	mkdir -m 0755 -p ./debian/tracee-ebpf/usr/bin/
 	install -m 0755 ./dist/tracee-ebpf ./debian/tracee-ebpf/usr/bin/
