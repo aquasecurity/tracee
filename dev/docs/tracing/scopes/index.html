@@ -10,27 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/contributing/events/kprobes/kallsyms_lookup_name/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/tracing/scopes/">
       
       
+        <link rel="prev" href="../event-filtering/">
+      
+      
+        <link rel="next" href="../network-events/">
       
       
         
       
       
-      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <link rel="icon" href="../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.6+insiders-4.29.0">
     
     
       
-        <title>kallsyms_lookup_name - Tracee</title>
+        <title>Scopes - Tracee</title>
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.c97aee8c.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.c97aee8c.min.css">
       
         
-        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.2505c338.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.2505c338.min.css">
       
       
 
@@ -46,7 +50,7 @@
       
     
     
-    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -70,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#kallsyms_lookup_name" class="md-skip">
+        <a href="#tracing-scopes-workloads" class="md-skip">
           Skip to content
         </a>
       
@@ -90,9 +94,9 @@
 
 <header class="md-header md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href="../../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="../../../../images/tracee_logo_only.png" alt="logo">
+  <img src="../../../images/tracee_logo_only.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -108,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              kallsyms_lookup_name
+              Scopes
             
           </span>
         </div>
@@ -179,7 +183,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../.." class="md-tabs__link">
+        <a href="../../.." class="md-tabs__link">
           
   
     
@@ -199,7 +203,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../../tutorials/everything-is-an-event/" class="md-tabs__link">
+        <a href="../../../tutorials/everything-is-an-event/" class="md-tabs__link">
           
   
   Tutorials
@@ -213,11 +217,13 @@
         
   
   
+    
+  
   
     
     
       <li class="md-tabs__item">
-        <a href="../../../../docs/overview/" class="md-tabs__link">
+        <a href="../../overview/" class="md-tabs__link md-tabs__link--active">
           
   
   Docs
@@ -235,7 +241,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../overview/" class="md-tabs__link">
+        <a href="../../../contributing/overview/" class="md-tabs__link">
           
   
   Contributing
@@ -274,9 +280,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href="../../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="../../../../images/tracee_logo_only.png" alt="logo">
+  <img src="../../../images/tracee_logo_only.png" alt="logo">
 
     </a>
     Tracee
@@ -346,7 +352,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../.." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -372,7 +378,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/kubernetes-quickstart/" class="md-nav__link">
+      <a href="../../../getting-started/kubernetes-quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -398,7 +404,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/docker-quickstart/" class="md-nav__link">
+      <a href="../../../getting-started/docker-quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -470,7 +476,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/installing/getting/" class="md-nav__link">
+      <a href="../../../getting-started/installing/getting/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -496,7 +502,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/installing/prerequisites/" class="md-nav__link">
+      <a href="../../../getting-started/installing/prerequisites/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -522,7 +528,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/installing/docker/" class="md-nav__link">
+      <a href="../../../getting-started/installing/docker/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -548,7 +554,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/installing/kubernetes/" class="md-nav__link">
+      <a href="../../../getting-started/installing/kubernetes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -618,7 +624,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/installing/distros/ubuntu/" class="md-nav__link">
+      <a href="../../../getting-started/installing/distros/ubuntu/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -644,7 +650,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/installing/distros/fedora/" class="md-nav__link">
+      <a href="../../../getting-started/installing/distros/fedora/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -670,7 +676,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/installing/distros/nix-nixos/" class="md-nav__link">
+      <a href="../../../getting-started/installing/distros/nix-nixos/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -704,7 +710,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/installing/headers/" class="md-nav__link">
+      <a href="../../../getting-started/installing/headers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -789,7 +795,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorials/everything-is-an-event/" class="md-nav__link">
+      <a href="../../../tutorials/everything-is-an-event/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -815,7 +821,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorials/setup-development-machine-with-vagrant/" class="md-nav__link">
+      <a href="../../../tutorials/setup-development-machine-with-vagrant/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -841,7 +847,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorials/deploy-grafana-dashboard/" class="md-nav__link">
+      <a href="../../../tutorials/deploy-grafana-dashboard/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -872,19 +878,21 @@
       
   
   
+    
+  
   
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
         
         
-        <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
         
-          <label class="md-nav__link" for="__nav_3" tabindex="0" aria-expanded="false">
+          <label class="md-nav__link" for="__nav_3" tabindex="0" aria-expanded="true">
             
   
   <span class="md-ellipsis">
@@ -918,7 +926,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/overview/" class="md-nav__link">
+      <a href="../../overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -942,21 +950,23 @@
                 
   
   
+    
+  
   
     
     
     
       
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
         
         
-        <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_3_2" type="checkbox" id="__nav_3_2" >
+        <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_3_2" type="checkbox" id="__nav_3_2" checked>
         
-          <label class="md-nav__link" for="__nav_3_2" tabindex="0" aria-expanded="false">
+          <label class="md-nav__link" for="__nav_3_2" tabindex="0" aria-expanded="true">
             
   
   <span class="md-ellipsis">
@@ -990,7 +1000,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/tracing/" class="md-nav__link">
+      <a href="../" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1016,7 +1026,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/tracing/output-formats/" class="md-nav__link">
+      <a href="../output-formats/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1042,7 +1052,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/tracing/output-options/" class="md-nav__link">
+      <a href="../output-options/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1068,7 +1078,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/tracing/event-filtering/" class="md-nav__link">
+      <a href="../event-filtering/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1092,9 +1102,35 @@
                 
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../../../../docs/tracing/scopes/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    
+  
+    Scopes
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -1109,6 +1145,104 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#scopes-matches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scopes matches
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-scope-the-same-of-not-using-the-scope-prefix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Single scope (the same of not using the scope prefix)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-scopes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-scopes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Multi-scopes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#detached-workloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detached workloads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#intertwined-workloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Intertwined workloads
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1120,7 +1254,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/tracing/network-events/" class="md-nav__link">
+      <a href="../network-events/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1200,7 +1334,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/capturing/" class="md-nav__link">
+      <a href="../../capturing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1280,7 +1414,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/detecting/" class="md-nav__link">
+      <a href="../../detecting/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1350,7 +1484,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/detecting/golang/" class="md-nav__link">
+      <a href="../../detecting/golang/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1376,7 +1510,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/detecting/rego/" class="md-nav__link">
+      <a href="../../detecting/rego/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1402,7 +1536,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/detecting/go-cel/" class="md-nav__link">
+      <a href="../../detecting/go-cel/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1436,7 +1570,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/detecting/rules/" class="md-nav__link">
+      <a href="../../detecting/rules/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1462,7 +1596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/detecting/avd/" class="md-nav__link">
+      <a href="../../detecting/avd/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1542,7 +1676,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/integrating/container-engines/" class="md-nav__link">
+      <a href="../../integrating/container-engines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1612,7 +1746,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/integrating/go-templates/" class="md-nav__link">
+      <a href="../../integrating/go-templates/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1682,7 +1816,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/integrating/webhook/" class="md-nav__link">
+      <a href="../../integrating/webhook/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1708,7 +1842,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/integrating/postee/" class="md-nav__link">
+      <a href="../../integrating/postee/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1734,7 +1868,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/integrating/falcosidekick/" class="md-nav__link">
+      <a href="../../integrating/falcosidekick/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1776,7 +1910,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/integrating/prometheus/" class="md-nav__link">
+      <a href="../../integrating/prometheus/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1856,7 +1990,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/deep-dive/architecture/" class="md-nav__link">
+      <a href="../../deep-dive/architecture/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1882,7 +2016,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/deep-dive/secure-tracing/" class="md-nav__link">
+      <a href="../../deep-dive/secure-tracing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1908,7 +2042,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/deep-dive/performance/" class="md-nav__link">
+      <a href="../../deep-dive/performance/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1934,7 +2068,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/deep-dive/caching-events/" class="md-nav__link">
+      <a href="../../deep-dive/caching-events/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1960,7 +2094,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/deep-dive/ordering-events/" class="md-nav__link">
+      <a href="../../deep-dive/ordering-events/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1986,7 +2120,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/deep-dive/override-os-files/" class="md-nav__link">
+      <a href="../../deep-dive/override-os-files/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2012,7 +2146,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/deep-dive/healthz/" class="md-nav__link">
+      <a href="../../deep-dive/healthz/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2097,7 +2231,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../overview/" class="md-nav__link">
+      <a href="../../../contributing/overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2123,7 +2257,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guidelines/" class="md-nav__link">
+      <a href="../../../contributing/guidelines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2195,7 +2329,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../building/building/" class="md-nav__link">
+      <a href="../../../contributing/building/building/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2221,7 +2355,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../building/environment/" class="md-nav__link">
+      <a href="../../../contributing/building/environment/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2247,7 +2381,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../building/containers/" class="md-nav__link">
+      <a href="../../../contributing/building/containers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2273,7 +2407,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../building/nocore-ebpf/" class="md-nav__link">
+      <a href="../../../contributing/building/nocore-ebpf/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2299,7 +2433,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../building/packaging/" class="md-nav__link">
+      <a href="../../../contributing/building/packaging/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2325,7 +2459,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../building/macosx/" class="md-nav__link">
+      <a href="../../../contributing/building/macosx/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2387,10 +2521,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#intro" class="md-nav__link">
+  <a href="#scopes-matches" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Intro
+        Scopes matches
       
     </span>
   </a>
@@ -2398,56 +2532,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#description" class="md-nav__link">
+  <a href="#examples" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Description
+        Examples
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#arguments" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Arguments
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#hooks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Hooks
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Hooks">
+    <nav class="md-nav" aria-label="Examples">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#kallsyms_lookup_name_1" class="md-nav__link">
+  <a href="#single-scope-the-same-of-not-using-the-scope-prefix" class="md-nav__link">
     <span class="md-ellipsis">
       
-        kallsyms_lookup_name
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="kallsyms_lookup_name">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#type" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Type
+        Single scope (the same of not using the scope prefix)
       
     </span>
   </a>
@@ -2455,10 +2555,33 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#purpose" class="md-nav__link">
+  <a href="#multi-scopes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Purpose
+        Multi-scopes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Multi-scopes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#detached-workloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detached workloads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#intertwined-workloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Intertwined workloads
       
     </span>
   </a>
@@ -2472,17 +2595,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#example-use-case" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example Use Case
-      
-    </span>
-  </a>
   
 </li>
       
@@ -2503,28 +2615,128 @@
 
 
 
-<h1 id="kallsyms_lookup_name">kallsyms_lookup_name<a class="headerlink" href="#kallsyms_lookup_name" title="Permanent link">&para;</a></h1>
-<h2 id="intro">Intro<a class="headerlink" href="#intro" title="Permanent link">&para;</a></h2>
-<p>kallsyms_lookup_name - lookup the address for a symbol</p>
-<h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>This event is invoked when the 'kallsyms_lookup_name()' kernel function returns. 
-It suggests a lookup of kernel symbol address.
-This function is used mainly by external kernel extensions like kernel modules or BPF programs.
-It might be interesting in cases where a sensitive kernel symbol is looked-up.</p>
-<h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
-<ul>
-<li><code>symbol_name</code>:<code>const char*</code>[K] - the symbol that is being looked-up.</li>
-<li><code>symbol_address</code>:<code>void*</code>[K] - the address of the symbol returned by the function. 0 if not found.</li>
-<li><code>syscall</code>:<code>int</code>[K] - the id of the syscall that invoked this lookup. If output option <code>parse-arguments</code> was chosen, the value will be transformed to the syscall name as a string type.</li>
-</ul>
-<h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
-<h3 id="kallsyms_lookup_name_1">kallsyms_lookup_name<a class="headerlink" href="#kallsyms_lookup_name_1" title="Permanent link">&para;</a></h3>
-<h4 id="type">Type<a class="headerlink" href="#type" title="Permanent link">&para;</a></h4>
-<p>kprobe + kretprobe</p>
-<h4 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h4>
-<p>tracing the kallsyms_lookup_name event</p>
-<h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
-<p><code>./dist/tracee-ebpf -t e=kallsyms_lookup_name</code></p>
+<h1 id="tracing-scopes-workloads">Tracing Scopes (workloads)<a class="headerlink" href="#tracing-scopes-workloads" title="Permanent link">&para;</a></h1>
+<p><strong>Scopes</strong> allow you to have more granularity and flexibility when <a href="../event-filtering/">filtering</a>
+events. Up to 64 scopes (workloads) can be used at the same time.</p>
+<p>If one of your filters doesn't match, the event will be filtered out, as they
+work together in a short circuit. However, you can use multiple sets of
+filters, called scopes, by adding a number and a colon before the trace flags,
+such as <code>1:</code>. In this way, you can have different workloads that mix different
+types of filters.</p>
+<p>The main filtering logic, <em>ANDed filters</em>, remains the same within a scope. But
+the result of multi-scopes is <em>ORed</em>, which enables you to have granularity.</p>
+<h2 id="scopes-matches">Scopes matches<a class="headerlink" href="#scopes-matches" title="Permanent link">&para;</a></h2>
+<p>To determine which scopes an event is related to, you can check the <strong>bitmask</strong>
+using:</p>
+<ol>
+<li><code>-o format:json</code>, via <code>matchedScopes</code> JSON field (in decimal).</li>
+<li><code>-o format:table-verbose</code>, via <code>SCOPES</code> column (in hexadecimal).</li>
+</ol>
+<p>For instance, an event with the matchedScopes value of 35 (decimal), tells you
+that this event matches the 1st, 2nd, and 6th scopes.</p>
+<div class="highlight"><pre><span></span><code>bc<span class="w"> </span><span class="o">&lt;&lt;&lt;</span><span class="w"> </span><span class="s2">&quot;obase=2; 35&quot;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>100011
+^   ^^
+6   21 (scope number)
+</code></pre></div>
+<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
+<h3 id="single-scope-the-same-of-not-using-the-scope-prefix">Single scope (the same of not using the scope prefix)<a class="headerlink" href="#single-scope-the-same-of-not-using-the-scope-prefix" title="Permanent link">&para;</a></h3>
+<p>Trace in <strong>scope 42</strong> <code>sched_process_exec</code> events from <code>/usr/bin/ls</code> binary:</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">42</span>:event<span class="o">=</span>sched_process_exec<span class="w"> </span>-t<span class="w"> </span><span class="m">42</span>:binary<span class="o">=</span>/usr/bin/ls<span class="w"> </span><span class="se">\</span>
+-o<span class="w"> </span>format:table-verbose
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
+20:09:15:041923  0000020000000000  hb                             4026531841   4026531836   1000   ls               470751  470751  470503  0                sched_process_exec   cmdpath: /usr/bin/ls, pathname: /usr/bin/ls, dev: 271581189, inode: 3933037, ctime: 1668553120490241295, inode_mode: 33261, argv: [ls --color=auto], interp: /usr/bin/ls, stdin_type: S_IFCHR, stdin_path: /dev/pts/2, invoked_from_kernel: 0
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you don't prefix the filter, <code>event=sched_process_exec</code>, Tracee
+will consider that event to be part of <strong>scope 1</strong>. As a result, it can
+be omitted for single scope usage.</p>
+</div>
+<h3 id="multi-scopes">Multi-scopes<a class="headerlink" href="#multi-scopes" title="Permanent link">&para;</a></h3>
+<h4 id="detached-workloads">Detached workloads<a class="headerlink" href="#detached-workloads" title="Permanent link">&para;</a></h4>
+<ol>
+<li>
+<p>Trace in <strong>scope 3</strong> only <code>sched_process_exit</code> events from <code>id</code> command and
+trace in <strong>scope 9</strong> only <code>sched_process_exit</code> events from <code>ls</code> command:</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">3</span>:event<span class="o">=</span>sched_process_exit<span class="w"> </span>-t<span class="w"> </span><span class="m">3</span>:comm<span class="o">=</span>id<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">9</span>:event<span class="o">=</span>sched_process_exit<span class="w"> </span>-t<span class="w"> </span><span class="m">9</span>:comm<span class="o">=</span>ls<span class="w"> </span><span class="se">\</span>
+-o<span class="w"> </span>format:table-verbose
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
+20:14:57:074270  0000000000000004  hb                             4026531841   4026531836   1000   id               471990  471990  470503  0                sched_process_exit   exit_code: 0, process_group_exit: true
+20:14:59:709468  0000000000000100  hb                             4026531841   4026531836   1000   ls               472033  472033  470503  0                sched_process_exit   exit_code: 0, process_group_exit: true
+</code></pre></div>
+</li>
+<li>
+<p>Trace in <strong>scope 6</strong> only <code>openat</code> events from <code>id</code> command and
+trace in <strong>scope 7</strong> only <code>close</code> events from <code>id</code> command:</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">6</span>:event<span class="o">=</span>openat<span class="w"> </span>-t<span class="w"> </span><span class="m">6</span>:comm<span class="o">=</span>id<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">7</span>:event<span class="o">=</span>close<span class="w"> </span>-t<span class="w"> </span><span class="m">7</span>:comm<span class="o">=</span>id<span class="w"> </span><span class="se">\</span>
+-o<span class="w"> </span>format:table-verbose
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
+20:23:22:794235  0000000000000020  hb                             4026531841   4026531836   1000   id               473432  473432  295394  3                openat               dirfd: -100, pathname: /etc/ld.so.cache, flags: O_RDONLY|O_CLOEXEC, mode: 0
+20:23:22:794246  0000000000000040  hb                             4026531841   4026531836   1000   id               473432  473432  295394  0                close                fd: 3
+</code></pre></div>
+</li>
+</ol>
+<h4 id="intertwined-workloads">Intertwined workloads<a class="headerlink" href="#intertwined-workloads" title="Permanent link">&para;</a></h4>
+<ol>
+<li>
+<p>Trace in <strong>scope 3</strong> only <code>sched_process_exit</code> events from <code>id</code> command and
+trace in <strong>scope 9</strong> only <code>sched_process_exit</code> events from <strong>all</strong>:</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">3</span>:event<span class="o">=</span>sched_process_exit<span class="w"> </span>-t<span class="w"> </span><span class="m">3</span>:comm<span class="o">=</span>id<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">9</span>:event<span class="o">=</span>sched_process_exit<span class="w"> </span><span class="se">\</span>
+-o<span class="w"> </span>format:table-verbose
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
+20:26:50:435805  0000000000000100  hb                             4026531841   4026531836   1000   sleep            474130  474130  474129  0                sched_process_exit   exit_code: 0, process_group_exit: true
+20:26:50:439402  0000000000000104  hb                             4026531841   4026531836   1000   id               474129  474129  295394  0                sched_process_exit   exit_code: 0, process_group_exit: true
+20:26:50:457932  0000000000000100  hb                             4026531841   4026531836   1000   pkgfile          474162  474166  474161  0                sched_process_exit   exit_code: 0, process_group_exit: false
+...
+</code></pre></div>
+</li>
+<li>
+<p>Trace in <strong>scope 3</strong> only <code>anti_debugging</code> events from <strong>all</strong>,
+trace in <strong>scope 5</strong> only <code>net_packet_icmp</code> events from <code>ping</code> command, and
+trace in <strong>scope 9</strong> only <code>ptrace</code> events from <strong>all</strong>.</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">3</span>:event<span class="o">=</span>anti_debugging<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">5</span>:event<span class="o">=</span>net_packet_icmp<span class="w"> </span>-t<span class="w"> </span><span class="m">5</span>:comm<span class="o">=</span>ping<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">9</span>:event<span class="o">=</span>ptrace<span class="w"> </span><span class="se">\</span>
+-o<span class="w"> </span>format:table-verbose
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
+20:59:54:105722  0000000000000010  hb                             4026531841   4026531836   1000   ping             480539  480539  295394  0                net_packet_icmp      src: 192.168.0.109, dst: 8.8.8.8, proto_icmp: {EchoRequest 36097 22 1}
+20:59:54:129919  0000000000000010  hb                             4026531841   4026531836   1000   ping             480539  480539  295394  0                net_packet_icmp      src: 8.8.8.8, dst: 192.168.0.109, proto_icmp: {EchoReply 38145 22 1}
+20:59:57:941107  0000000000000100  hb                             4026531841   4026531836   1000   strace           480614  480614  295394  0                ptrace               request: PTRACE_SEIZE, pid: 480615, addr: 0x0, data: 0x0
+20:59:57:941424  0000000000000100  hb                             4026531841   4026531836   1000   strace           480616  480616  480614  0                ptrace               request: PTRACE_TRACEME, pid: 0, addr: 0x0, data: 0x0
+20:59:57:941424  0000000000000004  hb                             4026531841   4026531836   1000   strace           480616  480616  480614  0                anti_debugging       request: PTRACE_TRACEME, pid: 0, addr: 0x0, data: 0x0
+</code></pre></div>
+</li>
+<li>
+<p>Trace in <strong>scope 3</strong> only <code>net_packet_icmp</code> events from containers and
+trace in <strong>scope 5</strong> only <code>net_packet_icmp</code> events from host:</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">3</span>:event<span class="o">=</span>net_packet_icmp<span class="w"> </span>-t<span class="w"> </span><span class="m">3</span>:container<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">5</span>:event<span class="o">=</span>net_packet_icmp<span class="w"> </span>-t<span class="w"> </span><span class="m">5</span>:<span class="s1">&#39;!container&#39;</span>
+-o<span class="w"> </span>format:table-verbose
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID/host        TID/host        PPID/host       RET              EVENT                ARGS
+21:13:24:153374  0000000000000010  hb                             4026531841   4026531836   1000   ping             484228 /484228  484228 /484228  295394 /295394  0                net_packet_icmp      src: 192.168.0.109, dst: 8.8.8.8, proto_icmp: {EchoRequest 13378 24 1}
+21:13:24:179052  0000000000000010  hb                             4026531841   4026531836   1000   ping             484228 /484228  484228 /484228  295394 /295394  0                net_packet_icmp      src: 8.8.8.8, dst: 192.168.0.109, proto_icmp: {EchoReply 15426 24 1}
+21:13:42:685181  0000000000000004  cd2f551ecb6b     cd2f551ecb6b  4026534610   4026534613   0      ping             8      /484370  8      /484370  1      /483638  0                net_packet_icmp      src: 172.17.0.3, dst: 8.8.8.8, proto_icmp: {EchoRequest 2123 8 0}
+21:13:42:709843  0000000000000004  cd2f551ecb6b     cd2f551ecb6b  4026534610   4026534613   0      ping             8      /484370  8      /484370  1      /483638  0                net_packet_icmp      src: 8.8.8.8, dst: 172.17.0.3, proto_icmp: {EchoReply 4171 8 0}
+</code></pre></div>
+</li>
+</ol>
 
 
 
@@ -2561,10 +2773,10 @@ It might be interesting in cases where a sensitive kernel symbol is looked-up.</
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../../assets/javascripts/workers/search.f236eb64.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../assets/javascripts/workers/search.f236eb64.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.b5a861c9.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.b5a861c9.min.js"></script>
       
     
   </body>
