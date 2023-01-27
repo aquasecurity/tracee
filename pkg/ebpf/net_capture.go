@@ -166,11 +166,9 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 		layer3 := packet.NetworkLayer()
 		layer4 := packet.TransportLayer()
 
-		ipHeaderLength := uint32(0)     // IP header length is dynamic
-		icmpHeaderLength := uint32(8)   // ICMP header length is 8 bytes
-		icmpv6HeaderLength := uint32(4) // ICMPv6 header length is 4 bytes
-		udpHeaderLength := uint32(8)    // UDP header length is 8 bytes
-		tcpHeaderLength := uint32(0)    // TCP header length is dynamic
+		ipHeaderLength := uint32(0)  // IP header length is dynamic
+		udpHeaderLength := uint32(8) // UDP header length is 8 bytes
+		tcpHeaderLength := uint32(0) // TCP header length is dynamic
 
 		// will calculate L4 protocol headers length value
 		ipHeaderLengthValue := uint32(0)
@@ -189,7 +187,7 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 			switch v.Protocol {
 			case layers.IPProtocolICMPv4:
 				// ICMP
-				ipHeaderLengthValue += icmpHeaderLength
+				break // always has "headers" only (payload = 0)
 			case layers.IPProtocolUDP:
 				// UDP
 				udpHeaderLengthValue += udpHeaderLength
@@ -249,7 +247,7 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 			switch v.NextHeader {
 			case layers.IPProtocolICMPv6:
 				// ICMPv6
-				ipHeaderLengthValue += icmpv6HeaderLength
+				break // always has "headers" only (payload = 0)
 			case layers.IPProtocolUDP:
 				// UDP
 				udpHeaderLengthValue += udpHeaderLength
