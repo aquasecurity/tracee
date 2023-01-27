@@ -24,8 +24,16 @@ Possible options:
 dir:/path/to/dir                              path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).
 profile                                       creates a runtime profile of program executions and their metadata for forensics use.
 clear-dir                                     clear the captured artifacts output dir before starting (default: false).
+
+Network:
+
 pcap:[single,process,container,command]       capture separate pcap files organized by single file, files per processes, containers and/or commands
-pcap-snaplen:[default, headers, max or SIZE]  sets captured payload from each packet (default=96b, headers, max, or 512b, 1kb, ...)
+pcap-snaplen:[default, headers, max or SIZE]  sets captured payload from each packet:
+                                              - default=96b (up to 96 bytes of payload if payload exists)
+											  - headers (up to layer 4, icmp & dns have full headers)
+											  - sizes ended in 'b' or 'kb' (for ipv4, ipv6, tcp, udp):
+											    256b, 512b, 1kb, 2kb, 4kb, ... (up to requested size)
+											  - max (entire packet)
 
 Examples:
   --capture exec                                           | capture executed files into the default output directory
@@ -34,10 +42,10 @@ Examples:
   --capture profile                                        | capture executed files and create a runtime profile in the output directory
   --capture net (or network)                               | capture network traffic. default: single pcap file containing all traced packets
   --capture net --capture pcap:process,command             | capture network traffic, save pcap files for processes and commands
-  --capture net --capture pcap-snaplen:1kb                 | capture network traffic, single pcap file (default), capture 1KB from each packet
+  --capture net --capture pcap-snaplen:1kb                 | capture network traffic, single pcap file (default), capture up to 1kb from each packet payload
   --capture net --capture pcap-snaplen:max                 | capture network traffic, single pcap file (default), capture full sized packets
-  --capture net --capture pcap-snaplen:headers             | capture network traffic, single pcap file (default), capture headers only from each packet
-  --capture net --capture pcap-snaplen:default             | capture network traffic, single pcap file (default), capture headers + 96 bytes from each packet
+  --capture net --capture pcap-snaplen:headers             | capture network traffic, single pcap file (default), capture headers only
+  --capture net --capture pcap-snaplen:default             | capture network traffic, single pcap file (default), capture headers + up to 96 bytes of payload
   --capture network --capture pcap:container,command       | capture network traffic, save pcap files for containers and commands
   --capture exec --output none                             | capture executed files into the default output directory not printing the stream of events
 

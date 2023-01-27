@@ -7833,7 +7833,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
                     break;
                 case IPPROTO_ICMP:
                     dest = &nethdrs->protohdrs.icmphdr;
-                    size = get_type_size(struct icmphdr);
+                    size = 0; // will be added later, last function
                     break;
                 default:
                     return 1; // other protocols are not an error
@@ -7861,7 +7861,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
                     break;
                 case IPPROTO_ICMPV6:
                     dest = &nethdrs->protohdrs.icmp6hdr;
-                    size = get_type_size(struct icmp6hdr);
+                    size = 0; // will be added later, last function
                     break;
                 default:
                     return 1; // other protocols are not an error
@@ -7879,8 +7879,13 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
 
     // load layer 4 protocol headers
 
-    if (bpf_skb_load_bytes_relative(ctx, prev_hdr_size, dest, size, BPF_HDR_START_NET))
-        return 1;
+    if (size) {
+        if (bpf_skb_load_bytes_relative(ctx,
+                                        prev_hdr_size,
+                                        dest, size,
+                                        BPF_HDR_START_NET))
+            return 1;
+    }
 
    // call protocol handlers (for more base events to be sent)
 
@@ -8005,6 +8010,7 @@ capture:
     return 1; // NOTE: might block UDP here if needed (return 0)
 }
 
+// clang-format off
 CGROUP_SKB_HANDLE_FUNCTION(proto_icmp)
 {
     // submit ICMP base event if needed (full packet)
@@ -8013,8 +8019,12 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmp)
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_ICMP, FULL);
 
     if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP) ||
-        should_submit_net_event(neteventctx, SUB_NET_PACKET_ICMP))
+        should_submit_net_event(neteventctx, SUB_NET_PACKET_ICMP)) {
+
+        // full icmp header for capture (payload doesn't make much sense)
+        neteventctx->md.header_size = ctx->len;
         cgroup_skb_capture(); // capture ip or icmp packets
+    }
 
     return 1; // NOTE: might block ICMP here if needed (return 0)
 }
@@ -8026,10 +8036,13 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6)
     if (should_submit_net_event(neteventctx, SUB_NET_PACKET_ICMPV6))
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_ICMPV6, FULL);
 
-
     if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP) ||
-        should_submit_net_event(neteventctx, SUB_NET_PACKET_ICMPV6))
+        should_submit_net_event(neteventctx, SUB_NET_PACKET_ICMPV6)) {
+
+        // full icmpv6 header for capture (payload doesn't make much sense)
+        neteventctx->md.header_size = ctx->len;
         cgroup_skb_capture(); // capture ip or icmpv6 packets
+    }
 
     return 1; // NOTE: might block ICMPv6 here if needed (return 0)
 }
@@ -8044,11 +8057,14 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_dns)
     if (should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS))
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS, FULL);
 
-
-    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP)  ||
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP) ||
         should_submit_net_event(neteventctx, SUB_NET_PACKET_TCP) ||
-        should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS))
+        should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS)) {
+
+        // full dns header for capture (payload doesn't make much sense)
+        neteventctx->md.header_size = ctx->len;
         cgroup_skb_capture(); // capture dns-tcp, tcp or ip packets
+    }
 
     return 1; // NOTE: might block DNS here if needed (return 0)
 }
@@ -8059,10 +8075,14 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_udp_dns)
     if (should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS))
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS, FULL);
 
-    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP)  ||
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP) ||
         should_submit_net_event(neteventctx, SUB_NET_PACKET_UDP) ||
-        should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS))
+        should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS)) {
+
+        // full dns header for capture (payload doesn't make much sense)
+        neteventctx->md.header_size = ctx->len;
         cgroup_skb_capture(); // capture dns-udp, udp or ip packets
+    }
 
     return 1; // NOTE: might block DNS here if needed (return 0)
 }
@@ -8074,12 +8094,15 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_http)
     if (should_submit_net_event(neteventctx, SUB_NET_PACKET_HTTP))
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_HTTP, FULL);
 
-    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP)  ||
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP) ||
         should_submit_net_event(neteventctx, SUB_NET_PACKET_TCP) ||
         should_submit_net_event(neteventctx, SUB_NET_PACKET_HTTP))
         cgroup_skb_capture(); // capture http-tcp, tcp or ip packets
 
+    // payload here DOES make sense so don't change header_size
+
     return 1; // NOTE: might block HTTP here if needed (return 0)
 }
+// clang-format on
 
 #endif
