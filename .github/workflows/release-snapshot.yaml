@@ -12,7 +12,8 @@ on:
 
 env:
   GO_VERSION: "1.18"
-  OPA_VERSION: "v0.41.0"
+  OPA_VERSION: "v0.48.0"
+
 jobs:
   release-snapshot:
     name: Release Snapshot
