@@ -1,5 +1,7 @@
 # Tracing Event Filtering
 
+> For filtering by workload, see [scopes](./scopes.md).
+
 ```
 $ sudo ./dist/tracee-ebpf --trace help
 $ sudo ./dist/tracee-ebpf --trace xxx
