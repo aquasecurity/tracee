@@ -505,8 +505,12 @@ type forwardEventPrinter struct {
 }
 
 func (p *forwardEventPrinter) Init() error {
-	fmt.Println("sending to", p.destination, "as", p.tag)
+	// Set up a default tag if required
+	if p.tag == "" {
+		p.tag = "tracee"
+	}
 
+	// Create a TCP connection to the forward receiver
 	p.client = forward.New(forward.ConnectionOptions{
 		Factory: &forward.ConnFactory{
 			Address: p.destination,
@@ -525,6 +529,7 @@ func (p *forwardEventPrinter) Print(event trace.Event) {
 		logger.Error("invalid Forward client")
 	}
 
+	// The actual event is marshalled as JSON then sent with the other information (tag, etc.)
 	eBytes, err := json.Marshal(event)
 	if err != nil {
 		logger.Error("error marshaling event to json", "error", err)
@@ -535,8 +540,21 @@ func (p *forwardEventPrinter) Print(event trace.Event) {
 	}
 
 	err = p.client.SendMessage(p.tag, record)
+	// Assuming all is well we continue but if the connection is dropped or some other error we retry
 	if err != nil {
 		logger.Error("error writing to Forward destination", "url", p.destination, "tag", p.tag, "error", err)
+		// Try five times to reconnect and send before giving up
+		for attempts := 0; attempts < 5; attempts++ {
+			// Attempt to reconnect (remote end may have dropped/restarted)
+			err = p.client.Reconnect()
+			if err == nil {
+				// Re-attempt to send
+				err = p.client.SendMessage(p.tag, record)
+				if err == nil {
+					break
+				}
+			}
+		}
 	}
 }
 

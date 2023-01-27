@@ -59,7 +59,6 @@ func PrepareOutput(outputSlice []string) (OutputConfig, printer.Config, error) {
 		if numParts == 1 && outputParts[0] != "none" {
 			outputParts = append(outputParts, outputParts[0])
 			outputParts[0] = "format"
-			numParts = len(outputParts)
 		}
 
 		switch outputParts[0] {
@@ -72,16 +71,26 @@ func PrepareOutput(outputSlice []string) (OutputConfig, printer.Config, error) {
 				printerKind != "json" &&
 				printerKind != "gob" &&
 				!strings.HasPrefix(printerKind, "gotemplate=") {
-				return outcfg, printcfg, fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob', or 'gotemplate='. Use '--output help' for more info", printerKind)
+				return outcfg, printcfg, fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info", printerKind)
 			}
 		case "forward":
+			// Validate the forward configuration details which are as follows:
+			// --output forward:host:port:tag
+			// This has been split into 'forward' and 'host:port:tag' substrings now so just verify the second string.
 			forwardConfigParts := strings.SplitN(outputParts[1], ":", 3)
+			// Ensure we have enough components
 			numForwardConfigParts := len(forwardConfigParts)
 			if numForwardConfigParts < 3 {
 				return outcfg, printcfg, fmt.Errorf("invalid configuration for forward output (%d): requires host, port and tag. Use '--output help' for more info", numForwardConfigParts)
 			}
+			// Ensure each component is not empty
+			for index, part := range forwardConfigParts {
+				if len(part) == 0 {
+					return outcfg, printcfg, fmt.Errorf("invalid configuration for forward output (%d): host, port and tag must all be non-empty. Use '--output help' for more info", index)
+				}
+			}
 			printerKind = "forward"
-			// Add host and port
+			// Add host and port as a destination
 			printcfg.ForwardDestination = forwardConfigParts[0] + ":" + forwardConfigParts[1]
 			printcfg.ForwardTag = forwardConfigParts[2]
 		case "out-file":
