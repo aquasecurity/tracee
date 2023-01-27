@@ -622,31 +622,31 @@ func (t *Tracee) initDerivationTable() error {
 	t.eventDerivations = derive.Table{
 		events.CgroupMkdir: {
 			events.ContainerCreate: {
-				Enabled:        t.events[events.ContainerCreate].submit > 0,
+				Enabled:        func() bool { return t.events[events.ContainerCreate].submit > 0 },
 				DeriveFunction: derive.ContainerCreate(t.containers),
 			},
 		},
 		events.CgroupRmdir: {
 			events.ContainerRemove: {
-				Enabled:        t.events[events.ContainerRemove].submit > 0,
+				Enabled:        func() bool { return t.events[events.ContainerRemove].submit > 0 },
 				DeriveFunction: derive.ContainerRemove(t.containers),
 			},
 		},
 		events.PrintSyscallTable: {
 			events.HookedSyscalls: {
-				Enabled:        t.events[events.PrintSyscallTable].submit > 0,
+				Enabled:        func() bool { return t.events[events.PrintSyscallTable].submit > 0 },
 				DeriveFunction: derive.DetectHookedSyscall(t.kernelSymbols),
 			},
 		},
 		events.PrintNetSeqOps: {
 			events.HookedSeqOps: {
-				Enabled:        t.events[events.HookedSeqOps].submit > 0,
+				Enabled:        func() bool { return t.events[events.HookedSeqOps].submit > 0 },
 				DeriveFunction: derive.HookedSeqOps(t.kernelSymbols),
 			},
 		},
 		events.SharedObjectLoaded: {
 			events.SymbolsLoaded: {
-				Enabled: t.events[events.SymbolsLoaded].submit > 0,
+				Enabled: func() bool { return t.events[events.SymbolsLoaded].submit > 0 },
 				DeriveFunction: derive.SymbolsLoaded(
 					soLoader,
 					watchedSymbols,
@@ -659,69 +659,78 @@ func (t *Tracee) initDerivationTable() error {
 		//
 		events.NetPacketIPBase: {
 			events.NetPacketIPv4: {
-				Enabled:        t.events[events.NetPacketIPv4].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketIPv4].submit > 0 },
 				DeriveFunction: derive.NetPacketIPv4(),
 			},
 			events.NetPacketIPv6: {
-				Enabled:        t.events[events.NetPacketIPv6].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketIPv6].submit > 0 },
 				DeriveFunction: derive.NetPacketIPv6(),
 			},
 		},
 		events.NetPacketTCPBase: {
 			events.NetPacketTCP: {
-				Enabled:        t.events[events.NetPacketTCP].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketTCP].submit > 0 },
 				DeriveFunction: derive.NetPacketTCP(),
 			},
 		},
 		events.NetPacketUDPBase: {
 			events.NetPacketUDP: {
-				Enabled:        t.events[events.NetPacketUDP].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketUDP].submit > 0 },
 				DeriveFunction: derive.NetPacketUDP(),
 			},
 		},
 		events.NetPacketICMPBase: {
 			events.NetPacketICMP: {
-				Enabled:        t.events[events.NetPacketICMP].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketICMP].submit > 0 },
 				DeriveFunction: derive.NetPacketICMP(),
 			},
 		},
 		events.NetPacketICMPv6Base: {
 			events.NetPacketICMPv6: {
-				Enabled:        t.events[events.NetPacketICMPv6].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketICMPv6].submit > 0 },
 				DeriveFunction: derive.NetPacketICMPv6(),
 			},
 		},
 		events.NetPacketDNSBase: {
 			events.NetPacketDNS: {
-				Enabled:        t.events[events.NetPacketDNS].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketDNS].submit > 0 },
 				DeriveFunction: derive.NetPacketDNS(),
 			},
 			events.NetPacketDNSRequest: {
-				Enabled:        t.events[events.NetPacketDNSRequest].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketDNSRequest].submit > 0 },
 				DeriveFunction: derive.NetPacketDNSRequest(),
 			},
 			events.NetPacketDNSResponse: {
-				Enabled:        t.events[events.NetPacketDNSResponse].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketDNSResponse].submit > 0 },
 				DeriveFunction: derive.NetPacketDNSResponse(),
 			},
 		},
 		events.NetPacketHTTPBase: {
 			events.NetPacketHTTP: {
-				Enabled:        t.events[events.NetPacketHTTP].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketHTTP].submit > 0 },
 				DeriveFunction: derive.NetPacketHTTP(),
 			},
 			events.NetPacketHTTPRequest: {
-				Enabled:        t.events[events.NetPacketHTTPRequest].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketHTTPRequest].submit > 0 },
 				DeriveFunction: derive.NetPacketHTTPRequest(),
 			},
 			events.NetPacketHTTPResponse: {
-				Enabled:        t.events[events.NetPacketHTTPResponse].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketHTTPResponse].submit > 0 },
 				DeriveFunction: derive.NetPacketHTTPResponse(),
 			},
 		},
 	}
 
 	return nil
+}
+
+// RegisterEventDerivation registers an event derivation handler for tracee to use in the event pipeline
+func (t *Tracee) RegisterEventDerivation(deriveFrom events.ID, deriveTo events.ID, deriveCondition func() bool, deriveLogic derive.DeriveFunction) error {
+	if t.eventDerivations == nil {
+		return fmt.Errorf("tracee not initialized yet")
+	}
+
+	return t.eventDerivations.Register(deriveFrom, deriveTo, deriveCondition, deriveLogic)
 }
 
 // options config should match defined values in ebpf code

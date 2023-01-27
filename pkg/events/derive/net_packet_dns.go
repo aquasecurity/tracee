@@ -13,7 +13,7 @@ import (
 // NetPacketDNS
 //
 
-func NetPacketDNS() deriveFunction {
+func NetPacketDNS() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketDNS, deriveDNS())
 }
 
@@ -46,7 +46,7 @@ func deriveDNSEvents(event trace.Event) ([]interface{}, error) {
 // NetPacketDNSRequest
 //
 
-func NetPacketDNSRequest() deriveFunction {
+func NetPacketDNSRequest() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketDNSRequest, deriveDNSRequest())
 }
 
@@ -94,7 +94,7 @@ func deriveDNSRequestEvents(event trace.Event) ([]interface{}, error) {
 // NetPacketDNSResponse
 //
 
-func NetPacketDNSResponse() deriveFunction {
+func NetPacketDNSResponse() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketDNSResponse, deriveDNSResponse())
 }
 

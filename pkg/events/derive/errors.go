@@ -14,6 +14,10 @@ func unexpectedArgCountError(name string, expected int, actual int) error {
 	return fmt.Errorf("error deriving event \"%s\": expected %d arguments but given %d", name, expected, actual)
 }
 
+func alreadyRegisteredError(from, to events.ID) error {
+	return fmt.Errorf("event derivation from %d to %d already exists", from, to)
+}
+
 //
 // Network Events
 //

@@ -9,7 +9,7 @@ import (
 
 // ContainerRemove receives a containers.Containers object as a closure argument to track it's containers.
 // If it receives a cgroup_rmdir event, it can derive a container_remove event from it.
-func ContainerRemove(containers *containers.Containers) deriveFunction {
+func ContainerRemove(containers *containers.Containers) DeriveFunction {
 	return deriveSingleEvent(events.ContainerRemove, deriveContainerRemoveArgs(containers))
 }
 

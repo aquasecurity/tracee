@@ -11,7 +11,6 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/events/derive"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -394,7 +393,7 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 				out <- event
 
 				// Derive event before parse its arguments
-				derivatives, errors := derive.DeriveEvent(eventCopy, t.eventDerivations)
+				derivatives, errors := t.eventDerivations.DeriveEvent(eventCopy)
 
 				for _, err := range errors {
 					t.handleError(err)

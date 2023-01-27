@@ -9,7 +9,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-func NetPacketICMP() deriveFunction {
+func NetPacketICMP() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketICMP, deriveNetPacketICMPArgs())
 }
 
