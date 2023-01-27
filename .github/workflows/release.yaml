@@ -1,21 +1,35 @@
-name: release
+---
+# Release Tracee when a tag starting with v is pushed to the repository.
+name: Release
+
 on:
   workflow_dispatch: {}
   push:
     tags:
       - "v*"
+
+env:
+  GO_VERSION: "1.18"
+  OPA_VERSION: "v0.48.0"
+
 jobs:
   release:
+    name: Release
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout Code
+        uses: actions/checkout@v2
         with:
-          fetch-depth: 0
           submodules: true
-      - name: authenticate
+      - name: Install Dependencies
+        uses: ./.github/actions/build-dependencies
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          opa-version: ${{ env.OPA_VERSION }}
+      - name: Login to docker.io and github
         run: |
           gh auth login --with-token <<<'${{ secrets.GITHUB_TOKEN }}'
           docker login docker.io --username ${{ secrets.DOCKERHUB_USER }} --password-stdin <<<'${{ secrets.DOCKERHUB_TOKEN }}'
-      - name: release
+      - name: Build and Release
         run: |
           make -f builder/Makefile.release PUSH_DOCKER_REPO=aquasec/tracee
