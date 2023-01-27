@@ -29,6 +29,13 @@ require (
 )
 
 require (
+	github.com/IBM/fluent-forward-go v0.2.1 // indirect
+	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/philhofer/fwd v1.1.1 // indirect
+	github.com/tinylib/msgp v1.1.6 // indirect
+)
+
+require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.1.1 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect

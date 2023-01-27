@@ -13,6 +13,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/types/trace"
+
+	forward "github.com/IBM/fluent-forward-go/fluent/client"
 )
 
 type EventPrinter interface {
@@ -37,11 +39,13 @@ const (
 )
 
 type Config struct {
-	Kind          string
-	OutPath       string
-	OutFile       io.WriteCloser
-	ContainerMode ContainerMode
-	RelativeTS    bool
+	Kind               string
+	OutPath            string
+	OutFile            io.WriteCloser
+	ContainerMode      ContainerMode
+	RelativeTS         bool
+	ForwardDestination string
+	ForwardTag         string
 }
 
 func New(config Config) (EventPrinter, error) {
@@ -76,6 +80,11 @@ func New(config Config) (EventPrinter, error) {
 	case kind == "gob":
 		res = &gobEventPrinter{
 			out: config.OutFile,
+		}
+	case kind == "forward":
+		res = &forwardEventPrinter{
+			destination: config.ForwardDestination,
+			tag:         config.ForwardTag,
 		}
 	case strings.HasPrefix(kind, "gotemplate="):
 		res = &templateEventPrinter{
@@ -487,3 +496,54 @@ func (p *ignoreEventPrinter) Print(event trace.Event) {}
 func (p *ignoreEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p ignoreEventPrinter) Close() {}
+
+// forwardEventPrinter sends events over the Fluent Forward protocol to a receiver
+type forwardEventPrinter struct {
+	destination string
+	tag         string
+	client      *forward.Client
+}
+
+func (p *forwardEventPrinter) Init() error {
+	fmt.Println("sending to", p.destination, "as", p.tag)
+
+	p.client = forward.New(forward.ConnectionOptions{
+		Factory: &forward.ConnFactory{
+			Address: p.destination,
+		},
+	})
+	if err := p.client.Connect(); err != nil {
+		return fmt.Errorf("error connecting to Forward destination %q: %v", p.destination, err)
+	}
+	return nil
+}
+
+func (p *forwardEventPrinter) Preamble() {}
+
+func (p *forwardEventPrinter) Print(event trace.Event) {
+	if p.client == nil {
+		logger.Error("invalid Forward client")
+	}
+
+	eBytes, err := json.Marshal(event)
+	if err != nil {
+		logger.Error("error marshaling event to json", "error", err)
+	}
+
+	record := map[string]interface{}{
+		"event": string(eBytes),
+	}
+
+	err = p.client.SendMessage(p.tag, record)
+	if err != nil {
+		logger.Error("error writing to Forward destination", "url", p.destination, "tag", p.tag, "error", err)
+	}
+}
+
+func (p *forwardEventPrinter) Epilogue(stats metrics.Stats) {}
+
+func (p forwardEventPrinter) Close() {
+	if p.client != nil {
+		p.client.Disconnect()
+	}
+}

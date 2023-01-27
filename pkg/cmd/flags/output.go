@@ -18,6 +18,7 @@ Possible options:
 [format:]json                                      output events in json format
 [format:]gob                                       output events in gob format
 [format:]gotemplate=/path/to/template              output events formatted using a given gotemplate file
+forward:host:port:tag                              send events in json format using the Forward protocol to a Fluent receiver
 out-file:/path/to/file                             write the output to a specified file. create/trim the file if exists (default: stdout)
 log-file:/path/to/file                             write the logs to a specified file. create/trim the file if exists (default: stderr)
 none                                               ignore stream of events output, usually used with --capture
@@ -35,6 +36,7 @@ Examples:
   --output json                                            | output as json
   --output gotemplate=/path/to/my.tmpl                     | output as the provided go template
   --output out-file:/my/out --output log-file:/my/log      | output to /my/out and logs to /my/log
+  --output forward:127.0.0.1:24224:tracee                  | output via the Forward protocol to 127.0.0.1 with the tag 'tracee'
   --output none                                            | ignore events output
 Use this flag multiple times to choose multiple output options
 `
@@ -57,6 +59,7 @@ func PrepareOutput(outputSlice []string) (OutputConfig, printer.Config, error) {
 		if numParts == 1 && outputParts[0] != "none" {
 			outputParts = append(outputParts, outputParts[0])
 			outputParts[0] = "format"
+			numParts = len(outputParts)
 		}
 
 		switch outputParts[0] {
@@ -69,8 +72,18 @@ func PrepareOutput(outputSlice []string) (OutputConfig, printer.Config, error) {
 				printerKind != "json" &&
 				printerKind != "gob" &&
 				!strings.HasPrefix(printerKind, "gotemplate=") {
-				return outcfg, printcfg, fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info", printerKind)
+				return outcfg, printcfg, fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob', or 'gotemplate='. Use '--output help' for more info", printerKind)
 			}
+		case "forward":
+			forwardConfigParts := strings.SplitN(outputParts[1], ":", 3)
+			numForwardConfigParts := len(forwardConfigParts)
+			if numForwardConfigParts < 3 {
+				return outcfg, printcfg, fmt.Errorf("invalid configuration for forward output (%d): requires host, port and tag. Use '--output help' for more info", numForwardConfigParts)
+			}
+			printerKind = "forward"
+			// Add host and port
+			printcfg.ForwardDestination = forwardConfigParts[0] + ":" + forwardConfigParts[1]
+			printcfg.ForwardTag = forwardConfigParts[2]
 		case "out-file":
 			outPath = outputParts[1]
 		case "log-file":
