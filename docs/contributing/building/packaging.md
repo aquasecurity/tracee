@@ -13,50 +13,50 @@ to install build depencies in your OS.
 !!! Ubuntu Note
 
     !!! Building Tip
-    
+
         * Bionic (LTS)
-        
+
         ```text
         $ make -f builder/Makefile.packaging ubuntu-bin-bionic
         ```
-        
+
         * Focal (LTS)
-        
+
         ```text
         $ make -f builder/Makefile.packaging ubuntu-bin-focal
         ```
-        
+
         * Jammy (LTS)
-        
+
         ```text
         $ make -f builder/Makefile.packaging ubuntu-bin-jammy
         ```
 
     !!! Versioning
-    
+
         The ubuntu `.deb` packages have the following versioning format:
-        
+
         `tracee-{ebpf,rules}_version~ubuntuver~builddate-lastcommit_arch.deb`
-        
+
         Examples:
-        
+
         ```text
         # bionic
         tracee-ebpf_0.6.5-111~18.04~2201281255-3a6874a_amd64.deb
         tracee-rules_0.6.5-111~18.04~2201281255-3a6874a_amd64.deb
-        
+
         # focal
         tracee-ebpf_0.6.5-111~20.04~2201281302-3a6874a_amd64.deb
         tracee-rules_0.6.5-111~20.04~2201281302-3a6874a_amd64.deb
-        
+
         ...
         ```
-        
+
         This allows upgrades among future releases of tracee AND ubuntu. It also allows
         you to upgrade to "in between releases" versions if a fix is needed.
-    
+
     !!! Location Attention
-    
+
         The packages will be generated in `dist/` directory.
 
 ## Fedora
@@ -66,53 +66,43 @@ will use docker containers to generate appropriate packages, so you don't need
 to install build depencies in your OS.
 
 !!! Fedora Note
-    
+
     !!! Building Tip
-    
-        * 35 (still mantained)
-        
-        ```text
-        make -f builder/Makefile.packaging fedora-bin-35
-        ```
-        
-        * 36 (latest)
-        
+
+        * 36 (still maintained)
+
         ```text
         make -f builder/makefile.packaging fedora-bin-36
         ```
-        
-        * 37 (devel)
-        
+
+        * 37 (latest)
+
         ```text
         make -f builder/makefile.packaging fedora-bin-37
         ```
-    
+
     !!! Versioning Note
-    
+
         The fedora `.rpm` packages have the following versioning format:
-        
+
           `tracee-{ebpf,rules}-version-f{34,35,36}.builddate.lastcommit.arch.rpm`
-        
+
         Examples:
-        
+
         ```text
-        # f35
-        tracee-ebpf-0.6.5.163-f35.2202140512.ef35306d.x86_64.rpm
-        tracee-rules-0.6.5.163-f35.2202140512.ef35306d.x86_64.rpm
-        
         # f36
         tracee-ebpf-0.6.5.163-f36.2202140514.ef35306d.x86_64.rpm
         tracee-rules-0.6.5.163-f36.2202140514.ef35306d.x86_64.rpm
-        
+
         # f37
         tracee-ebpf-0.8.0.rc-f37.2207080417.07c8af7.x86_64.rpm
         tracee-rules-0.8.0.rc-f37.2207080417.07c8af7.x86_64.rpm
         ...
         ```
-        
+
         This allows upgrades among future releases of tracee AND fedora. It also allows
         you to upgrade to "in between releases" versions if a fix is needed.
-    
+
     !!! Location Attention
-    
+
         The packages will be generated in `dist/` directory.

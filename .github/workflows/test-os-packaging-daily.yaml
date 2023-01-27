@@ -17,9 +17,10 @@ jobs:
           {distro: ubuntu, version: bionic},
           {distro: ubuntu, version: focal},
           {distro: ubuntu, version: jammy},
-          {distro: fedora, version: 34},
-          {distro: fedora, version: 35},
-          {distro: fedora, version: 36}
+          {distro: ubuntu, version: kinetic},
+          {distro: ubuntu, version: lunar},
+          {distro: fedora, version: 36},
+          {distro: fedora, version: 37},
           ]
     steps:
       - name: Checkout Code

@@ -51,18 +51,21 @@ help:
 	@echo "  * Focal (LTS)"
 	@echo "    $ make -f builder/Makefile.packaging ubuntu-bin-focal"
 	@echo ""
-	@echo "  * Jammy (devel)"
+	@echo "  * Jammy (LTS)"
 	@echo "    $ make -f builder/Makefile.packaging ubuntu-bin-jammy"
+	@echo ""
+	@echo "  * Kinetic (latest)"
+	@echo "    $ make -f builder/Makefile.packaging ubuntu-bin-kinetic"
+	@echo ""
+	@echo "  * Lunar (future)"
+	@echo "    $ make -f builder/Makefile.packaging ubuntu-bin-lunar"
 	@echo ""
 	@echo "FEDORA:"
 	@echo ""
-	@echo "  * 35 (still maintained)"
-	@echo "    $ make -f builder/Makefile.packaging fedora-bin-35"
-	@echo ""
-	@echo "  * 36 (latest)"
+	@echo "  * 36 (still maintained)"
 	@echo "    $ make -f builder/Makefile.packaging fedora-bin-36"
 	@echo ""
-	@echo "  * 37 (devel)"
+	@echo "  * 37 (latest)"
 	@echo "    $ make -f builder/Makefile.packaging fedora-bin-37"
 	@echo ""
 
@@ -192,7 +195,7 @@ ifneq ($(ARG),)
 endif
 
 #
-# FEDORA: binary pkg (fedora-pkgs-bin-35, fedora-pkgs-bin-36, ...)
+# FEDORA: binary pkg (fedora-pkgs-bin-36, fedora-pkgs-bin-37, ...)
 #
 
 .PHONY: fedora-bin-%

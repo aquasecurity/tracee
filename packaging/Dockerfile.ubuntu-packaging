@@ -64,10 +64,10 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     update-alternatives --install /usr/bin/gofmt gofmt /usr/lib/go-1.18/bin/gofmt 1 && \
     curl -L -o /llvm.sh https://apt.llvm.org/llvm.sh && \
     chmod 755 /llvm.sh && \
-    /llvm.sh 12 && \
+    /llvm.sh 13 && \
     rm /llvm.sh && \
-    update-alternatives --install /usr/bin/llc llc /usr/bin/llc-12 1 && \
-    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-12 1 || true
+    update-alternatives --install /usr/bin/llc llc /usr/bin/llc-13 1 && \
+    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-13 1 || true
 
 USER tracee
 ENV HOME /home/tracee
