@@ -32,6 +32,7 @@ nav:
       - Output Formats: docs/tracing/output-formats.md
       - Output Options: docs/tracing/output-options.md
       - Event Filtering: docs/tracing/event-filtering.md
+      - Scopes: docs/tracing/scopes.md
       - Network Events: docs/tracing/network-events.md
     - Capturing:
       - Getting Started: docs/capturing/index.md
