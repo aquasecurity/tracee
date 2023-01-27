@@ -4835,7 +4835,7 @@ int BPF_KPROBE(trace_security_file_open)
     // Load the arguments given to the open syscall (which eventually invokes this function)
     char empty_string[1] = "";
     void *syscall_pathname = &empty_string;
-    syscall_data_t *sys;
+    syscall_data_t *sys = NULL;
     bool syscall_traced = p.task_info->syscall_traced;
     if (syscall_traced) {
         sys = &p.task_info->syscall_data;
@@ -4856,7 +4856,8 @@ int BPF_KPROBE(trace_security_file_open)
     save_to_submit_buf(p.event, &inode_nr, sizeof(unsigned long), 3);
     save_to_submit_buf(p.event, &ctime, sizeof(u64), 4);
     save_str_to_buf(p.event, syscall_pathname, 5);
-    save_to_submit_buf(p.event, (void *) &sys->id, sizeof(int), 6);
+    if (sys)
+        save_to_submit_buf(p.event, (void *) &sys->id, sizeof(int), 6);
 
     return events_perf_submit(&p, SECURITY_FILE_OPEN, 0);
 }
