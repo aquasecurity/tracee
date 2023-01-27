@@ -79,19 +79,20 @@ func (r Runner) Run(ctx context.Context) error {
 }
 
 func PrintEventList(printRulesSet bool) {
-	padChar, firstPadLen, secondPadLen := " ", 9, 36
-	titleHeaderPadFirst := getPad(padChar, firstPadLen)
-	titleHeaderPadSecond := getPad(padChar, secondPadLen)
+	padChar := " "
+	titleHeaderPadFirst := getPad(padChar, 24)
+	titleHeaderPadSecond := getPad(padChar, 36)
 
 	var b strings.Builder
 
 	if printRulesSet {
 		b.WriteString("Rules: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
-		b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________" + "\n\n")
+		b.WriteString("_____  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________" + "\n\n")
 		printEventGroup(&b, events.StartRulesID, events.MaxRulesID)
 		b.WriteString("\n")
 	}
 
+	titleHeaderPadFirst = getPad(padChar, 17)
 	b.WriteString("System Calls: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________" + "\n\n")
 	printEventGroup(&b, 0, events.MaxSyscallID)
@@ -99,8 +100,10 @@ func PrintEventList(printRulesSet bool) {
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
 	printEventGroup(&b, events.SysEnter, events.MaxCommonID)
 	printEventGroup(&b, events.InitNamespaces, events.MaxUserSpace)
+
+	titleHeaderPadFirst = getPad(padChar, 15)
 	b.WriteString("\n\nNetwork Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
-	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
+	b.WriteString("______________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
 	printEventGroup(&b, events.NetPacketIPv4, events.MaxUserNetID)
 	fmt.Println(b.String())
 }
@@ -112,7 +115,7 @@ func printEventGroup(b *strings.Builder, firstEventID, lastEventID events.ID) {
 			continue
 		}
 		if event.Sets != nil {
-			eventSets := fmt.Sprintf("%-28s %-40s %s\n", event.Name, fmt.Sprintf("%v", event.Sets), getFormattedEventParams(i))
+			eventSets := fmt.Sprintf("%-30s %-40s %s\n", event.Name, fmt.Sprintf("%v", event.Sets), getFormattedEventParams(i))
 			b.WriteString(eventSets)
 		} else {
 			b.WriteString(event.Name + "\n")
