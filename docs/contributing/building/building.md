@@ -8,8 +8,8 @@
 1. Building **dependencies**
 
     1. **kernel readers** [if no CO-RE is needed](./nocore-ebpf.md)
-    2. **clang** (12 or 13)
-    3. **golang** (1.18)
+    2. **clang** (12, 13 or 14)
+    3. **golang** (1.19)
     4. **libelf** and **libelf-dev**  
        (or elfutils-libelf and elfutils-libelf-devel)
     5. **zlib1g** and **zlib1g-dev**  
@@ -32,43 +32,43 @@
 
     ```text
     $ make help
-    
+
     # environment
-    
+
         $ make env                  	# show makefile environment/variables
-    
+
     # build
-    
+
         $ make all                  	# build tracee-ebpf, tracee-rules & rules
         $ make bpf-core             	# build ./dist/tracee.bpf.core.o
         $ make bpf-nocore           	# build ./dist/tracee.bpf.XXX.o
         $ make tracee-ebpf          	# build ./dist/tracee-ebpf
         $ make tracee-rules         	# build ./dist/tracee-rules
         $ make rules                	# build ./dist/rules
-    
+
     # install
-    
+
         $ make install-bpf-nocore   	# install BPF no CO-RE obj into /tmp/tracee
         $ make uninstall-bpf-nocore 	# uninstall BPF no CO-RE obj from /tmp/tracee
-    
+
     # clean
-    
+
         $ make clean                	# wipe ./dist/
         $ make clean-bpf-core       	# wipe ./dist/tracee.bpf.core.o
         $ make clean-bpf-nocore     	# wipe ./dist/tracee.bpf.XXX.o
         $ make clean-tracee-ebpf    	# wipe ./dist/tracee-ebpf
         $ make clean-tracee-rules   	# wipe ./dist/tracee-rules
         $ make clean-rules          	# wipe ./dist/rules
-    
+
     # test
-    
+
         $ make test-types           	# run unit tests for types module
         $ make test-unit            	# run unit tests
         $ make test-integration     	# run integration tests
         $ make test-rules           	# opa test (tracee-rules)
-    
+
     # flags
-    
+
         $ STATIC=1 make ...                 # build static binaries
         $ BTFHUB=1 STATIC=1 make ...        # build static binaries, embed BTF
         $ DEBUG=1 make ...                  # build binaries with debug symbols

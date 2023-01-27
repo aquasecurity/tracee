@@ -52,7 +52,7 @@ ARG FLAVOR=tracee-ebpf-core
 # tracee-base
 #
 
-FROM alpine:3.16 as tracee-base
+FROM alpine:3.17 as tracee-base
 LABEL AS=tracee-base
 USER root
 
@@ -79,7 +79,8 @@ USER root
 RUN apk --no-cache update && \
     apk --no-cache add bash git rsync && \
     apk --no-cache add coreutils findutils && \
-    apk --no-cache add llvm clang go make gcc && \
+    apk --no-cache add llvm14 clang14 && \
+    apk --no-cache add go make gcc && \
     apk --no-cache add musl-dev && \
     apk --no-cache add linux-headers && \
     apk --no-cache add elfutils-dev && \

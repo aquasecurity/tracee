@@ -31,7 +31,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "shell", inline: <<-SHELL
     VAGRANT_HOME="/home/vagrant"
-    GO_VERSION="1.18"
+    GO_VERSION="1.19.5"
     OPA_VERSION="v0.48.0"
 
     apt-get update
