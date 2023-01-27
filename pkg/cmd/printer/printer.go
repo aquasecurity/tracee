@@ -509,6 +509,7 @@ func (p *forwardEventPrinter) Init() error {
 	if p.tag == "" {
 		p.tag = "tracee"
 	}
+	logger.Info("attempting to connect to Forward destination", "url", p.destination, "tag", p.tag)
 
 	// Create a TCP connection to the forward receiver
 	p.client = forward.New(forward.ConnectionOptions{
@@ -517,7 +518,8 @@ func (p *forwardEventPrinter) Init() error {
 		},
 	})
 	if err := p.client.Connect(); err != nil {
-		return fmt.Errorf("error connecting to Forward destination %q: %v", p.destination, err)
+		// The destination may not be available but may appear later so do not return an error here and just connect later.
+		logger.Error("error connecting to Forward destination", "url", p.destination, "tag", p.tag, "error", err)
 	}
 	return nil
 }
@@ -527,6 +529,7 @@ func (p *forwardEventPrinter) Preamble() {}
 func (p *forwardEventPrinter) Print(event trace.Event) {
 	if p.client == nil {
 		logger.Error("invalid Forward client")
+		return
 	}
 
 	// The actual event is marshalled as JSON then sent with the other information (tag, etc.)
@@ -562,6 +565,7 @@ func (p *forwardEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p forwardEventPrinter) Close() {
 	if p.client != nil {
+		logger.Info("disconnecting from Forward destination", "url", p.destination, "tag", p.tag)
 		p.client.Disconnect()
 	}
 }
