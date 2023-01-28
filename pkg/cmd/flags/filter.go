@@ -26,7 +26,7 @@ Available string expressions: event, set, uts, comm, container, binary.
 Boolean expressions that check if a boolean is true and allow the following operator: '!'.
 Available boolean expressions: container.
 
-Event arguments can be accessed using 'event_name.event_arg' and provide a way to filter an event by its arguments.
+Event arguments can be accessed using 'event_name.args.event_arg' and provide a way to filter an event by its arguments.
 Event arguments allow the following operators: '=', '!='.
 Strings can be compared as a prefix if ending with '*' or as suffix if starting with '*'.
 
@@ -69,8 +69,8 @@ Examples:
   --trace 'pid>0' --trace 'pid<1000'                           | only trace events from pids between 0 and 1000
   --trace 'u>0' --trace u!=1000                                | only trace events from uids greater than 0 but not 1000
   --trace event=execve,open                                    | only trace execve and open events
-  --trace event=open*                                          | only trace events prefixed by "open"
-  --trace event!=open*,dup*                                    | don't trace events prefixed by "open" or "dup"
+  --trace event='open*'                                        | only trace events prefixed by "open"
+  --trace event!='open*,dup*'                                  | don't trace events prefixed by "open" or "dup"
   --trace set=fs                                               | trace all file-system related events
   --trace s=fs --trace e!=open,openat                          | trace all file-system related events, but not open(at)
   --trace uts!=ab356bc4dd554                                   | don't trace events from uts name ab356bc4dd554
@@ -79,7 +79,8 @@ Examples:
   --trace binary=host:/usr/bin/ls                              | only trace events from /usr/bin/ls binary in the host mount namespace
   --trace binary=4026532448:/usr/bin/ls                        | only trace events from /usr/bin/ls binary in 4026532448 mount namespace
   --trace close.args.fd=5                                      | only trace 'close' events that have 'fd' equals 5
-  --trace openat.args.pathname=/tmp*                           | only trace 'openat' events that have 'pathname' prefixed by "/tmp"
+  --trace openat.args.pathname='/tmp*'                         | only trace 'openat' events that have 'pathname' prefixed by /tmp
+  --trace openat.args.pathname='*shadow'                       | only trace 'openat' events that have 'pathname' suffixed by shadow
   --trace openat.args.pathname!=/tmp/1,/bin/ls                 | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
   --trace openat.context.processName=ls                        | only trace 'openat' events that have 'processName' equal to 'ls'
   --trace security_file_open.context.container                 | only trace 'security_file_open' events coming from a container
@@ -109,7 +110,7 @@ Examples:
                                                                - trace in scope 9 only close event from all
 
 Note: some of the above operators have special meanings in different shells.
-To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
+To 'escape' those operators, please use single quotes, e.g.: 'uid>0', '/tmp*'
 `
 }
 
