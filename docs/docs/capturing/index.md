@@ -35,7 +35,7 @@ Tracee can capture the following types of artifacts:
         --trace follow \
         --output option:parse-arguments \
         --capture dir:/tmp/tracee/ \
-        --capture write=/tmp/*
+        --capture write='/tmp/*'
 
      $ echo testing 123 > /tmp/testing.txt
      ```

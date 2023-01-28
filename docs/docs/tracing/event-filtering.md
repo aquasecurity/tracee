@@ -43,8 +43,8 @@ expected.
      ```text
      1) --trace event=openat
      2) --trace event=execve,open
-     3) --trace event=open*
-     4) --trace event!=open*,dup*
+     3) --trace event='open*'
+     4) --trace event!='open*,dup*'
      5) --trace follow
      ```
 
@@ -56,7 +56,7 @@ expected.
 
      ```text
      1) --trace event=openat --trace openat.args.pathname=/etc/shadow
-     2) --trace event=openat --trace openat.args.pathname=/tmp*
+     2) --trace event=openat --trace openat.args.pathname='/tmp*'
      3) --trace event=openat --trace openat.args.pathname!=/tmp/1,/bin/ls
      ```
 
@@ -67,8 +67,8 @@ expected.
 1. **Event Return Code** `(Operators: =, !=, <, >)`
 
     ```text
-    1) --trace event=openat --trace openat.args.pathname=/etc/shadow --trace "openat.retval>0"
-    2) --trace event=openat --trace openat.args.pathname=/etc/shadow --trace "openat.retval<0"
+    1) --trace event=openat --trace openat.args.pathname=/etc/shadow --trace 'openat.retval>0'
+    2) --trace event=openat --trace openat.args.pathname=/etc/shadow --trace 'openat.retval<0'
     ```
 
     !!! Tip
@@ -125,7 +125,7 @@ expected.
     2) --trace '!container' # events from the host only
     3) --trace container=new # containers created after tracee-ebf execution
     4) --trace container=3f93da58be3c --trace event=openat
-    5) --trace container=new --trace event=openat --trace openat.args.pathname="/etc/shadow"
+    5) --trace container=new --trace event=openat --trace openat.args.pathname=/etc/shadow
     ```
 
     !!! Note

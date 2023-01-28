@@ -22,7 +22,7 @@
       2. `deploy/kubernetes/tracee-postee/tracee.yaml`
    4. Update `home`, `version` and `appVersion` properties in [`deploy/helm/tracee/Chart.yaml`] - [example](https://github.com/aquasecurity/tracee/pull/2195)
 1. Run tests and checks
-   1. Check that there are no verifier issues when choosing all events in tracee-ebpf (using `--trace e=*`)
+   1. Check that there are no verifier issues when choosing all events in tracee-ebpf (using `--trace e='*'`)
    1. Check both CO-RE and non CO-RE builds
    1. Run all unit, integration, and e2e tests
    1. Sanity checks for different special features
