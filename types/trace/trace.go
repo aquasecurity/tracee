@@ -48,6 +48,7 @@ type Event struct {
 // ContextFlags are flags representing event context
 type ContextFlags struct {
 	ContainerStarted bool `json:"containerStarted"`
+	IsCompat         bool `json:"isCompat"`
 }
 
 // EventOrigin is where a trace.Event occured, it can either be from the host machine or from a container
