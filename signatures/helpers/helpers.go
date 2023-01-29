@@ -1361,11 +1361,11 @@ func GetProtoHTTPByName(
 		"status":    "",
 	}
 	for key := range stringTypes {
-		val, ok := argProtoHTTPMap[key].(string)
+		val, ok := argProtoHTTPMap[key]
 		if !ok {
 			return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v", key)
 		}
-		stringTypes[key] = val
+		stringTypes[key] = val.(string)
 	}
 
 	// int conversion
@@ -1373,11 +1373,15 @@ func GetProtoHTTPByName(
 		"status_code": 0,
 	}
 	for key := range intTypes {
-		val, ok := argProtoHTTPMap[key].(int)
+		val, ok := argProtoHTTPMap[key]
 		if !ok {
 			return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v", key)
 		}
-		intTypes[key] = val
+		int64Val, err := val.(json.Number).Int64()
+		if err != nil {
+			return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v: %s", key, err)
+		}
+		intTypes[key] = int(int64Val)
 	}
 
 	// int64 conversion
@@ -1385,17 +1389,29 @@ func GetProtoHTTPByName(
 		"content_length": 0,
 	}
 	for key := range int64Types {
-		val, ok := argProtoHTTPMap[key].(int64)
+		val, ok := argProtoHTTPMap[key]
 		if !ok {
 			return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v", key)
 		}
-		int64Types[key] = val
+		int64Val, err := val.(json.Number).Int64()
+		if err != nil {
+			return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v: %s", key, err)
+		}
+		int64Types[key] = int64Val
 	}
 
 	// headers conversion
-	headers, ok := argProtoHTTPMap["headers"].(http.Header)
+	headersVal, ok := argProtoHTTPMap["headers"]
 	if !ok {
 		return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v", "headers")
+	}
+	headers := make(http.Header)
+	for headerKey, headerValInterface := range headersVal.(map[string]interface{}) {
+		var headerVals []string
+		for _, headerValInterfaceElem := range headerValInterface.([]interface{}) {
+			headerVals = append(headerVals, headerValInterfaceElem.(string))
+		}
+		headers[headerKey] = headerVals
 	}
 
 	return trace.ProtoHTTP{
