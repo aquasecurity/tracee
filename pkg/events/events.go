@@ -5638,7 +5638,7 @@ var Definitions = eventDefinitions{
 			Dependencies: dependencies{
 				Events: []eventDependency{{EventID: CgroupMkdir}},
 			},
-			Sets: []string{"containers"},
+			Sets: []string{"default", "containers"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "runtime"},
 				{Type: "const char*", Name: "container_id"},
@@ -5657,7 +5657,7 @@ var Definitions = eventDefinitions{
 			Dependencies: dependencies{
 				Events: []eventDependency{{EventID: CgroupRmdir}},
 			},
-			Sets: []string{"containers"},
+			Sets: []string{"default", "containers"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "runtime"},
 				{Type: "const char*", Name: "container_id"},

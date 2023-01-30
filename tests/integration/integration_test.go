@@ -323,7 +323,7 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name:       "trace only events from new containers",
-			filterArgs: []string{"container=new"},
+			filterArgs: []string{"container=new", "event!=container_create,container_remove"},
 			eventFunc:  checkNewContainers,
 		},
 		{
