@@ -6225,6 +6225,8 @@ int BPF_KPROBE(trace_security_bpf)
         save_to_submit_buf(p.event, (void *) &cmd, sizeof(int), 0);
 
         events_perf_submit(&p, SECURITY_BPF, 0);
+        p.event->buf_off = 0;
+        p.event->context.argnum = 0;
     }
 
     union bpf_attr *attr = (union bpf_attr *) PT_REGS_PARM2(ctx);
