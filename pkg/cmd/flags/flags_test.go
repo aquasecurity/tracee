@@ -537,24 +537,6 @@ func TestPrepareCapture(t *testing.T) {
 					Module:     true,
 				},
 			},
-			{
-				testName:     "capture exec and enable profile",
-				captureSlice: []string{"exec", "profile"},
-				expectedCapture: tracee.CaptureConfig{
-					OutputPath: "/tmp/tracee/out",
-					Exec:       true,
-					Profile:    true,
-				},
-			},
-			{
-				testName:     "just enable profile",
-				captureSlice: []string{"profile"},
-				expectedCapture: tracee.CaptureConfig{
-					OutputPath: "/tmp/tracee/out",
-					Exec:       true,
-					Profile:    true,
-				},
-			},
 		}
 		for _, tc := range testCases {
 			t.Run(tc.testName, func(t *testing.T) {

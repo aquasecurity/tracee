@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -81,7 +80,6 @@ type CaptureConfig struct {
 	Exec            bool
 	Mem             bool
 	Net             pcaps.Config
-	Profile         bool
 }
 
 type CapabilitiesConfig struct {
@@ -145,12 +143,6 @@ func (tc Config) Validate() error {
 	return nil
 }
 
-type profilerInfo struct {
-	Times            int64  `json:"times,omitempty"`
-	FileHash         string `json:"file_hash,omitempty"`
-	FirstExecutionTs uint64 `json:"-"`
-}
-
 type fileExecInfo struct {
 	LastCtime int64
 	Hash      string
@@ -184,7 +176,6 @@ type Tracee struct {
 	stats             metrics.Stats
 	capturedFiles     map[string]int64
 	fileHashes        *lru.Cache
-	profiledFiles     map[string]profilerInfo
 	writtenFiles      map[string]string
 	pidsInMntns       bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
@@ -243,11 +234,6 @@ func GetCaptureEventsList(cfg Config) map[events.ID]eventConfig {
 	}
 	if cfg.Capture.Mem {
 		captureEvents[events.CaptureMem] = eventConfig{
-			submit: 0xFFFFFFFFFFFFFFFF,
-		}
-	}
-	if cfg.Capture.Profile {
-		captureEvents[events.CaptureProfile] = eventConfig{
 			submit: 0xFFFFFFFFFFFFFFFF,
 		}
 	}
@@ -432,8 +418,6 @@ func (t *Tracee) Init() error {
 	}
 
 	// Initialize buckets cache
-
-	t.profiledFiles = make(map[string]profilerInfo)
 	if t.config.maxPidsCache == 0 {
 		t.config.maxPidsCache = 5 // default value for config.maxPidsCache
 	}
@@ -1363,17 +1347,6 @@ func (t *Tracee) initBPF() error {
 	return err
 }
 
-func (t *Tracee) writeProfilerStats(wr io.Writer) error {
-	b, err := json.MarshalIndent(t.profiledFiles, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	_, err = wr.Write(b)
-
-	return err
-}
-
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.invokeInitEvents()
@@ -1407,20 +1380,6 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 		t.netCapPerfMap.Stop()
 	}
 	t.bpfLogsPerfMap.Stop()
-	// capture profiler stats
-	if t.config.Capture.Profile {
-		f, err := utils.CreateAt(t.outDir, "tracee.profile")
-		if err != nil {
-			return fmt.Errorf("unable to open tracee.profile for writing: %s", err)
-		}
-
-		// update SHA for all captured files
-		t.updateFileSHA()
-
-		if err := t.writeProfilerStats(f); err != nil {
-			return fmt.Errorf("unable to write profiler output: %s", err)
-		}
-	}
 
 	// record index of written files
 	if t.config.Capture.FileWrite {
@@ -1514,17 +1473,6 @@ func computeFileHash(file *os.File) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
-}
-
-func (t *Tracee) updateFileSHA() {
-	for k, v := range t.profiledFiles {
-		s := strings.Split(k, ".")
-		exeName := strings.Split(s[1], ":")[0]
-		filePath := fmt.Sprintf("%s.%d.%s", s[0], v.FirstExecutionTs, exeName)
-		fileSHA, _ := t.computeOutFileHash(filePath)
-		v.FileHash = fileSHA
-		t.profiledFiles[k] = v
-	}
 }
 
 func (t *Tracee) invokeInitEvents() {
