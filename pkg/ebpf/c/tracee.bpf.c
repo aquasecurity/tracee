@@ -4295,6 +4295,8 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
     if (!init_program_data(&p, ctx))
         return 0;
 
+    p.event->context.matched_scopes = 0xFFFFFFFFFFFFFFFF;
+
     // uprobe was triggered from other tracee instance
     if (p.config->tracee_pid != trigger_pid)
         return 0;
@@ -4466,6 +4468,8 @@ int uprobe_mem_dump_trigger(struct pt_regs *ctx)
     program_data_t p = {};
     if (!init_program_data(&p, ctx))
         return 0;
+
+    p.event->context.matched_scopes = 0xFFFFFFFFFFFFFFFF;
 
     // uprobe was triggered from other tracee instance
     if (p.config->tracee_pid != trigger_pid)
