@@ -170,7 +170,9 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 					continue
 				}
 				if args[idx].Value != nil {
-					t.handleError(fmt.Errorf("read more than one instance of argument %s of event %s. Saved value: %v. New value: %v", arg.Name, eventDefinition.Name, args[idx].Value, arg.Value))
+					logger.Warn("Decode event", "error", "Read more than one argument instance",
+						"Argument name", arg.Name, "Event", eventDefinition.Name, "Saved value", args[idx].Value,
+						"New value", arg.Value)
 				}
 				args[idx] = arg
 			}
