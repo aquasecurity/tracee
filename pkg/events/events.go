@@ -1959,7 +1959,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32mount,
 			Name:    "mount",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs"},
+			Sets:    []string{"syscalls", "fs"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "source"},
 				{Type: "const char*", Name: "target"},
