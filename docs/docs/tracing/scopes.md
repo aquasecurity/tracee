@@ -94,26 +94,6 @@ trace in **scope 7** only `close` events from `id` command:
     20:23:22:794246  0000000000000040  hb                             4026531841   4026531836   1000   id               473432  473432  295394  0                close                fd: 3
     ```
 
-#### Intertwined workloads
-
-1. Trace in **scope 3** only `sched_process_exit` events from `id` command and
-trace in **scope 9** only `sched_process_exit` events from **all**:
-
-    ```shell
-    sudo ./dist/tracee \
-    -t 3:event=sched_process_exit -t 3:comm=id \
-    -t 9:event=sched_process_exit \
-    -o format:table-verbose
-    ```
-
-    ```text
-    TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
-    20:26:50:435805  0000000000000100  hb                             4026531841   4026531836   1000   sleep            474130  474130  474129  0                sched_process_exit   exit_code: 0, process_group_exit: true
-    20:26:50:439402  0000000000000104  hb                             4026531841   4026531836   1000   id               474129  474129  295394  0                sched_process_exit   exit_code: 0, process_group_exit: true
-    20:26:50:457932  0000000000000100  hb                             4026531841   4026531836   1000   pkgfile          474162  474166  474161  0                sched_process_exit   exit_code: 0, process_group_exit: false
-    ...
-    ```
-
 1. Trace in **scope 3** only `anti_debugging` events from **all**,
 trace in **scope 5** only `net_packet_icmp` events from `ping` command, and
 trace in **scope 9** only `ptrace` events from **all**.
@@ -135,20 +115,62 @@ trace in **scope 9** only `ptrace` events from **all**.
     20:59:57:941424  0000000000000004  hb                             4026531841   4026531836   1000   strace           480616  480616  480614  0                anti_debugging       request: PTRACE_TRACEME, pid: 0, addr: 0x0, data: 0x0
     ```
 
+#### Intertwined workloads
+
+1. Trace in **scope 3** only `sched_process_exit` events from `id` command and
+trace in **scope 9** only `sched_process_exit` events from **all**:
+
+    ```shell
+    sudo ./dist/tracee \
+    -t 3:event=sched_process_exit -t 3:comm=id \
+    -t 9:event=sched_process_exit \
+    -o format:table-verbose
+    ```
+
+    ```text
+    TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
+    20:26:50:435805  0000000000000100  hb                             4026531841   4026531836   1000   sleep            474130  474130  474129  0                sched_process_exit   exit_code: 0, process_group_exit: true
+    20:26:50:439402  0000000000000104  hb                             4026531841   4026531836   1000   id               474129  474129  295394  0                sched_process_exit   exit_code: 0, process_group_exit: true
+    20:26:50:457932  0000000000000100  hb                             4026531841   4026531836   1000   pkgfile          474162  474166  474161  0                sched_process_exit   exit_code: 0, process_group_exit: false
+    ...
+    ```
+
 1. Trace in **scope 3** only `net_packet_icmp` events from containers and
-trace in **scope 5** only `net_packet_icmp` events from host:
+trace in **scope 5** only `net_packet_icmp` events from **all**:
 
     ```shell
     sudo ./dist/tracee \
     -t 3:event=net_packet_icmp -t 3:container \
-    -t 5:event=net_packet_icmp -t 5:'!container'
+    -t 5:event=net_packet_icmp \
     -o format:table-verbose
     ```
 
     ```text
     TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID/host        TID/host        PPID/host       RET              EVENT                ARGS
-    21:13:24:153374  0000000000000010  hb                             4026531841   4026531836   1000   ping             484228 /484228  484228 /484228  295394 /295394  0                net_packet_icmp      src: 192.168.0.109, dst: 8.8.8.8, proto_icmp: {EchoRequest 13378 24 1}
-    21:13:24:179052  0000000000000010  hb                             4026531841   4026531836   1000   ping             484228 /484228  484228 /484228  295394 /295394  0                net_packet_icmp      src: 8.8.8.8, dst: 192.168.0.109, proto_icmp: {EchoReply 15426 24 1}
-    21:13:42:685181  0000000000000004  cd2f551ecb6b     cd2f551ecb6b  4026534610   4026534613   0      ping             8      /484370  8      /484370  1      /483638  0                net_packet_icmp      src: 172.17.0.3, dst: 8.8.8.8, proto_icmp: {EchoRequest 2123 8 0}
-    21:13:42:709843  0000000000000004  cd2f551ecb6b     cd2f551ecb6b  4026534610   4026534613   0      ping             8      /484370  8      /484370  1      /483638  0                net_packet_icmp      src: 8.8.8.8, dst: 172.17.0.3, proto_icmp: {EchoReply 4171 8 0}
+    22:06:47:106058  0000000000000010  hb                             4026531841   4026531836   1000   ping             902452 /902452  902452 /902452  902386 /902386  0                net_packet_icmp      src: 192.168.0.109, dst: 8.8.8.8, proto_icmp: {EchoRequest 6891 39 1}
+    22:06:47:131362  0000000000000010  hb                             4026531841   4026531836   1000   ping             902452 /902452  902452 /902452  902386 /902386  0                net_packet_icmp      src: 8.8.8.8, dst: 192.168.0.109, proto_icmp: {EchoReply 8939 39 1}
+    22:06:54:878971  0000000000000014  e9cf0db70635     e9cf0db70635  4026532904   4026532908   0      ping             8      /902559  8      /902559  1      /899413  0                net_packet_icmp      src: 172.17.0.2, dst: 8.8.8.8, proto_icmp: {EchoRequest 38257 8 0}
+    22:06:54:902975  0000000000000014  e9cf0db70635     e9cf0db70635  4026532904   4026532908   0      ping             8      /902559  8      /902559  1      /899413  0                net_packet_icmp      src: 8.8.8.8, dst: 172.17.0.2, proto_icmp: {EchoReply 40305 8 0}
+    ```
+
+1. Trace in **scope 3** `anti_debugging` and `ptrace` events from **all**,
+trace in **scope 5** only `net_packet_icmp` events from `ping` command, and
+trace in **scope 9** only `ptrace` events from **all**.
+
+    ```shell
+    sudo ./dist/tracee \
+    -t 3:event=anti_debugging,ptrace \
+    -t 5:event=net_packet_icmp -t 5:comm=ping \
+    -t 9:event=ptrace \
+    -o format:table-verbose
+    ```
+
+    ```text
+    TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
+    22:13:20:854132  0000000000000010  hb                             4026531841   4026531836   1000   ping             903291  903291  903233  0                net_packet_icmp      src: 192.168.0.109, dst: 8.8.8.8, proto_icmp: {EchoRequest 22398 40 1}
+    22:13:20:876449  0000000000000010  hb                             4026531841   4026531836   1000   ping             903291  903291  903233  0                net_packet_icmp      src: 8.8.8.8, dst: 192.168.0.109, proto_icmp: {EchoReply 24446 40 1}
+    22:13:28:877929  0000000000000104  hb                             4026531841   4026531836   1000   strace           903353  903353  903233  0                ptrace               request: PTRACE_SEIZE, pid: 903354, addr: 0x0, data: 0x0
+    22:13:28:878450  0000000000000104  hb                             4026531841   4026531836   1000   strace           903355  903355  903353  0                ptrace               request: PTRACE_TRACEME, pid: 0, addr: 0x0, data: 0x0
+    ...
+    22:13:28:878450  0000000000000004  hb                             4026531841   4026531836   1000   strace           903355  903355  903353  0                anti_debugging       request: PTRACE_TRACEME, pid: 0, addr: 0x0, data: 0x0
     ```
