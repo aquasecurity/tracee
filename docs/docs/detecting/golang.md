@@ -70,7 +70,7 @@ There are 2 ways you can get your own golang signatures working with tracee.
         
         		switch e.EventName {
         		case "openat", "execve":
-        			arg, err := helpers.GetTraceeArgumentByName(e, "pathname")
+        			arg, err := helpers.GetTraceeArgumentByName(e, "pathname", helpers.GetArgOps{DefaultArgs: false})
         			if err != nil {
         				return err
         			}

@@ -179,7 +179,7 @@ func checkSecurityFileOpenExecve(t *testing.T, gotOutput *[]trace.Event) {
 
 	syscallArgs := []events.ID{}
 	for _, evt := range *gotOutput {
-		arg, err := helpers.GetTraceeArgumentByName(evt, "syscall")
+		arg, err := helpers.GetTraceeArgumentByName(evt, "syscall", helpers.GetArgOps{DefaultArgs: false})
 		require.NoError(t, err)
 		syscallArgs = append(syscallArgs, events.ID(arg.Value.(int32)))
 	}
@@ -198,7 +198,7 @@ func checkScope42SecurityFileOpenLs(t *testing.T, gotOutput *[]trace.Event) {
 		// ls - scope 42
 		assert.Equal(t, "ls", evt.ProcessName)
 		assert.Equal(t, uint64(1<<41), evt.MatchedScopes)
-		arg, err := helpers.GetTraceeArgumentByName(evt, "pathname")
+		arg, err := helpers.GetTraceeArgumentByName(evt, "pathname", helpers.GetArgOps{DefaultArgs: false})
 		require.NoError(t, err)
 		assert.Contains(t, arg.Value, "integration")
 	}
