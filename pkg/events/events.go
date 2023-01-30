@@ -309,7 +309,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32open,
 			Name:    "open",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_file_ops"},
+			Sets:    []string{"syscalls", "fs", "fs_file_ops"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "int", Name: "flags"},
@@ -320,7 +320,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32close,
 			Name:    "close",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_file_ops"},
+			Sets:    []string{"syscalls", "fs", "fs_file_ops"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "fd"},
 			},
@@ -329,7 +329,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32stat,
 			Name:    "stat",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
+			Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "struct stat*", Name: "statbuf"},
@@ -339,7 +339,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32fstat,
 			Name:    "fstat",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
+			Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "fd"},
 				{Type: "struct stat*", Name: "statbuf"},
@@ -349,7 +349,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32lstat,
 			Name:    "lstat",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
+			Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "struct stat*", Name: "statbuf"},
@@ -513,7 +513,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32access,
 			Name:    "access",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
+			Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "int", Name: "mode"},
@@ -631,7 +631,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32dup,
 			Name:    "dup",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_fd_ops"},
+			Sets:    []string{"syscalls", "fs", "fs_fd_ops"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "oldfd"},
 			},
@@ -716,7 +716,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32socket,
 			Name:    "socket",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "net", "net_sock"},
+			Sets:    []string{"syscalls", "net", "net_sock"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "domain"},
 				{Type: "int", Name: "type"},
@@ -727,7 +727,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32connect,
 			Name:    "connect",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "net", "net_sock"},
+			Sets:    []string{"syscalls", "net", "net_sock"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "sockfd"},
 				{Type: "struct sockaddr*", Name: "addr"},
@@ -738,7 +738,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32undefined,
 			Name:    "accept",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "net", "net_sock"},
+			Sets:    []string{"syscalls", "net", "net_sock"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "sockfd"},
 				{Type: "struct sockaddr*", Name: "addr"},
@@ -809,7 +809,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32bind,
 			Name:    "bind",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "net", "net_sock"},
+			Sets:    []string{"syscalls", "net", "net_sock"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "sockfd"},
 				{Type: "struct sockaddr*", Name: "addr"},
@@ -820,7 +820,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32listen,
 			Name:    "listen",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "net", "net_sock"},
+			Sets:    []string{"syscalls", "net", "net_sock"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "sockfd"},
 				{Type: "int", Name: "backlog"},
@@ -830,7 +830,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32getsockname,
 			Name:    "getsockname",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "net", "net_sock"},
+			Sets:    []string{"syscalls", "net", "net_sock"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "sockfd"},
 				{Type: "struct sockaddr*", Name: "addr"},
@@ -890,7 +890,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32clone,
 			Name:    "clone",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "proc", "proc_life"},
+			Sets:    []string{"syscalls", "proc", "proc_life"},
 			Params: []trace.ArgMeta{
 				{Type: "unsigned long", Name: "flags"},
 				{Type: "void*", Name: "stack"},
@@ -903,14 +903,14 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32fork,
 			Name:    "fork",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "proc", "proc_life"},
+			Sets:    []string{"syscalls", "proc", "proc_life"},
 			Params:  []trace.ArgMeta{},
 		},
 		Vfork: {
 			ID32Bit: sys32vfork,
 			Name:    "vfork",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "proc", "proc_life"},
+			Sets:    []string{"syscalls", "proc", "proc_life"},
 			Params:  []trace.ArgMeta{},
 		},
 		Execve: {
@@ -922,7 +922,7 @@ var Definitions = eventDefinitions{
 					{MapName: "sys_enter_tails", MapIndexes: []uint32{uint32(Execve)}, ProgName: "syscall__execve"},
 				},
 			},
-			Sets: []string{"default", "syscalls", "proc", "proc_life"},
+			Sets: []string{"syscalls", "proc", "proc_life"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "const char*const*", Name: "argv"},
@@ -954,7 +954,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32kill,
 			Name:    "kill",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "signals"},
+			Sets:    []string{"syscalls", "signals"},
 			Params: []trace.ArgMeta{
 				{Type: "pid_t", Name: "pid"},
 				{Type: "int", Name: "sig"},
@@ -1121,7 +1121,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32getdents,
 			Name:    "getdents",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_dir_ops"},
+			Sets:    []string{"syscalls", "fs", "fs_dir_ops"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "fd"},
 				{Type: "struct linux_dirent*", Name: "dirp"},
@@ -1209,7 +1209,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32unlink,
 			Name:    "unlink",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_link_ops"},
+			Sets:    []string{"syscalls", "fs", "fs_link_ops"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "pathname"},
 			},
@@ -1218,7 +1218,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32symlink,
 			Name:    "symlink",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_link_ops"},
+			Sets:    []string{"syscalls", "fs", "fs_link_ops"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "target"},
 				{Type: "const char*", Name: "linkpath"},
@@ -1418,7 +1418,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32setpgid,
 			Name:    "setpgid",
 			Syscall: true,
-			Sets:    []string{"syscalls", "proc", "proc_ids"},
+			Sets:    []string{"default", "syscalls", "proc", "proc_ids"},
 			Params: []trace.ArgMeta{
 				{Type: "pid_t", Name: "pid"},
 				{Type: "pid_t", Name: "pgid"},
@@ -1442,7 +1442,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32setsid,
 			Name:    "setsid",
 			Syscall: true,
-			Sets:    []string{"syscalls", "proc", "proc_ids"},
+			Sets:    []string{"default", "syscalls", "proc", "proc_ids"},
 			Params:  []trace.ArgMeta{},
 		},
 		Setreuid: {
@@ -1489,7 +1489,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32setresuid32,
 			Name:    "setresuid",
 			Syscall: true,
-			Sets:    []string{"syscalls", "proc", "proc_ids"},
+			Sets:    []string{"default", "syscalls", "proc", "proc_ids"},
 			Params: []trace.ArgMeta{
 				{Type: "uid_t", Name: "ruid"},
 				{Type: "uid_t", Name: "euid"},
@@ -1511,7 +1511,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32setresgid32,
 			Name:    "setresgid",
 			Syscall: true,
-			Sets:    []string{"syscalls", "proc", "proc_ids"},
+			Sets:    []string{"default", "syscalls", "proc", "proc_ids"},
 			Params: []trace.ArgMeta{
 				{Type: "gid_t", Name: "rgid"},
 				{Type: "gid_t", Name: "egid"},
@@ -1652,7 +1652,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32mknod,
 			Name:    "mknod",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_file_ops"},
+			Sets:    []string{"syscalls", "fs", "fs_file_ops"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "mode_t", Name: "mode"},
@@ -1882,7 +1882,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32prctl,
 			Name:    "prctl",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "proc"},
+			Sets:    []string{"syscalls", "proc"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "option"},
 				{Type: "unsigned long", Name: "arg2"},
@@ -1972,7 +1972,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32umount2,
 			Name:    "umount2",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs"},
+			Sets:    []string{"syscalls", "fs"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "target"},
 				{Type: "int", Name: "flags"},
@@ -2071,7 +2071,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32delete_module,
 			Name:    "delete_module",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "system", "system_module"},
+			Sets:    []string{"syscalls", "system", "system_module"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "name"},
 				{Type: "int", Name: "flags"},
@@ -2479,7 +2479,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32getdents64,
 			Name:    "getdents64",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_dir_ops"},
+			Sets:    []string{"syscalls", "fs", "fs_dir_ops"},
 			Params: []trace.ArgMeta{
 				{Type: "unsigned int", Name: "fd"},
 				{Type: "struct linux_dirent64*", Name: "dirp"},
@@ -2914,7 +2914,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32openat,
 			Name:    "openat",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_file_ops"},
+			Sets:    []string{"syscalls", "fs", "fs_file_ops"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "dirfd"},
 				{Type: "const char*", Name: "pathname"},
@@ -2937,7 +2937,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32mknodat,
 			Name:    "mknodat",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_file_ops"},
+			Sets:    []string{"syscalls", "fs", "fs_file_ops"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "dirfd"},
 				{Type: "const char*", Name: "pathname"},
@@ -2985,7 +2985,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32unlinkat,
 			Name:    "unlinkat",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_link_ops"},
+			Sets:    []string{"syscalls", "fs", "fs_link_ops"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "dirfd"},
 				{Type: "const char*", Name: "pathname"},
@@ -3021,7 +3021,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32symlinkat,
 			Name:    "symlinkat",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_link_ops"},
+			Sets:    []string{"syscalls", "fs", "fs_link_ops"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "target"},
 				{Type: "int", Name: "newdirfd"},
@@ -3056,7 +3056,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32faccessat,
 			Name:    "faccessat",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
+			Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "dirfd"},
 				{Type: "const char*", Name: "pathname"},
@@ -3280,7 +3280,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32accept4,
 			Name:    "accept4",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "net", "net_sock"},
+			Sets:    []string{"syscalls", "net", "net_sock"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "sockfd"},
 				{Type: "struct sockaddr*", Name: "addr"},
@@ -3323,7 +3323,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32dup3,
 			Name:    "dup3",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_fd_ops"},
+			Sets:    []string{"syscalls", "fs", "fs_fd_ops"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "oldfd"},
 				{Type: "int", Name: "newfd"},
@@ -3507,7 +3507,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32setns,
 			Name:    "setns",
 			Syscall: true,
-			Sets:    []string{"syscalls", "proc"},
+			Sets:    []string{"default", "syscalls", "proc"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "fd"},
 				{Type: "int", Name: "nstype"},
@@ -3661,7 +3661,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32bpf,
 			Name:    "bpf",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "system"},
+			Sets:    []string{"syscalls", "system"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "cmd"},
 				{Type: "union bpf_attr*", Name: "attr"},
@@ -3677,7 +3677,7 @@ var Definitions = eventDefinitions{
 					{MapName: "sys_enter_tails", MapIndexes: []uint32{uint32(Execveat)}, ProgName: "syscall__execveat"},
 				},
 			},
-			Sets: []string{"default", "syscalls", "proc", "proc_life"},
+			Sets: []string{"syscalls", "proc", "proc_life"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "dirfd"},
 				{Type: "const char*", Name: "pathname"},
@@ -3762,7 +3762,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32pkey_mprotect,
 			Name:    "pkey_mprotect",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "proc", "proc_mem"},
+			Sets:    []string{"syscalls", "proc", "proc_mem"},
 			Params: []trace.ArgMeta{
 				{Type: "void*", Name: "addr"},
 				{Type: "size_t", Name: "len"},
@@ -3958,7 +3958,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32clone3,
 			Name:    "clone3",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "proc", "proc_life"},
+			Sets:    []string{"syscalls", "proc", "proc_life"},
 			Params: []trace.ArgMeta{
 				{Type: "struct clone_args*", Name: "cl_args"},
 				{Type: "size_t", Name: "size"},
@@ -3968,7 +3968,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32close_range,
 			Name:    "close_range",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_file_ops"},
+			Sets:    []string{"syscalls", "fs", "fs_file_ops"},
 			Params: []trace.ArgMeta{
 				{Type: "unsigned int", Name: "first"},
 				{Type: "unsigned int", Name: "last"},
@@ -3978,7 +3978,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32openat2,
 			Name:    "openat2",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_file_ops"},
+			Sets:    []string{"syscalls", "fs", "fs_file_ops"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "dirfd"},
 				{Type: "const char*", Name: "pathname"},
@@ -4001,7 +4001,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32faccessat2,
 			Name:    "faccessat2",
 			Syscall: true,
-			Sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
+			Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "fd"},
 				{Type: "const char*", Name: "path"},
@@ -5038,7 +5038,7 @@ var Definitions = eventDefinitions{
 				{Handle: probes.SchedProcessExit, Required: true},
 				{Handle: probes.SchedProcessFree, Required: true},
 			},
-			Sets: []string{"default", "proc", "proc_life"},
+			Sets: []string{"proc", "proc_life"},
 			Params: []trace.ArgMeta{
 				{Type: "long", Name: "exit_code"},
 				// The field value represents that all threads exited at the event time.
@@ -5077,7 +5077,7 @@ var Definitions = eventDefinitions{
 			Probes: []probeDependency{
 				{Handle: probes.CapCapable, Required: true},
 			},
-			Sets: []string{"default"},
+			Sets: []string{},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "cap"},
 				{Type: "int", Name: "syscall"},
@@ -5236,7 +5236,7 @@ var Definitions = eventDefinitions{
 			Probes: []probeDependency{
 				{Handle: probes.SecurityBPRMCheck, Required: true},
 			},
-			Sets: []string{"default", "lsm_hooks", "proc", "proc_life"},
+			Sets: []string{"lsm_hooks", "proc", "proc_life"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "dev_t", Name: "dev"},
@@ -5258,7 +5258,7 @@ var Definitions = eventDefinitions{
 					}, ProgName: "sys_enter_init"},
 				},
 			},
-			Sets: []string{"default", "lsm_hooks", "fs", "fs_file_ops"},
+			Sets: []string{"lsm_hooks", "fs", "fs_file_ops"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "int", Name: "flags"},
@@ -5289,7 +5289,7 @@ var Definitions = eventDefinitions{
 			Probes: []probeDependency{
 				{Handle: probes.SecuritySocketCreate, Required: true},
 			},
-			Sets: []string{"default", "lsm_hooks", "net", "net_sock"},
+			Sets: []string{"lsm_hooks", "net", "net_sock"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "family"},
 				{Type: "int", Name: "type"},
@@ -5309,7 +5309,7 @@ var Definitions = eventDefinitions{
 					{MapName: "sys_enter_init_tail", MapIndexes: []uint32{uint32(Listen)}, ProgName: "sys_enter_init"},
 				},
 			},
-			Sets: []string{"default", "lsm_hooks", "net", "net_sock"},
+			Sets: []string{"lsm_hooks", "net", "net_sock"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "sockfd"},
 				{Type: "struct sockaddr*", Name: "local_addr"},
@@ -5383,7 +5383,7 @@ var Definitions = eventDefinitions{
 					{MapName: "sys_enter_init_tail", MapIndexes: []uint32{uint32(Setsockopt)}, ProgName: "sys_enter_init"},
 				},
 			},
-			Sets: []string{"default", "lsm_hooks", "net", "net_sock"},
+			Sets: []string{"lsm_hooks", "net", "net_sock"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "sockfd"},
 				{Type: "int", Name: "level"},
@@ -5638,7 +5638,7 @@ var Definitions = eventDefinitions{
 			Dependencies: dependencies{
 				Events: []eventDependency{{EventID: CgroupMkdir}},
 			},
-			Sets: []string{"containers"},
+			Sets: []string{"default", "containers"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "runtime"},
 				{Type: "const char*", Name: "container_id"},
@@ -5657,7 +5657,7 @@ var Definitions = eventDefinitions{
 			Dependencies: dependencies{
 				Events: []eventDependency{{EventID: CgroupRmdir}},
 			},
-			Sets: []string{"containers"},
+			Sets: []string{"default", "containers"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "runtime"},
 				{Type: "const char*", Name: "container_id"},
@@ -5666,7 +5666,7 @@ var Definitions = eventDefinitions{
 		ExistingContainer: {
 			ID32Bit: sys32undefined,
 			Name:    "existing_container",
-			Sets:    []string{"containers"},
+			Sets:    []string{"default", "containers"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "runtime"},
 				{Type: "const char*", Name: "container_id"},
@@ -6251,7 +6251,7 @@ var Definitions = eventDefinitions{
 					{EventID: NetPacketICMPBase},
 				},
 			},
-			Sets: []string{"network_events"},
+			Sets: []string{"default", "network_events"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "src"},
 				{Type: "const char*", Name: "dst"},
@@ -6280,7 +6280,7 @@ var Definitions = eventDefinitions{
 					{EventID: NetPacketICMPv6Base},
 				},
 			},
-			Sets: []string{"network_events"},
+			Sets: []string{"default", "network_events"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "src"},
 				{Type: "const char*", Name: "dst"},
@@ -6326,7 +6326,7 @@ var Definitions = eventDefinitions{
 					{EventID: NetPacketDNSBase},
 				},
 			},
-			Sets: []string{"network_events"},
+			Sets: []string{"default", "network_events"},
 			Params: []trace.ArgMeta{
 				{Type: "trace.PktMeta", Name: "metadata"},
 				{Type: "[]trace.DnsQueryData", Name: "dns_questions"},
@@ -6340,7 +6340,7 @@ var Definitions = eventDefinitions{
 					{EventID: NetPacketDNSBase},
 				},
 			},
-			Sets: []string{"network_events"},
+			Sets: []string{"default", "network_events"},
 			Params: []trace.ArgMeta{
 				{Type: "trace.PktMeta", Name: "metadata"},
 				{Type: "[]trace.DnsResponseData", Name: "dns_response"},
@@ -6385,7 +6385,7 @@ var Definitions = eventDefinitions{
 					{EventID: NetPacketHTTPBase},
 				},
 			},
-			Sets: []string{"network_events"},
+			Sets: []string{"default", "network_events"},
 			Params: []trace.ArgMeta{
 				{Type: "trace.PktMeta", Name: "metadata"},
 				{Type: "trace.ProtoHTTPRequest", Name: "http_request"},
@@ -6399,7 +6399,7 @@ var Definitions = eventDefinitions{
 					{EventID: NetPacketHTTPBase},
 				},
 			},
-			Sets: []string{"network_events"},
+			Sets: []string{"default", "network_events"},
 			Params: []trace.ArgMeta{
 				{Type: "trace.PktMeta", Name: "metadata"},
 				{Type: "trace.ProtoHTTPResponse", Name: "http_response"},
