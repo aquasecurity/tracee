@@ -4388,6 +4388,8 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
     if (!init_program_data(&p, ctx))
         return 0;
 
+    p.event->context.matched_scopes = 0xFFFFFFFFFFFFFFFF;
+
     // uprobe was triggered from other tracee instance
     if (p.config->tracee_pid != trigger_pid)
         return 0;
