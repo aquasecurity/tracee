@@ -6255,7 +6255,7 @@ var Definitions = eventDefinitions{
 					{EventID: NetPacketICMPBase},
 				},
 			},
-			Sets: []string{"network_events"},
+			Sets: []string{"default", "network_events"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "src"},
 				{Type: "const char*", Name: "dst"},
@@ -6284,7 +6284,7 @@ var Definitions = eventDefinitions{
 					{EventID: NetPacketICMPv6Base},
 				},
 			},
-			Sets: []string{"network_events"},
+			Sets: []string{"default", "network_events"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "src"},
 				{Type: "const char*", Name: "dst"},
@@ -6330,7 +6330,7 @@ var Definitions = eventDefinitions{
 					{EventID: NetPacketDNSBase},
 				},
 			},
-			Sets: []string{"network_events"},
+			Sets: []string{"default", "network_events"},
 			Params: []trace.ArgMeta{
 				{Type: "trace.PktMeta", Name: "metadata"},
 				{Type: "[]trace.DnsQueryData", Name: "dns_questions"},
@@ -6344,7 +6344,7 @@ var Definitions = eventDefinitions{
 					{EventID: NetPacketDNSBase},
 				},
 			},
-			Sets: []string{"network_events"},
+			Sets: []string{"default", "network_events"},
 			Params: []trace.ArgMeta{
 				{Type: "trace.PktMeta", Name: "metadata"},
 				{Type: "[]trace.DnsResponseData", Name: "dns_response"},
@@ -6389,7 +6389,7 @@ var Definitions = eventDefinitions{
 					{EventID: NetPacketHTTPBase},
 				},
 			},
-			Sets: []string{"network_events"},
+			Sets: []string{"default", "network_events"},
 			Params: []trace.ArgMeta{
 				{Type: "trace.PktMeta", Name: "metadata"},
 				{Type: "trace.ProtoHTTPRequest", Name: "http_request"},
@@ -6403,7 +6403,7 @@ var Definitions = eventDefinitions{
 					{EventID: NetPacketHTTPBase},
 				},
 			},
-			Sets: []string{"network_events"},
+			Sets: []string{"default", "network_events"},
 			Params: []trace.ArgMeta{
 				{Type: "trace.PktMeta", Name: "metadata"},
 				{Type: "trace.ProtoHTTPResponse", Name: "http_response"},
