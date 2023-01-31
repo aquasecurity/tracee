@@ -95,8 +95,8 @@ github.com/alexflint/go-filemutex v0.0.0-20171022225611-72bdc8eae2ae/go.mod h1:C
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220418222510-f25a4f6275ed h1:ue9pVfIcP+QMEjfgo/Ez4ZjNZfonGgR6NgjMaJMu1Cg=
 github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220418222510-f25a4f6275ed/go.mod h1:F7bn7fEU90QkQ3tnmaTx3LTKLEDqnwWODIYppRQ5hnY=
-github.com/aquasecurity/libbpfgo v0.4.5-libbpf-1.0.1 h1:Et7WT8CEpaO03v7FIVk85GMRRbwjF7sgoBgQhH5T30k=
-github.com/aquasecurity/libbpfgo v0.4.5-libbpf-1.0.1/go.mod h1:v+Nk+v6BtHLfdT4kVdsp+fYt4AeUa3cIG2P0y+nBuuY=
+github.com/aquasecurity/libbpfgo v0.4.5-libbpf-1.0.1.0.20230131113824-8a1e54e011c6 h1:GMuKveh/HRw4DVBYFigwTZNP8vm8dO11xZHleecepwQ=
+github.com/aquasecurity/libbpfgo v0.4.5-libbpf-1.0.1.0.20230131113824-8a1e54e011c6/go.mod h1:v+Nk+v6BtHLfdT4kVdsp+fYt4AeUa3cIG2P0y+nBuuY=
 github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230109115933-5ede01b209e1 h1:pQQ/vb0z2dw3fFkvD4XDw6XGM82EjPfS93Cav77wjIo=
 github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230109115933-5ede01b209e1/go.mod h1:j/TQLmsZpOIdF3CnJODzYngG4yu1YoDCoRMELxkQSSA=
 github.com/aquasecurity/tracee/types v0.0.0-20230129145531-57eeea18c2c7 h1:iqpS5Ub/mYWMYhrsZR8CTLZTFC2+mq5Wa1bbVtAaNPE=
