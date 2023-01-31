@@ -37,7 +37,7 @@ type Context struct {
 	UtsName       [16]byte
 	Flags         uint32
 	EventID       events.ID //int32
-	_             [4]byte   // padding
+	Syscall       int32
 	MatchedScopes uint64
 	Retval        int64
 	StackID       uint32

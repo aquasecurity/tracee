@@ -104,6 +104,7 @@ expected.
         19) "podName"  
         20) "podNamespace"  
         21) "podUid"  
+        22) "syscall"  
     !!! Tip
         Open a container and try `cat /etc/shadow`.
 

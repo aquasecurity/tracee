@@ -298,11 +298,12 @@ $ kubectl -n tracee-system logs -f postee-0
 2022/03/29 08:26:32 {"Data":null,"Context":{"timestamp":1648542392170684298,"processorId":1,"processId":90731,"threadId"
 :90731,"parentProcessId":90729,"hostProcessId":90731,"hostThreadId":90731,"hostParentProcessId":90729,"userId":1000,"mou
 ntNamespace":4026531840,"pidNamespace":4026531836,"processName":"strace","hostName":"ubuntu-impish","containerId":"","ev
-entId":"101","eventName":"ptrace","argsNum":4,"returnValue":0,"stackAddresses":null,"args":[{"name":"request","type":"st
-ring","value":"PTRACE_TRACEME"},{"name":"pid","type":"pid_t","value":0},{"name":"addr","type":"void*","value":"0x0"},{"n
-ame":"data","type":"void*","value":"0x0"}]},"SigMetadata":{"ID":"TRC-2","Version":"0.1.0","Name":"Anti-Debugging","Descr
-iption":"Process uses anti-debugging technique to block debugger","Tags":["linux","container"],"Properties":{"MITRE ATT\
-u0026CK":"Defense Evasion: Execution Guardrails","Severity":3}}}
+entId":"101","eventName":"ptrace","argsNum":4,"returnValue":0,"stackAddresses":null,"syscall":"ptrace","contextFlags":{"
+containerStarted":false,"isCompat":false},"args":[{"name":"request","type":"string","value":"PTRACE_TRACEME"},{"name":"p
+id","type":"pid_t","value":0},{"name":"addr","type":"void*","value":"0x0"},{"name":"data","type":"void*","value":"0x0"}]
+},"SigMetadata":{"ID":"TRC-2","Version":"0.1.0","Name":"Anti-Debugging","Description":"Process uses anti-debugging techn
+ique to block debugger","Tags":["linux","container"],"Properties":{"MITRE ATT\u0026CK":"Defense Evasion: Execution Guard
+rails","Severity":3}}}
 ```
 
 As an alternative to static deployment descriptors you can install Tracee and

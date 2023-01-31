@@ -12,7 +12,6 @@ It might be interesting in cases where a sensitive kernel symbol is looked-up.
 ## Arguments
 * `symbol_name`:`const char*`[K] - the symbol that is being looked-up.
 * `symbol_address`:`void*`[K] - the address of the symbol returned by the function. 0 if not found.
-* `syscall`:`int`[K] - the id of the syscall that invoked this lookup. If output option `parse-arguments` was chosen, the value will be transformed to the syscall name as a string type.
 
 ## Hooks
 ### kallsyms_lookup_name

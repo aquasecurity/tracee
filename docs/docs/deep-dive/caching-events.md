@@ -39,8 +39,7 @@ The effects of this are the following:
 ## Use caching
 
 Example using **1GB cache**, container **enrichment** in the pipeline, argument
-**parsing** so arguments are formatted in a human consumable way, **detect**
-syscall that generated the event:
+**parsing** so arguments are formatted in a human consumable way:
 
 ```text
 $ sudo ./dist/tracee-ebpf \

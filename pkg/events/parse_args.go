@@ -56,7 +56,7 @@ func ParseArgs(event *trace.Event) error {
 				ParseOrEmptyString(prevProtArg, mmapProtArgument, nil)
 			}
 		}
-	case SysEnter, SysExit, CapCapable, CommitCreds, SecurityFileOpen, TaskRename, SecurityMmapFile, KallsymsLookupName, DoMmap:
+	case SysEnter, SysExit:
 		if syscallArg := GetArg(event, "syscall"); syscallArg != nil {
 			if id, isInt32 := syscallArg.Value.(int32); isInt32 {
 				if event, isKnown := Definitions.GetSafe(ID(id)); isKnown {
@@ -75,20 +75,11 @@ func ParseArgs(event *trace.Event) error {
 				}
 			}
 		}
-		if ID(event.EventID) == SecurityFileOpen {
-			if flagsArg := GetArg(event, "flags"); flagsArg != nil {
-				if flags, isInt32 := flagsArg.Value.(int32); isInt32 {
-					openFlagArgument, err := helpers.ParseOpenFlagArgument(uint64(flags))
-					ParseOrEmptyString(flagsArg, openFlagArgument, err)
-				}
-			}
-		}
-		if ID(event.EventID) == SecurityMmapFile || ID(event.EventID) == DoMmap {
-			if protArg := GetArg(event, "prot"); protArg != nil {
-				if prot, isUint64 := protArg.Value.(uint64); isUint64 {
-					mmapProtArgument := helpers.ParseMmapProt(prot)
-					ParseOrEmptyString(protArg, mmapProtArgument, nil)
-				}
+	case SecurityMmapFile, DoMmap:
+		if protArg := GetArg(event, "prot"); protArg != nil {
+			if prot, isUint64 := protArg.Value.(uint64); isUint64 {
+				mmapProtArgument := helpers.ParseMmapProt(prot)
+				ParseOrEmptyString(protArg, mmapProtArgument, nil)
 			}
 		}
 	case Mmap, Mprotect, PkeyMprotect:
@@ -165,7 +156,7 @@ func ParseArgs(event *trace.Event) error {
 				ParseOrEmptyString(flagsArg, execFlagArgument, err)
 			}
 		}
-	case Open, Openat:
+	case Open, Openat, SecurityFileOpen:
 		if flagsArg := GetArg(event, "flags"); flagsArg != nil {
 			if flags, isInt32 := flagsArg.Value.(int32); isInt32 {
 				openFlagArgument, err := helpers.ParseOpenFlagArgument(uint64(flags))
