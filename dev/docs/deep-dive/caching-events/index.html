@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.8+insiders-4.29.0">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.9+insiders-4.29.0">
     
     
       
@@ -2516,8 +2516,7 @@ they're not lost (if cache isn't full).</p>
 </ol>
 <h2 id="use-caching">Use caching<a class="headerlink" href="#use-caching" title="Permanent link">&para;</a></h2>
 <p>Example using <strong>1GB cache</strong>, container <strong>enrichment</strong> in the pipeline, argument
-<strong>parsing</strong> so arguments are formatted in a human consumable way, <strong>detect</strong>
-syscall that generated the event:</p>
+<strong>parsing</strong> so arguments are formatted in a human consumable way:</p>
 <div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
     --cache cache-type=mem \
     --cache mem-cache-size=1024 \

@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.8+insiders-4.29.0">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.9+insiders-4.29.0">
     
     
       
@@ -2515,7 +2515,6 @@ It might be interesting in cases where a sensitive kernel symbol is looked-up.</
 <ul>
 <li><code>symbol_name</code>:<code>const char*</code>[K] - the symbol that is being looked-up.</li>
 <li><code>symbol_address</code>:<code>void*</code>[K] - the address of the symbol returned by the function. 0 if not found.</li>
-<li><code>syscall</code>:<code>int</code>[K] - the id of the syscall that invoked this lookup. If output option <code>parse-arguments</code> was chosen, the value will be transformed to the syscall name as a string type.</li>
 </ul>
 <h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
 <h3 id="kallsyms_lookup_name_1">kallsyms_lookup_name<a class="headerlink" href="#kallsyms_lookup_name_1" title="Permanent link">&para;</a></h3>

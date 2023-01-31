@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.8+insiders-4.29.0">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.9+insiders-4.29.0">
     
     
       
@@ -2861,11 +2861,12 @@ logs:</p>
 <span class="go">2022/03/29 08:26:32 {&quot;Data&quot;:null,&quot;Context&quot;:{&quot;timestamp&quot;:1648542392170684298,&quot;processorId&quot;:1,&quot;processId&quot;:90731,&quot;threadId&quot;</span>
 <span class="go">:90731,&quot;parentProcessId&quot;:90729,&quot;hostProcessId&quot;:90731,&quot;hostThreadId&quot;:90731,&quot;hostParentProcessId&quot;:90729,&quot;userId&quot;:1000,&quot;mou</span>
 <span class="go">ntNamespace&quot;:4026531840,&quot;pidNamespace&quot;:4026531836,&quot;processName&quot;:&quot;strace&quot;,&quot;hostName&quot;:&quot;ubuntu-impish&quot;,&quot;containerId&quot;:&quot;&quot;,&quot;ev</span>
-<span class="go">entId&quot;:&quot;101&quot;,&quot;eventName&quot;:&quot;ptrace&quot;,&quot;argsNum&quot;:4,&quot;returnValue&quot;:0,&quot;stackAddresses&quot;:null,&quot;args&quot;:[{&quot;name&quot;:&quot;request&quot;,&quot;type&quot;:&quot;st</span>
-<span class="go">ring&quot;,&quot;value&quot;:&quot;PTRACE_TRACEME&quot;},{&quot;name&quot;:&quot;pid&quot;,&quot;type&quot;:&quot;pid_t&quot;,&quot;value&quot;:0},{&quot;name&quot;:&quot;addr&quot;,&quot;type&quot;:&quot;void*&quot;,&quot;value&quot;:&quot;0x0&quot;},{&quot;n</span>
-<span class="go">ame&quot;:&quot;data&quot;,&quot;type&quot;:&quot;void*&quot;,&quot;value&quot;:&quot;0x0&quot;}]},&quot;SigMetadata&quot;:{&quot;ID&quot;:&quot;TRC-2&quot;,&quot;Version&quot;:&quot;0.1.0&quot;,&quot;Name&quot;:&quot;Anti-Debugging&quot;,&quot;Descr</span>
-<span class="go">iption&quot;:&quot;Process uses anti-debugging technique to block debugger&quot;,&quot;Tags&quot;:[&quot;linux&quot;,&quot;container&quot;],&quot;Properties&quot;:{&quot;MITRE ATT\</span>
-<span class="go">u0026CK&quot;:&quot;Defense Evasion: Execution Guardrails&quot;,&quot;Severity&quot;:3}}}</span>
+<span class="go">entId&quot;:&quot;101&quot;,&quot;eventName&quot;:&quot;ptrace&quot;,&quot;argsNum&quot;:4,&quot;returnValue&quot;:0,&quot;stackAddresses&quot;:null,&quot;syscall&quot;:&quot;ptrace&quot;,&quot;contextFlags&quot;:{&quot;</span>
+<span class="go">containerStarted&quot;:false,&quot;isCompat&quot;:false},&quot;args&quot;:[{&quot;name&quot;:&quot;request&quot;,&quot;type&quot;:&quot;string&quot;,&quot;value&quot;:&quot;PTRACE_TRACEME&quot;},{&quot;name&quot;:&quot;p</span>
+<span class="go">id&quot;,&quot;type&quot;:&quot;pid_t&quot;,&quot;value&quot;:0},{&quot;name&quot;:&quot;addr&quot;,&quot;type&quot;:&quot;void*&quot;,&quot;value&quot;:&quot;0x0&quot;},{&quot;name&quot;:&quot;data&quot;,&quot;type&quot;:&quot;void*&quot;,&quot;value&quot;:&quot;0x0&quot;}]</span>
+<span class="go">},&quot;SigMetadata&quot;:{&quot;ID&quot;:&quot;TRC-2&quot;,&quot;Version&quot;:&quot;0.1.0&quot;,&quot;Name&quot;:&quot;Anti-Debugging&quot;,&quot;Description&quot;:&quot;Process uses anti-debugging techn</span>
+<span class="go">ique to block debugger&quot;,&quot;Tags&quot;:[&quot;linux&quot;,&quot;container&quot;],&quot;Properties&quot;:{&quot;MITRE ATT\u0026CK&quot;:&quot;Defense Evasion: Execution Guard</span>
+<span class="go">rails&quot;,&quot;Severity&quot;:3}}}</span>
 </code></pre></div>
 <p>As an alternative to static deployment descriptors you can install Tracee and
 Postee with Helm:</p>
