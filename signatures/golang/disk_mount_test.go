@@ -20,9 +20,10 @@ func TestDiskMount(t *testing.T) {
 			Name: "should trigger detection",
 			Events: []trace.Event{
 				{
-					ProcessName: "mal",
-					ThreadID:    8,
-					EventName:   "security_sb_mount",
+					ProcessName:  "mal",
+					ThreadID:     8,
+					ContextFlags: trace.ContextFlags{ContainerStarted: true},
+					EventName:    "security_sb_mount",
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -37,9 +38,10 @@ func TestDiskMount(t *testing.T) {
 				"TRC-1014": {
 					Data: nil,
 					Event: trace.Event{
-						ProcessName: "mal",
-						ThreadID:    8,
-						EventName:   "security_sb_mount",
+						ProcessName:  "mal",
+						ThreadID:     8,
+						ContextFlags: trace.ContextFlags{ContainerStarted: true},
+						EventName:    "security_sb_mount",
 						Args: []trace.Argument{
 							{
 								ArgMeta: trace.ArgMeta{
@@ -68,12 +70,13 @@ func TestDiskMount(t *testing.T) {
 			},
 		},
 		{
-			Name: "should not trigger detection - runc",
+			Name: "should not trigger detection - container not started",
 			Events: []trace.Event{
 				{
-					ProcessName: "runc:[init]",
-					ThreadID:    1,
-					EventName:   "security_sb_mount",
+					ProcessName:  "runc:[init]",
+					ThreadID:     1,
+					ContextFlags: trace.ContextFlags{ContainerStarted: false},
+					EventName:    "security_sb_mount",
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -90,9 +93,10 @@ func TestDiskMount(t *testing.T) {
 			Name: "should not trigger detection - wrong path",
 			Events: []trace.Event{
 				{
-					ProcessName: "runc:[init]",
-					ThreadID:    8,
-					EventName:   "security_sb_mount",
+					ProcessName:  "runc:[init]",
+					ThreadID:     8,
+					ContextFlags: trace.ContextFlags{ContainerStarted: true},
+					EventName:    "security_sb_mount",
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{

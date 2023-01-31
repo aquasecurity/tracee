@@ -56,12 +56,16 @@ func (sig *DiskMount) OnEvent(event protocol.Event) error {
 
 	case "security_sb_mount":
 
+		if !eventObj.ContextFlags.ContainerStarted {
+			return nil
+		}
+
 		deviceName, err := helpers.GetTraceeStringArgumentByName(eventObj, "dev_name")
 		if err != nil {
 			return nil
 		}
 
-		if !isRunc(eventObj) && strings.HasPrefix(deviceName, sig.devDir) {
+		if strings.HasPrefix(deviceName, sig.devDir) {
 			metadata, err := sig.GetMetadata()
 			if err != nil {
 				return err
@@ -82,11 +86,3 @@ func (sig *DiskMount) OnSignal(s detect.Signal) error {
 	return nil
 }
 func (sig *DiskMount) Close() {}
-
-func isRunc(event trace.Event) bool {
-	if event.ThreadID == 1 && strings.HasPrefix(event.ProcessName, "runc:") {
-		return true
-	}
-
-	return false
-}
