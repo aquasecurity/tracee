@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/tracee/pkg/cmd"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
@@ -29,6 +30,28 @@ func init() {
 			},
 		)
 	}
+
+	// Set libbpfgo logging callbacks
+	libbpfgo.SetLoggerCbs(libbpfgo.Callbacks{
+		Log: func(libLevel int, msg string, keyValues ...interface{}) {
+			lvl := logger.ErrorLevel
+
+			switch libLevel {
+			case libbpfgo.LibbpfWarnLevel:
+				lvl = logger.WarnLevel
+			case libbpfgo.LibbpfInfoLevel:
+				lvl = logger.InfoLevel
+			case libbpfgo.LibbpfDebugLevel:
+				lvl = logger.DebugLevel
+			}
+
+			logger.Log(lvl, false, msg, keyValues...)
+		},
+		LogFilters: []func(libLevel int, msg string) bool{
+			libbpfgo.LogFilterLevel,
+			libbpfgo.LogFilterOutput,
+		},
+	})
 }
 
 var version string
