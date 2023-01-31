@@ -69,7 +69,7 @@ func (p *cgroupProbe) attach(module *bpf.Module, args ...interface{}) error {
 
 	link, err = prog.AttachCgroupLegacy(cgroupV2MountPoint, p.attachType)
 	if err != nil {
-		return fmt.Errorf("failed to attach program %s to cgroup %s", p.programName, cgroupV2MountPoint)
+		return fmt.Errorf("failed to attach program %s to cgroup %s (error: %v)", p.programName, cgroupV2MountPoint, err)
 	}
 
 	p.bpfLink = link
