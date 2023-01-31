@@ -104,7 +104,7 @@ func (p tableEventPrinter) Preamble() {
 		switch p.containerMode {
 		case ContainerModeDisabled:
 			fmt.Fprintf(p.out,
-				"%-16s %-17s %-17s %-13s %-12s %-12s %-6s %-16s %-7s %-7s %-7s %-16s %-20s %s",
+				"%-16s %-17s %-17s %-13s %-12s %-12s %-6s %-16s %-7s %-7s %-7s %-16s %-25s %s",
 				"TIME",
 				"SCOPES",
 				"UTS_NAME",
@@ -122,7 +122,7 @@ func (p tableEventPrinter) Preamble() {
 			)
 		case ContainerModeEnabled:
 			fmt.Fprintf(p.out,
-				"%-16s %-17s %-17s %-13s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-20s %s",
+				"%-16s %-17s %-17s %-13s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-25s %s",
 				"TIME",
 				"SCOPES",
 				"UTS_NAME",
@@ -140,7 +140,7 @@ func (p tableEventPrinter) Preamble() {
 			)
 		case ContainerModeEnriched:
 			fmt.Fprintf(p.out,
-				"%-16s %-17s %-17s %-13s %-16s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-20s %s",
+				"%-16s %-17s %-17s %-13s %-16s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-25s %s",
 				"TIME",
 				"SCOPES",
 				"UTS_NAME",
@@ -162,7 +162,7 @@ func (p tableEventPrinter) Preamble() {
 		switch p.containerMode {
 		case ContainerModeDisabled:
 			fmt.Fprintf(p.out,
-				"%-16s %-6s %-16s %-7s %-7s %-16s %-20s %s",
+				"%-16s %-6s %-16s %-7s %-7s %-16s %-25s %s",
 				"TIME",
 				"UID",
 				"COMM",
@@ -174,7 +174,7 @@ func (p tableEventPrinter) Preamble() {
 			)
 		case ContainerModeEnabled:
 			fmt.Fprintf(p.out,
-				"%-16s %-13s %-6s %-16s %-15s %-15s %-16s %-20s %s",
+				"%-16s %-13s %-6s %-16s %-15s %-15s %-16s %-25s %s",
 				"TIME",
 				"CONTAINER_ID",
 				"UID",
@@ -187,7 +187,7 @@ func (p tableEventPrinter) Preamble() {
 			)
 		case ContainerModeEnriched:
 			fmt.Fprintf(p.out,
-				"%-16s %-13s %-16s %-6s %-16s %-15s %-15s %-16s %-20s %s",
+				"%-16s %-13s %-16s %-6s %-16s %-15s %-15s %-16s %-25s %s",
 				"TIME",
 				"CONTAINER_ID",
 				"IMAGE",
@@ -221,15 +221,15 @@ func (p tableEventPrinter) Print(event trace.Event) {
 	}
 
 	eventName := event.EventName
-	if len(eventName) > 20 {
-		eventName = eventName[:17] + "..."
+	if len(eventName) > 25 {
+		eventName = eventName[:22] + "..."
 	}
 
 	if p.verbose {
 		switch p.containerMode {
 		case ContainerModeDisabled:
 			fmt.Fprintf(p.out,
-				"%-16s %016x  %-16s %-13s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-20s ",
+				"%-16s %016x  %-16s %-13s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-25s ",
 				timestamp,
 				event.MatchedScopes,
 				event.HostName,
@@ -246,7 +246,7 @@ func (p tableEventPrinter) Print(event trace.Event) {
 			)
 		case ContainerModeEnabled:
 			fmt.Fprintf(p.out,
-				"%-16s %016x  %-16s %-13s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ",
+				"%-16s %016x  %-16s %-13s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-25s ",
 				timestamp,
 				event.MatchedScopes,
 				event.HostName,
@@ -266,7 +266,7 @@ func (p tableEventPrinter) Print(event trace.Event) {
 			)
 		case ContainerModeEnriched:
 			fmt.Fprintf(p.out,
-				"%-16s %016x  %-16s %-13s %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ",
+				"%-16s %016x  %-16s %-13s %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-25s ",
 				timestamp,
 				event.MatchedScopes,
 				event.HostName,
@@ -290,7 +290,7 @@ func (p tableEventPrinter) Print(event trace.Event) {
 		switch p.containerMode {
 		case ContainerModeDisabled:
 			fmt.Fprintf(p.out,
-				"%-16s %-6d %-16s %-7d %-7d %-16d %-20s ",
+				"%-16s %-6d %-16s %-7d %-7d %-16d %-25s ",
 				timestamp,
 				event.UserID,
 				event.ProcessName,
@@ -301,7 +301,7 @@ func (p tableEventPrinter) Print(event trace.Event) {
 			)
 		case ContainerModeEnabled:
 			fmt.Fprintf(p.out,
-				"%-16s %-13s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ",
+				"%-16s %-13s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-25s ",
 				timestamp,
 				containerId,
 				event.UserID,
@@ -315,7 +315,7 @@ func (p tableEventPrinter) Print(event trace.Event) {
 			)
 		case ContainerModeEnriched:
 			fmt.Fprintf(p.out,
-				"%-16s %-13s %-16s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ",
+				"%-16s %-13s %-16s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-25s ",
 				timestamp,
 				containerId,
 				containerImage,
