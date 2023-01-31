@@ -1,0 +1,2802 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Runtime security and forensics using eBPF.">
+      
+      
+      
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/v0.11/docs/tracing/scopes/">
+      
+      
+        <link rel="prev" href="../event-filtering/">
+      
+      
+        <link rel="next" href="../network-events/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.9+insiders-4.29.0">
+    
+    
+      
+        <title>Scopes - Tracee</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.b6d2c4d8.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.2505c338.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="" data-md-color-accent="">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#tracing-scopes-workloads" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
+      
+  <img src="../../../images/tracee_logo_only.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Tracee
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Scopes
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/aquasecurity/tracee" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../.." class="md-tabs__link">
+          
+  
+    
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../tutorials/everything-is-an-event/" class="md-tabs__link">
+          
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../overview/" class="md-tabs__link md-tabs__link--active">
+          
+  
+  Docs
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../contributing/overview/" class="md-tabs__link">
+          
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
+      
+  <img src="../../../images/tracee_logo_only.png" alt="logo">
+
+    </a>
+    Tracee
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/aquasecurity/tracee" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/kubernetes-quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes - Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/docker-quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker - Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_4" >
+        
+          <label class="md-nav__link" for="__nav_1_4" id="__nav_1_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Installation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/installing/getting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Tracee
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/installing/prerequisites/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Prerequisites
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/installing/docker/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/installing/kubernetes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_4_5" >
+        
+          <label class="md-nav__link" for="__nav_1_4_5" id="__nav_1_4_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Packages
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_1_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_4_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Packages
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/installing/distros/ubuntu/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Ubuntu
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/installing/distros/fedora/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Fedora
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/installing/distros/nix-nixos/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    NixOS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/installing/headers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Linux Headers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/everything-is-an-event/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Everything is an event
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/setup-development-machine-with-vagrant/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Development Machine with Vagrant
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/deploy-grafana-dashboard/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Deploy Tracee Grafana Dashboard
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Docs
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Docs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+    
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" checked>
+        
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Tracing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tracing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output-formats/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Output Formats
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output-options/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Output Options
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../event-filtering/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Event Filtering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    
+  
+    Scopes
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Scopes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#scopes-matches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scopes matches
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-scope-the-same-of-not-using-the-scope-prefix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Single scope (the same of not using the scope prefix)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-scopes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-scopes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Multi-scopes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#detached-workloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detached workloads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#intertwined-workloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Intertwined workloads
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network-events/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Network Events
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Capturing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Capturing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../capturing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
+        
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Detecting
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Detecting
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../detecting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4_2" >
+        
+          <label class="md-nav__link" for="__nav_3_4_2" id="__nav_3_4_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Creating Rules
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Creating Rules
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../detecting/golang/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Golang
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../detecting/rego/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Rego
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../detecting/go-cel/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Go-Cel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../detecting/rules/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Available Rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../detecting/avd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    AVD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
+        
+          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrating
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integrating
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrating/container-engines/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Container Engines
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_2" >
+        
+          <label class="md-nav__link" for="__nav_3_5_2" id="__nav_3_5_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Detected Events
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Detected Events
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrating/go-templates/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Go-template
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5_2_2" >
+        
+          <label class="md-nav__link" for="__nav_3_5_2_2" id="__nav_3_5_2_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Deliver
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_5_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Deliver
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrating/webhook/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrating/postee/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Postee
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrating/falcosidekick/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Falcosidekick
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrating/prometheus/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Prometheus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6" >
+        
+          <label class="md-nav__link" for="__nav_3_6" id="__nav_3_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Deep Dive
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Deep Dive
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deep-dive/architecture/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deep-dive/secure-tracing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Secure Tracing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deep-dive/performance/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Performance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deep-dive/caching-events/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Caching Events
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deep-dive/ordering-events/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Ordering Events
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deep-dive/override-os-files/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Override OS files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deep-dive/healthz/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Healthz
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributing/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributing/guidelines/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Source Code Guidelines
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Building
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributing/building/building/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Tracee
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributing/building/environment/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Environment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributing/building/containers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Containers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributing/building/nocore-ebpf/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Building non CO-RE
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributing/building/packaging/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    OS Packaging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributing/building/macosx/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Building on OSX
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#scopes-matches" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scopes matches
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-scope-the-same-of-not-using-the-scope-prefix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Single scope (the same of not using the scope prefix)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-scopes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-scopes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Multi-scopes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#detached-workloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detached workloads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#intertwined-workloads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Intertwined workloads
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="tracing-scopes-workloads">Tracing Scopes (workloads)<a class="headerlink" href="#tracing-scopes-workloads" title="Permanent link">&para;</a></h1>
+<p><strong>Scopes</strong> allow you to have more granularity and flexibility when <a href="../event-filtering/">filtering</a>
+events. Up to 64 scopes (workloads) can be used at the same time.</p>
+<p>If one of your filters doesn't match, the event will be filtered out, as they
+work together in a short circuit. However, you can use multiple sets of
+filters, called scopes, by adding a number and a colon before the trace flags,
+such as <code>1:</code>. In this way, you can have different workloads that mix different
+types of filters.</p>
+<p>The main filtering logic, <em>ANDed filters</em>, remains the same within a scope. But
+the result of multi-scopes is <em>ORed</em>, which enables you to have granularity.</p>
+<h2 id="scopes-matches">Scopes matches<a class="headerlink" href="#scopes-matches" title="Permanent link">&para;</a></h2>
+<p>To determine which scopes an event is related to, you can check the <strong>bitmask</strong>
+using:</p>
+<ol>
+<li><code>-o format:json</code>, via <code>matchedScopes</code> JSON field (in decimal).</li>
+<li><code>-o format:table-verbose</code>, via <code>SCOPES</code> column (in hexadecimal).</li>
+</ol>
+<p>For instance, an event with the matchedScopes value of 35 (decimal), tells you
+that this event matches the 1st, 2nd, and 6th scopes.</p>
+<div class="highlight"><pre><span></span><code>bc<span class="w"> </span><span class="o">&lt;&lt;&lt;</span><span class="w"> </span><span class="s2">&quot;obase=2; 35&quot;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>100011
+^   ^^
+6   21 (scope number)
+</code></pre></div>
+<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
+<h3 id="single-scope-the-same-of-not-using-the-scope-prefix">Single scope (the same of not using the scope prefix)<a class="headerlink" href="#single-scope-the-same-of-not-using-the-scope-prefix" title="Permanent link">&para;</a></h3>
+<p>Trace in <strong>scope 42</strong> <code>sched_process_exec</code> events from <code>/usr/bin/ls</code> binary:</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">42</span>:event<span class="o">=</span>sched_process_exec<span class="w"> </span>-t<span class="w"> </span><span class="m">42</span>:binary<span class="o">=</span>/usr/bin/ls<span class="w"> </span><span class="se">\</span>
+-o<span class="w"> </span>format:table-verbose
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
+20:09:15:041923  0000020000000000  hb                             4026531841   4026531836   1000   ls               470751  470751  470503  0                sched_process_exec   cmdpath: /usr/bin/ls, pathname: /usr/bin/ls, dev: 271581189, inode: 3933037, ctime: 1668553120490241295, inode_mode: 33261, argv: [ls --color=auto], interp: /usr/bin/ls, stdin_type: S_IFCHR, stdin_path: /dev/pts/2, invoked_from_kernel: 0
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you don't prefix the filter, <code>event=sched_process_exec</code>, Tracee
+will consider that event to be part of <strong>scope 1</strong>. As a result, it can
+be omitted for single scope usage.</p>
+</div>
+<h3 id="multi-scopes">Multi-scopes<a class="headerlink" href="#multi-scopes" title="Permanent link">&para;</a></h3>
+<h4 id="detached-workloads">Detached workloads<a class="headerlink" href="#detached-workloads" title="Permanent link">&para;</a></h4>
+<ol>
+<li>
+<p>Trace in <strong>scope 3</strong> only <code>sched_process_exit</code> events from <code>id</code> command and
+trace in <strong>scope 9</strong> only <code>sched_process_exit</code> events from <code>ls</code> command:</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">3</span>:event<span class="o">=</span>sched_process_exit<span class="w"> </span>-t<span class="w"> </span><span class="m">3</span>:comm<span class="o">=</span>id<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">9</span>:event<span class="o">=</span>sched_process_exit<span class="w"> </span>-t<span class="w"> </span><span class="m">9</span>:comm<span class="o">=</span>ls<span class="w"> </span><span class="se">\</span>
+-o<span class="w"> </span>format:table-verbose
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
+20:14:57:074270  0000000000000004  hb                             4026531841   4026531836   1000   id               471990  471990  470503  0                sched_process_exit   exit_code: 0, process_group_exit: true
+20:14:59:709468  0000000000000100  hb                             4026531841   4026531836   1000   ls               472033  472033  470503  0                sched_process_exit   exit_code: 0, process_group_exit: true
+</code></pre></div>
+</li>
+<li>
+<p>Trace in <strong>scope 6</strong> only <code>openat</code> events from <code>id</code> command and
+trace in <strong>scope 7</strong> only <code>close</code> events from <code>id</code> command:</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">6</span>:event<span class="o">=</span>openat<span class="w"> </span>-t<span class="w"> </span><span class="m">6</span>:comm<span class="o">=</span>id<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">7</span>:event<span class="o">=</span>close<span class="w"> </span>-t<span class="w"> </span><span class="m">7</span>:comm<span class="o">=</span>id<span class="w"> </span><span class="se">\</span>
+-o<span class="w"> </span>format:table-verbose
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
+20:23:22:794235  0000000000000020  hb                             4026531841   4026531836   1000   id               473432  473432  295394  3                openat               dirfd: -100, pathname: /etc/ld.so.cache, flags: O_RDONLY|O_CLOEXEC, mode: 0
+20:23:22:794246  0000000000000040  hb                             4026531841   4026531836   1000   id               473432  473432  295394  0                close                fd: 3
+</code></pre></div>
+</li>
+<li>
+<p>Trace in <strong>scope 3</strong> only <code>anti_debugging</code> events from <strong>all</strong>,
+trace in <strong>scope 5</strong> only <code>net_packet_icmp</code> events from <code>ping</code> command, and
+trace in <strong>scope 9</strong> only <code>ptrace</code> events from <strong>all</strong>.</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">3</span>:event<span class="o">=</span>anti_debugging<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">5</span>:event<span class="o">=</span>net_packet_icmp<span class="w"> </span>-t<span class="w"> </span><span class="m">5</span>:comm<span class="o">=</span>ping<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">9</span>:event<span class="o">=</span>ptrace<span class="w"> </span><span class="se">\</span>
+-o<span class="w"> </span>format:table-verbose
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
+20:59:54:105722  0000000000000010  hb                             4026531841   4026531836   1000   ping             480539  480539  295394  0                net_packet_icmp      src: 192.168.0.109, dst: 8.8.8.8, proto_icmp: {EchoRequest 36097 22 1}
+20:59:54:129919  0000000000000010  hb                             4026531841   4026531836   1000   ping             480539  480539  295394  0                net_packet_icmp      src: 8.8.8.8, dst: 192.168.0.109, proto_icmp: {EchoReply 38145 22 1}
+20:59:57:941107  0000000000000100  hb                             4026531841   4026531836   1000   strace           480614  480614  295394  0                ptrace               request: PTRACE_SEIZE, pid: 480615, addr: 0x0, data: 0x0
+20:59:57:941424  0000000000000100  hb                             4026531841   4026531836   1000   strace           480616  480616  480614  0                ptrace               request: PTRACE_TRACEME, pid: 0, addr: 0x0, data: 0x0
+20:59:57:941424  0000000000000004  hb                             4026531841   4026531836   1000   strace           480616  480616  480614  0                anti_debugging       request: PTRACE_TRACEME, pid: 0, addr: 0x0, data: 0x0
+</code></pre></div>
+</li>
+</ol>
+<h4 id="intertwined-workloads">Intertwined workloads<a class="headerlink" href="#intertwined-workloads" title="Permanent link">&para;</a></h4>
+<ol>
+<li>
+<p>Trace in <strong>scope 3</strong> only <code>sched_process_exit</code> events from <code>id</code> command and
+trace in <strong>scope 9</strong> only <code>sched_process_exit</code> events from <strong>all</strong>:</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">3</span>:event<span class="o">=</span>sched_process_exit<span class="w"> </span>-t<span class="w"> </span><span class="m">3</span>:comm<span class="o">=</span>id<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">9</span>:event<span class="o">=</span>sched_process_exit<span class="w"> </span><span class="se">\</span>
+-o<span class="w"> </span>format:table-verbose
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
+20:26:50:435805  0000000000000100  hb                             4026531841   4026531836   1000   sleep            474130  474130  474129  0                sched_process_exit   exit_code: 0, process_group_exit: true
+20:26:50:439402  0000000000000104  hb                             4026531841   4026531836   1000   id               474129  474129  295394  0                sched_process_exit   exit_code: 0, process_group_exit: true
+20:26:50:457932  0000000000000100  hb                             4026531841   4026531836   1000   pkgfile          474162  474166  474161  0                sched_process_exit   exit_code: 0, process_group_exit: false
+...
+</code></pre></div>
+</li>
+<li>
+<p>Trace in <strong>scope 3</strong> only <code>net_packet_icmp</code> events from containers and
+trace in <strong>scope 5</strong> only <code>net_packet_icmp</code> events from <strong>all</strong>:</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">3</span>:event<span class="o">=</span>net_packet_icmp<span class="w"> </span>-t<span class="w"> </span><span class="m">3</span>:container<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">5</span>:event<span class="o">=</span>net_packet_icmp<span class="w"> </span><span class="se">\</span>
+-o<span class="w"> </span>format:table-verbose
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID/host        TID/host        PPID/host       RET              EVENT                ARGS
+22:06:47:106058  0000000000000010  hb                             4026531841   4026531836   1000   ping             902452 /902452  902452 /902452  902386 /902386  0                net_packet_icmp      src: 192.168.0.109, dst: 8.8.8.8, proto_icmp: {EchoRequest 6891 39 1}
+22:06:47:131362  0000000000000010  hb                             4026531841   4026531836   1000   ping             902452 /902452  902452 /902452  902386 /902386  0                net_packet_icmp      src: 8.8.8.8, dst: 192.168.0.109, proto_icmp: {EchoReply 8939 39 1}
+22:06:54:878971  0000000000000014  e9cf0db70635     e9cf0db70635  4026532904   4026532908   0      ping             8      /902559  8      /902559  1      /899413  0                net_packet_icmp      src: 172.17.0.2, dst: 8.8.8.8, proto_icmp: {EchoRequest 38257 8 0}
+22:06:54:902975  0000000000000014  e9cf0db70635     e9cf0db70635  4026532904   4026532908   0      ping             8      /902559  8      /902559  1      /899413  0                net_packet_icmp      src: 8.8.8.8, dst: 172.17.0.2, proto_icmp: {EchoReply 40305 8 0}
+</code></pre></div>
+</li>
+<li>
+<p>Trace in <strong>scope 3</strong> <code>anti_debugging</code> and <code>ptrace</code> events from <strong>all</strong>,
+trace in <strong>scope 5</strong> only <code>net_packet_icmp</code> events from <code>ping</code> command, and
+trace in <strong>scope 9</strong> only <code>ptrace</code> events from <strong>all</strong>.</p>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">3</span>:event<span class="o">=</span>anti_debugging,ptrace<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">5</span>:event<span class="o">=</span>net_packet_icmp<span class="w"> </span>-t<span class="w"> </span><span class="m">5</span>:comm<span class="o">=</span>ping<span class="w"> </span><span class="se">\</span>
+-t<span class="w"> </span><span class="m">9</span>:event<span class="o">=</span>ptrace<span class="w"> </span><span class="se">\</span>
+-o<span class="w"> </span>format:table-verbose
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
+22:13:20:854132  0000000000000010  hb                             4026531841   4026531836   1000   ping             903291  903291  903233  0                net_packet_icmp      src: 192.168.0.109, dst: 8.8.8.8, proto_icmp: {EchoRequest 22398 40 1}
+22:13:20:876449  0000000000000010  hb                             4026531841   4026531836   1000   ping             903291  903291  903233  0                net_packet_icmp      src: 8.8.8.8, dst: 192.168.0.109, proto_icmp: {EchoReply 24446 40 1}
+22:13:28:877929  0000000000000104  hb                             4026531841   4026531836   1000   strace           903353  903353  903233  0                ptrace               request: PTRACE_SEIZE, pid: 903354, addr: 0x0, data: 0x0
+22:13:28:878450  0000000000000104  hb                             4026531841   4026531836   1000   strace           903355  903355  903353  0                ptrace               request: PTRACE_TRACEME, pid: 0, addr: 0x0, data: 0x0
+...
+22:13:28:878450  0000000000000004  hb                             4026531841   4026531836   1000   strace           903355  903355  903353  0                anti_debugging       request: PTRACE_TRACEME, pid: 0, addr: 0x0, data: 0x0
+</code></pre></div>
+</li>
+</ol>
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../assets/javascripts/workers/search.6c7302c4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.125978b2.min.js"></script>
+      
+    
+  </body>
+</html>
