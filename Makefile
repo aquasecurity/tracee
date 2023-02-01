@@ -354,6 +354,7 @@ $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o: \
 		-I $(KERN_SRC_PATH)/include/uapi \
 		-I $(KERN_BUILD_PATH)/include/generated \
 		-I $(KERN_BUILD_PATH)/include/generated/uapi \
+		-I ./pkg/ebpf/c/ \
 		-I $(OUTPUT_DIR)/libbpf \
 		-I ./3rdparty/include \
 		-Wunused \

@@ -1,6 +1,9 @@
 
 // cannot include trace/trace_probe.h
 
+#ifndef __TRACEE_MISSING_MACROS_H__
+#define __TRACEE_MISSING_MACROS_H__
+
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0))
 typedef void (*fetch_func_t)(struct pt_regs *, void *, void *);
 typedef int (*print_type_func_t)(struct trace_seq *, const char *, void *, void *);
@@ -176,3 +179,5 @@ struct trace_uprobe {
     unsigned long nhit;
     struct trace_probe tp;
 };
+
+#endif
