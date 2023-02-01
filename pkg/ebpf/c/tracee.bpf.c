@@ -101,32 +101,6 @@ char LICENSE[] SEC("license") = "GPL";
 int KERNEL_VERSION SEC("version") = LINUX_VERSION_CODE;
 #endif
 
-// INTERNAL ----------------------------------------------------------------------------------------
-
-enum bin_type_e
-{
-    SEND_VFS_WRITE = 1,
-    SEND_MPROTECT,
-    SEND_KERNEL_MODULE,
-};
-
-#define DEV_NULL_STR 0
-
-#define CONT_ID_LEN          12
-#define CONT_ID_MIN_FULL_LEN 64
-
-#define PACKET_MIN_SIZE 40
-
-enum signal_handling_method_e
-{
-#ifdef CORE
-    SIG_DFL,
-    SIG_IGN,
-#endif
-    SIG_HND = 2 // Doesn't exist in the kernel, but signifies that the method is through
-                // user-defined handler
-};
-
 // SYSCALL HOOKS -----------------------------------------------------------------------------------
 
 // trace/events/syscalls.h: TP_PROTO(struct pt_regs *regs, long id)
@@ -2237,6 +2211,13 @@ int BPF_KPROBE(trace_security_socket_setsockopt)
     return events_perf_submit(&p, SECURITY_SOCKET_SETSOCKOPT, 0);
 }
 
+enum bin_type_e
+{
+    SEND_VFS_WRITE = 1,
+    SEND_MPROTECT,
+    SEND_KERNEL_MODULE,
+};
+
 static __always_inline u32 send_bin_helper(void *ctx, void *prog_array, int tail_call)
 {
     // Note: sending the data to the userspace have the following constraints:
@@ -2687,6 +2668,23 @@ int BPF_KPROBE(trace_ret_vfs_readv)
 {
     return do_file_io_operation(ctx, VFS_READV, TAIL_VFS_READV, true, false);
 }
+
+// Used macro because of problem with verifier in NONCORE kinetic519
+#define submit_mem_prot_alert_event(event, alert, addr, len, prot, previous_prot, file_info)       \
+    {                                                                                              \
+        save_to_submit_buf(event, &alert, sizeof(u32), 0);                                         \
+        save_to_submit_buf(event, &addr, sizeof(void *), 1);                                       \
+        save_to_submit_buf(event, &len, sizeof(size_t), 2);                                        \
+        save_to_submit_buf(event, &prot, sizeof(int), 3);                                          \
+        save_to_submit_buf(event, &previous_prot, sizeof(int), 4);                                 \
+        if (file_info.pathname_p != NULL) {                                                        \
+            save_str_to_buf(event, file_info.pathname_p, 5);                                       \
+            save_to_submit_buf(event, &file_info.device, sizeof(dev_t), 6);                        \
+            save_to_submit_buf(event, &file_info.inode, sizeof(unsigned long), 7);                 \
+            save_to_submit_buf(event, &file_info.ctime, sizeof(u64), 8);                           \
+        }                                                                                          \
+        events_perf_submit(&p, MEM_PROT_ALERT, 0);                                                 \
+    }
 
 SEC("kprobe/security_mmap_addr")
 int BPF_KPROBE(trace_mmap_alert)
@@ -3775,6 +3773,16 @@ int BPF_KPROBE(trace_ret_kallsyms_lookup_name)
 
     return events_perf_submit(&p, KALLSYMS_LOOKUP_NAME, 0);
 }
+
+enum signal_handling_method_e
+{
+#ifdef CORE
+    SIG_DFL,
+    SIG_IGN,
+#endif
+    SIG_HND = 2 // Doesn't exist in the kernel, but signifies that the method is through
+                // user-defined handler
+};
 
 SEC("kprobe/do_sigaction")
 int BPF_KPROBE(trace_do_sigaction)
