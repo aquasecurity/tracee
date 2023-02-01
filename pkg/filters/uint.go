@@ -191,6 +191,10 @@ func (filter *UIntFilter[T]) Parse(operatorAndValues string) error {
 		if err != nil {
 			return InvalidValue(val)
 		}
+		// 'uint<0'
+		if operator == Lower && valInt == 0 {
+			return InvalidExpression(operatorAndValues)
+		}
 		err = filter.add(valInt, operator)
 		if err != nil {
 			return err
