@@ -314,23 +314,6 @@ static __always_inline int save_sockaddr_to_buf(event_data_t *event, struct sock
     return 0;
 }
 
-// Used macro because of problem with verifier in NONCORE kinetic519
-#define submit_mem_prot_alert_event(event, alert, addr, len, prot, previous_prot, file_info)       \
-    {                                                                                              \
-        save_to_submit_buf(event, &alert, sizeof(u32), 0);                                         \
-        save_to_submit_buf(event, &addr, sizeof(void *), 1);                                       \
-        save_to_submit_buf(event, &len, sizeof(size_t), 2);                                        \
-        save_to_submit_buf(event, &prot, sizeof(int), 3);                                          \
-        save_to_submit_buf(event, &previous_prot, sizeof(int), 4);                                 \
-        if (file_info.pathname_p != NULL) {                                                        \
-            save_str_to_buf(event, file_info.pathname_p, 5);                                       \
-            save_to_submit_buf(event, &file_info.device, sizeof(dev_t), 6);                        \
-            save_to_submit_buf(event, &file_info.inode, sizeof(unsigned long), 7);                 \
-            save_to_submit_buf(event, &file_info.ctime, sizeof(u64), 8);                           \
-        }                                                                                          \
-        events_perf_submit(&p, MEM_PROT_ALERT, 0);                                                 \
-    }
-
 static __always_inline int events_perf_submit(program_data_t *p, u32 id, long ret)
 {
     p->event->context.eventid = id;
