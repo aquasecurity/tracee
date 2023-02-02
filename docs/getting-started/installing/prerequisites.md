@@ -38,7 +38,7 @@ capabilities:
 * On cgroup v1 environments, `CAP_SYS_ADMIN` is recommended if running from a
   container in order to allow tracee to mount the cpuset cgroup controller.
 
-> Alternatively, run as `root` or with the `--privileged` flag of Docker.
+> Alternatively, run as `root` or with **Docker** `--pid=host --cgroupns=host --privileged` flags.
 
 [libbpf CO-RE documentation]: https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere
 [BTFHUB]: https://github.com/aquasecurity/btfhub-archive
