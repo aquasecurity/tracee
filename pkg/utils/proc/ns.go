@@ -72,11 +72,18 @@ func GetProcessStartTime(pid uint) (int, error) {
 	}
 	// see https://man7.org/linux/man-pages/man5/proc.5.html for how to read /proc/pid/stat
 	startTimeOffset := 22 // Offset start at 1
-	splitStat := bytes.SplitN(stat, []byte{' '}, startTimeOffset+1)
-	if len(splitStat) != startTimeOffset+1 {
+	commOffset := 2
+	// We want to remove the comm from the string, because it can contain a space which will change the offsets after split
+	splitByComm := bytes.SplitN(stat, []byte{')', ' '}, 2)
+	if len(splitByComm) != 2 {
+		return 0, fmt.Errorf("error in parsing /proc/<pid>/stat format - comm name is not surounded by parentheses as expected")
+	}
+	newStartTimeOffset := startTimeOffset - commOffset
+	splitStat := bytes.SplitN(splitByComm[1], []byte{' '}, newStartTimeOffset+1)
+	if len(splitStat) != newStartTimeOffset+1 {
 		return 0, fmt.Errorf("error in parsing /proc/<pid>/stat format - only %d values found inside", len(splitStat))
 	}
-	startTime, err := strconv.Atoi(string(splitStat[startTimeOffset-1]))
+	startTime, err := strconv.Atoi(string(splitStat[newStartTimeOffset-1]))
 	if err != nil {
 		return 0, err
 	}
