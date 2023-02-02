@@ -2370,9 +2370,6 @@ submit_magic_write(program_data_t *p, file_info_t *file_info, io_data_t io_data,
     if (header_bytes > bytes_written)
         header_bytes = bytes_written;
 
-    p->event->buf_off = 0;
-    p->event->context.argnum = 0;
-
     u8 header[FILE_MAGIC_HDR_SIZE];
     __builtin_memset(&header, 0, sizeof(header));
 
@@ -2477,6 +2474,7 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
 
     // magic_write event checks if the header of some file is changed
     if (!is_read && should_submit_magic_write && !char_dev && (start_pos == 0)) {
+        reset_event_args(&p);
         submit_magic_write(&p, &file_info, io_data, io_bytes_amount);
     }
 
@@ -2804,7 +2802,6 @@ int BPF_KPROBE(trace_security_mmap_file)
     save_to_submit_buf(p.event, &inode_nr, sizeof(unsigned long), 3);
     save_to_submit_buf(p.event, &ctime, sizeof(u64), 4);
 
-    int id = -1;
     if (submit_shared_object_loaded) {
         if ((prot & VM_EXEC) == VM_EXEC && p.event->context.syscall == SYSCALL_MMAP) {
             events_perf_submit(&p, SHARED_OBJECT_LOADED, 0);
@@ -2882,8 +2879,6 @@ int BPF_KPROBE(trace_security_file_mprotect)
         if (len == 0)
             len = PAGE_SIZE;
 
-        p.event->buf_off = 0;
-        p.event->context.argnum = 0;
         u32 alert;
         bool should_alert = false;
         bool should_extract_code = false;
@@ -2909,6 +2904,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
             }
         }
         if (should_alert) {
+            reset_event_args(&p);
             submit_mem_prot_alert_event(p.event, alert, addr, len, reqprot, prev_prot, file_info);
         }
         if (should_extract_code) {
@@ -3015,12 +3011,11 @@ int BPF_KPROBE(trace_security_bpf)
         save_to_submit_buf(p.event, (void *) &cmd, sizeof(int), 0);
 
         events_perf_submit(&p, SECURITY_BPF, 0);
-        p.event->buf_off = 0;
-        p.event->context.argnum = 0;
     }
 
     union bpf_attr *attr = (union bpf_attr *) PT_REGS_PARM2(ctx);
 
+    reset_event_args(&p);
     check_bpf_link(&p, attr, cmd);
 
     return 0;
