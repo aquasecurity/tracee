@@ -212,4 +212,11 @@ static __always_inline int init_tailcall_program_data(program_data_t *p, void *c
     return 1;
 }
 
+// use this function for programs that send more than one event
+static __always_inline void reset_event_args(program_data_t *p)
+{
+    p->event->buf_off = 0;
+    p->event->context.argnum = 0;
+}
+
 #endif
