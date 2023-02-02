@@ -39,8 +39,14 @@ func (cPathRes PathResolver) ResolveAbsolutePath(mountNSAbsolutePath string, mou
 		procRootPath := fmt.Sprintf("/proc/%d/root", int(pid))
 		// fs.FS interface requires relative paths, so the '/' prefix should be trimmed.
 		err := capabilities.GetInstance().Required(func() error {
-			_, err := fs.Stat(cPathRes.fs, strings.TrimPrefix(procRootPath, "/"))
-			return err
+			entries, err := fs.ReadDir(cPathRes.fs, strings.TrimPrefix(procRootPath, "/"))
+			if err != nil {
+				return err
+			}
+			if len(entries) == 0 {
+				return fmt.Errorf("empty directory")
+			}
+			return nil
 		})
 		if err == nil {
 			return fmt.Sprintf("%s%s", procRootPath, mountNSAbsolutePath), nil
