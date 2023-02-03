@@ -200,10 +200,10 @@ func main() {
 				Usage: "Control event rego settings. run '--rego help' for more info.",
 				Value: cli.NewStringSlice(),
 			},
-			&cli.StringFlag{
+			&cli.StringSliceFlag{
 				Name:  "log",
-				Usage: "logger level. run '--log help' for more info.",
-				Value: "info",
+				Usage: "logger option. run '--log help' for more info.",
+				Value: cli.NewStringSlice("info"),
 			},
 		},
 	}
