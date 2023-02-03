@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -74,11 +75,17 @@ func NewLogger(cfg *LoggerConfig) *Logger {
 	}
 }
 
+const (
+	DefaultLevel         = InfoLevel
+	DefaultFlushInterval = time.Duration(3) * time.Second
+)
+
 type LoggerConfig struct {
-	Writer    io.Writer
-	Level     Level
-	Encoder   Encoder
-	Aggregate bool
+	Writer        io.Writer
+	Level         Level
+	Encoder       Encoder
+	Aggregate     bool
+	FlushInterval time.Duration
 }
 
 func defaultEncoder() Encoder {
@@ -87,10 +94,11 @@ func defaultEncoder() Encoder {
 
 func NewDefaultLoggerConfig() *LoggerConfig {
 	return &LoggerConfig{
-		Writer:    os.Stderr,
-		Level:     InfoLevel,
-		Encoder:   defaultEncoder(),
-		Aggregate: false,
+		Writer:        os.Stderr,
+		Level:         DefaultLevel,
+		Encoder:       defaultEncoder(),
+		Aggregate:     false,
+		FlushInterval: DefaultFlushInterval,
 	}
 }
 
@@ -319,25 +327,6 @@ func (l *Logger) Sync() error {
 	return l.l.Sync()
 }
 
-// Setters
-// TODO: add SetWriter and Setlogger to the struct level?
-
-func SetWriter(w io.Writer) {
-	if w == nil {
-		panic("logger writer cannot be nil")
-	}
-
-	newConfig := (*pkgLogger.cfg)
-	newConfig.Writer = w
-	Init(&newConfig)
-}
-
-func SetLevel(lvl Level) {
-	newConfig := (*pkgLogger.cfg)
-	newConfig.Level = lvl
-	Init(&newConfig)
-}
-
 const (
 	TRACEE_LOGGER_LVL       = "TRACEE_LOGGER_LVL"
 	TRACEE_LOGGER_ENCODER   = "TRACEE_LOGGER_ENCODER"
@@ -368,7 +357,7 @@ func getLoggerLevelFromEnv() (lvl Level) {
 		lvl = FatalLevel
 	default:
 		fromEnv = false
-		lvl = InfoLevel
+		lvl = DefaultLevel
 	}
 
 	if !setFromEnv {

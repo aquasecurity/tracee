@@ -34,10 +34,11 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	// Log command line flags
 
-	err = flags.PrepareLogger(c.String("log"), output.LogFile)
+	logCfg, err := flags.PrepareLogger(c.StringSlice("log"), output.LogFile)
 	if err != nil {
 		return runner, err
 	}
+	logger.Init(logCfg)
 
 	// OS release information
 
