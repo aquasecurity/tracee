@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -103,8 +104,10 @@ func NewDefaultLoggerConfig() *LoggerConfig {
 }
 
 type LogOrigin struct {
-	File string
-	Line int
+	File  string
+	Line  int
+	Level Level
+	Msg   string
 }
 
 type LogCounter struct {
@@ -112,13 +115,10 @@ type LogCounter struct {
 	data    map[LogOrigin]uint32
 }
 
-func (lc *LogCounter) update(lo LogOrigin) (new bool) {
+func (lc *LogCounter) update(lo LogOrigin) {
 	lc.rwMutex.Lock()
 	defer lc.rwMutex.Unlock()
-	_, found := lc.data[lo]
 	lc.data[lo]++
-
-	return !found
 }
 
 func (lc *LogCounter) Lookup(key LogOrigin) (count uint32, found bool) {
@@ -129,15 +129,25 @@ func (lc *LogCounter) Lookup(key LogOrigin) (count uint32, found bool) {
 	return
 }
 
-func (lc *LogCounter) Dump() map[LogOrigin]uint32 {
+func (lc *LogCounter) dump(flush bool) map[LogOrigin]uint32 {
 	lc.rwMutex.RLock()
 	defer lc.rwMutex.RUnlock()
 	dump := make(map[LogOrigin]uint32, len(lc.data))
 	for k, v := range lc.data {
 		dump[k] = v
+		if flush {
+			delete(lc.data, k)
+		}
 	}
-
 	return dump
+}
+
+func (lc *LogCounter) Dump() map[LogOrigin]uint32 {
+	return lc.dump(false)
+}
+
+func (lc *LogCounter) Flush() map[LogOrigin]uint32 {
+	return lc.dump(true)
 }
 
 func newLogCounter() *LogCounter {
@@ -172,23 +182,23 @@ func getCallerInfo(skip int) (pkg, file string, line int) {
 	return pkg, file, line
 }
 
-func (l *Logger) updateCounter(file string, line int) (new bool) {
-	return l.LogCount.update(LogOrigin{
-		File: file,
-		Line: line,
+func (l *Logger) updateCounter(file string, line int, lvl Level, msg string) {
+	l.LogCount.update(LogOrigin{
+		File:  file,
+		Line:  line,
+		Level: lvl,
+		Msg:   msg,
 	})
 }
 
-// isAggregateSetAndIsLogNotNew checks
-// - if logs aggregation is set, so:
-//   - updates log count;
-//   - returns true if the log is not new, (avoiding writing).
-func isAggregateSetAndIsLogNotNew(skip int, l *Logger) bool {
+// aggregateLog will update the log counter if aggregation is enabled.
+// It returns true if the aggregation was done.
+func aggregateLog(skip int, l *Logger, lvl Level, msg string) bool {
 	if l.cfg.Aggregate {
 		_, file, line := getCallerInfo(skip + 1)
-		new := l.updateCounter(file, line)
+		l.updateCounter(file, line, lvl, msg)
 
-		return !new
+		return true
 	}
 
 	return false
@@ -236,7 +246,7 @@ func Log(lvl Level, innerAggregation bool, msg string, keysAndValues ...interfac
 
 // Debug
 func debugw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	if isAggregateSetAndIsLogNotNew(skip+1, l) {
+	if aggregateLog(skip+1, l, DebugLevel, msg) {
 		return
 	}
 
@@ -256,7 +266,7 @@ func (l *Logger) Debug(msg string, keysAndValues ...interface{}) {
 
 // Info
 func infow(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	if isAggregateSetAndIsLogNotNew(skip+1, l) {
+	if aggregateLog(skip+1, l, InfoLevel, msg) {
 		return
 	}
 
@@ -273,7 +283,7 @@ func (l *Logger) Info(msg string, keysAndValues ...interface{}) {
 
 // Warn
 func warnw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	if isAggregateSetAndIsLogNotNew(skip+1, l) {
+	if aggregateLog(skip+1, l, WarnLevel, msg) {
 		return
 	}
 
@@ -290,7 +300,7 @@ func (l *Logger) Warn(msg string, keysAndValues ...interface{}) {
 
 // Error
 func errorw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	if isAggregateSetAndIsLogNotNew(skip+1, l) {
+	if aggregateLog(skip+1, l, ErrorLevel, msg) {
 		return
 	}
 
@@ -307,7 +317,7 @@ func (l *Logger) Error(msg string, keysAndValues ...interface{}) {
 
 // Fatal
 func fatalw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	if isAggregateSetAndIsLogNotNew(skip+1, l) {
+	if aggregateLog(skip+1, l, FatalLevel, msg) {
 		return
 	}
 
@@ -477,6 +487,20 @@ func Init(cfg *LoggerConfig) {
 	}
 
 	SetBase(NewLogger(cfg))
+
+	// Flush aggregated logs every interval
+	if pkgLogger.cfg.Aggregate {
+		go func() {
+			for range time.Tick(pkgLogger.cfg.FlushInterval) {
+				for lo, count := range pkgLogger.LogCount.Flush() {
+					Log(lo.Level, false, lo.Msg,
+						"origin", fmt.Sprintf("%s:%d", lo.File, lo.Line),
+						"count", count,
+					)
+				}
+			}
+		}()
+	}
 }
 
 // GetLevel returns the logger level
