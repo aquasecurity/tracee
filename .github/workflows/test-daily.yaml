@@ -8,7 +8,7 @@ on:
   workflow_call:
 
 env:
-  GO_VERSION: "1.18"
+  GO_VERSION: "1.19"
   OPA_VERSION: "v0.41.0"
 
 jobs:
