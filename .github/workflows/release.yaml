@@ -8,14 +8,10 @@ on:
     tags:
       - "v*"
 
-env:
-  GO_VERSION: "1.18"
-  OPA_VERSION: "v0.48.0"
-
 jobs:
   release:
     name: Release
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -23,9 +19,6 @@ jobs:
           submodules: true
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          opa-version: ${{ env.OPA_VERSION }}
       - name: Login to docker.io and github
         run: |
           gh auth login --with-token <<<'${{ secrets.GITHUB_TOKEN }}'
