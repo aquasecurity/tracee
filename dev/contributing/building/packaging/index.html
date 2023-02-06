@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.11+insiders-4.29.0">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.11+insiders-4.30.0">
     
     
       
@@ -2518,11 +2518,6 @@ to install build depencies in your OS.</p>
 <div class="admonition building tip">
 <p class="admonition-title">Building</p>
 <ul>
-<li>Bionic (LTS)</li>
-</ul>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.packaging ubuntu-bin-bionic
-</code></pre></div>
-<ul>
 <li>Focal (LTS)</li>
 </ul>
 <div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.packaging ubuntu-bin-focal
@@ -2538,11 +2533,7 @@ to install build depencies in your OS.</p>
 <p>The ubuntu <code>.deb</code> packages have the following versioning format:</p>
 <p><code>tracee-{ebpf,rules}_version~ubuntuver~builddate-lastcommit_arch.deb</code></p>
 <p>Examples:</p>
-<div class="highlight"><pre><span></span><code># bionic
-tracee-ebpf_0.6.5-111~18.04~2201281255-3a6874a_amd64.deb
-tracee-rules_0.6.5-111~18.04~2201281255-3a6874a_amd64.deb
-
-# focal
+<div class="highlight"><pre><span></span><code># focal
 tracee-ebpf_0.6.5-111~20.04~2201281302-3a6874a_amd64.deb
 tracee-rules_0.6.5-111~20.04~2201281302-3a6874a_amd64.deb
 
