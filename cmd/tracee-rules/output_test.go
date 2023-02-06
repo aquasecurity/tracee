@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -187,7 +187,7 @@ HostName: foobar.local
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-				got, err := ioutil.ReadAll(request.Body)
+				got, err := io.ReadAll(request.Body)
 				require.NoError(t, err)
 				checkOutput(t, tc.name, NewSyncBuffer(got), tc.expectedOutput)
 				assert.Equal(t, tc.contentType, request.Header.Get("content-type"), tc.name)

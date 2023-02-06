@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"plugin"
@@ -120,7 +119,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 					if !isHelper(d.Name()) {
 						return nil
 					}
-					helperCode, err := ioutil.ReadFile(path)
+					helperCode, err := os.ReadFile(path)
 					if err != nil {
 						logger.Error("reading file " + path + ": " + err.Error())
 						return nil
@@ -139,7 +138,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 				if d.IsDir() || !isRegoFile(d.Name()) || isHelper(d.Name()) {
 					return nil
 				}
-				regoCode, err := ioutil.ReadFile(path)
+				regoCode, err := os.ReadFile(path)
 				if err != nil {
 					logger.Error("reading file " + path + ": " + err.Error())
 					return nil

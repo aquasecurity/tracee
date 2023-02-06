@@ -3,7 +3,6 @@ package flags_test
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -553,11 +552,11 @@ func TestPrepareCapture(t *testing.T) {
 	})
 
 	t.Run("clear dir", func(t *testing.T) {
-		d, _ := ioutil.TempDir("", "TestPrepareCapture-*")
-		capture, err := flags.PrepareCapture([]string{fmt.Sprintf("dir:%s", d), "clear-dir"})
+		d, _ := os.CreateTemp("", "TestPrepareCapture-*")
+		capture, err := flags.PrepareCapture([]string{fmt.Sprintf("dir:%s", d.Name()), "clear-dir"})
 		require.NoError(t, err)
-		assert.Equal(t, tracee.CaptureConfig{OutputPath: fmt.Sprintf("%s/out", d)}, capture)
-		require.NoDirExists(t, d+"out")
+		assert.Equal(t, tracee.CaptureConfig{OutputPath: fmt.Sprintf("%s/out", d.Name())}, capture)
+		require.NoDirExists(t, d.Name()+"out")
 	})
 }
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -457,7 +457,7 @@ func forkAndExecFunction(funcName testFunc) ([]byte, error) {
 	// ForkExec doesn't block, wait for output
 	time.Sleep(time.Second)
 
-	output, err := ioutil.ReadAll(tmpOutputFile)
+	output, err := io.ReadAll(tmpOutputFile)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't read output: %w", err)
 	}

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -127,7 +126,7 @@ func TestSetupTraceeJSONInputSource(t *testing.T) {
 		t.Run(testCase.testName, func(t *testing.T) {
 
 			// Setup temp file that tracee-rules reads from
-			f, err := ioutil.TempFile("", "TestSetupTraceeJSONInputSource-")
+			f, err := os.CreateTemp("", "TestSetupTraceeJSONInputSource-")
 			if err != nil {
 				t.Error(err)
 			}
@@ -145,7 +144,7 @@ func TestSetupTraceeJSONInputSource(t *testing.T) {
 				b = append(b, '\n')
 				allEventBytes = append(allEventBytes, b...)
 			}
-			err = ioutil.WriteFile(f.Name(), allEventBytes, 0644)
+			err = os.WriteFile(f.Name(), allEventBytes, 0644)
 			if err != nil {
 				t.Error(err)
 			}
@@ -217,7 +216,7 @@ func TestSetupTraceeGobInputSource(t *testing.T) {
 		t.Run(testCase.testName, func(t *testing.T) {
 
 			// Setup temp file that tracee-rules reads from
-			f, err := ioutil.TempFile("", "TestSetupTraceeGobInputSource-")
+			f, err := os.CreateTemp("", "TestSetupTraceeGobInputSource-")
 			if err != nil {
 				t.Error(err)
 			}
