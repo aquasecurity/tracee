@@ -14,7 +14,7 @@ on:
 jobs:
   deploy:
     name: Deploy the latest documentation
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout main
         uses: actions/checkout@v2
@@ -37,7 +37,7 @@ jobs:
           git config user.email "github-actions@github.com"
       - name: Deploy the latest documents
         run: |
-          VERSION="${{ github.event.inputs.tag }}" 
+          VERSION="${{ github.event.inputs.tag }}"
           if [ -z $VERSION ]; then
             VERSION=$(echo ${{ github.ref }} | sed -e "s#refs/tags/##g")
           fi

@@ -2,35 +2,46 @@ name: Build Dependencies
 description: |
   Install build dependencies to test and compile tracee artifacts
 inputs:
+  # set default versions in a single place (as default)
+  clang-version:
+    description: clang version
+    default: "14"
   go-version:
-    description: Version of Go
+    description: go version
     required: true
-    default: "1.18"
+    default: "1.19.5"
   opa-version:
-    description: Version of OPA
+    description: opa version
     required: true
-    default: "v0.41.0"
+    default: "v0.48.0"
 runs:
   using: composite
   steps:
-    - name: Setup Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: ${{ inputs.go-version }}
-    - name: Install Compilers & Formatters
+    - name: Install Base Packages
       run: |
         sudo apt-get update
-        sudo apt-get install --yes bsdutils
-        sudo apt-get install --yes build-essential
-        sudo apt-get install --yes pkgconf
-        sudo apt-get install --yes llvm-12 clang-12
-        sudo apt-get install --yes clang-format-12
-        sudo apt-get install --yes zlib1g-dev libelf-dev
-        for tool in "clang" "llc" "llvm-strip" "clang-format"
-        do
-          sudo rm -f /usr/bin/$tool
-          sudo ln -s /usr/bin/$tool-12 /usr/bin/$tool
-        done
+        sudo apt-get install -y bsdutils build-essential pkgconf
+        sudo apt-get install -y zlib1g-dev libelf-dev
+        sudo apt-get install -y software-properties-common
+      shell: bash
+    - name: Install Clang
+      run: |
+        curl -L -o /tmp/llvm.sh https://apt.llvm.org/llvm.sh
+        sudo chmod 755 /tmp/llvm.sh
+        sudo /tmp/llvm.sh ${{ inputs.clang-version }}
+        sudo update-alternatives --remove-all clang || true
+        sudo update-alternatives --remove-all llc || true
+        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${{ inputs.clang-version }} 1
+        sudo update-alternatives --install /usr/bin/llc llc /usr/bin/llc-${{ inputs.clang-version }} 1
+      shell: bash
+    - name: Install Golang
+      run: |
+        curl -L -o /tmp/go.tar.xz https://go.dev/dl/go${{ inputs.go-version }}.linux-amd64.tar.gz
+        sudo tar -C /usr/local -xzf /tmp/go.tar.xz
+        sudo update-alternatives --remove-all go || true
+        sudo update-alternatives --remove-all gofmt || true
+        sudo update-alternatives --install /usr/bin/go go /usr/local/go/bin/go 1
+        sudo update-alternatives --install /usr/bin/gofmt gofmt /usr/local/go/bin/gofmt 1
       shell: bash
     - name: Install OPA
       run: |
@@ -39,7 +50,8 @@ runs:
       shell: bash
     - name: Install staticchecker
       run: |
-        go install honnef.co/go/tools/cmd/staticcheck@latest
+        GOROOT=/usr/local/go GOPATH=$HOME/go go install honnef.co/go/tools/cmd/staticcheck@latest
+        sudo cp $HOME/go/bin/staticcheck /usr/bin/
       shell: bash
     - name: Install docker
       run: |
