@@ -50,13 +50,15 @@ RUN export uid=$uid gid=$gid && \
     echo "alias ls=\"ls --color\"" >> /home/tracee/.bashrc && \
     ln -s /home/tracee/.bashrc /home/tracee/.profile
 
-# install extra packages (if needed)
+# install golang
 
 RUN curl -L -o /tmp/golang.tar.xz https://go.dev/dl/go1.19.5.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf /tmp/golang.tar.xz && \
     echo "export GOROOT=/usr/local/go" >> /home/tracee/.bashrc && \
     echo "export GOPATH=/home/tracee/go" >> /home/tracee/.bashrc && \
     echo "export PATH=/home/tracee/go/bin:/usr/local/go/bin:$PATH" >> /home/tracee/.bashrc
+
+# TODO: install clang (do not use distro clang packages)
 
 USER tracee
 ENV GOROOT=/usr/local/go
