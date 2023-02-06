@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -87,24 +86,19 @@ func Test_isHelper(t *testing.T) {
 }
 
 func Test_findRegoSigs(t *testing.T) {
-	// create test signature directory, clean it up after the test
-	testRoot, err := ioutil.TempDir(os.TempDir(), "")
+	tRoot, err := os.MkdirTemp(os.TempDir(), "sample-***")
 	require.NoError(t, err)
-	defer os.RemoveAll(testRoot)
-
-	// create directory to test nested rule directories
-	testDir := filepath.Join(testRoot, "test")
-	err = os.Mkdir(testDir, 0777)
+	tDir, err := os.MkdirTemp(tRoot, "sample2-***")
 	require.NoError(t, err)
 
 	// copy example go signature to test dir and it's child dir
-	err = copyExampleSig("anti_debugging_ptraceme.rego", testRoot)
+	err = copyExampleSig("anti_debugging_ptraceme.rego", tRoot)
 	require.NoError(t, err)
-	err = copyExampleSig("anti_debugging_ptraceme.rego", testDir)
+	err = copyExampleSig("anti_debugging_ptraceme.rego", tDir)
 	require.NoError(t, err)
 
 	// find rego signatures
-	sigs, err := findRegoSigs(compile.TargetRego, false, testRoot, false)
+	sigs, err := findRegoSigs(compile.TargetRego, false, tRoot, false)
 	require.NoError(t, err)
 
 	assert.Equal(t, len(sigs), 2)
@@ -141,14 +135,14 @@ func copyExampleSig(exampleName, destDir string) error {
 	if err != nil {
 		return err
 	}
-	file, err := ioutil.ReadFile(exampleFile)
+	file, err := os.ReadFile(exampleFile)
 	if err != nil {
 		return err
 	}
 
 	// write example sig to directory
 	testSig := "test" + extension
-	err = ioutil.WriteFile(filepath.Join(destDir, testSig), file, 0777)
+	err = os.WriteFile(filepath.Join(destDir, testSig), file, 0777)
 	if err != nil {
 		return err
 	}

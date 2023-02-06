@@ -9,7 +9,6 @@
 package events
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -56,7 +55,7 @@ func getInitNamespaceArguments() []trace.Argument {
 func fetchInitNamespaces() map[string]uint32 {
 	initNamespacesMap := make(map[string]uint32)
 	namespaceValueReg := regexp.MustCompile(":[[[:digit:]]*]")
-	namespacesLinks, _ := ioutil.ReadDir(InitProcNsDir)
+	namespacesLinks, _ := os.ReadDir(InitProcNsDir)
 	for _, namespaceLink := range namespacesLinks {
 		linkString, _ := os.Readlink(filepath.Join(InitProcNsDir, namespaceLink.Name()))
 		trim := strings.Trim(namespaceValueReg.FindString(linkString), "[]:")

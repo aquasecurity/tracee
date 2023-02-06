@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -127,7 +126,7 @@ func (filter *ProcessTreeFilter) UpdateBPF(bpfModule *bpf.Module, filterScopeID 
 		}
 		var fn func(uint32)
 		fn = func(curPid uint32) {
-			stat, err := ioutil.ReadFile(fmt.Sprintf("/proc/%d/stat", curPid))
+			stat, err := os.ReadFile(fmt.Sprintf("/proc/%d/stat", curPid))
 			if err != nil {
 				return
 			}
