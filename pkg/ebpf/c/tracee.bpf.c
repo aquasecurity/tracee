@@ -3890,30 +3890,30 @@ int BPF_KPROBE(trace_do_sigaction)
 // network helper functions
 //
 
+// clang-format off
 static __always_inline bool is_socket_supported(struct socket *sock)
 {
-    // clang-format off
     struct sock *sk = (void *) BPF_READ(sock, sk);
     u16 protocol = get_sock_protocol(sk);
     switch (protocol) {
-        // case IPPROTO_IPV6:
         // case IPPROTO_IPIP:
         // case IPPROTO_DCCP:
         // case IPPROTO_SCTP:
         // case IPPROTO_UDPLITE:
         case IPPROTO_IP:
+        case IPPROTO_IPV6:
         case IPPROTO_TCP:
         case IPPROTO_UDP:
         case IPPROTO_ICMP:
         case IPPROTO_ICMPV6:
             break;
         default:
-            return 0;
+            return 0; // not supported
     }
 
-    return 1;
-    // clang-format on
+    return 1; // supported
 }
+// clang-format on
 
 //
 // network related maps
@@ -4285,12 +4285,10 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     eventctx->stack_id = 0;                                 // no stack trace
     eventctx->processor_id = p.event->context.processor_id; // copy from current ctx
     eventctx->matched_scopes = netctx->matched_scopes;      // pick matched-scopes from net ctx
-    if (type == BPF_CGROUP_INET_EGRESS) {
-        eventctx->syscall = netctx->syscall;
-    } else {
-        // During ingress there is no real originated syscall
-        eventctx->syscall = NO_SYSCALL;
-    }
+    eventctx->syscall = NO_SYSCALL;                         // ingress has no orig syscall
+
+    if (type == BPF_CGROUP_INET_EGRESS)
+        eventctx->syscall = netctx->syscall; // egress does have an orig syscall
 
     // inform userland about protocol family (for correct L3 header parsing)...
     struct sock_common *common = (void *) sk;
@@ -4298,8 +4296,10 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     switch (family) {
         case AF_INET:
             eventctx->retval |= family_ipv4;
+            break;
         case AF_INET6:
             eventctx->retval |= family_ipv6;
+            break;
     }
     // ... through event ctx ret val
 
@@ -4483,6 +4483,14 @@ static __always_inline u32 cgroup_skb_generic(struct __sk_buff *ctx)
 {
     // IMPORTANT: runs for EVERY packet of tasks belonging to root cgroup
 
+    switch (ctx->family) {
+        case PF_INET:
+        case PF_INET6:
+            break;
+        default:
+            return 1; // AF_INET and AF_INET6 only
+    }
+
     u64 skbts = ctx->tstamp; // use skb timestamp as key for cgroup/skb program
 
     net_event_context_t *neteventctx = bpf_map_lookup_elem(&cgrpctxmap, &skbts);
@@ -4576,7 +4584,7 @@ CGROUP_SKB_HANDLE_FUNCTION(family)
             size = get_type_size(struct ipv6hdr);
             break;
         default:
-            return 1; // other families are not an error
+            return 1; // verifier needs
     }
 
     // load layer 3 protocol headers
@@ -4633,7 +4641,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
 
             next_proto = nethdrs->iphdrs.iphdr.protocol;
 
-            switch (nethdrs->iphdrs.iphdr.protocol) {
+            switch (next_proto) {
                 case IPPROTO_TCP:
                     dest = &nethdrs->protohdrs.tcphdr;
                     size = get_type_size(struct tcphdr);
@@ -4661,7 +4669,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
 
             next_proto = nethdrs->iphdrs.ipv6hdr.nexthdr;
 
-            switch (nethdrs->iphdrs.ipv6hdr.nexthdr) {
+            switch (next_proto) {
                 case IPPROTO_TCP:
                     dest = &nethdrs->protohdrs.tcphdr;
                     size = get_type_size(struct tcphdr);
@@ -4679,8 +4687,8 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
             }
             break;
 
-        default: // do not handle other protocol families
-            return 1;
+        default:
+            return 1; // verifier needs
     }
 
     if (!dest)

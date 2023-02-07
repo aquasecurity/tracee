@@ -43,7 +43,6 @@ func deriveNetPacketIPv4Args() deriveArgsFunction {
 			layers.LayerTypeIPv4,
 			gopacket.Default,
 		)
-
 		if packet == nil {
 			return []interface{}{}, parsePacketError()
 		}
