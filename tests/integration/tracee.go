@@ -16,6 +16,28 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
+// eventBuffer is a thread-safe buffer for tracee events
+type eventBuffer struct {
+	mu     sync.RWMutex
+	events []trace.Event
+}
+
+// clear clears the buffer
+func (b *eventBuffer) clear() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.events = b.events[:0]
+}
+
+// len returns the number of events in the buffer
+func (b *eventBuffer) len() int {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+
+	return len(b.events)
+}
+
 // load tracee into memory with args
 func startTracee(ctx context.Context, t *testing.T, config tracee.Config, output *tracee.OutputConfig, capture *tracee.CaptureConfig) *tracee.Tracee {
 	initialize.SetLibbpfgoCallbacks()
@@ -77,6 +99,7 @@ func startTracee(ctx context.Context, t *testing.T, config tracee.Config, output
 	return trc
 }
 
+// prepareCapture prepares a capture config for tracee
 func prepareCapture() *tracee.CaptureConfig {
 	// taken from tracee-rule github project, might have to adjust...
 	// prepareCapture is called with nil input
@@ -136,15 +159,60 @@ func waitForTraceeOutput(t *testing.T, gotOutput *eventOutput, now time.Time, fa
 	}
 }
 
-func waitforTraceeStart(t *testing.T, trc *tracee.Tracee, now time.Time) {
+func waitforTraceeStart(t *testing.T, trc *tracee.Tracee) {
 	const checkTimeout = 10 * time.Second
+	ticker := time.NewTicker(100 * time.Millisecond)
+
 	for {
-		if trc.Running() {
-			break
-		}
-		if time.Since(now) > checkTimeout {
+		select {
+		case <-ticker.C:
+			if trc.Running() {
+				return
+			}
+		case <-time.After(checkTimeout):
 			t.Logf("timed out on running tracee\n")
 			t.FailNow()
+		}
+	}
+}
+
+// wait for tracee to stop (or timeout)
+// in case of timeout, the test will continue since all tests already passed
+func waitforTraceeStop(t *testing.T, trc *tracee.Tracee) {
+	const checkTimeout = 10 * time.Second
+	ticker := time.NewTicker(100 * time.Millisecond)
+
+	for {
+		select {
+		case <-ticker.C:
+			if !trc.Running() {
+				t.Logf("stopped tracee\n")
+				return
+			}
+		case <-time.After(checkTimeout):
+			t.Logf("timed out on stopping tracee\n")
+			return
+		}
+	}
+}
+
+// wait for tracee buffer to fill up with expected number of events (or timeout)
+func waitForTraceeOutputEvents(t *testing.T, actual *eventBuffer, now time.Time, expectedEvts int, failOnTimeout bool) {
+	const checkTimeout = 5 * time.Second
+	ticker := time.NewTicker(100 * time.Millisecond)
+
+	for {
+		select {
+		case <-ticker.C:
+			if actual.len() >= expectedEvts {
+				return
+			}
+		case <-time.After(checkTimeout):
+			if failOnTimeout {
+				t.Logf("timed out on output\n")
+				t.FailNow()
+			}
+			return
 		}
 	}
 }
