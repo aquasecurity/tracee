@@ -107,9 +107,8 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	lockdown, err := helpers.Lockdown()
 	if err != nil {
-		logger.Error("osinfo", "error", err)
+		logger.Debug("osinfo", "lockdown", err)
 	}
-
 	if err == nil && lockdown == helpers.CONFIDENTIALITY {
 		return runner, fmt.Errorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
 
