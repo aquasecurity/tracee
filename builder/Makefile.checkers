@@ -74,6 +74,8 @@ help:
 # check formatting (clang-format, gofmt)
 #
 
+C_FILES_TO_BE_CHECKED = $(shell find ./pkg/ebpf/c/ -regextype posix-extended -regex '.*\.(h|c)' | xargs)
+
 .PHONY: fmt-check
 fmt-check: | \
 	.check_tree \
@@ -81,10 +83,10 @@ fmt-check: | \
 #
 	@errors=0
 	echo "Checking C and eBPF files and headers formatting..."
-	$(CMD_CLANG_FMT) --dry-run ./pkg/ebpf/c/*.h ./pkg/ebpf/c/*.c ./pkg/ebpf/c/common/* > /tmp/check-c-fmt 2>&1
+	$(CMD_CLANG_FMT) --dry-run $(C_FILES_TO_BE_CHECKED) > /tmp/check-c-fmt 2>&1
 	clangfmtamount=$$(cat /tmp/check-c-fmt | wc -l)
 	if [[ $$clangfmtamount -ne 0 ]]; then
-		head -n30 /tmp/check-c-fmt
+		cat /tmp/check-c-fmt
 		errors=1
 	fi
 	rm -f /tmp/check-c-fmt
@@ -114,7 +116,7 @@ fmt-fix: | \
 	.check_$(CMD_CLANG_FMT)
 #
 	@echo "Fixing C and eBPF files and headers formatting..."
-	$(CMD_CLANG_FMT) -i --verbose ./pkg/ebpf/c/*.h ./pkg/ebpf/c/*.c ./pkg/ebpf/c/common/* 
+	$(CMD_CLANG_FMT) -i --verbose $(C_FILES_TO_BE_CHECKED)
 #
 	echo "Fixing golang files formatting..."
 	gofmt -l -s -d . > /tmp/patch.$$
