@@ -26,6 +26,7 @@ compile_commands.json
 
 # binaries and build files
 dist
+tests/integration/syscaller/cmd/syscaller
 
 # release files
 release_notes.txt
