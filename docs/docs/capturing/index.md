@@ -119,12 +119,22 @@ Tracee can capture the following types of artifacts:
      Anytime a **network packet** is delivered to a process, traced by tracee,
      this packet might be captured into one or multiple pcap files.
 
+    !!! Attention
+        The default behavior when capturing network traffic is to capture
+        ALL traffic, despite given event filters. If you want to make
+        capture feature to follow the given event filters, like for example
+        capturing DNS events only, then you have to provide `--capture
+        pcap-options:filtered` argument in the command line. Then only
+        net_packet_XXX events will be captured (IPv4, IPv6, TCP, UDP,
+        ICMP, ICMPv6, DNS, HTTP, etc).
+
      A good way to test this behavior is to execute:
 
      ```text
      $ sudo ./dist/tracee-ebpf \
          --trace event=net_packet_ipv4 \
-         --capture network
+         --capture network \
+         --capture pcap-options:filtered
      ```
 
      and observe a single **pcap file** for all ipv4 packets created:
@@ -140,7 +150,8 @@ Tracee can capture the following types of artifacts:
      ```text
      $ sudo ./dist/tracee-ebpf \
          --trace event=net_packet_dns \
-         --capture network
+         --capture network \
+         --capture pcap-options:filtered
      ```
 
      and the file `/tmp/tracee/out/pcap/single.pcap` would only contain DNS
@@ -173,6 +184,7 @@ Tracee can capture the following types of artifacts:
      $ sudo ./dist/tracee-ebpf \
          --trace event=net_packet_icmp \
          --capture network \
+         --capture pcap-options:filtered \
          --capture pcap:process,container,command
      ```
 
@@ -257,11 +269,12 @@ Tracee can capture the following types of artifacts:
      In order to capture a specific payload size you may specify:
 
      ```
-      $ sudo ./dist/tracee-ebpf \
-          --trace event=net_packet_tcp \
-          --capture network \
-          --capture pcap:single,command \
-          --capture pcap-snaplen:default
+     $ sudo ./dist/tracee-ebpf \
+         --trace event=net_packet_tcp \
+         --capture network \
+         --capture pcap-options:filtered \
+         --capture pcap:single,command \
+         --capture pcap-snaplen:default
      ```
 
      To capture packet headers + 96 bytes of payload. Or replace `default` by:

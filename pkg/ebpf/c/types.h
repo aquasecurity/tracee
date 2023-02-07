@@ -307,8 +307,14 @@ typedef struct config_entry {
     u64 pid_min;
 } config_entry_t;
 
+enum capture_options_e
+{
+    NET_CAP_OPT_FILTERED = (1 << 0), // pcap should obey event filters
+};
+
 typedef struct netconfig_entry {
-    u32 capture_length; // amount of network packet payload to capture (pcap)
+    u32 capture_options; // bitmask of capture options (pcap)
+    u32 capture_length;  // amount of network packet payload to capture (pcap)
 } netconfig_entry_t;
 
 typedef struct event_data {

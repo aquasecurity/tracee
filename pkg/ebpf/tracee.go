@@ -1012,8 +1012,14 @@ func (t *Tracee) populateBPFMaps() error {
 		if err != nil {
 			return err
 		}
-		netConfigVal := make([]byte, 4)
-		binary.LittleEndian.PutUint32(netConfigVal[0:4], t.config.Capture.Net.CaptureLength)
+
+		netConfigVal := make([]byte, 8) // u32 capture_options, u32 capture_length
+
+		options := pcaps.GetPcapOptions(t.config.Capture.Net)
+
+		binary.LittleEndian.PutUint32(netConfigVal[0:4], uint32(options))
+		binary.LittleEndian.PutUint32(netConfigVal[4:8], t.config.Capture.Net.CaptureLength)
+
 		if err = bpfNetConfigMap.Update(
 			unsafe.Pointer(&cZero),
 			unsafe.Pointer(&netConfigVal[0]),
