@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: tracee
-        image: docker.io/aquasec/tracee:0.11.0
+        image: docker.io/aquasec/tracee:0.11.1
         imagePullPolicy: IfNotPresent
         args:
           - --webhook=http://postee-svc:8082
