@@ -206,7 +206,7 @@ func main() {
 			},
 			&cli.BoolFlag{
 				Name:  server.PProfEndpointFlag,
-				Usage: "enables pprof endpoints",
+				Usage: "enable pprof endpoints",
 				Value: false,
 			},
 			&cli.BoolFlag{
