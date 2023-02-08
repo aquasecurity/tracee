@@ -71,7 +71,9 @@ func (sig *DroppedExecutable) OnEvent(event protocol.Event) error {
 			sig.cb(detect.Finding{
 				SigMetadata: metadata,
 				Event:       event,
-				Data:        nil,
+				Data: map[string]interface{}{
+					"path": pathname,
+				},
 			})
 		}
 

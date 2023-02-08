@@ -39,7 +39,7 @@ func TestDroppedExecutable(t *testing.T) {
 			},
 			Findings: map[string]detect.Finding{
 				"TRC-1022": {
-					Data: nil,
+					Data: map[string]interface{}{"path": "/bin/malware"},
 					Event: trace.Event{
 						EventName: "magic_write",
 						Args: []trace.Argument{
