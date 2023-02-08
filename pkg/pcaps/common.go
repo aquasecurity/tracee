@@ -224,3 +224,13 @@ func PcapsEnabled(simple Config) bool {
 	config := configToPcapType(simple)
 	return config != None
 }
+
+func GetPcapOptions(c Config) PcapOption {
+	var options PcapOption
+
+	if c.CaptureFiltered {
+		options |= Filtered
+	}
+
+	return options
+}

@@ -50,6 +50,12 @@ const (
 	Single    PcapType = 0x8
 )
 
+type PcapOption uint32
+
+const (
+	Filtered PcapOption = 0x1
+)
+
 // Pcap is a representation of a pcap file
 type Pcap struct {
 	writtenPkts int              // packets written before next sync
