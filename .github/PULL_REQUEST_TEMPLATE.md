@@ -1,59 +1,31 @@
-## Initial Checklist
+<!--
+Checklist:
 
-- [ ] There is an issue describing the need for this PR.
-- [ ] Git log contains summary of the change.
-- [ ] Git log contains motivation and context of the change.
-- [ ] If part of an EPIC, PR git log contains EPIC number.
-- [ ] If part of an EPIC, PR was added to EPIC description.
+  1. Make sure the PR fixes an issue, if that is the case, so issue can be closed.
+  2. Flag your PR with at least one label "kind/xxx".
+  3. Flag your PR with at least one label "area/xxx".
+  4. Do not use "kind/feature" without explicitly adding a release feature.
+  5. Add "milestone/next" label if you want it in the next milestone.
+  6. Make sure all tests pass before asking for review.
+  7. Explicitly asking a maintainer for review might block you more time.
+  8. Be mindful about rebases, try to provide them asap so merges can be done.
 
-## Description (git log)
+PS: DO NOT JUMP THE CHECKLIST. GO BACK AND READ, ALWAYS!
+-->
 
-Copy and paste the git log here.
+### 1. Explain what the PR does
 
-Fixes: #issue_number
+<!-- Best advice is to put copy & paste your very well written git logs -->
 
-## Type of change
+### 2. Explain how to test it
 
-- [ ] Bug fix (non-breaking change fixing an issue, preferable).
-- [ ] Quick fix (minor non-breaking change requiring no issue, use with care)
-- [ ] Code refactor (code improvement and/or code removal)
-- [ ] New feature (non-breaking change adding functionality).
-- [ ] Breaking change (cause existing functionality not to work as expected).
+<!--
+Maintainer will review the code, and test the fix/feature, how to run Tracee ?
+Give a full command line example and what to look for.
+-->
 
-## How Has This Been Tested?
+### 3. Other comments
 
-Tests being included in this PR:
-
-- [ ] Test File A
-- [ ] Test File B
-
-Reproduce the test by running:
-
-- command 01
-- command 02
-
-## Final Checklist:
-
-Pick "Bug Fix" or "Feature", delete the other and mark appropriate checks.
-
-- [ ] I have made corresponding changes to the documentation.
-- [ ] My code follows the style guidelines (C and Go) of this project.
-- [ ] I have performed a self-review of my own code.
-- [ ] I have commented all functions/methods created explaining what they do.
-- [ ] I have commented my code, particularly in hard-to-understand areas.
-- [ ] My changes generate no new warnings.
-- [ ] I have added tests that prove my fix, or feature, is effective.
-- [ ] New and existing unit tests pass locally with my changes.
-- [ ] Any dependent changes have been merged and published before.
-
-## Git Log Checklist:
-
-My commits logs have:
-
-- [ ] Subject starts with "subsystem|file: description".
-- [ ] Do not end the subject line with a period.
-- [ ] Limit the subject line to 50 characters.
-- [ ] Separate subject from body with a blank line.
-- [ ] Use the imperative mood in the subject line.
-- [ ] Wrap the body at 72 characters.
-- [ ] Use the body to explain what and why instead of how.
+<!--
+Links? References? Anything pointing to more context about the change.
+-->
