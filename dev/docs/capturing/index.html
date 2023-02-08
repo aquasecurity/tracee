@@ -3060,10 +3060,21 @@ command flag is given. This makes tracee to work in capture mode only.</p>
 <p><strong>Network PCAP Files</strong></p>
 <p>Anytime a <strong>network packet</strong> is delivered to a process, traced by tracee,
  this packet might be captured into one or multiple pcap files.</p>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>The default behavior when capturing network traffic is to capture
+ALL traffic, despite given event filters. If you want to make
+capture feature to follow the given event filters, like for example
+capturing DNS events only, then you have to provide <code>--capture
+pcap-options:filtered</code> argument in the command line. Then only
+net_packet_XXX events will be captured (IPv4, IPv6, TCP, UDP,
+ICMP, ICMPv6, DNS, HTTP, etc).</p>
+</div>
 <p>A good way to test this behavior is to execute:</p>
 <div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
     --trace event=net_packet_ipv4 \
-    --capture network
+    --capture network \
+    --capture pcap-options:filtered
 </code></pre></div>
 <p>and observe a single <strong>pcap file</strong> for all ipv4 packets created:</p>
 <div class="highlight"><pre><span></span><code>$ find /tmp/tracee/out/pcap/
@@ -3073,7 +3084,8 @@ command flag is given. This makes tracee to work in capture mode only.</p>
 <p>You can select only dns packets, for example:</p>
 <div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
     --trace event=net_packet_dns \
-    --capture network
+    --capture network \
+    --capture pcap-options:filtered
 </code></pre></div>
 <p>and the file <code>/tmp/tracee/out/pcap/single.pcap</code> would only contain DNS
  related packets:</p>
@@ -3103,6 +3115,7 @@ inside `containers/container_id.pcap`.
 $ sudo ./dist/tracee-ebpf \
     --trace event=net_packet_icmp \
     --capture network \
+    --capture pcap-options:filtered \
     --capture pcap:process,container,command
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>$ cd /tmp/tracee/out
@@ -3181,11 +3194,12 @@ interested in a few bytes of the captured packet (or event it all). Next
 item shows how to capture a specific packet payload size.</p>
 </div>
 <p>In order to capture a specific payload size you may specify:</p>
-<div class="highlight"><pre><span></span><code> $ sudo ./dist/tracee-ebpf \
-     --trace event=net_packet_tcp \
-     --capture network \
-     --capture pcap:single,command \
-     --capture pcap-snaplen:default
+<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
+    --trace event=net_packet_tcp \
+    --capture network \
+    --capture pcap-options:filtered \
+    --capture pcap:single,command \
+    --capture pcap-snaplen:default
 </code></pre></div>
 <p>To capture packet headers + 96 bytes of payload. Or replace <code>default</code> by:</p>
 <ol>
