@@ -460,20 +460,6 @@ func (t *Tracee) Init() error {
 		return fmt.Errorf("error initializing network capture: %w", err)
 	}
 
-	// Initialize PID file
-
-	pidFile, err := utils.OpenAt(t.outDir, "tracee.pid", syscall.O_WRONLY|syscall.O_CREAT, 0640)
-	if err != nil {
-		t.Close()
-		return fmt.Errorf("error creating readiness file: %w", err)
-	}
-
-	_, err = pidFile.Write([]byte(strconv.Itoa(os.Getpid()) + "\n"))
-	if err != nil {
-		t.Close()
-		return fmt.Errorf("error writing to readiness file: %w", err)
-	}
-
 	// Get reference to stack trace addresses map
 
 	stackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")
@@ -1370,8 +1356,17 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.bpfLogsPerfMap.Start()
 	go t.processBPFLogs()
 	t.running = true
+
+	// write pid file
+	err = t.writePid()
+	if err != nil {
+		// not able to write pid, abort
+		return err
+	}
+
 	// block until ctx is cancelled elsewhere
 	<-ctx.Done()
+
 	t.eventsPerfMap.Stop()
 	if t.config.BlobPerfBufferSize > 0 {
 		t.fileWrPerfMap.Stop()
@@ -1646,5 +1641,20 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 
 //go:noinline
 func (t *Tracee) triggerMemDumpCall(address uint64, length uint64, eventHandle uint64) error {
+	return nil
+}
+
+// Initialize PID file
+func (t *Tracee) writePid() error {
+	pidFile, err := utils.OpenAt(t.outDir, "tracee.pid", syscall.O_WRONLY|syscall.O_CREAT, 0640)
+	if err != nil {
+		return fmt.Errorf("error creating readiness file: %w", err)
+	}
+
+	_, err = pidFile.Write([]byte(strconv.Itoa(os.Getpid()) + "\n"))
+	if err != nil {
+		return fmt.Errorf("error writing to readiness file: %w", err)
+	}
+
 	return nil
 }
