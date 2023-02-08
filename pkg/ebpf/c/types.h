@@ -116,6 +116,7 @@ enum event_id_e
     KALLSYMS_LOOKUP_NAME,
     DO_MMAP,
     PRINT_MEM_DUMP,
+    VFS_UTIMES,
     MAX_EVENT_ID,
 };
 
