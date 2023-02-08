@@ -21,22 +21,22 @@ the detections in your preferred way (e.g. Slack, E-mail, JIRA and more).
 	1. Add Aqua chart repository:
 
 		```
-		$ helm repo add aqua https://aquasecurity.github.io/helm-charts/
-		$ helm repo update
+		helm repo add aqua https://aquasecurity.github.io/helm-charts/
+		helm repo update
 		```
 
 		or clone the Helm chart:
 
 		```text
-		$ git clone --depth 1 --branch {{ git.tag }} https://github.com/aquasecurity/tracee.git
-		$ cd tracee
+		git clone --depth 1 --branch {{ git.tag }} https://github.com/aquasecurity/tracee.git
+		cd tracee
 		```
 
 
 	2. Install the chart from the Aqua chart repository:
 
 		```
-		$ helm install tracee aqua/tracee \
+		helm install tracee aqua/tracee \
 				--namespace tracee-system --create-namespace \
 				--set hostPID=true
 		```
@@ -44,9 +44,9 @@ the detections in your preferred way (e.g. Slack, E-mail, JIRA and more).
 		or install the Helm chart from a local directory:
 
 		```text
-		$ helm repo add aqua https://aquasecurity.github.io/helm-charts/
-		$ helm dependency update ./deploy/helm/tracee
-		$ helm install tracee ./deploy/helm/tracee \
+		helm repo add aqua https://aquasecurity.github.io/helm-charts/
+		helm dependency update ./deploy/helm/tracee
+		helm install tracee ./deploy/helm/tracee \
 				--namespace tracee-system --create-namespace \
 				--set hostPID=true
 		```
@@ -57,8 +57,8 @@ the detections in your preferred way (e.g. Slack, E-mail, JIRA and more).
     simply run:
     
     ```text
-    $ kubectl create namespace tracee-system
-    $ kubectl create -n tracee-system \
+    kubectl create namespace tracee-system
+    kubectl create -n tracee-system \
         -f https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml \
         -f https://raw.githubusercontent.com/aquasecurity/tracee/{{ git.tag }}/deploy/kubernetes/tracee-postee/tracee.yaml
     ```
