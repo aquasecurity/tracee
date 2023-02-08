@@ -2501,24 +2501,24 @@ daemonset/tracee logs with <code>kubectl logs -f daemonset/tracee -n tracee-syst
 <ol>
 <li>
 <p>Add Aqua chart repository:</p>
-<div class="highlight"><pre><span></span><code>$ helm repo add aqua https://aquasecurity.github.io/helm-charts/
-$ helm repo update
+<div class="highlight"><pre><span></span><code>helm repo add aqua https://aquasecurity.github.io/helm-charts/
+helm repo update
 </code></pre></div>
 <p>or clone the Helm chart:</p>
-<div class="highlight"><pre><span></span><code>$ git clone --depth 1 --branch v0.11.0 https://github.com/aquasecurity/tracee.git
-$ cd tracee
+<div class="highlight"><pre><span></span><code>git clone --depth 1 --branch v0.11.0 https://github.com/aquasecurity/tracee.git
+cd tracee
 </code></pre></div>
 </li>
 <li>
 <p>Install the chart from the Aqua chart repository:</p>
-<div class="highlight"><pre><span></span><code>$ helm install tracee aqua/tracee \
+<div class="highlight"><pre><span></span><code>helm install tracee aqua/tracee \
         --namespace tracee-system --create-namespace \
         --set hostPID=true
 </code></pre></div>
 <p>or install the Helm chart from a local directory:</p>
-<div class="highlight"><pre><span></span><code>$ helm repo add aqua https://aquasecurity.github.io/helm-charts/
-$ helm dependency update ./deploy/helm/tracee
-$ helm install tracee ./deploy/helm/tracee \
+<div class="highlight"><pre><span></span><code>helm repo add aqua https://aquasecurity.github.io/helm-charts/
+helm dependency update ./deploy/helm/tracee
+helm install tracee ./deploy/helm/tracee \
         --namespace tracee-system --create-namespace \
         --set hostPID=true
 </code></pre></div>
@@ -2529,8 +2529,8 @@ $ helm install tracee ./deploy/helm/tracee \
 <p>Install <strong>Tracee</strong> <strong>Manually</strong></p>
 <p>To install Tracee with <a href="https://github.com/aquasecurity/postee">Postee</a>,
 simply run:</p>
-<div class="highlight"><pre><span></span><code>$ kubectl create namespace tracee-system
-$ kubectl create -n tracee-system \
+<div class="highlight"><pre><span></span><code>kubectl create namespace tracee-system
+kubectl create -n tracee-system \
     -f https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml \
     -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.11.0/deploy/kubernetes/tracee-postee/tracee.yaml
 </code></pre></div>
