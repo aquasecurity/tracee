@@ -72,6 +72,21 @@ nav:
       - Building non CO-RE: contributing/building/nocore-ebpf.md
       - OS Packaging: contributing/building/packaging.md
       - Building on OSX: contributing/building/macosx.md
+    - Events:
+      - kprobes:
+        - do_sigaction: contributing/events/kprobes/do_sigaction.md
+        - kallsysm_lookup_name: contributing/events/kprobes/kallsyms_lookup_name.md
+        - vfs_read: contributing/events/kprobes/vfs_read.md
+        - vfs_readv: contributing/events/kprobes/vfs_readv.md
+      - lsm_hooks:
+        - security_file_mprotect: contributing/events/lsm_hooks/security_file_mprotect.md
+        - security_socket_setsockopt: contributing/events/lsm_hooks/security_socket_setsockopt.md
+      - security_alerts:
+        - bpf_attach: contributing/events/security_alerts/bpf_attach.md
+        - magic_write: contributing/events/security_alerts/magic_write.md
+        - mem_prot_alert: contributing/events/security_alerts/mem_prot_alert.md
+        - symbols_loaded: contributing/events/security_alerts/symbols_loaded.md
+
 theme:
     name: material
     language: 'en'
