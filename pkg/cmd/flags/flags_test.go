@@ -600,7 +600,26 @@ func TestPrepareOutput(t *testing.T) {
 			},
 			expectedError: errors.New("unrecognized output format: out-file. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info"),
 		},
-
+		{
+			testName:    "default format",
+			outputSlice: []string{},
+			expectedOutput: flags.OutputConfig{
+				LogFile: os.Stderr,
+				TraceeConfig: &tracee.OutputConfig{
+					ParseArguments: true,
+				},
+			},
+		},
+		{
+			testName:    "table format always parse arguments",
+			outputSlice: []string{"table"},
+			expectedOutput: flags.OutputConfig{
+				LogFile: os.Stderr,
+				TraceeConfig: &tracee.OutputConfig{
+					ParseArguments: true,
+				},
+			},
+		},
 		{
 			testName:    "option stack-addresses",
 			outputSlice: []string{"option:stack-addresses"},
@@ -624,13 +643,48 @@ func TestPrepareOutput(t *testing.T) {
 			},
 		},
 		{
+			testName:    "option relative-time",
+			outputSlice: []string{"json", "option:relative-time"},
+			expectedOutput: flags.OutputConfig{
+
+				LogFile: os.Stderr,
+				TraceeConfig: &tracee.OutputConfig{
+					RelativeTime: true,
+				},
+			},
+		},
+		{
 			testName:    "option exec-hash",
 			outputSlice: []string{"option:exec-hash"},
 			expectedOutput: flags.OutputConfig{
+
 				LogFile: os.Stderr,
 				TraceeConfig: &tracee.OutputConfig{
 					ExecHash:       true,
 					ParseArguments: true,
+				},
+			},
+		},
+		{
+			testName:    "option parse-arguments",
+			outputSlice: []string{"json", "option:parse-arguments"},
+			expectedOutput: flags.OutputConfig{
+
+				LogFile: os.Stderr,
+				TraceeConfig: &tracee.OutputConfig{
+					ParseArguments: true,
+				},
+			},
+		},
+		{
+			testName:    "option parse-arguments-fds",
+			outputSlice: []string{"json", "option:parse-arguments-fds"},
+			expectedOutput: flags.OutputConfig{
+
+				LogFile: os.Stderr,
+				TraceeConfig: &tracee.OutputConfig{
+					ParseArguments:    true,
+					ParseArgumentsFDs: true,
 				},
 			},
 		},
@@ -646,16 +700,27 @@ func TestPrepareOutput(t *testing.T) {
 			},
 		},
 		{
-			testName:    "all options",
-			outputSlice: []string{"option:stack-addresses", "option:exec-env", "option:exec-hash", "option:sort-events"},
+			testName: "all options",
+			outputSlice: []string{
+				"json",
+				"option:stack-addresses",
+				"option:exec-env",
+				"option:relative-time",
+				"option:exec-hash",
+				"option:parse-arguments",
+				"option:parse-arguments-fds",
+				"option:sort-events",
+			},
 			expectedOutput: flags.OutputConfig{
 				LogFile: os.Stderr,
 				TraceeConfig: &tracee.OutputConfig{
-					StackAddresses: true,
-					ExecEnv:        true,
-					ExecHash:       true,
-					ParseArguments: true,
-					EventsSorting:  true,
+					StackAddresses:    true,
+					ExecEnv:           true,
+					RelativeTime:      true,
+					ExecHash:          true,
+					ParseArguments:    true,
+					ParseArgumentsFDs: true,
+					EventsSorting:     true,
 				},
 			},
 		},
