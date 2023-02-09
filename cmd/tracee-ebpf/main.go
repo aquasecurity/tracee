@@ -144,10 +144,10 @@ func main() {
 				Name:  "containers",
 				Usage: "enable container info enrichment to events. this feature is experimental and may cause unexpected behavior in the pipeline",
 			},
-			&cli.StringFlag{
+			&cli.StringSliceFlag{
 				Name:  "log",
-				Usage: "logger level. run '--log help' for more info.",
-				Value: "info",
+				Usage: "logger option. run '--log help' for more info.",
+				Value: cli.NewStringSlice("info"),
 			},
 		},
 	}
