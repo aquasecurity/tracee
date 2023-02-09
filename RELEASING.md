@@ -17,10 +17,11 @@
 1. Prepare release by creating the PR with the following changes
    1. Update the libbpfgo module
    2. Update the types module
-   3. Update the container image tag in the following files [example](https://github.com/aquasecurity/tracee/pull/2195):
-      1. `deploy/kubernetes/tracee-falcosidekick/falcosidekick.yaml`
-      2. `deploy/kubernetes/tracee-postee/tracee.yaml`
+   3. Update the container image tag in the following files
+      1. `deploy/kubernetes/kustomize/base/tracee.yaml`
+      2. `cd deploy/kubernetes/ && ./update-static.sh` to generate all static files with the proper tag
    4. Update `home`, `version` and `appVersion` properties in [`deploy/helm/tracee/Chart.yaml`] - [example](https://github.com/aquasecurity/tracee/pull/2195)
+	 5. Create a PR with the tags bump
 1. Run tests and checks
    1. Check that there are no verifier issues when choosing all events in tracee-ebpf (using `--trace e='*'`)
    1. Check both CO-RE and non CO-RE builds
