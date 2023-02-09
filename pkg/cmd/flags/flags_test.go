@@ -606,7 +606,7 @@ func TestPrepareOutput(t *testing.T) {
 			outputSlice: []string{"option:stack-addresses"},
 			expectedOutput: flags.OutputConfig{
 				LogFile: os.Stderr,
-				OutputConfig: tracee.OutputConfig{
+				TraceeConfig: &tracee.OutputConfig{
 					StackAddresses: true,
 					ParseArguments: true,
 				},
@@ -617,7 +617,7 @@ func TestPrepareOutput(t *testing.T) {
 			outputSlice: []string{"option:exec-env"},
 			expectedOutput: flags.OutputConfig{
 				LogFile: os.Stderr,
-				OutputConfig: tracee.OutputConfig{
+				TraceeConfig: &tracee.OutputConfig{
 					ExecEnv:        true,
 					ParseArguments: true,
 				},
@@ -628,7 +628,7 @@ func TestPrepareOutput(t *testing.T) {
 			outputSlice: []string{"option:exec-hash"},
 			expectedOutput: flags.OutputConfig{
 				LogFile: os.Stderr,
-				OutputConfig: tracee.OutputConfig{
+				TraceeConfig: &tracee.OutputConfig{
 					ExecHash:       true,
 					ParseArguments: true,
 				},
@@ -639,7 +639,7 @@ func TestPrepareOutput(t *testing.T) {
 			outputSlice: []string{"option:sort-events"},
 			expectedOutput: flags.OutputConfig{
 				LogFile: os.Stderr,
-				OutputConfig: tracee.OutputConfig{
+				TraceeConfig: &tracee.OutputConfig{
 					ParseArguments: true,
 					EventsSorting:  true,
 				},
@@ -650,7 +650,7 @@ func TestPrepareOutput(t *testing.T) {
 			outputSlice: []string{"option:stack-addresses", "option:exec-env", "option:exec-hash", "option:sort-events"},
 			expectedOutput: flags.OutputConfig{
 				LogFile: os.Stderr,
-				OutputConfig: tracee.OutputConfig{
+				TraceeConfig: &tracee.OutputConfig{
 					StackAddresses: true,
 					ExecEnv:        true,
 					ExecHash:       true,
@@ -662,11 +662,12 @@ func TestPrepareOutput(t *testing.T) {
 	}
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
-			output, _, err := flags.PrepareOutput(testcase.outputSlice)
+			output, err := flags.PrepareOutput(testcase.outputSlice)
 			if err != nil {
 				assert.Equal(t, testcase.expectedError, err)
 			} else {
-				assert.Equal(t, testcase.expectedOutput, output)
+				assert.Equal(t, testcase.expectedOutput.LogFile, output.LogFile)
+				assert.Equal(t, testcase.expectedOutput.TraceeConfig, output.TraceeConfig)
 			}
 		})
 	}

@@ -32,7 +32,7 @@ option:{stack-addresses,exec-env,relative-time,exec-hash,parse-arguments,sort-ev
   sort-events                                      enable sorting events before passing to them output. This will decrease the overall program efficiency.
   cache-events                                     enable caching events to release perf-buffer pressure. This will decrease amount of event loss until cache is full.
 Examples:
-  --output json                                            | output as json
+  --output json                                            | output as json to stdout
   --output gotemplate=/path/to/my.tmpl                     | output as the provided go template
   --output out-file:/my/out --output log-file:/my/log      | output to /my/out and logs to /my/log
   --output none                                            | ignore events output
@@ -41,16 +41,20 @@ Use this flag multiple times to choose multiple output options
 }
 
 type OutputConfig struct {
-	tracee.OutputConfig
-	LogPath string
-	LogFile *os.File
+	TraceeConfig  *tracee.OutputConfig
+	PrinterConfig printer.Config
+	LogFile       *os.File
 }
 
-func PrepareOutput(outputSlice []string) (OutputConfig, printer.Config, error) {
-	outcfg := OutputConfig{}
-	printcfg := printer.Config{}
+func PrepareOutput(outputSlice []string) (OutputConfig, error) {
+	outConfig := OutputConfig{}
+	traceeConfig := &tracee.OutputConfig{}
+	printerConfig := printer.Config{}
+
+	var outPath string
+	var logPath string
 	printerKind := "table"
-	outPath := ""
+
 	for _, o := range outputSlice {
 		outputParts := strings.SplitN(o, ":", 2)
 		numParts := len(outputParts)
@@ -64,80 +68,98 @@ func PrepareOutput(outputSlice []string) (OutputConfig, printer.Config, error) {
 			printerKind = "ignore"
 		case "format":
 			printerKind = outputParts[1]
-			if printerKind != "table" &&
-				printerKind != "table-verbose" &&
-				printerKind != "json" &&
-				printerKind != "gob" &&
-				!strings.HasPrefix(printerKind, "gotemplate=") {
-				return outcfg, printcfg, fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info", printerKind)
+			if err := validateFormat(printerKind); err != nil {
+				return outConfig, err
 			}
 		case "out-file":
 			outPath = outputParts[1]
 		case "log-file":
-			outcfg.LogPath = outputParts[1]
+			logPath = outputParts[1]
 		case "option":
 			switch outputParts[1] {
 			case "stack-addresses":
-				outcfg.StackAddresses = true
+				traceeConfig.StackAddresses = true
 			case "exec-env":
-				outcfg.ExecEnv = true
+				traceeConfig.ExecEnv = true
 			case "relative-time":
-				outcfg.RelativeTime = true
-				printcfg.RelativeTS = true
+				traceeConfig.RelativeTime = true
+				printerConfig.RelativeTS = true
 			case "exec-hash":
-				outcfg.ExecHash = true
+				traceeConfig.ExecHash = true
 			case "parse-arguments":
-				outcfg.ParseArguments = true
+				traceeConfig.ParseArguments = true
 			case "parse-arguments-fds":
-				outcfg.ParseArgumentsFDs = true
-				outcfg.ParseArguments = true // no point in parsing file descriptor args only
+				traceeConfig.ParseArgumentsFDs = true
+				traceeConfig.ParseArguments = true // no point in parsing file descriptor args only
 			case "sort-events":
-				outcfg.EventsSorting = true
+				traceeConfig.EventsSorting = true
 			default:
-				return outcfg, printcfg, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
+				return outConfig, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
 			}
 		default:
-			return outcfg, printcfg, fmt.Errorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
+			return outConfig, fmt.Errorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
 		}
 	}
 
 	if printerKind == "table" {
-		outcfg.ParseArguments = true
+		traceeConfig.ParseArguments = true
 	}
 
-	printcfg.Kind = printerKind
+	printerConfig.Kind = printerKind
 
 	if outPath == "" {
-		printcfg.OutFile = os.Stdout
+		printerConfig.OutFile = os.Stdout
 	} else {
-		printcfg.OutPath = outPath
-		fileInfo, err := os.Stat(outPath)
-		if err == nil && fileInfo.IsDir() {
-			return outcfg, printcfg, fmt.Errorf("cannot use a path of existing directory %s", outPath)
-		}
-		dir := filepath.Dir(outPath)
-		os.MkdirAll(dir, 0755)
-		printcfg.OutFile, err = os.Create(outPath)
+		file, err := createFile(outPath)
 		if err != nil {
-			return outcfg, printcfg, fmt.Errorf("failed to create output path: %v", err)
+			return outConfig, err
 		}
+
+		printerConfig.OutPath = outPath
+		printerConfig.OutFile = file
 	}
 
-	if outcfg.LogPath == "" {
-		outcfg.LogFile = os.Stderr
+	if logPath == "" {
+		outConfig.LogFile = os.Stderr
 	} else {
-		errPath := outcfg.LogPath
-		fileInfo, err := os.Stat(errPath)
-		if err == nil && fileInfo.IsDir() {
-			return outcfg, printcfg, fmt.Errorf("cannot use a path of existing directory %s", errPath)
-		}
-		dir := filepath.Dir(errPath)
-		os.MkdirAll(dir, 0755)
-		outcfg.LogFile, err = os.Create(errPath)
+		file, err := createFile(logPath)
 		if err != nil {
-			return outcfg, printcfg, fmt.Errorf("failed to create output path: %v", err)
+			return outConfig, err
 		}
+
+		outConfig.LogFile = file
 	}
 
-	return outcfg, printcfg, nil
+	outConfig.TraceeConfig = traceeConfig
+	outConfig.PrinterConfig = printerConfig
+
+	return outConfig, nil
+}
+
+func validateFormat(printerKind string) error {
+	if printerKind != "table" &&
+		printerKind != "table-verbose" &&
+		printerKind != "json" &&
+		printerKind != "gob" &&
+		!strings.HasPrefix(printerKind, "gotemplate=") {
+		return fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info", printerKind)
+	}
+
+	return nil
+}
+
+func createFile(path string) (*os.File, error) {
+	fileInfo, err := os.Stat(path)
+	if err == nil && fileInfo.IsDir() {
+		return nil, fmt.Errorf("cannot use a path of existing directory %s", path)
+	}
+
+	dir := filepath.Dir(path)
+	os.MkdirAll(dir, 0755)
+	file, err := os.Create(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create output path: %v", err)
+	}
+
+	return file, nil
 }
