@@ -7,8 +7,8 @@ require (
 	github.com/aquasecurity/libbpfgo v0.4.5-libbpf-1.0.1.0.20230131113824-8a1e54e011c6
 	github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230109115933-5ede01b209e1
 	github.com/aquasecurity/tracee/types v0.0.0-20230129145531-57eeea18c2c7
-	github.com/containerd/containerd v1.6.15
-	github.com/docker/docker v20.10.21+incompatible
+	github.com/containerd/containerd v1.6.16
+	github.com/docker/docker v20.10.23+incompatible
 	github.com/golang/protobuf v1.5.2
 	github.com/google/cel-go v0.11.4
 	github.com/google/gopacket v1.1.19
