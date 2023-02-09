@@ -27,7 +27,7 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	// Output command line flags
 
-	output, printerConfig, err := flags.PrepareOutput(c.StringSlice("output"))
+	output, err := flags.PrepareOutput(c.StringSlice("output"))
 	if err != nil {
 		return runner, err
 	}
@@ -100,8 +100,9 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	// Container information printer flag
 
+	printerConfig := output.PrinterConfig
 	printerConfig.ContainerMode = cmd.GetContainerMode(cfg)
-	cfg.Output = &output.OutputConfig
+	cfg.Output = output.TraceeConfig
 
 	// Check kernel lockdown
 
