@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -157,29 +157,74 @@ func newLogCounter() *LogCounter {
 	}
 }
 
+type callerInfo struct {
+	pkg       string
+	file      string
+	line      int
+	functions []string
+}
+
 // getCallerInfo retuns package, file and line from a function
 // based on the given number of skips (stack frames).
-func getCallerInfo(skip int) (pkg, file string, line int) {
-	pc, file, line, ok := runtime.Caller(skip + 1)
-	if !ok {
-		panic("could not get runtime caller information")
+func getCallerInfo(skip int) *callerInfo {
+	var (
+		pkg       string
+		file      string
+		line      int
+		functions []string
+	)
+
+	// maximum depth of 20
+	pcs := make([]uintptr, 20)
+	n := runtime.Callers(skip+2, pcs)
+	pcs = pcs[:n-1]
+
+	frames := runtime.CallersFrames(pcs)
+	firstCaller := true
+	for {
+		frame, more := frames.Next()
+		if !more {
+			break
+		}
+
+		fn := frame.Function
+		fnStart := strings.LastIndexByte(fn, '/')
+		if fnStart == -1 {
+			fnStart = 0
+		} else {
+			fnStart++
+		}
+
+		fn = fn[fnStart:]
+		pkgEnd := strings.IndexByte(fn, '.')
+		if pkgEnd == -1 {
+			fnStart = 0
+		} else {
+			fnStart = pkgEnd + 1
+		}
+		functions = append(functions, fn[fnStart:])
+
+		if firstCaller {
+			line = frame.Line
+			file = frame.File
+			// set file as relative path
+			pat := "tracee/"
+			traceeIndex := strings.Index(file, pat)
+			if traceeIndex != -1 {
+				file = file[traceeIndex+len(pat):]
+			}
+			pkg = fn[:pkgEnd]
+
+			firstCaller = false
+		}
 	}
 
-	funcName := runtime.FuncForPC(pc).Name()
-	lastSlash := strings.LastIndexByte(funcName, '/')
-	if lastSlash < 0 {
-		lastSlash = 0
-	} else {
-		lastSlash++
+	return &callerInfo{
+		pkg:       pkg,
+		file:      file,
+		line:      line,
+		functions: functions,
 	}
-	lastDot := strings.LastIndexByte(funcName, '.')
-	pkg = funcName[lastSlash:lastDot]
-	// check if it's from a receiver
-	if possibleLastDot := strings.LastIndexByte(pkg, '.'); possibleLastDot != -1 {
-		pkg = pkg[0:possibleLastDot]
-	}
-
-	return pkg, file, line
 }
 
 func (l *Logger) updateCounter(file string, line int, lvl Level, msg string) {
@@ -195,8 +240,8 @@ func (l *Logger) updateCounter(file string, line int, lvl Level, msg string) {
 // It returns true if the aggregation was done.
 func aggregateLog(skip int, l *Logger, lvl Level, msg string) bool {
 	if l.cfg.Aggregate {
-		_, file, line := getCallerInfo(skip + 1)
-		l.updateCounter(file, line, lvl, msg)
+		callerInfo := getCallerInfo(skip + 1)
+		l.updateCounter(callerInfo.file, callerInfo.line, lvl, msg)
 
 		return true
 	}
@@ -244,14 +289,25 @@ func Log(lvl Level, innerAggregation bool, msg string, keysAndValues ...interfac
 	}
 }
 
+func formatCallFlow(funcNames []string) string {
+	fns := make([]string, 0)
+	for _, fName := range funcNames {
+		fns = append(fns, fName+"()")
+	}
+
+	return strings.Join(fns, " < ")
+}
+
 // Debug
 func debugw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	if aggregateLog(skip+1, l, DebugLevel, msg) {
 		return
 	}
 
-	pkg, file, line := getCallerInfo(skip + 1)
-	keysAndValues = append(keysAndValues, "pkg", pkg, "file", filepath.Base(file), "line", line)
+	callerInfo := getCallerInfo(skip + 1)
+	origin := strings.Join([]string{callerInfo.pkg, callerInfo.file, strconv.Itoa(callerInfo.line)}, ":")
+	calls := formatCallFlow(callerInfo.functions)
+	keysAndValues = append(keysAndValues, "origin", origin, "calls", calls)
 
 	l.l.Debugw(msg, keysAndValues...)
 }
