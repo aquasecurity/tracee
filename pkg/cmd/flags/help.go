@@ -7,16 +7,21 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func PrintAndExitIfHelp(ctx *cli.Context) {
+func PrintAndExitIfHelp(ctx *cli.Context, newBinary bool) {
 	keys := []string{
 		"crs",
 		"cache",
 		"capture",
 		"trace",
-		"output",
 		"capabilities",
 		"rego",
 		"log",
+	}
+
+	if newBinary {
+		keys = append(keys, "output")
+	} else {
+		keys = append(keys, "outputOld")
 	}
 
 	for _, k := range keys {
@@ -52,6 +57,8 @@ func getHelpString(key string) string {
 		return filterHelp()
 	case "output":
 		return outputHelp()
+	case "outputOld":
+		return outputHelpOld()
 	case "capabilities":
 		return capabilitiesHelp()
 	case "rego":
