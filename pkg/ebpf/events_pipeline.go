@@ -419,7 +419,9 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (<-c
 }
 
 // deriveEvents is the derivation pipeline stage
-func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-chan *trace.Event, <-chan error) {
+func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
+	<-chan *trace.Event, <-chan error,
+) {
 	out := make(chan *trace.Event)
 	errc := make(chan error, 1)
 
@@ -430,13 +432,10 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 		for {
 			select {
 			case event := <-in:
-
-				// Get a copy of our event before sending it down the
-				// pipeline.
-				// This is needed because later modification of the event
-				// (in particular of the matched scopes) can affect
-				// the derivation and later pipeline logic acting on the derived
-				// event.
+				// Get a copy of our event before sending it down the pipeline.
+				// This is needed because later modification of the event (in
+				// particular of the matched scopes) can affect the derivation
+				// and later pipeline logic acting on the derived event.
 				eventCopy := *event
 				out <- event
 
@@ -447,9 +446,9 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 					t.handleError(err)
 				}
 
-				for _, derivative := range derivatives {
-					// Skip events that don't work well with filtering due
-					// to missing types being handled and similar reasons.
+				for i, derivative := range derivatives {
+					// Skip events that don't work well with filtering due to
+					// missing types being handled and similar reasons.
 					// https://github.com/aquasecurity/tracee/issues/2486
 					switch events.ID(derivative.EventID) {
 					case events.SymbolsLoaded:
@@ -462,9 +461,14 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 							continue
 						}
 					}
-					out <- &derivative
-				}
 
+					// Passing "derivative" variable here will make the ptr
+					// address always be the same as the last item. This makes
+					// the printer to print 2 or 3 times the last event, instead
+					// of printing all derived events (when there are more than
+					// one).
+					out <- &derivatives[i]
+				}
 			case <-ctx.Done():
 				return
 			}
