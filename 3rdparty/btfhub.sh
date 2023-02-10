@@ -23,6 +23,19 @@ TRACEE_BPF_CORE="${BASEDIR}/dist/tracee.bpf.core.o"
 BTFHUB_DIR="${BASEDIR}/3rdparty/btfhub"
 BTFHUB_ARCH_DIR="${BASEDIR}/3rdparty/btfhub-archive"
 
+ARCH=$(uname -m)
+
+case ${ARCH} in
+    "x86_64")
+        ARCH="x86_64"
+        ;;
+    "aarch64")
+        ARCH="arm64"
+        ;;
+    *)
+        die "unsupported architecture" ;;
+esac
+
 die() {
     echo ${@}
     exit 1
