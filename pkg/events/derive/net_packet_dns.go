@@ -1,9 +1,8 @@
 package derive
 
 import (
-	"fmt"
-
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 
 	"github.com/google/gopacket/layers"
@@ -80,8 +79,9 @@ func deriveDNSRequestEvents(event trace.Event) ([]interface{}, error) {
 
 	// NOTE: No DNS server does more than 1 question per query, but spec allows.
 
-	if len(requests) != int(dns.QDCount) { // number of questions to expect
-		return nil, fmt.Errorf("could not get all requests")
+	if len(requests) != 1 || len(requests) != int(dns.QDCount) {
+		logger.Debug("wrong number of requests found")
+		return nil, nil
 	}
 
 	return []interface{}{
@@ -129,14 +129,19 @@ func deriveDNSResponseEvents(event trace.Event) ([]interface{}, error) {
 	//       Unfortunately there is no way to tell which answer comes from
 	//       which question, so we support only single question DNS responses.
 
-	requests := convertProtoDNSQuestionToDnsRequest(dns.Questions)
-	if len(requests) > 1 {
-		return nil, fmt.Errorf("response with more than 1 question")
+	var requests []trace.DnsQueryData
+	var responses []trace.DnsResponseData
+
+	requests = convertProtoDNSQuestionToDnsRequest(dns.Questions)
+	if len(requests) != 1 {
+		logger.Debug("wrong number of requests found")
+		return nil, nil
 	}
 
-	responses := convertProtoDNSResourceRecordToDnsResponse(requests[0], dns.Answers)
+	responses = convertProtoDNSResourceRecordToDnsResponse(requests[0], dns.Answers)
 	if len(responses[0].DnsAnswer) != int(dns.ANCount) { // number of responses to expect
-		return nil, fmt.Errorf("could not get all responses")
+		logger.Debug("could not get all DNS responses")
+		return nil, nil
 	}
 
 	return []interface{}{
