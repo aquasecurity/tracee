@@ -3891,6 +3891,7 @@ int BPF_KPROBE(trace_do_sigaction)
 //
 
 // clang-format off
+
 static __always_inline bool is_socket_supported(struct socket *sock)
 {
     struct sock *sk = (void *) BPF_READ(sock, sk);
@@ -3913,13 +3914,10 @@ static __always_inline bool is_socket_supported(struct socket *sock)
 
     return 1; // supported
 }
-// clang-format on
 
 //
 // network related maps
 //
-
-// clang-format off
 
 // cgroupctxmap
 
@@ -3958,8 +3956,8 @@ typedef struct net_event_context {
 
 struct {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
-    __uint(max_entries, 1024);          // simultaneous cgroup/skb ingress/eggress progs
-    __type(key, u64);                   // sk_buff timestamp
+    __uint(max_entries, 10240);         // simultaneous cgroup/skb ingress/eggress progs
+    __type(key, u64);                   // sk_buff timestamp AND skb data pointer
     __type(value, net_event_context_t); // event context built so cgroup/skb can use
 } cgrpctxmap SEC(".maps");              // saved info between SKB caller and SKB program
 
@@ -3974,7 +3972,7 @@ typedef struct net_task_context {
 
 struct {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
-    __uint(max_entries, 10240);             // simultaneous sockets being traced
+    __uint(max_entries, 65535);             // simultaneous sockets being traced
     __type(key, u64);                       // socket inode number ...
     __type(value, struct net_task_context); // ... linked to a task context
 } inodemap SEC(".maps");                    // relate sockets and tasks
@@ -3987,7 +3985,7 @@ typedef struct entry {
 
 struct {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
-    __uint(max_entries, 1024);       // simultaneous tasks being traced for entry/exit
+    __uint(max_entries, 10240);      // simultaneous tasks being traced for entry/exit
     __type(key, u32);                // host thread group id (tgid or tid) ...
     __type(value, struct entry);     // ... linked to entry ctx->args
 } entrymap SEC(".maps");             // can't use args_map (indexed by existing events only)
@@ -4016,8 +4014,6 @@ struct {
     __type(key, u32);                          // per cpu index ... (always zero)
     __type(value, event_data_t);               // ... linked to a scratch area
 } net_heap_event SEC(".maps");
-
-// clang-format on
 
 //
 // support functions for network code
@@ -4261,22 +4257,14 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     if (inode == 0)
         return 0;
 
-    // save args for kretprobe
-    struct entry entry = {0};
-    entry.args[0] = PT_REGS_PARM1(ctx); // struct sock *sk
-    entry.args[1] = PT_REGS_PARM2(ctx); // struct sk_buff *skb
-
-    // prepare for kretprobe using entrymap
-    u32 host_tid = p.event->context.task.host_tid;
-    bpf_map_update_elem(&entrymap, &host_tid, &entry, BPF_ANY);
-
     // pick network context from the inodemap (inode <=> task)
     net_task_context_t *netctx = bpf_map_lookup_elem(&inodemap, &inode);
     if (!netctx)
         return 0;
 
-    // use skb timestamp as the key for cgroup/skb (*)
+    // use skb timestamp and the skb data ptr as the keys for the cgroup/skb (*)
     u64 skbts = BPF_READ(skb, tstamp);
+    u64 data = (u64) BPF_READ(skb, data); // or data pointer in case ts isn't enough
 
     // Prepare [event_context_t][args1,arg2,arg3...] to be sent by cgroup/skb
     // program. The [...] part of the event can't use existing per-cpu submit
@@ -4315,51 +4303,54 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     // set event arguments
     neteventctx.bytes = 0; // no payload by default (changed inside skb prog)
 
-    // (*) Use skb timestamp as the key for a map shared between this kprobe and
-    // the skb ebpf program: this is **NOT SUPER** BUT, for older kernels, that
-    // provide ABSOLUTE NO eBPF helpers in cgroup/skb programs context, it does
-    // its job: pre-process everything HERE so cgroup/skb programs can use.
+    // (*) Use skb timestamp AND the data ptr as the keys for a map shared
+    // between this kprobe and the skb ebpf program: this is **NOT SUPER** BUT,
+    // for older kernels, that provide ABSOLUTE NO eBPF helpers in cgroup/skb
+    // programs context, it does its job: pre-process everything HERE so
+    // cgroup/skb programs can use later inside the cgroup/skb program.
     //
     // Explanation: The cgroup/skb eBPF program is called right after this
     //              kprobe, but preemption is enabled. If preemption wasn't
     //              enabled, we could simply populate a single item map and pick
-    //              pointer inside cgroup/skb. Instead, we index map items
+    //              a pointer inside cgroup/skb. Instead, we index map items
     //              using the skb timestamp, which is a value that is shared
     //              among this kprobe AND the cgroup/skb program context
-    //              (through its skbuf copy).
+    //              (through its skbuf copy). Unfortunately the skb timestamp
+    //              sometimes is zeroed. In this case, we use the skb data
+    //              pointer as a second key for a second entry in the map
+    //              containing the same data.
     //
     // Theoretically, map collisions might occur, BUT very unlikely due to:
     //
     // kprobe (map update) -> cgroup/skb (consume) -> kretprobe (map delete)
+    //
+    // Tests using localhost traffic show that this method causes very little
+    // packet loss. In fact, there was a single packet loss in the test bellow
+    // (out of 11.8 GBytes transferred), which is a 0.000008% packet loss.
+    //
+    // [  5] local 127.0.0.1 port 33388 connected to 127.0.0.1 port 5201
+    // [ ID] Interval           Transfer     Bitrate         Retr  Cwnd
+    // [  5]   0.00-1.00   sec  1.25 GBytes  10.8 Gbits/sec    0    895 KBytes
+    // [  5]   1.00-2.00   sec  1.23 GBytes  10.6 Gbits/sec    0   1.75 MBytes
+    // [  5]   2.00-3.00   sec  1.26 GBytes  10.9 Gbits/sec    0   1.75 MBytes
+    // [  5]   3.00-4.00   sec  1.25 GBytes  10.8 Gbits/sec    0   1.75 MBytes
+    // [  5]   4.00-5.00   sec  1.31 GBytes  11.2 Gbits/sec    0   1.75 MBytes
+    // [  5]   5.00-6.00   sec   998 MBytes  8.38 Gbits/sec    0   1.75 MBytes
+    // [  5]   6.00-7.00   sec  1.08 GBytes  9.26 Gbits/sec    0   1.75 MBytes
+    // [  5]   7.00-8.00   sec  1.01 GBytes  8.68 Gbits/sec    0   1.75 MBytes
+    // [  5]   8.00-9.00   sec  1.33 GBytes  11.5 Gbits/sec    0   1.75 MBytes
+    // [  5]   9.00-10.00  sec  1.09 GBytes  9.32 Gbits/sec    0   1.81 MBytes
+    // - - - - - - - - - - - - - - - - - - - - - - - - -
+    // [ ID] Interval           Transfer     Bitrate         Retr
+    // [  5]   0.00-10.00  sec  11.8 GBytes  10.1 Gbits/sec    0   sender
+    // [  5]   0.00-10.00  sec  11.8 GBytes  10.1 Gbits/sec        receiver
+    //
 
-    bpf_map_update_elem(&cgrpctxmap, &skbts, &neteventctx, BPF_NOEXIST);
+    if (skbts) // first attempt with skb timestamp
+        bpf_map_update_elem(&cgrpctxmap, &skbts, &neteventctx, BPF_NOEXIST);
 
-    return 0;
-}
-
-SEC("kretprobe/__cgroup_bpf_run_filter_skb")
-int BPF_KRETPROBE(ret_cgroup_bpf_run_filter_skb)
-{
-    // runs AFTER the CGROUP/SKB eBPF program
-
-    // pick from entry from entrymap
-    u32 host_tid = bpf_get_current_pid_tgid();
-    struct entry *entry = bpf_map_lookup_elem(&entrymap, &host_tid);
-    if (!entry) // no entry == no tracing
-        return 0;
-
-    // pick args from entry point's entry
-    // struct sock *sk = (void *) entry->args[0];
-    struct sk_buff *skb = (void *) entry->args[1];
-
-    // cleanup entrymap
-    bpf_map_delete_elem(&entrymap, &host_tid);
-
-    // use skb timestamp as the key for cgroup/skb
-    u64 skbts = BPF_READ(skb, tstamp);
-
-    // delete netctx after cgroup ebpf program runs
-    bpf_map_delete_elem(&cgrpctxmap, &skbts);
+    if (data) // second attempt will be with skb data pointer
+        bpf_map_update_elem(&cgrpctxmap, &data, &neteventctx, BPF_NOEXIST);
 
     return 0;
 }
@@ -4389,8 +4380,6 @@ typedef struct nethdrs_t {
     iphdrs iphdrs;
     protohdrs protohdrs;
 } nethdrs;
-
-// clang-format off
 
 #define CGROUP_SKB_HANDLE_FUNCTION(name)                                       \
 static __always_inline u32 cgroup_skb_handle_##name(                           \
@@ -4484,8 +4473,6 @@ static __always_inline u32 cgroup_skb_capture_event(struct __sk_buff *ctx,
     }                                                                                              \
 }
 
-// clang-format on
-
 //
 // SKB eBPF programs
 //
@@ -4503,22 +4490,47 @@ static __always_inline u32 cgroup_skb_generic(struct __sk_buff *ctx)
     }
 
     u64 skbts = ctx->tstamp; // use skb timestamp as key for cgroup/skb program
+    u64 data = ctx->data;    // use data pointer as key for cgroup/skb program
 
-    net_event_context_t *neteventctx = bpf_map_lookup_elem(&cgrpctxmap, &skbts);
-    if (!neteventctx)
-        return 1;
+    net_event_context_t *neteventctx = NULL;
+
+    if (skbts) // 1st attempt with skb timestamp (fastpath, ~90% of times)
+        neteventctx = bpf_map_lookup_elem(&cgrpctxmap, &skbts);
+
+    if (!neteventctx) { // 2nd attempt with skb data pointer (egress)
+        neteventctx = bpf_map_lookup_elem(&cgrpctxmap, &data);
+
+        if (!neteventctx) { // 3rd attempt with skb data pointer + 20 bytes (ingress)
+            data += 20;
+            neteventctx = bpf_map_lookup_elem(&cgrpctxmap, &data);
+
+            if (!neteventctx) { // give up: task or socket not being traced
+                goto cleanup;
+            }
+        }
+    }
+
+    // packet from/to this socket belongs to a traced task
 
     struct bpf_sock *sk = ctx->sk;
     if (!sk)
-        return 1;
+        goto cleanup;
 
     sk = bpf_sk_fullsock(sk);
     if (!sk)
-        return 1;
+        goto cleanup;
 
     nethdrs hdrs = {0}, *nethdrs = &hdrs;
 
-    return CGROUP_SKB_HANDLE(family);
+    u32 ret = CGROUP_SKB_HANDLE(family); // process packet
+
+cleanup:
+    if (skbts)
+        bpf_map_delete_elem(&cgrpctxmap, &skbts); // delete entry using skb timestamp
+    if (data)
+        bpf_map_delete_elem(&cgrpctxmap, &data); // delete entry using skb data ptr
+
+    return ret;
 }
 
 SEC("cgroup_skb/ingress")
@@ -4561,7 +4573,6 @@ static __always_inline int net_l7_is_http(struct __sk_buff *skb, u32 l7_off)
         return proto_http_resp;
     }
 
-    // clang-format off
     // check if HTTP request
     if (has_prefix("GET ", http_min_str, 5)    ||
         has_prefix("POST ", http_min_str, 6)   ||
@@ -4570,7 +4581,6 @@ static __always_inline int net_l7_is_http(struct __sk_buff *skb, u32 l7_off)
         has_prefix("HEAD ", http_min_str, 6)) {
         return proto_http_req;
     }
-    // clang-format on
 
     return 0;
 }
@@ -4626,8 +4636,6 @@ CGROUP_SKB_HANDLE_FUNCTION(family)
 //
 // SUPPORTED L3 NETWORK PROTOCOLS (ip, ipv6) HANDLERS
 //
-
-// clang-format off
 
 CGROUP_SKB_HANDLE_FUNCTION(proto)
 {
@@ -4754,8 +4762,6 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
     return 1;
 }
 
-// clang-format on
-
 //
 // SUPPORTED L4 NETWORK PROTOCOL (tcp, udp, icmp) HANDLERS
 //
@@ -4855,7 +4861,6 @@ capture:
     return 1; // NOTE: might block UDP here if needed (return 0)
 }
 
-// clang-format off
 CGROUP_SKB_HANDLE_FUNCTION(proto_icmp)
 {
     // submit ICMP base event if needed (full packet)
@@ -4941,6 +4946,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_http)
 
     return 1; // NOTE: might block HTTP here if needed (return 0)
 }
+
 // clang-format on
 
 #endif

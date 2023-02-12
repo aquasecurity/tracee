@@ -581,11 +581,12 @@ typedef s64 ktime_t;
 struct sk_buff {
     __u16 transport_header;
     __u16 network_header;
-    unsigned char *head;
     union {
         ktime_t tstamp;
         u64 skb_mstamp_ns;
     };
+    unsigned char *head;
+    unsigned char *data;
 };
 
 struct linux_binprm {
