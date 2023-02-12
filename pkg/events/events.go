@@ -6120,7 +6120,6 @@ var Definitions = eventDefinitions{
 				{Handle: probes.SockAllocFile, Required: true},
 				{Handle: probes.SockAllocFileRet, Required: true},
 				{Handle: probes.CgroupBPFRunFilterSKB, Required: true},
-				{Handle: probes.CgroupBPFRunFilterSKBRet, Required: true},
 				{Handle: probes.SecuritySocketRecvmsg, Required: true},
 				{Handle: probes.SecuritySocketSendmsg, Required: true},
 			},
