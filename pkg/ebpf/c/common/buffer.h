@@ -419,8 +419,13 @@ static __always_inline int save_args_to_submit_buf(event_data_t *event, u64 type
                 size = sizeof(int[2]);
                 rc = save_to_submit_buf(event, (void *) (args->args[i]), size, index);
                 break;
+            case TIMESPEC_T:
+                size = sizeof(struct __kernel_timespec);
+                rc = save_to_submit_buf(event, (void *) (args->args[i]), size, index);
+                break;
         }
-        if ((type != NONE_T) && (type != STR_T) && (type != SOCKADDR_T) && (type != INT_ARR_2_T)) {
+        if ((type != NONE_T) && (type != STR_T) && (type != SOCKADDR_T) && (type != INT_ARR_2_T) &&
+            (type != TIMESPEC_T)) {
             rc = save_to_submit_buf(event, (void *) &(args->args[i]), size, index);
         }
 

@@ -144,6 +144,7 @@ enum argument_type_e
     INT_ARR_2_T,
     UINT64_ARR_T,
     U8_T,
+    TIMESPEC_T,
     TYPE_MAX = 255UL
 };
 
