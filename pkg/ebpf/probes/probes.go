@@ -104,7 +104,6 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		SecuritySocketSendmsg:      &traceProbe{eventName: "security_socket_sendmsg", probeType: kprobe, programName: "trace_security_socket_sendmsg"},
 		SecuritySocketRecvmsg:      &traceProbe{eventName: "security_socket_recvmsg", probeType: kprobe, programName: "trace_security_socket_recvmsg"},
 		CgroupBPFRunFilterSKB:      &traceProbe{eventName: "__cgroup_bpf_run_filter_skb", probeType: kprobe, programName: "cgroup_bpf_run_filter_skb"},
-		CgroupBPFRunFilterSKBRet:   &traceProbe{eventName: "__cgroup_bpf_run_filter_skb", probeType: kretprobe, programName: "ret_cgroup_bpf_run_filter_skb"},
 		CgroupSKBIngress:           &cgroupProbe{programName: "cgroup_skb_ingress", attachType: bpf.BPFAttachTypeCgroupInetIngress},
 		CgroupSKBEgress:            &cgroupProbe{programName: "cgroup_skb_egress", attachType: bpf.BPFAttachTypeCgroupInetEgress},
 		DoMmap:                     &traceProbe{eventName: "do_mmap", probeType: kprobe, programName: "trace_do_mmap"},
@@ -261,7 +260,6 @@ const (
 	SecuritySocketRecvmsg
 	SecuritySocketSendmsg
 	CgroupBPFRunFilterSKB
-	CgroupBPFRunFilterSKBRet
 	CgroupSKBIngress
 	CgroupSKBEgress
 	DoMmap
