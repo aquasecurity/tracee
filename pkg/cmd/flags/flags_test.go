@@ -11,7 +11,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
-	"github.com/aquasecurity/tracee/pkg/rules/rego"
+	"github.com/aquasecurity/tracee/pkg/signatures/rego"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -15,41 +15,41 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 
 	embedded "github.com/aquasecurity/tracee"
-	"github.com/aquasecurity/tracee/pkg/rules/celsig"
-	"github.com/aquasecurity/tracee/pkg/rules/regosig"
+	"github.com/aquasecurity/tracee/pkg/signatures/celsig"
+	"github.com/aquasecurity/tracee/pkg/signatures/regosig"
 	"github.com/aquasecurity/tracee/types/detect"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
-func Find(target string, partialEval bool, rulesDir string, rules []string, aioEnabled bool) ([]detect.Signature, error) {
-	if rulesDir == "" {
+func Find(target string, partialEval bool, signaturesDir string, signatures []string, aioEnabled bool) ([]detect.Signature, error) {
+	if signaturesDir == "" {
 		exePath, err := os.Executable()
 		if err != nil {
 			logger.Error("getting executable path: " + err.Error())
 		}
-		rulesDir = filepath.Join(filepath.Dir(exePath), "rules")
+		signaturesDir = filepath.Join(filepath.Dir(exePath), "signatures")
 	}
-	gosigs, err := findGoSigs(rulesDir)
+	gosigs, err := findGoSigs(signaturesDir)
 	if err != nil {
 		return nil, err
 	}
-	opasigs, err := findRegoSigs(target, partialEval, rulesDir, aioEnabled)
+	opasigs, err := findRegoSigs(target, partialEval, signaturesDir, aioEnabled)
 	if err != nil {
 		return nil, err
 	}
 	sigs := append(gosigs, opasigs...)
-	celsigs, err := celsig.NewSignaturesFromDir(rulesDir)
+	celsigs, err := celsig.NewSignaturesFromDir(signaturesDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed loading CEL signatures: %w", err)
 	}
 	sigs = append(sigs, celsigs...)
 
 	var res []detect.Signature
-	if rules == nil {
+	if signatures == nil {
 		res = sigs
 	} else {
 		for _, s := range sigs {
-			for _, r := range rules {
+			for _, r := range signatures {
 				if m, err := s.GetMetadata(); err == nil &&
 					(m.ID == r || m.EventName == r) {
 					res = append(res, s)

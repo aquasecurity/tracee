@@ -66,7 +66,7 @@ this context, rules are Rego's language constructs):
     }
     ```
 
-After placing your `signature_example.rego` inside `dist/rules` directory you
+After placing your `signature_example.rego` inside `dist/signatures` directory you
 may execute **tracee** selecting only the event you just created, if that is
 what you want:
 

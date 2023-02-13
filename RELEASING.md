@@ -46,7 +46,7 @@
    git push upstream v0.8.1
    ```
 1. Verify that the `release` workflow has built and published the following artifacts
-   1. Tracee binaries (tracee-ebpf, tracee-rules, rules) in the form of a tar archive `tracee.<VERSION>.tar.gz`
+   1. Tracee binaries (tracee-ebpf, tracee-rules, signatures) in the form of a tar archive `tracee.<VERSION>.tar.gz`
    1. Source code zip and tar files
    1. Docker images pushed to the aquasec/tracee repository (`docker.io/aquasec/tracee:<VERSION>` and `docker.io/aquasec/tracee:full-<VERSION>`)
 1. Publish the Helm chart by manually triggering the [`.github/workflows/publish-helm.yaml`] workflow

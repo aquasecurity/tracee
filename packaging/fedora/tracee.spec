@@ -75,16 +75,16 @@ ln -s %{_libdir}/tracee/tracee-rules $RPM_BUILD_ROOT/%{_bindir}/tracee-rules
 install -m 0755 ./dist/tracee $RPM_BUILD_ROOT/%{_libdir}/tracee
 ln -s %{_libdir}/tracee/tracee $RPM_BUILD_ROOT/%{_bindir}/tracee
 
-# rules
-mkdir -m 0755 -p $RPM_BUILD_ROOT/%{_libdir}/tracee/rules/
-install -m 0644 ./dist/rules/* $RPM_BUILD_ROOT/%{_libdir}/tracee/rules/
+# signatures
+mkdir -m 0755 -p $RPM_BUILD_ROOT/%{_libdir}/tracee/signatures/
+install -m 0644 ./dist/signatures/* $RPM_BUILD_ROOT/%{_libdir}/tracee/signatures/
 
 %clean
 
 %files
 %{_bindir}/tracee
 %{_libdir}/tracee/tracee
-%{_libdir}/tracee/rules*
+%{_libdir}/tracee/signatures*
 
 %files -n tracee-ebpf
 %{_bindir}/tracee-ebpf
@@ -92,4 +92,4 @@ install -m 0644 ./dist/rules/* $RPM_BUILD_ROOT/%{_libdir}/tracee/rules/
 %files -n tracee-rules
 %{_bindir}/tracee-rules
 %{_libdir}/tracee/tracee-rules
-%{_libdir}/tracee/rules*
+%{_libdir}/tracee/signatures*

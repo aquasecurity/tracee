@@ -88,7 +88,7 @@ func PrintEventList(printRulesSet bool) {
 	if printRulesSet {
 		b.WriteString("Rules: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
 		b.WriteString("_____  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________" + "\n\n")
-		printEventGroup(&b, events.StartRulesID, events.MaxRulesID)
+		printEventGroup(&b, events.StartSignatureID, events.MaxSignatureID)
 		b.WriteString("\n")
 	}
 

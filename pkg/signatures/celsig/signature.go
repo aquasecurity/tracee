@@ -3,7 +3,7 @@ package celsig
 import (
 	"fmt"
 
-	"github.com/aquasecurity/tracee/pkg/rules/celsig/wrapper"
+	"github.com/aquasecurity/tracee/pkg/signatures/celsig/wrapper"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/google/cel-go/cel"

@@ -93,10 +93,10 @@ jobs:
         uses: ./.github/actions/build-dependencies
       - name: Build Signatures
         run: |
-          make rules
+          make signatures
       - name: Test Signatures
         run: |
-          make test-rules
+          make test-signatures
   CORE:
     needs:
       - analyze-code

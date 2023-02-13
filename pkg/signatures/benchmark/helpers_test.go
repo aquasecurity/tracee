@@ -9,7 +9,7 @@ import (
 	"math/rand"
 	"os"
 
-	"github.com/aquasecurity/tracee/pkg/rules/engine"
+	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
 )

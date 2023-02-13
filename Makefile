@@ -1,5 +1,5 @@
 .PHONY: all | env
-all: tracee-ebpf tracee-rules rules tracee
+all: tracee-ebpf tracee-rules signatures tracee
 
 #
 # make
@@ -222,14 +222,14 @@ help:
 	@echo ""
 	@echo "# build"
 	@echo ""
-	@echo "    $$ make all                      # build tracee-ebpf, tracee-rules & rules"
+	@echo "    $$ make all                      # build tracee-ebpf, tracee-rules & signatures"
 	@echo "    $$ make bpf-core                 # build ./dist/tracee.bpf.core.o"
 	@echo "    $$ make bpf-nocore               # build ./dist/tracee.bpf.XXX.o"
 	@echo "    $$ make tracee-ebpf              # build ./dist/tracee-ebpf"
 	@echo "    $$ make tracee-rules             # build ./dist/tracee-rules"
 	@echo "    $$ make tracee-bench             # build ./dist/tracee-bench"
-	@echo "    $$ make rules                    # build ./dist/rules"
-	@echo "    $$ make e2e-net-rules            # build ./dist/e2e-net-rules"
+	@echo "    $$ make signatures               # build ./dist/signatures"
+	@echo "    $$ make e2e-net-signatures       # build ./dist/e2e-net-signatures"
 	@echo "    $$ make tracee                   # build ./dist/tracee"
 	@echo ""
 	@echo "# install"
@@ -245,7 +245,7 @@ help:
 	@echo "    $$ make clean-tracee-ebpf        # wipe ./dist/tracee-ebpf"
 	@echo "    $$ make clean-tracee-rules       # wipe ./dist/tracee-rules"
 	@echo "    $$ make clean-tracee-bench       # wipe ./dist/tracee-bench"
-	@echo "    $$ make clean-rules              # wipe ./dist/rules"
+	@echo "    $$ make clean-signatures         # wipe ./dist/signatures"
 	@echo "    $$ make clean-tracee             # wipe ./dist/tracee"
 	@echo ""
 	@echo "# test"
@@ -253,7 +253,7 @@ help:
 	@echo "    $$ make test-unit                # run unit tests"
 	@echo "    $$ make test-types               # run unit tests for types module"
 	@echo "    $$ make test-integration         # run integration tests"
-	@echo "    $$ make test-rules               # opa test (tracee-rules)"
+	@echo "    $$ make test-signatures          # opa test (tracee-rules)"
 	@echo ""
 	@echo "# flags"
 	@echo ""
@@ -536,7 +536,7 @@ GO_ENV_RULES += GOARCH=$(GO_ARCH)
 GO_ENV_RULES += CGO_CFLAGS=
 GO_ENV_RULES += CGO_LDFLAGS=
 
-TRACEE_RULES_SRC_DIRS = ./cmd/tracee-rules/ ./pkg/rules/
+TRACEE_RULES_SRC_DIRS = ./cmd/tracee-rules/ ./pkg/signatures/
 TRACEE_RULES_SRC=$(shell find $(TRACEE_RULES_SRC_DIRS) -type f -name '*.go')
 
 .PHONY: tracee-rules
@@ -546,7 +546,7 @@ $(OUTPUT_DIR)/tracee-rules: \
 	.checkver_$(CMD_GO) \
 	$(TRACEE_RULES_SRC) \
 	| $(OUTPUT_DIR) \
-	rules
+	signatures
 #
 	$(GO_ENV_RULES) $(CMD_GO) build \
 		-tags $(GO_TAGS_RULES) \
@@ -562,7 +562,7 @@ clean-tracee-rules:
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-rules
 
 #
-# rules
+# signatures
 #
 
 GOSIGNATURES_DIR ?= signatures/golang
@@ -581,10 +581,10 @@ REGO_SIGNATURES_SRC :=	$(shell find $(REGO_SIGNATURES_DIR) \
 			! -path '$(REGO_SIGNATURES_DIR)/examples/*' \
 			)
 
-.PHONY: rules
-rules: $(OUTPUT_DIR)/rules
+.PHONY: signatures
+signatures: $(OUTPUT_DIR)/signatures
 
-$(OUTPUT_DIR)/rules: \
+$(OUTPUT_DIR)/signatures: \
 	$(GOSIGNATURES_SRC) \
 	$(REGO_SIGNATURES_SRC) \
 	| .checkver_$(CMD_GO) \
@@ -599,26 +599,26 @@ $(OUTPUT_DIR)/rules: \
 	# disable rego signatures by default (keep golang signatures only)
 	# $(CMD_INSTALL) -m 0644 $(REGO_SIGNATURES_SRC) $@
 
-.PHONY: clean-rules
-clean-rules:
+.PHONY: clean-signatures
+clean-signatures:
 #
-	$(CMD_RM) -rf $(OUTPUT_DIR)/rules
+	$(CMD_RM) -rf $(OUTPUT_DIR)/signatures
 
 #
-# e2e rules
+# e2e signatures
 #
 
-E2E_DIR ?= tests/e2e-net-rules
+E2E_DIR ?= tests/e2e-net-signatures
 E2E_SRC := $(shell find $(E2E_DIR) \
 		-type f \
 		-name '*.go' \
 		! -name '*_test.go' \
 		)
 
-.PHONY: e2e-net-rules
-e2e-net-rules: $(OUTPUT_DIR)/e2e-net-rules
+.PHONY: e2e-net-signatures
+e2e-net-signatures: $(OUTPUT_DIR)/e2e-net-signatures
 
-$(OUTPUT_DIR)/e2e-net-rules: \
+$(OUTPUT_DIR)/e2e-net-signatures: \
 	$(E2E_SRC) \
 	| .checkver_$(CMD_GO) \
 	.check_$(CMD_INSTALL) \
@@ -630,10 +630,10 @@ $(OUTPUT_DIR)/e2e-net-rules: \
 		-o $@/builtin.so \
 		$(E2E_SRC)
 
-.PHONY: clean-e2e-net-rules
-clean-e2e-net-rules:
+.PHONY: clean-e2e-net-signatures
+clean-e2e-net-signatures:
 #
-	$(CMD_RM) -rf $(OUTPUT_DIR)/e2e-net-rules
+	$(CMD_RM) -rf $(OUTPUT_DIR)/e2e-net-signatures
 
 #
 # tracee
@@ -653,7 +653,7 @@ $(OUTPUT_DIR)/tracee: \
 	.checklib_$(LIB_ELF) \
 	.checklib_$(LIB_ZLIB) \
 	btfhub \
-	rules
+	signatures
 #
 	$(MAKE) $(OUTPUT_DIR)/btfhub
 	$(MAKE) btfhub
@@ -721,8 +721,8 @@ test-integration: \
 		-p 1 \
 		./tests/integration/... \
 
-.PHONY: test-rules
-test-rules: \
+.PHONY: test-signatures
+test-signatures: \
 	| .check_$(CMD_OPA)
 #
 	$(CMD_OPA) test $(REGO_SIGNATURES_DIR) --verbose

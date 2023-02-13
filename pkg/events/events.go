@@ -286,10 +286,10 @@ const (
 	CaptureNetPacket
 )
 
-// Rules events
+// Signature events
 const (
-	StartRulesID ID = 6000
-	MaxRulesID   ID = 6999
+	StartSignatureID ID = 6000
+	MaxSignatureID   ID = 6999
 )
 
 var Definitions = eventDefinitions{

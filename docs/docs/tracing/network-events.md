@@ -263,7 +263,7 @@ arguments).
 It is possible to create Golang (or Rego) signatures for the network events. If you haven't read about how to create signatures, do it [HERE](../../detecting/golang/).
 
 !!! Examples Note
-    Bellow is an example of how to create a signature for the `net_packet_dns` event. This same example is used by Tracee CI/CD tests and can be found at the [GitHub repository](https://github.com/aquasecurity/tracee/tree/main/tests/e2e-net-rules), together with some other signatures for the network events.
+    Below is an example of how to create a signature for the `net_packet_dns` event. This same example is used by Tracee CI/CD tests and can be found at the [GitHub repository](https://github.com/aquasecurity/tracee/tree/main/tests/e2e-net-signatures), together with some other signatures for the network events.
 
 1. **net_packet_dns** signature example
 

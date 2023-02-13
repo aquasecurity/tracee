@@ -57,7 +57,7 @@ spec:
               readOnly: true
             {{- if .Values.signatures.config }}
             - name: tracee-config
-              mountPath: /tracee/rules/signatures.yaml
+              mountPath: /tracee/signatures/signatures.yaml
               subPath: signatures.yaml
               readOnly: true
             {{- end }}

@@ -3,7 +3,7 @@ package celsig_test
 import (
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/rules/celsig"
+	"github.com/aquasecurity/tracee/pkg/signatures/celsig"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"

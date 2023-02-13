@@ -3,7 +3,7 @@ package rego
 import (
 	_ "embed"
 
-	"github.com/aquasecurity/tracee/pkg/rules/regosig"
+	"github.com/aquasecurity/tracee/pkg/signatures/regosig"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/open-policy-agent/opa/compile"
 )
