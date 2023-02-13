@@ -22,15 +22,16 @@ func FindingToEvent(f detect.Finding) (*trace.Event, error) {
 		return nil, fmt.Errorf("error finding event not found: %s", f.SigMetadata.EventName)
 	}
 
-	return newEvent(int(eventID), f.SigMetadata, s), nil
+	return newEvent(int(eventID), f, s), nil
 }
 
-func newEvent(id int, sigMetadata detect.SignatureMetadata, s trace.Event) *trace.Event {
-	metadata := getMetadataFromSignatureMetadata(sigMetadata)
+func newEvent(id int, f detect.Finding, s trace.Event) *trace.Event {
+	arguments := getArguments(f)
+	metadata := getMetadataFromSignatureMetadata(f.SigMetadata)
 
 	return &trace.Event{
 		EventID:             id,
-		EventName:           sigMetadata.Name,
+		EventName:           f.SigMetadata.Name,
 		Timestamp:           s.Timestamp,
 		ThreadStartTime:     s.ThreadStartTime,
 		ProcessorID:         s.ProcessorID,
@@ -52,13 +53,61 @@ func newEvent(id int, sigMetadata detect.SignatureMetadata, s trace.Event) *trac
 		PodName:             s.PodName,
 		PodNamespace:        s.PodNamespace,
 		PodUID:              s.PodUID,
-		ArgsNum:             s.ArgsNum,
 		ReturnValue:         s.ReturnValue,
 		StackAddresses:      s.StackAddresses,
 		ContextFlags:        s.ContextFlags,
 		MatchedScopes:       s.MatchedScopes,
-		Args:                s.Args,
+		ArgsNum:             len(arguments),
+		Args:                arguments,
 		Metadata:            metadata,
+	}
+}
+
+func getArguments(f detect.Finding) []trace.Argument {
+	arguments := make([]trace.Argument, 0, len(f.Data))
+
+	for k, v := range f.Data {
+		arg := trace.Argument{
+			ArgMeta: trace.ArgMeta{
+				Name: k,
+				Type: getCType(v),
+			},
+			Value: v,
+		}
+
+		arguments = append(arguments, arg)
+	}
+
+	return arguments
+}
+
+// TODO: we probably should have internal types instead of using kernel, or golang types
+func getCType(t interface{}) string {
+	switch t.(type) {
+	case int16:
+		return "short"
+	case int32:
+		return "int"
+	case int:
+		return "int"
+	case int64:
+		return "long long"
+	case uint16:
+		return "unsigned short"
+	case uint32:
+		return "unsigned int"
+	case uint64:
+		return "unsigned long long"
+	case string:
+		return "const char *"
+	case bool:
+		return "bool"
+	case float32:
+		return "float"
+	case float64:
+		return "long double"
+	default: // TODO: how to implement int8, uint8, pointers, slices, and maps
+		return "unknown"
 	}
 }
 

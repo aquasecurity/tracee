@@ -100,7 +100,8 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 		}
 	}
 
-	if !argFound {
+	// if the event is a signature event, we allow filtering on dynamic argument
+	if !argFound && !eventDefinition.IsASignatureEvent() {
 		return InvalidEventArgument(argName)
 	}
 
