@@ -3855,9 +3855,11 @@ int BPF_KPROBE(trace_do_sigaction)
     return events_perf_submit(&p, DO_SIGACTION, 0);
 }
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(5, 1, 0) || defined(CORE)) || defined(RHEL_RELEASE_CODE)
+// clang-format off
 
 // Network Packets (works from ~5.2 and beyond)
+
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(5, 1, 0) || defined(CORE)) || defined(RHEL_RELEASE_CODE)
 
 // To track ingress/egress traffic we always need to link a flow to its related
 // task (particularly when hooking ingress skb bpf programs, where the current
@@ -3887,8 +3889,6 @@ int BPF_KPROBE(trace_do_sigaction)
 // network helper functions
 //
 
-// clang-format off
-
 static __always_inline bool is_socket_supported(struct socket *sock)
 {
     struct sock *sk = (void *) BPF_READ(sock, sk);
@@ -3911,141 +3911,6 @@ static __always_inline bool is_socket_supported(struct socket *sock)
 
     return 1; // supported
 }
-
-//
-// network related maps
-//
-
-//
-// Type definitions and prototypes for protocol parsing
-//
-
-// NOTE: proto header structs need full type in vmlinux.h (for correct skb copy)
-
-typedef union iphdrs_t {
-    struct iphdr iphdr;
-    struct ipv6hdr ipv6hdr;
-} iphdrs;
-
-typedef union protohdrs_t {
-    struct tcphdr tcphdr;
-    struct udphdr udphdr;
-    struct icmphdr icmphdr;
-    struct icmp6hdr icmp6hdr;
-    union {
-        u8 tcp_extra[40]; // data offset might set it up to 60 bytes
-    };
-} protohdrs;
-
-typedef struct nethdrs_t {
-    iphdrs iphdrs;
-    protohdrs protohdrs;
-} nethdrs;
-
-// cgroupctxmap
-
-typedef enum net_packet {
-    CAP_NET_PACKET = 1 << 0,
-    // Layer 3
-    SUB_NET_PACKET_IP = 1 << 1,
-    // Layer 4
-    SUB_NET_PACKET_TCP = 1 << 2,
-    SUB_NET_PACKET_UDP = 1<<3,
-    SUB_NET_PACKET_ICMP = 1 <<4,
-    SUB_NET_PACKET_ICMPV6 = 1<<5,
-    // Layer 7
-    SUB_NET_PACKET_DNS = 1<< 6,
-    SUB_NET_PACKET_HTTP = 1<<7,
-} net_packet_t;
-
-typedef struct net_event_contextmd {
-    u8 submit;
-    u32 header_size;
-    u8 captured;
-    u8 padding;
-} __attribute__((__packed__)) net_event_contextmd_t;
-
-typedef struct net_event_context {
-    event_context_t eventctx;
-    struct { // event arguments (needs packing), use anonymous struct to ...
-        u8 index0;
-        u32 bytes;
-        // ... (payload sent by bpf_perf_event_output)
-    } __attribute__((__packed__)); // ... avoid address-of-packed-member warns
-    // members bellow this point are metadata (not part of event to be sent)
-    net_event_contextmd_t md;
-} net_event_context_t;
-
-typedef struct {
-    u64 ts;
-    u16 ip_csum;
-    struct in6_addr ip_saddr;
-    struct in6_addr ip_daddr;
-} indexer_t;
-
-typedef struct {
-    __uint(type, BPF_MAP_TYPE_LRU_HASH);
-    __uint(max_entries, 10240);         // simultaneous cgroup/skb ingress/eggress progs
-    __type(key, indexer_t);             // layer 3 header fields used as indexer
-    __type(value, net_event_context_t); // event context built so cgroup/skb can use
-} cgrpctxmap_t;
-
-cgrpctxmap_t cgrpctxmap_in SEC(".maps"); // saved info SKB caller <=> SKB ingress
-cgrpctxmap_t cgrpctxmap_eg SEC(".maps"); // saved info SKB caller <=> SKB egress
-
-// inodemap
-
-typedef struct net_task_context {
-    struct task_struct *task;
-    task_context_t taskctx;
-    u64 matched_scopes;
-    int syscall;
-} net_task_context_t;
-
-struct {
-    __uint(type, BPF_MAP_TYPE_LRU_HASH);
-    __uint(max_entries, 65535);             // simultaneous sockets being traced
-    __type(key, u64);                       // socket inode number ...
-    __type(value, struct net_task_context); // ... linked to a task context
-} inodemap SEC(".maps");                    // relate sockets and tasks
-
-// entrymap
-
-typedef struct entry {
-    long unsigned int args[6];
-} entry_t;
-
-struct {
-    __uint(type, BPF_MAP_TYPE_LRU_HASH);
-    __uint(max_entries, 10240);      // simultaneous tasks being traced for entry/exit
-    __type(key, u32);                // host thread group id (tgid or tid) ...
-    __type(value, struct entry);     // ... linked to entry ctx->args
-} entrymap SEC(".maps");             // can't use args_map (indexed by existing events only)
-
-// network capture events
-
-struct {
-    __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
-    __uint(max_entries, 10240);
-    __type(key, u32);
-    __type(value, u32);
-} net_cap_events SEC(".maps");
-
-// scratch area
-
-struct {
-    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
-    __uint(max_entries, 1);                    // simultaneous softirqs running per CPU (?)
-    __type(key, u32);                          // per cpu index ... (always zero)
-    __type(value, scratch_t);                  // ... linked to a scratch area
-} net_heap_scratch SEC(".maps");
-
-struct {
-    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
-    __uint(max_entries, 1);                    // simultaneous softirqs running per CPU (?)
-    __type(key, u32);                          // per cpu index ... (always zero)
-    __type(value, event_data_t);               // ... linked to a scratch area
-} net_heap_event SEC(".maps");
 
 //
 // Support functions for network code
@@ -4139,9 +4004,6 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6);
 // Network submission functions
 //
 
-#define FULL    65536 // 1 << 16
-#define HEADERS 0     // no payload
-
 static __always_inline u32 cgroup_skb_submit(void *map,
                                              struct __sk_buff *ctx,
                                              net_event_context_t *neteventctx,
@@ -4208,7 +4070,7 @@ static __always_inline u32 cgroup_skb_capture_event(struct __sk_buff *ctx,
 }
 
 //
-// Socket creation and socket <=> task context updates (keep track of task and inode)
+// Socket creation and socket <=> task context updates
 //
 
 SEC("kprobe/sock_alloc_file")
@@ -4229,8 +4091,8 @@ int BPF_KPROBE(trace_sock_alloc_file)
     entry.args[0] = PT_REGS_PARM1(ctx); // struct socket *sock
     struct socket *sock = (void *) PT_REGS_PARM1(ctx);
 
-    // if (!is_socket_supported(sock))
-    //     return 0;
+    if (!is_socket_supported(sock))
+        return 0;
 
     entry.args[1] = PT_REGS_PARM2(ctx); // int flags
     entry.args[2] = PT_REGS_PARM2(ctx); // char *dname
@@ -4333,12 +4195,6 @@ int BPF_KPROBE(trace_security_socket_sendmsg)
 
     return security_socket_send_recv_msg(sock, p.event);
 }
-
-    // network retval values
-    #define family_ipv4     (1 << 0)
-    #define family_ipv6     (1 << 1)
-    #define proto_http_req  (1 << 2)
-    #define proto_http_resp (1 << 3)
 
 //
 // Socket Ingress/Egress eBPF program loader (right before and right after eBPF)
@@ -4487,7 +4343,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
             // add IPv4 header items to indexer
             indexer.ip_csum = nethdrs->iphdrs.iphdr.check;
             indexer.ip_saddr.in6_u.u6_addr32[0] = nethdrs->iphdrs.iphdr.saddr;
-            indexer.ip_daddr.in6_u.u6_addr32[0]  = nethdrs->iphdrs.iphdr.daddr;
+            indexer.ip_daddr.in6_u.u6_addr32[0] = nethdrs->iphdrs.iphdr.daddr;
             break;
 
         case PF_INET6:
@@ -4611,7 +4467,7 @@ static __always_inline u32 cgroup_skb_generic(struct __sk_buff *ctx, void *cgrpc
             // add IPv6 header items to indexer
             indexer.ip_csum = nethdrs->iphdrs.iphdr.check;
             indexer.ip_saddr.in6_u.u6_addr32[0] = nethdrs->iphdrs.iphdr.saddr;
-            indexer.ip_daddr.in6_u.u6_addr32[0]  = nethdrs->iphdrs.iphdr.daddr;
+            indexer.ip_daddr.in6_u.u6_addr32[0] = nethdrs->iphdrs.iphdr.daddr;
             break;
 
         case PF_INET6:
@@ -4801,17 +4657,12 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
 // GUESS L7 NETWORK PROTOCOLS (http, dns, etc)
 //
 
-// when guessing by src/dst ports, declare here
-
-    #define UDP_PORT_DNS 53
-    #define TCP_PORT_DNS 53
+// when guessing by src/dst ports, declare at network.h
 
 // when guessing through l7 layer, here
 
 static __always_inline int net_l7_is_http(struct __sk_buff *skb, u32 l7_off)
 {
-    #define http_min_len 7 // longest http command is "DELETE "
-
     char http_min_str[http_min_len];
     __builtin_memset((void *) &http_min_str, 0, sizeof(char) * http_min_len);
 

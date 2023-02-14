@@ -1,10 +1,182 @@
 #ifndef __TRACEE_NETWORK_H__
 #define __TRACEE_NETWORK_H__
 
+#ifndef CORE
+    #include "missing_noncore_definitions.h"
+#else
+    // CO:RE is enabled
+    #include <vmlinux.h>
+    #include <missing_definitions.h>
+#endif
+
 #include <bpf/bpf_helpers.h>
 #include "common/common.h"
 #include "types.h"
 #include "maps.h"
+
+// clang-format off
+
+//
+// Network packet related events (TODO: spin off all net_packet related code)
+//
+
+// NOTE: proto header structs need full type in vmlinux.h (for correct skb copy)
+
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(5, 1, 0) || defined(CORE)) || defined(RHEL_RELEASE_CODE)
+
+// network retval values
+#define family_ipv4     (1 << 0)
+#define family_ipv6     (1 << 1)
+#define proto_http_req  (1 << 2)
+#define proto_http_resp (1 << 3)
+
+// payload size: full packets, only headers
+#define FULL    65536       // 1 << 16
+#define HEADERS 0           // no payload
+
+// when guessing by src/dst ports, declare at network.h
+#define UDP_PORT_DNS 53
+#define TCP_PORT_DNS 53
+
+// layer 7 parsing related constants
+#define http_min_len 7 // longest http command is "DELETE "
+
+// Type definitions and prototypes for protocol parsing
+
+typedef union iphdrs_t {
+    struct iphdr iphdr;
+    struct ipv6hdr ipv6hdr;
+} iphdrs;
+
+typedef union protohdrs_t {
+    struct tcphdr tcphdr;
+    struct udphdr udphdr;
+    struct icmphdr icmphdr;
+    struct icmp6hdr icmp6hdr;
+    union {
+        u8 tcp_extra[40]; // data offset might set it up to 60 bytes
+    };
+} protohdrs;
+
+typedef struct nethdrs_t {
+    iphdrs iphdrs;
+    protohdrs protohdrs;
+} nethdrs;
+
+// cgroupctxmap
+
+typedef enum net_packet {
+    CAP_NET_PACKET = 1 << 0,
+    // Layer 3
+    SUB_NET_PACKET_IP = 1 << 1,
+    // Layer 4
+    SUB_NET_PACKET_TCP = 1 << 2,
+    SUB_NET_PACKET_UDP = 1<<3,
+    SUB_NET_PACKET_ICMP = 1 <<4,
+    SUB_NET_PACKET_ICMPV6 = 1<<5,
+    // Layer 7
+    SUB_NET_PACKET_DNS = 1<< 6,
+    SUB_NET_PACKET_HTTP = 1<<7,
+} net_packet_t;
+
+typedef struct net_event_contextmd {
+    u8 submit;
+    u32 header_size;
+    u8 captured;
+    u8 padding;
+} __attribute__((__packed__)) net_event_contextmd_t;
+
+typedef struct net_event_context {
+    event_context_t eventctx;
+    struct { // event arguments (needs packing), use anonymous struct to ...
+        u8 index0;
+        u32 bytes;
+        // ... (payload sent by bpf_perf_event_output)
+    } __attribute__((__packed__)); // ... avoid address-of-packed-member warns
+    // members bellow this point are metadata (not part of event to be sent)
+    net_event_contextmd_t md;
+} net_event_context_t;
+
+// network related maps
+
+typedef struct {
+    u64 ts;
+    u16 ip_csum;
+    struct in6_addr ip_saddr;
+    struct in6_addr ip_daddr;
+} indexer_t;
+
+typedef struct {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 4096); // 800 KB    // simultaneous cgroup/skb ingress/eggress progs
+    __type(key, indexer_t);                 // layer 3 header fields used as indexer
+    __type(value, net_event_context_t);     // event context built so cgroup/skb can use
+} cgrpctxmap_t;
+
+cgrpctxmap_t cgrpctxmap_in SEC(".maps");    // saved info SKB caller <=> SKB ingress
+cgrpctxmap_t cgrpctxmap_eg SEC(".maps");    // saved info SKB caller <=> SKB egress
+
+// inodemap
+
+typedef struct net_task_context {
+    struct task_struct *task;
+    task_context_t taskctx;
+    u64 matched_scopes;
+    int syscall;
+} net_task_context_t;
+
+struct {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 65535); // 9 MB     // simultaneous sockets being traced
+    __type(key, u64);                       // socket inode number ...
+    __type(value, struct net_task_context); // ... linked to a task context
+} inodemap SEC(".maps");                    // relate sockets and tasks
+
+// entrymap
+
+typedef struct entry {
+    long unsigned int args[6];
+} entry_t;
+
+struct {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 2048);              // simultaneous tasks being traced for entry/exit
+    __type(key, u32);                       // host thread group id (tgid or tid) ...
+    __type(value, struct entry);            // ... linked to entry ctx->args
+} entrymap SEC(".maps");                    // can't use args_map (indexed by existing events only)
+
+// network capture events
+
+struct {
+    __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
+    __uint(max_entries, 10240);
+    __type(key, u32);
+    __type(value, u32);
+} net_cap_events SEC(".maps");
+
+// scratch area
+
+struct {
+    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
+    __uint(max_entries, 1);                 // simultaneous softirqs running per CPU (?)
+    __type(key, u32);                       // per cpu index ... (always zero)
+    __type(value, scratch_t);               // ... linked to a scratch area
+} net_heap_scratch SEC(".maps");
+
+struct {
+    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
+    __uint(max_entries, 1);                 // simultaneous softirqs running per CPU (?)
+    __type(key, u32);                       // per cpu index ... (always zero)
+    __type(value, event_data_t);            // ... linked to a scratch area
+} net_heap_event SEC(".maps");
+
+    // clang-format on
+
+#endif
+
+//
+// Regular events related to network
+//
 
 static __always_inline u32 get_inet_rcv_saddr(struct inet_sock *inet)
 {

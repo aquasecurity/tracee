@@ -1,6 +1,14 @@
 #ifndef __TRACEE_BUFFER_H__
 #define __TRACEE_BUFFER_H__
 
+#ifndef CORE
+    #include "missing_noncore_definitions.h"
+#else
+    // CO:RE is enabled
+    #include <vmlinux.h>
+    #include <missing_definitions.h>
+#endif
+
 #include <bpf/bpf_helpers.h>
 #include "types.h"
 #include "common/common.h"
