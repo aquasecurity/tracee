@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"github.com/aquasecurity/tracee/pkg/cmd"
@@ -57,20 +56,11 @@ func main() {
 				return err
 			}
 
-			// event names are parsed here because we need to know which signatures to load
-			eventNames := getEventNames(c)
-
-			// if list is enabled we set eventNames to nil, so every rule is loaded,
-			// and displayed on the list
-			if c.Bool("list") {
-				eventNames = nil
-			}
-
 			sigs, err := signature.Find(
 				rego.RuntimeTarget,
 				rego.PartialEval,
 				c.String("rules-dir"),
-				eventNames,
+				nil,
 				rego.AIO,
 			)
 			if err != nil {
@@ -242,7 +232,7 @@ func createEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 			dependencies = append(dependencies, eventID)
 		}
 
-		event := events.NewEventDefinition(m.EventName, []string{"rules"}, dependencies)
+		event := events.NewEventDefinition(m.EventName, []string{"signatures"}, dependencies)
 
 		err = events.Definitions.Add(id, event)
 		if err != nil {
@@ -252,20 +242,4 @@ func createEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 
 		id++
 	}
-}
-
-func getEventNames(c *cli.Context) []string {
-	traceArgs := c.StringSlice("trace")
-	events := make([]string, 0)
-	for _, optValue := range traceArgs {
-		if strings.Contains(optValue, "event=") {
-			values := strings.Split(optValue, "=")
-			if len(values[1]) == 0 {
-				continue
-			}
-			events = append(events, strings.Split(values[1], ",")...)
-		}
-	}
-
-	return events
 }
