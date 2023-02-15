@@ -1,10 +1,9 @@
----
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   labels:
-    app.kubernetes.io/name: tracee
     app.kubernetes.io/component: tracee
+    app.kubernetes.io/name: tracee
     app.kubernetes.io/part-of: tracee
   name: tracee
 spec:
@@ -18,43 +17,29 @@ spec:
       name: tracee
     spec:
       containers:
-      - name: tracee
+      - args:
+        - --webhook=http://postee-svc:8082
+        - --webhook-template=./templates/rawjson.tmpl
+        - --webhook-content-type=application/json
+        env:
+        - name: LIBBPFGO_OSRELEASE_FILE
+          value: /etc/os-release-host
         image: docker.io/aquasec/tracee:0.11.1
         imagePullPolicy: IfNotPresent
-        args:
-          - --webhook=http://postee-svc:8082
-          - --webhook-template=./templates/rawjson.tmpl
-          - --webhook-content-type=application/json
-        env:
-          - name: LIBBPFGO_OSRELEASE_FILE
-            value: /etc/os-release-host
+        name: tracee
         securityContext:
           privileged: true
         volumeMounts:
-        - name: tmp-tracee
-          mountPath: /tmp/tracee
-        - name: etc-os-release
-          mountPath: /etc/os-release-host
+        - mountPath: /tmp/tracee
+          name: tmp-tracee
+        - mountPath: /etc/os-release-host
+          name: etc-os-release
           readOnly: true
-        # NOTE: Resource consumption will vary between different use cases and
-        # workload characteristics. User should monitor tracee for resource
-        # consumption before enabling resource limits. Capping tracee
-        # resources may cause loss of events and miss detections. Golang
-        # signatures outperforms REGO signatures, use less HW resources,
-        # and are preferred if that is an option.
-        # resources:
-        # resources:
-        #   limits:
-        #     cpu: "1"
-        #     memory: 1Gi # tracee has a 512MB in-memory events cache enabled by default
-        #   requests:
-        #     cpu: "1"
-        #     memory: 1Gi
       tolerations:
-        - effect: NoSchedule
-          operator: Exists
-        - effect: NoExecute
-          operator: Exists
+      - effect: NoSchedule
+        operator: Exists
+      - effect: NoExecute
+        operator: Exists
       volumes:
       - hostPath:
           path: /tmp/tracee
