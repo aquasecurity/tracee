@@ -243,32 +243,7 @@ func (filter *BPFUIntFilter[T]) UpdateBPF(bpfModule *bpf.Module, filterScopeID u
 	var keyPointer unsafe.Pointer
 	filterVal := make([]byte, 16)
 
-	for equalFilter := range filter.equal {
-		equalU32 := uint32(equalFilter)
-		if filter.is32Bit {
-			keyPointer = unsafe.Pointer(&equalU32)
-		} else {
-			keyPointer = unsafe.Pointer(&equalFilter)
-		}
-
-		var equalInScopes, equalitySetInScopes uint64
-		curVal, err := equalityFilterMap.GetValue(keyPointer)
-		if err == nil {
-			equalInScopes = binary.LittleEndian.Uint64(curVal[0:8])
-			equalitySetInScopes = binary.LittleEndian.Uint64(curVal[8:16])
-		}
-
-		// filterEqual == 1, so set n bitmask bit
-		utils.SetBit(&equalInScopes, filterScopeID)
-		utils.SetBit(&equalitySetInScopes, filterScopeID)
-
-		binary.LittleEndian.PutUint64(filterVal[0:8], equalInScopes)
-		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
-		err = equalityFilterMap.Update(unsafe.Pointer(keyPointer), unsafe.Pointer(&filterVal[0]))
-		if err != nil {
-			return err
-		}
-	}
+	// first initialize notEqual values since equality should take precedence
 	for notEqualFilter := range filter.notEqual {
 		notEqualU32 := uint32(notEqualFilter)
 		if filter.is32Bit {
@@ -286,6 +261,34 @@ func (filter *BPFUIntFilter[T]) UpdateBPF(bpfModule *bpf.Module, filterScopeID u
 
 		// filterNotEqual == 0, so clear n bitmask bit
 		utils.ClearBit(&equalInScopes, filterScopeID)
+		utils.SetBit(&equalitySetInScopes, filterScopeID)
+
+		binary.LittleEndian.PutUint64(filterVal[0:8], equalInScopes)
+		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
+		err = equalityFilterMap.Update(unsafe.Pointer(keyPointer), unsafe.Pointer(&filterVal[0]))
+		if err != nil {
+			return err
+		}
+	}
+
+	// now - setup equality filters
+	for equalFilter := range filter.equal {
+		equalU32 := uint32(equalFilter)
+		if filter.is32Bit {
+			keyPointer = unsafe.Pointer(&equalU32)
+		} else {
+			keyPointer = unsafe.Pointer(&equalFilter)
+		}
+
+		var equalInScopes, equalitySetInScopes uint64
+		curVal, err := equalityFilterMap.GetValue(keyPointer)
+		if err == nil {
+			equalInScopes = binary.LittleEndian.Uint64(curVal[0:8])
+			equalitySetInScopes = binary.LittleEndian.Uint64(curVal[8:16])
+		}
+
+		// filterEqual == 1, so set n bitmask bit
+		utils.SetBit(&equalInScopes, filterScopeID)
 		utils.SetBit(&equalitySetInScopes, filterScopeID)
 
 		binary.LittleEndian.PutUint64(filterVal[0:8], equalInScopes)
