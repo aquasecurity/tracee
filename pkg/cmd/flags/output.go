@@ -2,6 +2,7 @@ package flags
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,7 +19,7 @@ Possible options:
 [format:]json                                      output events in json format
 [format:]gob                                       output events in gob format
 [format:]gotemplate=/path/to/template              output events formatted using a given gotemplate file
-forward:host:port:tag                              send events in json format using the Forward protocol to a Fluent receiver
+forward:url                                        send events in json format using the Forward protocol to a Fluent receiver
 out-file:/path/to/file                             write the output to a specified file. create/trim the file if exists (default: stdout)
 log-file:/path/to/file                             write the logs to a specified file. create/trim the file if exists (default: stderr)
 none                                               ignore stream of events output, usually used with --capture
@@ -33,11 +34,11 @@ option:{stack-addresses,exec-env,relative-time,exec-hash,parse-arguments,sort-ev
   sort-events                                      enable sorting events before passing to them output. This will decrease the overall program efficiency.
   cache-events                                     enable caching events to release perf-buffer pressure. This will decrease amount of event loss until cache is full.
 Examples:
-  --output json                                            | output as json
-  --output gotemplate=/path/to/my.tmpl                     | output as the provided go template
-  --output out-file:/my/out --output log-file:/my/log      | output to /my/out and logs to /my/log
-  --output forward:127.0.0.1:24224:tracee                  | output via the Forward protocol to 127.0.0.1 with the tag 'tracee'
-  --output none                                            | ignore events output
+  --output json                                                    | output as json
+  --output gotemplate=/path/to/my.tmpl                             | output as the provided go template
+  --output out-file:/my/out --output log-file:/my/log              | output to /my/out and logs to /my/log
+  --output forward:tcp://user:pass@127.0.0.1:24224?tag=tracee      | output via the Forward protocol to 127.0.0.1 on port 24224 with the tag 'tracee' using TCP
+  --output none                                                    | ignore events output
 Use this flag multiple times to choose multiple output options
 `
 }
@@ -54,72 +55,74 @@ func PrepareOutput(outputSlice []string) (OutputConfig, printer.Config, error) {
 	printerKind := "table"
 	outPath := ""
 	for _, o := range outputSlice {
-		outputParts := strings.SplitN(o, ":", 2)
-		numParts := len(outputParts)
-		if numParts == 1 && outputParts[0] != "none" {
-			outputParts = append(outputParts, outputParts[0])
-			outputParts[0] = "format"
-		}
-
-		switch outputParts[0] {
-		case "none":
-			printerKind = "ignore"
-		case "format":
-			printerKind = outputParts[1]
-			if printerKind != "table" &&
-				printerKind != "table-verbose" &&
-				printerKind != "json" &&
-				printerKind != "gob" &&
-				!strings.HasPrefix(printerKind, "gotemplate=") {
-				return outcfg, printcfg, fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info", printerKind)
-			}
-		case "forward":
+		// Forward uses the net/url library to handle a full url including protocol, etc. so must cope with embedded colon characters
+		if strings.HasPrefix(o, "forward:") {
 			// Validate the forward configuration details which are as follows:
-			// --output forward:host:port:tag
-			// This has been split into 'forward' and 'host:port:tag' substrings now so just verify the second string.
-			forwardConfigParts := strings.SplitN(outputParts[1], ":", 3)
-			// Ensure we have enough components
-			numForwardConfigParts := len(forwardConfigParts)
-			if numForwardConfigParts < 3 {
-				return outcfg, printcfg, fmt.Errorf("invalid configuration for forward output (%d): requires host, port and tag. Use '--output help' for more info", numForwardConfigParts)
+			// --output forward:[protocol://user:pass@]host:port[?k=v#f]
+			// Only host and port are required.
+
+			// Split out just the config
+			forwardConfigParts := strings.SplitN(o, ":", 2)
+			if len(forwardConfigParts) != 2 {
+				return outcfg, printcfg, fmt.Errorf("invalid configuration for forward output: %q. Use '--output help' for more info", o)
 			}
-			// Ensure each component is not empty
-			for index, part := range forwardConfigParts {
-				if len(part) == 0 {
-					return outcfg, printcfg, fmt.Errorf("invalid configuration for forward output (%d): host, port and tag must all be non-empty. Use '--output help' for more info", index)
-				}
+			// Now parse our URL using the standard library and report any errors from basic parsing.
+			forwardURL, err := url.Parse(forwardConfigParts[1])
+			if err != nil {
+				return outcfg, printcfg, fmt.Errorf("invalid configuration for forward output (%s): %w. Use '--output help' for more info", forwardConfigParts[1], err)
 			}
 			printerKind = "forward"
-			// Add host and port as a destination
-			printcfg.ForwardDestination = forwardConfigParts[0] + ":" + forwardConfigParts[1]
-			printcfg.ForwardTag = forwardConfigParts[2]
-		case "out-file":
-			outPath = outputParts[1]
-		case "log-file":
-			outcfg.LogPath = outputParts[1]
-		case "option":
-			switch outputParts[1] {
-			case "stack-addresses":
-				outcfg.StackAddresses = true
-			case "exec-env":
-				outcfg.ExecEnv = true
-			case "relative-time":
-				outcfg.RelativeTime = true
-				printcfg.RelativeTS = true
-			case "exec-hash":
-				outcfg.ExecHash = true
-			case "parse-arguments":
-				outcfg.ParseArguments = true
-			case "parse-arguments-fds":
-				outcfg.ParseArgumentsFDs = true
-				outcfg.ParseArguments = true // no point in parsing file descriptor args only
-			case "sort-events":
-				outcfg.EventsSorting = true
-			default:
-				return outcfg, printcfg, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
+			// Deliberately lightweight to just pass the URL into the printer config.
+			// We handle the specific configuration and other checks as part of the Init() call there.
+			printcfg.ForwardURL = forwardURL
+		} else {
+			outputParts := strings.SplitN(o, ":", 2)
+			numParts := len(outputParts)
+			if numParts == 1 && outputParts[0] != "none" {
+				outputParts = append(outputParts, outputParts[0])
+				outputParts[0] = "format"
 			}
-		default:
-			return outcfg, printcfg, fmt.Errorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
+
+			switch outputParts[0] {
+			case "none":
+				printerKind = "ignore"
+			case "format":
+				printerKind = outputParts[1]
+				if printerKind != "table" &&
+					printerKind != "table-verbose" &&
+					printerKind != "json" &&
+					printerKind != "gob" &&
+					!strings.HasPrefix(printerKind, "gotemplate=") {
+					return outcfg, printcfg, fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info", printerKind)
+				}
+			case "out-file":
+				outPath = outputParts[1]
+			case "log-file":
+				outcfg.LogPath = outputParts[1]
+			case "option":
+				switch outputParts[1] {
+				case "stack-addresses":
+					outcfg.StackAddresses = true
+				case "exec-env":
+					outcfg.ExecEnv = true
+				case "relative-time":
+					outcfg.RelativeTime = true
+					printcfg.RelativeTS = true
+				case "exec-hash":
+					outcfg.ExecHash = true
+				case "parse-arguments":
+					outcfg.ParseArguments = true
+				case "parse-arguments-fds":
+					outcfg.ParseArgumentsFDs = true
+					outcfg.ParseArguments = true // no point in parsing file descriptor args only
+				case "sort-events":
+					outcfg.EventsSorting = true
+				default:
+					return outcfg, printcfg, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
+				}
+			default:
+				return outcfg, printcfg, fmt.Errorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
+			}
 		}
 	}
 

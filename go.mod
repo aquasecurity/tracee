@@ -3,6 +3,7 @@ module github.com/aquasecurity/tracee
 go 1.18
 
 require (
+	github.com/IBM/fluent-forward-go v0.2.1
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/aquasecurity/libbpfgo v0.4.5-libbpf-1.0.1
 	github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230109115933-5ede01b209e1
@@ -29,9 +30,9 @@ require (
 )
 
 require (
-	github.com/IBM/fluent-forward-go v0.2.1 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/philhofer/fwd v1.1.1 // indirect
+	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/tinylib/msgp v1.1.6 // indirect
 )
 

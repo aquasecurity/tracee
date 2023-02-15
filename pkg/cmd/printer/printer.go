@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -39,13 +41,12 @@ const (
 )
 
 type Config struct {
-	Kind               string
-	OutPath            string
-	OutFile            io.WriteCloser
-	ContainerMode      ContainerMode
-	RelativeTS         bool
-	ForwardDestination string
-	ForwardTag         string
+	Kind          string
+	OutPath       string
+	OutFile       io.WriteCloser
+	ContainerMode ContainerMode
+	RelativeTS    bool
+	ForwardURL    *url.URL
 }
 
 func New(config Config) (EventPrinter, error) {
@@ -83,8 +84,7 @@ func New(config Config) (EventPrinter, error) {
 		}
 	case kind == "forward":
 		res = &forwardEventPrinter{
-			destination: config.ForwardDestination,
-			tag:         config.ForwardTag,
+			url: config.ForwardURL,
 		}
 	case strings.HasPrefix(kind, "gotemplate="):
 		res = &templateEventPrinter{
@@ -499,27 +499,81 @@ func (p ignoreEventPrinter) Close() {}
 
 // forwardEventPrinter sends events over the Fluent Forward protocol to a receiver
 type forwardEventPrinter struct {
-	destination string
-	tag         string
-	client      *forward.Client
+	url    *url.URL
+	client *forward.Client
+	// These parameters can be set up from the URL
+	tag string `default:"tracee"`
+}
+
+func getParameterValue(parameters url.Values, key string, defaultValue string) string {
+	param, found := parameters[key]
+	// Ensure we have a non-empty parameter set for this key
+	if found && param[0] != "" {
+		return param[0]
+	}
+	// Otherwise use the default value
+	return defaultValue
 }
 
 func (p *forwardEventPrinter) Init() error {
-	// Set up a default tag if required
-	if p.tag == "" {
-		p.tag = "tracee"
+	// Now parse the optional parameters with defaults and some basic verification
+	parameters, _ := url.ParseQuery(p.url.RawQuery)
+
+	// Check if we have a tag set or default it
+	p.tag = getParameterValue(parameters, "tag", "tracee")
+
+	// Do we want to enable requireAck?
+	requireAckString := getParameterValue(parameters, "requireAck", "false")
+	requireAck, err := strconv.ParseBool(requireAckString)
+	if err != nil {
+		return fmt.Errorf("unable to convert requireAck value %q: %w", requireAckString, err)
 	}
-	logger.Info("attempting to connect to Forward destination", "url", p.destination, "tag", p.tag)
+
+	// Timeout conversion from string
+	timeoutValueString := getParameterValue(parameters, "connectionTimeout", "10s")
+	connectionTimeout, err := time.ParseDuration(timeoutValueString)
+	if err != nil {
+		return fmt.Errorf("unable to convert connectionTimeout value %q: %w", timeoutValueString, err)
+	}
+
+	// We should have both username and password or neither for basic auth
+	username := p.url.User.Username()
+	password, isPasswordSet := p.url.User.Password()
+	if username != "" && !isPasswordSet {
+		return fmt.Errorf("missing basic auth configuration for Forward destination")
+	}
+
+	// Ensure we support tcp or udp protocols
+	protocol := "tcp"
+	if p.url.Scheme != "" {
+		protocol = p.url.Scheme
+	}
+	if protocol != "tcp" && protocol != "udp" {
+		return fmt.Errorf("unsupported protocol for Forward destination: %s", protocol)
+	}
+
+	// Extract the host (and port)
+	address := p.url.Host
+	logger.Info("attempting to connect to Forward destination", "url", address, "tag", p.tag)
 
 	// Create a TCP connection to the forward receiver
 	p.client = forward.New(forward.ConnectionOptions{
 		Factory: &forward.ConnFactory{
-			Address: p.destination,
+			Network: protocol,
+			Address: address,
+		},
+		RequireAck:        requireAck,
+		ConnectionTimeout: connectionTimeout,
+		AuthInfo: forward.AuthInfo{
+			Username: username,
+			Password: password,
 		},
 	})
-	if err := p.client.Connect(); err != nil {
+
+	err = p.client.Connect()
+	if err != nil {
 		// The destination may not be available but may appear later so do not return an error here and just connect later.
-		logger.Error("error connecting to Forward destination", "url", p.destination, "tag", p.tag, "error", err)
+		logger.Error("error connecting to Forward destination", "url", p.url.String(), "error", err)
 	}
 	return nil
 }
@@ -545,8 +599,9 @@ func (p *forwardEventPrinter) Print(event trace.Event) {
 	err = p.client.SendMessage(p.tag, record)
 	// Assuming all is well we continue but if the connection is dropped or some other error we retry
 	if err != nil {
-		logger.Error("error writing to Forward destination", "url", p.destination, "tag", p.tag, "error", err)
+		logger.Error("error writing to Forward destination", "destination", p.url.Host, "tag", p.tag, "error", err)
 		// Try five times to reconnect and send before giving up
+		// TODO: consider using go-kit for circuit break, retry, etc
 		for attempts := 0; attempts < 5; attempts++ {
 			// Attempt to reconnect (remote end may have dropped/restarted)
 			err = p.client.Reconnect()
@@ -565,7 +620,7 @@ func (p *forwardEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p forwardEventPrinter) Close() {
 	if p.client != nil {
-		logger.Info("disconnecting from Forward destination", "url", p.destination, "tag", p.tag)
+		logger.Info("disconnecting from Forward destination", "url", p.url.Host, "tag", p.tag)
 		p.client.Disconnect()
 	}
 }
