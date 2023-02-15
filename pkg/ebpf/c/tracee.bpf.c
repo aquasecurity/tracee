@@ -3889,6 +3889,34 @@ int BPF_KPROBE(trace_do_sigaction)
 // network helper functions
 //
 
+static __always_inline bool is_family_supported(struct socket *sock)
+{
+    struct sock *sk = (void *) BPF_READ(sock, sk);
+    struct sock_common *common = (void *) sk;
+    u8 family = BPF_READ(common, skc_family);
+
+    switch (family) {
+        case PF_INET:
+        case PF_INET6:
+            break;
+        // case PF_UNSPEC:
+        // case PF_LOCAL:      // PF_UNIX or PF_FILE
+        // case PF_NETLINK:
+        // case PF_VSOCK:
+        // case PF_XDP:
+        // case PF_BRIDGE:
+        // case PF_PACKET:
+        // case PF_MPLS:
+        // case PF_BLUETOOTH:
+        // case PF_IB:
+        // ...
+        default:
+            return 0; // not supported
+    }
+
+    return 1; // supported
+}
+
 static __always_inline bool is_socket_supported(struct socket *sock)
 {
     struct sock *sk = (void *) BPF_READ(sock, sk);
@@ -4078,6 +4106,16 @@ int BPF_KPROBE(trace_sock_alloc_file)
 {
     // runs every time a socket is created (entry)
 
+    struct socket *sock = (void *) PT_REGS_PARM1(ctx);
+
+    if (!is_family_supported(sock))
+        return 0;
+
+    if (!is_socket_supported(sock))
+        return 0;
+
+    // initialize program data
+
     program_data_t p = {};
     if (!init_program_data(&p, ctx))
         return 0;
@@ -4089,10 +4127,6 @@ int BPF_KPROBE(trace_sock_alloc_file)
 
     // save args for retprobe
     entry.args[0] = PT_REGS_PARM1(ctx); // struct socket *sock
-    struct socket *sock = (void *) PT_REGS_PARM1(ctx);
-
-    if (!is_socket_supported(sock))
-        return 0;
 
     entry.args[1] = PT_REGS_PARM2(ctx); // int flags
     entry.args[2] = PT_REGS_PARM2(ctx); // char *dname
@@ -4147,6 +4181,9 @@ int BPF_KRETPROBE(trace_ret_sock_alloc_file)
 
 static __always_inline u32 security_socket_send_recv_msg(struct socket *sock, event_data_t *event)
 {
+    if (!is_family_supported(sock))
+        return 0;
+
     if (!is_socket_supported(sock))
         return 0;
 
@@ -4219,6 +4256,20 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
             return 0; // other attachment type, return fast
     }
 
+    struct sock *sk = (void *) PT_REGS_PARM1(ctx);
+    struct sk_buff *skb = (void *) PT_REGS_PARM2(ctx);
+
+    struct sock_common *common = (void *) sk;
+    u8 family = BPF_READ(common, skc_family);
+
+    switch (family) {
+        case PF_INET:
+        case PF_INET6:
+            break;
+        default:
+            return 1; // return fast for unsupported socket families
+    }
+
     //
     // EVENT CONTEXT (from current task)
     //
@@ -4237,9 +4288,6 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     };
     if (!init_program_data(&p, ctx))
         return 0;
-
-    struct sock *sk = (void *) PT_REGS_PARM1(ctx);
-    struct sk_buff *skb = (void *) PT_REGS_PARM2(ctx);
 
     // obtain socket inode
     u64 inode = BPF_READ(sk, sk_socket, file, f_inode, i_ino);
@@ -4283,8 +4331,6 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     nethdrs hdrs = {0}, *nethdrs = &hdrs;
 
     // inform userland about protocol family (for correct L3 header parsing)...
-    struct sock_common *common = (void *) sk;
-    u8 family = BPF_READ(common, skc_family);
     switch (family) {
         case PF_INET:
             eventctx->retval |= family_ipv4;
