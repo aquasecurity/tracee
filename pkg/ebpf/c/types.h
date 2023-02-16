@@ -451,15 +451,16 @@ typedef struct kmod_data {
     u64 next;
 } kmod_data_t;
 
-enum bpf_write_user_e
+enum bpf_helper_usage_e
 {
-    WRITE_USER_FALSE,
-    WRITE_USER_TRUE,
-    WRITE_USER_UNKNOWN
+    HELPER_USAGE_FALSE,
+    HELPER_USAGE_TRUE,
+    HELPER_USAGE_UNKNOWN
 };
 
 typedef struct bpf_attach {
-    enum bpf_write_user_e write_user;
+    enum bpf_helper_usage_e write_user;
+    enum bpf_helper_usage_e override_return;
 } bpf_attach_t;
 
 // KERNEL STRUCTS ----------------------------------------------------------------------------------
