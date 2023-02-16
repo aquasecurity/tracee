@@ -1,76 +1,11 @@
-package ebpf
+package filterscope
 
 import (
 	"sync/atomic"
 
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
-
-const (
-	UIDFilterMap         = "uid_filter"
-	PIDFilterMap         = "pid_filter"
-	MntNSFilterMap       = "mnt_ns_filter"
-	PidNSFilterMap       = "pid_ns_filter"
-	UTSFilterMap         = "uts_ns_filter"
-	CommFilterMap        = "comm_filter"
-	ProcessTreeFilterMap = "process_tree_map"
-	CgroupIdFilterMap    = "cgroup_id_filter"
-	ContIdFilter         = "cont_id_filter"
-	BinaryFilterMap      = "binary_filter"
-	ProcInfoMap          = "proc_info_map"
-)
-
-type FilterScope struct {
-	ID                int
-	EventsToTrace     map[events.ID]string
-	UIDFilter         *filters.BPFUIntFilter[uint32]
-	PIDFilter         *filters.BPFUIntFilter[uint32]
-	NewPidFilter      *filters.BoolFilter
-	MntNSFilter       *filters.BPFUIntFilter[uint64]
-	PidNSFilter       *filters.BPFUIntFilter[uint64]
-	UTSFilter         *filters.BPFStringFilter
-	CommFilter        *filters.BPFStringFilter
-	ContFilter        *filters.BoolFilter
-	NewContFilter     *filters.BoolFilter
-	ContIDFilter      *filters.ContainerFilter
-	RetFilter         *filters.RetFilter
-	ArgFilter         *filters.ArgFilter
-	ContextFilter     *filters.ContextFilter
-	ProcessTreeFilter *filters.ProcessTreeFilter
-	BinaryFilter      *filters.BPFBinaryFilter
-	Follow            bool
-}
-
-func NewFilterScope() *FilterScope {
-	return &FilterScope{
-		ID:                0,
-		EventsToTrace:     map[events.ID]string{},
-		UIDFilter:         filters.NewBPFUInt32Filter(UIDFilterMap),
-		PIDFilter:         filters.NewBPFUInt32Filter(PIDFilterMap),
-		NewPidFilter:      filters.NewBoolFilter(),
-		MntNSFilter:       filters.NewBPFUIntFilter(MntNSFilterMap),
-		PidNSFilter:       filters.NewBPFUIntFilter(PidNSFilterMap),
-		UTSFilter:         filters.NewBPFStringFilter(UTSFilterMap),
-		CommFilter:        filters.NewBPFStringFilter(CommFilterMap),
-		ContFilter:        filters.NewBoolFilter(),
-		NewContFilter:     filters.NewBoolFilter(),
-		ContIDFilter:      filters.NewContainerFilter(CgroupIdFilterMap),
-		RetFilter:         filters.NewRetFilter(),
-		ArgFilter:         filters.NewArgFilter(),
-		ContextFilter:     filters.NewContextFilter(),
-		ProcessTreeFilter: filters.NewProcessTreeFilter(ProcessTreeFilterMap),
-		BinaryFilter:      filters.NewBPFBinaryFilter(BinaryFilterMap, ProcInfoMap),
-		Follow:            false,
-	}
-}
-
-const MaxFilterScopes = 64
-
-func isIDInRange(id int) bool {
-	return id >= 0 && id < MaxFilterScopes
-}
 
 // TODO: add locking mechanism as scopes will change at runtime
 type FilterScopes struct {
@@ -103,42 +38,43 @@ func NewFilterScopes() *FilterScopes {
 	}
 }
 
-func (fs FilterScopes) Count() int {
+func (fs *FilterScopes) Count() int {
 	return len(fs.filterEnabledScopesMap)
 }
 
-func (fs FilterScopes) UIDFilterMin() uint64 {
+func (fs *FilterScopes) UIDFilterMin() uint64 {
 	return fs.uidFilterMin
 }
 
-func (fs FilterScopes) UIDFilterMax() uint64 {
+func (fs *FilterScopes) UIDFilterMax() uint64 {
 	return fs.uidFilterMax
 }
 
-func (fs FilterScopes) PIDFilterMin() uint64 {
+func (fs *FilterScopes) PIDFilterMin() uint64 {
 	return fs.pidFilterMin
 }
 
-func (fs FilterScopes) PIDFilterMax() uint64 {
+func (fs *FilterScopes) PIDFilterMax() uint64 {
 	return fs.pidFilterMax
 }
 
-func (fs FilterScopes) UIDFilterableInUserSpace() bool {
+func (fs *FilterScopes) UIDFilterableInUserSpace() bool {
 	return fs.uidFilterableInUserSpace
 }
 
-func (fs FilterScopes) PIDFilterableInUserSpace() bool {
+func (fs *FilterScopes) PIDFilterableInUserSpace() bool {
 	return fs.pidFilterableInUserSpace
 }
 
-// ContainerFilterEnabled returns a bitmask of scopes that have at least one container filter type enabled
-func (fs FilterScopes) ContainerFilterEnabled() uint64 {
+// ContainerFilterEnabled returns a bitmask of scopes that have at least one
+// container filter type enabled
+func (fs *FilterScopes) ContainerFilterEnabled() uint64 {
 	return atomic.LoadUint64(&fs.containerFiltersEnabled)
 }
 
-// compute recalculates values, updates flags and fills the reduced user space map
-// It must be called at initialization and at every runtime scopes changes
-func (fs *FilterScopes) compute() {
+// Compute recalculates values, updates flags and fills the reduced user space
+// map. It must be called at initialization and at every runtime scopes changes
+func (fs *FilterScopes) Compute() {
 	// update global min and max
 	fs.calculateGlobalMinMax()
 
@@ -179,7 +115,7 @@ func (fs *FilterScopes) set(id int, scope *FilterScope) error {
 	fs.filterScopesArray[id] = scope
 	fs.filterEnabledScopesMap[scope] = id
 
-	fs.compute()
+	fs.Compute()
 
 	return nil
 }
@@ -218,12 +154,12 @@ func (fs *FilterScopes) Delete(id int) error {
 	delete(fs.filterUserSpaceScopesMap, fs.filterScopesArray[id])
 	fs.filterScopesArray[id] = nil
 
-	fs.compute()
+	fs.Compute()
 
 	return nil
 }
 
-func (fs FilterScopes) Lookup(id int) (*FilterScope, error) {
+func (fs *FilterScopes) Lookup(id int) (*FilterScope, error) {
 	if !isIDInRange(id) {
 		return nil, FilterScopesOutOfRangeError(id)
 	}
@@ -235,7 +171,7 @@ func (fs FilterScopes) Lookup(id int) (*FilterScope, error) {
 	return scope, nil
 }
 
-func (fs FilterScopes) Map() map[*FilterScope]int {
+func (fs *FilterScopes) Map() map[*FilterScope]int {
 	return fs.filterEnabledScopesMap
 }
 
@@ -251,16 +187,20 @@ func (fs *FilterScopes) updateContainerFilterEnabled() {
 
 // UserSpaceMap returns a reduced scopes map which must be filtered in
 // user space (ArgFilter, RetFilter, ContextFilter, UIDFilter and PIDFilter).
-func (fs FilterScopes) UserSpaceMap() map[*FilterScope]int {
+func (fs *FilterScopes) UserSpaceMap() map[*FilterScope]int {
 	return fs.filterUserSpaceScopesMap
 }
 
-// calculateGlobalMinMax sets the global min and max, to be checked in kernel space,
-// of the Minimum and Maximum enabled filters only if context filter types (e.g. BPFUIDFilter)
-// from all scopes have both Minimum and Maximum values set.
-// FilterScopes user space filter flags are also set (e.g. uidFilterableInUserSpace).
+// calculateGlobalMinMax sets the global min and max, to be checked in kernel
+// space, of the Minimum and Maximum enabled filters only if context filter
+// types (e.g. BPFUIDFilter) from all scopes have both Minimum and Maximum
+// values set.
 //
-// The context filter types relevant for this function are just UIDFilter and PIDFilter.
+// FilterScopes user space filter flags are also set (e.g.
+// uidFilterableInUserSpace).
+//
+// The context filter types relevant for this function are just UIDFilter and
+// PIDFilter.
 func (fs *FilterScopes) calculateGlobalMinMax() {
 	var (
 		uidMinFilterCount int
@@ -345,7 +285,7 @@ func (fs *FilterScopes) calculateGlobalMinMax() {
 }
 
 // ContainerFilterEnabled returns true when the scope has at least one container filter type enabled
-func (fs FilterScope) ContainerFilterEnabled() bool {
+func (fs *FilterScope) ContainerFilterEnabled() bool {
 	return (fs.ContFilter.Enabled() && fs.ContFilter.Value()) ||
 		(fs.NewContFilter.Enabled() && fs.NewContFilter.Value()) ||
 		fs.ContIDFilter.Enabled()

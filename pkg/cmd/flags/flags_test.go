@@ -10,6 +10,7 @@ import (
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/filters"
+	"github.com/aquasecurity/tracee/pkg/filterscope"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/pkg/rules/rego"
 	"github.com/stretchr/testify/assert"
@@ -35,8 +36,8 @@ func TestPrepareFilterScope(t *testing.T) {
 		},
 		{
 			testName:      "invalid scope id 3",
-			filters:       []string{fmt.Sprintf("%d:comm=bash", tracee.MaxFilterScopes+1)},
-			expectedError: filters.InvalidScope(fmt.Sprintf("%d:comm=bash", tracee.MaxFilterScopes+1)),
+			filters:       []string{fmt.Sprintf("%d:comm=bash", filterscope.MaxFilterScopes+1)},
+			expectedError: filters.InvalidScope(fmt.Sprintf("%d:comm=bash", filterscope.MaxFilterScopes+1)),
 		},
 		{
 			testName:      "invalid argfilter 1",

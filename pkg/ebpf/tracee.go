@@ -31,6 +31,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
 	"github.com/aquasecurity/tracee/pkg/filters"
+	"github.com/aquasecurity/tracee/pkg/filterscope"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
@@ -53,7 +54,7 @@ const (
 
 // Config is a struct containing user defined configuration of tracee
 type Config struct {
-	FilterScopes       *FilterScopes
+	FilterScopes       *filterscope.FilterScopes
 	Capture            *CaptureConfig
 	Capabilities       *CapabilitiesConfig
 	Output             *OutputConfig
@@ -870,7 +871,7 @@ func (t *Tracee) computeConfigValues() []byte {
 	}
 
 	// compute all filter scopes internals
-	t.config.FilterScopes.compute()
+	t.config.FilterScopes.Compute()
 
 	// uid_max
 	binary.LittleEndian.PutUint64(configVal[224:232], t.config.FilterScopes.UIDFilterMax())
@@ -1029,14 +1030,14 @@ func (t *Tracee) populateBPFMaps() error {
 		scopeID := uint(filterScope.ID)
 		errMap := make(map[string]error, 0)
 
-		errMap[UIDFilterMap] = filterScope.UIDFilter.UpdateBPF(t.bpfModule, scopeID)
-		errMap[PIDFilterMap] = filterScope.PIDFilter.UpdateBPF(t.bpfModule, scopeID)
-		errMap[MntNSFilterMap] = filterScope.MntNSFilter.UpdateBPF(t.bpfModule, scopeID)
-		errMap[PidNSFilterMap] = filterScope.PidNSFilter.UpdateBPF(t.bpfModule, scopeID)
-		errMap[UTSFilterMap] = filterScope.UTSFilter.UpdateBPF(t.bpfModule, scopeID)
-		errMap[CommFilterMap] = filterScope.CommFilter.UpdateBPF(t.bpfModule, scopeID)
-		errMap[ContIdFilter] = filterScope.ContIDFilter.UpdateBPF(t.bpfModule, t.containers, scopeID)
-		errMap[BinaryFilterMap] = filterScope.BinaryFilter.UpdateBPF(t.bpfModule, scopeID)
+		errMap[filterscope.UIDFilterMap] = filterScope.UIDFilter.UpdateBPF(t.bpfModule, scopeID)
+		errMap[filterscope.PIDFilterMap] = filterScope.PIDFilter.UpdateBPF(t.bpfModule, scopeID)
+		errMap[filterscope.MntNSFilterMap] = filterScope.MntNSFilter.UpdateBPF(t.bpfModule, scopeID)
+		errMap[filterscope.PidNSFilterMap] = filterScope.PidNSFilter.UpdateBPF(t.bpfModule, scopeID)
+		errMap[filterscope.UTSFilterMap] = filterScope.UTSFilter.UpdateBPF(t.bpfModule, scopeID)
+		errMap[filterscope.CommFilterMap] = filterScope.CommFilter.UpdateBPF(t.bpfModule, scopeID)
+		errMap[filterscope.ContIdFilter] = filterScope.ContIDFilter.UpdateBPF(t.bpfModule, t.containers, scopeID)
+		errMap[filterscope.BinaryFilterMap] = filterScope.BinaryFilter.UpdateBPF(t.bpfModule, scopeID)
 
 		for k, v := range errMap {
 			if v != nil {
