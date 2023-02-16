@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
+	"github.com/aquasecurity/tracee/pkg/filterscope"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
@@ -173,8 +173,8 @@ func parseFilterFlag(flag string) (*filterFlag, error) {
 
 		// now consider it as a scope index
 		scopeID--
-		if scopeID < 0 || scopeID > tracee.MaxFilterScopes-1 {
-			return nil, filters.InvalidScope(fmt.Sprintf("%s - scopes must be between 1 and %d", flag, tracee.MaxFilterScopes))
+		if scopeID < 0 || scopeID > filterscope.MaxFilterScopes-1 {
+			return nil, filters.InvalidScope(fmt.Sprintf("%s - scopes must be between 1 and %d", flag, filterscope.MaxFilterScopes))
 		}
 
 		filterNameIdx = scopeEndIdx + 1
@@ -210,7 +210,7 @@ func parseFilterFlag(flag string) (*filterFlag, error) {
 	}, nil
 }
 
-func PrepareFilterScopes(filtersArr []string) (*tracee.FilterScopes, error) {
+func PrepareFilterScopes(filtersArr []string) (*filterscope.FilterScopes, error) {
 	eventsNameToID := events.Definitions.NamesToIDs()
 	// remove internal events since they shouldn't be accesible by users
 	for event, id := range eventsNameToID {
@@ -234,9 +234,9 @@ func PrepareFilterScopes(filtersArr []string) (*tracee.FilterScopes, error) {
 		)
 	}
 
-	filterScopes := tracee.NewFilterScopes()
+	filterScopes := filterscope.NewFilterScopes()
 	for scopeIdx, fsFlags := range parsedMap {
-		filterScope := tracee.NewFilterScope()
+		filterScope := filterscope.NewFilterScope()
 		eventFilter := cliFilter{
 			Equal:    []string{},
 			NotEqual: []string{},
@@ -441,7 +441,7 @@ func PrepareFilterScopes(filtersArr []string) (*tracee.FilterScopes, error) {
 		}
 
 		var err error
-		newScope := tracee.NewFilterScope()
+		newScope := filterscope.NewFilterScope()
 		newScope.EventsToTrace, err = prepareEventsToTrace(eventFilter, setFilter, eventsNameToID)
 		if err != nil {
 			return nil, err
