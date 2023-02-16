@@ -3,7 +3,6 @@ package initialize
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -56,7 +55,7 @@ func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSInfo *hel
 				config.BTFObjPath = btfFilePath
 			}
 		} // else {} (2)
-		if bpfBytes, err = ioutil.ReadFile(bpfFilePath); err != nil {
+		if bpfBytes, err = os.ReadFile(bpfFilePath); err != nil {
 			return err
 		}
 
@@ -107,7 +106,7 @@ func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSInfo *hel
 	bpfFilePath = fmt.Sprintf("%s/tracee.bpf.%s.%s.o", installPath, kVersion, tVersion)
 	logger.Debug("BPF: no BTF file was found or provided")
 	logger.Debug("BPF: trying non CO-RE eBPF", "file", bpfFilePath)
-	if bpfBytes, err = ioutil.ReadFile(bpfFilePath); err != nil {
+	if bpfBytes, err = os.ReadFile(bpfFilePath); err != nil {
 		// tell entrypoint that eBPF non CO-RE obj compilation is needed
 		logger.Error("BPF", "error", err)
 		logger.Error("BPF: could not load CO-RE eBPF object and could not find non CO-RE object", "installPath", installPath)

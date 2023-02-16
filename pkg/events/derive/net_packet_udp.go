@@ -9,7 +9,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-func NetPacketUDP() deriveFunction {
+func NetPacketUDP() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketUDP, deriveNetPacketUDPArgs())
 }
 

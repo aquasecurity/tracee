@@ -52,7 +52,7 @@ func (sig *antiDebugging) OnEvent(event protocol.Event) error {
 	if ee.EventName != "ptrace" {
 		return nil
 	}
-	request, err := helpers.GetTraceeArgumentByName(ee, "request")
+	request, err := helpers.GetTraceeArgumentByName(ee, "request", helpers.GetArgOps{DefaultArgs: false})
 	if err != nil {
 		return err
 	}

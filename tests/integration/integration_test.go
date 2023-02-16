@@ -4,8 +4,9 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
@@ -19,6 +20,23 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestInitNamespacesEvent(t *testing.T) {
+	procNamespaces := [...]string{"mnt", "cgroup", "pid", "pid_for_children", "time", "time_for_children", "user", "ipc", "net", "uts"}
+	evts := events.InitNamespacesEvent()
+	initNamespaces := make(map[string]uint32)
+
+	for _, arg := range evts.Args {
+		namespaceVale, ok := arg.Value.(uint32)
+		assert.Truef(t, ok, "Value of namespace %s is not valid: %v", arg.Name, arg.Value)
+		initNamespaces[arg.Name] = namespaceVale
+	}
+
+	for _, namespace := range procNamespaces {
+		assert.Contains(t, initNamespaces, namespace)
+		assert.NotZero(t, initNamespaces[namespace])
+	}
+}
 
 // small set of actions to trigger a magic write event
 func checkMagicwrite(t *testing.T, gotOutput *[]trace.Event) {
@@ -176,14 +194,8 @@ func checkSecurityFileOpenExecve(t *testing.T, gotOutput *[]trace.Event) {
 	_, err := forkAndExecFunction(doFileOpen)
 	require.NoError(t, err)
 
-	syscallArgs := []events.ID{}
 	for _, evt := range *gotOutput {
-		arg, err := helpers.GetTraceeArgumentByName(evt, "syscall")
-		require.NoError(t, err)
-		syscallArgs = append(syscallArgs, events.ID(arg.Value.(int32)))
-	}
-	for _, syscall := range syscallArgs {
-		assert.Equal(t, events.Execve, syscall)
+		assert.Equal(t, "execve", evt.Syscall)
 	}
 }
 
@@ -197,7 +209,7 @@ func checkScope42SecurityFileOpenLs(t *testing.T, gotOutput *[]trace.Event) {
 		// ls - scope 42
 		assert.Equal(t, "ls", evt.ProcessName)
 		assert.Equal(t, uint64(1<<41), evt.MatchedScopes)
-		arg, err := helpers.GetTraceeArgumentByName(evt, "pathname")
+		arg, err := helpers.GetTraceeArgumentByName(evt, "pathname", helpers.GetArgOps{DefaultArgs: false})
 		require.NoError(t, err)
 		assert.Contains(t, arg.Value, "integration")
 	}
@@ -227,6 +239,41 @@ func checkExecveOnScopes4And2(t *testing.T, gotOutput *[]trace.Event) {
 	// uname - scope 2
 	assert.Equal(t, evts[1].ProcessName, "uname")
 	assert.Equal(t, uint64(1<<1), evts[1].MatchedScopes, "MatchedScopes")
+}
+
+func checkDockerdBinaryFilter(t *testing.T, gotOutput *[]trace.Event) {
+	dockerdPidBytes, err := forkAndExecFunction(getDockerdPid)
+	require.NoError(t, err)
+	dockerdPidString := strings.TrimSuffix(string(dockerdPidBytes), "\n")
+	dockerdPid, err := strconv.ParseInt(dockerdPidString, 10, 64)
+	require.NoError(t, err)
+	_, err = forkAndExecFunction(doDockerRun)
+	require.NoError(t, err)
+
+	waitForTraceeOutput(t, gotOutput, time.Now(), true)
+
+	processIds := []int{}
+	for _, evt := range *gotOutput {
+		processIds = append(processIds, evt.ProcessID)
+	}
+	assert.Contains(t, processIds, int(dockerdPid))
+}
+
+func checkLsAndWhichBinaryFilterWithScopes(t *testing.T, gotOutput *[]trace.Event) {
+	var err error
+	_, err = forkAndExecFunction(doLs)
+	require.NoError(t, err)
+	_, err = forkAndExecFunction(doWhichLs)
+	require.NoError(t, err)
+
+	waitForTraceeOutput(t, gotOutput, time.Now(), true)
+
+	for _, evt := range *gotOutput {
+		procName := evt.ProcessName
+		if procName != "ls" && procName != "which" {
+			t.Fail()
+		}
+	}
 }
 
 func Test_EventFilters(t *testing.T) {
@@ -287,7 +334,7 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name:       "trace only events from new containers",
-			filterArgs: []string{"container=new"},
+			filterArgs: []string{"container=new", "event!=container_create,container_remove"},
 			eventFunc:  checkNewContainers,
 		},
 		{
@@ -305,8 +352,18 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name:       "trace only security_file_open from \"execve\" syscall",
-			filterArgs: []string{"event=security_file_open", "security_file_open.args.syscall=execve"},
+			filterArgs: []string{"event=security_file_open", "security_file_open.context.syscall=execve"},
 			eventFunc:  checkSecurityFileOpenExecve,
+		},
+		{
+			name:       "trace only events from \"/usr/bin/dockerd\" binary and contain it's pid",
+			filterArgs: []string{"bin=/usr/bin/dockerd"},
+			eventFunc:  checkDockerdBinaryFilter,
+		},
+		{
+			name:       "trace events from ls and which binary in separate scopes",
+			filterArgs: []string{"1:bin=/usr/bin/ls", "2:bin=/usr/bin/which"},
+			eventFunc:  checkLsAndWhichBinaryFilterWithScopes,
 		},
 	}
 
@@ -346,11 +403,13 @@ func Test_EventFilters(t *testing.T) {
 type testFunc string
 
 const (
-	doMagicWrite testFunc = "do_magic_write"
-	doLs         testFunc = "do_ls"
-	doLsUname    testFunc = "do_ls_uname"
-	doDockerRun  testFunc = "do_docker_run"
-	doFileOpen   testFunc = "do_file_open"
+	doMagicWrite  testFunc = "do_magic_write"
+	doLs          testFunc = "do_ls"
+	doLsUname     testFunc = "do_ls_uname"
+	doDockerRun   testFunc = "do_docker_run"
+	doFileOpen    testFunc = "do_file_open"
+	getDockerdPid testFunc = "get_dockerd_pid"
+	doWhichLs     testFunc = "do_which_ls"
 )
 
 //go:embed tester.sh
@@ -398,7 +457,7 @@ func forkAndExecFunction(funcName testFunc) ([]byte, error) {
 	// ForkExec doesn't block, wait for output
 	time.Sleep(time.Second)
 
-	output, err := ioutil.ReadAll(tmpOutputFile)
+	output, err := io.ReadAll(tmpOutputFile)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't read output: %w", err)
 	}

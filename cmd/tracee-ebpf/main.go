@@ -67,7 +67,7 @@ func main() {
 				Name:    "list",
 				Aliases: []string{"l"},
 				Value:   false,
-				Usage:   "just list tracable events",
+				Usage:   "list tracable events",
 			},
 			&cli.StringSliceFlag{
 				Name:    "trace",
@@ -91,17 +91,17 @@ func main() {
 				Name:    "output",
 				Aliases: []string{"o"},
 				Value:   cli.NewStringSlice("format:table"),
-				Usage:   "Control how and where output is printed. run '--output help' for more info.",
+				Usage:   "control how and where output is printed. run '--output help' for more info.",
 			},
 			&cli.StringSliceFlag{
 				Name:    "cache",
 				Aliases: []string{"a"},
 				Value:   cli.NewStringSlice("none"),
-				Usage:   "Control event caching queues. run '--cache help' for more info.",
+				Usage:   "control event caching queues. run '--cache help' for more info.",
 			},
 			&cli.StringSliceFlag{
 				Name:  "crs",
-				Usage: "Define connected container runtimes. run '--crs help' for more info.",
+				Usage: "define connected container runtimes. run '--crs help' for more info.",
 				Value: cli.NewStringSlice(),
 			},
 			&cli.IntFlag{
@@ -132,7 +132,7 @@ func main() {
 			},
 			&cli.BoolFlag{
 				Name:  server.PProfEndpointFlag,
-				Usage: "enables pprof endpoints",
+				Usage: "enable pprof endpoints",
 				Value: false,
 			},
 			&cli.StringFlag{
@@ -144,10 +144,10 @@ func main() {
 				Name:  "containers",
 				Usage: "enable container info enrichment to events. this feature is experimental and may cause unexpected behavior in the pipeline",
 			},
-			&cli.StringFlag{
+			&cli.StringSliceFlag{
 				Name:  "log",
-				Usage: "logger level. run '--log help' for more info.",
-				Value: "info",
+				Usage: "logger option. run '--log help' for more info.",
+				Value: cli.NewStringSlice("info"),
 			},
 		},
 	}

@@ -246,8 +246,7 @@ func (filter *BPFStringFilter) UpdateBPF(bpfModule *bpf.Module, filterScopeID ui
 
 	filterVal := make([]byte, 16)
 
-	//Initialize the associated bpfMap
-	//First initialize notEqual values since equality should take precedence
+	// first initialize notEqual values since equality should take precedence
 	for str := range filter.notEqual {
 		byteStr := make([]byte, maxBpfStrFilterSize)
 		copy(byteStr, str)
@@ -270,7 +269,7 @@ func (filter *BPFStringFilter) UpdateBPF(bpfModule *bpf.Module, filterScopeID ui
 		}
 	}
 
-	//Now - setup equality filters
+	// now - setup equality filters
 	for str := range filter.equal {
 		byteStr := make([]byte, maxBpfStrFilterSize)
 		copy(byteStr, str)

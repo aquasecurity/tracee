@@ -40,6 +40,7 @@ type Event struct {
 	MatchedScopes       uint64       `json:"matchedScopes"`
 	ArgsNum             int          `json:"argsNum"`
 	ReturnValue         int          `json:"returnValue"`
+	Syscall             string       `json:"syscall"`
 	StackAddresses      []uint64     `json:"stackAddresses"`
 	ContextFlags        ContextFlags `json:"contextFlags"`
 	Args                []Argument   `json:"args"` //Arguments are ordered according their appearance in the original event
@@ -48,6 +49,7 @@ type Event struct {
 // ContextFlags are flags representing event context
 type ContextFlags struct {
 	ContainerStarted bool `json:"containerStarted"`
+	IsCompat         bool `json:"isCompat"`
 }
 
 // EventOrigin is where a trace.Event occured, it can either be from the host machine or from a container

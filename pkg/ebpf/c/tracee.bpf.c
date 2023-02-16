@@ -77,3263 +77,29 @@
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_endian.h>
+#include "maps.h"
+#include "types.h"
+#include "common/arch.h"
+#include "common/arguments.h"
+#include "common/binprm.h"
+#include "common/buffer.h"
+#include "common/cgroups.h"
+#include "common/common.h"
+#include "common/consts.h"
+#include "common/context.h"
+#include "common/filesystem.h"
+#include "common/filtering.h"
+#include "common/kconfig.h"
+#include "common/ksymbols.h"
+#include "common/logging.h"
+#include "common/memory.h"
+#include "common/network.h"
+#include "common/probes.h"
 
 char LICENSE[] SEC("license") = "GPL";
 #ifndef CORE
 int KERNEL_VERSION SEC("version") = LINUX_VERSION_CODE;
 #endif
-
-#if defined(bpf_target_x86)
-    #define PT_REGS_PARM6(ctx) ((ctx)->r9)
-#elif defined(bpf_target_arm64)
-    #define PT_REGS_PARM6(x) ((x)->regs[5])
-#endif
-
-// INTERNAL ----------------------------------------------------------------------------------------
-
-// clang-format off
-#define MAX_PERCPU_BUFSIZE  (1 << 15) // set by the kernel as an upper bound
-#define MAX_STRING_SIZE     4096      // same as PATH_MAX
-#define MAX_BYTES_ARR_SIZE  4096      // max size of bytes array (arbitrarily chosen)
-#define MAX_STACK_ADDRESSES 1024      // max amount of diff stack trace addrs to buffer
-#define MAX_STACK_DEPTH     20        // max depth of each stack trace to track
-#define MAX_STR_FILTER_SIZE 16        // bounded to size of the compared values (comm)
-#define MAX_BIN_PATH_SIZE   256       // max binary path size
-#define FILE_MAGIC_HDR_SIZE 32        // magic_write: bytes to save from a file's header
-#define FILE_MAGIC_MASK     31        // magic_write: mask used for verifier boundaries
-#define NET_SEQ_OPS_SIZE    4         // print_net_seq_ops: struct size - TODO: replace with uprobe argument
-#define NET_SEQ_OPS_TYPES   6         // print_net_seq_ops: argument size - TODO: replace with uprobe argument
-#define MAX_KSYM_NAME_SIZE  64
-#define UPROBE_MAGIC_NUMBER 20220829
-#define ARGS_BUF_SIZE       32000
-#define MAX_MEM_DUMP_SIZE   127
-// clang-format on
-
-// helper macros for branch prediction
-#ifndef likely
-    #define likely(x) __builtin_expect((x), 1)
-#endif
-#ifndef unlikely
-    #define unlikely(x) __builtin_expect((x), 0)
-#endif
-
-enum buf_idx_e
-{
-    STRING_BUF_IDX,
-    FILE_BUF_IDX,
-    MAX_BUFFERS
-};
-
-enum bin_type_e
-{
-    SEND_VFS_WRITE = 1,
-    SEND_MPROTECT,
-    SEND_KERNEL_MODULE,
-};
-
-#define SEND_META_SIZE 24
-
-enum mem_prot_alert_e
-{
-    ALERT_MMAP_W_X = 1,
-    ALERT_MPROT_X_ADD,
-    ALERT_MPROT_W_ADD,
-    ALERT_MPROT_W_REM
-};
-
-enum tail_call_id_e
-{
-    TAIL_VFS_WRITE,
-    TAIL_VFS_WRITEV,
-    TAIL_SEND_BIN,
-    TAIL_SEND_BIN_TP,
-    TAIL_KERNEL_WRITE,
-    TAIL_SCHED_PROCESS_EXEC_EVENT_SUBMIT,
-    TAIL_VFS_READ,
-    TAIL_VFS_READV,
-    MAX_TAIL_CALL
-};
-
-enum argument_type_e
-{
-    NONE_T = 0UL,
-    INT_T,
-    UINT_T,
-    LONG_T,
-    ULONG_T,
-    OFF_T_T,
-    MODE_T_T,
-    DEV_T_T,
-    SIZE_T_T,
-    POINTER_T,
-    STR_T,
-    STR_ARR_T,
-    SOCKADDR_T,
-    BYTES_T,
-    U16_T,
-    CRED_T,
-    INT_ARR_2_T,
-    UINT64_ARR_T,
-    U8_T,
-    TYPE_MAX = 255UL
-};
-
-#define UNDEFINED_SYSCALL 1000
-
-#if defined(bpf_target_x86)
-    #define SYSCALL_READ                   0
-    #define SYSCALL_WRITE                  1
-    #define SYSCALL_OPEN                   2
-    #define SYSCALL_CLOSE                  3
-    #define SYSCALL_FSTAT                  5
-    #define SYSCALL_LSEEK                  8
-    #define SYSCALL_MMAP                   9
-    #define SYSCALL_MPROTECT               10
-    #define SYSCALL_RT_SIGRETURN           15
-    #define SYSCALL_IOCTL                  16
-    #define SYSCALL_PREAD64                17
-    #define SYSCALL_PWRITE64               18
-    #define SYSCALL_READV                  19
-    #define SYSCALL_WRITEV                 20
-    #define SYSCALL_DUP                    32
-    #define SYSCALL_DUP2                   33
-    #define SYSCALL_SOCKET                 41
-    #define SYSCALL_CONNECT                42
-    #define SYSCALL_ACCEPT                 43
-    #define SYSCALL_SENDTO                 44
-    #define SYSCALL_RECVFROM               45
-    #define SYSCALL_SENDMSG                46
-    #define SYSCALL_RECVMSG                47
-    #define SYSCALL_SHUTDOWN               48
-    #define SYSCALL_BIND                   49
-    #define SYSCALL_LISTEN                 50
-    #define SYSCALL_GETSOCKNAME            51
-    #define SYSCALL_GETPEERNAME            52
-    #define SYSCALL_SETSOCKOPT             54
-    #define SYSCALL_GETSOCKOPT             55
-    #define SYSCALL_EXECVE                 59
-    #define SYSCALL_EXIT                   60
-    #define SYSCALL_FCNTL                  72
-    #define SYSCALL_FLOCK                  73
-    #define SYSCALL_FSYNC                  74
-    #define SYSCALL_FDATASYNC              75
-    #define SYSCALL_FTRUNCATE              77
-    #define SYSCALL_GETDENTS               78
-    #define SYSCALL_FCHDIR                 81
-    #define SYSCALL_FCHMOD                 91
-    #define SYSCALL_FCHOWN                 93
-    #define SYSCALL_FSTATFS                138
-    #define SYSCALL_READAHEAD              187
-    #define SYSCALL_FSETXATTR              190
-    #define SYSCALL_FGETXATTR              193
-    #define SYSCALL_FLISTXATTR             196
-    #define SYSCALL_FREMOVEXATTR           199
-    #define SYSCALL_GETDENTS64             217
-    #define SYSCALL_FADVISE64              221
-    #define SYSCALL_EXIT_GROUP             231
-    #define SYSCALL_EPOLL_WAIT             232
-    #define SYSCALL_EPOLL_CTL              233
-    #define SYSCALL_INOTIFY_ADD_WATCH      254
-    #define SYSCALL_INOTIFY_RM_WATCH       255
-    #define SYSCALL_OPENAT                 257
-    #define SYSCALL_MKDIRAT                258
-    #define SYSCALL_MKNODAT                259
-    #define SYSCALL_FCHOWNAT               260
-    #define SYSCALL_FUTIMESAT              261
-    #define SYSCALL_NEWFSTATAT             262
-    #define SYSCALL_UNLINKAT               263
-    #define SYSCALL_SYMLINKAT              266
-    #define SYSCALL_READLINKAT             267
-    #define SYSCALL_FCHMODAT               268
-    #define SYSCALL_FACCESSAT              269
-    #define SYSCALL_SYNC_FILE_RANGE        277
-    #define SYSCALL_VMSPLICE               278
-    #define SYSCALL_UTIMENSAT              280
-    #define SYSCALL_EPOLL_PWAIT            281
-    #define SYSCALL_SIGNALFD               282
-    #define SYSCALL_FALLOCATE              285
-    #define SYSCALL_TIMERFD_SETTIME        286
-    #define SYSCALL_TIMERFD_GETTIME        287
-    #define SYSCALL_ACCEPT4                288
-    #define SYSCALL_SIGNALFD4              289
-    #define SYSCALL_DUP3                   292
-    #define SYSCALL_PREADV                 295
-    #define SYSCALL_PWRITEV                296
-    #define SYSCALL_PERF_EVENT_OPEN        298
-    #define SYSCALL_RECVMMSG               299
-    #define SYSCALL_NAME_TO_HANDLE_AT      303
-    #define SYSCALL_OPEN_BY_HANDLE_AT      304
-    #define SYSCALL_SYNCFS                 306
-    #define SYSCALL_SENDMMSG               307
-    #define SYSCALL_SETNS                  308
-    #define SYSCALL_FINIT_MODULE           313
-    #define SYSCALL_EXECVEAT               322
-    #define SYSCALL_PREADV2                327
-    #define SYSCALL_PWRITEV2               328
-    #define SYSCALL_PKEY_MPROTECT          329
-    #define SYSCALL_STATX                  332
-    #define SYSCALL_PIDFD_SEND_SIGNAL      424
-    #define SYSCALL_IO_URING_ENTER         426
-    #define SYSCALL_IO_URING_REGISTER      427
-    #define SYSCALL_OPEN_TREE              428
-    #define SYSCALL_FSCONFIG               431
-    #define SYSCALL_FSMOUNT                432
-    #define SYSCALL_FSPICK                 433
-    #define SYSCALL_OPENAT2                437
-    #define SYSCALL_FACCESSAT2             439
-    #define SYSCALL_PROCESS_MADVISE        440
-    #define SYSCALL_EPOLL_PWAIT2           441
-    #define SYSCALL_MOUNT_SETATTR          442
-    #define SYSCALL_QUOTACTL_FD            443
-    #define SYSCALL_LANDLOCK_ADD_RULE      445
-    #define SYSCALL_LANDLOCK_RESTRICT_SELF 446
-    #define SYSCALL_PROCESS_MRELEASE       448
-
-#elif defined(bpf_target_arm64)
-    #define SYSCALL_READ                   63
-    #define SYSCALL_WRITE                  64
-    #define SYSCALL_OPEN                   UNDEFINED_SYSCALL
-    #define SYSCALL_CLOSE                  57
-    #define SYSCALL_FSTAT                  80
-    #define SYSCALL_LSEEK                  62
-    #define SYSCALL_MMAP                   222
-    #define SYSCALL_MPROTECT               226
-    #define SYSCALL_RT_SIGRETURN           139
-    #define SYSCALL_IOCTL                  29
-    #define SYSCALL_PREAD64                67
-    #define SYSCALL_PWRITE64               68
-    #define SYSCALL_READV                  65
-    #define SYSCALL_WRITEV                 66
-    #define SYSCALL_DUP                    23
-    #define SYSCALL_DUP2                   UNDEFINED_SYSCALL
-    #define SYSCALL_SOCKET                 198
-    #define SYSCALL_CONNECT                203
-    #define SYSCALL_ACCEPT                 202
-    #define SYSCALL_SENDTO                 206
-    #define SYSCALL_RECVFROM               207
-    #define SYSCALL_SENDMSG                211
-    #define SYSCALL_RECVMSG                212
-    #define SYSCALL_SHUTDOWN               210
-    #define SYSCALL_BIND                   200
-    #define SYSCALL_LISTEN                 201
-    #define SYSCALL_GETSOCKNAME            204
-    #define SYSCALL_GETPEERNAME            205
-    #define SYSCALL_SETSOCKOPT             208
-    #define SYSCALL_GETSOCKOPT             209
-    #define SYSCALL_EXECVE                 221
-    #define SYSCALL_EXIT                   93
-    #define SYSCALL_FCNTL                  25
-    #define SYSCALL_FLOCK                  32
-    #define SYSCALL_FSYNC                  82
-    #define SYSCALL_FDATASYNC              83
-    #define SYSCALL_FTRUNCATE              46
-    #define SYSCALL_GETDENTS               UNDEFINED_SYSCALL
-    #define SYSCALL_FCHDIR                 50
-    #define SYSCALL_FCHMOD                 52
-    #define SYSCALL_FCHOWN                 55
-    #define SYSCALL_FSTATFS                44
-    #define SYSCALL_READAHEAD              213
-    #define SYSCALL_FSETXATTR              7
-    #define SYSCALL_FGETXATTR              10
-    #define SYSCALL_FLISTXATTR             13
-    #define SYSCALL_FREMOVEXATTR           16
-    #define SYSCALL_GETDENTS64             61
-    #define SYSCALL_FADVISE64              223
-    #define SYSCALL_EXIT_GROUP             94
-    #define SYSCALL_EPOLL_WAIT             UNDEFINED_SYSCALL
-    #define SYSCALL_EPOLL_CTL              21
-    #define SYSCALL_INOTIFY_ADD_WATCH      27
-    #define SYSCALL_INOTIFY_RM_WATCH       28
-    #define SYSCALL_OPENAT                 56
-    #define SYSCALL_MKDIRAT                34
-    #define SYSCALL_MKNODAT                33
-    #define SYSCALL_FCHOWNAT               54
-    #define SYSCALL_FUTIMESAT              UNDEFINED_SYSCALL
-    #define SYSCALL_NEWFSTATAT             UNDEFINED_SYSCALL
-    #define SYSCALL_UNLINKAT               35
-    #define SYSCALL_SYMLINKAT              36
-    #define SYSCALL_READLINKAT             78
-    #define SYSCALL_FCHMODAT               53
-    #define SYSCALL_FACCESSAT              48
-    #define SYSCALL_SYNC_FILE_RANGE        84
-    #define SYSCALL_VMSPLICE               75
-    #define SYSCALL_UTIMENSAT              88
-    #define SYSCALL_EPOLL_PWAIT            22
-    #define SYSCALL_SIGNALFD               UNDEFINED_SYSCALL
-    #define SYSCALL_FALLOCATE              47
-    #define SYSCALL_TIMERFD_SETTIME        86
-    #define SYSCALL_TIMERFD_GETTIME        87
-    #define SYSCALL_ACCEPT4                242
-    #define SYSCALL_SIGNALFD4              74
-    #define SYSCALL_DUP3                   24
-    #define SYSCALL_PREADV                 69
-    #define SYSCALL_PWRITEV                70
-    #define SYSCALL_PERF_EVENT_OPEN        241
-    #define SYSCALL_RECVMMSG               243
-    #define SYSCALL_NAME_TO_HANDLE_AT      264
-    #define SYSCALL_OPEN_BY_HANDLE_AT      265
-    #define SYSCALL_SYNCFS                 267
-    #define SYSCALL_SENDMMSG               269
-    #define SYSCALL_SETNS                  268
-    #define SYSCALL_FINIT_MODULE           273
-    #define SYSCALL_EXECVEAT               281
-    #define SYSCALL_PREADV2                286
-    #define SYSCALL_PWRITEV2               287
-    #define SYSCALL_PKEY_MPROTECT          288
-    #define SYSCALL_STATX                  291
-    #define SYSCALL_PIDFD_SEND_SIGNAL      424
-    #define SYSCALL_IO_URING_ENTER         426
-    #define SYSCALL_IO_URING_REGISTER      427
-    #define SYSCALL_OPEN_TREE              428
-    #define SYSCALL_FSCONFIG               431
-    #define SYSCALL_FSMOUNT                432
-    #define SYSCALL_FSPICK                 433
-    #define SYSCALL_OPENAT2                437
-    #define SYSCALL_FACCESSAT2             439
-    #define SYSCALL_PROCESS_MADVISE        440
-    #define SYSCALL_EPOLL_PWAIT2           441
-    #define SYSCALL_MOUNT_SETATTR          442
-    #define SYSCALL_QUOTACTL_FD            443
-    #define SYSCALL_LANDLOCK_ADD_RULE      445
-    #define SYSCALL_LANDLOCK_RESTRICT_SELF 446
-    #define SYSCALL_PROCESS_MRELEASE       448
-#endif
-
-enum event_id_e
-{
-    // Net events IDs
-    NET_PACKET_BASE = 700,
-    NET_PACKET_IP,
-    NET_PACKET_TCP,
-    NET_PACKET_UDP,
-    NET_PACKET_ICMP,
-    NET_PACKET_ICMPV6,
-    NET_PACKET_DNS,
-    NET_PACKET_HTTP,
-    NET_PACKET_CAP_BASE,
-    MAX_NET_EVENT_ID,
-    // Common event IDs
-    RAW_SYS_ENTER,
-    RAW_SYS_EXIT,
-    SCHED_PROCESS_FORK,
-    SCHED_PROCESS_EXEC,
-    SCHED_PROCESS_EXIT,
-    SCHED_SWITCH,
-    DO_EXIT,
-    CAP_CAPABLE,
-    VFS_WRITE,
-    VFS_WRITEV,
-    VFS_READ,
-    VFS_READV,
-    MEM_PROT_ALERT,
-    COMMIT_CREDS,
-    SWITCH_TASK_NS,
-    MAGIC_WRITE,
-    CGROUP_ATTACH_TASK,
-    CGROUP_MKDIR,
-    CGROUP_RMDIR,
-    SECURITY_BPRM_CHECK,
-    SECURITY_FILE_OPEN,
-    SECURITY_INODE_UNLINK,
-    SECURITY_SOCKET_CREATE,
-    SECURITY_SOCKET_LISTEN,
-    SECURITY_SOCKET_CONNECT,
-    SECURITY_SOCKET_ACCEPT,
-    SECURITY_SOCKET_BIND,
-    SECURITY_SOCKET_SETSOCKOPT,
-    SECURITY_SB_MOUNT,
-    SECURITY_BPF,
-    SECURITY_BPF_MAP,
-    SECURITY_KERNEL_READ_FILE,
-    SECURITY_INODE_MKNOD,
-    SECURITY_POST_READ_FILE,
-    SECURITY_INODE_SYMLINK,
-    SECURITY_MMAP_FILE,
-    SECURITY_FILE_MPROTECT,
-    SOCKET_DUP,
-    HIDDEN_INODES,
-    __KERNEL_WRITE,
-    PROC_CREATE,
-    KPROBE_ATTACH,
-    CALL_USERMODE_HELPER,
-    DIRTY_PIPE_SPLICE,
-    DEBUGFS_CREATE_FILE,
-    PRINT_SYSCALL_TABLE,
-    DEBUGFS_CREATE_DIR,
-    DEVICE_ADD,
-    REGISTER_CHRDEV,
-    SHARED_OBJECT_LOADED,
-    DO_INIT_MODULE,
-    SOCKET_ACCEPT,
-    LOAD_ELF_PHDRS,
-    HOOKED_PROC_FOPS,
-    PRINT_NET_SEQ_OPS,
-    TASK_RENAME,
-    SECURITY_INODE_RENAME,
-    DO_SIGACTION,
-    BPF_ATTACH,
-    KALLSYMS_LOOKUP_NAME,
-    DO_MMAP,
-    PRINT_MEM_DUMP,
-    MAX_EVENT_ID,
-};
-
-#define CAPTURE_IFACE (1 << 0)
-#define TRACE_IFACE   (1 << 1)
-
-#define OPT_EXEC_ENV              (1 << 0)
-#define OPT_CAPTURE_FILES         (1 << 1)
-#define OPT_EXTRACT_DYN_CODE      (1 << 2)
-#define OPT_CAPTURE_STACK_TRACES  (1 << 3)
-#define OPT_CAPTURE_MODULES       (1 << 4)
-#define OPT_CGROUP_V1             (1 << 5)
-#define OPT_PROCESS_INFO          (1 << 6)
-#define OPT_TRANSLATE_FD_FILEPATH (1 << 7)
-
-#define FILTER_UID_ENABLED       (1 << 0)
-#define FILTER_UID_OUT           (1 << 1)
-#define FILTER_MNT_NS_ENABLED    (1 << 2)
-#define FILTER_MNT_NS_OUT        (1 << 3)
-#define FILTER_PID_NS_ENABLED    (1 << 4)
-#define FILTER_PID_NS_OUT        (1 << 5)
-#define FILTER_UTS_NS_ENABLED    (1 << 6)
-#define FILTER_UTS_NS_OUT        (1 << 7)
-#define FILTER_COMM_ENABLED      (1 << 8)
-#define FILTER_COMM_OUT          (1 << 9)
-#define FILTER_PID_ENABLED       (1 << 10)
-#define FILTER_PID_OUT           (1 << 11)
-#define FILTER_CONT_ENABLED      (1 << 12)
-#define FILTER_CONT_OUT          (1 << 13)
-#define FILTER_FOLLOW_ENABLED    (1 << 14)
-#define FILTER_NEW_PID_ENABLED   (1 << 15)
-#define FILTER_NEW_PID_OUT       (1 << 16)
-#define FILTER_NEW_CONT_ENABLED  (1 << 17)
-#define FILTER_NEW_CONT_OUT      (1 << 18)
-#define FILTER_PROC_TREE_ENABLED (1 << 19)
-#define FILTER_PROC_TREE_OUT     (1 << 20)
-#define FILTER_CGROUP_ID_ENABLED (1 << 21)
-#define FILTER_CGROUP_ID_OUT     (1 << 22)
-#define FILTER_BIN_PATH_ENABLED  (1 << 23)
-#define FILTER_BIN_PATH_OUT      (1 << 24)
-
-#define FILTER_MAX_NOT_SET 0
-#define FILTER_MIN_NOT_SET ULLONG_MAX
-
-#define DEV_NULL_STR 0
-
-#define CONT_ID_LEN          12
-#define CONT_ID_MIN_FULL_LEN 64
-
-enum context_flags_e
-{
-    CONTAINER_STARTED_FLAG = (1 << 0)
-};
-
-enum container_state_e
-{
-    CONTAINER_UNKNOWN = 0, // mark that container state is unknown
-    CONTAINER_EXISTED,     // container existed before tracee was started
-    CONTAINER_CREATED,     // new cgroup path created
-    CONTAINER_STARTED      // a process in the cgroup executed a new binary
-};
-
-#define PACKET_MIN_SIZE 40
-
-#ifndef CORE
-    #if LINUX_VERSION_CODE <                                                                       \
-        KERNEL_VERSION(5, 2, 0) // lower values in old kernels (instr lim is 4096)
-        #define MAX_STR_ARR_ELEM      38
-        #define MAX_ARGS_STR_ARR_ELEM 15
-        #define MAX_PATH_PREF_SIZE    64
-        #define MAX_PATH_COMPONENTS   20
-        #define MAX_BIN_CHUNKS        110
-    #else // complexity limit of 1M verified instructions
-        #define MAX_STR_ARR_ELEM      128
-        #define MAX_ARGS_STR_ARR_ELEM 128
-        #define MAX_PATH_PREF_SIZE    128
-        #define MAX_PATH_COMPONENTS   48
-        #define MAX_BIN_CHUNKS        256
-    #endif
-#else                                // CORE
-    #define MAX_STR_ARR_ELEM      38 // TODO: turn this into global variables set w/ libbpfgo
-    #define MAX_ARGS_STR_ARR_ELEM 15
-    #define MAX_PATH_PREF_SIZE    64
-    #define MAX_PATH_COMPONENTS   20
-    #define MAX_BIN_CHUNKS        110
-#endif
-
-#if defined(bpf_target_x86)
-    #define NUMBER_OF_SYSCALLS_TO_CHECK 18
-#elif defined(bpf_target_arm64)
-    #define NUMBER_OF_SYSCALLS_TO_CHECK 14
-#else
-    #define NUMBER_OF_SYSCALLS_TO_CHECK 0
-#endif
-
-#define MAX_CACHED_PATH_SIZE 64
-
-enum signal_handling_method_e
-{
-#ifdef CORE
-    SIG_DFL,
-    SIG_IGN,
-#endif
-    SIG_HND = 2 // Doesn't exist in the kernel, but signifies that the method is through
-                // user-defined handler
-};
-
-enum bpf_write_user_e
-{
-    WRITE_USER_FALSE,
-    WRITE_USER_TRUE,
-    WRITE_USER_UNKNOWN
-};
-
-enum perf_type_e
-{
-    PERF_TRACEPOINT,
-    PERF_KPROBE,
-    PERF_KRETPROBE,
-    PERF_UPROBE,
-    PERF_URETPROBE
-};
-
-// EBPF KCONFIGS -----------------------------------------------------------------------------------
-
-#ifdef CORE
-    #define get_kconfig(x) get_kconfig_val(x)
-#else
-    #define get_kconfig(x) CONFIG_##x
-#endif
-
-#ifdef CORE
-
-enum kconfig_key_e
-{
-    ARCH_HAS_SYSCALL_WRAPPER = 1000U
-};
-
-#else
-
-    #ifndef CONFIG_ARCH_HAS_SYSCALL_WRAPPER
-        #define CONFIG_ARCH_HAS_SYSCALL_WRAPPER 0
-    #endif
-
-#endif // CORE
-
-// EBPF MACRO HELPERS ------------------------------------------------------------------------------
-
-#ifndef CORE
-
-    #define GET_FIELD_ADDR(field) &field
-
-    #define READ_KERN(ptr)                                                                         \
-        ({                                                                                         \
-            typeof(ptr) _val;                                                                      \
-            __builtin_memset((void *) &_val, 0, sizeof(_val));                                     \
-            bpf_probe_read((void *) &_val, sizeof(_val), &ptr);                                    \
-            _val;                                                                                  \
-        })
-
-    #define READ_KERN_STR_INTO(dst, src) bpf_probe_read_str((void *) &dst, sizeof(dst), src)
-
-    #define READ_USER(ptr)                                                                         \
-        ({                                                                                         \
-            typeof(ptr) _val;                                                                      \
-            __builtin_memset((void *) &_val, 0, sizeof(_val));                                     \
-            bpf_probe_read_user((void *) &_val, sizeof(_val), &ptr);                               \
-            _val;                                                                                  \
-        })
-
-    #define BPF_READ(src, a, ...)                                                                  \
-        ({                                                                                         \
-            ___type((src), a, ##__VA_ARGS__) __r;                                                  \
-            BPF_PROBE_READ_INTO(&__r, (src), a, ##__VA_ARGS__);                                    \
-            __r;                                                                                   \
-        })
-
-#else // CORE
-
-    #define GET_FIELD_ADDR(field) __builtin_preserve_access_index(&field)
-
-    #define READ_KERN(ptr)                                                                         \
-        ({                                                                                         \
-            typeof(ptr) _val;                                                                      \
-            __builtin_memset((void *) &_val, 0, sizeof(_val));                                     \
-            bpf_core_read((void *) &_val, sizeof(_val), &ptr);                                     \
-            _val;                                                                                  \
-        })
-
-    #define READ_KERN_STR_INTO(dst, src) bpf_core_read_str((void *) &dst, sizeof(dst), src)
-
-    #define READ_USER(ptr)                                                                         \
-        ({                                                                                         \
-            typeof(ptr) _val;                                                                      \
-            __builtin_memset((void *) &_val, 0, sizeof(_val));                                     \
-            bpf_core_read_user((void *) &_val, sizeof(_val), &ptr);                                \
-            _val;                                                                                  \
-        })
-
-    #define BPF_READ(src, a, ...)                                                                  \
-        ({                                                                                         \
-            ___type((src), a, ##__VA_ARGS__) __r;                                                  \
-            BPF_CORE_READ_INTO(&__r, (src), a, ##__VA_ARGS__);                                     \
-            __r;                                                                                   \
-        })
-
-#endif
-
-// EBPF MAP MACROS ---------------------------------------------------------------------------------
-
-#define BPF_MAP(_name, _type, _key_type, _value_type, _max_entries)                                \
-    struct {                                                                                       \
-        __uint(type, _type);                                                                       \
-        __uint(max_entries, _max_entries);                                                         \
-        __type(key, _key_type);                                                                    \
-        __type(value, _value_type);                                                                \
-    } _name SEC(".maps");
-
-#define BPF_HASH(_name, _key_type, _value_type, _max_entries)                                      \
-    BPF_MAP(_name, BPF_MAP_TYPE_HASH, _key_type, _value_type, _max_entries)
-
-#define BPF_LRU_HASH(_name, _key_type, _value_type, _max_entries)                                  \
-    BPF_MAP(_name, BPF_MAP_TYPE_LRU_HASH, _key_type, _value_type, _max_entries)
-
-#define BPF_ARRAY(_name, _value_type, _max_entries)                                                \
-    BPF_MAP(_name, BPF_MAP_TYPE_ARRAY, u32, _value_type, _max_entries)
-
-#define BPF_PERCPU_ARRAY(_name, _value_type, _max_entries)                                         \
-    BPF_MAP(_name, BPF_MAP_TYPE_PERCPU_ARRAY, u32, _value_type, _max_entries)
-
-#define BPF_PROG_ARRAY(_name, _max_entries)                                                        \
-    BPF_MAP(_name, BPF_MAP_TYPE_PROG_ARRAY, u32, u32, _max_entries)
-
-#define BPF_PERF_OUTPUT(_name, _max_entries)                                                       \
-    BPF_MAP(_name, BPF_MAP_TYPE_PERF_EVENT_ARRAY, int, __u32, _max_entries)
-
-// stack traces: the value is 1 big byte array of the stack addresses
-typedef __u64 stack_trace_t[MAX_STACK_DEPTH];
-#define BPF_STACK_TRACE(_name, _max_entries)                                                       \
-    BPF_MAP(_name, BPF_MAP_TYPE_STACK_TRACE, u32, stack_trace_t, _max_entries)
-
-#ifndef CORE
-    #ifdef RHEL_RELEASE_CODE
-        #if (RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(8, 0))
-            #define RHEL_RELEASE_GT_8_0
-        #endif
-    #endif
-    #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0)
-        #error Minimal required kernel version is 4.18
-    #endif
-#endif
-
-// INTERNAL STRUCTS --------------------------------------------------------------------------------
-
-typedef struct task_context {
-    u64 start_time; // thread's start time
-    u64 cgroup_id;
-    u32 pid;       // PID as in the userspace term
-    u32 tid;       // TID as in the userspace term
-    u32 ppid;      // Parent PID as in the userspace term
-    u32 host_pid;  // PID in host pid namespace
-    u32 host_tid;  // TID in host pid namespace
-    u32 host_ppid; // Parent PID in host pid namespace
-    u32 uid;
-    u32 mnt_id;
-    u32 pid_id;
-    char comm[TASK_COMM_LEN];
-    char uts_name[TASK_COMM_LEN];
-    u32 flags;
-} task_context_t;
-
-typedef struct event_context {
-    u64 ts; // Timestamp
-    task_context_t task;
-    u32 eventid;
-    u32 padding; // free for further use
-    u64 matched_scopes;
-    s64 retval;
-    u32 stack_id;
-    u16 processor_id; // The ID of the processor which processed the event
-    u8 argnum;
-} event_context_t;
-
-typedef struct args {
-    unsigned long args[6];
-} args_t;
-
-typedef struct syscall_data {
-    uint id;           // Current syscall id
-    args_t args;       // Syscall arguments
-    unsigned long ts;  // Timestamp of syscall entry
-    unsigned long ret; // Syscall ret val. May be used by syscall exit tail calls.
-} syscall_data_t;
-
-typedef struct fd_arg_task {
-    u32 pid;
-    u32 tid;
-    int fd;
-} fd_arg_task_t;
-
-typedef struct fd_arg_path {
-    char path[MAX_CACHED_PATH_SIZE];
-} fd_arg_path_t;
-
-typedef struct task_info {
-    task_context_t context;
-    syscall_data_t syscall_data;
-    bool syscall_traced;  // indicates that syscall_data is valid
-    bool recompute_scope; // recompute matched_scopes (new task/context changed/policy changed)
-    u64 matched_scopes;   // cached bitmap of scopes this task matched
-    u8 container_state;   // the state of the container the task resides in
-} task_info_t;
-
-typedef struct file_info {
-    union {
-        char pathname[MAX_CACHED_PATH_SIZE];
-        char *pathname_p;
-    };
-    dev_t device;
-    unsigned long inode;
-    u64 ctime;
-} file_info_t;
-
-typedef struct binary {
-    u32 mnt_id;
-    char path[MAX_BIN_PATH_SIZE];
-} binary_t;
-
-typedef struct io_data {
-    void *ptr;
-    unsigned long len;
-    bool is_buf;
-} io_data_t;
-
-typedef struct proc_info {
-    bool new_proc;        // set if this process was started after tracee. Used with new_pid filter
-    u64 follow_in_scopes; // set if this process was traced before. Used with the follow filter
-    struct binary binary;
-    u32 binary_no_mnt; // used in binary lookup when we don't care about mount ns. always 0.
-    file_info_t interpreter;
-} proc_info_t;
-
-typedef struct bin_args {
-    u8 type;
-    u8 metadata[SEND_META_SIZE];
-    char *ptr;
-    loff_t start_off;
-    unsigned int full_size;
-    u8 iov_idx;
-    u8 iov_len;
-    struct iovec *vec;
-} bin_args_t;
-
-typedef struct simple_buf {
-    u8 buf[MAX_PERCPU_BUFSIZE];
-} buf_t;
-
-typedef struct path_filter {
-    char path[MAX_PATH_PREF_SIZE];
-} path_filter_t;
-
-typedef struct string_filter {
-    char str[MAX_STR_FILTER_SIZE];
-} string_filter_t;
-
-typedef struct ksym_name {
-    char str[MAX_KSYM_NAME_SIZE];
-} ksym_name_t;
-
-typedef struct config_entry {
-    u32 tracee_pid;
-    u32 options;
-    u32 cgroup_v1_hid;
-    u32 padding; // free for further use
-    // enabled scopes bitmask per filter
-    u64 uid_filter_enabled_scopes;
-    u64 pid_filter_enabled_scopes;
-    u64 mnt_ns_filter_enabled_scopes;
-    u64 pid_ns_filter_enabled_scopes;
-    u64 uts_ns_filter_enabled_scopes;
-    u64 comm_filter_enabled_scopes;
-    u64 cgroup_id_filter_enabled_scopes;
-    u64 cont_filter_enabled_scopes;
-    u64 new_cont_filter_enabled_scopes;
-    u64 new_pid_filter_enabled_scopes;
-    u64 proc_tree_filter_enabled_scopes;
-    u64 bin_path_filter_enabled_scopes;
-    u64 follow_filter_enabled_scopes;
-    // filter_out bitmask per filter
-    u64 uid_filter_out_scopes;
-    u64 pid_filter_out_scopes;
-    u64 mnt_ns_filter_out_scopes;
-    u64 pid_ns_filter_out_scopes;
-    u64 uts_ns_filter_out_scopes;
-    u64 comm_filter_out_scopes;
-    u64 cgroup_id_filter_out_scopes;
-    u64 cont_filter_out_scopes;
-    u64 new_cont_filter_out_scopes;
-    u64 new_pid_filter_out_scopes;
-    u64 proc_tree_filter_out_scopes;
-    u64 bin_path_filter_out_scopes;
-    // bitmask with scopes that have at least one filter enabled
-    u64 enabled_scopes;
-    // global min max
-    u64 uid_max;
-    u64 uid_min;
-    u64 pid_max;
-    u64 pid_min;
-} config_entry_t;
-
-typedef struct netconfig_entry {
-    u32 capture_length; // amount of network packet payload to capture (pcap)
-} netconfig_entry_t;
-
-typedef struct event_data {
-    event_context_t context;
-    char args[ARGS_BUF_SIZE];
-    u32 buf_off;
-    struct task_struct *task;
-} event_data_t;
-
-#define MAX_EVENT_SIZE sizeof(event_context_t) + ARGS_BUF_SIZE
-
-// For a good summary about capabilities, see https://lwn.net/Articles/636533/
-typedef struct slim_cred {
-    uid_t uid;           // real UID of the task
-    gid_t gid;           // real GID of the task
-    uid_t suid;          // saved UID of the task
-    gid_t sgid;          // saved GID of the task
-    uid_t euid;          // effective UID of the task
-    gid_t egid;          // effective GID of the task
-    uid_t fsuid;         // UID for VFS ops
-    gid_t fsgid;         // GID for VFS ops
-    u32 user_ns;         // User Namespace of the event
-    u32 securebits;      // SUID-less security management
-    u64 cap_inheritable; // caps our children can inherit
-    u64 cap_permitted;   // caps we're permitted
-    u64 cap_effective;   // caps we can actually use
-    u64 cap_bset;        // capability bounding set
-    u64 cap_ambient;     // Ambient capability set
-} slim_cred_t;
-
-typedef struct network_connection_v4 {
-    u32 local_address;
-    u16 local_port;
-    u32 remote_address;
-    u16 remote_port;
-} net_conn_v4_t;
-
-typedef struct network_connection_v6 {
-    struct in6_addr local_address;
-    u16 local_port;
-    struct in6_addr remote_address;
-    u16 remote_port;
-    u32 flowinfo;
-    u32 scope_id;
-} net_conn_v6_t;
-
-typedef struct net_id {
-    struct in6_addr address;
-    u16 port;
-    u16 protocol;
-} net_id_t;
-
-typedef struct net_ctx {
-    u32 host_tid;
-    char comm[TASK_COMM_LEN];
-} net_ctx_t;
-
-typedef struct net_ctx_ext {
-    u32 host_tid;
-    char comm[TASK_COMM_LEN];
-    __be16 local_port;
-} net_ctx_ext_t;
-
-// version is not size limited - save only first 32 bytes.
-// srcversion is not size limited - modpost calculates srcversion with size: 25.
-#define MODULE_VERSION_MAX_LENGTH    32
-#define MODULE_SRCVERSION_MAX_LENGTH 25
-
-typedef struct kmod_data {
-    char name[MODULE_NAME_LEN];
-    char version[MODULE_VERSION_MAX_LENGTH];
-    char srcversion[MODULE_SRCVERSION_MAX_LENGTH];
-    u64 prev;
-    u64 next;
-} kmod_data_t;
-
-typedef struct bpf_attach {
-    enum bpf_write_user_e write_user;
-} bpf_attach_t;
-
-typedef struct equality {
-    // bitmask with scopes on which a equal '=' filter is set
-    // its bit value will depend on the filter's equality precedence order
-    u64 equal_in_scopes;
-    // bitmask with scopes on which a filter equality is set
-    u64 equality_set_in_scopes;
-} eq_t;
-
-enum bpf_log_level
-{
-    BPF_LOG_LVL_DEBUG = -1,
-    BPF_LOG_LVL_INFO,
-    BPF_LOG_LVL_WARN,
-    BPF_LOG_LVL_ERROR,
-};
-
-enum bpf_log_id
-{
-    BPF_LOG_ID_UNSPEC = 0U, // enforce enum to u32
-
-    // tracee functions
-    BPF_LOG_ID_INIT_CONTEXT,
-
-    // bpf helpers functions
-    BPF_LOG_ID_MAP_LOOKUP_ELEM,
-    BPF_LOG_ID_MAP_UPDATE_ELEM,
-    BPF_LOG_ID_MAP_DELETE_ELEM,
-    BPF_LOG_ID_GET_CURRENT_COMM,
-    BPF_LOG_ID_TAIL_CALL,
-    BPF_LOG_ID_MEM_READ,
-};
-
-#define BPF_MAX_LOG_FILE_LEN 72
-
-typedef struct bpf_log {
-    s64 ret; // return value
-    u32 cpu;
-    u32 line;                        // line number
-    char file[BPF_MAX_LOG_FILE_LEN]; // filename
-} bpf_log_t;
-
-typedef struct bpf_log_count {
-    u32 count;
-    u64 ts; // timestamp
-} bpf_log_count_t;
-
-typedef struct bpf_log_output {
-    enum bpf_log_id id; // type
-    enum bpf_log_level level;
-    u32 count;
-    u32 padding;
-    struct bpf_log log;
-} bpf_log_output_t;
-
-typedef union scratch {
-    bpf_log_output_t log_output;
-    proc_info_t proc_info;
-    task_info_t task_info;
-} scratch_t;
-
-typedef struct program_data {
-    config_entry_t *config;
-    task_info_t *task_info;
-    event_data_t *event;
-    scratch_t *scratch;
-    void *ctx;
-} program_data_t;
-
-// KERNEL STRUCTS ----------------------------------------------------------------------------------
-
-#ifndef CORE
-struct mnt_namespace {
-    atomic_t count;
-    struct ns_common ns;
-    // ...
-};
-
-struct mount {
-    struct hlist_node mnt_hash;
-    struct mount *mnt_parent;
-    struct dentry *mnt_mountpoint;
-    struct vfsmount mnt;
-    // ...
-};
-
-    #define get_type_size(x)            sizeof(x)
-    #define get_node_addr(array, index) &array[index]
-
-#endif
-
-// EBPF MAPS DECLARATIONS --------------------------------------------------------------------------
-
-// clang-format off
-
-BPF_HASH(kconfig_map, u32, u32, 10240);                            // kernel config variables
-BPF_HASH(containers_map, u32, u8, 10240);                          // map cgroup id to container status {EXISTED, CREATED, STARTED}
-BPF_HASH(args_map, u64, args_t, 1024);                             // persist args between function entry and return
-BPF_HASH(uid_filter, u32, eq_t, 256);                              // filter events by UID, for specific UIDs either by == or !=
-BPF_HASH(pid_filter, u32, eq_t, 256);                              // filter events by PID
-BPF_HASH(mnt_ns_filter, u64, eq_t, 256);                           // filter events by mount namespace id
-BPF_HASH(pid_ns_filter, u64, eq_t, 256);                           // filter events by pid namespace id
-BPF_HASH(uts_ns_filter, string_filter_t, eq_t, 256);               // filter events by uts namespace name
-BPF_HASH(comm_filter, string_filter_t, eq_t, 256);                 // filter events by command name
-BPF_HASH(cgroup_id_filter, u32, eq_t, 256);                        // filter events by cgroup id
-BPF_HASH(binary_filter, binary_t, eq_t, 256);                      // filter events by binary path and mount namespace
-BPF_HASH(events_map, u32, u64, MAX_EVENT_ID);                      // map to persist event configuration data (currently submit scopes)
-BPF_HASH(bin_args_map, u64, bin_args_t, 256);                      // persist args for send_bin funtion
-BPF_HASH(sys_32_to_64_map, u32, u32, 1024);                        // map 32bit to 64bit syscalls
-BPF_HASH(params_types_map, u32, u64, 1024);                        // encoded parameters types for event
-BPF_HASH(process_tree_map, u32, eq_t, 10240);                      // filter events by the ancestry of the traced process
-BPF_LRU_HASH(proc_info_map, u32, proc_info_t, 10240);              // holds data for every process
-BPF_LRU_HASH(task_info_map, u32, task_info_t, 10240);              // holds data for every task
-BPF_HASH(ksymbols_map, ksym_name_t, u64, 1024);                    // holds the addresses of some kernel symbols
-BPF_HASH(syscalls_to_check_map, int, u64, 256);                    // syscalls to discover
-BPF_ARRAY(config_map, config_entry_t, 1);                          // various configurations
-BPF_ARRAY(netconfig_map, netconfig_entry_t, 1);                    // network related configurations
-BPF_ARRAY(file_filter, path_filter_t, 3);                          // filter vfs_write events
-BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);                        // percpu global buffer variables
-BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);                         // store programs for tail calls
-BPF_PROG_ARRAY(prog_array_tp, MAX_TAIL_CALL);                      // store programs for tail calls
-BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);                     // store syscall specific programs for tail calls from sys_enter
-BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);                      // store syscall specific programs for tail calls from sys_exit
-BPF_PROG_ARRAY(sys_enter_submit_tail, MAX_EVENT_ID);               // store program for submitting syscalls from sys_enter
-BPF_PROG_ARRAY(sys_exit_submit_tail, MAX_EVENT_ID);                // store program for submitting syscalls from sys_exit
-BPF_PROG_ARRAY(sys_enter_init_tail, MAX_EVENT_ID);                 // store program for performing syscall tracking logic in sys_enter
-BPF_PROG_ARRAY(sys_exit_init_tail, MAX_EVENT_ID);                  // store program for performing syscall tracking logic in sys_exits
-BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);             // store stack traces
-BPF_HASH(module_init_map, u32, kmod_data_t, 256);                  // holds module information between
-BPF_LRU_HASH(fd_arg_path_map, fd_arg_task_t, fd_arg_path_t, 1024); // store fds paths by task
-BPF_LRU_HASH(bpf_attach_map, u32, bpf_attach_t, 1024);             // holds bpf prog info
-BPF_LRU_HASH(bpf_attach_tmp_map, u32, bpf_attach_t, 1024);         // temporarily hold bpf_attach_t
-BPF_PERCPU_ARRAY(event_data_map, event_data_t, 1);                 // persist event related data
-BPF_HASH(logs_count, bpf_log_t, bpf_log_count_t, 4096);            // logs count
-BPF_PERCPU_ARRAY(scratch_map, scratch_t, 1);                       // scratch space to avoid allocating stuff on the stack
-// clang-format on
-
-// EBPF PERF BUFFERS -------------------------------------------------------------------------------
-
-BPF_PERF_OUTPUT(logs, 1024);        // logs submission
-BPF_PERF_OUTPUT(events, 1024);      // events submission
-BPF_PERF_OUTPUT(file_writes, 1024); // file writes events submission
-BPF_PERF_OUTPUT(net_events, 1024);  // network events submission
-
-// FUNCTIONS DECLARATIONS --------------------------------------------------------------------------
-
-static __always_inline void *get_path_str(struct path *path);
-
-// HELPERS: LOGS -----------------------------------------------------------------------------------
-
-static __always_inline void do_tracee_log(
-    void *ctx, enum bpf_log_level level, enum bpf_log_id id, s64 ret, u32 line, void *file)
-{
-    if (!ctx || !file)
-        return;
-
-    u32 zero = 0;
-    bpf_log_output_t *log_output = bpf_map_lookup_elem(&scratch_map, &zero);
-    if (unlikely(log_output == NULL))
-        return;
-
-    log_output->level = level;
-    log_output->id = id;
-
-    log_output->log.ret = ret;
-    log_output->log.cpu = bpf_get_smp_processor_id();
-    log_output->log.line = line;
-
-    u64 fsize = __builtin_strlen(file);
-    if (unlikely(fsize >= BPF_MAX_LOG_FILE_LEN))
-        fsize = BPF_MAX_LOG_FILE_LEN - 1;
-    __builtin_memcpy(log_output->log.file, file, fsize);
-    log_output->log.file[fsize] = '\0';
-
-    bpf_log_count_t counter_buf = {};
-    counter_buf.count = 1;
-    counter_buf.ts = bpf_ktime_get_ns(); // store the current ts
-    u64 ts_prev = 0;
-
-    bpf_log_count_t *counter = bpf_map_lookup_elem(&logs_count, &log_output->log);
-    if (likely(counter != NULL)) {
-        ts_prev = counter->ts; // store previous ts
-
-        counter->count += 1;
-        counter->ts = counter_buf.ts; // set to current ts
-    } else {
-        counter = &counter_buf;
-        bpf_map_update_elem(&logs_count, &log_output->log, counter, BPF_ANY);
-    }
-
-    // submit log when its cpu occurrence time diff is greater than 2s
-    if ((counter->ts - ts_prev) > (u64) 2000000000) {
-        log_output->count = counter->count;
-        bpf_perf_event_output(ctx, &logs, BPF_F_CURRENT_CPU, log_output, sizeof(*log_output));
-        counter->count = 0; // reset, assuming that the consumer is incrementing
-    }
-}
-
-#define tracee_log(ctx, level, id, ret) do_tracee_log(ctx, level, id, ret, __LINE__, __FILE__);
-
-// HELPERS: DEVICES --------------------------------------------------------------------------------
-
-static __always_inline const char *get_device_name(struct device *dev)
-{
-    struct kobject kobj = READ_KERN(dev->kobj);
-    return kobj.name;
-}
-
-// HELPERS: NAMESPACES -----------------------------------------------------------------------------
-
-static __always_inline u32 get_mnt_ns_id(struct nsproxy *ns)
-{
-    struct mnt_namespace *mntns = READ_KERN(ns->mnt_ns);
-    return READ_KERN(mntns->ns.inum);
-}
-
-static __always_inline u32 get_pid_ns_for_children_id(struct nsproxy *ns)
-{
-    struct pid_namespace *pidns = READ_KERN(ns->pid_ns_for_children);
-    return READ_KERN(pidns->ns.inum);
-}
-
-static __always_inline u32 get_uts_ns_id(struct nsproxy *ns)
-{
-    struct uts_namespace *uts_ns = READ_KERN(ns->uts_ns);
-    return READ_KERN(uts_ns->ns.inum);
-}
-
-static __always_inline u32 get_ipc_ns_id(struct nsproxy *ns)
-{
-    struct ipc_namespace *ipc_ns = READ_KERN(ns->ipc_ns);
-    return READ_KERN(ipc_ns->ns.inum);
-}
-
-static __always_inline u32 get_net_ns_id(struct nsproxy *ns)
-{
-    struct net *net_ns = READ_KERN(ns->net_ns);
-    return READ_KERN(net_ns->ns.inum);
-}
-
-static __always_inline u32 get_cgroup_ns_id(struct nsproxy *ns)
-{
-    struct cgroup_namespace *cgroup_ns = READ_KERN(ns->cgroup_ns);
-    return READ_KERN(cgroup_ns->ns.inum);
-}
-
-static __always_inline u32 get_task_mnt_ns_id(struct task_struct *task)
-{
-    return get_mnt_ns_id(READ_KERN(task->nsproxy));
-}
-
-static __always_inline u32 get_task_pid_ns_for_children_id(struct task_struct *task)
-{
-    return get_pid_ns_for_children_id(READ_KERN(task->nsproxy));
-}
-
-static __always_inline u32 get_task_pid_ns_id(struct task_struct *task)
-{
-    unsigned int level = 0;
-    struct pid *pid = NULL;
-    struct pid_namespace *ns = NULL;
-
-#ifndef CORE
-    #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0))
-    pid = READ_KERN(task->pids[PIDTYPE_PID].pid);
-    #else
-    pid = READ_KERN(task->thread_pid);
-    #endif
-#else
-    if (bpf_core_type_exists(struct pid_link)) {
-        struct task_struct___older_v50 *t = (void *) task;
-        pid = READ_KERN(t->pids[PIDTYPE_PID].pid);
-    } else {
-        pid = READ_KERN(task->thread_pid);
-    }
-#endif
-
-    level = READ_KERN(pid->level);
-    ns = READ_KERN(pid->numbers[level].ns);
-    return READ_KERN(ns->ns.inum);
-}
-
-static __always_inline u32 get_task_uts_ns_id(struct task_struct *task)
-{
-    return get_uts_ns_id(READ_KERN(task->nsproxy));
-}
-
-static __always_inline u32 get_task_ipc_ns_id(struct task_struct *task)
-{
-    return get_ipc_ns_id(READ_KERN(task->nsproxy));
-}
-
-static __always_inline u32 get_task_net_ns_id(struct task_struct *task)
-{
-    return get_net_ns_id(READ_KERN(task->nsproxy));
-}
-
-static __always_inline u32 get_task_cgroup_ns_id(struct task_struct *task)
-{
-    return get_cgroup_ns_id(READ_KERN(task->nsproxy));
-}
-
-static __always_inline u32 get_task_pid_vnr(struct task_struct *task)
-{
-    unsigned int level = 0;
-    struct pid *pid = NULL;
-
-#ifndef CORE
-    #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0))
-    pid = READ_KERN(task->pids[PIDTYPE_PID].pid);
-    #else
-    pid = READ_KERN(task->thread_pid);
-    #endif
-#else
-    if (bpf_core_type_exists(struct pid_link)) {
-        struct task_struct___older_v50 *t = (void *) task;
-        pid = READ_KERN(t->pids[PIDTYPE_PID].pid);
-    } else {
-        pid = READ_KERN(task->thread_pid);
-    }
-#endif
-
-    level = READ_KERN(pid->level);
-    return READ_KERN(pid->numbers[level].nr);
-}
-
-static __always_inline u32 get_task_ns_pid(struct task_struct *task)
-{
-    return get_task_pid_vnr(task);
-}
-
-static __always_inline u32 get_task_ns_tgid(struct task_struct *task)
-{
-    struct task_struct *group_leader = READ_KERN(task->group_leader);
-    return get_task_pid_vnr(group_leader);
-}
-
-static __always_inline u32 get_task_ns_ppid(struct task_struct *task)
-{
-    struct task_struct *real_parent = READ_KERN(task->real_parent);
-    return get_task_pid_vnr(real_parent);
-}
-
-// HELPERS: TASKS ----------------------------------------------------------------------------------
-
-static __always_inline char *get_task_uts_name(struct task_struct *task)
-{
-    struct nsproxy *np = READ_KERN(task->nsproxy);
-    struct uts_namespace *uts_ns = READ_KERN(np->uts_ns);
-    return READ_KERN(uts_ns->name.nodename);
-}
-
-static __always_inline u32 get_task_ppid(struct task_struct *task)
-{
-    struct task_struct *parent = READ_KERN(task->real_parent);
-    return READ_KERN(parent->tgid);
-}
-
-static __always_inline u64 get_task_start_time(struct task_struct *task)
-{
-    return READ_KERN(task->start_time);
-}
-
-static __always_inline u32 get_task_host_pid(struct task_struct *task)
-{
-    return READ_KERN(task->pid);
-}
-
-static __always_inline u32 get_task_host_tgid(struct task_struct *task)
-{
-    return READ_KERN(task->tgid);
-}
-
-static __always_inline struct task_struct *get_parent_task(struct task_struct *task)
-{
-    return READ_KERN(task->real_parent);
-}
-
-static __always_inline u32 get_task_exit_code(struct task_struct *task)
-{
-    return READ_KERN(task->exit_code);
-}
-
-static __always_inline int get_task_parent_flags(struct task_struct *task)
-{
-    struct task_struct *parent = READ_KERN(task->real_parent);
-    return READ_KERN(parent->flags);
-}
-
-static __always_inline const struct cred *get_task_real_cred(struct task_struct *task)
-{
-    return READ_KERN(task->real_cred);
-}
-
-// HELPERS: BINRPM ---------------------------------------------------------------------------------
-
-static __always_inline const char *get_binprm_filename(struct linux_binprm *bprm)
-{
-    return READ_KERN(bprm->filename);
-}
-
-static __always_inline const char *get_binprm_interp(struct linux_binprm *bprm)
-{
-    return READ_KERN(bprm->interp);
-}
-
-static __always_inline struct file *get_file_ptr_from_bprm(struct linux_binprm *bprm)
-{
-    return READ_KERN(bprm->file);
-}
-
-static __always_inline int get_argc_from_bprm(struct linux_binprm *bprm)
-{
-    return READ_KERN(bprm->argc);
-}
-
-static __always_inline int get_envc_from_bprm(struct linux_binprm *bprm)
-{
-    return READ_KERN(bprm->envc);
-}
-
-// HELPERS: CGROUPS --------------------------------------------------------------------------------
-
-static __always_inline const char *get_cgroup_dirname(struct cgroup *cgrp)
-{
-    struct kernfs_node *kn = READ_KERN(cgrp->kn);
-
-    if (kn == NULL)
-        return NULL;
-
-    return READ_KERN(kn->name);
-}
-
-static __always_inline const u64 get_cgroup_id(struct cgroup *cgrp)
-{
-    struct kernfs_node *kn = READ_KERN(cgrp->kn);
-
-    if (kn == NULL)
-        return 0;
-
-    u64 id; // was union kernfs_node_id before 5.5, can read it as u64 in both situations
-
-#ifdef CORE
-    if (bpf_core_type_exists(union kernfs_node_id)) {
-        struct kernfs_node___older_v55 *kn_old = (void *) kn;
-        struct kernfs_node___rh8 *kn_rh8 = (void *) kn;
-
-        if (bpf_core_field_exists(kn_rh8->id)) {
-            // RHEL8 has both types declared: union and u64:
-            //     kn->id
-            //     rh->rh_kabi_hidden_172->id
-            // pointing to the same data
-            bpf_core_read(&id, sizeof(u64), &kn_rh8->id);
-        } else {
-            // all other regular kernels bellow v5.5
-            bpf_core_read(&id, sizeof(u64), &kn_old->id);
-        }
-
-    } else {
-        // kernel v5.5 and above
-        bpf_core_read(&id, sizeof(u64), &kn->id);
-    }
-#else
-    bpf_probe_read(&id, sizeof(u64), &kn->id);
-#endif
-
-    return id;
-}
-
-static __always_inline const u32 get_cgroup_hierarchy_id(struct cgroup *cgrp)
-{
-    struct cgroup_root *root = READ_KERN(cgrp->root);
-    return READ_KERN(root->hierarchy_id);
-}
-
-static __always_inline const u64 get_cgroup_v1_subsys0_id(struct task_struct *task)
-{
-    struct css_set *cgroups = READ_KERN(task->cgroups);
-    struct cgroup_subsys_state *subsys0 = READ_KERN(cgroups->subsys[0]);
-    struct cgroup *cgroup = READ_KERN(subsys0->cgroup);
-    return get_cgroup_id(cgroup);
-}
-
-static __always_inline bool is_x86_compat(struct task_struct *task)
-{
-#if defined(bpf_target_x86)
-    return READ_KERN(task->thread_info.status) & TS_COMPAT;
-#else
-    return false;
-#endif
-}
-
-// ARCHITECTURE ------------------------------------------------------------------------------------
-
-static __always_inline bool is_arm64_compat(struct task_struct *task)
-{
-#if defined(bpf_target_arm64)
-    return READ_KERN(task->thread_info.flags) & _TIF_32BIT;
-#else
-    return false;
-#endif
-}
-
-static __always_inline bool is_compat(struct task_struct *task)
-{
-#if defined(bpf_target_x86)
-    return is_x86_compat(task);
-#elif defined(bpf_target_arm64)
-    return is_arm64_compat(task);
-#else
-    return false;
-#endif
-}
-
-static __always_inline int get_syscall_id_from_regs(struct pt_regs *regs)
-{
-#if defined(bpf_target_x86)
-    int id = READ_KERN(regs->orig_ax);
-#elif defined(bpf_target_arm64)
-    int id = READ_KERN(regs->syscallno);
-#endif
-    return id;
-}
-
-static __always_inline struct pt_regs *get_task_pt_regs(struct task_struct *task)
-{
-// THREAD_SIZE here is statistically defined and assumed to work for 4k page sizes.
-#if defined(bpf_target_x86)
-    void *__ptr = READ_KERN(task->stack) + THREAD_SIZE - TOP_OF_KERNEL_STACK_PADDING;
-    return ((struct pt_regs *) __ptr) - 1;
-#elif defined(bpf_target_arm64)
-    return ((struct pt_regs *) (THREAD_SIZE + READ_KERN(task->stack)) - 1);
-#endif
-}
-
-static __always_inline int get_task_syscall_id(struct task_struct *task)
-{
-    struct pt_regs *regs = get_task_pt_regs(task);
-    return get_syscall_id_from_regs(regs);
-}
-
-// HELPERS: VFS ------------------------------------------------------------------------------------
-
-static __always_inline u64 get_ctime_nanosec_from_inode(struct inode *inode)
-{
-    struct timespec64 ts = READ_KERN(inode->i_ctime);
-    time64_t sec = READ_KERN(ts.tv_sec);
-    if (sec < 0)
-        return 0;
-    long ns = READ_KERN(ts.tv_nsec);
-    return (sec * 1000000000L) + ns;
-}
-
-static __always_inline struct dentry *get_mnt_root_ptr_from_vfsmnt(struct vfsmount *vfsmnt)
-{
-    return READ_KERN(vfsmnt->mnt_root);
-}
-
-static __always_inline struct dentry *get_d_parent_ptr_from_dentry(struct dentry *dentry)
-{
-    return READ_KERN(dentry->d_parent);
-}
-
-static __always_inline struct qstr get_d_name_from_dentry(struct dentry *dentry)
-{
-    return READ_KERN(dentry->d_name);
-}
-
-static __always_inline dev_t get_dev_from_file(struct file *file)
-{
-    struct inode *f_inode = READ_KERN(file->f_inode);
-    struct super_block *i_sb = READ_KERN(f_inode->i_sb);
-    return READ_KERN(i_sb->s_dev);
-}
-
-static __always_inline unsigned long get_inode_nr_from_file(struct file *file)
-{
-    struct inode *f_inode = READ_KERN(file->f_inode);
-    return READ_KERN(f_inode->i_ino);
-}
-
-static __always_inline u64 get_ctime_nanosec_from_file(struct file *file)
-{
-    struct inode *f_inode = READ_KERN(file->f_inode);
-    return get_ctime_nanosec_from_inode(f_inode);
-}
-
-static __always_inline unsigned short get_inode_mode_from_file(struct file *file)
-{
-    struct inode *f_inode = READ_KERN(file->f_inode);
-    return READ_KERN(f_inode->i_mode);
-}
-
-static __always_inline struct path get_path_from_file(struct file *file)
-{
-    return READ_KERN(file->f_path);
-}
-
-static __always_inline struct file *get_struct_file_from_fd(u64 fd_num)
-{
-    struct task_struct *task = (struct task_struct *) bpf_get_current_task();
-    if (task == NULL) {
-        return NULL;
-    }
-    struct files_struct *files = (struct files_struct *) READ_KERN(task->files);
-    if (files == NULL) {
-        return NULL;
-    }
-    struct fdtable *fdt = (struct fdtable *) READ_KERN(files->fdt);
-    if (fdt == NULL) {
-        return NULL;
-    }
-    struct file **fd = (struct file **) READ_KERN(fdt->fd);
-    if (fd == NULL) {
-        return NULL;
-    }
-    struct file *f = (struct file *) READ_KERN(fd[fd_num]);
-    if (f == NULL) {
-        return NULL;
-    }
-
-    return f;
-}
-
-static __always_inline unsigned short get_inode_mode_from_fd(u64 fd)
-{
-    struct file *f = get_struct_file_from_fd(fd);
-    if (f == NULL) {
-        return -1;
-    }
-
-    struct inode *f_inode = READ_KERN(f->f_inode);
-    return READ_KERN(f_inode->i_mode);
-}
-
-static __always_inline int check_fd_type(u64 fd, u16 type)
-{
-    unsigned short i_mode = get_inode_mode_from_fd(fd);
-
-    if ((i_mode & S_IFMT) == type) {
-        return 1;
-    }
-
-    return 0;
-}
-
-static __always_inline unsigned long get_inode_nr_from_dentry(struct dentry *dentry)
-{
-    struct inode *d_inode = READ_KERN(dentry->d_inode);
-    return READ_KERN(d_inode->i_ino);
-}
-
-static __always_inline dev_t get_dev_from_dentry(struct dentry *dentry)
-{
-    struct inode *d_inode = READ_KERN(dentry->d_inode);
-    struct super_block *i_sb = READ_KERN(d_inode->i_sb);
-    return READ_KERN(i_sb->s_dev);
-}
-
-static __always_inline u64 get_ctime_nanosec_from_dentry(struct dentry *dentry)
-{
-    struct inode *d_inode = READ_KERN(dentry->d_inode);
-    return get_ctime_nanosec_from_inode(d_inode);
-}
-
-static __always_inline file_info_t get_file_info(struct file *file)
-{
-    file_info_t file_info = {};
-    if (file != NULL) {
-        file_info.pathname_p = get_path_str(GET_FIELD_ADDR(file->f_path));
-        file_info.ctime = get_ctime_nanosec_from_file(file);
-        file_info.device = get_dev_from_file(file);
-        file_info.inode = get_inode_nr_from_file(file);
-    }
-    return file_info;
-}
-
-// HELPERS: MEMORY ---------------------------------------------------------------------------------
-
-static __always_inline struct mm_struct *get_mm_from_task(struct task_struct *task)
-{
-    return READ_KERN(task->mm);
-}
-
-static __always_inline unsigned long get_arg_start_from_mm(struct mm_struct *mm)
-{
-    return READ_KERN(mm->arg_start);
-}
-
-static __always_inline unsigned long get_arg_end_from_mm(struct mm_struct *mm)
-{
-    return READ_KERN(mm->arg_end);
-}
-
-static __always_inline unsigned long get_env_start_from_mm(struct mm_struct *mm)
-{
-    return READ_KERN(mm->env_start);
-}
-
-static __always_inline unsigned long get_env_end_from_mm(struct mm_struct *mm)
-{
-    return READ_KERN(mm->env_end);
-}
-
-static __always_inline unsigned long get_vma_flags(struct vm_area_struct *vma)
-{
-    return READ_KERN(vma->vm_flags);
-}
-
-static inline struct mount *real_mount(struct vfsmount *mnt)
-{
-    return container_of(mnt, struct mount, mnt);
-}
-
-// HELPERS: NETWORK --------------------------------------------------------------------------------
-
-static __always_inline u32 get_inet_rcv_saddr(struct inet_sock *inet)
-{
-    return READ_KERN(inet->inet_rcv_saddr);
-}
-
-static __always_inline u32 get_inet_saddr(struct inet_sock *inet)
-{
-    return READ_KERN(inet->inet_saddr);
-}
-
-static __always_inline u32 get_inet_daddr(struct inet_sock *inet)
-{
-    return READ_KERN(inet->inet_daddr);
-}
-
-static __always_inline u16 get_inet_sport(struct inet_sock *inet)
-{
-    return READ_KERN(inet->inet_sport);
-}
-
-static __always_inline u16 get_inet_num(struct inet_sock *inet)
-{
-    return READ_KERN(inet->inet_num);
-}
-
-static __always_inline u16 get_inet_dport(struct inet_sock *inet)
-{
-    return READ_KERN(inet->inet_dport);
-}
-
-static __always_inline struct sock *get_socket_sock(struct socket *socket)
-{
-    return READ_KERN(socket->sk);
-}
-
-static __always_inline u16 get_sock_family(struct sock *sock)
-{
-    return READ_KERN(sock->sk_family);
-}
-
-static __always_inline u16 get_sock_protocol(struct sock *sock)
-{
-    u16 protocol = 0;
-
-#ifndef CORE
-    #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0))
-    // kernel 4.18-5.5: sk_protocol bit-field: use sk_gso_max_segs field and go
-    // back 24 bits to reach sk_protocol field index.
-    bpf_probe_read(&protocol, 1, (void *) (&sock->sk_gso_max_segs) - 3);
-    #else
-    // kernel 5.6
-    protocol = READ_KERN(sock->sk_protocol);
-    #endif
-#else // CORE
-    // commit bf9765145b85 ("sock: Make sk_protocol a 16-bit value")
-    struct sock___old *check = NULL;
-    if (bpf_core_field_exists(check->__sk_flags_offset)) {
-        check = (struct sock___old *) sock;
-        bpf_core_read(&protocol, 1, (void *) (&check->sk_gso_max_segs) - 3);
-    } else {
-        protocol = READ_KERN(sock->sk_protocol);
-    }
-#endif
-
-    return protocol;
-}
-
-static __always_inline u16 get_sockaddr_family(struct sockaddr *address)
-{
-    return READ_KERN(address->sa_family);
-}
-
-static __always_inline struct in6_addr get_sock_v6_rcv_saddr(struct sock *sock)
-{
-    return READ_KERN(sock->sk_v6_rcv_saddr);
-}
-
-static __always_inline struct in6_addr get_ipv6_pinfo_saddr(struct ipv6_pinfo *np)
-{
-    return READ_KERN(np->saddr);
-}
-
-static __always_inline struct in6_addr get_sock_v6_daddr(struct sock *sock)
-{
-    return READ_KERN(sock->sk_v6_daddr);
-}
-
-static __always_inline volatile unsigned char get_sock_state(struct sock *sock)
-{
-    volatile unsigned char sk_state_own_impl;
-    bpf_probe_read(
-        (void *) &sk_state_own_impl, sizeof(sk_state_own_impl), (const void *) &sock->sk_state);
-    return sk_state_own_impl;
-}
-
-static __always_inline struct ipv6_pinfo *get_inet_pinet6(struct inet_sock *inet)
-{
-    struct ipv6_pinfo *pinet6_own_impl;
-    bpf_probe_read(&pinet6_own_impl, sizeof(pinet6_own_impl), &inet->pinet6);
-    return pinet6_own_impl;
-}
-
-static __always_inline struct sockaddr_un get_unix_sock_addr(struct unix_sock *sock)
-{
-    struct unix_address *addr = READ_KERN(sock->addr);
-    int len = READ_KERN(addr->len);
-    struct sockaddr_un sockaddr = {};
-    if (len <= sizeof(struct sockaddr_un)) {
-        bpf_probe_read(&sockaddr, len, addr->name);
-    }
-    return sockaddr;
-}
-
-// INTERNAL: CONFIG --------------------------------------------------------------------------------
-
-static __always_inline struct inode *get_inode_from_file(struct file *file)
-{
-    return READ_KERN(file->f_inode);
-}
-
-static __always_inline struct super_block *get_super_block_from_inode(struct inode *f_inode)
-{
-    return READ_KERN(f_inode->i_sb);
-}
-
-static __always_inline unsigned long get_s_magic_from_super_block(struct super_block *i_sb)
-{
-    return READ_KERN(i_sb->s_magic);
-}
-
-static __always_inline int get_kconfig_val(u32 key)
-{
-    u32 *config = bpf_map_lookup_elem(&kconfig_map, &key);
-
-    if (config == NULL)
-        return 0;
-
-    return *config;
-}
-
-static __always_inline void *get_symbol_addr(char *symbol_name)
-{
-    char new_ksym_name[MAX_KSYM_NAME_SIZE] = {};
-    bpf_probe_read_str(new_ksym_name, MAX_KSYM_NAME_SIZE, symbol_name);
-    void **sym = bpf_map_lookup_elem(&ksymbols_map, (void *) &new_ksym_name);
-
-    if (sym == NULL)
-        return 0;
-
-    return *sym;
-}
-
-static __always_inline void *get_stext_addr()
-{
-    char start_text_sym[7] = "_stext";
-    return get_symbol_addr(start_text_sym);
-}
-
-static __always_inline void *get_etext_addr()
-{
-    char end_text_sym[7] = "_etext";
-    return get_symbol_addr(end_text_sym);
-}
-
-// INTERNAL: CONTEXT -------------------------------------------------------------------------------
-
-static __always_inline int
-init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 options)
-{
-    long ret = 0;
-    u64 id = bpf_get_current_pid_tgid();
-    context->task.start_time = get_task_start_time(task);
-    context->task.host_tid = id;
-    context->task.host_pid = id >> 32;
-    context->task.host_ppid = get_task_ppid(task);
-    context->task.tid = get_task_ns_pid(task);
-    context->task.pid = get_task_ns_tgid(task);
-    context->task.ppid = get_task_ns_ppid(task);
-    context->task.mnt_id = get_task_mnt_ns_id(task);
-    context->task.pid_id = get_task_pid_ns_id(task);
-    context->task.uid = bpf_get_current_uid_gid();
-    context->task.flags = 0;
-    __builtin_memset(context->task.comm, 0, sizeof(context->task.comm));
-    ret = bpf_get_current_comm(&context->task.comm, sizeof(context->task.comm));
-    if (unlikely(ret < 0)) {
-        // disable logging as a workaround for instruction limit verifier error on kernel 4.19
-        // tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_GET_CURRENT_COMM, ret);
-        return -1;
-    }
-
-    char *uts_name = get_task_uts_name(task);
-    if (uts_name) {
-        __builtin_memset(context->task.uts_name, 0, sizeof(context->task.uts_name));
-        bpf_probe_read_str(&context->task.uts_name, TASK_COMM_LEN, uts_name);
-    }
-    if (options & OPT_CGROUP_V1) {
-        context->task.cgroup_id = get_cgroup_v1_subsys0_id(task);
-    } else {
-        context->task.cgroup_id = bpf_get_current_cgroup_id();
-    }
-
-    context->ts = bpf_ktime_get_ns();
-    context->argnum = 0;
-
-    // Clean Stack Trace ID
-    context->stack_id = 0;
-
-    context->processor_id = (u16) bpf_get_smp_processor_id();
-
-    return 0;
-}
-
-static __always_inline task_info_t *init_task_info(u32 tid, u32 pid, scratch_t *scratch)
-{
-    int zero = 0;
-
-    // allow caller to specify a stack/map based scratch_t pointer
-    if (scratch == NULL) {
-        scratch = bpf_map_lookup_elem(&scratch_map, &zero);
-        if (unlikely(scratch == NULL))
-            return NULL;
-    }
-
-    proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &pid);
-    if (proc_info == NULL) {
-        scratch->proc_info.new_proc = false;
-        scratch->proc_info.follow_in_scopes = 0;
-        scratch->proc_info.binary.mnt_id = 0;
-        scratch->proc_info.binary_no_mnt = 0;
-        __builtin_memset(scratch->proc_info.binary.path, 0, MAX_BIN_PATH_SIZE);
-        bpf_map_update_elem(&proc_info_map, &pid, &scratch->proc_info, BPF_NOEXIST);
-    }
-
-    scratch->task_info.syscall_traced = false;
-    scratch->task_info.recompute_scope = true;
-    scratch->task_info.container_state = CONTAINER_UNKNOWN;
-    bpf_map_update_elem(&task_info_map, &tid, &scratch->task_info, BPF_NOEXIST);
-
-    return bpf_map_lookup_elem(&task_info_map, &tid);
-}
-
-static __always_inline bool context_changed(task_context_t *old, task_context_t *new)
-{
-    return (old->cgroup_id != new->cgroup_id) || old->uid != new->uid ||
-           old->mnt_id != new->mnt_id || old->pid_id != new->pid_id ||
-           *(u64 *) old->comm != *(u64 *) new->comm ||
-           *(u64 *) &old->comm[8] != *(u64 *) &new->comm[8] ||
-           *(u64 *) old->uts_name != *(u64 *) new->uts_name ||
-           *(u64 *) &old->uts_name[8] != *(u64 *) &new->uts_name[8];
-}
-
-// clang-format off
-static __always_inline int init_program_data(program_data_t *p, void *ctx)
-{
-    long ret = 0;
-    int zero = 0;
-
-    // allow caller to specify a stack/map based event_data_t pointer
-    if (p->event == NULL) {
-        p->event = bpf_map_lookup_elem(&event_data_map, &zero);
-        if (unlikely(p->event == NULL))
-            return 0;
-    }
-
-    p->config = bpf_map_lookup_elem(&config_map, &zero);
-    if (unlikely(p->config == NULL))
-        return 0;
-
-    p->event->task = (struct task_struct *) bpf_get_current_task();
-    ret = init_context(ctx, &p->event->context, p->event->task, p->config->options);
-    if (unlikely(ret < 0)) {
-        // disable logging as a workaround for instruction limit verifier error on kernel 4.19
-        // tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_INIT_CONTEXT, ret);
-        return 0;
-    }
-
-    p->ctx = ctx;
-    p->event->buf_off = 0;
-
-    bool container_lookup_required = true;
-
-    p->task_info = bpf_map_lookup_elem(&task_info_map, &p->event->context.task.host_tid);
-    if (unlikely(p->task_info == NULL)) {
-        p->task_info = init_task_info(
-            p->event->context.task.host_tid,
-            p->event->context.task.host_pid,
-            p->scratch
-        );
-        if (unlikely(p->task_info == NULL)) {
-            return 0;
-        }
-        // just initialized task info: recompute_scope is already set to true
-        goto out;
-    }
-
-    // in some places we don't call should_trace() (e.g. sys_exit) which also initializes
-    // matched_scopes. Use previously found scopes then to initialize it.
-    p->event->context.matched_scopes = p->task_info->matched_scopes;
-
-    // check if we need to recompute scope due to context change
-    if (context_changed(&p->task_info->context, &p->event->context.task))
-        p->task_info->recompute_scope = true;
-
-    u8 container_state = p->task_info->container_state;
-
-    // if task is already part of a container: no need to check if state changed
-    switch (container_state) {
-        case CONTAINER_STARTED:
-        case CONTAINER_EXISTED:
-            p->event->context.task.flags |= CONTAINER_STARTED_FLAG;
-            container_lookup_required = false;
-    }
-
-out:
-    if (container_lookup_required) {
-        u32 cgroup_id_lsb = p->event->context.task.cgroup_id;
-        u8 *state = bpf_map_lookup_elem(&containers_map, &cgroup_id_lsb);
-
-        if (state != NULL) {
-            p->task_info->container_state = *state;
-            switch (*state) {
-                case CONTAINER_STARTED:
-                case CONTAINER_EXISTED:
-                    p->event->context.task.flags |= CONTAINER_STARTED_FLAG;
-            }
-        }
-    }
-
-    // update task_info with the new context
-    bpf_probe_read(&p->task_info->context, sizeof(task_context_t), &p->event->context.task);
-
-    return 1;
-}
-// clang-format on
-
-static __always_inline int init_tailcall_program_data(program_data_t *p, void *ctx)
-{
-    u32 zero = 0;
-
-    p->ctx = ctx;
-
-    p->event = bpf_map_lookup_elem(&event_data_map, &zero);
-    if (unlikely(p->event == NULL))
-        return 0;
-
-    p->config = bpf_map_lookup_elem(&config_map, &zero);
-    if (unlikely(p->config == NULL))
-        return 0;
-
-    p->task_info = bpf_map_lookup_elem(&task_info_map, &p->event->context.task.host_tid);
-    if (unlikely(p->task_info == NULL)) {
-        return 0;
-    }
-
-    return 1;
-}
-
-// INTERNAL: FILTERING -----------------------------------------------------------------------------
-
-static __always_inline u64
-uint_filter_range_matches(u64 filter_out_scopes, void *filter_map, u64 value, u64 max, u64 min)
-{
-    // check equality_filter_matches() for more info
-
-    u64 equal_in_scopes = 0;
-    u64 equality_set_in_scopes = 0;
-    eq_t *equality = bpf_map_lookup_elem(filter_map, &value);
-    if (equality != NULL) {
-        equal_in_scopes = equality->equal_in_scopes;
-        equality_set_in_scopes = equality->equality_set_in_scopes;
-    }
-
-    if ((max != FILTER_MAX_NOT_SET) && (value >= max))
-        return equal_in_scopes;
-
-    if ((min != FILTER_MIN_NOT_SET) && (value <= min))
-        return equal_in_scopes;
-
-    return equal_in_scopes | (filter_out_scopes & ~equality_set_in_scopes);
-}
-
-static __always_inline u64 binary_filter_matches(u64 filter_out_scopes, proc_info_t *proc_info)
-{
-    // check equality_filter_matches() for more info
-
-    u64 equal_in_scopes = 0;
-    u64 equality_set_in_scopes = 0;
-    eq_t *equality = bpf_map_lookup_elem(&binary_filter, proc_info->binary.path);
-    if (equality == NULL) {
-        // lookup by binary path and mount namespace
-        equality = bpf_map_lookup_elem(&binary_filter, &proc_info->binary);
-    }
-    if (equality != NULL) {
-        equal_in_scopes = equality->equal_in_scopes;
-        equality_set_in_scopes = equality->equality_set_in_scopes;
-    }
-
-    return equal_in_scopes | (filter_out_scopes & ~equality_set_in_scopes);
-}
-
-static __always_inline u64 equality_filter_matches(u64 filter_out_scopes,
-                                                   void *filter_map,
-                                                   void *key)
-{
-    // check compute_scopes() for initial info
-    //
-    // e.g.: cmdline: -t 2:comm=who -t 3:comm=ping -t 4:comm!=who
-    //
-    // filter_out_scopes = 0000 1000, since scope 4 has "not equal" for comm filter
-    // filter_map        = comm_filter
-    // key               = "who" | "ping"
-    //
-    // ---
-    //
-    // considering an event from "who" command
-    //
-    // equal_in_scopes   = 0000 0010, since scope 2 has "equal" for comm filter
-    // equality_set_in_scopes = 0000 1010, since scope 2 and 4 are set for comm filter
-    //
-    // return            = equal_in_scopes | (filter_out_scopes & equality_set_in_scopes)
-    //                     0000 0010 |
-    //                     (0000 1000 & 1111 0101) -> 0000 0000
-    //
-    //                     0000 0010 |
-    //                     0000 0000
-    //                     ---------
-    //                     0000 0010 = (scope 2 matched)
-    //
-    // considering an event from "ping" command
-    //
-    // equal_in_scopes   = 0000 0100, since scope 3 has "equal" for comm filter
-    // equality_set_in_scopes = 0000 0100, since scope 3 is set for comm filter
-    //
-    // return            = equal_in_scopes | (filter_out_scopes & ~equality_set_in_scopes)
-    //                     0000 0100 |
-    //                     (0000 1000 & 0000 0100) -> 0000 0000
-    //
-    //                     0000 0100 |
-    //                     0000 0000
-    //                     ---------
-    //                     0000 0100 = (scope 3 matched)
-
-    u64 equal_in_scopes = 0;
-    u64 equality_set_in_scopes = 0;
-    eq_t *equality = bpf_map_lookup_elem(filter_map, key);
-    if (equality != NULL) {
-        equal_in_scopes = equality->equal_in_scopes;
-        equality_set_in_scopes = equality->equality_set_in_scopes;
-    }
-
-    return equal_in_scopes | (filter_out_scopes & ~equality_set_in_scopes);
-}
-
-static __always_inline u64 bool_filter_matches(u64 filter_out_scopes, bool val)
-{
-    // check compute_scopes() for initial info
-    //
-    // e.g.: cmdline: -t 5:container
-    //
-    // considering an event from a container
-    //
-    //   filter_out_scopes = 0000 0000
-    //   val               = true
-    //   return            = 0000 0000 ^
-    //                       1111 1111 <- ~0ULL
-    //                       ---------
-    //                       1111 1111
-    //
-    // considering an event not from a container
-    //
-    //   filter_out_scopes = 0000 0000
-    //   val               = false
-    //   return            = 0000 0000 ^
-    //                       0000 0000
-    //                       ---------
-    //                       0000 0000
-
-    return filter_out_scopes ^ (val ? ~0ULL : 0);
-}
-
-static __always_inline u64 compute_scopes(program_data_t *p)
-{
-    task_context_t *context = &p->task_info->context;
-    u64 res = ~0ULL;
-
-    // Don't monitor self
-    if (p->config->tracee_pid == context->host_pid) {
-        return 0;
-    }
-
-    proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &context->host_pid);
-    if (proc_info == NULL) {
-        // entry should exist in proc_map (init_program_data should have set it otherwise)
-        // disable logging as a workaround for instruction limit verifier error on kernel 4.19
-        // tracee_log(p->event->ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
-        return 0;
-    }
-
-    if (p->config->cont_filter_enabled_scopes) {
-        bool is_container = false;
-        u8 state = p->task_info->container_state;
-        if (state == CONTAINER_STARTED || state == CONTAINER_EXISTED)
-            is_container = true;
-        u64 filter_out_scopes = p->config->cont_filter_out_scopes;
-        u64 mask = ~p->config->cont_filter_enabled_scopes;
-        // For scopes which has this filter disabled we want to set the matching bits using 'mask'
-        res &= bool_filter_matches(filter_out_scopes, is_container) | mask;
-    }
-
-    if (p->config->new_cont_filter_enabled_scopes) {
-        bool is_new_container = false;
-        if (p->task_info->container_state == CONTAINER_STARTED)
-            is_new_container = true;
-        u64 filter_out_scopes = p->config->new_cont_filter_out_scopes;
-        u64 mask = ~p->config->new_cont_filter_enabled_scopes;
-        res &= bool_filter_matches(filter_out_scopes, is_new_container) | mask;
-    }
-
-    if (p->config->pid_filter_enabled_scopes) {
-        u64 filter_out_scopes = p->config->pid_filter_out_scopes;
-        u64 mask = ~p->config->pid_filter_enabled_scopes;
-        u64 max = p->config->pid_max;
-        u64 min = p->config->pid_min;
-        // the user might have given us a tid - check for it too
-        res &=
-            uint_filter_range_matches(filter_out_scopes, &pid_filter, context->host_pid, max, min) |
-            uint_filter_range_matches(filter_out_scopes, &pid_filter, context->host_tid, max, min) |
-            mask;
-    }
-
-    if (p->config->new_pid_filter_enabled_scopes) {
-        u64 filter_out_scopes = p->config->new_pid_filter_out_scopes;
-        u64 mask = ~p->config->new_pid_filter_enabled_scopes;
-        res &= bool_filter_matches(filter_out_scopes, proc_info->new_proc) | mask;
-    }
-
-    if (p->config->uid_filter_enabled_scopes) {
-        u64 filter_out_scopes = p->config->uid_filter_out_scopes;
-        u64 mask = ~p->config->uid_filter_enabled_scopes;
-        u64 max = p->config->uid_max;
-        u64 min = p->config->uid_min;
-        res &= uint_filter_range_matches(filter_out_scopes, &uid_filter, context->uid, max, min) |
-               mask;
-    }
-
-    if (p->config->mnt_ns_filter_enabled_scopes) {
-        u64 filter_out_scopes = p->config->mnt_ns_filter_out_scopes;
-        u64 mask = ~p->config->mnt_ns_filter_enabled_scopes;
-        u32 mnt_id = context->mnt_id;
-        res &= equality_filter_matches(filter_out_scopes, &mnt_ns_filter, &mnt_id) | mask;
-    }
-
-    if (p->config->pid_ns_filter_enabled_scopes) {
-        u64 filter_out_scopes = p->config->pid_ns_filter_out_scopes;
-        u64 mask = ~p->config->pid_ns_filter_enabled_scopes;
-        u32 pid_id = context->pid_id;
-        res &= equality_filter_matches(filter_out_scopes, &pid_ns_filter, &pid_id) | mask;
-    }
-
-    if (p->config->uts_ns_filter_enabled_scopes) {
-        u64 filter_out_scopes = p->config->uts_ns_filter_out_scopes;
-        u64 mask = ~p->config->uts_ns_filter_enabled_scopes;
-        res &=
-            equality_filter_matches(filter_out_scopes, &uts_ns_filter, &context->uts_name) | mask;
-    }
-
-    if (p->config->comm_filter_enabled_scopes) {
-        u64 filter_out_scopes = p->config->comm_filter_out_scopes;
-        u64 mask = ~p->config->comm_filter_enabled_scopes;
-        res &= equality_filter_matches(filter_out_scopes, &comm_filter, &context->comm) | mask;
-    }
-
-    if (p->config->proc_tree_filter_enabled_scopes) {
-        u64 filter_out_scopes = p->config->proc_tree_filter_out_scopes;
-        u64 mask = ~p->config->proc_tree_filter_enabled_scopes;
-        res &= equality_filter_matches(filter_out_scopes, &process_tree_map, &context->host_pid) |
-               mask;
-    }
-
-    if (p->config->cgroup_id_filter_enabled_scopes) {
-        u64 filter_out_scopes = p->config->cgroup_id_filter_out_scopes;
-        u64 mask = ~p->config->cgroup_id_filter_enabled_scopes;
-        u64 cgroup_id_lsb = context->cgroup_id;
-        res &= equality_filter_matches(filter_out_scopes, &cgroup_id_filter, &cgroup_id_lsb) | mask;
-    }
-
-    if (p->config->bin_path_filter_enabled_scopes) {
-        u64 filter_out_scopes = p->config->bin_path_filter_out_scopes;
-        u64 mask = ~p->config->bin_path_filter_enabled_scopes;
-        res &= binary_filter_matches(filter_out_scopes, proc_info) | mask;
-    }
-
-    if (p->config->follow_filter_enabled_scopes) {
-        // trace this proc anyway if follow was set by a scope
-        res |= proc_info->follow_in_scopes & p->config->follow_filter_enabled_scopes;
-    }
-
-    // Make sure only enabled scopes are set in the bitmask (other bits are invalid)
-    return res & p->config->enabled_scopes;
-}
-
-static __always_inline u64 should_trace(program_data_t *p)
-{
-    // use cache whenever possible
-    if (p->task_info->recompute_scope) {
-        p->task_info->matched_scopes = compute_scopes(p);
-        p->task_info->recompute_scope = false;
-    }
-
-    p->event->context.matched_scopes = p->task_info->matched_scopes;
-
-    return p->task_info->matched_scopes;
-}
-
-static __always_inline u64 should_submit(u32 event_id, event_context_t *ctx)
-{
-    // use a map only with no submit cache from config.
-    // since this function is only ever called after a should_trace
-    // and in the context of a submit program/tail_call, any preemptive
-    // cache calculation before checking the map will 99% of times be
-    // redundant.
-    // a probe/tail call attach almost always implies at least one
-    // scope requires the event to be submitted.
-    u64 *event_scopes = bpf_map_lookup_elem(&events_map, &event_id);
-    // if scopes not set, don't submit
-    if (event_scopes == NULL) {
-        return 0;
-    }
-
-    // align with previously matched scopes
-    ctx->matched_scopes &= *event_scopes;
-
-    return ctx->matched_scopes;
-}
-
-// INTERNAL: BUFFERS -------------------------------------------------------------------------------
-
-static __always_inline buf_t *get_buf(int idx)
-{
-    return bpf_map_lookup_elem(&bufs, &idx);
-}
-
-// The biggest element that can be saved with this function should be defined here
-#define MAX_ELEMENT_SIZE sizeof(struct sockaddr_un)
-
-static __always_inline int save_to_submit_buf(event_data_t *event, void *ptr, u32 size, u8 index)
-{
-    // Data saved to submit buf: [index][ ... buffer[size] ... ]
-
-    if (size == 0)
-        return 0;
-
-    barrier();
-    if (event->buf_off > ARGS_BUF_SIZE - 1)
-        return 0;
-
-    // Save argument index
-    event->args[event->buf_off] = index;
-
-    // Satisfy verifier
-    if (event->buf_off > ARGS_BUF_SIZE - (MAX_ELEMENT_SIZE + 1))
-        return 0;
-
-    // Read into buffer
-    if (bpf_probe_read(&(event->args[event->buf_off + 1]), size, ptr) == 0) {
-        // We update buf_off only if all writes were successful
-        event->buf_off += size + 1;
-        event->context.argnum++;
-        return 1;
-    }
-
-    return 0;
-}
-
-static __always_inline int save_bytes_to_buf(event_data_t *event, void *ptr, u32 size, u8 index)
-{
-    // Data saved to submit buf: [index][size][ ... bytes ... ]
-
-    if (size == 0)
-        return 0;
-
-    if (event->buf_off > ARGS_BUF_SIZE - 1)
-        return 0;
-
-    // Save argument index
-    event->args[event->buf_off] = index;
-
-    if (event->buf_off > ARGS_BUF_SIZE - (sizeof(int) + 1))
-        return 0;
-
-    // Save size to buffer
-    if (bpf_probe_read(&(event->args[event->buf_off + 1]), sizeof(int), &size) != 0) {
-        return 0;
-    }
-
-    if (event->buf_off > ARGS_BUF_SIZE - (MAX_BYTES_ARR_SIZE + 1 + sizeof(int)))
-        return 0;
-
-    // Read bytes into buffer
-    if (bpf_probe_read(&(event->args[event->buf_off + 1 + sizeof(int)]),
-                       size & (MAX_BYTES_ARR_SIZE - 1),
-                       ptr) == 0) {
-        // We update buf_off only if all writes were successful
-        event->buf_off += size + 1 + sizeof(int);
-        event->context.argnum++;
-        return 1;
-    }
-
-    return 0;
-}
-
-static __always_inline int save_str_to_buf(event_data_t *event, void *ptr, u8 index)
-{
-    // Data saved to submit buf: [index][size][ ... string ... ]
-
-    if (event->buf_off > ARGS_BUF_SIZE - 1)
-        return 0;
-
-    // Save argument index
-    event->args[event->buf_off] = index;
-
-    // Satisfy verifier for probe read
-    if (event->buf_off > ARGS_BUF_SIZE - (MAX_STRING_SIZE + 1 + sizeof(int)))
-        return 0;
-
-    // Read into buffer
-    int sz =
-        bpf_probe_read_str(&(event->args[event->buf_off + 1 + sizeof(int)]), MAX_STRING_SIZE, ptr);
-    if (sz > 0) {
-        barrier();
-        // Satisfy verifier for probe read
-        if (event->buf_off > ARGS_BUF_SIZE - (MAX_STRING_SIZE + 1 + sizeof(int)))
-            return 0;
-
-        __builtin_memcpy(&(event->args[event->buf_off + 1]), &sz, sizeof(int));
-        event->buf_off += sz + sizeof(int) + 1;
-        event->context.argnum++;
-        return 1;
-    }
-
-    return 0;
-}
-
-static __always_inline int
-add_u64_elements_to_buf(event_data_t *event, const u64 __user *ptr, int len, volatile u32 count_off)
-{
-    // save count_off into a new variable to avoid verifier errors
-    u32 off = count_off;
-    u8 elem_num = 0;
-#pragma unroll
-    for (int i = 0; i < len; i++) {
-        void *addr = &(event->args[event->buf_off]);
-        if (event->buf_off > ARGS_BUF_SIZE - sizeof(u64))
-            // not enough space - return
-            goto out;
-        if (bpf_probe_read(addr, sizeof(u64), (void *) &ptr[i]) != 0)
-            goto out;
-        elem_num++;
-        event->buf_off += sizeof(u64);
-    }
-out:
-    // save number of elements in the array
-    if (off > (ARGS_BUF_SIZE - 1))
-        return 0;
-
-    u8 current_elem_num = event->args[off];
-    event->args[off] = current_elem_num + elem_num;
-
-    return 1;
-}
-
-static __always_inline int
-save_u64_arr_to_buf(event_data_t *event, const u64 __user *ptr, int len, u8 index)
-{
-    // Data saved to submit buf: [index][u8 count][u64 1][u64 2][u64 3]...
-    if (event->buf_off > ARGS_BUF_SIZE - 1)
-        return 0;
-
-    // Save argument index
-    event->args[event->buf_off] = index;
-
-    // Save space for number of elements (1 byte)
-    event->buf_off += 1;
-    volatile u32 orig_off = event->buf_off;
-    if (event->buf_off > ARGS_BUF_SIZE - 1)
-        return 0;
-    event->args[event->buf_off] = 0;
-    event->buf_off += 1;
-    event->context.argnum++;
-
-    return add_u64_elements_to_buf(event, ptr, len, orig_off);
-}
-
-static __always_inline int
-save_str_arr_to_buf(event_data_t *event, const char __user *const __user *ptr, u8 index)
-{
-    // Data saved to submit buf: [index][string count][str1 size][str1][str2 size][str2]...
-
-    u8 elem_num = 0;
-
-    if (event->buf_off > ARGS_BUF_SIZE - 1)
-        return 0;
-
-    // Save argument index
-    event->args[event->buf_off] = index;
-
-    // Save space for number of elements (1 byte)
-    u32 orig_off = event->buf_off + 1;
-    event->buf_off += 2;
-
-#pragma unroll
-    for (int i = 0; i < MAX_STR_ARR_ELEM; i++) {
-        const char *argp = NULL;
-        bpf_probe_read(&argp, sizeof(argp), &ptr[i]);
-        if (!argp)
-            goto out;
-
-        if (event->buf_off > ARGS_BUF_SIZE - MAX_STRING_SIZE - sizeof(int))
-            // not enough space - return
-            goto out;
-
-        // Read into buffer
-        int sz =
-            bpf_probe_read_str(&(event->args[event->buf_off + sizeof(int)]), MAX_STRING_SIZE, argp);
-        if (sz > 0) {
-            if (event->buf_off > ARGS_BUF_SIZE - sizeof(int))
-                // Satisfy validator
-                goto out;
-            bpf_probe_read(&(event->args[event->buf_off]), sizeof(int), &sz);
-            event->buf_off += sz + sizeof(int);
-            elem_num++;
-            continue;
-        } else {
-            goto out;
-        }
-    }
-    // handle truncated argument list
-    char ellipsis[] = "...";
-    if (event->buf_off > ARGS_BUF_SIZE - MAX_STRING_SIZE - sizeof(int))
-        // not enough space - return
-        goto out;
-
-    // Read into buffer
-    int sz =
-        bpf_probe_read_str(&(event->args[event->buf_off + sizeof(int)]), MAX_STRING_SIZE, ellipsis);
-    if (sz > 0) {
-        if (event->buf_off > ARGS_BUF_SIZE - sizeof(int))
-            // Satisfy validator
-            goto out;
-        bpf_probe_read(&(event->args[event->buf_off]), sizeof(int), &sz);
-        event->buf_off += sz + sizeof(int);
-        elem_num++;
-    }
-out:
-    // save number of elements in the array
-    if (orig_off > ARGS_BUF_SIZE - 1)
-        return 0;
-    event->args[orig_off] = elem_num;
-    event->context.argnum++;
-    return 1;
-}
-
-#define MAX_ARR_LEN 8192
-
-static __always_inline int save_args_str_arr_to_buf(
-    event_data_t *event, const char *start, const char *end, int elem_num, u8 index)
-{
-    // Data saved to submit buf: [index][len][arg_len][arg #][null delimited string array]
-    // Note: This helper saves null (0x00) delimited string array into buf
-
-    if (start >= end)
-        return 0;
-
-    int len = end - start;
-    if (len > (MAX_ARR_LEN - 1))
-        len = MAX_ARR_LEN - 1;
-
-    // Save argument index
-    if (event->buf_off > ARGS_BUF_SIZE - 1)
-        return 0;
-    event->args[event->buf_off] = index;
-
-    // Satisfy validator for probe read
-    if ((event->buf_off + 1) > ARGS_BUF_SIZE - sizeof(int))
-        return 0;
-
-    // Save array length
-    bpf_probe_read(&(event->args[event->buf_off + 1]), sizeof(int), &len);
-
-    // Satisfy validator for probe read
-    if ((event->buf_off + 5) > ARGS_BUF_SIZE - sizeof(int))
-        return 0;
-
-    // Save number of arguments
-    bpf_probe_read(&(event->args[event->buf_off + 5]), sizeof(int), &elem_num);
-
-    // Satisfy validator for probe read
-    if ((event->buf_off + 9) > ARGS_BUF_SIZE - MAX_ARR_LEN)
-        return 0;
-
-    // Read into buffer
-    if (bpf_probe_read(&(event->args[event->buf_off + 9]), len & (MAX_ARR_LEN - 1), start) == 0) {
-        // We update buf_off only if all writes were successful
-        event->buf_off += len + 9;
-        event->context.argnum++;
-        return 1;
-    }
-
-    return 0;
-}
-
-// INTERNAL: PERF BUFFER ---------------------------------------------------------------------------
-
-static __always_inline int events_perf_submit(program_data_t *p, u32 id, long ret)
-{
-    p->event->context.eventid = id;
-    p->event->context.retval = ret;
-
-    // Get Stack trace
-    if (p->config->options & OPT_CAPTURE_STACK_TRACES) {
-        int stack_id = bpf_get_stackid(p->ctx, &stack_addresses, BPF_F_USER_STACK);
-        if (stack_id >= 0) {
-            p->event->context.stack_id = stack_id;
-        }
-    }
-
-    u32 size = sizeof(event_context_t) + p->event->buf_off;
-
-    // inline bounds check to force compiler to use the register of size
-    asm volatile("if %[size] < %[max_size] goto +1;\n"
-                 "%[size] = %[max_size];\n"
-                 :
-                 : [size] "r"(size), [max_size] "i"(MAX_EVENT_SIZE));
-
-    return bpf_perf_event_output(p->ctx, &events, BPF_F_CURRENT_CPU, p->event, size);
-}
-
-// INTERNAL: STRINGS -------------------------------------------------------------------------------
-
-// Workaround: Newer LLVM versions might fail to optimize has_prefix()
-// loop unrolling with the following error:
-//
-//     warning: loop not unrolled: the optimizer was unable to perform
-//     the requested transformation; the transformation might be
-//     disabled or specified as part of an unsupported transformation
-//     ordering
-//
-
-#if defined(__clang__) && __clang_major__ > 13
-
-    #define has_prefix(p, s, n)                                                                    \
-        ({                                                                                         \
-            int rc = 0;                                                                            \
-            char *pre = p, *str = s;                                                               \
-            _Pragma("unroll") for (int z = 0; z < n; pre++, str++, z++)                            \
-            {                                                                                      \
-                if (!*pre) {                                                                       \
-                    rc = 1;                                                                        \
-                    break;                                                                         \
-                } else if (*pre != *str) {                                                         \
-                    rc = 0;                                                                        \
-                    break;                                                                         \
-                }                                                                                  \
-            }                                                                                      \
-            rc;                                                                                    \
-        })
-
-#else
-
-static __inline int has_prefix(char *prefix, char *str, int n)
-{
-    int i;
-    #pragma unroll
-    for (i = 0; i < n; prefix++, str++, i++) {
-        if (!*prefix)
-            return 1;
-        if (*prefix != *str) {
-            return 0;
-        }
-    }
-
-    // prefix is too long
-    return 0;
-}
-
-#endif
-
-// HELPERS: VFS ------------------------------------------------------------------------------------
-
-static __always_inline void *get_path_str(struct path *path)
-{
-    struct path f_path;
-    bpf_probe_read(&f_path, sizeof(struct path), path);
-    char slash = '/';
-    int zero = 0;
-    struct dentry *dentry = f_path.dentry;
-    struct vfsmount *vfsmnt = f_path.mnt;
-    struct mount *mnt_parent_p;
-
-    struct mount *mnt_p = real_mount(vfsmnt);
-    bpf_probe_read(&mnt_parent_p, sizeof(struct mount *), &mnt_p->mnt_parent);
-
-    u32 buf_off = (MAX_PERCPU_BUFSIZE >> 1);
-    struct dentry *mnt_root;
-    struct dentry *d_parent;
-    struct qstr d_name;
-    unsigned int len;
-    unsigned int off;
-    int sz;
-
-    // Get per-cpu string buffer
-    buf_t *string_p = get_buf(STRING_BUF_IDX);
-    if (string_p == NULL)
-        return NULL;
-
-#pragma unroll
-    for (int i = 0; i < MAX_PATH_COMPONENTS; i++) {
-        mnt_root = get_mnt_root_ptr_from_vfsmnt(vfsmnt);
-        d_parent = get_d_parent_ptr_from_dentry(dentry);
-        if (dentry == mnt_root || dentry == d_parent) {
-            if (dentry != mnt_root) {
-                // We reached root, but not mount root - escaped?
-                break;
-            }
-            if (mnt_p != mnt_parent_p) {
-                // We reached root, but not global root - continue with mount point path
-                bpf_probe_read(&dentry, sizeof(struct dentry *), &mnt_p->mnt_mountpoint);
-                bpf_probe_read(&mnt_p, sizeof(struct mount *), &mnt_p->mnt_parent);
-                bpf_probe_read(&mnt_parent_p, sizeof(struct mount *), &mnt_p->mnt_parent);
-                vfsmnt = &mnt_p->mnt;
-                continue;
-            }
-            // Global root - path fully parsed
-            break;
-        }
-        // Add this dentry name to path
-        d_name = get_d_name_from_dentry(dentry);
-        len = (d_name.len + 1) & (MAX_STRING_SIZE - 1);
-        off = buf_off - len;
-
-        // Is string buffer big enough for dentry name?
-        sz = 0;
-        if (off <= buf_off) { // verify no wrap occurred
-            len = len & ((MAX_PERCPU_BUFSIZE >> 1) - 1);
-            sz = bpf_probe_read_str(
-                &(string_p->buf[off & ((MAX_PERCPU_BUFSIZE >> 1) - 1)]), len, (void *) d_name.name);
-        } else
-            break;
-        if (sz > 1) {
-            buf_off -= 1; // remove null byte termination with slash sign
-            bpf_probe_read(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
-            buf_off -= sz - 1;
-        } else {
-            // If sz is 0 or 1 we have an error (path can't be null nor an empty string)
-            break;
-        }
-        dentry = d_parent;
-    }
-
-    if (buf_off == (MAX_PERCPU_BUFSIZE >> 1)) {
-        // memfd files have no path in the filesystem -> extract their name
-        buf_off = 0;
-        d_name = get_d_name_from_dentry(dentry);
-        bpf_probe_read_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *) d_name.name);
-    } else {
-        // Add leading slash
-        buf_off -= 1;
-        bpf_probe_read(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
-        // Null terminate the path string
-        bpf_probe_read(&(string_p->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
-    }
-
-    return &string_p->buf[buf_off];
-}
-
-static __always_inline void *get_dentry_path_str(struct dentry *dentry)
-{
-    char slash = '/';
-    int zero = 0;
-
-    u32 buf_off = (MAX_PERCPU_BUFSIZE >> 1);
-
-    // Get per-cpu string buffer
-    buf_t *string_p = get_buf(STRING_BUF_IDX);
-    if (string_p == NULL)
-        return NULL;
-
-#pragma unroll
-    for (int i = 0; i < MAX_PATH_COMPONENTS; i++) {
-        struct dentry *d_parent = get_d_parent_ptr_from_dentry(dentry);
-        if (dentry == d_parent) {
-            break;
-        }
-        // Add this dentry name to path
-        struct qstr d_name = get_d_name_from_dentry(dentry);
-        unsigned int len = (d_name.len + 1) & (MAX_STRING_SIZE - 1);
-        unsigned int off = buf_off - len;
-        // Is string buffer big enough for dentry name?
-        int sz = 0;
-        if (off <= buf_off) { // verify no wrap occurred
-            len = len & ((MAX_PERCPU_BUFSIZE >> 1) - 1);
-            sz = bpf_probe_read_str(
-                &(string_p->buf[off & ((MAX_PERCPU_BUFSIZE >> 1) - 1)]), len, (void *) d_name.name);
-        } else
-            break;
-        if (sz > 1) {
-            buf_off -= 1; // remove null byte termination with slash sign
-            bpf_probe_read(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
-            buf_off -= sz - 1;
-        } else {
-            // If sz is 0 or 1 we have an error (path can't be null nor an empty string)
-            break;
-        }
-        dentry = d_parent;
-    }
-
-    if (buf_off == (MAX_PERCPU_BUFSIZE >> 1)) {
-        // memfd files have no path in the filesystem -> extract their name
-        buf_off = 0;
-        struct qstr d_name = get_d_name_from_dentry(dentry);
-        bpf_probe_read_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *) d_name.name);
-    } else {
-        // Add leading slash
-        buf_off -= 1;
-        bpf_probe_read(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
-        // Null terminate the path string
-        bpf_probe_read(&(string_p->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
-    }
-
-    return &string_p->buf[buf_off];
-}
-
-// INTERNAL: ARGUMENTS -----------------------------------------------------------------------------
-
-static __always_inline int save_args(args_t *args, u32 event_id)
-{
-    u64 id = event_id;
-    u32 tid = bpf_get_current_pid_tgid();
-    id = id << 32 | tid;
-    bpf_map_update_elem(&args_map, &id, args, BPF_ANY);
-
-    return 0;
-}
-
-static __always_inline int load_args(args_t *args, u32 event_id)
-{
-    args_t *saved_args;
-    u32 tid = bpf_get_current_pid_tgid();
-    u64 id = event_id;
-    id = id << 32 | tid;
-
-    saved_args = bpf_map_lookup_elem(&args_map, &id);
-    if (saved_args == 0) {
-        // missed entry or not a container
-        return -1;
-    }
-
-    args->args[0] = saved_args->args[0];
-    args->args[1] = saved_args->args[1];
-    args->args[2] = saved_args->args[2];
-    args->args[3] = saved_args->args[3];
-    args->args[4] = saved_args->args[4];
-    args->args[5] = saved_args->args[5];
-
-    return 0;
-}
-
-static __always_inline int del_args(u32 event_id)
-{
-    u32 tid = bpf_get_current_pid_tgid();
-    u64 id = event_id;
-    id = id << 32 | tid;
-
-    bpf_map_delete_elem(&args_map, &id);
-
-    return 0;
-}
-
-#define DEC_ARG(n, enc_arg) ((enc_arg >> (8 * n)) & 0xFF)
-
-static __always_inline int save_args_to_submit_buf(event_data_t *event, u64 types, args_t *args)
-{
-    unsigned int i;
-    unsigned int rc = 0;
-    unsigned int arg_num = 0;
-    short family = 0;
-
-    if (types == 0)
-        return 0;
-
-#pragma unroll
-    for (i = 0; i < 6; i++) {
-        int size = 0;
-        u8 type = DEC_ARG(i, types);
-        u8 index = i;
-        switch (type) {
-            case NONE_T:
-                break;
-            case INT_T:
-                size = sizeof(int);
-                break;
-            case UINT_T:
-                size = sizeof(unsigned int);
-                break;
-            case OFF_T_T:
-                size = sizeof(off_t);
-                break;
-            case DEV_T_T:
-                size = sizeof(dev_t);
-                break;
-            case MODE_T_T:
-                size = sizeof(mode_t);
-                break;
-            case LONG_T:
-                size = sizeof(long);
-                break;
-            case ULONG_T:
-                size = sizeof(unsigned long);
-                break;
-            case SIZE_T_T:
-                size = sizeof(size_t);
-                break;
-            case POINTER_T:
-                size = sizeof(void *);
-                break;
-            case U8_T:
-                size = sizeof(u8);
-                break;
-            case U16_T:
-                size = sizeof(u16);
-                break;
-            case STR_T:
-                rc = save_str_to_buf(event, (void *) args->args[i], index);
-                break;
-            case SOCKADDR_T:
-                if (args->args[i]) {
-                    bpf_probe_read(&family, sizeof(short), (void *) args->args[i]);
-                    switch (family) {
-                        case AF_UNIX:
-                            size = sizeof(struct sockaddr_un);
-                            break;
-                        case AF_INET:
-                            size = sizeof(struct sockaddr_in);
-                            break;
-                        case AF_INET6:
-                            size = sizeof(struct sockaddr_in6);
-                            break;
-                        default:
-                            size = sizeof(short);
-                    }
-                    rc = save_to_submit_buf(event, (void *) (args->args[i]), size, index);
-                } else {
-                    rc = save_to_submit_buf(event, &family, sizeof(short), index);
-                }
-                break;
-            case INT_ARR_2_T:
-                size = sizeof(int[2]);
-                rc = save_to_submit_buf(event, (void *) (args->args[i]), size, index);
-                break;
-        }
-        if ((type != NONE_T) && (type != STR_T) && (type != SOCKADDR_T) && (type != INT_ARR_2_T)) {
-            rc = save_to_submit_buf(event, (void *) &(args->args[i]), size, index);
-        }
-
-        if (rc > 0) {
-            arg_num++;
-            rc = 0;
-        }
-    }
-
-    return arg_num;
-}
-
-// INTERNAL: SYSCALLS ------------------------------------------------------------------------------
-
-static __always_inline bool has_syscall_fd_arg(uint syscall_id)
-{
-    // Only syscalls with one fd argument so far
-    switch (syscall_id) {
-        case SYSCALL_READ:
-        case SYSCALL_WRITE:
-        case SYSCALL_CLOSE:
-        case SYSCALL_FSTAT:
-        case SYSCALL_LSEEK:
-        case SYSCALL_MMAP:
-        case SYSCALL_IOCTL:
-        case SYSCALL_PREAD64:
-        case SYSCALL_PWRITE64:
-        case SYSCALL_READV:
-        case SYSCALL_WRITEV:
-        case SYSCALL_DUP:
-        case SYSCALL_CONNECT:
-        case SYSCALL_ACCEPT:
-        case SYSCALL_SENDTO:
-        case SYSCALL_RECVFROM:
-        case SYSCALL_SENDMSG:
-        case SYSCALL_RECVMSG:
-        case SYSCALL_SHUTDOWN:
-        case SYSCALL_BIND:
-        case SYSCALL_LISTEN:
-        case SYSCALL_GETSOCKNAME:
-        case SYSCALL_GETPEERNAME:
-        case SYSCALL_SETSOCKOPT:
-        case SYSCALL_GETSOCKOPT:
-        case SYSCALL_FCNTL:
-        case SYSCALL_FLOCK:
-        case SYSCALL_FSYNC:
-        case SYSCALL_FDATASYNC:
-        case SYSCALL_FTRUNCATE:
-        case SYSCALL_FCHDIR:
-        case SYSCALL_FCHMOD:
-        case SYSCALL_FCHOWN:
-        case SYSCALL_FSTATFS:
-        case SYSCALL_READAHEAD:
-        case SYSCALL_FSETXATTR:
-        case SYSCALL_FGETXATTR:
-        case SYSCALL_FLISTXATTR:
-        case SYSCALL_FREMOVEXATTR:
-        case SYSCALL_GETDENTS64:
-        case SYSCALL_FADVISE64:
-        case SYSCALL_INOTIFY_ADD_WATCH:
-        case SYSCALL_INOTIFY_RM_WATCH:
-        case SYSCALL_OPENAT:
-        case SYSCALL_MKDIRAT:
-        case SYSCALL_MKNODAT:
-        case SYSCALL_FCHOWNAT:
-        case SYSCALL_UNLINKAT:
-        case SYSCALL_SYMLINKAT:
-        case SYSCALL_READLINKAT:
-        case SYSCALL_FCHMODAT:
-        case SYSCALL_FACCESSAT:
-        case SYSCALL_SYNC_FILE_RANGE:
-        case SYSCALL_VMSPLICE:
-        case SYSCALL_UTIMENSAT:
-        case SYSCALL_FALLOCATE:
-        case SYSCALL_TIMERFD_SETTIME:
-        case SYSCALL_TIMERFD_GETTIME:
-        case SYSCALL_ACCEPT4:
-        case SYSCALL_SIGNALFD4:
-        case SYSCALL_PREADV:
-        case SYSCALL_PWRITEV:
-        case SYSCALL_PERF_EVENT_OPEN:
-        case SYSCALL_RECVMMSG:
-        case SYSCALL_NAME_TO_HANDLE_AT:
-        case SYSCALL_OPEN_BY_HANDLE_AT:
-        case SYSCALL_SYNCFS:
-        case SYSCALL_SENDMMSG:
-        case SYSCALL_SETNS:
-        case SYSCALL_FINIT_MODULE:
-        case SYSCALL_EXECVEAT:
-        case SYSCALL_PREADV2:
-        case SYSCALL_PWRITEV2:
-        case SYSCALL_STATX:
-        case SYSCALL_PIDFD_SEND_SIGNAL:
-        case SYSCALL_IO_URING_ENTER:
-        case SYSCALL_IO_URING_REGISTER:
-        case SYSCALL_OPEN_TREE:
-        case SYSCALL_FSCONFIG:
-        case SYSCALL_FSMOUNT:
-        case SYSCALL_FSPICK:
-        case SYSCALL_OPENAT2:
-        case SYSCALL_FACCESSAT2:
-        case SYSCALL_PROCESS_MADVISE:
-        case SYSCALL_EPOLL_PWAIT2:
-        case SYSCALL_MOUNT_SETATTR:
-        case SYSCALL_QUOTACTL_FD:
-        case SYSCALL_LANDLOCK_ADD_RULE:
-        case SYSCALL_LANDLOCK_RESTRICT_SELF:
-        case SYSCALL_PROCESS_MRELEASE:
-#if !defined(bpf_target_arm64)
-        case SYSCALL_GETDENTS:
-        case SYSCALL_EPOLL_WAIT:
-        case SYSCALL_FUTIMESAT:
-        case SYSCALL_NEWFSTATAT:
-        case SYSCALL_EPOLL_PWAIT:
-        case SYSCALL_SIGNALFD:
-#endif
-            return true;
-    }
-
-    return false;
-}
-
-static __always_inline uint get_syscall_fd_num_from_arg(uint syscall_id, args_t *args)
-{
-    switch (syscall_id) {
-        case SYSCALL_SYMLINKAT:
-            return args->args[1];
-        case SYSCALL_PERF_EVENT_OPEN:
-            return args->args[3];
-        case SYSCALL_MMAP:
-            return args->args[4];
-    }
-
-    return args->args[0];
-}
-
-// GENERIC PROBE MACROS ----------------------------------------------------------------------------
-
-#define TRACE_ENT_FUNC(name, id)                                                                   \
-    int trace_##name(struct pt_regs *ctx)                                                          \
-    {                                                                                              \
-        program_data_t p = {};                                                                     \
-        if (!init_program_data(&p, ctx))                                                           \
-            return 0;                                                                              \
-                                                                                                   \
-        if (!should_trace(&p))                                                                     \
-            return 0;                                                                              \
-                                                                                                   \
-        args_t args = {};                                                                          \
-        args.args[0] = PT_REGS_PARM1(ctx);                                                         \
-        args.args[1] = PT_REGS_PARM2(ctx);                                                         \
-        args.args[2] = PT_REGS_PARM3(ctx);                                                         \
-        args.args[3] = PT_REGS_PARM4(ctx);                                                         \
-        args.args[4] = PT_REGS_PARM5(ctx);                                                         \
-        args.args[5] = PT_REGS_PARM6(ctx);                                                         \
-                                                                                                   \
-        return save_args(&args, id);                                                               \
-    }
-
-#define TRACE_RET_FUNC(name, id, types, ret)                                                       \
-    int trace_ret_##name(void *ctx)                                                                \
-    {                                                                                              \
-        args_t args = {};                                                                          \
-        if (load_args(&args, id) != 0)                                                             \
-            return -1;                                                                             \
-        del_args(id);                                                                              \
-                                                                                                   \
-        program_data_t p = {};                                                                     \
-        if (!init_program_data(&p, ctx))                                                           \
-            return 0;                                                                              \
-                                                                                                   \
-        if (!should_submit(id, &(p.event->context)))                                               \
-            return 0;                                                                              \
-                                                                                                   \
-        save_args_to_submit_buf(p->event, types, &args);                                           \
-                                                                                                   \
-        return events_perf_submit(&p, id, ret);                                                    \
-    }
-
-// HELPERS: NETWORK --------------------------------------------------------------------------------
-
-static __always_inline int
-get_network_details_from_sock_v4(struct sock *sk, net_conn_v4_t *net_details, int peer)
-{
-    struct inet_sock *inet = inet_sk(sk);
-
-    if (!peer) {
-        net_details->local_address = get_inet_rcv_saddr(inet);
-        net_details->local_port = bpf_ntohs(get_inet_num(inet));
-        net_details->remote_address = get_inet_daddr(inet);
-        net_details->remote_port = get_inet_dport(inet);
-    } else {
-        net_details->remote_address = get_inet_rcv_saddr(inet);
-        net_details->remote_port = bpf_ntohs(get_inet_num(inet));
-        net_details->local_address = get_inet_daddr(inet);
-        net_details->local_port = get_inet_dport(inet);
-    }
-
-    return 0;
-}
-
-static __always_inline struct ipv6_pinfo *inet6_sk_own_impl(struct sock *__sk,
-                                                            struct inet_sock *inet)
-{
-    volatile unsigned char sk_state_own_impl;
-    sk_state_own_impl = get_sock_state(__sk);
-
-    struct ipv6_pinfo *pinet6_own_impl;
-    pinet6_own_impl = get_inet_pinet6(inet);
-
-    bool sk_fullsock = (1 << sk_state_own_impl) & ~(TCPF_TIME_WAIT | TCPF_NEW_SYN_RECV);
-    return sk_fullsock ? pinet6_own_impl : NULL;
-}
-
-static __always_inline int
-get_network_details_from_sock_v6(struct sock *sk, net_conn_v6_t *net_details, int peer)
-{
-    // inspired by 'inet6_getname(struct socket *sock, struct sockaddr *uaddr, int peer)'
-    // reference: https://elixir.bootlin.com/linux/latest/source/net/ipv6/af_inet6.c#L509
-
-    struct inet_sock *inet = inet_sk(sk);
-    struct ipv6_pinfo *np = inet6_sk_own_impl(sk, inet);
-
-    struct in6_addr addr = {};
-    addr = get_sock_v6_rcv_saddr(sk);
-    if (ipv6_addr_any(&addr)) {
-        addr = get_ipv6_pinfo_saddr(np);
-    }
-
-    // the flowinfo field can be specified by the user to indicate a network flow. how it is used by
-    // the kernel, or whether it is enforced to be unique is not so obvious.  getting this value is
-    // only supported by the kernel for outgoing packets using the 'struct ipv6_pinfo'.  in any
-    // case, leaving it with value of 0 won't affect our representation of network flows.
-    net_details->flowinfo = 0;
-
-    // the scope_id field can be specified by the user to indicate the network interface from which
-    // to send a packet. this only applies for link-local addresses, and is used only by the local
-    // kernel.  getting this value is done by using the 'ipv6_iface_scope_id(const struct in6_addr
-    // *addr, int iface)' function.  in any case, leaving it with value of 0 won't affect our
-    // representation of network flows.
-    net_details->scope_id = 0;
-
-    if (peer) {
-        net_details->local_address = get_sock_v6_daddr(sk);
-        net_details->local_port = get_inet_dport(inet);
-        net_details->remote_address = addr;
-        net_details->remote_port = get_inet_sport(inet);
-    } else {
-        net_details->local_address = addr;
-        net_details->local_port = get_inet_sport(inet);
-        net_details->remote_address = get_sock_v6_daddr(sk);
-        net_details->remote_port = get_inet_dport(inet);
-    }
-
-    return 0;
-}
-
-static __always_inline int get_local_sockaddr_in_from_network_details(struct sockaddr_in *addr,
-                                                                      net_conn_v4_t *net_details,
-                                                                      u16 family)
-{
-    addr->sin_family = family;
-    addr->sin_port = net_details->local_port;
-    addr->sin_addr.s_addr = net_details->local_address;
-
-    return 0;
-}
-
-static __always_inline int get_remote_sockaddr_in_from_network_details(struct sockaddr_in *addr,
-                                                                       net_conn_v4_t *net_details,
-                                                                       u16 family)
-{
-    addr->sin_family = family;
-    addr->sin_port = net_details->remote_port;
-    addr->sin_addr.s_addr = net_details->remote_address;
-
-    return 0;
-}
-
-static __always_inline int get_local_sockaddr_in6_from_network_details(struct sockaddr_in6 *addr,
-                                                                       net_conn_v6_t *net_details,
-                                                                       u16 family)
-{
-    addr->sin6_family = family;
-    addr->sin6_port = net_details->local_port;
-    addr->sin6_flowinfo = net_details->flowinfo;
-    addr->sin6_addr = net_details->local_address;
-    addr->sin6_scope_id = net_details->scope_id;
-
-    return 0;
-}
-
-static __always_inline int get_remote_sockaddr_in6_from_network_details(struct sockaddr_in6 *addr,
-                                                                        net_conn_v6_t *net_details,
-                                                                        u16 family)
-{
-    addr->sin6_family = family;
-    addr->sin6_port = net_details->remote_port;
-    addr->sin6_flowinfo = net_details->flowinfo;
-    addr->sin6_addr = net_details->remote_address;
-    addr->sin6_scope_id = net_details->scope_id;
-
-    return 0;
-}
-
-static __always_inline int get_local_net_id_from_network_details_v4(struct sock *sk,
-                                                                    net_id_t *connect_id,
-                                                                    net_conn_v4_t *net_details,
-                                                                    u16 family)
-{
-    connect_id->address.s6_addr32[3] = net_details->local_address;
-    connect_id->address.s6_addr16[5] = 0xffff;
-    connect_id->port = net_details->local_port;
-    connect_id->protocol = get_sock_protocol(sk);
-
-    return 0;
-}
-
-static __always_inline int get_local_net_id_from_network_details_v6(struct sock *sk,
-                                                                    net_id_t *connect_id,
-                                                                    net_conn_v6_t *net_details,
-                                                                    u16 family)
-{
-    connect_id->address = net_details->local_address;
-    connect_id->port = net_details->local_port;
-    connect_id->protocol = get_sock_protocol(sk);
-
-    return 0;
-}
-
-static __always_inline int save_sockaddr_to_buf(event_data_t *event, struct socket *sock, u8 index)
-{
-    struct sock *sk = get_socket_sock(sock);
-
-    u16 family = get_sock_family(sk);
-    if ((family != AF_INET) && (family != AF_INET6) && (family != AF_UNIX)) {
-        return 0;
-    }
-
-    if (family == AF_INET) {
-        net_conn_v4_t net_details = {};
-        struct sockaddr_in local;
-
-        get_network_details_from_sock_v4(sk, &net_details, 0);
-        get_local_sockaddr_in_from_network_details(&local, &net_details, family);
-
-        save_to_submit_buf(event, (void *) &local, sizeof(struct sockaddr_in), index);
-    } else if (family == AF_INET6) {
-        net_conn_v6_t net_details = {};
-        struct sockaddr_in6 local;
-
-        get_network_details_from_sock_v6(sk, &net_details, 0);
-        get_local_sockaddr_in6_from_network_details(&local, &net_details, family);
-
-        save_to_submit_buf(event, (void *) &local, sizeof(struct sockaddr_in6), index);
-    } else if (family == AF_UNIX) {
-        struct unix_sock *unix_sk = (struct unix_sock *) sk;
-        struct sockaddr_un sockaddr = get_unix_sock_addr(unix_sk);
-        save_to_submit_buf(event, (void *) &sockaddr, sizeof(struct sockaddr_un), index);
-    }
-    return 0;
-}
-
-static __always_inline struct pipe_inode_info *get_file_pipe_info(struct file *file)
-{
-    struct pipe_inode_info *pipe = READ_KERN(file->private_data);
-    char pipe_fops_sym[14] = "pipefifo_fops";
-    if (READ_KERN(file->f_op) != get_symbol_addr(pipe_fops_sym)) {
-        return NULL;
-    }
-    return pipe;
-}
-
-// HELPERS: SUBMIT SPECIFIC EVENT ------------------------------------------------------------------
-
-// Used macro because of problem with verifier in NONCORE kinetic519
-#define submit_mem_prot_alert_event(event, alert, addr, len, prot, previous_prot, file_info)       \
-    {                                                                                              \
-        save_to_submit_buf(event, &alert, sizeof(u32), 0);                                         \
-        save_to_submit_buf(event, &addr, sizeof(void *), 1);                                       \
-        save_to_submit_buf(event, &len, sizeof(size_t), 2);                                        \
-        save_to_submit_buf(event, &prot, sizeof(int), 3);                                          \
-        save_to_submit_buf(event, &previous_prot, sizeof(int), 4);                                 \
-        if (file_info.pathname_p != NULL) {                                                        \
-            save_str_to_buf(event, file_info.pathname_p, 5);                                       \
-            save_to_submit_buf(event, &file_info.device, sizeof(dev_t), 6);                        \
-            save_to_submit_buf(event, &file_info.inode, sizeof(unsigned long), 7);                 \
-            save_to_submit_buf(event, &file_info.ctime, sizeof(u64), 8);                           \
-        }                                                                                          \
-        events_perf_submit(&p, MEM_PROT_ALERT, 0);                                                 \
-    }
 
 // SYSCALL HOOKS -----------------------------------------------------------------------------------
 
@@ -4291,6 +1057,10 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
     if (!init_program_data(&p, ctx))
         return 0;
 
+    // Uprobes are not triggered by syscalls, so we need to override the false value.
+    p.event->context.syscall = NO_SYSCALL;
+    p.event->context.matched_scopes = 0xFFFFFFFFFFFFFFFF;
+
     // uprobe was triggered from other tracee instance
     if (p.config->tracee_pid != trigger_pid)
         return 0;
@@ -4384,6 +1154,10 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
     if (!init_program_data(&p, ctx))
         return 0;
 
+    // Uprobes are not triggered by syscalls, so we need to override the false value.
+    p.event->context.syscall = NO_SYSCALL;
+    p.event->context.matched_scopes = 0xFFFFFFFFFFFFFFFF;
+
     // uprobe was triggered from other tracee instance
     if (p.config->tracee_pid != trigger_pid)
         return 0;
@@ -4461,6 +1235,10 @@ int uprobe_mem_dump_trigger(struct pt_regs *ctx)
     if (!init_program_data(&p, ctx))
         return 0;
 
+    // Uprobes are not triggered by syscalls, so we need to override the false value.
+    p.event->context.syscall = NO_SYSCALL;
+    p.event->context.matched_scopes = 0xFFFFFFFFFFFFFFFF;
+
     // uprobe was triggered from other tracee instance
     if (p.config->tracee_pid != trigger_pid)
         return 0;
@@ -4523,6 +1301,15 @@ static __always_inline void *get_trace_probe_from_trace_event_call(struct trace_
 
     return tracep_ptr;
 }
+
+enum perf_type_e
+{
+    PERF_TRACEPOINT,
+    PERF_KPROBE,
+    PERF_KRETPROBE,
+    PERF_UPROBE,
+    PERF_URETPROBE
+};
 
 // Inspired by bpf_get_perf_event_info() kernel func.
 // https://elixir.bootlin.com/linux/v5.19.2/source/kernel/trace/bpf_trace.c#L2123
@@ -4648,7 +1435,7 @@ send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf
     char prog_name[BPF_OBJ_NAME_LEN];
     bpf_probe_read_str(&prog_name, BPF_OBJ_NAME_LEN, READ_KERN(prog_aux->name));
 
-    // get usage of helper bpf_probe_write_user
+    // get usage of helpers
     bpf_attach_t *val = bpf_map_lookup_elem(&bpf_attach_map, &prog_id);
     if (val == NULL)
         return 0;
@@ -4660,7 +1447,8 @@ send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf
     save_str_to_buf(p->event, (void *) &event_name, 2);
     save_to_submit_buf(p->event, &probe_addr, sizeof(u64), 3);
     save_to_submit_buf(p->event, &val->write_user, sizeof(int), 4);
-    save_to_submit_buf(p->event, &perf_type, sizeof(int), 5);
+    save_to_submit_buf(p->event, &val->override_return, sizeof(int), 5);
+    save_to_submit_buf(p->event, &perf_type, sizeof(int), 6);
 
     events_perf_submit(p, BPF_ATTACH, 0);
 
@@ -4703,6 +1491,9 @@ int tracepoint__cgroup__cgroup_attach_task(struct bpf_raw_tracepoint_args *ctx)
         return 0;
 
     if (!should_trace(&p))
+        return 0;
+
+    if (!should_submit(CGROUP_ATTACH_TASK, &(p.event->context)))
         return 0;
 
     char *path = (char *) ctx->args[1];
@@ -4835,7 +1626,7 @@ int BPF_KPROBE(trace_security_file_open)
     // Load the arguments given to the open syscall (which eventually invokes this function)
     char empty_string[1] = "";
     void *syscall_pathname = &empty_string;
-    syscall_data_t *sys;
+    syscall_data_t *sys = NULL;
     bool syscall_traced = p.task_info->syscall_traced;
     if (syscall_traced) {
         sys = &p.task_info->syscall_data;
@@ -4856,7 +1647,6 @@ int BPF_KPROBE(trace_security_file_open)
     save_to_submit_buf(p.event, &inode_nr, sizeof(unsigned long), 3);
     save_to_submit_buf(p.event, &ctime, sizeof(u64), 4);
     save_str_to_buf(p.event, syscall_pathname, 5);
-    save_to_submit_buf(p.event, (void *) &sys->id, sizeof(int), 6);
 
     return events_perf_submit(&p, SECURITY_FILE_OPEN, 0);
 }
@@ -5000,9 +1790,6 @@ int BPF_KPROBE(trace_commit_creds)
         (old_slim.cap_effective != new_slim.cap_effective) ||
         (old_slim.cap_bset != new_slim.cap_bset) ||
         (old_slim.cap_ambient != new_slim.cap_ambient)) {
-        int id = get_task_syscall_id(p.event->task);
-        save_to_submit_buf(p.event, (void *) &id, sizeof(int), 2);
-
         events_perf_submit(&p, COMMIT_CREDS, 0);
     }
 
@@ -5082,8 +1869,6 @@ int BPF_KPROBE(trace_cap_capable)
         return 0;
 
     save_to_submit_buf(p.event, (void *) &cap, sizeof(int), 0);
-    int id = get_task_syscall_id(p.event->task);
-    save_to_submit_buf(p.event, (void *) &id, sizeof(int), 1);
 
     return events_perf_submit(&p, CAP_CAPABLE, 0);
 }
@@ -5427,6 +2212,13 @@ int BPF_KPROBE(trace_security_socket_setsockopt)
     return events_perf_submit(&p, SECURITY_SOCKET_SETSOCKOPT, 0);
 }
 
+enum bin_type_e
+{
+    SEND_VFS_WRITE = 1,
+    SEND_MPROTECT,
+    SEND_KERNEL_MODULE,
+};
+
 static __always_inline u32 send_bin_helper(void *ctx, void *prog_array, int tail_call)
 {
     // Note: sending the data to the userspace have the following constraints:
@@ -5579,9 +2371,6 @@ submit_magic_write(program_data_t *p, file_info_t *file_info, io_data_t io_data,
     if (header_bytes > bytes_written)
         header_bytes = bytes_written;
 
-    p->event->buf_off = 0;
-    p->event->context.argnum = 0;
-
     u8 header[FILE_MAGIC_HDR_SIZE];
     __builtin_memset(&header, 0, sizeof(header));
 
@@ -5686,6 +2475,7 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
 
     // magic_write event checks if the header of some file is changed
     if (!is_read && should_submit_magic_write && !char_dev && (start_pos == 0)) {
+        reset_event_args(&p);
         submit_magic_write(&p, &file_info, io_data, io_bytes_amount);
     }
 
@@ -5878,6 +2668,23 @@ int BPF_KPROBE(trace_ret_vfs_readv)
     return do_file_io_operation(ctx, VFS_READV, TAIL_VFS_READV, true, false);
 }
 
+// Used macro because of problem with verifier in NONCORE kinetic519
+#define submit_mem_prot_alert_event(event, alert, addr, len, prot, previous_prot, file_info)       \
+    {                                                                                              \
+        save_to_submit_buf(event, &alert, sizeof(u32), 0);                                         \
+        save_to_submit_buf(event, &addr, sizeof(void *), 1);                                       \
+        save_to_submit_buf(event, &len, sizeof(size_t), 2);                                        \
+        save_to_submit_buf(event, &prot, sizeof(int), 3);                                          \
+        save_to_submit_buf(event, &previous_prot, sizeof(int), 4);                                 \
+        if (file_info.pathname_p != NULL) {                                                        \
+            save_str_to_buf(event, file_info.pathname_p, 5);                                       \
+            save_to_submit_buf(event, &file_info.device, sizeof(dev_t), 6);                        \
+            save_to_submit_buf(event, &file_info.inode, sizeof(unsigned long), 7);                 \
+            save_to_submit_buf(event, &file_info.ctime, sizeof(u64), 8);                           \
+        }                                                                                          \
+        events_perf_submit(&p, MEM_PROT_ALERT, 0);                                                 \
+    }
+
 SEC("kprobe/security_mmap_addr")
 int BPF_KPROBE(trace_mmap_alert)
 {
@@ -5960,8 +2767,6 @@ int BPF_KPROBE(trace_ret_do_mmap)
     save_to_submit_buf(p.event, &len, sizeof(unsigned long), 7);
     save_to_submit_buf(p.event, &prot, sizeof(unsigned long), 8);
     save_to_submit_buf(p.event, &mmap_flags, sizeof(unsigned long), 9);
-    int id = get_task_syscall_id(p.event->task);
-    save_to_submit_buf(p.event, (void *) &id, sizeof(int), 10);
 
     return events_perf_submit(&p, DO_MMAP, 0);
 }
@@ -5998,10 +2803,8 @@ int BPF_KPROBE(trace_security_mmap_file)
     save_to_submit_buf(p.event, &inode_nr, sizeof(unsigned long), 3);
     save_to_submit_buf(p.event, &ctime, sizeof(u64), 4);
 
-    int id = -1;
     if (submit_shared_object_loaded) {
-        id = get_task_syscall_id(p.event->task);
-        if ((prot & VM_EXEC) == VM_EXEC && id == SYSCALL_MMAP) {
+        if ((prot & VM_EXEC) == VM_EXEC && p.event->context.syscall == SYSCALL_MMAP) {
             events_perf_submit(&p, SHARED_OBJECT_LOADED, 0);
         }
     }
@@ -6009,10 +2812,6 @@ int BPF_KPROBE(trace_security_mmap_file)
     if (submit_sec_mmap_file) {
         save_to_submit_buf(p.event, &prot, sizeof(unsigned long), 5);
         save_to_submit_buf(p.event, &mmap_flags, sizeof(unsigned long), 6);
-        if (id == -1) { // if id wasn't checked yet, do so now.
-            id = get_task_syscall_id(p.event->task);
-        }
-        save_to_submit_buf(p.event, (void *) &id, sizeof(int), 7);
         return events_perf_submit(&p, SECURITY_MMAP_FILE, 0);
     }
 
@@ -6081,8 +2880,6 @@ int BPF_KPROBE(trace_security_file_mprotect)
         if (len == 0)
             len = PAGE_SIZE;
 
-        p.event->buf_off = 0;
-        p.event->context.argnum = 0;
         u32 alert;
         bool should_alert = false;
         bool should_extract_code = false;
@@ -6108,6 +2905,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
             }
         }
         if (should_alert) {
+            reset_event_args(&p);
             submit_mem_prot_alert_event(p.event, alert, addr, len, reqprot, prev_prot, file_info);
         }
         if (should_extract_code) {
@@ -6218,6 +3016,7 @@ int BPF_KPROBE(trace_security_bpf)
 
     union bpf_attr *attr = (union bpf_attr *) PT_REGS_PARM2(ctx);
 
+    reset_event_args(&p);
     check_bpf_link(&p, attr, cmd);
 
     return 0;
@@ -6312,15 +3111,18 @@ int BPF_KPROBE(trace_security_bpf_prog)
     bpf_attach_t val = {};
     // In some systems, the 'check_map_func_compatibility' and 'check_helper_call' symbols are not
     // available. For these cases, the temporary map 'bpf_attach_tmp_map' will not hold any
-    // information (WRITE_USER_FALSE/WRITE_USER_TRUE). nevertheless, we always want to output the
-    // 'bpf_attach' event to the user, so using the WRITE_USER_UNKNOWN value instead of returning,
-    // just so the map would be filled.
-    val.write_user = WRITE_USER_UNKNOWN;
+    // information about the usage of bpf_probe_write_user and bpf_override_return. nevertheless,
+    // we always want to output the 'bpf_attach' event to the user, so using the UNKNOWN values
+    // instead of returning, just so the map would be filled.
+    val.write_user = HELPER_USAGE_UNKNOWN;
+    val.override_return = HELPER_USAGE_UNKNOWN;
 
     bpf_attach_t *existing_val;
     existing_val = bpf_map_lookup_elem(&bpf_attach_tmp_map, &p.event->context.task.host_tid);
-    if (existing_val != NULL)
+    if (existing_val != NULL) {
         val.write_user = existing_val->write_user;
+        val.override_return = existing_val->override_return;
+    }
 
     bpf_map_update_elem(&bpf_attach_map, &prog_id, &val, BPF_ANY);
 
@@ -6329,10 +3131,10 @@ int BPF_KPROBE(trace_security_bpf_prog)
     return 0;
 }
 
-// Save in the temporary map 'bpf_attach_tmp_map' whether or not bpf_probe_write_user is used in the
-// bpf program. Get this information in the verifier phase of the bpf program load lifecycle, before
-// a prog_id is set for the bpf program. Save this information in a temporary map which includes the
-// host_tid as key instead of the prog_id.
+// Save in the temporary map 'bpf_attach_tmp_map' whether bpf_probe_write_user and
+// bpf_override_return are used in the bpf program. Get this information in the verifier phase of
+// the bpf program load lifecycle, before a prog_id is set for the bpf program. Save this
+// information in a temporary map which includes the host_tid as key instead of the prog_id.
 //
 // Later on, in security_bpf_prog, save this information in the stable map 'bpf_attach_map', which
 // contains the prog_id in its key.
@@ -6340,16 +3142,33 @@ int BPF_KPROBE(trace_security_bpf_prog)
 static __always_inline int handle_bpf_helper_func_id(u32 host_tid, int func_id)
 {
     bpf_attach_t val = {};
-    val.write_user = WRITE_USER_FALSE;
+    val.write_user = HELPER_USAGE_FALSE;
+    val.override_return = HELPER_USAGE_FALSE;
 
+    // we want the map to contain value, event if we didn't see the BPF helper functions we looked
+    // for. if there is a value, use it - because this program is invoked for each BPF helper
+    // function.
     bpf_attach_t *existing_val = bpf_map_lookup_elem(&bpf_attach_tmp_map, &host_tid);
-    if (existing_val == NULL)
+    if (existing_val == NULL) {
         bpf_map_update_elem(&bpf_attach_tmp_map, &host_tid, &val, BPF_ANY);
-
-    if (func_id == BPF_FUNC_probe_write_user) {
-        val.write_user = WRITE_USER_TRUE;
-        bpf_map_update_elem(&bpf_attach_tmp_map, &host_tid, &val, BPF_ANY);
+    } else {
+        val.write_user = existing_val->write_user;
+        val.override_return = existing_val->override_return;
     }
+
+    // update the map if the BPF helper function is one that we look for
+    switch (func_id) {
+        case BPF_FUNC_probe_write_user:
+            val.write_user = HELPER_USAGE_TRUE;
+            break;
+        case BPF_FUNC_override_return:
+            val.override_return = HELPER_USAGE_TRUE;
+            break;
+        default:
+            return 0;
+    }
+
+    bpf_map_update_elem(&bpf_attach_tmp_map, &host_tid, &val, BPF_ANY);
 
     return 0;
 }
@@ -6914,8 +3733,6 @@ int tracepoint__task__task_rename(struct bpf_raw_tracepoint_args *ctx)
 
     save_str_to_buf(p.event, (void *) old_name, 0);
     save_str_to_buf(p.event, (void *) new_name, 1);
-    int id = get_task_syscall_id(tsk);
-    save_to_submit_buf(p.event, (void *) &id, sizeof(int), 2);
 
     return events_perf_submit(&p, TASK_RENAME, 0);
 }
@@ -6969,11 +3786,19 @@ int BPF_KPROBE(trace_ret_kallsyms_lookup_name)
 
     save_str_to_buf(p.event, name, 0);
     save_to_submit_buf(p.event, &address, sizeof(unsigned long), 1);
-    int id = get_task_syscall_id(p.event->task);
-    save_to_submit_buf(p.event, &id, sizeof(int), 2);
 
     return events_perf_submit(&p, KALLSYMS_LOOKUP_NAME, 0);
 }
+
+enum signal_handling_method_e
+{
+#ifdef CORE
+    SIG_DFL,
+    SIG_IGN,
+#endif
+    SIG_HND = 2 // Doesn't exist in the kernel, but signifies that the method is through
+                // user-defined handler
+};
 
 SEC("kprobe/do_sigaction")
 int BPF_KPROBE(trace_do_sigaction)
@@ -7051,171 +3876,93 @@ int BPF_KPROBE(trace_do_sigaction)
     return events_perf_submit(&p, DO_SIGACTION, 0);
 }
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(5, 1, 0) || defined(CORE)) || defined(RHEL_RELEASE_CODE)
+// clang-format off
 
 // Network Packets (works from ~5.2 and beyond)
 
-// There are multiple ways to follow ingress/egress for a task. One way is to
-// try to track all flows within network interfaces and keep a map of addresses
-// tuples and translations. OR, sk_storage and socket cookies might help in
-// understanding which sock/sk_buff context the bpf program is dealing with but,
-// at the end, the need is always to tie a flow to a task (specially when
-// hooking ingress skb bpf programs, when the current task is a kernel thread
-// most of the times).
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(5, 1, 0) || defined(CORE)) || defined(RHEL_RELEASE_CODE)
 
-// Unfortunately that gets even more complicated in older kernels: the cgroup
-// skb programs have almost no bpf helpers to use, and most of common code
-// causes verifier to fail. With that in mind, this approach uses a technique of
-// kprobing the function responsible for calling the cgroup/skb programs.
+// To track ingress/egress traffic we always need to link a flow to its related
+// task (particularly when hooking ingress skb bpf programs, where the current
+// task is typically a kernel thread).
 
-// All the work, that should be done by the cgroup/skb programs in the common
-// case, in this case is done by this kprobe/kretprobe hook logic (right before
-// and right after the cgroup/skb program runs). By doing that, all the data
-// that cgroup/skb programs need to use is already placed in a map.
+// In older kernels, managing cgroup skb programs can be more difficult due to
+// the lack of bpf helpers and buggy/incomplete verifier. To deal with this,
+// this approach uses a technique of kprobing the function responsible for
+// calling the cgroup/skb programs.
 
-// Obviously this has some cons: this kprobe->cgroup/skb->kretprobe execution
-// flow does not have preemption disabled, so the map used in between the 3
-// hooks need to use something that is available to all 3 of them.
+// Tracee utilizes a technique of kprobing the function responsible for calling
+// the cgroup/skb programs in order to perform the tasks which cgroup skb
+// programs would usually accomplish. Through this method, all the data needed
+// by the cgroup/skb programs is already stored in a map.
+
+// Unfortunately this approach has some cons: the kprobe to cgroup/skb execution
+// flow does not have preemption disabled, so the map used in between all the
+// hooks need to use as a key something that is available to all the hooks
+// context (the packet contents themselves: e.g. L3 header fields).
 
 // At the end, the logic is simple: every time a socket is created an inode is
 // also created. The task owning the socket is indexed by the socket inode so
 // everytime this socket is used we know which task it belongs to (specially
-// during ingress hook).
+// during ingress hook, executed from the softirq context within a kthread).
 
 //
 // network helper functions
 //
 
+static __always_inline bool is_family_supported(struct socket *sock)
+{
+    struct sock *sk = (void *) BPF_READ(sock, sk);
+    struct sock_common *common = (void *) sk;
+    u8 family = BPF_READ(common, skc_family);
+
+    switch (family) {
+        case PF_INET:
+        case PF_INET6:
+            break;
+        // case PF_UNSPEC:
+        // case PF_LOCAL:      // PF_UNIX or PF_FILE
+        // case PF_NETLINK:
+        // case PF_VSOCK:
+        // case PF_XDP:
+        // case PF_BRIDGE:
+        // case PF_PACKET:
+        // case PF_MPLS:
+        // case PF_BLUETOOTH:
+        // case PF_IB:
+        // ...
+        default:
+            return 0; // not supported
+    }
+
+    return 1; // supported
+}
+
 static __always_inline bool is_socket_supported(struct socket *sock)
 {
-    // clang-format off
     struct sock *sk = (void *) BPF_READ(sock, sk);
     u16 protocol = get_sock_protocol(sk);
     switch (protocol) {
-        // case IPPROTO_IPV6:
         // case IPPROTO_IPIP:
         // case IPPROTO_DCCP:
         // case IPPROTO_SCTP:
         // case IPPROTO_UDPLITE:
         case IPPROTO_IP:
+        case IPPROTO_IPV6:
         case IPPROTO_TCP:
         case IPPROTO_UDP:
         case IPPROTO_ICMP:
         case IPPROTO_ICMPV6:
             break;
         default:
-            return 0;
+            return 0; // not supported
     }
 
-    return 1;
-    // clang-format on
+    return 1; // supported
 }
 
 //
-// network related maps
-//
-
-// clang-format off
-
-// cgroupctxmap
-
-typedef enum net_packet {
-    CAP_NET_PACKET = 1 << 0,
-    // Layer 3
-    SUB_NET_PACKET_IP = 1 << 1,
-    // Layer 4
-    SUB_NET_PACKET_TCP = 1 << 2,
-    SUB_NET_PACKET_UDP = 1<<3,
-    SUB_NET_PACKET_ICMP = 1 <<4,
-    SUB_NET_PACKET_ICMPV6 = 1<<5,
-    // Layer 7
-    SUB_NET_PACKET_DNS = 1<< 6,
-    SUB_NET_PACKET_HTTP = 1<<7,
-} net_packet_t;
-
-
-typedef struct net_event_contextmd {
-    u8 submit;
-    u32 header_size;
-    u8 captured;
-    u8 padding;
-} __attribute__((__packed__)) net_event_contextmd_t;
-
-typedef struct net_event_context {
-    event_context_t eventctx;
-    struct { // event arguments (needs packing), use anonymous struct to ...
-        u8 index0;
-        u32 bytes;
-        // ... (payload sent by bpf_perf_event_output)
-    } __attribute__((__packed__)); // ... avoid address-of-packed-member warns
-    // members bellow this point are metadata (not part of event to be sent)
-    net_event_contextmd_t md;
-} net_event_context_t;
-
-struct {
-    __uint(type, BPF_MAP_TYPE_LRU_HASH);
-    __uint(max_entries, 1024);          // simultaneous cgroup/skb ingress/eggress progs
-    __type(key, u64);                   // sk_buff timestamp
-    __type(value, net_event_context_t); // event context built so cgroup/skb can use
-} cgrpctxmap SEC(".maps");              // saved info between SKB caller and SKB program
-
-// inodemap
-
-typedef struct net_task_context {
-    struct task_struct *task;
-    task_context_t taskctx;
-    u64 matched_scopes;
-} net_task_context_t;
-
-struct {
-    __uint(type, BPF_MAP_TYPE_LRU_HASH);
-    __uint(max_entries, 10240);             // simultaneous sockets being traced
-    __type(key, u64);                       // socket inode number ...
-    __type(value, struct net_task_context); // ... linked to a task context
-} inodemap SEC(".maps");                    // relate sockets and tasks
-
-// entrymap
-
-typedef struct entry {
-    long unsigned int args[6];
-} entry_t;
-
-struct {
-    __uint(type, BPF_MAP_TYPE_LRU_HASH);
-    __uint(max_entries, 1024);       // simultaneous tasks being traced for entry/exit
-    __type(key, u32);                // host thread group id (tgid or tid) ...
-    __type(value, struct entry);     // ... linked to entry ctx->args
-} entrymap SEC(".maps");             // can't use args_map (indexed by existing events only)
-
-// network capture events
-
-struct {
-    __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
-    __uint(max_entries, 1024);
-    __type(key, u32);
-    __type(value, u32);
-} net_cap_events SEC(".maps");
-
-// scratch area
-
-struct {
-    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
-    __uint(max_entries, 1);                    // simultaneous softirqs running per CPU (?)
-    __type(key, u32);                          // per cpu index ... (always zero)
-    __type(value, scratch_t);                  // ... linked to a scratch area
-} net_heap_scratch SEC(".maps");
-
-struct {
-    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
-    __uint(max_entries, 1);                    // simultaneous softirqs running per CPU (?)
-    __type(key, u32);                          // per cpu index ... (always zero)
-    __type(value, event_data_t);               // ... linked to a scratch area
-} net_heap_event SEC(".maps");
-
-// clang-format on
-
-//
-// support functions for network code
+// Support functions for network code
 //
 
 static __always_inline u64 sizeof_net_event_context_t(void)
@@ -7227,6 +3974,7 @@ static __always_inline void set_net_task_context(event_data_t *event, net_task_c
 {
     netctx->task = event->task;
     netctx->matched_scopes = event->context.matched_scopes;
+    netctx->syscall = event->context.syscall;
     __builtin_memset(&netctx->taskctx, 0, sizeof(task_context_t));
     __builtin_memcpy(&netctx->taskctx, &event->context.task, sizeof(task_context_t));
 }
@@ -7269,308 +4017,18 @@ static __always_inline int should_submit_net_event(net_event_context_t *netevent
     return 0;
 }
 
-//
-// Socket Creation: keep track of created socket inodes per traced task
-//
-
-SEC("kprobe/sock_alloc_file")
-int BPF_KPROBE(trace_sock_alloc_file)
+static __always_inline int should_capture_net_event(net_event_context_t *neteventctx,
+                                                    net_packet_t packet_type)
 {
-    // runs every time a socket is created (entry)
-
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
+    if (neteventctx->md.captured) // already captured
         return 0;
 
-    if (!should_trace(&p))
-        return 0;
-
-    struct entry entry = {0};
-
-    // save args for retprobe
-    entry.args[0] = PT_REGS_PARM1(ctx); // struct socket *sock
-    struct socket *sock = (void *) PT_REGS_PARM1(ctx);
-
-    if (!is_socket_supported(sock))
-        return 0;
-
-    entry.args[1] = PT_REGS_PARM2(ctx); // int flags
-    entry.args[2] = PT_REGS_PARM2(ctx); // char *dname
-
-    // prepare for kretprobe using entrymap
-    u32 host_tid = p.event->context.task.host_tid;
-    bpf_map_update_elem(&entrymap, &host_tid, &entry, BPF_ANY);
-
-    return 0;
-}
-
-SEC("kretprobe/sock_alloc_file")
-int BPF_KRETPROBE(trace_ret_sock_alloc_file)
-{
-    // runs every time a socket is created (return)
-
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
-        return 0;
-
-    // pick from entry from entrymap
-    u32 host_tid = p.event->context.task.host_tid;
-    struct entry *entry = bpf_map_lookup_elem(&entrymap, &host_tid);
-    if (!entry) // no entry == no tracing
-        return 0;
-
-    // pick args from entry point's entry
-    // struct socket *sock = (void *) entry->args[0];
-    // int flags = entry->args[1];
-    // char *dname = (void *) entry->args[2];
-    struct file *sock_file = (void *) PT_REGS_RC(ctx);
-
-    // cleanup entrymap
-    bpf_map_delete_elem(&entrymap, &host_tid);
-
-    if (!sock_file)
-        return 0; // socket() failed ?
-
-    u64 inode = BPF_READ(sock_file, f_inode, i_ino);
-    if (inode == 0)
-        return 0;
-
-    // save context to further create an event when no context exists
-    net_task_context_t netctx = {0};
-    set_net_task_context(p.event, &netctx);
-
-    // update inodemap correlating inode <=> task
-    bpf_map_update_elem(&inodemap, &inode, &netctx, BPF_ANY);
-
-    return 0;
+    return should_submit_net_event(neteventctx, packet_type);
 }
 
 //
-// Socket creation and socket <=> task context updates
+// Protocol parsing functions
 //
-
-static __always_inline u32 security_socket_send_recv_msg(struct socket *sock, event_data_t *event)
-{
-    if (!is_socket_supported(sock))
-        return 0;
-
-    struct file *sock_file = BPF_READ(sock, file);
-    if (!sock_file)
-        return 0;
-
-    u64 inode = BPF_READ(sock_file, f_inode, i_ino);
-    if (inode == 0)
-        return 0;
-
-    // save updated context to the inode map (inode <=> task ctx relation)
-    net_task_context_t netctx = {0};
-    set_net_task_context(event, &netctx);
-    bpf_map_update_elem(&inodemap, &inode, &netctx, BPF_ANY);
-
-    return 0;
-}
-
-SEC("kprobe/security_socket_recvmsg")
-int BPF_KPROBE(trace_security_socket_recvmsg)
-{
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
-        return 0;
-
-    if (!should_trace(&p))
-        return 0;
-
-    struct socket *sock = (void *) PT_REGS_PARM1(ctx);
-
-    return security_socket_send_recv_msg(sock, p.event);
-}
-
-SEC("kprobe/security_socket_sendmsg")
-int BPF_KPROBE(trace_security_socket_sendmsg)
-{
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
-        return 0;
-
-    if (!should_trace(&p))
-        return 0;
-
-    struct socket *sock = (void *) PT_REGS_PARM1(ctx);
-
-    return security_socket_send_recv_msg(sock, p.event);
-}
-
-    // network retval values
-    #define family_ipv4     (1 << 0)
-    #define family_ipv6     (1 << 1)
-    #define proto_http_req  (1 << 2)
-    #define proto_http_resp (1 << 3)
-
-//
-// Socket Ingress/Egress eBPF program loader (right before and right after eBPF)
-//
-
-SEC("kprobe/__cgroup_bpf_run_filter_skb")
-int BPF_KPROBE(cgroup_bpf_run_filter_skb)
-{
-    // runs BEFORE the CGROUP/SKB eBPF program
-
-    int type = PT_REGS_PARM3(ctx);
-    switch (type) {
-        case BPF_CGROUP_INET_INGRESS:
-        case BPF_CGROUP_INET_EGRESS:
-            break;
-        default:
-            return 0; // wrong attachment type, return fast
-    }
-
-    u32 zero = 0;
-    event_data_t *e = bpf_map_lookup_elem(&net_heap_event, &zero);
-    if (unlikely(e == NULL))
-        return 0;
-    scratch_t *s = bpf_map_lookup_elem(&net_heap_scratch, &zero);
-    if (unlikely(s == NULL))
-        return 0;
-
-    program_data_t p = {
-        .event = e,
-        .scratch = s,
-    };
-    if (!init_program_data(&p, ctx))
-        return 0;
-
-    struct sock *sk = (void *) PT_REGS_PARM1(ctx);
-    struct sk_buff *skb = (void *) PT_REGS_PARM2(ctx);
-
-    // obtain socket inode
-    u64 inode = BPF_READ(sk, sk_socket, file, f_inode, i_ino);
-    if (inode == 0)
-        return 0;
-
-    // save args for kretprobe
-    struct entry entry = {0};
-    entry.args[0] = PT_REGS_PARM1(ctx); // struct sock *sk
-    entry.args[1] = PT_REGS_PARM2(ctx); // struct sk_buff *skb
-
-    // prepare for kretprobe using entrymap
-    u32 host_tid = p.event->context.task.host_tid;
-    bpf_map_update_elem(&entrymap, &host_tid, &entry, BPF_ANY);
-
-    // pick network context from the inodemap (inode <=> task)
-    net_task_context_t *netctx = bpf_map_lookup_elem(&inodemap, &inode);
-    if (!netctx)
-        return 0;
-
-    // use skb timestamp as the key for cgroup/skb (*)
-    u64 skbts = BPF_READ(skb, tstamp);
-
-    // Prepare [event_context_t][args1,arg2,arg3...] to be sent by cgroup/skb
-    // program. The [...] part of the event can't use existing per-cpu submit
-    // buffer helpers because the time in between this kprobe fires and the
-    // cgroup/skb program runs might be suffer a preemption.
-
-    net_event_context_t neteventctx = {0}; // to be sent by cgroup/skb program
-    event_context_t *eventctx = &neteventctx.eventctx;
-
-    // copy orig task ctx (from the netctx) to event ctx and build the rest
-    __builtin_memcpy(&eventctx->task, &netctx->taskctx, sizeof(task_context_t));
-    eventctx->ts = p.event->context.ts;                     // copy timestamp from current ctx
-    eventctx->argnum = 1;                                   // 1 argument (add more if needed)
-    eventctx->eventid = NET_PACKET_IP;                      // will be changed in skb program
-    eventctx->stack_id = 0;                                 // no stack trace
-    eventctx->processor_id = p.event->context.processor_id; // copy from current ctx
-    eventctx->matched_scopes = netctx->matched_scopes;      // pick matched-scopes from net ctx
-
-    // inform userland about protocol family (for correct L3 header parsing)...
-    struct sock_common *common = (void *) sk;
-    u8 family = BPF_READ(common, skc_family);
-    switch (family) {
-        case AF_INET:
-            eventctx->retval |= family_ipv4;
-        case AF_INET6:
-            eventctx->retval |= family_ipv6;
-    }
-    // ... through event ctx ret val
-
-    // set event arguments
-    neteventctx.bytes = 0; // no payload by default (changed inside skb prog)
-
-    // (*) Use skb timestamp as the key for a map shared between this kprobe and
-    // the skb ebpf program: this is **NOT SUPER** BUT, for older kernels, that
-    // provide ABSOLUTE NO eBPF helpers in cgroup/skb programs context, it does
-    // its job: pre-process everything HERE so cgroup/skb programs can use.
-    //
-    // Explanation: The cgroup/skb eBPF program is called right after this
-    //              kprobe, but preemption is enabled. If preemption wasn't
-    //              enabled, we could simply populate a single item map and pick
-    //              pointer inside cgroup/skb. Instead, we index map items
-    //              using the skb timestamp, which is a value that is shared
-    //              among this kprobe AND the cgroup/skb program context
-    //              (through its skbuf copy).
-    //
-    // Theoretically, map collisions might occur, BUT very unlikely due to:
-    //
-    // kprobe (map update) -> cgroup/skb (consume) -> kretprobe (map delete)
-
-    bpf_map_update_elem(&cgrpctxmap, &skbts, &neteventctx, BPF_NOEXIST);
-
-    return 0;
-}
-
-SEC("kretprobe/__cgroup_bpf_run_filter_skb")
-int BPF_KRETPROBE(ret_cgroup_bpf_run_filter_skb)
-{
-    // runs AFTER the CGROUP/SKB eBPF program
-
-    // pick from entry from entrymap
-    u32 host_tid = bpf_get_current_pid_tgid();
-    struct entry *entry = bpf_map_lookup_elem(&entrymap, &host_tid);
-    if (!entry) // no entry == no tracing
-        return 0;
-
-    // pick args from entry point's entry
-    // struct sock *sk = (void *) entry->args[0];
-    struct sk_buff *skb = (void *) entry->args[1];
-
-    // cleanup entrymap
-    bpf_map_delete_elem(&entrymap, &host_tid);
-
-    // use skb timestamp as the key for cgroup/skb
-    u64 skbts = BPF_READ(skb, tstamp);
-
-    // delete netctx after cgroup ebpf program runs
-    bpf_map_delete_elem(&cgrpctxmap, &skbts);
-
-    return 0;
-}
-
-//
-// Type definitions and prototypes for protocol parsing
-//
-
-// NOTE: proto header structs need full type in vmlinux.h (for correct skb copy)
-
-typedef union iphdrs_t {
-    struct iphdr iphdr;
-    struct ipv6hdr ipv6hdr;
-} iphdrs;
-
-typedef union protohdrs_t {
-    struct tcphdr tcphdr;
-    struct udphdr udphdr;
-    struct icmphdr icmphdr;
-    struct icmp6hdr icmp6hdr;
-    union {
-        u8 tcp_extra[40]; // data offset might set it up to 60 bytes
-    };
-} protohdrs;
-
-typedef struct nethdrs_t {
-    iphdrs iphdrs;
-    protohdrs protohdrs;
-} nethdrs;
-
-// clang-format off
 
 #define CGROUP_SKB_HANDLE_FUNCTION(name)                                       \
 static __always_inline u32 cgroup_skb_handle_##name(                           \
@@ -7594,9 +4052,6 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6);
 //
 // Network submission functions
 //
-
-#define FULL    65536 // 1 << 16
-#define HEADERS 0     // no payload
 
 static __always_inline u32 cgroup_skb_submit(void *map,
                                              struct __sk_buff *ctx,
@@ -7654,29 +4109,364 @@ static __always_inline u32 cgroup_skb_capture_event(struct __sk_buff *ctx,
 }
 
 // capture packet a single time (if passing through multiple protocols being submitted to userland)
-
 #define cgroup_skb_capture() {                                                                     \
-    if (should_submit_net_event(neteventctx, CAP_NET_PACKET) && neteventctx->md.captured == 0) {   \
-        cgroup_skb_capture_event(ctx, neteventctx, NET_PACKET_CAP_BASE);                           \
-        neteventctx->md.captured = 1;                                                              \
+    if (should_submit_net_event(neteventctx, CAP_NET_PACKET)) {                                    \
+        if (neteventctx->md.captured == 0) { /* do not capture the same packet twice */            \
+            cgroup_skb_capture_event(ctx, neteventctx, NET_PACKET_CAP_BASE);                       \
+            neteventctx->md.captured = 1;                                                          \
+        }                                                                                          \
     }                                                                                              \
 }
 
-// clang-format on
+//
+// Socket creation and socket <=> task context updates
+//
+
+SEC("kprobe/sock_alloc_file")
+int BPF_KPROBE(trace_sock_alloc_file)
+{
+    // runs every time a socket is created (entry)
+
+    struct socket *sock = (void *) PT_REGS_PARM1(ctx);
+
+    if (!is_family_supported(sock))
+        return 0;
+
+    if (!is_socket_supported(sock))
+        return 0;
+
+    // initialize program data
+
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    if (!should_trace(&p))
+        return 0;
+
+    struct entry entry = {0};
+
+    // save args for retprobe
+    entry.args[0] = PT_REGS_PARM1(ctx); // struct socket *sock
+
+    entry.args[1] = PT_REGS_PARM2(ctx); // int flags
+    entry.args[2] = PT_REGS_PARM2(ctx); // char *dname
+
+    // prepare for kretprobe using entrymap
+    u32 host_tid = p.event->context.task.host_tid;
+    bpf_map_update_elem(&entrymap, &host_tid, &entry, BPF_ANY);
+
+    return 0;
+}
+
+SEC("kretprobe/sock_alloc_file")
+int BPF_KRETPROBE(trace_ret_sock_alloc_file)
+{
+    // runs every time a socket is created (return)
+
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    // pick from entry from entrymap
+    u32 host_tid = p.event->context.task.host_tid;
+    struct entry *entry = bpf_map_lookup_elem(&entrymap, &host_tid);
+    if (!entry) // no entry == no tracing
+        return 0;
+
+    // pick args from entry point's entry
+    // struct socket *sock = (void *) entry->args[0];
+    // int flags = entry->args[1];
+    // char *dname = (void *) entry->args[2];
+    struct file *sock_file = (void *) PT_REGS_RC(ctx);
+
+    // cleanup entrymap
+    bpf_map_delete_elem(&entrymap, &host_tid);
+
+    if (!sock_file)
+        return 0; // socket() failed ?
+
+    u64 inode = BPF_READ(sock_file, f_inode, i_ino);
+    if (inode == 0)
+        return 0;
+
+    // save context to further create an event when no context exists
+    net_task_context_t netctx = {0};
+    set_net_task_context(p.event, &netctx);
+
+    // update inodemap correlating inode <=> task
+    bpf_map_update_elem(&inodemap, &inode, &netctx, BPF_ANY);
+
+    return 0;
+}
+
+static __always_inline u32 security_socket_send_recv_msg(struct socket *sock, event_data_t *event)
+{
+    if (!is_family_supported(sock))
+        return 0;
+
+    if (!is_socket_supported(sock))
+        return 0;
+
+    struct file *sock_file = BPF_READ(sock, file);
+    if (!sock_file)
+        return 0;
+
+    u64 inode = BPF_READ(sock_file, f_inode, i_ino);
+    if (inode == 0)
+        return 0;
+
+    // save updated context to the inode map (inode <=> task ctx relation)
+    net_task_context_t netctx = {0};
+    set_net_task_context(event, &netctx);
+    bpf_map_update_elem(&inodemap, &inode, &netctx, BPF_ANY);
+
+    return 0;
+}
+
+SEC("kprobe/security_socket_recvmsg")
+int BPF_KPROBE(trace_security_socket_recvmsg)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    if (!should_trace(&p))
+        return 0;
+
+    struct socket *sock = (void *) PT_REGS_PARM1(ctx);
+
+    return security_socket_send_recv_msg(sock, p.event);
+}
+
+SEC("kprobe/security_socket_sendmsg")
+int BPF_KPROBE(trace_security_socket_sendmsg)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    if (!should_trace(&p))
+        return 0;
+
+    struct socket *sock = (void *) PT_REGS_PARM1(ctx);
+
+    return security_socket_send_recv_msg(sock, p.event);
+}
+
+//
+// Socket Ingress/Egress eBPF program loader (right before and right after eBPF)
+//
+
+SEC("kprobe/__cgroup_bpf_run_filter_skb")
+int BPF_KPROBE(cgroup_bpf_run_filter_skb)
+{
+    // runs BEFORE the CGROUP/SKB eBPF program
+
+    void *cgrpctxmap = NULL;
+
+    int type = PT_REGS_PARM3(ctx);
+    switch (type) {
+        case BPF_CGROUP_INET_INGRESS:
+            cgrpctxmap = &cgrpctxmap_in;
+            break;
+        case BPF_CGROUP_INET_EGRESS:
+            cgrpctxmap = &cgrpctxmap_eg;
+            break;
+        default:
+            return 0; // other attachment type, return fast
+    }
+
+    struct sock *sk = (void *) PT_REGS_PARM1(ctx);
+    struct sk_buff *skb = (void *) PT_REGS_PARM2(ctx);
+
+    struct sock_common *common = (void *) sk;
+    u8 family = BPF_READ(common, skc_family);
+
+    switch (family) {
+        case PF_INET:
+        case PF_INET6:
+            break;
+        default:
+            return 1; // return fast for unsupported socket families
+    }
+
+    //
+    // EVENT CONTEXT (from current task)
+    //
+
+    u32 zero = 0;
+    event_data_t *e = bpf_map_lookup_elem(&net_heap_event, &zero);
+    if (unlikely(e == NULL))
+        return 0;
+    scratch_t *s = bpf_map_lookup_elem(&net_heap_scratch, &zero);
+    if (unlikely(s == NULL))
+        return 0;
+
+    program_data_t p = {
+        .event = e,
+        .scratch = s,
+    };
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    // obtain socket inode
+    u64 inode = BPF_READ(sk, sk_socket, file, f_inode, i_ino);
+    if (inode == 0)
+        return 0; // e.g. vhost kernel threads might not have an inode
+
+    // pick network context from the inodemap (inode <=> task)
+    net_task_context_t *netctx = bpf_map_lookup_elem(&inodemap, &inode);
+    if (!netctx)
+        return 0; // e.g. task isn't being traced
+
+    //
+    // PREPARE SKG PROGRAM EVENT CONTEXT (cgrpctxmap value)
+    //
+
+    // Prepare [event_context_t][args1,arg2,arg3...] to be sent by cgroup/skb
+    // program. The [...] part of the event can't use existing per-cpu submit
+    // buffer helpers because the time in between this kprobe fires and the
+    // cgroup/skb program runs might be suffer a preemption.
+
+    net_event_context_t neteventctx = {0}; // to be sent by cgroup/skb program
+    event_context_t *eventctx = &neteventctx.eventctx;
+
+    // copy orig task ctx (from the netctx) to event ctx and build the rest
+    __builtin_memcpy(&eventctx->task, &netctx->taskctx, sizeof(task_context_t));
+    eventctx->ts = p.event->context.ts;                     // copy timestamp from current ctx
+    eventctx->argnum = 1;                                   // 1 argument (add more if needed)
+    eventctx->eventid = NET_PACKET_IP;                      // will be changed in skb program
+    eventctx->stack_id = 0;                                 // no stack trace
+    eventctx->processor_id = p.event->context.processor_id; // copy from current ctx
+    eventctx->matched_scopes = netctx->matched_scopes;      // pick matched-scopes from net ctx
+    eventctx->syscall = NO_SYSCALL;                         // ingress has no orig syscall
+    if (type == BPF_CGROUP_INET_EGRESS)
+        eventctx->syscall = netctx->syscall; // egress does have an orig syscall
+
+    //
+    // SKB PROGRAM CONTEXT INDEXER (cgrpctxmap key)
+    //
+
+    u32 l3_size = 0;
+    nethdrs hdrs = {0}, *nethdrs = &hdrs;
+
+    // inform userland about protocol family (for correct L3 header parsing)...
+    switch (family) {
+        case PF_INET:
+            eventctx->retval |= family_ipv4;
+            l3_size = get_type_size(struct iphdr);
+            break;
+        case PF_INET6:
+            eventctx->retval |= family_ipv6;
+            l3_size = get_type_size(struct ipv6hdr);
+            break;
+        default:
+            return 1;
+    }
+    // ... through event ctx ret val
+
+    // read IP/IPv6 headers
+
+    void *data_ptr = NULL;
+    u16 mac_len = BPF_READ(skb, mac_len);
+    if (!mac_len) {
+        data_ptr = BPF_READ(skb, data); // no L2 header present in skb
+    } else {
+        data_ptr = BPF_READ(skb, head);
+        u16 nethead = BPF_READ(skb, network_header);
+        data_ptr += nethead;
+    }
+    bpf_core_read(nethdrs, l3_size, data_ptr);
+
+    // prepare the indexer with IP/IPv6 headers
+
+    u8 proto = 0;
+
+    indexer_t indexer = {0};
+    indexer.ts = BPF_READ(skb, tstamp);
+
+    switch (family) {
+        case PF_INET:
+            if (nethdrs->iphdrs.iphdr.version != 4) // IPv4
+                return 1;
+
+           if (nethdrs->iphdrs.iphdr.ihl > 5) { // re-read IP header if needed
+                l3_size -= get_type_size(struct iphdr);
+                l3_size += nethdrs->iphdrs.iphdr.ihl * 4;
+                bpf_core_read(nethdrs, l3_size, data_ptr);
+            }
+
+            proto = nethdrs->iphdrs.iphdr.protocol;
+            switch (proto) {
+                case IPPROTO_TCP:
+                case IPPROTO_UDP:
+                case IPPROTO_ICMP:
+                    break;
+                default:
+                    return 1; // ignore other protocols
+            }
+
+            // add IPv4 header items to indexer
+            indexer.ip_csum = nethdrs->iphdrs.iphdr.check;
+            indexer.ip_saddr.in6_u.u6_addr32[0] = nethdrs->iphdrs.iphdr.saddr;
+            indexer.ip_daddr.in6_u.u6_addr32[0] = nethdrs->iphdrs.iphdr.daddr;
+            break;
+
+        case PF_INET6:
+            // TODO: dual-stack IP implementation unsupported for now
+            // https://en.wikipedia.org/wiki/IPv6_transition_mechanism
+            if (nethdrs->iphdrs.ipv6hdr.version != 6) // IPv6
+                return 1;
+
+            proto = nethdrs->iphdrs.ipv6hdr.nexthdr;
+            switch (proto) {
+                case IPPROTO_TCP:
+                case IPPROTO_UDP:
+                case IPPROTO_ICMPV6:
+                    break;
+                default:
+                    return 1; // ignore other protocols
+            }
+
+            // add IPv6 header items to indexer
+            __builtin_memcpy(&indexer.ip_saddr.in6_u, &nethdrs->iphdrs.ipv6hdr.saddr.in6_u, 4 * sizeof(u32));
+            __builtin_memcpy(&indexer.ip_daddr.in6_u, &nethdrs->iphdrs.ipv6hdr.daddr.in6_u, 4 * sizeof(u32));
+            break;
+
+        default:
+            return 1;
+    }
+
+    //
+    // LINK CONTENT INDEXER TO EVENT CONTEXT
+    //
+
+    neteventctx.bytes = 0; // event arg size: no payload by default (changed inside skb prog)
+
+    // TODO: log collisions
+    bpf_map_update_elem(cgrpctxmap, &indexer, &neteventctx, BPF_NOEXIST);
+
+    return 0;
+}
 
 //
 // SKB eBPF programs
 //
 
-static __always_inline u32 cgroup_skb_generic(struct __sk_buff *ctx)
+static __always_inline u32 cgroup_skb_generic(struct __sk_buff *ctx, void *cgrpctxmap)
 {
     // IMPORTANT: runs for EVERY packet of tasks belonging to root cgroup
 
-    u64 skbts = ctx->tstamp; // use skb timestamp as key for cgroup/skb program
+    switch (ctx->family) {
+        case PF_INET:
+        case PF_INET6:
+            break;
+        default:
+            return 1; // PF_INET and PF_INET6 only
+    }
 
-    net_event_context_t *neteventctx = bpf_map_lookup_elem(&cgrpctxmap, &skbts);
-    if (!neteventctx)
-        return 1;
+    // HANDLE SOCKET FAMILY
 
     struct bpf_sock *sk = ctx->sk;
     if (!sk)
@@ -7688,70 +4478,8 @@ static __always_inline u32 cgroup_skb_generic(struct __sk_buff *ctx)
 
     nethdrs hdrs = {0}, *nethdrs = &hdrs;
 
-    return CGROUP_SKB_HANDLE(family);
-}
-
-SEC("cgroup_skb/ingress")
-int cgroup_skb_ingress(struct __sk_buff *ctx)
-{
-    return cgroup_skb_generic(ctx);
-}
-
-SEC("cgroup_skb/egress")
-int cgroup_skb_egress(struct __sk_buff *ctx)
-{
-    return cgroup_skb_generic(ctx);
-}
-
-//
-// Network Protocol Events Logic
-//
-
-// when guessing by src/dst ports, declare here
-
-    #define UDP_PORT_DNS 53
-    #define TCP_PORT_DNS 53
-
-// when guessing through l7 layer, here
-
-static __always_inline int net_l7_is_http(struct __sk_buff *skb, u32 l7_off)
-{
-    #define http_min_len 7 // longest http command is "DELETE "
-
-    char http_min_str[http_min_len];
-    __builtin_memset((void *) &http_min_str, 0, sizeof(char) * http_min_len);
-
-    // load first http_min_len bytes from layer 7 in packet.
-    if (bpf_skb_load_bytes(skb, l7_off, http_min_str, http_min_len) < 0) {
-        return 0; // failed loading data into http_min_str - return.
-    }
-
-    // check if HTTP response
-    if (has_prefix("HTTP/", http_min_str, 6)) {
-        return proto_http_resp;
-    }
-
-    // clang-format off
-    // check if HTTP request
-    if (has_prefix("GET ", http_min_str, 5)    ||
-        has_prefix("POST ", http_min_str, 6)   ||
-        has_prefix("PUT ", http_min_str, 5)    ||
-        has_prefix("DELETE ", http_min_str, 8) ||
-        has_prefix("HEAD ", http_min_str, 6)) {
-        return proto_http_req;
-    }
-    // clang-format on
-
-    return 0;
-}
-
-//
-// SUPPORTED SOCKET FAMILY TYPES (inet, inet6)
-//
-
-CGROUP_SKB_HANDLE_FUNCTION(family)
-{
     void *dest;
+
     u32 size = 0;
     u32 family = ctx->family;
 
@@ -7765,44 +4493,112 @@ CGROUP_SKB_HANDLE_FUNCTION(family)
             size = get_type_size(struct ipv6hdr);
             break;
         default:
-            return 1; // other families are not an error
+            return 1; // verifier
     }
 
-    // load layer 3 protocol headers
+    // load layer 3 headers (for cgrpctxmap key/indexer)
 
-    if (bpf_skb_load_bytes_relative(ctx, 0, dest, size, BPF_HDR_START_NET))
+    if (bpf_skb_load_bytes_relative(ctx, 0, dest, size, 1)) {
         return 1;
+    }
 
-    // recalculate IPv4 header after first load with read IHL field
+    //
+    // IGNORE UNSUPPORTED PROTOCOLS, CREATE INDEXER TO OBTAIN EVENT
+    //
+
+    indexer_t indexer = {0};
+    indexer.ts = ctx->tstamp;
 
     u32 ihl = 0;
     switch (family) {
         case PF_INET:
+            if (nethdrs->iphdrs.iphdr.version != 4) // IPv4
+                return 1;
+
             ihl = nethdrs->iphdrs.iphdr.ihl;
-            if (ihl > 5) { // IP header is bigger than 20 bytes (old compat mode)
+            if (ihl > 5) { // re-read IPv4 header if needed
                 size -= get_type_size(struct iphdr);
-                size += ihl * 4; // ihl * 32bit words = IP header size in bytes
-                // load bytes again with the new header size in place
-                if (bpf_skb_load_bytes_relative(ctx, 0, dest, size, BPF_HDR_START_NET))
-                    return 1;
+                size += ihl * 4;
+                bpf_skb_load_bytes_relative(ctx, 0, dest, size, 1);
             }
+
+            switch (nethdrs->iphdrs.iphdr.protocol) {
+                case IPPROTO_TCP:
+                case IPPROTO_UDP:
+                case IPPROTO_ICMP:
+                    break;
+                default:
+                    return 1; // unsupported proto
+            }
+
+            // add IPv6 header items to indexer
+            indexer.ip_csum = nethdrs->iphdrs.iphdr.check;
+            indexer.ip_saddr.in6_u.u6_addr32[0] = nethdrs->iphdrs.iphdr.saddr;
+            indexer.ip_daddr.in6_u.u6_addr32[0] = nethdrs->iphdrs.iphdr.daddr;
+            break;
+
+        case PF_INET6:
+            // TODO: dual-stack IP implementation unsupported for now
+            // https://en.wikipedia.org/wiki/IPv6_transition_mechanism
+            if (nethdrs->iphdrs.ipv6hdr.version != 6) // IPv6
+                return 1;
+
+            switch (nethdrs->iphdrs.ipv6hdr.nexthdr) {
+                case IPPROTO_TCP:
+                case IPPROTO_UDP:
+                case IPPROTO_ICMPV6:
+                    break;
+                default:
+                    return 1; // unsupported proto
+            }
+
+            // add IPv6 header items to indexer
+            __builtin_memcpy(&indexer.ip_saddr.in6_u, &nethdrs->iphdrs.ipv6hdr.saddr.in6_u, 4 * sizeof(u32));
+            __builtin_memcpy(&indexer.ip_daddr.in6_u, &nethdrs->iphdrs.ipv6hdr.daddr.in6_u, 4 * sizeof(u32));
+            break;
+
+        default:
+            return 1; // verifier
+    }
+
+    net_event_context_t *neteventctx;
+    neteventctx = bpf_map_lookup_elem(cgrpctxmap, &indexer); // obtain event context
+    if (!neteventctx) {
+        // 1. kthreads receiving ICMP and ICMPv6 (e.g dest unreach)
+        // 2. tasks not being traced
+        // 3. unknown (yet) sockets (need egress packet to link task and inode)
+        // ...
+        return 1;
     }
 
     neteventctx->md.header_size = size; // add header size to offset
 
-    // submit the IP base event
+    u32 ret = CGROUP_SKB_HANDLE(proto);
 
-    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP))
-        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_IP, HEADERS);
+    bpf_map_delete_elem(cgrpctxmap, &indexer); // cleanup
 
-    return CGROUP_SKB_HANDLE(proto);
+    return ret; // important for network blocking
 }
+
+SEC("cgroup_skb/ingress")
+int cgroup_skb_ingress(struct __sk_buff *ctx)
+{
+    return cgroup_skb_generic(ctx, &cgrpctxmap_in);
+}
+
+SEC("cgroup_skb/egress")
+int cgroup_skb_egress(struct __sk_buff *ctx)
+{
+    return cgroup_skb_generic(ctx, &cgrpctxmap_eg);
+}
+
+//
+// Network Protocol Events Logic
+//
 
 //
 // SUPPORTED L3 NETWORK PROTOCOLS (ip, ipv6) HANDLERS
 //
-
-// clang-format off
 
 CGROUP_SKB_HANDLE_FUNCTION(proto)
 {
@@ -7816,13 +4612,11 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
     switch (ctx->family) {
 
         case PF_INET:
-
             if (nethdrs->iphdrs.iphdr.version != 4) // IPv4
                 return 1;
 
             next_proto = nethdrs->iphdrs.iphdr.protocol;
-
-            switch (nethdrs->iphdrs.iphdr.protocol) {
+            switch (next_proto) {
                 case IPPROTO_TCP:
                     dest = &nethdrs->protohdrs.tcphdr;
                     size = get_type_size(struct tcphdr);
@@ -7833,7 +4627,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
                     break;
                 case IPPROTO_ICMP:
                     dest = &nethdrs->protohdrs.icmphdr;
-                    size = get_type_size(struct icmphdr);
+                    size = 0; // will be added later, last function
                     break;
                 default:
                     return 1; // other protocols are not an error
@@ -7841,16 +4635,13 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
             break;
 
         case PF_INET6:
-
             // TODO: dual-stack IP implementation unsupported for now
             // https://en.wikipedia.org/wiki/IPv6_transition_mechanism
-
             if (nethdrs->iphdrs.ipv6hdr.version != 6) // IPv6
                 return 1;
 
             next_proto = nethdrs->iphdrs.ipv6hdr.nexthdr;
-
-            switch (nethdrs->iphdrs.ipv6hdr.nexthdr) {
+            switch (next_proto) {
                 case IPPROTO_TCP:
                     dest = &nethdrs->protohdrs.tcphdr;
                     size = get_type_size(struct tcphdr);
@@ -7861,26 +4652,46 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
                     break;
                 case IPPROTO_ICMPV6:
                     dest = &nethdrs->protohdrs.icmp6hdr;
-                    size = get_type_size(struct icmp6hdr);
+                    size = 0; // will be added later, last function
                     break;
                 default:
                     return 1; // other protocols are not an error
             }
             break;
 
-        default: // do not handle other protocol families
-            return 1;
+        default:
+            return 1; // verifier needs
     }
 
     if (!dest)
         return 1; // satisfy verifier for clang-12 generated binaries
 
+    // fastpath: submit the IP base event
+
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP))
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_IP, HEADERS);
+
+    // fastpath: capture all packets if filtered pcap-option is not set
+
+    u32 zero = 0;
+    netconfig_entry_t *nc = bpf_map_lookup_elem(&netconfig_map, &zero);
+    if (nc == NULL)
+        return 0;
+
+    if (!(nc->capture_options & NET_CAP_OPT_FILTERED))
+        cgroup_skb_capture(); // will avoid extra lookups further if not needed
+
     neteventctx->md.header_size += size; // add header size to offset
 
     // load layer 4 protocol headers
 
-    if (bpf_skb_load_bytes_relative(ctx, prev_hdr_size, dest, size, BPF_HDR_START_NET))
-        return 1;
+    if (size) {
+        if (bpf_skb_load_bytes_relative(ctx,
+                                        prev_hdr_size,
+                                        dest, size,
+                                        BPF_HDR_START_NET))
+            return 1;
+    }
 
    // call protocol handlers (for more base events to be sent)
 
@@ -7894,7 +4705,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
         case IPPROTO_ICMPV6:
             return CGROUP_SKB_HANDLE(proto_icmpv6);
         default:
-            return 1; // shouldn't ever happen here
+            return 1; // verifier needs
     }
 
     // TODO: If cmdline is tracing net_packet_ipv6 only, then the ipv4 packets
@@ -7902,13 +4713,47 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
     //       applied to the capture pipeline to obey derived events only
     //       filters + capture.
 
-    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP))
-        cgroup_skb_capture(); // capture tcp packets
+    // capture IPv4/IPv6 packets (filtered)
+    if (should_capture_net_event(neteventctx, SUB_NET_PACKET_IP))
+        cgroup_skb_capture();
 
     return 1;
 }
 
-// clang-format on
+//
+// GUESS L7 NETWORK PROTOCOLS (http, dns, etc)
+//
+
+// when guessing by src/dst ports, declare at network.h
+
+// when guessing through l7 layer, here
+
+static __always_inline int net_l7_is_http(struct __sk_buff *skb, u32 l7_off)
+{
+    char http_min_str[http_min_len];
+    __builtin_memset((void *) &http_min_str, 0, sizeof(char) * http_min_len);
+
+    // load first http_min_len bytes from layer 7 in packet.
+    if (bpf_skb_load_bytes(skb, l7_off, http_min_str, http_min_len) < 0) {
+        return 0; // failed loading data into http_min_str - return.
+    }
+
+    // check if HTTP response
+    if (has_prefix("HTTP/", http_min_str, 6)) {
+        return proto_http_resp;
+    }
+
+    // check if HTTP request
+    if (has_prefix("GET ", http_min_str, 5)    ||
+        has_prefix("POST ", http_min_str, 6)   ||
+        has_prefix("PUT ", http_min_str, 5)    ||
+        has_prefix("DELETE ", http_min_str, 8) ||
+        has_prefix("HEAD ", http_min_str, 6)) {
+        return proto_http_req;
+    }
+
+    return 0;
+}
 
 //
 // SUPPORTED L4 NETWORK PROTOCOL (tcp, udp, icmp) HANDLERS
@@ -7959,9 +4804,11 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp)
     // ...
 
 capture:
-    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP) ||
-        should_submit_net_event(neteventctx, SUB_NET_PACKET_TCP))
-        cgroup_skb_capture(); // capture tcp packets
+    // capture IP or TCP packets (filtered)
+    if (should_capture_net_event(neteventctx, SUB_NET_PACKET_IP) ||
+        should_capture_net_event(neteventctx, SUB_NET_PACKET_TCP)) {
+        cgroup_skb_capture();
+    }
 
     return 1; // NOTE: might block TCP here if needed (return 0)
 }
@@ -7998,9 +4845,11 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_udp)
     // ...
 
 capture:
-    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_IP) ||
-        should_submit_net_event(neteventctx, SUB_NET_PACKET_UDP))
-        cgroup_skb_capture(); // capture tcp packets
+    // capture IP or UDP packets (filtered)
+    if (should_capture_net_event(neteventctx, SUB_NET_PACKET_IP) ||
+        should_capture_net_event(neteventctx, SUB_NET_PACKET_UDP)) {
+        cgroup_skb_capture();
+    }
 
     return 1; // NOTE: might block UDP here if needed (return 0)
 }
@@ -8008,10 +4857,14 @@ capture:
 CGROUP_SKB_HANDLE_FUNCTION(proto_icmp)
 {
     // submit ICMP base event if needed (full packet)
-
-    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_ICMP)) {
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_ICMP))
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_ICMP, FULL);
-        cgroup_skb_capture(); // capture icmp packets
+
+    // capture ip or icmp packets (filtered)
+    if (should_capture_net_event(neteventctx, SUB_NET_PACKET_IP) ||
+        should_capture_net_event(neteventctx, SUB_NET_PACKET_ICMP)) {
+        neteventctx->md.header_size = ctx->len; // full ICMP header
+        cgroup_skb_capture();
     }
 
     return 1; // NOTE: might block ICMP here if needed (return 0)
@@ -8020,10 +4873,14 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmp)
 CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6)
 {
     // submit ICMPv6 base event if needed (full packet)
-
-    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_ICMPV6)) {
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_ICMPV6))
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_ICMPV6, FULL);
-        cgroup_skb_capture(); // capture icmpv6 packets
+
+     // capture ip or icmpv6 packets (filtered)
+    if (should_capture_net_event(neteventctx, SUB_NET_PACKET_IP) ||
+        should_capture_net_event(neteventctx, SUB_NET_PACKET_ICMPV6)) {
+        neteventctx->md.header_size = ctx->len; // full ICMPv6 header
+        cgroup_skb_capture();
     }
 
     return 1; // NOTE: might block ICMPv6 here if needed (return 0)
@@ -8036,9 +4893,15 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6)
 CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_dns)
 {
     // submit DNS base event if needed (full packet)
-    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS)) {
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS))
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS, FULL);
-        cgroup_skb_capture(); // capture tcp dns packets
+
+    // capture DNS-TCP, TCP or IP packets (filtered)
+    if (should_capture_net_event(neteventctx, SUB_NET_PACKET_IP) ||
+        should_capture_net_event(neteventctx, SUB_NET_PACKET_TCP) ||
+        should_capture_net_event(neteventctx, SUB_NET_PACKET_DNS)) {
+        neteventctx->md.header_size = ctx->len; // full dns header
+        cgroup_skb_capture();
     }
 
     return 1; // NOTE: might block DNS here if needed (return 0)
@@ -8047,9 +4910,15 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_dns)
 CGROUP_SKB_HANDLE_FUNCTION(proto_udp_dns)
 {
     // submit DNS base event if needed (full packet)
-    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS)) {
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS))
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS, FULL);
-        cgroup_skb_capture(); // capture udp dns packets
+
+    // capture DNS-UDP, UDP or IP packets (filtered)
+    if (should_capture_net_event(neteventctx, SUB_NET_PACKET_IP) ||
+        should_capture_net_event(neteventctx, SUB_NET_PACKET_UDP) ||
+        should_capture_net_event(neteventctx, SUB_NET_PACKET_DNS)) {
+        neteventctx->md.header_size = ctx->len; // full dns header
+        cgroup_skb_capture();
     }
 
     return 1; // NOTE: might block DNS here if needed (return 0)
@@ -8058,13 +4927,19 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_udp_dns)
 CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_http)
 {
     // submit HTTP base event if needed (full packet)
-
-    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_HTTP)) {
+    if (should_submit_net_event(neteventctx, SUB_NET_PACKET_HTTP))
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_HTTP, FULL);
-        cgroup_skb_capture(); // capture http packets
+
+    // capture HTTP-TCP, TCP or IP packets (filtered)
+    if (should_capture_net_event(neteventctx, SUB_NET_PACKET_IP) ||
+        should_capture_net_event(neteventctx, SUB_NET_PACKET_TCP) ||
+        should_capture_net_event(neteventctx, SUB_NET_PACKET_HTTP)) {
+        cgroup_skb_capture(); // http header is dyn, do not change header_size
     }
 
     return 1; // NOTE: might block HTTP here if needed (return 0)
 }
+
+// clang-format on
 
 #endif

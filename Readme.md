@@ -50,13 +50,9 @@ docker run \
   trace
 ```
 
-## Components
+## Pipeline protection with Tracee
 
-Tracee is composed of the following sub-projects, which are hosted in the
-aquasecurity/tracee repository:
-
-- [Tracee-eBPF] - Linux Tracing and Forensics using eBPF
-- [Tracee-Rules] - Runtime Security Detection Engine
+Tracee can be used to protect GitHub Actions workflows against supply chain attacks. See the [tracee-action](https://github.com/aquasecurity/tracee-action) project for more information.
 
 ---
 

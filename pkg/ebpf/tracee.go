@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -81,7 +80,6 @@ type CaptureConfig struct {
 	Exec            bool
 	Mem             bool
 	Net             pcaps.Config
-	Profile         bool
 }
 
 type CapabilitiesConfig struct {
@@ -145,12 +143,6 @@ func (tc Config) Validate() error {
 	return nil
 }
 
-type profilerInfo struct {
-	Times            int64  `json:"times,omitempty"`
-	FileHash         string `json:"file_hash,omitempty"`
-	FirstExecutionTs uint64 `json:"-"`
-}
-
 type fileExecInfo struct {
 	LastCtime int64
 	Hash      string
@@ -184,7 +176,6 @@ type Tracee struct {
 	stats             metrics.Stats
 	capturedFiles     map[string]int64
 	fileHashes        *lru.Cache
-	profiledFiles     map[string]profilerInfo
 	writtenFiles      map[string]string
 	pidsInMntns       bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
@@ -243,11 +234,6 @@ func GetCaptureEventsList(cfg Config) map[events.ID]eventConfig {
 	}
 	if cfg.Capture.Mem {
 		captureEvents[events.CaptureMem] = eventConfig{
-			submit: 0xFFFFFFFFFFFFFFFF,
-		}
-	}
-	if cfg.Capture.Profile {
-		captureEvents[events.CaptureProfile] = eventConfig{
 			submit: 0xFFFFFFFFFFFFFFFF,
 		}
 	}
@@ -432,8 +418,6 @@ func (t *Tracee) Init() error {
 	}
 
 	// Initialize buckets cache
-
-	t.profiledFiles = make(map[string]profilerInfo)
 	if t.config.maxPidsCache == 0 {
 		t.config.maxPidsCache = 5 // default value for config.maxPidsCache
 	}
@@ -474,20 +458,6 @@ func (t *Tracee) Init() error {
 	if err != nil {
 		t.Close()
 		return fmt.Errorf("error initializing network capture: %w", err)
-	}
-
-	// Initialize PID file
-
-	pidFile, err := utils.OpenAt(t.outDir, "tracee.pid", syscall.O_WRONLY|syscall.O_CREAT, 0640)
-	if err != nil {
-		t.Close()
-		return fmt.Errorf("error creating readiness file: %w", err)
-	}
-
-	_, err = pidFile.Write([]byte(strconv.Itoa(os.Getpid()) + "\n"))
-	if err != nil {
-		t.Close()
-		return fmt.Errorf("error writing to readiness file: %w", err)
 	}
 
 	// Get reference to stack trace addresses map
@@ -622,31 +592,31 @@ func (t *Tracee) initDerivationTable() error {
 	t.eventDerivations = derive.Table{
 		events.CgroupMkdir: {
 			events.ContainerCreate: {
-				Enabled:        t.events[events.ContainerCreate].submit > 0,
+				Enabled:        func() bool { return t.events[events.ContainerCreate].submit > 0 },
 				DeriveFunction: derive.ContainerCreate(t.containers),
 			},
 		},
 		events.CgroupRmdir: {
 			events.ContainerRemove: {
-				Enabled:        t.events[events.ContainerRemove].submit > 0,
+				Enabled:        func() bool { return t.events[events.ContainerRemove].submit > 0 },
 				DeriveFunction: derive.ContainerRemove(t.containers),
 			},
 		},
 		events.PrintSyscallTable: {
 			events.HookedSyscalls: {
-				Enabled:        t.events[events.PrintSyscallTable].submit > 0,
+				Enabled:        func() bool { return t.events[events.PrintSyscallTable].submit > 0 },
 				DeriveFunction: derive.DetectHookedSyscall(t.kernelSymbols),
 			},
 		},
 		events.PrintNetSeqOps: {
 			events.HookedSeqOps: {
-				Enabled:        t.events[events.HookedSeqOps].submit > 0,
+				Enabled:        func() bool { return t.events[events.HookedSeqOps].submit > 0 },
 				DeriveFunction: derive.HookedSeqOps(t.kernelSymbols),
 			},
 		},
 		events.SharedObjectLoaded: {
 			events.SymbolsLoaded: {
-				Enabled: t.events[events.SymbolsLoaded].submit > 0,
+				Enabled: func() bool { return t.events[events.SymbolsLoaded].submit > 0 },
 				DeriveFunction: derive.SymbolsLoaded(
 					soLoader,
 					watchedSymbols,
@@ -659,69 +629,78 @@ func (t *Tracee) initDerivationTable() error {
 		//
 		events.NetPacketIPBase: {
 			events.NetPacketIPv4: {
-				Enabled:        t.events[events.NetPacketIPv4].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketIPv4].submit > 0 },
 				DeriveFunction: derive.NetPacketIPv4(),
 			},
 			events.NetPacketIPv6: {
-				Enabled:        t.events[events.NetPacketIPv6].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketIPv6].submit > 0 },
 				DeriveFunction: derive.NetPacketIPv6(),
 			},
 		},
 		events.NetPacketTCPBase: {
 			events.NetPacketTCP: {
-				Enabled:        t.events[events.NetPacketTCP].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketTCP].submit > 0 },
 				DeriveFunction: derive.NetPacketTCP(),
 			},
 		},
 		events.NetPacketUDPBase: {
 			events.NetPacketUDP: {
-				Enabled:        t.events[events.NetPacketUDP].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketUDP].submit > 0 },
 				DeriveFunction: derive.NetPacketUDP(),
 			},
 		},
 		events.NetPacketICMPBase: {
 			events.NetPacketICMP: {
-				Enabled:        t.events[events.NetPacketICMP].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketICMP].submit > 0 },
 				DeriveFunction: derive.NetPacketICMP(),
 			},
 		},
 		events.NetPacketICMPv6Base: {
 			events.NetPacketICMPv6: {
-				Enabled:        t.events[events.NetPacketICMPv6].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketICMPv6].submit > 0 },
 				DeriveFunction: derive.NetPacketICMPv6(),
 			},
 		},
 		events.NetPacketDNSBase: {
 			events.NetPacketDNS: {
-				Enabled:        t.events[events.NetPacketDNS].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketDNS].submit > 0 },
 				DeriveFunction: derive.NetPacketDNS(),
 			},
 			events.NetPacketDNSRequest: {
-				Enabled:        t.events[events.NetPacketDNSRequest].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketDNSRequest].submit > 0 },
 				DeriveFunction: derive.NetPacketDNSRequest(),
 			},
 			events.NetPacketDNSResponse: {
-				Enabled:        t.events[events.NetPacketDNSResponse].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketDNSResponse].submit > 0 },
 				DeriveFunction: derive.NetPacketDNSResponse(),
 			},
 		},
 		events.NetPacketHTTPBase: {
 			events.NetPacketHTTP: {
-				Enabled:        t.events[events.NetPacketHTTP].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketHTTP].submit > 0 },
 				DeriveFunction: derive.NetPacketHTTP(),
 			},
 			events.NetPacketHTTPRequest: {
-				Enabled:        t.events[events.NetPacketHTTPRequest].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketHTTPRequest].submit > 0 },
 				DeriveFunction: derive.NetPacketHTTPRequest(),
 			},
 			events.NetPacketHTTPResponse: {
-				Enabled:        t.events[events.NetPacketHTTPResponse].submit > 0,
+				Enabled:        func() bool { return t.events[events.NetPacketHTTPResponse].submit > 0 },
 				DeriveFunction: derive.NetPacketHTTPResponse(),
 			},
 		},
 	}
 
 	return nil
+}
+
+// RegisterEventDerivation registers an event derivation handler for tracee to use in the event pipeline
+func (t *Tracee) RegisterEventDerivation(deriveFrom events.ID, deriveTo events.ID, deriveCondition func() bool, deriveLogic derive.DeriveFunction) error {
+	if t.eventDerivations == nil {
+		return fmt.Errorf("tracee not initialized yet")
+	}
+
+	return t.eventDerivations.Register(deriveFrom, deriveTo, deriveCondition, deriveLogic)
 }
 
 // options config should match defined values in ebpf code
@@ -1019,8 +998,14 @@ func (t *Tracee) populateBPFMaps() error {
 		if err != nil {
 			return err
 		}
-		netConfigVal := make([]byte, 4)
-		binary.LittleEndian.PutUint32(netConfigVal[0:4], t.config.Capture.Net.CaptureLength)
+
+		netConfigVal := make([]byte, 8) // u32 capture_options, u32 capture_length
+
+		options := pcaps.GetPcapOptions(t.config.Capture.Net)
+
+		binary.LittleEndian.PutUint32(netConfigVal[0:4], uint32(options))
+		binary.LittleEndian.PutUint32(netConfigVal[4:8], t.config.Capture.Net.CaptureLength)
+
 		if err = bpfNetConfigMap.Update(
 			unsafe.Pointer(&cZero),
 			unsafe.Pointer(&netConfigVal[0]),
@@ -1354,17 +1339,6 @@ func (t *Tracee) initBPF() error {
 	return err
 }
 
-func (t *Tracee) writeProfilerStats(wr io.Writer) error {
-	b, err := json.MarshalIndent(t.profiledFiles, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	_, err = wr.Write(b)
-
-	return err
-}
-
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.invokeInitEvents()
@@ -1388,8 +1362,17 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.bpfLogsPerfMap.Start()
 	go t.processBPFLogs()
 	t.running = true
+
+	// write pid file
+	err = t.writePid()
+	if err != nil {
+		// not able to write pid, abort
+		return err
+	}
+
 	// block until ctx is cancelled elsewhere
 	<-ctx.Done()
+
 	t.eventsPerfMap.Stop()
 	if t.config.BlobPerfBufferSize > 0 {
 		t.fileWrPerfMap.Stop()
@@ -1398,20 +1381,6 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 		t.netCapPerfMap.Stop()
 	}
 	t.bpfLogsPerfMap.Stop()
-	// capture profiler stats
-	if t.config.Capture.Profile {
-		f, err := utils.CreateAt(t.outDir, "tracee.profile")
-		if err != nil {
-			return fmt.Errorf("unable to open tracee.profile for writing: %s", err)
-		}
-
-		// update SHA for all captured files
-		t.updateFileSHA()
-
-		if err := t.writeProfilerStats(f); err != nil {
-			return fmt.Errorf("unable to write profiler output: %s", err)
-		}
-	}
 
 	// record index of written files
 	if t.config.Capture.FileWrite {
@@ -1505,17 +1474,6 @@ func computeFileHash(file *os.File) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
-}
-
-func (t *Tracee) updateFileSHA() {
-	for k, v := range t.profiledFiles {
-		s := strings.Split(k, ".")
-		exeName := strings.Split(s[1], ":")[0]
-		filePath := fmt.Sprintf("%s.%d.%s", s[0], v.FirstExecutionTs, exeName)
-		fileSHA, _ := t.computeOutFileHash(filePath)
-		v.FileHash = fileSHA
-		t.profiledFiles[k] = v
-	}
 }
 
 func (t *Tracee) invokeInitEvents() {
@@ -1689,5 +1647,20 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 
 //go:noinline
 func (t *Tracee) triggerMemDumpCall(address uint64, length uint64, eventHandle uint64) error {
+	return nil
+}
+
+// Initialize PID file
+func (t *Tracee) writePid() error {
+	pidFile, err := utils.OpenAt(t.outDir, "tracee.pid", syscall.O_WRONLY|syscall.O_CREAT, 0640)
+	if err != nil {
+		return fmt.Errorf("error creating readiness file: %w", err)
+	}
+
+	_, err = pidFile.Write([]byte(strconv.Itoa(os.Getpid()) + "\n"))
+	if err != nil {
+		return fmt.Errorf("error writing to readiness file: %w", err)
+	}
+
 	return nil
 }

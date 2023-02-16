@@ -7,7 +7,7 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-func NetPacketIPv6() deriveFunction {
+func NetPacketIPv6() DeriveFunction {
 	return deriveSingleEvent(events.NetPacketIPv6, deriveNetPacketIPv6Args())
 }
 
@@ -16,6 +16,11 @@ func deriveNetPacketIPv6Args() deriveArgsFunction {
 		var ok bool
 		var payload []byte
 
+		// event retval encodes layer 3 protocol type
+
+		if event.ReturnValue&familyIpv6 != familyIpv6 {
+			return nil, nil
+		}
 		// sanity checks
 
 		payloadArg := events.GetArg(&event, "payload")
@@ -28,12 +33,6 @@ func deriveNetPacketIPv6Args() deriveArgsFunction {
 		payloadSize := len(payload)
 		if payloadSize < 1 {
 			return nil, emptyPayloadError()
-		}
-
-		// event retval encodes layer 3 protocol type
-
-		if event.ReturnValue&familyIpv6 != familyIpv6 {
-			return nil, nil
 		}
 
 		// parse packet
@@ -55,8 +54,8 @@ func deriveNetPacketIPv6Args() deriveArgsFunction {
 			copyIPv6ToProtoIPv6(l3, &ipv6)
 
 			return []interface{}{
-				l3.SrcIP,
-				l3.DstIP,
+				l3.SrcIP.String(),
+				l3.DstIP.String(),
 				ipv6,
 			}, nil
 		}

@@ -101,6 +101,14 @@ func toArg(event trace.Event, source trace.Argument) (*Argument, error) {
 		valueType = ValueType_UNKNOWN_VALUE_TYPE
 	}
 
+	if source.Value == nil {
+		return &Argument{
+			Name:      source.Name,
+			ValueType: valueType,
+			Value:     &Value{},
+		}, nil
+	}
+
 	var value Value
 
 	switch valueType {

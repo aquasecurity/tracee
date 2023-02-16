@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"github.com/aquasecurity/tracee/pkg/cmd"
@@ -57,20 +56,11 @@ func main() {
 				return err
 			}
 
-			// event names are parsed here because we need to know which signatures to load
-			eventNames := getEventNames(c)
-
-			// if list is enabled we set eventNames to nil, so every rule is loaded,
-			// and displayed on the list
-			if c.Bool("list") {
-				eventNames = nil
-			}
-
 			sigs, err := signature.Find(
 				rego.RuntimeTarget,
 				rego.PartialEval,
 				c.String("rules-dir"),
-				eventNames,
+				nil,
 				rego.AIO,
 			)
 			if err != nil {
@@ -110,7 +100,7 @@ func main() {
 				Name:    "list",
 				Aliases: []string{"l"},
 				Value:   false,
-				Usage:   "just list tracable events",
+				Usage:   "list tracable events",
 			},
 			&cli.StringSliceFlag{
 				Name:    "trace",
@@ -134,17 +124,17 @@ func main() {
 				Name:    "output",
 				Aliases: []string{"o"},
 				Value:   cli.NewStringSlice("format:table"),
-				Usage:   "Control how and where output is printed. run '--output help' for more info.",
+				Usage:   "control how and where output is printed. run '--output help' for more info.",
 			},
 			&cli.StringSliceFlag{
 				Name:    "cache",
 				Aliases: []string{"a"},
 				Value:   cli.NewStringSlice("none"),
-				Usage:   "Control event caching queues. run '--cache help' for more info.",
+				Usage:   "control event caching queues. run '--cache help' for more info.",
 			},
 			&cli.StringSliceFlag{
 				Name:  "crs",
-				Usage: "Define connected container runtimes. run '--crs help' for more info.",
+				Usage: "define connected container runtimes. run '--crs help' for more info.",
 				Value: cli.NewStringSlice(),
 			},
 			&cli.IntFlag{
@@ -175,7 +165,7 @@ func main() {
 			},
 			&cli.BoolFlag{
 				Name:  server.PProfEndpointFlag,
-				Usage: "enables pprof endpoints",
+				Usage: "enable pprof endpoints",
 				Value: false,
 			},
 			&cli.StringFlag{
@@ -197,13 +187,13 @@ func main() {
 			},
 			&cli.StringSliceFlag{
 				Name:  "rego",
-				Usage: "Control event rego settings. run '--rego help' for more info.",
+				Usage: "control event rego settings. run '--rego help' for more info.",
 				Value: cli.NewStringSlice(),
 			},
-			&cli.StringFlag{
+			&cli.StringSliceFlag{
 				Name:  "log",
-				Usage: "logger level. run '--log help' for more info.",
-				Value: "info",
+				Usage: "logger option. run '--log help' for more info.",
+				Value: cli.NewStringSlice("info"),
 			},
 		},
 	}
@@ -242,7 +232,7 @@ func createEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 			dependencies = append(dependencies, eventID)
 		}
 
-		event := events.NewEventDefinition(m.EventName, []string{"rules"}, dependencies)
+		event := events.NewEventDefinition(m.EventName, []string{"signatures"}, dependencies)
 
 		err = events.Definitions.Add(id, event)
 		if err != nil {
@@ -252,20 +242,4 @@ func createEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 
 		id++
 	}
-}
-
-func getEventNames(c *cli.Context) []string {
-	traceArgs := c.StringSlice("trace")
-	events := make([]string, 0)
-	for _, optValue := range traceArgs {
-		if strings.Contains(optValue, "event=") {
-			values := strings.Split(optValue, "=")
-			if len(values[1]) == 0 {
-				continue
-			}
-			events = append(events, strings.Split(values[1], ",")...)
-		}
-	}
-
-	return events
 }

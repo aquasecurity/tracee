@@ -17,8 +17,8 @@ Opt out from dropping capabilities by default OR set specific ones.
 
 Possible options:
   --capabilities bypass=[true|false]        | keep all capabilities during execution time.
-  --capabilities add="cap_kill,cap_syslog"  | add specific capabilities to the "required" capabilities ring.
-  --capabilities drop="cap_chown"           | drop specific capabilities from the "required" capabilities ring.
+  --capabilities add=cap_kill,cap_syslog    | add specific capabilities to the "required" capabilities ring.
+  --capabilities drop=cap_chown             | drop specific capabilities from the "required" capabilities ring.
 
 Available capabilities:
 ` + "  " + availCaps + "\n"

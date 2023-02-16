@@ -18,6 +18,10 @@ ARG gid
 # install needed environment (with ubuntu packaging dependencies)
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
+    sed -i 's/# deb-src/deb-src/g' /etc/apt/sources.list && \
+    sed -i 's:archive.ubuntu.com:br.archive.ubuntu.com:g' /etc/apt/sources.list && \
+    cat /etc/apt/sources.list | grep -Ev 'proposed|backports|security' > /tmp/sources.list && \
+    mv /tmp/sources.list /etc/apt/sources.list && \
     apt-get update && \
     apt-get install -y sudo coreutils findutils && \
     apt-get install -y bash git curl rsync && \
@@ -53,21 +57,26 @@ RUN export uid=$uid gid=$gid && \
     echo "alias ls=\"ls --color\"" >> /home/tracee/.bashrc && \
     ln -s /home/tracee/.bashrc /home/tracee/.profile
 
-# install extra packages (if needed)
+# install golang
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
-    grep -Eq "UBUNTU_CODENAME=(bionic|focal)" /etc/os-release && \
-    add-apt-repository -y ppa:longsleep/golang-backports && \
-    apt-get update && \
-    apt-get install -y golang-1.18-go && \
-    update-alternatives --install /usr/bin/go go /usr/lib/go-1.18/bin/go 1 && \
-    update-alternatives --install /usr/bin/gofmt gofmt /usr/lib/go-1.18/bin/gofmt 1 && \
+    curl -L -o /tmp/golang.tar.xz https://go.dev/dl/go1.19.5.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf /tmp/golang.tar.xz && \
+    echo "export GOROOT=/usr/local/go" >> /home/tracee/.bashrc && \
+    echo "export GOPATH=/home/tracee/go" >> /home/tracee/.bashrc && \
+    echo "export PATH=/home/tracee/go/bin:/usr/local/go/bin:$PATH" >> /home/tracee/.bashrc && \
+    update-alternatives --install /usr/bin/go go /usr/local/go/bin/go 1 && \
+    update-alternatives --install /usr/bin/gofmt gofmt /usr/local/go/bin/gofmt 1
+
+# install clang
+
+RUN export DEBIAN_FRONTEND=noninteractive && \
     curl -L -o /llvm.sh https://apt.llvm.org/llvm.sh && \
     chmod 755 /llvm.sh && \
-    /llvm.sh 13 && \
+    /llvm.sh 14 && \
     rm /llvm.sh && \
-    update-alternatives --install /usr/bin/llc llc /usr/bin/llc-13 1 && \
-    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-13 1 || true
+    update-alternatives --install /usr/bin/llc llc /usr/bin/llc-14 1 && \
+    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 1
 
 USER tracee
 ENV HOME /home/tracee

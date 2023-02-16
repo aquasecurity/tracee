@@ -15,7 +15,7 @@ func Test_DeriveEvent(t *testing.T) {
 	failEventID := events.ID(11)
 	deriveEventID := events.ID(12)
 	noDerivationEventID := events.ID(13)
-	alwaysDeriveError := func() deriveFunction {
+	alwaysDeriveError := func() DeriveFunction {
 		return func(e trace.Event) ([]trace.Event, []error) {
 			return []trace.Event{}, []error{fmt.Errorf("derive error")}
 		}
@@ -24,7 +24,7 @@ func Test_DeriveEvent(t *testing.T) {
 		testEventID: {
 			failEventID: {
 				DeriveFunction: alwaysDeriveError(),
-				Enabled:        true,
+				Enabled:        func() bool { return true },
 			},
 			deriveEventID: {
 				DeriveFunction: func(e trace.Event) ([]trace.Event, []error) {
@@ -34,13 +34,13 @@ func Test_DeriveEvent(t *testing.T) {
 						},
 					}, nil
 				},
-				Enabled: true,
+				Enabled: func() bool { return true },
 			},
 			noDerivationEventID: {
 				DeriveFunction: func(e trace.Event) ([]trace.Event, []error) {
 					return []trace.Event{}, nil
 				},
-				Enabled: true,
+				Enabled: func() bool { return true },
 			},
 		},
 	}
@@ -67,7 +67,7 @@ func Test_DeriveEvent(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			derived, errors := DeriveEvent(tc.event, mockDerivationTable)
+			derived, errors := mockDerivationTable.DeriveEvent(tc.event)
 			assert.Equal(t, tc.expectedDerived, derived)
 			assert.Equal(t, tc.expectedErrors, errors)
 		})

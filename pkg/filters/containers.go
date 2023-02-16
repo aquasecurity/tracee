@@ -32,33 +32,7 @@ func (f *ContainerFilter) UpdateBPF(bpfModule *bpf.Module, containers *container
 
 	filterVal := make([]byte, 16)
 
-	for _, equalFilter := range f.Equal() {
-		cgroupIDs := containers.FindContainerCgroupID32LSB(equalFilter)
-		if cgroupIDs == nil {
-			return fmt.Errorf("container id not found: %s", equalFilter)
-		}
-		if len(cgroupIDs) > 1 {
-			return fmt.Errorf("container id is ambiguous: %s", equalFilter)
-		}
-
-		var equalInScopes, equalitySetInScopes uint64
-		curVal, err := filterMap.GetValue(unsafe.Pointer(&cgroupIDs[0]))
-		if err == nil {
-			equalInScopes = binary.LittleEndian.Uint64(curVal[0:8])
-			equalitySetInScopes = binary.LittleEndian.Uint64(curVal[8:16])
-		}
-
-		// filterEqual == 1, so set n bitmask bit
-		utils.SetBit(&equalInScopes, filterScopeID)
-		utils.SetBit(&equalitySetInScopes, filterScopeID)
-
-		binary.LittleEndian.PutUint64(filterVal[0:8], equalInScopes)
-		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
-		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&filterVal[0])); err != nil {
-			return err
-		}
-	}
-
+	// first initialize notEqual values since equality should take precedence
 	for _, notEqualFilter := range f.NotEqual() {
 		cgroupIDs := containers.FindContainerCgroupID32LSB(notEqualFilter)
 		if cgroupIDs == nil {
@@ -77,6 +51,34 @@ func (f *ContainerFilter) UpdateBPF(bpfModule *bpf.Module, containers *container
 
 		// filterNotEqual == 0, so clear n bitmask bit
 		utils.ClearBit(&equalInScopes, filterScopeID)
+		utils.SetBit(&equalitySetInScopes, filterScopeID)
+
+		binary.LittleEndian.PutUint64(filterVal[0:8], equalInScopes)
+		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
+		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&filterVal[0])); err != nil {
+			return err
+		}
+	}
+
+	// now - setup equality filters
+	for _, equalFilter := range f.Equal() {
+		cgroupIDs := containers.FindContainerCgroupID32LSB(equalFilter)
+		if cgroupIDs == nil {
+			return fmt.Errorf("container id not found: %s", equalFilter)
+		}
+		if len(cgroupIDs) > 1 {
+			return fmt.Errorf("container id is ambiguous: %s", equalFilter)
+		}
+
+		var equalInScopes, equalitySetInScopes uint64
+		curVal, err := filterMap.GetValue(unsafe.Pointer(&cgroupIDs[0]))
+		if err == nil {
+			equalInScopes = binary.LittleEndian.Uint64(curVal[0:8])
+			equalitySetInScopes = binary.LittleEndian.Uint64(curVal[8:16])
+		}
+
+		// filterEqual == 1, so set n bitmask bit
+		utils.SetBit(&equalInScopes, filterScopeID)
 		utils.SetBit(&equalitySetInScopes, filterScopeID)
 
 		binary.LittleEndian.PutUint64(filterVal[0:8], equalInScopes)

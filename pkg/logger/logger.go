@@ -1,12 +1,14 @@
 package logger
 
 import (
+	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -74,11 +76,17 @@ func NewLogger(cfg *LoggerConfig) *Logger {
 	}
 }
 
+const (
+	DefaultLevel         = InfoLevel
+	DefaultFlushInterval = time.Duration(3) * time.Second
+)
+
 type LoggerConfig struct {
-	Writer    io.Writer
-	Level     Level
-	Encoder   Encoder
-	Aggregate bool
+	Writer        io.Writer
+	Level         Level
+	Encoder       Encoder
+	Aggregate     bool
+	FlushInterval time.Duration
 }
 
 func defaultEncoder() Encoder {
@@ -87,16 +95,19 @@ func defaultEncoder() Encoder {
 
 func NewDefaultLoggerConfig() *LoggerConfig {
 	return &LoggerConfig{
-		Writer:    os.Stderr,
-		Level:     InfoLevel,
-		Encoder:   defaultEncoder(),
-		Aggregate: false,
+		Writer:        os.Stderr,
+		Level:         DefaultLevel,
+		Encoder:       defaultEncoder(),
+		Aggregate:     false,
+		FlushInterval: DefaultFlushInterval,
 	}
 }
 
 type LogOrigin struct {
-	File string
-	Line int
+	File  string
+	Line  int
+	Level Level
+	Msg   string
 }
 
 type LogCounter struct {
@@ -104,13 +115,10 @@ type LogCounter struct {
 	data    map[LogOrigin]uint32
 }
 
-func (lc *LogCounter) update(lo LogOrigin) (new bool) {
+func (lc *LogCounter) update(lo LogOrigin) {
 	lc.rwMutex.Lock()
 	defer lc.rwMutex.Unlock()
-	_, found := lc.data[lo]
 	lc.data[lo]++
-
-	return !found
 }
 
 func (lc *LogCounter) Lookup(key LogOrigin) (count uint32, found bool) {
@@ -121,15 +129,25 @@ func (lc *LogCounter) Lookup(key LogOrigin) (count uint32, found bool) {
 	return
 }
 
-func (lc *LogCounter) Dump() map[LogOrigin]uint32 {
+func (lc *LogCounter) dump(flush bool) map[LogOrigin]uint32 {
 	lc.rwMutex.RLock()
 	defer lc.rwMutex.RUnlock()
 	dump := make(map[LogOrigin]uint32, len(lc.data))
 	for k, v := range lc.data {
 		dump[k] = v
+		if flush {
+			delete(lc.data, k)
+		}
 	}
-
 	return dump
+}
+
+func (lc *LogCounter) Dump() map[LogOrigin]uint32 {
+	return lc.dump(false)
+}
+
+func (lc *LogCounter) Flush() map[LogOrigin]uint32 {
+	return lc.dump(true)
 }
 
 func newLogCounter() *LogCounter {
@@ -139,48 +157,93 @@ func newLogCounter() *LogCounter {
 	}
 }
 
-// getCallerInfo retuns package, file and line from a function
-// based on the given number of skips (stack frames).
-func getCallerInfo(skip int) (pkg, file string, line int) {
-	pc, file, line, ok := runtime.Caller(skip + 1)
-	if !ok {
-		panic("could not get runtime caller information")
-	}
-
-	funcName := runtime.FuncForPC(pc).Name()
-	lastSlash := strings.LastIndexByte(funcName, '/')
-	if lastSlash < 0 {
-		lastSlash = 0
-	} else {
-		lastSlash++
-	}
-	lastDot := strings.LastIndexByte(funcName, '.')
-	pkg = funcName[lastSlash:lastDot]
-	// check if it's from a receiver
-	if possibleLastDot := strings.LastIndexByte(pkg, '.'); possibleLastDot != -1 {
-		pkg = pkg[0:possibleLastDot]
-	}
-
-	return pkg, file, line
+type callerInfo struct {
+	pkg       string
+	file      string
+	line      int
+	functions []string
 }
 
-func (l *Logger) updateCounter(file string, line int) (new bool) {
-	return l.LogCount.update(LogOrigin{
-		File: file,
-		Line: line,
+// getCallerInfo retuns package, file and line from a function
+// based on the given number of skips (stack frames).
+func getCallerInfo(skip int) *callerInfo {
+	var (
+		pkg       string
+		file      string
+		line      int
+		functions []string
+	)
+
+	// maximum depth of 20
+	pcs := make([]uintptr, 20)
+	n := runtime.Callers(skip+2, pcs)
+	pcs = pcs[:n-1]
+
+	frames := runtime.CallersFrames(pcs)
+	firstCaller := true
+	for {
+		frame, more := frames.Next()
+		if !more {
+			break
+		}
+
+		fn := frame.Function
+		fnStart := strings.LastIndexByte(fn, '/')
+		if fnStart == -1 {
+			fnStart = 0
+		} else {
+			fnStart++
+		}
+
+		fn = fn[fnStart:]
+		pkgEnd := strings.IndexByte(fn, '.')
+		if pkgEnd == -1 {
+			fnStart = 0
+		} else {
+			fnStart = pkgEnd + 1
+		}
+		functions = append(functions, fn[fnStart:])
+
+		if firstCaller {
+			line = frame.Line
+			file = frame.File
+			// set file as relative path
+			pat := "tracee/"
+			traceeIndex := strings.Index(file, pat)
+			if traceeIndex != -1 {
+				file = file[traceeIndex+len(pat):]
+			}
+			pkg = fn[:pkgEnd]
+
+			firstCaller = false
+		}
+	}
+
+	return &callerInfo{
+		pkg:       pkg,
+		file:      file,
+		line:      line,
+		functions: functions,
+	}
+}
+
+func (l *Logger) updateCounter(file string, line int, lvl Level, msg string) {
+	l.LogCount.update(LogOrigin{
+		File:  file,
+		Line:  line,
+		Level: lvl,
+		Msg:   msg,
 	})
 }
 
-// isAggregateSetAndIsLogNotNew checks
-// - if logs aggregation is set, so:
-//   - updates log count;
-//   - returns true if the log is not new, (avoiding writing).
-func isAggregateSetAndIsLogNotNew(skip int, l *Logger) bool {
+// aggregateLog will update the log counter if aggregation is enabled.
+// It returns true if the aggregation was done.
+func aggregateLog(skip int, l *Logger, lvl Level, msg string) bool {
 	if l.cfg.Aggregate {
-		_, file, line := getCallerInfo(skip + 1)
-		new := l.updateCounter(file, line)
+		callerInfo := getCallerInfo(skip + 1)
+		l.updateCounter(callerInfo.file, callerInfo.line, lvl, msg)
 
-		return !new
+		return true
 	}
 
 	return false
@@ -226,14 +289,25 @@ func Log(lvl Level, innerAggregation bool, msg string, keysAndValues ...interfac
 	}
 }
 
+func formatCallFlow(funcNames []string) string {
+	fns := make([]string, 0)
+	for _, fName := range funcNames {
+		fns = append(fns, fName+"()")
+	}
+
+	return strings.Join(fns, " < ")
+}
+
 // Debug
 func debugw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	if isAggregateSetAndIsLogNotNew(skip+1, l) {
+	if aggregateLog(skip+1, l, DebugLevel, msg) {
 		return
 	}
 
-	pkg, file, line := getCallerInfo(skip + 1)
-	keysAndValues = append(keysAndValues, "pkg", pkg, "file", filepath.Base(file), "line", line)
+	callerInfo := getCallerInfo(skip + 1)
+	origin := strings.Join([]string{callerInfo.pkg, callerInfo.file, strconv.Itoa(callerInfo.line)}, ":")
+	calls := formatCallFlow(callerInfo.functions)
+	keysAndValues = append(keysAndValues, "origin", origin, "calls", calls)
 
 	l.l.Debugw(msg, keysAndValues...)
 }
@@ -248,7 +322,7 @@ func (l *Logger) Debug(msg string, keysAndValues ...interface{}) {
 
 // Info
 func infow(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	if isAggregateSetAndIsLogNotNew(skip+1, l) {
+	if aggregateLog(skip+1, l, InfoLevel, msg) {
 		return
 	}
 
@@ -265,7 +339,7 @@ func (l *Logger) Info(msg string, keysAndValues ...interface{}) {
 
 // Warn
 func warnw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	if isAggregateSetAndIsLogNotNew(skip+1, l) {
+	if aggregateLog(skip+1, l, WarnLevel, msg) {
 		return
 	}
 
@@ -282,7 +356,7 @@ func (l *Logger) Warn(msg string, keysAndValues ...interface{}) {
 
 // Error
 func errorw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	if isAggregateSetAndIsLogNotNew(skip+1, l) {
+	if aggregateLog(skip+1, l, ErrorLevel, msg) {
 		return
 	}
 
@@ -299,7 +373,7 @@ func (l *Logger) Error(msg string, keysAndValues ...interface{}) {
 
 // Fatal
 func fatalw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	if isAggregateSetAndIsLogNotNew(skip+1, l) {
+	if aggregateLog(skip+1, l, FatalLevel, msg) {
 		return
 	}
 
@@ -317,25 +391,6 @@ func (l *Logger) Fatal(msg string, keysAndValues ...interface{}) {
 // Sync
 func (l *Logger) Sync() error {
 	return l.l.Sync()
-}
-
-// Setters
-// TODO: add SetWriter and Setlogger to the struct level?
-
-func SetWriter(w io.Writer) {
-	if w == nil {
-		panic("logger writer cannot be nil")
-	}
-
-	newConfig := (*pkgLogger.cfg)
-	newConfig.Writer = w
-	Init(&newConfig)
-}
-
-func SetLevel(lvl Level) {
-	newConfig := (*pkgLogger.cfg)
-	newConfig.Level = lvl
-	Init(&newConfig)
 }
 
 const (
@@ -368,7 +423,7 @@ func getLoggerLevelFromEnv() (lvl Level) {
 		lvl = FatalLevel
 	default:
 		fromEnv = false
-		lvl = InfoLevel
+		lvl = DefaultLevel
 	}
 
 	if !setFromEnv {
@@ -488,6 +543,20 @@ func Init(cfg *LoggerConfig) {
 	}
 
 	SetBase(NewLogger(cfg))
+
+	// Flush aggregated logs every interval
+	if pkgLogger.cfg.Aggregate {
+		go func() {
+			for range time.Tick(pkgLogger.cfg.FlushInterval) {
+				for lo, count := range pkgLogger.LogCount.Flush() {
+					Log(lo.Level, false, lo.Msg,
+						"origin", fmt.Sprintf("%s:%d", lo.File, lo.Line),
+						"count", count,
+					)
+				}
+			}
+		}()
+	}
 }
 
 // GetLevel returns the logger level

@@ -209,7 +209,7 @@ func GetProtoIPv4ByName(
 	//
 	var ipv4 trace.ProtoIPv4
 
-	arg, err := GetTraceeArgumentByName(event, argName)
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
 		return trace.ProtoIPv4{}, err
 	}
@@ -305,7 +305,7 @@ func GetProtoIPv6ByName(
 
 	var ipv4 trace.ProtoIPv6
 
-	arg, err := GetTraceeArgumentByName(event, argName)
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
 		return trace.ProtoIPv6{}, err
 	}
@@ -407,7 +407,7 @@ func GetProtoUDPByName(
 
 	var icmp trace.ProtoUDP
 
-	arg, err := GetTraceeArgumentByName(event, argName)
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
 		return trace.ProtoUDP{}, err
 	}
@@ -475,7 +475,7 @@ func GetProtoTCPByName(
 
 	var icmp trace.ProtoTCP
 
-	arg, err := GetTraceeArgumentByName(event, argName)
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
 		return trace.ProtoTCP{}, err
 	}
@@ -595,7 +595,7 @@ func GetProtoICMPByName(
 
 	var icmp trace.ProtoICMP
 
-	arg, err := GetTraceeArgumentByName(event, argName)
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
 		return trace.ProtoICMP{}, err
 	}
@@ -655,7 +655,7 @@ func GetProtoICMPv6ByName(
 
 	var icmpv6 trace.ProtoICMPv6
 
-	arg, err := GetTraceeArgumentByName(event, argName)
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
 		return trace.ProtoICMPv6{}, err
 	}
@@ -729,7 +729,7 @@ func GetProtoDNSByName(
 	//
 	var dns trace.ProtoDNS
 
-	arg, err := GetTraceeArgumentByName(event, argName)
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
 		return trace.ProtoDNS{}, err
 	}
@@ -1334,7 +1334,7 @@ func GetProtoHTTPByName(
 ) {
 	var httpProto trace.ProtoHTTP
 
-	arg, err := GetTraceeArgumentByName(event, argName)
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
 	if err != nil {
 		return trace.ProtoHTTP{}, err
 	}
@@ -1361,11 +1361,11 @@ func GetProtoHTTPByName(
 		"status":    "",
 	}
 	for key := range stringTypes {
-		val, ok := argProtoHTTPMap[key].(string)
+		val, ok := argProtoHTTPMap[key]
 		if !ok {
 			return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v", key)
 		}
-		stringTypes[key] = val
+		stringTypes[key] = val.(string)
 	}
 
 	// int conversion
@@ -1373,11 +1373,15 @@ func GetProtoHTTPByName(
 		"status_code": 0,
 	}
 	for key := range intTypes {
-		val, ok := argProtoHTTPMap[key].(int)
+		val, ok := argProtoHTTPMap[key]
 		if !ok {
 			return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v", key)
 		}
-		intTypes[key] = val
+		int64Val, err := val.(json.Number).Int64()
+		if err != nil {
+			return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v: %s", key, err)
+		}
+		intTypes[key] = int(int64Val)
 	}
 
 	// int64 conversion
@@ -1385,17 +1389,29 @@ func GetProtoHTTPByName(
 		"content_length": 0,
 	}
 	for key := range int64Types {
-		val, ok := argProtoHTTPMap[key].(int64)
+		val, ok := argProtoHTTPMap[key]
 		if !ok {
 			return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v", key)
 		}
-		int64Types[key] = val
+		int64Val, err := val.(json.Number).Int64()
+		if err != nil {
+			return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v: %s", key, err)
+		}
+		int64Types[key] = int64Val
 	}
 
 	// headers conversion
-	headers, ok := argProtoHTTPMap["headers"].(http.Header)
+	headersVal, ok := argProtoHTTPMap["headers"]
 	if !ok {
 		return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v", "headers")
+	}
+	headers := make(http.Header)
+	for headerKey, headerValInterface := range headersVal.(map[string]interface{}) {
+		var headerVals []string
+		for _, headerValInterfaceElem := range headerValInterface.([]interface{}) {
+			headerVals = append(headerVals, headerValInterfaceElem.(string))
+		}
+		headers[headerKey] = headerVals
 	}
 
 	return trace.ProtoHTTP{

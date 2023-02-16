@@ -3,7 +3,6 @@ package flags_test
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -537,24 +536,6 @@ func TestPrepareCapture(t *testing.T) {
 					Module:     true,
 				},
 			},
-			{
-				testName:     "capture exec and enable profile",
-				captureSlice: []string{"exec", "profile"},
-				expectedCapture: tracee.CaptureConfig{
-					OutputPath: "/tmp/tracee/out",
-					Exec:       true,
-					Profile:    true,
-				},
-			},
-			{
-				testName:     "just enable profile",
-				captureSlice: []string{"profile"},
-				expectedCapture: tracee.CaptureConfig{
-					OutputPath: "/tmp/tracee/out",
-					Exec:       true,
-					Profile:    true,
-				},
-			},
 		}
 		for _, tc := range testCases {
 			t.Run(tc.testName, func(t *testing.T) {
@@ -571,11 +552,11 @@ func TestPrepareCapture(t *testing.T) {
 	})
 
 	t.Run("clear dir", func(t *testing.T) {
-		d, _ := ioutil.TempDir("", "TestPrepareCapture-*")
-		capture, err := flags.PrepareCapture([]string{fmt.Sprintf("dir:%s", d), "clear-dir"})
+		d, _ := os.CreateTemp("", "TestPrepareCapture-*")
+		capture, err := flags.PrepareCapture([]string{fmt.Sprintf("dir:%s", d.Name()), "clear-dir"})
 		require.NoError(t, err)
-		assert.Equal(t, tracee.CaptureConfig{OutputPath: fmt.Sprintf("%s/out", d)}, capture)
-		require.NoDirExists(t, d+"out")
+		assert.Equal(t, tracee.CaptureConfig{OutputPath: fmt.Sprintf("%s/out", d.Name())}, capture)
+		require.NoDirExists(t, d.Name()+"out")
 	})
 }
 
@@ -619,13 +600,32 @@ func TestPrepareOutput(t *testing.T) {
 			},
 			expectedError: errors.New("unrecognized output format: out-file. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info"),
 		},
-
+		{
+			testName:    "default format",
+			outputSlice: []string{},
+			expectedOutput: flags.OutputConfig{
+				LogFile: os.Stderr,
+				TraceeConfig: &tracee.OutputConfig{
+					ParseArguments: true,
+				},
+			},
+		},
+		{
+			testName:    "table format always parse arguments",
+			outputSlice: []string{"table"},
+			expectedOutput: flags.OutputConfig{
+				LogFile: os.Stderr,
+				TraceeConfig: &tracee.OutputConfig{
+					ParseArguments: true,
+				},
+			},
+		},
 		{
 			testName:    "option stack-addresses",
 			outputSlice: []string{"option:stack-addresses"},
 			expectedOutput: flags.OutputConfig{
 				LogFile: os.Stderr,
-				OutputConfig: tracee.OutputConfig{
+				TraceeConfig: &tracee.OutputConfig{
 					StackAddresses: true,
 					ParseArguments: true,
 				},
@@ -636,9 +636,20 @@ func TestPrepareOutput(t *testing.T) {
 			outputSlice: []string{"option:exec-env"},
 			expectedOutput: flags.OutputConfig{
 				LogFile: os.Stderr,
-				OutputConfig: tracee.OutputConfig{
+				TraceeConfig: &tracee.OutputConfig{
 					ExecEnv:        true,
 					ParseArguments: true,
+				},
+			},
+		},
+		{
+			testName:    "option relative-time",
+			outputSlice: []string{"json", "option:relative-time"},
+			expectedOutput: flags.OutputConfig{
+
+				LogFile: os.Stderr,
+				TraceeConfig: &tracee.OutputConfig{
+					RelativeTime: true,
 				},
 			},
 		},
@@ -646,10 +657,34 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option exec-hash",
 			outputSlice: []string{"option:exec-hash"},
 			expectedOutput: flags.OutputConfig{
+
 				LogFile: os.Stderr,
-				OutputConfig: tracee.OutputConfig{
+				TraceeConfig: &tracee.OutputConfig{
 					ExecHash:       true,
 					ParseArguments: true,
+				},
+			},
+		},
+		{
+			testName:    "option parse-arguments",
+			outputSlice: []string{"json", "option:parse-arguments"},
+			expectedOutput: flags.OutputConfig{
+
+				LogFile: os.Stderr,
+				TraceeConfig: &tracee.OutputConfig{
+					ParseArguments: true,
+				},
+			},
+		},
+		{
+			testName:    "option parse-arguments-fds",
+			outputSlice: []string{"json", "option:parse-arguments-fds"},
+			expectedOutput: flags.OutputConfig{
+
+				LogFile: os.Stderr,
+				TraceeConfig: &tracee.OutputConfig{
+					ParseArguments:    true,
+					ParseArgumentsFDs: true,
 				},
 			},
 		},
@@ -658,34 +693,46 @@ func TestPrepareOutput(t *testing.T) {
 			outputSlice: []string{"option:sort-events"},
 			expectedOutput: flags.OutputConfig{
 				LogFile: os.Stderr,
-				OutputConfig: tracee.OutputConfig{
+				TraceeConfig: &tracee.OutputConfig{
 					ParseArguments: true,
 					EventsSorting:  true,
 				},
 			},
 		},
 		{
-			testName:    "all options",
-			outputSlice: []string{"option:stack-addresses", "option:exec-env", "option:exec-hash", "option:sort-events"},
+			testName: "all options",
+			outputSlice: []string{
+				"json",
+				"option:stack-addresses",
+				"option:exec-env",
+				"option:relative-time",
+				"option:exec-hash",
+				"option:parse-arguments",
+				"option:parse-arguments-fds",
+				"option:sort-events",
+			},
 			expectedOutput: flags.OutputConfig{
 				LogFile: os.Stderr,
-				OutputConfig: tracee.OutputConfig{
-					StackAddresses: true,
-					ExecEnv:        true,
-					ExecHash:       true,
-					ParseArguments: true,
-					EventsSorting:  true,
+				TraceeConfig: &tracee.OutputConfig{
+					StackAddresses:    true,
+					ExecEnv:           true,
+					RelativeTime:      true,
+					ExecHash:          true,
+					ParseArguments:    true,
+					ParseArgumentsFDs: true,
+					EventsSorting:     true,
 				},
 			},
 		},
 	}
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
-			output, _, err := flags.PrepareOutput(testcase.outputSlice)
+			output, err := flags.PrepareOutput(testcase.outputSlice)
 			if err != nil {
 				assert.Equal(t, testcase.expectedError, err)
 			} else {
-				assert.Equal(t, testcase.expectedOutput, output)
+				assert.Equal(t, testcase.expectedOutput.LogFile, output.LogFile)
+				assert.Equal(t, testcase.expectedOutput.TraceeConfig, output.TraceeConfig)
 			}
 		})
 	}

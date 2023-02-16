@@ -74,6 +74,7 @@ func (store *context) Apply(event trace.Event) (trace.Event, error) {
 	invoking.EventID = event.EventID
 	invoking.ReturnValue = 0
 	invoking.Args = make([]trace.Argument, len(event.Args))
+	invoking.MatchedScopes = event.MatchedScopes
 	copied := copy(invoking.Args, event.Args)
 	if copied != len(event.Args) {
 		return trace.Event{}, errors.New("failed to apply event's args")

@@ -6,23 +6,19 @@ on:
     branches:
       - main
 env:
-  GO_VERSION: "1.18"
-  OPA_VERSION: "v0.41.0"
   TESTS: "TRC-102 TRC-103 TRC-104 TRC-105 TRC-107 TRC-1018 TRC-1014 TRC-1016 TRC-1010"
-  NETTESTS: "IPv4 IPv6 TCP UDP ICMP ICMPv6 DNS"
+  NETTESTS: "IPv4 IPv6 TCP UDP ICMP ICMPv6 DNS HTTP"
 jobs:
-  VERIFY-CODE:
+  verify-code:
     name: Verify Code
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
-      - name: Setup Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ env.GO_VERSION }}
       - name: Checkout Code
         uses: actions/checkout@v2
         with:
           submodules: true
+      - name: Install Dependencies
+        uses: ./.github/actions/build-dependencies
       - name: Lint
         run: |
           if test -z "$(gofmt -l .)"; then
@@ -32,11 +28,11 @@ jobs:
             gofmt -s -d .
             exit 1
           fi
-  ANALYZE-CODE:
+  analyze-code:
     name: Analyze Code
     needs:
-      - VERIFY-CODE
-    runs-on: ubuntu-20.04
+      - verify-code
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -44,9 +40,6 @@ jobs:
           submodules: true
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          opa-version: ${{ env.OPA_VERSION }}
       - name: Check Code Style
         run: |
           make check-fmt
@@ -56,9 +49,9 @@ jobs:
       - name: Check with StaticCheck
         run: |
           make check-staticcheck
-  UNIT-TESTS:
+  unit-tests:
     name: Unit Tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -66,18 +59,15 @@ jobs:
           submodules: true
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          opa-version: ${{ env.OPA_VERSION }}
       - name: Run Unit Tests
         run: |
           make test-unit
-  INTEGRATION-TESTS:
+  integration-tests:
     name: Integration Tests
     needs:
-      - ANALYZE-CODE
-      - UNIT-TESTS
-    runs-on: ubuntu-20.04
+      - analyze-code
+      - unit-tests
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -85,18 +75,15 @@ jobs:
           submodules: true
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          opa-version: ${{ env.OPA_VERSION }}
       - name: Run Integration Tests
         run: |
           sudo env "PATH=$PATH" make test-integration
-  VERIFY-SIGNATURES:
+  verify-signatures:
     name: Verify Signatures
     needs:
-      - ANALYZE-CODE
-      - UNIT-TESTS
-    runs-on: ubuntu-20.04
+      - analyze-code
+      - unit-tests
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -104,9 +91,6 @@ jobs:
           submodules: true
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          opa-version: ${{ env.OPA_VERSION }}
       - name: Build Signatures
         run: |
           make rules
@@ -115,8 +99,8 @@ jobs:
           make test-rules
   CORE:
     needs:
-      - ANALYZE-CODE
-      - UNIT-TESTS
+      - analyze-code
+      - unit-tests
     strategy:
       fail-fast: false
       matrix:
@@ -135,8 +119,8 @@ jobs:
           DONTSLEEP=0 ISNONCORE=0 ./tests/e2e-net-test.sh
   NONCORE:
     needs:
-      - ANALYZE-CODE
-      - UNIT-TESTS
+      - analyze-code
+      - unit-tests
     strategy:
       fail-fast: false
       matrix:

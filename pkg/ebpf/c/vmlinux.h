@@ -1,6 +1,8 @@
 #ifndef __VMLINUX_H__
 #define __VMLINUX_H__
 
+;
+; // don't remove: clangd parsing bug https://github.com/clangd/clangd/issues/1167
 #pragma clang attribute push(__attribute__((preserve_access_index)), apply_to = record)
 
 typedef signed char __s8;
@@ -581,11 +583,15 @@ typedef s64 ktime_t;
 struct sk_buff {
     __u16 transport_header;
     __u16 network_header;
-    unsigned char *head;
     union {
         ktime_t tstamp;
         u64 skb_mstamp_ns;
     };
+    unsigned char *head;
+    unsigned char *data;
+    u32 len;
+    u16 mac_len;
+    u16 hdr_len;
 };
 
 struct linux_binprm {

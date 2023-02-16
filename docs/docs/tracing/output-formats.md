@@ -19,7 +19,7 @@ Tracee supports different output formats for detected events:
     11:21:51:254418  1000   exa              1639459 1639459 3                openat               dirfd: -100, pathname: /lib/x86_64-linux-gnu/libm.so.6, flags: O_RDONLY|O_CLOEXEC, mode: 0
     
     End of events stream
-    Stats: {EventCount:6 EventsFiltered:0 NetEvCount:0 ErrorCount:0 LostEvCount:0 LostWrCount:0 LostNtCount:0}
+    Stats: {EventCount:3 EventsFiltered:0 NetCapCount:0 BPFLogsCount:0 ErrorCount:0 LostEvCount:0 LostWrCount:0 LostNtCapCount:0 LostBPFLogsCount:0}
     ```
 
 2. **Table (Verbose)**
@@ -32,7 +32,7 @@ Tracee supports different output formats for detected events:
     11:22:16:970913  fujitsu                        4026531840   4026531836   1000   exa              1643836 1643836 3795408 3                openat               dirfd: -100, pathname: /lib/x86_64-linux-gnu/libm.so.6, flags: 524288, mode: 0
     
     End of events stream
-    Stats: {EventCount:6 EventsFiltered:0 NetEvCount:0 ErrorCount:0 LostEvCount:0 LostWrCount:0 LostNtCount:0}
+    Stats: {EventCount:3 EventsFiltered:0 NetCapCount:0 BPFLogsCount:0 ErrorCount:0 LostEvCount:0 LostWrCount:0 LostNtCapCount:0 LostBPFLogsCount:0}
     ```
 
 3. **JSON**
@@ -42,8 +42,8 @@ Tracee supports different output formats for detected events:
     ```
 
     ```json
-    {"timestamp":1657290245020855990,"threadStartTime":615325807626168,"processorId":22,"processId":1664936,"cgroupId":1,"threadId":1664936,"parentProcessId":3795408,"hostProcessId":1664936,"hostThreadId":1664936,"hostParentProcessId":3795408,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"exa","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"257","eventName":"openat","argsNum":4,"returnValue":3,"stackAddresses":null,"args":[{"name":"dirfd","type":"int","value":-100},{"name":"pathname","type":"const char*","value":"/etc/ld.so.cache"},{"name":"flags","type":"int","value":524288},{"name":"mode","type":"mode_t","value":0}]}
-    {"timestamp":1657290245020940791,"threadStartTime":615325807626168,"processorId":22,"processId":1664936,"cgroupId":1,"threadId":1664936,"parentProcessId":3795408,"hostProcessId":1664936,"hostThreadId":1664936,"hostParentProcessId":3795408,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"exa","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"257","eventName":"openat","argsNum":4,"returnValue":3,"stackAddresses":null,"args":[{"name":"dirfd","type":"int","value":-100},{"name":"pathname","type":"const char*","value":"/lib/x86_64-linux-gnu/libgcc_s.so.1"},{"name":"flags","type":"int","value":524288},{"name":"mode","type":"mode_t","value":0}]}
+    {"timestamp":1657290245020855990,"threadStartTime":615325807626168,"processorId":22,"processId":1664936,"cgroupId":1,"threadId":1664936,"parentProcessId":3795408,"hostProcessId":1664936,"hostThreadId":1664936,"hostParentProcessId":3795408,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"exa","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"257","eventName":"openat","argsNum":4,"returnValue":3,"stackAddresses":null,"syscall":"openat","contextFlags":{"containerStarted":false,"isCompat":false},"args":[{"name":"dirfd","type":"int","value":-100},{"name":"pathname","type":"const char*","value":"/etc/ld.so.cache"},{"name":"flags","type":"int","value":524288},{"name":"mode","type":"mode_t","value":0}]}
+    {"timestamp":1657290245020940791,"threadStartTime":615325807626168,"processorId":22,"processId":1664936,"cgroupId":1,"threadId":1664936,"parentProcessId":3795408,"hostProcessId":1664936,"hostThreadId":1664936,"hostParentProcessId":3795408,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"exa","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"257","eventName":"openat","argsNum":4,"returnValue":3,"stackAddresses":null,"syscall":"openat","contextFlags":{"containerStarted":false,"isCompat":false},"args":[{"name":"dirfd","type":"int","value":-100},{"name":"pathname","type":"const char*","value":"/lib/x86_64-linux-gnu/libgcc_s.so.1"},{"name":"flags","type":"int","value":524288},{"name":"mode","type":"mode_t","value":0}]}
     ```
     
     !!! Tip
@@ -86,8 +86,8 @@ output and standard error:
     ```
 
     ```json
-    {"timestamp":1657291487418386000,"threadStartTime":616568205378363,"processorId":11,"processId":1893369,"cgroupId":1,"threadId":1893369,"parentProcessId":3795408,"hostProcessId":1893369,"hostThreadId":1893369,"hostParentProcessId":3795408,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"exa","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"257","eventName":"openat","argsNum":4,"returnValue":3,"stackAddresses":null,"args":[{"name":"dirfd","type":"int","value":-100},{"name":"pathname","type":"const char*","value":"/etc/ld.so.cache"},{"name":"flags","type":"int","value":524288},{"name":"mode","type":"mode_t","value":0}]}
-    {"timestamp":1657291487418510000,"threadStartTime":616568205378363,"processorId":11,"processId":1893369,"cgroupId":1,"threadId":1893369,"parentProcessId":3795408,"hostProcessId":1893369,"hostThreadId":1893369,"hostParentProcessId":3795408,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"exa","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"257","eventName":"openat","argsNum":4,"returnValue":3,"stackAddresses":null,"args":[{"name":"dirfd","type":"int","value":-100},{"name":"pathname","type":"const char*","value":"/lib/x86_64-linux-gnu/libgcc_s.so.1"},{"name":"flags","type":"int","value":524288},{"name":"mode","type":"mode_t","value":0}]}
+    {"timestamp":1657291487418386000,"threadStartTime":616568205378363,"processorId":11,"processId":1893369,"cgroupId":1,"threadId":1893369,"parentProcessId":3795408,"hostProcessId":1893369,"hostThreadId":1893369,"hostParentProcessId":3795408,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"exa","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"257","eventName":"openat","argsNum":4,"returnValue":3,"stackAddresses":null,"syscall":"openat","contextFlags":{"containerStarted":false,"isCompat":false},"args":[{"name":"dirfd","type":"int","value":-100},{"name":"pathname","type":"const char*","value":"/etc/ld.so.cache"},{"name":"flags","type":"int","value":524288},{"name":"mode","type":"mode_t","value":0}]}
+    {"timestamp":1657291487418510000,"threadStartTime":616568205378363,"processorId":11,"processId":1893369,"cgroupId":1,"threadId":1893369,"parentProcessId":3795408,"hostProcessId":1893369,"hostThreadId":1893369,"hostParentProcessId":3795408,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"exa","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"257","eventName":"openat","argsNum":4,"returnValue":3,"stackAddresses":null,"syscall":"openat","contextFlags":{"containerStarted":false,"isCompat":false},"args":[{"name":"dirfd","type":"int","value":-100},{"name":"pathname","type":"const char*","value":"/lib/x86_64-linux-gnu/libgcc_s.so.1"},{"name":"flags","type":"int","value":524288},{"name":"mode","type":"mode_t","value":0}]}
     ```
 
 2. Error file

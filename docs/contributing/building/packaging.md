@@ -14,12 +14,6 @@ to install build depencies in your OS.
 
     !!! Building Tip
 
-        * Bionic (LTS)
-
-        ```text
-        $ make -f builder/Makefile.packaging ubuntu-bin-bionic
-        ```
-
         * Focal (LTS)
 
         ```text
@@ -41,10 +35,6 @@ to install build depencies in your OS.
         Examples:
 
         ```text
-        # bionic
-        tracee-ebpf_0.6.5-111~18.04~2201281255-3a6874a_amd64.deb
-        tracee-rules_0.6.5-111~18.04~2201281255-3a6874a_amd64.deb
-
         # focal
         tracee-ebpf_0.6.5-111~20.04~2201281302-3a6874a_amd64.deb
         tracee-rules_0.6.5-111~20.04~2201281302-3a6874a_amd64.deb

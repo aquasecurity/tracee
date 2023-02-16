@@ -56,7 +56,7 @@ func ParseArgs(event *trace.Event) error {
 				ParseOrEmptyString(prevProtArg, mmapProtArgument, nil)
 			}
 		}
-	case SysEnter, SysExit, CapCapable, CommitCreds, SecurityFileOpen, TaskRename, SecurityMmapFile, KallsymsLookupName, DoMmap:
+	case SysEnter, SysExit:
 		if syscallArg := GetArg(event, "syscall"); syscallArg != nil {
 			if id, isInt32 := syscallArg.Value.(int32); isInt32 {
 				if event, isKnown := Definitions.GetSafe(ID(id)); isKnown {
@@ -75,20 +75,11 @@ func ParseArgs(event *trace.Event) error {
 				}
 			}
 		}
-		if ID(event.EventID) == SecurityFileOpen {
-			if flagsArg := GetArg(event, "flags"); flagsArg != nil {
-				if flags, isInt32 := flagsArg.Value.(int32); isInt32 {
-					openFlagArgument, err := helpers.ParseOpenFlagArgument(uint64(flags))
-					ParseOrEmptyString(flagsArg, openFlagArgument, err)
-				}
-			}
-		}
-		if ID(event.EventID) == SecurityMmapFile || ID(event.EventID) == DoMmap {
-			if protArg := GetArg(event, "prot"); protArg != nil {
-				if prot, isUint64 := protArg.Value.(uint64); isUint64 {
-					mmapProtArgument := helpers.ParseMmapProt(prot)
-					ParseOrEmptyString(protArg, mmapProtArgument, nil)
-				}
+	case SecurityMmapFile, DoMmap:
+		if protArg := GetArg(event, "prot"); protArg != nil {
+			if prot, isUint64 := protArg.Value.(uint64); isUint64 {
+				mmapProtArgument := helpers.ParseMmapProt(prot)
+				ParseOrEmptyString(protArg, mmapProtArgument, nil)
 			}
 		}
 	case Mmap, Mprotect, PkeyMprotect:
@@ -165,7 +156,7 @@ func ParseArgs(event *trace.Event) error {
 				ParseOrEmptyString(flagsArg, execFlagArgument, err)
 			}
 		}
-	case Open, Openat:
+	case Open, Openat, SecurityFileOpen:
 		if flagsArg := GetArg(event, "flags"); flagsArg != nil {
 			if flags, isInt32 := flagsArg.Value.(int32); isInt32 {
 				openFlagArgument, err := helpers.ParseOpenFlagArgument(uint64(flags))
@@ -249,10 +240,19 @@ func ParseArgs(event *trace.Event) error {
 		}
 		if writeUserArg := GetArg(event, "prog_write_user"); writeUserArg != nil {
 			if writeUser, isInt := writeUserArg.Value.(int32); isInt {
-				perfTypestr, err := parseBpfAttachWriteUser(writeUser)
+				perfTypestr, err := parseBpfAttachHelperUsage(writeUser)
 				EmptyString(writeUserArg)
 				if err == nil {
 					writeUserArg.Value = perfTypestr
+				}
+			}
+		}
+		if overrideReturnArg := GetArg(event, "prog_override_return"); overrideReturnArg != nil {
+			if overrideReturn, isInt := overrideReturnArg.Value.(int32); isInt {
+				perfTypestr, err := parseBpfAttachHelperUsage(overrideReturn)
+				EmptyString(overrideReturnArg)
+				if err == nil {
+					overrideReturnArg.Value = perfTypestr
 				}
 			}
 		}
@@ -312,8 +312,8 @@ func (arg CustomFunctionArgument) Value() uint64 {
 	return arg.val
 }
 
-func parseBpfAttachWriteUser(writeUser int32) (string, error) {
-	switch writeUser {
+func parseBpfAttachHelperUsage(helperArg int32) (string, error) {
+	switch helperArg {
 	case 0:
 		return "false", nil
 	case 1:
@@ -321,7 +321,7 @@ func parseBpfAttachWriteUser(writeUser int32) (string, error) {
 	case 2:
 		return "unknown", nil
 	default:
-		return "", fmt.Errorf("unknown prog_write_user value got from bpf_attach event")
+		return "", fmt.Errorf("unknown value got from bpf_attach event for helper usage arg")
 	}
 }
 

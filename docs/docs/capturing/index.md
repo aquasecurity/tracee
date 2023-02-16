@@ -35,14 +35,14 @@ Tracee can capture the following types of artifacts:
         --trace follow \
         --output option:parse-arguments \
         --capture dir:/tmp/tracee/ \
-        --capture write=/tmp/*
+        --capture write='/tmp/*'
 
      $ echo testing 123 > /tmp/testing.txt
      ```
 
      ```json
-     {"timestamp":1657321167356748797,"threadStartTime":620311624458929,"processorId":7,"processId":2578238,"cgroupId":1,"threadId":2578238,"parentProcessId":2578237,"hostProcessId":2578238,"hostThreadId":2578238,"hostParentProcessId":2578237,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"bash","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"722","eventName":"security_file_open","argsNum":6,"returnValue":0,"stackAddresses":null,"args":[{"name":"pathname","type":"const char*","value":"/tmp/testing.txt"},{"name":"flags","type":"string","value":"O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE"},{"name":"dev","type":"dev_t","value":271581185},{"name":"inode","type":"unsigned long","value":1966101},{"name":"ctime","type":"unsigned long","value":1657321027326584850},{"name":"syscall_pathname","type":"const char*","value":"/tmp/testing.txt"}]}
-     {"timestamp":1657321167356729582,"threadStartTime":620311624458929,"processorId":7,"processId":2578238,"cgroupId":1,"threadId":2578238,"parentProcessId":2578237,"hostProcessId":2578238,"hostThreadId":2578238,"hostParentProcessId":2578237,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"bash","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"257","eventName":"openat","argsNum":4,"returnValue":3,"stackAddresses":null,"args":[{"name":"dirfd","type":"int","value":-100},{"name":"pathname","type":"const char*","value":"/tmp/testing.txt"},{"name":"flags","type":"string","value":"O_WRONLY|O_CREAT|O_TRUNC"},{"name":"mode","type":"mode_t","value":438}]}
+     {"timestamp":1657321167356748797,"threadStartTime":620311624458929,"processorId":7,"processId":2578238,"cgroupId":1,"threadId":2578238,"parentProcessId":2578237,"hostProcessId":2578238,"hostThreadId":2578238,"hostParentProcessId":2578237,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"bash","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"722","eventName":"security_file_open","argsNum":6,"returnValue":0,"stackAddresses":null,"syscall":"openat","contextFlags":{"containerStarted":false,"isCompat":false},"args":[{"name":"pathname","type":"const char*","value":"/tmp/testing.txt"},{"name":"flags","type":"string","value":"O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE"},{"name":"dev","type":"dev_t","value":271581185},{"name":"inode","type":"unsigned long","value":1966101},{"name":"ctime","type":"unsigned long","value":1657321027326584850},{"name":"syscall_pathname","type":"const char*","value":"/tmp/testing.txt"}]}
+     {"timestamp":1657321167356729582,"threadStartTime":620311624458929,"processorId":7,"processId":2578238,"cgroupId":1,"threadId":2578238,"parentProcessId":2578237,"hostProcessId":2578238,"hostThreadId":2578238,"hostParentProcessId":2578237,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"bash","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"257","eventName":"openat","argsNum":4,"returnValue":3,"stackAddresses":null,"syscall":"openat","contextFlags":{"containerStarted":false,"isCompat":false},"args":[{"name":"dirfd","type":"int","value":-100},{"name":"pathname","type":"const char*","value":"/tmp/testing.txt"},{"name":"flags","type":"string","value":"O_WRONLY|O_CREAT|O_TRUNC"},{"name":"mode","type":"mode_t","value":438}]}
      ```
 
     !!! Note
@@ -70,8 +70,8 @@ Tracee can capture the following types of artifacts:
      ```
 
      ```json
-     {"timestamp":1657322300531713371,"threadStartTime":620311624458929,"processorId":21,"processId":2578238,"cgroupId":1,"threadId":2578238,"parentProcessId":2578237,"hostProcessId":2578238,"hostThreadId":2578238,"hostParentProcessId":2578237,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"bash","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"56","eventName":"clone","argsNum":5,"returnValue":3331757,"stackAddresses":null,"args":[{"name":"flags","type":"string","value":"CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID"},{"name":"stack","type":"void*","value":"0x0"},{"name":"parent_tid","type":"int*","value":"0x0"},{"name":"child_tid","type":"int*","value":"0x7fd7ce0d3a10"},{"name":"tls","type":"unsigned long","value":0}]}
-     {"timestamp":1657322300534562489,"threadStartTime":620311624458929,"processorId":21,"processId":2578238,"cgroupId":1,"threadId":2578238,"parentProcessId":2578237,"hostProcessId":2578238,"hostThreadId":2578238,"hostParentProcessId":2578237,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"bash","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"3","eventName":"close","argsNum":1,"returnValue":0,"stackAddresses":null,"args":[{"name":"fd","type":"int","value":3}]}
+     {"timestamp":1657322300531713371,"threadStartTime":620311624458929,"processorId":21,"processId":2578238,"cgroupId":1,"threadId":2578238,"parentProcessId":2578237,"hostProcessId":2578238,"hostThreadId":2578238,"hostParentProcessId":2578237,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"bash","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"56","eventName":"clone","argsNum":5,"returnValue":3331757,"stackAddresses":null,"syscall":"clone","contextFlags":{"containerStarted":false,"isCompat":false},"args":[{"name":"flags","type":"string","value":"CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID"},{"name":"stack","type":"void*","value":"0x0"},{"name":"parent_tid","type":"int*","value":"0x0"},{"name":"child_tid","type":"int*","value":"0x7fd7ce0d3a10"},{"name":"tls","type":"unsigned long","value":0}]}
+     {"timestamp":1657322300534562489,"threadStartTime":620311624458929,"processorId":21,"processId":2578238,"cgroupId":1,"threadId":2578238,"parentProcessId":2578237,"hostProcessId":2578238,"hostThreadId":2578238,"hostParentProcessId":2578237,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"bash","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"3","eventName":"close","argsNum":1,"returnValue":0,"stackAddresses":null,"syscall":"close","contextFlags":{"containerStarted":false,"isCompat":false},"args":[{"name":"fd","type":"int","value":3}]}
      ```
 
     !!! Note
@@ -119,12 +119,22 @@ Tracee can capture the following types of artifacts:
      Anytime a **network packet** is delivered to a process, traced by tracee,
      this packet might be captured into one or multiple pcap files.
 
+    !!! Attention
+        The default behavior when capturing network traffic is to capture
+        ALL traffic, despite given event filters. If you want to make
+        capture feature to follow the given event filters, like for example
+        capturing DNS events only, then you have to provide `--capture
+        pcap-options:filtered` argument in the command line. Then only
+        net_packet_XXX events will be captured (IPv4, IPv6, TCP, UDP,
+        ICMP, ICMPv6, DNS, HTTP, etc).
+
      A good way to test this behavior is to execute:
 
      ```text
      $ sudo ./dist/tracee-ebpf \
          --trace event=net_packet_ipv4 \
-         --capture network
+         --capture network \
+         --capture pcap-options:filtered
      ```
 
      and observe a single **pcap file** for all ipv4 packets created:
@@ -140,7 +150,8 @@ Tracee can capture the following types of artifacts:
      ```text
      $ sudo ./dist/tracee-ebpf \
          --trace event=net_packet_dns \
-         --capture network
+         --capture network \
+         --capture pcap-options:filtered
      ```
 
      and the file `/tmp/tracee/out/pcap/single.pcap` would only contain DNS
@@ -173,6 +184,7 @@ Tracee can capture the following types of artifacts:
      $ sudo ./dist/tracee-ebpf \
          --trace event=net_packet_icmp \
          --capture network \
+         --capture pcap-options:filtered \
          --capture pcap:process,container,command
      ```
 
@@ -257,11 +269,12 @@ Tracee can capture the following types of artifacts:
      In order to capture a specific payload size you may specify:
 
      ```
-      $ sudo ./dist/tracee-ebpf \
-          --trace event=net_packet_tcp \
-          --capture network \
-          --capture pcap:single,command \
-          --capture pcap-snaplen:default
+     $ sudo ./dist/tracee-ebpf \
+         --trace event=net_packet_tcp \
+         --capture network \
+         --capture pcap-options:filtered \
+         --capture pcap:single,command \
+         --capture pcap-snaplen:default
      ```
 
      To capture packet headers + 96 bytes of payload. Or replace `default` by:

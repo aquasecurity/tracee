@@ -16,9 +16,9 @@ ARG gid=1000
 RUN apk --no-cache update && \
     apk --no-cache add sudo coreutils findutils && \
     apk --no-cache add bash git curl rsync && \
+    apk --no-cache add clang14 llvm14 && \
     apk --no-cache add musl-dev libc6-compat && \
-    apk --no-cache add llvm clang go make gcc && \
-    apk --no-cache add clang-extra-tools && \
+    apk --no-cache add go make gcc && \
     apk --no-cache add linux-headers && \
     apk --no-cache add elfutils-dev && \
     apk --no-cache add libelf-static && \

@@ -51,7 +51,10 @@ func main() {
 
 			// Capabilities command line flags
 
-			err := capabilities.Initialize(c.Bool("allcaps"))
+			// if the user is not root, we will bypass capabilities raising,
+			// which means default capabilities will be used
+			bypass := c.Bool("allcaps") || !isRoot()
+			err := capabilities.Initialize(bypass)
 			if err != nil {
 				return err
 			}
@@ -206,7 +209,7 @@ func main() {
 			},
 			&cli.BoolFlag{
 				Name:  server.PProfEndpointFlag,
-				Usage: "enables pprof endpoints",
+				Usage: "enable pprof endpoints",
 				Value: false,
 			},
 			&cli.BoolFlag{
@@ -284,4 +287,8 @@ func listEvents(w io.Writer, sigs []detect.Signature) {
 
 	sort.Slice(events, func(i, j int) bool { return events[i] < events[j] })
 	fmt.Fprintln(w, strings.Join(events, ","))
+}
+
+func isRoot() bool {
+	return os.Geteuid() == 0
 }

@@ -93,18 +93,6 @@ func (t *Tracee) registerEventProcessors() {
 	t.RegisterEventProcessor(events.PrintMemDump, t.processPrintMemDump)
 }
 
-func (t *Tracee) updateProfile(sourceFilePath string, executionTs uint64) {
-	if pf, ok := t.profiledFiles[sourceFilePath]; !ok {
-		t.profiledFiles[sourceFilePath] = profilerInfo{
-			Times:            1,
-			FirstExecutionTs: executionTs,
-		}
-	} else {
-		pf.Times = pf.Times + 1              // bump execution count
-		t.profiledFiles[sourceFilePath] = pf // update
-	}
-}
-
 // convertArgMonotonicToEpochTime change time from monotonic relative time to time since epoch.
 // Monotonic time is timestamp relative to the boot time (not including sleep time)
 // Add the boot time to receive timestamp which is approximately relative to epoch.
@@ -201,10 +189,6 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 					return err
 				}
 				destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", event.Timestamp, filepath.Base(filePath)))
-				// create an in-memory profile
-				if t.config.Capture.Profile {
-					t.updateProfile(fmt.Sprintf("%s:%d", filepath.Join(destinationDirPath, fmt.Sprintf("exec.%s", filepath.Base(filePath))), castedSourceFileCtime), uint64(event.Timestamp))
-				}
 				// don't capture same file twice unless it was modified
 				lastCtime, ok := t.capturedFiles[capturedFileID]
 				if !ok || lastCtime != castedSourceFileCtime {

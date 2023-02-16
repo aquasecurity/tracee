@@ -62,11 +62,11 @@ func TestPrepareOutputPrinterConfig(t *testing.T) {
 	}
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
-			_, printerCfg, err := flags.PrepareOutput(testcase.outputSlice)
+			outputConfig, err := flags.PrepareOutput(testcase.outputSlice)
 			if err != nil {
 				assert.Equal(t, testcase.expectedError, err)
 			} else {
-				assert.Equal(t, testcase.expectedPrinter, printerCfg)
+				assert.Equal(t, testcase.expectedPrinter, outputConfig.PrinterConfig)
 			}
 		})
 	}

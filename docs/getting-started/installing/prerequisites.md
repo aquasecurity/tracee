@@ -16,8 +16,8 @@ A longterm supported kernel: 5.4, 5.10, 5.15, 5.18, 5.19. Check
 2. For **tracee:full** docker image:
 
     1. **kernel readers** (most distros provide packages)
-    2. **clang** (12 or 13)
-    3. **golang** (1.18)
+    2. **clang** (12, 13 or 14)
+    3. **golang** (1.19)
     4. **libelf** and **libelf-dev** (or elfutils-libelf and elfutils-libelf-devel)
     5. **zlib1g** and **lib1g-dev** (or zlib and zlib-devel)
 
@@ -38,7 +38,7 @@ capabilities:
 * On cgroup v1 environments, `CAP_SYS_ADMIN` is recommended if running from a
   container in order to allow tracee to mount the cpuset cgroup controller.
 
-> Alternatively, run as `root` or with the `--privileged` flag of Docker.
+> Alternatively, run as `root` or with **Docker** `--pid=host --cgroupns=host --privileged` flags.
 
 [libbpf CO-RE documentation]: https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere
 [BTFHUB]: https://github.com/aquasecurity/btfhub-archive

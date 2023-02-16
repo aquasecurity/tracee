@@ -15,9 +15,11 @@ BASEDIR=$(dirname "${0}") ; cd ${BASEDIR}/../ ; BASEDIR=$(pwd) ; cd ${BASEDIR}
 
 # variables
 
-TRACEE_BPF_CORE="${BASEDIR}/dist/tracee.bpf.core.o"
 BTFHUB_REPO="https://github.com/aquasecurity/btfhub.git"
 BTFHUB_ARCH_REPO="https://github.com/aquasecurity/btfhub-archive.git"
+
+TRACEE_BPF_CORE="${BASEDIR}/dist/tracee.bpf.core.o"
+
 BTFHUB_DIR="${BASEDIR}/3rdparty/btfhub"
 BTFHUB_ARCH_DIR="${BASEDIR}/3rdparty/btfhub-archive"
 
@@ -26,11 +28,9 @@ ARCH=$(uname -m)
 case ${ARCH} in
     "x86_64")
         ARCH="x86_64"
-        NOT_ARCH=("arm64")
         ;;
     "aarch64")
         ARCH="arm64"
-        NOT_ARCH=("x86_64")
         ;;
     *)
         die "unsupported architecture" ;;
@@ -76,48 +76,35 @@ fi
 
 cd ${BTFHUB_DIR}
 
-#
-# https://github.com/aquasecurity/btfhub/blob/main/docs/supported-distros.md
-#
-# remove BTFs for:
-# - centos7 & v4.15 kernels: unsupported eBPF features
-# - fedora 29 & 30 (from 5.3 and on) and newer: already have BTF embedded
-# - amzn2: older than 4.19
-# - ol7: older than 5.4
-#
+# sync only supported kernels
+
+ARCH_EXCLUDE=$(printf "x86_64\narm64\n" | grep -v $(uname -m) | xargs)
 
 rsync -avz \
     ${BTFHUB_ARCH_DIR}/                   \
     --exclude=.git*                       \
     --exclude=README.md                   \
-    --exclude="centos/7*"                 \
-    --exclude="fedora/29/*/5.3*"          \
-    --exclude="fedora/30/*/5.6*"          \
-    --exclude="fedora/31*"                \
-    --exclude="fedora/32*"                \
-    --exclude="fedora/33*"                \
-    --exclude="fedora/34*"                \
-    --exclude="4.15*"                     \
-    --exclude="amzn*"                     \
-    --exclude="ol/7/*/*3.10*"             \
-    --exclude="ol/7/*/*4.14*"             \
+    --exclude=${ARCH_EXCLUDE}             \
+    --exclude=*/3.*                       \
+    --exclude=*/4.*                       \
     ./archive/
 
-# cleanup unneeded architectures
-
-for not in ${NOT_ARCH[@]}; do
-    rm -r $(find ./archive/ -type d -name ${not} | xargs)
+for n in rhel centos; do
+rsync -avz \
+    ${BTFHUB_ARCH_DIR}/$n/8/*             \
+    --exclude=${ARCH_EXCLUDE}             \
+    ./archive/$n/8/
 done
 
 # generate tailored BTFs
 
 [ ! -f ./tools/btfgen.sh ] && die "could not find btfgen.sh"
-./tools/btfgen.sh -a ${ARCH} -o $TRACEE_BPF_CORE
+./tools/btfgen.sh -a ${ARCH} -o ${TRACEE_BPF_CORE}
 
 # move tailored BTFs to dist
 
 [ ! -d ${BASEDIR}/dist ] && die "could not find dist directory"
 [ ! -d ${BASEDIR}/dist/btfhub ] && mkdir ${BASEDIR}/dist/btfhub
 
-rm -rf ${BASEDIR}/dist/btfhub/*
+rm -rf ${BASEDIR}/dist/btfhub/* || true
 mv ./custom-archive/* ${BASEDIR}/dist/btfhub

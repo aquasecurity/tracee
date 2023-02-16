@@ -167,7 +167,7 @@ func TestReadArgFromBuff(t *testing.T) {
 		decoder := New(tc.input)
 		_, actual, err := ReadArgFromBuff(0, decoder, tc.params)
 		assert.Equal(t, tc.expectedError, err, tc.name)
-		assert.Equal(t, tc.expectedArg, actual, tc.name)
+		assert.Equal(t, tc.expectedArg, actual.Value, tc.name)
 
 		if tc.name == "unknown" {
 			continue

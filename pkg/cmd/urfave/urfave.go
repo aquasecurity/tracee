@@ -27,17 +27,18 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	// Output command line flags
 
-	output, printerConfig, err := flags.PrepareOutput(c.StringSlice("output"))
+	output, err := flags.PrepareOutput(c.StringSlice("output"))
 	if err != nil {
 		return runner, err
 	}
 
 	// Log command line flags
 
-	err = flags.PrepareLogger(c.String("log"), output.LogFile)
+	logCfg, err := flags.PrepareLogger(c.StringSlice("log"), output.LogFile)
 	if err != nil {
 		return runner, err
 	}
+	logger.Init(logCfg)
 
 	// OS release information
 
@@ -100,16 +101,16 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	// Container information printer flag
 
+	printerConfig := output.PrinterConfig
 	printerConfig.ContainerMode = cmd.GetContainerMode(cfg)
-	cfg.Output = &output.OutputConfig
+	cfg.Output = output.TraceeConfig
 
 	// Check kernel lockdown
 
 	lockdown, err := helpers.Lockdown()
 	if err != nil {
-		logger.Error("osinfo", "error", err)
+		logger.Debug("osinfo", "lockdown", err)
 	}
-
 	if err == nil && lockdown == helpers.CONFIDENTIALITY {
 		return runner, fmt.Errorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
 

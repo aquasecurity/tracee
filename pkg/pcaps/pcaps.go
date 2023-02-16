@@ -30,6 +30,7 @@ type Config struct {
 	CaptureProcess   bool
 	CaptureContainer bool
 	CaptureCommand   bool
+	CaptureFiltered  bool
 	CaptureLength    uint32
 }
 

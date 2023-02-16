@@ -104,19 +104,10 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 		return InvalidEventArgument(argName)
 	}
 
-	var err error
-	// syscall filters are special in that they take a string input such as:
-	// task_rename.syscall=execve,execveat
-	// but their internal filter values are numerical, as such they get a special
-	// parsing case.
-	if argName == "syscall" {
-		err = filter.parseSyscallFilter(id, operatorAndValues)
-	} else {
-		err = filter.parseFilter(id, argName, operatorAndValues, func() Filter {
-			// TODO: map argument type to an appropriate filter constructor
-			return NewStringFilter()
-		})
-	}
+	err := filter.parseFilter(id, argName, operatorAndValues, func() Filter {
+		// TODO: map argument type to an appropriate filter constructor
+		return NewStringFilter()
+	})
 	if err != nil {
 		return err
 	}
@@ -149,49 +140,6 @@ func (filter *ArgFilter) parseFilter(id events.ID, argName string, operatorAndVa
 	// store the arg filter again
 	filter.filters[id][argName] = argFilter
 
-	return nil
-}
-
-// parseSyscallFilter is a specialized parser for syscall filters.
-func (filter *ArgFilter) parseSyscallFilter(id events.ID, operatorAndValues string) error {
-	if len(operatorAndValues) < 2 {
-		return InvalidExpression(operatorAndValues)
-	}
-	valuesString := string(operatorAndValues[1:])
-	operatorString := string(operatorAndValues[0])
-
-	if operatorString == "!" {
-		if len(operatorAndValues) < 3 {
-			return InvalidExpression(operatorAndValues)
-		}
-		operatorString = operatorAndValues[0:2]
-		valuesString = operatorAndValues[2:]
-	}
-
-	syscalls := strings.Split(valuesString, ",")
-
-	if _, ok := filter.filters[id]; !ok {
-		filter.filters[id] = map[string]Filter{}
-	}
-
-	if _, ok := filter.filters[id]["syscall"]; !ok {
-		// store new event arg filter if missing
-		argFilter := NewInt32Filter()
-		filter.filters[id]["syscall"] = argFilter
-	}
-
-	syscallFilter := filter.filters[id]["syscall"]
-	for _, syscall := range syscalls {
-		id, ok := events.Definitions.GetID(syscall)
-		if !ok {
-			return InvalidValue(syscall)
-		}
-		def := events.Definitions.Get(id)
-		if !def.Syscall {
-			return InvalidValue(syscall)
-		}
-		syscallFilter.Parse(fmt.Sprintf("%s%d", operatorString, id))
-	}
 	return nil
 }
 

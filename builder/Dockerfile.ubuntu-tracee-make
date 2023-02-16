@@ -64,6 +64,15 @@ RUN export uid=$uid gid=$gid && \
     echo "set -o vi" >> /home/tracee/.bashrc && \
     ln -s /home/tracee/.bashrc /home/tracee/.profile
 
+# install extra packages (if needed)
+
+RUN export DEBIAN_FRONTEND=noninteractive && \
+    apt-get update && \
+    curl -L -o /tmp/golang.tar.xz https://go.dev/dl/go1.19.5.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf /tmp/golang.tar.xz && \
+    update-alternatives --install /usr/bin/go go /usr/local/go/bin/go 1 && \
+    update-alternatives --install /usr/bin/gofmt gofmt /usr/local/go/bin/gofmt 1
+
 USER tracee
 ENV HOME /home/tracee
 WORKDIR /tracee

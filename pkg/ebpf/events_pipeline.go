@@ -11,7 +11,6 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/events/derive"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -20,6 +19,9 @@ import (
 // Max depth of each stack trace to track
 // Matches 'MAX_STACK_DEPTH' in eBPF code
 const maxStackDepth int = 20
+
+// Matches 'NO_SYSCALL' in eBPF code
+const noSyscall int32 = -1
 
 // handleEvents is a high-level function that starts all operations related to events processing
 func (t *Tracee) handleEvents(ctx context.Context) {
@@ -142,6 +144,7 @@ func (t *Tracee) queueEvents(ctx context.Context, in <-chan *trace.Event) (chan 
 func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) (<-chan *trace.Event, <-chan error) {
 	out := make(chan *trace.Event, 10000)
 	errc := make(chan error, 1)
+	sysCompatTranslation := events.Definitions.IDs32ToIDs()
 	go func() {
 		defer close(out)
 		defer close(errc)
@@ -159,10 +162,9 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				continue
 			}
 
-			args := make([]trace.Argument, 0, ctx.Argnum)
-
+			args := make([]trace.Argument, len(eventDefinition.Params))
 			for i := 0; i < int(ctx.Argnum); i++ {
-				argMeta, argVal, err := bufferdecoder.ReadArgFromBuff(
+				idx, arg, err := bufferdecoder.ReadArgFromBuff(
 					eventId,
 					ebpfMsgDecoder,
 					eventDefinition.Params,
@@ -171,8 +173,16 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 					t.handleError(fmt.Errorf("failed to read argument %d of event %s: %v", i, eventDefinition.Name, err))
 					continue
 				}
-
-				args = append(args, trace.Argument{ArgMeta: argMeta, Value: argVal})
+				if args[idx].Value != nil {
+					t.handleError(fmt.Errorf("read more than one instance of argument %s of event %s. Saved value: %v. New value: %v", arg.Name, eventDefinition.Name, args[idx].Value, arg.Value))
+				}
+				args[idx] = arg
+			}
+			// Fill missing arguments metadata
+			for i := 0; i < len(eventDefinition.Params); i++ {
+				if args[i].Value == nil {
+					args[i].ArgMeta = eventDefinition.Params[i]
+				}
 			}
 
 			// Add stack trace if needed
@@ -195,6 +205,16 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 			}
 
 			containerInfo := t.containers.GetCgroupInfo(ctx.CgroupID).Container
+
+			flags := parseContextFlags(ctx.Flags)
+			syscall := ""
+			if ctx.Syscall != noSyscall {
+				var err error
+				syscall, err = parseSyscallID(int(ctx.Syscall), flags.IsCompat, sysCompatTranslation)
+				if err != nil {
+					logger.Debug("Originated syscall parsing", "error", err)
+				}
+			}
 
 			evt := trace.Event{
 				Timestamp:           int(ctx.Ts),
@@ -226,7 +246,8 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				ReturnValue:         int(ctx.Retval),
 				Args:                args,
 				StackAddresses:      StackAddresses,
-				ContextFlags:        parseContextFlags(ctx.Flags),
+				ContextFlags:        flags,
+				Syscall:             syscall,
 			}
 
 			// base events for derived ones should be filtered in later stage
@@ -318,9 +339,35 @@ func (t *Tracee) shouldProcessEvent(event *trace.Event) bool {
 func parseContextFlags(flags uint32) trace.ContextFlags {
 	const (
 		ContainerStartFlag = 1 << iota
+		IsCompatFlag
 	)
 	return trace.ContextFlags{
 		ContainerStarted: (flags & ContainerStartFlag) != 0,
+		IsCompat:         (flags & IsCompatFlag) != 0,
+	}
+}
+
+// Get the syscall name from its ID, taking into account architecture and 32bit/64bit modes
+func parseSyscallID(syscallID int, isCompat bool, compatTranslationMap map[events.ID]events.ID) (string, error) {
+	if !isCompat {
+		def, ok := events.Definitions.GetSafe(events.ID(syscallID))
+		if ok {
+			return def.Name, nil
+		} else {
+			return "", fmt.Errorf("no syscall event with syscall id %d", syscallID)
+		}
+	} else {
+		id, ok := compatTranslationMap[events.ID(syscallID)]
+		if ok {
+			def, ok := events.Definitions.GetSafe(id)
+			if ok {
+				return def.Name, nil
+			} else { // Should never happen, as the translation map should be initialized from events.Definition
+				return "", fmt.Errorf("no syscall event with compat syscall id %d, translated to ID %d", syscallID, id)
+			}
+		} else {
+			return "", fmt.Errorf("no syscall event with compat syscall id %d", syscallID)
+		}
 	}
 }
 
@@ -372,7 +419,9 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (<-c
 }
 
 // deriveEvents is the derivation pipeline stage
-func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-chan *trace.Event, <-chan error) {
+func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
+	<-chan *trace.Event, <-chan error,
+) {
 	out := make(chan *trace.Event)
 	errc := make(chan error, 1)
 
@@ -383,26 +432,23 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 		for {
 			select {
 			case event := <-in:
-
-				// Get a copy of our event before sending it down the
-				// pipeline.
-				// This is needed because later modification of the event
-				// (in particular of the matched scopes) can affect
-				// the derivation and later pipeline logic acting on the derived
-				// event.
+				// Get a copy of our event before sending it down the pipeline.
+				// This is needed because later modification of the event (in
+				// particular of the matched scopes) can affect the derivation
+				// and later pipeline logic acting on the derived event.
 				eventCopy := *event
 				out <- event
 
 				// Derive event before parse its arguments
-				derivatives, errors := derive.DeriveEvent(eventCopy, t.eventDerivations)
+				derivatives, errors := t.eventDerivations.DeriveEvent(eventCopy)
 
 				for _, err := range errors {
 					t.handleError(err)
 				}
 
-				for _, derivative := range derivatives {
-					// Skip events that don't work well with filtering due
-					// to missing types being handled and similar reasons.
+				for i, derivative := range derivatives {
+					// Skip events that don't work well with filtering due to
+					// missing types being handled and similar reasons.
 					// https://github.com/aquasecurity/tracee/issues/2486
 					switch events.ID(derivative.EventID) {
 					case events.SymbolsLoaded:
@@ -415,9 +461,14 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 							continue
 						}
 					}
-					out <- &derivative
-				}
 
+					// Passing "derivative" variable here will make the ptr
+					// address always be the same as the last item. This makes
+					// the printer to print 2 or 3 times the last event, instead
+					// of printing all derived events (when there are more than
+					// one).
+					out <- &derivatives[i]
+				}
 			case <-ctx.Done():
 				return
 			}

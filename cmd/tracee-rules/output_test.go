@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -187,7 +187,7 @@ HostName: foobar.local
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-				got, err := ioutil.ReadAll(request.Body)
+				got, err := io.ReadAll(request.Body)
 				require.NoError(t, err)
 				checkOutput(t, tc.name, NewSyncBuffer(got), tc.expectedOutput)
 				assert.Equal(t, tc.contentType, request.Header.Get("content-type"), tc.name)
@@ -248,6 +248,7 @@ func TestOutputTemplates(t *testing.T) {
 					UserID:       0,
 					ContainerID:  "abbc123",
 					EventName:    "execve",
+					Syscall:      "execve",
 					ContextFlags: trace.ContextFlags{ContainerStarted: true},
 				}.ToProtocol(),
 				SigMetadata: detect.SignatureMetadata{
@@ -268,7 +269,7 @@ func TestOutputTemplates(t *testing.T) {
 					"a":123,"b":"c","d":true,"f":{"123":"456","foo":"bar"}
 				},
 				"Context":{
-					"timestamp":1321321,"processorId":0,"processId":21312,"threadId":0,"threadStartTime":0,"parentProcessId":0,"hostProcessId":0,"hostThreadId":0,"matchedScopes":0,"hostParentProcessId":0,"userId":0,"mountNamespace":0,"pidNamespace":0,"processName":"","hostName":"","cgroupId":0,"containerId":"abbc123","containerImage":"", "containerName":"","podName":"","podNamespace":"","podUID":"","podSandbox":false,"eventId":"0","eventName":"execve","argsNum":0,"returnValue":0,"stackAddresses":null,"args":null,"contextFlags":{"containerStarted":true}
+					"timestamp":1321321,"processorId":0,"processId":21312,"threadId":0,"threadStartTime":0,"parentProcessId":0,"hostProcessId":0,"hostThreadId":0,"matchedScopes":0,"hostParentProcessId":0,"userId":0,"mountNamespace":0,"pidNamespace":0,"processName":"","hostName":"","cgroupId":0,"containerId":"abbc123","containerImage":"", "containerName":"","podName":"","podNamespace":"","podUID":"","podSandbox":false,"eventId":"0","eventName":"execve","argsNum":0,"returnValue":0,"syscall":"execve","stackAddresses":null,"args":null,"contextFlags":{"containerStarted":true,"isCompat":false}
 				},
 				"SigMetadata":{
 					"ID":"TRC-1","EventName": "stdio","Version":"0.1.0","Name":"Standard Input/Output Over Socket","Description":"Redirection of process's standard input/output to socket","Tags":["linux","container"],"Properties":{"MITRE ATT\u0026CK":"Persistence: Server Software Component","Severity":3}
