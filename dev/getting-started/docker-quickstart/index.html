@@ -2887,14 +2887,14 @@
 <p>This guide is focused on running tracee in a docker container on your local machine.</p>
 <p>Before you proceed, make sure you follow the [prerequiresites].</p>
 <ol>
-<li>Running <strong>tracee:v0.11.0</strong></li>
+<li>Running <strong>tracee:v0.11.1</strong></li>
 </ol>
 <div class="highlight"><pre><span></span><code>docker run \
      --name tracee --rm -it \
      --pid=host --cgroupns=host --privileged \
      -v /etc/os-release:/etc/os-release-host:ro \
      -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-     aquasec/tracee:0.11.0
+     aquasec/tracee:0.11.1
 </code></pre></div>
 <ol>
 <li>Running <strong>tracee:full</strong></li>

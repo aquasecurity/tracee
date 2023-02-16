@@ -3502,6 +3502,7 @@ as well as information about the probe itself.</p>
 <li><code>perf_symbol</code>:<code>const char*</code>[K] - name/path of the symbol the BPF program is being attached to.</li>
 <li><code>perf_addr</code>:<code>u64</code>[K] - address/offset of the symbol the BPF program is being attached to.</li>
 <li><code>prog_write_user</code>:<code>int</code>[K] - whether the BPF program uses the bpf_probe_write_user() helper function.</li>
+<li><code>prog_override_return</code>:<code>int</code>[K] - whether the BPF program uses the bpf_override_return() helper function.</li>
 <li><code>perf_type</code>:<code>int</code>[K] - the probe's type.</li>
 </ul>
 <h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
@@ -3524,12 +3525,12 @@ as well as information about the probe itself.</p>
 <h4 id="type_3">Type<a class="headerlink" href="#type_3" title="Permanent link">&para;</a></h4>
 <p>kprobe</p>
 <h4 id="purpose_3">Purpose<a class="headerlink" href="#purpose_3" title="Permanent link">&para;</a></h4>
-<p>check whether the BPF program uses the bpf_probe_write_user() helper function</p>
+<p>check whether the BPF program uses helper functions of interest</p>
 <h3 id="check_map_func_compatibility">check_map_func_compatibility<a class="headerlink" href="#check_map_func_compatibility" title="Permanent link">&para;</a></h3>
 <h4 id="type_4">Type<a class="headerlink" href="#type_4" title="Permanent link">&para;</a></h4>
 <p>kprobe</p>
 <h4 id="purpose_4">Purpose<a class="headerlink" href="#purpose_4" title="Permanent link">&para;</a></h4>
-<p>check whether the BPF program uses the bpf_probe_write_user() helper function</p>
+<p>check whether the BPF program uses helper functions of interest</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
 <p>./tracee-ebpf -t e=bpf_attach</p>
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
