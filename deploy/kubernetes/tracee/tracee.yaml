@@ -20,6 +20,7 @@ spec:
       - args:
         - --filter set=signatures
         - --output json
+        - --containers
         env:
         - name: LIBBPFGO_OSRELEASE_FILE
           value: /etc/os-release-host
@@ -34,6 +35,18 @@ spec:
         - mountPath: /etc/os-release-host
           name: etc-os-release
           readOnly: true
+        - mountPath: /var/run/docker.sock
+          name: docker
+          readOnly: true
+        - mountPath: /var/run/containerd/containerd.sock
+          name: containerd
+          readOnly: true
+        - mountPath: /var/run/crio/crio.sock
+          name: crio
+          readOnly: true
+        - mountPath: /var/run/podman/podman.sock
+          name: podman
+          readOnly: true
       tolerations:
       - effect: NoSchedule
         operator: Exists
@@ -46,3 +59,15 @@ spec:
       - hostPath:
           path: /etc/os-release
         name: etc-os-release
+      - hostPath:
+          path: /var/run/docker.sock
+        name: docker
+      - hostPath:
+          path: /var/run/containerd/containerd.sock
+        name: containerd
+      - hostPath:
+          path: /var/run/crio/crio.sock
+        name: crio
+      - hostPath:
+          path: /var/run/podman/podman.sock
+        name: podman

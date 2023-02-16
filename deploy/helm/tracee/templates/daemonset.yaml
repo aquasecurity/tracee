@@ -33,6 +33,7 @@ spec:
           args:
             - --filter set=signatures
             - --output json
+            - --containers
           {{- if .Values.postee.enabled }}
             - --output webhook:{{ .Values.postee.webhook }}
           {{- end }}
@@ -46,6 +47,18 @@ spec:
               mountPath: /tmp/tracee
             - name: etc-os-release
               mountPath: /etc/os-release-host
+              readOnly: true
+            - name: docker
+              mountPath: /var/run/docker.sock
+              readOnly: true
+            - name: containerd
+              mountPath: /var/run/containerd/containerd.sock
+              readOnly: true
+            - name: crio
+              mountPath: /var/run/crio/crio.sock
+              readOnly: true
+            - name: podman
+              mountPath: /var/run/podman/podman.sock
               readOnly: true
             {{- if .Values.signatures.config }}
             - name: tracee-config
@@ -74,6 +87,18 @@ spec:
         - name: etc-os-release
           hostPath:
             path: /etc/os-release
+      - name: docker
+        hostPath:
+          path: /var/run/docker.sock
+      - name: containerd
+        hostPath:
+          path: /var/run/containerd/containerd.sock
+      - name: crio
+        hostPath:
+          path: /var/run/crio/crio.sock
+      - name: podman
+        hostPath:
+          path: /var/run/podman/podman.sock
         {{- if .Values.signatures.config }}
         - name: tracee-config
           configMap:
