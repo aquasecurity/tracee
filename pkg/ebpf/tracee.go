@@ -370,8 +370,30 @@ func (t *Tracee) Init() error {
 		}
 	}
 
-	// Canceling events missing kernel symbols
-	t.validateKallsymsDependencies()
+	t.validateKallsymsDependencies() // Canceling events missing kernel symbols
+
+	// Initialize buckets cache
+
+	if t.config.maxPidsCache == 0 {
+		t.config.maxPidsCache = 5 // default value for config.maxPidsCache
+	}
+	t.pidsInMntns.Init(t.config.maxPidsCache)
+
+	var mntNSProcs map[int]int
+	err = capabilities.GetInstance().Requested(func() error {
+		mntNSProcs, err = proc.GetMountNSFirstProcesses()
+		return err
+	},
+		cap.DAC_READ_SEARCH,
+		cap.SYS_PTRACE,
+	)
+	if err == nil {
+		for mountNS, pid := range mntNSProcs {
+			t.pidsInMntns.AddBucketItem(uint32(mountNS), uint32(pid))
+		}
+	} else {
+		logger.Debug("caps Requested", "error", err)
+	}
 
 	// Initialize cgroups filesystems
 
@@ -416,28 +438,6 @@ func (t *Tracee) Init() error {
 	if err != nil {
 		t.Close()
 		return err
-	}
-
-	// Initialize buckets cache
-	if t.config.maxPidsCache == 0 {
-		t.config.maxPidsCache = 5 // default value for config.maxPidsCache
-	}
-	t.pidsInMntns.Init(t.config.maxPidsCache)
-
-	var mntNSProcs map[int]int
-	err = capabilities.GetInstance().Requested(func() error {
-		mntNSProcs, err = proc.GetMountNSFirstProcesses()
-		return err
-	},
-		cap.DAC_READ_SEARCH,
-		cap.SYS_PTRACE,
-	)
-	if err == nil {
-		for mountNS, pid := range mntNSProcs {
-			t.pidsInMntns.AddBucketItem(uint32(mountNS), uint32(pid))
-		}
-	} else {
-		logger.Debug("caps Requested", "error", err)
 	}
 
 	// Initialize capture directory
