@@ -80,9 +80,9 @@ func TestPathResolver_ResolveAbsolutePath(t *testing.T) {
 					}
 				}
 
-				pres := InitPathResolver(&bucket)
+				pres := InitContainerPathResolver(&bucket)
 				pres.fs = mfs
-				_, err := pres.ResolveAbsolutePath(testFilePath, testMntNS)
+				_, err := pres.GetHostAbsPath(testFilePath, testMntNS)
 				if testCase.ExpectedError {
 					assert.Error(t, err)
 				} else {
@@ -137,9 +137,9 @@ func TestPathResolver_ResolveAbsolutePath(t *testing.T) {
 					mfs[fmt.Sprintf("proc/%d/root/%s", testPID, testCase.path)] = &fstest.MapFile{}
 				}
 
-				pres := InitPathResolver(&bucket)
+				pres := InitContainerPathResolver(&bucket)
 				pres.fs = mfs
-				_, err := pres.ResolveAbsolutePath(testCase.path, testMntNS)
+				_, err := pres.GetHostAbsPath(testCase.path, testMntNS)
 				if testCase.expectedError {
 					assert.Error(t, err)
 				} else {
