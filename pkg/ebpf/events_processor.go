@@ -270,7 +270,13 @@ func (t *Tracee) processCgroupMkdir(event *trace.Event) error {
 		// If cgroupId is from a regular cgroup directory, and not the
 		// container base directory (from known runtimes), it should be
 		// removed from the containers bpf map.
-		err = t.containers.RemoveFromBpfMap(t.bpfModule, cgroupId, hId)
+		if err := t.containers.RemoveFromBpfMap(t.bpfModule, cgroupId, hId); err != nil {
+			// If the cgroupId was not found in bpf map, this could mean that
+			// it is not a container cgroup and, as a systemd cgroup, could have been
+			// created and removed very quickly.
+			// In this case, we don't want to return an error.
+			logger.Debug("failed to remove entry from containers bpf map", "error", err)
+		}
 	}
 	return err
 }
