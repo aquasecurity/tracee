@@ -156,41 +156,51 @@ type eventConfig struct {
 
 // Tracee traces system calls and system events using eBPF
 type Tracee struct {
-	config            Config
-	probes            probes.Probes
-	events            map[events.ID]eventConfig
-	bpfModule         *bpf.Module
-	eventsPerfMap     *bpf.PerfBuffer
-	fileWrPerfMap     *bpf.PerfBuffer
-	netCapPerfMap     *bpf.PerfBuffer
-	bpfLogsPerfMap    *bpf.PerfBuffer
-	eventsChannel     chan []byte
-	fileWrChannel     chan []byte
-	netCapChannel     chan []byte
-	bpfLogsChannel    chan []byte
-	lostEvChannel     chan uint64
-	lostWrChannel     chan uint64
-	lostNetCapChannel chan uint64
-	lostBPFLogChannel chan uint64
-	bootTime          uint64
-	startTime         uint64
-	stats             metrics.Stats
-	capturedFiles     map[string]int64
-	fileHashes        *lru.Cache
-	writtenFiles      map[string]string
-	pidsInMntns       bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
+	config    Config
+	bootTime  uint64
+	startTime uint64
+	running   bool
+	outDir    *os.File // use utils.XXX functions to access this file
+	stats     metrics.Stats
+	// Events
+	events           map[events.ID]eventConfig
+	eventsSorter     *sorting.EventsChronologicalSorter
+	eventProcessor   map[events.ID][]func(evt *trace.Event) error
+	eventDerivations derive.Table
+	// Artifacts
+	fileHashes     *lru.Cache
+	capturedFiles  map[string]int64
+	writtenFiles   map[string]string
+	netCapturePcap *pcaps.Pcaps
+	// Internal Data
+	pidsInMntns   bucketscache.BucketsCache // first n PIDs in each mountns
+	kernelSymbols helpers.KernelSymbolTable
+	// eBPF
+	bpfModule *bpf.Module
+	probes    probes.Probes
+	// BPF Maps
 	StackAddressesMap *bpf.BPFMap
 	FDArgPathMap      *bpf.BPFMap
-	netCapturePcap    *pcaps.Pcaps
-	containers        *containers.Containers
-	eventsSorter      *sorting.EventsChronologicalSorter
-	eventProcessor    map[events.ID][]func(evt *trace.Event) error
-	eventDerivations  derive.Table
-	kernelSymbols     helpers.KernelSymbolTable
-	triggerContexts   trigger.Context
-	running           bool
-	outDir            *os.File // All file operations to output dir should be through the utils package file operations (like utils.OpenAt) using this directory file.
-	cgroups           *cgroup.Cgroups
+	// Perf Buffers
+	eventsPerfMap  *bpf.PerfBuffer // perf buffer for events
+	fileWrPerfMap  *bpf.PerfBuffer // perf buffer for file writes
+	netCapPerfMap  *bpf.PerfBuffer // perf buffer for network captures
+	bpfLogsPerfMap *bpf.PerfBuffer // perf buffer for bpf logs
+	// Events Channels
+	eventsChannel  chan []byte // channel for events
+	fileWrChannel  chan []byte // channel for file writes
+	netCapChannel  chan []byte // channel for network captures
+	bpfLogsChannel chan []byte // channel for bpf logs
+	// Lost Events Channels
+	lostEvChannel     chan uint64 // channel for lost events
+	lostWrChannel     chan uint64 // channel for lost file writes
+	lostNetCapChannel chan uint64 // channel for lost network captures
+	lostBPFLogChannel chan uint64 // channel for lost bpf logs
+	// Containers
+	cgroups    *cgroup.Cgroups
+	containers *containers.Containers
+	// Specific Events Needs
+	triggerContexts trigger.Context
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
