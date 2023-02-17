@@ -573,9 +573,11 @@ func (t *Tracee) initDerivationTable() error {
 	soLoader := sharedobjs.InitContainersSymbolsLoader(&pathResolver, 1024)
 
 	symbolsLoadedFilters := map[string]filters.Filter{}
+
 	for filterScope := range t.config.FilterScopes.Map() {
 		maps.Copy(symbolsLoadedFilters, filterScope.ArgFilter.GetEventFilters(events.SymbolsLoaded))
 	}
+
 	loadWatchedSymbols := []string{}
 	loadWhitelistedLibs := []string{}
 
@@ -591,18 +593,18 @@ func (t *Tracee) initDerivationTable() error {
 	}
 
 	symbolsCollisionFilters := map[string]filters.Filter{}
+
 	for filterScope := range t.config.FilterScopes.Map() {
 		maps.Copy(symbolsCollisionFilters, filterScope.ArgFilter.GetEventFilters(events.SymbolsCollision))
 	}
+
 	collisionAllowListSymbols := []string{}
 	collisionDenyListSymbols := []string{}
 
-	if symbolsCollisionFilters != nil {
-		collisionSymbolsFilter, ok := symbolsCollisionFilters["symbols"].(*filters.StringFilter)
-		if collisionSymbolsFilter != nil && ok {
-			collisionAllowListSymbols = collisionSymbolsFilter.Equal()
-			collisionDenyListSymbols = collisionSymbolsFilter.NotEqual()
-		}
+	collisionSymbolsFilter, ok := symbolsCollisionFilters["symbols"].(*filters.StringFilter)
+	if collisionSymbolsFilter != nil && ok {
+		collisionAllowListSymbols = collisionSymbolsFilter.Equal()
+		collisionDenyListSymbols = collisionSymbolsFilter.NotEqual()
 	}
 
 	soSymbolsCollisionsDeriveFn := derive.SymbolsCollision(
