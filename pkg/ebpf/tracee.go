@@ -579,7 +579,7 @@ func (t *Tracee) initDerivationTable() error {
 		return fmt.Errorf("nil tracee containers")
 	}
 
-	pathResolver := containers.InitPathResolver(&t.pidsInMntns)
+	pathResolver := containers.InitContainerPathResolver(&t.pidsInMntns)
 	soLoader := sharedobjs.InitContainersSymbolsLoader(&pathResolver, 1024)
 
 	symbolsLoadedFilters := map[string]filters.Filter{}

@@ -9,10 +9,10 @@ import (
 // This object operation requires the CAP_DAC_OVERRIDE to access files across the system.
 type ContainersSymbolsLoader struct {
 	hostLoader   DynamicSymbolsLoader
-	pathResolver *containers.PathResolver
+	pathResolver *containers.ContainerPathResolver
 }
 
-func InitContainersSymbolsLoader(pathResolver *containers.PathResolver, cacheSize int) *ContainersSymbolsLoader {
+func InitContainersSymbolsLoader(pathResolver *containers.ContainerPathResolver, cacheSize int) *ContainersSymbolsLoader {
 	return &ContainersSymbolsLoader{
 		hostLoader:   InitHostSymbolsLoader(cacheSize),
 		pathResolver: pathResolver,
@@ -21,7 +21,7 @@ func InitContainersSymbolsLoader(pathResolver *containers.PathResolver, cacheSiz
 
 func (cLoader *ContainersSymbolsLoader) GetDynamicSymbols(soInfo ObjInfo) (map[string]bool, error) {
 	var err error
-	soInfo.Path, err = cLoader.pathResolver.ResolveAbsolutePath(soInfo.Path, soInfo.MountNS)
+	soInfo.Path, err = cLoader.pathResolver.GetHostAbsPath(soInfo.Path, soInfo.MountNS)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +30,7 @@ func (cLoader *ContainersSymbolsLoader) GetDynamicSymbols(soInfo ObjInfo) (map[s
 
 func (cLoader *ContainersSymbolsLoader) GetExportedSymbols(soInfo ObjInfo) (map[string]bool, error) {
 	var err error
-	soInfo.Path, err = cLoader.pathResolver.ResolveAbsolutePath(soInfo.Path, soInfo.MountNS)
+	soInfo.Path, err = cLoader.pathResolver.GetHostAbsPath(soInfo.Path, soInfo.MountNS)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func (cLoader *ContainersSymbolsLoader) GetExportedSymbols(soInfo ObjInfo) (map[
 
 func (cLoader *ContainersSymbolsLoader) GetImportedSymbols(soInfo ObjInfo) (map[string]bool, error) {
 	var err error
-	soInfo.Path, err = cLoader.pathResolver.ResolveAbsolutePath(soInfo.Path, soInfo.MountNS)
+	soInfo.Path, err = cLoader.pathResolver.GetHostAbsPath(soInfo.Path, soInfo.MountNS)
 	if err != nil {
 		return nil, err
 	}
