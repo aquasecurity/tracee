@@ -19,7 +19,7 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/urfave/cli/v2 v2.3.0
 	go.uber.org/zap v1.23.0
-	golang.org/x/sys v0.4.0
+	golang.org/x/sys v0.5.0
 	google.golang.org/genproto v0.0.0-20220502173005-c8bf987b8c21
 	google.golang.org/grpc v1.51.0
 	google.golang.org/protobuf v1.28.1
@@ -93,9 +93,9 @@ require (
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.4.0 // indirect
 	golang.org/x/exp v0.0.0-20221002003631-540bb7301a08
-	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	kernel.org/pub/linux/libs/security/libcap/psx v1.2.64 // indirect
 )
