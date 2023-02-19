@@ -212,6 +212,11 @@ type HookedSymbolData struct {
 	ModuleOwner string
 }
 
+type HiddenKernelModule struct {
+	Name    string `json:"name"`
+	Address string `json:"address"`
+}
+
 // MemProtAlert is an enum of possible messages that can be sent by an event to pass some extra information about the event.
 type MemProtAlert uint32
 
