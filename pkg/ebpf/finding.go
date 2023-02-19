@@ -22,13 +22,15 @@ func FindingToEvent(f detect.Finding) (*trace.Event, error) {
 		return nil, fmt.Errorf("error finding event not found: %s", f.SigMetadata.EventName)
 	}
 
-	return newEvent(int(eventID), f.SigMetadata.EventName, s), nil
+	return newEvent(int(eventID), f.SigMetadata, s), nil
 }
 
-func newEvent(id int, name string, s trace.Event) *trace.Event {
+func newEvent(id int, sigMetadata detect.SignatureMetadata, s trace.Event) *trace.Event {
+	metadata := getMetadataFromSignatureMetadata(sigMetadata)
+
 	return &trace.Event{
 		EventID:             id,
-		EventName:           name,
+		EventName:           sigMetadata.Name,
 		Timestamp:           s.Timestamp,
 		ThreadStartTime:     s.ThreadStartTime,
 		ProcessorID:         s.ProcessorID,
@@ -56,5 +58,24 @@ func newEvent(id int, name string, s trace.Event) *trace.Event {
 		ContextFlags:        s.ContextFlags,
 		MatchedScopes:       s.MatchedScopes,
 		Args:                s.Args,
+		Metadata:            metadata,
 	}
+}
+
+func getMetadataFromSignatureMetadata(sigMetadata detect.SignatureMetadata) trace.Metadata {
+	metadata := make(trace.Metadata)
+
+	metadata["SignatureID"] = trace.Value(sigMetadata.ID)
+	metadata["SignatureName"] = trace.Value(sigMetadata.Name)
+	metadata["SignatureVersion"] = trace.Value(sigMetadata.Version)
+	metadata["SignatureDescription"] = trace.Value(sigMetadata.Description)
+	metadata["SignatureProperties"] = trace.Value(sigMetadata.Properties)
+
+	tags := make([]trace.Value, 0, len(sigMetadata.Tags))
+	for _, tag := range sigMetadata.Tags {
+		tags = append(tags, trace.Value(tag))
+	}
+	metadata["SignatureTags"] = tags
+
+	return metadata
 }

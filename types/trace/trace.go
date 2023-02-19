@@ -44,7 +44,12 @@ type Event struct {
 	StackAddresses      []uint64     `json:"stackAddresses"`
 	ContextFlags        ContextFlags `json:"contextFlags"`
 	Args                []Argument   `json:"args"` //Arguments are ordered according their appearance in the original event
+	Metadata            Metadata     `json:"metadata,omitempty"`
 }
+
+type Value interface{}
+
+type Metadata map[string]Value
 
 // ContextFlags are flags representing event context
 type ContextFlags struct {
@@ -93,7 +98,7 @@ func (e Event) ToProtocol() protocol.Event {
 // Argument holds the information for one argument
 type Argument struct {
 	ArgMeta
-	Value interface{} `json:"value"`
+	Value Value `json:"value"`
 }
 
 // ArgMeta describes an argument
