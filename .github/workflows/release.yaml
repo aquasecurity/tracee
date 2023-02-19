@@ -12,6 +12,9 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -19,7 +22,11 @@ jobs:
           submodules: true
       - name: Install Dependencies
         uses: ./.github/actions/build-dependencies
-      - name: Login to docker.io and github
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@main
+        with:
+          cosign-release: 'v1.13.1'
+      - name: authenticate
         run: |
           gh auth login --with-token <<<'${{ secrets.GITHUB_TOKEN }}'
           docker login docker.io --username ${{ secrets.DOCKERHUB_USER }} --password-stdin <<<'${{ secrets.DOCKERHUB_TOKEN }}'
