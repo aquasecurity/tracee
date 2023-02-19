@@ -18,9 +18,9 @@ type ContainerPathResolver struct {
 	mountNSPIDsCache *bucketscache.BucketsCache
 }
 
-// InitContainerPathResolver create a resolver for paths from within containers.
-func InitContainerPathResolver(mountNSPIDsCache *bucketscache.BucketsCache) ContainerPathResolver {
-	return ContainerPathResolver{
+// InitContainerPathResolver creates a resolver for paths from within containers.
+func InitContainerPathResolver(mountNSPIDsCache *bucketscache.BucketsCache) *ContainerPathResolver {
+	return &ContainerPathResolver{
 		fs:               os.DirFS("/"),
 		mountNSPIDsCache: mountNSPIDsCache,
 	}
@@ -31,7 +31,7 @@ func InitContainerPathResolver(mountNSPIDsCache *bucketscache.BucketsCache) Cont
 func (cPathRes *ContainerPathResolver) GetHostAbsPath(mountNSAbsolutePath string, mountNS int) (
 	string, error,
 ) {
-	// path should be absolute, except for e.g memfd_create files
+	// path should be absolute, except, for example, memfd_create files
 	if mountNSAbsolutePath == "" || mountNSAbsolutePath[0] != '/' {
 		return "", fmt.Errorf("file path is not absolute in its container mount point")
 	}

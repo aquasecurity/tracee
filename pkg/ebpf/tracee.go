@@ -42,7 +42,6 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 
 	lru "github.com/hashicorp/golang-lru"
-	"golang.org/x/exp/maps"
 	"golang.org/x/sys/unix"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
@@ -197,8 +196,10 @@ type Tracee struct {
 	lostNetCapChannel chan uint64 // channel for lost network captures
 	lostBPFLogChannel chan uint64 // channel for lost bpf logs
 	// Containers
-	cgroups    *cgroup.Cgroups
-	containers *containers.Containers
+	cgroups           *cgroup.Cgroups
+	containers        *containers.Containers
+	contPathResolver  *containers.ContainerPathResolver
+	contSymbolsLoader *sharedobjs.ContainersSymbolsLoader
 	// Specific Events Needs
 	triggerContexts trigger.Context
 }
@@ -427,6 +428,9 @@ func (t *Tracee) Init() error {
 		return fmt.Errorf("error initializing containers: %w", err)
 	}
 
+	t.contPathResolver = containers.InitContainerPathResolver(&t.pidsInMntns)
+	t.contSymbolsLoader = sharedobjs.InitContainersSymbolsLoader(t.contPathResolver, 1024)
+
 	// Initialize event derivation logic
 
 	err = t.initDerivationTable()
@@ -574,54 +578,6 @@ func (t *Tracee) initTailCall(mapName string, mapIndexes []uint32, progName stri
 // we declare for each Event (represented through it's ID) to which other
 // events it can be derived and the corresponding function to derive into that Event.
 func (t *Tracee) initDerivationTable() error {
-	// sanity check for containers dependency
-	if t.containers == nil {
-		return fmt.Errorf("nil tracee containers")
-	}
-
-	pathResolver := containers.InitContainerPathResolver(&t.pidsInMntns)
-	soLoader := sharedobjs.InitContainersSymbolsLoader(&pathResolver, 1024)
-
-	symbolsLoadedFilters := map[string]filters.Filter{}
-
-	for filterScope := range t.config.FilterScopes.Map() {
-		maps.Copy(symbolsLoadedFilters, filterScope.ArgFilter.GetEventFilters(events.SymbolsLoaded))
-	}
-
-	loadWatchedSymbols := []string{}
-	loadWhitelistedLibs := []string{}
-
-	if len(symbolsLoadedFilters) > 0 {
-		watchedSymbolsFilter, ok := symbolsLoadedFilters["symbols"].(*filters.StringFilter)
-		if watchedSymbolsFilter != nil && ok {
-			loadWatchedSymbols = watchedSymbolsFilter.Equal()
-		}
-		whitelistedLibsFilter, ok := symbolsLoadedFilters["library_path"].(*filters.StringFilter)
-		if whitelistedLibsFilter != nil && ok {
-			loadWhitelistedLibs = whitelistedLibsFilter.NotEqual()
-		}
-	}
-
-	symbolsCollisionFilters := map[string]filters.Filter{}
-
-	for filterScope := range t.config.FilterScopes.Map() {
-		maps.Copy(symbolsCollisionFilters, filterScope.ArgFilter.GetEventFilters(events.SymbolsCollision))
-	}
-
-	collisionAllowListSymbols := []string{}
-	collisionDenyListSymbols := []string{}
-
-	collisionSymbolsFilter, ok := symbolsCollisionFilters["symbols"].(*filters.StringFilter)
-	if collisionSymbolsFilter != nil && ok {
-		collisionAllowListSymbols = collisionSymbolsFilter.Equal()
-		collisionDenyListSymbols = collisionSymbolsFilter.NotEqual()
-	}
-
-	soSymbolsCollisionsDeriveFn := derive.SymbolsCollision(
-		soLoader,
-		collisionAllowListSymbols,
-		collisionDenyListSymbols,
-	)
 
 	t.eventDerivations = derive.Table{
 		events.CgroupMkdir: {
@@ -652,20 +608,25 @@ func (t *Tracee) initDerivationTable() error {
 			events.SymbolsLoaded: {
 				Enabled: func() bool { return t.events[events.SymbolsLoaded].submit > 0 },
 				DeriveFunction: derive.SymbolsLoaded(
-					soLoader,
-					loadWatchedSymbols,
-					loadWhitelistedLibs,
+					t.contSymbolsLoader,
+					t.config.FilterScopes,
 				),
 			},
 			events.SymbolsCollision: {
-				Enabled:        func() bool { return t.events[events.SymbolsCollision].submit > 0 },
-				DeriveFunction: soSymbolsCollisionsDeriveFn,
+				Enabled: func() bool { return t.events[events.SymbolsCollision].submit > 0 },
+				DeriveFunction: derive.SymbolsCollision(
+					t.contSymbolsLoader,
+					t.config.FilterScopes,
+				),
 			},
 		},
 		events.SchedProcessExec: {
 			events.SymbolsCollision: {
-				Enabled:        func() bool { return t.events[events.SymbolsCollision].submit > 0 },
-				DeriveFunction: soSymbolsCollisionsDeriveFn,
+				Enabled: func() bool { return t.events[events.SymbolsCollision].submit > 0 },
+				DeriveFunction: derive.SymbolsCollision(
+					t.contSymbolsLoader,
+					t.config.FilterScopes,
+				),
 			},
 		},
 		//
