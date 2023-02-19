@@ -6,13 +6,42 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/filters"
+	"github.com/aquasecurity/tracee/pkg/filterscope"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 	"github.com/aquasecurity/tracee/types/trace"
+	"golang.org/x/exp/maps"
 )
 
-func SymbolsLoaded(soLoader sharedobjs.DynamicSymbolsLoader, watchedSymbols []string, whitelistedLibsPrefixes []string) DeriveFunction {
-	gen := initSymbolsLoadedEventGenerator(soLoader, watchedSymbols, whitelistedLibsPrefixes)
+func SymbolsLoaded(
+	soLoader sharedobjs.DynamicSymbolsLoader,
+	filterScopes *filterscope.FilterScopes,
+) DeriveFunction {
+
+	symbolsLoadedFilters := map[string]filters.Filter{}
+
+	for filterScope := range filterScopes.Map() {
+		f := filterScope.ArgFilter.GetEventFilters(events.SymbolsLoaded)
+		maps.Copy(symbolsLoadedFilters, f)
+	}
+
+	loadWatchedSymbols := []string{}
+	loadWhitelistedLibs := []string{}
+
+	if len(symbolsLoadedFilters) > 0 {
+		watchedSymbolsFilter, ok := symbolsLoadedFilters["symbols"].(*filters.StringFilter)
+		if watchedSymbolsFilter != nil && ok {
+			loadWatchedSymbols = watchedSymbolsFilter.Equal()
+		}
+		whitelistedLibsFilter, ok := symbolsLoadedFilters["library_path"].(*filters.StringFilter)
+		if whitelistedLibsFilter != nil && ok {
+			loadWhitelistedLibs = whitelistedLibsFilter.NotEqual()
+		}
+	}
+
+	gen := initSymbolsLoadedEventGenerator(soLoader, loadWatchedSymbols, loadWhitelistedLibs)
+
 	return deriveSingleEvent(events.SymbolsLoaded, gen.deriveArgs)
 }
 
@@ -32,8 +61,8 @@ var knownArchitectureDirs = []string{
 	"", // non-specific architecture dir
 }
 
-// symbolsLoadedEventGenerator is responsible of generating event if shared object loaded to a process
-// export one or more from given watched sybmols.
+// symbolsLoadedEventGenerator is responsible of generating event if shared object loaded to a
+// process export one or more from given watched symbols.
 type symbolsLoadedEventGenerator struct {
 	soLoader            sharedobjs.DynamicSymbolsLoader
 	watchedSymbols      map[string]bool
@@ -45,12 +74,14 @@ type symbolsLoadedEventGenerator struct {
 func initSymbolsLoadedEventGenerator(
 	soLoader sharedobjs.DynamicSymbolsLoader,
 	watchedSymbols []string,
-	whitelistedLibsPrefixes []string) *symbolsLoadedEventGenerator {
+	whitelistedLibsPrefixes []string,
+) *symbolsLoadedEventGenerator {
 
 	watchedSymbolsMap := make(map[string]bool)
 	for _, sym := range watchedSymbols {
 		watchedSymbolsMap[sym] = true
 	}
+
 	var libraries, prefixes []string
 	for _, path := range whitelistedLibsPrefixes {
 		if strings.HasPrefix(path, "/") {
@@ -59,6 +90,7 @@ func initSymbolsLoadedEventGenerator(
 			libraries = append(libraries, path)
 		}
 	}
+
 	return &symbolsLoadedEventGenerator{
 		soLoader:            soLoader,
 		watchedSymbols:      watchedSymbolsMap,
@@ -68,7 +100,10 @@ func initSymbolsLoadedEventGenerator(
 	}
 }
 
-func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(event trace.Event) ([]interface{}, error) {
+func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(
+	event trace.Event,
+) ([]interface{}, error) {
+
 	loadingObjectInfo, err := getSharedObjectInfo(event)
 	if err != nil {
 		return nil, err
@@ -94,6 +129,7 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(event trace.Event)
 	}
 
 	var exportedWatchSymbols []string
+
 	for sym := range soSyms {
 		if symbsLoadedGen.watchedSymbols[sym] {
 			exportedWatchSymbols = append(exportedWatchSymbols, sym)
@@ -109,6 +145,7 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(event trace.Event)
 
 // isWhitelist check if a SO's path is in the whitelist given in initialization
 func (symbsLoadedGen *symbolsLoadedEventGenerator) isWhitelist(soPath string) bool {
+
 	// Check absolute path libraries whitelist
 	for _, prefix := range symbsLoadedGen.pathPrefixWhitelist {
 		if strings.HasPrefix(soPath, prefix) {
@@ -135,12 +172,14 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) isWhitelist(soPath string) bo
 			}
 		}
 	}
+
 	return false
 }
 
 // getSharedObjectInfo extract from SO loading event the information available about the SO
 func getSharedObjectInfo(event trace.Event) (sharedobjs.ObjInfo, error) {
 	var objInfo sharedobjs.ObjInfo
+
 	loadedObjectInode, err := parse.ArgVal[uint64](&event, "inode")
 	if err != nil {
 		return objInfo, err
@@ -157,6 +196,7 @@ func getSharedObjectInfo(event trace.Event) (sharedobjs.ObjInfo, error) {
 	if err != nil {
 		return objInfo, err
 	}
+
 	objInfo = sharedobjs.ObjInfo{
 		Id: sharedobjs.ObjID{
 			Inode:  loadedObjectInode,
@@ -165,5 +205,6 @@ func getSharedObjectInfo(event trace.Event) (sharedobjs.ObjInfo, error) {
 		Path:    loadedObjectPath,
 		MountNS: event.MountNS,
 	}
+
 	return objInfo, nil
 }
