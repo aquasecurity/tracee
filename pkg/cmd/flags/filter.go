@@ -91,7 +91,7 @@ Events that match all trace expressions within a single scope will be traced.
 To find out which scopes an event is related to, read the bitmask in one of these ways:
 
 - using '-o format:json', matchedScopes JSON field (in decimal)
-- using '-o format:table-verbose', SCOPES collumn (in hexadecimal)
+- using '-o format:table-verbose', SCOPES column (in hexadecimal)
 
 Examples:
 
@@ -212,7 +212,7 @@ func parseFilterFlag(flag string) (*filterFlag, error) {
 
 func PrepareFilterScopes(filtersArr []string) (*filterscope.FilterScopes, error) {
 	eventsNameToID := events.Definitions.NamesToIDs()
-	// remove internal events since they shouldn't be accesible by users
+	// remove internal events since they shouldn't be accessible by users
 	for event, id := range eventsNameToID {
 		if events.Definitions.Get(id).Internal {
 			delete(eventsNameToID, event)
