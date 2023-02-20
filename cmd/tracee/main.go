@@ -70,7 +70,7 @@ func main() {
 				return cli.ShowAppHelp(c) // no args, only flags supported
 			}
 
-			flags.PrintAndExitIfHelp(c)
+			flags.PrintAndExitIfHelp(c, true)
 
 			// Rego command line flags
 
@@ -97,7 +97,7 @@ func main() {
 				return nil
 			}
 
-			runner, err := urfave.GetTraceeRunner(c, version)
+			runner, err := urfave.GetTraceeRunner(c, version, true)
 			if err != nil {
 				return err
 			}
@@ -146,7 +146,7 @@ func main() {
 			&cli.StringSliceFlag{
 				Name:    "output",
 				Aliases: []string{"o"},
-				Value:   cli.NewStringSlice("format:table"),
+				Value:   cli.NewStringSlice("table"),
 				Usage:   "control how and where output is printed. run '--output help' for more info.",
 			},
 			&cli.StringSliceFlag{

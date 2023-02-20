@@ -45,7 +45,6 @@ type Config struct {
 	OutFile       io.WriteCloser
 	ContainerMode ContainerMode
 	RelativeTS    bool
-	ForwardURL    *url.URL
 }
 
 func New(config Config) (EventPrinter, error) {
@@ -83,7 +82,7 @@ func New(config Config) (EventPrinter, error) {
 		}
 	case kind == "forward":
 		res = &forwardEventPrinter{
-			url: config.ForwardURL,
+			outPath: config.OutPath,
 		}
 	case strings.HasPrefix(kind, "gotemplate="):
 		res = &templateEventPrinter{
@@ -498,8 +497,9 @@ func (p ignoreEventPrinter) Close() {}
 
 // forwardEventPrinter sends events over the Fluent Forward protocol to a receiver
 type forwardEventPrinter struct {
-	url    *url.URL
-	client *forward.Client
+	outPath string
+	url     *url.URL
+	client  *forward.Client
 	// These parameters can be set up from the URL
 	tag string `default:"tracee"`
 }
@@ -516,6 +516,12 @@ func getParameterValue(parameters url.Values, key string, defaultValue string) s
 
 func (p *forwardEventPrinter) Init() error {
 	// Now parse the optional parameters with defaults and some basic verification
+	u, err := url.Parse(p.outPath)
+	if err != nil {
+		return fmt.Errorf("unable to parse URL %q: %w", p.url, err)
+	}
+	p.url = u
+
 	parameters, _ := url.ParseQuery(p.url.RawQuery)
 
 	// Check if we have a tag set or default it

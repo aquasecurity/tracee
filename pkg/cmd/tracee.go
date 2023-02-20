@@ -13,9 +13,9 @@ import (
 )
 
 type Runner struct {
-	TraceeConfig  tracee.Config
-	PrinterConfig printer.Config
-	Server        *server.Server
+	TraceeConfig tracee.Config
+	Printers     []printer.EventPrinter
+	Server       *server.Server
 }
 
 func (r Runner) Run(ctx context.Context) error {
@@ -39,19 +39,14 @@ func (r Runner) Run(ctx context.Context) error {
 		go r.Server.Start()
 	}
 
-	// Configure the events printer
-
-	printer, err := printer.New(r.PrinterConfig)
-	if err != nil {
-		return logger.ErrorFunc(err)
-	}
-
 	// Print statistics at the end
 
 	defer func() {
-		stats := t.Stats()
-		printer.Epilogue(*stats)
-		printer.Close()
+		for _, p := range r.Printers {
+			stats := t.Stats()
+			p.Epilogue(*stats)
+			p.Close()
+		}
 	}()
 
 	// Initialize tracee
@@ -61,14 +56,14 @@ func (r Runner) Run(ctx context.Context) error {
 		return logger.NewErrorf("error initializing Tracee: %v", err)
 	}
 
-	// Print the preamble and start event channel reception
+	broadcast := printer.NewBroadcast(ctx, r.Printers)
 
+	// Start event channel reception
 	go func() {
-		printer.Preamble()
 		for {
 			select {
 			case event := <-r.TraceeConfig.ChanEvents:
-				printer.Print(event)
+				broadcast.Print(event)
 			case <-ctx.Done():
 				return
 			}
@@ -149,23 +144,4 @@ func getPad(padChar string, padLength int) (pad string) {
 		pad += padChar
 	}
 	return
-}
-
-func GetContainerMode(cfg tracee.Config) printer.ContainerMode {
-	containerMode := printer.ContainerModeDisabled
-
-	for filterScope := range cfg.FilterScopes.Map() {
-		if filterScope.ContainerFilterEnabled() {
-			// enable printer container print mode if container filters are set
-			containerMode = printer.ContainerModeEnabled
-			if cfg.ContainersEnrich {
-				// further enable container enrich print mode if container enrichment is enabled
-				containerMode = printer.ContainerModeEnriched
-			}
-
-			break
-		}
-	}
-
-	return containerMode
 }

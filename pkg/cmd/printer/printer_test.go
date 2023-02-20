@@ -66,7 +66,7 @@ func TestTraceeEbpfPrepareOutputPrinterConfig(t *testing.T) {
 			if err != nil {
 				assert.ErrorContains(t, err, testcase.expectedError.Error())
 			} else {
-				assert.Equal(t, testcase.expectedPrinter, outputConfig.PrinterConfig)
+				assert.Equal(t, testcase.expectedPrinter, outputConfig.PrinterConfigs[0])
 			}
 		})
 	}

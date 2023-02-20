@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func PrintAndExitIfHelp(ctx *cli.Context) {
+func PrintAndExitIfHelp(ctx *cli.Context, newBinary bool) {
 	keys := []string{
 		"crs",
 		"cache",
@@ -21,7 +21,7 @@ func PrintAndExitIfHelp(ctx *cli.Context) {
 
 	for _, k := range keys {
 		if checkIsHelp(ctx, k) {
-			fmt.Print(getHelpString(k))
+			fmt.Print(getHelpString(k, newBinary))
 			os.Exit(0)
 		}
 	}
@@ -40,7 +40,7 @@ func checkIsHelp(ctx *cli.Context, k string) bool {
 	return v == "help"
 }
 
-func getHelpString(key string) string {
+func getHelpString(key string, newBinary bool) string {
 	switch key {
 	case "crs":
 		return containersHelp()
@@ -51,6 +51,9 @@ func getHelpString(key string) string {
 	case "filter":
 		return filterHelp()
 	case "output":
+		if newBinary {
+			return outputHelp()
+		}
 		return traceeEbpfOutputHelp()
 	case "capabilities":
 		return capabilitiesHelp()
