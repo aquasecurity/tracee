@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.12+insiders-4.30.2">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.13+insiders-4.32.0">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.b6d2c4d8.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.e95b5de1.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.2505c338.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.6932e648.min.css">
       
       
 
@@ -83,7 +83,7 @@
       
     </div>
     
-      <div data-md-component="outdated" hidden>
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
         
       </div>
     
@@ -2886,7 +2886,6 @@
                   
 
 
-
 <h1 id="signatures-written-in-go-cel-poc">Signatures written in Go-Cel (POC)<a class="headerlink" href="#signatures-written-in-go-cel-poc" title="Permanent link">&para;</a></h1>
 <p>Tracee has introduced, on its last version, a new type of signatures, the
 Common Expression Language, or <a href="https://github.com/google/cel-go">Go-Cel</a>, signatures as a <strong>PROOF OF CONCEPT</strong>.</p>
@@ -2907,7 +2906,7 @@ wrapper internal structure.</p>
 </div>
 <p>This feature is enabled by placing CEL signature definition files (.cel, .yaml,
 .yml) in the  the <code>--rules-dir</code> directory. Sample definition files can be found
-in the <code>pkg/rules/celsig/testdata/rules/</code> directory.</p>
+in the <code>pkg/signatures/celsig/testdata/rules/</code> directory.</p>
 <div class="admonition signature example">
 <p class="admonition-title">Signature</p>
 <div class="highlight"><pre><span></span><code><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SignaturesConfig</span>
@@ -2928,7 +2927,7 @@ in the <code>pkg/rules/celsig/testdata/rules/</code> directory.</p>
 <span class="w">        </span><span class="no">input.stringArg(&#39;pathname&#39;).startsWith(&#39;/etc/passwd&#39;)</span>
 </code></pre></div>
 </div>
-<p>After placing your <code>signature_example.yaml</code> inside <code>dist/rules</code> directory you
+<p>After placing your <code>signature_example.yaml</code> inside <code>dist/signatures</code> directory you
 may execute <strong>tracee</strong> selecting only the event you just created, if that is
 what you want:</p>
 <div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
@@ -2963,7 +2962,7 @@ you may face some issues:</p>
 <p>Go-Cel depends on <a href="https://github.com/golang/protobuf">protobuf</a> and <code>tracee.Event</code> is not yet a protobuf
    object. Because of that, there is a <strong>wrapper</strong> in place converting
    <code>tracee.Event</code> into <code>protobuf</code> so the evaluations can happen (check
-   files inside <code>pkg/rules/celsig/wrapper/</code> directory.</p>
+   files inside <code>pkg/signatures/celsig/wrapper/</code> directory.</p>
 </li>
 <li>
 <p>When writting your signature, it might happen that the event you're
@@ -2976,7 +2975,7 @@ you may face some issues:</p>
 </li>
 <li>
 <p>Your signature might need helpers/macros that don't exist yet. A good
-   source of an example is <code>pkg/rules/celsig/library.go</code> file and
+   source of an example is <code>pkg/signatures/celsig/library.go</code> file and
    functions:</p>
 <ul>
 <li><code>sockaddrArg</code></li>
@@ -3025,7 +3024,7 @@ you may face some issues:</p>
     <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../assets/javascripts/workers/search.6c7302c4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.fbce390c.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.b7178837.min.js"></script>
       
     
   </body>

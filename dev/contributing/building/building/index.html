@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.12+insiders-4.30.2">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.13+insiders-4.32.0">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.b6d2c4d8.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.e95b5de1.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.2505c338.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.6932e648.min.css">
       
       
 
@@ -83,7 +83,7 @@
       
     </div>
     
-      <div data-md-component="outdated" hidden>
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
         
       </div>
     
@@ -2884,7 +2884,6 @@
                   
 
 
-
 <h1 id="building-from-the-source">Building from the source<a class="headerlink" href="#building-from-the-source" title="Permanent link">&para;</a></h1>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2927,12 +2926,12 @@ Resolving deltas: 100% (8105/8105), done.
 
 # build
 
-    $ make all                      # build tracee-ebpf, tracee-rules &amp; rules
+    $ make all                      # build tracee-ebpf, tracee-rules &amp; signatures
     $ make bpf-core                 # build ./dist/tracee.bpf.core.o
     $ make bpf-nocore               # build ./dist/tracee.bpf.XXX.o
     $ make tracee-ebpf              # build ./dist/tracee-ebpf
     $ make tracee-rules             # build ./dist/tracee-rules
-    $ make rules                    # build ./dist/rules
+    $ make signatures             # build ./dist/signatures
 
 # install
 
@@ -2946,14 +2945,14 @@ Resolving deltas: 100% (8105/8105), done.
     $ make clean-bpf-nocore         # wipe ./dist/tracee.bpf.XXX.o
     $ make clean-tracee-ebpf        # wipe ./dist/tracee-ebpf
     $ make clean-tracee-rules       # wipe ./dist/tracee-rules
-    $ make clean-rules              # wipe ./dist/rules
+    $ make clean-signatures       # wipe ./dist/signatures
 
 # test
 
     $ make test-types               # run unit tests for types module
     $ make test-unit                # run unit tests
     $ make test-integration         # run integration tests
-    $ make test-rules               # opa test (tracee-rules)
+    $ make test-signatures        # opa test (tracee-rules)
 
 # flags
 
@@ -2967,10 +2966,10 @@ Resolving deltas: 100% (8105/8105), done.
 <div class="highlight"><pre><span></span><code>$ make all
 Submodule &#39;libbpf&#39; (https://github.com/libbpf/libbpf.git) registered for path &#39;3rdparty/libbpf&#39;
 Cloning into &#39;/home/rafaeldtinoco/tracee/3rdparty/libbpf&#39;...
-mkdir -p dist/rules
+mkdir -p dist/signatures
 GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS= CGO_LDFLAGS= go build \
     --buildmode=plugin \
-    -o dist/rules/builtin.so \
+    -o dist/signatures/builtin.so \
     signatures/golang/export.go signatures/golang/kubernetes_api_connection.go signatures/golang/stdio_over_socket.go
 </code></pre></div>
 </li>
@@ -3018,8 +3017,8 @@ at the BTFHUB repository)</p>
 <p>compiling <code>tracee-rules</code> with STATIC=1 won't allow you to use golang based
 signatures as plugins, only as built-ins:</p>
 <blockquote>
-<div class="highlight"><pre><span></span><code>2021/12/13 13:27:21 error opening plugin /tracee/dist/rules/builtin.so:
-plugin.Open(&quot;/tracee/dist/rules/builtin.so&quot;): Dynamic loading not supported
+<div class="highlight"><pre><span></span><code>2021/12/13 13:27:21 error opening plugin /tracee/dist/signatures/builtin.so:
+plugin.Open(&quot;/tracee/dist/signatures/builtin.so&quot;): Dynamic loading not supported
 </code></pre></div>
 </blockquote>
 </div>
@@ -3078,7 +3077,7 @@ GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS=&quot;-I/home/gg/code/tracee/dist/li
     <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../assets/javascripts/workers/search.6c7302c4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.fbce390c.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.b7178837.min.js"></script>
       
     
   </body>
