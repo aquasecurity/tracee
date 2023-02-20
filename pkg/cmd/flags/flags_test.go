@@ -561,7 +561,7 @@ func TestPrepareCapture(t *testing.T) {
 	})
 }
 
-func TestPrepareOutput(t *testing.T) {
+func TestTraceeEbpfPrepareOutput(t *testing.T) {
 	testCases := []struct {
 		testName       string
 		outputSlice    []string
@@ -728,7 +728,7 @@ func TestPrepareOutput(t *testing.T) {
 	}
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
-			output, err := flags.PrepareOutput(testcase.outputSlice)
+			output, err := flags.TraceeEbpfPrepareOutput(testcase.outputSlice)
 			if err != nil {
 				assert.ErrorContains(t, err, testcase.expectedError.Error())
 			} else {

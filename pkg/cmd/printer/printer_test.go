@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPrepareOutputPrinterConfig(t *testing.T) {
+func TestTraceeEbpfPrepareOutputPrinterConfig(t *testing.T) {
 
 	testCases := []struct {
 		testName        string
@@ -62,7 +62,7 @@ func TestPrepareOutputPrinterConfig(t *testing.T) {
 	}
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
-			outputConfig, err := flags.PrepareOutput(testcase.outputSlice)
+			outputConfig, err := flags.TraceeEbpfPrepareOutput(testcase.outputSlice)
 			if err != nil {
 				assert.ErrorContains(t, err, testcase.expectedError.Error())
 			} else {
