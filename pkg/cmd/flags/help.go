@@ -51,7 +51,7 @@ func getHelpString(key string) string {
 	case "filter":
 		return filterHelp()
 	case "output":
-		return outputHelp()
+		return traceeEbpfOutputHelp()
 	case "capabilities":
 		return capabilitiesHelp()
 	case "rego":

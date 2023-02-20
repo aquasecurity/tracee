@@ -11,7 +11,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
-func outputHelp() string {
+func traceeEbpfOutputHelp() string {
 	return `Control how and where output is printed.
 Possible options:
 [format:]table                                     output events in table format
@@ -48,7 +48,7 @@ type OutputConfig struct {
 	LogFile       *os.File
 }
 
-func PrepareOutput(outputSlice []string) (OutputConfig, error) {
+func TraceeEbpfPrepareOutput(outputSlice []string) (OutputConfig, error) {
 	outConfig := OutputConfig{}
 	traceeConfig := &tracee.OutputConfig{}
 	printerConfig := printer.Config{}
