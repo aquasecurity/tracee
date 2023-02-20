@@ -20,7 +20,7 @@ Common Expression Language, or [Go-Cel], signatures as a **PROOF OF CONCEPT**.
 
 This feature is enabled by placing CEL signature definition files (.cel, .yaml,
 .yml) in the  the `--rules-dir` directory. Sample definition files can be found
-in the `pkg/rules/celsig/testdata/rules/` directory.
+in the `pkg/signatures/celsig/testdata/rules/` directory.
 
 !!! Signature Example
     ```yaml
@@ -42,7 +42,7 @@ in the `pkg/rules/celsig/testdata/rules/` directory.
             input.stringArg('pathname').startsWith('/etc/passwd')
     ```
 
-After placing your `signature_example.yaml` inside `dist/rules` directory you
+After placing your `signature_example.yaml` inside `dist/signatures` directory you
 may execute **tracee** selecting only the event you just created, if that is
 what you want:
 
@@ -78,7 +78,7 @@ Hostname: fujitsu
     1. Go-Cel depends on [protobuf] and `tracee.Event` is not yet a protobuf
        object. Because of that, there is a **wrapper** in place converting
        `tracee.Event` into `protobuf` so the evaluations can happen (check
-       files inside `pkg/rules/celsig/wrapper/` directory.
+       files inside `pkg/signatures/celsig/wrapper/` directory.
 
     2. When writting your signature, it might happen that the event you're
        filtering for does not have all of its arguments types wrapper into
@@ -90,7 +90,7 @@ Hostname: fujitsu
        is able to evaluate it.
 
     3. Your signature might need helpers/macros that don't exist yet. A good
-       source of an example is `pkg/rules/celsig/library.go` file and
+       source of an example is `pkg/signatures/celsig/library.go` file and
        functions:
         - `sockaddrArg`
         - `stringArg`

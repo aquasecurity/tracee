@@ -4,12 +4,12 @@ import (
 	"context"
 
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/rules/engine"
+	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-// engineEvents stage in the pipeline allows rules detection to be executed in the pipeline
+// engineEvents stage in the pipeline allows signatures detection to be executed in the pipeline
 func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-chan *trace.Event, <-chan error) {
 	out := make(chan *trace.Event)
 	errc := make(chan error, 1)

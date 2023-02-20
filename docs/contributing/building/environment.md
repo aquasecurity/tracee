@@ -159,6 +159,6 @@ $ ldd dist/tracee-ebpf
     compiling **tracee-rules** with STATIC=1 won't allow you to use golang based
     signatures:
     > ```text
-    > 2021/12/13 13:27:21 error opening plugin /tracee/dist/rules/builtin.so:
-    > plugin.Open("/tracee/dist/rules/builtin.so"): Dynamic loading not supported
+    > 2021/12/13 13:27:21 error opening plugin /tracee/dist/signatures/builtin.so:
+    > plugin.Open("/tracee/dist/signatures/builtin.so"): Dynamic loading not supported
     > ```

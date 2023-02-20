@@ -35,8 +35,8 @@ override_dh_auto_install:
 	mkdir -m 0755 -p ./debian/tracee/usr/lib/tracee/
 	install -m 0755 ./dist/tracee ./debian/tracee/usr/lib/tracee/
 	ln -s /usr/lib/tracee/tracee ./debian/tracee/usr/bin/tracee
-	mkdir -m 0755 -p ./debian/tracee/usr/lib/tracee/rules/
-	install -m 0644 ./dist/rules/* ./debian/tracee/usr/lib/tracee/rules/
+	mkdir -m 0755 -p ./debian/tracee/usr/lib/tracee/signatures/
+	install -m 0644 ./dist/signatures/* ./debian/tracee/usr/lib/tracee/signatures/
 	# tracee-ebpf
 	mkdir -m 0755 -p ./debian/tracee-ebpf/usr/bin/
 	install -m 0755 ./dist/tracee-ebpf ./debian/tracee-ebpf/usr/bin/
@@ -45,9 +45,9 @@ override_dh_auto_install:
 	mkdir -m 0755 -p ./debian/tracee-rules/usr/lib/tracee/
 	install -m 0755 ./dist/tracee-rules ./debian/tracee-rules/usr/lib/tracee/
 	ln -s /usr/lib/tracee/tracee-rules ./debian/tracee-rules/usr/bin/tracee-rules
-	# rules
-	mkdir -m 0755 -p ./debian/tracee-rules/usr/lib/tracee/rules/
-	install -m 0644 ./dist/rules/* ./debian/tracee-rules/usr/lib/tracee/rules/
+	# signatures
+	mkdir -m 0755 -p ./debian/tracee-rules/usr/lib/tracee/signatures/
+	install -m 0644 ./dist/signatures/* ./debian/tracee-rules/usr/lib/tracee/signatures/
 ifeq ($(STATIC),1)
-	rm ./debian/tracee-rules/usr/lib/tracee/rules/*.so
+	rm ./debian/tracee-rules/usr/lib/tracee/signatures/*.so
 endif

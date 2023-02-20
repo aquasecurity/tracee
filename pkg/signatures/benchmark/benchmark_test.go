@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/rules/benchmark/signature/golang"
-	"github.com/aquasecurity/tracee/pkg/rules/benchmark/signature/rego"
-	"github.com/aquasecurity/tracee/pkg/rules/benchmark/signature/wasm"
-	"github.com/aquasecurity/tracee/pkg/rules/engine"
+	"github.com/aquasecurity/tracee/pkg/signatures/benchmark/signature/golang"
+	"github.com/aquasecurity/tracee/pkg/signatures/benchmark/signature/rego"
+	"github.com/aquasecurity/tracee/pkg/signatures/benchmark/signature/wasm"
+	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/stretchr/testify/require"
@@ -108,7 +108,7 @@ func BenchmarkEngineWithCodeInjectionSignature(b *testing.B) {
 				require.NoError(b, err, "constructing engine")
 				b.StartTimer()
 
-				// Start rules engine and wait until all events are processed
+				// Start signatures engine and wait until all events are processed
 				e.Start(waitForEventsProcessed(inputs.Tracee))
 			}
 		})
@@ -166,7 +166,7 @@ func BenchmarkEngineWithMultipleSignatures(b *testing.B) {
 				require.NoError(b, err, "constructing engine")
 				b.StartTimer()
 
-				// Start rules engine and wait until all events are processed
+				// Start signatures engine and wait until all events are processed
 				e.Start(waitForEventsProcessed(inputs.Tracee))
 			}
 		})
@@ -231,7 +231,7 @@ func BenchmarkEngineWithNSignatures(b *testing.B) {
 					require.NoError(b, err, "constructing engine")
 					b.StartTimer()
 
-					// Start rules engine and wait until all events are processed
+					// Start signatures engine and wait until all events are processed
 					e.Start(waitForEventsProcessed(inputs.Tracee))
 				}
 			})

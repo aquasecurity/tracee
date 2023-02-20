@@ -103,7 +103,7 @@ COPY . /tracee
 RUN make clean && \
     BTFHUB=$BTFHUB make tracee-ebpf && \
     make tracee-rules && \
-    make rules && \
+    make signatures && \
     make tracee && \
     rm -rf ./3rdparty/btfhub/ && \
     rm -rf ./3rdparty/btfhub-archive/
@@ -121,7 +121,7 @@ WORKDIR /tracee
 COPY --from=tracee-make /tracee/dist/tracee /tracee
 COPY --from=tracee-make /tracee/dist/tracee-ebpf /tracee
 COPY --from=tracee-make /tracee/dist/tracee-rules /tracee
-COPY --from=tracee-make /tracee/dist/rules/ /tracee/rules/
+COPY --from=tracee-make /tracee/dist/signatures/ /tracee/signatures/
 COPY --from=tracee-make /tracee/builder/entrypoint.sh /tracee/entrypoint.sh
 COPY --from=tracee-make /tracee/cmd/tracee-rules/templates/ /tracee/templates/
 
@@ -141,7 +141,7 @@ COPY --from=tracee-make /tracee /tracee/src
 COPY --from=tracee-make /tracee/dist/tracee /tracee
 COPY --from=tracee-make /tracee/dist/tracee-ebpf /tracee
 COPY --from=tracee-make /tracee/dist/tracee-rules /tracee
-COPY --from=tracee-make /tracee/dist/rules/ /tracee/rules
+COPY --from=tracee-make /tracee/dist/signatures/ /tracee/signatures
 COPY --from=tracee-make /tracee/builder/entrypoint.sh /tracee/entrypoint.sh
 COPY --from=tracee-make /tracee/cmd/tracee-rules/templates/ /tracee/templates/
 

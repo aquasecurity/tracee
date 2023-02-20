@@ -4,7 +4,7 @@ package rego
 type Config struct {
 	// RuntimeTarget, currently only supports rego
 	RuntimeTarget string
-	// Rego Partial Evaluation of rules
+	// Rego Partial Evaluation of signatures
 	PartialEval bool
 	// Aggregation Policy complication
 	AIO bool

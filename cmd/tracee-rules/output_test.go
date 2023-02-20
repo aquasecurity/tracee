@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/rules/signature"
+	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"

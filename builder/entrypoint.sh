@@ -13,7 +13,7 @@ TRACEE_OUT="${TRACEE_TMP}/out"
 TRACEE_EBPF_SRC=${TRACEE_EBPF_SRC:="/tracee/src"}
 TRACEE_EBPF_EXE=${TRACEE_EBPF_EXE:="/tracee/tracee-ebpf"}
 TRACEE_RULES_EXE=${TRACEE_RULES_EXE:="/tracee/tracee-rules"}
-TRACEE_RULES=${TRACEE_RULES:="/tracee/rules"}
+TRACEE_RULES=${TRACEE_RULES:="/tracee/signatures"}
 LIBBPFGO_OSRELEASE_FILE=${LIBBPFGO_OSRELEASE_FILE:=""}
 
 TRACEE_EBPF_ONLY=${TRACEE_EBPF_ONLY:=0} # used by both container images

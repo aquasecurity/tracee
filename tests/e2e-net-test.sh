@@ -69,7 +69,7 @@ info "GO: $(go version)"
 info
 info "= SETUP NETWORK TESTING ENV  =================================="
 info
-timeout --preserve-status 20 ./tests/e2e-net-rules/scripts/setup.sh
+timeout --preserve-status 20 ./tests/e2e-net-signatures/scripts/setup.sh
 ret=$?
 if [[ $ret -ne 0 ]]; then
     error_exit "could not setup network namespaces: error $ret"
@@ -80,7 +80,7 @@ info
 # make clean # if you want to be extra cautious
 set -e
 make -j$(nproc) all
-make e2e-net-rules
+make e2e-net-signatures
 set +e
 if [[ ! -x ./dist/tracee-ebpf || ! -x ./dist/tracee-rules ]]
 then
@@ -109,7 +109,7 @@ for TEST in $TESTS; do
     rm -f $SCRIPT_TMP_DIR/build-$$
     rm -f $SCRIPT_TMP_DIR/ebpf-$$
 
-    events=$(./dist/tracee-rules --allcaps --rules-dir ./dist/e2e-net-rules/ --rules $TEST --list-events)
+    events=$(./dist/tracee-rules --allcaps --rules-dir ./dist/e2e-net-signatures/ --rules $TEST --list-events)
 
     ./dist/tracee-ebpf \
         --install-path $TRACEE_TMP_DIR \
@@ -122,7 +122,7 @@ for TEST in $TESTS; do
         2>$SCRIPT_TMP_DIR/ebpf-$$ \
         | \
     ./dist/tracee-rules \
-        --rules-dir ./dist/e2e-net-rules/ \
+        --rules-dir ./dist/e2e-net-signatures/ \
         --input-tracee=file:stdin \
         --input-tracee format:json \
         --rules $TEST \
@@ -167,7 +167,7 @@ for TEST in $TESTS; do
     sleep 3
 
     # run tracee-tester (triggering the signature)
-    timeout --preserve-status 20 ./tests/e2e-net-rules/scripts/${TEST,,}.sh
+    timeout --preserve-status 20 ./tests/e2e-net-signatures/scripts/${TEST,,}.sh
 
     # so event can be processed and detected
     sleep 3

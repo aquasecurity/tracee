@@ -588,7 +588,7 @@ func (t *Tracee) handleError(err error) {
 	logger.Error("tracee encountered an error", "error", err)
 }
 
-// parseArguments must happen before rules are evaluated.
+// parseArguments must happen before signatures are evaluated.
 // For the new experience (cmd/tracee), it needs to happen in the the events_engine stage of the pipeline.
 // For the old experience (cmd/tracee-ebpf && cmd/tracee-rules), it happens on the sink stage of the pipeline.
 func (t *Tracee) parseArguments(e *trace.Event) error {

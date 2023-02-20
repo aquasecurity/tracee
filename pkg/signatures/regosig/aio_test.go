@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/rules/regosig"
+	"github.com/aquasecurity/tracee/pkg/signatures/regosig"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"

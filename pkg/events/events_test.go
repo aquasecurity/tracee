@@ -15,10 +15,10 @@ func TestNewEventDefinition(t *testing.T) {
 				{EventID: DoInitModule},
 			},
 		},
-		Sets: []string{"rules"},
+		Sets: []string{"signatures"},
 	}
 
-	e := NewEventDefinition("hooked_seq_ops2", []string{"rules"}, []ID{PrintNetSeqOps, DoInitModule})
+	e := NewEventDefinition("hooked_seq_ops2", []string{"signatures"}, []ID{PrintNetSeqOps, DoInitModule})
 
 	assert.Equal(t, expected.Name, e.Name)
 	assert.Equal(t, expected.Dependencies, e.Dependencies)
@@ -41,7 +41,7 @@ func TestAdd(t *testing.T) {
 						{EventID: DoInitModule},
 					},
 				},
-				Sets: []string{"rules"},
+				Sets: []string{"signatures"},
 			},
 		},
 		{
@@ -55,7 +55,7 @@ func TestAdd(t *testing.T) {
 						{EventID: DoInitModule},
 					},
 				},
-				Sets: []string{"rules"},
+				Sets: []string{"signatures"},
 			},
 			err: "error event id already exist: 700",
 		},
@@ -70,7 +70,7 @@ func TestAdd(t *testing.T) {
 						{EventID: DoInitModule},
 					},
 				},
-				Sets: []string{"rules"},
+				Sets: []string{"signatures"},
 			},
 			err: "error event name already exist: net_packet",
 		},

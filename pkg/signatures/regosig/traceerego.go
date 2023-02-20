@@ -16,7 +16,7 @@ import (
 
 // RegoSignature is an abstract signature that is implemented in rego
 // each struct instance is associated with a rego file
-// the rego file declares the following rules:
+// the rego file declares the following signatures:
 // __rego_metadoc__: a *document* rule that defines the rule's metadata (see GetMetadata())
 // tracee_selected_events: a *set* rule that defines the event selectors (see GetSelectedEvent())
 // tracee_match: a *boolean*, or a *document* rule that defines the logic of the signature (see OnEvent())

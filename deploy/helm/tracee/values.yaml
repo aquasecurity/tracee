@@ -69,7 +69,7 @@ signatures:
   # config defines Common Expression Language (CEL) signatures that are loaded
   # by Tracee-Rules from the --rules-dir directory. If the config object is not
   # empty, the configuration file is automatically mounted at
-  # /tracee/rules/signatures.yaml.
+  # /tracee/signatures/signatures.yaml.
   config: {}
 #  config:
 #    kind: SignaturesConfig

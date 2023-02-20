@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/rules/signature"
+	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -340,7 +340,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			//       The gotNumEvents variable is causing data race, because it's accessed
 			//       by two goroutines. Temporary workaround is to change from int to uint32 and
 			//       use atomic.AddUint32 and atomic.LoadUint32 methods.
-			//       go test -v -run=TestConsumeSources -race ./pkg/rules/engine/...
+			//       go test -v -run=TestConsumeSources -race ./pkg/signatures/engine/...
 			var gotNumEvents uint32
 			tc.inputSignature.FakeOnEvent = func(event protocol.Event) error {
 				assert.Equal(t, tc.expectedEvent, event.Payload, tc.name)

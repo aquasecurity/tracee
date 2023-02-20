@@ -4,14 +4,14 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/rules/rego"
+	"github.com/aquasecurity/tracee/pkg/signatures/rego"
 	"github.com/open-policy-agent/opa/compile"
 )
 
 func regoHelp() string {
 	return `Rego configurations.
 possible options:
-partial-eval            enable partial evaluation of rego rules.
+partial-eval            enable partial evaluation of rego signatures.
 aio                     compile rego signatures altogether as an aggregate policy. By default each signature is compiled separately.
 Examples:
   --rego partial-eval                               | enable partial evaluation

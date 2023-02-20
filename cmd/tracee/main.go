@@ -12,8 +12,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/urfave"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/rules/engine"
-	"github.com/aquasecurity/tracee/pkg/rules/signature"
+	"github.com/aquasecurity/tracee/pkg/signatures/engine"
+	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 	"github.com/aquasecurity/tracee/types/detect"
 
 	cli "github.com/urfave/cli/v2"
@@ -59,7 +59,7 @@ func main() {
 			sigs, err := signature.Find(
 				rego.RuntimeTarget,
 				rego.PartialEval,
-				c.String("rules-dir"),
+				c.String("signatures-dir"),
 				nil,
 				rego.AIO,
 			)
@@ -67,7 +67,7 @@ func main() {
 				return err
 			}
 
-			createEventsFromSignatures(events.StartRulesID, sigs)
+			createEventsFromSignatures(events.StartSignatureID, sigs)
 
 			if c.Bool("list") {
 				cmd.PrintEventList(true) // list events
@@ -180,10 +180,10 @@ func main() {
 
 			// TODO: add webhook
 
-			// rules
+			// signature events
 			&cli.StringFlag{
-				Name:  "rules-dir",
-				Usage: "directory where to search for rules in CEL (.yaml), OPA (.rego), and Go plugin (.so) formats",
+				Name:  "signatures-dir",
+				Usage: "directory where to search for signatures in CEL (.yaml), OPA (.rego), and Go plugin (.so) formats",
 			},
 			&cli.StringSliceFlag{
 				Name:  "rego",

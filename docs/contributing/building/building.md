@@ -39,12 +39,12 @@
 
     # build
 
-        $ make all                  	# build tracee-ebpf, tracee-rules & rules
+        $ make all                  	# build tracee-ebpf, tracee-rules & signatures
         $ make bpf-core             	# build ./dist/tracee.bpf.core.o
         $ make bpf-nocore           	# build ./dist/tracee.bpf.XXX.o
         $ make tracee-ebpf          	# build ./dist/tracee-ebpf
         $ make tracee-rules         	# build ./dist/tracee-rules
-        $ make rules                	# build ./dist/rules
+        $ make signatures             # build ./dist/signatures
 
     # install
 
@@ -58,14 +58,14 @@
         $ make clean-bpf-nocore     	# wipe ./dist/tracee.bpf.XXX.o
         $ make clean-tracee-ebpf    	# wipe ./dist/tracee-ebpf
         $ make clean-tracee-rules   	# wipe ./dist/tracee-rules
-        $ make clean-rules          	# wipe ./dist/rules
+        $ make clean-signatures       # wipe ./dist/signatures
 
     # test
 
         $ make test-types           	# run unit tests for types module
         $ make test-unit            	# run unit tests
         $ make test-integration     	# run integration tests
-        $ make test-rules           	# opa test (tracee-rules)
+        $ make test-signatures        # opa test (tracee-rules)
 
     # flags
 
@@ -80,10 +80,10 @@
     $ make all
     Submodule 'libbpf' (https://github.com/libbpf/libbpf.git) registered for path '3rdparty/libbpf'
     Cloning into '/home/rafaeldtinoco/tracee/3rdparty/libbpf'...
-    mkdir -p dist/rules
+    mkdir -p dist/signatures
     GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS= CGO_LDFLAGS= go build \
         --buildmode=plugin \
-        -o dist/rules/builtin.so \
+        -o dist/signatures/builtin.so \
         signatures/golang/export.go signatures/golang/kubernetes_api_connection.go signatures/golang/stdio_over_socket.go
     ```
 
@@ -132,8 +132,8 @@
         compiling `tracee-rules` with STATIC=1 won't allow you to use golang based
         signatures as plugins, only as built-ins:
         >```text
-        >2021/12/13 13:27:21 error opening plugin /tracee/dist/rules/builtin.so:
-        >plugin.Open("/tracee/dist/rules/builtin.so"): Dynamic loading not supported
+        >2021/12/13 13:27:21 error opening plugin /tracee/dist/signatures/builtin.so:
+        >plugin.Open("/tracee/dist/signatures/builtin.so"): Dynamic loading not supported
         >```
 
 7. Build a **debuggable binary** with DWARF generation by setting `DEBUG=1`
