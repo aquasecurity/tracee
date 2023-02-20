@@ -6,6 +6,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
+	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -13,7 +14,7 @@ import (
 	cli "github.com/urfave/cli/v2"
 )
 
-func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
+func GetTraceeRunner(c *cli.Context, version string, newBinary bool) (cmd.Runner, error) {
 	var runner cmd.Runner
 
 	// Initialize a tracee config structure
@@ -25,10 +26,19 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	// Output command line flags
 
-	output, err := flags.TraceeEbpfPrepareOutput(c.StringSlice("output"))
+	var err error
+	var output flags.OutputConfig
+
+	if newBinary {
+		output, err = flags.PrepareOutput(c.StringSlice("output"))
+	} else {
+		output, err = flags.TraceeEbpfPrepareOutput(c.StringSlice("output"))
+	}
+
 	if err != nil {
 		return runner, err
 	}
+	cfg.Output = output.TraceeConfig
 
 	// Log command line flags
 
@@ -98,10 +108,18 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	cfg.FilterScopes = filterScopes
 
 	// Container information printer flag
+	containerMode := getContainerMode(cfg)
+	printers := make([]printer.EventPrinter, 0, len(output.PrinterConfigs))
+	for _, pConfig := range output.PrinterConfigs {
+		pConfig.ContainerMode = containerMode
 
-	printerConfig := output.PrinterConfig
-	printerConfig.ContainerMode = cmd.GetContainerMode(cfg)
-	cfg.Output = output.TraceeConfig
+		p, err := printer.New(pConfig)
+		if err != nil {
+			return runner, err
+		}
+
+		printers = append(printers, p)
+	}
 
 	// Check kernel lockdown
 
@@ -156,7 +174,26 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	runner.Server = httpServer
 	runner.TraceeConfig = cfg
-	runner.PrinterConfig = printerConfig
+	runner.Printers = printers
 
 	return runner, nil
+}
+
+func getContainerMode(cfg tracee.Config) printer.ContainerMode {
+	containerMode := printer.ContainerModeDisabled
+
+	for filterScope := range cfg.FilterScopes.Map() {
+		if filterScope.ContainerFilterEnabled() {
+			// enable printer container print mode if container filters are set
+			containerMode = printer.ContainerModeEnabled
+			if cfg.ContainersEnrich {
+				// further enable container enrich print mode if container enrichment is enabled
+				containerMode = printer.ContainerModeEnriched
+			}
+
+			break
+		}
+	}
+
+	return containerMode
 }

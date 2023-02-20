@@ -47,14 +47,14 @@ func main() {
 				return cli.ShowAppHelp(c) // no args, only flags supported
 			}
 
-			flags.PrintAndExitIfHelp(c)
+			flags.PrintAndExitIfHelp(c, false)
 
 			if c.Bool("list") {
 				cmd.PrintEventList(false) // list events
 				return nil
 			}
 
-			runner, err := urfave.GetTraceeRunner(c, version)
+			runner, err := urfave.GetTraceeRunner(c, version, false)
 			if err != nil {
 				return err
 			}
