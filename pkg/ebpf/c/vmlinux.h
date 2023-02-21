@@ -609,6 +609,13 @@ struct timespec64 {
     long int tv_nsec;
 };
 
+typedef long long __kernel_time64_t;
+
+struct __kernel_timespec {
+    __kernel_time64_t tv_sec;
+    long long tv_nsec;
+};
+
 struct inode {
     umode_t i_mode;
     struct super_block *i_sb;

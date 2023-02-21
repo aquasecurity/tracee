@@ -37,6 +37,7 @@ const (
 	intArr2T
 	uint64ArrT
 	u8T
+	timespecT
 )
 
 // These types don't match the ones defined in the ebpf code since they are not being used by syscalls arguments.
@@ -174,6 +175,15 @@ func ReadArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.A
 			return uint(argIdx), arg, fmt.Errorf("error reading ulong elements: %v", err)
 		}
 		res = ulongArray
+	case timespecT:
+		var sec int64
+		var nsec int64
+		err = ebpfMsgDecoder.DecodeInt64(&sec)
+		if err != nil {
+			return uint(argIdx), arg, err
+		}
+		err = ebpfMsgDecoder.DecodeInt64(&nsec)
+		res = float64(sec) + (float64(nsec) / float64(1000000000))
 
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
@@ -228,6 +238,8 @@ func GetParamType(paramType string) ArgType {
 		return u8T
 	case "unsigned long[]", "[]trace.HookedSymbolData":
 		return uint64ArrT
+	case "struct timespec*", "const struct timespec*":
+		return timespecT
 	default:
 		// Default to pointer (printed as hex) for unsupported types
 		return pointerT

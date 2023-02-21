@@ -19,6 +19,7 @@
     #include <linux/signal.h>
     #include <linux/fs.h>
     #include <linux/mm_types.h>
+    #include <linux/time.h>
     #include <linux/mount.h>
     #include <linux/nsproxy.h>
     #include <linux/ns_common.h>
