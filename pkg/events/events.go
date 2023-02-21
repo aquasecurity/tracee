@@ -248,6 +248,7 @@ const (
 	KallsymsLookupName
 	DoMmap
 	PrintMemDump
+	VfsUtimes
 	MaxCommonID
 )
 
@@ -6508,6 +6509,22 @@ var Definitions = eventDefinitions{
 				{Type: "unsigned long", Name: "inode"},
 				{Type: "unsigned long", Name: "vlen"},
 				{Type: "off_t", Name: "pos"},
+			},
+		},
+		VfsUtimes: {
+			ID32Bit: sys32undefined,
+			Name:    "vfs_utimes",
+			Probes: []probeDependency{
+				{Handle: probes.VfsUtimes, Required: false},    // this probe exits in kernels >= 5.9
+				{Handle: probes.UtimesCommon, Required: false}, // this probe exits in kernels < 5.9
+			},
+			Sets: []string{},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "pathname"},
+				{Type: "dev_t", Name: "dev"},
+				{Type: "unsigned long", Name: "inode"},
+				{Type: "u64", Name: "atime"},
+				{Type: "u64", Name: "mtime"},
 			},
 		},
 	},

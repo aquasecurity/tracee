@@ -3877,6 +3877,51 @@ int BPF_KPROBE(trace_do_sigaction)
     return events_perf_submit(&p, DO_SIGACTION, 0);
 }
 
+static __always_inline int common_utimes(struct pt_regs *ctx)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    if (!should_trace(&p))
+        return 0;
+
+    if (!should_submit(VFS_UTIMES, &(p.event->context)))
+        return 0;
+
+    struct path *path = (struct path *) PT_REGS_PARM1(ctx);
+    struct timespec64 *times = (struct timespec64 *) PT_REGS_PARM2(ctx);
+
+    void *path_str = get_path_str(path);
+
+    struct dentry *dentry = READ_KERN(path->dentry);
+    u64 inode_nr = get_inode_nr_from_dentry(dentry);
+    dev_t dev = get_dev_from_dentry(dentry);
+
+    u64 atime = get_time_nanosec_timespec(times);
+    u64 mtime = get_time_nanosec_timespec(&times[1]);
+
+    save_str_to_buf(p.event, path_str, 0);
+    save_to_submit_buf(p.event, &dev, sizeof(dev_t), 1);
+    save_to_submit_buf(p.event, &inode_nr, sizeof(u64), 2);
+    save_to_submit_buf(p.event, &atime, sizeof(u64), 3);
+    save_to_submit_buf(p.event, &mtime, sizeof(u64), 4);
+
+    return events_perf_submit(&p, VFS_UTIMES, 0);
+}
+
+SEC("kprobe/vfs_utimes")
+int BPF_KPROBE(trace_vfs_utimes)
+{
+    return common_utimes(ctx);
+}
+
+SEC("kprobe/utimes_common")
+int BPF_KPROBE(trace_utimes_common)
+{
+    return common_utimes(ctx);
+}
+
 // clang-format off
 
 // Network Packets (works from ~5.2 and beyond)

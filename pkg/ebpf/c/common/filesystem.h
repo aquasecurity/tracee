@@ -15,14 +15,19 @@
 #include "memory.h"
 #include "maps.h"
 
+static __always_inline u64 get_time_nanosec_timespec(struct timespec64 *ts)
+{
+    time64_t sec = READ_KERN(ts->tv_sec);
+    if (sec < 0)
+        return 0;
+    long ns = READ_KERN(ts->tv_nsec);
+    return (sec * 1000000000L) + ns;
+}
+
 static __always_inline u64 get_ctime_nanosec_from_inode(struct inode *inode)
 {
     struct timespec64 ts = READ_KERN(inode->i_ctime);
-    time64_t sec = READ_KERN(ts.tv_sec);
-    if (sec < 0)
-        return 0;
-    long ns = READ_KERN(ts.tv_nsec);
-    return (sec * 1000000000L) + ns;
+    return get_time_nanosec_timespec(&ts);
 }
 
 static __always_inline struct dentry *get_mnt_root_ptr_from_vfsmnt(struct vfsmount *vfsmnt)
