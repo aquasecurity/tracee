@@ -432,11 +432,17 @@ static __always_inline int save_args_to_submit_buf(event_data_t *event, u64 type
                 rc = save_to_submit_buf(event, (void *) (args->args[i]), size, index);
                 break;
         }
-        if ((type != NONE_T) && (type != STR_T) && (type != SOCKADDR_T) && (type != INT_ARR_2_T) &&
-            (type != TIMESPEC_T)) {
-            rc = save_to_submit_buf(event, (void *) &(args->args[i]), size, index);
+        switch (type) {
+            case NONE_T:
+            case STR_T:
+            case SOCKADDR_T:
+            case INT_ARR_2_T:
+            case TIMESPEC_T:
+                break;
+            default:
+                rc = save_to_submit_buf(event, (void *) &(args->args[i]), size, index);
+                break;
         }
-
         if (rc > 0) {
             arg_num++;
             rc = 0;
