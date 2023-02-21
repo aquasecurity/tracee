@@ -22,13 +22,15 @@ func FindingToEvent(f detect.Finding) (*trace.Event, error) {
 		return nil, fmt.Errorf("error finding event not found: %s", f.SigMetadata.EventName)
 	}
 
-	return newEvent(int(eventID), f.SigMetadata.EventName, s), nil
+	return newEvent(int(eventID), f.SigMetadata, s), nil
 }
 
-func newEvent(id int, name string, s trace.Event) *trace.Event {
+func newEvent(id int, sigMetadata detect.SignatureMetadata, s trace.Event) *trace.Event {
+	metadata := getMetadataFromSignatureMetadata(sigMetadata)
+
 	return &trace.Event{
 		EventID:             id,
-		EventName:           name,
+		EventName:           sigMetadata.Name,
 		Timestamp:           s.Timestamp,
 		ThreadStartTime:     s.ThreadStartTime,
 		ProcessorID:         s.ProcessorID,
@@ -56,5 +58,25 @@ func newEvent(id int, name string, s trace.Event) *trace.Event {
 		ContextFlags:        s.ContextFlags,
 		MatchedScopes:       s.MatchedScopes,
 		Args:                s.Args,
+		Metadata:            metadata,
 	}
+}
+
+func getMetadataFromSignatureMetadata(sigMetadata detect.SignatureMetadata) *trace.Metadata {
+	metadata := &trace.Metadata{}
+
+	metadata.Version = sigMetadata.Version
+	metadata.Description = sigMetadata.Description
+	metadata.Tags = sigMetadata.Tags
+
+	properties := sigMetadata.Properties
+	if sigMetadata.Properties == nil {
+		properties = make(map[string]interface{})
+	}
+
+	metadata.Properties = properties
+	metadata.Properties["signatureID"] = sigMetadata.ID
+	metadata.Properties["signatureName"] = sigMetadata.Name
+
+	return metadata
 }
