@@ -44,6 +44,15 @@ type Event struct {
 	StackAddresses      []uint64     `json:"stackAddresses"`
 	ContextFlags        ContextFlags `json:"contextFlags"`
 	Args                []Argument   `json:"args"` //Arguments are ordered according their appearance in the original event
+	Metadata            *Metadata    `json:"metadata,omitempty"`
+}
+
+// Metadata is a struct that holds metadata about an event
+type Metadata struct {
+	Version     string
+	Description string
+	Tags        []string
+	Properties  map[string]interface{}
 }
 
 // ContextFlags are flags representing event context
