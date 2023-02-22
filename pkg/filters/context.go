@@ -150,13 +150,13 @@ func (filter *eventCtxFilter) Filter(evt trace.Event) bool {
 	// TODO: optimize the order of filter calls
 	// if we order this by most to least likely filter to be set
 	// we can short circuit this logic.
-	return filter.containerFilter.Filter(evt.ContainerID != "") &&
+	return filter.containerFilter.Filter(evt.Container.ID != "") &&
 		filter.processNameFilter.Filter(evt.ProcessName) &&
 		filter.timestampFilter.Filter(int64(evt.Timestamp)) &&
 		filter.cgroupIDFilter.Filter(uint64(evt.CgroupID)) &&
-		filter.containerIDFilter.Filter(evt.ContainerID) &&
-		filter.containerImageFilter.Filter(evt.ContainerImage) &&
-		filter.containerNameFilter.Filter(evt.ContainerName) &&
+		filter.containerIDFilter.Filter(evt.Container.ID) &&
+		filter.containerImageFilter.Filter(evt.Container.ImageName) &&
+		filter.containerNameFilter.Filter(evt.Container.Name) &&
 		filter.hostNameFilter.Filter(evt.HostName) &&
 		filter.hostPidFilter.Filter(int64(evt.HostProcessID)) &&
 		filter.hostPpidFilter.Filter(int64(evt.HostParentProcessID)) &&
@@ -167,9 +167,9 @@ func (filter *eventCtxFilter) Filter(evt trace.Event) bool {
 		filter.ppidFilter.Filter(int64(evt.ParentProcessID)) &&
 		filter.pidNSFilter.Filter(int64(evt.PIDNS)) &&
 		filter.processorIDFilter.Filter(int64(evt.ProcessorID)) &&
-		filter.podNameFilter.Filter(evt.ContainerImage) &&
-		filter.podNSFilter.Filter(evt.PodNamespace) &&
-		filter.podUIDFilter.Filter(evt.PodUID) &&
+		filter.podNameFilter.Filter(evt.Kubernetes.PodName) &&
+		filter.podNSFilter.Filter(evt.Kubernetes.PodNamespace) &&
+		filter.podUIDFilter.Filter(evt.Kubernetes.PodUID) &&
 		filter.tidFilter.Filter(int64(evt.ThreadID)) &&
 		filter.uidFilter.Filter(int64(evt.UserID))
 }

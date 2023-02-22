@@ -26,7 +26,7 @@ func TestContext_Apply(t *testing.T) {
 				EventName:   "open",
 				Timestamp:   123,
 				ProcessID:   5,
-				ContainerID: "abc123",
+				Container:   trace.Container{ID: "abc123"},
 				ProcessName: "insmod",
 				ReturnValue: 2,
 			},
@@ -36,7 +36,7 @@ func TestContext_Apply(t *testing.T) {
 				Timestamp:   187,
 				ProcessID:   0,
 				ArgsNum:     3,
-				ContainerID: "",
+				Container:   trace.Container{ID: ""},
 				ProcessName: "tracee-ebpf",
 				Args: []trace.Argument{
 					{
@@ -68,7 +68,7 @@ func TestContext_Apply(t *testing.T) {
 				Timestamp:   123,
 				ProcessID:   5,
 				ReturnValue: 0,
-				ContainerID: "abc123",
+				Container:   trace.Container{ID: "abc123"},
 				ProcessName: "insmod",
 				ArgsNum:     3,
 				Args: []trace.Argument{

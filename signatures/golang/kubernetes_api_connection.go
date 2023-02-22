@@ -51,7 +51,7 @@ func (sig *K8sApiConnection) OnEvent(event protocol.Event) error {
 		return fmt.Errorf("failed to cast event's payload")
 	}
 
-	containerID := eventObj.ContainerID
+	containerID := eventObj.Container.ID
 	if containerID == "" {
 		return nil
 	}

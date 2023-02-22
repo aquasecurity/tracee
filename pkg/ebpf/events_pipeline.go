@@ -207,6 +207,17 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 			}
 
 			containerInfo := t.containers.GetCgroupInfo(ctx.CgroupID).Container
+			containerData := trace.Container{
+				ID:          containerInfo.ContainerId,
+				ImageName:   containerInfo.Image,
+				ImageDigest: containerInfo.ImageDigest,
+				Name:        containerInfo.Name,
+			}
+			kubernetesData := trace.Kubernetes{
+				PodName:      containerInfo.Pod.Name,
+				PodNamespace: containerInfo.Pod.Namespace,
+				PodUID:       containerInfo.Pod.UID,
+			}
 
 			flags := parseContextFlags(ctx.Flags)
 			syscall := ""
@@ -234,13 +245,8 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				ProcessName:         string(bytes.TrimRight(ctx.Comm[:], "\x00")),
 				HostName:            string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
 				CgroupID:            uint(ctx.CgroupID),
-				ContainerID:         containerInfo.ContainerId,
-				ContainerImage:      containerInfo.Image,
-				ContainerName:       containerInfo.Name,
-				PodName:             containerInfo.Pod.Name,
-				PodNamespace:        containerInfo.Pod.Namespace,
-				PodUID:              containerInfo.Pod.UID,
-				PodSandbox:          containerInfo.Pod.Sandbox,
+				Container:           containerData,
+				Kubernetes:          kubernetesData,
 				EventID:             int(ctx.EventID),
 				EventName:           eventDefinition.Name,
 				MatchedPolicies:     ctx.MatchedPolicies,
@@ -391,7 +397,7 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (<-c
 
 			// store the atomic read
 			policiesWithContainerFilter := t.config.Policies.ContainerFilterEnabled()
-			if policiesWithContainerFilter > 0 && event.ContainerID == "" {
+			if policiesWithContainerFilter > 0 && event.Container.ID == "" {
 				// Don't trace false container positives -
 				// a container filter is set by the user, but this event wasn't originated in a container.
 				// Although kernel filters shouldn't submit such events, we do this check to be on the safe side.

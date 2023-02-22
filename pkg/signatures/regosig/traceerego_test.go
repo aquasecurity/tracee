@@ -441,9 +441,9 @@ func BenchmarkSignature_OnEvent(b *testing.B) {
 			},
 			input: protocol.Event{
 				Payload: trace.Event{
-					EventName:   "sched_process_exec",
-					ArgsNum:     1,
-					ContainerID: "someContainer",
+					EventName: "sched_process_exec",
+					ArgsNum:   1,
+					Container: trace.Container{ID: "someContainer"},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{

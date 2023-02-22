@@ -34,18 +34,28 @@ message Event {
   int64 PIDNS = 12;
   string processName = 13;
   string hostName = 14;
-  string containerID = 15;
-  string containerImage = 16;
-  string containerName = 17;
-  string podName = 18;
-  string podNamespace = 19;
-  string podUID = 20;
-  int64 eventID = 21;
-  string eventName = 22;
-  int64 argsNum = 23;
-  int64 returnValue = 24;
-  repeated uint64 stackAddresses = 25;
-  repeated Argument args = 26;
+  Container container = 15;
+  Kubernetes kubernetes = 16;
+  int64 eventID = 17;
+  string eventName = 18;
+  int64 argsNum = 19;
+  int64 returnValue = 20;
+  repeated uint64 stackAddresses = 21;
+  repeated Argument args = 22;
+}
+
+message Container {
+  string id = 1;
+  string imageName = 2;
+  string imageDigest = 3;
+  string containerName = 4;
+}
+
+message Kubernetes {
+  string podName = 1;
+  string podNamespace = 2;
+  string podUID = 3;
+  bool podSandbox = 4;
 }
 
 // ValueType enumerates types of Argument values.

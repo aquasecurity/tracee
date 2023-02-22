@@ -62,12 +62,12 @@ func getItemIndexFromEvent(event *trace.Event, itemType PcapType) interface{} {
 	case Process:
 		return event.HostThreadID
 	case Container:
-		return event.ContainerID
+		return event.Container.ID
 	case Command:
 		// index by using container_id and comm (to avoid having all
 		// captured packets in command/host/XXX, as it would occur if
 		// indexing by container_id only).
-		ret := fmt.Sprintf("%s:%s", event.ContainerID, event.ProcessName)
+		ret := fmt.Sprintf("%s:%s", event.Container.ID, event.ProcessName)
 		return ret
 	}
 
@@ -79,7 +79,7 @@ func getItemIndexFromEvent(event *trace.Event, itemType PcapType) interface{} {
 func getPcapFileName(event *trace.Event, pcapType PcapType) (string, error) {
 	var err error
 
-	contID := getContainerID(event.ContainerID)
+	contID := getContainerID(event.Container.ID)
 
 	// create needed dirs
 	err = mkdirForPcapType(outputDirectory, contID, pcapType)

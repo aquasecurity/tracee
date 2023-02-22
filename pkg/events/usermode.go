@@ -79,6 +79,7 @@ func ExistingContainersEvents(containers *containers.Containers, enrich bool) []
 			{ArgMeta: def.Params[1], Value: info.Container.ContainerId},
 			{ArgMeta: def.Params[2], Value: info.Ctime.UnixNano()},
 			{ArgMeta: def.Params[3], Value: container.Image},
+			{ArgMeta: def.Params[3], Value: container.ImageDigest},
 			{ArgMeta: def.Params[4], Value: container.Name},
 			{ArgMeta: def.Params[5], Value: container.Pod.Name},
 			{ArgMeta: def.Params[6], Value: container.Pod.Namespace},

@@ -225,11 +225,11 @@ func (p tableEventPrinter) Print(event trace.Event) {
 	}
 	timestamp := fmt.Sprintf("%02d:%02d:%02d:%06d", ut.Hour(), ut.Minute(), ut.Second(), ut.Nanosecond()/1000)
 
-	containerId := event.ContainerID
+	containerId := event.Container.ID
 	if len(containerId) > 12 {
 		containerId = containerId[:12]
 	}
-	containerImage := event.ContainerImage
+	containerImage := event.Container.ImageName
 	if len(containerImage) > 16 {
 		containerImage = containerImage[:16]
 	}
@@ -285,7 +285,7 @@ func (p tableEventPrinter) Print(event trace.Event) {
 				event.MatchedPolicies,
 				event.HostName,
 				containerId,
-				event.ContainerImage,
+				event.Container.ImageName,
 				event.MountNS,
 				event.PIDNS,
 				event.UserID,
