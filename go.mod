@@ -100,4 +100,6 @@ require (
 	kernel.org/pub/linux/libs/security/libcap/psx v1.2.64 // indirect
 )
 
+replace github.com/aquasecurity/tracee/types => ./types
+
 replace github.com/kubernetes/cri-api => k8s.io/cri-api v0.23.5-rc.0
