@@ -37,12 +37,8 @@ func Wrap(envelope protocol.Event) (*Event, error) {
 		PIDNS:               int64(event.PIDNS),
 		ProcessName:         event.ProcessName,
 		HostName:            event.HostName,
-		ContainerID:         event.ContainerID,
-		ContainerImage:      event.ContainerImage,
-		ContainerName:       event.ContainerName,
-		PodName:             event.PodName,
-		PodNamespace:        event.PodNamespace,
-		PodUID:              event.PodUID,
+		Container:           wrapContainerData(&event.Container),
+		Kubernetes:          wrapKubernetesData(&event.Kubernetes),
 		EventID:             int64(event.EventID),
 		EventName:           event.EventName,
 		ArgsNum:             int64(event.ArgsNum),
@@ -214,4 +210,22 @@ func parsePort(value string) (uint32, error) {
 		return 0, err
 	}
 	return uint32(i), nil
+}
+
+func wrapContainerData(cont *trace.Container) *Container {
+	return &Container{
+		Id:            cont.ID,
+		ImageName:     cont.ImageName,
+		ImageDigest:   cont.ImageDigest,
+		ContainerName: cont.Name,
+	}
+}
+
+func wrapKubernetesData(kube *trace.Kubernetes) *Kubernetes {
+	return &Kubernetes{
+		PodName:      kube.PodName,
+		PodNamespace: kube.PodNamespace,
+		PodUID:       kube.PodUID,
+		PodSandbox:   kube.PodSandbox,
+	}
 }

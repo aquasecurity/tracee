@@ -31,6 +31,7 @@ func deriveContainerCreateArgs(containers *containers.Containers) func(event tra
 				info.Container.ContainerId,
 				info.Ctime.UnixNano(),
 				info.Container.Image,
+				info.Container.ImageDigest,
 				info.Container.Name,
 				info.Container.Pod.Name,
 				info.Container.Pod.Namespace,

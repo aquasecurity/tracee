@@ -78,7 +78,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 			case event := <-in:
 				eventID := events.ID(event.EventID)
 				// send out irrelevant events (non container or already enriched), don't skip the cgroup lifecycle events
-				if (event.ContainerID == "" || event.ContainerImage != "") && eventID != events.CgroupMkdir && eventID != events.CgroupRmdir {
+				if (event.Container.ID == "" || event.Container.Name != "") && eventID != events.CgroupMkdir && eventID != events.CgroupRmdir {
 					out <- event
 					continue
 				}
@@ -131,8 +131,8 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 					if _, ok := queues[cgroupId]; ok {
 						event := <-queues[cgroupId]
 						eventID := events.ID(event.EventID)
-						// check if not enrich, and only enrich regular non cgroup related events
-						if event.ContainerImage == "" && eventID != events.CgroupMkdir && eventID != events.CgroupRmdir {
+						// check if not enriched, and only enrich regular non cgroup related events
+						if event.Container.Name == "" && eventID != events.CgroupMkdir && eventID != events.CgroupRmdir {
 							// event is not enriched: enrich if enrichment worked
 							i := enrichInfo[cgroupId]
 							if i.err == nil {
@@ -182,9 +182,14 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 }
 
 func enrichEvent(evt *trace.Event, enrichData runtime.ContainerMetadata) {
-	evt.ContainerImage = enrichData.Image
-	evt.ContainerName = enrichData.Name
-	evt.PodName = enrichData.Pod.Name
-	evt.PodNamespace = enrichData.Pod.Namespace
-	evt.PodUID = enrichData.Pod.UID
+	evt.Container = trace.Container{
+		ImageName:   enrichData.Image,
+		ImageDigest: enrichData.ImageDigest,
+		Name:        enrichData.Name,
+	}
+	evt.Kubernetes = trace.Kubernetes{
+		PodName:      enrichData.Pod.Name,
+		PodNamespace: enrichData.Pod.Namespace,
+		PodUID:       enrichData.Pod.UID,
+	}
 }

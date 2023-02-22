@@ -295,9 +295,9 @@ input.processName in ['nginx', 'httpd', 'httpd-foregroun', 'lighttpd', 'apache',
 			},
 			input: protocol.Event{
 				Payload: trace.Event{
-					EventName:   "sched_process_exec",
-					ArgsNum:     1,
-					ContainerID: "someContainer",
+					EventName: "sched_process_exec",
+					ArgsNum:   1,
+					Container: trace.Container{ID: "someContainer"},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{

@@ -143,7 +143,7 @@ func (t *Tracee) processWriteEvent(event *trace.Event) error {
 	}
 
 	// stop processing if write was already indexed
-	containerId := event.ContainerID
+	containerId := event.Container.ID
 	if containerId == "" {
 		containerId = "host"
 	}
@@ -188,7 +188,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 			}
 			castedSourceFileCtime := int64(sourceFileCtime)
 
-			containerId := event.ContainerID
+			containerId := event.Container.ID
 			if containerId == "" {
 				containerId = "host"
 			}

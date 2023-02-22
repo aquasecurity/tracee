@@ -118,7 +118,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 				ProcessID:       2,
 				HostProcessID:   1002,
 				ParentProcessID: 1,
-				ContainerID:     "container ID",
+				Container:       trace.Container{ID: "container ID"},
 				ContextFlags:    trace.ContextFlags{ContainerStarted: true},
 				Args: []trace.Argument{
 					{
@@ -142,7 +142,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			},
 			expectedNumEvents: 1,
 			expectedEvent: trace.Event{
-				ProcessID: 2, ParentProcessID: 1, HostProcessID: 1002, ContainerID: "container ID", ContextFlags: trace.ContextFlags{ContainerStarted: true}, Args: []trace.Argument{{ArgMeta: trace.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
+				ProcessID: 2, ParentProcessID: 1, HostProcessID: 1002, Container: trace.Container{ID: "container ID"}, ContextFlags: trace.ContextFlags{ContainerStarted: true}, Args: []trace.Argument{{ArgMeta: trace.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
 				EventName: "test_event",
 			},
 		},
@@ -153,7 +153,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 				ProcessID:       2,
 				HostProcessID:   1002,
 				ParentProcessID: 1,
-				ContainerID:     "container ID",
+				Container:       trace.Container{ID: "container ID"},
 				ContextFlags:    trace.ContextFlags{ContainerStarted: true},
 				Args: []trace.Argument{
 					{
