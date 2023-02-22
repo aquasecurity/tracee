@@ -94,6 +94,7 @@ func (filter *ContextFilter) Parse(filterName string, operatorAndValues string) 
 			podNameFilter:        NewStringFilter(),
 			podNSFilter:          NewStringFilter(),
 			podUIDFilter:         NewStringFilter(),
+			podSandboxFilter:     NewBoolFilter(),
 			syscallFilter:        NewStringFilter(),
 		}
 		filter.filters[id] = eventFilter
@@ -109,29 +110,31 @@ func (filter *ContextFilter) Parse(filterName string, operatorAndValues string) 
 }
 
 type eventCtxFilter struct {
-	enabled              bool
-	timestampFilter      *IntFilter[int64]
-	processorIDFilter    *IntFilter[int64]
-	pidFilter            *IntFilter[int64]
-	tidFilter            *IntFilter[int64]
-	ppidFilter           *IntFilter[int64]
-	hostPidFilter        *IntFilter[int64]
-	hostTidFilter        *IntFilter[int64]
-	hostPpidFilter       *IntFilter[int64]
-	uidFilter            *IntFilter[int64]
-	mntNSFilter          *IntFilter[int64]
-	pidNSFilter          *IntFilter[int64]
-	processNameFilter    *StringFilter
-	hostNameFilter       *StringFilter
-	cgroupIDFilter       *UIntFilter[uint64]
-	containerFilter      *BoolFilter
-	containerIDFilter    *StringFilter
-	containerImageFilter *StringFilter
-	containerNameFilter  *StringFilter
-	podNameFilter        *StringFilter
-	podNSFilter          *StringFilter
-	podUIDFilter         *StringFilter
-	syscallFilter        *StringFilter
+	enabled                    bool
+	timestampFilter            *IntFilter[int64]
+	processorIDFilter          *IntFilter[int64]
+	pidFilter                  *IntFilter[int64]
+	tidFilter                  *IntFilter[int64]
+	ppidFilter                 *IntFilter[int64]
+	hostPidFilter              *IntFilter[int64]
+	hostTidFilter              *IntFilter[int64]
+	hostPpidFilter             *IntFilter[int64]
+	uidFilter                  *IntFilter[int64]
+	mntNSFilter                *IntFilter[int64]
+	pidNSFilter                *IntFilter[int64]
+	processNameFilter          *StringFilter
+	hostNameFilter             *StringFilter
+	cgroupIDFilter             *UIntFilter[uint64]
+	containerFilter            *BoolFilter
+	containerIDFilter          *StringFilter
+	containerImageFilter       *StringFilter
+	containerImageDigestFilter *StringFilter
+	containerNameFilter        *StringFilter
+	podNameFilter              *StringFilter
+	podNSFilter                *StringFilter
+	podUIDFilter               *StringFilter
+	podSandboxFilter           *BoolFilter
+	syscallFilter              *StringFilter
 }
 
 func (f *eventCtxFilter) Enable() {
@@ -226,15 +229,22 @@ func (f *eventCtxFilter) Parse(field string, operatorAndValues string) error {
 		filter := f.containerFilter
 		filter.Enable()
 		return filter.add(true, Equal)
+	// TODO: change this and below container filters to the format
+	// eventname.context.container.id and so on...
 	case "containerId":
 		filter := f.containerIDFilter
 		return f.addContainer(filter, operatorAndValues)
 	case "containerImage":
 		filter := f.containerImageFilter
 		return f.addContainer(filter, operatorAndValues)
+	case "containerImageDigest":
+		filter := f.containerImageDigestFilter
+		return f.addContainer(filter, operatorAndValues)
 	case "containerName":
 		filter := f.containerNameFilter
 		return f.addContainer(filter, operatorAndValues)
+	// TODO: change this and below pod filters to the format
+	// eventname.context.kubernetes.podName and so on...
 	case "podName":
 		filter := f.podNameFilter
 		return f.addContainer(filter, operatorAndValues)
@@ -243,6 +253,9 @@ func (f *eventCtxFilter) Parse(field string, operatorAndValues string) error {
 		return f.addContainer(filter, operatorAndValues)
 	case "podUid":
 		filter := f.podUIDFilter
+		return f.addContainer(filter, operatorAndValues)
+	case "podSandbox":
+		filter := f.podSandboxFilter
 		return f.addContainer(filter, operatorAndValues)
 	case "syscall":
 		filter := f.syscallFilter
