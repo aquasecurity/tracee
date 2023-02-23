@@ -5,7 +5,7 @@ collected by the `tracee-ebpf` binary. By default, `tracee-ebpf` binary prints e
 redirected to the standard input of the `tracee-rules` binary:
 
 ```
-tracee-ebpf --output=format:gob --trace event=mem_prot_alert | tracee-rules --input-tracee=file:stdin --input-tracee=format:gob
+tracee-ebpf --output=format:gob --filter event=mem_prot_alert | tracee-rules --input-tracee=file:stdin --input-tracee=format:gob
 ```
 
 The heuristics implemented by `tracee-rules` are either Go or Rego signatures loaded on startup as Go plugins or Rego

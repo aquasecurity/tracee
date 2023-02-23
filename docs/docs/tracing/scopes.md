@@ -7,7 +7,7 @@ events. Up to 64 scopes (workloads) can be used at the same time.
 
 If one of your filters doesn't match, the event will be filtered out, as they
 work together in a short circuit. However, you can use multiple sets of
-filters, called scopes, by adding a number and a colon before the trace flags,
+filters, called scopes, by adding a number and a colon before the filter flags,
 such as `1:`. In this way, you can have different workloads that mix different
 types of filters.
 
@@ -44,7 +44,7 @@ Trace in **scope 42** `sched_process_exec` events from `/usr/bin/ls` binary:
 
 ```shell
 sudo ./dist/tracee \
--t 42:event=sched_process_exec -t 42:binary=/usr/bin/ls \
+-f 42:event=sched_process_exec -f 42:binary=/usr/bin/ls \
 -o format:table-verbose
 ```
 
@@ -67,8 +67,8 @@ trace in **scope 9** only `sched_process_exit` events from `ls` command:
 
     ```shell
     sudo ./dist/tracee \
-    -t 3:event=sched_process_exit -t 3:comm=id \
-    -t 9:event=sched_process_exit -t 9:comm=ls \
+    -f 3:event=sched_process_exit -f 3:comm=id \
+    -f 9:event=sched_process_exit -f 9:comm=ls \
     -o format:table-verbose
     ```
 
@@ -83,8 +83,8 @@ trace in **scope 7** only `close` events from `id` command:
 
     ```shell
     sudo ./dist/tracee \
-    -t 6:event=openat -t 6:comm=id \
-    -t 7:event=close -t 7:comm=id \
+    -f 6:event=openat -f 6:comm=id \
+    -f 7:event=close -f 7:comm=id \
     -o format:table-verbose
     ```
 
@@ -100,9 +100,9 @@ trace in **scope 9** only `ptrace` events from **all**.
 
     ```shell
     sudo ./dist/tracee \
-    -t 3:event=anti_debugging \
-    -t 5:event=net_packet_icmp -t 5:comm=ping \
-    -t 9:event=ptrace \
+    -f 3:event=anti_debugging \
+    -f 5:event=net_packet_icmp -f 5:comm=ping \
+    -f 9:event=ptrace \
     -o format:table-verbose
     ```
 
@@ -122,8 +122,8 @@ trace in **scope 9** only `sched_process_exit` events from **all**:
 
     ```shell
     sudo ./dist/tracee \
-    -t 3:event=sched_process_exit -t 3:comm=id \
-    -t 9:event=sched_process_exit \
+    -f 3:event=sched_process_exit -f 3:comm=id \
+    -f 9:event=sched_process_exit \
     -o format:table-verbose
     ```
 
@@ -140,8 +140,8 @@ trace in **scope 5** only `net_packet_icmp` events from **all**:
 
     ```shell
     sudo ./dist/tracee \
-    -t 3:event=net_packet_icmp -t 3:container \
-    -t 5:event=net_packet_icmp \
+    -f 3:event=net_packet_icmp -f 3:container \
+    -f 5:event=net_packet_icmp \
     -o format:table-verbose
     ```
 
@@ -159,9 +159,9 @@ trace in **scope 9** only `ptrace` events from **all**.
 
     ```shell
     sudo ./dist/tracee \
-    -t 3:event=anti_debugging,ptrace \
-    -t 5:event=net_packet_icmp -t 5:comm=ping \
-    -t 9:event=ptrace \
+    -f 3:event=anti_debugging,ptrace \
+    -f 5:event=net_packet_icmp -f 5:comm=ping \
+    -f 9:event=ptrace \
     -o format:table-verbose
     ```
 

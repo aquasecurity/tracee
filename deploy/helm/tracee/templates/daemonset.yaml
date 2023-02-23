@@ -35,7 +35,7 @@ spec:
           args:
             - --output
             - json
-            - --trace
+            - --filter
             - event={{ .Values.events }}
           {{- end }}
           {{- if .Values.postee.enabled }}

@@ -17,5 +17,5 @@ func InvalidEventExcludeError(event string) error {
 }
 
 func InvalidFilterOptionError(expr string) error {
-	return fmt.Errorf("invalid filter option specified (%s), use '--trace help' for more info", expr)
+	return fmt.Errorf("invalid filter option specified (%s), use '--filter help' for more info", expr)
 }

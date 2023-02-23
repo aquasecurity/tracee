@@ -33,7 +33,7 @@ Also, used to maintain the cache used by the event for performance improvement.
 ## Example Use Case
 Could be used for example to catch collision between a shared object and `libc.so`, overwriting libc symbols:
 ```shell
-./dist/tracee-ebpf -t e=symbols_collision -t symbols_collision.args.loaded_path=/usr/lib/libc.so.6
+./dist/tracee-ebpf -f e=symbols_collision -f symbols_collision.args.loaded_path=/usr/lib/libc.so.6
 ```
 
 Running this line will give a lot of spam symbols collision, for example collisions of `libc` with `libm`:
@@ -45,11 +45,11 @@ TIME             UID    COMM             PID     TID     RET              EVENT 
 To reduce the spam collisions, we can configure the event to not print the collision using two ways:
 1. Whitelist the collided symbols:
 ```shell
-./dist/tracee-ebpf -t e=symbols_collision -t symbols_collision.args.loaded_path=/usr/lib/libc.so.6 -t symbols_collision.args.symbols!=finitel,__signbitf,finite,frexpl,frexp,scalbn,__finite,copysignl,scalbnf,__signbitl,scalbnl,copysign,copysignf,ldexpf,modff,modf,ldexp,ldexpl,finitef,frexpf,__finitel,modfl,__finitef,__signbit
+./dist/tracee-ebpf -f e=symbols_collision -f symbols_collision.args.loaded_path=/usr/lib/libc.so.6 -f symbols_collision.args.symbols!=finitel,__signbitf,finite,frexpl,frexp,scalbn,__finite,copysignl,scalbnf,__signbitl,scalbnl,copysign,copysignf,ldexpf,modff,modf,ldexp,ldexpl,finitef,frexpf,__finitel,modfl,__finitef,__signbit
 ```
 2. Whitelist the library `libm`:
 ```shell
-./dist/tracee-ebpf -t e=symbols_collision -t symbols_collision.args.loaded_path=/usr/lib/libc.so.6 -t symbols_collision.args.collision_path!=/usr/lib/libm.so.6
+./dist/tracee-ebpf -f e=symbols_collision -f symbols_collision.args.loaded_path=/usr/lib/libc.so.6 -f symbols_collision.args.collision_path!=/usr/lib/libm.so.6
 ```
 
 The first approach is recommended when dealing with common symbols like 'setup_', 'finish_' etc. because it will reduce

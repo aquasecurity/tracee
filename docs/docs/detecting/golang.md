@@ -117,8 +117,8 @@ There are 2 ways you can get your own golang signatures working with tracee.
     ```text
     $ sudo ./dist/tracee-ebpf \
         --output json \
-        --trace comm=bash \
-        --trace follow \
+        --filter comm=bash \
+        --filter follow \
         --output option:parse-arguments \
         -trace event=$(./dist/tracee-rules --rules Mine-0.1.0 --list-events) \
         | ./dist/tracee-rules \

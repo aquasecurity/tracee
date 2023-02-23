@@ -15,7 +15,7 @@ Tracee will show you collected information about the running Linux OS with the
 `--log debug` argument:
 
 ```
-$ sudo ./dist/tracee-ebpf --log debug --trace uid=1000 --trace pid=new --trace event=execve
+$ sudo ./dist/tracee-ebpf --log debug --filter uid=1000 --filter pid=new --filter event=execve
 {"level":"debug","ts":1670976393.7308447,"msg":"osinfo","ARCH":"x86_64","PRETTY_NAME":"\"Manjaro Linux\"","ID":"manjaro","ID_LIKE":"arch","BUILD_ID":"rolling","KERNEL_RELEASE":"5.15.81-1-MANJARO","pkg":"urfave","file":"urfave.go","line":53}
 {"level":"debug","ts":1670976393.73088,"msg":"RuntimeSockets: failed to register default","socket":"containerd","error":"failed to register runtime socket stat /var/run/containerd/containerd.sock: no such file or directory","pkg":"flags","file":"containers.go","line":45}
 {"level":"debug","ts":1670976393.730894,"msg":"RuntimeSockets: failed to register default","socket":"crio","error":"failed to register runtime socket stat /var/run/crio/crio.sock: no such file or directory","pkg":"flags","file":"containers.go","line":45}
@@ -36,7 +36,7 @@ because you're running inside a container that does not support it, you may
 face the following error:
 
 ```
-$ sudo ./dist/tracee-ebpf --log debug --trace uid=1000 --trace pid=new --trace event=execve
+$ sudo ./dist/tracee-ebpf --log debug --filter uid=1000 --filter pid=new --filter event=execve
 {"level":"debug","ts":1670976530.5685039,"msg":"osinfo", "warning: os-release file could not be found","error","open /etc/os-release: no such file or directory","pkg":"urfave","file":"urfave.go","line":33}
 ...
 TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
@@ -56,7 +56,7 @@ you may create another os-release file and inform tracee-ebpf by using
 LIBBPFGO's environment variable `LIBBPFGO_OSRELEASE_FILE`:
 
 ```
-$ sudo LIBBPFGO_OSRELEASE_FILE=/etc/os-release.orig ./dist/tracee-ebpf --trace uid=1000 --trace pid=new --trace event=execve
+$ sudo LIBBPFGO_OSRELEASE_FILE=/etc/os-release.orig ./dist/tracee-ebpf --filter uid=1000 --filter pid=new --filter event=execve
 ```
 
 > If you're running tracee inside a docker container, you can simply bind mount
@@ -74,7 +74,7 @@ Tracee needs access to kconfig file (/proc/config.gz OR /boot/config-$(uname -r)
     Tracee **should NOT fail** when it cannot find a kconfig file:
     
     ```text
-    $ sudo ./dist/tracee-ebpf --log debug --trace uid=1000 --trace pid=new --trace event=execve
+    $ sudo ./dist/tracee-ebpf --log debug --filter uid=1000 --filter pid=new --filter event=execve
     {"level":"debug","ts":1670976875.7735798,"msg":"osinfo","VERSION":"\"20.04.5 LTS (Focal Fossa)\"","ID":"ubuntu","ID_LIKE":"debian","PRETTY_NAME":"\"Ubuntu 20.04.5 LTS\"","VERSION_ID":"\"20.04\"","VERSION_CODENAME":"focal","KERNEL_RELEASE":"5.4.0-91-generic","ARCH":"x86_64","pkg":"urfave","file":"urfave.go","line":53}
     ...
     {"level":"warn","ts":1670976875.7762284,"msg":"KConfig: could not check enabled kconfig features","error":"could not read /boot/config-5.4.0-91-generic: stat /boot/config-5.4.0-91-generic: no such file or directory"}
@@ -94,7 +94,7 @@ Tracee needs access to kconfig file (/proc/config.gz OR /boot/config-$(uname -r)
     variable:
 
 ```text
-$ sudo LIBBPFGO_KCONFIG_FILE=/boot/config-other -E ./dist/tracee-ebpf --log debug --trace uid=1000 --trace pid=new --trace event=execve
+$ sudo LIBBPFGO_KCONFIG_FILE=/boot/config-other -E ./dist/tracee-ebpf --log debug --filter uid=1000 --filter pid=new --filter event=execve
 {"level":"debug","ts":1670979362.3586345,"msg":"osinfo","VERSION_ID":"\"20.04\"","VERSION_CODENAME":"focal","KERNEL_RELEASE":"5.4.0-91-generic","ARCH":"x86_64","VERSION":"\"20.04.5 LTS (Focal Fossa)\"","ID":"ubuntu","ID_LIKE":"debian","PRETTY_NAME":"\"Ubuntu 20.04.5 LTS\"","pkg":"urfave","file":"urfave.go","line":53}
 {"level":"debug","ts":1670979362.358663,"msg":"RuntimeSockets: failed to register default","socket":"containerd","error":"failed to register runtime socket stat /var/run/containerd/containerd.sock: no such file or directory","pkg":"flags","file":"containers.go","line":45}
 {"level":"debug","ts":1670979362.3586702,"msg":"RuntimeSockets: failed to register default","socket":"docker","error":"failed to register runtime socket stat /var/run/docker.sock: no such file or directory","pkg":"flags","file":"containers.go","line":45}

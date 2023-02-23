@@ -61,7 +61,7 @@ Check [getting tracee] in order to understand how to obtain **tracee-rules**.
 
      This will:
      
-     1. Start **tracee-ebpf** with the default tracing mode (default events).
+     1. Start **tracee-ebpf** with the default filtering mode (default events).
      2. Configure **tracee-ebpf** to output events into stdout as [gob] format.
      3. Start **tracee-rules** with all built-in signatures enabled.
 
@@ -71,7 +71,7 @@ Check [getting tracee] in order to understand how to obtain **tracee-rules**.
 
 !!! Example
     Let's put together all that we learned from the [tracing] section, together
-    with what we're learning at this section and see how we can trace events
+    with what we're learning at this section and see how we can filter events
     and pipe them to **tracee-rules** so detections occur:
      
      [tracing]:../tracing/index.md
@@ -79,10 +79,10 @@ Check [getting tracee] in order to understand how to obtain **tracee-rules**.
      ```text
      $ sudo ./dist/tracee-ebpf \
          --output json \
-         --trace comm=bash \
-         --trace follow \
+         --filter comm=bash \
+         --filter follow \
          --output option:parse-arguments \
-         --trace event=$(./dist/tracee-rules --list-events) \
+         --filter event=$(./dist/tracee-rules --list-events) \
          | ./dist/tracee-rules \
          --input-tracee format:json \
          --input-tracee file:stdin
@@ -92,7 +92,7 @@ Check [getting tracee] in order to understand how to obtain **tracee-rules**.
      
      We are:
 
-     1. **tracing all executed commands** from all existing and new `bash` processes,
+     1. **filtering all executed commands** from all existing and new `bash` processes,
      1. **detecting syscalls** that generated each event (if they're not syscalls),
      1. **parsing captured event** arguments into a human readable format,
      1. **filtering for ALL events needed by all existing signatures**,
@@ -153,7 +153,7 @@ meaningful events (for the loaded signature(s)) you may request from
     new processes happening as childs of all running `bash` processes.
 
     ```text
-    $ sudo ./dist/tracee-ebpf --output json --trace comm=bash --trace follow --output option:parse-arguments --output option:exec-env --trace event=$(./dist/tracee-rules --rules TRC-2 --list-events) | ./dist/tracee-rules --input-tracee format:json --input-tracee file:stdin --rules TRC-2
+    $ sudo ./dist/tracee-ebpf --output json --filter comm=bash --filter follow --output option:parse-arguments --output option:exec-env --filter event=$(./dist/tracee-rules --rules TRC-2 --list-events) | ./dist/tracee-rules --input-tracee format:json --input-tracee file:stdin --rules TRC-2
     Loaded 1 signature(s): [TRC-2]
     
     *** Detection ***

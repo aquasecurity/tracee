@@ -99,8 +99,8 @@ for TEST in $TESTS; do
         --cache mem-cache-size=512 \
         --output format:gob \
         --output option:parse-arguments \
-        --trace container=new \
-        --trace event=$events \
+        --filter container=new \
+        --filter event=$events \
         2>$SCRIPT_TMP_DIR/ebpf-$$ \
         | \
     ./dist/tracee-rules \

@@ -29,8 +29,8 @@
         tracee@f64bb4a2f0b1[/tracee]$ make tracee-ebpf
         tracee@f64bb4a2f0b1[/tracee]$ sudo ./dist/tracee-ebpf \
             -o option:parse-arguments \
-            --trace comm=bash \
-            --trace follow
+            --filter comm=bash \
+            --filter follow
         ```
     
     Now, in your host's bash shell, execute a command. You will see all events
@@ -47,8 +47,8 @@
         tracee@f64bb4a2f0b1[/tracee]$ sudo ./dist/tracee-ebpf \
             -o format:json \
             -o option:parse-arguments \
-            --trace comm=bash \
-            --trace follow | \
+            --filter comm=bash \
+            --filter follow | \
             ./dist/tracee-rules \
             --input-tracee file:stdin \
             --input-tracee format:json
@@ -130,8 +130,8 @@ And, after the compilation, run the commands directly in your host:
 ```text
 $ sudo ./dist/tracee-ebpf \
     -o option:parse-arguments \
-    --trace comm=bash \
-    --trace follow
+    --filter comm=bash \
+    --filter follow
 ```
 
 > **Note**: the generated binary must be compatible to your host (depending on
