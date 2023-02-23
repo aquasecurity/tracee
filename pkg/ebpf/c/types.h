@@ -117,6 +117,7 @@ enum event_id_e
     DO_MMAP,
     PRINT_MEM_DUMP,
     VFS_UTIMES,
+    DO_TRUNCATE,
     MAX_EVENT_ID,
 };
 
