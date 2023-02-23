@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -13,6 +15,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/types/trace"
+
+	forward "github.com/IBM/fluent-forward-go/fluent/client"
 )
 
 type EventPrinter interface {
@@ -42,6 +46,7 @@ type Config struct {
 	OutFile       io.WriteCloser
 	ContainerMode ContainerMode
 	RelativeTS    bool
+	ForwardURL    *url.URL
 }
 
 func New(config Config) (EventPrinter, error) {
@@ -76,6 +81,10 @@ func New(config Config) (EventPrinter, error) {
 	case kind == "gob":
 		res = &gobEventPrinter{
 			out: config.OutFile,
+		}
+	case kind == "forward":
+		res = &forwardEventPrinter{
+			url: config.ForwardURL,
 		}
 	case strings.HasPrefix(kind, "gotemplate="):
 		res = &templateEventPrinter{
@@ -487,3 +496,131 @@ func (p *ignoreEventPrinter) Print(event trace.Event) {}
 func (p *ignoreEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p ignoreEventPrinter) Close() {}
+
+// forwardEventPrinter sends events over the Fluent Forward protocol to a receiver
+type forwardEventPrinter struct {
+	url    *url.URL
+	client *forward.Client
+	// These parameters can be set up from the URL
+	tag string `default:"tracee"`
+}
+
+func getParameterValue(parameters url.Values, key string, defaultValue string) string {
+	param, found := parameters[key]
+	// Ensure we have a non-empty parameter set for this key
+	if found && param[0] != "" {
+		return param[0]
+	}
+	// Otherwise use the default value
+	return defaultValue
+}
+
+func (p *forwardEventPrinter) Init() error {
+	// Now parse the optional parameters with defaults and some basic verification
+	parameters, _ := url.ParseQuery(p.url.RawQuery)
+
+	// Check if we have a tag set or default it
+	p.tag = getParameterValue(parameters, "tag", "tracee")
+
+	// Do we want to enable requireAck?
+	requireAckString := getParameterValue(parameters, "requireAck", "false")
+	requireAck, err := strconv.ParseBool(requireAckString)
+	if err != nil {
+		return fmt.Errorf("unable to convert requireAck value %q: %w", requireAckString, err)
+	}
+
+	// Timeout conversion from string
+	timeoutValueString := getParameterValue(parameters, "connectionTimeout", "10s")
+	connectionTimeout, err := time.ParseDuration(timeoutValueString)
+	if err != nil {
+		return fmt.Errorf("unable to convert connectionTimeout value %q: %w", timeoutValueString, err)
+	}
+
+	// We should have both username and password or neither for basic auth
+	username := p.url.User.Username()
+	password, isPasswordSet := p.url.User.Password()
+	if username != "" && !isPasswordSet {
+		return fmt.Errorf("missing basic auth configuration for Forward destination")
+	}
+
+	// Ensure we support tcp or udp protocols
+	protocol := "tcp"
+	if p.url.Scheme != "" {
+		protocol = p.url.Scheme
+	}
+	if protocol != "tcp" && protocol != "udp" {
+		return fmt.Errorf("unsupported protocol for Forward destination: %s", protocol)
+	}
+
+	// Extract the host (and port)
+	address := p.url.Host
+	logger.Info("attempting to connect to Forward destination", "url", address, "tag", p.tag)
+
+	// Create a TCP connection to the forward receiver
+	p.client = forward.New(forward.ConnectionOptions{
+		Factory: &forward.ConnFactory{
+			Network: protocol,
+			Address: address,
+		},
+		RequireAck:        requireAck,
+		ConnectionTimeout: connectionTimeout,
+		AuthInfo: forward.AuthInfo{
+			Username: username,
+			Password: password,
+		},
+	})
+
+	err = p.client.Connect()
+	if err != nil {
+		// The destination may not be available but may appear later so do not return an error here and just connect later.
+		logger.Error("error connecting to Forward destination", "url", p.url.String(), "error", err)
+	}
+	return nil
+}
+
+func (p *forwardEventPrinter) Preamble() {}
+
+func (p *forwardEventPrinter) Print(event trace.Event) {
+	if p.client == nil {
+		logger.Error("invalid Forward client")
+		return
+	}
+
+	// The actual event is marshalled as JSON then sent with the other information (tag, etc.)
+	eBytes, err := json.Marshal(event)
+	if err != nil {
+		logger.Error("error marshaling event to json", "error", err)
+	}
+
+	record := map[string]interface{}{
+		"event": string(eBytes),
+	}
+
+	err = p.client.SendMessage(p.tag, record)
+	// Assuming all is well we continue but if the connection is dropped or some other error we retry
+	if err != nil {
+		logger.Error("error writing to Forward destination", "destination", p.url.Host, "tag", p.tag, "error", err)
+		// Try five times to reconnect and send before giving up
+		// TODO: consider using go-kit for circuit break, retry, etc
+		for attempts := 0; attempts < 5; attempts++ {
+			// Attempt to reconnect (remote end may have dropped/restarted)
+			err = p.client.Reconnect()
+			if err == nil {
+				// Re-attempt to send
+				err = p.client.SendMessage(p.tag, record)
+				if err == nil {
+					break
+				}
+			}
+		}
+	}
+}
+
+func (p *forwardEventPrinter) Epilogue(stats metrics.Stats) {}
+
+func (p forwardEventPrinter) Close() {
+	if p.client != nil {
+		logger.Info("disconnecting from Forward destination", "url", p.url.Host, "tag", p.tag)
+		p.client.Disconnect()
+	}
+}

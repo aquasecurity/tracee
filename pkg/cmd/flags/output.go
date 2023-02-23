@@ -2,6 +2,7 @@ package flags
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,6 +19,7 @@ Possible options:
 [format:]json                                      output events in json format
 [format:]gob                                       output events in gob format
 [format:]gotemplate=/path/to/template              output events formatted using a given gotemplate file
+forward:url                                        send events in json format using the Forward protocol to a Fluent receiver
 out-file:/path/to/file                             write the output to a specified file. create/trim the file if exists (default: stdout)
 log-file:/path/to/file                             write the logs to a specified file. create/trim the file if exists (default: stderr)
 none                                               ignore stream of events output, usually used with --capture
@@ -31,10 +33,11 @@ option:{stack-addresses,exec-env,relative-time,exec-hash,parse-arguments,sort-ev
   parse-arguments-fds                              enable parse-arguments and enrich fd with its file path translation. This can cause pipeline slowdowns.
   sort-events                                      enable sorting events before passing to them output. This will decrease the overall program efficiency.
 Examples:
-  --output json                                            | output as json to stdout
-  --output gotemplate=/path/to/my.tmpl                     | output as the provided go template
-  --output out-file:/my/out --output log-file:/my/log      | output to /my/out and logs to /my/log
-  --output none                                            | ignore events output
+  --output json                                                    | output as json
+  --output gotemplate=/path/to/my.tmpl                             | output as the provided go template
+  --output out-file:/my/out --output log-file:/my/log              | output to /my/out and logs to /my/log
+  --output forward:tcp://user:pass@127.0.0.1:24224?tag=tracee      | output via the Forward protocol to 127.0.0.1 on port 24224 with the tag 'tracee' using TCP
+  --output none                                                    | ignore events output
 Use this flag multiple times to choose multiple output options
 `
 }
@@ -55,48 +58,70 @@ func PrepareOutput(outputSlice []string) (OutputConfig, error) {
 	printerKind := "table"
 
 	for _, o := range outputSlice {
-		outputParts := strings.SplitN(o, ":", 2)
-		numParts := len(outputParts)
-		if numParts == 1 && outputParts[0] != "none" {
-			outputParts = append(outputParts, outputParts[0])
-			outputParts[0] = "format"
-		}
+		// Forward uses the net/url library to handle a full url including protocol, etc. so must cope with embedded colon characters
+		if strings.HasPrefix(o, "forward:") {
+			// Validate the forward configuration details which are as follows:
+			// --output forward:[protocol://user:pass@]host:port[?k=v#f]
+			// Only host and port are required.
 
-		switch outputParts[0] {
-		case "none":
-			printerKind = "ignore"
-		case "format":
-			printerKind = outputParts[1]
-			if err := validateFormat(printerKind); err != nil {
-				return outConfig, err
+			// Split out just the config
+			forwardConfigParts := strings.SplitN(o, ":", 2)
+			if len(forwardConfigParts) != 2 {
+				return outConfig, fmt.Errorf("invalid configuration for forward output: %q. Use '--output help' for more info", o)
 			}
-		case "out-file":
-			outPath = outputParts[1]
-		case "log-file":
-			logPath = outputParts[1]
-		case "option":
-			switch outputParts[1] {
-			case "stack-addresses":
-				traceeConfig.StackAddresses = true
-			case "exec-env":
-				traceeConfig.ExecEnv = true
-			case "relative-time":
-				traceeConfig.RelativeTime = true
-				printerConfig.RelativeTS = true
-			case "exec-hash":
-				traceeConfig.ExecHash = true
-			case "parse-arguments":
-				traceeConfig.ParseArguments = true
-			case "parse-arguments-fds":
-				traceeConfig.ParseArgumentsFDs = true
-				traceeConfig.ParseArguments = true // no point in parsing file descriptor args only
-			case "sort-events":
-				traceeConfig.EventsSorting = true
+			// Now parse our URL using the standard library and report any errors from basic parsing.
+			forwardURL, err := url.Parse(forwardConfigParts[1])
+			if err != nil {
+				return outConfig, fmt.Errorf("invalid configuration for forward output (%s): %w. Use '--output help' for more info", forwardConfigParts[1], err)
+			}
+			printerKind = "forward"
+			// Deliberately lightweight to just pass the URL into the printer config.
+			// We handle the specific configuration and other checks as part of the Init() call there.
+			printerConfig.ForwardURL = forwardURL
+		} else {
+			outputParts := strings.SplitN(o, ":", 2)
+			numParts := len(outputParts)
+			if numParts == 1 && outputParts[0] != "none" {
+				outputParts = append(outputParts, outputParts[0])
+				outputParts[0] = "format"
+			}
+
+			switch outputParts[0] {
+			case "none":
+				printerKind = "ignore"
+			case "format":
+				printerKind = outputParts[1]
+				if err := validateFormat(printerKind); err != nil {
+					return outConfig, err
+				}
+			case "out-file":
+				outPath = outputParts[1]
+			case "log-file":
+				logPath = outputParts[1]
+			case "option":
+				switch outputParts[1] {
+				case "stack-addresses":
+					traceeConfig.StackAddresses = true
+				case "exec-env":
+					traceeConfig.ExecEnv = true
+				case "relative-time":
+					traceeConfig.RelativeTime = true
+					printerConfig.RelativeTS = true
+				case "exec-hash":
+					traceeConfig.ExecHash = true
+				case "parse-arguments":
+					traceeConfig.ParseArguments = true
+				case "parse-arguments-fds":
+					traceeConfig.ParseArgumentsFDs = true
+					traceeConfig.ParseArguments = true // no point in parsing file descriptor args only
+				case "sort-events":
+					traceeConfig.EventsSorting = true
+				default:
+					return outConfig, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
+				}
 			default:
-				return outConfig, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
+				return outConfig, fmt.Errorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
 			}
-		default:
-			return outConfig, fmt.Errorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
 		}
 	}
 

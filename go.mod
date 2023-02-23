@@ -3,6 +3,7 @@ module github.com/aquasecurity/tracee
 go 1.19
 
 require (
+	github.com/IBM/fluent-forward-go v0.2.1
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/aquasecurity/libbpfgo v0.4.5-libbpf-1.0.1.0.20230220155652-8f83f25d0ee2
 	github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230109115933-5ede01b209e1
@@ -26,6 +27,13 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
 	kernel.org/pub/linux/libs/security/libcap/cap v1.2.64
+)
+
+require (
+	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/philhofer/fwd v1.1.1 // indirect
+	github.com/rogpeppe/go-internal v1.9.0 // indirect
+	github.com/tinylib/msgp v1.1.6 // indirect
 )
 
 require (
