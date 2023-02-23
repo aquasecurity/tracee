@@ -108,7 +108,7 @@ func GetContainerIdFromTaskDir(taskPath string) (string, error) {
 	taskPath = fmt.Sprintf("%s/cgroup", taskPath)
 	cgroupFile, err := os.Open(taskPath)
 	if err != nil {
-		return containerId, err
+		return containerId, logger.ErrorFunc(err)
 	}
 	defer cgroupFile.Close()
 	scanner := bufio.NewScanner(cgroupFile)
@@ -142,7 +142,7 @@ func (c *Containers) populate() error {
 		statusChange := time.Unix(stat.Ctim.Sec, stat.Ctim.Nsec)
 		_, err = c.CgroupUpdate(inodeNumber, path, statusChange)
 
-		return err
+		return logger.ErrorFunc(err)
 	}
 
 	return filepath.WalkDir(c.cgroups.GetDefaultCgroup().GetMountPoint(), fn)
@@ -184,14 +184,14 @@ func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetada
 
 	//if there is no cgroup anymore for some reason, return early
 	if !ok {
-		return metadata, fmt.Errorf("no cgroup to enrich")
+		return metadata, logger.NewErrorf("no cgroup to enrich")
 	}
 
 	containerId := info.Container.ContainerId
 	runtime := info.Runtime
 
 	if containerId == "" {
-		return metadata, fmt.Errorf("no containerId")
+		return metadata, logger.NewErrorf("no containerId")
 	}
 
 	//There might be a performance overhead with the cancel
@@ -201,7 +201,7 @@ func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetada
 	defer cancel()
 	//if enrichment fails, just return early
 	if err != nil {
-		return metadata, err
+		return metadata, logger.ErrorFunc(err)
 	}
 
 	info.Container = metadata
@@ -406,7 +406,7 @@ const (
 func (c *Containers) PopulateBpfMap(bpfModule *libbpfgo.Module) error {
 	containersMap, err := bpfModule.GetMap(c.bpfMapName)
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 
 	c.mtx.RLock()
@@ -418,7 +418,7 @@ func (c *Containers) PopulateBpfMap(bpfModule *libbpfgo.Module) error {
 	}
 	c.mtx.RUnlock()
 
-	return err
+	return logger.ErrorFunc(err)
 }
 
 func (c *Containers) RemoveFromBpfMap(bpfModule *libbpfgo.Module, cgroupId uint64, hierarchyID uint32) error {
@@ -432,7 +432,7 @@ func (c *Containers) RemoveFromBpfMap(bpfModule *libbpfgo.Module, cgroupId uint6
 
 	containersMap, err := bpfModule.GetMap(c.bpfMapName)
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 
 	cgroupIdLsb := uint32(cgroupId)

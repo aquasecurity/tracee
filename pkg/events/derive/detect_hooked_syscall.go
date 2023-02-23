@@ -6,6 +6,7 @@ import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -18,11 +19,11 @@ func deriveDetectHookedSyscallArgs(kernelSymbols helpers.KernelSymbolTable) deri
 	return func(event trace.Event) ([]interface{}, error) {
 		syscallAddresses, err := parse.ArgVal[[]uint64](&event, "syscalls_addresses")
 		if err != nil {
-			return nil, fmt.Errorf("error parsing syscalls_numbers arg: %v", err)
+			return nil, logger.NewErrorf("error parsing syscalls_numbers arg: %v", err)
 		}
 		hookedSyscall, err := analyzeHookedAddresses(syscallAddresses, kernelSymbols)
 		if err != nil {
-			return nil, fmt.Errorf("error parsing analyzing hooked syscalls addresses arg: %v", err)
+			return nil, logger.NewErrorf("error parsing analyzing hooked syscalls addresses arg: %v", err)
 		}
 		return []interface{}{hookedSyscall}, nil
 	}
@@ -37,7 +38,7 @@ func analyzeHookedAddresses(addresses []uint64, kernelSymbols helpers.KernelSymb
 		}
 		syscallsToCheck := events.SyscallsToCheck()
 		if idx > len(syscallsToCheck) {
-			return nil, fmt.Errorf("syscall inedx out of the syscalls to check list")
+			return nil, logger.NewErrorf("syscall inedx out of the syscalls to check list")
 		}
 		hookingFunction := utils.ParseSymbol(syscallAddress, kernelSymbols)
 		syscallNumber := syscallsToCheck[idx]

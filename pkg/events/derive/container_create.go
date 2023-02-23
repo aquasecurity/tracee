@@ -5,6 +5,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -18,11 +19,11 @@ func deriveContainerCreateArgs(containers *containers.Containers) func(event tra
 	return func(event trace.Event) ([]interface{}, error) {
 		// if cgroup_id is from non default hid (v1 case), the cgroup info query will fail, so we skip
 		if check, err := isCgroupEventInHid(&event, containers); !check {
-			return nil, err
+			return nil, logger.ErrorFunc(err)
 		}
 		cgroupId, err := parse.ArgVal[uint64](&event, "cgroup_id")
 		if err != nil {
-			return nil, err
+			return nil, logger.ErrorFunc(err)
 		}
 		if info := containers.GetCgroupInfo(cgroupId); info.Container.ContainerId != "" {
 			args := []interface{}{
@@ -51,7 +52,7 @@ func isCgroupEventInHid(event *trace.Event, containers *containers.Containers) (
 	}
 	hierarchyID, err := parse.ArgVal[uint32](event, "hierarchy_id")
 	if err != nil {
-		return false, err
+		return false, logger.ErrorFunc(err)
 	}
 	return containers.GetDefaultCgroupHierarchyID() == int(hierarchyID), nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/aquasecurity/tracee/pkg/logger"
 	cri "github.com/kubernetes/cri-api/pkg/apis/runtime/v1alpha2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -17,7 +18,7 @@ func CrioEnricher(socket string) (ContainerEnricher, error) {
 	unixSocket := "unix://" + strings.TrimPrefix(socket, "unix://")
 	conn, err := grpc.Dial(unixSocket, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return nil, err
+		return nil, logger.ErrorFunc(err)
 	}
 	client := cri.NewRuntimeServiceClient(conn)
 
@@ -37,7 +38,7 @@ func (e *crioEnricher) Get(containerId string, ctx context.Context) (ContainerMe
 		Verbose:     true,
 	})
 	if err != nil {
-		return metadata, err
+		return metadata, logger.ErrorFunc(err)
 	}
 
 	//if in k8s we can extract pod info from labels

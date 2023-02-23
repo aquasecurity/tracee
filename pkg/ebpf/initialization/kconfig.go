@@ -21,7 +21,7 @@ func LoadKconfigValues(kc *helpers.KernelConfig) (map[helpers.KernelConfigOption
 	var err error
 	for key, keyString := range kconfigUsed {
 		if err = kc.AddCustomKernelConfig(key, keyString); err != nil {
-			return nil, err
+			return nil, logger.ErrorFunc(err)
 		}
 	}
 

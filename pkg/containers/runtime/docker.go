@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/aquasecurity/tracee/pkg/logger"
 	docker "github.com/docker/docker/client"
 )
 
@@ -15,7 +16,7 @@ func DockerEnricher(socket string) (ContainerEnricher, error) {
 	unixSocket := "unix://" + strings.TrimPrefix(socket, "unix://")
 	cli, err := docker.NewClientWithOpts(docker.WithHost(unixSocket), docker.WithAPIVersionNegotiation())
 	if err != nil {
-		return nil, err
+		return nil, logger.ErrorFunc(err)
 	}
 
 	enricher := &dockerEnricher{}
@@ -30,7 +31,7 @@ func (e *dockerEnricher) Get(containerId string, ctx context.Context) (Container
 	}
 	resp, err := e.client.ContainerInspect(ctx, containerId)
 	if err != nil {
-		return metadata, err
+		return metadata, logger.ErrorFunc(err)
 	}
 	container := (*resp.ContainerJSONBase)
 	metadata.Name = container.Name

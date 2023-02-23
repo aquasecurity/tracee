@@ -314,7 +314,7 @@ func TestStringFilter(t *testing.T) {
 			for _, expr := range tc.expressions {
 				err := filter.Parse(expr)
 				if tc.expectedErr != nil {
-					assert.Equal(t, tc.expectedErr, err)
+					assert.ErrorContains(t, err, tc.expectedErr.Error())
 				}
 			}
 			if tc.expectedErr == nil {

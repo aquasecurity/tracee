@@ -56,7 +56,7 @@ func TestArgVal(t *testing.T) {
 				val, err := ArgVal[int32](&e, tt.name)
 				if tt.errorMessage != "" {
 					assert.Error(t, err)
-					assert.Equal(t, tt.errorMessage, err.Error())
+					assert.Contains(t, err.Error(), tt.errorMessage)
 				} else {
 					assert.NoError(t, err)
 					assert.Equal(t, tt.expectedValue, val)
@@ -113,7 +113,7 @@ func TestArgVal(t *testing.T) {
 				val, err := ArgVal[string](&e, tt.name)
 				if tt.errorMessage != "" {
 					assert.Error(t, err)
-					assert.Equal(t, tt.errorMessage, err.Error())
+					assert.Contains(t, err.Error(), tt.errorMessage)
 				} else {
 					assert.NoError(t, err)
 					assert.Equal(t, tt.expectedValue, val)
@@ -170,7 +170,7 @@ func TestArgVal(t *testing.T) {
 				val, err := ArgVal[uint64](&e, tt.name)
 				if tt.errorMessage != "" {
 					assert.Error(t, err)
-					assert.Equal(t, tt.errorMessage, err.Error())
+					assert.Contains(t, err.Error(), tt.errorMessage)
 				} else {
 					assert.NoError(t, err)
 					assert.Equal(t, tt.expectedValue, val)
@@ -227,7 +227,7 @@ func TestArgVal(t *testing.T) {
 				val, err := ArgVal[uint32](&e, tt.name)
 				if tt.errorMessage != "" {
 					assert.Error(t, err)
-					assert.Equal(t, tt.errorMessage, err.Error())
+					assert.Contains(t, err.Error(), tt.errorMessage)
 				} else {
 					assert.NoError(t, err)
 					assert.Equal(t, tt.expectedValue, val)
@@ -284,7 +284,7 @@ func TestArgVal(t *testing.T) {
 				val, err := ArgVal[[]string](&e, tt.name)
 				if tt.errorMessage != "" {
 					assert.Error(t, err)
-					assert.Equal(t, tt.errorMessage, err.Error())
+					assert.Contains(t, err.Error(), tt.errorMessage)
 				} else {
 					assert.NoError(t, err)
 					assert.Equal(t, tt.expectedValue, val)
@@ -341,7 +341,7 @@ func TestArgVal(t *testing.T) {
 				val, err := ArgVal[[]uint64](&e, tt.name)
 				if tt.errorMessage != "" {
 					assert.Error(t, err)
-					assert.Equal(t, tt.errorMessage, err.Error())
+					assert.Contains(t, err.Error(), tt.errorMessage)
 				} else {
 					assert.NoError(t, err)
 					assert.Equal(t, tt.expectedValue, val)

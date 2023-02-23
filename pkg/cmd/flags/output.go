@@ -1,7 +1,6 @@
 package flags
 
 import (
-	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 func outputHelp() string {
@@ -115,10 +115,10 @@ func PrepareOutput(outputSlice []string) (OutputConfig, error) {
 			case "sort-events":
 				traceeConfig.EventsSorting = true
 			default:
-				return outConfig, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
+				return outConfig, logger.NewErrorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
 			}
 		default:
-			return outConfig, fmt.Errorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
+			return outConfig, logger.NewErrorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
 		}
 	}
 
@@ -163,7 +163,7 @@ func validateFormat(printerKind string) error {
 		printerKind != "json" &&
 		printerKind != "gob" &&
 		!strings.HasPrefix(printerKind, "gotemplate=") {
-		return fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info", printerKind)
+		return logger.NewErrorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info", printerKind)
 	}
 
 	return nil
@@ -172,14 +172,14 @@ func validateFormat(printerKind string) error {
 func createFile(path string) (*os.File, error) {
 	fileInfo, err := os.Stat(path)
 	if err == nil && fileInfo.IsDir() {
-		return nil, fmt.Errorf("cannot use a path of existing directory %s", path)
+		return nil, logger.NewErrorf("cannot use a path of existing directory %s", path)
 	}
 
 	dir := filepath.Dir(path)
 	os.MkdirAll(dir, 0755)
 	file, err := os.Create(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create output path: %v", err)
+		return nil, logger.NewErrorf("failed to create output path: %v", err)
 	}
 
 	return file, nil
@@ -189,12 +189,12 @@ func parseForwardFlag(o string) (*url.URL, error) {
 	// Split out just the config
 	forwardConfigParts := strings.SplitN(o, ":", 2)
 	if len(forwardConfigParts) != 2 {
-		return nil, fmt.Errorf("invalid configuration for forward output: %q. Use '--output help' for more info", o)
+		return nil, logger.NewErrorf("invalid configuration for forward output: %q. Use '--output help' for more info", o)
 	}
 	// Now parse our URL using the standard library and report any errors from basic parsing.
 	forwardURL, err := url.Parse(forwardConfigParts[1])
 	if err != nil {
-		return nil, fmt.Errorf("invalid configuration for forward output (%s): %w. Use '--output help' for more info", forwardConfigParts[1], err)
+		return nil, logger.NewErrorf("invalid configuration for forward output (%s): %v. Use '--output help' for more info", forwardConfigParts[1], err)
 	}
 
 	return forwardURL, nil

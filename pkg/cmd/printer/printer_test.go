@@ -64,7 +64,7 @@ func TestPrepareOutputPrinterConfig(t *testing.T) {
 		t.Run(testcase.testName, func(t *testing.T) {
 			outputConfig, err := flags.PrepareOutput(testcase.outputSlice)
 			if err != nil {
-				assert.Equal(t, testcase.expectedError, err)
+				assert.ErrorContains(t, err, testcase.expectedError.Error())
 			} else {
 				assert.Equal(t, testcase.expectedPrinter, outputConfig.PrinterConfig)
 			}

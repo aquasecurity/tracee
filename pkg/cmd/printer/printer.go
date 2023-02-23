@@ -3,7 +3,6 @@ package printer
 import (
 	"encoding/gob"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -54,7 +53,7 @@ func New(config Config) (EventPrinter, error) {
 	kind := config.Kind
 
 	if config.OutFile == nil {
-		return res, fmt.Errorf("out file is not set")
+		return res, logger.NewErrorf("out file is not set")
 	}
 
 	switch {
@@ -369,11 +368,11 @@ func (p *templateEventPrinter) Init() error {
 	if tmplPath != "" {
 		tmpl, err := template.ParseFiles(tmplPath)
 		if err != nil {
-			return err
+			return logger.ErrorFunc(err)
 		}
 		p.templateObj = &tmpl
 	} else {
-		return errors.New("please specify a gotemplate for event-based output")
+		return logger.NewErrorf("please specify a gotemplate for event-based output")
 	}
 	return nil
 }
@@ -526,21 +525,21 @@ func (p *forwardEventPrinter) Init() error {
 	requireAckString := getParameterValue(parameters, "requireAck", "false")
 	requireAck, err := strconv.ParseBool(requireAckString)
 	if err != nil {
-		return fmt.Errorf("unable to convert requireAck value %q: %w", requireAckString, err)
+		return logger.NewErrorf("unable to convert requireAck value %q: %v", requireAckString, err)
 	}
 
 	// Timeout conversion from string
 	timeoutValueString := getParameterValue(parameters, "connectionTimeout", "10s")
 	connectionTimeout, err := time.ParseDuration(timeoutValueString)
 	if err != nil {
-		return fmt.Errorf("unable to convert connectionTimeout value %q: %w", timeoutValueString, err)
+		return logger.NewErrorf("unable to convert connectionTimeout value %q: %v", timeoutValueString, err)
 	}
 
 	// We should have both username and password or neither for basic auth
 	username := p.url.User.Username()
 	password, isPasswordSet := p.url.User.Password()
 	if username != "" && !isPasswordSet {
-		return fmt.Errorf("missing basic auth configuration for Forward destination")
+		return logger.NewErrorf("missing basic auth configuration for Forward destination")
 	}
 
 	// Ensure we support tcp or udp protocols
@@ -549,7 +548,7 @@ func (p *forwardEventPrinter) Init() error {
 		protocol = p.url.Scheme
 	}
 	if protocol != "tcp" && protocol != "udp" {
-		return fmt.Errorf("unsupported protocol for Forward destination: %s", protocol)
+		return logger.NewErrorf("unsupported protocol for Forward destination: %s", protocol)
 	}
 
 	// Extract the host (and port)

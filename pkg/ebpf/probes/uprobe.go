@@ -1,10 +1,9 @@
 package probes
 
 import (
-	"fmt"
-
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 //
@@ -28,22 +27,22 @@ func (p *uProbe) attach(module *bpf.Module, args ...interface{}) error {
 	}
 
 	if module == nil {
-		return fmt.Errorf("incorrect arguments for event: %s", p.eventName)
+		return logger.NewErrorf("incorrect arguments for event: %s", p.eventName)
 	}
 
 	prog, err := module.GetProgram(p.programName)
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 
 	offset, err := helpers.SymbolToOffset(p.binaryPath, p.symbolName)
 	if err != nil {
-		return fmt.Errorf("error finding %s function offset: %v", p.symbolName, err)
+		return logger.NewErrorf("error finding %s function offset: %v", p.symbolName, err)
 	}
 
 	link, err = prog.AttachUprobe(-1, p.binaryPath, offset)
 	if err != nil {
-		return fmt.Errorf("error attaching uprobe on %s: %v", p.symbolName, err)
+		return logger.NewErrorf("error attaching uprobe on %s: %v", p.symbolName, err)
 	}
 
 	p.bpfLink = link
@@ -61,7 +60,7 @@ func (p *uProbe) detach(args ...interface{}) error {
 
 	err = p.bpfLink.Destroy()
 	if err != nil {
-		return fmt.Errorf("failed to detach event: %s (%v)", p.eventName, err)
+		return logger.NewErrorf("failed to detach event: %s (%v)", p.eventName, err)
 	}
 
 	p.bpfLink = nil // NOTE: needed so a new call to bpf_link__destroy() works

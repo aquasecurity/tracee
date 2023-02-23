@@ -545,7 +545,7 @@ func TestPrepareCapture(t *testing.T) {
 					require.NoError(t, err)
 					assert.Equal(t, tc.expectedCapture, capture, tc.testName)
 				} else {
-					require.Equal(t, tc.expectedError, err, tc.testName)
+					assert.ErrorContains(t, err, tc.expectedError.Error(), tc.testName)
 					assert.Empty(t, capture, tc.testName)
 				}
 			})
@@ -730,7 +730,7 @@ func TestPrepareOutput(t *testing.T) {
 		t.Run(testcase.testName, func(t *testing.T) {
 			output, err := flags.PrepareOutput(testcase.outputSlice)
 			if err != nil {
-				assert.Equal(t, testcase.expectedError, err)
+				assert.ErrorContains(t, err, testcase.expectedError.Error())
 			} else {
 				assert.Equal(t, testcase.expectedOutput.LogFile, output.LogFile)
 				assert.Equal(t, testcase.expectedOutput.TraceeConfig, output.TraceeConfig)
@@ -784,7 +784,9 @@ func TestPrepareCache(t *testing.T) {
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
 			cache, err := flags.PrepareCache(testcase.cacheSlice)
-			assert.Equal(t, testcase.expectedError, err)
+			if testcase.expectedError != nil {
+				assert.ErrorContains(t, err, testcase.expectedError.Error())
+			}
 			assert.Equal(t, testcase.expectedCache, cache)
 		})
 	}
@@ -837,7 +839,7 @@ func TestPrepareRego(t *testing.T) {
 					require.NoError(t, err)
 					assert.Equal(t, tc.expectedRego, rego, tc.testName)
 				} else {
-					require.Equal(t, tc.expectedError, err, tc.testName)
+					assert.ErrorContains(t, err, tc.expectedError.Error(), tc.testName)
 					assert.Empty(t, rego, tc.testName)
 				}
 			})

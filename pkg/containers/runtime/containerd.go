@@ -2,9 +2,9 @@ package runtime
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/containers"
 	"github.com/containerd/containerd/namespaces"
@@ -25,13 +25,13 @@ func ContainerdEnricher(socket string) (ContainerEnricher, error) {
 
 	client, err := containerd.New(socket)
 	if err != nil {
-		return nil, err
+		return nil, logger.ErrorFunc(err)
 	}
 
 	conn, err := grpc.Dial(unixSocket, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		client.Close()
-		return nil, err
+		return nil, logger.ErrorFunc(err)
 	}
 
 	enricher.images = cri.NewImageServiceClient(conn)
@@ -47,7 +47,7 @@ func (e *containerdEnricher) Get(containerId string, ctx context.Context) (Conta
 	}
 	nsList, err := e.namespaces.List(ctx)
 	if err != nil {
-		return metadata, fmt.Errorf("failed to fetch namespaces %s", err.Error())
+		return metadata, logger.NewErrorf("failed to fetch namespaces %s", err.Error())
 	}
 	for _, namespace := range nsList {
 		nsCtx := namespaces.WithNamespace(ctx, namespace)
@@ -94,7 +94,7 @@ func (e *containerdEnricher) Get(containerId string, ctx context.Context) (Conta
 		}
 	}
 
-	return metadata, fmt.Errorf("failed to find container in any namespace")
+	return metadata, logger.NewErrorf("failed to find container in any namespace")
 }
 
 func (e *containerdEnricher) isSandbox(labels map[string]string) bool {

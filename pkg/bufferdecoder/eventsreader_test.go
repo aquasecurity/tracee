@@ -166,8 +166,11 @@ func TestReadArgFromBuff(t *testing.T) {
 	for _, tc := range testCases {
 		decoder := New(tc.input)
 		_, actual, err := ReadArgFromBuff(0, decoder, tc.params)
-		assert.Equal(t, tc.expectedError, err, tc.name)
-		assert.Equal(t, tc.expectedArg, actual.Value, tc.name)
+
+		if tc.expectedError != nil {
+			assert.ErrorContains(t, err, tc.expectedError.Error())
+		}
+		assert.Equal(t, tc.expectedArg, actual.Value)
 
 		if tc.name == "unknown" {
 			continue

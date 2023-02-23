@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/gob"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -17,7 +16,7 @@ import (
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
-var errHelp = errors.New("user has requested help text")
+var errHelp = logger.NewErrorf("user has requested help text")
 
 type inputFormat uint8
 
@@ -42,7 +41,7 @@ func setupTraceeInputSource(opts *traceeInputOptions) (chan protocol.Event, erro
 		return setupTraceeGobInputSource(opts)
 	}
 
-	return nil, errors.New("could not set up input source")
+	return nil, logger.NewErrorf("could not set up input source")
 }
 
 func setupTraceeGobInputSource(opts *traceeInputOptions) (chan protocol.Event, error) {
@@ -136,7 +135,7 @@ func parseTraceeInputOptions(inputOptions []string) (*traceeInputOptions, error)
 	)
 
 	if len(inputOptions) == 0 {
-		return nil, errors.New("no tracee input options specified")
+		return nil, logger.NewErrorf("no tracee input options specified")
 	}
 
 	for i := range inputOptions {
@@ -146,23 +145,23 @@ func parseTraceeInputOptions(inputOptions []string) (*traceeInputOptions, error)
 
 		kv := strings.Split(inputOptions[i], ":")
 		if len(kv) != 2 {
-			return nil, fmt.Errorf("invalid input-tracee option: %s", inputOptions[i])
+			return nil, logger.NewErrorf("invalid input-tracee option: %s", inputOptions[i])
 		}
 		if kv[0] == "" || kv[1] == "" {
-			return nil, fmt.Errorf("empty key or value passed: key: >%s< value: >%s<", kv[0], kv[1])
+			return nil, logger.NewErrorf("empty key or value passed: key: >%s< value: >%s<", kv[0], kv[1])
 		}
 		if kv[0] == "file" {
 			err = parseTraceeInputFile(&inputSourceOptions, kv[1])
 			if err != nil {
-				return nil, err
+				return nil, logger.ErrorFunc(err)
 			}
 		} else if kv[0] == "format" {
 			err = parseTraceeInputFormat(&inputSourceOptions, kv[1])
 			if err != nil {
-				return nil, err
+				return nil, logger.ErrorFunc(err)
 			}
 		} else {
-			return nil, fmt.Errorf("invalid input-tracee option key: %s", kv[0])
+			return nil, logger.NewErrorf("invalid input-tracee option key: %s", kv[0])
 		}
 	}
 	return &inputSourceOptions, nil
@@ -179,18 +178,18 @@ func parseTraceeInputFile(option *traceeInputOptions, fileOpt string) error {
 		func() error {
 			_, err := os.Stat(fileOpt)
 			if err != nil {
-				return fmt.Errorf("invalid Tracee input file: %s", fileOpt)
+				return logger.NewErrorf("invalid Tracee input file: %s", fileOpt)
 			}
 			f, err = os.Open(fileOpt)
 			if err != nil {
-				return fmt.Errorf("invalid file: %s", fileOpt)
+				return logger.NewErrorf("invalid file: %s", fileOpt)
 			}
 			return nil
 		},
 		cap.DAC_OVERRIDE,
 	)
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 	option.inputFile = f
 
@@ -206,7 +205,7 @@ func parseTraceeInputFormat(option *traceeInputOptions, formatString string) err
 		option.inputFormat = gobInputFormat
 	} else {
 		option.inputFormat = invalidInputFormat
-		return fmt.Errorf("invalid tracee input format specified: %s", formatString)
+		return logger.NewErrorf("invalid tracee input format specified: %s", formatString)
 	}
 	return nil
 }

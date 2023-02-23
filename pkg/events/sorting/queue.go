@@ -1,9 +1,9 @@
 package sorting
 
 import (
-	"fmt"
 	"sync"
 
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -31,7 +31,7 @@ func (eq *eventsQueue) Put(newEvent *trace.Event) error {
 	eq.mutex.Lock()
 	defer eq.mutex.Unlock()
 	eq.put(newNode)
-	return err
+	return logger.ErrorFunc(err)
 }
 
 // Get remove the node at the head of the queue and return it
@@ -42,23 +42,23 @@ func (eq *eventsQueue) Get() (*trace.Event, error) {
 	defer eq.mutex.Unlock()
 	if eq.head == nil {
 		if eq.tail != nil {
-			return nil, fmt.Errorf("BUG: TAIL without a HEAD")
+			return nil, logger.NewErrorf("BUG: TAIL without a HEAD")
 		}
 		return nil, nil
 	}
 	headNode := eq.head
 	if headNode == eq.tail {
 		if headNode.next != nil || headNode.previous != nil {
-			return nil, fmt.Errorf("BUG: last existing node still conneced")
+			return nil, logger.NewErrorf("BUG: last existing node still conneced")
 		}
 		eq.tail = nil
 		eq.head = nil
 	} else {
 		if headNode.previous == nil {
-			return nil, fmt.Errorf("BUG: not TAIL lacking previous")
+			return nil, logger.NewErrorf("BUG: not TAIL lacking previous")
 		}
 		if headNode.next != nil {
-			return nil, fmt.Errorf("BUG: HEAD has next")
+			return nil, logger.NewErrorf("BUG: HEAD has next")
 		}
 		headNode.previous.next = nil
 		eq.head = headNode.previous
@@ -69,7 +69,7 @@ func (eq *eventsQueue) Get() (*trace.Event, error) {
 	err := eq.pool.Free(headNode)
 	if err != nil {
 		eq.pool.Reset()
-		return extractedEvent, fmt.Errorf("error in queue's node freeing - %v", err)
+		return extractedEvent, logger.NewErrorf("error in queue's node freeing - %v", err)
 	}
 	return extractedEvent, nil
 }

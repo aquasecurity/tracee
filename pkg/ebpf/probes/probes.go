@@ -1,9 +1,8 @@
 package probes
 
 import (
-	"fmt"
-
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 //
@@ -132,7 +131,7 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 // Attach attaches given handle's program to its hook
 func (p *probes) Attach(handle Handle, args ...interface{}) error {
 	if _, ok := p.probes[handle]; !ok {
-		return fmt.Errorf("probe handle (%d) does not exist", handle)
+		return logger.NewErrorf("probe handle (%d) does not exist", handle)
 	}
 
 	return p.probes[handle].attach(p.module, args...)
@@ -141,7 +140,7 @@ func (p *probes) Attach(handle Handle, args ...interface{}) error {
 // Detach detaches given handle's program from its hook
 func (p *probes) Detach(handle Handle, args ...interface{}) error {
 	if _, ok := p.probes[handle]; !ok {
-		return fmt.Errorf("probe handle (%d) does not exist", handle)
+		return logger.NewErrorf("probe handle (%d) does not exist", handle)
 	}
 
 	return p.probes[handle].detach(args...)
@@ -152,7 +151,7 @@ func (p *probes) DetachAll() error {
 	for _, pr := range p.probes {
 		err := pr.detach()
 		if err != nil {
-			return err
+			return logger.ErrorFunc(err)
 		}
 	}
 

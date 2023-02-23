@@ -9,6 +9,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/mount"
 )
 
@@ -62,7 +63,7 @@ func NewCgroups() (*Cgroups, error) {
 	// discover the default cgroup being used
 	defaultVersion, err := GetCgroupDefaultVersion()
 	if err != nil {
-		return nil, err
+		return nil, logger.ErrorFunc(err)
 	}
 
 	// only start cgroupv1 if it is the OS default (orelse it isn't needed)
@@ -70,7 +71,7 @@ func NewCgroups() (*Cgroups, error) {
 		cgroupv1, err = NewCgroup(CgroupVersion1)
 		if err != nil {
 			if _, ok := err.(*VersionNotSupported); !ok {
-				return nil, err
+				return nil, logger.ErrorFunc(err)
 			}
 		}
 	}
@@ -79,7 +80,7 @@ func NewCgroups() (*Cgroups, error) {
 	cgroupv2, err = NewCgroup(CgroupVersion2)
 	if err != nil {
 		if _, ok := err.(*VersionNotSupported); !ok {
-			return nil, err
+			return nil, logger.ErrorFunc(err)
 		}
 	}
 
@@ -102,7 +103,7 @@ func NewCgroups() (*Cgroups, error) {
 		// discover default cgroup controller hierarchy id for cgroupv1
 		hid, err = GetCgroupControllerHierarchy(CgroupDefaultController)
 		if err != nil {
-			return nil, err
+			return nil, logger.ErrorFunc(err)
 		}
 
 	case CgroupVersion2:
@@ -126,7 +127,7 @@ func (cs *Cgroups) Destroy() error {
 	if cs.cgroupv1 != nil {
 		err := cs.cgroupv1.destroy()
 		if err != nil {
-			return err
+			return logger.ErrorFunc(err)
 		}
 	}
 	if cs.cgroupv2 != nil {
@@ -193,7 +194,7 @@ func (c *CgroupV1) init() error {
 	// 0. check if cgroup type is supported
 	supported, err := mount.IsFileSystemSupported(CgroupVersion1.String())
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 	if !supported {
 		return &VersionNotSupported{}
@@ -207,7 +208,7 @@ func (c *CgroupV1) init() error {
 		sysFsCgroup, // where to check for already mounted cgroupfs
 	)
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 
 	// 2. discover where cgroup is mounted
@@ -244,7 +245,7 @@ func (c *CgroupV2) init() error {
 	// 0. check if cgroup type is supported
 	supported, err := mount.IsFileSystemSupported(CgroupVersion2.String())
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 	if !supported {
 		return &VersionNotSupported{}
@@ -258,7 +259,7 @@ func (c *CgroupV2) init() error {
 		sysFsCgroup, // where to check for already mounted cgroupfs
 	)
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 
 	// 2. discover where cgroup is mounted
@@ -384,7 +385,7 @@ func GetCgroupControllerHierarchy(subsys string) (int, error) {
 func GetCgroupPath(rootDir string, cgroupId uint64, subPath string) (string, error) {
 	entries, err := os.ReadDir(rootDir)
 	if err != nil {
-		return "", err
+		return "", logger.ErrorFunc(err)
 	}
 
 	for _, entry := range entries {

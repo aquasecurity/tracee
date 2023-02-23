@@ -1,8 +1,6 @@
 package urfave
 
 import (
-	"fmt"
-
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/pkg/cmd"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
@@ -112,7 +110,7 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 		logger.Debug("osinfo", "lockdown", err)
 	}
 	if err == nil && lockdown == helpers.CONFIDENTIALITY {
-		return runner, fmt.Errorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
+		return runner, logger.NewErrorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
 
 	}
 
@@ -140,7 +138,7 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	traceeInstallPath := c.String("install-path")
 	err = initialize.BpfObject(&cfg, kernelConfig, OSInfo, traceeInstallPath, version)
 	if err != nil {
-		return runner, fmt.Errorf("failed preparing BPF object: %w", err)
+		return runner, logger.NewErrorf("failed preparing BPF object: %v", err)
 	}
 
 	cfg.ChanEvents = make(chan trace.Event, 1000)

@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -100,7 +101,7 @@ func (filter *ContextFilter) Parse(filterName string, operatorAndValues string) 
 
 	err := eventFilter.Parse(eventField, operatorAndValues)
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 
 	filter.Enable()
@@ -253,7 +254,7 @@ func (f *eventCtxFilter) Parse(field string, operatorAndValues string) error {
 func (f *eventCtxFilter) addContainer(filter Filter, operatorAndValues string) error {
 	err := filter.Parse(operatorAndValues)
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 	f.containerFilter.add(true, Equal)
 	f.containerFilter.Enable()

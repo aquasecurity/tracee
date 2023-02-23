@@ -568,3 +568,28 @@ func GetLevel() Level {
 func HasDebugLevel() bool {
 	return pkgLogger.cfg.Level == DebugLevel
 }
+
+// ErrorFuncName displays a given error prefixed by the current (caller) fn name
+// and a given string in a given format (just like fmt.Sprintf)
+func NewErrorf(format string, a ...interface{}) error {
+	sentence := fmt.Sprintf(format, a...)
+
+	pc, _, _, _ := runtime.Caller(1)
+	funcName := runtime.FuncForPC(pc).Name()
+	index := strings.LastIndex(funcName, "/") + 1
+
+	return fmt.Errorf("%v: %v", funcName[index:], sentence)
+}
+
+// ErrorFunc displays a given error prefixed by the current (caller) fn name
+func ErrorFunc(e error) error {
+	if e != nil {
+		pc, _, _, _ := runtime.Caller(1)
+		funcName := runtime.FuncForPC(pc).Name()
+		index := strings.LastIndex(funcName, "/") + 1
+
+		return fmt.Errorf("%v: %v", funcName[index:], e)
+	}
+
+	return nil
+}

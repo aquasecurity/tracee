@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"golang.org/x/exp/constraints"
 )
 
@@ -174,7 +175,7 @@ func (filter *IntFilter[T]) Parse(operatorAndValues string) error {
 		}
 		err = filter.add(valInt, operator)
 		if err != nil {
-			return err
+			return logger.ErrorFunc(err)
 		}
 	}
 

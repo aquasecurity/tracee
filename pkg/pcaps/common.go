@@ -82,7 +82,7 @@ func getPcapFileName(event *trace.Event, pcapType PcapType) (string, error) {
 	// create needed dirs
 	err = mkdirForPcapType(outputDirectory, contID, pcapType)
 	if err != nil {
-		return "", utils.ErrorFuncName(err)
+		return "", logger.ErrorFunc(err)
 	}
 
 	// return filename in format according to pcap type
@@ -157,7 +157,7 @@ func mkdirForPcapType(o *os.File, c string, t PcapType) error {
 		e = utils.MkdirAtExist(o, pcapCommDir+c, os.ModePerm)
 	}
 
-	return utils.ErrorFuncName(e)
+	return logger.ErrorFunc(e)
 }
 
 // getPcapFileAndWriter returns a file descriptor and and its associated pcap
@@ -169,7 +169,7 @@ func getPcapFileAndWriter(event *trace.Event, t PcapType) (
 ) {
 	pcapFilePath, err := getPcapFileName(event, t)
 	if err != nil {
-		return nil, nil, utils.ErrorFuncName(err)
+		return nil, nil, logger.ErrorFunc(err)
 	}
 	file, err := utils.OpenAt(
 		outputDirectory,
@@ -178,7 +178,7 @@ func getPcapFileAndWriter(event *trace.Event, t PcapType) (
 		0644,
 	)
 	if err != nil {
-		return nil, nil, utils.ErrorFuncName(err)
+		return nil, nil, logger.ErrorFunc(err)
 	}
 
 	logger.Debug("pcap file (re)opened", "filename", pcapFilePath)
@@ -189,11 +189,11 @@ func getPcapFileAndWriter(event *trace.Event, t PcapType) (
 		pcapgo.DefaultNgWriterOptions,
 	)
 	if err != nil {
-		return nil, nil, utils.ErrorFuncName(err)
+		return nil, nil, logger.ErrorFunc(err)
 	}
 	err = writer.Flush()
 	if err != nil {
-		return nil, nil, utils.ErrorFuncName(err)
+		return nil, nil, logger.ErrorFunc(err)
 	}
 
 	return file, writer, nil

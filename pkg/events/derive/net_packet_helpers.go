@@ -1,11 +1,11 @@
 package derive
 
 import (
-	"fmt"
 	"net"
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -106,7 +106,7 @@ func parseUntilLayer7(event *trace.Event, pair *netPair) (gopacket.ApplicationLa
 	} else if event.ReturnValue&familyIpv6 == familyIpv6 {
 		layerType = layers.LayerTypeIPv6
 	} else {
-		return nil, fmt.Errorf("base layer type not supported: %d", event.ReturnValue)
+		return nil, logger.NewErrorf("base layer type not supported: %d", event.ReturnValue)
 	}
 
 	// parse packet with gopacket
@@ -134,7 +134,7 @@ func parseUntilLayer7(event *trace.Event, pair *netPair) (gopacket.ApplicationLa
 		pair.dstIP = v.DstIP
 		pair.length = uint32(v.Length)
 	default:
-		return nil, fmt.Errorf("layer 3 not supported: %v", layer3)
+		return nil, logger.NewErrorf("layer 3 not supported: %v", layer3)
 	}
 
 	// transport layer
@@ -151,7 +151,7 @@ func parseUntilLayer7(event *trace.Event, pair *netPair) (gopacket.ApplicationLa
 		pair.dstPort = uint16(v.DstPort)
 		pair.proto = IPPROTO_UDP
 	default:
-		return nil, fmt.Errorf("layer 4 not supported: %v", layer4)
+		return nil, logger.NewErrorf("layer 4 not supported: %v", layer4)
 	}
 
 	// check partial packet decoding

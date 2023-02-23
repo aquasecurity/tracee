@@ -106,7 +106,7 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(
 
 	loadingObjectInfo, err := getSharedObjectInfo(event)
 	if err != nil {
-		return nil, err
+		return nil, logger.ErrorFunc(err)
 	}
 
 	if symbsLoadedGen.isWhitelist(loadingObjectInfo.Path) {
@@ -182,19 +182,19 @@ func getSharedObjectInfo(event trace.Event) (sharedobjs.ObjInfo, error) {
 
 	loadedObjectInode, err := parse.ArgVal[uint64](&event, "inode")
 	if err != nil {
-		return objInfo, err
+		return objInfo, logger.ErrorFunc(err)
 	}
 	loadedObjectDevice, err := parse.ArgVal[uint32](&event, "dev")
 	if err != nil {
-		return objInfo, err
+		return objInfo, logger.ErrorFunc(err)
 	}
 	loadedObjectCtime, err := parse.ArgVal[uint64](&event, "ctime")
 	if err != nil {
-		return objInfo, err
+		return objInfo, logger.ErrorFunc(err)
 	}
 	loadedObjectPath, err := parse.ArgVal[string](&event, "pathname")
 	if err != nil {
-		return objInfo, err
+		return objInfo, logger.ErrorFunc(err)
 	}
 
 	objInfo = sharedobjs.ObjInfo{
