@@ -222,15 +222,16 @@ help:
 	@echo ""
 	@echo "# build"
 	@echo ""
-	@echo "    $$ make all                      # build tracee-ebpf, tracee-rules & signatures"
-	@echo "    $$ make bpf-core                 # build ./dist/tracee.bpf.core.o"
-	@echo "    $$ make bpf-nocore               # build ./dist/tracee.bpf.XXX.o"
-	@echo "    $$ make tracee-ebpf              # build ./dist/tracee-ebpf"
-	@echo "    $$ make tracee-rules             # build ./dist/tracee-rules"
-	@echo "    $$ make tracee-bench             # build ./dist/tracee-bench"
-	@echo "    $$ make signatures               # build ./dist/signatures"
-	@echo "    $$ make e2e-net-signatures       # build ./dist/e2e-net-signatures"
-	@echo "    $$ make tracee                   # build ./dist/tracee"
+	@echo "    $$ make all                      		# build tracee-ebpf, tracee-rules & signatures"
+	@echo "    $$ make bpf-core                 		# build ./dist/tracee.bpf.core.o"
+	@echo "    $$ make bpf-nocore               		# build ./dist/tracee.bpf.XXX.o"
+	@echo "    $$ make tracee-ebpf              		# build ./dist/tracee-ebpf"
+	@echo "    $$ make tracee-rules             		# build ./dist/tracee-rules"
+	@echo "    $$ make tracee-bench             		# build ./dist/tracee-bench"
+	@echo "    $$ make signatures               		# build ./dist/signatures"
+	@echo "    $$ make e2e-net-signatures       		# build ./dist/e2e-net-signatures"
+	@echo "    $$ make e2e-instrumentation-signatures	# build ./dist/e2e-instrumentation-signatures"
+	@echo "    $$ make tracee                   		# build ./dist/tracee"
 	@echo ""
 	@echo "# install"
 	@echo ""
@@ -605,11 +606,11 @@ clean-signatures:
 	$(CMD_RM) -rf $(OUTPUT_DIR)/signatures
 
 #
-# e2e signatures
+# e2e network signatures
 #
 
-E2E_DIR ?= tests/e2e-net-signatures
-E2E_SRC := $(shell find $(E2E_DIR) \
+E2E_NET_DIR ?= tests/e2e-net-signatures
+E2E_NET_SRC := $(shell find $(E2E_NET_DIR) \
 		-type f \
 		-name '*.go' \
 		! -name '*_test.go' \
@@ -619,7 +620,7 @@ E2E_SRC := $(shell find $(E2E_DIR) \
 e2e-net-signatures: $(OUTPUT_DIR)/e2e-net-signatures
 
 $(OUTPUT_DIR)/e2e-net-signatures: \
-	$(E2E_SRC) \
+	$(E2E_NET_SRC) \
 	| .checkver_$(CMD_GO) \
 	.check_$(CMD_INSTALL) \
 	$(OUTPUT_DIR)
@@ -628,12 +629,43 @@ $(OUTPUT_DIR)/e2e-net-signatures: \
 	$(GO_ENV_RULES) $(CMD_GO) build \
 		--buildmode=plugin \
 		-o $@/builtin.so \
-		$(E2E_SRC)
+		$(E2E_NET_SRC)
 
 .PHONY: clean-e2e-net-signatures
 clean-e2e-net-signatures:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/e2e-net-signatures
+
+#
+# e2e instrumentation signatures
+#
+
+E2E_INST_DIR ?= tests/e2e-instrumentation-signatures
+E2E_INST_SRC := $(shell find $(E2E_INST_DIR) \
+		-type f \
+		-name '*.go' \
+		! -name '*_test.go' \
+		)
+
+.PHONY: e2e-instrumentation-signatures
+e2e-instrumentation-signatures: $(OUTPUT_DIR)/e2e-instrumentation-signatures
+
+$(OUTPUT_DIR)/e2e-instrumentation-signatures: \
+	$(E2E_INST_SRC) \
+	| .checkver_$(CMD_GO) \
+	.check_$(CMD_INSTALL) \
+	$(OUTPUT_DIR)
+#
+	$(CMD_MKDIR) -p $@
+	$(GO_ENV_RULES) $(CMD_GO) build \
+		--buildmode=plugin \
+		-o $@/builtin.so \
+		$(E2E_INST_SRC)
+
+.PHONY: clean-e2e-instrumentation-signatures
+clean-e2e-instrumentation-signatures:
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/e2e-instrumentation-signatures
 
 #
 # tracee

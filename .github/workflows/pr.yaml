@@ -8,6 +8,7 @@ on:
 env:
   TESTS: "TRC-102 TRC-103 TRC-104 TRC-105 TRC-107 TRC-1018 TRC-1014 TRC-1016 TRC-1010"
   NETTESTS: "IPv4 IPv6 TCP UDP ICMP ICMPv6 DNS HTTP"
+  INSTTESTS: "VFS_WRITE"
 jobs:
   verify-code:
     name: Verify Code
@@ -117,6 +118,9 @@ jobs:
       - name: "NETWORK"
         run: |
           DONTSLEEP=0 ISNONCORE=0 ./tests/e2e-net-test.sh
+      - name: "INSTRUMENTATION"
+        run: |
+          DONTSLEEP=0 ISNONCORE=0 ./tests/e2e-instrumentation-test.sh
   NONCORE:
     needs:
       - analyze-code
@@ -137,3 +141,6 @@ jobs:
       - name: "NETWORK"
         run: |
           DONTSLEEP=0 ISNONCORE=1 ./tests/e2e-net-test.sh
+      - name: "INSTRUMENTATION"
+        run: |
+          DONTSLEEP=0 ISNONCORE=1 ./tests/e2e-instrumentation-test.sh
