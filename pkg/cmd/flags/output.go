@@ -64,64 +64,61 @@ func PrepareOutput(outputSlice []string) (OutputConfig, error) {
 			// --output forward:[protocol://user:pass@]host:port[?k=v#f]
 			// Only host and port are required.
 
-			// Split out just the config
-			forwardConfigParts := strings.SplitN(o, ":", 2)
-			if len(forwardConfigParts) != 2 {
-				return outConfig, fmt.Errorf("invalid configuration for forward output: %q. Use '--output help' for more info", o)
-			}
-			// Now parse our URL using the standard library and report any errors from basic parsing.
-			forwardURL, err := url.Parse(forwardConfigParts[1])
+			forwardURL, err := parseForwardFlag(o)
 			if err != nil {
-				return outConfig, fmt.Errorf("invalid configuration for forward output (%s): %w. Use '--output help' for more info", forwardConfigParts[1], err)
+				return outConfig, err
 			}
+
 			printerKind = "forward"
 			// Deliberately lightweight to just pass the URL into the printer config.
 			// We handle the specific configuration and other checks as part of the Init() call there.
 			printerConfig.ForwardURL = forwardURL
-		} else {
-			outputParts := strings.SplitN(o, ":", 2)
-			numParts := len(outputParts)
-			if numParts == 1 && outputParts[0] != "none" {
-				outputParts = append(outputParts, outputParts[0])
-				outputParts[0] = "format"
-			}
 
-			switch outputParts[0] {
-			case "none":
-				printerKind = "ignore"
-			case "format":
-				printerKind = outputParts[1]
-				if err := validateFormat(printerKind); err != nil {
-					return outConfig, err
-				}
-			case "out-file":
-				outPath = outputParts[1]
-			case "log-file":
-				logPath = outputParts[1]
-			case "option":
-				switch outputParts[1] {
-				case "stack-addresses":
-					traceeConfig.StackAddresses = true
-				case "exec-env":
-					traceeConfig.ExecEnv = true
-				case "relative-time":
-					traceeConfig.RelativeTime = true
-					printerConfig.RelativeTS = true
-				case "exec-hash":
-					traceeConfig.ExecHash = true
-				case "parse-arguments":
-					traceeConfig.ParseArguments = true
-				case "parse-arguments-fds":
-					traceeConfig.ParseArgumentsFDs = true
-					traceeConfig.ParseArguments = true // no point in parsing file descriptor args only
-				case "sort-events":
-					traceeConfig.EventsSorting = true
-				default:
-					return outConfig, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
-				}
-			default:
-				return outConfig, fmt.Errorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
+			continue
+		}
+
+		outputParts := strings.SplitN(o, ":", 2)
+		numParts := len(outputParts)
+		if numParts == 1 && outputParts[0] != "none" {
+			outputParts = append(outputParts, outputParts[0])
+			outputParts[0] = "format"
+		}
+
+		switch outputParts[0] {
+		case "none":
+			printerKind = "ignore"
+		case "format":
+			printerKind = outputParts[1]
+			if err := validateFormat(printerKind); err != nil {
+				return outConfig, err
 			}
+		case "out-file":
+			outPath = outputParts[1]
+		case "log-file":
+			logPath = outputParts[1]
+		case "option":
+			switch outputParts[1] {
+			case "stack-addresses":
+				traceeConfig.StackAddresses = true
+			case "exec-env":
+				traceeConfig.ExecEnv = true
+			case "relative-time":
+				traceeConfig.RelativeTime = true
+				printerConfig.RelativeTS = true
+			case "exec-hash":
+				traceeConfig.ExecHash = true
+			case "parse-arguments":
+				traceeConfig.ParseArguments = true
+			case "parse-arguments-fds":
+				traceeConfig.ParseArgumentsFDs = true
+				traceeConfig.ParseArguments = true // no point in parsing file descriptor args only
+			case "sort-events":
+				traceeConfig.EventsSorting = true
+			default:
+				return outConfig, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
+			}
+		default:
+			return outConfig, fmt.Errorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
 		}
 	}
 
@@ -186,4 +183,19 @@ func createFile(path string) (*os.File, error) {
 	}
 
 	return file, nil
+}
+
+func parseForwardFlag(o string) (*url.URL, error) {
+	// Split out just the config
+	forwardConfigParts := strings.SplitN(o, ":", 2)
+	if len(forwardConfigParts) != 2 {
+		return nil, fmt.Errorf("invalid configuration for forward output: %q. Use '--output help' for more info", o)
+	}
+	// Now parse our URL using the standard library and report any errors from basic parsing.
+	forwardURL, err := url.Parse(forwardConfigParts[1])
+	if err != nil {
+		return nil, fmt.Errorf("invalid configuration for forward output (%s): %w. Use '--output help' for more info", forwardConfigParts[1], err)
+	}
+
+	return forwardURL, nil
 }
