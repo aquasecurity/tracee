@@ -39,7 +39,7 @@ func TestInitNamespacesEvent(t *testing.T) {
 }
 
 // small set of actions to trigger a magic write event
-func checkMagicwrite(t *testing.T, gotOutput *[]trace.Event) {
+func checkMagicwrite(t *testing.T, gotOutput *eventOutput) {
 
 	_, err := forkAndExecFunction(doMagicWrite)
 	require.NoError(t, err)
@@ -47,13 +47,14 @@ func checkMagicwrite(t *testing.T, gotOutput *[]trace.Event) {
 	waitForTraceeOutput(t, gotOutput, time.Now(), true)
 
 	// check tracee output
-	for _, evt := range *gotOutput {
+	output := gotOutput.getEventsCopy()
+	for _, evt := range output {
 		assert.Equal(t, []byte(evt.EventName), []byte("magic_write"))
 	}
 }
 
 // execute a ls command
-func checkExeccommand(t *testing.T, gotOutput *[]trace.Event) {
+func checkExeccommand(t *testing.T, gotOutput *eventOutput) {
 	_, err := forkAndExecFunction(doLs)
 	require.NoError(t, err)
 
@@ -61,7 +62,8 @@ func checkExeccommand(t *testing.T, gotOutput *[]trace.Event) {
 
 	// check tracee output
 	processNames := []string{}
-	for _, evt := range *gotOutput {
+	output := gotOutput.getEventsCopy()
+	for _, evt := range output {
 		processNames = append(processNames, evt.ProcessName)
 	}
 	for _, pname := range processNames {
@@ -70,7 +72,7 @@ func checkExeccommand(t *testing.T, gotOutput *[]trace.Event) {
 }
 
 // only capture new pids after tracee
-func checkPidnew(t *testing.T, gotOutput *[]trace.Event) {
+func checkPidnew(t *testing.T, gotOutput *eventOutput) {
 	traceePid := os.Getpid()
 
 	_, err := forkAndExecFunction(doLs)
@@ -80,7 +82,8 @@ func checkPidnew(t *testing.T, gotOutput *[]trace.Event) {
 
 	// output should only have events with pids greater (newer) than tracee
 	pids := []int{}
-	for _, evt := range *gotOutput {
+	output := gotOutput.getEventsCopy()
+	for _, evt := range output {
 		if evt.ProcessName == "ls" {
 			pids = append(pids, evt.ProcessID)
 		}
@@ -91,7 +94,7 @@ func checkPidnew(t *testing.T, gotOutput *[]trace.Event) {
 }
 
 // only capture uids of 0 that are run by comm ls
-func checkUidZero(t *testing.T, gotOutput *[]trace.Event) {
+func checkUidZero(t *testing.T, gotOutput *eventOutput) {
 	_, err := forkAndExecFunction(doLs)
 	require.NoError(t, err)
 
@@ -102,7 +105,8 @@ func checkUidZero(t *testing.T, gotOutput *[]trace.Event) {
 
 	// output should only have events with uids of 0
 	uids := []int{}
-	for _, evt := range *gotOutput {
+	output := gotOutput.getEventsCopy()
+	for _, evt := range output {
 		uids = append(uids, evt.UserID)
 	}
 	for _, uid := range uids {
@@ -111,7 +115,7 @@ func checkUidZero(t *testing.T, gotOutput *[]trace.Event) {
 }
 
 // trigger ls from uid 0 (tests run as root) and check if empty
-func checkUidNonZero(t *testing.T, gotOutput *[]trace.Event) {
+func checkUidNonZero(t *testing.T, gotOutput *eventOutput) {
 	_, err := forkAndExecFunction(doLs)
 	require.NoError(t, err)
 
@@ -122,7 +126,7 @@ func checkUidNonZero(t *testing.T, gotOutput *[]trace.Event) {
 }
 
 // check that execve event is called
-func checkExecve(t *testing.T, gotOutput *[]trace.Event) {
+func checkExecve(t *testing.T, gotOutput *eventOutput) {
 	_, err := forkAndExecFunction(doLs)
 	require.NoError(t, err)
 
@@ -133,7 +137,8 @@ func checkExecve(t *testing.T, gotOutput *[]trace.Event) {
 
 	// output should only have events with event name of execve
 	eventNames := []string{}
-	for _, evt := range *gotOutput {
+	output := gotOutput.getEventsCopy()
+	for _, evt := range output {
 		eventNames = append(eventNames, evt.EventName)
 	}
 	for _, en := range eventNames {
@@ -144,7 +149,7 @@ func checkExecve(t *testing.T, gotOutput *[]trace.Event) {
 }
 
 // check for filesystem set when ls is invoked
-func checkSetFs(t *testing.T, gotOutput *[]trace.Event) {
+func checkSetFs(t *testing.T, gotOutput *eventOutput) {
 	_, err := forkAndExecFunction(doLs)
 	require.NoError(t, err)
 
@@ -157,7 +162,8 @@ func checkSetFs(t *testing.T, gotOutput *[]trace.Event) {
 
 	// output should only have events with events in the set of filesystem syscalls
 	eventNames := []string{}
-	for _, evt := range *gotOutput {
+	output := gotOutput.getEventsCopy()
+	for _, evt := range output {
 		eventNames = append(eventNames, evt.EventName)
 	}
 	for _, en := range eventNames {
@@ -165,12 +171,13 @@ func checkSetFs(t *testing.T, gotOutput *[]trace.Event) {
 	}
 }
 
-func checkNewContainers(t *testing.T, gotOutput *[]trace.Event) {
+func checkNewContainers(t *testing.T, gotOutput *eventOutput) {
 	containerIdBytes, err := forkAndExecFunction(doDockerRun)
 	require.NoError(t, err)
 	containerId := strings.TrimSuffix(string(containerIdBytes), "\n")
 	containerIds := []string{}
-	for _, evt := range *gotOutput {
+	output := gotOutput.getEventsCopy()
+	for _, evt := range output {
 		containerIds = append(containerIds, evt.ContainerID)
 	}
 	for _, id := range containerIds {
@@ -190,22 +197,24 @@ func getAllSyscallsInSet(set string) []string {
 	return syscallsInSet
 }
 
-func checkSecurityFileOpenExecve(t *testing.T, gotOutput *[]trace.Event) {
+func checkSecurityFileOpenExecve(t *testing.T, gotOutput *eventOutput) {
 	_, err := forkAndExecFunction(doFileOpen)
 	require.NoError(t, err)
 
-	for _, evt := range *gotOutput {
+	output := gotOutput.getEventsCopy()
+	for _, evt := range output {
 		assert.Equal(t, "execve", evt.Syscall)
 	}
 }
 
-func checkScope42SecurityFileOpenLs(t *testing.T, gotOutput *[]trace.Event) {
+func checkScope42SecurityFileOpenLs(t *testing.T, gotOutput *eventOutput) {
 	_, err := forkAndExecFunction(doLs)
 	require.NoError(t, err)
 
 	waitForTraceeOutput(t, gotOutput, time.Now(), true)
 
-	for _, evt := range *gotOutput {
+	output := gotOutput.getEventsCopy()
+	for _, evt := range output {
 		// ls - scope 42
 		assert.Equal(t, "ls", evt.ProcessName)
 		assert.Equal(t, uint64(1<<41), evt.MatchedScopes)
@@ -216,18 +225,19 @@ func checkScope42SecurityFileOpenLs(t *testing.T, gotOutput *[]trace.Event) {
 }
 
 // checkExecveOnScopes4And2 demands an ordered events submission
-func checkExecveOnScopes4And2(t *testing.T, gotOutput *[]trace.Event) {
+func checkExecveOnScopes4And2(t *testing.T, gotOutput *eventOutput) {
 	_, err := forkAndExecFunction(doLsUname)
 	require.NoError(t, err)
 
 	waitForTraceeOutput(t, gotOutput, time.Now(), true)
 
 	// check output length
-	require.Len(t, *gotOutput, 2)
+	output := gotOutput.getEventsCopy()
+	require.Len(t, output, 2)
 	var evts [2]trace.Event
 
 	// output should only have events with event name of execve
-	for i, evt := range *gotOutput {
+	for i, evt := range output {
 		assert.Equal(t, "sched_process_exit", evt.EventName)
 		evts[i] = evt
 	}
@@ -241,7 +251,7 @@ func checkExecveOnScopes4And2(t *testing.T, gotOutput *[]trace.Event) {
 	assert.Equal(t, uint64(1<<1), evts[1].MatchedScopes, "MatchedScopes")
 }
 
-func checkDockerdBinaryFilter(t *testing.T, gotOutput *[]trace.Event) {
+func checkDockerdBinaryFilter(t *testing.T, gotOutput *eventOutput) {
 	dockerdPidBytes, err := forkAndExecFunction(getDockerdPid)
 	require.NoError(t, err)
 	dockerdPidString := strings.TrimSuffix(string(dockerdPidBytes), "\n")
@@ -253,13 +263,14 @@ func checkDockerdBinaryFilter(t *testing.T, gotOutput *[]trace.Event) {
 	waitForTraceeOutput(t, gotOutput, time.Now(), true)
 
 	processIds := []int{}
-	for _, evt := range *gotOutput {
+	output := gotOutput.getEventsCopy()
+	for _, evt := range output {
 		processIds = append(processIds, evt.ProcessID)
 	}
 	assert.Contains(t, processIds, int(dockerdPid))
 }
 
-func checkLsAndWhichBinaryFilterWithScopes(t *testing.T, gotOutput *[]trace.Event) {
+func checkLsAndWhichBinaryFilterWithScopes(t *testing.T, gotOutput *eventOutput) {
 	var err error
 	_, err = forkAndExecFunction(doLs)
 	require.NoError(t, err)
@@ -268,7 +279,8 @@ func checkLsAndWhichBinaryFilterWithScopes(t *testing.T, gotOutput *[]trace.Even
 
 	waitForTraceeOutput(t, gotOutput, time.Now(), true)
 
-	for _, evt := range *gotOutput {
+	output := gotOutput.getEventsCopy()
+	for _, evt := range output {
 		procName := evt.ProcessName
 		if procName != "ls" && procName != "which" {
 			t.Fail()
@@ -280,7 +292,7 @@ func Test_EventFilters(t *testing.T) {
 	testCases := []struct {
 		name       string
 		filterArgs []string
-		eventFunc  func(*testing.T, *[]trace.Event)
+		eventFunc  func(*testing.T, *eventOutput)
 	}{
 		{
 			name:       "do a file write",
@@ -381,11 +393,11 @@ func Test_EventFilters(t *testing.T) {
 				},
 			}
 			config.FilterScopes = filterScopes
-			eventOutput := []trace.Event{}
+			eventOutput := &eventOutput{}
 
 			go func() {
 				for evt := range eventChan {
-					eventOutput = append(eventOutput, evt)
+					eventOutput.addEvent(evt)
 				}
 			}()
 
@@ -393,7 +405,7 @@ func Test_EventFilters(t *testing.T) {
 
 			waitforTraceeStart(t, trc, time.Now())
 
-			tc.eventFunc(t, &eventOutput)
+			tc.eventFunc(t, eventOutput)
 
 			cancel()
 		})
