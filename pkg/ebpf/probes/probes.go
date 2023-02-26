@@ -114,7 +114,6 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		VfsReadVRet:                &traceProbe{eventName: "vfs_readv", probeType: kretprobe, programName: "trace_ret_vfs_readv"},
 		VfsUtimes:                  &traceProbe{eventName: "vfs_utimes", probeType: kprobe, programName: "trace_vfs_utimes"},
 		UtimesCommon:               &traceProbe{eventName: "utimes_common", probeType: kprobe, programName: "trace_utimes_common"},
-		DoTruncate:                 &traceProbe{eventName: "do_truncate", probeType: kprobe, programName: "trace_do_truncate"},
 	}
 
 	if !netEnabled {
@@ -274,5 +273,4 @@ const (
 	VfsReadVRet
 	VfsUtimes
 	UtimesCommon
-	DoTruncate
 )

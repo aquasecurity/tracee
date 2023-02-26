@@ -249,7 +249,6 @@ const (
 	DoMmap
 	PrintMemDump
 	VfsUtimes
-	DoTruncate
 	MaxCommonID
 )
 
@@ -6526,20 +6525,6 @@ var Definitions = eventDefinitions{
 				{Type: "unsigned long", Name: "inode"},
 				{Type: "u64", Name: "atime"},
 				{Type: "u64", Name: "mtime"},
-			},
-		},
-		DoTruncate: {
-			ID32Bit: sys32undefined,
-			Name:    "do_truncate",
-			Probes: []probeDependency{
-				{Handle: probes.DoTruncate, Required: true},
-			},
-			Sets: []string{},
-			Params: []trace.ArgMeta{
-				{Type: "const char*", Name: "pathname"},
-				{Type: "unsigned long", Name: "inode"},
-				{Type: "dev_t", Name: "dev"},
-				{Type: "u64", Name: "length"},
 			},
 		},
 	},
