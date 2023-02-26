@@ -3922,6 +3922,34 @@ int BPF_KPROBE(trace_utimes_common)
     return common_utimes(ctx);
 }
 
+SEC("kprobe/do_truncate")
+int BPF_KPROBE(trace_do_truncate)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    if (!should_trace(&p))
+        return 0;
+
+    if (!should_submit(DO_TRUNCATE, &(p.event->context)))
+        return 0;
+
+    struct dentry *dentry = (struct dentry *) PT_REGS_PARM2(ctx);
+    u64 length = (long) PT_REGS_PARM3(ctx);
+
+    void *dentry_path = get_dentry_path_str(dentry);
+    unsigned long inode_nr = get_inode_nr_from_dentry(dentry);
+    dev_t dev = get_dev_from_dentry(dentry);
+
+    save_str_to_buf(p.event, dentry_path, 0);
+    save_to_submit_buf(p.event, &inode_nr, sizeof(unsigned long), 1);
+    save_to_submit_buf(p.event, &dev, sizeof(dev_t), 2);
+    save_to_submit_buf(p.event, &length, sizeof(u64), 3);
+
+    return events_perf_submit(&p, DO_TRUNCATE, 0);
+}
+
 // clang-format off
 
 // Network Packets (works from ~5.2 and beyond)
