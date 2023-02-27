@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -70,11 +71,44 @@ func prepareCapture() *tracee.CaptureConfig {
 	}
 }
 
+// eventOutput is a thread safe holder for trace events
+type eventOutput struct {
+	mu     sync.Mutex
+	events []trace.Event
+}
+
+// addEvent adds an event to the eventOutput
+func (e *eventOutput) addEvent(evt trace.Event) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	e.events = append(e.events, evt)
+}
+
+// getEventsCopy returns a copy of the current events
+func (e *eventOutput) getEventsCopy() []trace.Event {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	events := make([]trace.Event, len(e.events))
+	copy(events, e.events)
+
+	return events
+}
+
+// len returns the number of the current events
+func (e *eventOutput) len() int {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	return len(e.events)
+}
+
 // wait for tracee buffer to fill or timeout to occur, whichever comes first
-func waitForTraceeOutput(t *testing.T, gotOutput *[]trace.Event, now time.Time, failOnTimeout bool) {
+func waitForTraceeOutput(t *testing.T, gotOutput *eventOutput, now time.Time, failOnTimeout bool) {
 	const CheckTimeout = 5 * time.Second
 	for {
-		if len(*gotOutput) > 0 {
+		if gotOutput.len() > 0 {
 			break
 		}
 		if time.Since(now) > CheckTimeout {

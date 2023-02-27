@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 	"unsafe"
@@ -158,7 +159,7 @@ type Tracee struct {
 	config    Config
 	bootTime  uint64
 	startTime uint64
-	running   bool
+	running   atomic.Bool
 	outDir    *os.File // use utils.XXX functions to access this file
 	stats     metrics.Stats
 	// Events
@@ -1366,7 +1367,6 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	}
 	t.bpfLogsPerfMap.Start()
 	go t.processBPFLogs()
-	t.running = true
 
 	// write pid file
 	err = t.writePid()
@@ -1374,6 +1374,9 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 		// not able to write pid, abort
 		return err
 	}
+
+	// set running state after writing pid file
+	t.running.Store(true)
 
 	// block until ctx is cancelled elsewhere
 	<-ctx.Done()
@@ -1436,7 +1439,6 @@ func (t *Tracee) Close() {
 					return fmt.Errorf("failed to clean containers module when closing tracee: %s", err)
 				}
 			}
-			t.running = false
 			return nil
 		},
 	)
@@ -1448,10 +1450,14 @@ func (t *Tracee) Close() {
 	if err != nil {
 		logger.Error("cgroups destroy", "error", err)
 	}
+
+	// set running to false only if there were no errors
+	t.running.Store(false)
 }
 
+// Running returns true if the tracee is running
 func (t *Tracee) Running() bool {
-	return t.running
+	return t.running.Load()
 }
 
 func (t *Tracee) computeOutFileHash(fileName string) (string, error) {
