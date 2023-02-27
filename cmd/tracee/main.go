@@ -235,7 +235,7 @@ func createEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 			dependencies = append(dependencies, eventID)
 		}
 
-		event := events.NewEventDefinition(m.EventName, []string{"signatures"}, dependencies)
+		event := events.NewEventDefinition(m.EventName, []string{"signatures", "default"}, dependencies)
 
 		err = events.Definitions.Add(id, event)
 		if err != nil {
