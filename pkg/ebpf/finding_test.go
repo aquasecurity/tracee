@@ -1,6 +1,7 @@
 package ebpf
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -69,6 +70,11 @@ func TestFindingToEvent(t *testing.T) {
 	got, err := FindingToEvent(finding)
 
 	assert.NoError(t, err)
+
+	// sort arguments to avoid flaky tests
+	sort.Slice(got.Args, func(i, j int) bool { return got.Args[i].Name < got.Args[j].Name })
+	sort.Slice(expected.Args, func(i, j int) bool { return expected.Args[i].Name < expected.Args[j].Name })
+
 	assert.Equal(t, got, expected)
 }
 
