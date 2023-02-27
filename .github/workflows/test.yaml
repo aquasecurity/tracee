@@ -1,0 +1,16 @@
+name: Test
+on:
+  workflow_dispatch: {}
+  pull_request:
+    types: [opened, assigned, synchronize, reopened]
+jobs:
+  focal513:
+    name: focal513
+    runs-on:
+      [
+        "github-self-hosted_ami-0601b5a18cf43940a_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: Hello
+        run: |
+          echo Hello World!!
