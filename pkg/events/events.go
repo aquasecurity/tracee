@@ -80,6 +80,17 @@ type Event struct {
 	Params       []trace.ArgMeta
 }
 
+func (e *Event) IsASignatureEvent() bool {
+
+	for _, s := range e.Sets {
+		if s == "signatures" {
+			return true
+		}
+	}
+
+	return false
+}
+
 // NewEventDefinition creates a new event definition
 func NewEventDefinition(name string, sets []string, depsID []ID) Event {
 	evt := Event{

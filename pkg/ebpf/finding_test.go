@@ -35,7 +35,23 @@ func TestFindingToEvent(t *testing.T) {
 		PodUID:              "uid",
 		ReturnValue:         0,
 		MatchedScopes:       1,
-		ArgsNum:             0,
+		ArgsNum:             2,
+		Args: []trace.Argument{
+			{
+				ArgMeta: trace.ArgMeta{
+					Name: "arg1",
+					Type: "const char *",
+				},
+				Value: "value1",
+			},
+			{
+				ArgMeta: trace.ArgMeta{
+					Name: "arg2",
+					Type: "int",
+				},
+				Value: 1,
+			},
+		},
 		Metadata: &trace.Metadata{
 			Version:     "1",
 			Description: "description",
