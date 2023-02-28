@@ -12,7 +12,7 @@ func PrintAndExitIfHelp(ctx *cli.Context) {
 		"crs",
 		"cache",
 		"capture",
-		"trace",
+		"filter",
 		"output",
 		"capabilities",
 		"rego",
@@ -48,7 +48,7 @@ func getHelpString(key string) string {
 		return cacheHelp()
 	case "capture":
 		return captureHelp()
-	case "trace":
+	case "filter":
 		return filterHelp()
 	case "output":
 		return outputHelp()

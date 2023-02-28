@@ -1,15 +1,15 @@
 # Tracing Network Events
 
-In order to trace network events you may execute:
+In order to filter network events you may execute:
 
 ```txt
-$ sudo ./dist/tracee-ebpf --output format:json --trace event=X,Y,Z
+$ sudo ./dist/tracee-ebpf --output format:json --filter event=X,Y,Z
 ```
 
 where `X,Y,Z` might be one of the events described below. All the network events
 try to translate the referred protocols (**IP**, **IPv6**, **TCP**, **UDP**,
 **ICMPv6**, **DNS**) headers into tracee events, so all fields from that network
-header are available for tracing. Besides the protocol header, there is also
+header are available for filtering. Besides the protocol header, there is also
 some primary arguments, to each event, classifying the event using: **`src`**,
 **`dest`** (and **`src_port`**, **`dst_port`** if the protocol has those
 arguments).
@@ -19,7 +19,7 @@ arguments).
 1. **net_packet_ipv4**
 
     ```txt
-    --output format:json  --trace comm=nc --trace event=net_packet_ipv4
+    --output format:json  --filter comm=nc --filter event=net_packet_ipv4
     ```
 
     ```json
@@ -43,7 +43,7 @@ arguments).
 2. **net_packet_ipv6**
 
     ```txt
-    --output format:json  --trace comm=nc --trace event=net_packet_ipv6
+    --output format:json  --filter comm=nc --filter event=net_packet_ipv6
     ```
 
     ```json
@@ -67,7 +67,7 @@ arguments).
 3. **net_packet_tcp**
 
     ```txt
-    --output format:json  --trace comm=nc --trace event=net_packet_tcp
+    --output format:json  --filter comm=nc --filter event=net_packet_tcp
     ```
 
     ```json
@@ -91,7 +91,7 @@ arguments).
 4. **net_packet_udp**
 
     ```txt
-    --output format:json  --trace comm=nc --trace event=net_packet_udp
+    --output format:json  --filter comm=nc --filter event=net_packet_udp
     ```
 
     ```json
@@ -107,7 +107,7 @@ arguments).
 5. **net_packet_icmp**
 
     ```txt
-    --output format:json  --trace comm=ping --trace event=net_packet_icmp
+    --output format:json  --filter comm=ping --filter event=net_packet_icmp
     ```
 
     ```json
@@ -123,7 +123,7 @@ arguments).
 6. **net_packet_icmpv6**
 
     ```txt
-    --output format:json  --trace comm=ping --trace event=net_packet_icmpv6
+    --output format:json  --filter comm=ping --filter event=net_packet_icmpv6
     ```
 
     ```json
@@ -139,7 +139,7 @@ arguments).
 7. **net_packet_dns**
 
     ```txt
-    --output format:json  --trace comm=nslookup --trace follow --trace event=net_packet_dns
+    --output format:json  --filter comm=nslookup --filter follow --filter event=net_packet_dns
     ```
 
     > the `follow` tracing option is needed as `nslookup` creates child processes to execute the queries, and this makes tracee to also follow all `nslookup` child processes.
@@ -168,7 +168,7 @@ arguments).
     The `net_packet_dns_request` event is a simpler event, than the full `net_packet_dns` one. It contains simpler arguments to consume.
 
     ```txt
-    --output format:json  --trace comm=nslookup --trace follow --trace event=net_packet_dns_request
+    --output format:json  --filter comm=nslookup --filter follow --filter event=net_packet_dns_request
     ```
 
     > the `follow` tracing option is needed as `nslookup` creates child processes to execute the queries, and this makes tracee to also follow all `nslookup` child processes.
@@ -192,7 +192,7 @@ arguments).
     The `net_packet_dns_response` event is a simpler event, than the full `net_packet_dns` one. It contains simpler arguments to consume.
 
     ```txt
-    --output format:json  --trace comm=nslookup --trace follow --trace event=net_packet_dns_response
+    --output format:json  --filter comm=nslookup --filter follow --filter event=net_packet_dns_response
     ```
 
     > the `follow` tracing option is needed as `nslookup` creates child processes to execute the queries, and this makes tracee to also follow all `nslookup` child processes.
@@ -225,7 +225,7 @@ arguments).
     Let's say you're interested in all TCP packets sent to port 80 anywhere, from any process:
 
     ```txt
-    --output format:json --trace event=net_packet_tcp --trace net_packet_tcp.args.dst_port=80
+    --output format:json --filter event=net_packet_tcp --filter net_packet_tcp.args.dst_port=80
     ```
 
     you can trace all commands talking to any other peer using TCP to port 80.
@@ -240,7 +240,7 @@ arguments).
 
 
     ```txt
-    --output format:json --trace event=net_packet_dns --trace net_packet_dns.args.src=8.8.8.8
+    --output format:json --filter event=net_packet_dns --filter net_packet_dns.args.src=8.8.8.8
     ```
 
     and see all processes that are resolving names using that server (only **systemd-resolved**, since all the other processes are resolving using local systemd-resolved server `127.0.1.1:53`):

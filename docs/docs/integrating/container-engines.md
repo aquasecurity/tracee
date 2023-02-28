@@ -74,7 +74,7 @@ As a user, when container enrichment is enabled the event output will include en
         trace --output json --containers
     ```
 
-2. Running in container tracing mode and with enrichment enabled will add the image name to the table printer
+2. Running in container filtering mode and with enrichment enabled will add the image name to the table printer
     text```
     $ docker run \
         --name tracee --rm -it \
@@ -83,5 +83,5 @@ As a user, when container enrichment is enabled the event output will include en
         -v /var/run/containerd:/var/run/containerd \
         -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
         aquasec/tracee:{{ git.tag }} \
-        trace --trace containers --containers
+        trace --filter container --containers
     ```

@@ -109,8 +109,8 @@ for TEST in $TESTS; do
         --cache mem-cache-size=512 \
         --output format:json \
         --output option:parse-arguments \
-        --trace comm=echo \
-        --trace event=$events \
+        --filter comm=echo \
+        --filter event=$events \
         2>$SCRIPT_TMP_DIR/ebpf-$$ \
         | \
     ./dist/tracee-rules \

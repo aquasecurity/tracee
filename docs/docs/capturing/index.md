@@ -31,8 +31,8 @@ Tracee can capture the following types of artifacts:
      ```text
      $ sudo ./dist/tracee-ebpf \
         --output json \
-        --trace comm=bash \
-        --trace follow \
+        --filter comm=bash \
+        --filter follow \
         --output option:parse-arguments \
         --capture dir:/tmp/tracee/ \
         --capture write='/tmp/*'
@@ -60,8 +60,8 @@ Tracee can capture the following types of artifacts:
      ```text
      $ sudo ./dist/tracee-ebpf \
         --output json \
-        --trace comm=bash \
-        --trace follow \
+        --filter comm=bash \
+        --filter follow \
         --output option:parse-arguments \
         --capture dir:/tmp/tracee/ \
         --capture exec
@@ -104,8 +104,8 @@ Tracee can capture the following types of artifacts:
      ```text
      $ sudo ./dist/tracee-ebpf \
         --output none \
-        --trace comm=bash \
-        --trace follow \
+        --filter comm=bash \
+        --filter follow \
         --capture dir:/tmp/tracee/ \
         --capture mem
      ```
@@ -132,7 +132,7 @@ Tracee can capture the following types of artifacts:
 
      ```text
      $ sudo ./dist/tracee-ebpf \
-         --trace event=net_packet_ipv4 \
+         --filter event=net_packet_ipv4 \
          --capture network \
          --capture pcap-options:filtered
      ```
@@ -149,7 +149,7 @@ Tracee can capture the following types of artifacts:
 
      ```text
      $ sudo ./dist/tracee-ebpf \
-         --trace event=net_packet_dns \
+         --filter event=net_packet_dns \
          --capture network \
          --capture pcap-options:filtered
      ```
@@ -182,7 +182,7 @@ Tracee can capture the following types of artifacts:
 
      ```text
      $ sudo ./dist/tracee-ebpf \
-         --trace event=net_packet_icmp \
+         --filter event=net_packet_icmp \
          --capture network \
          --capture pcap-options:filtered \
          --capture pcap:process,container,command
@@ -270,7 +270,7 @@ Tracee can capture the following types of artifacts:
 
      ```
      $ sudo ./dist/tracee-ebpf \
-         --trace event=net_packet_tcp \
+         --filter event=net_packet_tcp \
          --capture network \
          --capture pcap-options:filtered \
          --capture pcap:single,command \
@@ -295,8 +295,8 @@ Tracee can capture the following types of artifacts:
      ```text
      $ sudo ./dist/tracee-ebpf \
         --output none \
-        --trace comm=bash \
-        --trace follow \
+        --filter comm=bash \
+        --filter follow \
         --capture clear-dir \
         --capture module
      ```

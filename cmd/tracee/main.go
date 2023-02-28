@@ -126,10 +126,10 @@ func main() {
 				Usage:   "list tracable events",
 			},
 			&cli.StringSliceFlag{
-				Name:    "trace",
-				Aliases: []string{"t"},
+				Name:    "filter",
+				Aliases: []string{"f"},
 				Value:   nil,
-				Usage:   "select events to trace by defining trace expressions. run '--trace help' for more info.",
+				Usage:   "select events to trace by defining filter expressions. run '--filter help' for more info.",
 			},
 			&cli.StringSliceFlag{
 				Name:    "capture",

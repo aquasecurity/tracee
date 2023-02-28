@@ -1585,9 +1585,9 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 		printMemDumpFilters := filterScope.ArgFilter.GetEventFilters(events.PrintMemDump)
 		if printMemDumpFilters == nil {
 			errArgFilter[filterScope.ID] = fmt.Errorf("scope %d: no address or symbols were provided to print_mem_dump event. "+
-				"please provide it via -t print_mem_dump.args.address=<hex address>"+
-				", -t print_mem_dump.args.symbol_name=<owner>:<symbol> or "+
-				"-t print_mem_dump.args.symbol_name=<symbol> if specifying a system owned symbol", filterScope.ID)
+				"please provide it via -f print_mem_dump.args.address=<hex address>"+
+				", -f print_mem_dump.args.symbol_name=<owner>:<symbol> or "+
+				"-f print_mem_dump.args.symbol_name=<symbol> if specifying a system owned symbol", filterScope.ID)
 
 			continue
 		}

@@ -117,8 +117,8 @@ for TEST in $TESTS; do
         --cache mem-cache-size=512 \
         --output format:json \
         --output option:parse-arguments \
-        --trace comm=ping,nc,nslookup,isc-net-0000,isc-worker0000,curl \
-        --trace event=$events \
+        --filter comm=ping,nc,nslookup,isc-net-0000,isc-worker0000,curl \
+        --filter event=$events \
         2>$SCRIPT_TMP_DIR/ebpf-$$ \
         | \
     ./dist/tracee-rules \

@@ -134,7 +134,7 @@ One way of forcing **tracee-ebpf** to use non CO-RE eBPF object, even in a kerne
 that supports CO-RE, is by setting the `TRACEE_BPF_FILE` environment, like this:
 
 ```
-$ sudo TRACEE_BPF_FILE=/tmp/tracee/tracee.bpf.5_4_0-91-generic.v0_8_0-rc-2-363-g3e73eeb1.o ./dist/tracee-ebpf --log debug -o option:parse-arguments --trace comm=bash --trace follow
+$ sudo TRACEE_BPF_FILE=/tmp/tracee/tracee.bpf.5_4_0-91-generic.v0_8_0-rc-2-363-g3e73eeb1.o ./dist/tracee-ebpf --log debug -o option:parse-arguments --filter comm=bash --filter follow
 {"level":"debug","ts":1670972956.7201664,"msg":"osinfo","VERSION_CODENAME":"focal","KERNEL_RELEASE":"5.4.0-91-generic","ARCH":"x86_64","VERSION":"\"20.04.5 LTS (Focal Fossa)\"","ID":"ubuntu","ID_LIKE":"debian","PRETTY_NAME":"\"Ubuntu 20.04.5 LTS\"","VERSION_ID":"\"20.04\"","pkg":"urfave","file":"urfave.go","line":53}
 {"level":"debug","ts":1670972956.7202075,"msg":"RuntimeSockets: failed to register default","socket":"crio","error":"failed to register runtime socket stat /var/run/crio/crio.sock: no such file or directory","pkg":"flags","file":"containers.go","line":45}
 {"level":"debug","ts":1670972956.7202215,"msg":"RuntimeSockets: failed to register default","socket":"podman","error":"failed to register runtime socket stat /var/run/podman/podman.sock: no such file or directory","pkg":"flags","file":"containers.go","line":45}

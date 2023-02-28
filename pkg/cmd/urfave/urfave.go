@@ -89,9 +89,9 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	}
 	cfg.Capabilities = &capsCfg
 
-	// Filtering (trace) command line flags
+	// Filter command line flags
 
-	filterScopes, err := flags.PrepareFilterScopes(c.StringSlice("trace"))
+	filterScopes, err := flags.PrepareFilterScopes(c.StringSlice("filter"))
 	if err != nil {
 		return runner, err
 	}

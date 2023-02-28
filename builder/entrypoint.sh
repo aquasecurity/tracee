@@ -40,7 +40,7 @@ probe_tracee_ebpf() {
         echo "INFO: probing tracee-ebpf capabilities..."
         timeout --preserve-status ${EBPF_PROBE_TIMEOUT} \
             ${TRACEE_EBPF_EXE} --metrics --output=none \
-            --trace comm="nothing" 2>&1 > /dev/null 2>&1
+            --filter comm="nothing" 2>&1 > /dev/null 2>&1
         TRACEE_RET=$?
     fi
 }
@@ -80,7 +80,7 @@ run_tracee_rules() {
         --capabilities bypass=${CAPABILITIES_BYPASS:="0"}\
         --capabilities add=${CAPABILITIES_ADD:=""}\
         --capabilities drop=${CAPABILITIES_DROP:=""}\
-        --trace event=${events} \
+        --filter event=${events} \
         --output=out-file:${TRACEE_PIPE} &
     tracee_ebpf_pid=$!
 

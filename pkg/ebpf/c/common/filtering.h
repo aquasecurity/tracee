@@ -85,7 +85,7 @@ static __always_inline u64 equality_filter_matches(u64 filter_out_scopes,
 {
     // check compute_scopes() for initial info
     //
-    // e.g.: cmdline: -t 2:comm=who -t 3:comm=ping -t 4:comm!=who
+    // e.g.: cmdline: -f 2:comm=who -f 3:comm=ping -f 4:comm!=who
     //
     // filter_out_scopes = 0000 1000, since scope 4 has "not equal" for comm filter
     // filter_map        = comm_filter
@@ -136,7 +136,7 @@ static __always_inline u64 bool_filter_matches(u64 filter_out_scopes, bool val)
 {
     // check compute_scopes() for initial info
     //
-    // e.g.: cmdline: -t 5:container
+    // e.g.: cmdline: -f 5:container
     //
     // considering an event from a container
     //

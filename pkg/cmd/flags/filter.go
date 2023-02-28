@@ -12,8 +12,8 @@ import (
 )
 
 func filterHelp() string {
-	return `Select which events to trace by defining trace expressions that operate on events or process metadata.
-Only events that match all trace expressions will be traced (trace flags are ANDed).
+	return `Select which events to trace by defining filter expressions that operate on events or process metadata.
+Only events that match all filter expressions will be traced (filter flags are ANDed).
 The following types of expressions are supported:
 
 Numerical expressions which compare numbers and allow the following operators: '=', '!=', '<', '>'.
@@ -51,43 +51,43 @@ The field 'net' specifies which interfaces to monitor when tracing network event
 Notice that the 'net' field is mandatory when tracing network events.
 
 Examples:
-  --trace pid=new                                              | only trace events from new processes
-  --trace pid=510,1709                                         | only trace events from pid 510 or pid 1709
-  --trace p=510 --trace p=1709                                 | only trace events from pid 510 or pid 1709 (same as above)
-  --trace container=new                                        | only trace events from newly created containers
-  --trace container=ab356bc4dd554                              | only trace events from container id ab356bc4dd554
-  --trace container                                            | only trace events from containers
-  --trace c                                                    | only trace events from containers (same as above)
-  --trace '!container'                                         | only trace events from the host
-  --trace uid=0                                                | only trace events from uid 0
-  --trace mntns=4026531840                                     | only trace events from mntns id 4026531840
-  --trace pidns!=4026531836                                    | only trace events from pidns id not equal to 4026531840
-  --trace tree=476165                                          | only trace events that descend from the process with pid 476165
-  --trace tree!=5023                                           | only trace events if they do not descend from the process with pid 5023
-  --trace tree=3213,5200 --trace tree!=3215                    | only trace events if they descend from 3213 or 5200, but not 3215
-  --trace 'uid>0'                                              | only trace events from uids greater than 0
-  --trace 'pid>0' --trace 'pid<1000'                           | only trace events from pids between 0 and 1000
-  --trace 'u>0' --trace u!=1000                                | only trace events from uids greater than 0 but not 1000
-  --trace event=execve,open                                    | only trace execve and open events
-  --trace event='open*'                                        | only trace events prefixed by "open"
-  --trace event!='open*,dup*'                                  | don't trace events prefixed by "open" or "dup"
-  --trace set=fs                                               | trace all file-system related events
-  --trace s=fs --trace e!=open,openat                          | trace all file-system related events, but not open(at)
-  --trace uts!=ab356bc4dd554                                   | don't trace events from uts name ab356bc4dd554
-  --trace comm=ls                                              | only trace events from ls command
-  --trace binary=/usr/bin/ls                                   | only trace events from /usr/bin/ls binary
-  --trace binary=host:/usr/bin/ls                              | only trace events from /usr/bin/ls binary in the host mount namespace
-  --trace binary=4026532448:/usr/bin/ls                        | only trace events from /usr/bin/ls binary in 4026532448 mount namespace
-  --trace close.args.fd=5                                      | only trace 'close' events that have 'fd' equals 5
-  --trace openat.args.pathname='/tmp*'                         | only trace 'openat' events that have 'pathname' prefixed by /tmp
-  --trace openat.args.pathname='*shadow'                       | only trace 'openat' events that have 'pathname' suffixed by shadow
-  --trace openat.args.pathname!=/tmp/1,/bin/ls                 | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
-  --trace openat.context.processName=ls                        | only trace 'openat' events that have 'processName' equal to 'ls'
-  --trace security_file_open.context.container                 | only trace 'security_file_open' events coming from a container
-  --trace comm=bash --trace follow                             | trace all events that originated from bash or from one of the processes spawned by bash
+  --filter pid=new                                              | only trace events from new processes
+  --filter pid=510,1709                                         | only trace events from pid 510 or pid 1709
+  --filter p=510 --filter p=1709                                | only trace events from pid 510 or pid 1709 (same as above)
+  --filter container=new                                        | only trace events from newly created containers
+  --filter container=ab356bc4dd554                              | only trace events from container id ab356bc4dd554
+  --filter container                                            | only trace events from containers
+  --filter c                                                    | only trace events from containers (same as above)
+  --filter '!container'                                         | only trace events from the host
+  --filter uid=0                                                | only trace events from uid 0
+  --filter mntns=4026531840                                     | only trace events from mntns id 4026531840
+  --filter pidns!=4026531836                                    | only trace events from pidns id not equal to 4026531840
+  --filter tree=476165                                          | only trace events that descend from the process with pid 476165
+  --filter tree!=5023                                           | only trace events if they do not descend from the process with pid 5023
+  --filter tree=3213,5200 --filter tree!=3215                   | only trace events if they descend from 3213 or 5200, but not 3215
+  --filter 'uid>0'                                              | only trace events from uids greater than 0
+  --filter 'pid>0' --filter 'pid<1000'                          | only trace events from pids between 0 and 1000
+  --filter 'u>0' --filter u!=1000                               | only trace events from uids greater than 0 but not 1000
+  --filter event=execve,open                                    | only trace execve and open events
+  --filter event='open*'                                        | only trace events prefixed by "open"
+  --filter event!='open*,dup*'                                  | don't trace events prefixed by "open" or "dup"
+  --filter set=fs                                               | trace all file-system related events
+  --filter s=fs --filter e!=open,openat                         | trace all file-system related events, but not open(at)
+  --filter uts!=ab356bc4dd554                                   | don't trace events from uts name ab356bc4dd554
+  --filter comm=ls                                              | only trace events from ls command
+  --filter binary=/usr/bin/ls                                   | only trace events from /usr/bin/ls binary
+  --filter binary=host:/usr/bin/ls                              | only trace events from /usr/bin/ls binary in the host mount namespace
+  --filter binary=4026532448:/usr/bin/ls                        | only trace events from /usr/bin/ls binary in 4026532448 mount namespace
+  --filter close.args.fd=5                                      | only trace 'close' events that have 'fd' equals 5
+  --filter openat.args.pathname='/tmp*'                         | only trace 'openat' events that have 'pathname' prefixed by /tmp
+  --filter openat.args.pathname='*shadow'                       | only trace 'openat' events that have 'pathname' suffixed by shadow
+  --filter openat.args.pathname!=/tmp/1,/bin/ls                 | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
+  --filter openat.context.processName=ls                        | only trace 'openat' events that have 'processName' equal to 'ls'
+  --filter security_file_open.context.container                 | only trace 'security_file_open' events coming from a container
+  --filter comm=bash --filter follow                            | trace all events that originated from bash or from one of the processes spawned by bash
 
 Filters can also be configured within up to 64 scopes (workloads).
-Events that match all trace expressions within a single scope will be traced.
+Events that match all filter expressions within a single scope will be filtered.
 To find out which scopes an event is related to, read the bitmask in one of these ways:
 
 - using '-o format:json', matchedScopes JSON field (in decimal)
@@ -95,17 +95,17 @@ To find out which scopes an event is related to, read the bitmask in one of thes
 
 Examples:
 
-  -t 42:event=sched_process_exec -t 42:binary=/usr/bin/ls      | trace in scope 42 sched_process_exec event from /usr/bin/ls binary
+  -f 42:event=sched_process_exec -f 42:binary=/usr/bin/ls      | trace in scope 42 sched_process_exec event from /usr/bin/ls binary
 
-  -t 3:event=openat -t 3:comm=id -t 9:event=close -t 9:comm=ls - trace in scope 3 only openat event from id command
+  -f 3:event=openat -f 3:comm=id -f 9:event=close -f 9:comm=ls - trace in scope 3 only openat event from id command
                                                                | and
                                                                - trace in scope 9 only close event from ls command
 
-  -t 6:event=openat -t 6:comm=id -t 7:event=close -t 7:comm=id - trace in scope 6 only openat event from id command
+  -f 6:event=openat -f 6:comm=id -f 7:event=close -f 7:comm=id - trace in scope 6 only openat event from id command
                                                                | and
                                                                _ trace in scope 7 only close event from id command
 
-  -t 3:event=openat -t 3:comm=id -t 9:event=close              - trace in scope 3 only openat event from id command
+  -f 3:event=openat -f 3:comm=id -f 9:event=close              - trace in scope 3 only openat event from id command
                                                                | and
                                                                - trace in scope 9 only close event from all
 
