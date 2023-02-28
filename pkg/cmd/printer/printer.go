@@ -1,10 +1,12 @@
 package printer
 
 import (
+	"bytes"
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -82,6 +84,10 @@ func New(config Config) (EventPrinter, error) {
 		}
 	case kind == "forward":
 		res = &forwardEventPrinter{
+			outPath: config.OutPath,
+		}
+	case kind == "webhook":
+		res = &webhookEventPrinter{
 			outPath: config.OutPath,
 		}
 	case strings.HasPrefix(kind, "gotemplate="):
@@ -628,4 +634,66 @@ func (p forwardEventPrinter) Close() {
 		logger.Info("disconnecting from Forward destination", "url", p.url.Host, "tag", p.tag)
 		p.client.Disconnect()
 	}
+}
+
+type webhookEventPrinter struct {
+	outPath string
+	url     *url.URL
+	timeout time.Duration
+}
+
+func (ws *webhookEventPrinter) Init() error {
+	u, err := url.Parse(ws.outPath)
+	if err != nil {
+		return logger.NewErrorf("unable to parse URL %q: %v", ws.outPath, err)
+	}
+	ws.url = u
+
+	parameters, _ := url.ParseQuery(ws.url.RawQuery)
+
+	timeout := getParameterValue(parameters, "timeout", "10s")
+	t, err := time.ParseDuration(timeout)
+	if err != nil {
+		return logger.NewErrorf("unable to convert timeout value %q: %v", timeout, err)
+	}
+	ws.timeout = t
+
+	return nil
+}
+
+func (ws *webhookEventPrinter) Preamble() {}
+
+func (ws *webhookEventPrinter) Print(event trace.Event) {
+	payload, err := json.Marshal(event)
+	if err != nil {
+		logger.Error("error marshalling event", "error", err)
+		return
+	}
+
+	client := http.Client{Timeout: ws.timeout}
+
+	req, err := http.NewRequest(http.MethodPost, ws.url.String(), bytes.NewReader(payload))
+	if err != nil {
+		logger.Error("error creating request", "error", err)
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		logger.Error("error sending webhook", "error", err)
+		return
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		logger.Error(fmt.Sprintf("error sending webhook, http status: %d", resp.StatusCode))
+	}
+
+	_ = resp.Body.Close()
+}
+
+func (ws *webhookEventPrinter) Epilogue(stats metrics.Stats) {}
+
+func (ws *webhookEventPrinter) Close() {
 }

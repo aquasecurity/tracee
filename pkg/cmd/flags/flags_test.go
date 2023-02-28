@@ -1032,7 +1032,7 @@ func TestPrepareOutput(t *testing.T) {
 			expectedOutput: flags.OutputConfig{
 				LogFile: os.Stderr,
 			},
-			expectedError: errors.New("flags.validateForwardFlag: forward flag can't be empty, use '--output help' for more info"),
+			expectedError: errors.New("flags.validateURL: forward flag can't be empty, use '--output help' for more info"),
 		},
 		{
 			testName:    "empty forward flag",
@@ -1040,7 +1040,7 @@ func TestPrepareOutput(t *testing.T) {
 			expectedOutput: flags.OutputConfig{
 				LogFile: os.Stderr,
 			},
-			expectedError: errors.New("flags.validateForwardFlag: forward flag can't be empty, use '--output help' for more info"),
+			expectedError: errors.New("flags.validateURL: forward flag can't be empty, use '--output help' for more info"),
 		},
 		{
 			testName:    "invalid forward url",
@@ -1048,7 +1048,7 @@ func TestPrepareOutput(t *testing.T) {
 			expectedOutput: flags.OutputConfig{
 				LogFile: os.Stderr,
 			},
-			expectedError: errors.New("flags.validateForwardFlag: invalid uri for forward output \"lalala\". Use '--output help' for more info"),
+			expectedError: errors.New("flags.validateURL: invalid uri for forward output \"lalala\". Use '--output help' for more info"),
 		},
 		{
 			testName:    "forward",
@@ -1057,6 +1057,42 @@ func TestPrepareOutput(t *testing.T) {
 				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "forward", OutPath: "tcp://localhost:1234"},
+				},
+				TraceeConfig: &tracee.OutputConfig{},
+			},
+		},
+		// webhook
+		{
+			testName:    "empty webhook flag",
+			outputSlice: []string{"webhook"},
+			expectedOutput: flags.OutputConfig{
+				LogFile: os.Stderr,
+			},
+			expectedError: errors.New("flags.validateURL: webhook flag can't be empty, use '--output help' for more info"),
+		},
+		{
+			testName:    "empty webhook flag",
+			outputSlice: []string{"webhook:"},
+			expectedOutput: flags.OutputConfig{
+				LogFile: os.Stderr,
+			},
+			expectedError: errors.New("flags.validateURL: webhook flag can't be empty, use '--output help' for more info"),
+		},
+		{
+			testName:    "invalid webhook url",
+			outputSlice: []string{"webhook:lalala"},
+			expectedOutput: flags.OutputConfig{
+				LogFile: os.Stderr,
+			},
+			expectedError: errors.New("flags.validateURL: invalid uri for webhook output \"lalala\". Use '--output help' for more info"),
+		},
+		{
+			testName:    "webhook",
+			outputSlice: []string{"webhook:http://localhost:8080"},
+			expectedOutput: flags.OutputConfig{
+				LogFile: os.Stderr,
+				PrinterConfigs: []printer.Config{
+					{Kind: "webhook", OutPath: "http://localhost:8080"},
 				},
 				TraceeConfig: &tracee.OutputConfig{},
 			},

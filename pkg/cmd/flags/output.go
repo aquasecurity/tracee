@@ -26,6 +26,9 @@ none                                               ignore stream of events outpu
 Fluent Forward options:
 forward:url                                        send events in json format using the Forward protocol to a Fluent receiver
 
+Webhook options:
+webhook:url                                        send events in json format to the webhook url
+
 Log options:
 log-file:/path/to/file                             write the logs to a specified file. create/trim the file if exists (default: stderr)
 
@@ -50,6 +53,8 @@ Examples:
   --output none                                                  | ignore events output
   --output table --output option:stack-addresses                 | output as table with stack addresses
   --output forward:tcp://user:pass@127.0.0.1:24224?tag=tracee    | output via the Forward protocol to 127.0.0.1 on port 24224 with the tag 'tracee' using TCP
+  --output webhook:http://webhook:8080                           | output events to the webhook endpoint
+  --output webhook:http://webhook:8080?timeout=5s                | output events to the webhook endpoint with a timeout of 5s
 
 Use this flag multiple times to choose multiple output options
 `
@@ -93,15 +98,19 @@ func PrepareOutput(outputSlice []string) (OutputConfig, error) {
 				return outConfig, err
 			}
 		case "forward":
-			// Validate the forward configuration details which are as follows:
-			// --output forward:[protocol://user:pass@]host:port[?k=v#f]
-			// Only host and port are required.
-			err := validateForwardFlag(outputParts)
+			err := validateURL(outputParts, "forward")
 			if err != nil {
 				return outConfig, err
 			}
 
 			printerMap[outputParts[1]] = "forward"
+		case "webhook":
+			err := validateURL(outputParts, "webhook")
+			if err != nil {
+				return outConfig, err
+			}
+
+			printerMap[outputParts[1]] = "webhook"
 		case "log-file":
 			err := validateLogfile(outputParts)
 			if err != nil {
@@ -182,7 +191,7 @@ func getPrinterConfigs(printerMap map[string]string, traceeConfig *tracee.Output
 		outFile := os.Stdout
 		var err error
 
-		if outPath != "stdout" && printerKind != "forward" {
+		if outPath != "stdout" && printerKind != "forward" && printerKind != "webhook" {
 			outFile, err = createFile(outPath)
 			if err != nil {
 				return nil, err
@@ -264,15 +273,17 @@ func createFile(path string) (*os.File, error) {
 	return file, nil
 }
 
-func validateForwardFlag(outputParts []string) error {
+// validateURL validates the given URL
+// --output [webhook|forward]:[protocol://user:pass@]host:port[?k=v#f]
+func validateURL(outputParts []string, flag string) error {
 	if len(outputParts) == 1 || outputParts[1] == "" {
-		return logger.NewErrorf("forward flag can't be empty, use '--output help' for more info")
+		return logger.NewErrorf("%s flag can't be empty, use '--output help' for more info", flag)
 	}
 	// Now parse our URL using the standard library and report any errors from basic parsing.
 	_, err := url.ParseRequestURI(outputParts[1])
 
 	if err != nil {
-		return logger.NewErrorf("invalid uri for forward output %q. Use '--output help' for more info", outputParts[1])
+		return logger.NewErrorf("invalid uri for %s output %q. Use '--output help' for more info", flag, outputParts[1])
 	}
 
 	return nil
