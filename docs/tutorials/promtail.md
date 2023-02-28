@@ -204,4 +204,4 @@ However, once you have all the above components installed, you can open the Graf
 
 Now, you can write log queries in LogQL to access the logs that are stored in the Tracee pods:
 
-![Screenshot from Grafana, accessing Tracee logs through Loki](../images/loki.plng)
+![Screenshot from Grafana, accessing Tracee logs through Loki](../images/loki.png)
