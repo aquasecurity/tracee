@@ -4,6 +4,7 @@ import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -34,7 +35,7 @@ func deriveHookedSeqOpsArgs(kernelSymbols helpers.KernelSymbolTable) deriveArgsF
 	return func(event trace.Event) ([]interface{}, error) {
 		seqOpsArr, err := parse.ArgVal[[]uint64](&event, "net_seq_ops")
 		if err != nil || len(seqOpsArr) < 1 {
-			return nil, err
+			return nil, logger.ErrorFunc(err)
 		}
 		hookedSeqOps := make(map[string]trace.HookedSymbolData, 0)
 		for i, addr := range seqOpsArr {

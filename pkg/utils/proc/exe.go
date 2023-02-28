@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 // GetProcNS returns the namespace ID of a given namespace and process.
@@ -11,7 +13,7 @@ import (
 func GetProcBinary(pid uint) (string, error) {
 	binPath, err := os.Readlink(fmt.Sprintf("/proc/%d/exe", pid))
 	if err != nil {
-		return "", fmt.Errorf("could not read exe file: %v", err)
+		return "", logger.NewErrorf("could not read exe file: %v", err)
 	}
 	return binPath, nil
 }
@@ -21,12 +23,12 @@ func GetProcBinary(pid uint) (string, error) {
 func GetAllBinaryProcs() (map[string][]uint32, error) {
 	procDir, err := os.Open("/proc")
 	if err != nil {
-		return nil, fmt.Errorf("could not open procfs dir: %v", err)
+		return nil, logger.NewErrorf("could not open procfs dir: %v", err)
 	}
 	defer procDir.Close()
 	procs, err := procDir.Readdirnames(-1)
 	if err != nil {
-		return nil, fmt.Errorf("could not open procfs dir: %v", err)
+		return nil, logger.NewErrorf("could not open procfs dir: %v", err)
 
 	}
 	binProcs := map[string][]uint32{}

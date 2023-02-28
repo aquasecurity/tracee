@@ -9,6 +9,7 @@ import (
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"golang.org/x/exp/constraints"
 )
@@ -197,7 +198,7 @@ func (filter *UIntFilter[T]) Parse(operatorAndValues string) error {
 		}
 		err = filter.add(valInt, operator)
 		if err != nil {
-			return err
+			return logger.ErrorFunc(err)
 		}
 	}
 
@@ -237,7 +238,7 @@ func (filter *BPFUIntFilter[T]) UpdateBPF(bpfModule *bpf.Module, filterScopeID u
 	// 4. pid_ns_filter     u64, eq_t
 	equalityFilterMap, err := bpfModule.GetMap(filter.mapName)
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 
 	var keyPointer unsafe.Pointer
@@ -267,7 +268,7 @@ func (filter *BPFUIntFilter[T]) UpdateBPF(bpfModule *bpf.Module, filterScopeID u
 		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
 		err = equalityFilterMap.Update(unsafe.Pointer(keyPointer), unsafe.Pointer(&filterVal[0]))
 		if err != nil {
-			return err
+			return logger.ErrorFunc(err)
 		}
 	}
 
@@ -295,7 +296,7 @@ func (filter *BPFUIntFilter[T]) UpdateBPF(bpfModule *bpf.Module, filterScopeID u
 		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
 		err = equalityFilterMap.Update(unsafe.Pointer(keyPointer), unsafe.Pointer(&filterVal[0]))
 		if err != nil {
-			return err
+			return logger.ErrorFunc(err)
 		}
 	}
 

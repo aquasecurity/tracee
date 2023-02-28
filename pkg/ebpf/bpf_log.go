@@ -139,7 +139,7 @@ func (b BPFLog) Size() int {
 
 func (b *BPFLog) Decode(rawBuffer []byte) error {
 	if len(rawBuffer) < b.Size() {
-		return fmt.Errorf("can't decode log raw data - buffer of %d should have at least %d bytes", len(rawBuffer), b.Size())
+		return logger.NewErrorf("can't decode log raw data - buffer of %d should have at least %d bytes", len(rawBuffer), b.Size())
 	}
 
 	b.id = BPFLogType(binary.LittleEndian.Uint32(rawBuffer[0:4]))
@@ -167,7 +167,7 @@ func (t *Tracee) processBPFLogs() {
 
 			bpfLog := BPFLog{}
 			if err := bpfLog.Decode(rawData); err != nil {
-				t.handleError(fmt.Errorf("consume BPFLogsChannel: decode - %v", err))
+				t.handleError(logger.NewErrorf("consume BPFLogsChannel: decode - %v", err))
 				continue
 			}
 			// This logger timestamp in no way reflects the bpf log original time

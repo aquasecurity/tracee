@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"sync/atomic"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 type Counter struct {
@@ -23,7 +25,7 @@ func (c *Counter) Increment(amount ...uint64) error {
 
 	sum, err := sumUint64(amount...)
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 
 	return c.incAtomic(sum)
@@ -36,7 +38,7 @@ func (c *Counter) Decrement(amount ...uint64) error {
 
 	sum, err := sumUint64(amount...)
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 
 	return c.decAtomic(sum)
@@ -86,9 +88,9 @@ func sumUint64(values ...uint64) (uint64, error) {
 }
 
 func errorCounterWrapAround() error {
-	return fmt.Errorf("counter: wrap around")
+	return logger.NewErrorf("counter: wrap around")
 }
 
 func errorCounterSumWrapAround() error {
-	return fmt.Errorf("counter sum: wrap around")
+	return logger.NewErrorf("counter sum: wrap around")
 }

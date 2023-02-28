@@ -1,10 +1,9 @@
 package events
 
 import (
-	"fmt"
-
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
@@ -119,11 +118,11 @@ type eventDefinitions struct {
 // Add adds an event to definitions
 func (e *eventDefinitions) Add(eventId ID, evt Event) error {
 	if _, ok := e.events[eventId]; ok {
-		return fmt.Errorf("error event id already exist: %v", eventId)
+		return logger.NewErrorf("error event id already exist: %v", eventId)
 	}
 
 	if _, ok := e.GetID(evt.Name); ok {
-		return fmt.Errorf("error event name already exist: %v", evt.Name)
+		return logger.NewErrorf("error event name already exist: %v", evt.Name)
 	}
 
 	e.events[eventId] = evt

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -110,7 +111,7 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 		return NewStringFilter()
 	})
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 
 	filter.Enable()
@@ -135,7 +136,7 @@ func (filter *ArgFilter) parseFilter(id events.ID, argName string, operatorAndVa
 	argFilter := filter.filters[id][argName]
 	err := argFilter.Parse(operatorAndValues)
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 
 	// store the arg filter again

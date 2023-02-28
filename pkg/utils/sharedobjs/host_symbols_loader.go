@@ -4,6 +4,7 @@ import (
 	"debug/elf"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/hashicorp/golang-lru/simplelru"
 )
 
@@ -30,7 +31,7 @@ func InitHostSymbolsLoader(cacheSize int) *HostSymbolsLoader {
 func (soLoader *HostSymbolsLoader) GetDynamicSymbols(soInfo ObjInfo) (map[string]bool, error) {
 	syms, err := soLoader.loadSOSymbols(soInfo)
 	if err != nil {
-		return nil, err
+		return nil, logger.ErrorFunc(err)
 	}
 	dynSyms := copyMap(syms.Imported)
 	for expSym := range syms.Exported {
@@ -44,7 +45,7 @@ func (soLoader *HostSymbolsLoader) GetDynamicSymbols(soInfo ObjInfo) (map[string
 func (soLoader *HostSymbolsLoader) GetExportedSymbols(soInfo ObjInfo) (map[string]bool, error) {
 	syms, err := soLoader.loadSOSymbols(soInfo)
 	if err != nil {
-		return nil, err
+		return nil, logger.ErrorFunc(err)
 	}
 	return copyMap(syms.Exported), nil
 }
@@ -54,7 +55,7 @@ func (soLoader *HostSymbolsLoader) GetExportedSymbols(soInfo ObjInfo) (map[strin
 func (soLoader *HostSymbolsLoader) GetImportedSymbols(soInfo ObjInfo) (map[string]bool, error) {
 	syms, err := soLoader.loadSOSymbols(soInfo)
 	if err != nil {
-		return nil, err
+		return nil, logger.ErrorFunc(err)
 	}
 	return copyMap(syms.Imported), nil
 }
@@ -66,7 +67,7 @@ func (soLoader *HostSymbolsLoader) loadSOSymbols(soInfo ObjInfo) (*dynamicSymbol
 	}
 	syms, err := soLoader.loadingFunc(soInfo.Path)
 	if err != nil {
-		return nil, err
+		return nil, logger.ErrorFunc(err)
 	}
 	soLoader.soCache.Add(soInfo, syms)
 	return syms, nil
@@ -108,13 +109,13 @@ func loadSharedObjectDynamicSymbols(path string) (*dynamicSymbols, error) {
 		return e
 	})
 	if err != nil {
-		return nil, err
+		return nil, logger.ErrorFunc(err)
 	}
 	defer loadedObject.Close()
 
 	dynamicSymbols, err := loadedObject.DynamicSymbols()
 	if err != nil {
-		return nil, err
+		return nil, logger.ErrorFunc(err)
 	}
 	return parseDynamicSymbols(dynamicSymbols), nil
 }

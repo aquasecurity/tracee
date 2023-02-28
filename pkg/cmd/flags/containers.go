@@ -1,7 +1,6 @@
 package flags
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
@@ -58,19 +57,19 @@ func PrepareContainers(containerFlags []string) (runtime.Sockets, error) {
 	for _, flag := range containerFlags {
 		parts := strings.Split(flag, ":")
 		if len(parts) != 2 {
-			return sockets, fmt.Errorf("failed to parse container flags (must be of format {runtime}:{socket path})")
+			return sockets, logger.NewErrorf("failed to parse container flags (must be of format {runtime}:{socket path})")
 		}
 		containerRuntime := parts[0]
 
 		if !contains(supportedRuntimes, containerRuntime) {
-			return sockets, fmt.Errorf("provided unsupported container runtime (see --crs help for supported runtimes)")
+			return sockets, logger.NewErrorf("provided unsupported container runtime (see --crs help for supported runtimes)")
 		}
 
 		socket := parts[1]
 		err := sockets.Register(runtime.FromString(containerRuntime), socket)
 
 		if err != nil {
-			return sockets, fmt.Errorf("failed to register runtime socket, %s", err.Error())
+			return sockets, logger.NewErrorf("failed to register runtime socket, %s", err.Error())
 		}
 	}
 

@@ -215,7 +215,7 @@ HostName: foobar.local
 
 			switch {
 			case tc.expectedError != "":
-				assert.EqualError(t, actualError, tc.expectedError, tc.name)
+				assert.ErrorContains(t, actualError, tc.expectedError, tc.name)
 			default:
 				assert.NoError(t, actualError, tc.name)
 			}

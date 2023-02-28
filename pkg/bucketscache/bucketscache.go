@@ -1,8 +1,9 @@
 package bucketscache
 
 import (
-	"fmt"
 	"sync"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 type BucketsCache struct {
@@ -68,5 +69,5 @@ func (c *BucketsCache) addBucketItem(key uint32, value uint32, force bool) {
 }
 
 func NoSuchItem(key uint32, index int) error {
-	return fmt.Errorf("no such item in cache at key: %d, index: %d", key, index)
+	return logger.NewErrorf("no such item in cache at key: %d, index: %d", key, index)
 }

@@ -7,6 +7,7 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/tracee/pkg/filters/sets"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
@@ -113,7 +114,7 @@ func (f *StringFilter) Parse(operatorAndValues string) error {
 	for _, val := range values {
 		err := f.add(val, stringToOperator(operatorString))
 		if err != nil {
-			return err
+			return logger.ErrorFunc(err)
 		}
 	}
 
@@ -241,7 +242,7 @@ func (filter *BPFStringFilter) UpdateBPF(bpfModule *bpf.Module, filterScopeID ui
 
 	bpfMap, err := bpfModule.GetMap(filter.mapName)
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 
 	filterVal := make([]byte, 16)
@@ -265,7 +266,7 @@ func (filter *BPFStringFilter) UpdateBPF(bpfModule *bpf.Module, filterScopeID ui
 		binary.LittleEndian.PutUint64(filterVal[0:8], equalInScopes)
 		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
 		if err = bpfMap.Update(unsafe.Pointer(&byteStr[0]), unsafe.Pointer(&filterVal[0])); err != nil {
-			return err
+			return logger.ErrorFunc(err)
 		}
 	}
 
@@ -288,7 +289,7 @@ func (filter *BPFStringFilter) UpdateBPF(bpfModule *bpf.Module, filterScopeID ui
 		binary.LittleEndian.PutUint64(filterVal[0:8], equalInScopes)
 		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
 		if err = bpfMap.Update(unsafe.Pointer(&byteStr[0]), unsafe.Pointer(&filterVal[0])); err != nil {
-			return err
+			return logger.ErrorFunc(err)
 		}
 	}
 

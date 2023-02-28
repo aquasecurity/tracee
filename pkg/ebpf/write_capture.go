@@ -41,12 +41,12 @@ func (t *Tracee) processFileWrites() {
 			}
 
 			if meta.Size <= 0 {
-				t.handleError(fmt.Errorf("error in file writer: invalid chunk size: %d", meta.Size))
+				t.handleError(logger.NewErrorf("invalid chunk size: %d", meta.Size))
 				continue
 			}
 
 			if ebpfMsgDecoder.BuffLen() < int(meta.Size) {
-				t.handleError(fmt.Errorf("error in file writer: chunk too large: %d", meta.Size))
+				t.handleError(logger.NewErrorf("chunk too large: %d", meta.Size))
 				continue
 			}
 
@@ -103,7 +103,7 @@ func (t *Tracee) processFileWrites() {
 					filename = fmt.Sprintf("%s.pid-%d", filename, kernelModuleMeta.Pid)
 				}
 			} else {
-				t.handleError(fmt.Errorf("error in file writer: unknown binary type: %d", meta.BinType))
+				t.handleError(logger.NewErrorf("unknown binary type: %d", meta.BinType))
 				continue
 			}
 

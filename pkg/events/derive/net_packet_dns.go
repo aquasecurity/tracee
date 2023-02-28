@@ -23,7 +23,7 @@ func deriveDNS() deriveArgsFunction {
 func deriveDNSEvents(event trace.Event) ([]interface{}, error) {
 	net, dns, err := eventToProtoDNS(&event)
 	if err != nil {
-		return nil, err
+		return nil, logger.ErrorFunc(err)
 	}
 	if dns == nil {
 		return nil, nil // connection related packets
@@ -56,13 +56,13 @@ func deriveDNSRequest() deriveArgsFunction {
 func deriveDNSRequestEvents(event trace.Event) ([]interface{}, error) {
 	net, dns, err := eventToProtoDNS(&event)
 	if err != nil {
-		return nil, err
+		return nil, logger.ErrorFunc(err)
 	}
 	if dns == nil {
 		return nil, nil // connection related packets
 	}
 	if net == nil {
-		return nil, err
+		return nil, logger.ErrorFunc(err)
 	}
 
 	// discover if it is a request or response
@@ -105,13 +105,13 @@ func deriveDNSResponse() deriveArgsFunction {
 func deriveDNSResponseEvents(event trace.Event) ([]interface{}, error) {
 	net, dns, err := eventToProtoDNS(&event)
 	if err != nil {
-		return nil, err
+		return nil, logger.ErrorFunc(err)
 	}
 	if dns == nil {
 		return nil, nil // connection related packets
 	}
 	if net == nil {
-		return nil, err
+		return nil, logger.ErrorFunc(err)
 	}
 
 	// discover if it is a request or response
@@ -157,7 +157,7 @@ func eventToProtoDNS(event *trace.Event) (*netPair, *trace.ProtoDNS, error) {
 
 	layer7, err := parseUntilLayer7(event, &DnsNetPair)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, logger.ErrorFunc(err)
 	}
 
 	switch l7 := layer7.(type) {

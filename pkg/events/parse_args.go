@@ -8,6 +8,7 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -280,7 +281,7 @@ func ParseArgsFDs(event *trace.Event, fdArgPathMap *bpf.BPFMap) error {
 			}
 			bs, err := fdArgPathMap.GetValue(unsafe.Pointer(fdArgTask))
 			if err != nil {
-				return err
+				return logger.ErrorFunc(err)
 			}
 
 			fpath := string(bytes.Trim(bs, "\x00"))
@@ -321,7 +322,7 @@ func parseBpfAttachHelperUsage(helperArg int32) (string, error) {
 	case 2:
 		return "unknown", nil
 	default:
-		return "", fmt.Errorf("unknown value got from bpf_attach event for helper usage arg")
+		return "", logger.NewErrorf("unknown value got from bpf_attach event for helper usage arg")
 	}
 }
 
@@ -338,6 +339,6 @@ func parseBpfAttachPerfType(perfType int32) (string, error) {
 	case 4:
 		return "uretprobe", nil
 	default:
-		return "", fmt.Errorf("unknown perf_type got from bpf_attach event")
+		return "", logger.NewErrorf("unknown perf_type got from bpf_attach event")
 	}
 }

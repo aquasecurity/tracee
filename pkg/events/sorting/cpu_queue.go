@@ -1,8 +1,7 @@
 package sorting
 
 import (
-	"fmt"
-
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -35,7 +34,7 @@ func (cq *cpuEventsQueue) InsertByTimestamp(newEvent *trace.Event) error {
 			}
 			if insertLocation.next == insertLocation {
 				if err != nil {
-					err = fmt.Errorf("encountered node with self reference at next: %w", err)
+					err = logger.NewErrorf("encountered node with self reference at next: %v", err)
 				}
 			}
 			insertLocation = insertLocation.next
@@ -44,7 +43,7 @@ func (cq *cpuEventsQueue) InsertByTimestamp(newEvent *trace.Event) error {
 	} else {
 		cq.put(newNode)
 	}
-	return err
+	return logger.ErrorFunc(err)
 }
 
 // insertAfter insert new event to the queue after another node

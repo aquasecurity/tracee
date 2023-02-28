@@ -86,7 +86,7 @@ func TestParseTraceeInputOptions(t *testing.T) {
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
 			opt, err := parseTraceeInputOptions(testcase.optionStringSlice)
-			assert.Equal(t, testcase.expectedError, err)
+			assert.ErrorContains(t, err, testcase.expectedError.Error())
 			assert.Equal(t, testcase.expectedResultOptions, opt)
 		})
 	}

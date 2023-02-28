@@ -80,7 +80,7 @@ func TestAdd(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			err := Definitions.Add(test.evt.ID32Bit, test.evt)
 			if err != nil {
-				assert.Equal(t, test.err, err.Error())
+				assert.ErrorContains(t, err, test.err)
 				return
 			}
 

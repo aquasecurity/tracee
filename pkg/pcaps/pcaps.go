@@ -1,12 +1,10 @@
 package pcaps
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -59,7 +57,7 @@ func New(simple Config, output *os.File) (*Pcaps, error) {
 			logger.Debug("pcap enabled: " + t.String())
 			caches[t], err = newPcapCache(t)
 			if err != nil {
-				return nil, utils.ErrorFuncName(err)
+				return nil, logger.ErrorFunc(err)
 			}
 		} else {
 			// remove keys that were not requested
@@ -75,17 +73,17 @@ func (p *Pcaps) Write(event *trace.Event, payload []byte) error {
 
 	// sanity check
 	if events.ID(event.EventID) != events.NetPacketCapture {
-		return fmt.Errorf("wrong event type given to pcap")
+		return logger.NewErrorf("wrong event type given to pcap")
 	}
 
 	for k := range p.pcapCaches {
 		item, err := p.pcapCaches[k].get(event)
 		if err != nil {
-			return utils.ErrorFuncName(err)
+			return logger.ErrorFunc(err)
 		}
 		err = item.write(event, payload)
 		if err != nil {
-			return utils.ErrorFuncName(err)
+			return logger.ErrorFunc(err)
 		}
 	}
 
@@ -98,7 +96,7 @@ func (p *Pcaps) Destroy() error {
 	for k := range p.pcapCaches {
 		err := p.pcapCaches[k].destroy()
 		if err != nil {
-			return utils.ErrorFuncName(err)
+			return logger.ErrorFunc(err)
 		}
 	}
 

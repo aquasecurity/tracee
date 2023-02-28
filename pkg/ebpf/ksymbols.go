@@ -1,15 +1,13 @@
 package ebpf
 
 import (
-	"errors"
-	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"github.com/aquasecurity/tracee/pkg/events"
-	"runtime/debug"
 	"unsafe"
+
+	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/logger"
 
 	"github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 var maxKsymNameLen = 64 // Most match the constant in the bpf code
@@ -33,7 +31,7 @@ func SendKsymbolsToMap(bpfKsymsMap *libbpfgo.BPFMap, ksymbols map[string]*helper
 		address := value.Address
 		err := bpfKsymsMap.Update(unsafe.Pointer(&key[0]), unsafe.Pointer(&address))
 		if err != nil {
-			return err
+			return logger.ErrorFunc(err)
 		}
 	}
 	return nil
@@ -45,29 +43,31 @@ func SendKsymbolsToMap(bpfKsymsMap *libbpfgo.BPFMap, ksymbols map[string]*helper
 // given. The chosen symbol used here is "security_file_open" because it is a
 // must-have symbol for tracee to run.
 func ValidateKsymbolsTable(ksyms helpers.KernelSymbolTable) bool {
+
 	sym, err := ksyms.GetSymbolByName(globalSymbolOwner, "security_file_open")
 	if err != nil || sym.Address == 0 {
 		return false
 	}
+
 	return true
 }
 
 func (t *Tracee) NewKernelSymbols() error {
-	return capabilities.GetInstance().Requested(func() error { // ring2
+	var kernelSymbols helpers.KernelSymbolTable
+	var err error
 
-		kernelSymbols, err := helpers.NewLazyKernelSymbolsMap()
-		if err != nil {
-			return err
-		}
-		if !ValidateKsymbolsTable(kernelSymbols) {
-			debug.PrintStack()
-			return errors.New("invalid ksymbol table")
-		}
-		t.kernelSymbols = kernelSymbols
+	kernelSymbols, err = helpers.NewLazyKernelSymbolsMap()
+	if err != nil {
+		return logger.ErrorFunc(err)
+	}
 
-		return nil
+	if !ValidateKsymbolsTable(kernelSymbols) {
+		// debug.PrintStack()
+		return logger.NewErrorf("invalid ksymbol table")
+	}
+	t.kernelSymbols = kernelSymbols
 
-	}, cap.SYSLOG)
+	return nil
 }
 
 func (t *Tracee) UpdateKernelSymbols() error {
@@ -75,13 +75,17 @@ func (t *Tracee) UpdateKernelSymbols() error {
 }
 
 func (t *Tracee) UpdateBPFKsymbolsMap() error {
-	bpfKsymsMap, err := t.bpfModule.GetMap("ksymbols_map") // u32, u64
+	var err error
+	var bpfKsymsMap *libbpfgo.BPFMap
+
+	bpfKsymsMap, err = t.bpfModule.GetMap("ksymbols_map")
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 
 	// get required symbols by chosen events
 	var reqKsyms []string
+
 	for id := range t.events {
 		event := events.Definitions.Get(id)
 		if event.Dependencies.KSymbols != nil {
@@ -90,7 +94,6 @@ func (t *Tracee) UpdateBPFKsymbolsMap() error {
 			}
 		}
 	}
-
 	kallsymsValues := LoadKallsymsValues(t.kernelSymbols, reqKsyms)
 
 	return SendKsymbolsToMap(bpfKsymsMap, kallsymsValues)
@@ -99,7 +102,7 @@ func (t *Tracee) UpdateBPFKsymbolsMap() error {
 func (t *Tracee) UpdateKallsyms() error {
 	err := t.UpdateKernelSymbols()
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 
 	return t.UpdateBPFKsymbolsMap()

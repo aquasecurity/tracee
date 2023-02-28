@@ -1,10 +1,9 @@
 package probes
 
 import (
-	"fmt"
-
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/tracee/pkg/cgroup"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 //
@@ -39,11 +38,11 @@ func (p *cgroupProbe) attach(module *bpf.Module, args ...interface{}) error {
 		}
 	}
 	if cgroups == nil {
-		return fmt.Errorf("cgroup probes needs control groups argument")
+		return logger.NewErrorf("cgroup probes needs control groups argument")
 	}
 	cgroupV2 := cgroups.GetCgroup(cgroup.CgroupVersion2)
 	if cgroupV2 == nil {
-		return fmt.Errorf("cgroup probes needs cgroup v2 support")
+		return logger.NewErrorf("cgroup probes needs cgroup v2 support")
 	}
 
 	cgroupV2MountPoint := cgroupV2.GetMountPoint()
@@ -57,19 +56,19 @@ func (p *cgroupProbe) attach(module *bpf.Module, args ...interface{}) error {
 	// sanity checks
 
 	if module == nil {
-		return fmt.Errorf("incorrect arguments for program: %s", p.programName)
+		return logger.NewErrorf("incorrect arguments for program: %s", p.programName)
 	}
 
 	// attach
 
 	prog, err := module.GetProgram(p.programName)
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 
 	link, err = prog.AttachCgroupLegacy(cgroupV2MountPoint, p.attachType)
 	if err != nil {
-		return fmt.Errorf("failed to attach program %s to cgroup %s (error: %v)", p.programName, cgroupV2MountPoint, err)
+		return logger.NewErrorf("failed to attach program %s to cgroup %s (error: %v)", p.programName, cgroupV2MountPoint, err)
 	}
 
 	p.bpfLink = link
@@ -87,7 +86,7 @@ func (p *cgroupProbe) detach(args ...interface{}) error {
 
 	err = p.bpfLink.Destroy()
 	if err != nil {
-		return fmt.Errorf("failed to detach program: %s (%v)", p.programName, err)
+		return logger.NewErrorf("failed to detach program: %s (%v)", p.programName, err)
 	}
 
 	p.bpfLink = nil // NOTE: needed so a new call to bpf_link__destroy() works

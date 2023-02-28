@@ -1,7 +1,6 @@
 package flags
 
 import (
-	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -30,7 +29,7 @@ Examples:
 }
 
 func InvalidLogOption(opt string) error {
-	return fmt.Errorf("invalid log option: %s, use '--log help' for more info", opt)
+	return logger.NewErrorf("invalid log option: %s, use '--log help' for more info", opt)
 }
 
 func PrepareLogger(logOptions []string, w io.Writer) (*logger.LoggerConfig, error) {

@@ -1,12 +1,11 @@
 package trigger
 
 import (
-	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/counter"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -58,7 +57,7 @@ func (store *context) Get(id uint64) (trace.Event, bool) {
 func (store *context) Apply(event trace.Event) (trace.Event, error) {
 	contextID, err := parse.ArgVal[uint64](&event, ContextArgName)
 	if err != nil {
-		return trace.Event{}, fmt.Errorf("error parsing caller_context_id arg: %v", err)
+		return trace.Event{}, logger.NewErrorf("error parsing caller_context_id arg: %v", err)
 	}
 	invoking, ok := store.Get(contextID)
 	if !ok {
@@ -77,7 +76,7 @@ func (store *context) Apply(event trace.Event) (trace.Event, error) {
 	invoking.MatchedScopes = event.MatchedScopes
 	copied := copy(invoking.Args, event.Args)
 	if copied != len(event.Args) {
-		return trace.Event{}, errors.New("failed to apply event's args")
+		return trace.Event{}, logger.NewErrorf("failed to apply event's args")
 	}
 	invoking.ArgsNum = event.ArgsNum
 

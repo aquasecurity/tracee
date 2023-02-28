@@ -8,9 +8,9 @@ package bufferdecoder
 
 import (
 	"encoding/binary"
-	"fmt"
 
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 type EbpfDecoder struct {
@@ -43,7 +43,7 @@ func (decoder *EbpfDecoder) ReadAmountBytes() int {
 func (decoder *EbpfDecoder) DecodeContext(ctx *Context) error {
 	offset := decoder.cursor
 	if uint32(len(decoder.buffer[offset:])) < ctx.GetSizeBytes() {
-		return fmt.Errorf("context buffer size [%d] smaller than %d", len(decoder.buffer[offset:]), ctx.GetSizeBytes())
+		return logger.NewErrorf("context buffer size [%d] smaller than %d", len(decoder.buffer[offset:]), ctx.GetSizeBytes())
 	}
 
 	// event_context start
@@ -84,7 +84,7 @@ func (decoder *EbpfDecoder) DecodeUint8(msg *uint8) error {
 	readAmount := 1
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < readAmount {
-		return fmt.Errorf("can't read context from buffer: buffer too short")
+		return logger.NewErrorf("can't read context from buffer: buffer too short")
 	}
 	*msg = decoder.buffer[decoder.cursor]
 	decoder.cursor += readAmount
@@ -96,7 +96,7 @@ func (decoder *EbpfDecoder) DecodeInt8(msg *int8) error {
 	readAmount := 1
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < readAmount {
-		return fmt.Errorf("can't read context from buffer: buffer too short")
+		return logger.NewErrorf("can't read context from buffer: buffer too short")
 	}
 	*msg = int8(decoder.buffer[offset])
 	decoder.cursor += readAmount
@@ -108,7 +108,7 @@ func (decoder *EbpfDecoder) DecodeUint16(msg *uint16) error {
 	readAmount := 2
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < readAmount {
-		return fmt.Errorf("can't read context from buffer: buffer too short")
+		return logger.NewErrorf("can't read context from buffer: buffer too short")
 	}
 	*msg = binary.LittleEndian.Uint16(decoder.buffer[offset : offset+readAmount])
 	decoder.cursor += readAmount
@@ -120,7 +120,7 @@ func (decoder *EbpfDecoder) DecodeUint16BigEndian(msg *uint16) error {
 	readAmount := 2
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < readAmount {
-		return fmt.Errorf("can't read context from buffer: buffer too short")
+		return logger.NewErrorf("can't read context from buffer: buffer too short")
 	}
 	*msg = binary.BigEndian.Uint16(decoder.buffer[offset : offset+readAmount])
 	decoder.cursor += readAmount
@@ -132,7 +132,7 @@ func (decoder *EbpfDecoder) DecodeInt16(msg *int16) error {
 	readAmount := 2
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < readAmount {
-		return fmt.Errorf("can't read context from buffer: buffer too short")
+		return logger.NewErrorf("can't read context from buffer: buffer too short")
 	}
 	*msg = int16(binary.LittleEndian.Uint16(decoder.buffer[offset : offset+readAmount]))
 	decoder.cursor += readAmount
@@ -144,7 +144,7 @@ func (decoder *EbpfDecoder) DecodeUint32(msg *uint32) error {
 	readAmount := 4
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < readAmount {
-		return fmt.Errorf("can't read context from buffer: buffer too short")
+		return logger.NewErrorf("can't read context from buffer: buffer too short")
 	}
 	*msg = binary.LittleEndian.Uint32(decoder.buffer[offset : offset+readAmount])
 	decoder.cursor += readAmount
@@ -156,7 +156,7 @@ func (decoder *EbpfDecoder) DecodeUint32BigEndian(msg *uint32) error {
 	readAmount := 4
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < readAmount {
-		return fmt.Errorf("can't read context from buffer: buffer too short")
+		return logger.NewErrorf("can't read context from buffer: buffer too short")
 	}
 	*msg = binary.BigEndian.Uint32(decoder.buffer[offset : offset+readAmount])
 	decoder.cursor += readAmount
@@ -168,7 +168,7 @@ func (decoder *EbpfDecoder) DecodeInt32(msg *int32) error {
 	readAmount := 4
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < readAmount {
-		return fmt.Errorf("can't read context from buffer: buffer too short")
+		return logger.NewErrorf("can't read context from buffer: buffer too short")
 	}
 	*msg = int32(binary.LittleEndian.Uint32(decoder.buffer[offset : offset+readAmount]))
 	decoder.cursor += readAmount
@@ -180,7 +180,7 @@ func (decoder *EbpfDecoder) DecodeUint64(msg *uint64) error {
 	readAmount := 8
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < readAmount {
-		return fmt.Errorf("can't read context from buffer: buffer too short")
+		return logger.NewErrorf("can't read context from buffer: buffer too short")
 	}
 	*msg = binary.LittleEndian.Uint64(decoder.buffer[offset : offset+readAmount])
 	decoder.cursor += readAmount
@@ -192,7 +192,7 @@ func (decoder *EbpfDecoder) DecodeInt64(msg *int64) error {
 	readAmount := 8
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < readAmount {
-		return fmt.Errorf("can't read context from buffer: buffer too short")
+		return logger.NewErrorf("can't read context from buffer: buffer too short")
 	}
 	*msg = int64(binary.LittleEndian.Uint64(decoder.buffer[decoder.cursor : decoder.cursor+readAmount]))
 	decoder.cursor += readAmount
@@ -203,7 +203,7 @@ func (decoder *EbpfDecoder) DecodeInt64(msg *int64) error {
 func (decoder *EbpfDecoder) DecodeBool(msg *bool) error {
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < 1 {
-		return fmt.Errorf("can't read context from buffer: buffer too short")
+		return logger.NewErrorf("can't read context from buffer: buffer too short")
 	}
 	*msg = (decoder.buffer[offset] != 0)
 	decoder.cursor += 1
@@ -215,7 +215,7 @@ func (decoder *EbpfDecoder) DecodeBytes(msg []byte, size uint32) error {
 	offset := decoder.cursor
 	castedSize := int(size)
 	if len(decoder.buffer[offset:]) < castedSize {
-		return fmt.Errorf("can't read context from buffer: buffer too short")
+		return logger.NewErrorf("can't read context from buffer: buffer too short")
 	}
 	_ = copy(msg[:], decoder.buffer[offset:offset+castedSize])
 	decoder.cursor += castedSize
@@ -226,7 +226,7 @@ func (decoder *EbpfDecoder) DecodeBytes(msg []byte, size uint32) error {
 func (decoder *EbpfDecoder) DecodeIntArray(msg []int32, size uint32) error {
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < int(size*4) {
-		return fmt.Errorf("can't read context from buffer: buffer too short")
+		return logger.NewErrorf("can't read context from buffer: buffer too short")
 	}
 	for i := 0; i < int(size); i++ {
 		msg[i] = int32(binary.LittleEndian.Uint32(decoder.buffer[decoder.cursor : decoder.cursor+4]))
@@ -240,13 +240,13 @@ func (decoder *EbpfDecoder) DecodeUint64Array(msg *[]uint64) error {
 	var arrLen uint8
 	err := decoder.DecodeUint8(&arrLen)
 	if err != nil {
-		return fmt.Errorf("error reading ulong array number of elements: %v", err)
+		return logger.NewErrorf("error reading ulong array number of elements: %v", err)
 	}
 	for i := 0; i < int(arrLen); i++ {
 		var element uint64
 		err := decoder.DecodeUint64(&element)
 		if err != nil {
-			return fmt.Errorf("can't read element %d uint64 from buffer: %s", i, err)
+			return logger.NewErrorf("can't read element %d uint64 from buffer: %s", i, err)
 		}
 		*msg = append(*msg, element)
 	}
@@ -257,7 +257,7 @@ func (decoder *EbpfDecoder) DecodeUint64Array(msg *[]uint64) error {
 func (decoder *EbpfDecoder) DecodeSlimCred(slimCred *SlimCred) error {
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < 80 {
-		return fmt.Errorf("can't read context from buffer: buffer too short")
+		return logger.NewErrorf("can't read context from buffer: buffer too short")
 	}
 	slimCred.Uid = binary.LittleEndian.Uint32(decoder.buffer[offset : offset+4])
 	slimCred.Gid = binary.LittleEndian.Uint32(decoder.buffer[offset+4 : offset+8])
@@ -282,7 +282,7 @@ func (decoder *EbpfDecoder) DecodeSlimCred(slimCred *SlimCred) error {
 func (decoder *EbpfDecoder) DecodeChunkMeta(chunkMeta *ChunkMeta) error {
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < int(chunkMeta.GetSizeBytes()) {
-		return fmt.Errorf("can't read context from buffer: buffer too short")
+		return logger.NewErrorf("can't read context from buffer: buffer too short")
 	}
 	chunkMeta.BinType = BinType(decoder.buffer[offset])
 	chunkMeta.CgroupID = binary.LittleEndian.Uint64(decoder.buffer[offset+1 : offset+9])
@@ -297,7 +297,7 @@ func (decoder *EbpfDecoder) DecodeChunkMeta(chunkMeta *ChunkMeta) error {
 func (decoder *EbpfDecoder) DecodeVfsWriteMeta(vfsWriteMeta *VfsWriteMeta) error {
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < int(vfsWriteMeta.GetSizeBytes()) {
-		return fmt.Errorf("can't read context from buffer: buffer too short")
+		return logger.NewErrorf("can't read context from buffer: buffer too short")
 	}
 	vfsWriteMeta.DevID = binary.LittleEndian.Uint32(decoder.buffer[offset : offset+4])
 	vfsWriteMeta.Inode = binary.LittleEndian.Uint64(decoder.buffer[offset+4 : offset+12])
@@ -311,7 +311,7 @@ func (decoder *EbpfDecoder) DecodeVfsWriteMeta(vfsWriteMeta *VfsWriteMeta) error
 func (decoder *EbpfDecoder) DecodeKernelModuleMeta(kernelModuleMeta *KernelModuleMeta) error {
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < int(kernelModuleMeta.GetSizeBytes()) {
-		return fmt.Errorf("can't read context from buffer: buffer too short")
+		return logger.NewErrorf("can't read context from buffer: buffer too short")
 	}
 	kernelModuleMeta.DevID = binary.LittleEndian.Uint32(decoder.buffer[offset : offset+4])
 	kernelModuleMeta.Inode = binary.LittleEndian.Uint64(decoder.buffer[offset+4 : offset+12])
@@ -325,7 +325,7 @@ func (decoder *EbpfDecoder) DecodeKernelModuleMeta(kernelModuleMeta *KernelModul
 func (decoder *EbpfDecoder) DecodeMprotectWriteMeta(mprotectWriteMeta *MprotectWriteMeta) error {
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < int(mprotectWriteMeta.GetSizeBytes()) {
-		return fmt.Errorf("can't read context from buffer: buffer too short")
+		return logger.NewErrorf("can't read context from buffer: buffer too short")
 	}
 	mprotectWriteMeta.Ts = binary.LittleEndian.Uint64(decoder.buffer[offset : offset+8])
 	decoder.cursor += int(mprotectWriteMeta.GetSizeBytes())

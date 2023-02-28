@@ -23,7 +23,7 @@ func (r Runner) Run(ctx context.Context) error {
 
 	t, err := tracee.New(r.TraceeConfig)
 	if err != nil {
-		return fmt.Errorf("error creating Tracee: %v", err)
+		return logger.NewErrorf("error creating Tracee: %v", err)
 	}
 
 	// Decide if HTTP server should be started
@@ -43,7 +43,7 @@ func (r Runner) Run(ctx context.Context) error {
 
 	printer, err := printer.New(r.PrinterConfig)
 	if err != nil {
-		return err
+		return logger.ErrorFunc(err)
 	}
 
 	// Print statistics at the end
@@ -58,7 +58,7 @@ func (r Runner) Run(ctx context.Context) error {
 
 	err = t.Init()
 	if err != nil {
-		return fmt.Errorf("error initializing Tracee: %v", err)
+		return logger.NewErrorf("error initializing Tracee: %v", err)
 	}
 
 	// Print the preamble and start event channel reception
