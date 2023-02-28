@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.13+insiders-4.32.0">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.15+insiders-4.32.1">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.e95b5de1.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.17f92d59.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.6932e648.min.css">
@@ -92,7 +92,7 @@
 
   
 
-<header class="md-header md-header--lifted" data-md-component="header">
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
       
@@ -3089,7 +3089,7 @@
 events. Up to 64 scopes (workloads) can be used at the same time.</p>
 <p>If one of your filters doesn't match, the event will be filtered out, as they
 work together in a short circuit. However, you can use multiple sets of
-filters, called scopes, by adding a number and a colon before the trace flags,
+filters, called scopes, by adding a number and a colon before the filter flags,
 such as <code>1:</code>. In this way, you can have different workloads that mix different
 types of filters.</p>
 <p>The main filtering logic, <em>ANDed filters</em>, remains the same within a scope. But
@@ -3113,7 +3113,7 @@ that this event matches the 1st, 2nd, and 6th scopes.</p>
 <h3 id="single-scope-the-same-of-not-using-the-scope-prefix">Single scope (the same of not using the scope prefix)<a class="headerlink" href="#single-scope-the-same-of-not-using-the-scope-prefix" title="Permanent link">&para;</a></h3>
 <p>Trace in <strong>scope 42</strong> <code>sched_process_exec</code> events from <code>/usr/bin/ls</code> binary:</p>
 <div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
--t<span class="w"> </span><span class="m">42</span>:event<span class="o">=</span>sched_process_exec<span class="w"> </span>-t<span class="w"> </span><span class="m">42</span>:binary<span class="o">=</span>/usr/bin/ls<span class="w"> </span><span class="se">\</span>
+-f<span class="w"> </span><span class="m">42</span>:event<span class="o">=</span>sched_process_exec<span class="w"> </span>-f<span class="w"> </span><span class="m">42</span>:binary<span class="o">=</span>/usr/bin/ls<span class="w"> </span><span class="se">\</span>
 -o<span class="w"> </span>format:table-verbose
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
@@ -3132,8 +3132,8 @@ be omitted for single scope usage.</p>
 <p>Trace in <strong>scope 3</strong> only <code>sched_process_exit</code> events from <code>id</code> command and
 trace in <strong>scope 9</strong> only <code>sched_process_exit</code> events from <code>ls</code> command:</p>
 <div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
--t<span class="w"> </span><span class="m">3</span>:event<span class="o">=</span>sched_process_exit<span class="w"> </span>-t<span class="w"> </span><span class="m">3</span>:comm<span class="o">=</span>id<span class="w"> </span><span class="se">\</span>
--t<span class="w"> </span><span class="m">9</span>:event<span class="o">=</span>sched_process_exit<span class="w"> </span>-t<span class="w"> </span><span class="m">9</span>:comm<span class="o">=</span>ls<span class="w"> </span><span class="se">\</span>
+-f<span class="w"> </span><span class="m">3</span>:event<span class="o">=</span>sched_process_exit<span class="w"> </span>-f<span class="w"> </span><span class="m">3</span>:comm<span class="o">=</span>id<span class="w"> </span><span class="se">\</span>
+-f<span class="w"> </span><span class="m">9</span>:event<span class="o">=</span>sched_process_exit<span class="w"> </span>-f<span class="w"> </span><span class="m">9</span>:comm<span class="o">=</span>ls<span class="w"> </span><span class="se">\</span>
 -o<span class="w"> </span>format:table-verbose
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
@@ -3145,8 +3145,8 @@ trace in <strong>scope 9</strong> only <code>sched_process_exit</code> events fr
 <p>Trace in <strong>scope 6</strong> only <code>openat</code> events from <code>id</code> command and
 trace in <strong>scope 7</strong> only <code>close</code> events from <code>id</code> command:</p>
 <div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
--t<span class="w"> </span><span class="m">6</span>:event<span class="o">=</span>openat<span class="w"> </span>-t<span class="w"> </span><span class="m">6</span>:comm<span class="o">=</span>id<span class="w"> </span><span class="se">\</span>
--t<span class="w"> </span><span class="m">7</span>:event<span class="o">=</span>close<span class="w"> </span>-t<span class="w"> </span><span class="m">7</span>:comm<span class="o">=</span>id<span class="w"> </span><span class="se">\</span>
+-f<span class="w"> </span><span class="m">6</span>:event<span class="o">=</span>openat<span class="w"> </span>-f<span class="w"> </span><span class="m">6</span>:comm<span class="o">=</span>id<span class="w"> </span><span class="se">\</span>
+-f<span class="w"> </span><span class="m">7</span>:event<span class="o">=</span>close<span class="w"> </span>-f<span class="w"> </span><span class="m">7</span>:comm<span class="o">=</span>id<span class="w"> </span><span class="se">\</span>
 -o<span class="w"> </span>format:table-verbose
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
@@ -3159,9 +3159,9 @@ trace in <strong>scope 7</strong> only <code>close</code> events from <code>id</
 trace in <strong>scope 5</strong> only <code>net_packet_icmp</code> events from <code>ping</code> command, and
 trace in <strong>scope 9</strong> only <code>ptrace</code> events from <strong>all</strong>.</p>
 <div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
--t<span class="w"> </span><span class="m">3</span>:event<span class="o">=</span>anti_debugging<span class="w"> </span><span class="se">\</span>
--t<span class="w"> </span><span class="m">5</span>:event<span class="o">=</span>net_packet_icmp<span class="w"> </span>-t<span class="w"> </span><span class="m">5</span>:comm<span class="o">=</span>ping<span class="w"> </span><span class="se">\</span>
--t<span class="w"> </span><span class="m">9</span>:event<span class="o">=</span>ptrace<span class="w"> </span><span class="se">\</span>
+-f<span class="w"> </span><span class="m">3</span>:event<span class="o">=</span>anti_debugging<span class="w"> </span><span class="se">\</span>
+-f<span class="w"> </span><span class="m">5</span>:event<span class="o">=</span>net_packet_icmp<span class="w"> </span>-f<span class="w"> </span><span class="m">5</span>:comm<span class="o">=</span>ping<span class="w"> </span><span class="se">\</span>
+-f<span class="w"> </span><span class="m">9</span>:event<span class="o">=</span>ptrace<span class="w"> </span><span class="se">\</span>
 -o<span class="w"> </span>format:table-verbose
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
@@ -3179,8 +3179,8 @@ trace in <strong>scope 9</strong> only <code>ptrace</code> events from <strong>a
 <p>Trace in <strong>scope 3</strong> only <code>sched_process_exit</code> events from <code>id</code> command and
 trace in <strong>scope 9</strong> only <code>sched_process_exit</code> events from <strong>all</strong>:</p>
 <div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
--t<span class="w"> </span><span class="m">3</span>:event<span class="o">=</span>sched_process_exit<span class="w"> </span>-t<span class="w"> </span><span class="m">3</span>:comm<span class="o">=</span>id<span class="w"> </span><span class="se">\</span>
--t<span class="w"> </span><span class="m">9</span>:event<span class="o">=</span>sched_process_exit<span class="w"> </span><span class="se">\</span>
+-f<span class="w"> </span><span class="m">3</span>:event<span class="o">=</span>sched_process_exit<span class="w"> </span>-f<span class="w"> </span><span class="m">3</span>:comm<span class="o">=</span>id<span class="w"> </span><span class="se">\</span>
+-f<span class="w"> </span><span class="m">9</span>:event<span class="o">=</span>sched_process_exit<span class="w"> </span><span class="se">\</span>
 -o<span class="w"> </span>format:table-verbose
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
@@ -3194,8 +3194,8 @@ trace in <strong>scope 9</strong> only <code>sched_process_exit</code> events fr
 <p>Trace in <strong>scope 3</strong> only <code>net_packet_icmp</code> events from containers and
 trace in <strong>scope 5</strong> only <code>net_packet_icmp</code> events from <strong>all</strong>:</p>
 <div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
--t<span class="w"> </span><span class="m">3</span>:event<span class="o">=</span>net_packet_icmp<span class="w"> </span>-t<span class="w"> </span><span class="m">3</span>:container<span class="w"> </span><span class="se">\</span>
--t<span class="w"> </span><span class="m">5</span>:event<span class="o">=</span>net_packet_icmp<span class="w"> </span><span class="se">\</span>
+-f<span class="w"> </span><span class="m">3</span>:event<span class="o">=</span>net_packet_icmp<span class="w"> </span>-f<span class="w"> </span><span class="m">3</span>:container<span class="w"> </span><span class="se">\</span>
+-f<span class="w"> </span><span class="m">5</span>:event<span class="o">=</span>net_packet_icmp<span class="w"> </span><span class="se">\</span>
 -o<span class="w"> </span>format:table-verbose
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID/host        TID/host        PPID/host       RET              EVENT                ARGS
@@ -3210,9 +3210,9 @@ trace in <strong>scope 5</strong> only <code>net_packet_icmp</code> events from 
 trace in <strong>scope 5</strong> only <code>net_packet_icmp</code> events from <code>ping</code> command, and
 trace in <strong>scope 9</strong> only <code>ptrace</code> events from <strong>all</strong>.</p>
 <div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>./dist/tracee<span class="w"> </span><span class="se">\</span>
--t<span class="w"> </span><span class="m">3</span>:event<span class="o">=</span>anti_debugging,ptrace<span class="w"> </span><span class="se">\</span>
--t<span class="w"> </span><span class="m">5</span>:event<span class="o">=</span>net_packet_icmp<span class="w"> </span>-t<span class="w"> </span><span class="m">5</span>:comm<span class="o">=</span>ping<span class="w"> </span><span class="se">\</span>
--t<span class="w"> </span><span class="m">9</span>:event<span class="o">=</span>ptrace<span class="w"> </span><span class="se">\</span>
+-f<span class="w"> </span><span class="m">3</span>:event<span class="o">=</span>anti_debugging,ptrace<span class="w"> </span><span class="se">\</span>
+-f<span class="w"> </span><span class="m">5</span>:event<span class="o">=</span>net_packet_icmp<span class="w"> </span>-f<span class="w"> </span><span class="m">5</span>:comm<span class="o">=</span>ping<span class="w"> </span><span class="se">\</span>
+-f<span class="w"> </span><span class="m">9</span>:event<span class="o">=</span>ptrace<span class="w"> </span><span class="se">\</span>
 -o<span class="w"> </span>format:table-verbose
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>TIME             SCOPES            UTS_NAME          CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
@@ -3264,7 +3264,7 @@ trace in <strong>scope 9</strong> only <code>ptrace</code> events from <strong>a
     <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../assets/javascripts/workers/search.6c7302c4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.b7178837.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.2097b2ef.min.js"></script>
       
     
   </body>

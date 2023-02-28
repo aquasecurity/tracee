@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.13+insiders-4.32.0">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.15+insiders-4.32.1">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.e95b5de1.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.17f92d59.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.6932e648.min.css">
@@ -92,7 +92,7 @@
 
   
 
-<header class="md-header md-header--lifted" data-md-component="header">
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
       
@@ -2979,8 +2979,8 @@ to be cleared every time you execute tracee.</p>
  prefix.</p>
 <div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
    --output json \
-   --trace comm=bash \
-   --trace follow \
+   --filter comm=bash \
+   --filter follow \
    --output option:parse-arguments \
    --capture dir:/tmp/tracee/ \
    --capture write=&#39;/tmp/*&#39;
@@ -3004,8 +3004,8 @@ testing 123
  same binary is executed multiple times, it will be captured just once.</p>
 <div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
    --output json \
-   --trace comm=bash \
-   --trace follow \
+   --filter comm=bash \
+   --filter follow \
    --output option:parse-arguments \
    --capture dir:/tmp/tracee/ \
    --capture exec
@@ -3044,8 +3044,8 @@ $ /tmp/tracee/out/host/exec.1657322052835478987.ls
  <strong>Write+Execute</strong> to <strong>Write</strong>.</p>
 <div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
    --output none \
-   --trace comm=bash \
-   --trace follow \
+   --filter comm=bash \
+   --filter follow \
    --capture dir:/tmp/tracee/ \
    --capture mem
 </code></pre></div>
@@ -3071,7 +3071,7 @@ ICMP, ICMPv6, DNS, HTTP, etc).</p>
 </div>
 <p>A good way to test this behavior is to execute:</p>
 <div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
-    --trace event=net_packet_ipv4 \
+    --filter event=net_packet_ipv4 \
     --capture network \
     --capture pcap-options:filtered
 </code></pre></div>
@@ -3082,7 +3082,7 @@ ICMP, ICMPv6, DNS, HTTP, etc).</p>
 </code></pre></div>
 <p>You can select only dns packets, for example:</p>
 <div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
-    --trace event=net_packet_dns \
+    --filter event=net_packet_dns \
     --capture network \
     --capture pcap-options:filtered
 </code></pre></div>
@@ -3112,7 +3112,7 @@ inside `containers/container_id.pcap`.
 
 ```text
 $ sudo ./dist/tracee-ebpf \
-    --trace event=net_packet_icmp \
+    --filter event=net_packet_icmp \
     --capture network \
     --capture pcap-options:filtered \
     --capture pcap:process,container,command
@@ -3194,7 +3194,7 @@ item shows how to capture a specific packet payload size.</p>
 </div>
 <p>In order to capture a specific payload size you may specify:</p>
 <div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
-    --trace event=net_packet_tcp \
+    --filter event=net_packet_tcp \
     --capture network \
     --capture pcap-options:filtered \
     --capture pcap:single,command \
@@ -3218,8 +3218,8 @@ headers (and not the entire packet length).</p>
  If the same binary is loaded multiple times, it will be captured just once.</p>
 <div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
    --output none \
-   --trace comm=bash \
-   --trace follow \
+   --filter comm=bash \
+   --filter follow \
    --capture clear-dir \
    --capture module
 </code></pre></div>
@@ -3281,7 +3281,7 @@ $ sudo rmmod lkm_example
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6c7302c4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.b7178837.min.js"></script>
+      <script src="../../assets/javascripts/bundle.2097b2ef.min.js"></script>
       
     
   </body>

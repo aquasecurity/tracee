@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.13+insiders-4.32.0">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.15+insiders-4.32.1">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.e95b5de1.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.17f92d59.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.6932e648.min.css">
@@ -92,7 +92,7 @@
 
   
 
-<header class="md-header md-header--lifted" data-md-component="header">
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
       
@@ -3166,7 +3166,7 @@ TIME             UID    COMM             PID     TID     RET              EVENT 
 </code></pre></div>
 <p>One way of forcing <strong>tracee-ebpf</strong> to use non CO-RE eBPF object, even in a kernel
 that supports CO-RE, is by setting the <code>TRACEE_BPF_FILE</code> environment, like this:</p>
-<div class="highlight"><pre><span></span><code>$ sudo TRACEE_BPF_FILE=/tmp/tracee/tracee.bpf.5_4_0-91-generic.v0_8_0-rc-2-363-g3e73eeb1.o ./dist/tracee-ebpf --log debug -o option:parse-arguments --trace comm=bash --trace follow
+<div class="highlight"><pre><span></span><code>$ sudo TRACEE_BPF_FILE=/tmp/tracee/tracee.bpf.5_4_0-91-generic.v0_8_0-rc-2-363-g3e73eeb1.o ./dist/tracee-ebpf --log debug -o option:parse-arguments --filter comm=bash --filter follow
 {&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670972956.7201664,&quot;msg&quot;:&quot;osinfo&quot;,&quot;VERSION_CODENAME&quot;:&quot;focal&quot;,&quot;KERNEL_RELEASE&quot;:&quot;5.4.0-91-generic&quot;,&quot;ARCH&quot;:&quot;x86_64&quot;,&quot;VERSION&quot;:&quot;\&quot;20.04.5 LTS (Focal Fossa)\&quot;&quot;,&quot;ID&quot;:&quot;ubuntu&quot;,&quot;ID_LIKE&quot;:&quot;debian&quot;,&quot;PRETTY_NAME&quot;:&quot;\&quot;Ubuntu 20.04.5 LTS\&quot;&quot;,&quot;VERSION_ID&quot;:&quot;\&quot;20.04\&quot;&quot;,&quot;pkg&quot;:&quot;urfave&quot;,&quot;file&quot;:&quot;urfave.go&quot;,&quot;line&quot;:53}
 {&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670972956.7202075,&quot;msg&quot;:&quot;RuntimeSockets: failed to register default&quot;,&quot;socket&quot;:&quot;crio&quot;,&quot;error&quot;:&quot;failed to register runtime socket stat /var/run/crio/crio.sock: no such file or directory&quot;,&quot;pkg&quot;:&quot;flags&quot;,&quot;file&quot;:&quot;containers.go&quot;,&quot;line&quot;:45}
 {&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670972956.7202215,&quot;msg&quot;:&quot;RuntimeSockets: failed to register default&quot;,&quot;socket&quot;:&quot;podman&quot;,&quot;error&quot;:&quot;failed to register runtime socket stat /var/run/podman/podman.sock: no such file or directory&quot;,&quot;pkg&quot;:&quot;flags&quot;,&quot;file&quot;:&quot;containers.go&quot;,&quot;line&quot;:45}
@@ -3249,7 +3249,7 @@ TIME             UID    COMM             PID     TID     RET              EVENT 
     <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../assets/javascripts/workers/search.6c7302c4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.b7178837.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.2097b2ef.min.js"></script>
       
     
   </body>

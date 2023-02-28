@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.13+insiders-4.32.0">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.15+insiders-4.32.1">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.e95b5de1.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.17f92d59.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.6932e648.min.css">
@@ -92,7 +92,7 @@
 
   
 
-<header class="md-header md-header--lifted" data-md-component="header">
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
       
@@ -3090,7 +3090,7 @@ default entrypoint and signatures.</p>
 </code></pre></div>
 <p>This will:</p>
 <ol>
-<li>Start <strong>tracee-ebpf</strong> with the default tracing mode (default events).</li>
+<li>Start <strong>tracee-ebpf</strong> with the default filtering mode (default events).</li>
 <li>Configure <strong>tracee-ebpf</strong> to output events into stdout as <a href="https://golang.org/pkg/encoding/gob/">gob</a> format.</li>
 <li>Start <strong>tracee-rules</strong> with all built-in signatures enabled.</li>
 </ol>
@@ -3102,14 +3102,14 @@ default entrypoint and signatures.</p>
 <div class="admonition example">
 <p class="admonition-title">Example</p>
 <p>Let's put together all that we learned from the <a href="../tracing/">tracing</a> section, together
-with what we're learning at this section and see how we can trace events
+with what we're learning at this section and see how we can filter events
 and pipe them to <strong>tracee-rules</strong> so detections occur:</p>
 <div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
     --output json \
-    --trace comm=bash \
-    --trace follow \
+    --filter comm=bash \
+    --filter follow \
     --output option:parse-arguments \
-    --trace event=$(./dist/tracee-rules --list-events) \
+    --filter event=$(./dist/tracee-rules --list-events) \
     | ./dist/tracee-rules \
     --input-tracee format:json \
     --input-tracee file:stdin
@@ -3118,7 +3118,7 @@ Loaded 14 signature(s): [TRC-1 TRC-13 TRC-2 TRC-14 TRC-3 TRC-11 TRC-9 TRC-4 TRC-
 </code></pre></div>
 <p>We are:</p>
 <ol>
-<li><strong>tracing all executed commands</strong> from all existing and new <code>bash</code> processes,</li>
+<li><strong>filtering all executed commands</strong> from all existing and new <code>bash</code> processes,</li>
 <li><strong>detecting syscalls</strong> that generated each event (if they're not syscalls),</li>
 <li><strong>parsing captured event</strong> arguments into a human readable format,</li>
 <li><strong>filtering for ALL events needed by all existing signatures</strong>,</li>
@@ -3176,7 +3176,7 @@ process_vm_writev,ptrace,security_file_open
 <p class="admonition-title">Example</p>
 <p>Let's pretend we would like to pick TRC-2 signature only and monitor all
 new processes happening as childs of all running <code>bash</code> processes.</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --output json --trace comm=bash --trace follow --output option:parse-arguments --output option:exec-env --trace event=$(./dist/tracee-rules --rules TRC-2 --list-events) | ./dist/tracee-rules --input-tracee format:json --input-tracee file:stdin --rules TRC-2
+<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --output json --filter comm=bash --filter follow --output option:parse-arguments --output option:exec-env --filter event=$(./dist/tracee-rules --rules TRC-2 --list-events) | ./dist/tracee-rules --input-tracee format:json --input-tracee file:stdin --rules TRC-2
 Loaded 1 signature(s): [TRC-2]
 
 *** Detection ***
@@ -3227,7 +3227,7 @@ Hostname: fujitsu
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6c7302c4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.b7178837.min.js"></script>
+      <script src="../../assets/javascripts/bundle.2097b2ef.min.js"></script>
       
     
   </body>

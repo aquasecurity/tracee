@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.13+insiders-4.32.0">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.15+insiders-4.32.1">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.e95b5de1.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.17f92d59.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.6932e648.min.css">
@@ -92,7 +92,7 @@
 
   
 
-<header class="md-header md-header--lifted" data-md-component="header">
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
       
@@ -2976,13 +2976,13 @@
 <blockquote>
 <p>For filtering by workload, see <a href="../scopes/">scopes</a>.</p>
 </blockquote>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --trace help
-$ sudo ./dist/tracee-ebpf --trace xxx
+<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --filter help
+$ sudo ./dist/tracee-ebpf --filter xxx
 </code></pre></div>
-<p>Tracing output might become too hard to consume when tracing all the events from
-a system. Luckily, Tracee has a powerful mechanism to accurately trace just the
-information that is relevant to the user, the <code>--trace</code> flag.</p>
-<p>With <code>--trace</code> command line flag you define expressions that tells
+<p>Tracee output might become too hard to consume when tracing all the events from
+a system. Luckily, Tracee has a powerful mechanism to accurately filter just the
+information that is relevant to the user, the <code>--filter</code> flag.</p>
+<p>With <code>--filter</code> command line flag you define expressions that tells
 <strong>tracee-ebpf</strong> what you are interested in based on event metadata filtering
 capabilities. Only events that match given criteria will be traced.</p>
 <div class="admonition tip">
@@ -2994,8 +2994,8 @@ capabilities. Only events that match given criteria will be traced.</p>
 prefix command:</p>
 <div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
     --output json \
-    --trace comm=bash \
-    --trace follow
+    --filter comm=bash \
+    --filter follow
     --output option:parse-arguments \
     &lt;rest of filters&gt;
 </code></pre></div>
@@ -3006,11 +3006,11 @@ expected.</p>
 <ol>
 <li>
 <p><strong>Event</strong> <code>(Operators: =, != and "follow". Prefix/Suffix: *)</code></p>
-<div class="highlight"><pre><span></span><code>1) --trace event=openat
-2) --trace event=execve,open
-3) --trace event=&#39;open*&#39;
-4) --trace event!=&#39;open*,dup*&#39;
-5) --trace follow
+<div class="highlight"><pre><span></span><code>1) --filter event=openat
+2) --filter event=execve,open
+3) --filter event=&#39;open*&#39;
+4) --filter event!=&#39;open*,dup*&#39;
+5) --filter follow
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -3020,9 +3020,9 @@ child processes of the parents being filtered.</p>
 </li>
 <li>
 <p><strong>Event Arguments</strong> <code>(Operators: =, !=. Prefix/Suffix: *)</code></p>
-<div class="highlight"><pre><span></span><code>1) --trace event=openat --trace openat.args.pathname=/etc/shadow
-2) --trace event=openat --trace openat.args.pathname=&#39;/tmp*&#39;
-3) --trace event=openat --trace openat.args.pathname!=/tmp/1,/bin/ls
+<div class="highlight"><pre><span></span><code>1) --filter event=openat --filter openat.args.pathname=/etc/shadow
+2) --filter event=openat --filter openat.args.pathname=&#39;/tmp*&#39;
+3) --filter event=openat --filter openat.args.pathname!=/tmp/1,/bin/ls
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -3032,8 +3032,8 @@ But ANDed if used with any other operator.</p>
 </li>
 <li>
 <p><strong>Event Return Code</strong> <code>(Operators: =, !=, &lt;, &gt;)</code></p>
-<div class="highlight"><pre><span></span><code>1) --trace event=openat --trace openat.args.pathname=/etc/shadow --trace &#39;openat.retval&gt;0&#39;
-2) --trace event=openat --trace openat.args.pathname=/etc/shadow --trace &#39;openat.retval&lt;0&#39;
+<div class="highlight"><pre><span></span><code>1) --filter event=openat --filter openat.args.pathname=/etc/shadow --filter &#39;openat.retval&gt;0&#39;
+2) --filter event=openat --filter openat.args.pathname=/etc/shadow --filter &#39;openat.retval&lt;0&#39;
 </code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
@@ -3042,8 +3042,8 @@ But ANDed if used with any other operator.</p>
 </li>
 <li>
 <p><strong>Event Context</strong> <code>(Operators: vary by field)</code></p>
-<div class="highlight"><pre><span></span><code>1) --trace openat.context.container --trace openat.args.pathname=/etc/shadow
-2) --trace event=openat --trace openat.context.container --trace openat.args.pathname=/etc/shadow
+<div class="highlight"><pre><span></span><code>1) --filter openat.context.container --filter openat.args.pathname=/etc/shadow
+2) --filter event=openat --filter openat.context.container --filter openat.args.pathname=/etc/shadow
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -3078,8 +3078,8 @@ But ANDed if used with any other operator.</p>
 </li>
 <li>
 <p><strong>Event Sets</strong> <code>(Operators: =, !=)</code></p>
-<div class="highlight"><pre><span></span><code>1) --trace set=fs
-2) --trace set=lsm_hooks,network_events
+<div class="highlight"><pre><span></span><code>1) --filter set=fs
+2) --filter set=lsm_hooks,network_events
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -3089,21 +3089,21 @@ can be listed by using <code>--list</code> command line argument.</p>
 </li>
 <li>
 <p><strong>Container</strong> <code>(Operators: =, != and "new". Boolean)</code></p>
-<div class="highlight"><pre><span></span><code>1) --trace container # all container events
-2) --trace &#39;!container&#39; # events from the host only
-3) --trace container=new # containers created after tracee-ebf execution
-4) --trace container=3f93da58be3c --trace event=openat
-5) --trace container=new --trace event=openat --trace openat.args.pathname=/etc/shadow
+<div class="highlight"><pre><span></span><code>1) --filter container # all container events
+2) --filter &#39;!container&#39; # events from the host only
+3) --filter container=new # containers created after tracee-ebf execution
+4) --filter container=3f93da58be3c --filter event=openat
+5) --filter container=new --filter event=openat --filter openat.args.pathname=/etc/shadow
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The <strong>new</strong> flag allows to trace newly created containers only.  </p>
+<p>The <strong>new</strong> flag allows to filter newly created containers only.  </p>
 </div>
 </li>
 <li>
 <p><strong>Command</strong> <code>(Operators: =, !=)</code></p>
-<div class="highlight"><pre><span></span><code>1) --trace comm=cat,vim,ping
-2) --trace comm!=ping
+<div class="highlight"><pre><span></span><code>1) --filter comm=cat,vim,ping
+2) --filter comm!=ping
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -3113,9 +3113,9 @@ by command name as well.</p>
 </li>
 <li>
 <p><strong>Binary Path</strong> <code>(Operators: =, !=)</code></p>
-<div class="highlight"><pre><span></span><code>1) --trace binary=/usr/bin/ls
-2) --trace binary=host:/usr/bin/ls
-3) --trace binary=4026532448:/usr/bin/ls
+<div class="highlight"><pre><span></span><code>1) --filter binary=/usr/bin/ls
+2) --filter binary=host:/usr/bin/ls
+3) --filter binary=4026532448:/usr/bin/ls
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -3128,44 +3128,44 @@ by command name as well.</p>
 </li>
 <li>
 <p><strong>PID</strong> <code>(Operators: =, !=, &lt;, &gt; and "new")</code></p>
-<div class="highlight"><pre><span></span><code>1) --trace pid=new # newly created events (after tracee-ebpf execution)
-2) --trace pid=510,1709 # # pids 510 and 1709
-3) --trace &#39;pid&gt;0&#39; --trace pid &#39;pid&lt;1000&#39;
-4) --trace pid=2578238 --trace event=openat --trace openat.pathname=/etc/shadow --trace follow
+<div class="highlight"><pre><span></span><code>1) --filter pid=new # newly created events (after tracee-ebpf execution)
+2) --filter pid=510,1709 # # pids 510 and 1709
+3) --filter &#39;pid&gt;0&#39; --filter pid &#39;pid&lt;1000&#39;
+4) --filter pid=2578238 --filter event=openat --filter openat.pathname=/etc/shadow --filter follow
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>This filter can be used to trace a specific process or thread:
-1. Providing a tgid (aka pid) will trace all threads of the process.
-2. Providing a tid (where tid != tgid) will only trace the specific thread.</p>
+<p>This filter can be used to filter a specific process or thread:
+1. Providing a tgid (aka pid) will filter all threads of the process.
+2. Providing a tid (where tid != tgid) will only filter the specific thread.</p>
 </div>
 </li>
 <li>
 <p><strong>Process Tree</strong></p>
-<div class="highlight"><pre><span></span><code>1) --trace tree=476165 # events descending from process 476165
-2) --trace tree!=5023 # events that do not descend from process 5023
+<div class="highlight"><pre><span></span><code>1) --filter tree=476165 # events descending from process 476165
+2) --filter tree!=5023 # events that do not descend from process 5023
 </code></pre></div>
 </li>
 <li>
 <p><strong>UID</strong> <code>(Operators: =, !=, &lt;, &gt;)</code></p>
-<div class="highlight"><pre><span></span><code>1) --trace uid=0
-2) --trace &#39;uid&gt;0&#39;
-3) --trace &#39;uid&gt;0&#39; --trace uid!=1000 # do not trace root and uid=1000
+<div class="highlight"><pre><span></span><code>1) --filter uid=0
+2) --filter &#39;uid&gt;0&#39;
+3) --filter &#39;uid&gt;0&#39; --filter uid!=1000 # do not filter root and uid=1000
 </code></pre></div>
 </li>
 <li>
 <p><strong>UTS Namespace (hostnames)</strong> <code>(Operators: =, !=)</code></p>
-<div class="highlight"><pre><span></span><code>1) --trace uts!=ab356bc4dd554 
+<div class="highlight"><pre><span></span><code>1) --filter uts!=ab356bc4dd554 
 </code></pre></div>
 </li>
 <li>
 <p><strong>PID Namespace</strong> <code>(Operators: =, !=)</code></p>
-<div class="highlight"><pre><span></span><code>1) --trace pidns!=4026531836
+<div class="highlight"><pre><span></span><code>1) --filter pidns!=4026531836
 </code></pre></div>
 </li>
 <li>
 <p><strong>MOUNT Namespace</strong> <code>(Operators: =, !=)</code></p>
-<div class="highlight"><pre><span></span><code>1) --trace mntns=4026531840
+<div class="highlight"><pre><span></span><code>1) --filter mntns=4026531840
 </code></pre></div>
 </li>
 </ol>
@@ -3208,7 +3208,7 @@ by command name as well.</p>
     <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../assets/javascripts/workers/search.6c7302c4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.b7178837.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.2097b2ef.min.js"></script>
       
     
   </body>
