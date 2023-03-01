@@ -27,7 +27,19 @@ var (
 	// 1. %s = cgroup_skb_ingress or cgroup_skb_egress
 	// 2. %s = cgroup
 	// 3. %s = Invalid argument
-	libbpfgoAttachCgroupregexp = regexp.MustCompile(`libbpf:.*prog 'cgroup_skb_ingress|cgroup_skb_egress'.*failed to attach to cgroup.*Invalid argument`)
+	libbpfgoAttachCgroupRegexp = regexp.MustCompile(`libbpf:.*prog 'cgroup_skb_ingress|cgroup_skb_egress'.*failed to attach to cgroup.*Invalid argument`)
+
+	// triggered by: libbpf/src/libbpf.c->bpf_object__create_map()
+	// "libbpf: Error in bpf_create_map_xattr(%s)\n"
+	// 1. %s = sys_enter_init_tail
+	// 2. %s = sys_enter_submit_tail
+	// 3. %s = sys_enter_tails
+	// 4. %s = sys_exit_init_tail
+	// 5. %s = sys_exit_submit_tail
+	// 6. %s = sys_exit_tails
+	// 7. %s = prog_array_tp
+	// 8. %s = prog_array
+	libbpfgoBpfCreateMapXattrRegexp = regexp.MustCompile(`libbpf:.*bpf_create_map_xattr\((sys_enter_init_tail|sys_enter_submit_tail|sys_enter_tails|sys_exit_init_tail|sys_exit_submit_tail|sys_exit_tails|prog_array_tp|prog_array)\)`)
 )
 
 // SetLibbpfgoCallbacks sets libbpfgo logger callbacks
@@ -68,7 +80,12 @@ func SetLibbpfgoCallbacks() {
 				// AttachCgroupLegacy() will first try AttachCgroup() and it might fail. This
 				// is not an error and is the best way of probing for eBPF cgroup attachment
 				// link existence.
-				if libbpfgoAttachCgroupregexp.MatchString(msg) {
+				if libbpfgoAttachCgroupRegexp.MatchString(msg) {
+					return true
+				}
+
+				// BUG: https://github.com/aquasecurity/tracee/issues/1602
+				if libbpfgoBpfCreateMapXattrRegexp.MatchString(msg) {
 					return true
 				}
 
