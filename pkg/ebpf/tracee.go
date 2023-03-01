@@ -1359,18 +1359,18 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 		logger.Warnw("Memory dump", "error", err)
 	}
 	t.eventsPerfMap.Start()
-	go t.processLostEvents()
+	go t.processLostEvents(ctx)
 	go t.handleEvents(ctx)
 	if t.config.BlobPerfBufferSize > 0 {
 		t.fileWrPerfMap.Start()
-		go t.processFileWrites()
+		go t.processFileWrites(ctx)
 	}
 	if pcaps.PcapsEnabled(t.config.Capture.Net) {
 		t.netCapPerfMap.Start()
 		go t.processNetCaptureEvents(ctx)
 	}
 	t.bpfLogsPerfMap.Start()
-	go t.processBPFLogs()
+	go t.processBPFLogs(ctx)
 
 	// write pid file
 	err = t.writePid()

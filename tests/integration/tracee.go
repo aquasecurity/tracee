@@ -17,7 +17,7 @@ import (
 )
 
 // load tracee into memory with args
-func startTracee(t *testing.T, config tracee.Config, output *tracee.OutputConfig, capture *tracee.CaptureConfig, ctx context.Context) *tracee.Tracee {
+func startTracee(t *testing.T, ctx context.Context, config tracee.Config, output *tracee.OutputConfig, capture *tracee.CaptureConfig) *tracee.Tracee {
 	initialize.SetLibbpfgoCallbacks()
 
 	kernelConfig, err := initialize.KernelConfig()
@@ -43,8 +43,16 @@ func startTracee(t *testing.T, config tracee.Config, output *tracee.OutputConfig
 	errChan := make(chan error)
 
 	go func() {
-		for err := range errChan {
-			t.Logf("received error while testing: %s\n", err)
+		for {
+			select {
+			case err, ok := <-errChan:
+				if !ok {
+					return
+				}
+				t.Logf("received error while testing: %s\n", err)
+			case <-ctx.Done():
+				return
+			}
 		}
 	}()
 

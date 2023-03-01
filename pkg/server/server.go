@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/pprof"
@@ -12,16 +13,21 @@ import (
 
 // Server represents a http server
 type Server struct {
-	mux            *http.ServeMux
-	listenAddr     string
+	hs             *http.Server
+	mux            *http.ServeMux // just an exposed copy of hs.Handler
 	metricsEnabled bool
 }
 
 // New creates a new server
 func New(listenAddr string) *Server {
+	mux := http.NewServeMux()
+
 	return &Server{
-		mux:        http.NewServeMux(),
-		listenAddr: listenAddr,
+		hs: &http.Server{
+			Addr:    listenAddr,
+			Handler: mux,
+		},
+		mux: mux,
 	}
 }
 
@@ -38,15 +44,35 @@ func (s *Server) EnableHealthzEndpoint() {
 	})
 }
 
-// Start starts the http server on the listen addr
-func (s *Server) Start() {
-	logger.Debugw("Serving metrics endpoint", "address", s.listenAddr)
+// Start starts the http server on the listen address
+func (s *Server) Start(ctx context.Context) {
+	srvCtx, srvCancel := context.WithCancel(ctx)
+	defer srvCancel()
 
-	if err := http.ListenAndServe(s.listenAddr, s.mux); err != http.ErrServerClosed {
-		logger.Errorw("Serving metrics endpoint", "error", err)
+	go func() {
+		logger.Debugw("Starting serving metrics endpoint go routine", "address", s.hs.Addr)
+		defer logger.Debugw("Stopped serving metrics endpoint")
+
+		if err := s.hs.ListenAndServe(); err != http.ErrServerClosed {
+			logger.Errorw("Serving metrics endpoint", "error", err)
+		}
+
+		srvCancel()
+	}()
+
+	select {
+	case <-ctx.Done():
+		logger.Debugw("Context cancelled, shutting down metrics endpoint server")
+		if err := s.hs.Shutdown(ctx); err != nil {
+			logger.Errorw("Stopping serving metrics endpoint", "error", err)
+		}
+
+	// if server error occurred while base ctx is not done, we should exit via this case
+	case <-srvCtx.Done():
 	}
 }
 
+// EnablePProfEndpoint enables pprof endpoint for debugging
 func (s *Server) EnablePProfEndpoint() {
 	s.mux.HandleFunc("/debug/pprof/", pprof.Index)
 	s.mux.Handle("/debug/pprof/allocs", pprof.Handler("allocs"))
@@ -59,6 +85,7 @@ func (s *Server) EnablePProfEndpoint() {
 	s.mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 }
 
+// MetricsEndpointEnabled returns true if metrics endpoint is enabled
 func (s *Server) MetricsEndpointEnabled() bool {
 	return s.metricsEnabled
 }

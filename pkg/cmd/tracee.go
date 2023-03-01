@@ -37,7 +37,7 @@ func (r Runner) Run(ctx context.Context) error {
 			}
 		}
 
-		go r.Server.Start()
+		go r.Server.Start(ctx)
 	}
 
 	// Print statistics at the end

@@ -397,12 +397,21 @@ func Test_EventFilters(t *testing.T) {
 			eventOutput := &eventOutput{}
 
 			go func() {
-				for evt := range eventChan {
-					eventOutput.addEvent(evt)
+				for {
+					select {
+					case evt, ok := <-eventChan:
+						if !ok {
+							return
+						}
+						eventOutput.addEvent(evt)
+
+					case <-ctx.Done():
+						return
+					}
 				}
 			}()
 
-			trc := startTracee(t, config, nil, nil, ctx)
+			trc := startTracee(t, ctx, config, nil, nil)
 
 			waitforTraceeStart(t, trc, time.Now())
 

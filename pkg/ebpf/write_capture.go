@@ -1,6 +1,7 @@
 package ebpf
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -12,7 +13,9 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
-func (t *Tracee) processFileWrites() {
+func (t *Tracee) processFileWrites(ctx context.Context) {
+	logger.Debugw("Starting processFileWrites go routine")
+	defer logger.Debugw("Stopped processFileWrites go routine")
 
 	const (
 		//S_IFMT uint32 = 0170000 // bit mask for the file type bit field
@@ -159,6 +162,9 @@ func (t *Tracee) processFileWrites() {
 				t.stats.LostWrCount.Increment(lost)
 				logger.Warnw(fmt.Sprintf("Lost %d write events", lost))
 			}
+
+		case <-ctx.Done():
+			return
 		}
 	}
 }
