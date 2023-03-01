@@ -3,7 +3,6 @@ package printer
 import (
 	"context"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -31,15 +30,8 @@ func NewBroadcast(ctx context.Context, printers []EventPrinter) *Broadcast {
 // Print broadcasts the event to all printers
 func (b *Broadcast) Print(event trace.Event) {
 	for _, c := range b.eventsChan {
-		// we use select to avoid blocking the print loop if one of the printers is slow
-		// in case the event can't be sent because the buffered channel is full, we drop it
-		// and log an warning
-		select {
-		case c <- event:
-		default:
-			// TODO: add metrics about not printed events
-			logger.Info("dropping event due to slow printer", "event", event)
-		}
+		// we are blocking here if the printer is not consuming events fast enough
+		c <- event
 	}
 }
 
