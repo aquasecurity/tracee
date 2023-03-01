@@ -6141,8 +6141,114 @@ var Definitions = eventDefinitions{
 				{Type: "void*", Name: "symbol_address"},
 			},
 		},
+		PrintMemDump: {
+			ID32Bit: sys32undefined,
+			Name:    "print_mem_dump",
+			Sets:    []string{},
+			Params: []trace.ArgMeta{
+				{Type: "bytes", Name: "bytes"},
+				{Type: "void*", Name: "address"},
+				{Type: "u64", Name: "length"},
+				{Type: "u64", Name: "caller_context_id"},
+				{Type: "char*", Name: "arch"},
+				{Type: "char*", Name: "symbol_name"},
+				{Type: "char*", Name: "symbol_owner"},
+			},
+			Probes: []probeDependency{
+				{Handle: probes.PrintMemDump, Required: true},
+			},
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: DoInitModule},
+				},
+				KSymbols: &[]kSymbolDependency{},
+			},
+		},
+		VfsRead: {
+			ID32Bit: sys32undefined,
+			Name:    "vfs_read",
+			Probes: []probeDependency{
+				{Handle: probes.VfsRead, Required: true},
+				{Handle: probes.VfsReadRet, Required: true},
+			},
+			Sets: []string{},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "pathname"},
+				{Type: "dev_t", Name: "dev"},
+				{Type: "unsigned long", Name: "inode"},
+				{Type: "size_t", Name: "count"},
+				{Type: "off_t", Name: "pos"},
+			},
+		},
+		VfsReadv: {
+			ID32Bit: sys32undefined,
+			Name:    "vfs_readv",
+			Probes: []probeDependency{
+				{Handle: probes.VfsReadV, Required: true},
+				{Handle: probes.VfsReadVRet, Required: true},
+			},
+			Sets: []string{},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "pathname"},
+				{Type: "dev_t", Name: "dev"},
+				{Type: "unsigned long", Name: "inode"},
+				{Type: "unsigned long", Name: "vlen"},
+				{Type: "off_t", Name: "pos"},
+			},
+		},
+		VfsUtimes: {
+			ID32Bit: sys32undefined,
+			Name:    "vfs_utimes",
+			Probes: []probeDependency{
+				{Handle: probes.VfsUtimes, Required: false},    // this probe exits in kernels >= 5.9
+				{Handle: probes.UtimesCommon, Required: false}, // this probe exits in kernels < 5.9
+			},
+			Sets: []string{},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "pathname"},
+				{Type: "dev_t", Name: "dev"},
+				{Type: "unsigned long", Name: "inode"},
+				{Type: "u64", Name: "atime"},
+				{Type: "u64", Name: "mtime"},
+			},
+		},
+		DoTruncate: {
+			ID32Bit: sys32undefined,
+			Name:    "do_truncate",
+			Probes: []probeDependency{
+				{Handle: probes.DoTruncate, Required: true},
+			},
+			Sets: []string{},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "pathname"},
+				{Type: "unsigned long", Name: "inode"},
+				{Type: "dev_t", Name: "dev"},
+				{Type: "u64", Name: "length"},
+			},
+		},
+		FileModification: {
+			ID32Bit: sys32undefined,
+			Name:    "file_modification",
+			DocPath: "kprobes/file_modification.md",
+			Sets:    []string{},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "file_path"},
+				{Type: "dev_t", Name: "dev"},
+				{Type: "unsigned long", Name: "inode"},
+				{Type: "unsigned long", Name: "old_ctime"},
+				{Type: "unsigned long", Name: "new_ctime"},
+			},
+			Probes: []probeDependency{
+				{Handle: probes.FdInstall, Required: true},
+				{Handle: probes.FilpClose, Required: true},
+				{Handle: probes.FileUpdateTime, Required: true},
+				{Handle: probes.FileUpdateTimeRet, Required: true},
+				{Handle: probes.FileModified, Required: false},    // not required because doesn't ...
+				{Handle: probes.FileModifiedRet, Required: false}, // ... exist in kernels < 5.3
+			},
+		},
 		//
-		// Network Protocol Event Types
+		// Network Protocol Event Types (add new events above here)
 		//
 		NetPacketBase: {
 			ID32Bit:  sys32undefined,
@@ -6468,111 +6574,6 @@ var Definitions = eventDefinitions{
 				},
 			},
 		},
-		PrintMemDump: {
-			ID32Bit: sys32undefined,
-			Name:    "print_mem_dump",
-			Sets:    []string{},
-			Params: []trace.ArgMeta{
-				{Type: "bytes", Name: "bytes"},
-				{Type: "void*", Name: "address"},
-				{Type: "u64", Name: "length"},
-				{Type: "u64", Name: "caller_context_id"},
-				{Type: "char*", Name: "arch"},
-				{Type: "char*", Name: "symbol_name"},
-				{Type: "char*", Name: "symbol_owner"},
-			},
-			Probes: []probeDependency{
-				{Handle: probes.PrintMemDump, Required: true},
-			},
-			Dependencies: dependencies{
-				Events: []eventDependency{
-					{EventID: DoInitModule},
-				},
-				KSymbols: &[]kSymbolDependency{},
-			},
-		},
-		VfsRead: {
-			ID32Bit: sys32undefined,
-			Name:    "vfs_read",
-			Probes: []probeDependency{
-				{Handle: probes.VfsRead, Required: true},
-				{Handle: probes.VfsReadRet, Required: true},
-			},
-			Sets: []string{},
-			Params: []trace.ArgMeta{
-				{Type: "const char*", Name: "pathname"},
-				{Type: "dev_t", Name: "dev"},
-				{Type: "unsigned long", Name: "inode"},
-				{Type: "size_t", Name: "count"},
-				{Type: "off_t", Name: "pos"},
-			},
-		},
-		VfsReadv: {
-			ID32Bit: sys32undefined,
-			Name:    "vfs_readv",
-			Probes: []probeDependency{
-				{Handle: probes.VfsReadV, Required: true},
-				{Handle: probes.VfsReadVRet, Required: true},
-			},
-			Sets: []string{},
-			Params: []trace.ArgMeta{
-				{Type: "const char*", Name: "pathname"},
-				{Type: "dev_t", Name: "dev"},
-				{Type: "unsigned long", Name: "inode"},
-				{Type: "unsigned long", Name: "vlen"},
-				{Type: "off_t", Name: "pos"},
-			},
-		},
-		VfsUtimes: {
-			ID32Bit: sys32undefined,
-			Name:    "vfs_utimes",
-			Probes: []probeDependency{
-				{Handle: probes.VfsUtimes, Required: false},    // this probe exits in kernels >= 5.9
-				{Handle: probes.UtimesCommon, Required: false}, // this probe exits in kernels < 5.9
-			},
-			Sets: []string{},
-			Params: []trace.ArgMeta{
-				{Type: "const char*", Name: "pathname"},
-				{Type: "dev_t", Name: "dev"},
-				{Type: "unsigned long", Name: "inode"},
-				{Type: "u64", Name: "atime"},
-				{Type: "u64", Name: "mtime"},
-			},
-		},
-		DoTruncate: {
-			ID32Bit: sys32undefined,
-			Name:    "do_truncate",
-			Probes: []probeDependency{
-				{Handle: probes.DoTruncate, Required: true},
-			},
-			Sets: []string{},
-			Params: []trace.ArgMeta{
-				{Type: "const char*", Name: "pathname"},
-				{Type: "unsigned long", Name: "inode"},
-				{Type: "dev_t", Name: "dev"},
-				{Type: "u64", Name: "length"},
-			},
-		},
-		FileModification: {
-			ID32Bit: sys32undefined,
-			Name:    "file_modification",
-			DocPath: "kprobes/file_modification.md",
-			Sets:    []string{},
-			Params: []trace.ArgMeta{
-				{Type: "const char*", Name: "file_path"},
-				{Type: "dev_t", Name: "dev"},
-				{Type: "unsigned long", Name: "inode"},
-				{Type: "unsigned long", Name: "old_ctime"},
-				{Type: "unsigned long", Name: "new_ctime"},
-			},
-			Probes: []probeDependency{
-				{Handle: probes.FdInstall, Required: true},
-				{Handle: probes.FilpClose, Required: true},
-				{Handle: probes.FileUpdateTime, Required: true},
-				{Handle: probes.FileUpdateTimeRet, Required: true},
-				{Handle: probes.FileModified, Required: false},    // not required because doesn't ...
-				{Handle: probes.FileModifiedRet, Required: false}, // ... exist in kernels < 5.3
-			},
-		},
+		// NOTE: add new events before the network events (keep them at the end)
 	},
 }
