@@ -7,13 +7,23 @@
 
 1. Building **dependencies**
 
-    1. **kernel readers** [if no CO-RE is needed](./nocore-ebpf.md)
-    2. **clang** (12, 13 or 14)
-    3. **golang** (1.19)
-    4. **libelf** and **libelf-dev**  
+    1. **clang** && **llvm** (12, 13 or 14)
+    1. **golang** (1.19)
+    1. **libelf** and **libelf-dev**  
        (or elfutils-libelf and elfutils-libelf-devel)
-    5. **zlib1g** and **zlib1g-dev**  
+    1. **zlib1g** and **zlib1g-dev**  
        (or zlib and zlib-devel)
+    1. **clang-format-12** (specific version) for `fix-fmt`
+    1. **kernel readers** [if no CO-RE is needed](./nocore-ebpf.md)
+
+    > You might take a look at the following files to understand how to have a
+    > building environment:
+    >
+    > 1. [.github/actions/build-dependencies/action.yaml](https://github.com/aquasecurity/tracee/blob/main/.github/actions/build-dependencies/action.yaml)
+    > 1. [packaging/Dockerfile.ubuntu-packaging](https://github.com/aquasecurity/tracee/blob/main/packaging/Dockerfile.ubuntu-packaging)
+    > 1. [packaging/Dockerfile.fedora-packaging](https://github.com/aquasecurity/tracee/blob/main/packaging/Dockerfile.fedora-packaging)
+    >
+    > Those are very good examples for you to replicate a working environment.
 
 2. **Clone** [tracee repository](https://github.com/aquasecurity/tracee/)
 
@@ -35,43 +45,49 @@
 
     # environment
 
-        $ make env                  	# show makefile environment/variables
+        $ make env                      # show makefile environment/variables
 
     # build
 
-        $ make all                  	# build tracee-ebpf, tracee-rules & signatures
-        $ make bpf-core             	# build ./dist/tracee.bpf.core.o
-        $ make bpf-nocore           	# build ./dist/tracee.bpf.XXX.o
-        $ make tracee-ebpf          	# build ./dist/tracee-ebpf
-        $ make tracee-rules         	# build ./dist/tracee-rules
-        $ make signatures             # build ./dist/signatures
+        $ make all                                  # build tracee-ebpf, tracee-rules & signatures
+        $ make bpf-core                             # build ./dist/tracee.bpf.core.o
+        $ make bpf-nocore                           # build ./dist/tracee.bpf.XXX.o
+        $ make tracee-ebpf                          # build ./dist/tracee-ebpf
+        $ make tracee-rules                         # build ./dist/tracee-rules
+        $ make tracee-bench                         # build ./dist/tracee-bench
+        $ make signatures                           # build ./dist/signatures
+        $ make e2e-net-signatures                   # build ./dist/e2e-net-signatures
+        $ make e2e-instrumentation-signatures       # build ./dist/e2e-instrumentation-signatures
+        $ make tracee                               # build ./dist/tracee
 
     # install
 
-        $ make install-bpf-nocore   	# install BPF no CO-RE obj into /tmp/tracee
-        $ make uninstall-bpf-nocore 	# uninstall BPF no CO-RE obj from /tmp/tracee
+        $ make install-bpf-nocore       # install BPF no CO-RE obj into /tmp/tracee
+        $ make uninstall-bpf-nocore     # uninstall BPF no CO-RE obj from /tmp/tracee
 
     # clean
 
-        $ make clean                	# wipe ./dist/
-        $ make clean-bpf-core       	# wipe ./dist/tracee.bpf.core.o
-        $ make clean-bpf-nocore     	# wipe ./dist/tracee.bpf.XXX.o
-        $ make clean-tracee-ebpf    	# wipe ./dist/tracee-ebpf
-        $ make clean-tracee-rules   	# wipe ./dist/tracee-rules
-        $ make clean-signatures       # wipe ./dist/signatures
+        $ make clean                    # wipe ./dist/
+        $ make clean-bpf-core           # wipe ./dist/tracee.bpf.core.o
+        $ make clean-bpf-nocore         # wipe ./dist/tracee.bpf.XXX.o
+        $ make clean-tracee-ebpf        # wipe ./dist/tracee-ebpf
+        $ make clean-tracee-rules       # wipe ./dist/tracee-rules
+        $ make clean-tracee-bench       # wipe ./dist/tracee-bench
+        $ make clean-signatures         # wipe ./dist/signatures
+        $ make clean-tracee             # wipe ./dist/tracee
 
     # test
 
-        $ make test-types           	# run unit tests for types module
-        $ make test-unit            	# run unit tests
-        $ make test-integration     	# run integration tests
-        $ make test-signatures        # opa test (tracee-rules)
+        $ make test-unit                # run unit tests
+        $ make test-types               # run unit tests for types module
+        $ make test-integration         # run integration tests
+        $ make test-signatures          # opa test (tracee-rules)
 
     # flags
 
-        $ STATIC=1 make ...                 # build static binaries
-        $ BTFHUB=1 STATIC=1 make ...        # build static binaries, embed BTF
-        $ DEBUG=1 make ...                  # build binaries with debug symbols
+        $ STATIC=1 make ...             # build static binaries
+        $ BTFHUB=1 STATIC=1 make ...    # build static binaries, embed BTF
+        $ DEBUG=1 make ...              # build binaries with debug symbols
     ```
 
 4. Build **all** targets at once (but bpf-nocore)
@@ -142,11 +158,11 @@
     $ DEBUG=1 make
     ...
     GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS="-I/home/gg/code/tracee/dist/libbpf" CGO_LDFLAGS="-lelf  -lz  /home/gg/code/tracee/dist/libbpf/libbpf.a" go build \
-	-tags core,ebpf \
-	-ldflags=" \
-		-extldflags \"\" \
-		-X main.version=\"v0.8.0-107-g121efeb\" \
-		" \
-	-v -o dist/tracee-ebpf \
-	./cmd/tracee-ebpf
+        -tags core,ebpf \
+        -ldflags=" \
+             -extldflags \"\" \
+             -X main.version=\"v0.8.0-107-g121efeb\" \
+            " \
+        -v -o dist/tracee-ebpf \
+       ./cmd/tracee-ebpf
     ```
