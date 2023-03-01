@@ -30,14 +30,6 @@ spec:
         - name: tracee
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- if .Values.everythingIsAnEvent }}
-          command: ["/tracee/tracee"]
-          args:
-            - --output
-            - json
-            - --filter
-            - event={{ .Values.events }}
-          {{- end }}
           {{- if .Values.postee.enabled }}
           args:
             - --webhook={{ .Values.postee.webhook }}
