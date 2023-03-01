@@ -2,6 +2,7 @@ package ebpf
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -26,15 +27,22 @@ func init() {
 	initKernelReadFileTypes()
 }
 
-func (t *Tracee) processLostEvents() {
+func (t *Tracee) processLostEvents(ctx context.Context) {
+	logger.Debugw("Starting processLostEvents go routine")
+	defer logger.Debugw("Stopped processLostEvents go routine")
+
 	for {
-		lost := <-t.lostEvChannel
-		// When terminating tracee-ebpf the lost channel receives multiple "0 lost events" events.
-		// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:
-		// https://github.com/aquasecurity/libbpfgo/issues/122
-		if lost > 0 {
-			t.stats.LostEvCount.Increment(lost)
-			logger.Warnw(fmt.Sprintf("Lost %d events", lost))
+		select {
+		case lost := <-t.lostEvChannel:
+			// When terminating tracee-ebpf the lost channel receives multiple "0 lost events" events.
+			// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:
+			// https://github.com/aquasecurity/libbpfgo/issues/122
+			if lost > 0 {
+				_ = t.stats.LostEvCount.Increment(lost)
+				logger.Warnw(fmt.Sprintf("Lost %d events", lost))
+			}
+		case <-ctx.Done():
+			return
 		}
 	}
 }

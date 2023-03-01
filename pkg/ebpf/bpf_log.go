@@ -1,6 +1,7 @@
 package ebpf
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 	"strings"
@@ -158,7 +159,10 @@ func (b *BPFLog) Decode(rawBuffer []byte) error {
 	return nil
 }
 
-func (t *Tracee) processBPFLogs() {
+func (t *Tracee) processBPFLogs(ctx context.Context) {
+	logger.Debugw("Starting processBPFLogs go routine")
+	defer logger.Debugw("Stopped processBPFLogs go routine")
+
 	for {
 		select {
 		case rawData := <-t.bpfLogsChannel:
@@ -193,6 +197,9 @@ func (t *Tracee) processBPFLogs() {
 				t.stats.LostBPFLogsCount.Increment(lost)
 				logger.Warnw(fmt.Sprintf("Lost %d ebpf logs events", lost))
 			}
+
+		case <-ctx.Done():
+			return
 		}
 	}
 }

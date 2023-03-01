@@ -159,12 +159,12 @@ func main() {
 				return err
 			}
 
-			if httpServer != nil {
-				go httpServer.Start()
-			}
-
 			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 			defer stop()
+
+			if httpServer != nil {
+				go httpServer.Start(ctx)
+			}
 
 			e.Start(ctx)
 

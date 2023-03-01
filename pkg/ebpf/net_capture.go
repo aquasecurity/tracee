@@ -1,7 +1,7 @@
 package ebpf
 
 import (
-	gocontext "context"
+	"context"
 	"encoding/binary"
 	"fmt"
 
@@ -29,7 +29,10 @@ const (
 	familyIpv6
 )
 
-func (t *Tracee) processNetCaptureEvents(ctx gocontext.Context) {
+func (t *Tracee) processNetCaptureEvents(ctx context.Context) {
+	logger.Debugw("Starting processNetCaptureEvents go routine")
+	defer logger.Debugw("Stopped processNetCaptureEvents go routine")
+
 	var errChanList []<-chan error
 
 	// source pipeline stage (re-used from regular pipeline)
@@ -44,7 +47,7 @@ func (t *Tracee) processNetCaptureEvents(ctx gocontext.Context) {
 	t.WaitForPipeline(errChanList...)
 }
 
-func (t *Tracee) processNetCapEvents(ctx gocontext.Context, in <-chan *trace.Event) <-chan error {
+func (t *Tracee) processNetCapEvents(ctx context.Context, in <-chan *trace.Event) <-chan error {
 	errc := make(chan error, 1)
 
 	go func() {
