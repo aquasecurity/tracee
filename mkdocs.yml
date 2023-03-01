@@ -8,94 +8,97 @@ edit_uri: ""
 
 nav:
   - Getting Started:
-    - Overview: index.md
-    - Kubernetes - Quick Start: getting-started/kubernetes-quickstart.md
-    - Docker - Quick Start: getting-started/docker-quickstart.md
-    - Installation:
-      - Getting Tracee: getting-started/installing/getting.md
-      - Prerequisites: getting-started/installing/prerequisites.md
-      - Docker: getting-started/installing/docker.md
-      - Kubernetes: getting-started/installing/kubernetes.md
-      - Packages:
-        - Ubuntu: getting-started/installing/distros/ubuntu.md
-        - Fedora: getting-started/installing/distros/fedora.md
-        - NixOS: getting-started/installing/distros/nix-nixos.md
-      - Linux Headers: getting-started/installing/headers.md
+      - Overview: index.md
+      - Kubernetes - Quick Start: getting-started/kubernetes-quickstart.md
+      - Docker - Quick Start: getting-started/docker-quickstart.md
+      - Installation:
+          - Getting Tracee: getting-started/installing/getting.md
+          - Prerequisites: getting-started/installing/prerequisites.md
+          - Docker: getting-started/installing/docker.md
+          - Kubernetes: getting-started/installing/kubernetes.md
+          - Packages:
+              - Ubuntu: getting-started/installing/distros/ubuntu.md
+              - Fedora: getting-started/installing/distros/fedora.md
+              - NixOS: getting-started/installing/distros/nix-nixos.md
+          - Linux Headers: getting-started/installing/headers.md
   - Tutorials:
-    - Everything is an event: tutorials/everything-is-an-event.md
-    - Setup Development Machine with Vagrant: tutorials/setup-development-machine-with-vagrant.md
-    - Deploy Tracee Grafana Dashboard: tutorials/deploy-grafana-dashboard.md
+      - Everything is an event: tutorials/everything-is-an-event.md
+      - Setup Development Machine with Vagrant: tutorials/setup-development-machine-with-vagrant.md
+      - Deploy Tracee Grafana Dashboard: tutorials/deploy-grafana-dashboard.md
   - Docs:
-    - Overview: docs/overview.md
-    - Tracing:
-      - Getting Started: docs/tracing/index.md
-      - Output Formats: docs/tracing/output-formats.md
-      - Output Options: docs/tracing/output-options.md
-      - Event Filtering: docs/tracing/event-filtering.md
-      - Scopes: docs/tracing/scopes.md
-      - Network Events: docs/tracing/network-events.md
-    - Capturing:
-      - Getting Started: docs/capturing/index.md
-    - Detecting:
-      - Getting Started: docs/detecting/index.md
-      - Creating Rules:
-        - Golang: docs/detecting/golang.md
-        - Rego: docs/detecting/rego.md
-        - Go-Cel: docs/detecting/go-cel.md
-      - Available Rules: docs/detecting/rules.md
-      - AVD: docs/detecting/avd.md
-    - Integrating:
-        - Container Engines: docs/integrating/container-engines.md
-        - Detected Events:
-          - Go-template: docs/integrating/go-templates.md
-          - Deliver:
-            - Webhook: docs/integrating/webhook.md
-            - Postee: docs/integrating/postee.md
-            - Falcosidekick: docs/integrating/falcosidekick.md
-        - Prometheus: docs/integrating/prometheus.md
-    - Deep Dive:
-      - Architecture: docs/deep-dive/architecture.md
-      - Secure Tracing: docs/deep-dive/secure-tracing.md
-      - Performance: docs/deep-dive/performance.md
-      - Caching Events: docs/deep-dive/caching-events.md
-      - Ordering Events: docs/deep-dive/ordering-events.md
-      - Override OS files: docs/deep-dive/override-os-files.md
-      - Healthz: docs/deep-dive/healthz.md
+      - Overview: docs/overview.md
+      - Tracing:
+          - Getting Started: docs/tracing/index.md
+          - Output Formats: docs/tracing/output-formats.md
+          - Output Options: docs/tracing/output-options.md
+          - Event Filtering: docs/tracing/event-filtering.md
+          - Scopes: docs/tracing/scopes.md
+          - Network Events: docs/tracing/network-events.md
+      - Capturing:
+          - Getting Started: docs/capturing/index.md
+      - Detecting:
+          - Getting Started: docs/detecting/index.md
+          - Creating Rules:
+              - Golang: docs/detecting/golang.md
+              - Rego: docs/detecting/rego.md
+              - Go-Cel: docs/detecting/go-cel.md
+          - Available Rules: docs/detecting/rules.md
+          - AVD: docs/detecting/avd.md
+      - Integrating:
+          - Container Engines: docs/integrating/container-engines.md
+          - Detected Events:
+              - Go-template: docs/integrating/go-templates.md
+              - Deliver:
+                  - Webhook: docs/integrating/webhook.md
+                  - Postee: docs/integrating/postee.md
+                  - Falcosidekick: docs/integrating/falcosidekick.md
+          - Prometheus: docs/integrating/prometheus.md
+      - Deep Dive:
+          - Architecture: docs/deep-dive/architecture.md
+          - Performance: docs/deep-dive/performance.md
+          - Caching Events: docs/deep-dive/caching-events.md
+          - Ordering Events: docs/deep-dive/ordering-events.md
+          - Dropping Capabilities: docs/deep-dive/dropping-capabilities.md
+          - Override OS files: docs/deep-dive/override-os-files.md
+          - Secure Tracing: docs/deep-dive/secure-tracing.md
+          - Healthz: docs/deep-dive/healthz.md
 
   - Contributing:
-    - Overview: contributing/overview.md
-    - Source Code Guidelines: contributing/guidelines.md
-    - Building:
-      - Building Tracee: contributing/building/building.md
-      - Building Environment: contributing/building/environment.md
-      - Building Containers: contributing/building/containers.md
-      - Building non CO-RE: contributing/building/nocore-ebpf.md
-      - OS Packaging: contributing/building/packaging.md
-      - Building on OSX: contributing/building/macosx.md
-    - Events:
-      - kprobes:
-        - do_sigaction: contributing/events/kprobes/do_sigaction.md
-        - kallsysm_lookup_name: contributing/events/kprobes/kallsyms_lookup_name.md
-        - vfs_read: contributing/events/kprobes/vfs_read.md
-        - vfs_readv: contributing/events/kprobes/vfs_readv.md
-      - lsm_hooks:
-        - security_file_mprotect: contributing/events/lsm_hooks/security_file_mprotect.md
-        - security_socket_setsockopt: contributing/events/lsm_hooks/security_socket_setsockopt.md
-      - security_alerts:
-        - bpf_attach: contributing/events/security_alerts/bpf_attach.md
-        - magic_write: contributing/events/security_alerts/magic_write.md
-        - mem_prot_alert: contributing/events/security_alerts/mem_prot_alert.md
-        - symbols_loaded: contributing/events/security_alerts/symbols_loaded.md
+      - Overview: contributing/overview.md
+      - Source Code Guidelines: contributing/guidelines.md
+      - Building:
+          - Building Tracee: contributing/building/building.md
+          - Building Environment: contributing/building/environment.md
+          - Building Containers: contributing/building/containers.md
+          - Building non CO-RE: contributing/building/nocore-ebpf.md
+          - OS Packaging: contributing/building/packaging.md
+          - Building on OSX: contributing/building/macosx.md
+      - Events:
+          - kprobes:
+              - do_sigaction: contributing/events/kprobes/do_sigaction.md
+              - kallsysm_lookup_name: contributing/events/kprobes/kallsyms_lookup_name.md
+              - vfs_read: contributing/events/kprobes/vfs_read.md
+              - vfs_readv: contributing/events/kprobes/vfs_readv.md
+              - file_modification: contributing/events/kprobes/file_modification.md
+          - lsm_hooks:
+              - security_file_mprotect: contributing/events/lsm_hooks/security_file_mprotect.md
+              - security_socket_setsockopt: contributing/events/lsm_hooks/security_socket_setsockopt.md
+          - security_alerts:
+              - bpf_attach: contributing/events/security_alerts/bpf_attach.md
+              - magic_write: contributing/events/security_alerts/magic_write.md
+              - mem_prot_alert: contributing/events/security_alerts/mem_prot_alert.md
+              - symbols_loaded: contributing/events/security_alerts/symbols_loaded.md
+              - symbols_collision: contributing/events/security_alerts/symbols_collision.md
 
 theme:
-    name: material
-    language: 'en'
-    logo: images/tracee_logo_only.png
-    features:
-      - navigation.tabs
-      - navigation.tabs.sticky
-      - navigation.sections
-      - content.tabs.link
+  name: material
+  language: "en"
+  logo: images/tracee_logo_only.png
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - content.tabs.link
 
 markdown_extensions:
   - pymdownx.highlight
