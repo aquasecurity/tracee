@@ -9,9 +9,6 @@ patchesJson6902:
     name: tracee
   patch: |-
     - op: add
-      path: /spec/template/spec/containers/0/args
-      value: 
-        - --webhook http://tracee-webhook:2801 
-        - --webhook-template ./templates/falcosidekick.tmpl 
-        - --webhook-content-type application/json
+      path: /spec/template/spec/containers/0/args/2
+      value: --output webhook:http://tracee-webhook:2801
 
