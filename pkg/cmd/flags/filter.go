@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/filterscope"
@@ -456,7 +457,11 @@ func PrepareFilterScopes(filtersArr []string) (*filterscope.FilterScopes, error)
 	return filterScopes, nil
 }
 
-func prepareEventsToTrace(eventFilter cliFilter, setFilter cliFilter, eventsNameToID map[string]events.ID) (map[events.ID]string, error) {
+func prepareEventsToTrace(
+	eventFilter cliFilter, setFilter cliFilter, eventsNameToID map[string]events.ID,
+) (
+	map[events.ID]string, error,
+) {
 	eventsToTrace := eventFilter.Equal
 	excludeEvents := eventFilter.NotEqual
 	setsToTrace := setFilter.Equal
@@ -464,14 +469,42 @@ func prepareEventsToTrace(eventFilter cliFilter, setFilter cliFilter, eventsName
 	var res map[events.ID]string
 	setsToEvents := make(map[string][]events.ID)
 	isExcluded := make(map[events.ID]bool)
+
+	// build a map: k:set, v:eventID
 	for id, event := range events.Definitions.Events() {
 		for _, set := range event.Sets {
 			setsToEvents[set] = append(setsToEvents[set], id)
 		}
 	}
+
+	// Exclude network events from the default set if kernel v4.19.
+	// Issue: https://github.com/aquasecurity/tracee/issues/1602
+	// TODO: workaround until we have the feature probing mechanism
+	if osInfo, err := helpers.GetOSInfo(); err == nil {
+		kernel51ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("5.1.0")
+		if err != nil {
+			logger.Error("failed to compare kernel version", "error", err)
+		} else {
+			if kernel51ComparedToRunningKernel == helpers.KernelVersionNewer {
+				id_like := osInfo.GetOSReleaseFieldValue(helpers.OS_ID_LIKE)
+				if !strings.Contains(id_like, "rhel") {
+					// disable network events for v4.19 kernels other than RHEL based ones
+					logger.Debug("kernel <= v5.1, disabling network events from default set")
+					for _, id := range setsToEvents["default"] {
+						if id >= events.NetPacketIPv4 && id <= events.MaxUserNetID {
+							isExcluded[id] = true
+						}
+					}
+				}
+			}
+		}
+	} else {
+		logger.Error("failed to get OS info", "error", err)
+	}
+
+	// mark excluded events (isExcluded) by their id
 	for _, name := range excludeEvents {
-		// Handle event prefixes with wildcards
-		if strings.HasSuffix(name, "*") {
+		if strings.HasSuffix(name, "*") { // handle event prefixes with wildcards
 			found := false
 			prefix := name[:len(name)-1]
 			for event, id := range eventsNameToID {
@@ -491,14 +524,16 @@ func prepareEventsToTrace(eventFilter cliFilter, setFilter cliFilter, eventsName
 			isExcluded[id] = true
 		}
 	}
+
+	// if no events were specified, add all events from the default set
 	if len(eventsToTrace) == 0 && len(setsToTrace) == 0 {
 		setsToTrace = append(setsToTrace, "default")
 	}
 
+	// build a map: k:eventID, v:eventName with all events to trace
 	res = make(map[events.ID]string, events.Definitions.Length())
 	for _, name := range eventsToTrace {
-		// Handle event prefixes with wildcards
-		if strings.HasSuffix(name, "*") {
+		if strings.HasSuffix(name, "*") { // handle event prefixes with wildcards
 			found := false
 			prefix := name[:len(name)-1]
 			for event, id := range eventsNameToID {
@@ -518,6 +553,8 @@ func prepareEventsToTrace(eventFilter cliFilter, setFilter cliFilter, eventsName
 			res[id] = name
 		}
 	}
+
+	// add events from sets to the map containing events to trace
 	for _, set := range setsToTrace {
 		setEvents, ok := setsToEvents[set]
 		if !ok {
@@ -529,6 +566,7 @@ func prepareEventsToTrace(eventFilter cliFilter, setFilter cliFilter, eventsName
 			}
 		}
 	}
+
 	return res, nil
 }
 
