@@ -51,7 +51,6 @@ nav:
               - Deliver:
                   - Webhook: docs/integrating/webhook.md
                   - Postee: docs/integrating/postee.md
-                  - Falcosidekick: docs/integrating/falcosidekick.md
           - Prometheus: docs/integrating/prometheus.md
       - Deep Dive:
           - Architecture: docs/deep-dive/architecture.md
