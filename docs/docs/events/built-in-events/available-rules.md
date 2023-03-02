@@ -53,5 +53,5 @@ TRC-1031 | System request key configuration modification | An attempt to modify 
 !!! Note
     And, obviously, you can create your signatures in [golang] and [rego].
 
-[golang]: ./custom-events/golang.md
-[rego]: ./custom-events/rego.md
+[golang]: ../custom-events/golang.md
+[rego]: ../custom-events/rego.md

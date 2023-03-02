@@ -16,6 +16,7 @@ nav:
           - Prerequisites: getting-started/installing/prerequisites.md
           - Docker: getting-started/installing/docker.md
           - Kubernetes: getting-started/installing/kubernetes.md
+          - Override OS files: getting-started/installing/override-os-files.md
           - Packages:
               - Ubuntu: getting-started/installing/distros/ubuntu.md
               - Fedora: getting-started/installing/distros/fedora.md
@@ -23,15 +24,14 @@ nav:
           - Linux Headers: getting-started/installing/headers.md
   - Tutorials:
       - Everything is an event: tutorials/everything-is-an-event.md
-      - Setup Development Machine with Vagrant: tutorials/setup-development-machine-with-vagrant.md
       - Deploy Tracee Grafana Dashboard: tutorials/deploy-grafana-dashboard.md
       - Accessing Tracee Logs through Promtail and Loki: tutorials/promtail.md
   - Docs:
       - Overview: docs/overview.md
       - Events:
           - Getting Started: docs/events/index.md
-          - Available Rules: docs/events/events.md
           - Built-in Events: 
+              - Available Rules: docs/events/built-in-events/available-rules.md
               - Syscalls: docs/events/built-in-events/syscalls.md
               - Security events: docs/events/built-in-events/security-events.md
               - Security events: docs/events/built-in-events/network-events.md
@@ -39,6 +39,21 @@ nav:
           - Custom Events:
               - Go: docs/events/custom-events/golang.md
               - Rego: docs/events/custom-events/rego.md
+          - kprobes:
+              - do_sigaction: docs/events/kprobes/do_sigaction.md
+              - kallsysm_lookup_name: docs/events/kprobes/kallsyms_lookup_name.md
+              - vfs_read: docs/events/kprobes/vfs_read.md
+              - vfs_readv: docs/events/kprobes/vfs_readv.md
+              - file_modification: docs/events/kprobes/file_modification.md
+          - lsm_hooks:
+              - security_file_mprotect: docs/events/lsm_hooks/security_file_mprotect.md
+              - security_socket_setsockopt: docs/events/lsm_hooks/security_socket_setsockopt.md
+          - security_alerts:
+              - bpf_attach: docs/events/security_alerts/bpf_attach.md
+              - magic_write: docs/events/security_alerts/magic_write.md
+              - mem_prot_alert: docs/events/security_alerts/mem_prot_alert.md
+              - symbols_loaded: docs/events/security_alerts/symbols_loaded.md
+              - symbols_collision: docs/events/security_alerts/symbols_collision.md
       - Filters:
           - Filtering: docs/filters/filtering.md
       - Outputs:
@@ -59,7 +74,6 @@ nav:
           - Caching Events: docs/deep-dive/caching-events.md
           - Ordering Events: docs/deep-dive/ordering-events.md
           - Dropping Capabilities: docs/deep-dive/dropping-capabilities.md
-          - Override OS files: docs/deep-dive/override-os-files.md
           - Secure Tracing: docs/deep-dive/secure-tracing.md
   - Classic Docs:
       - Overview: classic-docs/overview.md
@@ -103,6 +117,7 @@ nav:
       - Overview: contributing/overview.md
       - Source Code Guidelines: contributing/guidelines.md
       - Architecture: contributing/architecture.md
+      - Setup Development Machine with Vagrant: contributing/setup-development-machine-with-vagrant.md
       - Building:
           - Building Tracee: contributing/building/building.md
           - Building Environment: contributing/building/environment.md
@@ -573,7 +588,6 @@ nav:
               - waitpid: contributing/events/syscalls/waitpid.md
               - write: contributing/events/syscalls/write.md
               - writev: contributing/events/syscalls/writev.md
-
 theme:
   name: material
   language: "en"
