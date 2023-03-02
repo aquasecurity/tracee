@@ -19,7 +19,6 @@ $ ./dist/tracee-rules --output-template /path/to/my.tmpl
     | File name          | Description                            | Content-Type       | Source                                                                                                            |
     |--------------------|----------------------------------------|--------------------|-------------------------------------------------------------------------------------------------------------------|
     | rawjson.tmpl       | Dumps the Finding object as raw JSON   | `application/json` | [source](https://github.com/aquasecurity/tracee/blob/{{ git.tag }}/cmd/tracee-rules/templates/rawjson.tmpl)       |
-    | falcosidekick.tmpl | For compatibility with [falcosidekick] | `application/json` | [source](https://github.com/aquasecurity/tracee/blob/{{ git.tag }}/cmd/tracee-rules/templates/falcosidekick.tmpl) |
 
 1. Basic Example: **Raw JSON** stdout
 
@@ -44,8 +43,6 @@ $ ./dist/tracee-rules --output-template /path/to/my.tmpl
 2. [Deliver using a Webhook](./webhook.md)
 
 3. [Deliver using Postee](./postee.md)
-
-4. [Deliver using Falcosidekick](./falcosidekick.md)
 
 ## Authoring
 

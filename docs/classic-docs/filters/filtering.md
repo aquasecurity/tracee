@@ -1,7 +1,5 @@
 # Tracing Event Filtering
 
-> For filtering by workload, see [scopes](./scopes.md).
-
 ```
 $ sudo ./dist/tracee --filter help
 $ sudo ./dist/tracee --filter xxx

@@ -4,7 +4,7 @@
     Differently than [golang built-in signatures](./golang.md), with Rego
     signatures you are able to add and/or remove signatures to Tracee without
     the need of recompiling it (or re-distributing the binary) BUT it may come
-    with a [performance price](../deep-dive/performance.md) to pay.
+    with a performance price to pay.
 
 In order to create your own [Rego] signature you need to create a `.rego`
 file in the **rules directory** that has the following Rego Rules (now, in

@@ -51,8 +51,7 @@ TRC-1030 | Syscall table hooking detected | Syscall table hooking detected. Sysc
 TRC-1031 | System request key configuration modification | An attempt to modify and activate the System Request Key configuration file was detected. The system request key allows immediate input to the kernel through simple key combinations. Adversaries may use this feature to immediately shut down or restart a system. With read access to kernel logs, host related information such as listing tasks and CPU registers may be disclosed and could be used for container escape.
 
 !!! Note
-    And, obviously, you can create your signatures in [golang], [rego] and [go-cel].
+    And, obviously, you can create your signatures in [golang] and [rego].
 
-[golang]: ./golang.md
-[rego]: ./rego.md
-[go-cel]: ./go-cel.md
+[golang]: ../custom-events/golang.md
+[rego]: ../custom-events/rego.md

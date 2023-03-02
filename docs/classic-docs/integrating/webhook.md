@@ -11,4 +11,3 @@ tracee-rules --webhook http://my.webhook/endpoint \
 
 !!! Also Important
     1. [Deliver using Postee](./postee.md)
-    2. [Deliver using Falcosidekick](./falcosidekick.md)

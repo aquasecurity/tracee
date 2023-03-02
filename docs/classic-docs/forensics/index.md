@@ -1,4 +1,4 @@
-# Getting Started with Capturing
+# Getting Started with Forensics
 
 Tracee has a unique feature that lets you capture interesting artifacts from
 running applications, using the `--capture` flag.
