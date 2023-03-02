@@ -1,11 +1,20 @@
-![Tracee Logo](images/tracee.png)
+---
+hide:
+- toc
+---
+![Tracee Logo](images/tracee.png){ align=right }
 
 Before moving on, please consider giving us a star ⭐️
 by clicking the button at the top of the [GitHub page](https://github.com/aquasecurity/tracee/)
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/aquasecurity/tracee)](https://github.com/aquasecurity/tracee/releases)
-[![License](https://img.shields.io/github/license/aquasecurity/tracee)](https://github.com/aquasecurity/tracee/blob/main/LICENSE)
-[![docker](https://badgen.net/docker/pulls/aquasec/tracee)](https://hub.docker.com/r/aquasec/tracee)
+# Tracee Documentation
+
+👋 Welcome to Tracee Documentation! To help you get around, please notice the different sections at the top global menu:
+
+- You are currently in the [Getting Started](./) section where you can find general information and help with first steps.
+- In the [Tutorials](./tutorials/overview) section you can find step-by-step guides that help you accomplish specific tasks.
+- In the [Docs](./docs) section you can find the complete reference documentation for all of the different features and settings that Trivy has to offer.
+- In the [Contributing](./contributing) section you can find technical developer documentation and contribution guidelines.
 
 # Tracee: Runtime Security and Forensics using eBPF
 
