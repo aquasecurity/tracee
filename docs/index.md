@@ -1,39 +1,35 @@
 ![Tracee Logo](images/tracee.png)
 
-> Before moving on, make sure to give us a star at the
-> [GitHub Project](https://github.com/aquasecurity/tracee/)
-> if you liked it. That is important for us. Thank you!
+Before moving on, please consider giving us a star ⭐️
+by clicking the button at the top of the [GitHub page](https://github.com/aquasecurity/tracee/)
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/aquasecurity/tracee)](https://github.com/aquasecurity/tracee/releases)
-[![Go Report Card](https://goreportcard.com/badge/github.com/aquasecurity/tracee)](https://goreportcard.com/report/github.com/aquasecurity/tracee)
 [![License](https://img.shields.io/github/license/aquasecurity/tracee)](https://github.com/aquasecurity/tracee/blob/main/LICENSE)
 [![docker](https://badgen.net/docker/pulls/aquasec/tracee)](https://hub.docker.com/r/aquasec/tracee)
 
 # Tracee: Runtime Security and Forensics using eBPF
 
-Tracee is a runtime security and forensics tool for Linux based cloud deployments.
-It uses **eBPF** to trace the host OS and applications **at runtime**, and analyzes
-collected events in order to detect **suspicious behavioral patterns**. It can be
-run as a daemon-set in your kubernetes environment, but is flexible to be run for
-many purposes on any Linux based hosts. It can be delivered via Helm, as a docker
-container, or as a small set of static binaries.
+Tracee uses eBPF technology to tap into your system and give you access to hundreds of events that help you understand how your system behaves.
+In addition to basic observability events about system activity, Tracee adds a collection of sophisticated security events that expose more advanced behavioral patterns. You can also easily add your own events using the popular [Rego](https://www.openpolicyagent.org/docs/latest/policy-language/) language.
+Tracee provides a rich filtering mechanism that allows you to eliminate noise and focus on specific workloads that matter most to you.
 
-The goal of Tracee is to serve as an easy to use and effective solution for learning 
-when cloud native attacks occur in your environment. By leveraging Aqua's advanced 
-security research, performant eBPF based detection, and cloud native first
-approach Tracee makes runtime detection accesible, powerful, and effective.
+To learn more about Tracee, check out the [documentation](https://aquasecurity.github.io/tracee/).
 
-Have a look at the Tracee YouTube playlist for video content: 
+## Quickstart
 
-[![Tracee YouTube Playlist](./images/tracee_video_thumbnail.png)](https://youtube.com/playlist?list=PLRdPssLrT8d2Jp71pkgDTjq2fm_8P7Nqk)
+You can easily start experimenting with Tracee using the Docker image as follows:
 
-## Quickstart (Kubernetes)
+```shell
+docker run \
+  --name tracee --rm -it \
+  --pid=host --cgroupns=host --privileged \
+  -v /etc/os-release:/etc/os-release-host:ro \
+  -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+  aquasec/tracee:latest
+```
 
-Tracee is designed to monitor hosts in kubernetes clusters. To see this in action check out the quickstart [here](./getting-started/kubernetes-quickstart).
+To learn how to install Tracee in a production environment, [check out the Kubernetes guide](./getting-started/kubernetes-quickstart).
 
-## Quickstart (docker)
-
-To get a closer feel for what tracee accomplishes, you can run tracee on your local machine. Follow along to the quickstart [here](./getting-started/docker-quickstart)
 
 ## Pipeline protection with Tracee
 
@@ -41,14 +37,6 @@ Tracee can be used to protect GitHub Actions workflows against supply chain atta
 
 ---
 
-Tracee is an [Aqua Security] open source project.
-Learn about our open source work and portfolio [Here].
-Join the community, and talk to us about any matter in [GitHub Discussion] or [Slack].
-
-[Tracee-eBPF]: ./docs/tracing/index.md
-[Tracee-Rules]: ./docs/detecting/index.md
-
-[Aqua Security]: https://aquasec.com
-[GitHub Discussion]: https://github.com/aquasecurity/tracee/discussions
-[Slack]: https://slack.aquasec.com
-[Here]: https://www.aquasec.com/products/open-source-projects/
+Tracee is an [Aqua Security](https://aquasec.com) open source project.  
+Learn about our open source work and portfolio [Here](https://www.aquasec.com/products/open-source-projects/).  
+Join the community, and talk to us about any matter in [GitHub Discussion](https://github.com/aquasecurity/tracee/discussions) or [Slack](https://slack.aquasec.com).  
