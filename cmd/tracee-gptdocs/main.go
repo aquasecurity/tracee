@@ -16,6 +16,7 @@ const (
 	openAIKey   = "openaikey"
 	temperature = "temperature"
 	maxTokens   = "maxtokens"
+	givenEvents = "events"
 )
 
 func main() {
@@ -30,13 +31,18 @@ func main() {
 			},
 			&cli.Float64Flag{
 				Name:  temperature,
-				Usage: "OpenAI sampling temperature (lower is more deterministic)",
+				Usage: "OpenAI temperature, lower is deterministic",
 				Value: 0.0,
 			},
 			&cli.Int64Flag{
 				Name:  maxTokens,
 				Usage: "OpenAI max number of tokens to generate",
 				Value: 1000,
+			},
+			&cli.StringSliceFlag{
+				Name:  givenEvents,
+				Usage: "If provided, only generate docs for the given events",
+				Value: nil,
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -58,8 +64,9 @@ func main() {
 			if token < 0 || token > 4096 {
 				return fmt.Errorf("max tokens should be between 0 and 4096")
 			}
+			events := c.StringSlice(givenEvents)
 
-			runner, err := urfave.GetGPTDocsRunner(c, key, temp, token)
+			runner, err := urfave.GetGPTDocsRunner(key, temp, token, events)
 			if err != nil {
 				return err
 			}

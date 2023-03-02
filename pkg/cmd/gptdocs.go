@@ -26,15 +26,11 @@ const (
 	outputDirectory = "./dist/gptdocs"
 )
 
-type handleInfo struct {
-	eventName   string
-	programName string
-}
-
 type GPTDocsRunner struct {
 	OpenAIKey         string
 	OpenAITemperature float64
 	OpenAIMaxTokens   int
+	GivenEvents       []string
 }
 
 type WorkRet struct {
@@ -58,6 +54,8 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 
 	var wg sync.WaitGroup
 
+	// Go routines pool to handle work
+
 	for i := 0; i < amountOfWorkers; i++ {
 		wg.Add(1)
 		go func() {
@@ -67,15 +65,17 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 				case <-ctx.Done():
 					return
 				case evt := <-evtChannel:
-					ctxTimeout, cancel := context.WithTimeout(ctx, timeoutInSec*time.Second)
-					defer cancel()
 					wrkChannel <- evt.Name
+					ctxTimeout, cancel := context.WithTimeout(ctx, timeoutInSec*time.Second)
 					fileName, err := r.GenerateSyscall(ctxTimeout, template, evt)
 					retChannel <- WorkRet{evt.Name, fileName, err}
+					cancel()
 				}
 			}
 		}()
 	}
+
+	// Routine to handle work status
 
 	wg.Add(1)
 	go func() {
@@ -98,22 +98,36 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 		}
 	}()
 
-	// Pick all events
-
-	var evt events.Event
-
 	// TODO: starting with syscall events only, but should also generate docs
 	//       for all other events if they don't exist. Note that for the other
 	//       events, the event definition should marshal everything into strings
 	//       so the chatGPT is able to understand the definition in order to
 	//       generate the event doc based on the template.
 
+	// Pick all events
+
+	var evt events.Event
+
 	allEvents := events.Definitions.Events()
+
+	// Check if the given events exist
+
+	for _, given := range r.GivenEvents {
+		_, ok := events.Definitions.GetID(given)
+		if !ok {
+			logger.Error("event definition not found", "event", given)
+		}
+	}
+
+	// Run all the events map through the GPT3 API
 
 	for _, evt = range allEvents {
 		if !evt.Syscall {
 			continue
 		}
+
+		// Check if the filename exists already and skip if it does
+
 		fileName := outputDirectory + "/" + evt.Name + ".md"
 		_, err := os.Stat(fileName)
 		if err == nil {
@@ -121,16 +135,34 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 			case <-ctx.Done():
 				return nil
 			default:
+				logger.Debug("file already exists", "file", fileName)
 				continue
 			}
 		}
+
+		// Check if the event is in the given list of events and skip if it not
+
+		if len(r.GivenEvents) > 0 {
+			found := false
+			for _, given := range r.GivenEvents {
+				if strings.Contains(evt.Name, given) {
+					found = true
+				}
+			}
+			if !found {
+				logger.Debug("event not in given list", "event", evt.Name)
+				continue
+			}
+		}
+
+		logger.Debug("picked event", "event", evt.Name)
+
+		// Submit event to be processed
 
 		select {
 		case <-ctx.Done():
 			return nil
 		case evtChannel <- evt:
-		default:
-			time.Sleep(10 * time.Millisecond)
 		}
 	}
 
