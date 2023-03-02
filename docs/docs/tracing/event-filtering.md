@@ -3,8 +3,8 @@
 > For filtering by workload, see [scopes](./scopes.md).
 
 ```
-$ sudo ./dist/tracee-ebpf --filter help
-$ sudo ./dist/tracee-ebpf --filter xxx
+$ sudo ./dist/tracee --filter help
+$ sudo ./dist/tracee --filter xxx
 ```
 
 Tracee output might become too hard to consume when tracing all the events from
@@ -12,7 +12,7 @@ a system. Luckily, Tracee has a powerful mechanism to accurately filter just the
 information that is relevant to the user, the `--filter` flag.
 
 With `--filter` command line flag you define expressions that tells
-**tracee-ebpf** what you are interested in based on event metadata filtering
+**tracee** what you are interested in based on event metadata filtering
 capabilities. Only events that match given criteria will be traced.
 
 !!! Tip
@@ -20,11 +20,11 @@ capabilities. Only events that match given criteria will be traced.
 
 ## Initial Example
 
-All the examples bellow this item can be executed with the following tracee-ebpf
+All the examples bellow this item can be executed with the following tracee
 prefix command:
 
 ```text
-$ sudo ./dist/tracee-ebpf \
+$ sudo ./dist/tracee \
     --output json \
     --filter comm=bash \
     --filter follow
@@ -159,7 +159,7 @@ expected.
 1. **PID** `(Operators: =, !=, <, > and "new")`
 
     ```text
-    1) --filter pid=new # newly created events (after tracee-ebpf execution)
+    1) --filter pid=new # newly created events (after tracee execution)
     2) --filter pid=510,1709 # # pids 510 and 1709
     3) --filter 'pid>0' --filter pid 'pid<1000'
     4) --filter pid=2578238 --filter event=openat --filter openat.pathname=/etc/shadow --filter follow

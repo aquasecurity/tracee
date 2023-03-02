@@ -105,7 +105,7 @@ from GitHub.
 
 ## Build and Run Tracee-eBPF and Tracee-Rules
 
-To build **tracee-ebpf** and **tracee-rules** executable binaries, run the
+To build **tracee** executable binary, run the
 default make target:
 
 ```
@@ -120,16 +120,15 @@ total 47972
 drwxr-xr-x 1 vagrant vagrant       96 Mar 25 10:45 btfhub
 drwxr-xr-x 1 vagrant vagrant      224 Mar 25 10:45 libbpf
 drwxr-xr-x 1 vagrant vagrant      512 Mar 25 10:46 rules
--rwxr-xr-x 1 vagrant vagrant 17876784 Mar 26 18:32 tracee-ebpf
--rwxr-xr-x 1 vagrant vagrant 26982352 Mar 25 10:45 tracee-rules
+-rwxr-xr-x 1 vagrant vagrant 17876784 Mar 26 18:32 tracee
 drwxr-xr-x 1 vagrant vagrant      544 Mar 26 18:31 tracee.bpf
 -rw-r--r-- 1 vagrant vagrant  4232032 Mar 26 18:31 tracee.bpf.core.o
 ```
 
-You can now run Tracee-eBPF and see raw events printed to the standard output in a tabular format:
+You can now run Tracee and see events printed to the standard output in a tabular format:
 
 ```console
-$ sudo ./dist/tracee-ebpf
+$ sudo ./dist/tracee
 TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
 18:39:43:781824  0      mkdocs           1       19      0                stat                 pathname: /docs/docs, statbuf: 0x7f851365eb20
 18:39:43:782125  0      mkdocs           1       19      0                security_file_open   pathname: /docs/docs, flags: O_RDONLY|O_LARGEFILE|O_DIRECTORY, dev: 43, inode: 47, ctime: 1648313072000000000
@@ -143,30 +142,6 @@ TIME             UID    COMM             PID     TID     RET              EVENT 
 18:39:43:784589  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/integrations.md, statbuf: 0x7f851365e9b0
 18:39:43:784906  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/faq.md, statbuf: 0x7f851365e9b0
 ```
-
-To analyze collected events and see detections printed to the standard output,
-run **tracee-ebpf** and pipe it with **tracee-rules**:
-
-```console
-$ sudo ./dist/tracee-ebpf \
-  --output=format:gob \
-  --output=option:parse-arguments \
-  | ./dist/tracee-rules \
-  --input-tracee=file:stdin \
-  --input-tracee=format:gob
-Loaded 14 signature(s): [TRC-1 TRC-13 TRC-2 TRC-14 TRC-3 TRC-11 TRC-9 TRC-4 TRC-5 TRC-12 TRC-8 TRC-6 TRC-10 TRC-7]
-
-*** Detection ***
-Time: 2022-03-26T18:48:00Z
-Signature ID: TRC-2
-Signature: Anti-Debugging
-Data: map[]
-Command: strace
-Hostname: ubuntu-impish
-```
-
-In this example, we run `strace ls` to trigger Anit-Debugging signature
-detection.
 
 ## Switch Between CO-RE and non CO-RE Linux Distribution
 

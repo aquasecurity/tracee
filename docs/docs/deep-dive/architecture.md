@@ -46,7 +46,7 @@
        they're attached to are triggered.
     
     1. eBPF programs decide whether they should submit the events to
-       **tracee-ebpf** or not, based on given filters.
+       **tracee** or not, based on given filters.
     
     1. Those events are sent to **libbpfgo** through a [shared memory ring buffer]
        mechanism (called **perfbuffer**).
@@ -54,13 +54,13 @@
     1. **libbpfgo** sends collected events to tracee through **golang
        channels**.
     
-    1. **tracee-ebpf** parses received events and does multiple things:
+    1. **tracee** parses received events and does multiple things:
     
         1. [parse events for argument type] conversions if requested
         1. [enriches the events] that need enrichment (containers, network, processes)
         1. [capture artifacts] from collected events into external files
     
-    1. **tracee-ebpf** writes events to **tracee-rules** through a mechanism
+    1. **tracee** writes events to **tracee-rules** through a mechanism
        called **printer**.
     
     1. **tracee-rules** receives events and evaluate them using either [golang]
@@ -74,7 +74,7 @@
        positive.
     
     > This mechanism is what we call the **tracee pipeline**: to receive events
-    > from the kernel into userland (**tracee-ebpf**), then to parse and enrich
+    > from the kernel into userland (**tracee**), then to parse and enrich
     > those events and to submit them to **tracee-rules** for it to evaluate
     > them looking for detection patterns described as **signatures**.
 

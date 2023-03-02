@@ -3,8 +3,8 @@
 In order to check latest output options you may execute:
 
 ```text
-$ sudo ./dist/tracee-ebpf --output help
-$ sudo ./dist/tracee-ebpf --output option:xxx
+$ sudo ./dist/tracee --output help
+$ sudo ./dist/tracee --output option:xxx
 ```
 
 Tracee supports different output options for detected events:
@@ -14,7 +14,7 @@ Tracee supports different output options for detected events:
     Pick stack memory address from each event
 
     ```text
-    $ sudo ./dist/tracee-ebpf --output json --filter comm=bash --filter follow --filter event=openat --output option:stack-addresses
+    $ sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=openat --output option:stack-addresses
     ```
 
     ```json
@@ -24,11 +24,11 @@ Tracee supports different output options for detected events:
 2. **option:parse-arguments**
 
     In order to have a better experience with the output provided by
-    **tracee-ebpf**, you may opt to parse event arguments to a **human
+    **tracee**, you may opt to parse event arguments to a **human
     *readable** format.
 
     ```text
-    $ sudo ./dist/tracee-ebpf --output json --filter comm=bash --filter follow --filter event=security_file_open --output option:parse-arguments
+    $ sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=security_file_open --output option:parse-arguments
     ```
     ```json
     {"timestamp":1657292314817581101,"threadStartTime":617395606682013,"processorId":9,"processId":2045288,"cgroupId":1,"threadId":2045288,"parentProcessId":3795408,"hostProcessId":2045288,"hostThreadId":2045288,"hostParentProcessId":3795408,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"bash","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"722","eventName":"security_file_open","argsNum":7,"returnValue":0,"stackAddresses":null,"syscall":"execve","contextFlags":{"containerStarted":false,"isCompat":false},"args":[{"name":"pathname","type":"const char*","value":"/usr/bin/exa"},{"name":"flags","type":"string","value":"O_RDONLY|O_LARGEFILE"},{"name":"dev","type":"dev_t","value":271581185},{"name":"inode","type":"unsigned long","value":2493759},{"name":"ctime","type":"unsigned long","value":1653730234432691496},{"name":"syscall_pathname","type":"const char*","value":""}]}
@@ -45,11 +45,11 @@ Tracee supports different output options for detected events:
 3. **option:parse-arguments-fds**
 
     In order to have a better experience with the output provided by
-    **tracee-ebpf**, you may opt to parse event fd arguments to be
+    **tracee**, you may opt to parse event fd arguments to be
     enriched with **file paths**. This option also enables `parse-arguments`.
 
     ```text
-    $ sudo ./dist/tracee-ebpf --output json --filter comm=bash --filter follow --filter event=read --output option:parse-arguments-fds
+    $ sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=read --output option:parse-arguments-fds
     ```
 
     ```text
@@ -77,7 +77,7 @@ Tracee supports different output options for detected events:
     whenever an event is detected, specially when deteting **execve** event.
 
     ```text
-    $ sudo ./dist/tracee-ebpf --output json --filter comm=bash --filter follow --filter event=execve --output option:parse-arguments --output option:exec-env
+    $ sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=execve --output option:parse-arguments --output option:exec-env
     ```
 
     ```json
@@ -99,7 +99,7 @@ Tracee supports different output options for detected events:
     example).
 
     ```text
-    $ sudo ./dist/tracee-ebpf --output json --filter comm=bash --filter follow --filter event=sched_process_exec --output option:parse-arguments --output option:exec-hash
+    $ sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=sched_process_exec --output option:parse-arguments --output option:exec-hash
     ```
 
     ```json

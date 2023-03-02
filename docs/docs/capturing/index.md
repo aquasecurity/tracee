@@ -1,16 +1,11 @@
 # Getting Started with Capturing
 
-!!! Note
-    This entire section is about running **tracee-ebpf** only, without piping
-    events to **tracee-rules** but, instead, **capturing artifacts** from
-    the environment being traced.
-
 Tracee has a unique feature that lets you capture interesting artifacts from
 running applications, using the `--capture` flag.
 
 ```text
-$ sudo ./dist/tracee-ebpf --capture help
-$ sudo ./dist/tracee-ebpf --capture xxx
+$ sudo ./dist/tracee --capture help
+$ sudo ./dist/tracee --capture xxx
 ```
 !!! Tip
     All captured artifacts are saved in Tracee's "output directory", which can
@@ -29,7 +24,7 @@ Tracee can capture the following types of artifacts:
      prefix.
 
      ```text
-     $ sudo ./dist/tracee-ebpf \
+     $ sudo ./dist/tracee \
         --output json \
         --filter comm=bash \
         --filter follow \
@@ -58,7 +53,7 @@ Tracee can capture the following types of artifacts:
      same binary is executed multiple times, it will be captured just once.
 
      ```text
-     $ sudo ./dist/tracee-ebpf \
+     $ sudo ./dist/tracee \
         --output json \
         --filter comm=bash \
         --filter follow \
@@ -102,7 +97,7 @@ Tracee can capture the following types of artifacts:
      **Write+Execute** to **Write**.
 
      ```text
-     $ sudo ./dist/tracee-ebpf \
+     $ sudo ./dist/tracee \
         --output none \
         --filter comm=bash \
         --filter follow \
@@ -131,7 +126,7 @@ Tracee can capture the following types of artifacts:
      A good way to test this behavior is to execute:
 
      ```text
-     $ sudo ./dist/tracee-ebpf \
+     $ sudo ./dist/tracee \
          --filter event=net_packet_ipv4 \
          --capture network \
          --capture pcap-options:filtered
@@ -148,7 +143,7 @@ Tracee can capture the following types of artifacts:
      You can select only dns packets, for example:
 
      ```text
-     $ sudo ./dist/tracee-ebpf \
+     $ sudo ./dist/tracee \
          --filter event=net_packet_dns \
          --capture network \
          --capture pcap-options:filtered
@@ -181,7 +176,7 @@ Tracee can capture the following types of artifacts:
      inside `containers/container_id.pcap`.
 
      ```text
-     $ sudo ./dist/tracee-ebpf \
+     $ sudo ./dist/tracee \
          --filter event=net_packet_icmp \
          --capture network \
          --capture pcap-options:filtered \
@@ -269,7 +264,7 @@ Tracee can capture the following types of artifacts:
      In order to capture a specific payload size you may specify:
 
      ```
-     $ sudo ./dist/tracee-ebpf \
+     $ sudo ./dist/tracee \
          --filter event=net_packet_tcp \
          --capture network \
          --capture pcap-options:filtered \
@@ -293,7 +288,7 @@ Tracee can capture the following types of artifacts:
      If the same binary is loaded multiple times, it will be captured just once.
 
      ```text
-     $ sudo ./dist/tracee-ebpf \
+     $ sudo ./dist/tracee \
         --output none \
         --filter comm=bash \
         --filter follow \

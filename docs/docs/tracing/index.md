@@ -1,9 +1,5 @@
 # Getting Started with Tracing
 
-!!! Note
-    This entire section is about running **tracee-ebpf** only, without piping
-    events to **tracee-rules**.
-
 In some cases, you might want to leverage Tracee event collection capabilities
 only, without involving the [detection engine]. You may, or may not, choose to
 [capture artifacts] while tracing.
@@ -19,7 +15,7 @@ This might be useful for:
 1. **security research**
 1. **education**
 
-In this case you can use Tracee's eBPF collector component (**tracee-ebpf**),
+In this case you can use Tracee's eBPF collector component (**tracee**),
 which will start dumping raw data directly into standard output.
 
 [Watch a quick video demo of Tracee's eBPF tracing capabilities](https://youtu.be/WTqE2ae257o)
@@ -36,14 +32,10 @@ $ docker run \
     --pid=host --cgroupns=host --privileged \
     -v /etc/os-release:/etc/os-release-host:ro \
     -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-    aquasec/tracee:{{ git.tag[1:] }} \
-    trace
+    aquasec/tracee:{{ git.tag[1:] }}
 ```
 
-Here, we are running the `aquasec/tracee` container, but with the
-`trace` sub-command, which will start just a raw
-trace (Tracee-eBPF), without the detection engine **tracee-rules**. Here's a
-sample output of running with no additional arguments:
+This is a sample output of running with no additional arguments:
 
 ```text
 TIME(s)        UID    COMM             PID     TID     RET             EVENT                ARGS
@@ -55,12 +47,7 @@ TIME(s)        UID    COMM             PID     TID     RET             EVENT    
 
 ```
 
-!!! Note
-    There are 2 ways to enable tracing only:  
-    1. To export a TRACEE_EBPF_ONLY=1 env variable to docker.  
-    2. To provide a `trace` 1st argument to docker container.  
-
-Each line is a single event collected by Tracee-eBPF, with the following
+Each line is a single event collected by **tracee**, with the following
 information:
 
 1. **TIME**  
@@ -89,4 +76,4 @@ information:
 > Check the existing [output options](./output-options.md) for other output options.
 > Check the existing [output format](./output-formats.md) for other output formats.
 
-> Follow [getting tracee](../../getting-started/installing/getting.md) in order to get tracee-ebpf.
+> Follow [getting tracee](../../getting-started/installing/getting.md) in order to get **tracee**.

@@ -3,8 +3,7 @@
 In order to check latest output options you may execute:
 
 ```text
-$ sudo ./dist/tracee-ebpf --output help
-$ sudo ./dist/tracee-ebpf --output format:xxx
+$ sudo ./dist/tracee --output help
 ```
 
 Tracee supports different output formats for detected events:
@@ -12,7 +11,7 @@ Tracee supports different output formats for detected events:
 1. **Table**
 
     ```text
-    $ sudo ./dist/tracee-ebpf --output table --filter comm=bash --filter follow --filter event=openat
+    $ sudo ./dist/tracee --output table --filter comm=bash --filter follow --filter event=openat
     TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
     11:21:51:254199  1000   exa              1639459 1639459 3                openat               dirfd: -100, pathname: /etc/ld.so.cache, flags: O_RDONLY|O_CLOEXEC, mode: 0
     11:21:51:254285  1000   exa              1639459 1639459 3                openat               dirfd: -100, pathname: /lib/x86_64-linux-gnu/libgcc_s.so.1, flags: O_RDONLY|O_CLOEXEC, mode: 0
@@ -25,7 +24,7 @@ Tracee supports different output formats for detected events:
 2. **Table (Verbose)**
 
     ```text
-    $ sudo ./dist/tracee-ebpf --output table-verbose --filter comm=bash --filter follow --filter event=openat
+    $ sudo ./dist/tracee --output table-verbose --filter comm=bash --filter follow --filter event=openat
     TIME             UTS_NAME         CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
     11:22:16:970700  fujitsu                        4026531840   4026531836   1000   exa              1643836 1643836 3795408 3                openat               dirfd: -100, pathname: /etc/ld.so.cache, flags: 524288, mode: 0
     11:22:16:970783  fujitsu                        4026531840   4026531836   1000   exa              1643836 1643836 3795408 3                openat               dirfd: -100, pathname: /lib/x86_64-linux-gnu/libgcc_s.so.1, flags: 524288, mode: 0
@@ -38,7 +37,7 @@ Tracee supports different output formats for detected events:
 3. **JSON**
 
     ```text
-    $ sudo ./dist/tracee-ebpf --output json --filter comm=bash --filter follow --filter event=openat
+    $ sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=openat
     ```
 
     ```json
@@ -47,10 +46,10 @@ Tracee supports different output formats for detected events:
     ```
     
     !!! Tip
-        A good tip is to pipe **tracee-ebpf** json output to [jq]() tool, this way
+        A good tip is to pipe **tracee** json output to [jq]() tool, this way
         you can select fields, rename them, filter values, and many other things:
         > ```text
-        > sudo ./dist/tracee-ebpf -o format:json -o option:parse-arguments
+        > sudo ./dist/tracee -o json -o option:parse-arguments
         > -trace comm=ping | jq -c '. | {eventId, hostName, processName,
         > hostProcessId,UserId}'
         > ```
@@ -58,12 +57,8 @@ Tracee supports different output formats for detected events:
 4. **GOB**
 
     ```text
-    $ sudo ./dist/tracee-ebpf --output json --filter comm=bash --filter follow --filter event=openat
+    $ sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=openat
     ```
-
-    > The output is **binary** (optimizes performance when piping
-    > **tracee-ebpf** events to **tracee-rules**, for signature patterns
-    > detections).
 
 5. **GOTEMPLATE**
 
@@ -80,7 +75,7 @@ output and standard error:
         User might use different output formats combined with output file option
 
     ```text
-    $ sudo ./dist/tracee-ebpf --output json --filter comm=bash --filter follow --filter event=openat --output out-file:/tmp/tracee.log
+    $ sudo ./dist/tracee --filter comm=bash --filter follow --filter event=openat --output json:/tmp/tracee.log
     
     $ cat /tmp/tracee.log | jq -c
     ```
@@ -95,5 +90,5 @@ output and standard error:
     Redirect logs to a file if needed:
 
     ```text
-    $ sudo TRACEE_BPF_FILE=do-not-exist ./dist/tracee-ebpf --output json --filter comm=bash --filter follow --filter event=openat --output out-file:/tmp/tracee.events --output log-file:/tmp/tracee.log
+    $ sudo TRACEE_BPF_FILE=do-not-exist ./dist/tracee --filter comm=bash --filter follow --filter event=openat --output json:/tmp/tracee.events --output log-file:/tmp/tracee.log
     ```
