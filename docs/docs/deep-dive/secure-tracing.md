@@ -2,7 +2,7 @@
 
 1. Secure tracing
 
-    When **tracee-ebpf** reads information from user programs, it is subject to a
+    When **tracee** reads information from user programs, it is subject to a
     **race condition** where the user program might be able to change the arguments
     after **tracee** read them.
 

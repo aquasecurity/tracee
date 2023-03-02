@@ -6,10 +6,9 @@ used alongside prometheus.
 Since version 0.7.0, tracee exports useful runtime metrics to prometheus.
 
 These metrics exports are enabled by default in all docker images and can be
-enabled using the `--metrics` flag in both [tracee-ebpf] and [tracee-rules].
+enabled using the `--metrics`.
 
-[tracee-ebpf]: https://github.com/aquasecurity/tracee/tree/{{ git.tag }}/cmd/tracee-ebpf
-[tracee-rules]: https://github.com/aquasecurity/tracee/tree/{{ git.tag }}/cmd/tracee-rules
+[tracee]: https://github.com/aquasecurity/tracee/tree/{{ git.tag }}/cmd/tracee
 
 By using grafana and the new metrics from tracee, we can deploy a simple
 dashboard which tracks your tracee's instance performance and outputs.
@@ -35,14 +34,14 @@ $ docker run \
     -v /tmp/tracee:/tmp/tracee  \
     -v /etc/os-release:/etc/os-release-host:ro \
     -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-    -it -p 3366:3366 -p 4466:4466 aquasec/tracee:{{ git.tag }}
+    -it -p 3366:3366 aquasec/tracee:{{ git.tag }}
 ```
 
 Of course, the forwarded metrics ports can be changed, but you should note that
 some of the later instructions depend on these ports.
 
 If running Tracee locally through built binaries, the metrics address may be
-overriden with the `--listen-addr` flag in both tracee-ebpf and tracee-rules.
+overriden with the `--listen-addr` flag.
 
 ## Run Prometheus and Configure it to Scrape Tracee
 
@@ -59,10 +58,10 @@ scrape_configs:
     # Override the global default and scrape targets from this job every 5 seconds.
     scrape_interval: 5s
 
-    #Scrape tracee-ebpf's and tracee-rules's default metrics hosts.
+    #Scrape tracee's default metrics hosts.
     #If forwarding different ports make sure to change these addresses.
     static_configs:
-      - targets: ['localhost:3366', 'localhost:4466']
+      - targets: ['localhost:3366']
 ```
 
 We must then start prometheus with the following command:

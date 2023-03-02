@@ -4,7 +4,7 @@ Tracee has an events caching (in-memory) mechanism. In order to check latest
 caching options you may execute:
 
 ```
-$ ./dist/tracee-ebpf --cache help
+$ ./dist/tracee --cache help
 ```
 
 !!! Read Important
@@ -20,8 +20,7 @@ $ ./dist/tracee-ebpf --cache help
 
 The caching happens in userland, it is an in-memory caching, and it helps with
 workload bursts: if kernel produces more events than userland is capable of
-processing (considering **tracee-ebpf** parsing and **tracee-rules**
-evaluations) then the events are kept in a sizeable cache (defined by user) so
+processing then the events are kept in a sizeable cache (defined by user) so
 they're not lost (if cache isn't full).
 
 The effects of this are the following:
@@ -32,9 +31,7 @@ The effects of this are the following:
 2. Event losses from the kernel perf/ring buffer will only happen when
    **cache is full**.
 
-3. Any difference in ratio production:consumption (either from
-   **kernel**->**tracee-ebpf or **tracee-ebpf**->**tracee-rules**) can be
-   mitigated temporarily.
+3. Any difference in ratio production:consumption can be mitigated temporarily.
 
 ## Use caching
 
@@ -42,7 +39,7 @@ Example using **1GB cache**, container **enrichment** in the pipeline, argument
 **parsing** so arguments are formatted in a human consumable way:
 
 ```text
-$ sudo ./dist/tracee-ebpf \
+$ sudo ./dist/tracee \
     --cache cache-type=mem \
     --cache mem-cache-size=1024 \
     --containers -o format:json \
@@ -55,11 +52,11 @@ $ sudo ./dist/tracee-ebpf \
 > pipeline BUT we're not piping the events to **tracee-rules**.
 
 !!! Attention
-    If you pipe **tracee-ebpf** output to another tool, like `jq`:
+    If you pipe **tracee** output to another tool, like `jq`:
     ```text
     | jq -c '. | {cgroupid, processname, containername}'
     ```
-    You may cause latencies in **tracee-ebpf** pipeline because the event json
-    processing from `jq` might not be as fast as how **tracee-ebpf** is capable
+    You may cause latencies in **tracee** pipeline because the event json
+    processing from `jq` might not be as fast as how **tracee** is capable
     of writing events to it (just like **tracee-rules** could do if being slow
     evaluating events).

@@ -21,4 +21,4 @@ kprobe + kretprobe
 tracing the kallsyms_lookup_name event
 
 ## Example Use Case
-`./dist/tracee-ebpf -f e=kallsyms_lookup_name`
+`./dist/tracee -f e=kallsyms_lookup_name`

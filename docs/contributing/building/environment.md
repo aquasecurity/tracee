@@ -19,15 +19,15 @@
 
 !!! Example
 
-    * Build and execute **tracee-ebpf**:
+    * Build and execute **tracee**:
     
         ```text
         $ make -f builder/Makefile.tracee-make alpine-prepare
         $ make -f builder/Makefile.tracee-make alpine-shell
         
         tracee@f64bb4a2f0b1[/tracee]$ make clean
-        tracee@f64bb4a2f0b1[/tracee]$ make tracee-ebpf
-        tracee@f64bb4a2f0b1[/tracee]$ sudo ./dist/tracee-ebpf \
+        tracee@f64bb4a2f0b1[/tracee]$ make tracee
+        tracee@f64bb4a2f0b1[/tracee]$ sudo ./dist/tracee \
             -o option:parse-arguments \
             --filter comm=bash \
             --filter follow
@@ -44,14 +44,11 @@
         
         tracee@f64bb4a2f0b1[/tracee]$ make clean
         tracee@f64bb4a2f0b1[/tracee]$ make all
-        tracee@f64bb4a2f0b1[/tracee]$ sudo ./dist/tracee-ebpf \
+        tracee@f64bb4a2f0b1[/tracee]$ sudo ./dist/tracee \
             -o format:json \
             -o option:parse-arguments \
             --filter comm=bash \
-            --filter follow | \
-            ./dist/tracee-rules \
-            --input-tracee file:stdin \
-            --input-tracee format:json
+            --filter follow 
         ```
     
     Now, in your host's bash shell, execute: `sudo strace /bin/ls` and observe
@@ -63,7 +60,7 @@ Now, for **more patient readers** ...
 
 In order to have a controlled building environment for tracee, tracee provides
 a `Makefile.tracee-make` file that allows you to create and use a docker
-container environment to build & test **tracee-ebpf** and **tracee-rules**.
+container environment to build & test **tracee**. 
 
 Two different environments are maintained for building tracee:
 
@@ -79,9 +76,8 @@ builds (and executes) correctly in both environments.
 !!! Attention
     Locally created containers, called `alpine-tracee-make` or
     `ubuntu-tracee-make`, share the host source code directory. This means
-    that, if you build tracee binaries using `alpine` distribution, binaries
-    **tracee-ebpf** and **tracee-rules** might not be compatible to the Linux
-    distribution from your host OS.
+    that, if you build tracee binary using `alpine` distribution, the binary
+    might not be compatible to the Linux distribution from your host OS.
 
 ### Creating a builder environment
 
@@ -121,14 +117,14 @@ $ make -f builder/Makefile.tracee-make ubuntu-prepare
 $ make -f builder/Makefile.tracee-make ubuntu-make ARG="help"
 $ make -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
 $ make -f builder/Makefile.tracee-make ubuntu-make ARG="bpf-core"
-$ make -f builder/Makefile.tracee-make ubuntu-make ARG="tracee-ebpf"
+$ make -f builder/Makefile.tracee-make ubuntu-make ARG="tracee"
 $ make -f builder/Makefile.tracee-make ubuntu-make ARG="all"
 ```
 
 And, after the compilation, run the commands directly in your host:
 
 ```text
-$ sudo ./dist/tracee-ebpf \
+$ sudo ./dist/tracee \
     -o option:parse-arguments \
     --filter comm=bash \
     --filter follow
@@ -151,7 +147,7 @@ $ STATIC=1 make -f builder/Makefile.tracee-make alpine-make ARG="all"
 and execute the static binary from your host:
 
 ```text
-$ ldd dist/tracee-ebpf
+$ ldd dist/tracee
   not a dynamic executable
 ```
 

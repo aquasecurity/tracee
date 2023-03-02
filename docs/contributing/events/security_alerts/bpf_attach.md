@@ -51,7 +51,7 @@ kprobe
 check whether the BPF program uses helper functions of interest
 
 ## Example Use Case
-./tracee-ebpf -f e=bpf_attach
+./tracee -f e=bpf_attach
 
 ## Issues
 the 'check_helper_call' and 'check_map_func_compatibility' serves the same purpose. 

@@ -6,13 +6,13 @@ those events by communicating with the relevant container's runtime and SDK.
 
 !!! Experimental Warning
     This feature is experimental and should be explicitly enabled in
-    **tracee-ebpf**, by using the `--container` flag OR, if running tracee
+    **tracee**, by using the `--container` flag OR, if running tracee
     container image, setting the `CONTAINERS_ENRICHMENT` environment flag (see
     example bellow).
 
-1. Running **tracee-ebpf** (with or without tracee-rules) manually
+1. Running **tracee** (with or without tracee-rules) manually
 
-    If running tracee-ebpf directly (not in a container), it will automatically
+    If running tracee directly (not in a container), it will automatically
     search for known supported runtimes in their socket's default locations.
 
 2. Running **tracee** using a docker container
@@ -62,7 +62,7 @@ listed runtimes:
 
 As a user, when container enrichment is enabled the event output will include enriched fields in these cases:
 
-1. Running **tracee-ebpf** with a json format will include all container enriched fields 
+1. Running **tracee** with a json format will include all container enriched fields 
     text```
     $ docker run \
         --name tracee --rm -it \

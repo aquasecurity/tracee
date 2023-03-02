@@ -35,8 +35,8 @@ the capabilities that are gained during execve(2).
 
 ## Tracee and capabilities
 
-**tracee-ebpf** and **tracee-rules** both try to reduce their capabilities
-during their execution. The way they do is through "protection rings":
+**tracee** tries to reduce their capabilities during their execution. 
+The way does it is through "protection rings":
 
 * Privileged   (ring 0): all capabilities are Effective (almost never)
 * Required     (ring 1): only required (by events) capabilities are Effective (during config)
@@ -56,7 +56,7 @@ command line flag.
 ## Bypass capabilities dropping feature
 
 !!! Attention
-    This session is important if you're facing errors while **tracee-ebpf** is
+    This session is important if you're facing errors while **tracee** is
     trying to drop its capabilities or any other permissions errors.
 
 Some environments **won't allow capabilities dropping** because of permission
@@ -69,18 +69,14 @@ Failure in capabilities dropping will result tracee's exit with a matching
 error, to **guarantee that tracee isn't running with excess capabilities
 without the user agreement**.
 
-To **allow tracee-ebpf to run with high capabilities**, and prevent those
+To **allow tracee to run with high capabilities**, and prevent those
 errors, the `--capabilities bypass=1` flag can be used. For the docker
 container users, the environment variable `CAPABILITIES_BYPASS=0|1` will have
 the same effect.
 
-> For tracee-rules, CAPABILITIES_BYPASS=1 will set the "--allcaps" command line
-> flag and allow it to run with full capabilities.
-
 !!! Note
-    Bypassing the capabilities drop will run tracee-ebpf and/or tracee-rules
-    with all capabilities set as Effective and it is only recommended if you
-    know what you are doing.
+    Bypassing the capabilities drop will run tracee with all capabilities set as Effective 
+		and it is only recommended if you know what you are doing.
 
 ## Capabilities Errors (Missing or Too Permissive)
 
@@ -96,5 +92,3 @@ is to rely on following 2 command line flags:
 
 The first will add given capabilities to the Required ring (so events might be
 able to work). The last will remove the capabilities from that same ring.
-
-> Tracee-rules do not support adding or removing specific capabilities.
