@@ -33,6 +33,7 @@ require (
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/philhofer/fwd v1.1.1 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
+	github.com/sashabaranov/go-gpt3 v1.2.1 // indirect
 	github.com/tinylib/msgp v1.1.6 // indirect
 )
 
