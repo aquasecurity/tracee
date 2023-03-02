@@ -23,11 +23,9 @@ when cloud native attacks occur in your environment. By leveraging Aqua's advanc
 security research, performant eBPF based detection, and cloud native first
 approach Tracee makes runtime detection accesible, powerful, and effective.
 
-Watch a quick video demo of Tracee:
+Have a look at the Tracee YouTube playlist for video content: 
 
-[![Tracee Live Demo AND Q&A](./images/tracee_video_thumbnail.png)](https://youtu.be/x2_iF0KjPKs?t=2971)
-
-Check out the [Tracee video hub](https://info.aquasec.com/ebpf-runtime-security) for more videos.
+[![Tracee YouTube Playlist](./images/tracee_video_thumbnail.png)](https://youtube.com/playlist?list=PLRdPssLrT8d2Jp71pkgDTjq2fm_8P7Nqk)
 
 ## Quickstart (Kubernetes)
 

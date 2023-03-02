@@ -28,24 +28,24 @@ nav:
       - Accessing Tracee Logs through Promtail and Loki: tutorials/promtail.md
   - Docs:
       - Overview: docs/overview.md
-      - Tracing:
-          - Getting Started: docs/tracing/index.md
-          - Output Formats: docs/tracing/output-formats.md
-          - Output Options: docs/tracing/output-options.md
-          - Event Filtering: docs/tracing/event-filtering.md
-          - Scopes: docs/tracing/scopes.md
-          - Network Events: docs/tracing/network-events.md
-      - Capturing:
-          - Getting Started: docs/capturing/index.md
-      - Detecting:
-          - Getting Started: docs/detecting/index.md
-          - Creating Rules:
-              - Golang: docs/detecting/golang.md
-              - Rego: docs/detecting/rego.md
-              - Go-Cel: docs/detecting/go-cel.md
-          - Available Rules: docs/detecting/rules.md
-          - AVD: docs/detecting/avd.md
-      - Integrating:
+      - Events:
+          - Getting Started: docs/events/index.md
+          - Available Rules: docs/events/rules.md
+          - Built-in Events: 
+              - Syscalls: docs/events/buit-in-events/syscalls.md
+              - Security events: docs/events/buit-in-events/security-events.md
+              - AVD: docs/events/buit-in-events/avd.md
+          - Custom Events:
+              - Go: docs/events/custom-events/golang.md
+              - Rego: docs/events/custom-events/rego.md
+      - Filters:
+          - Filtering: docs/filters/filtering.md
+      - Outputs:
+          - Output Formats: docs/outputs/output-formats.md
+          - Output Options: docs/outputs/output-options.md
+      - Forensics:
+          - Getting Started: docs/forensics/index.md
+      - Integrations:
           - Container Engines: docs/integrating/container-engines.md
           - Detected Events:
               - Go-template: docs/integrating/go-templates.md
@@ -53,19 +53,55 @@ nav:
                   - Webhook: docs/integrating/webhook.md
                   - Postee: docs/integrating/postee.md
           - Prometheus: docs/integrating/prometheus.md
+          - Healthz: docs/integrating/healthz.md
       - Deep Dive:
-          - Architecture: docs/deep-dive/architecture.md
-          - Performance: docs/deep-dive/performance.md
           - Caching Events: docs/deep-dive/caching-events.md
           - Ordering Events: docs/deep-dive/ordering-events.md
           - Dropping Capabilities: docs/deep-dive/dropping-capabilities.md
           - Override OS files: docs/deep-dive/override-os-files.md
           - Secure Tracing: docs/deep-dive/secure-tracing.md
-          - Healthz: docs/deep-dive/healthz.md
+  - Classic Docs:
+      - Overview: classic-docs/overview.md
+      - Tracing:
+          - Getting Started: classic-docs/tracing/index.md
+          - Output Formats: classic-docs/tracing/output-formats.md
+          - Output Options: classic-docs/tracing/output-options.md
+          - Event Filtering: classic-docs/tracing/event-filtering.md
+          - Scopes: classic-docs/tracing/scopes.md
+          - Network Events: classic-docs/tracing/network-events.md
+      - Capturing:
+          - Getting Started: classic-docs/capturing/index.md
+      - Detecting:
+          - Getting Started: classic-docs/detecting/index.md
+          - Creating Rules:
+              - Golang: classic-docs/detecting/golang.md
+              - Rego: classic-docs/detecting/rego.md
+              - Go-Cel: classic-docs/detecting/go-cel.md
+          - Available Rules: classic-docs/detecting/rules.md
+          - AVD: classic-docs/detecting/avd.md
+      - Integrating:
+          - Container Engines: classic-docs/integrating/container-engines.md
+          - Detected Events:
+              - Go-template: classic-docs/integrating/go-templates.md
+              - Deliver:
+                  - Webhook: classic-docs/integrating/webhook.md
+                  - Postee: classic-docs/integrating/postee.md
+                  - Falcosidekick: classic-docs/integrating/falcosidekick.md
+          - Prometheus: classic-docs/integrating/prometheus.md
+      - Deep Dive:
+          - Architecture: classic-docs/deep-dive/architecture.md
+          - Performance: classic-docs/deep-dive/performance.md
+          - Caching Events: classic-docs/deep-dive/caching-events.md
+          - Ordering Events: classic-docs/deep-dive/ordering-events.md
+          - Dropping Capabilities: classic-docs/deep-dive/dropping-capabilities.md
+          - Override OS files: classic-docs/deep-dive/override-os-files.md
+          - Secure Tracing: classic-docs/deep-dive/secure-tracing.md
+          - Healthz: classic-docs/deep-dive/healthz.md
 
   - Contributing:
       - Overview: contributing/overview.md
       - Source Code Guidelines: contributing/guidelines.md
+      - Architecture: contributing/architecture.md
       - Building:
           - Building Tracee: contributing/building/building.md
           - Building Environment: contributing/building/environment.md
