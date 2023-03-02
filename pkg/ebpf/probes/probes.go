@@ -123,6 +123,8 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		FileModifiedRet:            &traceProbe{eventName: "file_modified", probeType: kretprobe, programName: "trace_ret_file_modified"},
 		FdInstall:                  &traceProbe{eventName: "fd_install", probeType: kprobe, programName: "trace_fd_install"},
 		FilpClose:                  &traceProbe{eventName: "filp_close", probeType: kprobe, programName: "trace_filp_close"},
+		InotifyFindInode:           &traceProbe{eventName: "inotify_find_inode", probeType: kprobe, programName: "trace_inotify_find_inode"},
+		InotifyFindInodeRet:        &traceProbe{eventName: "inotify_find_inode", probeType: kretprobe, programName: "trace_ret_inotify_find_inode"},
 	}
 
 	if !netEnabled {
@@ -316,4 +318,6 @@ const (
 	FileModifiedRet
 	FdInstall
 	FilpClose
+	InotifyFindInode
+	InotifyFindInodeRet
 )

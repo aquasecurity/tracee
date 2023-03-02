@@ -119,6 +119,7 @@ enum event_id_e
     VFS_UTIMES,
     DO_TRUNCATE,
     FILE_MODIFICATION,
+    INOTIFY_WATCH,
     MAX_EVENT_ID,
 };
 
