@@ -29,7 +29,6 @@
     1. Let other tools to **CONSUME** detection events:
         1. [Capture Artifacts](./../capturing/index.md)
         1. [Postee](./../integrating/postee.md)
-        1. [Falco Sidekick](./../integrating/falcosidekick.md)
     
     1. **ENFORCE**
         1. Work in Progress

@@ -134,22 +134,6 @@ func Test_sendToWebhook(t *testing.T) {
 		expectedError      string
 	}{
 		{
-			name:              "happy path with falcosidekick template",
-			contentType:       "application/json",
-			expectedOutput:    `{"output":"Rule \"foo bar signature\" detection:\n map[foo1:bar1, baz1 foo2:[bar2 baz2]]","rule":"foo bar signature","time":"2021-02-23T01:54:57Z","output_fields":{"value":0}}`,
-			inputTemplateFile: "templates/falcosidekick.tmpl",
-		},
-		{
-			name:        "happy path, with simple template",
-			contentType: "text/plain",
-			expectedOutput: `*** Detection ***
-Timestamp: 2021-02-23T01:54:57Z
-ProcessName: foobar.exe
-HostName: foobar.local
-`,
-			inputTemplateFile: "templates/simple.tmpl",
-		},
-		{
 			name:        "happy path with functions from sprig template",
 			contentType: "text/plain",
 			expectedOutput: `{
