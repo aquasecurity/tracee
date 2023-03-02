@@ -30,11 +30,12 @@ nav:
       - Overview: docs/overview.md
       - Events:
           - Getting Started: docs/events/index.md
-          - Available Rules: docs/events/rules.md
+          - Available Rules: docs/events/events.md
           - Built-in Events: 
-              - Syscalls: docs/events/buit-in-events/syscalls.md
-              - Security events: docs/events/buit-in-events/security-events.md
-              - AVD: docs/events/buit-in-events/avd.md
+              - Syscalls: docs/events/built-in-events/syscalls.md
+              - Security events: docs/events/built-in-events/security-events.md
+              - Security events: docs/events/built-in-events/network-events.md
+              - AVD: docs/events/built-in-events/avd.md
           - Custom Events:
               - Go: docs/events/custom-events/golang.md
               - Rego: docs/events/custom-events/rego.md

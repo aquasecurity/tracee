@@ -143,7 +143,7 @@ There are 2 ways you can get your own golang signatures working with tracee.
     a cached external data-source and return a positive detection for cases A,
     B or C.
 
-    [how to build Tracee]: ../../contributing/building/building.md
+    [how to build Tracee]: ../../../contributing/building/building.md
 
 2. Create a golang signature plugin and dynamically load it during runtime
 

@@ -70,12 +70,10 @@ Check [getting tracee] in order to understand how to obtain **tracee-rules**.
 1. A more realistic example
 
 !!! Example
-    Let's put together all that we learned from the [tracing] section, together
+    Let's put together all that we learned from the tracing section, together
     with what we're learning at this section and see how we can filter events
     and pipe them to **tracee-rules** so detections occur:
-     
-     [tracing]:../tracing/index.md
-     
+          
      ```text
      $ sudo ./dist/tracee-ebpf \
          --output json \

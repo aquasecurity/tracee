@@ -71,7 +71,7 @@ Loaded 15 signature(s): [TRC-1 TRC-13 TRC-2 TRC-14 TRC-3 TRC-11 TRC-9 TRC-4 TRC-
 
 Note that the pod-name has been taken from the previous command.
 
-Each of the signatures listed above represent potentially malicious behaviors for tracee to detect and alert you on. You can see signature definitions [here](https://github.com/aquasecurity/tracee/tree/main/signatures). Tracee comes with these default signatures but also allows for you to write custom ones as well. More information can be found [here](../docs/detecting/rules.md)
+Each of the signatures listed above represent potentially malicious behaviors for tracee to detect and alert you on. You can see signature definitions [here](https://github.com/aquasecurity/tracee/tree/main/signatures). Tracee comes with these default signatures but also allows for you to write custom ones as well. More information can be found [here](../docs/events/index.md)
 
 Let’s trigger one of the default signatures to see tracee in action.
 

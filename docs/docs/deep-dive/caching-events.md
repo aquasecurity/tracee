@@ -12,9 +12,8 @@ $ ./dist/tracee --cache help
     understand the [tracee pipeline] concept, AND the [performance page], to
     understand possible pain points.
 
-[architecture page]: ./architecture.md
-[performance page]: ./performance.md
-[tracee pipeline]: ./architecture.md#tracee-pipeline-concept
+[architecture page]: ../../contributing/architecture.md
+[tracee pipeline]: ../../contributing/architecture.md#tracee-pipeline-concept
 
 ![Tracee Cache](../../images/tracee-cache.png)
 
