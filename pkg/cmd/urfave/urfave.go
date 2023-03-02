@@ -198,10 +198,13 @@ func getContainerMode(cfg tracee.Config) printer.ContainerMode {
 	return containerMode
 }
 
-func GetGPTDocsRunner(c *cli.Context, k string, t float64, m int) (*cmd.GPTDocsRunner, error) {
+func GetGPTDocsRunner(k string, t float64, m int, e []string) (
+	*cmd.GPTDocsRunner, error,
+) {
 	return &cmd.GPTDocsRunner{
 		OpenAIKey:         k,
 		OpenAITemperature: t,
 		OpenAIMaxTokens:   m,
+		GivenEvents:       e,
 	}, nil
 }
