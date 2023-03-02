@@ -228,6 +228,7 @@ help:
 	@echo "    $$ make tracee-ebpf              		# build ./dist/tracee-ebpf"
 	@echo "    $$ make tracee-rules             		# build ./dist/tracee-rules"
 	@echo "    $$ make tracee-bench             		# build ./dist/tracee-bench"
+	@echo "    $$ make tracee-gptdocs             		# build ./dist/tracee-gptdocs"
 	@echo "    $$ make signatures               		# build ./dist/signatures"
 	@echo "    $$ make e2e-net-signatures       		# build ./dist/e2e-net-signatures"
 	@echo "    $$ make e2e-instrumentation-signatures	# build ./dist/e2e-instrumentation-signatures"
@@ -834,6 +835,41 @@ $(OUTPUT_DIR)/tracee-bench: \
 clean-tracee-bench:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-bench
+
+#
+# tracee-gptdocs
+#
+
+TRACEE_GPTDOCS_SRC_DIRS = ./cmd/tracee-gptdocs/ ./pkg/cmd/
+TRACEE_GPTDOCS_SRC = $(shell find $(TRACEE_GPTDOCS_SRC_DIRS) \
+		   -type f \
+		   -name '*.go' \
+		   ! -name '*_test.go' \
+		   )
+
+.PHONY: tracee-gptdocs
+tracee-gptdocs: $(OUTPUT_DIR)/tracee-gptdocs
+
+$(OUTPUT_DIR)/tracee-gptdocs: \
+	.checkver_$(CMD_GO) \
+	$(TRACEE_GPTDOCS_SRC) \
+	| $(OUTPUT_DIR)
+#
+	$(MAKE) $(OUTPUT_DIR)/btfhub
+	$(MAKE) btfhub
+	$(GO_ENV_EBPF) $(CMD_GO) build \
+		-tags $(GO_TAGS_EBPF) \
+		-ldflags="$(GO_DEBUG_FLAG) \
+			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
+			-X main.version=\"$(VERSION)\" \
+			" \
+		-v -o $@ \
+		./cmd/tracee-gptdocs
+
+.PHONY: clean-tracee-gptdocs
+clean-tracee-gptdocs:
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-gptdocs
 
 #
 # clean

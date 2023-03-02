@@ -17,6 +17,8 @@ type Probes interface {
 	Attach(handle Handle, args ...interface{}) error
 	Detach(handle Handle, args ...interface{}) error
 	DetachAll() error
+	GetProbeType(handle Handle) string
+	GetEventName(handle Handle) (string, string)
 }
 
 type probes struct {
@@ -132,6 +134,33 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		probes: allProbes,
 		module: module,
 	}, nil
+}
+
+func (p *probes) GetEventName(handle Handle) (string, string) {
+	if r, ok := p.probes[handle]; ok {
+		if probe, ok := r.(*traceProbe); ok {
+			return probe.eventName, probe.programName
+		}
+	}
+	return "", ""
+}
+
+func (p *probes) GetProbeType(handle Handle) string {
+	if r, ok := p.probes[handle]; ok {
+		if probe, ok := r.(*traceProbe); ok {
+			switch probe.probeType {
+			case kprobe:
+				return "kprobe"
+			case kretprobe:
+				return "kretprobe"
+			case tracepoint:
+				return "tracepoint"
+			case rawTracepoint:
+				return "raw_tracepoint"
+			}
+		}
+	}
+	return ""
 }
 
 // Attach attaches given handle's program to its hook
