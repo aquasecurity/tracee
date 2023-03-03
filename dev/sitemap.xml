@@ -2556,27 +2556,12 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/integrating/go-templates/</loc>
-         <lastmod>2023-03-03</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/integrating/healthz/</loc>
          <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/integrating/postee/</loc>
-         <lastmod>2023-03-03</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/integrating/prometheus/</loc>
-         <lastmod>2023-03-03</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/integrating/webhook/</loc>
          <lastmod>2023-03-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
