@@ -506,11 +506,8 @@ nav:
           - Getting Started: docs/forensics/index.md
       - Integrations:
           - Container Engines: docs/integrating/container-engines.md
-          - Detected Events:
-              - Go-template: docs/integrating/go-templates.md
-              - Deliver:
-                  - Webhook: docs/integrating/webhook.md
-                  - Postee: docs/integrating/postee.md
+          - Webhook: docs/integrating/webhook.md
+          - Postee: docs/integrating/postee.md
           - Prometheus: docs/integrating/prometheus.md
           - Healthz: docs/integrating/healthz.md
       - Deep Dive:

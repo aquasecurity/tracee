@@ -69,7 +69,11 @@ $ sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter e
 
 ### GOTEMPLATE
 
-Check [integrations page](../integrating/go-templates.md) for more info.
+When authoring a Go template the data source is Tracee's `trace.Event` struct, which is defined in `https://github.com/aquasecurity/tracee/blob/main/types/trace/trace.go#L15`.
+
+Go template can utilize helper functions from [Sprig](http://masterminds.github.io/sprig/).
+
+For example templates, see [tracee/cmd/tracee-rules/templates](https://github.com/aquasecurity/tracee/tree/main/cmd/tracee-rules/templates).
 
 ## Logging
 
