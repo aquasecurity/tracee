@@ -34,10 +34,10 @@ it. If you try to run it from the building environment you may get the following
 error:
 
 ```text
-tracee@5fb7cc667842[/tracee]$ sudo ./dist/tracee-ebpf
+tracee@5fb7cc667842[/tracee]$ sudo ./dist/tracee
 BPF: open /tmp/tracee/tracee.bpf.5_10_104-linuxkit.v0_8_0-rc-1-24-g72e0d02.o: no such file or directory
 BPF: ATTENTION:
-BPF: It seems tracee-ebpf can't load CO-RE eBPF obj and could not find
+BPF: It seems tracee can't load CO-RE eBPF obj and could not find
 BPF: the non CO-RE object in /tmp/tracee. You may build a non CO-RE eBPF
 BPF: obj by using the source tree and executing "make install-bpf-nocore".
 ```

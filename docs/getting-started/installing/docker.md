@@ -6,4 +6,4 @@ as an introspection tool, can either be used as a docker image,
 [binary artifacts](https://github.com/aquasecurity/tracee/releases) or
 [OS packages](../../contributing/building/packaging.md).
 
-Check [Getting Started](../../docker-quickstart) for how to run tracee.
+Check [Getting Started](../../index.md#quickstart) for how to run tracee.

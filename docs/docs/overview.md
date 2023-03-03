@@ -1,16 +1,9 @@
 # Docs
 
-This documentation details how to use Tracee to access the features listed below.
+In this section you can find the complete reference documentation for all of the different features and settings that Tracee has to offer.
 
-## Features
+!!! Note
+We have recently transitioned to a new architecture and user-experience, as detailed [here](https://github.com/aquasecurity/tracee/discussions/2499), and the documentation has been updated accordingly.  
+If you using an older version of Tracee using `tracee-ebpf`/`tracee-rules`, please use the [classic docs](/classic-docs) section of the documentation.  
 
-- Tracing
-	- Tracee event collection capabilities only, without involving the detection engine.
-- Capturing
-	- Tracee's unique feature that lets you capture interesting artifacts from running applications, using the --capture flag.
-- Detecting
-	- Tracee is a runtime security detection engine, more than an introspection tool (tracee-ebpf) only. tracee-rules is a rules engine that helps you detect suspicious behavioral patterns in streams of events.
-- Integrating
-	- Tracee integration with other techonologies, like Prometheus.
-- Deep Dive
-	- In depth analysis of specific features and core logic to Tracee's various components.
+👈 Please use the side-navigation on the left in order to browse the different topics.

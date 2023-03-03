@@ -4,8 +4,8 @@ Package sorting feature is responsible for sorting incoming events from the BPF
 programs chronologically.
 
 ```
-sudo ./dist/tracee \
-    -o json \
+sudo ./dist/tracee-ebpf \
+    -o format:json \
     -o option:parse-arguments \
     -o option:sort-events
 ```
