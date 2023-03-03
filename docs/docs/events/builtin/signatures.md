@@ -1,20 +1,4 @@
-# Available Rules
-
-!!! Tip
-    To view the list of available rules, run Tracee with the `--list` flag.
-
-Tracee currently distributes **fully functional signatures** that detect potentially malicous behavior.
-
-## Signatures in Aqua Vulnerability Database (AVD)
-
-The Aqua Vulnerability Database gives detailed information and
-remediation guidance for vulnerabilities and weaknesses found in
-open source applications and cloud native infrastructure. This
-includes information about common techniques and attack vectors
-that occur at application runtime, which are generated from the
-signatures in tracee. You can see them at
-[avd.aquasec.com/tracee](https://avd.aquasec.com/tracee/) and in
-the table below:
+Tracee has a library of behavioral patterns that might indicate suspicious malicious activity. These Tracee events, sometimes referred to as "signatures" help you detect more sophisticated security insights than basic observability events like syscalls. The following is a list of all available signatures:
 
 Name   |Description                               |Full Description
 -------|------------------------------------------|----
@@ -50,8 +34,3 @@ TRC-1029 | sched_debug CPU file was read | The sched_debug file was read. This f
 TRC-1030 | Syscall table hooking detected | Syscall table hooking detected. Syscalls (system calls) are the interface between user applications and the kernel. By hooking the syscall table an adversary gains control on certain system function, such as file writing and reading or other basic function performed by the operation system. The adversary may also hijack the execution flow and execute it's own code. Syscall table hooking is considered a malicious behavior that is performed by rootkits and may indicate that the host's kernel has been compromised. Hidden modules are marked as hidden symbol owners and indicate further malicious activity of an adversary.
 TRC-1031 | System request key configuration modification | An attempt to modify and activate the System Request Key configuration file was detected. The system request key allows immediate input to the kernel through simple key combinations. Adversaries may use this feature to immediately shut down or restart a system. With read access to kernel logs, host related information such as listing tasks and CPU registers may be disclosed and could be used for container escape.
 
-!!! Note
-    And, obviously, you can create your signatures in [golang] and [rego].
-
-[golang]: ../custom-events/golang.md
-[rego]: ../custom-events/rego.md

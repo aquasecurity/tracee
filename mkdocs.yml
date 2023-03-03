@@ -21,36 +21,34 @@ nav:
               - Fedora: getting-started/installing/distros/fedora.md
               - NixOS: getting-started/installing/distros/nix-nixos.md
           - Linux Headers: getting-started/installing/headers.md
-  - Tutorials: tutorials/overview.md
+  - Tutorials: 
+      - Overview: tutorials/overview.md
       - Deploy Tracee Grafana Dashboard: tutorials/deploy-grafana-dashboard.md
       - Accessing Tracee Logs through Promtail and Loki: tutorials/promtail.md
   - Docs:
       - Overview: docs/overview.md
       - Events:
-          - Built-in Events: 
-              - Available Rules: docs/events/built-in-events/available-rules.md
-              - Syscalls: docs/events/built-in-events/syscalls.md
-              - Security events: docs/events/built-in-events/security-events.md
-              - Security events: docs/events/built-in-events/network-events.md
-              - AVD: docs/events/built-in-events/avd.md
+          - Overview: docs/events/overview.md
+          - Built-in Events:
+              - Syscalls: docs/events/builtin/syscalls.md
+              - Network Events: docs/events/builtin/network.md
+              - Behavioral Signatures: docs/events/builtin/signatures.md
+              - Extra Events:
+                - do_sigaction: docs/events/builtin/extra/do_sigaction.md
+                - kallsysm_lookup_name: docs/events/builtin/extra/kallsyms_lookup_name.md
+                - vfs_read: docs/events/builtin/extra/vfs_read.md
+                - vfs_readv: docs/events/builtin/extra/vfs_readv.md
+                - file_modification: docs/events/builtin/extra/file_modification.md
+                - security_file_mprotect: docs/events/builtin/extra/security_file_mprotect.md
+                - security_socket_setsockopt: docs/events/builtin/extra/security_socket_setsockopt.md
+                - bpf_attach: docs/events/builtin/extra/bpf_attach.md
+                - magic_write: docs/events/builtin/extra/magic_write.md
+                - mem_prot_alert: docs/events/builtin/extra/mem_prot_alert.md
+                - symbols_loaded: docs/events/builtin/extra/symbols_loaded.md
+                - symbols_collision: docs/events/builtin/extra/symbols_collision.md
           - Custom Events:
               - Go: docs/events/custom-events/golang.md
               - Rego: docs/events/custom-events/rego.md
-          - kprobes:
-              - do_sigaction: docs/events/kprobes/do_sigaction.md
-              - kallsysm_lookup_name: docs/events/kprobes/kallsyms_lookup_name.md
-              - vfs_read: docs/events/kprobes/vfs_read.md
-              - vfs_readv: docs/events/kprobes/vfs_readv.md
-              - file_modification: docs/events/kprobes/file_modification.md
-          - lsm_hooks:
-              - security_file_mprotect: docs/events/lsm_hooks/security_file_mprotect.md
-              - security_socket_setsockopt: docs/events/lsm_hooks/security_socket_setsockopt.md
-          - security_alerts:
-              - bpf_attach: docs/events/security_alerts/bpf_attach.md
-              - magic_write: docs/events/security_alerts/magic_write.md
-              - mem_prot_alert: docs/events/security_alerts/mem_prot_alert.md
-              - symbols_loaded: docs/events/security_alerts/symbols_loaded.md
-              - symbols_collision: docs/events/security_alerts/symbols_collision.md
       - Filters:
           - Filtering: docs/filters/filtering.md
       - Outputs:
