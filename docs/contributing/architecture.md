@@ -18,8 +18,8 @@
         1. Network Events
         
     1. **DETECT** patterns based on existing signatures:
-        1. [OPA/Rego signatures](../docs/events/custom-events/rego.md)
-        1. [Golang signatures](../docs/events/custom-events/golang.md)
+        1. [OPA/Rego signatures](../docs/events/custom/rego.md)
+        1. [Golang signatures](../docs/events/custom/golang.md)
         
     1. Let other tools to **CONSUME** detection events:
         1. [Filters](../docs/filters/filtering.md)
@@ -75,7 +75,7 @@
 
 [parse events for argument type]: ./../docs/outputs/output-options.md
 [enriches the events]: ./../docs/integrating/container-engines.md
-[golang]: ./../docs/events/custom-events/golang.md
-[rego]: ./../docs/events/custom-events/rego.md
+[golang]: ./../docs/events/custom/golang.md
+[rego]: ./../docs/events/custom/rego.md
 [spit out]: ./../docs/integrating/webhook.md
  

@@ -28,7 +28,7 @@ which will start dumping raw data directly into standard output.
 
 Before you proceed, make sure you follow the [prerequisites].
 
-[prerequisites]:../../getting-started/installing/prerequisites.md
+[prerequisites]:../../../getting-started/installing/prerequisites.md
 
 ```text
 $ docker run \
@@ -89,4 +89,4 @@ information:
 > Check the existing [output options](./output-options.md) for other output options.
 > Check the existing [output format](./output-formats.md) for other output formats.
 
-> Follow [getting tracee](../../getting-started/installing/getting.md) in order to get tracee-ebpf.
+> Follow [getting tracee](../../../getting-started/installing/getting.md) in order to get tracee-ebpf.

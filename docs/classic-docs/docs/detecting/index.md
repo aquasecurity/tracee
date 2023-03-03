@@ -32,7 +32,7 @@ There are 3 basic concepts for **tracee-rules**:
 **tracee-rules** doesn't have any requirement, but in order to run with
 **tracee-ebpf**, make sure you follow the **tracee-ebpf** [prerequisites].
 
-[prerequisites]: ../../getting-started/installing/prerequisites.md
+[prerequisites]: ../../../getting-started/installing/prerequisites.md
 
 !!! Attention
     You can't customize (yet) **tracee-rules** execution when executing
@@ -41,11 +41,11 @@ There are 3 basic concepts for **tracee-rules**:
     you have to follow [building/containers.md] instructions and change the
     default entrypoint and signatures.
 
-[building/containers.md]: ../../contributing/building/containers.md
+[building/containers.md]: ../../../contributing/building/containers.md
 
 Check [getting tracee] in order to understand how to obtain **tracee-rules**.
 
-[getting tracee]: ../../getting-started/installing/getting.md
+[getting tracee]: ../../../getting-started/installing/getting.md
 
 ### Running **tracee-rules**
 

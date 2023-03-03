@@ -47,8 +47,8 @@ nav:
                 - symbols_loaded: docs/events/builtin/extra/symbols_loaded.md
                 - symbols_collision: docs/events/builtin/extra/symbols_collision.md
           - Custom Events:
-              - Go: docs/events/custom-events/golang.md
-              - Rego: docs/events/custom-events/rego.md
+              - Go: docs/events/custom/golang.md
+              - Rego: docs/events/custom/rego.md
       - Filters:
           - Filtering: docs/filters/filtering.md
       - Outputs:
@@ -71,42 +71,41 @@ nav:
           - Dropping Capabilities: docs/deep-dive/dropping-capabilities.md
           - Secure Tracing: docs/deep-dive/secure-tracing.md
   - Classic Docs:
-      - Overview: classic-docs/overview.md
+      - Overview: classic-docs/docs/overview.md
       - Tracing:
-          - Getting Started: classic-docs/tracing/index.md
-          - Output Formats: classic-docs/tracing/output-formats.md
-          - Output Options: classic-docs/tracing/output-options.md
-          - Event Filtering: classic-docs/tracing/event-filtering.md
-          - Scopes: classic-docs/tracing/scopes.md
-          - Network Events: classic-docs/tracing/network-events.md
+          - Getting Started: classic-docs/docs/tracing/index.md
+          - Output Formats: classic-docs/docs/tracing/output-formats.md
+          - Output Options: classic-docs/docs/tracing/output-options.md
+          - Event Filtering: classic-docs/docs/tracing/event-filtering.md
+          - Scopes: classic-docs/docs/tracing/scopes.md
+          - Network Events: classic-docs/docs/tracing/network-events.md
       - Capturing:
-          - Getting Started: classic-docs/capturing/index.md
+          - Getting Started: classic-docs/docs/capturing/index.md
       - Detecting:
-          - Getting Started: classic-docs/detecting/index.md
+          - Getting Started: classic-docs/docs/detecting/index.md
           - Creating Rules:
-              - Golang: classic-docs/detecting/golang.md
-              - Rego: classic-docs/detecting/rego.md
-              - Go-Cel: classic-docs/detecting/go-cel.md
-          - Available Rules: classic-docs/detecting/rules.md
-          - AVD: classic-docs/detecting/avd.md
+              - Golang: classic-docs/docs/detecting/golang.md
+              - Rego: classic-docs/docs/detecting/rego.md
+              - Go-Cel: classic-docs/docs/detecting/go-cel.md
+          - Available Rules: classic-docs/docs/detecting/rules.md
+          - AVD: classic-docs/docs/detecting/avd.md
       - Integrating:
-          - Container Engines: classic-docs/integrating/container-engines.md
+          - Container Engines: classic-docs/docs/integrating/container-engines.md
           - Detected Events:
-              - Go-template: classic-docs/integrating/go-templates.md
+              - Go-template: classic-docs/docs/integrating/go-templates.md
               - Deliver:
-                  - Webhook: classic-docs/integrating/webhook.md
-                  - Postee: classic-docs/integrating/postee.md
-                  - Falcosidekick: classic-docs/integrating/falcosidekick.md
-          - Prometheus: classic-docs/integrating/prometheus.md
+                  - Webhook: classic-docs/docs/integrating/webhook.md
+                  - Postee: classic-docs/docs/integrating/postee.md
+          - Prometheus: classic-docs/docs/integrating/prometheus.md
       - Deep Dive:
-          - Architecture: classic-docs/deep-dive/architecture.md
-          - Performance: classic-docs/deep-dive/performance.md
-          - Caching Events: classic-docs/deep-dive/caching-events.md
-          - Ordering Events: classic-docs/deep-dive/ordering-events.md
-          - Dropping Capabilities: classic-docs/deep-dive/dropping-capabilities.md
-          - Override OS files: classic-docs/deep-dive/override-os-files.md
-          - Secure Tracing: classic-docs/deep-dive/secure-tracing.md
-          - Healthz: classic-docs/deep-dive/healthz.md
+          - Architecture: classic-docs/docs/deep-dive/architecture.md
+          - Performance: classic-docs/docs/deep-dive/performance.md
+          - Caching Events: classic-docs/docs/deep-dive/caching-events.md
+          - Ordering Events: classic-docs/docs/deep-dive/ordering-events.md
+          - Dropping Capabilities: classic-docs/docs/deep-dive/dropping-capabilities.md
+          - Override OS files: classic-docs/docs/deep-dive/override-os-files.md
+          - Secure Tracing: classic-docs/docs/deep-dive/secure-tracing.md
+          - Healthz: classic-docs/docs/deep-dive/healthz.md
   - Contributing:
       - Overview: contributing/overview.md
       - Source Code Guidelines: contributing/guidelines.md

@@ -17,4 +17,4 @@ through the following URLs:
 !!! Tip
     Check [this tutorial] for more information as well.
 
-[this tutorial]: ../../tutorials/deploy-grafana-dashboard.md
+[this tutorial]: ../../../tutorials/deploy-grafana-dashboard.md

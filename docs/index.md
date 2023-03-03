@@ -2,7 +2,7 @@
 hide:
 - toc
 ---
-![Tracee Logo](images/tracee.png){ align=right }
+![Tracee Logo >](images/tracee.png){ align=right }
 
 Before moving on, please consider giving us a star ⭐️
 by clicking the button at the top of the [GitHub page](https://github.com/aquasecurity/tracee/)
