@@ -25,7 +25,7 @@ nav:
       - Everything is an event: tutorials/everything-is-an-event.md
       - Setup Development Machine with Vagrant: tutorials/setup-development-machine-with-vagrant.md
       - Deploy Tracee Grafana Dashboard: tutorials/deploy-grafana-dashboard.md
-      - Accessign Tracee Logs through Promtail and Loki: tutorials/promtail.md
+      - Accessing Tracee Logs through Promtail and Loki: tutorials/promtail.md
   - Docs:
       - Overview: docs/overview.md
       - Tracing:
