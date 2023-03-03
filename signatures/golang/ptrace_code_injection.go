@@ -59,6 +59,8 @@ func (sig *PtraceCodeInjection) OnEvent(event protocol.Event) error {
 			return err
 		}
 
+		fmt.Printf("requestArg: %s\n", requestArg)
+
 		if requestArg == sig.ptracePokeText {
 			metadata, err := sig.GetMetadata()
 			if err != nil {
