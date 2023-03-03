@@ -11,8 +11,11 @@ env:
   INSTTESTS: "VFS_WRITE FILE_MODIFICATION"
 
 jobs:
-  verify-code:
-    name: Verify Code
+  #
+  # CODE VERIFICATION
+  #
+  verify-analyze-code:
+    name: Verify and Analyze Code
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -30,19 +33,6 @@ jobs:
             gofmt -s -d .
             exit 1
           fi
-
-  analyze-code:
-    name: Analyze Code
-    needs:
-      - verify-code
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
-        with:
-          submodules: true
-      - name: Install Dependencies
-        uses: ./.github/actions/build-dependencies
       - name: Check Code Style
         run: |
           make check-fmt
@@ -52,43 +42,13 @@ jobs:
       - name: Check with StaticCheck
         run: |
           make check-staticcheck
-
-  unit-tests:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
-        with:
-          submodules: true
-      - name: Install Dependencies
-        uses: ./.github/actions/build-dependencies
-      - name: Run Unit Tests
-        run: |
-          make test-unit
-
-  integration-tests:
-    name: Integration Tests
-    needs:
-      - analyze-code
-      - unit-tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
-        with:
-          submodules: true
-      - name: Install Dependencies
-        uses: ./.github/actions/build-dependencies
-      - name: Run Integration Tests
-        run: |
-          sudo env "PATH=$PATH" make test-integration
-
+  #
+  # SIGNATURES CODE VERIFICATION
+  #
   verify-signatures:
     name: Verify Signatures
     needs:
-      - analyze-code
-      - unit-tests
+      - verify-analyze-code
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -103,8 +63,28 @@ jobs:
       - name: Test Signatures
         run: |
           make test-signatures
-
   #
+  # CODE TESTS
+  #
+  unit-integration-tests:
+    name: Unit and Integration Tests
+    needs:
+      - verify-analyze-code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Install Dependencies
+        uses: ./.github/actions/build-dependencies
+      - name: Run Unit Tests
+        run: |
+          make test-unit
+      - name: Run Integration Tests
+        run: |
+          sudo env "PATH=$PATH" make test-integration
+  #----
   # JENKINS RUNNERS
   #
   # TODO: Turn these jobs into a matrix, extracing ${{ matrix.name }} as the step name.
@@ -119,19 +99,81 @@ jobs:
   #
   #       but this needs more tests.
   #
-
+  #----
+  #
+  # FOCALv5.4
+  #
+  focal54-core:
+    name: Focal 5.4 CORE
+    needs:
+      - unit-integration-tests
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
+    runs-on:
+      [
+        "github-self-hosted_ami-0215ef3ceac330d0a_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+        # CORE
+      - name: "CORE: Kernel"
+        run: |
+          DONTSLEEP=1 ISNONCORE=0 ./tests/kerneltest.sh
+      - name: "CORE: Network"
+        run: |
+          DONTSLEEP=1 ISNONCORE=0 ./tests/e2e-net-test.sh
+      - name: "CORE: Instrumentation"
+        run: |
+          DONTSLEEP=1 ISNONCORE=0 ./tests/e2e-instrumentation-test.sh
   focal54:
     name: Focal 5.4
     needs:
-      - analyze-code
-      - unit-tests
+      - unit-integration-tests
     env:
+      HOME: "/tmp/root"
       GOPATH: "/tmp/go"
       GOCACHE: "/tmp/go-cache"
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-08b9b7adefa417856_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0601bde02a6437b33_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+        # NONCORE
+      - name: "NONCORE: Kernel"
+        run: |
+          DONTSLEEP=1 ISNONCORE=1 ./tests/kerneltest.sh
+      - name: "NONCORE: Network"
+        run: |
+          DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-net-test.sh
+      - name: "NONCORE: Instrumentation"
+        run: |
+          DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-instrumentation-test.sh
+  #
+  # FOCAL v5.13
+  #
+  focal513-core:
+    name: Focal 5.13 CORE
+    needs:
+      - unit-integration-tests
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
+    runs-on:
+      [
+        "github-self-hosted_ami-0f23165db12015479_${{ github.event.number }}-${{ github.run_id }}",
       ]
     steps:
       - name: "Checkout"
@@ -148,29 +190,49 @@ jobs:
       - name: "CORE: Instrumentation"
         run: |
           DONTSLEEP=1 ISNONCORE=0 ./tests/e2e-instrumentation-test.sh
-        # NONCORE
-      - name: "NONCORE: Kernel"
-        run: |
-          DONTSLEEP=1 ISNONCORE=1 ./tests/kerneltest.sh
-      - name: "NONCORE: Network"
-        run: |
-          DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-net-test.sh
-      - name: "NONCORE: Instrumentation"
-        run: |
-          DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-instrumentation-test.sh
-
   focal513:
     name: Focal 5.13
     needs:
-      - analyze-code
-      - unit-tests
+      - unit-integration-tests
     env:
+      HOME: "/tmp/root"
       GOPATH: "/tmp/go"
       GOCACHE: "/tmp/go-cache"
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-0601b5a18cf43940a_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-078f5ea2295f177e3_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+        # NONCORE
+      - name: "NONCORE: Kernel"
+        run: |
+          DONTSLEEP=1 ISNONCORE=1 ./tests/kerneltest.sh
+      - name: "NONCORE: Network"
+        run: |
+          DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-net-test.sh
+      - name: "NONCORE: Instrumentation"
+        run: |
+          DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-instrumentation-test.sh
+  #
+  # JAMMY v5.15
+  #
+  jammy515-core:
+    name: Jammy 5.15 CORE
+    needs:
+      - unit-integration-tests
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
+    runs-on:
+      [
+        "github-self-hosted_ami-0238444dc8524d8c7_${{ github.event.number }}-${{ github.run_id }}",
       ]
     steps:
       - name: "Checkout"
@@ -187,29 +249,49 @@ jobs:
       - name: "CORE: Instrumentation"
         run: |
           DONTSLEEP=1 ISNONCORE=0 ./tests/e2e-instrumentation-test.sh
-        # NONCORE
-      - name: "NONCORE: Kernel"
-        run: |
-          DONTSLEEP=1 ISNONCORE=1 ./tests/kerneltest.sh
-      - name: "NONCORE: Network"
-        run: |
-          DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-net-test.sh
-      - name: "NONCORE: Instrumentation"
-        run: |
-          DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-instrumentation-test.sh
-
   jammy515:
     name: Jammy 5.15
     needs:
-      - analyze-code
-      - unit-tests
+      - unit-integration-tests
     env:
+      HOME: "/tmp/root"
       GOPATH: "/tmp/go"
       GOCACHE: "/tmp/go-cache"
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-03b87a282ab315904_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-067bae9e96c5e6d16_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+        # NONCORE
+      - name: "NONCORE: Kernel"
+        run: |
+          DONTSLEEP=1 ISNONCORE=1 ./tests/kerneltest.sh
+      - name: "NONCORE: Network"
+        run: |
+          DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-net-test.sh
+      - name: "NONCORE: Instrumentation"
+        run: |
+          DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-instrumentation-test.sh
+  #
+  # JAMMY v5.19
+  #
+  jammy519-core:
+    name: Jammy 5.19 CORE
+    needs:
+      - unit-integration-tests
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
+    runs-on:
+      [
+        "github-self-hosted_ami-0f14a28ff0b2d6279_${{ github.event.number }}-${{ github.run_id }}",
       ]
     steps:
       - name: "Checkout"
@@ -226,45 +308,24 @@ jobs:
       - name: "CORE: Instrumentation"
         run: |
           DONTSLEEP=1 ISNONCORE=0 ./tests/e2e-instrumentation-test.sh
-        # NONCORE
-      - name: "NONCORE: Kernel"
-        run: |
-          DONTSLEEP=1 ISNONCORE=1 ./tests/kerneltest.sh
-      - name: "NONCORE: Network"
-        run: |
-          DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-net-test.sh
-      - name: "NONCORE: Instrumentation"
-        run: |
-          DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-instrumentation-test.sh
-
   jammy519:
     name: Jammy 5.19
     needs:
-      - analyze-code
-      - unit-tests
+      - unit-integration-tests
     env:
+      HOME: "/tmp/root"
       GOPATH: "/tmp/go"
       GOCACHE: "/tmp/go-cache"
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-0a9255a3c3ae858c9_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-034f8f73bfac81c60_${{ github.event.number }}-${{ github.run_id }}",
       ]
     steps:
       - name: "Checkout"
         uses: actions/checkout@v2
         with:
           submodules: true
-        # CORE
-      - name: "CORE: Kernel"
-        run: |
-          DONTSLEEP=1 ISNONCORE=0 ./tests/kerneltest.sh
-      - name: "CORE: Network"
-        run: |
-          DONTSLEEP=1 ISNONCORE=0 ./tests/e2e-net-test.sh
-      - name: "CORE: Instrumentation"
-        run: |
-          DONTSLEEP=1 ISNONCORE=0 ./tests/e2e-instrumentation-test.sh
         # NONCORE
       - name: "NONCORE: Kernel"
         run: |
@@ -275,19 +336,21 @@ jobs:
       - name: "NONCORE: Instrumentation"
         run: |
           DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-instrumentation-test.sh
-
+  #
+  # FOCAL v4.19 (non CO-RE only)
+  #
   focal419:
     name: Focal 4.19
     needs:
-      - analyze-code
-      - unit-tests
+      - unit-integration-tests
     env:
+      HOME: "/tmp/root"
       GOPATH: "/tmp/go"
       GOCACHE: "/tmp/go-cache"
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-01151f3f8ef19d947_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0bab76ae5b7322b45_${{ github.event.number }}-${{ github.run_id }}",
       ]
     steps:
       - name: "Checkout"
@@ -320,9 +383,9 @@ jobs:
   # stream8:
   #   name: Stream8 4.19
   #   needs:
-  #     - analyze-code
-  #     - unit-tests
+  #     - unit-integration-tests
   #   env:
+  #     HOME: "/tmp/root"
   #     GOPATH: "/tmp/go"
   #     GOCACHE: "/tmp/go-cache"
   #     GOROOT: "/usr/local/go"
