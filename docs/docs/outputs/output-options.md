@@ -1,13 +1,8 @@
 # Tracing Output Options
 
-In order to check latest output options you may execute:
+Tracee supports different output options for customizing the way events are printed. For a complete list of available options, run `tracee --output help`.
 
-```text
-$ sudo ./dist/tracee --output help
-$ sudo ./dist/tracee --output option:xxx
-```
-
-Tracee supports different output options for detected events:
+Available options:
 
 1. **option:stack-addresses**  
 
