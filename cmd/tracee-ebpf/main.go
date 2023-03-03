@@ -157,6 +157,6 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
-		logger.Fatal("app", "error", err)
+		logger.Fatal("App", "error", err)
 	}
 }

@@ -21,7 +21,7 @@ func newPcapCache(itemType PcapType) (*PcapCache, error) {
 			// sync and close pcap file on evict
 			item, ok := value.(*Pcap)
 			if !ok {
-				logger.Debug("could not evict a pcap cache item")
+				logger.Debug("Could not evict a pcap cache item")
 				return
 			}
 

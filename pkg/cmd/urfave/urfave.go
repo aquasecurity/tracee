@@ -52,14 +52,14 @@ func GetTraceeRunner(c *cli.Context, version string, newBinary bool) (cmd.Runner
 
 	OSInfo, err := helpers.GetOSInfo()
 	if err != nil {
-		logger.Debug("osinfo", "warning: os-release file could not be found", "error", err) // only to be enforced when BTF needs to be downloaded, later on
-		logger.Debug("osinfo", "os_realease_field", helpers.OS_KERNEL_RELEASE, "OS_KERNEL_RELEASE", OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
+		logger.Debug("OSInfo", "warning: os-release file could not be found", "error", err) // only to be enforced when BTF needs to be downloaded, later on
+		logger.Debug("OSInfo", "os_realease_field", helpers.OS_KERNEL_RELEASE, "OS_KERNEL_RELEASE", OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
 	} else {
 		osInfoSlice := make([]interface{}, 0)
 		for k, v := range OSInfo.GetOSReleaseAllFieldValues() {
 			osInfoSlice = append(osInfoSlice, k.String(), v)
 		}
-		logger.Debug("osinfo", osInfoSlice...)
+		logger.Debug("OSInfo", osInfoSlice...)
 	}
 
 	cfg.OSInfo = OSInfo
@@ -80,7 +80,7 @@ func GetTraceeRunner(c *cli.Context, version string, newBinary bool) (cmd.Runner
 	}
 	cfg.Cache = cache
 	if cfg.Cache != nil {
-		logger.Debug("cache", "type", cfg.Cache.String())
+		logger.Debug("Cache", "type", cfg.Cache.String())
 	}
 
 	// Capture command line flags
@@ -125,14 +125,14 @@ func GetTraceeRunner(c *cli.Context, version string, newBinary bool) (cmd.Runner
 
 	lockdown, err := helpers.Lockdown()
 	if err != nil {
-		logger.Debug("osinfo", "lockdown", err)
+		logger.Debug("OSInfo", "lockdown", err)
 	}
 	if err == nil && lockdown == helpers.CONFIDENTIALITY {
 		return runner, logger.NewErrorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
 
 	}
 
-	logger.Debug("osinfo", "security_lockdown", lockdown)
+	logger.Debug("OSInfo", "security_lockdown", lockdown)
 
 	// Check if ftrace is enabled
 

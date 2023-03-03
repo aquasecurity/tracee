@@ -95,7 +95,7 @@ func setupTraceeGobInputSource(opts *traceeInputOptions) (chan protocol.Event, e
 				if err == io.EOF {
 					break
 				} else {
-					logger.Error("decoding event: " + err.Error())
+					logger.Error("Decoding event: " + err.Error())
 				}
 			} else {
 				res <- event.ToProtocol()
@@ -116,7 +116,7 @@ func setupTraceeJSONInputSource(opts *traceeInputOptions) (chan protocol.Event, 
 			var e trace.Event
 			err := json.Unmarshal(event, &e)
 			if err != nil {
-				logger.Error("invalid json in " + string(event) + ": " + err.Error())
+				logger.Error("Invalid json in " + string(event) + ": " + err.Error())
 			} else {
 				res <- e.ToProtocol()
 			}

@@ -91,7 +91,7 @@ var (
 func toArg(event trace.Event, source trace.Argument) (*Argument, error) {
 	valueType, ok := typesMapping[source.Type]
 	if !ok {
-		logger.Error("unrecognized event arg",
+		logger.Error("Unrecognized event arg",
 			"eventName", event.EventName,
 			"name", source.Name,
 			"type", source.Type,
@@ -135,7 +135,7 @@ func toArg(event trace.Event, source trace.Argument) (*Argument, error) {
 				Uint32Value: &v,
 			}
 		default:
-			logger.Error("unhandled unsigned integer type", "type", fmt.Sprintf("%T", source.Value))
+			logger.Error("Unhandled unsigned integer type", "type", fmt.Sprintf("%T", source.Value))
 		}
 	case ValueType_UINT64:
 		v := source.Value.(uint64)

@@ -25,7 +25,7 @@ func Find(target string, partialEval bool, signaturesDir string, signatures []st
 	if signaturesDir == "" {
 		exePath, err := os.Executable()
 		if err != nil {
-			logger.Error("getting executable path: " + err.Error())
+			logger.Error("Getting executable path: " + err.Error())
 		}
 		signaturesDir = filepath.Join(filepath.Dir(exePath), "signatures")
 	}
@@ -67,7 +67,7 @@ func findGoSigs(dir string) ([]detect.Signature, error) {
 			err := filepath.WalkDir(dir,
 				func(path string, d fs.DirEntry, err error) error {
 					if err != nil {
-						logger.Error("finding golang sigs", "error", err)
+						logger.Error("Finding golang sigs", "error", err)
 						return err
 					}
 
@@ -77,12 +77,12 @@ func findGoSigs(dir string) ([]detect.Signature, error) {
 
 					p, err := plugin.Open(path)
 					if err != nil {
-						logger.Error("opening plugin " + path + ": " + err.Error())
+						logger.Error("Opening plugin " + path + ": " + err.Error())
 						return err
 					}
 					export, err := p.Lookup("ExportedSignatures")
 					if err != nil {
-						logger.Error("missing Export symbol in plugin " + d.Name())
+						logger.Error("Missing Export symbol in plugin " + d.Name())
 						return err
 					}
 					sigs := *export.(*[]detect.Signature)
@@ -110,7 +110,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 			filepath.WalkDir(dir,
 				func(path string, d fs.DirEntry, err error) error {
 					if err != nil {
-						logger.Error("finding rego sigs", "error", err)
+						logger.Error("Finding rego sigs", "error", err)
 						return err
 					}
 					if d.IsDir() || d.Name() == "helpers.rego" {
@@ -121,7 +121,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 					}
 					helperCode, err := os.ReadFile(path)
 					if err != nil {
-						logger.Error("reading file " + path + ": " + err.Error())
+						logger.Error("Reading file " + path + ": " + err.Error())
 						return nil
 					}
 
@@ -132,7 +132,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 			filepath.WalkDir(dir, func(
 				path string, d fs.DirEntry, err error) error {
 				if err != nil {
-					logger.Error("finding rego sigs", "error", err)
+					logger.Error("Finding rego sigs", "error", err)
 					return err
 				}
 				if d.IsDir() || !isRegoFile(d.Name()) || isHelper(d.Name()) {
@@ -140,7 +140,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 				}
 				regoCode, err := os.ReadFile(path)
 				if err != nil {
-					logger.Error("reading file " + path + ": " + err.Error())
+					logger.Error("Reading file " + path + ": " + err.Error())
 					return nil
 				}
 				modules[path] = string(regoCode)
@@ -158,7 +158,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 							newlineOffset = 22
 						}
 					}
-					logger.Error("creating rego signature with: " + string(regoCode[0:newlineOffset]) + ": " + err.Error())
+					logger.Error("Creating rego signature with: " + string(regoCode[0:newlineOffset]) + ": " + err.Error())
 					return nil
 				}
 				res = append(res, sig)

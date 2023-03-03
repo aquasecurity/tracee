@@ -140,7 +140,7 @@ func unpackCOREBinary() ([]byte, error) {
 		return nil, err
 	}
 
-	logger.Debug("unpacked CO:RE bpf object file into memory")
+	logger.Debug("Unpacked CO:RE bpf object file into memory")
 
 	return b, nil
 }
