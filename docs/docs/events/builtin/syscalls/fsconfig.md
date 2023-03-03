@@ -13,7 +13,7 @@ The same key might occur multiple times (path, then tag or namespace) so the `fs
 
 ## Arguments
 * `fs_fd`:`int*` - Pointer to a file descriptor pointing to the filesystem.
-* `cmd`:`unsigned int` - Command requesting a specific operation. It should be one of the `FSCONFIG_CMD_*` definitions defined in the [include/uapi/linux/fsconfig.h](include/uapi/linux/fsconfig.h).  
+* `cmd`:`unsigned int` - Command requesting a specific operation. It should be one of the `FSCONFIG_CMD_*` definitions defined in the include/uapi/linux/fsconfig.h - include/uapi/linux/fsconfig.h.  
 * `key`:`const char*` - Null-terminated key string whose format depends on the specific FS and context. Its length must not exceed `FSCONFIG_MAX_NAME`.
 * `value`:`const void*` - Pointer to a memory area containing the value for the configuration. Its length must not exceed `FSCONFIG_MAX_VALUE`.
 * `aux`:`int` - Auxiliary data used to provide context for the configuration (path, tag or namespace). Its length must not exceed `FSCONFIG_MAX_AUX`.
