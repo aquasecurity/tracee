@@ -377,44 +377,62 @@ jobs:
       - name: "NONCORE: Instrumentation"
         run: |
           echo UNSUPPORTED
-
-  # TODO: having internal server errors from Jenkins (might need AMI change)S
   #
-  # stream8:
-  #   name: Stream8 4.19
-  #   needs:
-  #     - unit-integration-tests
-  #   env:
-  #     HOME: "/tmp/root"
-  #     GOPATH: "/tmp/go"
-  #     GOCACHE: "/tmp/go-cache"
-  #     GOROOT: "/usr/local/go"
-  #   runs-on:
-  #     [
-  #       "github-self-hosted_ami-00ec9bfceee11187e_${{ github.event.number }}-${{ github.run_id }}",
-  #     ]
-  #   steps:
-  #     - name: "Checkout"
-  #       uses: actions/checkout@v2
-  #       with:
-  #         submodules: true
-  #       # CORE
-  #     - name: "CORE: Kernel"
-  #       run: |
-  #         DONTSLEEP=1 ISNONCORE=0 ./tests/kerneltest.sh
-  #     - name: "CORE: Network"
-  #       run: |
-  #         DONTSLEEP=1 ISNONCORE=0 ./tests/e2e-net-test.sh
-  #     - name: "CORE: Instrumentation"
-  #       run: |
-  #         DONTSLEEP=1 ISNONCORE=0 ./tests/e2e-instrumentation-test.sh
-  #       # NONCORE
-  #     - name: "NONCORE: Kernel"
-  #       run: |
-  #         DONTSLEEP=1 ISNONCORE=1 ./tests/kerneltest.sh
-  #     - name: "NONCORE: Network"
-  #       run: |
-  #         DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-net-test.sh
-  #     - name: "NONCORE: Instrumentation"
-  #       run: |
-  #         DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-instrumentation-test.sh
+  # STREAM8 v4.19
+  #
+  stream8-core:
+    name: Stream8 4.19 CORE
+    needs:
+      - unit-integration-tests
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
+    runs-on:
+      [
+        "github-self-hosted_ami-0b2a0ace94dbbaf0c_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+        # CORE
+      - name: "CORE: Kernel"
+        run: |
+          DONTSLEEP=1 ISNONCORE=0 ./tests/kerneltest.sh
+      - name: "CORE: Network"
+        run: |
+          DONTSLEEP=1 ISNONCORE=0 ./tests/e2e-net-test.sh
+      - name: "CORE: Instrumentation"
+        run: |
+          DONTSLEEP=1 ISNONCORE=0 ./tests/e2e-instrumentation-test.sh
+  stream8:
+    name: Stream8 4.19
+    needs:
+      - unit-integration-tests
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
+    runs-on:
+      [
+        "github-self-hosted_ami-016e0b226c39e1252_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+        # NONCORE
+      - name: "NONCORE: Kernel"
+        run: |
+          DONTSLEEP=1 ISNONCORE=1 ./tests/kerneltest.sh
+      - name: "NONCORE: Network"
+        run: |
+          DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-net-test.sh
+      - name: "NONCORE: Instrumentation"
+        run: |
+          DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-instrumentation-test.sh
