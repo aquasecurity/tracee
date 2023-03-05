@@ -86,7 +86,6 @@ BPF_HASH(comm_filter, string_filter_t, eq_t, 256);                 // filter eve
 BPF_HASH(cgroup_id_filter, u32, eq_t, 256);                        // filter events by cgroup id
 BPF_HASH(binary_filter, binary_t, eq_t, 256);                      // filter events by binary path and mount namespace
 BPF_HASH(events_map, u32, event_config_t, MAX_EVENT_ID);           // map to persist event configuration data
-BPF_HASH(bin_args_map, u64, bin_args_t, 256);                      // persist args for send_bin funtion
 BPF_HASH(sys_32_to_64_map, u32, u32, 1024);                        // map 32bit to 64bit syscalls
 BPF_HASH(process_tree_map, u32, eq_t, 10240);                      // filter events by the ancestry of the traced process
 BPF_LRU_HASH(proc_info_map, u32, proc_info_t, 10240);              // holds data for every process

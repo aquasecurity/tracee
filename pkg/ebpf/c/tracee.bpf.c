@@ -2211,6 +2211,22 @@ enum bin_type_e
     SEND_KERNEL_MODULE,
 };
 
+static __always_inline u32 tail_call_send_bin(void *ctx,
+                                              program_data_t *p,
+                                              bin_args_t *bin_args,
+                                              int tail_call)
+{
+    if (p->event->buf_off < ARGS_BUF_SIZE - sizeof(bin_args_t)) {
+        bpf_probe_read(&(p->event->args[p->event->buf_off]), sizeof(bin_args_t), bin_args);
+        if (tail_call == TAIL_SEND_BIN)
+            bpf_tail_call(ctx, &prog_array, tail_call);
+        else if (tail_call == TAIL_SEND_BIN_TP)
+            bpf_tail_call(ctx, &prog_array_tp, tail_call);
+    }
+
+    return 0;
+}
+
 static __always_inline u32 send_bin_helper(void *ctx, void *prog_array, int tail_call)
 {
     // Note: sending the data to the userspace have the following constraints:
@@ -2224,13 +2240,13 @@ static __always_inline u32 send_bin_helper(void *ctx, void *prog_array, int tail
 
     int i = 0;
     unsigned int chunk_size;
-    u64 id = bpf_get_current_pid_tgid();
+    u32 zero = 0;
 
-    bin_args_t *bin_args = bpf_map_lookup_elem(&bin_args_map, &id);
-    if (bin_args == 0) {
-        // missed entry or not traced
+    event_data_t *event = bpf_map_lookup_elem(&event_data_map, &zero);
+    if (!event || (event->buf_off > ARGS_BUF_SIZE - sizeof(bin_args_t)))
         return 0;
-    }
+
+    bin_args_t *bin_args = (bin_args_t *) &(event->args[event->buf_off]);
 
     if (bin_args->full_size <= 0) {
         // If there are more vector elements, continue to the next one
@@ -2243,15 +2259,12 @@ static __always_inline u32 send_bin_helper(void *ctx, void *prog_array, int tail
             bin_args->full_size = io_vec.iov_len;
             bpf_tail_call(ctx, prog_array, tail_call);
         }
-        bpf_map_delete_elem(&bin_args_map, &id);
         return 0;
     }
 
     buf_t *file_buf_p = get_buf(FILE_BUF_IDX);
-    if (file_buf_p == NULL) {
-        bpf_map_delete_elem(&bin_args_map, &id);
+    if (file_buf_p == NULL)
         return 0;
-    }
 
 #define F_SEND_TYPE  0
 #define F_CGROUP_ID  (F_SEND_TYPE + sizeof(u8))
@@ -2263,17 +2276,7 @@ static __always_inline u32 send_bin_helper(void *ctx, void *prog_array, int tail
 
     bpf_probe_read((void **) &(file_buf_p->buf[F_SEND_TYPE]), sizeof(u8), &bin_args->type);
 
-    int zero = 0;
-    config_entry_t *config = bpf_map_lookup_elem(&config_map, &zero);
-    if (config == NULL)
-        return 0;
-
-    u64 cgroup_id;
-    if (config->options & OPT_CGROUP_V1) {
-        cgroup_id = get_cgroup_v1_subsys0_id((struct task_struct *) bpf_get_current_task());
-    } else {
-        cgroup_id = bpf_get_current_cgroup_id();
-    }
+    u64 cgroup_id = event->context.task.cgroup_id;
     bpf_probe_read((void **) &(file_buf_p->buf[F_CGROUP_ID]), sizeof(u64), &cgroup_id);
 
     // Save metadata to be used in filename
@@ -2312,7 +2315,6 @@ static __always_inline u32 send_bin_helper(void *ctx, void *prog_array, int tail
         // Handle the rest of write recursively
         bin_args->full_size = chunk_size;
         bpf_tail_call(ctx, prog_array, tail_call);
-        bpf_map_delete_elem(&bin_args_map, &id);
         return 0;
     }
 
@@ -2340,7 +2342,6 @@ static __always_inline u32 send_bin_helper(void *ctx, void *prog_array, int tail
         bpf_tail_call(ctx, prog_array, tail_call);
     }
 
-    bpf_map_delete_elem(&bin_args_map, &id);
     return 0;
 }
 
@@ -2561,7 +2562,6 @@ static __always_inline int capture_file_write(struct pt_regs *ctx, u32 event_id)
     if (start_pos != 0)
         start_pos -= PT_REGS_RC(ctx);
 
-    u64 id = bpf_get_current_pid_tgid();
     u32 pid = p.event->context.task.pid;
 
     if (p.event->buf_off > ARGS_BUF_SIZE - MAX_STRING_SIZE)
@@ -2590,10 +2590,9 @@ static __always_inline int capture_file_write(struct pt_regs *ctx, u32 event_id)
             bin_args.full_size = io_vec.iov_len;
         }
     }
-    bpf_map_update_elem(&bin_args_map, &id, &bin_args, BPF_ANY);
 
-    // Send file data
-    bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
+    tail_call_send_bin(ctx, &p, &bin_args, TAIL_SEND_BIN);
+
     return 0;
 }
 
@@ -2907,9 +2906,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
             bin_args.start_off = 0;
             bin_args.full_size = len;
 
-            u64 id = bpf_get_current_pid_tgid();
-            bpf_map_update_elem(&bin_args_map, &id, &bin_args, BPF_ANY);
-            bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
+            tail_call_send_bin(ctx, &p, &bin_args, TAIL_SEND_BIN);
         }
     }
 
@@ -2944,9 +2941,7 @@ int syscall__init_module(void *ctx)
         bin_args.start_off = 0;
         bin_args.full_size = (unsigned int) len;
 
-        u64 id = bpf_get_current_pid_tgid();
-        bpf_map_update_elem(&bin_args_map, &id, &bin_args, BPF_ANY);
-        bpf_tail_call(ctx, &prog_array_tp, TAIL_SEND_BIN_TP);
+        tail_call_send_bin(ctx, &p, &bin_args, TAIL_SEND_BIN_TP);
     }
     return 0;
 }
@@ -3241,12 +3236,7 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
     if (!should_trace(&p))
         return 0;
 
-    bin_args_t bin_args = {};
-    u64 id = bpf_get_current_pid_tgid();
-
     struct file *file = (struct file *) PT_REGS_PARM1(ctx);
-    u32 pid = p.event->context.task.host_pid;
-
     char *buf = (char *) PT_REGS_PARM2(ctx);
     loff_t size = (loff_t) PT_REGS_PARM3(ctx);
     enum kernel_read_file_id type_id = (enum kernel_read_file_id) PT_REGS_PARM4(ctx);
@@ -3264,6 +3254,8 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
         // Extract device id, inode number for file name
         dev_t s_dev = get_dev_from_file(file);
         unsigned long inode_nr = get_inode_nr_from_file(file);
+        bin_args_t bin_args = {};
+        u32 pid = p.event->context.task.host_pid;
 
         bin_args.type = SEND_KERNEL_MODULE;
         bpf_probe_read(bin_args.metadata, 4, &s_dev);
@@ -3273,10 +3265,8 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
         bin_args.start_off = 0;
         bin_args.ptr = buf;
         bin_args.full_size = size;
-        bpf_map_update_elem(&bin_args_map, &id, &bin_args, BPF_ANY);
 
-        // Send file data
-        bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
+        tail_call_send_bin(ctx, &p, &bin_args, TAIL_SEND_BIN);
     }
 
     return 0;
