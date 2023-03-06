@@ -25,7 +25,7 @@
         return save_args(&args, id);                                                               \
     }
 
-#define TRACE_RET_FUNC(name, id, types, ret)                                                       \
+#define TRACE_RET_FUNC(name, id, ret)                                                              \
     int trace_ret_##name(void *ctx)                                                                \
     {                                                                                              \
         args_t args = {};                                                                          \
@@ -37,10 +37,10 @@
         if (!init_program_data(&p, ctx))                                                           \
             return 0;                                                                              \
                                                                                                    \
-        if (!should_submit(id, &(p.event->context)))                                               \
+        if (!should_submit(id, p.event))                                                           \
             return 0;                                                                              \
                                                                                                    \
-        save_args_to_submit_buf(p->event, types, &args);                                           \
+        save_args_to_submit_buf(p.event, &args);                                                   \
                                                                                                    \
         return events_perf_submit(&p, id, ret);                                                    \
     }

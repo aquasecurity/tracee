@@ -293,23 +293,33 @@ static __always_inline u64 should_trace(program_data_t *p)
     return p->task_info->matched_scopes;
 }
 
-static __always_inline u64 should_submit(u32 event_id, event_context_t *ctx)
+static __always_inline u64 should_submit(u32 event_id, event_data_t *event)
 {
-    // use a map only with no submit cache from config.
-    // since this function is only ever called after a should_trace
-    // and in the context of a submit program/tail_call, any preemptive
-    // cache calculation before checking the map will 99% of times be
-    // redundant.
-    // a probe/tail call attach almost always implies at least one
-    // policy requires the event to be submitted.
-    u64 *event_policies = bpf_map_lookup_elem(&events_map, &event_id);
-    // if policies not set, don't submit
-    if (event_policies == NULL) {
+    event_config_t *event_config = bpf_map_lookup_elem(&events_map, &event_id);
+    // if event config not set, don't submit
+    if (event_config == NULL)
         return 0;
-    }
 
     // align with previously matched policies
-    ctx->matched_policies &= *event_policies;
+    event->context.matched_policies &= event_config->submit_for_policies;
+
+    // save event's param types
+    event->param_types = event_config->param_types;
+
+    return event->context.matched_policies;
+}
+
+// network events don't use event_data_t type, but only event_context_t so we ignore
+// param types used by the event
+static __always_inline u64 should_submit_by_ctx(u32 event_id, event_context_t *ctx)
+{
+    event_config_t *event_config = bpf_map_lookup_elem(&events_map, &event_id);
+    // if event config not set, don't submit
+    if (event_config == NULL)
+        return 0;
+
+    // align with previously matched policies
+    ctx->matched_policies &= event_config->submit_for_policies;
 
     return ctx->matched_policies;
 }

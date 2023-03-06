@@ -348,20 +348,20 @@ static __always_inline int events_perf_submit(program_data_t *p, u32 id, long re
 
 #define DEC_ARG(n, enc_arg) ((enc_arg >> (8 * n)) & 0xFF)
 
-static __always_inline int save_args_to_submit_buf(event_data_t *event, u64 types, args_t *args)
+static __always_inline int save_args_to_submit_buf(event_data_t *event, args_t *args)
 {
     unsigned int i;
     unsigned int rc = 0;
     unsigned int arg_num = 0;
     short family = 0;
 
-    if (types == 0)
+    if (event->param_types == 0)
         return 0;
 
 #pragma unroll
     for (i = 0; i < 6; i++) {
         int size = 0;
-        u8 type = DEC_ARG(i, types);
+        u8 type = DEC_ARG(i, event->param_types);
         u8 index = i;
         switch (type) {
             case NONE_T:

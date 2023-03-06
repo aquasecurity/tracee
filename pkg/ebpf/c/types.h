@@ -312,6 +312,11 @@ typedef struct config_entry {
     u64 pid_min;
 } config_entry_t;
 
+typedef struct event_config {
+    u64 submit_for_policies;
+    u64 param_types;
+} event_config_t;
+
 enum capture_options_e
 {
     NET_CAP_OPT_FILTERED = (1 << 0), // pcap should obey event filters
@@ -327,6 +332,7 @@ typedef struct event_data {
     char args[ARGS_BUF_SIZE];
     u32 buf_off;
     struct task_struct *task;
+    u64 param_types;
 } event_data_t;
 
 #define MAX_EVENT_SIZE sizeof(event_context_t) + ARGS_BUF_SIZE
