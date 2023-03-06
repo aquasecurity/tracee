@@ -73,7 +73,9 @@ func (t *Tracee) handleEvents(ctx context.Context) {
 	errcList = append(errcList, errc)
 
 	// Pipeline started. Waiting for pipeline to complete
-	t.WaitForPipeline(errcList...)
+	if err := t.WaitForPipeline(errcList...); err != nil {
+		logger.Errorw("Pipeline", "error", err)
+	}
 }
 
 // Under some circumstances, tracee-rules might be slower to consume events
@@ -253,7 +255,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 			// base events for derived ones should be filtered in later stage
 			if _, ok := t.eventDerivations[eventId]; !ok {
 				if !t.shouldProcessEvent(&evt) {
-					t.stats.EventsFiltered.Increment()
+					_ = t.stats.EventsFiltered.Increment()
 					continue
 				}
 			}
@@ -502,7 +504,7 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 
 			select {
 			case t.config.ChanEvents <- *event:
-				t.stats.EventCount.Increment()
+				_ = t.stats.EventCount.Increment()
 				event = nil
 			case <-ctx.Done():
 				return
@@ -584,7 +586,7 @@ func MergeErrors(cs ...<-chan error) <-chan error {
 }
 
 func (t *Tracee) handleError(err error) {
-	t.stats.ErrorCount.Increment()
+	_ = t.stats.ErrorCount.Increment()
 	logger.Errorw("Tracee encountered an error", "error", err)
 }
 

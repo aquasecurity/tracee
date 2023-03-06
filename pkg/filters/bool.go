@@ -65,7 +65,9 @@ func (filter *BoolFilter) Parse(operatorAndValues string) error {
 			if err != nil {
 				return InvalidValue(val)
 			}
-			filter.add(boolVal, Equal)
+			if err = filter.add(boolVal, Equal); err != nil {
+				return err
+			}
 		}
 		return nil
 	}
@@ -82,7 +84,9 @@ func (filter *BoolFilter) Parse(operatorAndValues string) error {
 			if err != nil {
 				return InvalidValue(val)
 			}
-			filter.add(boolVal, NotEqual)
+			if err = filter.add(boolVal, NotEqual); err != nil {
+				return err
+			}
 		}
 		return nil
 	}

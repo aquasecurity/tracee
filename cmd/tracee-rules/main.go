@@ -60,7 +60,9 @@ func main() {
 			}
 
 			if c.NumFlags() == 0 {
-				cli.ShowAppHelp(c)
+				if err = cli.ShowAppHelp(c); err != nil {
+					logger.Errorw("Failed to show app help", "error", err)
+				}
 				return errors.New("no flags specified")
 			}
 
@@ -86,7 +88,7 @@ func main() {
 			}
 
 			var loadedSigIDs []string
-			capabilities.GetInstance().Requested(
+			err = capabilities.GetInstance().Requested(
 				func() error {
 					for _, s := range sigs {
 						m, err := s.GetMetadata()
@@ -100,6 +102,10 @@ func main() {
 				},
 				cap.DAC_OVERRIDE,
 			)
+			if err != nil {
+				logger.Errorw("Requested capabilities", "error", err)
+			}
+
 			if c.Bool("list-events") {
 				listEvents(os.Stdout, sigs)
 				return nil

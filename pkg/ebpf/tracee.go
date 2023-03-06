@@ -332,7 +332,9 @@ func New(cfg Config) (*Tracee, error) {
 			return t, errfmt.Errorf("could not get event")
 		}
 		for _, capArray := range evt.Dependencies.Capabilities {
-			caps.Require(capArray)
+			if err := caps.Require(capArray); err != nil {
+				return t, errfmt.WrapError(err)
+			}
 		}
 	}
 
@@ -408,7 +410,7 @@ func (t *Tracee) Init() error {
 			t.pidsInMntns.AddBucketItem(uint32(mountNS), uint32(pid))
 		}
 	} else {
-		logger.Debugw("Caps Requested", "error", err)
+		logger.Debugw("Requesting capabilities", "error", err)
 	}
 
 	// Initialize cgroups filesystems
@@ -511,7 +513,10 @@ func (t *Tracee) Init() error {
 	// monotonic clock so tracee can calculate event timestamps relative to it.
 
 	var ts unix.Timespec
-	unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts)
+	err = unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts)
+	if err != nil {
+		return errfmt.Errorf("getting clock time %v", err)
+	}
 	startTime := ts.Nano()
 
 	// Calculate the boot time using the monotonic time (since this is the clock
@@ -1398,7 +1403,11 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 		if err != nil {
 			return errfmt.Errorf("error logging written files")
 		}
-		defer f.Close()
+		defer func() {
+			if err := f.Close(); err != nil {
+				logger.Errorw("Closing file", "error", err)
+			}
+		}()
 		for fileName, filePath := range t.writtenFiles {
 			writeFiltered := false
 			for _, filterPrefix := range t.config.Capture.FilterFileWrite {
@@ -1466,7 +1475,11 @@ func (t *Tracee) computeOutFileHash(fileName string) (string, error) {
 	if err != nil {
 		return "", errfmt.WrapError(err)
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			logger.Errorw("Closing file", "error", err)
+		}
+	}()
 	return computeFileHash(f)
 }
 
@@ -1475,7 +1488,11 @@ func computeFileHashAtPath(fileName string) (string, error) {
 	if err != nil {
 		return "", errfmt.WrapError(err)
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			logger.Errorw("Closing file", "error", err)
+		}
+	}()
 	return computeFileHash(f)
 }
 
@@ -1490,17 +1507,20 @@ func computeFileHash(file *os.File) (string, error) {
 
 func (t *Tracee) invokeInitEvents() {
 	if t.events[events.InitNamespaces].emit > 0 {
-		capabilities.GetInstance().Requested(func() error { // ring2
+		err := capabilities.GetInstance().Requested(func() error { // ring2
 			systemInfoEvent := events.InitNamespacesEvent()
 			t.config.ChanEvents <- systemInfoEvent
 			return nil
 		}, cap.SYS_PTRACE)
-		t.stats.EventCount.Increment()
+		if err != nil {
+			logger.Debugw("Requesting capabilities", "error", err)
+		}
+		_ = t.stats.EventCount.Increment()
 	}
 	if t.events[events.ExistingContainer].emit > 0 {
 		for _, e := range events.ExistingContainersEvents(t.containers, t.config.ContainersEnrich) {
 			t.config.ChanEvents <- e
-			t.stats.EventCount.Increment()
+			_ = t.stats.EventCount.Increment()
 		}
 	}
 }
@@ -1559,7 +1579,7 @@ func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
 		seqOpsPointers[i] = seqOpsStruct.Address
 	}
 	eventHandle := t.triggerContexts.Store(event)
-	t.triggerSeqOpsIntegrityCheckCall(
+	_ = t.triggerSeqOpsIntegrityCheckCall(
 		uProbeMagicNumber,
 		uint64(eventHandle),
 		seqOpsPointers,
@@ -1619,7 +1639,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 				if err != nil {
 					return errfmt.WrapError(err)
 				}
-				t.triggerMemDumpCall(address, length, uint64(eventHandle))
+				_ = t.triggerMemDumpCall(address, length, uint64(eventHandle))
 			}
 		}
 
@@ -1643,7 +1663,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 				if err != nil {
 					return errfmt.WrapError(err)
 				}
-				t.triggerMemDumpCall(symbol.Address, length, uint64(eventHandle))
+				_ = t.triggerMemDumpCall(symbol.Address, length, uint64(eventHandle))
 			}
 		}
 	}

@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 // GetProcNS returns the namespace ID of a given namespace and process.
@@ -25,7 +26,11 @@ func GetAllBinaryProcs() (map[string][]uint32, error) {
 	if err != nil {
 		return nil, errfmt.Errorf("could not open procfs dir: %v", err)
 	}
-	defer procDir.Close()
+	defer func() {
+		if err := procDir.Close(); err != nil {
+			logger.Errorw("Closing file", "error", err)
+		}
+	}()
 	procs, err := procDir.Readdirnames(-1)
 	if err != nil {
 		return nil, errfmt.Errorf("could not open procfs dir: %v", err)

@@ -80,7 +80,9 @@ func TraceeEbpfPrepareOutput(outputSlice []string) (OutputConfig, error) {
 	printerConfigs := make([]printer.Config, 0)
 
 	if printerKind == "table" {
-		setOption(traceeConfig, "parse-arguments")
+		if err := setOption(traceeConfig, "parse-arguments"); err != nil {
+			return outConfig, err
+		}
 	}
 
 	if outPath == "" {

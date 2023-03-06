@@ -187,14 +187,18 @@ func (t *Tracee) processBPFLogs(ctx context.Context) {
 				"line", bpfLog.Line(),
 				"count", bpfLog.Count(),
 			)
-			t.stats.BPFLogsCount.Increment(uint64(bpfLog.Count()))
+			if err := t.stats.BPFLogsCount.Increment(uint64(bpfLog.Count())); err != nil {
+				logger.Errorw("Incrementing BPF logs count", "error", err)
+			}
 
 		case lost := <-t.lostBPFLogChannel:
 			// When terminating tracee-ebpf the lost channel receives multiple "0 lost events" events.
 			// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:
 			// https://github.com/aquasecurity/libbpfgo/issues/122
 			if lost > 0 {
-				t.stats.LostBPFLogsCount.Increment(lost)
+				if err := t.stats.LostBPFLogsCount.Increment(lost); err != nil {
+					logger.Errorw("Incrementing lost BPF logs count", "error", err)
+				}
 				logger.Warnw(fmt.Sprintf("Lost %d ebpf logs events", lost))
 			}
 

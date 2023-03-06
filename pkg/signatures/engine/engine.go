@@ -128,7 +128,7 @@ func (engine *Engine) unloadAllSignatures() {
 
 // matchHandler is a function that runs when a signature is matched
 func (engine *Engine) matchHandler(res detect.Finding) {
-	engine.stats.Detections.Increment()
+	_ = engine.stats.Detections.Increment()
 	engine.output <- res
 }
 
@@ -177,7 +177,7 @@ func (engine *Engine) consumeSources(ctx context.Context) {
 					Source: event.Headers.Selector.Source,
 				}
 				source := signatureSelector.Source
-				engine.stats.Events.Increment()
+				_ = engine.stats.Events.Increment()
 
 				//Check the selector for every case and partial case
 
@@ -271,7 +271,7 @@ func (engine *Engine) loadSignature(signature detect.Signature) (string, error) 
 		}
 	}
 
-	engine.stats.Signatures.Increment()
+	_ = engine.stats.Signatures.Increment()
 	return metadata.ID, nil
 }
 
@@ -300,7 +300,9 @@ func (engine *Engine) UnloadSignature(signatureId string) error {
 	c, ok := engine.signatures[signature]
 	if ok {
 		delete(engine.signatures, signature)
-		defer engine.stats.Signatures.Decrement()
+		defer func() {
+			_ = engine.stats.Signatures.Decrement()
+		}()
 		defer signature.Close()
 		defer close(c)
 	}

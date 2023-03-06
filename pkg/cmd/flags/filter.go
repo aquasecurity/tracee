@@ -374,11 +374,15 @@ func PreparePolicies(filtersArr []string) (*policy.Policies, error) {
 
 			if strings.HasPrefix("pid", filterFlag.filterName) {
 				if filterFlag.operatorAndValues == "=new" {
-					p.NewPidFilter.Parse("new")
+					if err := p.NewPidFilter.Parse("new"); err != nil {
+						return nil, err
+					}
 					continue
 				}
 				if filterFlag.operatorAndValues == "!=new" {
-					p.NewPidFilter.Parse("!new")
+					if err := p.NewPidFilter.Parse("!new"); err != nil {
+						return nil, err
+					}
 					continue
 				}
 				err := p.PIDFilter.Parse(filterFlag.operatorAndValues)

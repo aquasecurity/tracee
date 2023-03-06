@@ -267,7 +267,11 @@ given syscall. The template for this markdown file is the following:
 	if err != nil {
 		return "", fmt.Errorf("error opening output file: %v", err)
 	}
-	defer outputFile.Close()
+	defer func() {
+		if err := outputFile.Close(); err != nil {
+			logger.Errorw("Closing file", "error", err)
+		}
+	}()
 
 	_, err = fmt.Fprintf(outputFile, "%v\n%v", choicesStr, footNote)
 

@@ -11,6 +11,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -367,7 +368,10 @@ func readStringFromBuff(ebpfMsgDecoder *EbpfDecoder) (string, error) {
 	res, err := ReadByteSliceFromBuff(ebpfMsgDecoder, int(size-1)) //last byte is string terminating null
 	defer func() {
 		var dummy int8
-		ebpfMsgDecoder.DecodeInt8(&dummy) // discard last byte which is string terminating null
+		err := ebpfMsgDecoder.DecodeInt8(&dummy) // discard last byte which is string terminating null
+		if err != nil {
+			logger.Warnw("Trying to discard last byte", "error", err)
+		}
 	}()
 	if err != nil {
 		return "", errfmt.Errorf("error reading string arg: %v", err)

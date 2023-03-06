@@ -27,8 +27,12 @@ func newPcapCache(itemType PcapType) (*PcapCache, error) {
 				return
 			}
 
-			item.pcapWriter.Flush()
-			item.pcapFile.Close()
+			if err := item.pcapWriter.Flush(); err != nil {
+				logger.Errorw("Flushing pcap", "error", err)
+			}
+			if err := item.pcapFile.Close(); err != nil {
+				logger.Errorw("Closing file", "error", err)
+			}
 		})
 
 	return &PcapCache{
@@ -67,7 +71,9 @@ func (p *PcapCache) destroy() error {
 	for _, k := range p.itemCache.Keys() {
 		switch key := k.(type) {
 		case *Pcap:
-			key.close()
+			if err := key.close(); err != nil {
+				logger.Errorw("Closing file", "error", err)
+			}
 		default:
 			return errfmt.Errorf("wrong key type in pcap cache")
 		}

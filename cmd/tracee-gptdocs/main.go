@@ -86,7 +86,9 @@ func main() {
 
 func printAndExitIfHelp(c *cli.Context, exit bool) {
 	if c.Bool("help") {
-		cli.ShowAppHelp(c)
+		if err := cli.ShowAppHelp(c); err != nil {
+			log.Fatal(err)
+		}
 		if exit {
 			os.Exit(0)
 		}

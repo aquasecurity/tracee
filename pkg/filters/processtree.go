@@ -12,6 +12,7 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
@@ -92,7 +93,11 @@ func (filter *ProcessTreeFilter) UpdateBPF(bpfModule *bpf.Module, policyID uint)
 	if err != nil {
 		return errfmt.Errorf("could not open proc dir: %v", err)
 	}
-	defer procDir.Close()
+	defer func() {
+		if err := procDir.Close(); err != nil {
+			logger.Errorw("Closing file", "error", err)
+		}
+	}()
 
 	entries, err := procDir.Readdirnames(-1)
 	if err != nil {
@@ -117,7 +122,10 @@ func (filter *ProcessTreeFilter) UpdateBPF(bpfModule *bpf.Module, policyID uint)
 
 		binary.LittleEndian.PutUint64(filterVal[0:8], equalInPolicies)
 		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInPolicies)
-		processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&filterVal[0]))
+		err = processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&filterVal[0]))
+		if err != nil {
+			logger.Errorw("Updating processTreeBPFMap", "error", err)
+		}
 	}
 
 	// Iterate over each pid
