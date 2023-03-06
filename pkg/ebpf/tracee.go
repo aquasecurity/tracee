@@ -945,14 +945,35 @@ func (t *Tracee) validateKallsymsDependencies() {
 }
 
 func (t *Tracee) populateBPFMaps() error {
+	// Initialize events parameter types map
+	eventsParams := make(map[events.ID][]bufferdecoder.ArgType)
+	for id, eventDefinition := range events.Definitions.Events() {
+		params := eventDefinition.Params
+		for _, param := range params {
+			eventsParams[id] = append(eventsParams[id], bufferdecoder.GetParamType(param.Type))
+		}
+	}
+
 	// Prepare events map
 	eventsMap, err := t.bpfModule.GetMap("events_map")
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 	for id, ecfg := range t.events {
-		submit := ecfg.submit
-		err := eventsMap.Update(unsafe.Pointer(&id), unsafe.Pointer(&submit))
+		eventConfigVal := make([]byte, 16)
+
+		// bitmap of policies that require this event to be submitted
+		binary.LittleEndian.PutUint64(eventConfigVal[0:8], ecfg.submit)
+
+		// encoded event's parameter types
+		var paramTypes uint64
+		params := eventsParams[id]
+		for n, paramType := range params {
+			paramTypes = paramTypes | (uint64(paramType) << (8 * n))
+		}
+		binary.LittleEndian.PutUint64(eventConfigVal[8:16], paramTypes)
+
+		err := eventsMap.Update(unsafe.Pointer(&id), unsafe.Pointer(&eventConfigVal[0]))
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -1070,30 +1091,6 @@ func (t *Tracee) populateBPFMaps() error {
 	for i := uint32(0); i < uint32(len(t.config.Capture.FilterFileWrite)); i++ {
 		FilterFileWriteBytes := []byte(t.config.Capture.FilterFileWrite[i])
 		if err = fileFilterMap.Update(unsafe.Pointer(&i), unsafe.Pointer(&FilterFileWriteBytes[0])); err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	// Initialize param types map
-	eventsParams := make(map[events.ID][]bufferdecoder.ArgType)
-	for id, eventDefinition := range events.Definitions.Events() {
-		params := eventDefinition.Params
-		for _, param := range params {
-			eventsParams[id] = append(eventsParams[id], bufferdecoder.GetParamType(param.Type))
-		}
-	}
-	paramsTypesBPFMap, err := t.bpfModule.GetMap("params_types_map") // u32, u64
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-	for e := range t.events {
-		eU32 := uint32(e) // e is int32
-		params := eventsParams[e]
-		var paramsTypes uint64
-		for n, paramType := range params {
-			paramsTypes = paramsTypes | (uint64(paramType) << (8 * n))
-		}
-		if err := paramsTypesBPFMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&paramsTypes)); err != nil {
 			return errfmt.WrapError(err)
 		}
 	}
