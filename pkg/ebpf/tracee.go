@@ -107,7 +107,7 @@ type InitValues struct {
 func (tc Config) Validate() error {
 	for filterScope := range tc.FilterScopes.Map() {
 		if filterScope == nil || filterScope.EventsToTrace == nil {
-			return logger.NewErrorf("FilterScope or EventsToTrace is nil")
+			return logger.NewErrorf("filterScope or EventsToTrace is nil")
 		}
 
 		for e := range filterScope.EventsToTrace {
@@ -403,7 +403,7 @@ func (t *Tracee) Init() error {
 			t.pidsInMntns.AddBucketItem(uint32(mountNS), uint32(pid))
 		}
 	} else {
-		logger.Debug("caps Requested", "error", err)
+		logger.Debug("Caps Requested", "error", err)
 	}
 
 	// Initialize cgroups filesystems
@@ -934,7 +934,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 
 	// Cancel events with missing symbols dependencies
 	for eventToCancel, missingDepSyms := range missingSymsPerEvent {
-		logger.Error("event canceled because of missing kernel symbol dependency", "missing symbols", missingDepSyms, "event", events.Definitions.Get(eventToCancel).Name)
+		logger.Error("Event canceled because of missing kernel symbol dependency", "missing symbols", missingDepSyms, "event", events.Definitions.Get(eventToCancel).Name)
 		delete(t.events, eventToCancel)
 	}
 }
@@ -1159,7 +1159,7 @@ func getTailCalls(eventConfigs map[events.ID]eventConfig) ([]events.TailCall, er
 			}
 			for _, index := range tailCall.MapIndexes {
 				if index >= uint32(events.MaxCommonID) { // remove undefined syscalls (check arm64.go) and events
-					logger.Debug("removing index from tail call (over max event id)", "tail_call_map", tailCall.MapName, "index", index,
+					logger.Debug("Removing index from tail call (over max event id)", "tail_call_map", tailCall.MapName, "index", index,
 						"max_event_id", events.MaxCommonID, "pkgName", pkgName)
 					tailCall.RemoveIndex(index)
 				}
@@ -1351,7 +1351,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.triggerSeqOpsIntegrityCheck(trace.Event{})
 	err := t.triggerMemDump(trace.Event{})
 	if err != nil {
-		logger.Warn("memory dump", "error", err)
+		logger.Warn("Memory dump", "error", err)
 	}
 	t.eventsPerfMap.Start()
 	go t.processLostEvents()
@@ -1442,12 +1442,12 @@ func (t *Tracee) Close() {
 		},
 	)
 	if err != nil {
-		logger.Error("capabilities", "error", err)
+		logger.Error("Capabilities", "error", err)
 	}
 
 	err = t.cgroups.Destroy()
 	if err != nil {
-		logger.Error("cgroups destroy", "error", err)
+		logger.Error("Cgroups destroy", "error", err)
 	}
 
 	// set running to false only if there were no errors

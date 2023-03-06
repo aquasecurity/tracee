@@ -33,7 +33,7 @@ func (t *Tracee) processLostEvents() {
 		// https://github.com/aquasecurity/libbpfgo/issues/122
 		if lost > 0 {
 			t.stats.LostEvCount.Increment(lost)
-			logger.Warn(fmt.Sprintf("lost %d events", lost))
+			logger.Warn(fmt.Sprintf("Lost %d events", lost))
 		}
 	}
 }
@@ -50,7 +50,7 @@ func (t *Tracee) processEvent(event *trace.Event) []error {
 	for _, procFunc := range processors {
 		err := procFunc(event)
 		if err != nil {
-			logger.Error("error processing event", "event", event.EventName, "error", err)
+			logger.Error("Error processing event", "event", event.EventName, "error", err)
 			errs = append(errs, err)
 		}
 	}
@@ -275,7 +275,7 @@ func (t *Tracee) processCgroupMkdir(event *trace.Event) error {
 			// it is not a container cgroup and, as a systemd cgroup, could have been
 			// created and removed very quickly.
 			// In this case, we don't want to return an error.
-			logger.Debug("failed to remove entry from containers bpf map", "error", err)
+			logger.Debug("Failed to remove entry from containers bpf map", "error", err)
 		}
 	}
 	return logger.ErrorFunc(err)
@@ -317,7 +317,7 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 		if okMemDump {
 			err := t.triggerMemDump(*event)
 			if err != nil {
-				logger.Warn("memory dump", "error", err)
+				logger.Warn("Memory dump", "error", err)
 			}
 		}
 	}

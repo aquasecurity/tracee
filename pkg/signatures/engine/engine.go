@@ -65,7 +65,7 @@ func NewEngine(config Config, sources EventSources, output chan detect.Finding) 
 	for _, sig := range config.Signatures {
 		_, err := engine.loadSignature(sig)
 		if err != nil {
-			logger.Error("loading signature: " + err.Error())
+			logger.Error("Loading signature: " + err.Error())
 		}
 	}
 	return &engine, nil
@@ -79,7 +79,7 @@ func StartPipeline(ctx context.Context, cfg Config, input chan protocol.Event) <
 	source := EventSources{Tracee: input}
 	engine, err := NewEngine(cfg, source, output)
 	if err != nil {
-		logger.Fatal("error creating engine: " + err.Error())
+		logger.Fatal("Error creating engine: " + err.Error())
 	}
 
 	go func() {
@@ -96,7 +96,7 @@ func signatureStart(signature detect.Signature, c chan protocol.Event, wg *sync.
 	for e := range c {
 		if err := signature.OnEvent(e); err != nil {
 			meta, _ := signature.GetMetadata()
-			logger.Error("handling event by signature " + meta.Name + ": " + err.Error())
+			logger.Error("Handling event by signature " + meta.Name + ": " + err.Error())
 		}
 	}
 	wg.Done()
@@ -155,7 +155,7 @@ func (engine *Engine) consumeSources(ctx context.Context) {
 				for sig := range engine.signatures {
 					se, err := sig.GetSelectedEvents()
 					if err != nil {
-						logger.Error("getting selected events: " + err.Error())
+						logger.Error("Getting selected events: " + err.Error())
 						continue
 					}
 					for _, sel := range se {
@@ -264,7 +264,7 @@ func (engine *Engine) loadSignature(signature detect.Signature) (string, error) 
 			selectedEvent.Origin = ALL_EVENT_ORIGINS
 		}
 		if selectedEvent.Source == "" {
-			logger.Error("signature " + metadata.Name + " doesn't declare an input source")
+			logger.Error("Signature " + metadata.Name + " doesn't declare an input source")
 		} else {
 			engine.signaturesMutex.Lock()
 			engine.signaturesIndex[selectedEvent] = append(engine.signaturesIndex[selectedEvent], signature)

@@ -59,7 +59,7 @@ func (t *Tracee) processNetCapEvents(ctx gocontext.Context, in <-chan *trace.Eve
 				if lost > 0 {
 					// https://github.com/aquasecurity/libbpfgo/issues/122
 					t.stats.LostNtCapCount.Increment(lost)
-					logger.Warn(fmt.Sprintf("lost %d network capture events", lost))
+					logger.Warn(fmt.Sprintf("Lost %d network capture events", lost))
 				}
 
 			case <-ctx.Done():
@@ -89,16 +89,16 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 
 		payloadArg := events.GetArg(event, "payload")
 		if payloadArg == nil {
-			logger.Debug("network capture: no payload packet")
+			logger.Debug("Network capture: no payload packet")
 			return
 		}
 		if payload, ok = payloadArg.Value.([]byte); !ok {
-			logger.Debug("network capture: non []byte argument")
+			logger.Debug("Network capture: non []byte argument")
 			return
 		}
 		payloadSize := len(payload)
 		if payloadSize < 1 {
-			logger.Debug("network capture: empty payload")
+			logger.Debug("Network capture: empty payload")
 			return
 		}
 
@@ -109,7 +109,7 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 		} else if event.ReturnValue&familyIpv6 == familyIpv6 {
 			layerType = layers.LayerTypeIPv6
 		} else {
-			logger.Debug("unsupported layer3 protocol")
+			logger.Debug("Unsupported layer3 protocol")
 		}
 
 		// parse packet
@@ -120,7 +120,7 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 			gopacket.Default,
 		)
 		if packet == nil {
-			logger.Debug("could not parse packet")
+			logger.Debug("Could not parse packet")
 			return
 		}
 
@@ -305,10 +305,10 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 
 		err := t.netCapturePcap.Write(event, payload)
 		if err != nil {
-			logger.Error("could not write pcap data", "err", err)
+			logger.Error("Could not write pcap data", "err", err)
 		}
 
 	default:
-		logger.Debug("network capture: wrong net capture event type")
+		logger.Debug("Network capture: wrong net capture event type")
 	}
 }

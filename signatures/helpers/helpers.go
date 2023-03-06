@@ -221,7 +221,7 @@ func GetProtoIPv4ByName(
 
 	argProtoIPv4Map, ok := arg.Value.(map[string]interface{})
 	if !ok {
-		return trace.ProtoIPv4{}, fmt.Errorf("ProtoIPv4: wrong types received")
+		return trace.ProtoIPv4{}, fmt.Errorf("protocol IPv4: wrong types received")
 	}
 
 	uint8Types := map[string]uint8{"version": 0, "IHL": 0, "TOS": 0, "flags": 0, "TTL": 0}
@@ -229,7 +229,7 @@ func GetProtoIPv4ByName(
 	for key := range uint8Types {
 		val, ok := argProtoIPv4Map[key].(json.Number)
 		if !ok {
-			return ipv4, fmt.Errorf("ProtoIPv4: error in argument %v", argName)
+			return ipv4, fmt.Errorf("protocol IPv4: error in argument %v", argName)
 		}
 
 		val64, err := val.Int64()
@@ -245,7 +245,7 @@ func GetProtoIPv4ByName(
 	for key := range uint16Types {
 		val, ok := argProtoIPv4Map[key].(json.Number)
 		if !ok {
-			return ipv4, fmt.Errorf("ProtoIPv4: error in argument %v", argName)
+			return ipv4, fmt.Errorf("protocol IPv4: error in argument %v", argName)
 		}
 
 		val64, err := val.Int64()
@@ -261,7 +261,7 @@ func GetProtoIPv4ByName(
 	for key := range stringTypes {
 		val, ok := argProtoIPv4Map[key].(string)
 		if !ok {
-			return ipv4, fmt.Errorf("ProtoIPv4: error in argument %v", argName)
+			return ipv4, fmt.Errorf("protocol IPv4: error in argument %v", argName)
 		}
 
 		stringTypes[key] = val
@@ -317,7 +317,7 @@ func GetProtoIPv6ByName(
 
 	argProtoIPv6Map, ok := arg.Value.(map[string]interface{})
 	if !ok {
-		return trace.ProtoIPv6{}, fmt.Errorf("ProtoIPv6: wrong types received")
+		return trace.ProtoIPv6{}, fmt.Errorf("protocol IPv6: wrong types received")
 	}
 
 	uint8Types := map[string]uint8{"version": 0, "trafficClass": 0, "hopLimit": 0}
@@ -325,7 +325,7 @@ func GetProtoIPv6ByName(
 	for key := range uint8Types {
 		val, ok := argProtoIPv6Map[key].(json.Number)
 		if !ok {
-			return ipv4, fmt.Errorf("ProtoIPv6: error in argument %v", argName)
+			return ipv4, fmt.Errorf("protocol IPv6: error in argument %v", argName)
 		}
 
 		val64, err := val.Int64()
@@ -341,7 +341,7 @@ func GetProtoIPv6ByName(
 	for key := range uint16Types {
 		val, ok := argProtoIPv6Map[key].(json.Number)
 		if !ok {
-			return ipv4, fmt.Errorf("ProtoIPv6: error in argument %v", argName)
+			return ipv4, fmt.Errorf("protocol IPv6: error in argument %v", argName)
 		}
 
 		val64, err := val.Int64()
@@ -357,7 +357,7 @@ func GetProtoIPv6ByName(
 	for key := range uint32Types {
 		val, ok := argProtoIPv6Map[key].(json.Number)
 		if !ok {
-			return ipv4, fmt.Errorf("ProtoIPv6: error in argument %v", argName)
+			return ipv4, fmt.Errorf("protocol IPv6: error in argument %v", argName)
 		}
 
 		val64, err := val.Int64()
@@ -373,7 +373,7 @@ func GetProtoIPv6ByName(
 	for key := range stringTypes {
 		val, ok := argProtoIPv6Map[key].(string)
 		if !ok {
-			return ipv4, fmt.Errorf("ProtoIPv6: error in argument %v", argName)
+			return ipv4, fmt.Errorf("protocol IPv6: error in argument %v", argName)
 		}
 
 		stringTypes[key] = val
@@ -419,7 +419,7 @@ func GetProtoUDPByName(
 
 	argProtoUDPMap, ok := arg.Value.(map[string]interface{})
 	if !ok {
-		return trace.ProtoUDP{}, fmt.Errorf("ProtoUDP: wrong types received")
+		return trace.ProtoUDP{}, fmt.Errorf("protocol UDP: wrong types received")
 	}
 
 	uint16Types := map[string]uint16{"srcPort": 0, "dstPort": 0, "length": 0, "checksum": 0}
@@ -427,7 +427,7 @@ func GetProtoUDPByName(
 	for key := range uint16Types {
 		val, ok := argProtoUDPMap[key].(json.Number)
 		if !ok {
-			return icmp, fmt.Errorf("ProtoUDP: error in argument %v", argName)
+			return icmp, fmt.Errorf("protocol UDP: error in argument %v", argName)
 		}
 
 		val64, err := val.Int64()
@@ -487,7 +487,7 @@ func GetProtoTCPByName(
 
 	argProtoTCPMap, ok := arg.Value.(map[string]interface{})
 	if !ok {
-		return trace.ProtoTCP{}, fmt.Errorf("ProtoTCP: wrong types received")
+		return trace.ProtoTCP{}, fmt.Errorf("protocol TCP: wrong types received")
 	}
 
 	uint8Types := map[string]uint8{
@@ -506,7 +506,7 @@ func GetProtoTCPByName(
 	for key := range uint8Types {
 		val, ok := argProtoTCPMap[key].(json.Number)
 		if !ok {
-			return icmp, fmt.Errorf("ProtoTCP: error in argument %v", argName)
+			return icmp, fmt.Errorf("protocol TCP: error in argument %v", argName)
 		}
 
 		val64, err := val.Int64()
@@ -528,7 +528,7 @@ func GetProtoTCPByName(
 	for key := range uint16Types {
 		val, ok := argProtoTCPMap[key].(json.Number)
 		if !ok {
-			return icmp, fmt.Errorf("ProtoTCP: error in argument %v", argName)
+			return icmp, fmt.Errorf("protocol TCP: error in argument %v", argName)
 		}
 
 		val64, err := val.Int64()
@@ -547,7 +547,7 @@ func GetProtoTCPByName(
 	for key := range uint32Types {
 		val, ok := argProtoTCPMap[key].(json.Number)
 		if !ok {
-			return icmp, fmt.Errorf("ProtoTCP: error in argument %v", argName)
+			return icmp, fmt.Errorf("protocol TCP: error in argument %v", argName)
 		}
 
 		val64, err := val.Int64()
@@ -607,7 +607,7 @@ func GetProtoICMPByName(
 
 	argProtoICMPMap, ok := arg.Value.(map[string]interface{})
 	if !ok {
-		return trace.ProtoICMP{}, fmt.Errorf("ProtoICMP: wrong types received")
+		return trace.ProtoICMP{}, fmt.Errorf("protocol ICMP: wrong types received")
 	}
 
 	uint16Types := map[string]uint16{"checksum": 0, "id": 0, "seq": 0}
@@ -615,7 +615,7 @@ func GetProtoICMPByName(
 	for key := range uint16Types {
 		val, ok := argProtoICMPMap[key].(json.Number)
 		if !ok {
-			return icmp, fmt.Errorf("ProtoICMP: error in argument %v", argName)
+			return icmp, fmt.Errorf("protocol ICMP: error in argument %v", argName)
 		}
 
 		val64, err := val.Int64()
@@ -628,7 +628,7 @@ func GetProtoICMPByName(
 
 	typeCode, ok := argProtoICMPMap["typeCode"].(string)
 	if !ok {
-		return icmp, fmt.Errorf("ProtoICMP: error in argument %v", argName)
+		return icmp, fmt.Errorf("protocol ICMP: error in argument %v", argName)
 	}
 
 	return trace.ProtoICMP{
@@ -667,7 +667,7 @@ func GetProtoICMPv6ByName(
 
 	argProtoICMPv6Map, ok := arg.Value.(map[string]interface{})
 	if !ok {
-		return trace.ProtoICMPv6{}, fmt.Errorf("ProtoICMPv6: wrong types received")
+		return trace.ProtoICMPv6{}, fmt.Errorf("protocol ICMPv6: wrong types received")
 	}
 
 	uint16Types := map[string]uint16{"checksum": 0}
@@ -675,7 +675,7 @@ func GetProtoICMPv6ByName(
 	for key := range uint16Types {
 		val, ok := argProtoICMPv6Map[key].(json.Number)
 		if !ok {
-			return icmpv6, fmt.Errorf("ProtoICMPv6: error in argument %v", argName)
+			return icmpv6, fmt.Errorf("protocol ICMPv6: error in argument %v", argName)
 		}
 
 		val64, err := val.Int64()
@@ -688,7 +688,7 @@ func GetProtoICMPv6ByName(
 
 	typeCode, ok := argProtoICMPv6Map["typeCode"].(string)
 	if !ok {
-		return icmpv6, fmt.Errorf("ProtoICMPv6: error in argument %v", argName)
+		return icmpv6, fmt.Errorf("protocol ICMPv6: error in argument %v", argName)
 	}
 
 	return trace.ProtoICMPv6{
@@ -743,7 +743,7 @@ func GetProtoDNSByName(
 	// if type comes from json, deal with it
 	argProtoDNSMap, ok := arg.Value.(map[string]interface{})
 	if !ok {
-		return trace.ProtoDNS{}, fmt.Errorf("ProtoDNS: type error")
+		return trace.ProtoDNS{}, fmt.Errorf("protocol DNS: type error")
 	}
 
 	// uint8 conversion
@@ -758,11 +758,11 @@ func GetProtoDNSByName(
 	for key := range uint8Types {
 		val, ok := argProtoDNSMap[key].(json.Number)
 		if !ok {
-			return dns, fmt.Errorf("ProtoDNS: type error for key %v", key)
+			return dns, fmt.Errorf("protocol DNS: type error for key %v", key)
 		}
 		val64, err := val.Int64()
 		if err != nil {
-			return dns, fmt.Errorf("ProtoDNS: error in key %v: %v", key, err)
+			return dns, fmt.Errorf("protocol DNS: error in key %v: %v", key, err)
 		}
 		uint8Types[key] = uint8(val64)
 	}
@@ -778,11 +778,11 @@ func GetProtoDNSByName(
 	for key := range uint16Types {
 		val, ok := argProtoDNSMap[key].(json.Number)
 		if !ok {
-			return dns, fmt.Errorf("ProtoDNS: type error for key %v", key)
+			return dns, fmt.Errorf("protocol DNS: type error for key %v", key)
 		}
 		val64, err := val.Int64()
 		if err != nil {
-			return dns, fmt.Errorf("ProtoDNS: error in key %v: %v", key, err)
+			return dns, fmt.Errorf("protocol DNS: error in key %v: %v", key, err)
 		}
 		uint16Types[key] = uint16(val64)
 	}
@@ -795,7 +795,7 @@ func GetProtoDNSByName(
 	for key := range stringTypes {
 		val, ok := argProtoDNSMap[key].(string)
 		if !ok {
-			return dns, fmt.Errorf("ProtoDNS: type error for key %v", key)
+			return dns, fmt.Errorf("protocol DNS: type error for key %v", key)
 		}
 		stringTypes[key] = val
 	}
@@ -803,7 +803,7 @@ func GetProtoDNSByName(
 	// questions conversion
 	qu, ok := argProtoDNSMap["questions"].([]interface{})
 	if !ok {
-		return dns, fmt.Errorf("ProtoDNS: type error for key %v", "questions")
+		return dns, fmt.Errorf("protocol DNS: type error for key %v", "questions")
 	}
 	dnsQuestions, err := GetProtoDNSQuestion(qu)
 	if err != nil {
@@ -813,7 +813,7 @@ func GetProtoDNSByName(
 	// answers conversion
 	an, ok := argProtoDNSMap["answers"].([]interface{})
 	if !ok {
-		return dns, fmt.Errorf("ProtoDNS: type error for key %v", "answers")
+		return dns, fmt.Errorf("protocol DNS: type error for key %v", "answers")
 	}
 	dnsAnswers, err := GetProtoDNSResourceRecord(an)
 	if err != nil {
@@ -823,7 +823,7 @@ func GetProtoDNSByName(
 	// authorities conversion
 	au, ok := argProtoDNSMap["authorities"].([]interface{})
 	if !ok {
-		return dns, fmt.Errorf("ProtoDNS: type error for key %v", "authorities")
+		return dns, fmt.Errorf("protocol DNS: type error for key %v", "authorities")
 	}
 	dnsAuthorities, err := GetProtoDNSResourceRecord(au)
 	if err != nil {
@@ -833,7 +833,7 @@ func GetProtoDNSByName(
 	// additionals conversion
 	ad, ok := argProtoDNSMap["additionals"].([]interface{})
 	if !ok {
-		return dns, fmt.Errorf("ProtoDNS: type error for key %v", "additionals")
+		return dns, fmt.Errorf("protocol DNS: type error for key %v", "additionals")
 	}
 	dnsAdditionals, err := GetProtoDNSResourceRecord(ad)
 	if err != nil {
@@ -881,7 +881,7 @@ func GetProtoDNSQuestion(
 	for _, value := range arg {
 		val, ok := value.(map[string]interface{})
 		if !ok {
-			return dnsQuestions, fmt.Errorf("ProtoDNSQuestion: type error")
+			return dnsQuestions, fmt.Errorf("protocol DNSQuestion: type error")
 		}
 
 		// string conversion
@@ -893,7 +893,7 @@ func GetProtoDNSQuestion(
 		for key := range stringTypes {
 			v, ok := val[key].(string)
 			if !ok {
-				return dnsQuestions, fmt.Errorf("ProtoDNS: type error for key %v", key)
+				return dnsQuestions, fmt.Errorf("protocol DNS: type error for key %v", key)
 			}
 			stringTypes[key] = v
 		}
@@ -943,7 +943,7 @@ func GetProtoDNSResourceRecord(
 
 		val, ok := value.(map[string]interface{})
 		if !ok {
-			return dnsResourceRecords, fmt.Errorf("ProtoDNSResourceRecord: type error")
+			return dnsResourceRecords, fmt.Errorf("protocol DNSResourceRecord: type error")
 		}
 
 		// string conversion
@@ -960,7 +960,7 @@ func GetProtoDNSResourceRecord(
 		for key := range stringTypes {
 			v, ok := val[key].(string)
 			if !ok {
-				return dnsResourceRecords, fmt.Errorf("ProtoDNS: type error for key %v", key)
+				return dnsResourceRecords, fmt.Errorf("protocol DNS: type error for key %v", key)
 			}
 			stringTypes[key] = v
 		}
@@ -972,11 +972,11 @@ func GetProtoDNSResourceRecord(
 		for key := range uint32Types {
 			val, ok := val[key].(json.Number)
 			if !ok {
-				return dnsResourceRecords, fmt.Errorf("ProtoDNS: type error for key %v", key)
+				return dnsResourceRecords, fmt.Errorf("protocol DNS: type error for key %v", key)
 			}
 			val64, err := val.Int64()
 			if err != nil {
-				return dnsResourceRecords, fmt.Errorf("ProtoDNS: error in key %v: %v", key, err)
+				return dnsResourceRecords, fmt.Errorf("protocol DNS: error in key %v: %v", key, err)
 			}
 			uint32Types[key] = uint32(val64)
 		}
@@ -1001,22 +1001,22 @@ func GetProtoDNSResourceRecord(
 				case "SOA":
 					soa, err = GetProtoDNSSOA(v)
 					if err != nil {
-						return dnsResourceRecords, fmt.Errorf("ProtoDNSResourceRecord: SOA error: %v", err)
+						return dnsResourceRecords, fmt.Errorf("protocol DNSResourceRecord: SOA error: %v", err)
 					}
 				case "SRV":
 					srv, err = GetProtoDNSSRV(v)
 					if err != nil {
-						return dnsResourceRecords, fmt.Errorf("ProtoDNSResourceRecord: SRV error: %v", err)
+						return dnsResourceRecords, fmt.Errorf("protocol DNSResourceRecord: SRV error: %v", err)
 					}
 				case "MX":
 					mx, err = GetProtoDNSMX(v)
 					if err != nil {
-						return dnsResourceRecords, fmt.Errorf("ProtoDNSResourceRecord: MX error: %v", err)
+						return dnsResourceRecords, fmt.Errorf("protocol DNSResourceRecord: MX error: %v", err)
 					}
 				case "URI":
 					uri, err = GetProtoDNSURI(v)
 					if err != nil {
-						return dnsResourceRecords, fmt.Errorf("ProtoDNSResourceRecord: URI error: %v", err)
+						return dnsResourceRecords, fmt.Errorf("protocol DNSResourceRecord: URI error: %v", err)
 					}
 				}
 			case []interface{}:
@@ -1024,16 +1024,16 @@ func GetProtoDNSResourceRecord(
 				case "TXTs":
 					txts, err = GetProtoDNSTXTs(v)
 					if err != nil {
-						return dnsResourceRecords, fmt.Errorf("ProtoDNSResourceRecord: TXTs error: %v", err)
+						return dnsResourceRecords, fmt.Errorf("protocol DNSResourceRecord: TXTs error: %v", err)
 					}
 				case "OPT":
 					opt, err = GetProtoDNSOPT(v)
 					if err != nil {
-						return dnsResourceRecords, fmt.Errorf("ProtoDNSResourceRecord: OPT error: %v", err)
+						return dnsResourceRecords, fmt.Errorf("protocol DNSResourceRecord: OPT error: %v", err)
 					}
 				}
 			default:
-				return dnsResourceRecords, fmt.Errorf("ProtoDNSResourceRecord: error in key %v, type %v not implemented", k, reflect.TypeOf(v))
+				return dnsResourceRecords, fmt.Errorf("protocol DNSResourceRecord: error in key %v, type %v not implemented", k, reflect.TypeOf(v))
 			}
 		}
 
@@ -1089,7 +1089,7 @@ func GetProtoDNSSOA(
 	for key := range stringTypes {
 		val, ok := arg[key].(string)
 		if !ok {
-			return dnsSOA, fmt.Errorf("ProtoDNSSOA: type error for key %v", key)
+			return dnsSOA, fmt.Errorf("protocol DNSSOA: type error for key %v", key)
 		}
 		stringTypes[key] = val
 	}
@@ -1105,11 +1105,11 @@ func GetProtoDNSSOA(
 	for key := range uint32Types {
 		val, ok := arg[key].(json.Number)
 		if !ok {
-			return dnsSOA, fmt.Errorf("ProtoDNSSOA: type error for key %v", key)
+			return dnsSOA, fmt.Errorf("protocol DNSSOA: type error for key %v", key)
 		}
 		val64, err := val.Int64()
 		if err != nil {
-			return dnsSOA, fmt.Errorf("ProtoDNSNSOA: error in key %v: %v", key, err)
+			return dnsSOA, fmt.Errorf("protocol DNSNSOA: error in key %v: %v", key, err)
 		}
 		uint32Types[key] = uint32(val64)
 	}
@@ -1150,7 +1150,7 @@ func GetProtoDNSSRV(
 	for key := range stringTypes {
 		val, ok := arg[key].(string)
 		if !ok {
-			return dnsSRV, fmt.Errorf("ProtoDNSSRV: type error for key %v", key)
+			return dnsSRV, fmt.Errorf("protocol DNSSRV: type error for key %v", key)
 		}
 		stringTypes[key] = val
 	}
@@ -1164,11 +1164,11 @@ func GetProtoDNSSRV(
 	for key := range uint16Types {
 		val, ok := arg[key].(json.Number)
 		if !ok {
-			return dnsSRV, fmt.Errorf("ProtoDNSSRV: type error for key %v", key)
+			return dnsSRV, fmt.Errorf("protocol DNSSRV: type error for key %v", key)
 		}
 		val64, err := val.Int64()
 		if err != nil {
-			return dnsSRV, fmt.Errorf("ProtoDNSNSRV: error in key %v: %v", key, err)
+			return dnsSRV, fmt.Errorf("protocol DNSNSRV: error in key %v: %v", key, err)
 		}
 		uint16Types[key] = uint16(val64)
 	}
@@ -1204,7 +1204,7 @@ func GetProtoDNSMX(
 	for key := range stringTypes {
 		val, ok := arg[key].(string)
 		if !ok {
-			return dnsMX, fmt.Errorf("ProtoDNSMX: type error for key %v", key)
+			return dnsMX, fmt.Errorf("protocol DNSMX: type error for key %v", key)
 		}
 		stringTypes[key] = val
 	}
@@ -1217,11 +1217,11 @@ func GetProtoDNSMX(
 	for key := range uint16Types {
 		val, ok := arg[key].(json.Number)
 		if !ok {
-			return dnsMX, fmt.Errorf("ProtoDNSMX: type error for key %v", key)
+			return dnsMX, fmt.Errorf("protocol DNSMX: type error for key %v", key)
 		}
 		val64, err := val.Int64()
 		if err != nil {
-			return dnsMX, fmt.Errorf("ProtoDNSNMX: error in key %v: %v", key, err)
+			return dnsMX, fmt.Errorf("protocol DNSNMX: error in key %v: %v", key, err)
 		}
 		uint16Types[key] = uint16(val64)
 	}
@@ -1256,7 +1256,7 @@ func GetProtoDNSURI(
 	for key := range stringTypes {
 		val, ok := arg[key].(string)
 		if !ok {
-			return dnsURI, fmt.Errorf("ProtoDNSURI: type error for key %v", key)
+			return dnsURI, fmt.Errorf("protocol DNSURI: type error for key %v", key)
 		}
 		stringTypes[key] = val
 	}
@@ -1269,11 +1269,11 @@ func GetProtoDNSURI(
 	for key := range uint16Types {
 		val, ok := arg[key].(json.Number)
 		if !ok {
-			return dnsURI, fmt.Errorf("ProtoDNSURI: type error for key %v", key)
+			return dnsURI, fmt.Errorf("protocol DNSURI: type error for key %v", key)
 		}
 		val64, err := val.Int64()
 		if err != nil {
-			return dnsURI, fmt.Errorf("ProtoDNSURI: error in key %v: %v", key, err)
+			return dnsURI, fmt.Errorf("protocol DNSURI: error in key %v: %v", key, err)
 		}
 		uint16Types[key] = uint16(val64)
 	}
@@ -1296,7 +1296,7 @@ func GetProtoDNSTXTs(
 	for _, v := range arg {
 		val, ok := v.(string)
 		if !ok {
-			return nil, fmt.Errorf("ProtoDNSTXTs: type error")
+			return nil, fmt.Errorf("protocol DNSTXTs: type error")
 		}
 		DNSTXTs = append(DNSTXTs, val)
 	}
@@ -1348,7 +1348,7 @@ func GetProtoHTTPByName(
 	// if type comes from json, deal with it
 	argProtoHTTPMap, ok := arg.Value.(map[string]interface{})
 	if !ok {
-		return trace.ProtoHTTP{}, fmt.Errorf("ProtoHTTP: type error")
+		return trace.ProtoHTTP{}, fmt.Errorf("protocol HTTP: type error")
 	}
 
 	// string conversion
@@ -1363,7 +1363,7 @@ func GetProtoHTTPByName(
 	for key := range stringTypes {
 		val, ok := argProtoHTTPMap[key]
 		if !ok {
-			return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v", key)
+			return httpProto, fmt.Errorf("protocol HTTP: type error for key %v", key)
 		}
 		stringTypes[key] = val.(string)
 	}
@@ -1375,11 +1375,11 @@ func GetProtoHTTPByName(
 	for key := range intTypes {
 		val, ok := argProtoHTTPMap[key]
 		if !ok {
-			return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v", key)
+			return httpProto, fmt.Errorf("protocol HTTP: type error for key %v", key)
 		}
 		int64Val, err := val.(json.Number).Int64()
 		if err != nil {
-			return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v: %s", key, err)
+			return httpProto, fmt.Errorf("protocol HTTP: type error for key %v: %s", key, err)
 		}
 		intTypes[key] = int(int64Val)
 	}
@@ -1391,11 +1391,11 @@ func GetProtoHTTPByName(
 	for key := range int64Types {
 		val, ok := argProtoHTTPMap[key]
 		if !ok {
-			return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v", key)
+			return httpProto, fmt.Errorf("protocol HTTP: type error for key %v", key)
 		}
 		int64Val, err := val.(json.Number).Int64()
 		if err != nil {
-			return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v: %s", key, err)
+			return httpProto, fmt.Errorf("protocol HTTP: type error for key %v: %s", key, err)
 		}
 		int64Types[key] = int64Val
 	}
@@ -1403,7 +1403,7 @@ func GetProtoHTTPByName(
 	// headers conversion
 	headersVal, ok := argProtoHTTPMap["headers"]
 	if !ok {
-		return httpProto, fmt.Errorf("ProtoHTTP: type error for key %v", "headers")
+		return httpProto, fmt.Errorf("protocol HTTP: type error for key %v", "headers")
 	}
 	headers := make(http.Header)
 	for headerKey, headerValInterface := range headersVal.(map[string]interface{}) {

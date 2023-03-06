@@ -32,7 +32,7 @@ func (r Runner) Run(ctx context.Context) error {
 		if r.Server.MetricsEndpointEnabled() {
 			err := t.Stats().RegisterPrometheus()
 			if err != nil {
-				logger.Error("registering prometheus metrics", "error", err)
+				logger.Error("Registering prometheus metrics", "error", err)
 			}
 		}
 

@@ -388,7 +388,7 @@ func (p templateEventPrinter) Print(event trace.Event) {
 	if p.templateObj != nil {
 		err := (*p.templateObj).Execute(p.out, event)
 		if err != nil {
-			logger.Error("error executing template", "error", err)
+			logger.Error("Error executing template", "error", err)
 		}
 	} else {
 		fmt.Fprintf(p.out, "Template Obj is nil")
@@ -411,7 +411,7 @@ func (p jsonEventPrinter) Preamble() {}
 func (p jsonEventPrinter) Print(event trace.Event) {
 	eBytes, err := json.Marshal(event)
 	if err != nil {
-		logger.Error("error marshaling event to json", "error", err)
+		logger.Error("Error marshaling event to json", "error", err)
 	}
 	fmt.Fprintln(p.out, string(eBytes))
 }
@@ -477,7 +477,7 @@ func (p *gobEventPrinter) Preamble() {}
 func (p *gobEventPrinter) Print(event trace.Event) {
 	err := p.outEnc.Encode(event)
 	if err != nil {
-		logger.Error("error encoding event to gob", "error", err)
+		logger.Error("Error encoding event to gob", "error", err)
 	}
 }
 
@@ -565,7 +565,7 @@ func (p *forwardEventPrinter) Init() error {
 
 	// Extract the host (and port)
 	address := p.url.Host
-	logger.Info("attempting to connect to Forward destination", "url", address, "tag", p.tag)
+	logger.Info("Attempting to connect to Forward destination", "url", address, "tag", p.tag)
 
 	// Create a TCP connection to the forward receiver
 	p.client = forward.New(forward.ConnectionOptions{
@@ -584,7 +584,7 @@ func (p *forwardEventPrinter) Init() error {
 	err = p.client.Connect()
 	if err != nil {
 		// The destination may not be available but may appear later so do not return an error here and just connect later.
-		logger.Error("error connecting to Forward destination", "url", p.url.String(), "error", err)
+		logger.Error("Error connecting to Forward destination", "url", p.url.String(), "error", err)
 	}
 	return nil
 }
@@ -593,14 +593,14 @@ func (p *forwardEventPrinter) Preamble() {}
 
 func (p *forwardEventPrinter) Print(event trace.Event) {
 	if p.client == nil {
-		logger.Error("invalid Forward client")
+		logger.Error("Invalid Forward client")
 		return
 	}
 
 	// The actual event is marshalled as JSON then sent with the other information (tag, etc.)
 	eBytes, err := json.Marshal(event)
 	if err != nil {
-		logger.Error("error marshaling event to json", "error", err)
+		logger.Error("Error marshaling event to json", "error", err)
 	}
 
 	record := map[string]interface{}{
@@ -610,7 +610,7 @@ func (p *forwardEventPrinter) Print(event trace.Event) {
 	err = p.client.SendMessage(p.tag, record)
 	// Assuming all is well we continue but if the connection is dropped or some other error we retry
 	if err != nil {
-		logger.Error("error writing to Forward destination", "destination", p.url.Host, "tag", p.tag, "error", err)
+		logger.Error("Error writing to Forward destination", "destination", p.url.Host, "tag", p.tag, "error", err)
 		// Try five times to reconnect and send before giving up
 		// TODO: consider using go-kit for circuit break, retry, etc
 		for attempts := 0; attempts < 5; attempts++ {
@@ -631,7 +631,7 @@ func (p *forwardEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p forwardEventPrinter) Close() {
 	if p.client != nil {
-		logger.Info("disconnecting from Forward destination", "url", p.url.Host, "tag", p.tag)
+		logger.Info("Disconnecting from Forward destination", "url", p.url.Host, "tag", p.tag)
 		p.client.Disconnect()
 	}
 }
@@ -666,7 +666,7 @@ func (ws *webhookEventPrinter) Preamble() {}
 func (ws *webhookEventPrinter) Print(event trace.Event) {
 	payload, err := json.Marshal(event)
 	if err != nil {
-		logger.Error("error marshalling event", "error", err)
+		logger.Error("Error marshalling event", "error", err)
 		return
 	}
 
@@ -674,7 +674,7 @@ func (ws *webhookEventPrinter) Print(event trace.Event) {
 
 	req, err := http.NewRequest(http.MethodPost, ws.url.String(), bytes.NewReader(payload))
 	if err != nil {
-		logger.Error("error creating request", "error", err)
+		logger.Error("Error creating request", "error", err)
 		return
 	}
 
@@ -682,12 +682,12 @@ func (ws *webhookEventPrinter) Print(event trace.Event) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		logger.Error("error sending webhook", "error", err)
+		logger.Error("Error sending webhook", "error", err)
 		return
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		logger.Error(fmt.Sprintf("error sending webhook, http status: %d", resp.StatusCode))
+		logger.Error(fmt.Sprintf("Error sending webhook, http status: %d", resp.StatusCode))
 	}
 
 	_ = resp.Body.Close()
