@@ -7,6 +7,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 // HostSymbolsLoader is responsible for efficient reading of shared object's symbols.
@@ -112,7 +113,11 @@ func loadSharedObjectDynamicSymbols(path string) (*dynamicSymbols, error) {
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	defer loadedObject.Close()
+	defer func() {
+		if err := loadedObject.Close(); err != nil {
+			logger.Errorw("Closing file", "error", err)
+		}
+	}()
 
 	dynamicSymbols, err := loadedObject.DynamicSymbols()
 	if err != nil {

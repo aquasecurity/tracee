@@ -69,7 +69,10 @@ func startTracee(t *testing.T, ctx context.Context, config tracee.Config, output
 	require.NoError(t, err)
 
 	t.Logf("started tracee...\n")
-	go trc.Run(ctx)
+	go func() {
+		err := trc.Run(ctx)
+		require.NoError(t, err, "tracee run failed")
+	}()
 
 	return trc
 }

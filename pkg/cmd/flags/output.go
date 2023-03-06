@@ -185,7 +185,9 @@ func getPrinterConfigs(printerMap map[string]string, traceeConfig *tracee.Output
 
 	for outPath, printerKind := range printerMap {
 		if printerKind == "table" {
-			setOption(traceeConfig, "parse-arguments")
+			if err := setOption(traceeConfig, "parse-arguments"); err != nil {
+				return nil, err
+			}
 		}
 
 		outFile := os.Stdout
@@ -264,7 +266,9 @@ func createFile(path string) (*os.File, error) {
 	}
 
 	dir := filepath.Dir(path)
-	os.MkdirAll(dir, 0755)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return nil, errfmt.Errorf("failed to create directory: %v", err)
+	}
 	file, err := os.Create(path)
 	if err != nil {
 		return nil, errfmt.Errorf("failed to create output path: %v", err)

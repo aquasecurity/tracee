@@ -11,6 +11,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
@@ -88,7 +89,10 @@ func (m *MountOnce) Mount() error {
 		// remove created target directory on errors
 		empty, _ := utils.IsDirEmpty(m.target)
 		if empty {
-			os.RemoveAll(m.target) // best effort for cleanup
+			errRA := os.RemoveAll(m.target) // best effort for cleanup
+			if errRA != nil {
+				logger.Errorw("Removing all", "error", errRA)
+			}
 		}
 	}
 
@@ -163,7 +167,11 @@ func IsFileSystemSupported(fsType string) (bool, error) {
 	if err != nil {
 		return false, CouldNotOpenFile(procFilesystems, err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			logger.Errorw("Closing file", "error", err)
+		}
+	}()
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -186,7 +194,11 @@ func SearchMountpoint(fstype string, search string) (string, error) {
 	if err != nil {
 		return "", errfmt.WrapError(err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			logger.Errorw("Closing file", "error", err)
+		}
+	}()
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {

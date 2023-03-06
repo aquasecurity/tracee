@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 type containerdEnricher struct {
@@ -31,7 +32,9 @@ func ContainerdEnricher(socket string) (ContainerEnricher, error) {
 
 	conn, err := grpc.Dial(unixSocket, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		client.Close()
+		if errC := client.Close(); errC != nil {
+			logger.Errorw("Closing containerd connection", "error", errC)
+		}
 		return nil, errfmt.WrapError(err)
 	}
 

@@ -633,7 +633,9 @@ func (p *forwardEventPrinter) Epilogue(stats metrics.Stats) {}
 func (p forwardEventPrinter) Close() {
 	if p.client != nil {
 		logger.Infow("Disconnecting from Forward destination", "url", p.url.Host, "tag", p.tag)
-		p.client.Disconnect()
+		if err := p.client.Disconnect(); err != nil {
+			logger.Errorw("Disconnecting from Forward destination", "error", err)
+		}
 	}
 }
 

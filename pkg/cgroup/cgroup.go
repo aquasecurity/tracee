@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/mount"
 )
 
@@ -317,7 +318,11 @@ func GetCgroupDefaultVersion() (CgroupVersion, error) {
 	if err != nil {
 		return -1, CouldNotOpenFile(procCgroups, err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			logger.Errorw("Closing file", "error", err)
+		}
+	}()
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -361,7 +366,11 @@ func GetCgroupControllerHierarchy(subsys string) (int, error) {
 	if err != nil {
 		return -1, CouldNotOpenFile(procCgroups, err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			logger.Errorw("Closing file", "error", err)
+		}
+	}()
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {

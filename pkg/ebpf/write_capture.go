@@ -120,13 +120,17 @@ func (t *Tracee) processFileWrites(ctx context.Context) {
 			}
 			if appendFile {
 				if _, err := f.Seek(0, io.SeekEnd); err != nil {
-					f.Close()
+					if err := f.Close(); err != nil {
+						t.handleError(err)
+					}
 					t.handleError(err)
 					continue
 				}
 			} else {
 				if _, err := f.Seek(int64(meta.Off), io.SeekStart); err != nil {
-					f.Close()
+					if err := f.Close(); err != nil {
+						t.handleError(err)
+					}
 					t.handleError(err)
 					continue
 				}
@@ -134,12 +138,16 @@ func (t *Tracee) processFileWrites(ctx context.Context) {
 
 			dataBytes, err := bufferdecoder.ReadByteSliceFromBuff(ebpfMsgDecoder, int(meta.Size))
 			if err != nil {
-				f.Close()
+				if err := f.Close(); err != nil {
+					t.handleError(err)
+				}
 				t.handleError(err)
 				continue
 			}
 			if _, err := f.Write(dataBytes); err != nil {
-				f.Close()
+				if err := f.Close(); err != nil {
+					t.handleError(err)
+				}
 				t.handleError(err)
 				continue
 			}
@@ -151,7 +159,11 @@ func (t *Tracee) processFileWrites(ctx context.Context) {
 			if meta.BinType == bufferdecoder.SendKernelModule {
 				if uint64(meta.Size)+meta.Off == kernelModuleMeta.Size {
 					fileHash, _ := t.computeOutFileHash(fullname)
-					utils.RenameAt(t.outDir, fullname, t.outDir, fullname+"."+fileHash)
+					err := utils.RenameAt(t.outDir, fullname, t.outDir, fullname+"."+fileHash)
+					if err != nil {
+						t.handleError(err)
+						continue
+					}
 				}
 			}
 		case lost := <-t.lostWrChannel:
@@ -159,7 +171,9 @@ func (t *Tracee) processFileWrites(ctx context.Context) {
 			// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:
 			// https://github.com/aquasecurity/libbpfgo/issues/122
 			if lost > 0 {
-				t.stats.LostWrCount.Increment(lost)
+				if err := t.stats.LostWrCount.Increment(lost); err != nil {
+					logger.Errorw("Incrementing lost write count", "error", err)
+				}
 				logger.Warnw(fmt.Sprintf("Lost %d write events", lost))
 			}
 

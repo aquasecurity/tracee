@@ -38,7 +38,9 @@ func (t *Tracee) processLostEvents(ctx context.Context) {
 			// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:
 			// https://github.com/aquasecurity/libbpfgo/issues/122
 			if lost > 0 {
-				_ = t.stats.LostEvCount.Increment(lost)
+				if err := t.stats.LostEvCount.Increment(lost); err != nil {
+					logger.Errorw("Incrementing lost event count", "error", err)
+				}
 				logger.Warnw(fmt.Sprintf("Lost %d events", lost))
 			}
 		case <-ctx.Done():
@@ -232,7 +234,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 				} else {
 
 					// ring1
-					capabilities.GetInstance().Required(func() error {
+					err = capabilities.GetInstance().Required(func() error {
 						currentHash, err = computeFileHashAtPath(sourceFilePath)
 						if err == nil {
 							hashInfoObj = fileExecInfo{castedSourceFileCtime, currentHash}
@@ -240,7 +242,9 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 						}
 						return nil
 					})
-
+					if err != nil {
+						logger.Errorw("Requiring capabilities", "error", err)
+					}
 				}
 				event.Args = append(event.Args, trace.Argument{
 					ArgMeta: trace.ArgMeta{Name: "sha256", Type: "const char*"},
@@ -466,14 +470,15 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 	if err != nil || address == 0 {
 		return errfmt.Errorf("error parsing print_mem_dump args: %v", err)
 	}
+
 	addressUint64 := uint64(address)
 	symbol := utils.ParseSymbol(addressUint64, t.kernelSymbols)
 	var utsName unix.Utsname
 	arch := ""
-	unix.Uname(&utsName)
-	if err == nil {
-		arch = string(bytes.TrimRight(utsName.Machine[:], "\x00"))
+	if err := unix.Uname(&utsName); err != nil {
+		return errfmt.WrapError(err)
 	}
+	arch = string(bytes.TrimRight(utsName.Machine[:], "\x00"))
 	event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "arch", Type: "char*"}, Value: arch})
 	event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "symbol_name", Type: "char*"}, Value: symbol.Name})
 	event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "symbol_owner", Type: "char*"}, Value: symbol.Owner})

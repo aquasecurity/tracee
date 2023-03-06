@@ -11,6 +11,7 @@ import (
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/detect"
 )
 
@@ -60,7 +61,11 @@ func NewConfigFromFile(filePath string) (SignaturesConfig, error) {
 	if err != nil {
 		return SignaturesConfig{}, fmt.Errorf("failed opening CEL signature config file: %s: %w", filePath, err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			logger.Errorw("Closing file", "error", err)
+		}
+	}()
 	decoder := yaml.NewDecoder(file)
 
 	err = decoder.Decode(&config)
