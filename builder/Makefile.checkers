@@ -21,9 +21,15 @@ CMD_HEAD ?= head
 CMD_CUT ?= cut
 CMD_SED ?= sed
 CMD_TR ?= tr
+CMD_FIND ?= find
 CMD_CLANG ?= clang
 # clang-format-12 is mandatory for now (enum declarations incompatibilities w/ 13 and newer)
 CMD_CLANG_FMT ?= clang-format-12
+CMD_GOFMT ?= gofmt
+# goimports-reviser
+CMD_GOIMPORTS ?= goimports-reviser
+CMD_GOIMPORTS_COMPANY_PREFIXES ?= "github.com/aquasecurity"
+CMD_GOIMPORTS_PROJECT ?= "github.com/aquasecurity/tracee"
 
 .check_%:
 #
@@ -71,7 +77,7 @@ help:
 	fi
 
 #
-# check formatting (clang-format, gofmt)
+# check formatting (clang-format, goimports-reviser, gofmt)
 #
 
 C_FILES_TO_BE_CHECKED = $(shell find ./pkg/ebpf/c/ -regextype posix-extended -regex '.*\.(h|c)' | xargs)
@@ -79,7 +85,10 @@ C_FILES_TO_BE_CHECKED = $(shell find ./pkg/ebpf/c/ -regextype posix-extended -re
 .PHONY: fmt-check
 fmt-check: | \
 	.check_tree \
-	.check_$(CMD_CLANG_FMT)
+	.check_$(CMD_CLANG_FMT) \
+	.check_$(CMD_FIND) \
+	.check_$(CMD_GOIMPORTS) \
+	.check_$(CMD_GOFMT)
 #
 	@errors=0
 	echo "Checking C and eBPF files and headers formatting..."
@@ -91,8 +100,33 @@ fmt-check: | \
 	fi
 	rm -f /tmp/check-c-fmt
 #
+	echo "Checking golang files imports formatting..."
+	rm -f /tmp/check-goimports-fmt
+	# need to iterate due to this issue https://github.com/incu6us/goimports-reviser/issues/93
+	for file in `$(CMD_FIND) . -type f -name '*.go'`; do \
+		$(CMD_GOIMPORTS) \
+			-output stdout \
+			-list-diff \
+			-company-prefixes $(CMD_GOIMPORTS_COMPANY_PREFIXES) \
+			-project-name $(CMD_GOIMPORTS_PROJECT) \
+			$$file >> /tmp/check-goimports-fmt 2>&1; \
+	done
+	goimportsamount=$$(cat /tmp/check-goimports-fmt | wc -l)
+	if [[ $$goimportsamount -ne 0 ]]; then
+		errors=1
+	fi
+	if [[ $$errors -ne 0 ]]; then
+		cat /tmp/check-goimports-fmt
+		echo
+		echo "Please fix formatting errors in the files above!"
+		echo "Use: $(MAKE) fmt-fix target".
+		echo
+		exit 1
+	fi
+	rm -f /tmp/check-goimports-fmt
+#
 	echo "Checking golang files formatting..."
-	gofmt -l -s -d . | tee /tmp/check-go-fmt
+	$(CMD_GOFMT) -l -s -d . | tee /tmp/check-go-fmt
 	gofmtamount=$$(cat /tmp/check-go-fmt | wc -l)
 	if [[ $$gofmtamount -ne 0 ]]; then
 		errors=1
@@ -107,19 +141,28 @@ fmt-check: | \
 	rm -f /tmp/check-go-fmt
 
 #
-# fix formatting (clang-format, gofmt)
+# fix formatting (clang-format, goimports-reviser, gofmt)
 #
 
 .PHONY: fmt-fix
 fmt-fix: | \
 	.check_tree \
-	.check_$(CMD_CLANG_FMT)
+	.check_$(CMD_CLANG_FMT) \
+	.check_$(CMD_GOIMPORTS) \
+	.check_$(CMD_GOFMT)
 #
 	@echo "Fixing C and eBPF files and headers formatting..."
 	$(CMD_CLANG_FMT) -i --verbose $(C_FILES_TO_BE_CHECKED)
 #
+	echo "Fixing golang files imports formatting..."
+	$(CMD_GOIMPORTS) \
+		-list-diff \
+		-company-prefixes $(CMD_GOIMPORTS_COMPANY_PREFIXES) \
+		-project-name $(CMD_GOIMPORTS_PROJECT) \
+		./...
+#
 	echo "Fixing golang files formatting..."
-	gofmt -l -s -d . > /tmp/patch.$$
+	$(CMD_GOFMT) -l -s -d . > /tmp/patch.$$
 	patch -p0 < /tmp/patch.$$
 	rm /tmp/patch.$$
 
