@@ -39,6 +39,11 @@ RUN apk --no-cache add man-pages man-pages-posix bash-completion vim && \
 RUN GOROOT=/usr/lib/go GOPATH=$HOME/go go install github.com/incu6us/goimports-reviser/v3@latest && \
     sudo cp $HOME/go/bin/goimports-reviser /usr/bin/
 
+# install errcheck
+
+RUN GOROOT=/usr/lib/go GOPATH=$HOME/go go install github.com/kisielk/errcheck@latest && \
+    sudo cp $HOME/go/bin/errcheck /usr/bin/
+
 # allow TRACEE* and LIBBPFGO* environment variables through sudo
 
 RUN echo "Defaults env_keep += \"LANG LC_* HOME EDITOR PAGER GIT_PAGER MAN_PAGER\"" > /etc/sudoers && \

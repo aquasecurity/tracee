@@ -68,6 +68,9 @@ jobs:
       - name: Check with StaticCheck
         run: |
           make check-staticcheck
+      - name: Check with errcheck
+        run: |
+          make check-err
   #
   # SIGNATURES CODE VERIFICATION (github runner)
   #
