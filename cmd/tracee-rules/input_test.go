@@ -8,9 +8,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func TestParseTraceeInputOptions(t *testing.T) {

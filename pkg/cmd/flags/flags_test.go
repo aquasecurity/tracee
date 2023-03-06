@@ -6,6 +6,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
@@ -14,8 +17,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/filterscope"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/pkg/signatures/rego"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // This will only test failure cases since success cases are covered in the filter tests themselves

@@ -3,6 +3,7 @@ package probes
 import (
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
+
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 

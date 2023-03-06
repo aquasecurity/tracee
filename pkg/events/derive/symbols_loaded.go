@@ -4,6 +4,8 @@ import (
 	"path"
 	"strings"
 
+	"golang.org/x/exp/maps"
+
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/filters"
@@ -11,7 +13,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 	"github.com/aquasecurity/tracee/types/trace"
-	"golang.org/x/exp/maps"
 )
 
 func SymbolsLoaded(

@@ -6,13 +6,14 @@ import (
 	"os"
 	"testing"
 
+	"github.com/open-policy-agent/opa/compile"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/aquasecurity/tracee/pkg/signatures/regosig"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
-	"github.com/open-policy-agent/opa/compile"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestAio_GetMetadata(t *testing.T) {

@@ -8,10 +8,12 @@ import (
 	"strings"
 	"unsafe"
 
+	"golang.org/x/exp/constraints"
+
 	bpf "github.com/aquasecurity/libbpfgo"
+
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
-	"golang.org/x/exp/constraints"
 )
 
 const (

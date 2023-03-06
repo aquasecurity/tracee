@@ -5,10 +5,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestTraceeEbpfPrepareOutputPrinterConfig(t *testing.T) {

@@ -3,11 +3,11 @@ package ebpf
 import (
 	"unsafe"
 
-	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/logger"
-
 	"github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
+
+	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 var maxKsymNameLen = 64 // Most match the constant in the bpf code

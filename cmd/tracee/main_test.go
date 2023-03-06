@@ -3,11 +3,11 @@ package main
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 	"github.com/aquasecurity/tracee/types/detect"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_createEventsFromSigs(t *testing.T) {

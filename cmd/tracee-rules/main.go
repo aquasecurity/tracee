@@ -11,16 +11,16 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/open-policy-agent/opa/compile"
+	"github.com/urfave/cli/v2"
+	"kernel.org/pub/linux/libs/security/libcap/cap"
+
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 	"github.com/aquasecurity/tracee/types/detect"
-
-	"github.com/open-policy-agent/opa/compile"
-	"github.com/urfave/cli/v2"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 func init() {

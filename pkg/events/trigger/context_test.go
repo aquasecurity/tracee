@@ -3,11 +3,12 @@ package trigger_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"gotest.tools/assert"
+
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
 	"github.com/aquasecurity/tracee/types/trace"
-	"github.com/stretchr/testify/require"
-	"gotest.tools/assert"
 )
 
 func TestContext_Apply(t *testing.T) {

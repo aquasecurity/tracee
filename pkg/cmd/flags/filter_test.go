@@ -3,9 +3,10 @@ package flags
 import (
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/pkg/events"
 )
 
 func TestFilter_prepareEventsToTrace(t *testing.T) {

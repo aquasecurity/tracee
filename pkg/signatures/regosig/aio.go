@@ -1,19 +1,19 @@
 package regosig
 
 import (
-	_ "embed"
-
 	"context"
+	_ "embed"
 	"fmt"
 	"sort"
 	"strings"
 
-	"github.com/aquasecurity/tracee/types/detect"
-	"github.com/aquasecurity/tracee/types/protocol"
-	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/open-policy-agent/opa/rego"
+
+	"github.com/aquasecurity/tracee/types/detect"
+	"github.com/aquasecurity/tracee/types/protocol"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 var (

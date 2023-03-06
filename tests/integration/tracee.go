@@ -7,11 +7,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/aquasecurity/libbpfgo/helpers"
+
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/types/trace"
-	"github.com/stretchr/testify/require"
 )
 
 // load tracee into memory with args

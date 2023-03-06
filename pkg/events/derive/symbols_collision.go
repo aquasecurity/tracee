@@ -1,14 +1,15 @@
 package derive
 
 import (
+	"github.com/hashicorp/golang-lru/simplelru"
+	"golang.org/x/exp/maps"
+
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/filterscope"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 	"github.com/aquasecurity/tracee/types/trace"
-	"github.com/hashicorp/golang-lru/simplelru"
-	"golang.org/x/exp/maps"
 )
 
 //

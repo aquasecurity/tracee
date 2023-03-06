@@ -6,8 +6,9 @@ import (
 	"os"
 	"path"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"golang.org/x/sys/unix"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 // OpenExistingDir open a directory with given path, and return the os.File of it.

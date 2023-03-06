@@ -5,10 +5,11 @@ import (
 	"strconv"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Wrap the specified protocol.Event as Event so we can use cel-go without implementing custom ref.TypeProvider.

@@ -6,8 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/pkg/filters"
 )
 
 func matchFilter(filters []string, argValStr string) bool {

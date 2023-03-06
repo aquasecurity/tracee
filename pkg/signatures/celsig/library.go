@@ -1,13 +1,14 @@
 package celsig
 
 import (
-	"github.com/aquasecurity/tracee/pkg/signatures/celsig/wrapper"
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/checker/decls"
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
 	"github.com/google/cel-go/interpreter/functions"
 	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
+
+	"github.com/aquasecurity/tracee/pkg/signatures/celsig/wrapper"
 )
 
 var (

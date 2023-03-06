@@ -4,13 +4,14 @@ import (
 	"context"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/containers"
 	"github.com/containerd/containerd/namespaces"
 	cri "github.com/kubernetes/cri-api/pkg/apis/runtime/v1alpha2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 type containerdEnricher struct {

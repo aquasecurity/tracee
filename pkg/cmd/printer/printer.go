@@ -13,11 +13,11 @@ import (
 	"text/template"
 	"time"
 
+	forward "github.com/IBM/fluent-forward-go/fluent/client"
+
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/types/trace"
-
-	forward "github.com/IBM/fluent-forward-go/fluent/client"
 )
 
 type EventPrinter interface {
