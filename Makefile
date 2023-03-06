@@ -35,6 +35,7 @@ CMD_CAT ?= cat
 CMD_MD5 ?= md5sum
 CMD_OPA ?= opa
 CMD_STATICCHECK ?= staticcheck
+CMD_ERRCHECK ?= errcheck
 
 .check_%:
 #
@@ -806,6 +807,20 @@ check-staticcheck: \
 	@$(GO_ENV_EBPF) \
 	$(CMD_STATICCHECK) -f stylish \
 		-tags $(GO_TAGS_EBPF) \
+		./...
+
+.PHONY: check-err
+check-err: \
+	.checkver_$(CMD_GO) \
+	tracee-ebpf \
+	| .check_$(CMD_ERRCHECK)
+#
+	@$(CMD_ERRCHECK) \
+		-tags $(GO_TAGS_EBPF) \
+		-ignoretests \
+		-ignore 'fmt:[FS]?[Pp]rint*|[wW]rite' \
+		-ignore '[rR]ead|[wW]rite' \
+		-ignore 'RegisterEventProcessor' \
 		./...
 
 #
