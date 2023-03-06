@@ -8,8 +8,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/aquasecurity/tracee/pkg/cmd/urfave"
 	"github.com/urfave/cli/v2"
+
+	"github.com/aquasecurity/tracee/pkg/cmd/urfave"
 )
 
 const (

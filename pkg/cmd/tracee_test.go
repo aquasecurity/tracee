@@ -3,9 +3,9 @@ package cmd
 import (
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/events"
-
 	"github.com/stretchr/testify/assert"
+
+	"github.com/aquasecurity/tracee/pkg/events"
 )
 
 func Test_getFormattedEventParams(t *testing.T) {

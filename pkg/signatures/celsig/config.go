@@ -7,10 +7,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"github.com/aquasecurity/tracee/types/detect"
 	"gopkg.in/yaml.v2"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
+
+	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/types/detect"
 )
 
 var (

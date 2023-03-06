@@ -3,10 +3,11 @@ package derive
 import (
 	"net"
 
-	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+
+	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func NetPacketICMPv6() DeriveFunction {

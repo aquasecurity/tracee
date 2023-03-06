@@ -4,8 +4,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
 	docker "github.com/docker/docker/client"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 type dockerEnricher struct {

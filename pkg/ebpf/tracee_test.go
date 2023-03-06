@@ -4,9 +4,10 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/pkg/events"
 )
 
 func Test_getTailCalls(t *testing.T) {

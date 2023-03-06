@@ -1,7 +1,10 @@
 package urfave
 
 import (
+	cli "github.com/urfave/cli/v2"
+
 	"github.com/aquasecurity/libbpfgo/helpers"
+
 	"github.com/aquasecurity/tracee/pkg/cmd"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
@@ -10,8 +13,6 @@ import (
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
-
-	cli "github.com/urfave/cli/v2"
 )
 
 func GetTraceeRunner(c *cli.Context, version string, newBinary bool) (cmd.Runner, error) {

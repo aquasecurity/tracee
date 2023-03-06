@@ -2,6 +2,7 @@ package initialize
 
 import (
 	"github.com/aquasecurity/libbpfgo/helpers"
+
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 

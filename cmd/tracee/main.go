@@ -6,6 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	cli "github.com/urfave/cli/v2"
+
 	"github.com/aquasecurity/tracee/pkg/cmd"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
@@ -16,8 +18,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 	"github.com/aquasecurity/tracee/types/detect"
-
-	cli "github.com/urfave/cli/v2"
 )
 
 func init() {

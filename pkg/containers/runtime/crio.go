@@ -4,10 +4,11 @@ import (
 	"context"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
 	cri "github.com/kubernetes/cri-api/pkg/apis/runtime/v1alpha2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 type crioEnricher struct {

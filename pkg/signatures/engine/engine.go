@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/logger"
-
 	"github.com/aquasecurity/tracee/pkg/signatures/metrics"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"

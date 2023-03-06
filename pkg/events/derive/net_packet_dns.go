@@ -1,11 +1,11 @@
 package derive
 
 import (
+	"github.com/google/gopacket/layers"
+
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
-
-	"github.com/google/gopacket/layers"
 )
 
 //

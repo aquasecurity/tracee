@@ -3,8 +3,9 @@ package parse
 import (
 	"testing"
 
-	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func TestArgVal(t *testing.T) {

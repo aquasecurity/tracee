@@ -3,9 +3,10 @@ package flags
 import (
 	"strings"
 
+	"github.com/open-policy-agent/opa/compile"
+
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/signatures/rego"
-	"github.com/open-policy-agent/opa/compile"
 )
 
 func regoHelp() string {

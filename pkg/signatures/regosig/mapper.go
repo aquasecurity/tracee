@@ -6,8 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/open-policy-agent/opa/rego"
+
+	"github.com/aquasecurity/tracee/types/detect"
 )
 
 type Mapper struct {

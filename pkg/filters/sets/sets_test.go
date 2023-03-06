@@ -4,8 +4,9 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/filters/sets"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/aquasecurity/tracee/pkg/filters/sets"
 )
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")

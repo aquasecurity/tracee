@@ -3,10 +3,11 @@ package celsig_test
 import (
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/signatures/celsig"
-	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/pkg/signatures/celsig"
+	"github.com/aquasecurity/tracee/types/detect"
 )
 
 func TestNewConfigFromFile(t *testing.T) {

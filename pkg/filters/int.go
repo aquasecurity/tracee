@@ -6,8 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"golang.org/x/exp/constraints"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 const (

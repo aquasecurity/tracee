@@ -4,8 +4,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/aquasecurity/tracee/types/trace"
 	"gotest.tools/assert"
+
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func TestEnqueueDequeue(t *testing.T) {

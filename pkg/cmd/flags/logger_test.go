@@ -4,10 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/cmd/flags"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/pkg/cmd/flags"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 func TestPrepareLogger(t *testing.T) {

@@ -4,6 +4,7 @@ import (
 	"regexp"
 
 	"github.com/aquasecurity/libbpfgo"
+
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 

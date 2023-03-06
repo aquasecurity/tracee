@@ -6,11 +6,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/google/gopacket/layers"
+	"github.com/google/gopacket/pcapgo"
+
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
-	"github.com/google/gopacket/layers"
-	"github.com/google/gopacket/pcapgo"
 )
 
 var outputDirectory *os.File
