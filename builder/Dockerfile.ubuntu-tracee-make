@@ -67,10 +67,21 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     curl -L -o /tmp/golang.tar.xz https://go.dev/dl/go1.19.5.linux-${altarch}.tar.gz && \
     tar -C /usr/local -xzf /tmp/golang.tar.xz && \
     update-alternatives --install /usr/bin/go go /usr/local/go/bin/go 1 && \
-    update-alternatives --install /usr/bin/gofmt gofmt /usr/local/go/bin/gofmt 1 && \
-    GOROOT=/usr/local/go GOPATH=$HOME/go go install github.com/incu6us/goimports-reviser/v3@latest && \
-    sudo cp $HOME/go/bin/goimports-reviser /usr/bin/ && \
-    GOROOT=/usr/local/go GOPATH=$HOME/go go install github.com/kisielk/errcheck@latest && \
+    update-alternatives --install /usr/bin/gofmt gofmt /usr/local/go/bin/gofmt 1
+
+# install staticcheck
+
+RUN GOROOT=/usr/local/go GOPATH=$HOME/go go install honnef.co/go/tools/cmd/staticcheck@latest && \
+    sudo cp $HOME/go/bin/staticcheck /usr/bin/
+
+# install goimports-reviser
+
+RUN GOROOT=/usr/local/go GOPATH=$HOME/go go install github.com/incu6us/goimports-reviser/v3@latest && \
+    sudo cp $HOME/go/bin/goimports-reviser /usr/bin/
+
+# install errcheck
+
+RUN GOROOT=/usr/local/go GOPATH=$HOME/go go install github.com/kisielk/errcheck@latest && \
     sudo cp $HOME/go/bin/errcheck /usr/bin/
 
 USER tracee

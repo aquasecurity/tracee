@@ -34,6 +34,11 @@ RUN apk --no-cache add man-pages man-pages-posix bash-completion vim && \
     apk --no-cache add wget lynx w3m && \
     apk --no-cache add stress-ng
 
+# install staticcheck
+
+RUN GOROOT=/usr/lib/go GOPATH=$HOME/go go install honnef.co/go/tools/cmd/staticcheck@latest && \
+    sudo cp $HOME/go/bin/staticcheck /usr/bin/
+
 # install goimports-reviser
 
 RUN GOROOT=/usr/lib/go GOPATH=$HOME/go go install github.com/incu6us/goimports-reviser/v3@latest && \
