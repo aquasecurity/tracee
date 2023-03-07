@@ -105,7 +105,7 @@ build-tracee: \
 	$(CMD_DOCKER) images \
 		--filter "label=AS=tracee-make" \
 		--format "{{.ID}}" \
-		| xargs $(CMD_DOCKER) rmi
+		| xargs -r $(CMD_DOCKER) rmi
 
 .PHONY: build-tracee-full
 build-tracee-full: \
@@ -122,7 +122,7 @@ build-tracee-full: \
 	$(CMD_DOCKER) images \
 		--filter "label=AS=tracee-make" \
 		--format "{{.ID}}" \
-		| xargs $(CMD_DOCKER) rmi
+		| xargs -r $(CMD_DOCKER) rmi
 
 #
 # run tracee and tracee-full
