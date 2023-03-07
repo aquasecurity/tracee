@@ -71,7 +71,9 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     curl -L -o /tmp/golang.tar.xz https://go.dev/dl/go1.19.5.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf /tmp/golang.tar.xz && \
     update-alternatives --install /usr/bin/go go /usr/local/go/bin/go 1 && \
-    update-alternatives --install /usr/bin/gofmt gofmt /usr/local/go/bin/gofmt 1
+    update-alternatives --install /usr/bin/gofmt gofmt /usr/local/go/bin/gofmt 1 && \
+    GOROOT=/usr/local/go GOPATH=$HOME/go go install github.com/incu6us/goimports-reviser/v3@latest && \
+    sudo cp $HOME/go/bin/goimports-reviser /usr/bin/
 
 USER tracee
 ENV HOME /home/tracee
