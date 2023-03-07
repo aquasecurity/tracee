@@ -50,9 +50,9 @@ DONTSLEEP=${DONTSLEEP:=1}
 # randomize start point (for parallel runners)
 if [[ $DONTSLEEP -ne 1 ]]
 then
-  rand=$(( $RANDOM % 10 ))
-  info "sleeping for $rand seconds"
-  sleep $rand
+    rand=$(( $RANDOM % 10 ))
+    info "sleeping for $rand seconds"
+    sleep $rand
 fi
 
 # startup needs
