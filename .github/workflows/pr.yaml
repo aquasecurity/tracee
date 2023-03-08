@@ -23,11 +23,12 @@ concurrency:
   group: ${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 env:
-  # TRC-103 disabled: https://github.com/aquasecurity/tracee/issues/2820
-  TESTS: "TRC-102 TRC-104 TRC-105 TRC-107 TRC-1018 TRC-1014 TRC-1016 TRC-1010"
+  # TRC-103 enabled but under analysis
+  # https://github.com/aquasecurity/tracee/issues/2820
+  TESTS: "TRC-102 TRC-103 TRC-104 TRC-105 TRC-107 TRC-1018 TRC-1014 TRC-1016 TRC-1010"
   # ARM64 tests are disabled due to missing arm64 binaries in tracee-tester
   # https://github.com/aquasecurity/tracee/issues/2821
-  ARM64_TESTS: "TRC-102 TRC-104 TRC-107 TRC-1018 TRC-1014 TRC-1016"
+  ARM64_TESTS: "TRC-102 TRC-103 TRC-104 TRC-107 TRC-1018 TRC-1014 TRC-1016"
   RHEL_ARM64_TESTS: "TRC-102 TRC-107 TRC-1018 TRC-1014 TRC-1016"
   NETTESTS: "IPv4 IPv6 TCP UDP ICMP ICMPv6 DNS HTTP"
   INSTTESTS: "VFS_WRITE FILE_MODIFICATION"
