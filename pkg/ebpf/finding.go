@@ -30,7 +30,7 @@ func newEvent(id int, f detect.Finding, s trace.Event) *trace.Event {
 
 	return &trace.Event{
 		EventID:             id,
-		EventName:           f.SigMetadata.Name,
+		EventName:           f.SigMetadata.EventName,
 		Timestamp:           s.Timestamp,
 		ThreadStartTime:     s.ThreadStartTime,
 		ProcessorID:         s.ProcessorID,
