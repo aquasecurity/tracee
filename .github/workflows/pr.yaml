@@ -5,6 +5,9 @@ on:
   pull_request:
     branches:
       - main
+concurrency:
+  group: ${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 env:
   # TRC-103 disabled: https://github.com/aquasecurity/tracee/issues/2820
   TESTS: "TRC-102 TRC-104 TRC-105 TRC-107 TRC-1018 TRC-1014 TRC-1016 TRC-1010"
