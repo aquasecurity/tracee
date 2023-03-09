@@ -17,6 +17,7 @@ require (
 	github.com/kubernetes/cri-api v0.0.0-00010101000000-000000000000
 	github.com/open-policy-agent/opa v0.48.0
 	github.com/prometheus/client_golang v1.14.0
+	github.com/sashabaranov/go-gpt3 v1.2.1
 	github.com/stretchr/testify v1.8.1
 	github.com/urfave/cli/v2 v2.3.0
 	go.uber.org/zap v1.23.0
@@ -33,7 +34,6 @@ require (
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/philhofer/fwd v1.1.1 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
-	github.com/sashabaranov/go-gpt3 v1.2.1 // indirect
 	github.com/tinylib/msgp v1.1.6 // indirect
 )
 
