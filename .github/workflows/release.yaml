@@ -1,13 +1,12 @@
----
-# Release Tracee when a tag starting with v is pushed to the repository.
+#
+# When tag vXXX is pushed: Release Tracee
+#
 name: Release
-
 on:
   workflow_dispatch: {}
   push:
     tags:
       - "v*"
-
 jobs:
   release:
     name: Release
@@ -20,13 +19,11 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: true
-      - name: Install Dependencies
-        uses: ./.github/actions/build-dependencies
       - name: Install Cosign
         uses: sigstore/cosign-installer@main
         with:
-          cosign-release: 'v1.13.1'
-      - name: authenticate
+          cosign-release: "v1.13.1"
+      - name: Authenticate
         run: |
           gh auth login --with-token <<<'${{ secrets.GITHUB_TOKEN }}'
           docker login docker.io --username ${{ secrets.DOCKERHUB_USER }} --password-stdin <<<'${{ secrets.DOCKERHUB_TOKEN }}'

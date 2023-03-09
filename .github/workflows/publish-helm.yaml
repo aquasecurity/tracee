@@ -1,23 +1,22 @@
----
+# On demand: package and upload the Helm chart
+#
 # This is a manually triggered workflow to package and upload the Helm chart
 # from the specified Git revision (e.g., main branch or v0.7.0 tag) to Helm
 # repository on https://github.com/aquasecurity/helm-charts.
+#
 name: Publish Helm
-
 on:
   workflow_dispatch:
     inputs:
       ref:
         description: The branch, tag or SHA to publish, e.g. v0.0.1
         required: true
-
 env:
   HELM_REP: helm-charts
   GH_OWNER: aquasecurity
   CHART_DIR: deploy/helm/tracee
   KIND_VERSION: "v0.14.0"
   KIND_IMAGE: "kindest/node:v1.23.6@sha256:b1fa224cc6c7ff32455e0b1fd9cbfd3d3bc87ecaa8fcb06961ed1afb3db0f9ae"
-
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -37,12 +36,12 @@ jobs:
           python-version: 3.7
       - name: Set up aqua charts
         run: |
-           helm repo add aqua https://aquasecurity.github.io/helm-charts
+          helm repo add aqua https://aquasecurity.github.io/helm-charts
       - name: Setup Chart Linting
         id: lint
         uses: helm/chart-testing-action@dae259e86a35ff09145c0805e2d7dd3f7207064a
       - name: Setup Kubernetes cluster (KIND)
-        uses: helm/kind-action@9e8295d178de23cbfbd8fa16cf844eec1d773a07  # v1.2.0
+        uses: helm/kind-action@9e8295d178de23cbfbd8fa16cf844eec1d773a07 # v1.2.0
         with:
           version: ${{ env.KIND_VERSION }}
           image: ${{ env.KIND_IMAGE }}
@@ -75,9 +74,9 @@ jobs:
         env:
           API_TOKEN_GITHUB: ${{ secrets.ORG_REPO_TOKEN }}
         with:
-          source_file: 'index.yaml'
-          destination_repo: '${{ env.GH_OWNER }}/${{ env.HELM_REP }}'
-          destination_folder: '.'
-          destination_branch: 'gh-pages'
+          source_file: "index.yaml"
+          destination_repo: "${{ env.GH_OWNER }}/${{ env.HELM_REP }}"
+          destination_folder: "."
+          destination_branch: "gh-pages"
           user_email: aqua-bot@users.noreply.github.com
-          user_name: 'aqua-bot'
+          user_name: "aqua-bot"
