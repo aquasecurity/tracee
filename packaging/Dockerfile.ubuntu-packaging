@@ -1,10 +1,6 @@
-################################################################################
-# INSTRUCTIONS
-################################################################################
 #
-# This Dockerfile is meant to create a tracee ubuntu pkgs building environment
+# Creates a building environment for tracee ubuntu pkgs.
 #
-################################################################################
 
 ARG version
 ARG uid=1000

@@ -1,10 +1,6 @@
-################################################################################
-# INSTRUCTIONS
-################################################################################
 #
-# This Dockerfile is meant to create a building/exec environment for tracee.
+# Creates a local docker building environment (ubuntu).
 #
-################################################################################
 
 FROM ubuntu:jammy
 

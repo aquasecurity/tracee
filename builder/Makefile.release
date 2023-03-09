@@ -1,5 +1,5 @@
 #
-# Responsible for creating tracee snapshots for testing and releasing
+# Creates tracee snapshots for testing and releasing.
 #
 
 .PHONY: all

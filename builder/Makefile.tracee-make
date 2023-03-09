@@ -1,5 +1,5 @@
 #
-# Responsible for creating a local docker building environment (alpine & ubuntu)
+# Creates a local docker building environment (alpine & ubuntu).
 #
 
 .PHONY: all
@@ -132,16 +132,16 @@ ifeq ($(BTFHUB), 1)
 endif
 
 DOCKER_RUN_ARGS = run --rm \
-		  --pid=host \
-		  --cgroupns=host \
-		  --privileged \
-		  -v /etc/os-release:/etc/os-release-host:ro \
-		  -v $(PWD):/tracee \
-		  -v /lib/modules:/lib/modules:ro \
-		  -v /usr/src:/usr/src:ro \
-		  -v /sys/kernel/security:/sys/kernel/security:ro \
-		  -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-		  $(DOCKER_RUN_ENV)
+	--pid=host \
+	--cgroupns=host \
+	--privileged \
+	-v /etc/os-release:/etc/os-release-host:ro \
+	-v $(PWD):/tracee \
+	-v /lib/modules:/lib/modules:ro \
+	-v /usr/src:/usr/src:ro \
+	-v /sys/kernel/security:/sys/kernel/security:ro \
+	-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+	$(DOCKER_RUN_ENV)
 
 #
 # tracee-make's shell
