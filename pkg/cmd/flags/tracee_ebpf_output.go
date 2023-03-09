@@ -6,7 +6,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 func traceeEbpfOutputHelp() string {
@@ -73,7 +73,7 @@ func TraceeEbpfPrepareOutput(outputSlice []string) (OutputConfig, error) {
 				return outConfig, err
 			}
 		default:
-			return outConfig, logger.NewErrorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
+			return outConfig, errfmt.Errorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
 		}
 	}
 
@@ -130,7 +130,7 @@ func validateFormat(printerKind string) error {
 		printerKind != "json" &&
 		printerKind != "gob" &&
 		!strings.HasPrefix(printerKind, "gotemplate=") {
-		return logger.NewErrorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info", printerKind)
+		return errfmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info", printerKind)
 	}
 
 	return nil

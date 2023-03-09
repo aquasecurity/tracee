@@ -11,6 +11,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -129,7 +130,7 @@ func GetTraceeRunner(c *cli.Context, version string, newBinary bool) (cmd.Runner
 		logger.Debug("OSInfo", "lockdown", err)
 	}
 	if err == nil && lockdown == helpers.CONFIDENTIALITY {
-		return runner, logger.NewErrorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
+		return runner, errfmt.Errorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
 
 	}
 
@@ -157,7 +158,7 @@ func GetTraceeRunner(c *cli.Context, version string, newBinary bool) (cmd.Runner
 	traceeInstallPath := c.String("install-path")
 	err = initialize.BpfObject(&cfg, kernelConfig, OSInfo, traceeInstallPath, version)
 	if err != nil {
-		return runner, logger.NewErrorf("failed preparing BPF object: %v", err)
+		return runner, errfmt.Errorf("failed preparing BPF object: %v", err)
 	}
 
 	cfg.ChanEvents = make(chan trace.Event, 1000)

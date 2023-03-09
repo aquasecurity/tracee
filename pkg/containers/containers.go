@@ -18,6 +18,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/cgroup"
 	cruntime "github.com/aquasecurity/tracee/pkg/containers/runtime"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
@@ -109,7 +110,7 @@ func GetContainerIdFromTaskDir(taskPath string) (string, error) {
 	taskPath = fmt.Sprintf("%s/cgroup", taskPath)
 	cgroupFile, err := os.Open(taskPath)
 	if err != nil {
-		return containerId, logger.ErrorFunc(err)
+		return containerId, errfmt.WrapError(err)
 	}
 	defer cgroupFile.Close()
 	scanner := bufio.NewScanner(cgroupFile)
@@ -143,7 +144,7 @@ func (c *Containers) populate() error {
 		statusChange := time.Unix(stat.Ctim.Sec, stat.Ctim.Nsec)
 		_, err = c.CgroupUpdate(inodeNumber, path, statusChange)
 
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	return filepath.WalkDir(c.cgroups.GetDefaultCgroup().GetMountPoint(), fn)
@@ -185,14 +186,14 @@ func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetada
 
 	//if there is no cgroup anymore for some reason, return early
 	if !ok {
-		return metadata, logger.NewErrorf("no cgroup to enrich")
+		return metadata, errfmt.Errorf("no cgroup to enrich")
 	}
 
 	containerId := info.Container.ContainerId
 	runtime := info.Runtime
 
 	if containerId == "" {
-		return metadata, logger.NewErrorf("no containerId")
+		return metadata, errfmt.Errorf("no containerId")
 	}
 
 	//There might be a performance overhead with the cancel
@@ -202,7 +203,7 @@ func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetada
 	defer cancel()
 	//if enrichment fails, just return early
 	if err != nil {
-		return metadata, logger.ErrorFunc(err)
+		return metadata, errfmt.WrapError(err)
 	}
 
 	info.Container = metadata
@@ -407,7 +408,7 @@ const (
 func (c *Containers) PopulateBpfMap(bpfModule *libbpfgo.Module) error {
 	containersMap, err := bpfModule.GetMap(c.bpfMapName)
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	c.mtx.RLock()
@@ -419,7 +420,7 @@ func (c *Containers) PopulateBpfMap(bpfModule *libbpfgo.Module) error {
 	}
 	c.mtx.RUnlock()
 
-	return logger.ErrorFunc(err)
+	return errfmt.WrapError(err)
 }
 
 func (c *Containers) RemoveFromBpfMap(bpfModule *libbpfgo.Module, cgroupId uint64, hierarchyID uint32) error {
@@ -433,7 +434,7 @@ func (c *Containers) RemoveFromBpfMap(bpfModule *libbpfgo.Module, cgroupId uint6
 
 	containersMap, err := bpfModule.GetMap(c.bpfMapName)
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	cgroupIdLsb := uint32(cgroupId)

@@ -3,7 +3,7 @@ package runtime
 import (
 	"os"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 // Sockets represent existing container runtime connections
@@ -19,7 +19,7 @@ func (s *Sockets) Register(runtime RuntimeId, socket string) error {
 
 	_, err := os.Stat(socket)
 	if err != nil {
-		return logger.NewErrorf("failed to register runtime socket %v", err)
+		return errfmt.Errorf("failed to register runtime socket %v", err)
 	}
 	s.sockets[runtime] = socket
 	return nil

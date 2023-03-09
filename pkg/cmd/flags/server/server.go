@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/server"
 )
 
@@ -19,7 +19,7 @@ const (
 
 func PrepareServer(listenAddr string, metrics, healthz, pprof bool) (*server.Server, error) {
 	if len(listenAddr) == 0 {
-		return nil, logger.NewErrorf("listen address cannot be empty")
+		return nil, errfmt.Errorf("listen address cannot be empty")
 	}
 
 	if metrics || healthz || pprof {

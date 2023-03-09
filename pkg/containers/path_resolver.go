@@ -8,7 +8,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/bucketscache"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 // ContainerPathResolver generates an accessible absolute path from the root mount namespace to a
@@ -34,7 +34,7 @@ func (cPathRes *ContainerPathResolver) GetHostAbsPath(mountNSAbsolutePath string
 ) {
 	// path should be absolute, except, for example, memfd_create files
 	if mountNSAbsolutePath == "" || mountNSAbsolutePath[0] != '/' {
-		return "", logger.NewErrorf("file path is not absolute in its container mount point")
+		return "", errfmt.Errorf("file path is not absolute in its container mount point")
 	}
 	// try to access the root fs via another process in the same mount namespace
 	// (since the current process might have already died)
@@ -45,10 +45,10 @@ func (cPathRes *ContainerPathResolver) GetHostAbsPath(mountNSAbsolutePath string
 		err := capabilities.GetInstance().Required(func() error {
 			entries, err := fs.ReadDir(cPathRes.fs, strings.TrimPrefix(procRootPath, "/"))
 			if err != nil {
-				return logger.ErrorFunc(err)
+				return errfmt.WrapError(err)
 			}
 			if len(entries) == 0 {
-				return logger.NewErrorf("empty directory")
+				return errfmt.Errorf("empty directory")
 			}
 			return nil
 		})
@@ -56,5 +56,5 @@ func (cPathRes *ContainerPathResolver) GetHostAbsPath(mountNSAbsolutePath string
 			return fmt.Sprintf("%s%s", procRootPath, mountNSAbsolutePath), nil
 		}
 	}
-	return "", logger.NewErrorf("has no access to container fs - no living task of mountns %d", mountNS)
+	return "", errfmt.Errorf("has no access to container fs - no living task of mountns %d", mountNS)
 }

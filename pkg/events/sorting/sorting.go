@@ -105,6 +105,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -131,7 +132,7 @@ type EventsChronologicalSorter struct {
 func InitEventSorter() (*EventsChronologicalSorter, error) {
 	cpusAmount, err := environment.GetCPUAmount()
 	if err != nil {
-		return nil, logger.ErrorFunc(err)
+		return nil, errfmt.WrapError(err)
 	}
 	newSorter := EventsChronologicalSorter{
 		cpuEventsQueues:                  make([]cpuEventsQueue, cpusAmount),
@@ -255,7 +256,7 @@ func (sorter *EventsChronologicalSorter) getMostDelayingEventCPUQueue() (*cpuEve
 		}
 	}
 	if mostDelayingEventQueue == nil {
-		return nil, 0, logger.NewErrorf("no queue with events found")
+		return nil, 0, errfmt.Errorf("no queue with events found")
 	}
 	return mostDelayingEventQueue, mostDelayingEventQueueHeadTimestamp, nil
 }
@@ -278,7 +279,7 @@ func (sorter *EventsChronologicalSorter) getUpdatedMostDelayedLastCPUEventTimest
 		cq.IsUpdated = false // Mark that the values of the queue were checked from previous time
 	}
 	if !foundUpdatedQueue {
-		return 0, logger.NewErrorf("no valid CPU events queue was updated since last interval")
+		return 0, errfmt.Errorf("no valid CPU events queue was updated since last interval")
 	}
 	return newMostDelayedEventTimestamp, nil
 }
@@ -295,7 +296,7 @@ func (sorter *EventsChronologicalSorter) getMostRecentEventTimestamp() (int, err
 		}
 	}
 	if mostRecentEventTimestamp == 0 {
-		return 0, logger.NewErrorf("all CPU queques are empty")
+		return 0, errfmt.Errorf("all CPU queques are empty")
 	}
 	return mostRecentEventTimestamp, nil
 }

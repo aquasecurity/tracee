@@ -9,6 +9,7 @@ import (
 	"unsafe"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -157,7 +158,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 			eventId := events.ID(ctx.EventID)
 			eventDefinition, ok := events.Definitions.GetSafe(eventId)
 			if !ok {
-				t.handleError(logger.NewErrorf("failed to get configuration of event %d", eventId))
+				t.handleError(errfmt.Errorf("failed to get configuration of event %d", eventId))
 				continue
 			}
 
@@ -169,11 +170,11 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 					eventDefinition.Params,
 				)
 				if err != nil {
-					t.handleError(logger.NewErrorf("failed to read argument %d of event %s: %v", i, eventDefinition.Name, err))
+					t.handleError(errfmt.Errorf("failed to read argument %d of event %s: %v", i, eventDefinition.Name, err))
 					continue
 				}
 				if args[idx].Value != nil {
-					t.handleError(logger.NewErrorf("read more than one instance of argument %s of event %s. Saved value: %v. New value: %v", arg.Name, eventDefinition.Name, args[idx].Value, arg.Value))
+					t.handleError(errfmt.Errorf("read more than one instance of argument %s of event %s. Saved value: %v. New value: %v", arg.Name, eventDefinition.Name, args[idx].Value, arg.Value))
 				}
 				args[idx] = arg
 			}
@@ -353,7 +354,7 @@ func parseSyscallID(syscallID int, isCompat bool, compatTranslationMap map[event
 		if ok {
 			return def.Name, nil
 		} else {
-			return "", logger.NewErrorf("no syscall event with syscall id %d", syscallID)
+			return "", errfmt.Errorf("no syscall event with syscall id %d", syscallID)
 		}
 	} else {
 		id, ok := compatTranslationMap[events.ID(syscallID)]
@@ -362,10 +363,10 @@ func parseSyscallID(syscallID int, isCompat bool, compatTranslationMap map[event
 			if ok {
 				return def.Name, nil
 			} else { // Should never happen, as the translation map should be initialized from events.Definition
-				return "", logger.NewErrorf("no syscall event with compat syscall id %d, translated to ID %d", syscallID, id)
+				return "", errfmt.Errorf("no syscall event with compat syscall id %d, translated to ID %d", syscallID, id)
 			}
 		} else {
-			return "", logger.NewErrorf("no syscall event with compat syscall id %d", syscallID)
+			return "", errfmt.Errorf("no syscall event with compat syscall id %d", syscallID)
 		}
 	}
 }
@@ -594,7 +595,7 @@ func (t *Tracee) parseArguments(e *trace.Event) error {
 	if t.config.Output.ParseArguments {
 		err := events.ParseArgs(e)
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 		if t.config.Output.ParseArgumentsFDs {
 			return events.ParseArgsFDs(e, t.FDArgPathMap)

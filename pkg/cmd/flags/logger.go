@@ -6,6 +6,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
@@ -29,7 +30,7 @@ Examples:
 }
 
 func InvalidLogOption(opt string) error {
-	return logger.NewErrorf("invalid log option: %s, use '--log help' for more info", opt)
+	return errfmt.Errorf("invalid log option: %s, use '--log help' for more info", opt)
 }
 
 func PrepareLogger(logOptions []string, w io.Writer) (*logger.LoggerConfig, error) {

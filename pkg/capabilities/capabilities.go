@@ -9,6 +9,7 @@ import (
 
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
@@ -46,7 +47,7 @@ func Initialize(bypass bool) error {
 		err = caps.initialize(bypass)
 	})
 
-	return logger.ErrorFunc(err)
+	return errfmt.WrapError(err)
 }
 
 // GetInstance returns current "caps" instance. It initializes capabilities if
@@ -79,7 +80,7 @@ func (c *Capabilities) initialize(bypass bool) error {
 
 	err := c.getProc()
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	for c := range c.all {
@@ -88,7 +89,7 @@ func (c *Capabilities) initialize(bypass bool) error {
 
 	err = c.setProc()
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	// The base for required capabilities (ring1) depends on the following:
@@ -141,7 +142,7 @@ func (c *Capabilities) Privileged(cb func() error) error {
 
 		err = c.apply(Privileged) // ring0 as effective for callback exec
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 
@@ -150,7 +151,7 @@ func (c *Capabilities) Privileged(cb func() error) error {
 	if !c.bypass {
 		err = c.apply(Unprivileged) // back to ring3
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 
@@ -167,7 +168,7 @@ func (c *Capabilities) Required(cb func() error) error {
 
 		err = c.apply(Required) // ring1 as effective
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 
@@ -176,7 +177,7 @@ func (c *Capabilities) Required(cb func() error) error {
 	if !c.bypass {
 		err = c.apply(Unprivileged) // back to ring3
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 
@@ -197,15 +198,15 @@ func (c *Capabilities) Requested(cb func() error, values ...cap.Value) error {
 
 		err = c.set(Requested, values...)
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 		err = c.apply(Requested) // ring2 as effective
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 		err = c.unset(Requested, values...) // clean requested (for next calls)
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 
@@ -217,7 +218,7 @@ func (c *Capabilities) Requested(cb func() error, values ...cap.Value) error {
 	if !c.bypass {
 		err = c.apply(Unprivileged)
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 
@@ -240,7 +241,7 @@ func (c *Capabilities) Require(values ...cap.Value) error {
 	err = c.set(Required, values...) // populate ring1 (Required)
 	c.lock.Unlock()
 
-	return logger.ErrorFunc(err)
+	return errfmt.WrapError(err)
 }
 
 // Unrequire is only called when command line "capabilities drop=X" is given.
@@ -258,7 +259,7 @@ func (c *Capabilities) Unrequire(values ...cap.Value) error {
 	err = c.unset(Required, values...) // unpopulate ring1 (Required)
 	c.lock.Unlock()
 
-	return logger.ErrorFunc(err)
+	return errfmt.WrapError(err)
 }
 
 // Private Methods
@@ -304,7 +305,7 @@ func (c *Capabilities) apply(t ringType) error {
 
 	err = c.getProc()
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	logger.Debug("Capabilities change")
@@ -315,7 +316,7 @@ func (c *Capabilities) apply(t ringType) error {
 		}
 		err = c.have.SetFlag(cap.Effective, v[t], k)
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 

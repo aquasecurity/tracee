@@ -7,6 +7,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/server"
@@ -23,7 +24,7 @@ func (r Runner) Run(ctx context.Context) error {
 
 	t, err := tracee.New(r.TraceeConfig)
 	if err != nil {
-		return logger.NewErrorf("error creating Tracee: %v", err)
+		return errfmt.Errorf("error creating Tracee: %v", err)
 	}
 
 	// Decide if HTTP server should be started
@@ -53,7 +54,7 @@ func (r Runner) Run(ctx context.Context) error {
 
 	err = t.Init()
 	if err != nil {
-		return logger.NewErrorf("error initializing Tracee: %v", err)
+		return errfmt.Errorf("error initializing Tracee: %v", err)
 	}
 
 	broadcast := printer.NewBroadcast(ctx, r.Printers)

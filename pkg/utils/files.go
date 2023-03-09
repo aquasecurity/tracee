@@ -8,14 +8,14 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 // OpenExistingDir open a directory with given path, and return the os.File of it.
 func OpenExistingDir(path string) (*os.File, error) {
 	outDirFD, err := unix.Open(path, unix.O_DIRECTORY|unix.O_PATH, 0)
 	if err != nil {
-		return nil, logger.ErrorFunc(err)
+		return nil, errfmt.WrapError(err)
 	}
 	return os.NewFile(uintptr(outDirFD), path), nil
 }
@@ -24,7 +24,7 @@ func OpenExistingDir(path string) (*os.File, error) {
 func OpenAt(dir *os.File, relativePath string, flags int, perm fs.FileMode) (*os.File, error) {
 	pidFileFD, err := unix.Openat(int(dir.Fd()), relativePath, flags, uint32(perm))
 	if err != nil {
-		return nil, logger.ErrorFunc(err)
+		return nil, errfmt.WrapError(err)
 	}
 	return os.NewFile(uintptr(pidFileFD), path.Join(dir.Name(), relativePath)), nil
 }
@@ -40,7 +40,7 @@ func MkdirAtExist(dir *os.File, relativePath string, perm fs.FileMode) error {
 	if err != nil {
 		// Seems that os.ErrExist doesn't catch the error (at least on Manjaro distro)
 		if err != os.ErrExist && err.Error() != "file exists" {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 	return nil
@@ -55,7 +55,7 @@ func CreateAt(dir *os.File, relativePath string) (*os.File, error) {
 func Dup(file *os.File) (*os.File, error) {
 	newFD, err := unix.Dup(int(file.Fd()))
 	if err != nil {
-		return nil, logger.ErrorFunc(err)
+		return nil, errfmt.WrapError(err)
 	}
 	return os.NewFile(uintptr(newFD), file.Name()), nil
 }
@@ -69,24 +69,24 @@ func RenameAt(olddir *os.File, oldpath string, newdir *os.File, newpath string) 
 func CopyRegularFileByPath(src, dst string) error {
 	sourceFileStat, err := os.Stat(src)
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 	if !sourceFileStat.Mode().IsRegular() {
-		return logger.NewErrorf("%s is not a regular file", src)
+		return errfmt.Errorf("%s is not a regular file", src)
 	}
 	source, err := os.Open(src)
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 	defer source.Close()
 	destination, err := os.Create(dst)
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 	defer destination.Close()
 	_, err = io.Copy(destination, source)
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 	return nil
 }
@@ -95,24 +95,24 @@ func CopyRegularFileByPath(src, dst string) error {
 func CopyRegularFileByRelativePath(srcName string, dstDir *os.File, dstName string) error {
 	sourceFileStat, err := os.Stat(srcName)
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 	if !sourceFileStat.Mode().IsRegular() {
-		return logger.NewErrorf("%s is not a regular file", srcName)
+		return errfmt.Errorf("%s is not a regular file", srcName)
 	}
 	source, err := os.Open(srcName)
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 	defer source.Close()
 	destination, err := CreateAt(dstDir, dstName)
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 	defer destination.Close()
 	_, err = io.Copy(destination, source)
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 	return nil
 }
@@ -121,7 +121,7 @@ func CopyRegularFileByRelativePath(srcName string, dstDir *os.File, dstName stri
 func IsDirEmpty(pathname string) (bool, error) {
 	dir, err := os.Open(pathname)
 	if err != nil {
-		return false, logger.ErrorFunc(err)
+		return false, errfmt.WrapError(err)
 	}
 	defer dir.Close()
 
@@ -130,5 +130,5 @@ func IsDirEmpty(pathname string) (bool, error) {
 		return true, nil
 	}
 
-	return false, logger.ErrorFunc(err)
+	return false, errfmt.WrapError(err)
 }

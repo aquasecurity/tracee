@@ -4,6 +4,7 @@ import (
 	"github.com/hashicorp/golang-lru/simplelru"
 	"golang.org/x/exp/maps"
 
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/filterscope"
@@ -102,7 +103,7 @@ func (gen *SymbolsCollisionArgsGenerator) deriveArgs(event trace.Event) ([][]int
 		return gen.handleExec(event) // evicts saved data (loaded shared objects) for the process
 	}
 
-	return nil, []error{logger.NewErrorf("received unexpected event - \"%s\"", event.EventName)}
+	return nil, []error{errfmt.Errorf("received unexpected event - \"%s\"", event.EventName)}
 }
 
 // handleShObjLoaded handles the shared object loaded event (from mmap).
@@ -190,7 +191,7 @@ func (gen *SymbolsCollisionArgsGenerator) findShObjsCollisions(
 			} else {
 				logger.Debug("symbols_loaded", "object loaded", loadingShObj.ObjInfo, "error", err.Error())
 			}
-			return nil, logger.ErrorFunc(err)
+			return nil, errfmt.WrapError(err)
 		}
 		loadingShObj.FilterSymbols(gen.symbolsBlacklistMap)    // del symbols NOT in blacklist
 		loadingShObj.FilterOutSymbols(gen.symbolsWhitelistMap) // del symbols IN the white list
@@ -206,7 +207,7 @@ func (gen *SymbolsCollisionArgsGenerator) findShObjsCollisions(
 			} else {
 				logger.Debug("symbols_loaded", "object loaded", loadedShObjInfo, "error", err.Error())
 			}
-			return nil, logger.ErrorFunc(err)
+			return nil, errfmt.WrapError(err)
 		}
 
 		// create a loadingSharedObj from the already loaded shared object (to get collisions)

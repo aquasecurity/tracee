@@ -9,6 +9,7 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
 
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -83,7 +84,7 @@ func getPcapFileName(event *trace.Event, pcapType PcapType) (string, error) {
 	// create needed dirs
 	err = mkdirForPcapType(outputDirectory, contID, pcapType)
 	if err != nil {
-		return "", logger.ErrorFunc(err)
+		return "", errfmt.WrapError(err)
 	}
 
 	// return filename in format according to pcap type
@@ -158,7 +159,7 @@ func mkdirForPcapType(o *os.File, c string, t PcapType) error {
 		e = utils.MkdirAtExist(o, pcapCommDir+c, os.ModePerm)
 	}
 
-	return logger.ErrorFunc(e)
+	return errfmt.WrapError(e)
 }
 
 // getPcapFileAndWriter returns a file descriptor and and its associated pcap
@@ -170,7 +171,7 @@ func getPcapFileAndWriter(event *trace.Event, t PcapType) (
 ) {
 	pcapFilePath, err := getPcapFileName(event, t)
 	if err != nil {
-		return nil, nil, logger.ErrorFunc(err)
+		return nil, nil, errfmt.WrapError(err)
 	}
 	file, err := utils.OpenAt(
 		outputDirectory,
@@ -179,7 +180,7 @@ func getPcapFileAndWriter(event *trace.Event, t PcapType) (
 		0644,
 	)
 	if err != nil {
-		return nil, nil, logger.ErrorFunc(err)
+		return nil, nil, errfmt.WrapError(err)
 	}
 
 	logger.Debug("pcap file (re)opened", "filename", pcapFilePath)
@@ -190,11 +191,11 @@ func getPcapFileAndWriter(event *trace.Event, t PcapType) (
 		pcapgo.DefaultNgWriterOptions,
 	)
 	if err != nil {
-		return nil, nil, logger.ErrorFunc(err)
+		return nil, nil, errfmt.WrapError(err)
 	}
 	err = writer.Flush()
 	if err != nil {
-		return nil, nil, logger.ErrorFunc(err)
+		return nil, nil, errfmt.WrapError(err)
 	}
 
 	return file, writer, nil

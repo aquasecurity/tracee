@@ -6,6 +6,7 @@ import (
 
 	"golang.org/x/exp/maps"
 
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/filters"
@@ -107,7 +108,7 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(
 
 	loadingObjectInfo, err := getSharedObjectInfo(event)
 	if err != nil {
-		return nil, logger.ErrorFunc(err)
+		return nil, errfmt.WrapError(err)
 	}
 
 	if symbsLoadedGen.isWhitelist(loadingObjectInfo.Path) {
@@ -183,19 +184,19 @@ func getSharedObjectInfo(event trace.Event) (sharedobjs.ObjInfo, error) {
 
 	loadedObjectInode, err := parse.ArgVal[uint64](&event, "inode")
 	if err != nil {
-		return objInfo, logger.ErrorFunc(err)
+		return objInfo, errfmt.WrapError(err)
 	}
 	loadedObjectDevice, err := parse.ArgVal[uint32](&event, "dev")
 	if err != nil {
-		return objInfo, logger.ErrorFunc(err)
+		return objInfo, errfmt.WrapError(err)
 	}
 	loadedObjectCtime, err := parse.ArgVal[uint64](&event, "ctime")
 	if err != nil {
-		return objInfo, logger.ErrorFunc(err)
+		return objInfo, errfmt.WrapError(err)
 	}
 	loadedObjectPath, err := parse.ArgVal[string](&event, "pathname")
 	if err != nil {
-		return objInfo, logger.ErrorFunc(err)
+		return objInfo, errfmt.WrapError(err)
 	}
 
 	objInfo = sharedobjs.ObjInfo{
