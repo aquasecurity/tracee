@@ -119,8 +119,8 @@ ifeq ($(BTFHUB),)
 BTFHUB=0
 endif
 
-TRACEE_CONT_NAME = tracee:$(ARCH)
-TRACEE_FULL_CONT_NAME = tracee:$(ARCH)-full
+TRACEE_CONT_NAME = tracee:latest
+TRACEE_FULL_CONT_NAME = tracee:full
 TRACEE_CONT_DOCKERFILE = builder/Dockerfile.alpine-tracee-container
 
 .PHONY: build-tracee

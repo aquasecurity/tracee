@@ -1,12 +1,12 @@
 #
 # Daily Test: Test generating OS packages
 #
-name: OS Packages (DAILY)
+name: OS Packages
 on:
   workflow_dispatch: {}
   schedule:
     # Daily At 04:00
-    - cron: '0 4 * * 0'
+    - cron: "0 4 * * *"
 jobs:
   packaging:
     runs-on: ubuntu-latest
@@ -14,13 +14,13 @@ jobs:
       fail-fast: false
       matrix:
         flavor: [
-          # llvm repository is broken for bionic
-          # {distro: ubuntu, version: bionic},
-          {distro: ubuntu, version: focal},
-          {distro: ubuntu, version: jammy},
-          {distro: ubuntu, version: kinetic},
-          {distro: fedora, version: 36},
-          {distro: fedora, version: 37},
+            # llvm repository is broken for bionic
+            # {distro: ubuntu, version: bionic},
+            { distro: ubuntu, version: focal },
+            { distro: ubuntu, version: jammy },
+            { distro: ubuntu, version: kinetic },
+            { distro: fedora, version: 36 },
+            { distro: fedora, version: 37 },
           ]
     steps:
       - name: Checkout Code

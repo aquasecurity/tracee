@@ -83,37 +83,30 @@ env:
 .PHONY: help
 help:
 	@echo ""
-	@echo "Create tracee snapshots for testing and releasing"
+	@echo "CREATES TRACEE SNAPSHOTS FOR TESTING AND RELEASING"
 	@echo ""
-	@echo "To generate a release snapshot:"
+	@echo "To GENERATE a release SNAPSHOT (versioned by latest git SHA):"
 	@echo ""
-	@echo "    $$ make -f builder/Makefile.release SNAPSHOT=1"
+	@echo "  $$ SNAPSHOT=1 make -f builder/Makefile.release"
 	@echo ""
-	@echo "    - Compiles tracee-ebpf, tracee-rules and rules"
-	@echo "    - Creates an archive of build artifacts along with license"
-	@echo "    - Takes a checksum of the archive"
+	@echo "  > Compiles tracee-ebpf, tracee-rules and rules"
+	@echo "  > Creates an archive of build artifacts along with license"
+	@echo "  > Takes a checksum of the archive"
 	@echo ""
-	@echo "    - Container images are:"
-	@echo "        - aquasec/tracee:latest (embedded eBPF CO-RE obj with BTFHUB support)"
-	@echo "        - aquasec/tracee:full   (compiles non CO-RE eBPF object on startup)"
+	@echo "Container images are:"
 	@echo ""
-	@echo "    Example:"
+	@echo "  - aquasec/tracee:latest (embedded eBPF CO-RE obj with BTFHUB support)"
+	@echo "  - aquasec/tracee:full   (compiles non CO-RE eBPF object on startup if needed)"
 	@echo ""
-	@echo "        To create build artifacts versioned by latest git SHA:"
+	@echo "To PUBLISH a release:"
 	@echo ""
-	@echo "        $$ SNAPSHOT=1 make -f builder/Makefile.release"
+	@echo "  $$ PUSH_DOCKER_REPO=aquasec/tracee make -f builder/Makefile.release"
 	@echo ""
-	@echo "To publish a release:"
-	@echo ""
-	@echo "    $$ PUSH_DOCKER_REPO=aquasec/tracee \ "
-	@echo "        make -f builder/Makefile.release"
-	@echo ""
-	@echo "    - Pushes the snapshot release artifacts found by the latest git tag to"
-	@echo "      docker.io/aquasec/tracee"
+	@echo "  > Pushes artifact found by the latest git tag to docker.io/aquasec/tracee"
 	@echo ""
 	@echo "Clean leftovers:"
 	@echo ""
-	@echo "    $$ make -f builder/Makefile.release clean"
+	@echo "  $$ make -f builder/Makefile.release clean"
 	@echo ""
 
 #
@@ -176,6 +169,7 @@ release: \
 # build binaries (tracee-ebpf, tracee-rules, rules)
 #
 	$(MAKE) -f builder/Makefile.tracee-make ubuntu-prepare
+	BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
 	BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="all"
 #
 # create the tar ball and checksum files
@@ -186,14 +180,22 @@ release: \
 # build official slim container image (CO-RE + BTFHUB)
 #
 	BTFHUB=0 $(MAKE) -f builder/Makefile.tracee-container build-tracee
+ifeq ($(ARCH),x86_64)
 	$(CMD_DOCKER) tag tracee:latest $(PUSH_DOCKER_REPO):latest
 	$(CMD_DOCKER) tag tracee:latest $(PUSH_DOCKER_REPO):$(IMAGE_TAG)
+endif
+	$(CMD_DOCKER) tag tracee:latest $(PUSH_DOCKER_REPO):$(ARCH)-latest
+	$(CMD_DOCKER) tag tracee:latest $(PUSH_DOCKER_REPO):$(ARCH)-$(IMAGE_TAG)
 #
 # build official full container image (CO-RE + non CO-RE build)
 #
 	BTFHUB=0 $(MAKE) -f builder/Makefile.tracee-container build-tracee-full
+ifeq ($(ARCH),x86_64)
 	$(CMD_DOCKER) tag tracee:full $(PUSH_DOCKER_REPO):full
 	$(CMD_DOCKER) tag tracee:full $(PUSH_DOCKER_REPO):full-$(IMAGE_TAG)
+endif
+	$(CMD_DOCKER) tag tracee:full $(PUSH_DOCKER_REPO):$(ARCH)-full
+	$(CMD_DOCKER) tag tracee:full $(PUSH_DOCKER_REPO):$(ARCH)-full-$(IMAGE_TAG)
 #
 # RELEASE
 #
@@ -201,22 +203,38 @@ ifneq ("$(SNAPSHOT)", "1")
 #
 # push container images to docker hub
 #
+ifeq ($(ARCH),x86_64)
 	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):latest
-	COSIGN_EXPERIMENTAL=1 $(CMD_COSIGN) sign $(PUSH_DOCKER_REPO)@$(shell docker inspect --format='{{index .RepoDigests 0}}' $(PUSH_DOCKER_REPO):latest | awk -F'@' '{print $2}')
 	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):$(IMAGE_TAG)
-	COSIGN_EXPERIMENTAL=1 $(CMD_COSIGN) sign $(PUSH_DOCKER_REPO)@$(shell docker inspect --format='{{index .RepoDigests 0}}' $(PUSH_DOCKER_REPO):full | awk -F'@' '{print $2}')
 	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):full
 	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):full-$(IMAGE_TAG)
+endif
+	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):$(ARCH)-latest
+	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):$(ARCH)-$(IMAGE_TAG)
+	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):$(ARCH)-full
+	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):$(ARCH)-full-$(IMAGE_TAG)
 #
-# create release notes
+# sign pushed container images (x86_64 only)
 #
+ifeq ($(ARCH),x86_64)
+	COSIGN_EXPERIMENTAL=1 $(CMD_COSIGN) sign $(PUSH_DOCKER_REPO)@$(shell docker inspect --format='{{index .RepoDigests 0}}' $(PUSH_DOCKER_REPO):latest | awk -F'@' '{print $2}')
+	COSIGN_EXPERIMENTAL=1 $(CMD_COSIGN) sign $(PUSH_DOCKER_REPO)@$(shell docker inspect --format='{{index .RepoDigests 0}}' $(PUSH_DOCKER_REPO):full | awk -F'@' '{print $2}')
+endif
+#
+# create release notes (x86_64 only, other arches will be added after release)
+#
+ifeq ($(ARCH),x86_64)
 	echo '## Docker images' >> $(RELEASE_NOTES)
+	echo '' >> $(RELEASE_NOTES)
 	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):$(IMAGE_TAG) (embedded eBPF CO-RE obj with BTFHUB support)`' >> $(RELEASE_NOTES);
 	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):full-$(IMAGE_TAG) (compiles non CO-RE eBPF object on startup)`' >> $(RELEASE_NOTES);
+endif
 #
-# release it!
+# release it (x86_64 only, other arches will be added after release)
 #
+ifeq ($(ARCH),x86_64)
 	$(CMD_GITHUB) release create $(SNAPSHOT_VERSION) $(OUT_ARCHIVE) $(OUT_CHECKSUMS) --title $(SNAPSHOT_VERSION) --notes-file $(RELEASE_NOTES)
+endif
 #
 endif
 

@@ -1,4 +1,6 @@
----
+#
+# When a PR is opened or updated: Run Tracee Tests
+#
 name: PR
 on:
   workflow_dispatch: {}
@@ -34,7 +36,7 @@ env:
   INSTTESTS: "VFS_WRITE FILE_MODIFICATION"
 jobs:
   #
-  # CODE VERIFICATION
+  # CODE VERIFICATION (github runner)
   #
   verify-analyze-code:
     name: Verify and Analyze Code
@@ -65,7 +67,7 @@ jobs:
         run: |
           make check-staticcheck
   #
-  # SIGNATURES CODE VERIFICATION
+  # SIGNATURES CODE VERIFICATION (github runner)
   #
   verify-signatures:
     name: Verify Signatures
@@ -86,7 +88,7 @@ jobs:
         run: |
           make test-signatures
   #
-  # TOOLS BUILD VERIFICATION
+  # TOOLS BUILD VERIFICATION (github runner)
   #
   verify-tools:
     name: Verify Other Tools
@@ -117,7 +119,7 @@ jobs:
           make clean
           make e2e-instrumentation-signatures
   #
-  # CODE TESTS
+  # CODE TESTS (github runner)
   #
   unit-tests:
     name: Unit Tests

@@ -1,26 +1,32 @@
----
-# Release snapshot on CRON schedule or on demand. This workflow ensures that
-# the main branch is ready for release and that all build configuration files
-# are valid. Also scans tracee container images for vulnerabilities, and
-# publishes to DockerHub as aquasec/tracee:dev and aquasec/tracee:full-dev.
+#
+# On cron schedule or on demand: Release snapshot (amd64 and arm64)
+#
+# This workflow ensures that the main branch is ready for release and that all
+# build configuration files are valid. Also scans tracee container images for
+# vulnerabilities, and publishes to DockerHub as aquasec/tracee:dev and
+# aquasec/tracee:full-dev.
+#
 name: Release Snapshot
-
 on:
   workflow_dispatch: {}
   schedule:
-    - cron: "0 0 * * *"
-
+    # Daily at 05:00
+    - cron: "0 5 * * *"
 jobs:
   release-snapshot:
-    name: Release Snapshot
-    runs-on: ubuntu-latest
+    name: Release Snapshot X64 (Default)
+    runs-on:
+      [
+        "github-self-hosted_ami-0b445cffc9303efcc_${{ github.event.number }}-${{ github.run_id }}",
+      ]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
         with:
           submodules: true
-      - name: Install Dependencies
-        uses: ./.github/actions/build-dependencies
+      - name: AWS Environment
+        run: |
+          dmidecode
       - name: Build
         run: |
           make -f builder/Makefile.release SNAPSHOT=1
@@ -45,5 +51,49 @@ jobs:
         run: |
           docker image tag tracee:latest aquasec/tracee:dev
           docker image tag tracee:full aquasec/tracee:full-dev
+          docker image tag tracee:latest aquasec/tracee:x86_64-dev
+          docker image tag tracee:full aquasec/tracee:x86_64-full-dev
           docker image push aquasec/tracee:dev
           docker image push aquasec/tracee:full-dev
+          docker image push aquasec/tracee:x86_64-dev
+          docker image push aquasec/tracee:x86_64-full-dev
+  release-snapshot-arm64:
+    name: Release Snapshot ARM64
+    runs-on:
+      [
+        "github-self-hosted_ami-0aa5b93153349d9ec_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: AWS Environment
+        run: |
+          dmidecode
+      - name: Build
+        run: |
+          make -f builder/Makefile.release SNAPSHOT=1
+      - name: Scan Docker Image for Vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "tracee:latest"
+          severity: "CRITICAL"
+          exit-code: "1"
+      - name: Scan Docker Image for Vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "tracee:full"
+          severity: "CRITICAL"
+          exit-code: "1"
+      - name: Login to docker.io registry
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Publish to docker.io registry
+        run: |
+          docker image tag tracee:latest aquasec/tracee:aarch64-dev
+          docker image tag tracee:full aquasec/tracee:aarch64-full-dev
+          docker image push aquasec/tracee:aarch64-dev
+          docker image push aquasec/tracee:aarch64-full-dev

@@ -1,16 +1,12 @@
----
+#
+# On demand and on vXXX tag push: Deploy the latest documentatio
+#
 name: Deploy the latest documentation
 on:
   push:
-    # Include tags whose name match release pattern "v*", like v0.7.0 (refs/tags/v0.7.0)
-    # Exclude tags whose name match release candidate pattern "v*-rc*", like v0.7.0-rc-1 (refs/tags/v0.7.0-rc-1)
     tags:
       - "v*"
-      - "!v*-rc*"
-  workflow_dispatch:
-    inputs:
-      tag:
-        required: false
+  workflow_dispatch: {}
 jobs:
   deploy:
     name: Deploy the latest documentation

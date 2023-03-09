@@ -1,9 +1,12 @@
+#
+# On document changes and on demand: Deploy the dev documentatio
+#
 name: Deploy the dev documentation
 on:
   workflow_dispatch: {}
   push:
     paths:
-      - 'docs/**'
+      - "docs/**"
       - mkdocs.yml
     branches:
       - main
