@@ -6,8 +6,8 @@ import (
 	"github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
 
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 var maxKsymNameLen = 64 // Most match the constant in the bpf code
@@ -31,7 +31,7 @@ func SendKsymbolsToMap(bpfKsymsMap *libbpfgo.BPFMap, ksymbols map[string]*helper
 		address := value.Address
 		err := bpfKsymsMap.Update(unsafe.Pointer(&key[0]), unsafe.Pointer(&address))
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 	return nil
@@ -58,12 +58,12 @@ func (t *Tracee) NewKernelSymbols() error {
 
 	kernelSymbols, err = helpers.NewLazyKernelSymbolsMap()
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	if !ValidateKsymbolsTable(kernelSymbols) {
 		// debug.PrintStack()
-		return logger.NewErrorf("invalid ksymbol table")
+		return errfmt.Errorf("invalid ksymbol table")
 	}
 	t.kernelSymbols = kernelSymbols
 
@@ -80,7 +80,7 @@ func (t *Tracee) UpdateBPFKsymbolsMap() error {
 
 	bpfKsymsMap, err = t.bpfModule.GetMap("ksymbols_map")
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	// get required symbols by chosen events
@@ -102,7 +102,7 @@ func (t *Tracee) UpdateBPFKsymbolsMap() error {
 func (t *Tracee) UpdateKallsyms() error {
 	err := t.UpdateKernelSymbols()
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	return t.UpdateBPFKsymbolsMap()

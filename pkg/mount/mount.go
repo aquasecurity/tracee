@@ -10,7 +10,7 @@ import (
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
@@ -50,12 +50,12 @@ func NewMountOnce(source, fstype, data, where string) (*MountOnce, error) {
 	// already mounted filesystems will be like mounted ones, but unmanaged
 	alreadyMounted, err := m.isMountedByOS(where)
 	if err != nil {
-		return nil, logger.ErrorFunc(err)
+		return nil, errfmt.WrapError(err)
 	}
 	if !alreadyMounted {
 		err = m.Mount()
 		if err != nil {
-			return nil, logger.ErrorFunc(err)
+			return nil, errfmt.WrapError(err)
 		}
 		m.managed = true // managed by this object
 	}
@@ -68,11 +68,11 @@ func NewMountOnce(source, fstype, data, where string) (*MountOnce, error) {
 func (m *MountOnce) Mount() error {
 	path, err := os.MkdirTemp(os.TempDir(), tmpPathPrefix) // create temp dir
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 	mp, err := filepath.Abs(path) // pick mountpoint path
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	m.target = mp
@@ -92,7 +92,7 @@ func (m *MountOnce) Mount() error {
 		}
 	}
 
-	return logger.ErrorFunc(err)
+	return errfmt.WrapError(err)
 }
 
 func (m *MountOnce) Umount() error {
@@ -105,7 +105,7 @@ func (m *MountOnce) Umount() error {
 			cap.SYS_ADMIN,
 		)
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 
 		m.mounted = false
@@ -114,7 +114,7 @@ func (m *MountOnce) Umount() error {
 		// check if target dir is empty before removing it
 		empty, err := utils.IsDirEmpty(m.target)
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 		if !empty {
 			return UnmountedDirNotEmpty(m.target)
@@ -140,7 +140,7 @@ func (m *MountOnce) GetMountpoint() string {
 func (m *MountOnce) isMountedByOS(where string) (bool, error) {
 	mp, err := SearchMountpoint(m.fsType, m.data)
 	if err != nil || mp == "" {
-		return false, logger.ErrorFunc(err)
+		return false, errfmt.WrapError(err)
 	}
 	if where != "" && !strings.Contains(mp, where) {
 		return false, nil
@@ -184,7 +184,7 @@ func SearchMountpoint(fstype string, search string) (string, error) {
 
 	file, err := os.Open(procMounts)
 	if err != nil {
-		return "", logger.ErrorFunc(err)
+		return "", errfmt.WrapError(err)
 	}
 	defer file.Close()
 

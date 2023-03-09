@@ -11,6 +11,7 @@ import (
 
 	embed "github.com/aquasecurity/tracee"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
@@ -29,13 +30,13 @@ func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSInfo *hel
 	if bpfFilePath != "" {
 		d.bpfenv = true
 	} else if bpfFilePath == "" && err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 	btfFilePath, err := checkEnvPath("TRACEE_BTF_FILE")
 	if btfFilePath != "" {
 		d.btfenv = true
 	} else if btfFilePath == "" && err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 	logger.Debug("BTF", "bpfenv", d.bpfenv, "btfenv", d.btfenv, "vmlinux", d.btfvmlinux)
 
@@ -57,7 +58,7 @@ func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSInfo *hel
 			}
 		} // else {} (2)
 		if bpfBytes, err = os.ReadFile(bpfFilePath); err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 
 		goto out
@@ -74,7 +75,7 @@ func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSInfo *hel
 		bpfFilePath = "embedded-core"
 		bpfBytes, err = unpackCOREBinary()
 		if err != nil {
-			return logger.NewErrorf("could not unpack embedded CO-RE eBPF object: %v", err)
+			return errfmt.Errorf("could not unpack embedded CO-RE eBPF object: %v", err)
 		}
 
 		goto out
@@ -91,7 +92,7 @@ func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSInfo *hel
 		bpfFilePath = "embedded-core"
 		bpfBytes, err = unpackCOREBinary()
 		if err != nil {
-			return logger.NewErrorf("could not unpack embedded CO-RE eBPF object: %v", err)
+			return errfmt.Errorf("could not unpack embedded CO-RE eBPF object: %v", err)
 		}
 
 		goto out
@@ -128,7 +129,7 @@ func checkEnvPath(env string) (string, error) {
 	if filePath != "" {
 		_, err := os.Stat(filePath)
 		if err != nil {
-			return "", logger.NewErrorf("could not open %s %s", env, filePath)
+			return "", errfmt.Errorf("could not open %s %s", env, filePath)
 		}
 		return filePath, nil
 	}
@@ -156,24 +157,24 @@ func unpackBTFHub(outFilePath string, OSInfo *helpers.OSInfo) error {
 	arch := OSInfo.GetOSReleaseFieldValue(helpers.OS_ARCH)
 
 	if err := os.MkdirAll(filepath.Dir(outFilePath), 0755); err != nil {
-		return logger.NewErrorf("could not create temp dir: %s", err.Error())
+		return errfmt.Errorf("could not create temp dir: %s", err.Error())
 	}
 
 	btfFilePath = fmt.Sprintf("dist/btfhub/%s/%s/%s/%s.btf", osId, versionId, arch, kernelRelease)
 	btfFile, err := embed.BPFBundleInjected.Open(btfFilePath)
 	if err != nil {
-		return logger.NewErrorf("error opening embedded btfhub file: %s", err.Error())
+		return errfmt.Errorf("error opening embedded btfhub file: %s", err.Error())
 	}
 	defer btfFile.Close()
 
 	outFile, err := os.Create(outFilePath)
 	if err != nil {
-		return logger.NewErrorf("could not create btf file: %s", err.Error())
+		return errfmt.Errorf("could not create btf file: %s", err.Error())
 	}
 	defer outFile.Close()
 
 	if _, err := io.Copy(outFile, btfFile); err != nil {
-		return logger.NewErrorf("error copying embedded btfhub file: %s", err.Error())
+		return errfmt.Errorf("error copying embedded btfhub file: %s", err.Error())
 
 	}
 

@@ -5,7 +5,7 @@ import (
 
 	"github.com/open-policy-agent/opa/compile"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/signatures/rego"
 )
 
@@ -40,7 +40,7 @@ func PrepareRego(regoSlice []string) (rego.Config, error) {
 		case "aio":
 			c.AIO = true
 		default:
-			return rego.Config{}, logger.NewErrorf("invalid rego option specified, use '--rego help' for more info")
+			return rego.Config{}, errfmt.Errorf("invalid rego option specified, use '--rego help' for more info")
 		}
 	}
 

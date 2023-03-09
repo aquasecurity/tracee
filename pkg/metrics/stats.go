@@ -4,7 +4,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/aquasecurity/tracee/pkg/counter"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 // When updating this struct, please make sure to update the relevant exporting functions
@@ -29,7 +29,7 @@ func (stats *Stats) RegisterPrometheus() error {
 	}, func() float64 { return float64(stats.EventCount.Read()) }))
 
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
@@ -39,7 +39,7 @@ func (stats *Stats) RegisterPrometheus() error {
 	}, func() float64 { return float64(stats.EventsFiltered.Read()) }))
 
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
@@ -49,7 +49,7 @@ func (stats *Stats) RegisterPrometheus() error {
 	}, func() float64 { return float64(stats.NetCapCount.Read()) }))
 
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
@@ -59,7 +59,7 @@ func (stats *Stats) RegisterPrometheus() error {
 	}, func() float64 { return float64(stats.LostEvCount.Read()) }))
 
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
@@ -69,7 +69,7 @@ func (stats *Stats) RegisterPrometheus() error {
 	}, func() float64 { return float64(stats.LostWrCount.Read()) }))
 
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
@@ -79,7 +79,7 @@ func (stats *Stats) RegisterPrometheus() error {
 	}, func() float64 { return float64(stats.LostNtCapCount.Read()) }))
 
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
@@ -89,7 +89,7 @@ func (stats *Stats) RegisterPrometheus() error {
 	}, func() float64 { return float64(stats.BPFLogsCount.Read()) }))
 
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
@@ -98,5 +98,5 @@ func (stats *Stats) RegisterPrometheus() error {
 		Help:      "errors accumulated by tracee-ebpf",
 	}, func() float64 { return float64(stats.ErrorCount.Read()) }))
 
-	return logger.ErrorFunc(err)
+	return errfmt.WrapError(err)
 }

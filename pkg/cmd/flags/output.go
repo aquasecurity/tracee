@@ -10,7 +10,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 func outputHelp() string {
@@ -173,7 +173,7 @@ func setOption(config *tracee.OutputConfig, option string) error {
 	case "sort-events":
 		config.EventsSorting = true
 	default:
-		return logger.NewErrorf("invalid output option: %s, use '--output help' for more info", option)
+		return errfmt.Errorf("invalid output option: %s, use '--output help' for more info", option)
 	}
 
 	return nil
@@ -219,11 +219,11 @@ func parseFormat(outputParts []string, printerMap map[string]string) error {
 	for _, outPath := range strings.Split(outputParts[1], ",") {
 
 		if outPath == "" {
-			return logger.NewErrorf("format flag can't be empty, use '--output help' for more info")
+			return errfmt.Errorf("format flag can't be empty, use '--output help' for more info")
 		}
 
 		if _, ok := printerMap[outPath]; ok {
-			return logger.NewErrorf("cannot use the same path for multiple outputs: %s, use '--output help' for more info", outPath)
+			return errfmt.Errorf("cannot use the same path for multiple outputs: %s, use '--output help' for more info", outPath)
 		}
 		printerMap[outPath] = outputParts[0]
 	}
@@ -234,7 +234,7 @@ func parseFormat(outputParts []string, printerMap map[string]string) error {
 // parseOption parses the given option and sets it in the given config
 func parseOption(outputParts []string, traceeConfig *tracee.OutputConfig) error {
 	if len(outputParts) == 1 || outputParts[1] == "" {
-		return logger.NewErrorf("option flag can't be empty, use '--output help' for more info")
+		return errfmt.Errorf("option flag can't be empty, use '--output help' for more info")
 	}
 
 	for _, option := range strings.Split(outputParts[1], ",") {
@@ -250,7 +250,7 @@ func parseOption(outputParts []string, traceeConfig *tracee.OutputConfig) error 
 // validateLogfile validates the given logfile
 func validateLogfile(outputParts []string) error {
 	if len(outputParts) == 1 || outputParts[1] == "" {
-		return logger.NewErrorf("log-file flag can't be empty, use '--output help' for more info")
+		return errfmt.Errorf("log-file flag can't be empty, use '--output help' for more info")
 	}
 
 	return nil
@@ -260,14 +260,14 @@ func validateLogfile(outputParts []string) error {
 func createFile(path string) (*os.File, error) {
 	fileInfo, err := os.Stat(path)
 	if err == nil && fileInfo.IsDir() {
-		return nil, logger.NewErrorf("cannot use a path of existing directory %s", path)
+		return nil, errfmt.Errorf("cannot use a path of existing directory %s", path)
 	}
 
 	dir := filepath.Dir(path)
 	os.MkdirAll(dir, 0755)
 	file, err := os.Create(path)
 	if err != nil {
-		return nil, logger.NewErrorf("failed to create output path: %v", err)
+		return nil, errfmt.Errorf("failed to create output path: %v", err)
 	}
 
 	return file, nil
@@ -277,13 +277,13 @@ func createFile(path string) (*os.File, error) {
 // --output [webhook|forward]:[protocol://user:pass@]host:port[?k=v#f]
 func validateURL(outputParts []string, flag string) error {
 	if len(outputParts) == 1 || outputParts[1] == "" {
-		return logger.NewErrorf("%s flag can't be empty, use '--output help' for more info", flag)
+		return errfmt.Errorf("%s flag can't be empty, use '--output help' for more info", flag)
 	}
 	// Now parse our URL using the standard library and report any errors from basic parsing.
 	_, err := url.ParseRequestURI(outputParts[1])
 
 	if err != nil {
-		return logger.NewErrorf("invalid uri for %s output %q. Use '--output help' for more info", flag, outputParts[1])
+		return errfmt.Errorf("invalid uri for %s output %q. Use '--output help' for more info", flag, outputParts[1])
 	}
 
 	return nil

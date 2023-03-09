@@ -30,6 +30,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
@@ -108,37 +109,37 @@ type InitValues struct {
 func (tc Config) Validate() error {
 	for filterScope := range tc.FilterScopes.Map() {
 		if filterScope == nil || filterScope.EventsToTrace == nil {
-			return logger.NewErrorf("filterScope or EventsToTrace is nil")
+			return errfmt.Errorf("filterScope or EventsToTrace is nil")
 		}
 
 		for e := range filterScope.EventsToTrace {
 			_, exists := events.Definitions.GetSafe(e)
 			if !exists {
-				return logger.NewErrorf("invalid event [%d] to trace in filter scope [%d]", e, filterScope.ID)
+				return errfmt.Errorf("invalid event [%d] to trace in filter scope [%d]", e, filterScope.ID)
 			}
 		}
 	}
 	if (tc.PerfBufferSize & (tc.PerfBufferSize - 1)) != 0 {
-		return logger.NewErrorf("invalid perf buffer size - must be a power of 2")
+		return errfmt.Errorf("invalid perf buffer size - must be a power of 2")
 	}
 	if (tc.BlobPerfBufferSize & (tc.BlobPerfBufferSize - 1)) != 0 {
-		return logger.NewErrorf("invalid perf buffer size - must be a power of 2")
+		return errfmt.Errorf("invalid perf buffer size - must be a power of 2")
 	}
 	if len(tc.Capture.FilterFileWrite) > 3 {
-		return logger.NewErrorf("too many file-write filters given")
+		return errfmt.Errorf("too many file-write filters given")
 	}
 	for _, filter := range tc.Capture.FilterFileWrite {
 		if len(filter) > 50 {
-			return logger.NewErrorf("the length of a path filter is limited to 50 characters: %s", filter)
+			return errfmt.Errorf("the length of a path filter is limited to 50 characters: %s", filter)
 		}
 	}
 
 	if tc.BPFObjBytes == nil {
-		return logger.NewErrorf("nil bpf object in memory")
+		return errfmt.Errorf("nil bpf object in memory")
 	}
 
 	if tc.ChanEvents == nil {
-		return logger.NewErrorf("nil events channel")
+		return errfmt.Errorf("nil events channel")
 	}
 
 	return nil
@@ -278,7 +279,7 @@ func (t *Tracee) handleEventsDependencies(eventId events.ID, submitMap uint64) {
 func New(cfg Config) (*Tracee, error) {
 	err := cfg.Validate()
 	if err != nil {
-		return nil, logger.NewErrorf("validation error: %v", err)
+		return nil, errfmt.Errorf("validation error: %v", err)
 	}
 
 	// Create Tracee
@@ -292,7 +293,7 @@ func New(cfg Config) (*Tracee, error) {
 	// Initialize capabilities rings soon
 	err = capabilities.Initialize(t.config.Capabilities.BypassCaps)
 	if err != nil {
-		return t, logger.ErrorFunc(err)
+		return t, errfmt.WrapError(err)
 	}
 	caps := capabilities.GetInstance()
 
@@ -325,7 +326,7 @@ func New(cfg Config) (*Tracee, error) {
 	for id := range t.events {
 		evt, ok := events.Definitions.GetSafe(id)
 		if !ok {
-			return t, logger.NewErrorf("could not get event")
+			return t, errfmt.Errorf("could not get event")
 		}
 		for _, capArray := range evt.Dependencies.Capabilities {
 			caps.Require(capArray)
@@ -336,20 +337,20 @@ func New(cfg Config) (*Tracee, error) {
 
 	capsToAdd, err := capabilities.ReqByString(t.config.Capabilities.AddCaps...)
 	if err != nil {
-		return t, logger.ErrorFunc(err)
+		return t, errfmt.WrapError(err)
 	}
 	err = caps.Require(capsToAdd...)
 	if err != nil {
-		return t, logger.ErrorFunc(err)
+		return t, errfmt.WrapError(err)
 	}
 
 	capsToDrop, err := capabilities.ReqByString(t.config.Capabilities.DropCaps...)
 	if err != nil {
-		return t, logger.ErrorFunc(err)
+		return t, errfmt.WrapError(err)
 	}
 	err = caps.Unrequire(capsToDrop...)
 	if err != nil {
-		return t, logger.ErrorFunc(err)
+		return t, errfmt.WrapError(err)
 	}
 
 	// Register default event processors
@@ -370,7 +371,7 @@ func (t *Tracee) Init() error {
 
 	initReq, err := t.generateInitValues()
 	if err != nil {
-		return logger.NewErrorf("failed to generate required init values: %s", err)
+		return errfmt.Errorf("failed to generate required init values: %s", err)
 	}
 
 	// Init kernel symbols map
@@ -378,7 +379,7 @@ func (t *Tracee) Init() error {
 	if initReq.kallsyms {
 		err = t.NewKernelSymbols()
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 
@@ -394,7 +395,7 @@ func (t *Tracee) Init() error {
 	var mntNSProcs map[int]int
 	err = capabilities.GetInstance().Requested(func() error {
 		mntNSProcs, err = proc.GetMountNSFirstProcesses()
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	},
 		cap.DAC_READ_SEARCH,
 		cap.SYS_PTRACE,
@@ -411,7 +412,7 @@ func (t *Tracee) Init() error {
 
 	t.cgroups, err = cgroup.NewCgroups()
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	// Initialize containers enrichment logic
@@ -422,11 +423,11 @@ func (t *Tracee) Init() error {
 		"containers_map",
 	)
 	if err != nil {
-		return logger.NewErrorf("error initializing containers: %v", err)
+		return errfmt.Errorf("error initializing containers: %v", err)
 	}
 
 	if err := t.containers.Populate(); err != nil {
-		return logger.NewErrorf("error initializing containers: %v", err)
+		return errfmt.Errorf("error initializing containers: %v", err)
 	}
 
 	t.contPathResolver = containers.InitContainerPathResolver(&t.pidsInMntns)
@@ -436,7 +437,7 @@ func (t *Tracee) Init() error {
 
 	err = t.initDerivationTable()
 	if err != nil {
-		return logger.NewErrorf("error initializing event derivation map: %v", err)
+		return errfmt.Errorf("error initializing event derivation map: %v", err)
 	}
 
 	// Initialize eBPF programs and maps
@@ -444,7 +445,7 @@ func (t *Tracee) Init() error {
 	err = t.initBPF()
 	if err != nil {
 		t.Close()
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	// Initialize hashes for files
@@ -452,20 +453,20 @@ func (t *Tracee) Init() error {
 	t.fileHashes, err = lru.New(1024)
 	if err != nil {
 		t.Close()
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	// Initialize capture directory
 
 	if err := os.MkdirAll(t.config.Capture.OutputPath, 0755); err != nil {
 		t.Close()
-		return logger.NewErrorf("error creating output path: %v", err)
+		return errfmt.Errorf("error creating output path: %v", err)
 	}
 
 	t.outDir, err = utils.OpenExistingDir(t.config.Capture.OutputPath)
 	if err != nil {
 		t.Close()
-		return logger.NewErrorf("error opening out directory: %v", err)
+		return errfmt.Errorf("error opening out directory: %v", err)
 	}
 
 	// Initialize network capture (all needed pcap files)
@@ -473,7 +474,7 @@ func (t *Tracee) Init() error {
 	t.netCapturePcap, err = pcaps.New(t.config.Capture.Net, t.outDir)
 	if err != nil {
 		t.Close()
-		return logger.NewErrorf("error initializing network capture: %v", err)
+		return errfmt.Errorf("error initializing network capture: %v", err)
 	}
 
 	// Get reference to stack trace addresses map
@@ -481,7 +482,7 @@ func (t *Tracee) Init() error {
 	stackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")
 	if err != nil {
 		t.Close()
-		return logger.NewErrorf("error getting access to 'stack_addresses' eBPF Map %v", err)
+		return errfmt.Errorf("error getting access to 'stack_addresses' eBPF Map %v", err)
 	}
 	t.StackAddressesMap = stackAddressesMap
 
@@ -490,7 +491,7 @@ func (t *Tracee) Init() error {
 	fdArgPathMap, err := t.bpfModule.GetMap("fd_arg_path_map")
 	if err != nil {
 		t.Close()
-		return logger.NewErrorf("error getting access to 'fd_arg_path_map' eBPF Map %v", err)
+		return errfmt.Errorf("error getting access to 'fd_arg_path_map' eBPF Map %v", err)
 	}
 	t.FDArgPathMap = fdArgPathMap
 
@@ -499,7 +500,7 @@ func (t *Tracee) Init() error {
 	if t.config.Output.EventsSorting {
 		t.eventsSorter, err = sorting.InitEventSorter()
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 
@@ -529,7 +530,7 @@ func (t *Tracee) generateInitValues() (InitValues, error) {
 	for evt := range t.events {
 		def, exists := events.Definitions.GetSafe(evt)
 		if !exists {
-			return initVals, logger.NewErrorf("event with id %d doesn't exist", evt)
+			return initVals, errfmt.Errorf("event with id %d doesn't exist", evt)
 		}
 		if def.Dependencies.KSymbols != nil {
 			initVals.kallsyms = true
@@ -543,15 +544,15 @@ func (t *Tracee) generateInitValues() (InitValues, error) {
 func (t *Tracee) initTailCall(mapName string, mapIndexes []uint32, progName string) error {
 	bpfMap, err := t.bpfModule.GetMap(mapName)
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 	bpfProg, err := t.bpfModule.GetProgram(progName)
 	if err != nil {
-		return logger.NewErrorf("could not get BPF program %s: %v", progName, err)
+		return errfmt.Errorf("could not get BPF program %s: %v", progName, err)
 	}
 	fd := bpfProg.FileDescriptor()
 	if fd < 0 {
-		return logger.NewErrorf("could not get BPF program FD for %s: %v", progName, err)
+		return errfmt.Errorf("could not get BPF program FD for %s: %v", progName, err)
 	}
 
 	for _, index := range mapIndexes {
@@ -560,16 +561,16 @@ func (t *Tracee) initTailCall(mapName string, mapIndexes []uint32, progName stri
 		if def.Syscall {
 			err := t.probes.Attach(probes.SyscallEnter__Internal)
 			if err != nil {
-				return logger.ErrorFunc(err)
+				return errfmt.WrapError(err)
 			}
 			err = t.probes.Attach(probes.SyscallExit__Internal)
 			if err != nil {
-				return logger.ErrorFunc(err)
+				return errfmt.WrapError(err)
 			}
 		}
 		err := bpfMap.Update(unsafe.Pointer(&index), unsafe.Pointer(&fd))
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 	return nil
@@ -703,7 +704,7 @@ func (t *Tracee) initDerivationTable() error {
 // RegisterEventDerivation registers an event derivation handler for tracee to use in the event pipeline
 func (t *Tracee) RegisterEventDerivation(deriveFrom events.ID, deriveTo events.ID, deriveCondition func() bool, deriveLogic derive.DeriveFunction) error {
 	if t.eventDerivations == nil {
-		return logger.NewErrorf("tracee not initialized yet")
+		return errfmt.Errorf("tracee not initialized yet")
 	}
 
 	return t.eventDerivations.Register(deriveFrom, deriveTo, deriveCondition, deriveLogic)
@@ -944,33 +945,33 @@ func (t *Tracee) populateBPFMaps() error {
 	// Prepare events map
 	eventsMap, err := t.bpfModule.GetMap("events_map")
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 	for id, ecfg := range t.events {
 		submit := ecfg.submit
 		err := eventsMap.Update(unsafe.Pointer(&id), unsafe.Pointer(&submit))
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 
 	// Prepare 32bit to 64bit syscall number mapping
 	sys32to64BPFMap, err := t.bpfModule.GetMap("sys_32_to_64_map") // u32, u32
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 	for id, event := range events.Definitions.Events() {
 		ID32BitU32 := uint32(event.ID32Bit) // ID32Bit is int32
 		IDU32 := uint32(id)                 // ID is int32
 		if err := sys32to64BPFMap.Update(unsafe.Pointer(&ID32BitU32), unsafe.Pointer(&IDU32)); err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 
 	if t.kernelSymbols != nil {
 		err = t.UpdateBPFKsymbolsMap()
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 
@@ -979,12 +980,12 @@ func (t *Tracee) populateBPFMaps() error {
 
 	bpfKConfigMap, err := t.bpfModule.GetMap("kconfig_map") // u32, u32
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	kconfigValues, err := initialization.LoadKconfigValues(t.config.KernelConfig)
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	for key, value := range kconfigValues {
@@ -992,7 +993,7 @@ func (t *Tracee) populateBPFMaps() error {
 		valueU32 := uint32(value)
 		err = bpfKConfigMap.Update(unsafe.Pointer(&keyU32), unsafe.Pointer(&valueU32))
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 
@@ -1002,7 +1003,7 @@ func (t *Tracee) populateBPFMaps() error {
 	if pcaps.PcapsEnabled(t.config.Capture.Net) {
 		bpfNetConfigMap, err := t.bpfModule.GetMap("netconfig_map")
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 
 		netConfigVal := make([]byte, 8) // u32 capture_options, u32 capture_length
@@ -1016,19 +1017,19 @@ func (t *Tracee) populateBPFMaps() error {
 			unsafe.Pointer(&cZero),
 			unsafe.Pointer(&netConfigVal[0]),
 		); err != nil {
-			return logger.NewErrorf("error updating net config eBPF map: %v", err)
+			return errfmt.Errorf("error updating net config eBPF map: %v", err)
 		}
 	}
 
 	// Initialize config map
 	bpfConfigMap, err := t.bpfModule.GetMap("config_map")
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	configVal := t.computeConfigValues()
 	if err = bpfConfigMap.Update(unsafe.Pointer(&cZero), unsafe.Pointer(&configVal[0])); err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	for filterScope := range t.config.FilterScopes.Map() {
@@ -1046,7 +1047,7 @@ func (t *Tracee) populateBPFMaps() error {
 
 		for k, v := range errMap {
 			if v != nil {
-				return logger.NewErrorf("error setting %v filter: %v", k, v)
+				return errfmt.Errorf("error setting %v filter: %v", k, v)
 			}
 		}
 	}
@@ -1054,19 +1055,19 @@ func (t *Tracee) populateBPFMaps() error {
 	// Populate containers map with existing containers
 	err = t.containers.PopulateBpfMap(t.bpfModule)
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	// Set filters given by the user to filter file write events
 	fileFilterMap, err := t.bpfModule.GetMap("file_filter") // u32, u32
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	for i := uint32(0); i < uint32(len(t.config.Capture.FilterFileWrite)); i++ {
 		FilterFileWriteBytes := []byte(t.config.Capture.FilterFileWrite[i])
 		if err = fileFilterMap.Update(unsafe.Pointer(&i), unsafe.Pointer(&FilterFileWriteBytes[0])); err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 
@@ -1080,7 +1081,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 	paramsTypesBPFMap, err := t.bpfModule.GetMap("params_types_map") // u32, u64
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 	for e := range t.events {
 		eU32 := uint32(e) // e is int32
@@ -1090,7 +1091,7 @@ func (t *Tracee) populateBPFMaps() error {
 			paramsTypes = paramsTypes | (uint64(paramType) << (8 * n))
 		}
 		if err := paramsTypesBPFMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&paramsTypes)); err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 
@@ -1098,7 +1099,7 @@ func (t *Tracee) populateBPFMaps() error {
 	if ok {
 		syscallsToCheckMap, err := t.bpfModule.GetMap("syscalls_to_check_map")
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 		/* the syscallsToCheckMap store the syscall numbers that we are fetching from the syscall table, like that:
 		 * [syscall num #1][syscall num #2][syscall num #3]...
@@ -1108,7 +1109,7 @@ func (t *Tracee) populateBPFMaps() error {
 		for idx, val := range events.SyscallsToCheck() {
 			err = syscallsToCheckMap.Update(unsafe.Pointer(&(idx)), unsafe.Pointer(&val))
 			if err != nil {
-				return logger.ErrorFunc(err)
+				return errfmt.WrapError(err)
 			}
 		}
 	}
@@ -1116,12 +1117,12 @@ func (t *Tracee) populateBPFMaps() error {
 	// Initialize tail call dependencies
 	tailCalls, err := t.GetTailCalls()
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 	for _, tailCall := range tailCalls {
 		err := t.initTailCall(tailCall.MapName, tailCall.MapIndexes, tailCall.ProgName)
 		if err != nil {
-			return logger.NewErrorf("failed to initialize tail call: %v", err)
+			return errfmt.Errorf("failed to initialize tail call: %v", err)
 		}
 	}
 
@@ -1203,11 +1204,11 @@ func (t *Tracee) attachProbes() error {
 		if event.Syscall {
 			err := t.probes.Attach(probes.SyscallEnter__Internal)
 			if err != nil {
-				return logger.ErrorFunc(err)
+				return errfmt.WrapError(err)
 			}
 			err = t.probes.Attach(probes.SyscallExit__Internal)
 			if err != nil {
-				return logger.ErrorFunc(err)
+				return errfmt.WrapError(err)
 			}
 		}
 
@@ -1215,7 +1216,7 @@ func (t *Tracee) attachProbes() error {
 		for _, dep := range event.Probes {
 			err = t.probes.Attach(dep.Handle, t.cgroups)
 			if err != nil && dep.Required {
-				return logger.NewErrorf("failed to attach required probe: %v", err)
+				return errfmt.Errorf("failed to attach required probe: %v", err)
 			}
 		}
 	}
@@ -1241,35 +1242,35 @@ func (t *Tracee) initBPF() error {
 
 		t.bpfModule, err = bpf.NewModuleFromBufferArgs(newModuleArgs)
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 
 		// Initialize probes
 
 		t.probes, err = probes.Init(t.bpfModule, t.netEnabled())
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 
 		// Load the eBPF object into kernel
 
 		err = t.bpfModule.BPFLoadObject()
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 
 		// Populate eBPF maps with initial data
 
 		err = t.populateBPFMaps()
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 
 		// Attach eBPF programs to selected event's probes
 
 		err = t.attachProbes()
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 
 		// Update all ProcessTreeFilters after probes are attached: reduce the
@@ -1278,7 +1279,7 @@ func (t *Tracee) initBPF() error {
 		for filterScope := range t.config.FilterScopes.Map() {
 			err = filterScope.ProcessTreeFilter.UpdateBPF(t.bpfModule, uint(filterScope.ID))
 			if err != nil {
-				return logger.NewErrorf("error building process tree: %v", err)
+				return errfmt.Errorf("error building process tree: %v", err)
 			}
 		}
 
@@ -1287,7 +1288,7 @@ func (t *Tracee) initBPF() error {
 		t.eventsChannel = make(chan []byte, 1000)
 		t.lostEvChannel = make(chan uint64)
 		if t.config.PerfBufferSize < 1 {
-			return logger.NewErrorf("invalid perf buffer size: %d", t.config.PerfBufferSize)
+			return errfmt.Errorf("invalid perf buffer size: %d", t.config.PerfBufferSize)
 		}
 		t.eventsPerfMap, err = t.bpfModule.InitPerfBuf(
 			"events",
@@ -1296,7 +1297,7 @@ func (t *Tracee) initBPF() error {
 			t.config.PerfBufferSize,
 		)
 		if err != nil {
-			return logger.NewErrorf("error initializing events perf map: %v", err)
+			return errfmt.Errorf("error initializing events perf map: %v", err)
 		}
 
 		if t.config.BlobPerfBufferSize > 0 {
@@ -1309,7 +1310,7 @@ func (t *Tracee) initBPF() error {
 				t.config.BlobPerfBufferSize,
 			)
 			if err != nil {
-				return logger.NewErrorf("error initializing file_writes perf map: %v", err)
+				return errfmt.Errorf("error initializing file_writes perf map: %v", err)
 			}
 		}
 
@@ -1323,7 +1324,7 @@ func (t *Tracee) initBPF() error {
 				t.config.PerfBufferSize,
 			)
 			if err != nil {
-				return logger.NewErrorf("error initializing net capture perf map: %v", err)
+				return errfmt.Errorf("error initializing net capture perf map: %v", err)
 			}
 		}
 
@@ -1336,13 +1337,13 @@ func (t *Tracee) initBPF() error {
 			t.config.PerfBufferSize,
 		)
 		if err != nil {
-			return logger.NewErrorf("error initializing logs perf map: %v", err)
+			return errfmt.Errorf("error initializing logs perf map: %v", err)
 		}
 
 		return nil
 	})
 
-	return logger.ErrorFunc(err)
+	return errfmt.WrapError(err)
 }
 
 // Run starts the trace. it will run until ctx is cancelled
@@ -1372,7 +1373,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	err = t.writePid()
 	if err != nil {
 		// not able to write pid, abort
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	// set running state after writing pid file
@@ -1395,7 +1396,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 		destinationFilePath := "written_files"
 		f, err := utils.OpenAt(t.outDir, destinationFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			return logger.NewErrorf("error logging written files")
+			return errfmt.Errorf("error logging written files")
 		}
 		defer f.Close()
 		for fileName, filePath := range t.writtenFiles {
@@ -1411,7 +1412,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 				continue
 			}
 			if _, err := f.WriteString(fmt.Sprintf("%s %s\n", fileName, filePath)); err != nil {
-				return logger.NewErrorf("error logging written files")
+				return errfmt.Errorf("error logging written files")
 			}
 		}
 	}
@@ -1427,7 +1428,7 @@ func (t *Tracee) Close() {
 			if t.probes != nil {
 				err := t.probes.DetachAll()
 				if err != nil {
-					return logger.NewErrorf("failed to detach probes when closing tracee: %s", err)
+					return errfmt.Errorf("failed to detach probes when closing tracee: %s", err)
 				}
 			}
 			if t.bpfModule != nil {
@@ -1436,7 +1437,7 @@ func (t *Tracee) Close() {
 			if t.containers != nil {
 				err := t.containers.Close()
 				if err != nil {
-					return logger.NewErrorf("failed to clean containers module when closing tracee: %s", err)
+					return errfmt.Errorf("failed to clean containers module when closing tracee: %s", err)
 				}
 			}
 			return nil
@@ -1463,7 +1464,7 @@ func (t *Tracee) Running() bool {
 func (t *Tracee) computeOutFileHash(fileName string) (string, error) {
 	f, err := utils.OpenAt(t.outDir, fileName, os.O_RDONLY, 0)
 	if err != nil {
-		return "", logger.ErrorFunc(err)
+		return "", errfmt.WrapError(err)
 	}
 	defer f.Close()
 	return computeFileHash(f)
@@ -1472,7 +1473,7 @@ func (t *Tracee) computeOutFileHash(fileName string) (string, error) {
 func computeFileHashAtPath(fileName string) (string, error) {
 	f, err := os.Open(fileName)
 	if err != nil {
-		return "", logger.ErrorFunc(err)
+		return "", errfmt.WrapError(err)
 	}
 	defer f.Close()
 	return computeFileHash(f)
@@ -1482,7 +1483,7 @@ func computeFileHash(file *os.File) (string, error) {
 	h := sha256.New()
 	_, err := io.Copy(h, file)
 	if err != nil {
-		return "", logger.ErrorFunc(err)
+		return "", errfmt.WrapError(err)
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
@@ -1604,7 +1605,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 			for _, field := range lengthFilter.Equal() {
 				length, err = strconv.ParseUint(field, 10, 64)
 				if err != nil {
-					return logger.ErrorFunc(err)
+					return errfmt.WrapError(err)
 				}
 				//lint:ignore SA4004 we only want the first argument
 				break
@@ -1616,7 +1617,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 			for _, field := range addressFilter.Equal() {
 				address, err := strconv.ParseUint(field, 16, 64)
 				if err != nil {
-					return logger.ErrorFunc(err)
+					return errfmt.WrapError(err)
 				}
 				t.triggerMemDumpCall(address, length, uint64(eventHandle))
 			}
@@ -1636,11 +1637,11 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 					owner = symbolSlice[0]
 					name = symbolSlice[1]
 				} else {
-					return logger.NewErrorf("invalid symbols provided %s - more than one ':' provided", field)
+					return errfmt.Errorf("invalid symbols provided %s - more than one ':' provided", field)
 				}
 				symbol, err := t.kernelSymbols.GetSymbolByName(owner, name)
 				if err != nil {
-					return logger.ErrorFunc(err)
+					return errfmt.WrapError(err)
 				}
 				t.triggerMemDumpCall(symbol.Address, length, uint64(eventHandle))
 			}
@@ -1649,7 +1650,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 
 	for k, v := range errArgFilter {
 		if v != nil {
-			return logger.NewErrorf("error setting %v filter: %v", k, v)
+			return errfmt.Errorf("error setting %v filter: %v", k, v)
 		}
 	}
 
@@ -1665,12 +1666,12 @@ func (t *Tracee) triggerMemDumpCall(address uint64, length uint64, eventHandle u
 func (t *Tracee) writePid() error {
 	pidFile, err := utils.OpenAt(t.outDir, "tracee.pid", syscall.O_WRONLY|syscall.O_CREAT, 0640)
 	if err != nil {
-		return logger.NewErrorf("error creating readiness file: %v", err)
+		return errfmt.Errorf("error creating readiness file: %v", err)
 	}
 
 	_, err = pidFile.Write([]byte(strconv.Itoa(os.Getpid()) + "\n"))
 	if err != nil {
-		return logger.NewErrorf("error writing to readiness file: %v", err)
+		return errfmt.Errorf("error writing to readiness file: %v", err)
 	}
 
 	return nil

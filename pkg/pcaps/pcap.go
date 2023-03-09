@@ -7,7 +7,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/pcapgo"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -74,7 +74,7 @@ func NewPcap(e *trace.Event, t PcapType) (*Pcap, error) {
 
 	p.pcapFile, p.pcapWriter, err = getPcapFileAndWriter(e, t)
 
-	return p, logger.ErrorFunc(err)
+	return p, errfmt.WrapError(err)
 }
 
 func (p *Pcap) write(event *trace.Event, payload []byte) error {

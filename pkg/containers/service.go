@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 type runtimeInfoService struct {
@@ -23,12 +23,12 @@ func RuntimeInfoService(sockets runtime.Sockets) runtimeInfoService {
 // Register associates some ContainerEnricher with a runtime, the service can then use it for relevant queries
 func (e *runtimeInfoService) Register(runtime runtime.RuntimeId, enricherBuilder func(socket string) (runtime.ContainerEnricher, error)) error {
 	if !e.sockets.Supports(runtime) {
-		return logger.NewErrorf("error registering enricher: unsupported runtime %s", runtime.String())
+		return errfmt.Errorf("error registering enricher: unsupported runtime %s", runtime.String())
 	}
 	socket := e.sockets.Socket(runtime)
 	enricher, err := enricherBuilder(socket)
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 	e.enrichers[runtime] = enricher
 	return nil
@@ -50,7 +50,7 @@ func (e *runtimeInfoService) getFromKnownRuntime(containerId string, containerRu
 	if enricher != nil {
 		return enricher.Get(containerId, ctx)
 	}
-	return runtime.ContainerMetadata{}, logger.NewErrorf("unsupported runtime")
+	return runtime.ContainerMetadata{}, errfmt.Errorf("unsupported runtime")
 }
 
 // in case where we don't know the container's runtime, we query through all the registered enrichers
@@ -63,5 +63,5 @@ func (e *runtimeInfoService) getFromUnknownRuntime(containerId string, ctx conte
 		}
 	}
 
-	return runtime.ContainerMetadata{}, logger.NewErrorf("no runtime found for container")
+	return runtime.ContainerMetadata{}, errfmt.Errorf("no runtime found for container")
 }

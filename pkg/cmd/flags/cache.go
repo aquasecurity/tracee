@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 func cacheHelp() string {
@@ -34,7 +34,7 @@ func PrepareCache(cacheSlice []string) (queue.CacheConfig, error) {
 	for _, o := range cacheSlice {
 		cacheParts := strings.SplitN(o, "=", 2)
 		if len(cacheParts) != 2 {
-			return cache, logger.NewErrorf("unrecognized cache option format: %s", o)
+			return cache, errfmt.Errorf("unrecognized cache option format: %s", o)
 		}
 		key := cacheParts[0]
 		value := cacheParts[1]
@@ -45,19 +45,19 @@ func PrepareCache(cacheSlice []string) (queue.CacheConfig, error) {
 			case "mem":
 				cacheTypeMem = true
 			default:
-				return nil, logger.NewErrorf("unrecognized cache-mem option: %s (valid options are: none,mem)", o)
+				return nil, errfmt.Errorf("unrecognized cache-mem option: %s (valid options are: none,mem)", o)
 			}
 		case "mem-cache-size":
 			if !cacheTypeMem {
-				return nil, logger.NewErrorf("you need to specify cache-type=mem before setting mem-cache-size")
+				return nil, errfmt.Errorf("you need to specify cache-type=mem before setting mem-cache-size")
 			}
 			eventsCacheMemSizeMb, err = strconv.Atoi(value)
 			if err != nil {
-				return nil, logger.NewErrorf("could not parse mem-cache-size value: %v", err)
+				return nil, errfmt.Errorf("could not parse mem-cache-size value: %v", err)
 			}
 
 		default:
-			return nil, logger.NewErrorf("unrecognized cache option format: %s", o)
+			return nil, errfmt.Errorf("unrecognized cache option format: %s", o)
 		}
 	}
 	if cacheTypeMem {

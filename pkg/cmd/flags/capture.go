@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 func captureHelp() string {
@@ -94,7 +94,7 @@ func PrepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 			capture.FileWrite = true
 			pathPrefix := strings.TrimSuffix(strings.TrimPrefix(cap, "write="), "*")
 			if len(pathPrefix) == 0 {
-				return tracee.CaptureConfig{}, logger.NewErrorf("capture write filter cannot be empty")
+				return tracee.CaptureConfig{}, errfmt.Errorf("capture write filter cannot be empty")
 			}
 			filterFileWrite = append(filterFileWrite, pathPrefix)
 		} else if cap == "exec" {
@@ -155,10 +155,10 @@ func PrepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 				context = strings.TrimSuffix(context, "b")
 				amount, err = strconv.ParseUint(context, 10, 64)
 			} else {
-				return tracee.CaptureConfig{}, logger.NewErrorf("could not parse pcap snaplen: missing b or kb ?")
+				return tracee.CaptureConfig{}, errfmt.Errorf("could not parse pcap snaplen: missing b or kb ?")
 			}
 			if err != nil {
-				return tracee.CaptureConfig{}, logger.NewErrorf("could not parse pcap snaplen: %v", err)
+				return tracee.CaptureConfig{}, errfmt.Errorf("could not parse pcap snaplen: %v", err)
 			}
 			if amount >= (1 << 16) {
 				amount = (1 << 16) - 1
@@ -169,10 +169,10 @@ func PrepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 		} else if strings.HasPrefix(cap, "dir:") {
 			outDir = strings.TrimPrefix(cap, "dir:")
 			if len(outDir) == 0 {
-				return tracee.CaptureConfig{}, logger.NewErrorf("capture output dir cannot be empty")
+				return tracee.CaptureConfig{}, errfmt.Errorf("capture output dir cannot be empty")
 			}
 		} else {
-			return tracee.CaptureConfig{}, logger.NewErrorf("invalid capture option specified, use '--capture help' for more info")
+			return tracee.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, use '--capture help' for more info")
 		}
 	}
 	capture.FilterFileWrite = filterFileWrite

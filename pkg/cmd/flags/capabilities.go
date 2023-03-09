@@ -5,7 +5,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 func capabilitiesHelp() string {
@@ -35,7 +35,7 @@ func PrepareCapabilities(capsSlice []string) (tracee.CapabilitiesConfig, error) 
 			if b == "0" || b == "false" {
 				capsConfig.BypassCaps = false
 			} else if b != "1" && b != "true" {
-				return capsConfig, logger.NewErrorf("bypass should either be true or false")
+				return capsConfig, errfmt.Errorf("bypass should either be true or false")
 			}
 		}
 		if strings.HasPrefix(slice, "add=") {
@@ -65,7 +65,7 @@ func PrepareCapabilities(capsSlice []string) (tracee.CapabilitiesConfig, error) 
 	for _, a := range capsConfig.AddCaps {
 		for _, d := range capsConfig.DropCaps {
 			if a == d {
-				return capsConfig, logger.NewErrorf("cant add and drop %v at the same time", a)
+				return capsConfig, errfmt.Errorf("cant add and drop %v at the same time", a)
 			}
 		}
 	}

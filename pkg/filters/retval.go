@@ -3,8 +3,8 @@ package filters
 import (
 	"strings"
 
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 type RetFilter struct {
@@ -74,7 +74,7 @@ func (filter *RetFilter) Parse(filterName string, operatorAndValues string, even
 	// Treat operatorAndValues as an int filter to avoid code duplication
 	err := intFilter.Parse(operatorAndValues)
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	filter.filters[id] = intFilter

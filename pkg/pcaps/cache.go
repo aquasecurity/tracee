@@ -3,6 +3,7 @@ package pcaps
 import (
 	lru "github.com/hashicorp/golang-lru"
 
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -33,7 +34,7 @@ func newPcapCache(itemType PcapType) (*PcapCache, error) {
 	return &PcapCache{
 		itemCache: cache,
 		itemType:  itemType,
-	}, logger.ErrorFunc(err)
+	}, errfmt.WrapError(err)
 }
 
 func (p *PcapCache) get(event *trace.Event) (*Pcap, error) {
@@ -46,7 +47,7 @@ func (p *PcapCache) get(event *trace.Event) (*Pcap, error) {
 		// create an item and return it
 		new, err := NewPcap(event, p.itemType)
 		if err != nil {
-			return nil, logger.ErrorFunc(err)
+			return nil, errfmt.WrapError(err)
 		}
 		p.itemCache.Add(getItemIndexFromEvent(event, p.itemType), new)
 		item = new
@@ -54,7 +55,7 @@ func (p *PcapCache) get(event *trace.Event) (*Pcap, error) {
 		// return the cached item
 		item, ok = i.(*Pcap)
 		if !ok {
-			return nil, logger.NewErrorf("unexpected item type in pcap cache")
+			return nil, errfmt.Errorf("unexpected item type in pcap cache")
 		}
 	}
 
@@ -68,7 +69,7 @@ func (p *PcapCache) destroy() error {
 		case *Pcap:
 			key.close()
 		default:
-			return logger.NewErrorf("wrong key type in pcap cache")
+			return errfmt.Errorf("wrong key type in pcap cache")
 		}
 	}
 	p.itemCache.Purge()

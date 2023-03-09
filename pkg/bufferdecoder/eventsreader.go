@@ -9,8 +9,8 @@ import (
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -61,10 +61,10 @@ func ReadArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.A
 
 	err = ebpfMsgDecoder.DecodeUint8(&argIdx)
 	if err != nil {
-		return 0, arg, logger.NewErrorf("error reading arg index: %v", err)
+		return 0, arg, errfmt.Errorf("error reading arg index: %v", err)
 	}
 	if int(argIdx) >= len(params) {
-		return 0, arg, logger.NewErrorf("invalid arg index %d", argIdx)
+		return 0, arg, errfmt.Errorf("invalid arg index %d", argIdx)
 	}
 	arg.ArgMeta = params[argIdx]
 	argType := GetParamType(arg.Type)
@@ -116,12 +116,12 @@ func ReadArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.A
 		var arrLen uint8
 		err = ebpfMsgDecoder.DecodeUint8(&arrLen)
 		if err != nil {
-			return uint(argIdx), arg, logger.NewErrorf("error reading string array number of elements: %v", err)
+			return uint(argIdx), arg, errfmt.Errorf("error reading string array number of elements: %v", err)
 		}
 		for i := 0; i < int(arrLen); i++ {
 			s, err := readStringFromBuff(ebpfMsgDecoder)
 			if err != nil {
-				return uint(argIdx), arg, logger.NewErrorf("error reading string element: %v", err)
+				return uint(argIdx), arg, errfmt.Errorf("error reading string element: %v", err)
 			}
 			ss = append(ss, s)
 		}
@@ -133,15 +133,15 @@ func ReadArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.A
 
 		err = ebpfMsgDecoder.DecodeUint32(&arrLen)
 		if err != nil {
-			return uint(argIdx), arg, logger.NewErrorf("error reading args array length: %v", err)
+			return uint(argIdx), arg, errfmt.Errorf("error reading args array length: %v", err)
 		}
 		err = ebpfMsgDecoder.DecodeUint32(&argNum)
 		if err != nil {
-			return uint(argIdx), arg, logger.NewErrorf("error reading args number: %v", err)
+			return uint(argIdx), arg, errfmt.Errorf("error reading args number: %v", err)
 		}
 		resBytes, err := ReadByteSliceFromBuff(ebpfMsgDecoder, int(arrLen))
 		if err != nil {
-			return uint(argIdx), arg, logger.NewErrorf("error reading args array: %v", err)
+			return uint(argIdx), arg, errfmt.Errorf("error reading args array: %v", err)
 		}
 		ss = strings.Split(string(resBytes), "\x00")
 		if ss[len(ss)-1] == "" {
@@ -155,25 +155,25 @@ func ReadArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.A
 		var size uint32
 		err = ebpfMsgDecoder.DecodeUint32(&size)
 		if err != nil {
-			return uint(argIdx), arg, logger.NewErrorf("error reading byte array size: %v", err)
+			return uint(argIdx), arg, errfmt.Errorf("error reading byte array size: %v", err)
 		}
 		// error if byte buffer is too big (and not a network event)
 		if size > 4096 && (id < events.NetPacketBase || id > events.MaxNetID) {
-			return uint(argIdx), arg, logger.NewErrorf("byte array size too big: %d", size)
+			return uint(argIdx), arg, errfmt.Errorf("byte array size too big: %d", size)
 		}
 		res, err = ReadByteSliceFromBuff(ebpfMsgDecoder, int(size))
 	case intArr2T:
 		var intArray [2]int32
 		err = ebpfMsgDecoder.DecodeIntArray(intArray[:], 2)
 		if err != nil {
-			return uint(argIdx), arg, logger.NewErrorf("error reading int elements: %v", err)
+			return uint(argIdx), arg, errfmt.Errorf("error reading int elements: %v", err)
 		}
 		res = intArray
 	case uint64ArrT:
 		ulongArray := make([]uint64, 0)
 		err := ebpfMsgDecoder.DecodeUint64Array(&ulongArray)
 		if err != nil {
-			return uint(argIdx), arg, logger.NewErrorf("error reading ulong elements: %v", err)
+			return uint(argIdx), arg, errfmt.Errorf("error reading ulong elements: %v", err)
 		}
 		res = ulongArray
 	case timespecT:
@@ -181,17 +181,17 @@ func ReadArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.A
 		var nsec int64
 		err = ebpfMsgDecoder.DecodeInt64(&sec)
 		if err != nil {
-			return uint(argIdx), arg, logger.ErrorFunc(err)
+			return uint(argIdx), arg, errfmt.WrapError(err)
 		}
 		err = ebpfMsgDecoder.DecodeInt64(&nsec)
 		res = float64(sec) + (float64(nsec) / float64(1000000000))
 
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
-		return uint(argIdx), arg, logger.NewErrorf("error unknown arg type %v", argType)
+		return uint(argIdx), arg, errfmt.Errorf("error unknown arg type %v", argType)
 	}
 	if err != nil {
-		return uint(argIdx), arg, logger.ErrorFunc(err)
+		return uint(argIdx), arg, errfmt.WrapError(err)
 	}
 	arg.Value = res
 	return uint(argIdx), arg, nil
@@ -252,7 +252,7 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 	var family int16
 	err := ebpfMsgDecoder.DecodeInt16(&family)
 	if err != nil {
-		return nil, logger.ErrorFunc(err)
+		return nil, errfmt.WrapError(err)
 	}
 	socketDomainArg, err := helpers.ParseSocketDomainArgument(uint64(family))
 	if err != nil {
@@ -271,7 +271,7 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 		var sunPathBuf [108]byte
 		err := ebpfMsgDecoder.DecodeBytes(sunPathBuf[:], 108)
 		if err != nil {
-			return nil, logger.NewErrorf("error parsing sockaddr_un: %v", err)
+			return nil, errfmt.Errorf("error parsing sockaddr_un: %v", err)
 		}
 		trimmedPath := bytes.TrimLeft(sunPathBuf[:], "\000")
 		sunPath := ""
@@ -280,7 +280,7 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 			sunPath, err = readStringVarFromBuff(pathDecoder, 108)
 		}
 		if err != nil {
-			return nil, logger.NewErrorf("error parsing sockaddr_un: %v", err)
+			return nil, errfmt.Errorf("error parsing sockaddr_un: %v", err)
 		}
 		res["sun_path"] = sunPath
 	case 2: // AF_INET
@@ -299,18 +299,18 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 		var port uint16
 		err = ebpfMsgDecoder.DecodeUint16BigEndian(&port)
 		if err != nil {
-			return nil, logger.NewErrorf("error parsing sockaddr_in: %v", err)
+			return nil, errfmt.Errorf("error parsing sockaddr_in: %v", err)
 		}
 		res["sin_port"] = strconv.Itoa(int(port))
 		var addr uint32
 		err = ebpfMsgDecoder.DecodeUint32BigEndian(&addr)
 		if err != nil {
-			return nil, logger.NewErrorf("error parsing sockaddr_in: %v", err)
+			return nil, errfmt.Errorf("error parsing sockaddr_in: %v", err)
 		}
 		res["sin_addr"] = PrintUint32IP(addr)
 		_, err := ReadByteSliceFromBuff(ebpfMsgDecoder, 8)
 		if err != nil {
-			return nil, logger.NewErrorf("error parsing sockaddr_in: %v", err)
+			return nil, errfmt.Errorf("error parsing sockaddr_in: %v", err)
 		}
 	case 10: // AF_INET6
 		/*
@@ -329,25 +329,25 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 		var port uint16
 		err = ebpfMsgDecoder.DecodeUint16BigEndian(&port)
 		if err != nil {
-			return nil, logger.NewErrorf("error parsing sockaddr_in6: %v", err)
+			return nil, errfmt.Errorf("error parsing sockaddr_in6: %v", err)
 		}
 		res["sin6_port"] = strconv.Itoa(int(port))
 
 		var flowinfo uint32
 		err = ebpfMsgDecoder.DecodeUint32BigEndian(&flowinfo)
 		if err != nil {
-			return nil, logger.NewErrorf("error parsing sockaddr_in6: %v", err)
+			return nil, errfmt.Errorf("error parsing sockaddr_in6: %v", err)
 		}
 		res["sin6_flowinfo"] = strconv.Itoa(int(flowinfo))
 		addr, err := ReadByteSliceFromBuff(ebpfMsgDecoder, 16)
 		if err != nil {
-			return nil, logger.NewErrorf("error parsing sockaddr_in6: %v", err)
+			return nil, errfmt.Errorf("error parsing sockaddr_in6: %v", err)
 		}
 		res["sin6_addr"] = Print16BytesSliceIP(addr)
 		var scopeid uint32
 		err = ebpfMsgDecoder.DecodeUint32BigEndian(&scopeid)
 		if err != nil {
-			return nil, logger.NewErrorf("error parsing sockaddr_in6: %v", err)
+			return nil, errfmt.Errorf("error parsing sockaddr_in6: %v", err)
 		}
 		res["sin6_scopeid"] = strconv.Itoa(int(scopeid))
 	}
@@ -359,10 +359,10 @@ func readStringFromBuff(ebpfMsgDecoder *EbpfDecoder) (string, error) {
 	var size uint32
 	err = ebpfMsgDecoder.DecodeUint32(&size)
 	if err != nil {
-		return "", logger.NewErrorf("error reading string size: %v", err)
+		return "", errfmt.Errorf("error reading string size: %v", err)
 	}
 	if size > 4096 {
-		return "", logger.NewErrorf("string size too big: %d", size)
+		return "", errfmt.Errorf("string size too big: %d", size)
 	}
 	res, err := ReadByteSliceFromBuff(ebpfMsgDecoder, int(size-1)) //last byte is string terminating null
 	defer func() {
@@ -370,7 +370,7 @@ func readStringFromBuff(ebpfMsgDecoder *EbpfDecoder) (string, error) {
 		ebpfMsgDecoder.DecodeInt8(&dummy) // discard last byte which is string terminating null
 	}()
 	if err != nil {
-		return "", logger.NewErrorf("error reading string arg: %v", err)
+		return "", errfmt.Errorf("error reading string arg: %v", err)
 	}
 	return string(res), nil
 }
@@ -383,13 +383,13 @@ func readStringVarFromBuff(decoder *EbpfDecoder, max int) (string, error) {
 	res := make([]byte, max)
 	err = decoder.DecodeInt8(&char)
 	if err != nil {
-		return "", logger.NewErrorf("error reading null terminated string: %v", err)
+		return "", errfmt.Errorf("error reading null terminated string: %v", err)
 	}
 	for count := 1; char != 0 && count < max; count++ {
 		res = append(res, byte(char))
 		err = decoder.DecodeInt8(&char)
 		if err != nil {
-			return "", logger.NewErrorf("error reading null terminated string: %v", err)
+			return "", errfmt.Errorf("error reading null terminated string: %v", err)
 		}
 	}
 	res = bytes.TrimLeft(res[:], "\000")
@@ -401,7 +401,7 @@ func ReadByteSliceFromBuff(ebpfMsgDecoder *EbpfDecoder, len int) ([]byte, error)
 	res := make([]byte, len)
 	err = ebpfMsgDecoder.DecodeBytes(res[:], uint32(len))
 	if err != nil {
-		return nil, logger.NewErrorf("error reading byte array: %v", err)
+		return nil, errfmt.Errorf("error reading byte array: %v", err)
 	}
 	return res, nil
 }

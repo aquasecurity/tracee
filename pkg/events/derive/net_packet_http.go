@@ -5,8 +5,8 @@ import (
 	"bytes"
 	"net/http"
 
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -27,7 +27,7 @@ func deriveHTTP() deriveArgsFunction {
 func deriveHTTPEvents(event trace.Event) ([]interface{}, error) {
 	net, http, err := eventToProtoHTTP(&event)
 	if err != nil {
-		return nil, logger.ErrorFunc(err)
+		return nil, errfmt.WrapError(err)
 	}
 	if http == nil {
 		return nil, nil // connection related packets
@@ -60,13 +60,13 @@ func deriveHTTPRequest() deriveArgsFunction {
 func deriveHTTPRequestEvents(event trace.Event) ([]interface{}, error) {
 	net, http, err := eventToProtoHTTPRequest(&event)
 	if err != nil {
-		return nil, logger.ErrorFunc(err)
+		return nil, errfmt.WrapError(err)
 	}
 	if http == nil {
 		return nil, nil // not a request
 	}
 	if net == nil {
-		return nil, logger.ErrorFunc(err)
+		return nil, errfmt.WrapError(err)
 	}
 
 	meta := convertNetPairToPktMeta(net)
@@ -92,13 +92,13 @@ func deriveHTTPResponse() deriveArgsFunction {
 func deriveHTTPResponseEvents(event trace.Event) ([]interface{}, error) {
 	net, http, err := eventToProtoHTTPResponse(&event)
 	if err != nil {
-		return nil, logger.ErrorFunc(err)
+		return nil, errfmt.WrapError(err)
 	}
 	if http == nil {
 		return nil, nil // // not a response
 	}
 	if net == nil {
-		return nil, logger.ErrorFunc(err)
+		return nil, errfmt.WrapError(err)
 	}
 
 	meta := convertNetPairToPktMeta(net)
@@ -114,7 +114,7 @@ func eventToProtoHTTP(event *trace.Event) (*netPair, *trace.ProtoHTTP, error) {
 
 	layer7, err := parseUntilLayer7(event, &httpNetPair)
 	if err != nil {
-		return nil, nil, logger.ErrorFunc(err)
+		return nil, nil, errfmt.WrapError(err)
 	}
 	if layer7 == nil {
 		return nil, nil, nil
@@ -133,7 +133,7 @@ func eventToProtoHTTP(event *trace.Event) (*netPair, *trace.ProtoHTTP, error) {
 
 			httpReq, err = http.ReadRequest(reader)
 			if err != nil {
-				return nil, nil, logger.ErrorFunc(err)
+				return nil, nil, errfmt.WrapError(err)
 			}
 
 			copyHTTPReqToProtoHTTP(httpReq, &protoHttp)
@@ -142,13 +142,13 @@ func eventToProtoHTTP(event *trace.Event) (*netPair, *trace.ProtoHTTP, error) {
 
 			httpRes, err = http.ReadResponse(reader, nil)
 			if err != nil {
-				return nil, nil, logger.ErrorFunc(err)
+				return nil, nil, errfmt.WrapError(err)
 			}
 
 			copyHTTPResToProtoHTTP(httpRes, &protoHttp)
 
 		} else {
-			return &httpNetPair, nil, logger.NewErrorf("unspecified direction for HTTP packet")
+			return &httpNetPair, nil, errfmt.Errorf("unspecified direction for HTTP packet")
 		}
 
 		return &httpNetPair, &protoHttp, nil
@@ -162,7 +162,7 @@ func eventToProtoHTTPRequest(event *trace.Event) (*netPair, *trace.ProtoHTTPRequ
 
 	layer7, err := parseUntilLayer7(event, &httpNetPair)
 	if err != nil {
-		return nil, nil, logger.ErrorFunc(err)
+		return nil, nil, errfmt.WrapError(err)
 	}
 	if layer7 == nil {
 		return nil, nil, nil
@@ -179,7 +179,7 @@ func eventToProtoHTTPRequest(event *trace.Event) (*netPair, *trace.ProtoHTTPRequ
 
 		httpReq, err := http.ReadRequest(reader)
 		if err != nil {
-			return nil, nil, logger.ErrorFunc(err)
+			return nil, nil, errfmt.WrapError(err)
 		}
 
 		var httpRequest trace.ProtoHTTPRequest
@@ -197,7 +197,7 @@ func eventToProtoHTTPResponse(event *trace.Event) (*netPair, *trace.ProtoHTTPRes
 
 	layer7, err := parseUntilLayer7(event, &httpNetPair)
 	if err != nil {
-		return nil, nil, logger.ErrorFunc(err)
+		return nil, nil, errfmt.WrapError(err)
 	}
 	if layer7 == nil {
 		return nil, nil, nil
@@ -214,7 +214,7 @@ func eventToProtoHTTPResponse(event *trace.Event) (*netPair, *trace.ProtoHTTPRes
 
 		httpRes, err := http.ReadResponse(reader, nil)
 		if err != nil {
-			return nil, nil, logger.ErrorFunc(err)
+			return nil, nil, errfmt.WrapError(err)
 		}
 
 		var httpResponse trace.ProtoHTTPResponse

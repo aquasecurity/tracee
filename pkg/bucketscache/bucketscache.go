@@ -3,7 +3,7 @@ package bucketscache
 import (
 	"sync"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 type BucketsCache struct {
@@ -69,5 +69,5 @@ func (c *BucketsCache) addBucketItem(key uint32, value uint32, force bool) {
 }
 
 func NoSuchItem(key uint32, index int) error {
-	return logger.NewErrorf("no such item in cache at key: %d, index: %d", key, index)
+	return errfmt.Errorf("no such item in cache at key: %d, index: %d", key, index)
 }

@@ -8,7 +8,7 @@ import (
 
 	"golang.org/x/exp/constraints"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 const (
@@ -176,7 +176,7 @@ func (filter *IntFilter[T]) Parse(operatorAndValues string) error {
 		}
 		err = filter.add(valInt, operator)
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 

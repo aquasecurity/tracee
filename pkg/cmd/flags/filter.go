@@ -7,6 +7,7 @@ import (
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/filterscope"
@@ -582,7 +583,7 @@ func (filter *cliFilter) Parse(operatorAndValues string) error {
 
 	if operatorString == "!" {
 		if len(operatorAndValues) < 3 {
-			return logger.NewErrorf("invalid operator and/or values given to filter: %s", operatorAndValues)
+			return errfmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
 		}
 		operatorString = operatorAndValues[0:2]
 		valuesString = operatorAndValues[2:]
@@ -597,7 +598,7 @@ func (filter *cliFilter) Parse(operatorAndValues string) error {
 		case "!=":
 			filter.NotEqual = append(filter.NotEqual, values[i])
 		default:
-			return logger.NewErrorf("invalid filter operator: %s", operatorString)
+			return errfmt.Errorf("invalid filter operator: %s", operatorString)
 		}
 	}
 

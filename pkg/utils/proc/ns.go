@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
@@ -15,13 +16,13 @@ import (
 func GetMountNSFirstProcesses() (map[int]int, error) {
 	procDir, err := os.Open("/proc")
 	if err != nil {
-		return nil, logger.NewErrorf("could not open proc dir: %v", err)
+		return nil, errfmt.Errorf("could not open proc dir: %v", err)
 	}
 	defer procDir.Close()
 
 	entries, err := procDir.Readdirnames(-1)
 	if err != nil {
-		return nil, logger.NewErrorf("could not read proc dir: %v", err)
+		return nil, errfmt.Errorf("could not read proc dir: %v", err)
 	}
 
 	type pidTimestamp struct {
@@ -68,7 +69,7 @@ func GetMountNSFirstProcesses() (map[int]int, error) {
 func GetProcessStartTime(pid uint) (int, error) {
 	stat, err := os.ReadFile(fmt.Sprintf("/proc/%d/stat", pid))
 	if err != nil {
-		return 0, logger.ErrorFunc(err)
+		return 0, errfmt.WrapError(err)
 	}
 	// see https://man7.org/linux/man-pages/man5/proc.5.html for how to read /proc/pid/stat
 	startTimeOffset := 22 // Offset start at 1
@@ -76,16 +77,16 @@ func GetProcessStartTime(pid uint) (int, error) {
 	// We want to remove the comm from the string, because it can contain a space which will change the offsets after split
 	splitByComm := bytes.SplitN(stat, []byte{')', ' '}, 2)
 	if len(splitByComm) != 2 {
-		return 0, logger.NewErrorf("error in parsing /proc/<pid>/stat format - comm name is not surounded by parentheses as expected")
+		return 0, errfmt.Errorf("error in parsing /proc/<pid>/stat format - comm name is not surounded by parentheses as expected")
 	}
 	newStartTimeOffset := startTimeOffset - commOffset
 	splitStat := bytes.SplitN(splitByComm[1], []byte{' '}, newStartTimeOffset+1)
 	if len(splitStat) != newStartTimeOffset+1 {
-		return 0, logger.NewErrorf("error in parsing /proc/<pid>/stat format - only %d values found inside", len(splitStat))
+		return 0, errfmt.Errorf("error in parsing /proc/<pid>/stat format - only %d values found inside", len(splitStat))
 	}
 	startTime, err := strconv.Atoi(string(splitStat[newStartTimeOffset-1]))
 	if err != nil {
-		return 0, logger.ErrorFunc(err)
+		return 0, errfmt.WrapError(err)
 	}
 
 	return startTime, nil
@@ -109,24 +110,24 @@ type ProcNS struct {
 func GetAllProcNS(pid uint) (*ProcNS, error) {
 	nsDir, err := os.Open(fmt.Sprintf("/proc/%d/ns", pid))
 	if err != nil {
-		return nil, logger.NewErrorf("could not open ns dir: %v", err)
+		return nil, errfmt.Errorf("could not open ns dir: %v", err)
 	}
 	defer nsDir.Close()
 
 	entries, err := nsDir.Readdirnames(-1)
 	if err != nil {
-		return nil, logger.NewErrorf("could not read ns dir: %v", err)
+		return nil, errfmt.Errorf("could not read ns dir: %v", err)
 	}
 
 	var procNS ProcNS
 	for _, entry := range entries {
 		nsLink, err := os.Readlink(fmt.Sprintf("/proc/%d/ns/%s", pid, entry))
 		if err != nil {
-			return nil, logger.ErrorFunc(err)
+			return nil, errfmt.WrapError(err)
 		}
 		ns, err := extractNSFromLink(nsLink)
 		if err != nil {
-			return nil, logger.ErrorFunc(err)
+			return nil, errfmt.WrapError(err)
 		}
 		switch entry {
 		case "cgroup":
@@ -150,7 +151,7 @@ func GetAllProcNS(pid uint) (*ProcNS, error) {
 		case "uts":
 			procNS.Uts = ns
 		default:
-			return nil, logger.NewErrorf("encountered unexpected namespace file - %s", entry)
+			return nil, errfmt.Errorf("encountered unexpected namespace file - %s", entry)
 		}
 	}
 	return &procNS, nil
@@ -161,11 +162,11 @@ func GetAllProcNS(pid uint) (*ProcNS, error) {
 func GetProcNS(pid uint, nsName string) (int, error) {
 	nsLink, err := os.Readlink(fmt.Sprintf("/proc/%d/ns/%s", pid, nsName))
 	if err != nil {
-		return 0, logger.NewErrorf("could not read ns file: %v", err)
+		return 0, errfmt.Errorf("could not read ns file: %v", err)
 	}
 	ns, err := extractNSFromLink(nsLink)
 	if err != nil {
-		return 0, logger.NewErrorf("could not extract ns id: %v", err)
+		return 0, errfmt.Errorf("could not extract ns id: %v", err)
 	}
 	return ns, nil
 }
@@ -173,12 +174,12 @@ func GetProcNS(pid uint, nsName string) (int, error) {
 func extractNSFromLink(link string) (int, error) {
 	nsLinkSplitted := strings.SplitN(link, ":[", 2)
 	if len(nsLinkSplitted) != 2 {
-		return 0, logger.NewErrorf("link format is not supported")
+		return 0, errfmt.Errorf("link format is not supported")
 	}
 	nsString := strings.TrimSuffix(nsLinkSplitted[1], "]")
 	ns, err := strconv.Atoi(nsString)
 	if err != nil {
-		return 0, logger.ErrorFunc(err)
+		return 0, errfmt.WrapError(err)
 	}
 	return ns, nil
 }

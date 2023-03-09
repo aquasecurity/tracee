@@ -3,6 +3,7 @@ package derive
 import (
 	"github.com/google/gopacket/layers"
 
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -23,7 +24,7 @@ func deriveDNS() deriveArgsFunction {
 func deriveDNSEvents(event trace.Event) ([]interface{}, error) {
 	net, dns, err := eventToProtoDNS(&event)
 	if err != nil {
-		return nil, logger.ErrorFunc(err)
+		return nil, errfmt.WrapError(err)
 	}
 	if dns == nil {
 		return nil, nil // connection related packets
@@ -56,13 +57,13 @@ func deriveDNSRequest() deriveArgsFunction {
 func deriveDNSRequestEvents(event trace.Event) ([]interface{}, error) {
 	net, dns, err := eventToProtoDNS(&event)
 	if err != nil {
-		return nil, logger.ErrorFunc(err)
+		return nil, errfmt.WrapError(err)
 	}
 	if dns == nil {
 		return nil, nil // connection related packets
 	}
 	if net == nil {
-		return nil, logger.ErrorFunc(err)
+		return nil, errfmt.WrapError(err)
 	}
 
 	// discover if it is a request or response
@@ -105,13 +106,13 @@ func deriveDNSResponse() deriveArgsFunction {
 func deriveDNSResponseEvents(event trace.Event) ([]interface{}, error) {
 	net, dns, err := eventToProtoDNS(&event)
 	if err != nil {
-		return nil, logger.ErrorFunc(err)
+		return nil, errfmt.WrapError(err)
 	}
 	if dns == nil {
 		return nil, nil // connection related packets
 	}
 	if net == nil {
-		return nil, logger.ErrorFunc(err)
+		return nil, errfmt.WrapError(err)
 	}
 
 	// discover if it is a request or response
@@ -157,7 +158,7 @@ func eventToProtoDNS(event *trace.Event) (*netPair, *trace.ProtoDNS, error) {
 
 	layer7, err := parseUntilLayer7(event, &DnsNetPair)
 	if err != nil {
-		return nil, nil, logger.ErrorFunc(err)
+		return nil, nil, errfmt.WrapError(err)
 	}
 
 	switch l7 := layer7.(type) {

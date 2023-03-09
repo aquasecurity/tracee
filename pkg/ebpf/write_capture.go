@@ -7,6 +7,7 @@ import (
 	"path"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
@@ -41,12 +42,12 @@ func (t *Tracee) processFileWrites() {
 			}
 
 			if meta.Size <= 0 {
-				t.handleError(logger.NewErrorf("invalid chunk size: %d", meta.Size))
+				t.handleError(errfmt.Errorf("invalid chunk size: %d", meta.Size))
 				continue
 			}
 
 			if ebpfMsgDecoder.BuffLen() < int(meta.Size) {
-				t.handleError(logger.NewErrorf("chunk too large: %d", meta.Size))
+				t.handleError(errfmt.Errorf("chunk too large: %d", meta.Size))
 				continue
 			}
 
@@ -103,7 +104,7 @@ func (t *Tracee) processFileWrites() {
 					filename = fmt.Sprintf("%s.pid-%d", filename, kernelModuleMeta.Pid)
 				}
 			} else {
-				t.handleError(logger.NewErrorf("unknown binary type: %d", meta.BinType))
+				t.handleError(errfmt.Errorf("unknown binary type: %d", meta.BinType))
 				continue
 			}
 

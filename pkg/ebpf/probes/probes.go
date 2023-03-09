@@ -3,7 +3,7 @@ package probes
 import (
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 //
@@ -169,7 +169,7 @@ func (p *probes) GetProbeType(handle Handle) string {
 // Attach attaches given handle's program to its hook
 func (p *probes) Attach(handle Handle, args ...interface{}) error {
 	if _, ok := p.probes[handle]; !ok {
-		return logger.NewErrorf("probe handle (%d) does not exist", handle)
+		return errfmt.Errorf("probe handle (%d) does not exist", handle)
 	}
 
 	return p.probes[handle].attach(p.module, args...)
@@ -178,7 +178,7 @@ func (p *probes) Attach(handle Handle, args ...interface{}) error {
 // Detach detaches given handle's program from its hook
 func (p *probes) Detach(handle Handle, args ...interface{}) error {
 	if _, ok := p.probes[handle]; !ok {
-		return logger.NewErrorf("probe handle (%d) does not exist", handle)
+		return errfmt.Errorf("probe handle (%d) does not exist", handle)
 	}
 
 	return p.probes[handle].detach(args...)
@@ -189,7 +189,7 @@ func (p *probes) DetachAll() error {
 	for _, pr := range p.probes {
 		err := pr.detach()
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 

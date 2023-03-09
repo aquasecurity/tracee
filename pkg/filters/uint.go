@@ -12,7 +12,7 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
@@ -200,7 +200,7 @@ func (filter *UIntFilter[T]) Parse(operatorAndValues string) error {
 		}
 		err = filter.add(valInt, operator)
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 
@@ -240,7 +240,7 @@ func (filter *BPFUIntFilter[T]) UpdateBPF(bpfModule *bpf.Module, filterScopeID u
 	// 4. pid_ns_filter     u64, eq_t
 	equalityFilterMap, err := bpfModule.GetMap(filter.mapName)
 	if err != nil {
-		return logger.ErrorFunc(err)
+		return errfmt.WrapError(err)
 	}
 
 	var keyPointer unsafe.Pointer
@@ -270,7 +270,7 @@ func (filter *BPFUIntFilter[T]) UpdateBPF(bpfModule *bpf.Module, filterScopeID u
 		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
 		err = equalityFilterMap.Update(unsafe.Pointer(keyPointer), unsafe.Pointer(&filterVal[0]))
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 
@@ -298,7 +298,7 @@ func (filter *BPFUIntFilter[T]) UpdateBPF(bpfModule *bpf.Module, filterScopeID u
 		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
 		err = equalityFilterMap.Update(unsafe.Pointer(keyPointer), unsafe.Pointer(&filterVal[0]))
 		if err != nil {
-			return logger.ErrorFunc(err)
+			return errfmt.WrapError(err)
 		}
 	}
 

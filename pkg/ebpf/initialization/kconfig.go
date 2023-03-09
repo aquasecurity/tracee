@@ -3,6 +3,7 @@ package initialization
 import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
@@ -22,7 +23,7 @@ func LoadKconfigValues(kc *helpers.KernelConfig) (map[helpers.KernelConfigOption
 	var err error
 	for key, keyString := range kconfigUsed {
 		if err = kc.AddCustomKernelConfig(key, keyString); err != nil {
-			return nil, logger.ErrorFunc(err)
+			return nil, errfmt.WrapError(err)
 		}
 	}
 

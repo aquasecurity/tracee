@@ -3,7 +3,7 @@ package sorting
 import (
 	"sync"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -31,7 +31,7 @@ func (p *eventsPool) Alloc(event *trace.Event) (*eventNode, error) {
 	if node != nil {
 		if node.isAllocated {
 			p.poolMutex.Unlock()
-			return &eventNode{event: event, isAllocated: true}, logger.NewErrorf("bug: alocated node in pool")
+			return &eventNode{event: event, isAllocated: true}, errfmt.Errorf("bug: alocated node in pool")
 		}
 		p.head = node.previous
 		node.event = event
@@ -56,7 +56,7 @@ func (p *eventsPool) Free(node *eventNode) error {
 	defer p.poolMutex.Unlock()
 	// Prevent malicious use of free
 	if p.allocationsCount == 0 {
-		return logger.NewErrorf("bug: free called when no allocated node exist")
+		return errfmt.Errorf("bug: free called when no allocated node exist")
 	}
 
 	node.isAllocated = false

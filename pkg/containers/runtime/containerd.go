@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 type containerdEnricher struct {
@@ -26,13 +26,13 @@ func ContainerdEnricher(socket string) (ContainerEnricher, error) {
 
 	client, err := containerd.New(socket)
 	if err != nil {
-		return nil, logger.ErrorFunc(err)
+		return nil, errfmt.WrapError(err)
 	}
 
 	conn, err := grpc.Dial(unixSocket, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		client.Close()
-		return nil, logger.ErrorFunc(err)
+		return nil, errfmt.WrapError(err)
 	}
 
 	enricher.images = cri.NewImageServiceClient(conn)
@@ -48,7 +48,7 @@ func (e *containerdEnricher) Get(containerId string, ctx context.Context) (Conta
 	}
 	nsList, err := e.namespaces.List(ctx)
 	if err != nil {
-		return metadata, logger.NewErrorf("failed to fetch namespaces %s", err.Error())
+		return metadata, errfmt.Errorf("failed to fetch namespaces %s", err.Error())
 	}
 	for _, namespace := range nsList {
 		nsCtx := namespaces.WithNamespace(ctx, namespace)
@@ -95,7 +95,7 @@ func (e *containerdEnricher) Get(containerId string, ctx context.Context) (Conta
 		}
 	}
 
-	return metadata, logger.NewErrorf("failed to find container in any namespace")
+	return metadata, errfmt.Errorf("failed to find container in any namespace")
 }
 
 func (e *containerdEnricher) isSandbox(labels map[string]string) bool {
