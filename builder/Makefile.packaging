@@ -1,5 +1,5 @@
 #
-# Responsible for Linux distribution packages for tracee
+# Creates a building environment for tracee distro pkgs.
 #
 
 .PHONY: all

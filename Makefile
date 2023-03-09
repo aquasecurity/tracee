@@ -62,7 +62,7 @@ endef
 #
 	@$(CMD_PKGCONFIG) --silence-errors --validate $* 2>/dev/null
 	if [ $$? -ne 0 ]; then
-	        echo "missing lib $*"
+		echo "missing lib $*"
 		exit 1
 	else
 		touch $@ # avoid target rebuilds due to inexistent file
@@ -123,15 +123,15 @@ else
 endif
 
 ifeq ($(UNAME_M),x86_64)
-   ARCH = x86_64
-   LINUX_ARCH = x86
-   GO_ARCH = amd64
+	ARCH = x86_64
+	LINUX_ARCH = x86
+	GO_ARCH = amd64
 endif
 
 ifeq ($(UNAME_M),aarch64)
-   ARCH = arm64
-   LINUX_ARCH = arm64
-   GO_ARCH = arm64
+	ARCH = arm64
+	LINUX_ARCH = arm64
+	GO_ARCH = arm64
 endif
 
 .PHONY: env
@@ -804,7 +804,7 @@ check-staticcheck: \
 	| .check_$(CMD_STATICCHECK)
 #
 	@$(GO_ENV_EBPF) \
-	staticcheck -f stylish \
+	$(CMD_STATICCHECK) -f stylish \
 		-tags $(GO_TAGS_EBPF) \
 		./...
 
@@ -814,10 +814,10 @@ check-staticcheck: \
 
 TRACEE_BENCH_SRC_DIRS = ./cmd/tracee-bench/
 TRACEE_BENCH_SRC = $(shell find $(TRACEE_BENCH_SRC_DIRS) \
-		   -type f \
-		   -name '*.go' \
-		   ! -name '*_test.go' \
-		   )
+			-type f \
+			-name '*.go' \
+			! -name '*_test.go' \
+			)
 
 .PHONY: tracee-bench
 tracee-bench: $(OUTPUT_DIR)/tracee-bench
@@ -842,10 +842,10 @@ clean-tracee-bench:
 
 TRACEE_GPTDOCS_SRC_DIRS = ./cmd/tracee-gptdocs/ ./pkg/cmd/
 TRACEE_GPTDOCS_SRC = $(shell find $(TRACEE_GPTDOCS_SRC_DIRS) \
-		   -type f \
-		   -name '*.go' \
-		   ! -name '*_test.go' \
-		   )
+			-type f \
+			-name '*.go' \
+			! -name '*_test.go' \
+			)
 
 .PHONY: tracee-gptdocs
 tracee-gptdocs: $(OUTPUT_DIR)/tracee-gptdocs

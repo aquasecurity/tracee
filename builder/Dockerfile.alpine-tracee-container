@@ -1,47 +1,7 @@
-################################################################################
-# INSTRUCTIONS
-################################################################################
 #
-# This Dockerfile is meant to build the official tracee containers.
+# Creates the official tracee containers.
 #
-# 1. BUILDING tracee container:
-#
-#   $ docker build -f builder/Dockerfile.alpine-tracee-container \
-#           --build-arg=BTFHUB=[0|1] \
-#           --build-arg=FLAVOR=[tracee-core|tracee-nocore] \
-#           -t alpine-tracee:latest \
-#           .
-#
-# 2. RUNNING tracee container:
-#
-#   2.1 tracee-core:
-#
-#   $ docker run --privileged --pid=host \
-#           -v /etc/os-release:/etc/os-release-host:ro \
-#           -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-#           -e TRACEE_EBPF_ONLY=0 \
-#           --rm -it alpine-tracee [arguments | --help]
-#
-#   2.2 tracee-nocore:
-#
-#   $ docker run --privileged --pid=host \
-#           -v /etc/os-release:/etc/os-release-host:ro \
-#           -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-#           -v /usr/src:/usr/src:ro \
-#           -v /lib/modules:/lib/modules:ro \
-#           -e TRACEE_EBPF_ONLY=0 \
-#           -e FORCE_CORE=0 \
-#           --rm -it alpine-tracee [arguments | --help]
-#
-#   Notes:
-#
-#   - TRACEE_EBPF_ONLY=1 will execute "tracee-ebpf" instead of "tracee".
-#   - FORCE_CORE=1 will force CORE obj loading in a tracee-nocore container.
-#
-################################################################################
 
-# FLAVOR(s):
-#
 # tracee-core      entrypoint: tracee-ebpf + tracee-rules + tracee
 # tracee-nocore    entrypoint: install-bpf-nocore + tracee-ebpf + tracee-rules + tracee
 

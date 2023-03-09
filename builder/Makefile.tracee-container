@@ -1,5 +1,5 @@
 #
-# Responsible for creating the official tracee container images
+# Creates the official tracee containers.
 #
 
 .PHONY: all
