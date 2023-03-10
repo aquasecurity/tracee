@@ -142,16 +142,16 @@ build-tracee-full: \
 #
 
 DOCKER_RUN_ARGS = run --rm \
-		--pid=host --cgroupns=host --privileged \
-		-v /etc/os-release:/etc/os-release-host:ro \
-		-v /boot/config-$(UNAME_R):/boot/config-$(UNAME_R):ro \
-		-v /sys/kernel/security:/sys/kernel/security:ro \
-		-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-		-v /tmp/tracee:/tmp/tracee:rw
+	--pid=host --cgroupns=host --privileged \
+	-v /etc/os-release:/etc/os-release-host:ro \
+	-v /boot/config-$(UNAME_R):/boot/config-$(UNAME_R):ro \
+	-v /sys/kernel/security:/sys/kernel/security:ro \
+	-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+	-v /tmp/tracee:/tmp/tracee:rw
 
 DOCKER_RUN_ARGS_FULL = $(DOCKER_RUN_ARGS) \
-		-v /lib/modules:/lib/modules:ro \
-		-v /usr/src:/usr/src:ro
+	-v /lib/modules:/lib/modules:ro \
+	-v /usr/src:/usr/src:ro
 
 .PHONY: run-tracee
 run-tracee: \
