@@ -172,7 +172,6 @@ run-tracee-full: \
 	$(CMD_DOCKER) \
 		$(DOCKER_RUN_ARGS_FULL) \
 		-e TRACEE_EBPF_ONLY=0 \
-		-e FORCE_CORE=0 \
 		--rm -it $(TRACEE_FULL_CONT_NAME) \
 		$(ARG)
 
@@ -199,7 +198,6 @@ run-tracee-ebpf-full: \
 	$(CMD_DOCKER) \
 		$(DOCKER_RUN_ARGS_FULL) \
 		-e TRACEE_EBPF_ONLY=1 \
-		-e FORCE_CORE=0 \
 		--rm -it $(TRACEE_FULL_CONT_NAME) \
 		$(ARG)
 
