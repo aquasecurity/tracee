@@ -33,7 +33,7 @@ typedef struct event_context {
     task_context_t task;
     u32 eventid;
     s32 syscall; // The syscall which triggered the event
-    u64 matched_scopes;
+    u64 matched_policies;
     s64 retval;
     u32 stack_id;
     u16 processor_id; // The ID of the processor which processed the event

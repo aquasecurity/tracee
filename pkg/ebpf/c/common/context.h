@@ -151,8 +151,8 @@ static __always_inline int init_program_data(program_data_t *p, void *ctx)
     }
 
     // in some places we don't call should_trace() (e.g. sys_exit) which also initializes
-    // matched_scopes. Use previously found scopes then to initialize it.
-    p->event->context.matched_scopes = p->task_info->matched_scopes;
+    // matched_policies. Use previously found scopes then to initialize it.
+    p->event->context.matched_policies = p->task_info->matched_scopes;
 
     // check if we need to recompute scope due to context change
     if (context_changed(&p->task_info->context, &p->event->context.task))

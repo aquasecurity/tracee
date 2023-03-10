@@ -1060,7 +1060,7 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
 
     // Uprobes are not triggered by syscalls, so we need to override the false value.
     p.event->context.syscall = NO_SYSCALL;
-    p.event->context.matched_scopes = 0xFFFFFFFFFFFFFFFF;
+    p.event->context.matched_policies = ULLONG_MAX;
 
     // uprobe was triggered from other tracee instance
     if (p.config->tracee_pid != trigger_pid)
@@ -1157,7 +1157,7 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
 
     // Uprobes are not triggered by syscalls, so we need to override the false value.
     p.event->context.syscall = NO_SYSCALL;
-    p.event->context.matched_scopes = 0xFFFFFFFFFFFFFFFF;
+    p.event->context.matched_policies = ULLONG_MAX;
 
     // uprobe was triggered from other tracee instance
     if (p.config->tracee_pid != trigger_pid)
@@ -1238,7 +1238,7 @@ int uprobe_mem_dump_trigger(struct pt_regs *ctx)
 
     // Uprobes are not triggered by syscalls, so we need to override the false value.
     p.event->context.syscall = NO_SYSCALL;
-    p.event->context.matched_scopes = 0xFFFFFFFFFFFFFFFF;
+    p.event->context.matched_policies = ULLONG_MAX;
 
     // uprobe was triggered from other tracee instance
     if (p.config->tracee_pid != trigger_pid)
@@ -1519,7 +1519,7 @@ int tracepoint__cgroup__cgroup_mkdir(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx))
         return 0;
 
-    p.event->context.matched_scopes = 0xFFFFFFFFFFFFFFFF; // see tracee.GetEssentialEvents
+    p.event->context.matched_policies = ULLONG_MAX; // see tracee.GetEssentialEvents
 
     struct cgroup *dst_cgrp = (struct cgroup *) ctx->args[0];
     char *path = (char *) ctx->args[1];
@@ -1555,7 +1555,7 @@ int tracepoint__cgroup__cgroup_rmdir(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx))
         return 0;
 
-    p.event->context.matched_scopes = 0xFFFFFFFFFFFFFFFF; // see tracee.GetEssentialEvents
+    p.event->context.matched_policies = ULLONG_MAX; // see tracee.GetEssentialEvents
 
     struct cgroup *dst_cgrp = (struct cgroup *) ctx->args[0];
     char *path = (char *) ctx->args[1];
@@ -4259,7 +4259,7 @@ static __always_inline u64 sizeof_net_event_context_t(void)
 static __always_inline void set_net_task_context(event_data_t *event, net_task_context_t *netctx)
 {
     netctx->task = event->task;
-    netctx->matched_scopes = event->context.matched_scopes;
+    netctx->matched_policies = event->context.matched_policies;
     netctx->syscall = event->context.syscall;
     __builtin_memset(&netctx->taskctx, 0, sizeof(task_context_t));
     __builtin_memcpy(&netctx->taskctx, &event->context.task, sizeof(task_context_t));
@@ -4625,7 +4625,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     eventctx->eventid = NET_PACKET_IP;                      // will be changed in skb program
     eventctx->stack_id = 0;                                 // no stack trace
     eventctx->processor_id = p.event->context.processor_id; // copy from current ctx
-    eventctx->matched_scopes = netctx->matched_scopes;      // pick matched-scopes from net ctx
+    eventctx->matched_policies = netctx->matched_policies;  // pick matched_policies from net ctx
     eventctx->syscall = NO_SYSCALL;                         // ingress has no orig syscall
     if (type == BPF_CGROUP_INET_EGRESS)
         eventctx->syscall = netctx->syscall; // egress does have an orig syscall
