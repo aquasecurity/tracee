@@ -288,7 +288,7 @@ static __always_inline u64 should_trace(program_data_t *p)
         p->task_info->recompute_scope = false;
     }
 
-    p->event->context.matched_scopes = p->task_info->matched_scopes;
+    p->event->context.matched_policies = p->task_info->matched_scopes;
 
     return p->task_info->matched_scopes;
 }
@@ -301,17 +301,17 @@ static __always_inline u64 should_submit(u32 event_id, event_context_t *ctx)
     // cache calculation before checking the map will 99% of times be
     // redundant.
     // a probe/tail call attach almost always implies at least one
-    // scope requires the event to be submitted.
-    u64 *event_scopes = bpf_map_lookup_elem(&events_map, &event_id);
-    // if scopes not set, don't submit
-    if (event_scopes == NULL) {
+    // policy requires the event to be submitted.
+    u64 *event_policies = bpf_map_lookup_elem(&events_map, &event_id);
+    // if policies not set, don't submit
+    if (event_policies == NULL) {
         return 0;
     }
 
-    // align with previously matched scopes
-    ctx->matched_scopes &= *event_scopes;
+    // align with previously matched policies
+    ctx->matched_policies &= *event_policies;
 
-    return ctx->matched_scopes;
+    return ctx->matched_policies;
 }
 
 #endif

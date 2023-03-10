@@ -121,7 +121,7 @@ cgrpctxmap_t cgrpctxmap_eg SEC(".maps");    // saved info SKB caller <=> SKB egr
 typedef struct net_task_context {
     struct task_struct *task;
     task_context_t taskctx;
-    u64 matched_scopes;
+    u64 matched_policies;
     int syscall;
 } net_task_context_t;
 
