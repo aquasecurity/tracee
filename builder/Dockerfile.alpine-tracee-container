@@ -49,7 +49,8 @@ RUN apk --no-cache update && \
     apk --no-cache add linux-headers && \
     apk --no-cache add elfutils-dev && \
     apk --no-cache add libelf-static && \
-    apk --no-cache add zlib-static
+    apk --no-cache add zlib-static && \
+    ln -s /usr/bin/llc14 /usr/bin/llc
 
 #
 # tracee-make
