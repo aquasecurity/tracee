@@ -15,6 +15,28 @@ SHELL = /bin/sh
 MAKEFLAGS += --no-print-directory
 
 #
+# environment
+#
+
+UNAME_M := $(shell uname -m)
+UNAME_R := $(shell uname -r)
+
+ifeq ($(UNAME_M),x86_64)
+	ARCH = x86_64
+	ALTARCH = amd64
+endif
+
+ifeq ($(UNAME_M),aarch64)
+	ARCH = aarch64
+	ALTARCH = arm64
+endif
+
+ifeq ($(ALTARCH),)
+	@echo "can't find architecture"
+	exit 1
+endif
+
+#
 # tools
 #
 
@@ -85,9 +107,8 @@ ifeq ($(BTFHUB),)
 BTFHUB=0
 endif
 
-TRACEE_CONT_NAME = tracee:latest
-TRACEE_FULL_CONT_NAME = tracee:full
-
+TRACEE_CONT_NAME = tracee:$(ARCH)
+TRACEE_FULL_CONT_NAME = tracee:$(ARCH)-full
 TRACEE_CONT_DOCKERFILE = builder/Dockerfile.alpine-tracee-container
 
 .PHONY: build-tracee
@@ -102,10 +123,6 @@ build-tracee: \
 		--build-arg=FLAVOR=tracee-core \
 		--target tracee-core \
 		.
-	$(CMD_DOCKER) images \
-		--filter "label=AS=tracee-make" \
-		--format "{{.ID}}" \
-		| xargs $(CMD_DOCKER) rmi
 
 .PHONY: build-tracee-full
 build-tracee-full: \
@@ -119,17 +136,15 @@ build-tracee-full: \
 		--build-arg=FLAVOR=tracee-nocore \
 		--target tracee-nocore \
 		.
-	$(CMD_DOCKER) images \
-		--filter "label=AS=tracee-make" \
-		--format "{{.ID}}" \
-		| xargs $(CMD_DOCKER) rmi
 
 #
 # run tracee and tracee-full
 #
 
-DOCKER_RUN_ARGS = run --rm --pid=host --privileged \
+DOCKER_RUN_ARGS = run --rm \
+		--pid=host --cgroupns=host --privileged \
 		-v /etc/os-release:/etc/os-release-host:ro \
+		-v /boot/config-$(UNAME_R):/boot/config-$(UNAME_R):ro \
 		-v /sys/kernel/security:/sys/kernel/security:ro \
 		-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
 		-v /tmp/tracee:/tmp/tracee:rw

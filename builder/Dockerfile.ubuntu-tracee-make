@@ -7,11 +7,6 @@ FROM ubuntu:jammy
 ARG uid=1000
 ARG gid=1000
 
-# ubuntu has been extremely slow with the default archive
-
-RUN echo "deb http://br.archive.ubuntu.com/ubuntu jammy main restricted universe multiverse" > /etc/apt/sources.list && \
-    echo "deb http://br.archive.ubuntu.com/ubuntu jammy-updates main restricted universe multiverse" >> /etc/apt/sources.list
-
 # install needed environment
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
@@ -26,8 +21,12 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get install -y zlib1g-dev && \
     update-alternatives --install /usr/bin/clang clang /usr/bin/clang-12 130 --slave /usr/bin/clang++ clang++ /usr/bin/clang++-12 --slave /usr/bin/llc llc /usr/bin/llc-12 --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-12 --slave /usr/bin/clangd clangd /usr/bin/clangd-12 && \
     update-alternatives --install /usr/bin/clang clang /usr/bin/clang-13 130 --slave /usr/bin/clang++ clang++ /usr/bin/clang++-13 --slave /usr/bin/llc llc /usr/bin/llc-13 --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-13 --slave /usr/bin/clangd clangd /usr/bin/clangd-13 && \
-    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 140 --slave /usr/bin/clang++ clang++ /usr/bin/clang++-14 --slave /usr/bin/llc llc /usr/bin/llc-14 --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-14 --slave /usr/bin/clangd clangd /usr/bin/clangd-14 && \
-    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.48.0/opa_linux_amd64_static && \
+    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 140 --slave /usr/bin/clang++ clang++ /usr/bin/clang++-14 --slave /usr/bin/llc llc /usr/bin/llc-14 --slave /usr/bin/clang-format clang-format /usr/bin/clang-format-14 --slave /usr/bin/clangd clangd /usr/bin/clangd-14
+
+# install OPA
+
+RUN altarch=$(uname -m | sed 's:x86_64:amd64:g' | sed 's:aarch64:arm64:g') && \
+    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.48.0/opa_linux_${altarch}_static && \
     chmod 755 /usr/bin/opa
 
 # extra tools for testing things
@@ -63,8 +62,9 @@ RUN export uid=$uid gid=$gid && \
 # install extra packages (if needed)
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
+    altarch=$(uname -m | sed 's:x86_64:amd64:g' | sed 's:aarch64:arm64:g') && \
     apt-get update && \
-    curl -L -o /tmp/golang.tar.xz https://go.dev/dl/go1.19.5.linux-amd64.tar.gz && \
+    curl -L -o /tmp/golang.tar.xz https://go.dev/dl/go1.19.5.linux-${altarch}.tar.gz && \
     tar -C /usr/local -xzf /tmp/golang.tar.xz && \
     update-alternatives --install /usr/bin/go go /usr/local/go/bin/go 1 && \
     update-alternatives --install /usr/bin/gofmt gofmt /usr/local/go/bin/gofmt 1 && \
