@@ -43,6 +43,24 @@ CMD_COSIGN ?= cosign
 # environment
 #
 
+UNAME_M := $(shell uname -m)
+UNAME_R := $(shell uname -r)
+
+ifeq ($(UNAME_M),x86_64)
+	ARCH = x86_64
+	ALTARCH = amd64
+endif
+
+ifeq ($(UNAME_M),aarch64)
+	ARCH = aarch64
+	ALTARCH = arm64
+endif
+
+ifeq ($(ALTARCH),)
+	@echo "can't find architecture"
+	exit 1
+endif
+
 .PHONY: env
 env:
 	@echo ---------------------------------------
@@ -155,50 +173,51 @@ release: \
 	.check_$(CMD_CHECKSUM) \
 	.check_$(CMD_GITHUB)
 #
-	#
-	# build binaries (tracee-ebpf (CO-RE + BTFHUB), tracee-rules, rules)
-	#
+# build binaries (tracee-ebpf, tracee-rules, rules)
+#
 	$(MAKE) -f builder/Makefile.tracee-make ubuntu-prepare
-	BTFHUB=1 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="all"
-	#
-	# create the tar ball and checksum files
-	#
+	BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="all"
+#
+# create the tar ball and checksum files
+#
 	$(CMD_TAR) -czf $(OUT_ARCHIVE) $(RELEASE_FILES)
 	$(CMD_CHECKSUM) $(OUT_ARCHIVE) > $(OUT_CHECKSUMS)
-	#
-	# build official slim container image (CO-RE + BTFHUB)
-	#
-	BTFHUB=1 $(MAKE) -f builder/Makefile.tracee-container build-tracee
+#
+# build official slim container image (CO-RE + BTFHUB)
+#
+	BTFHUB=0 $(MAKE) -f builder/Makefile.tracee-container build-tracee
 	$(CMD_DOCKER) tag tracee:latest $(PUSH_DOCKER_REPO):latest
 	$(CMD_DOCKER) tag tracee:latest $(PUSH_DOCKER_REPO):$(IMAGE_TAG)
-	#
-	# build official full container image (CO-RE + BTFHUB + non CO-RE build)
-	#
-	BTFHUB=1 $(MAKE) -f builder/Makefile.tracee-container build-tracee-full
+#
+# build official full container image (CO-RE + non CO-RE build)
+#
+	BTFHUB=0 $(MAKE) -f builder/Makefile.tracee-container build-tracee-full
 	$(CMD_DOCKER) tag tracee:full $(PUSH_DOCKER_REPO):full
 	$(CMD_DOCKER) tag tracee:full $(PUSH_DOCKER_REPO):full-$(IMAGE_TAG)
+#
+# RELEASE
+#
 ifneq ("$(SNAPSHOT)", "1")
-	#
-	# push container images to docker hub
-	#
+#
+# push container images to docker hub
+#
 	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):latest
-
 	COSIGN_EXPERIMENTAL=1 $(CMD_COSIGN) sign $(PUSH_DOCKER_REPO)@$(shell docker inspect --format='{{index .RepoDigests 0}}' $(PUSH_DOCKER_REPO):latest | awk -F'@' '{print $2}')
 	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):$(IMAGE_TAG)
 	COSIGN_EXPERIMENTAL=1 $(CMD_COSIGN) sign $(PUSH_DOCKER_REPO)@$(shell docker inspect --format='{{index .RepoDigests 0}}' $(PUSH_DOCKER_REPO):full | awk -F'@' '{print $2}')
 	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):full
-	
 	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):full-$(IMAGE_TAG)
-	#
-	# create release notes
-	#
+#
+# create release notes
+#
 	echo '## Docker images' >> $(RELEASE_NOTES)
 	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):$(IMAGE_TAG) (embedded eBPF CO-RE obj with BTFHUB support)`' >> $(RELEASE_NOTES);
 	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):full-$(IMAGE_TAG) (compiles non CO-RE eBPF object on startup)`' >> $(RELEASE_NOTES);
-	#
-	# release it!
-	#
+#
+# release it!
+#
 	$(CMD_GITHUB) release create $(SNAPSHOT_VERSION) $(OUT_ARCHIVE) $(OUT_CHECKSUMS) --title $(SNAPSHOT_VERSION) --notes-file $(RELEASE_NOTES)
+#
 endif
 
 .PHONY: clean

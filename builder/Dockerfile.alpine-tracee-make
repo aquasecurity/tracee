@@ -18,11 +18,13 @@ RUN apk --no-cache update && \
     apk --no-cache add linux-headers && \
     apk --no-cache add elfutils-dev && \
     apk --no-cache add libelf-static && \
-    apk --no-cache add zlib-static && \
-    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.48.0/opa_linux_amd64_static && \
-    chmod 755 /usr/bin/opa && \
-    GOROOT=/usr/lib/go GOPATH=$HOME/go go install github.com/incu6us/goimports-reviser/v3@latest && \
-    sudo cp $HOME/go/bin/goimports-reviser /usr/bin/
+    apk --no-cache add zlib-static
+
+# install OPA
+
+RUN altarch=$(uname -m | sed 's:x86_64:amd64:g' | sed 's:aarch64:arm64:g') && \
+    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.48.0/opa_linux_${altarch}_static && \
+    chmod 755 /usr/bin/opa
 
 # extra tools for testing things
 
@@ -31,6 +33,11 @@ RUN apk --no-cache add man-pages man-pages-posix bash-completion vim && \
     apk --no-cache add netcat-openbsd iputils && \
     apk --no-cache add wget lynx w3m && \
     apk --no-cache add stress-ng
+
+# install goimports-reviser
+
+RUN GOROOT=/usr/lib/go GOPATH=$HOME/go go install github.com/incu6us/goimports-reviser/v3@latest && \
+    sudo cp $HOME/go/bin/goimports-reviser /usr/bin/
 
 # allow TRACEE* and LIBBPFGO* environment variables through sudo
 
