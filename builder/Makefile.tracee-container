@@ -1,5 +1,5 @@
 #
-# Creates the official tracee containers.
+# Creates the official tracee containers images.
 #
 
 .PHONY: all
@@ -60,27 +60,39 @@ CMD_RM ?= rm
 .PHONY: help
 help:
 	@echo ""
-	@echo "To generate tracee containers:"
+	@echo "CREATES THE OFFICIAL TRACEE CONTAINER IMAGES"
+	@echo ""
+	@echo "To GENERATE tracee containers:"
 	@echo ""
 	@echo "    $$ make -f builder/Makefile.tracee-container build-tracee"
 	@echo "    $$ make -f builder/Makefile.tracee-container build-tracee-full"
 	@echo ""
-	@echo "To execute tracee containers:"
+	@echo "To EXECUTE tracee containers:"
+	@echo ""
+	@echo "  Tracee CO-RE version (small and portable):"
 	@echo ""
 	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee"
 	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee-ebpf"
 	@echo ""
+	@echo "  Tracee FULL version (Tries CO-RE, compiles NON CO-RE object if needed):"
+	@echo ""
 	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee-full"
 	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee-ebpf-full"
 	@echo ""
-	@echo "Note: You may provide \"run\" arguments using the ARG variable."
+	@echo "  Tracee NON CO-RE FULL (Forces NON CO-RE eBPF object compilation and use):"
 	@echo ""
-	@echo "Example:"
+	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee-full-noncore"
+	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee-ebpf-full-noncore"
+	@echo ""
+	@echo "NOTES:"
+	@echo ""
+	@echo "  1. You may provide \"run\" arguments using the ARG variable. Example:"
 	@echo ""
 	@echo "    $$ make -f builder/Makefile.tracee-container build-tracee"
+	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee ARG=\"--help\""
+	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee-ebpf ARG=\"--help\""
 	@echo ""
-	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee-ebpf-full \ "
-	@echo "          ARG=\"--log debug --filter comm=bash --filter follow\" "
+	@echo "    > This will run tracee or tracee-ebpf using provided arguments."
 	@echo ""
 
 #
@@ -172,6 +184,19 @@ run-tracee-full: \
 	$(CMD_DOCKER) \
 		$(DOCKER_RUN_ARGS_FULL) \
 		-e TRACEE_EBPF_ONLY=0 \
+		-e FORCE_NONCORE=0 \
+		--rm -it $(TRACEE_FULL_CONT_NAME) \
+		$(ARG)
+
+.PHONY: run-tracee-full-noncore
+run-tracee-full-noncore: \
+	| .check_$(CMD_DOCKER) \
+	.check_tree
+#
+	$(CMD_DOCKER) \
+		$(DOCKER_RUN_ARGS_FULL) \
+		-e TRACEE_EBPF_ONLY=0 \
+		-e FORCE_NONCORE=1 \
 		--rm -it $(TRACEE_FULL_CONT_NAME) \
 		$(ARG)
 
@@ -198,6 +223,19 @@ run-tracee-ebpf-full: \
 	$(CMD_DOCKER) \
 		$(DOCKER_RUN_ARGS_FULL) \
 		-e TRACEE_EBPF_ONLY=1 \
+		-e FORCE_NONCORE=0 \
+		--rm -it $(TRACEE_FULL_CONT_NAME) \
+		$(ARG)
+
+.PHONY: run-tracee-ebpf-full-noncore
+run-tracee-ebpf-full-noncore: \
+	| .check_$(CMD_DOCKER) \
+	.check_tree
+#
+	$(CMD_DOCKER) \
+		$(DOCKER_RUN_ARGS_FULL) \
+		-e TRACEE_EBPF_ONLY=1 \
+		-e FORCE_NONCORE=1 \
 		--rm -it $(TRACEE_FULL_CONT_NAME) \
 		$(ARG)
 

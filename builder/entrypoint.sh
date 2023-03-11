@@ -13,61 +13,79 @@ TRACEE_EXE=${TRACEE_EXE:="/tracee/tracee"}
 
 LIBBPFGO_OSRELEASE_FILE=${LIBBPFGO_OSRELEASE_FILE:=""}
 
-EBPF_PROBE_TIMEOUT=${EBPF_PROBE_TIMEOUT:=3} # 3 seconds for ebpf co-re probe
+FORCE_NONCORE=${FORCE_NONCORE:=0}
+CONTAINERS_ENRICHMENT=${CONTAINERS_ENRICHMENT:="0"}
+EBPF_PROBE_TIMEOUT=${EBPF_PROBE_TIMEOUT:=3}
+
+CAPABILITIES_BYPASS=${CAPABILITIES_BYPASS:="0"}
+CAPABILITIES_ADD=${CAPABILITIES_ADD:=""}
+CAPABILITIES_DROP=${CAPABILITIES_DROP:=""}
 
 # functions
 
 run_tracee() {
-    probe_tracee_ebpf
-    if [ "${TRACEE_RET}" -eq 2 ]; then
+
+    probe_tracee_ebpf # second time called will not probe again
+
+    if [ $tracee_ret -eq 2 ]; then # if ret = 2, non CO-RE obj is needed
         return
     fi
 
-    mkdir -p ${TRACEE_OUT}
-
-    # start tracee
+    mkdir -p $TRACEE_OUT
 
     echo "INFO: starting tracee..."
-    ${TRACEE_EXE} \
+
+    $TRACEE_EXE \
         --metrics \
         --output=option:parse-arguments \
         --cache cache-type=mem \
         --cache mem-cache-size=512 \
-        --containers=${CONTAINERS_ENRICHMENT:="0"}\
-        --capabilities bypass=${CAPABILITIES_BYPASS:="0"}\
-        --capabilities add=${CAPABILITIES_ADD:=""}\
-        --capabilities drop=${CAPABILITIES_DROP:=""}\
+        --containers=$CONTAINERS_ENRICHMENT \
+        --capabilities bypass=$CAPABILITIES_BYPASS \
+        --capabilities add=$CAPABILITIES_ADD \
+        --capabilities drop=$CAPABILITIES_DROP \
         $@
-    #tracee_pid=$!
 
-    TRACEE_RET=$?
+    tracee_ret=$?
 }
 
 probe_tracee_ebpf() {
-    # check if non CO-RE obj is needed (tracee-ebpf ret code is 2)
 
-    TRACEE_RET=0
-    if [ "${probed_cap}" -ne 1 ]; then
-        probed_cap=1
+    if [ $FORCE_NONCORE -eq 1 ] && [ $already_probed -eq 0 ]; then # force non-core
 
-        echo "INFO: probing tracee-ebpf capabilities..."
-        timeout --preserve-status "${EBPF_PROBE_TIMEOUT}" \
-            "${TRACEE_EBPF_EXE}" --metrics --output=none \
-            --filter comm="nothing" 2>&1 > /dev/null 2>&1
-        TRACEE_RET=$?
+        echo "INFO: forcing non CO-RE eBPF object"
+
+        already_probed=1
+        tracee_ret=2 # pretend it has probed and found non CO-RE is needed
+
+    else # check if non CO-RE obj is needed (tracee-ebpf ret code is 2)
+
+        tracee_ret=0 # clear ret code for the second call
+
+        if [ $already_probed -eq 0 ]; then
+
+            echo "INFO: probing tracee-ebpf capabilities..."
+
+            timeout --preserve-status "$EBPF_PROBE_TIMEOUT" \
+                "$TRACEE_EBPF_EXE" --metrics --output=none \
+                --filter comm="nothing" 2>&1 >/dev/null 2>&1
+
+            already_probed=1
+            tracee_ret=$?
+        fi
     fi
 }
 
 # startup
 
-probed_cap=0
+already_probed=0
 
-if [ ! -x "${TRACEE_EXE}" ]; then
-    echo "ERROR: cannot execute ${TRACEE_EXE}"
+if [ ! -x $TRACEE_EXE ]; then
+    echo "ERROR: cannot execute $TRACEE_EXE"
     exit 1
 fi
 
-if [ "${LIBBPFGO_OSRELEASE_FILE}" == "" ]; then
+if [ "$LIBBPFGO_OSRELEASE_FILE" == "" ]; then
     echo "ERROR:"
     echo "ERROR: You have to set LIBBPFGO_OSRELEASE_FILE env variable."
     echo "ERROR: It allows tracee to detect host environment features."
@@ -79,10 +97,10 @@ if [ "${LIBBPFGO_OSRELEASE_FILE}" == "" ]; then
     echo "ERROR:     -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host"
     echo "ERROR:"
 
-    exit 1;
+    exit 1
 fi
 
-if [ ! -f "${LIBBPFGO_OSRELEASE_FILE}" ]; then
+if [ ! -f "$LIBBPFGO_OSRELEASE_FILE" ]; then
     echo "ERROR:"
     echo "ERROR: You provided a LIBBPFGO_OSRELEASE_FILE variable but"
     echo "ERROR: missed providing the bind mount for it."
@@ -90,19 +108,18 @@ if [ ! -f "${LIBBPFGO_OSRELEASE_FILE}" ]; then
     echo "ERROR: Try docker with: -v /etc/os-release:/etc/os-release-host:ro"
     echo "ERROR:"
 
-    exit 1;
+    exit 1
 fi
 
+#
 # main
+#
 
-if [ -d "${TRACEE_SRC}" ]; then
-    # full container image
+if [ -d "$TRACEE_SRC" ]; then # full image (contains tracee source)
 
-    # run first, may find cached eBPF non CO-RE obj in /tmp/tracee
-    run_tracee $@
+    run_tracee $@ # run first, may find cached eBPF non CO-RE obj in /tmp/tracee
 
-    if [ "${TRACEE_RET}" -eq 2 ]; then
-        # if ret code is 2, compile non CO-RE obj, run again
+    if [ $tracee_ret -eq 2 ]; then # if ret = 2, compile non CO-RE obj, run again
 
         if [ ! -d "/lib/modules/$(uname -r)" ]; then
             echo "ERROR:"
@@ -117,23 +134,25 @@ if [ -d "${TRACEE_SRC}" ]; then
             exit 1
         fi
 
-        cd "${TRACEE_SRC}"
+        cd $TRACEE_SRC
+
         make clean
         make install-bpf-nocore
-        # force nocore ebpf object
 
-        # make sure the just generated eBPF non CO-RE obj is used
+        # force nocore ebpf object (by setting the env variable to last built obj)
+
         export TRACEE_BPF_FILE=$(ls -tr1 /tmp/tracee/tracee.bpf.*.o | head -1)
-        if [ ! -f "${TRACEE_BPF_FILE}" ]; then
+
+        if [ ! -f "$TRACEE_BPF_FILE" ]; then
             echo "ERROR: could not find TRACEE_BPF_FILE"
             exit 1
         fi
     fi
 fi
 
-run_tracee $@
+run_tracee $@ # might be running the slim or the full version
 
-if [ "${TRACEE_RET}" -eq 2 ] && [ ! -d "${TRACEE_SRC}" ]; then
+if [ $tracee_ret -eq 2 ] && [ ! -d $TRACEE_SRC ]; then # if slim, warn the user
     echo "INFO:"
     echo "INFO: You should try the FULL tracee container image, it supports"
     echo "INFO: building, based on your host environment, needed eBPF objects"
@@ -141,6 +160,4 @@ if [ "${TRACEE_RET}" -eq 2 ] && [ ! -d "${TRACEE_SRC}" ]; then
     echo "INFO:"
 fi
 
-exit ${TRACEE_RET}
-
-# vi:syntax=sh:expandtab:tabstop=4:shiftwidth=4:softtabstop=4
+exit $tracee_ret
