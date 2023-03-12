@@ -86,6 +86,37 @@ jobs:
         run: |
           make test-signatures
   #
+  # TOOLS BUILD VERIFICATION
+  #
+  verify-tools:
+    name: Verify Other Tools
+    needs:
+      - verify-analyze-code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Install Dependencies
+        uses: ./.github/actions/build-dependencies
+      - name: Build Tracee Benchmark Tool
+        run: |
+          make clean
+          make tracee-bench
+      - name: Build Tracee GPT Docs Tool
+        run: |
+          make clean
+          make tracee-gptdocs
+      - name: Build E2E Network Signatures
+        run: |
+          make clean
+          make e2e-net-signatures
+      - name: Build E2E Instrumentation Signatures
+        run: |
+          make clean
+          make e2e-instrumentation-signatures
+  #
   # CODE TESTS
   #
   unit-tests:
@@ -103,6 +134,9 @@ jobs:
       - name: Run Unit Tests
         run: |
           make test-unit
+  #
+  # INTEGRATION TESTS
+  #
   integration-tests:
     name: Integration Tests
     needs:
@@ -142,6 +176,8 @@ jobs:
     name: RHEL8 4.18 X64 CORE
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -173,6 +209,8 @@ jobs:
     name: RHEL8 4.18 X64
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -205,6 +243,8 @@ jobs:
     name: RHEL8 4.18 ARM64 CORE
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -236,6 +276,8 @@ jobs:
     name: RHEL8 4.18 ARM64
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -271,6 +313,8 @@ jobs:
     name: Focal 5.4 X64 CORE
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -302,6 +346,8 @@ jobs:
     name: Focal 5.4 X64
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -334,6 +380,8 @@ jobs:
     name: Focal 5.4 ARM64 CORE
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -365,6 +413,8 @@ jobs:
     name: Focal 5.4 ARM64
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -399,6 +449,8 @@ jobs:
     name: Focal 5.13 X64 CORE
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -430,6 +482,8 @@ jobs:
     name: Focal 5.13 X64
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -462,6 +516,8 @@ jobs:
     name: Focal 5.13 ARM64 CORE
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -493,6 +549,8 @@ jobs:
     name: Focal 5.13 ARM64
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -527,6 +585,8 @@ jobs:
     name: Jammy 5.15 X64 CORE
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -558,6 +618,8 @@ jobs:
     name: Jammy 5.15 X64
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -590,6 +652,8 @@ jobs:
     name: Jammy 5.15 ARM64 CORE
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -621,6 +685,8 @@ jobs:
     name: Jammy 5.15 ARM64
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -655,6 +721,8 @@ jobs:
     name: Jammy 5.19 X64 CORE
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -686,6 +754,8 @@ jobs:
     name: Jammy 5.19 X64
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -718,6 +788,8 @@ jobs:
     name: Jammy 5.19 ARM64 CORE
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -749,6 +821,8 @@ jobs:
     name: Jammy 5.19 ARM64
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -783,6 +857,8 @@ jobs:
     name: Focal 4.19 X64
     needs:
       - unit-tests
+      - verify-signatures
+      - verify-tools
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
