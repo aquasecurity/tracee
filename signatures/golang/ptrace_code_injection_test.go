@@ -18,7 +18,7 @@ func TestPtraceCodeInjection(t *testing.T) {
 		Findings map[string]detect.Finding
 	}{
 		{
-			Name: "should trigger detection",
+			Name: "should trigger detection - PTRACE_POKETEXT",
 			Events: []trace.Event{
 				{
 					EventName: "ptrace",
@@ -43,6 +43,53 @@ func TestPtraceCodeInjection(t *testing.T) {
 									Name: "request",
 								},
 								Value: interface{}("PTRACE_POKETEXT"),
+							},
+						},
+					}.ToProtocol(),
+					SigMetadata: detect.SignatureMetadata{
+						ID:          "TRC-103",
+						Version:     "1",
+						Name:        "Code injection detected using ptrace",
+						EventName:   "ptrace_code_injection",
+						Description: "Possible code injection into another process was detected. Code injection is an exploitation technique used to run malicious code, adversaries may use it in order to execute their malware.",
+						Properties: map[string]interface{}{
+							"Severity":             3,
+							"Category":             "defense-evasion",
+							"Technique":            "Ptrace System Calls",
+							"Kubernetes_Technique": "",
+							"id":                   "attack-pattern--ea016b56-ae0e-47fe-967a-cc0ad51af67f",
+							"external_id":          "T1055.008",
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "should trigger detection - PTRACE_POKEDATA",
+			Events: []trace.Event{
+				{
+					EventName: "ptrace",
+					Args: []trace.Argument{
+						{
+							ArgMeta: trace.ArgMeta{
+								Name: "request",
+							},
+							Value: interface{}("PTRACE_POKEDATA"),
+						},
+					},
+				},
+			},
+			Findings: map[string]detect.Finding{
+				"TRC-103": {
+					Data: nil,
+					Event: trace.Event{
+						EventName: "ptrace",
+						Args: []trace.Argument{
+							{
+								ArgMeta: trace.ArgMeta{
+									Name: "request",
+								},
+								Value: interface{}("PTRACE_POKEDATA"),
 							},
 						},
 					}.ToProtocol(),
