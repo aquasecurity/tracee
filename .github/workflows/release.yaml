@@ -9,8 +9,11 @@ on:
       - "v*"
 jobs:
   release:
-    name: Release
-    runs-on: ubuntu-latest
+    name: Release X64 (Default)
+    runs-on:
+      [
+        "github-self-hosted_ami-0b445cffc9303efcc_${{ github.event.number }}-${{ github.run_id }}",
+      ]
     permissions:
       contents: write
       id-token: write
@@ -23,6 +26,31 @@ jobs:
         uses: sigstore/cosign-installer@main
         with:
           cosign-release: "v1.13.1"
+      - name: Authenticate
+        run: |
+          gh auth login --with-token <<<'${{ secrets.GITHUB_TOKEN }}'
+          docker login docker.io --username ${{ secrets.DOCKERHUB_USER }} --password-stdin <<<'${{ secrets.DOCKERHUB_TOKEN }}'
+      - name: Build and Release
+        run: |
+          make -f builder/Makefile.release PUSH_DOCKER_REPO=aquasec/tracee
+  release-arm64:
+    name: Release ARM64
+    # only runs after x64 released (x64 is still the "default" arch, will create the release)
+    needs:
+      - release
+    runs-on:
+      [
+        "github-self-hosted_ami-0aa5b93153349d9ec_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      # TODO: check if sigstore/cosign-installer@main supports arm64
       - name: Authenticate
         run: |
           gh auth login --with-token <<<'${{ secrets.GITHUB_TOKEN }}'

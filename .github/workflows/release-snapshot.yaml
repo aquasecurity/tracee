@@ -50,15 +50,16 @@ jobs:
       - name: Publish to docker.io registry
         run: |
           docker image tag tracee:latest aquasec/tracee:dev
-          docker image tag tracee:full aquasec/tracee:full-dev
+          docker image tag tracee:full   aquasec/tracee:dev-full
           docker image tag tracee:latest aquasec/tracee:x86_64-dev
-          docker image tag tracee:full aquasec/tracee:x86_64-full-dev
+          docker image tag tracee:full   aquasec/tracee:x86_64-dev-full
           docker image push aquasec/tracee:dev
           docker image push aquasec/tracee:full-dev
           docker image push aquasec/tracee:x86_64-dev
-          docker image push aquasec/tracee:x86_64-full-dev
+          docker image push aquasec/tracee:x86_64-dev-full
   release-snapshot-arm64:
     name: Release Snapshot ARM64
+    # only runs after x64 released (x64 is still the "default" arch)
     runs-on:
       [
         "github-self-hosted_ami-0aa5b93153349d9ec_${{ github.event.number }}-${{ github.run_id }}",
@@ -94,6 +95,6 @@ jobs:
       - name: Publish to docker.io registry
         run: |
           docker image tag tracee:latest aquasec/tracee:aarch64-dev
-          docker image tag tracee:full aquasec/tracee:aarch64-full-dev
+          docker image tag tracee:full   aquasec/tracee:aarch64-dev-full
           docker image push aquasec/tracee:aarch64-dev
-          docker image push aquasec/tracee:aarch64-full-dev
+          docker image push aquasec/tracee:aarch64-dev-full
