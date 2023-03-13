@@ -208,7 +208,7 @@ func checkSecurityFileOpenExecve(t *testing.T, gotOutput *eventOutput) {
 	}
 }
 
-func checkScope42SecurityFileOpenLs(t *testing.T, gotOutput *eventOutput) {
+func checkPolicy42SecurityFileOpenLs(t *testing.T, gotOutput *eventOutput) {
 	_, err := forkAndExecFunction(doLs)
 	require.NoError(t, err)
 
@@ -216,17 +216,17 @@ func checkScope42SecurityFileOpenLs(t *testing.T, gotOutput *eventOutput) {
 
 	output := gotOutput.getEventsCopy()
 	for _, evt := range output {
-		// ls - scope 42
+		// ls - policy 42
 		assert.Equal(t, "ls", evt.ProcessName)
-		assert.Equal(t, uint64(1<<41), evt.MatchedScopes)
+		assert.Equal(t, uint64(1<<41), evt.MatchedPolicies)
 		arg, err := helpers.GetTraceeArgumentByName(evt, "pathname", helpers.GetArgOps{DefaultArgs: false})
 		require.NoError(t, err)
 		assert.Contains(t, arg.Value, "integration")
 	}
 }
 
-// checkExecveOnScopes4And2 demands an ordered events submission
-func checkExecveOnScopes4And2(t *testing.T, gotOutput *eventOutput) {
+// checkExecveOnPolicies4And2 demands an ordered events submission
+func checkExecveOnPolicies4And2(t *testing.T, gotOutput *eventOutput) {
 	_, err := forkAndExecFunction(doLsUname)
 	require.NoError(t, err)
 
@@ -243,13 +243,13 @@ func checkExecveOnScopes4And2(t *testing.T, gotOutput *eventOutput) {
 		evts[i] = evt
 	}
 
-	// ls - scope 4
+	// ls - policy 4
 	assert.Equal(t, evts[0].ProcessName, "ls")
-	assert.Equal(t, uint64(1<<3), evts[0].MatchedScopes, "MatchedScopes")
+	assert.Equal(t, uint64(1<<3), evts[0].MatchedPolicies, "MatchedPolicies")
 
-	// uname - scope 2
+	// uname - policy 2
 	assert.Equal(t, evts[1].ProcessName, "uname")
-	assert.Equal(t, uint64(1<<1), evts[1].MatchedScopes, "MatchedScopes")
+	assert.Equal(t, uint64(1<<1), evts[1].MatchedPolicies, "MatchedPolicies")
 }
 
 func checkDockerdBinaryFilter(t *testing.T, gotOutput *eventOutput) {
@@ -271,7 +271,7 @@ func checkDockerdBinaryFilter(t *testing.T, gotOutput *eventOutput) {
 	assert.Contains(t, processIds, int(dockerdPid))
 }
 
-func checkLsAndWhichBinaryFilterWithScopes(t *testing.T, gotOutput *eventOutput) {
+func checkLsAndWhichBinaryFilterWithPolicies(t *testing.T, gotOutput *eventOutput) {
 	var err error
 	_, err = forkAndExecFunction(doLs)
 	require.NoError(t, err)
@@ -351,17 +351,17 @@ func Test_EventFilters(t *testing.T) {
 			eventFunc:  checkNewContainers,
 		},
 		{
-			name:       "trace event set in a specific scope",
+			name:       "trace event set in a specific policy",
 			filterArgs: []string{"42:comm=ls", "42:event=security_file_open", "42:security_file_open.args.pathname=*integration"},
-			eventFunc:  checkScope42SecurityFileOpenLs,
+			eventFunc:  checkPolicy42SecurityFileOpenLs,
 		},
 		{
-			name: "trace events set in two specific scope",
+			name: "trace events set in two specific policy",
 			filterArgs: []string{
 				"4:event=sched_process_exit", "4:comm=ls",
 				"2:event=sched_process_exit", "2:comm=uname",
 			},
-			eventFunc: checkExecveOnScopes4And2,
+			eventFunc: checkExecveOnPolicies4And2,
 		},
 		{
 			name:       "trace only security_file_open from \"execve\" syscall",
@@ -374,16 +374,16 @@ func Test_EventFilters(t *testing.T) {
 			eventFunc:  checkDockerdBinaryFilter,
 		},
 		{
-			name:       "trace events from ls and which binary in separate scopes",
+			name:       "trace events from ls and which binary in separate policies",
 			filterArgs: []string{"1:bin=/usr/bin/ls", "2:bin=/usr/bin/which"},
-			eventFunc:  checkLsAndWhichBinaryFilterWithScopes,
+			eventFunc:  checkLsAndWhichBinaryFilterWithPolicies,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
-			filterScopes, err := flags.PrepareFilterScopes(tc.filterArgs)
+			policies, err := flags.PreparePolicies(tc.filterArgs)
 			require.NoError(t, err)
 
 			eventChan := make(chan trace.Event, 1000)
@@ -393,7 +393,7 @@ func Test_EventFilters(t *testing.T) {
 					BypassCaps: true,
 				},
 			}
-			config.FilterScopes = filterScopes
+			config.Policies = policies
 			eventOutput := &eventOutput{}
 
 			go func() {

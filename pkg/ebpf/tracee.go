@@ -37,10 +37,10 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
 	"github.com/aquasecurity/tracee/pkg/filters"
-	"github.com/aquasecurity/tracee/pkg/filterscope"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
+	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
@@ -55,7 +55,7 @@ const (
 
 // Config is a struct containing user defined configuration of tracee
 type Config struct {
-	FilterScopes       *filterscope.FilterScopes
+	Policies           *policy.Policies
 	Capture            *CaptureConfig
 	Capabilities       *CapabilitiesConfig
 	Output             *OutputConfig
@@ -107,15 +107,18 @@ type InitValues struct {
 
 // Validate does static validation of the configuration
 func (tc Config) Validate() error {
-	for filterScope := range tc.FilterScopes.Map() {
-		if filterScope == nil || filterScope.EventsToTrace == nil {
-			return errfmt.Errorf("filterScope or EventsToTrace is nil")
+	for p := range tc.Policies.Map() {
+		if p == nil {
+			return errfmt.Errorf("policy is nil")
+		}
+		if p.EventsToTrace == nil {
+			return errfmt.Errorf("policy [%d] has no events to trace", p.ID)
 		}
 
-		for e := range filterScope.EventsToTrace {
+		for e := range p.EventsToTrace {
 			_, exists := events.Definitions.GetSafe(e)
 			if !exists {
-				return errfmt.Errorf("invalid event [%d] to trace in filter scope [%d]", e, filterScope.ID)
+				return errfmt.Errorf("invalid event [%d] to trace in policy [%d]", e, p.ID)
 			}
 		}
 	}
@@ -151,8 +154,8 @@ type fileExecInfo struct {
 }
 
 type eventConfig struct {
-	submit uint64 // event that should be submitted to userspace (by scopes bitmap)
-	emit   uint64 // event that should be emitted to the user (by scopes bitmap)
+	submit uint64 // event that should be submitted to userspace (by policies bitmap)
+	emit   uint64 // event that should be emitted to the user (by policies bitmap)
 }
 
 // Tracee traces system calls and system events using eBPF
@@ -227,8 +230,8 @@ func GetCaptureEventsList(cfg Config) map[events.ID]eventConfig {
 	captureEvents := make(map[events.ID]eventConfig)
 
 	// All capture events should be placed, at least for now, to
-	// all matched scopes, or else the event won't be set to
-	// matched scope in eBPF and should_submit() won't submit
+	// all matched policies, or else the event won't be set to
+	// matched policy in eBPF and should_submit() won't submit
 	// the capture event to userland.
 
 	if cfg.Capture.Exec {
@@ -303,15 +306,15 @@ func New(cfg Config) (*Tracee, error) {
 	}
 
 	// Events chosen by the user
-	for filterScope := range t.config.FilterScopes.Map() {
-		for e := range filterScope.EventsToTrace {
+	for p := range t.config.Policies.Map() {
+		for e := range p.EventsToTrace {
 			var submit, emit uint64
 			if _, ok := t.events[e]; ok {
 				submit = t.events[e].submit
 				emit = t.events[e].emit
 			}
-			utils.SetBit(&submit, uint(filterScope.ID))
-			utils.SetBit(&emit, uint(filterScope.ID))
+			utils.SetBit(&submit, uint(p.ID))
+			utils.SetBit(&emit, uint(p.ID))
 			t.events[e] = eventConfig{submit: submit, emit: emit}
 		}
 	}
@@ -611,14 +614,14 @@ func (t *Tracee) initDerivationTable() error {
 				Enabled: func() bool { return t.events[events.SymbolsLoaded].submit > 0 },
 				DeriveFunction: derive.SymbolsLoaded(
 					t.contSymbolsLoader,
-					t.config.FilterScopes,
+					t.config.Policies,
 				),
 			},
 			events.SymbolsCollision: {
 				Enabled: func() bool { return t.events[events.SymbolsCollision].submit > 0 },
 				DeriveFunction: derive.SymbolsCollision(
 					t.contSymbolsLoader,
-					t.config.FilterScopes,
+					t.config.Policies,
 				),
 			},
 		},
@@ -627,7 +630,7 @@ func (t *Tracee) initDerivationTable() error {
 				Enabled: func() bool { return t.events[events.SymbolsCollision].submit > 0 },
 				DeriveFunction: derive.SymbolsCollision(
 					t.contSymbolsLoader,
-					t.config.FilterScopes,
+					t.config.Policies,
 				),
 			},
 		},
@@ -764,110 +767,110 @@ func (t *Tracee) computeConfigValues() []byte {
 	// padding
 	binary.LittleEndian.PutUint32(configVal[12:16], 0)
 
-	for filterScope := range t.config.FilterScopes.Map() {
-		byteIndex := filterScope.ID / 8
-		bitOffset := filterScope.ID % 8
+	for p := range t.config.Policies.Map() {
+		byteIndex := p.ID / 8
+		bitOffset := p.ID % 8
 
-		// filter enabled scopes bitmask
-		if filterScope.UIDFilter.Enabled() {
+		// filter enabled policies bitmask
+		if p.UIDFilter.Enabled() {
 			// uid_filter_enabled_scopes
 			configVal[16+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.PIDFilter.Enabled() {
+		if p.PIDFilter.Enabled() {
 			// pid_filter_enabled_scopes
 			configVal[24+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.MntNSFilter.Enabled() {
+		if p.MntNSFilter.Enabled() {
 			// mnt_ns_filter_enabled_scopes
 			configVal[32+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.PidNSFilter.Enabled() {
+		if p.PidNSFilter.Enabled() {
 			// pid_ns_filter_enabled_scopes
 			configVal[40+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.UTSFilter.Enabled() {
+		if p.UTSFilter.Enabled() {
 			// uts_ns_filter_enabled_scopes
 			configVal[48+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.CommFilter.Enabled() {
+		if p.CommFilter.Enabled() {
 			// comm_filter_enabled_scopes
 			configVal[56+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.ContIDFilter.Enabled() {
+		if p.ContIDFilter.Enabled() {
 			// cgroup_id_filter_enabled_scopes
 			configVal[64+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.ContFilter.Enabled() {
+		if p.ContFilter.Enabled() {
 			// cont_filter_enabled_scopes
 			configVal[72+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.NewContFilter.Enabled() {
+		if p.NewContFilter.Enabled() {
 			// new_cont_filter_enabled_scopes
 			configVal[80+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.NewPidFilter.Enabled() {
+		if p.NewPidFilter.Enabled() {
 			// new_pid_filter_enabled_scopes
 			configVal[88+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.ProcessTreeFilter.Enabled() {
+		if p.ProcessTreeFilter.Enabled() {
 			// proc_tree_filter_enabled_scopes
 			configVal[96+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.BinaryFilter.Enabled() {
+		if p.BinaryFilter.Enabled() {
 			// bin_path_filter_enabled_scopes
 			configVal[104+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.Follow {
+		if p.Follow {
 			// follow_filter_enabled_scopes
 			configVal[112+byteIndex] |= 1 << bitOffset
 		}
 
 		// filter out scopes bitmask
-		if filterScope.UIDFilter.FilterOut() {
+		if p.UIDFilter.FilterOut() {
 			// uid_filter_out_scopes
 			configVal[120+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.PIDFilter.FilterOut() {
+		if p.PIDFilter.FilterOut() {
 			// pid_filter_out_scopes
 			configVal[128+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.MntNSFilter.FilterOut() {
+		if p.MntNSFilter.FilterOut() {
 			// mnt_ns_filter_out_scopes
 			configVal[136+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.PidNSFilter.FilterOut() {
+		if p.PidNSFilter.FilterOut() {
 			// pid_ns_filter_out_scopes
 			configVal[144+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.UTSFilter.FilterOut() {
+		if p.UTSFilter.FilterOut() {
 			// uts_ns_filter_out_scopes
 			configVal[152+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.CommFilter.FilterOut() {
+		if p.CommFilter.FilterOut() {
 			// comm_filter_out_scopes
 			configVal[160+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.ContIDFilter.FilterOut() {
+		if p.ContIDFilter.FilterOut() {
 			// cgroup_id_filter_out_scopes
 			configVal[168+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.ContFilter.FilterOut() {
+		if p.ContFilter.FilterOut() {
 			// cont_filter_out_scopes
 			configVal[176+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.NewContFilter.FilterOut() {
+		if p.NewContFilter.FilterOut() {
 			// new_cont_filter_out_scopes
 			configVal[184+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.NewPidFilter.FilterOut() {
+		if p.NewPidFilter.FilterOut() {
 			// new_pid_filter_out_scopes
 			configVal[192+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.ProcessTreeFilter.FilterOut() {
+		if p.ProcessTreeFilter.FilterOut() {
 			// proc_tree_filter_out_scopes
 			configVal[200+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.BinaryFilter.FilterOut() {
+		if p.BinaryFilter.FilterOut() {
 			// bin_path_filter_out_scopes
 			configVal[208+byteIndex] |= 1 << bitOffset
 		}
@@ -876,17 +879,17 @@ func (t *Tracee) computeConfigValues() []byte {
 		configVal[216+byteIndex] |= 1 << bitOffset
 	}
 
-	// compute all filter scopes internals
-	t.config.FilterScopes.Compute()
+	// compute all policies internals
+	t.config.Policies.Compute()
 
 	// uid_max
-	binary.LittleEndian.PutUint64(configVal[224:232], t.config.FilterScopes.UIDFilterMax())
+	binary.LittleEndian.PutUint64(configVal[224:232], t.config.Policies.UIDFilterMax())
 	// uid_min
-	binary.LittleEndian.PutUint64(configVal[232:240], t.config.FilterScopes.UIDFilterMin())
+	binary.LittleEndian.PutUint64(configVal[232:240], t.config.Policies.UIDFilterMin())
 	// pid_max
-	binary.LittleEndian.PutUint64(configVal[240:248], t.config.FilterScopes.PIDFilterMax())
+	binary.LittleEndian.PutUint64(configVal[240:248], t.config.Policies.PIDFilterMax())
 	// pid_min
-	binary.LittleEndian.PutUint64(configVal[248:256], t.config.FilterScopes.PIDFilterMin())
+	binary.LittleEndian.PutUint64(configVal[248:256], t.config.Policies.PIDFilterMin())
 
 	return configVal
 }
@@ -1032,18 +1035,18 @@ func (t *Tracee) populateBPFMaps() error {
 		return errfmt.WrapError(err)
 	}
 
-	for filterScope := range t.config.FilterScopes.Map() {
-		scopeID := uint(filterScope.ID)
+	for p := range t.config.Policies.Map() {
+		policyID := uint(p.ID)
 		errMap := make(map[string]error, 0)
 
-		errMap[filterscope.UIDFilterMap] = filterScope.UIDFilter.UpdateBPF(t.bpfModule, scopeID)
-		errMap[filterscope.PIDFilterMap] = filterScope.PIDFilter.UpdateBPF(t.bpfModule, scopeID)
-		errMap[filterscope.MntNSFilterMap] = filterScope.MntNSFilter.UpdateBPF(t.bpfModule, scopeID)
-		errMap[filterscope.PidNSFilterMap] = filterScope.PidNSFilter.UpdateBPF(t.bpfModule, scopeID)
-		errMap[filterscope.UTSFilterMap] = filterScope.UTSFilter.UpdateBPF(t.bpfModule, scopeID)
-		errMap[filterscope.CommFilterMap] = filterScope.CommFilter.UpdateBPF(t.bpfModule, scopeID)
-		errMap[filterscope.ContIdFilter] = filterScope.ContIDFilter.UpdateBPF(t.bpfModule, t.containers, scopeID)
-		errMap[filterscope.BinaryFilterMap] = filterScope.BinaryFilter.UpdateBPF(t.bpfModule, scopeID)
+		errMap[policy.UIDFilterMap] = p.UIDFilter.UpdateBPF(t.bpfModule, policyID)
+		errMap[policy.PIDFilterMap] = p.PIDFilter.UpdateBPF(t.bpfModule, policyID)
+		errMap[policy.MntNSFilterMap] = p.MntNSFilter.UpdateBPF(t.bpfModule, policyID)
+		errMap[policy.PidNSFilterMap] = p.PidNSFilter.UpdateBPF(t.bpfModule, policyID)
+		errMap[policy.UTSFilterMap] = p.UTSFilter.UpdateBPF(t.bpfModule, policyID)
+		errMap[policy.CommFilterMap] = p.CommFilter.UpdateBPF(t.bpfModule, policyID)
+		errMap[policy.ContIdFilter] = p.ContIDFilter.UpdateBPF(t.bpfModule, t.containers, policyID)
+		errMap[policy.BinaryFilterMap] = p.BinaryFilter.UpdateBPF(t.bpfModule, policyID)
 
 		for k, v := range errMap {
 			if v != nil {
@@ -1276,8 +1279,8 @@ func (t *Tracee) initBPF() error {
 		// Update all ProcessTreeFilters after probes are attached: reduce the
 		// possible race window between the bpf programs updating the maps and
 		// userland reading procfs and also dealing with same maps.
-		for filterScope := range t.config.FilterScopes.Map() {
-			err = filterScope.ProcessTreeFilter.UpdateBPF(t.bpfModule, uint(filterScope.ID))
+		for p := range t.config.Policies.Map() {
+			err = p.ProcessTreeFilter.UpdateBPF(t.bpfModule, uint(p.ID))
 			if err != nil {
 				return errfmt.Errorf("error building process tree: %v", err)
 			}
@@ -1583,13 +1586,13 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 
 	errArgFilter := make(map[int]error, 0)
 
-	for filterScope := range t.config.FilterScopes.Map() {
-		printMemDumpFilters := filterScope.ArgFilter.GetEventFilters(events.PrintMemDump)
+	for p := range t.config.Policies.Map() {
+		printMemDumpFilters := p.ArgFilter.GetEventFilters(events.PrintMemDump)
 		if printMemDumpFilters == nil {
-			errArgFilter[filterScope.ID] = fmt.Errorf("scope %d: no address or symbols were provided to print_mem_dump event. "+
+			errArgFilter[p.ID] = fmt.Errorf("policy %d: no address or symbols were provided to print_mem_dump event. "+
 				"please provide it via -f print_mem_dump.args.address=<hex address>"+
 				", -f print_mem_dump.args.symbol_name=<owner>:<symbol> or "+
-				"-f print_mem_dump.args.symbol_name=<symbol> if specifying a system owned symbol", filterScope.ID)
+				"-f print_mem_dump.args.symbol_name=<symbol> if specifying a system owned symbol", p.ID)
 
 			continue
 		}

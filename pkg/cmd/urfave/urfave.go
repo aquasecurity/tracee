@@ -103,11 +103,11 @@ func GetTraceeRunner(c *cli.Context, version string, newBinary bool) (cmd.Runner
 
 	// Filter command line flags
 
-	filterScopes, err := flags.PrepareFilterScopes(c.StringSlice("filter"))
+	policies, err := flags.PreparePolicies(c.StringSlice("filter"))
 	if err != nil {
 		return runner, err
 	}
-	cfg.FilterScopes = filterScopes
+	cfg.Policies = policies
 
 	// Container information printer flag
 	containerMode := getContainerMode(cfg)
@@ -184,8 +184,8 @@ func GetTraceeRunner(c *cli.Context, version string, newBinary bool) (cmd.Runner
 func getContainerMode(cfg tracee.Config) printer.ContainerMode {
 	containerMode := printer.ContainerModeDisabled
 
-	for filterScope := range cfg.FilterScopes.Map() {
-		if filterScope.ContainerFilterEnabled() {
+	for p := range cfg.Policies.Map() {
+		if p.ContainerFilterEnabled() {
 			// enable printer container print mode if container filters are set
 			containerMode = printer.ContainerModeEnabled
 			if cfg.ContainersEnrich {

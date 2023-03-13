@@ -10,21 +10,21 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/filters"
-	"github.com/aquasecurity/tracee/pkg/filterscope"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func SymbolsLoaded(
 	soLoader sharedobjs.DynamicSymbolsLoader,
-	filterScopes *filterscope.FilterScopes,
+	policies *policy.Policies,
 ) DeriveFunction {
 
 	symbolsLoadedFilters := map[string]filters.Filter{}
 
-	for filterScope := range filterScopes.Map() {
-		f := filterScope.ArgFilter.GetEventFilters(events.SymbolsLoaded)
+	for p := range policies.Map() {
+		f := p.ArgFilter.GetEventFilters(events.SymbolsLoaded)
 		maps.Copy(symbolsLoadedFilters, f)
 	}
 

@@ -21,7 +21,7 @@ func NewContainerFilter(mapName string) *ContainerFilter {
 	}
 }
 
-func (f *ContainerFilter) UpdateBPF(bpfModule *bpf.Module, containers *containers.Containers, filterScopeID uint) error {
+func (f *ContainerFilter) UpdateBPF(bpfModule *bpf.Module, containers *containers.Containers, policyID uint) error {
 	if !f.Enabled() {
 		return nil
 	}
@@ -43,19 +43,19 @@ func (f *ContainerFilter) UpdateBPF(bpfModule *bpf.Module, containers *container
 			return errfmt.Errorf("container id is ambiguous: %s", notEqualFilter)
 		}
 
-		var equalInScopes, equalitySetInScopes uint64
+		var equalInPolicies, equalitySetInPolicies uint64
 		curVal, err := filterMap.GetValue(unsafe.Pointer(&cgroupIDs[0]))
 		if err == nil {
-			equalInScopes = binary.LittleEndian.Uint64(curVal[0:8])
-			equalitySetInScopes = binary.LittleEndian.Uint64(curVal[8:16])
+			equalInPolicies = binary.LittleEndian.Uint64(curVal[0:8])
+			equalitySetInPolicies = binary.LittleEndian.Uint64(curVal[8:16])
 		}
 
 		// filterNotEqual == 0, so clear n bitmask bit
-		utils.ClearBit(&equalInScopes, filterScopeID)
-		utils.SetBit(&equalitySetInScopes, filterScopeID)
+		utils.ClearBit(&equalInPolicies, policyID)
+		utils.SetBit(&equalitySetInPolicies, policyID)
 
-		binary.LittleEndian.PutUint64(filterVal[0:8], equalInScopes)
-		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
+		binary.LittleEndian.PutUint64(filterVal[0:8], equalInPolicies)
+		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInPolicies)
 		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&filterVal[0])); err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -71,19 +71,19 @@ func (f *ContainerFilter) UpdateBPF(bpfModule *bpf.Module, containers *container
 			return errfmt.Errorf("container id is ambiguous: %s", equalFilter)
 		}
 
-		var equalInScopes, equalitySetInScopes uint64
+		var equalInPolicies, equalitySetInPolicies uint64
 		curVal, err := filterMap.GetValue(unsafe.Pointer(&cgroupIDs[0]))
 		if err == nil {
-			equalInScopes = binary.LittleEndian.Uint64(curVal[0:8])
-			equalitySetInScopes = binary.LittleEndian.Uint64(curVal[8:16])
+			equalInPolicies = binary.LittleEndian.Uint64(curVal[0:8])
+			equalitySetInPolicies = binary.LittleEndian.Uint64(curVal[8:16])
 		}
 
 		// filterEqual == 1, so set n bitmask bit
-		utils.SetBit(&equalInScopes, filterScopeID)
-		utils.SetBit(&equalitySetInScopes, filterScopeID)
+		utils.SetBit(&equalInPolicies, policyID)
+		utils.SetBit(&equalitySetInPolicies, policyID)
 
-		binary.LittleEndian.PutUint64(filterVal[0:8], equalInScopes)
-		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
+		binary.LittleEndian.PutUint64(filterVal[0:8], equalInPolicies)
+		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInPolicies)
 		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&filterVal[0])); err != nil {
 			return errfmt.WrapError(err)
 		}

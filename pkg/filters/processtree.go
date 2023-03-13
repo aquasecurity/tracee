@@ -78,7 +78,7 @@ func (filter *ProcessTreeFilter) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (filter *ProcessTreeFilter) UpdateBPF(bpfModule *bpf.Module, filterScopeID uint) error {
+func (filter *ProcessTreeFilter) UpdateBPF(bpfModule *bpf.Module, policyID uint) error {
 	if !filter.Enabled() {
 		return nil
 	}
@@ -101,22 +101,22 @@ func (filter *ProcessTreeFilter) UpdateBPF(bpfModule *bpf.Module, filterScopeID 
 
 	updateBPF := func(shouldBeTraced bool, pid uint64) {
 		filterVal := make([]byte, 16)
-		var equalInScopes, equalitySetInScopes uint64
+		var equalInPolicies, equalitySetInPolicies uint64
 		curVal, err := processTreeBPFMap.GetValue(unsafe.Pointer(&pid))
 		if err == nil {
-			equalInScopes = binary.LittleEndian.Uint64(curVal[0:8])
-			equalitySetInScopes = binary.LittleEndian.Uint64(curVal[8:16])
+			equalInPolicies = binary.LittleEndian.Uint64(curVal[0:8])
+			equalitySetInPolicies = binary.LittleEndian.Uint64(curVal[8:16])
 		}
 
 		if shouldBeTraced {
-			utils.SetBit(&equalInScopes, filterScopeID)
+			utils.SetBit(&equalInPolicies, policyID)
 		} else {
-			utils.ClearBit(&equalInScopes, filterScopeID)
+			utils.ClearBit(&equalInPolicies, policyID)
 		}
-		utils.SetBit(&equalitySetInScopes, filterScopeID)
+		utils.SetBit(&equalitySetInPolicies, policyID)
 
-		binary.LittleEndian.PutUint64(filterVal[0:8], equalInScopes)
-		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
+		binary.LittleEndian.PutUint64(filterVal[0:8], equalInPolicies)
+		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInPolicies)
 		processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&filterVal[0]))
 	}
 

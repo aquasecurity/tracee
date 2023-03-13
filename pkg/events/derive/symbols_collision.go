@@ -7,8 +7,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
-	"github.com/aquasecurity/tracee/pkg/filterscope"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -24,14 +24,14 @@ import (
 // `sched_process_exec` event for handling.
 //
 
-func SymbolsCollision(soLoader sharedobjs.DynamicSymbolsLoader, fScopes *filterscope.FilterScopes,
+func SymbolsCollision(soLoader sharedobjs.DynamicSymbolsLoader, policies *policy.Policies,
 ) DeriveFunction {
 
 	symbolsCollisionFilters := map[string]filters.Filter{}
 
 	// pick white and black lists from the filters (TODO: change this)
-	for fScope := range fScopes.Map() {
-		f := fScope.ArgFilter.GetEventFilters(events.SymbolsCollision)
+	for policies := range policies.Map() {
+		f := policies.ArgFilter.GetEventFilters(events.SymbolsCollision)
 		maps.Copy(symbolsCollisionFilters, f)
 	}
 

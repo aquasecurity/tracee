@@ -362,7 +362,7 @@ func (t *Tracee) processTriggeredEvent(event *trace.Event) error {
 		return errfmt.Errorf("failed to apply invoke context on %s event: %s", event.EventName, err)
 	}
 	// This was previously event = &withInvokingContext. However, if applied
-	// as such, withInvokingContext will go out of scope and the reference
+	// as such, withInvokingContext will go out of policy and the reference
 	// will be moved back as such we apply the value internally and not
 	// through a reference switch
 	(*event) = withInvokingContext

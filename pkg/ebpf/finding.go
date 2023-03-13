@@ -55,7 +55,7 @@ func newEvent(id int, f detect.Finding, s trace.Event) *trace.Event {
 		ReturnValue:         s.ReturnValue,
 		StackAddresses:      s.StackAddresses,
 		ContextFlags:        s.ContextFlags,
-		MatchedScopes:       s.MatchedScopes,
+		MatchedPolicies:     s.MatchedPolicies,
 		ArgsNum:             len(arguments),
 		Args:                arguments,
 		Metadata:            metadata,
