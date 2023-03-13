@@ -4,7 +4,7 @@
 # This workflow ensures that the main branch is ready for release and that all
 # build configuration files are valid. Also scans tracee container images for
 # vulnerabilities, and publishes to DockerHub as aquasec/tracee:dev and
-# aquasec/tracee:full-dev.
+# aquasec/tracee:dev-full.
 #
 name: Release Snapshot
 on:
@@ -54,7 +54,7 @@ jobs:
           docker image tag tracee:latest aquasec/tracee:x86_64-dev
           docker image tag tracee:full   aquasec/tracee:x86_64-dev-full
           docker image push aquasec/tracee:dev
-          docker image push aquasec/tracee:full-dev
+          docker image push aquasec/tracee:dev-full
           docker image push aquasec/tracee:x86_64-dev
           docker image push aquasec/tracee:x86_64-dev-full
   release-snapshot-arm64:
