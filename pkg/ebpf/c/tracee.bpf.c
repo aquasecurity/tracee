@@ -440,6 +440,7 @@ int syscall__execve(void *ctx)
     if (!p.task_info->syscall_traced)
         return -1;
     syscall_data_t *sys = &p.task_info->syscall_data;
+    p.event->context.ts = sys->ts;
 
     if (!should_submit(SYSCALL_EXECVE, &(p.event->context)))
         return 0;
@@ -463,6 +464,7 @@ int syscall__execveat(void *ctx)
     if (!p.task_info->syscall_traced)
         return -1;
     syscall_data_t *sys = &p.task_info->syscall_data;
+    p.event->context.ts = sys->ts;
 
     if (!should_submit(SYSCALL_EXECVEAT, &(p.event->context)))
         return 0;
