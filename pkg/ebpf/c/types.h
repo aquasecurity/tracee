@@ -121,6 +121,7 @@ enum event_id_e
     FILE_MODIFICATION,
     INOTIFY_WATCH,
     SECURITY_BPF_PROG,
+    PROCESS_EXECUTION_FAILED,
     MAX_EVENT_ID,
 };
 
@@ -151,6 +152,11 @@ enum argument_type_e
     U8_T,
     TIMESPEC_T,
     TYPE_MAX = 255UL
+};
+
+enum internal_hook_e
+{
+    EXEC_BINPRM = 80000,
 };
 
 enum mem_prot_alert_e
