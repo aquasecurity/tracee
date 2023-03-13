@@ -19,7 +19,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
       - name: Install Cosign
@@ -47,7 +47,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
       # TODO: check if sigstore/cosign-installer@main supports arm64
