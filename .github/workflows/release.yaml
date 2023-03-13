@@ -31,8 +31,10 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: imjasonh/setup-crane@e82f1b9a8007d399333baba4d75915558e9fb6a4 # v0.2
       - name: Build and Release
-        run: |
+        run:
+          crane auth login -u ${{ secrets.DOCKERHUB_USER }} -p ${{ secrets.DOCKERHUB_TOKEN }} docker.io
           make -f builder/Makefile.release PUSH_DOCKER_REPO=aquasec/tracee
   release-arm64:
     name: Release ARM64
@@ -59,4 +61,5 @@ jobs:
       # TODO: check if sigstore/cosign-installer@main supports arm64
       - name: Build and Release
         run: |
+          crane auth login -u ${{ secrets.DOCKERHUB_USER }} -p ${{ secrets.DOCKERHUB_TOKEN }} docker.io
           make -f builder/Makefile.release PUSH_DOCKER_REPO=aquasec/tracee
