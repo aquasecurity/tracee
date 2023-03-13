@@ -16,6 +16,8 @@ on:
       - "!**.txt"
       - "!**.conf"
       # override previous rules:
+      - "go.mod"
+      - "go.sum"
       - "**.c"
       - "**.h"
       - "**.go"
