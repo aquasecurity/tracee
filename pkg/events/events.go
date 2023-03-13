@@ -6136,10 +6136,9 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "prog_type"},
 				{Type: "const char*", Name: "prog_name"},
+				{Type: "unsigned long[]", Name: "prog_helpers"},
 				{Type: "const char*", Name: "perf_symbol"},
 				{Type: "u64", Name: "perf_addr"},
-				{Type: "int", Name: "prog_write_user"},
-				{Type: "int", Name: "prog_override_return"},
 				{Type: "int", Name: "perf_type"},
 			},
 		},

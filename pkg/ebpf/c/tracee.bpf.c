@@ -1429,7 +1429,7 @@ send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf
     bpf_probe_read_str(&prog_name, BPF_OBJ_NAME_LEN, READ_KERN(prog_aux->name));
 
     // get usage of helpers
-    bpf_attach_t *val = bpf_map_lookup_elem(&bpf_attach_map, &prog_id);
+    bpf_used_helpers_t *val = bpf_map_lookup_elem(&bpf_attach_map, &prog_id);
     if (val == NULL)
         return 0;
 
@@ -1437,11 +1437,10 @@ send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf
 
     save_to_submit_buf(p->event, &prog_type, sizeof(int), 0);
     save_str_to_buf(p->event, (void *) &prog_name, 1);
-    save_str_to_buf(p->event, (void *) &event_name, 2);
-    save_to_submit_buf(p->event, &probe_addr, sizeof(u64), 3);
-    save_to_submit_buf(p->event, &val->write_user, sizeof(int), 4);
-    save_to_submit_buf(p->event, &val->override_return, sizeof(int), 5);
-    save_to_submit_buf(p->event, &perf_type, sizeof(int), 6);
+    save_u64_arr_to_buf(p->event, (const u64 *) val->helpers, 4, 2);
+    save_str_to_buf(p->event, (void *) &event_name, 3);
+    save_to_submit_buf(p->event, &probe_addr, sizeof(u64), 4);
+    save_to_submit_buf(p->event, &perf_type, sizeof(int), 5);
 
     events_perf_submit(p, BPF_ATTACH, 0);
 
@@ -3120,20 +3119,17 @@ int BPF_KPROBE(trace_security_bpf_prog)
     struct bpf_prog_aux *prog_aux = READ_KERN(prog->aux);
     u32 prog_id = READ_KERN(prog_aux->id);
 
-    bpf_attach_t val = {};
     // In some systems, the 'check_map_func_compatibility' and 'check_helper_call' symbols are not
     // available. For these cases, the temporary map 'bpf_attach_tmp_map' will not hold any
-    // information about the usage of bpf_probe_write_user and bpf_override_return. nevertheless,
-    // we always want to output the 'bpf_attach' event to the user, so using the UNKNOWN values
-    // instead of returning, just so the map would be filled.
-    val.write_user = HELPER_USAGE_UNKNOWN;
-    val.override_return = HELPER_USAGE_UNKNOWN;
+    // information about the used helpers in the prog. nevertheless, we always want to output the
+    // 'bpf_attach' event to the user, so using zero values
+    bpf_used_helpers_t val = {0};
 
-    bpf_attach_t *existing_val;
+    // if there is a value, use it
+    bpf_used_helpers_t *existing_val;
     existing_val = bpf_map_lookup_elem(&bpf_attach_tmp_map, &p.event->context.task.host_tid);
     if (existing_val != NULL) {
-        val.write_user = existing_val->write_user;
-        val.override_return = existing_val->override_return;
+        __builtin_memcpy(&val.helpers, &existing_val->helpers, sizeof(bpf_used_helpers_t));
     }
 
     bpf_map_update_elem(&bpf_attach_map, &prog_id, &val, BPF_ANY);
@@ -3153,33 +3149,39 @@ int BPF_KPROBE(trace_security_bpf_prog)
 
 static __always_inline int handle_bpf_helper_func_id(u32 host_tid, int func_id)
 {
-    bpf_attach_t val = {};
-    val.write_user = HELPER_USAGE_FALSE;
-    val.override_return = HELPER_USAGE_FALSE;
+    bpf_used_helpers_t val = {0};
 
-    // we want the map to contain value, event if we didn't see the BPF helper functions we looked
-    // for. if there is a value, use it - because this program is invoked for each BPF helper
-    // function.
-    bpf_attach_t *existing_val = bpf_map_lookup_elem(&bpf_attach_tmp_map, &host_tid);
-    if (existing_val == NULL) {
-        bpf_map_update_elem(&bpf_attach_tmp_map, &host_tid, &val, BPF_ANY);
-    } else {
-        val.write_user = existing_val->write_user;
-        val.override_return = existing_val->override_return;
+    // we want to the existing value in the map a just update it with the current func_id
+    bpf_used_helpers_t *existing_val = bpf_map_lookup_elem(&bpf_attach_tmp_map, &host_tid);
+    if (existing_val != NULL) {
+        __builtin_memcpy(&val.helpers, &existing_val->helpers, sizeof(bpf_used_helpers_t));
     }
 
-    // update the map if the BPF helper function is one that we look for
-    switch (func_id) {
-        case BPF_FUNC_probe_write_user:
-            val.write_user = HELPER_USAGE_TRUE;
+    // calculate where to encode usage of this func_id in bpf_used_helpers_t.
+    // this method is used in order to stay in bounds of the helpers array and pass verifier checks.
+    // it is equivalent to:
+    //  val.helpers[func_id / 64] |= (1ULL << (func_id % 64));
+    // which the verifier doesn't like.
+    int arr_num;
+    int arr_idx = func_id;
+
+#pragma unroll
+    for (int i = 0; i < NUM_OF_HELPERS_ELEMS; i++) {
+        arr_num = i;
+        if (arr_idx - SIZE_OF_HELPER_ELEM >= 0) {
+            arr_idx = arr_idx - SIZE_OF_HELPER_ELEM;
+        } else {
             break;
-        case BPF_FUNC_override_return:
-            val.override_return = HELPER_USAGE_TRUE;
-            break;
-        default:
-            return 0;
+        }
+    }
+    if (arr_idx >= SIZE_OF_HELPER_ELEM) {
+        // unsupported func_id
+        return 0;
     }
 
+    val.helpers[arr_num] |= (1ULL << (arr_idx));
+
+    // update the map with the current func_id
     bpf_map_update_elem(&bpf_attach_tmp_map, &host_tid, &val, BPF_ANY);
 
     return 0;
