@@ -12,11 +12,11 @@ as well as information about the probe itself.
 
 ## Arguments
 * `prog_type`:`int`[K] - the BPF program type.
-* `prog_name`:`const char*`[K] - the BPF program type (first 16 bytes only, as this is how it is saved in the kernel).
+* `prog_name`:`const char*`[K] - the BPF program name (first 16 bytes only, as this is how it is saved in the kernel).
+* `prog_id`:`u32`[K] - the BPF program ID as set by the kernel.
+* `prog_helpers`:`unsigned long[]`[K] - list of all BPF helpers being used by the BPF program.
 * `perf_symbol`:`const char*`[K] - name/path of the symbol the BPF program is being attached to.
 * `perf_addr`:`u64`[K] - address/offset of the symbol the BPF program is being attached to.
-* `prog_write_user`:`int`[K] - whether the BPF program uses the bpf_probe_write_user() helper function.
-* `prog_override_return`:`int`[K] - whether the BPF program uses the bpf_override_return() helper function.
 * `perf_type`:`int`[K] - the probe's type.
 
 ## Hooks
@@ -42,19 +42,17 @@ save data of the BPF program for when we output the event
 #### Type
 kprobe
 #### Purpose
-check whether the BPF program uses helper functions of interest
+get information about which helper functions are used by the BPF program
 
 ### check_map_func_compatibility
 #### Type
 kprobe
 #### Purpose
-check whether the BPF program uses helper functions of interest
+get information about which helper functions are used by the BPF program
 
 ## Example Use Case
 ./tracee -f e=bpf_attach
 
 ## Issues
-the 'check_helper_call' and 'check_map_func_compatibility' serves the same purpose. 
-in some kernels one of this symbols would not exist - therefore libbpf will output an error (execution will continue successfully due to the other hook).
 
 ## Related Events
