@@ -14,32 +14,32 @@ import (
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/filters"
-	"github.com/aquasecurity/tracee/pkg/filterscope"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
+	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/signatures/rego"
 )
 
 // This will only test failure cases since success cases are covered in the filter tests themselves
-func TestPrepareFilterScope(t *testing.T) {
+func TestPrepareFilterPolicy(t *testing.T) {
 	testCases := []struct {
 		testName      string
 		filters       []string
 		expectedError error
 	}{
 		{
-			testName:      "invalid scope id 1",
+			testName:      "invalid policy id 1",
 			filters:       []string{":comm=bash"},
-			expectedError: filters.InvalidScope(":comm=bash"),
+			expectedError: filters.InvalidPolicy(":comm=bash"),
 		},
 		{
-			testName:      "invalid scope id 2",
+			testName:      "invalid policy id 2",
 			filters:       []string{"0:comm=bash"},
-			expectedError: filters.InvalidScope("0:comm=bash"),
+			expectedError: filters.InvalidPolicy("0:comm=bash"),
 		},
 		{
-			testName:      "invalid scope id 3",
-			filters:       []string{fmt.Sprintf("%d:comm=bash", filterscope.MaxFilterScopes+1)},
-			expectedError: filters.InvalidScope(fmt.Sprintf("%d:comm=bash", filterscope.MaxFilterScopes+1)),
+			testName:      "invalid policy id 3",
+			filters:       []string{fmt.Sprintf("%d:comm=bash", policy.MaxPolicies+1)},
+			expectedError: filters.InvalidPolicy(fmt.Sprintf("%d:comm=bash", policy.MaxPolicies+1)),
 		},
 		{
 			testName:      "invalid argfilter 1",
@@ -142,12 +142,12 @@ func TestPrepareFilterScope(t *testing.T) {
 			expectedError: filters.InvalidValue("-1\t"),
 		},
 		{
-			testName: "success - scope 1",
-			filters:  []string{"10:uid=4294967296"},
+			testName: "success - policy 1",
+			filters:  []string{"1:uid=4294967296"},
 		},
 		{
-			testName: "success - scope 2",
-			filters:  []string{"25:pid>50000"},
+			testName: "success - policy 2",
+			filters:  []string{"2:pid>50000"},
 		},
 		{
 			testName: "success - large uid filter",
@@ -186,7 +186,7 @@ func TestPrepareFilterScope(t *testing.T) {
 			filters:  []string{"binary=/usr/bin/ls"},
 		},
 		{
-			testName: "success - scope 2:binary=host:/usr/bin/ls",
+			testName: "success - policy 2:binary=host:/usr/bin/ls",
 			filters:  []string{"2:binary=host:/usr/bin/ls"},
 		},
 		{
@@ -243,7 +243,7 @@ func TestPrepareFilterScope(t *testing.T) {
 			filters:  []string{"openat.pathname=/bin/ls,/tmp/tracee", "openat.pathname!=/etc/passwd"},
 		},
 		{
-			testName: "argfilter scope",
+			testName: "argfilter policy",
 			filters:  []string{"2:openat.pathname=/bin/ls,/tmp/tracee", "2:openat.pathname!=/etc/passwd"},
 		},
 		{
@@ -251,7 +251,7 @@ func TestPrepareFilterScope(t *testing.T) {
 			filters:  []string{"openat.retval=2", "openat.retval>1"},
 		},
 		{
-			testName: "retfilter scope",
+			testName: "retfilter policy",
 			filters:  []string{"2:openat.retval=2", "2:openat.retval>1"},
 		},
 		{
@@ -259,7 +259,7 @@ func TestPrepareFilterScope(t *testing.T) {
 			filters:  []string{"event=open*"},
 		},
 		{
-			testName: "wildcard filter scope",
+			testName: "wildcard filter policy",
 			filters:  []string{"2:event=open*"},
 		},
 		{
@@ -267,7 +267,7 @@ func TestPrepareFilterScope(t *testing.T) {
 			filters:  []string{"event!=*"},
 		},
 		{
-			testName: "wildcard not filter scope",
+			testName: "wildcard not filter policy",
 			filters:  []string{"2:event!=*"},
 		},
 		{
@@ -275,7 +275,7 @@ func TestPrepareFilterScope(t *testing.T) {
 			filters:  []string{"uid<1", "mntns=5", "pidns!=3", "pid!=10", "comm=ps", "uts!=abc"},
 		},
 		{
-			testName: "multiple filters scope",
+			testName: "multiple filters policy",
 			filters:  []string{"2:uid<1", "2:mntns=5", "2:pidns!=3", "2:pid!=10", "2:comm=ps", "2:uts!=abc"},
 		},
 		{
@@ -284,7 +284,7 @@ func TestPrepareFilterScope(t *testing.T) {
 			expectedError: filters.InvalidValue("=0"),
 		},
 		{
-			testName:      "invalid value scope - extra operator",
+			testName:      "invalid value policy - extra operator",
 			filters:       []string{"2:uid==0"},
 			expectedError: filters.InvalidValue("=0"),
 		},
@@ -294,7 +294,7 @@ func TestPrepareFilterScope(t *testing.T) {
 			expectedError: filters.InvalidValue(">>>>>>>>>>>>>>>>>>>>>>>>>>>>0"),
 		},
 		{
-			testName:      "invalid value scope - extra operator",
+			testName:      "invalid value policy - extra operator",
 			filters:       []string{"2:uid>>>>>>>>>>>>>>>>>>>>>>>>>>>>>0"},
 			expectedError: filters.InvalidValue(">>>>>>>>>>>>>>>>>>>>>>>>>>>>0"),
 		},
@@ -304,7 +304,7 @@ func TestPrepareFilterScope(t *testing.T) {
 			expectedError: filters.InvalidValue("a"),
 		},
 		{
-			testName:      "invalid value scope - string in numeric filter",
+			testName:      "invalid value policy - string in numeric filter",
 			filters:       []string{"2:uid=a"},
 			expectedError: filters.InvalidValue("a"),
 		},
@@ -314,7 +314,7 @@ func TestPrepareFilterScope(t *testing.T) {
 			expectedError: filters.InvalidValue("a"),
 		},
 		{
-			testName:      "invalid pidns scope",
+			testName:      "invalid pidns policy",
 			filters:       []string{"2:pidns=a"},
 			expectedError: filters.InvalidValue("a"),
 		},
@@ -324,7 +324,7 @@ func TestPrepareFilterScope(t *testing.T) {
 			filters:  []string{"pid>12"},
 		},
 		{
-			testName: "valid pid scope",
+			testName: "valid pid policy",
 			filters:  []string{"2:pid>12"},
 		},
 		{
@@ -332,7 +332,7 @@ func TestPrepareFilterScope(t *testing.T) {
 			filters:  []string{"open.retval=5", "security_file_open.pathname=/etc/shadow"},
 		},
 		{
-			testName: "adding retval filter then argfilter scope",
+			testName: "adding retval filter then argfilter policy",
 			filters:  []string{"2:open.retval=5", "2:security_file_open.pathname=/etc/shadow"},
 		},
 		{
@@ -341,7 +341,7 @@ func TestPrepareFilterScope(t *testing.T) {
 			expectedError: errors.New("invalid event to trace: blah"),
 		},
 		{
-			testName:      "invalid wildcard scope",
+			testName:      "invalid wildcard policy",
 			filters:       []string{"2:event=blah*"},
 			expectedError: errors.New("invalid event to trace: blah"),
 		},
@@ -351,7 +351,7 @@ func TestPrepareFilterScope(t *testing.T) {
 			expectedError: errors.New("invalid event to trace: bl*ah"),
 		},
 		{
-			testName:      "invalid wildcard scope 2",
+			testName:      "invalid wildcard policy 2",
 			filters:       []string{"2:event=bl*ah"},
 			expectedError: errors.New("invalid event to trace: bl*ah"),
 		},
@@ -361,7 +361,7 @@ func TestPrepareFilterScope(t *testing.T) {
 			expectedError: errors.New("invalid event to trace: print_syscall_table"),
 		},
 		{
-			testName:      "internal event selection scope",
+			testName:      "internal event selection policy",
 			filters:       []string{"2:event=print_syscall_table"},
 			expectedError: errors.New("invalid event to trace: print_syscall_table"),
 		},
@@ -371,7 +371,7 @@ func TestPrepareFilterScope(t *testing.T) {
 			expectedError: errors.New("invalid event to exclude: blah"),
 		},
 		{
-			testName:      "invalid not wildcard scope",
+			testName:      "invalid not wildcard policy",
 			filters:       []string{"2:event!=blah*"},
 			expectedError: errors.New("invalid event to exclude: blah"),
 		},
@@ -381,14 +381,14 @@ func TestPrepareFilterScope(t *testing.T) {
 			expectedError: errors.New("invalid event to exclude: bl*ah"),
 		},
 		{
-			testName:      "invalid not wildcard scope 2",
+			testName:      "invalid not wildcard policy 2",
 			filters:       []string{"2:event!=bl*ah"},
 			expectedError: errors.New("invalid event to exclude: bl*ah"),
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			_, err := flags.PrepareFilterScopes(tc.filters)
+			_, err := flags.PreparePolicies(tc.filters)
 			if tc.expectedError != nil {
 				require.Error(t, err)
 				assert.ErrorContains(t, err, tc.expectedError.Error())

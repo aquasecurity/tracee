@@ -6,8 +6,8 @@ func UnsupportedOperator(op Operator) error {
 	return fmt.Errorf("failed to add filter: unsupported operator %s", op.String())
 }
 
-func InvalidScope(filterScope string) error {
-	return fmt.Errorf("invalid filter scope: %s", filterScope)
+func InvalidPolicy(policy string) error {
+	return fmt.Errorf("invalid policy: %s", policy)
 }
 
 func InvalidExpression(expression string) error {

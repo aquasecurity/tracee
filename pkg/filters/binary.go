@@ -22,11 +22,11 @@ type nsBinary struct {
 }
 
 type procInfo struct {
-	newProc      bool
-	followScopes uint64
-	mntNS        uint32
-	binaryBytes  [maxBpfBinPathSize]byte
-	binNoMnt     uint32
+	newProc        bool
+	followPolicies uint64
+	mntNS          uint32
+	binaryBytes    [maxBpfBinPathSize]byte
+	binNoMnt       uint32
 }
 
 type BinaryFilter struct {
@@ -173,12 +173,12 @@ func NewBPFBinaryFilter(binaryMapName, procInfoMap string) *BPFBinaryFilter {
 	}
 }
 
-func (f *BPFBinaryFilter) UpdateBPF(bpfModule *bpf.Module, filterScopeID uint) error {
+func (f *BPFBinaryFilter) UpdateBPF(bpfModule *bpf.Module, policyID uint) error {
 	if !f.Enabled() {
 		return nil
 	}
 
-	err := f.populateBinaryMap(bpfModule, filterScopeID)
+	err := f.populateBinaryMap(bpfModule, policyID)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -188,7 +188,7 @@ func (f *BPFBinaryFilter) UpdateBPF(bpfModule *bpf.Module, filterScopeID uint) e
 	return errfmt.WrapError(err)
 }
 
-func (f *BPFBinaryFilter) populateBinaryMap(bpfModule *bpf.Module, filterScopeID uint) error {
+func (f *BPFBinaryFilter) populateBinaryMap(bpfModule *bpf.Module, policyID uint) error {
 
 	binMap, err := bpfModule.GetMap(f.binaryMapName)
 	if err != nil {
@@ -209,23 +209,23 @@ func (f *BPFBinaryFilter) populateBinaryMap(bpfModule *bpf.Module, filterScopeID
 			copy(binBytes[4:], bin.path)
 		}
 
-		var equalInScopes, equalitySetInScopes uint64
+		var equalInPolicies, equalitySetInPolicies uint64
 		curVal, err := binMap.GetValue(unsafe.Pointer(&binBytes[0]))
 		if err == nil {
-			equalInScopes = binary.LittleEndian.Uint64(curVal[0:8])
-			equalitySetInScopes = binary.LittleEndian.Uint64(curVal[8:16])
+			equalInPolicies = binary.LittleEndian.Uint64(curVal[0:8])
+			equalitySetInPolicies = binary.LittleEndian.Uint64(curVal[8:16])
 		}
 
 		filterVal := make([]byte, 16)
 
 		if eqVal == filterNotEqual {
-			utils.ClearBit(&equalInScopes, filterScopeID)
+			utils.ClearBit(&equalInPolicies, policyID)
 		} else {
-			utils.SetBit(&equalInScopes, filterScopeID)
+			utils.SetBit(&equalInPolicies, policyID)
 		}
-		utils.SetBit(&equalitySetInScopes, filterScopeID)
-		binary.LittleEndian.PutUint64(filterVal[0:8], equalInScopes)
-		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInScopes)
+		utils.SetBit(&equalitySetInPolicies, policyID)
+		binary.LittleEndian.PutUint64(filterVal[0:8], equalInPolicies)
+		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInPolicies)
 
 		return binMap.Update(unsafe.Pointer(&binBytes[0]), unsafe.Pointer(&filterVal[0]))
 	}
@@ -273,11 +273,11 @@ func (f *BPFBinaryFilter) populateProcInfoMap(bpfModule *bpf.Module) error {
 			copy(binBytes, bin.path)
 			binBytesCopy := (*[maxBpfBinPathSize]byte)(binBytes)
 			procInfo := procInfo{
-				newProc:      false,
-				followScopes: 0,
-				mntNS:        bin.mntNS,
-				binaryBytes:  *binBytesCopy,
-				binNoMnt:     0, // always 0, see bin_no_mnt in tracee.bpf.c
+				newProc:        false,
+				followPolicies: 0,
+				mntNS:          bin.mntNS,
+				binaryBytes:    *binBytesCopy,
+				binNoMnt:       0, // always 0, see bin_no_mnt in tracee.bpf.c
 			}
 			err := procInfoMap.Update(unsafe.Pointer(&proc), unsafe.Pointer(&procInfo))
 			if err != nil {

@@ -10,7 +10,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
-	"github.com/aquasecurity/tracee/pkg/filterscope"
+	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 )
 
@@ -460,26 +460,26 @@ func TestSymbolsCollision(t *testing.T) {
 			filterName := "symbols_collision.args.symbols"
 			eventsNameToID := map[string]events.ID{"symbols_collision": events.SymbolsCollision}
 
-			fScope := filterscope.NewFilterScope()
-			fScope.EventsToTrace = map[events.ID]string{events.SymbolsCollision: "symbols_collision"}
+			p := policy.NewPolicy()
+			p.EventsToTrace = map[events.ID]string{events.SymbolsCollision: "symbols_collision"}
 
 			if len(testCase.blackList) > 0 {
 				operAndValsBlack := fmt.Sprintf("!=%s", strings.Join(testCase.blackList, ","))
-				err := fScope.ArgFilter.Parse(filterName, operAndValsBlack, eventsNameToID)
+				err := p.ArgFilter.Parse(filterName, operAndValsBlack, eventsNameToID)
 				require.NoError(t, err)
 			}
 			if len(testCase.whiteList) > 0 {
 				operAndValsWhite := fmt.Sprintf("=%s", strings.Join(testCase.whiteList, ","))
-				err := fScope.ArgFilter.Parse(filterName, operAndValsWhite, eventsNameToID)
+				err := p.ArgFilter.Parse(filterName, operAndValsWhite, eventsNameToID)
 				require.NoError(t, err)
 			}
 
-			fScopes := filterscope.NewFilterScopes()
-			err := fScopes.Set(0, fScope)
+			ps := policy.NewPolicies()
+			err := ps.Set(0, p)
 			require.NoError(t, err)
 
 			// Pick derive function from mocked tests
-			deriveFunc := SymbolsCollision(mockLoader, fScopes)
+			deriveFunc := SymbolsCollision(mockLoader, ps)
 
 			mockLoader.addSOSymbols(
 				testSOInstance{
