@@ -17,7 +17,7 @@ jobs:
     name: Release Snapshot X64 (Default)
     runs-on:
       [
-        "github-self-hosted_ami-0b445cffc9303efcc_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0f2475a5a0c2160fe_${{ github.event.number }}-${{ github.run_id }}",
       ]
     steps:
       - name: Checkout Code
@@ -62,7 +62,7 @@ jobs:
     # only runs after x64 released (x64 is still the "default" arch)
     runs-on:
       [
-        "github-self-hosted_ami-0aa5b93153349d9ec_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0ba464e9b7e49c0c1_${{ github.event.number }}-${{ github.run_id }}",
       ]
     steps:
       - name: Checkout Code
