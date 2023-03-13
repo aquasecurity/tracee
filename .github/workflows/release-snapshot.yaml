@@ -27,6 +27,11 @@ jobs:
       - name: AWS Environment
         run: |
           dmidecode
+      - name: Login to docker.io registry
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build
         run: |
           make -f builder/Makefile.release SNAPSHOT=1
@@ -42,11 +47,6 @@ jobs:
           image-ref: "tracee:full"
           severity: "CRITICAL"
           exit-code: "1"
-      - name: Login to docker.io registry
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Publish to docker.io registry
         run: |
           docker image tag tracee:latest aquasec/tracee:dev
@@ -72,6 +72,11 @@ jobs:
       - name: AWS Environment
         run: |
           dmidecode
+      - name: Login to docker.io registry
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build
         run: |
           make -f builder/Makefile.release SNAPSHOT=1
@@ -87,11 +92,6 @@ jobs:
           image-ref: "tracee:full"
           severity: "CRITICAL"
           exit-code: "1"
-      - name: Login to docker.io registry
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Publish to docker.io registry
         run: |
           docker image tag tracee:latest aquasec/tracee:aarch64-dev
