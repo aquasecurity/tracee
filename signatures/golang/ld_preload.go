@@ -16,8 +16,8 @@ type LdPreload struct {
 	preloadPath string
 }
 
-func (sig *LdPreload) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *LdPreload) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.preloadEnvs = []string{"LD_PRELOAD", "LD_LIBRARY_PATH"}
 	sig.preloadPath = "/etc/ld.so.preload"
 	return nil

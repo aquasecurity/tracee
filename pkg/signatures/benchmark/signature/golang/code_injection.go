@@ -35,8 +35,8 @@ func NewCodeInjectionSignature() (detect.Signature, error) {
 	}, nil
 }
 
-func (sig *codeInjection) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *codeInjection) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	return nil
 }
 

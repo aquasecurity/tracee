@@ -13,8 +13,8 @@ type ProcessVmWriteCodeInjection struct {
 	cb detect.SignatureHandler
 }
 
-func (sig *ProcessVmWriteCodeInjection) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *ProcessVmWriteCodeInjection) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 
 	return nil
 }

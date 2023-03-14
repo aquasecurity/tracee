@@ -13,8 +13,8 @@ type SyscallTableHooking struct {
 	cb detect.SignatureHandler
 }
 
-func (sig *SyscallTableHooking) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *SyscallTableHooking) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	return nil
 }
 

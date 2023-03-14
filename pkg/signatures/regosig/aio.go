@@ -175,8 +175,8 @@ func NewAIO(modules map[string]string, opts ...Option) (detect.Signature, error)
 	}, nil
 }
 
-func (a *aio) Init(cb detect.SignatureHandler) error {
-	a.cb = cb
+func (a *aio) Init(ctx detect.SignatureContext) error {
+	a.cb = ctx.Callback
 	return nil
 }
 

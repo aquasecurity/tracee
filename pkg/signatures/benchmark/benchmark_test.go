@@ -43,7 +43,7 @@ func BenchmarkOnEventWithCodeInjectionSignature(b *testing.B) {
 		b.Run(bc.name, func(b *testing.B) {
 			s, err := bc.sigFunc()
 			require.NoError(b, err, bc.name)
-			require.NoError(b, s.Init(ignoreFinding), bc.name)
+			require.NoError(b, s.Init(detect.SignatureContext{Callback: ignoreFinding}), bc.name)
 
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {

@@ -14,8 +14,8 @@ type SchedDebugRecon struct {
 	schedDebugPaths []string
 }
 
-func (sig *SchedDebugRecon) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *SchedDebugRecon) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.schedDebugPaths = []string{"/proc/sched_debug", "/sys/kernel/debug/sched/debug"}
 	return nil
 }

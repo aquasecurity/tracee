@@ -16,9 +16,9 @@ type ProcMemCodeInjection struct {
 	compiledRegex      *regexp.Regexp
 }
 
-func (sig *ProcMemCodeInjection) Init(cb detect.SignatureHandler) error {
+func (sig *ProcMemCodeInjection) Init(ctx detect.SignatureContext) error {
 	var err error
-	sig.cb = cb
+	sig.cb = ctx.Callback
 	sig.procMemPathPattern = `/proc/(?:\d.+)/mem$`
 	sig.compiledRegex, err = regexp.Compile(sig.procMemPathPattern)
 	return err

@@ -273,7 +273,7 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 			require.NoError(t, err)
 
 			holder := &signaturestest.FindingsHolder{}
-			err = sig.Init(holder.OnFinding)
+			err = sig.Init(detect.SignatureContext{Callback: holder.OnFinding})
 			require.NoError(t, err)
 
 			err = sig.OnEvent(tc.event.ToProtocol())

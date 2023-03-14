@@ -14,8 +14,8 @@ type StdioOverSocket struct {
 	legitPorts []string
 }
 
-func (sig *StdioOverSocket) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *StdioOverSocket) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.legitPorts = []string{"", "0"}
 	return nil
 }

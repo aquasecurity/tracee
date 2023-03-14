@@ -14,8 +14,8 @@ type e2eVfsWrite struct {
 	cb detect.SignatureHandler
 }
 
-func (sig *e2eVfsWrite) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *e2eVfsWrite) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	return nil
 }
 

@@ -20,8 +20,8 @@ type counter struct {
 }
 
 // Init implements the Signature interface by resetting internal state
-func (sig *counter) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *counter) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.count = 0
 	return nil
 }

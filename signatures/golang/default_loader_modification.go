@@ -16,9 +16,9 @@ type DefaultLoaderModification struct {
 	compiledRegex        *regexp.Regexp
 }
 
-func (sig *DefaultLoaderModification) Init(cb detect.SignatureHandler) error {
+func (sig *DefaultLoaderModification) Init(ctx detect.SignatureContext) error {
 	var err error
-	sig.cb = cb
+	sig.cb = ctx.Callback
 	sig.dynamicLoaderPattern = "^\\/(lib|usr\\/lib).*\\/ld.*\\.so[^\\/]*"
 	sig.compiledRegex, err = regexp.Compile(sig.dynamicLoaderPattern)
 	return err

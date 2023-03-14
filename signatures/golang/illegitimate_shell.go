@@ -16,8 +16,8 @@ type IllegitimateShell struct {
 	webServersProcessNames []string
 }
 
-func (sig *IllegitimateShell) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *IllegitimateShell) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.shellNames = []string{"/ash", "/bash", "/csh", "/ksh", "/sh", "/tcsh", "/zsh", "/dash"}
 	sig.webServersProcessNames = []string{"nginx", "httpd", "httpd-foregroun", "http-nio", "lighttpd", "apache", "apache2"}
 	return nil

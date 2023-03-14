@@ -18,8 +18,8 @@ type ScheduledTaskModification struct {
 	cronCommands []string
 }
 
-func (sig *ScheduledTaskModification) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *ScheduledTaskModification) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.cronFiles = []string{"/etc/crontab", "/etc/anacrontab", "/etc/cron.deny", "/etc/cron.allow"}
 	sig.cronDirs = []string{"/etc/cron.hourly", "/etc/cron.daily", "/etc/cron.weekly", "/etc/cron.monthly", "/etc/cron.d", "/var/spool/cron/crontabs", "var/spool/anacron"}
 	sig.cronCommands = []string{"crontab", "at", "batch", "launchd"}

@@ -15,8 +15,8 @@ type CorePatternModification struct {
 	corePattern string
 }
 
-func (sig *CorePatternModification) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *CorePatternModification) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.corePattern = "/proc/sys/kernel/core_pattern"
 	return nil
 }

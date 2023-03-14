@@ -13,8 +13,8 @@ type e2eTCP struct {
 	cb detect.SignatureHandler
 }
 
-func (sig *e2eTCP) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *e2eTCP) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	return nil
 }
 

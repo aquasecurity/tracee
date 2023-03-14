@@ -50,8 +50,8 @@ func (s *signature) GetSelectedEvents() ([]detect.SignatureEventSelector, error)
 	return s.selectedEvents, nil
 }
 
-func (s *signature) Init(cb detect.SignatureHandler) error {
-	s.cb = cb
+func (s *signature) Init(ctx detect.SignatureContext) error {
+	s.cb = ctx.Callback
 	return nil
 }
 

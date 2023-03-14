@@ -14,8 +14,8 @@ type SystemRequestKeyConfigModification struct {
 	sysrqPaths []string
 }
 
-func (sig *SystemRequestKeyConfigModification) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *SystemRequestKeyConfigModification) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.sysrqPaths = []string{"/proc/sys/kernel/sysrq", "/proc/sysrq-trigger"}
 	return nil
 }

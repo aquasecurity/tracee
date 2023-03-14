@@ -14,8 +14,8 @@ type AntiDebuggingPtraceme struct {
 	ptraceTraceMe string
 }
 
-func (sig *AntiDebuggingPtraceme) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *AntiDebuggingPtraceme) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.ptraceTraceMe = "PTRACE_TRACEME"
 	return nil
 }

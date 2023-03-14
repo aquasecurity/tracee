@@ -13,8 +13,8 @@ type ProcFopsHooking struct {
 	cb detect.SignatureHandler
 }
 
-func (sig *ProcFopsHooking) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *ProcFopsHooking) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	return nil
 }
 

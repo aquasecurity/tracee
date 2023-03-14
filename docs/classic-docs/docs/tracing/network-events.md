@@ -296,10 +296,12 @@ type e2eDNS struct {
     foundSOA  bool
     foundTXTs bool
     cb        detect.SignatureHandler
+    logger    detect.Logger
 }
 
-func (sig *e2eDNS) Init(cb detect.SignatureHandler) error {
-    sig.cb = cb
+func (sig *e2eDNS) Init(ctx detect.SignatureContext) error {
+    sig.cb = ctx.Callback
+    sig.logger = ctx.Logger
     sig.foundMX = false   // proforma
     sig.foundNS = false   // proforma
     sig.foundSOA = false  // proforma

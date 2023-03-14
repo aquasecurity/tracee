@@ -11,7 +11,7 @@ import (
 type FakeSignature struct {
 	FakeGetMetadata       func() (detect.SignatureMetadata, error)
 	FakeGetSelectedEvents func() ([]detect.SignatureEventSelector, error)
-	FakeInit              func(detect.SignatureHandler) error
+	FakeInit              func(detect.SignatureContext) error
 	FakeOnEvent           func(protocol.Event) error
 	FakeOnSignal          func(signal detect.Signal) error
 }
@@ -34,9 +34,9 @@ func (fs FakeSignature) GetSelectedEvents() ([]detect.SignatureEventSelector, er
 	return []detect.SignatureEventSelector{}, nil
 }
 
-func (fs FakeSignature) Init(cb detect.SignatureHandler) error {
+func (fs FakeSignature) Init(ctx detect.SignatureContext) error {
 	if fs.FakeInit != nil {
-		return fs.FakeInit(cb)
+		return fs.FakeInit(ctx)
 	}
 	return nil
 }

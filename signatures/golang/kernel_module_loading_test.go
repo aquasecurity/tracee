@@ -118,7 +118,7 @@ func TestKernelModuleLoading(t *testing.T) {
 		t.Run(tc.Name, func(t *testing.T) {
 			holder := signaturestest.FindingsHolder{}
 			sig := KernelModuleLoading{}
-			sig.Init(holder.OnFinding)
+			sig.Init(detect.SignatureContext{Callback: holder.OnFinding})
 
 			for _, e := range tc.Events {
 				err := sig.OnEvent(e.ToProtocol())

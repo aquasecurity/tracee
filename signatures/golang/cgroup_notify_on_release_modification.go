@@ -15,8 +15,8 @@ type CgroupNotifyOnReleaseModification struct {
 	notifyFileName string
 }
 
-func (sig *CgroupNotifyOnReleaseModification) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *CgroupNotifyOnReleaseModification) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.notifyFileName = "notify_on_release"
 	return nil
 }

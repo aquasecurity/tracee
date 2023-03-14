@@ -14,8 +14,8 @@ type e2eFileModification struct {
 	cb detect.SignatureHandler
 }
 
-func (sig *e2eFileModification) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *e2eFileModification) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	return nil
 }
 

@@ -13,8 +13,8 @@ type DroppedExecutable struct {
 	cb detect.SignatureHandler
 }
 
-func (sig *DroppedExecutable) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *DroppedExecutable) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	return nil
 }
 

@@ -13,8 +13,8 @@ type e2eICMP struct {
 	cb detect.SignatureHandler
 }
 
-func (sig *e2eICMP) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *e2eICMP) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	return nil
 }
 

@@ -17,9 +17,9 @@ type K8SServiceAccountToken struct {
 	compiledRegex    *regexp.Regexp
 }
 
-func (sig *K8SServiceAccountToken) Init(cb detect.SignatureHandler) error {
+func (sig *K8SServiceAccountToken) Init(ctx detect.SignatureContext) error {
 	var err error
-	sig.cb = cb
+	sig.cb = ctx.Callback
 	sig.legitProcs = []string{"flanneld", "kube-proxy", "etcd", "kube-apiserver", "coredns", "kube-controller", "kubectl"}
 	sig.tokenPathPattern = `secrets/kubernetes.io/serviceaccount.+token$`
 	sig.compiledRegex, err = regexp.Compile(sig.tokenPathPattern)
