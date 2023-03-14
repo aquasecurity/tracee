@@ -4132,6 +4132,36 @@ int BPF_KPROBE(trace_ret_file_modified)
     return 0;
 }
 
+SEC("kprobe/inotify_find_inode")
+TRACE_ENT_FUNC(inotify_find_inode, INOTIFY_WATCH);
+
+SEC("kretprobe/inotify_find_inode")
+int BPF_KPROBE(trace_ret_inotify_find_inode)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    args_t saved_args;
+    if (load_args(&saved_args, INOTIFY_WATCH) != 0)
+        return 0;
+    del_args(INOTIFY_WATCH);
+
+    struct path *path = (struct path *) saved_args.args[1];
+
+    void *path_str = get_path_str(path);
+
+    struct dentry *dentry = READ_KERN(path->dentry);
+    u64 inode_nr = get_inode_nr_from_dentry(dentry);
+    dev_t dev = get_dev_from_dentry(dentry);
+
+    save_str_to_buf(p.event, path_str, 0);
+    save_to_submit_buf(p.event, &inode_nr, sizeof(unsigned long), 1);
+    save_to_submit_buf(p.event, &dev, sizeof(dev_t), 2);
+
+    return events_perf_submit(&p, INOTIFY_WATCH, 0);
+}
+
 // clang-format off
 
 // Network Packets (works from ~5.2 and beyond)

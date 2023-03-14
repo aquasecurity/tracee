@@ -262,6 +262,7 @@ const (
 	VfsUtimes
 	DoTruncate
 	FileModification
+	InotifyWatch
 	MaxCommonID
 )
 
@@ -6246,6 +6247,20 @@ var Definitions = eventDefinitions{
 				{Handle: probes.FileUpdateTimeRet, Required: true},
 				{Handle: probes.FileModified, Required: false},    // not required because doesn't ...
 				{Handle: probes.FileModifiedRet, Required: false}, // ... exist in kernels < 5.3
+			},
+		},
+		InotifyWatch: {
+			ID32Bit: sys32undefined,
+			Name:    "inotify_watch",
+			Probes: []probeDependency{
+				{Handle: probes.InotifyFindInode, Required: true},
+				{Handle: probes.InotifyFindInodeRet, Required: true},
+			},
+			Sets: []string{},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "pathname"},
+				{Type: "unsigned long", Name: "inode"},
+				{Type: "dev_t", Name: "dev"},
 			},
 		},
 		//
