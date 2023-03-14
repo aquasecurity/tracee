@@ -12,11 +12,13 @@ import (
 type PtraceCodeInjection struct {
 	cb             detect.SignatureHandler
 	ptracePokeText string
+	ptracePokeData string
 }
 
 func (sig *PtraceCodeInjection) Init(cb detect.SignatureHandler) error {
 	sig.cb = cb
 	sig.ptracePokeText = "PTRACE_POKETEXT"
+	sig.ptracePokeData = "PTRACE_POKEDATA"
 	return nil
 }
 
@@ -59,7 +61,7 @@ func (sig *PtraceCodeInjection) OnEvent(event protocol.Event) error {
 			return err
 		}
 
-		if requestArg == sig.ptracePokeText {
+		if requestArg == sig.ptracePokeText || requestArg == sig.ptracePokeData {
 			metadata, err := sig.GetMetadata()
 			if err != nil {
 				return err
