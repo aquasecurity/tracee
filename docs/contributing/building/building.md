@@ -5,7 +5,12 @@
     1. docker container as [building environment](./environment.md)  
     2. building tracee [container images](./containers.md)  
 
-1. Building **dependencies**
+1. Supported **Architectures**
+
+    1. x86_64 (amd64)
+    1. aarch64 (arm64)
+
+2. Building **dependencies**
 
     1. **clang** && **llvm** (12, 13 or 14)
     1. **golang** (1.19)
@@ -25,7 +30,7 @@
     >
     > Those are very good examples for you to replicate a working environment.
 
-2. **Clone** [tracee repository](https://github.com/aquasecurity/tracee/)
+3. **Clone** [tracee repository](https://github.com/aquasecurity/tracee/)
 
     ```text
     $ git clone git@github.com:aquasecurity/tracee
@@ -38,7 +43,7 @@
     Resolving deltas: 100% (8105/8105), done.
     ```
 
-3. All makefiles have a **help** target to give you needed instrutions
+4. All makefiles have a **help** target to give you needed instrutions
 
     ```text
     $ make help
@@ -90,7 +95,7 @@
         $ DEBUG=1 make ...              # build binaries with debug symbols
     ```
 
-4. Build **all** targets at once (but bpf-nocore)
+5. Build **all** targets at once (but bpf-nocore)
 
     ```text
     $ make all
@@ -103,7 +108,7 @@
         signatures/golang/export.go signatures/golang/kubernetes_api_connection.go signatures/golang/stdio_over_socket.go
     ```
 
-5. Build a **static binary** by setting `STATIC=1`
+6. Build a **static binary** by setting `STATIC=1`
 
     ```text
     $ STATIC=1 make all
@@ -120,7 +125,7 @@
     ...
     ```
 
-6. Build a **static binary** with [BTFHUB Support](https://github.com/aquasecurity/btfhub)
+7. Build a **static binary** with [BTFHUB Support](https://github.com/aquasecurity/btfhub)
 
     ```text
     $ BTFHUB=1 STATIC=1 make all
@@ -152,7 +157,7 @@
         >plugin.Open("/tracee/dist/signatures/builtin.so"): Dynamic loading not supported
         >```
 
-7. Build a **debuggable binary** with DWARF generation by setting `DEBUG=1`
+8. Build a **debuggable binary** with DWARF generation by setting `DEBUG=1`
 
     ```text
     $ DEBUG=1 make
