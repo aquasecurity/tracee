@@ -173,7 +173,7 @@ release: \
 # build binaries (tracee-ebpf, tracee-rules, rules)
 #
 	$(MAKE) -f builder/Makefile.tracee-make ubuntu-prepare
-	BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
+	$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
 	BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="all"
 #
 # create the tar ball and checksum files
@@ -183,9 +183,9 @@ release: \
 #
 # build official slim container image (CO-RE + BTFHUB)
 #
-	BTFHUB=0 $(MAKE) -f builder/Makefile.tracee-container build-tracee
+	BTFHUB=1 $(MAKE) -f builder/Makefile.tracee-container build-tracee
 #
-# build official full container image (CO-RE + non CO-RE build)
+# build official full container image (CO-RE + non CO-RE on-demand build)
 #
 	BTFHUB=0 $(MAKE) -f builder/Makefile.tracee-container build-tracee-full
 #

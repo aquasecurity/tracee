@@ -11,7 +11,10 @@
 # Note: You may opt out from fetching repositories changes in the beginning of
 # the execution by exporting SKIP_FETCH=1 env variable.
 
-BASEDIR=$(dirname "${0}") ; cd ${BASEDIR}/../ ; BASEDIR=$(pwd) ; cd ${BASEDIR}
+BASEDIR=$(dirname "${0}")
+cd ${BASEDIR}/../
+BASEDIR=$(pwd)
+cd ${BASEDIR}
 
 # variables
 
@@ -26,14 +29,15 @@ BTFHUB_ARCH_DIR="${BASEDIR}/3rdparty/btfhub-archive"
 ARCH=$(uname -m)
 
 case ${ARCH} in
-    "x86_64")
-        ARCH="x86_64"
-        ;;
-    "aarch64")
-        ARCH="arm64"
-        ;;
-    *)
-        die "unsupported architecture" ;;
+"x86_64")
+    ARCH="x86_64"
+    ;;
+"aarch64")
+    ARCH="arm64"
+    ;;
+*)
+    die "unsupported architecture"
+    ;;
 esac
 
 die() {
@@ -47,12 +51,12 @@ branch_clean() {
     # small sanity check
     [ ! -d ./.git ] && die "$(basename $(pwd)) not a repo dir"
 
-    git fetch -a || die "could not fetch ${1}"  # make sure its updated
-    git clean -fdX                              # clean leftovers
-    git reset --hard                            # reset letfovers
+    git fetch -a || die "could not fetch ${1}" # make sure its updated
+    git clean -fdX                             # clean leftovers
+    git reset --hard                           # reset letfovers
     git checkout origin/main -b main-$$
     git branch -D main
-    git branch -m main-$$ main                  # origin/main == main
+    git branch -m main-$$ main # origin/main == main
 
     cd ${BASEDIR}
 }
@@ -78,22 +82,24 @@ cd ${BTFHUB_DIR}
 
 # sync only supported kernels
 
-ARCH_EXCLUDE=$(printf "x86_64\narm64\n" | grep -v $(uname -m) | xargs)
+ARCH_EXCLUDE=$(printf "x86_64\naarch64\n" | grep -v $(uname -m) | xargs)
 
 rsync -avz \
-    ${BTFHUB_ARCH_DIR}/                   \
-    --exclude=.git*                       \
-    --exclude=README.md                   \
-    --exclude=${ARCH_EXCLUDE}             \
-    --exclude=*/3.*                       \
-    --exclude=*/4.*                       \
+    ${BTFHUB_ARCH_DIR}/ \
+    --exclude=.git* \
+    --exclude=README.md \
+    --exclude=${ARCH_EXCLUDE} \
+    --exclude=*/3.* \
+    --exclude=*/4.* \
     ./archive/
 
+# sync v4.18 kernels for RHEL only (eBPF features backported)
+
 for n in rhel centos; do
-rsync -avz \
-    ${BTFHUB_ARCH_DIR}/$n/8/*             \
-    --exclude=${ARCH_EXCLUDE}             \
-    ./archive/$n/8/
+    rsync -avz \
+        ${BTFHUB_ARCH_DIR}/$n/8/* \
+        --exclude=${ARCH_EXCLUDE} \
+        ./archive/$n/8/
 done
 
 # generate tailored BTFs
