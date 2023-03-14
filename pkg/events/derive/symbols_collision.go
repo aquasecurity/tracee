@@ -187,9 +187,9 @@ func (gen *SymbolsCollisionArgsGenerator) findShObjsCollisions(
 			_, ok := gen.returnedErrorsMap[err.Error()]
 			if !ok {
 				gen.returnedErrorsMap[err.Error()] = true
-				logger.Warn("symbols_loaded", "object loaded", loadingShObj.ObjInfo, "error", err.Error())
+				logger.Warnw("symbols_loaded", "object loaded", loadingShObj.ObjInfo, "error", err.Error())
 			} else {
-				logger.Debug("symbols_loaded", "object loaded", loadingShObj.ObjInfo, "error", err.Error())
+				logger.Debugw("symbols_loaded", "object loaded", loadingShObj.ObjInfo, "error", err.Error())
 			}
 			return nil, errfmt.WrapError(err)
 		}
@@ -203,9 +203,9 @@ func (gen *SymbolsCollisionArgsGenerator) findShObjsCollisions(
 			_, ok := gen.returnedErrorsMap[err.Error()]
 			if !ok {
 				gen.returnedErrorsMap[err.Error()] = true
-				logger.Warn("symbols_loaded", "object loaded", loadedShObjInfo, "error", err.Error())
+				logger.Warnw("symbols_loaded", "object loaded", loadedShObjInfo, "error", err.Error())
 			} else {
-				logger.Debug("symbols_loaded", "object loaded", loadedShObjInfo, "error", err.Error())
+				logger.Debugw("symbols_loaded", "object loaded", loadedShObjInfo, "error", err.Error())
 			}
 			return nil, errfmt.WrapError(err)
 		}

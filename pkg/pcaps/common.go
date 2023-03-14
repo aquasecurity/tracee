@@ -183,7 +183,7 @@ func getPcapFileAndWriter(event *trace.Event, t PcapType) (
 		return nil, nil, errfmt.WrapError(err)
 	}
 
-	logger.Debug("pcap file (re)opened", "filename", pcapFilePath)
+	logger.Debugw("pcap file (re)opened", "filename", pcapFilePath)
 
 	writer, err := pcapgo.NewNgWriterInterface(
 		file,

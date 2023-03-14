@@ -91,7 +91,7 @@ func main() {
 					for _, s := range sigs {
 						m, err := s.GetMetadata()
 						if err != nil {
-							logger.Error("Failed to load signature", "error", err)
+							logger.Errorw("Failed to load signature", "error", err)
 							continue
 						}
 						loadedSigIDs = append(loadedSigIDs, m.ID)
@@ -105,7 +105,7 @@ func main() {
 				return nil
 			}
 
-			logger.Info("Signatures loaded", "total", len(loadedSigIDs), "signatures", loadedSigIDs)
+			logger.Infow("Signatures loaded", "total", len(loadedSigIDs), "signatures", loadedSigIDs)
 
 			if c.Bool("list") {
 				listSigs(os.Stdout, sigs)
@@ -254,7 +254,7 @@ func main() {
 	}
 	err := app.Run(os.Args)
 	if err != nil {
-		logger.Fatal("App", "error", err)
+		logger.Fatalw("App", "error", err)
 	}
 }
 

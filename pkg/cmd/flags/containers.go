@@ -44,9 +44,9 @@ func PrepareContainers(containerFlags []string) (runtime.Sockets, error) {
 	if len(containerFlags) == 0 {
 		return runtime.Autodiscover(func(err error, runtime runtime.RuntimeId, socket string) {
 			if err != nil {
-				logger.Debug("RuntimeSockets: failed to register default", "socket", runtime.String(), "error", err)
+				logger.Debugw("RuntimeSockets: failed to register default", "socket", runtime.String(), "error", err)
 			} else {
-				logger.Debug("RuntimeSockets: registered default", "socket", runtime.String(), "from", socket)
+				logger.Debugw("RuntimeSockets: registered default", "socket", runtime.String(), "from", socket)
 			}
 		}), nil
 	}

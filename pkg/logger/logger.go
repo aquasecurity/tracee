@@ -312,11 +312,11 @@ func debugw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	l.l.Debugw(msg, keysAndValues...)
 }
 
-func Debug(msg string, keysAndValues ...interface{}) {
+func Debugw(msg string, keysAndValues ...interface{}) {
 	debugw(1, pkgLogger, msg, keysAndValues...)
 }
 
-func (l *Logger) Debug(msg string, keysAndValues ...interface{}) {
+func (l *Logger) Debugw(msg string, keysAndValues ...interface{}) {
 	debugw(1, l, msg, keysAndValues...)
 }
 
@@ -329,11 +329,11 @@ func infow(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	l.l.Infow(msg, keysAndValues...)
 }
 
-func Info(msg string, keysAndValues ...interface{}) {
+func Infow(msg string, keysAndValues ...interface{}) {
 	infow(1, pkgLogger, msg, keysAndValues...)
 }
 
-func (l *Logger) Info(msg string, keysAndValues ...interface{}) {
+func (l *Logger) Infow(msg string, keysAndValues ...interface{}) {
 	infow(1, l, msg, keysAndValues...)
 }
 
@@ -346,11 +346,11 @@ func warnw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	l.l.Warnw(msg, keysAndValues...)
 }
 
-func Warn(msg string, keysAndValues ...interface{}) {
+func Warnw(msg string, keysAndValues ...interface{}) {
 	warnw(1, pkgLogger, msg, keysAndValues...)
 }
 
-func (l *Logger) Warn(msg string, keysAndValues ...interface{}) {
+func (l *Logger) Warnw(msg string, keysAndValues ...interface{}) {
 	warnw(1, l, msg, keysAndValues...)
 }
 
@@ -363,11 +363,11 @@ func errorw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	l.l.Errorw(msg, keysAndValues...)
 }
 
-func Error(msg string, keysAndValues ...interface{}) {
+func Errorw(msg string, keysAndValues ...interface{}) {
 	errorw(1, pkgLogger, msg, keysAndValues...)
 }
 
-func (l *Logger) Error(msg string, keysAndValues ...interface{}) {
+func (l *Logger) Errorw(msg string, keysAndValues ...interface{}) {
 	errorw(1, l, msg, keysAndValues...)
 }
 
@@ -380,11 +380,11 @@ func fatalw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	l.l.Fatalw(msg, keysAndValues...)
 }
 
-func Fatal(msg string, keysAndValues ...interface{}) {
+func Fatalw(msg string, keysAndValues ...interface{}) {
 	fatalw(1, pkgLogger, msg, keysAndValues...)
 }
 
-func (l *Logger) Fatal(msg string, keysAndValues ...interface{}) {
+func (l *Logger) Fatalw(msg string, keysAndValues ...interface{}) {
 	fatalw(1, l, msg, keysAndValues...)
 }
 
@@ -567,4 +567,8 @@ func GetLevel() Level {
 // HasDebugLevel returns true if logger has debug level
 func HasDebugLevel() bool {
 	return pkgLogger.cfg.Level == DebugLevel
+}
+
+func Current() *Logger {
+	return pkgLogger
 }

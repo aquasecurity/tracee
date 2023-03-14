@@ -203,7 +203,7 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
-		logger.Fatal("App", "error", err)
+		logger.Fatalw("App", "error", err)
 	}
 }
 
@@ -213,13 +213,13 @@ func createEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 	for _, s := range sigs {
 		m, err := s.GetMetadata()
 		if err != nil {
-			logger.Error("Failed to load event", "error", err)
+			logger.Errorw("Failed to load event", "error", err)
 			continue
 		}
 
 		selectedEvents, err := s.GetSelectedEvents()
 		if err != nil {
-			logger.Error("Failed to load event", "error", err)
+			logger.Errorw("Failed to load event", "error", err)
 			continue
 		}
 
@@ -228,7 +228,7 @@ func createEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 		for _, s := range selectedEvents {
 			eventID, found := events.Definitions.GetID(s.Name)
 			if !found {
-				logger.Error("Failed to load event dependency", "event", s.Name)
+				logger.Errorw("Failed to load event dependency", "event", s.Name)
 				continue
 			}
 
@@ -239,7 +239,7 @@ func createEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 
 		err = events.Definitions.Add(id, event)
 		if err != nil {
-			logger.Error("Failed to add event definition", "error", err)
+			logger.Errorw("Failed to add event definition", "error", err)
 			continue
 		}
 

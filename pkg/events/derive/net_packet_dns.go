@@ -81,7 +81,7 @@ func deriveDNSRequestEvents(event trace.Event) ([]interface{}, error) {
 	// NOTE: No DNS server does more than 1 question per query, but spec allows.
 
 	if len(requests) != 1 || len(requests) != int(dns.QDCount) {
-		logger.Debug("Wrong number of requests found")
+		logger.Debugw("Wrong number of requests found")
 		return nil, nil
 	}
 
@@ -135,13 +135,13 @@ func deriveDNSResponseEvents(event trace.Event) ([]interface{}, error) {
 
 	requests = convertProtoDNSQuestionToDnsRequest(dns.Questions)
 	if len(requests) != 1 {
-		logger.Debug("Wrong number of requests found")
+		logger.Debugw("Wrong number of requests found")
 		return nil, nil
 	}
 
 	responses = convertProtoDNSResourceRecordToDnsResponse(requests[0], dns.Answers)
 	if len(responses[0].DnsAnswer) != int(dns.ANCount) { // number of responses to expect
-		logger.Debug("Could not get all DNS responses")
+		logger.Debugw("Could not get all DNS responses")
 		return nil, nil
 	}
 

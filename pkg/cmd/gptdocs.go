@@ -116,7 +116,7 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 	for _, given := range r.GivenEvents {
 		_, ok := events.Definitions.GetID(given)
 		if !ok {
-			logger.Error("Event definition not found", "event", given)
+			logger.Errorw("Event definition not found", "event", given)
 		}
 	}
 
@@ -136,7 +136,7 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 			case <-ctx.Done():
 				return nil
 			default:
-				logger.Debug("File already exists", "file", fileName)
+				logger.Debugw("File already exists", "file", fileName)
 				continue
 			}
 		}
@@ -151,12 +151,12 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 				}
 			}
 			if !found {
-				logger.Debug("Event not in given list", "event", evt.Name)
+				logger.Debugw("Event not in given list", "event", evt.Name)
 				continue
 			}
 		}
 
-		logger.Debug("Picked event", "event", evt.Name)
+		logger.Debugw("Picked event", "event", evt.Name)
 
 		// Submit event to be processed
 
@@ -180,7 +180,7 @@ func (r GPTDocsRunner) GenerateSyscall(
 
 	once.Do(func() {
 		if os.MkdirAll(outputDirectory, 0755) != nil {
-			logger.Error("Error creating output directory")
+			logger.Errorw("Error creating output directory")
 		}
 	})
 
@@ -197,7 +197,7 @@ func (r GPTDocsRunner) GenerateSyscall(
 
 	y, err = yaml.Marshal(evt.Params)
 	if err != nil {
-		logger.Error("Error marshaling event", "err", err)
+		logger.Errorw("Error marshaling event", "err", err)
 	}
 
 	headNote := `

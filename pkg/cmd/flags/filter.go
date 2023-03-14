@@ -428,7 +428,7 @@ func PrepareFilterScopes(filtersArr []string) (*filterscope.FilterScopes, error)
 
 		err = filterScopes.Set(scopeIdx, filterScope)
 		if err != nil {
-			logger.Warn("Setting scope", "error", err)
+			logger.Warnw("Setting scope", "error", err)
 		}
 	}
 
@@ -485,13 +485,13 @@ func prepareEventsToTrace(
 	if osInfo, err := helpers.GetOSInfo(); err == nil {
 		kernel51ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("5.1.0")
 		if err != nil {
-			logger.Error("Failed to compare kernel version", "error", err)
+			logger.Errorw("Failed to compare kernel version", "error", err)
 		} else {
 			if kernel51ComparedToRunningKernel == helpers.KernelVersionNewer {
 				id_like := osInfo.GetOSReleaseFieldValue(helpers.OS_ID_LIKE)
 				if !strings.Contains(id_like, "rhel") {
 					// disable network events for v4.19 kernels other than RHEL based ones
-					logger.Debug("Kernel <= v5.1, disabling network events from default set")
+					logger.Debugw("Kernel <= v5.1, disabling network events from default set")
 					for _, id := range setsToEvents["default"] {
 						if id >= events.NetPacketIPv4 && id <= events.MaxUserNetID {
 							isExcluded[id] = true
@@ -501,7 +501,7 @@ func prepareEventsToTrace(
 			}
 		}
 	} else {
-		logger.Error("Failed to get OS info", "error", err)
+		logger.Errorw("Failed to get OS info", "error", err)
 	}
 
 	// mark excluded events (isExcluded) by their id

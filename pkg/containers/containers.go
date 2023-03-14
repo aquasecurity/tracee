@@ -63,21 +63,21 @@ func New(
 	//attempt to register for all supported runtimes
 	err := runtimeService.Register(cruntime.Containerd, cruntime.ContainerdEnricher)
 	if err != nil {
-		logger.Debug("Enricher", "error", err)
+		logger.Debugw("Enricher", "error", err)
 	}
 	err = runtimeService.Register(cruntime.Crio, cruntime.CrioEnricher)
 	if err != nil {
-		logger.Debug("Enricher", "error", err)
+		logger.Debugw("Enricher", "error", err)
 	}
 	err = runtimeService.Register(cruntime.Docker, cruntime.DockerEnricher)
 	if err != nil {
-		logger.Debug("Enricher", "error", err)
+		logger.Debugw("Enricher", "error", err)
 	}
 	// podman and docker use compatible http apis, therefore the docker enricher
 	// works for podman.
 	err = runtimeService.Register(cruntime.Podman, cruntime.DockerEnricher)
 	if err != nil {
-		logger.Debug("Enricher", "error", err)
+		logger.Debugw("Enricher", "error", err)
 	}
 
 	containers.enricher = runtimeService
@@ -127,7 +127,7 @@ func GetContainerIdFromTaskDir(taskPath string) (string, error) {
 func (c *Containers) populate() error {
 	fn := func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			logger.Error("WalkDir func", "error", err)
+			logger.Errorw("WalkDir func", "error", err)
 			return nil
 		}
 		if !d.IsDir() {
