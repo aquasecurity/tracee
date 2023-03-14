@@ -27,7 +27,6 @@ docker run \
 
 To learn how to install Tracee in a production environment, [check out the Kubernetes guide](https://aquasecurity.github.io/tracee/latest/getting-started/kubernetes-quickstart).
 
-
 ## Pipeline protection with Tracee
 
 Tracee can be used to protect GitHub Actions workflows against supply chain attacks. See the [tracee-action](https://github.com/aquasecurity/tracee-action) project for more information.
