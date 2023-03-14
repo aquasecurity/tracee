@@ -134,7 +134,7 @@ func TestK8sApiConnection(t *testing.T) {
 			holder := signaturestest.FindingsHolder{}
 
 			sig := &K8sApiConnection{}
-			err := sig.Init(holder.OnFinding)
+			err := sig.Init(detect.SignatureContext{Callback: holder.OnFinding})
 			require.NoError(t, err)
 
 			for _, e := range tc.Events {

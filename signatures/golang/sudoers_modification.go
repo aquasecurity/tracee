@@ -16,8 +16,8 @@ type SudoersModification struct {
 	sudoersDirs  []string
 }
 
-func (sig *SudoersModification) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *SudoersModification) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.sudoersFiles = []string{"/etc/sudoers", "/private/etc/sudoers"}
 	sig.sudoersDirs = []string{"/etc/sudoers.d/", "/private/etc/sudoers.d/"}
 	return nil

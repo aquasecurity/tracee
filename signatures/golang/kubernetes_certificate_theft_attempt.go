@@ -16,8 +16,8 @@ type KubernetesCertificateTheftAttempt struct {
 	k8sCertificatesDir string
 }
 
-func (sig *KubernetesCertificateTheftAttempt) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *KubernetesCertificateTheftAttempt) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.legitProcs = []string{"kube-apiserver", "kubelet", "kube-controller", "etcd"}
 	sig.k8sCertificatesDir = "/etc/kubernetes/pki/"
 	return nil

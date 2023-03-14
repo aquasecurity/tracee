@@ -25,8 +25,8 @@ type e2eDNS struct {
 	cb       detect.SignatureHandler
 }
 
-func (sig *e2eDNS) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *e2eDNS) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.foundMX = false  // proforma
 	sig.foundNS = false  // proforma
 	sig.foundSOA = false // proforma

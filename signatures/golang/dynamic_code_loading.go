@@ -14,8 +14,8 @@ type DynamicCodeLoading struct {
 	alertText string
 }
 
-func (sig *DynamicCodeLoading) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *DynamicCodeLoading) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.alertText = "Protection changed from W+E to E!"
 	return nil
 }

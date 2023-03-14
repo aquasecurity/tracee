@@ -16,9 +16,9 @@ type ProcMemAccess struct {
 	compiledRegex      *regexp.Regexp
 }
 
-func (sig *ProcMemAccess) Init(cb detect.SignatureHandler) error {
+func (sig *ProcMemAccess) Init(ctx detect.SignatureContext) error {
 	var err error
-	sig.cb = cb
+	sig.cb = ctx.Callback
 	sig.procMemPathPattern = `/proc/(?:\d.+)/mem$`
 	sig.compiledRegex, err = regexp.Compile(sig.procMemPathPattern)
 	return err

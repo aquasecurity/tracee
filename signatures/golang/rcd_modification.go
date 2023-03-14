@@ -18,8 +18,8 @@ type RcdModification struct {
 	rcdCommand string
 }
 
-func (sig *RcdModification) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *RcdModification) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.rcdFiles = []string{"/etc/rc.local", "/etc/init.d/rc.local"}
 	sig.rcdDirs = []string{"/etc/rc1.d", "/etc/rc2.d", "/etc/rc3.d", "/etc/rc4.d", "/etc/rc5.d", "/etc/rc6.d", "/etc/rcs.d", "/etc/init.d", "/etc/rc.d/rc.local", "/etc/rc.d/init.d", "/etc/rc.d"}
 	sig.rcdCommand = "update-rc.d"

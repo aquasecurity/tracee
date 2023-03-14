@@ -14,8 +14,8 @@ type AslrInspection struct {
 	aslrPath string
 }
 
-func (sig *AslrInspection) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *AslrInspection) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.aslrPath = "/proc/sys/kernel/randomize_va_space"
 	return nil
 }

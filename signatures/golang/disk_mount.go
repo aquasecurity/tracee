@@ -15,8 +15,8 @@ type DiskMount struct {
 	devDir string
 }
 
-func (sig *DiskMount) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *DiskMount) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.devDir = "/dev/"
 	return nil
 }

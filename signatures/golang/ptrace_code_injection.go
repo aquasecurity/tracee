@@ -15,8 +15,8 @@ type PtraceCodeInjection struct {
 	ptracePokeData string
 }
 
-func (sig *PtraceCodeInjection) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *PtraceCodeInjection) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.ptracePokeText = "PTRACE_POKETEXT"
 	sig.ptracePokeData = "PTRACE_POKEDATA"
 	return nil

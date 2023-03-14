@@ -21,8 +21,8 @@ type e2eHTTP struct {
 	cb detect.SignatureHandler
 }
 
-func (sig *e2eHTTP) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *e2eHTTP) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	return nil
 }
 

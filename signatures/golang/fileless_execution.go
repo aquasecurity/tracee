@@ -13,8 +13,8 @@ type FilelessExecution struct {
 	cb detect.SignatureHandler
 }
 
-func (sig *FilelessExecution) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *FilelessExecution) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	return nil
 }
 

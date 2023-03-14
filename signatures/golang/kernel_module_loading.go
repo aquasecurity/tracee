@@ -13,8 +13,8 @@ type KernelModuleLoading struct {
 	cb detect.SignatureHandler
 }
 
-func (sig *KernelModuleLoading) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *KernelModuleLoading) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	return nil
 }
 

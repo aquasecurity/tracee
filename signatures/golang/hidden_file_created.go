@@ -15,8 +15,8 @@ type HiddenFileCreated struct {
 	hiddenPathPattern string
 }
 
-func (sig *HiddenFileCreated) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *HiddenFileCreated) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.hiddenPathPattern = "/."
 	return nil
 }

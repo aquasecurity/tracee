@@ -96,8 +96,8 @@ func NewSignature(metadata detect.SignatureMetadata, selector []detect.Signature
 	}, nil
 }
 
-func (s *signature) Init(cb detect.SignatureHandler) error {
-	s.cb = cb
+func (s *signature) Init(ctx detect.SignatureContext) error {
+	s.cb = ctx.Callback
 	return nil
 }
 

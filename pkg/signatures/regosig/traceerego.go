@@ -100,8 +100,8 @@ func NewRegoSignature(target string, partialEval bool, regoCodes ...string) (det
 }
 
 // Init implements the Signature interface by resetting internal state
-func (sig *RegoSignature) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *RegoSignature) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	return nil
 }
 

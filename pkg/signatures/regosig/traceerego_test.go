@@ -348,7 +348,7 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 			require.NoError(t, err)
 
 			holder := &signaturestest.FindingsHolder{}
-			err = sig.Init(holder.OnFinding)
+			err = sig.Init(detect.SignatureContext{Callback: holder.OnFinding})
 			require.NoError(t, err)
 
 			event := tc.event
@@ -487,7 +487,7 @@ func BenchmarkSignature_OnEvent(b *testing.B) {
 			signature, err := regosig.NewRegoSignature(compile.TargetRego, false, bm.regoCodes...)
 			require.NoError(b, err)
 			holder := &signaturestest.FindingsHolder{}
-			err = signature.Init(holder.OnFinding)
+			err = signature.Init(detect.SignatureContext{Callback: holder.OnFinding})
 			require.NoError(b, err)
 
 			b.ResetTimer()

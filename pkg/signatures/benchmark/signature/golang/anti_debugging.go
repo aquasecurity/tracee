@@ -28,8 +28,8 @@ func NewAntiDebuggingSignature() (detect.Signature, error) {
 	}, nil
 }
 
-func (sig *antiDebugging) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *antiDebugging) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	return nil
 }
 

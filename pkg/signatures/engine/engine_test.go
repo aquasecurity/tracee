@@ -227,7 +227,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		{
 			name: "sad path - signature init fails",
 			inputSignature: signature.FakeSignature{
-				FakeInit: func(handler detect.SignatureHandler) error {
+				FakeInit: func(ctx detect.SignatureContext) error {
 					return errors.New("init failed")
 				},
 			},

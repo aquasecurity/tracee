@@ -28,11 +28,13 @@ There are 2 ways you can get your own golang signatures working with tracee.
         )
         
         type signatureExample struct {
-        	cb detect.SignatureHandler
+        	cb     detect.SignatureHandler
+            logger detect.Logger
         }
         
-        func (sig *signatureExample) Init(cb detect.SignatureHandler) error {
-        	sig.cb = cb
+        func (sig *signatureExample) Init(ctx detect.SignatureContext) error {
+        	sig.cb = ctx.Callback
+            sig.logger = ctx.Logger
         
         	return nil
         }
@@ -65,6 +67,7 @@ There are 2 ways you can get your own golang signatures working with tracee.
         	switch e := event.Payload.(type) {
         	case trace.Event:
         		if e.ArgsNum == 0 {
+                    logger.Debugw("no arguments found")
         			return nil
         		}
         

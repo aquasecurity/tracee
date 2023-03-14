@@ -15,8 +15,8 @@ type DockerAbuse struct {
 	dockerSock string
 }
 
-func (sig *DockerAbuse) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *DockerAbuse) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.dockerSock = "docker.sock"
 	return nil
 }

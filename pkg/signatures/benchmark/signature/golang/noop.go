@@ -21,8 +21,8 @@ func (n *noop) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
 	return []detect.SignatureEventSelector{}, nil
 }
 
-func (n *noop) Init(cb detect.SignatureHandler) error {
-	n.cb = cb
+func (n *noop) Init(ctx detect.SignatureContext) error {
+	n.cb = ctx.Callback
 	return nil
 }
 

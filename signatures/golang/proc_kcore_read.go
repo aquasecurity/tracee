@@ -15,8 +15,8 @@ type ProcKcoreRead struct {
 	kcorePath string
 }
 
-func (sig *ProcKcoreRead) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *ProcKcoreRead) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.kcorePath = "/proc/kcore"
 	return nil
 }

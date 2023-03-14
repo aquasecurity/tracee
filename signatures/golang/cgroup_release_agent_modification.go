@@ -15,8 +15,8 @@ type CgroupReleaseAgentModification struct {
 	releaseAgentName string
 }
 
-func (sig *CgroupReleaseAgentModification) Init(cb detect.SignatureHandler) error {
-	sig.cb = cb
+func (sig *CgroupReleaseAgentModification) Init(ctx detect.SignatureContext) error {
+	sig.cb = ctx.Callback
 	sig.releaseAgentName = "release_agent"
 	return nil
 }

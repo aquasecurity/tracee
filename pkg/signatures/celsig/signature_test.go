@@ -205,7 +205,7 @@ input.sockaddrArg('addr').sin_addr == "216.58.215.110"`,
 			signature, err := celsig.NewSignature(tc.config)
 			require.NoError(t, err)
 			holder := &signaturestest.FindingsHolder{}
-			err = signature.Init(holder.OnFinding)
+			err = signature.Init(detect.SignatureContext{Callback: holder.OnFinding})
 			require.NoError(t, err)
 			err = signature.OnEvent(tc.input)
 			require.NoError(t, err)
@@ -347,7 +347,7 @@ input.sockaddrArg('addr') == wrapper.sockaddr{
 			signature, err := celsig.NewSignature(bm.config)
 			require.NoError(b, err)
 			holder := &signaturestest.FindingsHolder{}
-			err = signature.Init(holder.OnFinding)
+			err = signature.Init(detect.SignatureContext{Callback: holder.OnFinding})
 			require.NoError(b, err)
 
 			b.ResetTimer()
