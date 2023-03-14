@@ -152,8 +152,8 @@ RELEASE_FILES += $(OUTPUT_DIR)/tracee
 RELEASE_FILES += $(OUTPUT_DIR)/rules
 RELEASE_FILES += $(OUTPUT_DIR)/tracee.bpf.core.o
 
-OUT_ARCHIVE := $(OUTPUT_DIR)/tracee.$(SNAPSHOT_VERSION).tar.gz
-OUT_CHECKSUMS := $(OUTPUT_DIR)/checksum.$(SNAPSHOT_VERSION).txt
+OUT_ARCHIVE := $(OUTPUT_DIR)/tracee-$(ARCH).$(SNAPSHOT_VERSION).tar.gz
+OUT_CHECKSUMS := $(OUTPUT_DIR)/checksum-$(ARCH).$(SNAPSHOT_VERSION).txt
 
 PUSH_DOCKER_REPO ?= aquasec/tracee
 
@@ -244,6 +244,10 @@ endif
 #
 ifeq ($(ARCH),x86_64)
 	$(CMD_GITHUB) release create $(SNAPSHOT_VERSION) $(OUT_ARCHIVE) $(OUT_CHECKSUMS) --title $(SNAPSHOT_VERSION) --notes-file $(RELEASE_NOTES)
+endif
+# add artifacts to the already created release (by x86_64 arch)
+ifeq ($(ARCH),aarch64)
+	$(CMD_GITHUB) release upload $(SNAPSHOT_VERSION) $(OUT_ARCHIVE) $(OUT_CHECKSUMS)
 endif
 
 endif
