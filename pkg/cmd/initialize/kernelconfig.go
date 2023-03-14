@@ -11,8 +11,8 @@ func KernelConfig() (*helpers.KernelConfig, error) {
 	kernelConfig, err := helpers.InitKernelConfig()
 	if err != nil {
 		// do not fail if we cannot init kconfig - print out warning messages
-		logger.Warn("KConfig: could not check enabled kconfig features", "error", err)
-		logger.Warn("KConfig: assuming kconfig values, might have unexpected behavior")
+		logger.Warnw("KConfig: could not check enabled kconfig features", "error", err)
+		logger.Warnw("KConfig: assuming kconfig values, might have unexpected behavior")
 		return kernelConfig, nil
 	}
 

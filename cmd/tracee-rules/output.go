@@ -60,16 +60,16 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 			switch res.Event.Payload.(type) {
 			case trace.Event:
 				if err := tOutput.Execute(w, res); err != nil {
-					logger.Error("Writing to output: " + err.Error())
+					logger.Errorw("Writing to output: " + err.Error())
 				}
 			default:
-				logger.Warn("Unsupported event detected: " + res.Event.Payload.(string))
+				logger.Warnw("Unsupported event detected: " + res.Event.Payload.(string))
 				continue
 			}
 
 			if webhook != "" {
 				if err := sendToWebhook(tWebhook, res, webhook, webhookTemplate, contentType); err != nil {
-					logger.Error("Sending to webhook: " + err.Error())
+					logger.Errorw("Sending to webhook: " + err.Error())
 				}
 			}
 		}
@@ -86,7 +86,7 @@ func sendToWebhook(t *template.Template, res detect.Finding, webhook string, web
 			return errfmt.Errorf("error writing to template: template not initialized")
 		}
 		if contentType == "" {
-			logger.Warn("Content-type was not set for the custom template: " + webhookTemplate)
+			logger.Warnw("Content-type was not set for the custom template: " + webhookTemplate)
 		}
 		buf := bytes.Buffer{}
 		if err := t.Execute(&buf, res); err != nil {

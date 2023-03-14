@@ -105,13 +105,13 @@ func (c *Capabilities) initialize(bypass bool) error {
 
 	paranoid, err := getKernelPerfEventParanoidValue()
 	if err != nil {
-		logger.Debug("Could not get perf_event_paranoid, assuming highest")
+		logger.Debugw("Could not get perf_event_paranoid, assuming highest")
 	}
 
 	if paranoid > 2 {
-		logger.Debug("Paranoid: Value in /proc/sys/kernel/perf_event_paranoid is > 2")
-		logger.Debug("Paranoid: Tracee needs CAP_SYS_ADMIN instead of CAP_BPF + CAP_PERFMON")
-		logger.Debug("Paranoid: To change that behavior set perf_event_paranoid to 2 or less.")
+		logger.Debugw("Paranoid: Value in /proc/sys/kernel/perf_event_paranoid is > 2")
+		logger.Debugw("Paranoid: Tracee needs CAP_SYS_ADMIN instead of CAP_BPF + CAP_PERFMON")
+		logger.Debugw("Paranoid: To change that behavior set perf_event_paranoid to 2 or less.")
 		c.Require(cap.SYS_ADMIN)
 	}
 
@@ -212,7 +212,7 @@ func (c *Capabilities) Requested(cb func() error, values ...cap.Value) error {
 
 	errCb := cb()
 	if errCb != nil {
-		logger.Debug("Caps Requested cb func", "error", errCb)
+		logger.Debugw("Caps Requested cb func", "error", errCb)
 	}
 
 	if !c.bypass {
@@ -308,11 +308,11 @@ func (c *Capabilities) apply(t ringType) error {
 		return errfmt.WrapError(err)
 	}
 
-	logger.Debug("Capabilities change")
+	logger.Debugw("Capabilities change")
 
 	for k, v := range c.all {
 		if v[t] {
-			logger.Debug("Enabling cap", "cap", k)
+			logger.Debugw("Enabling cap", "cap", k)
 		}
 		err = c.have.SetFlag(cap.Effective, v[t], k)
 		if err != nil {

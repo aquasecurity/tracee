@@ -123,9 +123,9 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(
 		_, ok := symbsLoadedGen.returnedErrors[err.Error()]
 		if !ok {
 			symbsLoadedGen.returnedErrors[err.Error()] = true
-			logger.Warn("symbols_loaded", "object loaded", loadingObjectInfo, "error", err.Error())
+			logger.Warnw("symbols_loaded", "object loaded", loadingObjectInfo, "error", err.Error())
 		} else {
-			logger.Debug("symbols_loaded", "object loaded", loadingObjectInfo, "error", err.Error())
+			logger.Debugw("symbols_loaded", "object loaded", loadingObjectInfo, "error", err.Error())
 		}
 		return nil, nil
 	}

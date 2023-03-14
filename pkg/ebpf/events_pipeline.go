@@ -212,7 +212,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				var err error
 				syscall, err = parseSyscallID(int(ctx.Syscall), flags.IsCompat, sysCompatTranslation)
 				if err != nil {
-					logger.Debug("Originated syscall parsing", "error", err)
+					logger.Debugw("Originated syscall parsing", "error", err)
 				}
 			}
 
@@ -398,7 +398,7 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (<-c
 
 				// don't skip cgroup_mkdir and cgroup_rmdir so we can derive container_create and container_remove events
 				if eventId != events.CgroupMkdir && eventId != events.CgroupRmdir {
-					logger.Debug("False container positive", "event.Timestamp", event.Timestamp, "eventId", eventId)
+					logger.Debugw("False container positive", "event.Timestamp", event.Timestamp, "eventId", eventId)
 
 					// filter container scopes out
 					utils.ClearBits(&event.MatchedScopes, scopesWithContainerFilter)
@@ -585,7 +585,7 @@ func MergeErrors(cs ...<-chan error) <-chan error {
 
 func (t *Tracee) handleError(err error) {
 	t.stats.ErrorCount.Increment()
-	logger.Error("Tracee encountered an error", "error", err)
+	logger.Errorw("Tracee encountered an error", "error", err)
 }
 
 // parseArguments must happen before signatures are evaluated.

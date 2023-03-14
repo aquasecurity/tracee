@@ -29,7 +29,7 @@ func LoadKconfigValues(kc *helpers.KernelConfig) (map[helpers.KernelConfigOption
 
 	// re-load kconfig and get just added kconfig option values
 	if err = kc.LoadKernelConfig(); err != nil { // invalid kconfig file: assume values then
-		logger.Debug("KConfig: warning: assuming kconfig values, might have unexpected behavior")
+		logger.Debugw("KConfig: warning: assuming kconfig values, might have unexpected behavior")
 		for key := range kconfigUsed {
 			values[key] = helpers.UNDEFINED
 		}

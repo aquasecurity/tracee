@@ -55,7 +55,7 @@ func New(simple Config, output *os.File) (*Pcaps, error) {
 
 	for t := range caches {
 		if config&t == t { // if type was requested, init its cache
-			logger.Debug("pcap enabled: " + t.String())
+			logger.Debugw("pcap enabled: " + t.String())
 			caches[t], err = newPcapCache(t)
 			if err != nil {
 				return nil, errfmt.WrapError(err)

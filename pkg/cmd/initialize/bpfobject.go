@@ -38,7 +38,7 @@ func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSInfo *hel
 	} else if btfFilePath == "" && err != nil {
 		return errfmt.WrapError(err)
 	}
-	logger.Debug("BTF", "bpfenv", d.bpfenv, "btfenv", d.btfenv, "vmlinux", d.btfvmlinux)
+	logger.Debugw("BTF", "bpfenv", d.bpfenv, "btfenv", d.btfenv, "vmlinux", d.btfvmlinux)
 
 	var tVersion, kVersion string
 	var bpfBytes []byte
@@ -50,10 +50,10 @@ func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSInfo *hel
 	// (2) BPF file given & if no BTF exists: it is a non CO-RE BPF
 
 	if d.bpfenv {
-		logger.Debug("BPF: using BPF object from environment", "file", bpfFilePath)
+		logger.Debugw("BPF: using BPF object from environment", "file", bpfFilePath)
 		if d.btfvmlinux || d.btfenv { // (1)
 			if d.btfenv {
-				logger.Debug("BTF: using BTF file from environment", "file", btfFilePath)
+				logger.Debugw("BTF: using BTF file from environment", "file", btfFilePath)
 				config.BTFObjPath = btfFilePath
 			}
 		} // else {} (2)
@@ -67,9 +67,9 @@ func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSInfo *hel
 	// (3) no BPF file given & BTF (vmlinux or env) exists: load embedded BPF as CO-RE
 
 	if d.btfvmlinux || d.btfenv { // (3)
-		logger.Debug("BPF: using embedded BPF object")
+		logger.Debugw("BPF: using embedded BPF object")
 		if d.btfenv {
-			logger.Debug("BTF: using BTF file from environment", "file", btfFilePath)
+			logger.Debugw("BTF: using BTF file from environment", "file", btfFilePath)
 			config.BTFObjPath = btfFilePath
 		}
 		bpfFilePath = "embedded-core"
@@ -87,7 +87,7 @@ func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSInfo *hel
 	err = unpackBTFHub(unpackBTFFile, OSInfo)
 
 	if err == nil {
-		logger.Debug("BTF: using BTF file from embedded btfhub", "file", unpackBTFFile)
+		logger.Debugw("BTF: using BTF file from embedded btfhub", "file", unpackBTFFile)
 		config.BTFObjPath = unpackBTFFile
 		bpfFilePath = "embedded-core"
 		bpfBytes, err = unpackCOREBinary()
@@ -106,13 +106,13 @@ func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSInfo *hel
 	kVersion = strings.ReplaceAll(kVersion, ".", "_")
 
 	bpfFilePath = fmt.Sprintf("%s/tracee.bpf.%s.%s.o", installPath, kVersion, tVersion)
-	logger.Debug("BPF: no BTF file was found or provided")
-	logger.Debug("BPF: trying non CO-RE eBPF", "file", bpfFilePath)
+	logger.Debugw("BPF: no BTF file was found or provided")
+	logger.Debugw("BPF: trying non CO-RE eBPF", "file", bpfFilePath)
 	if bpfBytes, err = os.ReadFile(bpfFilePath); err != nil {
 		// tell entrypoint that eBPF non CO-RE obj compilation is needed
-		logger.Error("BPF", "error", err)
-		logger.Error("BPF: could not load CO-RE eBPF object and could not find non CO-RE object", "installPath", installPath)
-		logger.Warn("BPF: you may build a non CO-RE eBPF object by executing \"make install-bpf-nocore\" in the source tree")
+		logger.Errorw("BPF", "error", err)
+		logger.Errorw("BPF: could not load CO-RE eBPF object and could not find non CO-RE object", "installPath", installPath)
+		logger.Warnw("BPF: you may build a non CO-RE eBPF object by executing \"make install-bpf-nocore\" in the source tree")
 		os.Exit(2)
 	}
 
@@ -142,7 +142,7 @@ func unpackCOREBinary() ([]byte, error) {
 		return nil, err
 	}
 
-	logger.Debug("Unpacked CO:RE bpf object file into memory")
+	logger.Debugw("Unpacked CO:RE bpf object file into memory")
 
 	return b, nil
 }
