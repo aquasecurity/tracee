@@ -910,7 +910,15 @@ enum bpf_cmd
     BPF_PROG_BIND_MAP,
 };
 
+#define BPF_OBJ_NAME_LEN 16U
+
 union bpf_attr {
+    struct { /* anonymous struct used by BPF_PROG_LOAD command */
+        __u32 insn_cnt;
+        __u64 insns;
+        char prog_name[BPF_OBJ_NAME_LEN];
+    };
+
     struct {
         __u32 prog_fd;
         union {
@@ -954,8 +962,6 @@ enum bpf_prog_type
     BPF_PROG_TYPE_SK_LOOKUP,
     BPF_PROG_TYPE_SYSCALL, /* a program that can execute syscalls */
 };
-
-#define BPF_OBJ_NAME_LEN 16U
 
 struct bpf_prog_aux {
     u32 id;
@@ -1025,7 +1031,11 @@ struct bpf_verifier_env {
 };
 
 struct bpf_insn {
-    __s32 imm;
+    __u8 code;        /* opcode */
+    __u8 dst_reg : 4; /* dest register */
+    __u8 src_reg : 4; /* source register */
+    __s16 off;        /* signed offset */
+    __s32 imm;        /* signed immediate constant */
 };
 
 const int TRACE_EVENT_FL_TRACEPOINT_BIT = 4;

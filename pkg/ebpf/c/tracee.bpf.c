@@ -96,6 +96,7 @@
 #include "common/memory.h"
 #include "common/network.h"
 #include "common/probes.h"
+#include "common/bpf_prog.h"
 
 char LICENSE[] SEC("license") = "GPL";
 #ifndef CORE
@@ -2997,15 +2998,39 @@ int BPF_KPROBE(trace_security_bpf)
     if (should_submit(SECURITY_BPF, p.event)) {
         // 1st argument == cmd (int)
         save_to_submit_buf(p.event, (void *) &cmd, sizeof(int), 0);
-
         events_perf_submit(&p, SECURITY_BPF, 0);
     }
-
     union bpf_attr *attr = (union bpf_attr *) PT_REGS_PARM2(ctx);
 
     reset_event_args(&p);
     check_bpf_link(&p, attr, cmd);
 
+    // Capture BPF object loaded
+    if (cmd == BPF_PROG_LOAD && p.config->options & OPT_CAPTURE_BPF) {
+        bin_args_t bin_args = {};
+        u32 pid = p.task_info->context.host_pid;
+
+        u32 insn_cnt = get_attr_insn_cnt(attr);
+        const struct bpf_insn *insns = get_attr_insns(attr);
+        unsigned int insn_size = (unsigned int) (sizeof(struct bpf_insn) * insn_cnt);
+
+        bin_args.type = SEND_BPF_OBJECT;
+        char prog_name[16] = {0};
+        long sz = bpf_probe_read_str(prog_name, 16, attr->prog_name);
+        if (sz > 0) {
+            sz = bpf_probe_read_str(bin_args.metadata, sz, prog_name);
+        }
+
+        u32 rand = bpf_get_prandom_u32();
+        bpf_probe_read(&bin_args.metadata[16], 4, &rand);
+        bpf_probe_read(&bin_args.metadata[20], 4, &pid);
+        bpf_probe_read(&bin_args.metadata[24], 4, &insn_size);
+        bin_args.ptr = (char *) insns;
+        bin_args.start_off = 0;
+        bin_args.full_size = insn_size;
+
+        tail_call_send_bin(ctx, &p, &bin_args, TAIL_SEND_BIN);
+    }
     return 0;
 }
 
@@ -3251,6 +3276,10 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
     }
 
     if (p.config->options & OPT_CAPTURE_MODULES) {
+        // Do not extract files greater than 4GB
+        if (size >= (u64) 1 << 32) {
+            return 0;
+        }
         // Extract device id, inode number for file name
         dev_t s_dev = get_dev_from_file(file);
         unsigned long inode_nr = get_inode_nr_from_file(file);
@@ -3261,7 +3290,7 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
         bpf_probe_read(bin_args.metadata, 4, &s_dev);
         bpf_probe_read(&bin_args.metadata[4], 8, &inode_nr);
         bpf_probe_read(&bin_args.metadata[12], 4, &pid);
-        bpf_probe_read(&bin_args.metadata[16], 8, &size);
+        bpf_probe_read(&bin_args.metadata[16], 4, &size);
         bin_args.start_off = 0;
         bin_args.ptr = buf;
         bin_args.full_size = size;

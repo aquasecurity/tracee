@@ -81,6 +81,7 @@ type CaptureConfig struct {
 	FilterFileWrite []string
 	Exec            bool
 	Mem             bool
+	Bpf             bool
 	Net             pcaps.Config
 }
 
@@ -254,6 +255,11 @@ func GetCaptureEventsList(cfg Config) map[events.ID]eventConfig {
 			submit: 0xFFFFFFFFFFFFFFFF,
 		}
 	}
+	if cfg.Capture.Bpf {
+		captureEvents[events.CaptureBpf] = eventConfig{
+			submit: 0xFFFFFFFFFFFFFFFF,
+		}
+	}
 	if pcaps.PcapsEnabled(cfg.Capture.Net) {
 		captureEvents[events.CaptureNetPacket] = eventConfig{
 			submit: 0xFFFFFFFFFFFFFFFF,
@@ -329,7 +335,7 @@ func New(cfg Config) (*Tracee, error) {
 	for id := range t.events {
 		evt, ok := events.Definitions.GetSafe(id)
 		if !ok {
-			return t, errfmt.Errorf("could not get event")
+			return t, errfmt.Errorf("could not get event %d", id)
 		}
 		for _, capArray := range evt.Dependencies.Capabilities {
 			if err := caps.Require(capArray); err != nil {
@@ -728,6 +734,7 @@ const (
 	optCgroupV1
 	optProcessInfo
 	optTranslateFDFilePath
+	optCaptureBpf
 )
 
 func (t *Tracee) getOptionsConfig() uint32 {
@@ -744,6 +751,9 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	}
 	if t.config.Capture.Module {
 		cOptVal = cOptVal | optCaptureModules
+	}
+	if t.config.Capture.Bpf {
+		cOptVal = cOptVal | optCaptureBpf
 	}
 	if t.config.Capture.Mem {
 		cOptVal = cOptVal | optExtractDynCode

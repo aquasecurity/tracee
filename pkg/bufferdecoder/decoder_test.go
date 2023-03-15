@@ -364,7 +364,7 @@ func TestDecodeChunkMeta(t *testing.T) {
 	expected := ChunkMeta{
 		BinType:  54,
 		CgroupID: 6543,
-		Metadata: [24]byte{5, 4, 3, 5, 6, 7, 4, 54, 3, 32, 4},
+		Metadata: [28]byte{5, 4, 3, 5, 6, 7, 4, 54, 3, 32, 4, 4, 4, 4, 4},
 		Size:     6543,
 		Off:      76543,
 	}
@@ -410,6 +410,24 @@ func TestDecodeKernelModuleMeta(t *testing.T) {
 	rawBuf := buf.Bytes()
 	d := New(rawBuf)
 	err = d.DecodeKernelModuleMeta(&obtained)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, expected, obtained)
+}
+
+func TestDecodeBpfObjectMeta(t *testing.T) {
+	buf := new(bytes.Buffer)
+	expected := BpfObjectMeta{
+		Name: [16]byte{80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80},
+		Rand: 543,
+		Pid:  7654,
+		Size: 4533,
+	}
+	err := binary.Write(buf, binary.LittleEndian, expected)
+	assert.Equal(t, nil, err)
+	var obtained BpfObjectMeta
+	rawBuf := buf.Bytes()
+	d := New(rawBuf)
+	err = d.DecodeBpfObjectMeta(&obtained)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, expected, obtained)
 }

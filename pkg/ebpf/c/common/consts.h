@@ -14,7 +14,9 @@
 #define MAX_KSYM_NAME_SIZE  64
 #define UPROBE_MAGIC_NUMBER 20220829
 #define ARGS_BUF_SIZE       32000
-#define SEND_META_SIZE      24
+#define SEND_BPF_OBJECT     4
+#define SEND_META_SIZE      28
+
 #define MAX_MEM_DUMP_SIZE   127
 
 // clang-format on
@@ -53,6 +55,7 @@
 #define OPT_CGROUP_V1             (1 << 5)
 #define OPT_PROCESS_INFO          (1 << 6)
 #define OPT_TRANSLATE_FD_FILEPATH (1 << 7)
+#define OPT_CAPTURE_BPF           (1 << 8)
 
 enum buf_idx_e
 {
