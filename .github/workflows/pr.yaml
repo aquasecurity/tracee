@@ -189,7 +189,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-0256d27c94fd8654b_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0256d27c94fd8654b_${{ github.event.number }}-${{ github.run_id }}_x64c",
       ]
     steps:
       - name: "Checkout"
@@ -222,7 +222,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-0e54075d15718c56d_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0256d27c94fd8654b_${{ github.event.number }}-${{ github.run_id }}_x64",
       ]
     steps:
       - name: "Checkout"
@@ -256,7 +256,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-06bf1de0491bed185_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-06bf1de0491bed185_${{ github.event.number }}-${{ github.run_id }}_arm64c",
       ]
     steps:
       - name: "Checkout"
@@ -289,7 +289,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-0427616252e9f53b2_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-06bf1de0491bed185_${{ github.event.number }}-${{ github.run_id }}_arm64",
       ]
     steps:
       - name: "Checkout"
@@ -326,7 +326,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-0215ef3ceac330d0a_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0215ef3ceac330d0a_${{ github.event.number }}-${{ github.run_id }}_x64c",
       ]
     steps:
       - name: "Checkout"
@@ -359,7 +359,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-0601bde02a6437b33_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0215ef3ceac330d0a_${{ github.event.number }}-${{ github.run_id }}_x64",
       ]
     steps:
       - name: "Checkout"
@@ -393,7 +393,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-0964f99b81de934a3_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0964f99b81de934a3_${{ github.event.number }}-${{ github.run_id }}_arm64c",
       ]
     steps:
       - name: "Checkout"
@@ -426,7 +426,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-0bc094ea49893b7ad_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0964f99b81de934a3_${{ github.event.number }}-${{ github.run_id }}_arm64",
       ]
     steps:
       - name: "Checkout"
@@ -462,7 +462,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-0f23165db12015479_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0f23165db12015479_${{ github.event.number }}-${{ github.run_id }}_x64c",
       ]
     steps:
       - name: "Checkout"
@@ -495,7 +495,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-078f5ea2295f177e3_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0f23165db12015479_${{ github.event.number }}-${{ github.run_id }}_x64",
       ]
     steps:
       - name: "Checkout"
@@ -529,7 +529,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-0f12d300b01df6d27_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0f12d300b01df6d27_${{ github.event.number }}-${{ github.run_id }}_arm64c",
       ]
     steps:
       - name: "Checkout"
@@ -562,7 +562,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-05d00e617d77e79f1_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0f12d300b01df6d27_${{ github.event.number }}-${{ github.run_id }}_arm64",
       ]
     steps:
       - name: "Checkout"
@@ -598,7 +598,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-0238444dc8524d8c7_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0238444dc8524d8c7_${{ github.event.number }}-${{ github.run_id }}_x64c",
       ]
     steps:
       - name: "Checkout"
@@ -631,7 +631,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-067bae9e96c5e6d16_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0238444dc8524d8c7_${{ github.event.number }}-${{ github.run_id }}_x64",
       ]
     steps:
       - name: "Checkout"
@@ -665,7 +665,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-0870bd48b77710358_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0870bd48b77710358_${{ github.event.number }}-${{ github.run_id }}_arm64c",
       ]
     steps:
       - name: "Checkout"
@@ -698,7 +698,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-07f85af1870b56666_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0870bd48b77710358_${{ github.event.number }}-${{ github.run_id }}_arm64",
       ]
     steps:
       - name: "Checkout"
@@ -734,7 +734,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-0f14a28ff0b2d6279_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0f14a28ff0b2d6279_${{ github.event.number }}-${{ github.run_id }}_x64c",
       ]
     steps:
       - name: "Checkout"
@@ -767,7 +767,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-034f8f73bfac81c60_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0f14a28ff0b2d6279_${{ github.event.number }}-${{ github.run_id }}_x64",
       ]
     steps:
       - name: "Checkout"
@@ -801,7 +801,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-0d40904002284d8de_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0d40904002284d8de_${{ github.event.number }}-${{ github.run_id }}_arm64c",
       ]
     steps:
       - name: "Checkout"
@@ -834,7 +834,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-015c14d192a77f1eb_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0d40904002284d8de_${{ github.event.number }}-${{ github.run_id }}_arm64",
       ]
     steps:
       - name: "Checkout"
@@ -870,7 +870,7 @@ jobs:
       GOROOT: "/usr/local/go"
     runs-on:
       [
-        "github-self-hosted_ami-0bab76ae5b7322b45_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0bab76ae5b7322b45_${{ github.event.number }}-${{ github.run_id }}_x64",
       ]
     steps:
       - name: "Checkout"
