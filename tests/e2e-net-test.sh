@@ -14,7 +14,7 @@ KERNEL=$(uname -r)
 KERNEL_MAJ=$(echo $KERNEL | cut -d'.' -f1)
 
 if [[ $KERNEL_MAJ -lt 5 && "$KERNEL" != *"el8"* ]]; then
-	info_exit "skip test in kernels < 5.0 (and not RHEL)"
+    info_exit "skip test in kernels < 5.0 (and not RHEL)"
 fi
 
 TRACEE_STARTUP_TIMEOUT=5
@@ -32,13 +32,11 @@ error_exit() {
     exit 1
 }
 
-if [[ $UID -ne 0 ]]
-then
+if [[ $UID -ne 0 ]]; then
     error_exit "need root privileges"
 fi
 
-if [[ ! -d ./signatures ]]
-then
+if [[ ! -d ./signatures ]]; then
     error_exit "need to be in tracee root directory"
 fi
 
@@ -48,9 +46,8 @@ ISNONCORE=${ISNONCORE:=0}
 DONTSLEEP=${DONTSLEEP:=1}
 
 # randomize start point (for parallel runners)
-if [[ $DONTSLEEP -ne 1 ]]
-then
-    rand=$(( $RANDOM % 10 ))
+if [[ $DONTSLEEP -ne 1 ]]; then
+    rand=$(($RANDOM % 10))
     info "sleeping for $rand seconds"
     sleep $rand
 fi
@@ -82,12 +79,10 @@ set -e
 make -j$(nproc) all
 make e2e-net-signatures
 set +e
-if [[ ! -x ./dist/tracee-ebpf || ! -x ./dist/tracee-rules ]]
-then
+if [[ ! -x ./dist/tracee-ebpf || ! -x ./dist/tracee-rules ]]; then
     error_exit "could not find tracee executables"
 fi
-if [[ $ISNONCORE -eq 1 ]]
-then
+if [[ $ISNONCORE -eq 1 ]]; then
     info "STATE: Compiling non CO-RE eBPF object"
     make clean-bpf-nocore
     set -e
@@ -119,16 +114,14 @@ for TEST in $TESTS; do
         --output option:parse-arguments \
         --filter comm=ping,nc,nslookup,isc-net-0000,isc-worker0000,curl \
         --filter event=$events \
-        2>$SCRIPT_TMP_DIR/ebpf-$$ \
-        | \
-    ./dist/tracee-rules \
-        --rules-dir ./dist/e2e-net-signatures/ \
-        --input-tracee=file:stdin \
-        --input-tracee format:json \
-        --rules $TEST \
-        --allcaps 2>&1 \
-        | \
-    tee $SCRIPT_TMP_DIR/build-$$ 2>&1 &
+        2>$SCRIPT_TMP_DIR/ebpf-$$ |
+        ./dist/tracee-rules \
+            --rules-dir ./dist/e2e-net-signatures/ \
+            --input-tracee=file:stdin \
+            --input-tracee format:json \
+            --rules $TEST \
+            --allcaps 2>&1 |
+        tee $SCRIPT_TMP_DIR/build-$$ 2>&1 &
 
     # wait tracee-ebpf to be started (30 sec most)
     times=0
@@ -136,24 +129,21 @@ for TEST in $TESTS; do
     while true; do
         times=$(($times + 1))
         sleep 1
-        if [[ -f $TRACEE_TMP_DIR/out/tracee.pid ]]
-        then
+        if [[ -f $TRACEE_TMP_DIR/out/tracee.pid ]]; then
             info
             info "UP AND RUNNING"
             info
             break
         fi
 
-        if [[ $times -gt $TRACEE_STARTUP_TIMEOUT ]]
-        then
+        if [[ $times -gt $TRACEE_STARTUP_TIMEOUT ]]; then
             timedout=1
             break
         fi
     done
 
     # tracee-ebpf could not start for some reason, check stderr
-    if [[ $timedout -eq 1 ]]
-    then
+    if [[ $timedout -eq 1 ]]; then
         info
         info "$TEST: FAILED. ERRORS:"
         info
@@ -166,7 +156,7 @@ for TEST in $TESTS; do
     # give some time for tracee to settle
     sleep 3
 
-    # run tracee-tester (triggering the signature)
+    # run test scripts
     timeout --preserve-status 20 ./tests/e2e-net-signatures/scripts/${TEST,,}.sh
 
     # so event can be processed and detected
@@ -177,8 +167,7 @@ for TEST in $TESTS; do
     found=0
     cat $SCRIPT_TMP_DIR/build-$$ | grep "Signature ID: $TEST" -B2 | head -3 | grep -q "\*\*\* Detection" && found=1
     info
-    if [[ $found -eq 1 ]]
-    then
+    if [[ $found -eq 1 ]]; then
         info "$TEST: SUCCESS"
     else
         anyerror="${anyerror}$TEST,"
@@ -201,16 +190,15 @@ for TEST in $TESTS; do
 
     sleep 5 # wait for cleanup
 
-    kill -9 $pid_rules > /dev/null 2>&1
-    kill -9 $pid_ebpf > /dev/null 2>&1
+    kill -9 $pid_rules >/dev/null 2>&1
+    kill -9 $pid_ebpf >/dev/null 2>&1
 
     # give a little break for OS noise to reduce
     sleep 3
 done
 
 info
-if [[ $anyerror != "" ]]
-then
+if [[ $anyerror != "" ]]; then
     info "ALL TESTS: FAILED: ${anyerror::-1}"
     exit 1
 fi
