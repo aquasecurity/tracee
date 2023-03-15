@@ -126,6 +126,7 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		FilpClose:                  &traceProbe{eventName: "filp_close", probeType: kprobe, programName: "trace_filp_close"},
 		InotifyFindInode:           &traceProbe{eventName: "inotify_find_inode", probeType: kprobe, programName: "trace_inotify_find_inode"},
 		InotifyFindInodeRet:        &traceProbe{eventName: "inotify_find_inode", probeType: kretprobe, programName: "trace_ret_inotify_find_inode"},
+		BpfCheck:                   &traceProbe{eventName: "bpf_check", probeType: kprobe, programName: "trace_bpf_check"},
 	}
 
 	if !netEnabled {
@@ -325,4 +326,5 @@ const (
 	FilpClose
 	InotifyFindInode
 	InotifyFindInodeRet
+	BpfCheck
 )

@@ -259,6 +259,23 @@ func ParseArgs(event *trace.Event) error {
 				}
 			}
 		}
+	case SecurityBpfProg:
+		if progTypeArg := GetArg(event, "type"); progTypeArg != nil {
+			if progType, isInt := progTypeArg.Value.(int32); isInt {
+				progTypeArgument, err := helpers.ParseBPFProgType(uint64(progType))
+				ParseOrEmptyString(progTypeArg, progTypeArgument, err)
+			}
+		}
+		if helpersArg := GetArg(event, "helpers"); helpersArg != nil {
+			if helpersList, isUintSlice := helpersArg.Value.([]uint64); isUintSlice {
+				parsedHelpersList, err := parseBpfAttachHelperUsage(helpersList)
+				if err != nil {
+					return err
+				}
+				helpersArg.Type = "char*"
+				helpersArg.Value = parsedHelpersList
+			}
+		}
 	}
 
 	return nil
