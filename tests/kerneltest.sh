@@ -7,6 +7,7 @@
 TRACEE_STARTUP_TIMEOUT=30
 SCRIPT_TMP_DIR=/tmp
 TRACEE_TMP_DIR=/tmp/tracee
+DOCKER_IMAGE=ghcr.io/aquasecurity/tracee-tester:latest
 
 info() {
     echo -n "INFO: "
@@ -19,13 +20,11 @@ error_exit() {
     exit 1
 }
 
-if [[ $UID -ne 0 ]]
-then
+if [[ $UID -ne 0 ]]; then
     error_exit "need root privileges for docker caps config"
 fi
 
-if [[ ! -d ./signatures ]]
-then
+if [[ ! -d ./signatures ]]; then
     error_exit "need to be in tracee root directory"
 fi
 
@@ -35,11 +34,10 @@ ISNONCORE=${ISNONCORE:=0}
 DONTSLEEP=${DONTSLEEP:=1}
 
 # randomize start point (for parallel runners)
-if [[ $DONTSLEEP -ne 1 ]]
-then
-  rand=$(( $RANDOM % 10 ))
-  info "sleeping for $rand seconds"
-  sleep $rand
+if [[ $DONTSLEEP -ne 1 ]]; then
+    rand=$(($RANDOM % 10))
+    info "sleeping for $rand seconds"
+    sleep $rand
 fi
 
 # startup needs
@@ -56,7 +54,7 @@ info "GO: $(go version)"
 info
 info "= PULLING CONTAINER IMAGE ====================================="
 info
-docker image pull aquasec/tracee-tester:latest
+docker image pull $DOCKER_IMAGE
 info
 info "= COMPILING TRACEE ============================================"
 info
@@ -64,12 +62,10 @@ info
 set -e
 make -j$(nproc) all
 set +e
-if [[ ! -x ./dist/tracee-ebpf || ! -x ./dist/tracee-rules ]]
-then
+if [[ ! -x ./dist/tracee-ebpf || ! -x ./dist/tracee-rules ]]; then
     error_exit "could not find tracee executables"
 fi
-if [[ $ISNONCORE -eq 1 ]]
-then
+if [[ $ISNONCORE -eq 1 ]]; then
     info "STATE: Compiling non CO-RE eBPF object"
     make clean-bpf-nocore
     set -e
@@ -101,14 +97,12 @@ for TEST in $TESTS; do
         --output option:parse-arguments \
         --filter container=new \
         --filter event=$events \
-        2>$SCRIPT_TMP_DIR/ebpf-$$ \
-        | \
-    ./dist/tracee-rules \
-        --input-tracee=file:stdin \
-        --input-tracee format:gob \
-        --rules $TEST 2>&1 \
-        | \
-    tee $SCRIPT_TMP_DIR/build-$$ 2>&1 &
+        2>$SCRIPT_TMP_DIR/ebpf-$$ |
+        ./dist/tracee-rules \
+            --input-tracee=file:stdin \
+            --input-tracee format:gob \
+            --rules $TEST 2>&1 |
+        tee $SCRIPT_TMP_DIR/build-$$ 2>&1 &
 
     # wait tracee-ebpf to be started (30 sec most)
     times=0
@@ -116,24 +110,21 @@ for TEST in $TESTS; do
     while true; do
         times=$(($times + 1))
         sleep 1
-        if [[ -f $TRACEE_TMP_DIR/out/tracee.pid ]]
-        then
+        if [[ -f $TRACEE_TMP_DIR/out/tracee.pid ]]; then
             info
             info "UP AND RUNNING"
             info
             break
         fi
 
-        if [[ $times -gt $TRACEE_STARTUP_TIMEOUT ]]
-        then
+        if [[ $times -gt $TRACEE_STARTUP_TIMEOUT ]]; then
             timedout=1
             break
         fi
     done
 
     # tracee-ebpf could not start for some reason, check stderr
-    if [[ $timedout -eq 1 ]]
-    then
+    if [[ $timedout -eq 1 ]]; then
         info
         info "$TEST: FAILED. ERRORS:"
         info
@@ -145,21 +136,20 @@ for TEST in $TESTS; do
 
     # special capabilities needed for some tests
     case $TEST in
-        TRC-2 | TRC-102 | TRC-3 | TRC-103)
-            docker_extra_arg="--cap-add=SYS_PTRACE"
-            ;;
-        TRC-11 | TRC-1014)
-            docker_extra_arg="--cap-add=SYS_ADMIN"
-            ;;
-        *)
-            ;;
+    TRC-2 | TRC-102 | TRC-3 | TRC-103)
+        docker_extra_arg="--cap-add=SYS_PTRACE"
+        ;;
+    TRC-11 | TRC-1014)
+        docker_extra_arg="--cap-add=SYS_ADMIN"
+        ;;
+    *) ;;
     esac
 
     # give some time for tracee to settle
     sleep 5
 
     # run tracee-tester (triggering the signature)
-    docker run $docker_extra_arg --rm aquasec/tracee-tester $TEST > /dev/null 2>&1
+    docker run $docker_extra_arg --rm $DOCKER_IMAGE $TEST >/dev/null 2>&1
 
     # so event can be processed and detected
     sleep 5
@@ -169,8 +159,7 @@ for TEST in $TESTS; do
     found=0
     cat $SCRIPT_TMP_DIR/build-$$ | grep "Signature ID: $TEST" -B2 | head -3 | grep -q "\*\*\* Detection" && found=1
     info
-    if [[ $found -eq 1 ]]
-    then
+    if [[ $found -eq 1 ]]; then
         info "$TEST: SUCCESS"
     else
         anyerror="${anyerror}$TEST,"
@@ -194,13 +183,12 @@ for TEST in $TESTS; do
     sleep 5
 
     # make sure tracee is exited with SIGKILL
-    kill -9 $rules_pid > /dev/null 2>&1
-    kill -9 $tracee_pid > /dev/null 2>&1
+    kill -9 $rules_pid >/dev/null 2>&1
+    kill -9 $tracee_pid >/dev/null 2>&1
 done
 
 info
-if [[ $anyerror != "" ]]
-then
+if [[ $anyerror != "" ]]; then
     info "ALL TESTS: FAILED: ${anyerror::-1}"
     exit 1
 fi
