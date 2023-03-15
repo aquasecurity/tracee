@@ -263,6 +263,7 @@ const (
 	DoTruncate
 	FileModification
 	InotifyWatch
+	SecurityBpfProg
 	MaxCommonID
 )
 
@@ -6110,7 +6111,7 @@ var Definitions = eventDefinitions{
 		BpfAttach: {
 			ID32Bit: sys32undefined,
 			Name:    "bpf_attach",
-			DocPath: "security_alerts/bpf_attach.md",
+			DocPath: "docs/events/builtin/extra/bpf_attach.md",
 			Probes: []probeDependency{
 				{Handle: probes.SecurityFileIoctl, Required: true},
 				{Handle: probes.SecurityBpfProg, Required: true},
@@ -6122,6 +6123,7 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "prog_type"},
 				{Type: "const char*", Name: "prog_name"},
+				{Type: "u32", Name: "prog_id"},
 				{Type: "unsigned long[]", Name: "prog_helpers"},
 				{Type: "const char*", Name: "perf_symbol"},
 				{Type: "u64", Name: "perf_addr"},
@@ -6260,6 +6262,25 @@ var Definitions = eventDefinitions{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "unsigned long", Name: "inode"},
 				{Type: "dev_t", Name: "dev"},
+			},
+		},
+		SecurityBpfProg: {
+			ID32Bit: sys32undefined,
+			Name:    "security_bpf_prog",
+			DocPath: "docs/events/builtin/extra/security_bpf_prog.md",
+			Probes: []probeDependency{
+				{Handle: probes.SecurityBpfProg, Required: true},
+				{Handle: probes.BpfCheck, Required: true},
+				{Handle: probes.CheckHelperCall, Required: false},
+				{Handle: probes.CheckMapFuncCompatibility, Required: false},
+			},
+			Sets: []string{},
+			Params: []trace.ArgMeta{
+				{Type: "int", Name: "type"},
+				{Type: "const char*", Name: "name"},
+				{Type: "unsigned long[]", Name: "helpers"},
+				{Type: "u32", Name: "id"},
+				{Type: "bool", Name: "load"},
 			},
 		},
 		//

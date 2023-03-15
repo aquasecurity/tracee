@@ -1425,7 +1425,7 @@ send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf
     struct bpf_prog_aux *prog_aux = READ_KERN(prog->aux);
     u32 prog_id = READ_KERN(prog_aux->id);
     char prog_name[BPF_OBJ_NAME_LEN];
-    bpf_probe_read_str(&prog_name, BPF_OBJ_NAME_LEN, READ_KERN(prog_aux->name));
+    bpf_probe_read_str(&prog_name, BPF_OBJ_NAME_LEN, prog_aux->name);
 
     // get usage of helpers
     bpf_used_helpers_t *val = bpf_map_lookup_elem(&bpf_attach_map, &prog_id);
@@ -1436,10 +1436,11 @@ send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf
 
     save_to_submit_buf(p->event, &prog_type, sizeof(int), 0);
     save_str_to_buf(p->event, (void *) &prog_name, 1);
-    save_u64_arr_to_buf(p->event, (const u64 *) val->helpers, 4, 2);
-    save_str_to_buf(p->event, (void *) &event_name, 3);
-    save_to_submit_buf(p->event, &probe_addr, sizeof(u64), 4);
-    save_to_submit_buf(p->event, &perf_type, sizeof(int), 5);
+    save_to_submit_buf(p->event, &prog_id, sizeof(u32), 2);
+    save_u64_arr_to_buf(p->event, (const u64 *) val->helpers, 4, 3);
+    save_str_to_buf(p->event, (void *) &event_name, 4);
+    save_to_submit_buf(p->event, &probe_addr, sizeof(u64), 5);
+    save_to_submit_buf(p->event, &perf_type, sizeof(int), 6);
 
     events_perf_submit(p, BPF_ATTACH, 0);
 
@@ -3107,9 +3108,65 @@ int BPF_KPROBE(trace_security_bpf_prog)
         __builtin_memcpy(&val.helpers, &existing_val->helpers, sizeof(bpf_used_helpers_t));
     }
 
-    bpf_map_update_elem(&bpf_attach_map, &prog_id, &val, BPF_ANY);
-
     bpf_map_delete_elem(&bpf_attach_tmp_map, &p.event->context.task.host_tid);
+
+    if (should_submit(BPF_ATTACH, p.event)) {
+        bpf_map_update_elem(&bpf_attach_map, &prog_id, &val, BPF_ANY);
+    }
+
+    if (!should_submit(SECURITY_BPF_PROG, p.event)) {
+        return 0;
+    }
+
+    bool is_load = false;
+    void **aux_ptr = bpf_map_lookup_elem(&bpf_prog_load_map, &p.event->context.task.host_tid);
+    if (aux_ptr != NULL) {
+        if (*aux_ptr == (void *) prog_aux) {
+            is_load = true;
+        }
+
+        bpf_map_delete_elem(&bpf_prog_load_map, &p.event->context.task.host_tid);
+    }
+
+    int prog_type = READ_KERN(prog->type);
+
+    char prog_name[BPF_OBJ_NAME_LEN];
+    bpf_probe_read_str(&prog_name, BPF_OBJ_NAME_LEN, prog_aux->name);
+
+    save_to_submit_buf(p.event, &prog_type, sizeof(int), 0);
+    save_str_to_buf(p.event, (void *) &prog_name, 1);
+    save_u64_arr_to_buf(p.event, (const u64 *) val.helpers, 4, 2);
+    save_to_submit_buf(p.event, &prog_id, sizeof(u32), 3);
+    save_to_submit_buf(p.event, &is_load, sizeof(bool), 4);
+
+    events_perf_submit(&p, SECURITY_BPF_PROG, 0);
+
+    return 0;
+}
+
+SEC("kprobe/bpf_check")
+int BPF_KPROBE(trace_bpf_check)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    if (!should_trace(&p))
+        return 0;
+
+    // this probe is triggered when a bpf program is loaded.
+    // we save the aux pointer to be used in security_bpf_prog, to indicate this prog is being
+    // loaded - security_bpf_prog is triggered not only on prog load.
+
+    if (!should_submit(SECURITY_BPF_PROG, p.event))
+        return 0;
+
+    struct bpf_prog **prog = (struct bpf_prog **) PT_REGS_PARM1(ctx);
+
+    struct bpf_prog *prog_ptr = READ_KERN(*prog);
+    struct bpf_prog_aux *prog_aux = READ_KERN(prog_ptr->aux);
+
+    bpf_map_update_elem(&bpf_prog_load_map, &p.event->context.task.host_tid, &prog_aux, BPF_ANY);
 
     return 0;
 }

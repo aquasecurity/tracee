@@ -120,6 +120,7 @@ enum event_id_e
     DO_TRUNCATE,
     FILE_MODIFICATION,
     INOTIFY_WATCH,
+    SECURITY_BPF_PROG,
     MAX_EVENT_ID,
 };
 
