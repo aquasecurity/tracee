@@ -37,7 +37,7 @@ type Event struct {
 	PodSandbox          bool         `json:"podSandbox"`
 	EventID             int          `json:"eventId,string"`
 	EventName           string       `json:"eventName"`
-	MatchedScopes       uint64       `json:"matchedScopes"`
+	MatchedPolicies     uint64       `json:"matchedPolicies"`
 	ArgsNum             int          `json:"argsNum"`
 	ReturnValue         int          `json:"returnValue"`
 	Syscall             string       `json:"syscall"`
