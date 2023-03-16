@@ -1,0 +1,34 @@
+name: shell-519-arm64
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/shell*"
+env:
+  HOME: "/tmp/root"
+  GOPATH: "/tmp/go"
+  GOCACHE: "/tmp/go-cache"
+  GOROOT: "/usr/local/go"
+  PATH: "/bin:/sbin:/usr/bin:/usr/sbin:/tmp/go/bin:/tmp/go/sbin"
+jobs:
+  shell-519-arm64:
+    runs-on: [ "github-self-hosted_ami-0d40904002284d8de_${{ github.event.number }}-${{ github.run_id }}_x64" ] 
+    steps:
+      - uses: actions/checkout@v2
+      - name: Generate ED25519 key
+        run: |
+          mkdir -p ~/.ssh/
+          ssh-keygen -t ed25519 -P '' -f ~/.ssh/id_ed25519
+        shell: bash
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+        with:
+          limit-access-to-actor: false
+      # - name: Install and run Upterm
+      #   run: |
+      #     git clone https://github.com/owenthereal/upterm.git
+      #     cd upterm
+      #     go install ./cmd/upterm/...
+      #     upterm host --github-user ${{ github.actor }}
+      #   shell: bash
