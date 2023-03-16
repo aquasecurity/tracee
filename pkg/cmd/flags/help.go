@@ -64,3 +64,5 @@ func getHelpString(key string, newBinary bool) string {
 	}
 	return ""
 }
+
+// this is just a test
