@@ -12,7 +12,7 @@ jobs:
     name: Release X64 (Default)
     runs-on:
       [
-        "github-self-hosted_ami-0f66f3ab4856ffc3f_${{ github.event.number }}-${{ github.run_id }}_releasex64",
+        "github-self-hosted_ami-0f66f3ab4856ffc3f_${{ github.event.number }}-${{ github.run_id }}",
       ]
     permissions:
       contents: write
@@ -43,7 +43,7 @@ jobs:
       - release
     runs-on:
       [
-        "github-self-hosted_ami-0226a47b9804ee055_${{ github.event.number }}-${{ github.run_id }}_releasearm64",
+        "github-self-hosted_ami-0226a47b9804ee055_${{ github.event.number }}-${{ github.run_id }}",
       ]
     permissions:
       contents: write
