@@ -855,51 +855,92 @@ jobs:
         run: |
           DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-instrumentation-test.sh
   #
-  # Temporarily disabled as the AMI is being recreated (deleted by accident)
+  # FOCAL v4.19 (non CO-RE only)
   #
-  # #
-  # # FOCAL v4.19 (non CO-RE only)
-  # #
-  # focal419:
-  #   name: Focal 4.19 X64
-  #   needs:
-  #     - unit-tests
-  #     - verify-signatures
-  #     - verify-tools
-  #   env:
-  #     HOME: "/tmp/root"
-  #     GOPATH: "/tmp/go"
-  #     GOCACHE: "/tmp/go-cache"
-  #     GOROOT: "/usr/local/go"
-  #   runs-on:
-  #     [
-  #       "github-self-hosted_ami-0bab76ae5b7322b45_${{ github.event.number }}-${{ github.run_id }}_x64",
-  #     ]
-  #   steps:
-  #     - name: "Checkout"
-  #       uses: actions/checkout@v3
-  #       with:
-  #         submodules: true
-  #     - name: AWS Environment
-  #       run: |
-  #         dmidecode
-  #       # CORE
-  #     - name: "CORE: Kernel"
-  #       run: |
-  #         echo UNSUPPORTED
-  #     - name: "CORE: Network"
-  #       run: |
-  #         echo UNSUPPORTED
-  #     - name: "CORE: Instrumentation"
-  #       run: |
-  #         echo UNSUPPORTED
-  #       # NONCORE
-  #     - name: "NONCORE: Kernel"
-  #       run: |
-  #         DONTSLEEP=1 ISNONCORE=1 ./tests/kerneltest.sh
-  #     - name: "NONCORE Network"
-  #       run: |
-  #         echo UNSUPPORTED
-  #     - name: "NONCORE: Instrumentation"
-  #       run: |
-  #         echo UNSUPPORTED
+  focal419:
+    name: Focal 4.19 X64
+    needs:
+      - unit-tests
+      - verify-signatures
+      - verify-tools
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
+    runs-on:
+      [
+        "github-self-hosted_ami-06c844d8e084a6328_${{ github.event.number }}-${{ github.run_id }}_x64",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: AWS Environment
+        run: |
+          dmidecode
+        # CORE
+      - name: "CORE: Kernel"
+        run: |
+          echo UNSUPPORTED
+      - name: "CORE: Network"
+        run: |
+          echo UNSUPPORTED
+      - name: "CORE: Instrumentation"
+        run: |
+          echo UNSUPPORTED
+        # NONCORE
+      - name: "NONCORE: Kernel"
+        run: |
+          DONTSLEEP=1 ISNONCORE=1 ./tests/kerneltest.sh
+      - name: "NONCORE Network"
+        run: |
+          echo UNSUPPORTED
+      - name: "NONCORE: Instrumentation"
+        run: |
+          echo UNSUPPORTED
+  # ARM64
+  focal419-arm64:
+    name: Focal 4.19 ARM64
+    needs:
+      - unit-tests
+      - verify-signatures
+      - verify-tools
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
+    runs-on:
+      [
+        "github-self-hosted_ami-0956bf30569c0bce9_${{ github.event.number }}-${{ github.run_id }}_x64",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: AWS Environment
+        run: |
+          dmidecode
+        # CORE
+      - name: "CORE: Kernel"
+        run: |
+          echo UNSUPPORTED
+      - name: "CORE: Network"
+        run: |
+          echo UNSUPPORTED
+      - name: "CORE: Instrumentation"
+        run: |
+          echo UNSUPPORTED
+        # NONCORE
+      - name: "NONCORE: Kernel"
+        run: |
+          DONTSLEEP=1 ISNONCORE=1 TESTS="${{ env.ARM64_TESTS }}" ./tests/kerneltest.sh
+      - name: "NONCORE Network"
+        run: |
+          echo UNSUPPORTED
+      - name: "NONCORE: Instrumentation"
+        run: |
+          echo UNSUPPORTED
