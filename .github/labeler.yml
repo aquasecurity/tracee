@@ -31,6 +31,8 @@ area/kubernetes:
   - deploy/*
   - deploy/**/*
 area/logging:
+  - pkg/logger/*
+  - pkg/logger/**/*
   - pkg/errfmt/*
   - pkg/errfmt/**/*
 # area/network:
