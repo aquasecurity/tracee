@@ -22,7 +22,7 @@ on:
       - "**.h"
       - "**.go"
       - "**.sh"
-      - ".github/workflows/pr.yaml"
+      - "**/pr.yaml"
 concurrency:
   group: ${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -309,7 +309,142 @@ jobs:
       - name: "NONCORE: Instrumentation"
         run: |
           DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-instrumentation-test.sh
-
+  #
+  # AMZN2 5.10 (jammy userland with AMZN2 kernel)
+  #
+  amzn2510-core:
+    name: AMZN2 5.10 X64 CORE
+    needs:
+      - unit-tests
+      - verify-signatures
+      - verify-tools
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
+    runs-on:
+      [
+        "github-self-hosted_ami-0d099424e2075f1a4_${{ github.event.number }}-${{ github.run_id }}_x64c",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: AWS Environment
+        run: |
+          dmidecode
+        # CORE
+      - name: "CORE: Kernel"
+        run: |
+          DONTSLEEP=1 ISNONCORE=0 ./tests/kerneltest.sh
+      - name: "CORE: Network"
+        run: |
+          DONTSLEEP=1 ISNONCORE=0 ./tests/e2e-net-test.sh
+      - name: "CORE: Instrumentation"
+        run: |
+          DONTSLEEP=1 ISNONCORE=0 ./tests/e2e-instrumentation-test.sh
+  amzn2510:
+    name: AMZN2 5.10 X64
+    needs:
+      - unit-tests
+      - verify-signatures
+      - verify-tools
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
+    runs-on:
+      [
+        "github-self-hosted_ami-0d099424e2075f1a4_${{ github.event.number }}-${{ github.run_id }}_x64",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: AWS Environment
+        run: |
+          dmidecode
+        # NONCORE
+      - name: "NONCORE: Kernel"
+        run: |
+          DONTSLEEP=1 ISNONCORE=1 ./tests/kerneltest.sh
+      - name: "NONCORE: Network"
+        run: |
+          DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-net-test.sh
+      - name: "NONCORE: Instrumentation"
+        run: |
+          DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-instrumentation-test.sh
+  # ARM64
+  amzn2510-arm64-core:
+    name: AMZN2 5.10 ARM64 CORE
+    needs:
+      - unit-tests
+      - verify-signatures
+      - verify-tools
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
+    runs-on:
+      [
+        "github-self-hosted_ami-00c130a5b3b61db15_${{ github.event.number }}-${{ github.run_id }}_arm64c",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: AWS Environment
+        run: |
+          dmidecode
+        # CORE
+      - name: "CORE: Kernel"
+        run: |
+          DONTSLEEP=1 ISNONCORE=0 TESTS="${{ env.RHEL_ARM64_TESTS }}" ./tests/kerneltest.sh
+      - name: "CORE: Network"
+        run: |
+          DONTSLEEP=1 ISNONCORE=0 ./tests/e2e-net-test.sh
+      - name: "CORE: Instrumentation"
+        run: |
+          DONTSLEEP=1 ISNONCORE=0 ./tests/e2e-instrumentation-test.sh
+  amzn2510-arm64:
+    name: AMZN2 5.10 ARM64
+    needs:
+      - unit-tests
+      - verify-signatures
+      - verify-tools
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
+    runs-on:
+      [
+        "github-self-hosted_ami-00c130a5b3b61db15_${{ github.event.number }}-${{ github.run_id }}_arm64",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: AWS Environment
+        run: |
+          dmidecode
+        # NONCORE
+      - name: "NONCORE: Kernel"
+        run: |
+          DONTSLEEP=1 ISNONCORE=0 TESTS="${{ env.RHEL_ARM64_TESTS }}" ./tests/kerneltest.sh
+      - name: "NONCORE: Network"
+        run: |
+          DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-net-test.sh
+      - name: "NONCORE: Instrumentation"
+        run: |
+          DONTSLEEP=1 ISNONCORE=1 ./tests/e2e-instrumentation-test.sh
   #
   # FOCAL v5.4
   #
