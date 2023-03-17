@@ -752,6 +752,7 @@ test-integration: \
 			" \
 		-v \
 		-p 1 \
+		-count=1 \
 		./tests/integration/... \
 
 .PHONY: test-signatures
