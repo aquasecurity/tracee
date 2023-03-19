@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/IBM/fluent-forward-go v0.2.1
 	github.com/Masterminds/sprig/v3 v3.2.2
-	github.com/aquasecurity/libbpfgo v0.4.6-libbpf-1.1.0
+	github.com/aquasecurity/libbpfgo v0.4.6-libbpf-1.1.0.0.20230319164450-e424b7d07863
 	github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230109115933-5ede01b209e1
 	github.com/aquasecurity/tracee/types v0.0.0-20230316130841-a5905f0eb881
 	github.com/containerd/containerd v1.7.0
