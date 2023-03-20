@@ -383,7 +383,12 @@ func Test_EventFilters(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
-			policies, err := flags.PreparePolicies(tc.filterArgs)
+
+			filterMap, err := flags.PrepareFilterMapForFlags(tc.filterArgs)
+			require.NoError(t, err)
+
+			policies, err := flags.CreatePolicies(filterMap)
+
 			require.NoError(t, err)
 
 			eventChan := make(chan trace.Event, 1000)

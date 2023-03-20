@@ -20,7 +20,7 @@ import (
 )
 
 // This will only test failure cases since success cases are covered in the filter tests themselves
-func TestPrepareFilterPolicy(t *testing.T) {
+func TestPrepareFilterMapForFlags(t *testing.T) {
 	testCases := []struct {
 		testName      string
 		filters       []string
@@ -41,6 +41,35 @@ func TestPrepareFilterPolicy(t *testing.T) {
 			filters:       []string{fmt.Sprintf("%d:comm=bash", policy.MaxPolicies+1)},
 			expectedError: filters.InvalidPolicy(fmt.Sprintf("%d:comm=bash", policy.MaxPolicies+1)),
 		},
+		{
+			testName:      "invalid mntns 1",
+			filters:       []string{"mntns="},
+			expectedError: filters.InvalidExpression("mntns="),
+		},
+		{
+			testName:      "invalid - uid>=",
+			filters:       []string{"uid>="},
+			expectedError: filters.InvalidExpression("uid>="),
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			_, err := flags.PrepareFilterMapForFlags(tc.filters)
+			if tc.expectedError != nil {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tc.expectedError.Error())
+			}
+		})
+	}
+}
+
+// This will only test failure cases since success cases are covered in the filter tests themselves
+func TestCreatePolicies(t *testing.T) {
+	testCases := []struct {
+		testName      string
+		filters       []string
+		expectedError error
+	}{
 		{
 			testName:      "invalid argfilter 1",
 			filters:       []string{"open.args"},
@@ -110,11 +139,6 @@ func TestPrepareFilterPolicy(t *testing.T) {
 			testName:      "invalid filter type",
 			filters:       []string{"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=0"},
 			expectedError: flags.InvalidFilterOptionError("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=0"),
-		},
-		{
-			testName:      "invalid mntns 1",
-			filters:       []string{"mntns="},
-			expectedError: filters.InvalidExpression("mntns="),
 		},
 		{
 			testName:      "invalid mntns 2",
@@ -200,11 +224,6 @@ func TestPrepareFilterPolicy(t *testing.T) {
 		{
 			testName: "success - uid<0",
 			filters:  []string{"uid<0"},
-		},
-		{
-			testName:      "invalid - uid>=",
-			filters:       []string{"uid>="},
-			expectedError: filters.InvalidExpression("uid>="),
 		},
 		{
 			testName: "container",
@@ -388,7 +407,10 @@ func TestPrepareFilterPolicy(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			_, err := flags.PreparePolicies(tc.filters)
+			filterMap, err := flags.PrepareFilterMapForFlags(tc.filters)
+			assert.NoError(t, err)
+
+			_, err = flags.CreatePolicies(filterMap)
 			if tc.expectedError != nil {
 				require.Error(t, err)
 				assert.ErrorContains(t, err, tc.expectedError.Error())
