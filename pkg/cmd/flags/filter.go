@@ -115,7 +115,7 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0', '/tmp*'
 `
 }
 
-func PrepareFilterMapForFlags(filtersArr []string) (FilterMap, error) {
+func PrepareFilterMapFromFlags(filtersArr []string) (FilterMap, error) {
 	// parse and store filters by policy
 	filterMap := make(FilterMap)
 	for _, filter := range filtersArr {

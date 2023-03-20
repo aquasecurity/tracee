@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/signal"
 	"syscall"
@@ -54,6 +55,10 @@ func main() {
 
 			// Rego command line flags
 
+			if c.StringSlice("policy") != nil && c.StringSlice("filter") != nil {
+				return errors.New("policy and filter flags cannot be used together")
+			}
+
 			rego, err := flags.PrepareRego(c.StringSlice("rego"))
 			if err != nil {
 				return err
@@ -104,6 +109,11 @@ func main() {
 				Aliases: []string{"l"},
 				Value:   false,
 				Usage:   "list tracable events",
+			},
+			&cli.StringSliceFlag{
+				Name:    "policy",
+				Aliases: []string{"p"},
+				Usage:   "path to a policy or directory with policies",
 			},
 			&cli.StringSliceFlag{
 				Name:    "filter",

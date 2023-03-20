@@ -1,0 +1,10 @@
+name: context_comm
+description: traces openat done by ls
+scope: 
+  - global
+defaultAction: log
+rules:
+  - event: openat
+    filter:
+      - comm=ls
+

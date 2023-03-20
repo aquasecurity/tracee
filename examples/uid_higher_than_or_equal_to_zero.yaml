@@ -1,0 +1,9 @@
+name: uid_higher_than_or_equal_to_zero
+description: traces read and write syscall for uids higher than or equal to 0
+scope: 
+  - uid>=0
+defaultAction: log
+rules:
+  - event: read
+  - event: write
+

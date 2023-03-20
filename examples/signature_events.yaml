@@ -1,0 +1,37 @@
+name: signature_events
+description: traces all signature events
+defaultAction: log
+scope:
+  - global
+rules:
+  - event: stdio_over_socket
+  - event: k8s_api_connection
+  - event: aslr_inspection
+  - event: proc_mem_code_injection
+  - event: docker_abuse   
+  - event: scheduled_task_mod     
+  - event: ld_preload     
+  - event: cgroup_notify_on_release
+  - event: default_loader_mod     
+  - event: sudoers_modification   
+  - event: sched_debug_recon      
+  - event: system_request_key_mod 
+  - event: cgroup_release_agent   
+  - event: rcd_modification       
+  - event: core_pattern_modification
+  - event: proc_kcore_read
+  - event: proc_mem_access
+  - event: hidden_file_created    
+  - event: anti_debugging 
+  - event: ptrace_code_injection  
+  - event: process_vm_write_inject
+  - event: disk_mount     
+  - event: dynamic_code_loading   
+  - event: fileless_execution     
+  - event: illegitimate_shell     
+  - event: kernel_module_loading  
+  - event: k8s_cert_theft 
+  - event: proc_fops_hooking      
+  - event: syscall_hooking
+  - event: dropped_executable
+

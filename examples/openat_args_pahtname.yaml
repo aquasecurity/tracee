@@ -1,0 +1,10 @@
+name: openat_args_pathname
+description: traces openat under /tmp/*
+scope: 
+  - global
+defaultAction: log
+rules:
+  - event: openat
+    filter:
+      - args.pathname=/tmp*
+

@@ -1,0 +1,13 @@
+name: pid_equal
+description: traces read and write syscalls for pids 1000, and 2000
+scope: 
+  - global
+defaultAction: log
+rules:
+  - event: read
+    filter: 
+      - pid=1000
+  - event: write
+    filter:
+      - pid=2000
+
