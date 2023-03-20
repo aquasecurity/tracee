@@ -384,7 +384,7 @@ func Test_EventFilters(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 
-			filterMap, err := flags.PrepareFilterMapForFlags(tc.filterArgs)
+			filterMap, err := flags.PrepareFilterMapFromFlags(tc.filterArgs)
 			require.NoError(t, err)
 
 			policies, err := flags.CreatePolicies(filterMap)

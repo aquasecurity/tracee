@@ -1,0 +1,9 @@
+name: new_pids
+description: traces openat and security_file_open for new pids
+scope: 
+  - pid=new
+defaultAction: log
+rules:
+  - event: openat
+  - event: security_file_open
+

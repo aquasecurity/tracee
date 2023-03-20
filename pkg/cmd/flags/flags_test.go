@@ -20,7 +20,7 @@ import (
 )
 
 // This will only test failure cases since success cases are covered in the filter tests themselves
-func TestPrepareFilterMapForFlags(t *testing.T) {
+func TestPrepareFilterMapFromFlags(t *testing.T) {
 	testCases := []struct {
 		testName      string
 		filters       []string
@@ -54,7 +54,7 @@ func TestPrepareFilterMapForFlags(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			_, err := flags.PrepareFilterMapForFlags(tc.filters)
+			_, err := flags.PrepareFilterMapFromFlags(tc.filters)
 			if tc.expectedError != nil {
 				require.Error(t, err)
 				assert.ErrorContains(t, err, tc.expectedError.Error())
@@ -407,7 +407,7 @@ func TestCreatePolicies(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			filterMap, err := flags.PrepareFilterMapForFlags(tc.filters)
+			filterMap, err := flags.PrepareFilterMapFromFlags(tc.filters)
 			assert.NoError(t, err)
 
 			_, err = flags.CreatePolicies(filterMap)
