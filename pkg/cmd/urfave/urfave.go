@@ -103,10 +103,16 @@ func GetTraceeRunner(c *cli.Context, version string, newBinary bool) (cmd.Runner
 
 	// Filter command line flags
 
-	policies, err := flags.PreparePolicies(c.StringSlice("filter"))
+	filterMap, err := flags.PrepareFilterMapForFlags(c.StringSlice("filter"))
 	if err != nil {
 		return runner, err
 	}
+
+	policies, err := flags.CreatePolicies(filterMap)
+	if err != nil {
+		return runner, err
+	}
+
 	cfg.Policies = policies
 
 	// Container information printer flag
