@@ -1,0 +1,8 @@
+name: new_containers
+description: This policy will be applied on any new container created in the system
+scope: 
+  - container=new
+defaultAction: log
+rules:
+  - event: container_create
+  - event: security_file_open

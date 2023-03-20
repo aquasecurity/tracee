@@ -1,0 +1,12 @@
+name: pid_lower_than_1000
+description: This policy traces read and write syscalls for pids lower than 1000
+scope: 
+  - global
+defaultAction: log
+rules:
+  - event: read
+    filter: 
+      - pid<1000
+  - event: write
+    filter:
+      - pid<1000

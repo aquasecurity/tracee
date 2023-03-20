@@ -1,0 +1,7 @@
+name: not_containers
+description: This policy trace anti_debugging in the host
+scope: 
+  - "!container"
+defaultAction: log
+rules:
+  - event: anti_debugging

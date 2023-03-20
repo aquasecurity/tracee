@@ -1,7 +1,12 @@
 package urfave
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
+
 	cli "github.com/urfave/cli/v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 
@@ -103,9 +108,23 @@ func GetTraceeRunner(c *cli.Context, version string, newBinary bool) (cmd.Runner
 
 	// Filter command line flags
 
-	filterMap, err := flags.PrepareFilterMapForFlags(c.StringSlice("filter"))
-	if err != nil {
-		return runner, err
+	var filterMap flags.FilterMap
+
+	if len(c.StringSlice("policy")) > 0 {
+		policies, err := getPolicies(c.StringSlice("policy"))
+		if err != nil {
+			return runner, err
+		}
+
+		filterMap, err = flags.PrepareFilterMapForPolicies(policies)
+		if err != nil {
+			return runner, err
+		}
+	} else {
+		filterMap, err = flags.PrepareFilterMapForFlags(c.StringSlice("filter"))
+		if err != nil {
+			return runner, err
+		}
 	}
 
 	policies, err := flags.CreatePolicies(filterMap)
@@ -215,4 +234,75 @@ func GetGPTDocsRunner(k string, t float64, m int, e []string) (
 		OpenAIMaxTokens:   m,
 		GivenEvents:       e,
 	}, nil
+}
+
+func getPolicies(paths []string) ([]flags.PolicyFile, error) {
+	policies := make([]flags.PolicyFile, 0)
+
+	for _, path := range paths {
+		if path == "" {
+			return nil, errfmt.Errorf("policy path cannot be empty: %s", path)
+		}
+
+		path, err := filepath.Abs(path)
+		if err != nil {
+			return nil, err
+		}
+
+		fileInfo, err := os.Stat(path)
+		if err != nil {
+			return nil, err
+		}
+
+		if !fileInfo.IsDir() {
+			p, err := getPoliciesFromFile(path)
+			if err != nil {
+				return nil, err
+			}
+			policies = append(policies, p)
+
+			continue
+		}
+
+		files, err := os.ReadDir(path)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, file := range files {
+			if file.IsDir() {
+				continue
+			}
+
+			// TODO: support json
+			if !strings.HasSuffix(file.Name(), ".yaml") {
+				continue
+			}
+
+			policy, err := getPoliciesFromFile(filepath.Join(path, file.Name()))
+			if err != nil {
+				return nil, err
+			}
+
+			policies = append(policies, policy)
+		}
+	}
+
+	return policies, nil
+}
+
+func getPoliciesFromFile(filePath string) (flags.PolicyFile, error) {
+	var p flags.PolicyFile
+
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return p, err
+	}
+
+	err = yaml.Unmarshal(data, &p)
+	if err != nil {
+		return p, err
+	}
+
+	return p, nil
 }

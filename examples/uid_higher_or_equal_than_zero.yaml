@@ -1,0 +1,8 @@
+name: uid_higher_or_equal_than_zero
+description: This policy traces read and write syscall for uids higher or equal than 0
+scope: 
+  - uid>=1000
+defaultAction: log
+rules:
+  - event: read
+  - event: write

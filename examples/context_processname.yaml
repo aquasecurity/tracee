@@ -1,0 +1,9 @@
+name: context_processname
+description: This policy traces openat done by ls
+scope: 
+  - global
+defaultAction: log
+rules:
+  - event: openat
+    filter:
+      - processName=ls
