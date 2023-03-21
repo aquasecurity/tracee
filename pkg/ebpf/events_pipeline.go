@@ -252,10 +252,11 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				Syscall:             syscall,
 			}
 
-			// base events for derived ones should be filtered in later stage
-			if _, ok := t.eventDerivations[eventId]; !ok {
-				if !t.shouldProcessEvent(&evt) {
-					_ = t.stats.EventsFiltered.Increment()
+			if !t.shouldProcessEvent(&evt) {
+				_ = t.stats.EventsFiltered.Increment()
+				// we can stop processing the event if it doesn't have derivatives.
+				// otherwise, since it has MatchedPolicies==0 it won't be emitted later anyway.
+				if _, ok := t.eventDerivations[eventId]; !ok {
 					continue
 				}
 			}
