@@ -57,6 +57,7 @@ func (e *crioEnricher) Get(containerId string, ctx context.Context) (ContainerMe
 	}
 	metadata.Name = resp.Status.Metadata.Name
 	metadata.Image = resp.Status.Image.Image
+	metadata.ImageDigest = resp.Status.ImageRef
 
 	return metadata, nil
 }

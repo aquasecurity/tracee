@@ -61,6 +61,7 @@ func (e *containerdEnricher) Get(containerId string, ctx context.Context) (Conta
 			continue
 		} else {
 			imageName := container.Image
+			imageDigest := container.Image
 			image := container.Image
 			//container may not have image name as id, if so fetch from the sha256 id
 			if strings.HasPrefix(image, "sha256:") {
@@ -71,9 +72,13 @@ func (e *containerdEnricher) Get(containerId string, ctx context.Context) (Conta
 				})
 				if err != nil {
 					imageName = image
+					imageDigest = image
 				} else {
 					if len(imageInfo.Image.RepoTags) > 0 {
 						imageName = imageInfo.Image.RepoTags[0]
+					}
+					if len(imageInfo.Image.RepoDigests) > 0 {
+						imageDigest = imageInfo.Image.RepoTags[0]
 					}
 				}
 			}
@@ -93,6 +98,7 @@ func (e *containerdEnricher) Get(containerId string, ctx context.Context) (Conta
 				metadata.Name = labels[ContainerNameLabel]
 			}
 			metadata.Image = imageName
+			metadata.ImageDigest = imageDigest
 
 			return metadata, nil
 		}

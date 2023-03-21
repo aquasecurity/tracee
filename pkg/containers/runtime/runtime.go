@@ -8,6 +8,7 @@ type ContainerMetadata struct {
 	ContainerId string
 	Name        string
 	Image       string
+	ImageDigest string
 	Pod         PodMetadata
 }
 
