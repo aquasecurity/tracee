@@ -17,7 +17,9 @@ type filterFlag struct {
 	full              string
 	filterName        string
 	operatorAndValues string
-	policyIdx         int
+	// policy
+	policyIdx  int
+	policyName string
 }
 
 func parseFilterFlag(flag string) (*filterFlag, error) {

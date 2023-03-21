@@ -475,7 +475,7 @@ func TestSymbolsCollision(t *testing.T) {
 			}
 
 			ps := policy.NewPolicies()
-			err := ps.Set(0, p)
+			err := ps.Set(p)
 			require.NoError(t, err)
 
 			// Pick derive function from mocked tests

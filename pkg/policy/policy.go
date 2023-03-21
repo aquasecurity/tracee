@@ -21,6 +21,7 @@ const (
 
 type Policy struct {
 	ID                int
+	Name              string
 	EventsToTrace     map[events.ID]string
 	UIDFilter         *filters.BPFUIntFilter[uint32]
 	PIDFilter         *filters.BPFUIntFilter[uint32]
@@ -43,6 +44,7 @@ type Policy struct {
 func NewPolicy() *Policy {
 	return &Policy{
 		ID:                0,
+		Name:              "",
 		EventsToTrace:     map[events.ID]string{},
 		UIDFilter:         filters.NewBPFUInt32Filter(UIDFilterMap),
 		PIDFilter:         filters.NewBPFUInt32Filter(PIDFilterMap),

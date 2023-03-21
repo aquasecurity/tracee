@@ -137,8 +137,8 @@ func (ps *Policies) Add(p *Policy) error {
 	return nil
 }
 
-func (ps *Policies) Set(id int, p *Policy) error {
-	return ps.set(id, p)
+func (ps *Policies) Set(p *Policy) error {
+	return ps.set(p.ID, p)
 }
 
 // Delete deletes a policy from Policies.

@@ -145,7 +145,7 @@ func CreatePolicies(filterMap FilterMap) (*policy.Policies, error) {
 	}
 
 	policies := policy.NewPolicies()
-	for policyIdx, fsFlags := range filterMap {
+	for _, fsFlags := range filterMap {
 		p := policy.NewPolicy()
 		eventFilter := cliFilter{
 			Equal:    []string{},
@@ -157,6 +157,9 @@ func CreatePolicies(filterMap FilterMap) (*policy.Policies, error) {
 		}
 
 		for _, filterFlag := range fsFlags {
+			p.ID = filterFlag.policyIdx
+			p.Name = filterFlag.policyName
+
 			if strings.Contains(filterFlag.full, ".retval") {
 				err := p.RetFilter.Parse(filterFlag.filterName, filterFlag.operatorAndValues, eventsNameToID)
 				if err != nil {
@@ -337,7 +340,7 @@ func CreatePolicies(filterMap FilterMap) (*policy.Policies, error) {
 			return nil, err
 		}
 
-		err = policies.Set(policyIdx, p)
+		err = policies.Set(p)
 		if err != nil {
 			logger.Warnw("Setting policy", "error", err)
 		}
