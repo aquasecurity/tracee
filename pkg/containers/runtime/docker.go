@@ -75,6 +75,11 @@ func (e *dockerEnricher) Get(containerId string, ctx context.Context) (Container
 	imageName := image.RepoTags[0]
 	metadata.Image = imageName
 
+	if len(image.RepoDigests) == 0 {
+		return metadata, nil
+	}
+	metadata.ImageDigest = image.RepoDigests[0]
+
 	return metadata, nil
 }
 
