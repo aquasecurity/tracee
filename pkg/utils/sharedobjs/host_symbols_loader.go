@@ -4,6 +4,7 @@ import (
 	"debug/elf"
 
 	"github.com/hashicorp/golang-lru/simplelru"
+	"golang.org/x/exp/maps"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -44,22 +45,24 @@ func (soLoader *HostSymbolsLoader) GetDynamicSymbols(soInfo ObjInfo) (map[string
 
 // GetExportedSymbols try to get shared objects exported symbols from lru, and if fails read needed information
 // from ELF file.
+// The returned map is part of a cache, so if the user wants to modify it he should copy it and modify it there.
 func (soLoader *HostSymbolsLoader) GetExportedSymbols(soInfo ObjInfo) (map[string]bool, error) {
 	syms, err := soLoader.loadSOSymbols(soInfo)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	return copyMap(syms.Exported), nil
+	return syms.Exported, nil
 }
 
 // GetImportedSymbols try to get shared objects imported symbols from lru, and if fails read needed information
 // from ELF file.
+// The returned map is part of a cache, so if the user wants to modify it he should copy it and modify it there.
 func (soLoader *HostSymbolsLoader) GetImportedSymbols(soInfo ObjInfo) (map[string]bool, error) {
 	syms, err := soLoader.loadSOSymbols(soInfo)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	return copyMap(syms.Imported), nil
+	return syms.Imported, nil
 }
 
 func (soLoader *HostSymbolsLoader) loadSOSymbols(soInfo ObjInfo) (*dynamicSymbols, error) {
@@ -140,8 +143,6 @@ func parseDynamicSymbols(dynamicSymbols []elf.Symbol) *dynamicSymbols {
 
 func copyMap(source map[string]bool) map[string]bool {
 	copiedMap := make(map[string]bool, len(source))
-	for k, v := range source {
-		copiedMap[k] = v
-	}
+	maps.Copy(copiedMap, source)
 	return copiedMap
 }
