@@ -95,7 +95,7 @@ func initSymbolsLoadedEventGenerator(
 		}
 	}
 
-	cacheLRU, _ := lru.New(1024)
+	cacheLRU, _ := lru.New(10240)
 
 	return &symbolsLoadedEventGenerator{
 		soLoader:            soLoader,
