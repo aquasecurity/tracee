@@ -163,13 +163,13 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 		},
 	}
 	pid := 1
-	baseLogger := logger.Base()
+	baseLogger := logger.Current()
 
 	t.Run("Happy flow", func(t *testing.T) {
 		for _, testCase := range happyFlowTestCases {
 			t.Run(testCase.name, func(t *testing.T) {
 				errChan := setMockLogger(logger.DebugLevel)
-				defer logger.SetBase(baseLogger)
+				defer logger.SetLogger(baseLogger)
 
 				mockLoader := initLoaderMock(false)
 				mockLoader.addSOSymbols(testCase.loadingSO)
@@ -195,7 +195,7 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 	t.Run("Errors flow", func(t *testing.T) {
 		t.Run("Debug", func(t *testing.T) {
 			errChan := setMockLogger(logger.DebugLevel)
-			defer logger.SetBase(baseLogger)
+			defer logger.SetLogger(baseLogger)
 			mockLoader := initLoaderMock(true)
 			gen := initSymbolsLoadedEventGenerator(mockLoader, nil, nil)
 
@@ -215,7 +215,7 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 		})
 		t.Run("No debug", func(t *testing.T) {
 			errChan := setMockLogger(logger.WarnLevel)
-			defer logger.SetBase(baseLogger)
+			defer logger.SetLogger(baseLogger)
 			mockLoader := initLoaderMock(true)
 			gen := initSymbolsLoadedEventGenerator(mockLoader, nil, nil)
 
@@ -240,14 +240,13 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 func setMockLogger(l logger.Level) <-chan []byte {
 	mw, errChan := newMockWriter()
 	mockLogger := logger.NewLogger(
-		&logger.LoggerConfig{
-			Writer:    mw,
-			Level:     l,
-			Encoder:   logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
-			Aggregate: false,
+		logger.LoggerConfig{
+			Writer:  mw,
+			Level:   l,
+			Encoder: logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
 		},
 	)
-	logger.SetBase(mockLogger)
+	logger.SetLogger(mockLogger)
 	return errChan
 }
 

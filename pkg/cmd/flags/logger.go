@@ -30,7 +30,7 @@ func InvalidLogOption(opt string) error {
 	return errfmt.Errorf("invalid log option: %s, use '--log help' for more info", opt)
 }
 
-func PrepareLogger(logOptions []string) (*logger.LoggerConfig, error) {
+func PrepareLogger(logOptions []string) (logger.LoggingConfig, error) {
 	var (
 		agg      bool
 		interval = logger.DefaultFlushInterval
@@ -45,12 +45,12 @@ func PrepareLogger(logOptions []string) (*logger.LoggerConfig, error) {
 			vals := strings.Split(opt, ":")
 
 			if len(vals) == 1 || vals[1] == "" {
-				return nil, InvalidLogOption(opt)
+				return logger.LoggingConfig{}, InvalidLogOption(opt)
 			}
 
 			w, err = createFile(vals[1])
 			if err != nil {
-				return nil, err
+				return logger.LoggingConfig{}, err
 			}
 
 			continue
@@ -61,22 +61,22 @@ func PrepareLogger(logOptions []string) (*logger.LoggerConfig, error) {
 			if !strings.HasSuffix(opt, "aggregate") {
 				vals := strings.Split(opt, ":")
 				if len(vals) != 2 || len(vals[1]) <= 1 {
-					return nil, InvalidLogOption(opt)
+					return logger.LoggingConfig{}, InvalidLogOption(opt)
 				}
 
 				// handle only seconds and minutes
 				timeSuffix := vals[1][len(vals[1])-1:][0]
 				if timeSuffix != 's' && timeSuffix != 'm' {
-					return nil, InvalidLogOption(opt)
+					return logger.LoggingConfig{}, InvalidLogOption(opt)
 				}
 				prevByte := vals[1][len(vals[1])-2:][0]
 				if timeSuffix == 's' && !unicode.IsDigit(rune(prevByte)) {
-					return nil, InvalidLogOption(opt)
+					return logger.LoggingConfig{}, InvalidLogOption(opt)
 				}
 
 				interval, err = time.ParseDuration(vals[1])
 				if err != nil {
-					return nil, InvalidLogOption(opt)
+					return logger.LoggingConfig{}, InvalidLogOption(opt)
 				}
 			}
 			agg = true
@@ -95,21 +95,24 @@ func PrepareLogger(logOptions []string) (*logger.LoggerConfig, error) {
 		case "fatal":
 			lvl = logger.FatalLevel
 		default:
-			return nil, InvalidLogOption(opt)
+			return logger.LoggingConfig{}, InvalidLogOption(opt)
 		}
 	}
 
-	cfg := &logger.LoggerConfig{
-		Writer:        w,
-		Level:         lvl,
-		Aggregate:     agg,
-		FlushInterval: interval,
+	loggerCfg := logger.LoggerConfig{
+		Writer: w,
+		Level:  lvl,
 	}
 	if lvl == logger.DebugLevel {
-		cfg.Encoder = logger.NewJSONEncoder(logger.NewDevelopmentEncoderConfig())
+		loggerCfg.Encoder = logger.NewJSONEncoder(logger.NewDevelopmentEncoderConfig())
 	} else {
-		cfg.Encoder = logger.NewJSONEncoder(logger.NewProductionEncoderConfig())
+		loggerCfg.Encoder = logger.NewJSONEncoder(logger.NewProductionEncoderConfig())
 	}
 
-	return cfg, nil
+	llogger := logger.NewLogger(loggerCfg)
+	return logger.LoggingConfig{
+		Logger:        llogger,
+		Aggregate:     agg,
+		FlushInterval: interval,
+	}, nil
 }

@@ -23,22 +23,6 @@ import (
 	"github.com/aquasecurity/tracee/types/detect"
 )
 
-func init() {
-	// Avoiding to override package-level logger
-	// when it's already set by logger environment variables
-	if !logger.IsSetFromEnv() {
-		// Logger Setup
-		logger.Init(
-			&logger.LoggerConfig{
-				Writer:    os.Stderr,
-				Level:     logger.InfoLevel,
-				Encoder:   logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
-				Aggregate: false,
-			},
-		)
-	}
-}
-
 const (
 	signatureBufferFlag = "sig-buffer"
 )
@@ -48,6 +32,9 @@ func main() {
 		Name:  "tracee-rules",
 		Usage: "A rule engine for Runtime Security",
 		Action: func(c *cli.Context) error {
+
+			// Logger Setup
+			logger.Init(logger.NewDefaultLoggingConfig())
 
 			// Capabilities command line flags
 
