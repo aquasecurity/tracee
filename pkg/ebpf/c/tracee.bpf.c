@@ -3736,8 +3736,8 @@ int BPF_KPROBE(trace_security_inode_rename)
     struct dentry *new_dentry = (struct dentry *) PT_REGS_PARM4(ctx);
 
     void *old_dentry_path = get_dentry_path_str(old_dentry);
-    void *new_dentry_path = get_dentry_path_str(new_dentry);
     save_str_to_buf(p.event, old_dentry_path, 0);
+    void *new_dentry_path = get_dentry_path_str(new_dentry);
     save_str_to_buf(p.event, new_dentry_path, 1);
     return events_perf_submit(&p, SECURITY_INODE_RENAME, 0);
 }
