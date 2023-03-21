@@ -21,24 +21,6 @@ import (
 	"github.com/aquasecurity/tracee/types/detect"
 )
 
-func init() {
-	// Avoiding to override package-level logger
-	// when it's already set by logger environment variables
-	if !logger.IsSetFromEnv() {
-		// Logger Setup
-		logger.Init(
-			&logger.LoggerConfig{
-				Writer:    os.Stderr,
-				Level:     logger.InfoLevel,
-				Encoder:   logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
-				Aggregate: false,
-			},
-		)
-	}
-
-	initialize.SetLibbpfgoCallbacks()
-}
-
 var version string
 
 func main() {
@@ -50,6 +32,8 @@ func main() {
 			if c.NArg() > 0 {
 				return cli.ShowAppHelp(c) // no args, only flags supported
 			}
+
+			logger.Init(logger.NewDefaultLoggingConfig())
 
 			flags.PrintAndExitIfHelp(c, true)
 
@@ -81,6 +65,8 @@ func main() {
 				cmd.PrintEventList(true) // list events
 				return nil
 			}
+
+			initialize.SetLibbpfgoCallbacks()
 
 			runner, err := urfave.GetTraceeRunner(c, version, true)
 			if err != nil {

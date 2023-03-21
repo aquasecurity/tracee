@@ -177,6 +177,7 @@ func checkNewContainers(t *testing.T, gotOutput *eventOutput) {
 	containerIdBytes, err := forkAndExecFunction(doDockerRun)
 	require.NoError(t, err)
 	containerId := strings.TrimSuffix(string(containerIdBytes), "\n")
+	require.NotEmpty(t, containerId)
 	containerIds := []string{}
 	output := gotOutput.getEventsCopy()
 	for _, evt := range output {

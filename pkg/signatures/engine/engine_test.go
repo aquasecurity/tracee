@@ -313,16 +313,16 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		var logBuf []byte
 		loggerBuf := bytes.NewBuffer(logBuf)
-		if !logger.IsSetFromEnv() {
-			logger.Init(
-				&logger.LoggerConfig{
-					Writer:    loggerBuf,
-					Level:     logger.InfoLevel,
-					Encoder:   logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
-					Aggregate: false,
-				},
-			)
-		}
+		logger.Init(
+			logger.LoggingConfig{
+				Logger: logger.NewLogger(logger.LoggerConfig{
+					Writer:  loggerBuf,
+					Level:   logger.InfoLevel,
+					Encoder: logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
+				}),
+				Aggregate: false,
+			},
+		)
 
 		t.Run(tc.name, func(t *testing.T) {
 			defer func() {
