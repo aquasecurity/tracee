@@ -279,18 +279,18 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 
 // computePolicies iterates through the policies that do the filtering in user space, checking whether an event should be considered.
 // If it should not, it sets the respective offset to 0.
-// Finally it returns the bitmask of computed policies.
-func (t *Tracee) computePolicies(event *trace.Event) uint64 {
+// Finally it returns computed policies and the names of the policies that matched.
+func (t *Tracee) computePolicies(event *trace.Event) (uint64, []string) {
 	eventID := events.ID(event.EventID)
-	origMatchedPolicies := event.MatchedPolicies
 	matchedPolicies := event.MatchedPolicies
+	matchedPoliciesNames := []string{}
 
 	for p := range t.config.Policies.Map() {
 		bitOffset := uint(p.ID)
 
 		// Events submitted with matching policies.
 		// The policy must have its bit cleared when it does not match.
-		if !utils.HasBit(origMatchedPolicies, bitOffset) {
+		if !utils.HasBit(matchedPolicies, bitOffset) {
 			continue
 		}
 
@@ -333,15 +333,18 @@ func (t *Tracee) computePolicies(event *trace.Event) uint64 {
 			utils.ClearBit(&matchedPolicies, bitOffset)
 			continue
 		}
+
+		// as we reached here, the policy matched
+		matchedPoliciesNames = append(matchedPoliciesNames, p.Name)
 	}
 
-	return matchedPolicies
+	return matchedPolicies, matchedPoliciesNames
 }
 
 // shouldProcessEvent decides whether or not to drop an event before further processing it
 func (t *Tracee) shouldProcessEvent(event *trace.Event) bool {
 	// As we don't do all the filtering on the ebpf side, we have to update MatchedPolicies
-	event.MatchedPolicies = t.computePolicies(event)
+	event.MatchedPolicies, event.MatchedPoliciesNames = t.computePolicies(event)
 	return event.MatchedPolicies != 0
 }
 
