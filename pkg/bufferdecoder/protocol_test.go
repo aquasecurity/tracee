@@ -22,7 +22,7 @@ func TestContextSize(t *testing.T) {
 func TestChunkMetaSize(t *testing.T) {
 	var v ChunkMeta
 	size := int(unsafe.Sizeof(v))
-	assert.Equal(t, size-11, int(v.GetSizeBytes()))
+	assert.Equal(t, size-7, int(v.GetSizeBytes()))
 }
 
 func TestVfsWriteMetaSize(t *testing.T) {
@@ -34,7 +34,13 @@ func TestVfsWriteMetaSize(t *testing.T) {
 func TestKernelModuleMetaSize(t *testing.T) {
 	var v KernelModuleMeta
 	size := int(unsafe.Sizeof(v))
-	assert.Equal(t, size-8, int(v.GetSizeBytes()))
+	assert.Equal(t, size-4, int(v.GetSizeBytes()))
+}
+
+func TestBpfObjectMetaSize(t *testing.T) {
+	var v BpfObjectMeta
+	size := int(unsafe.Sizeof(v))
+	assert.Equal(t, size, int(v.GetSizeBytes()))
 }
 
 func TestMprotectWriteMetaSize(t *testing.T) {

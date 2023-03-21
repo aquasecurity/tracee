@@ -300,6 +300,7 @@ const (
 	CaptureMem
 	CapturePcap
 	CaptureNetPacket
+	CaptureBpf
 )
 
 // Signature events
@@ -5943,6 +5944,19 @@ var Definitions = eventDefinitions{
 			ID32Bit:  sys32undefined,
 			Name:     "capture_mem",
 			Internal: true,
+			Dependencies: dependencies{
+				TailCalls: []TailCall{
+					{MapName: "prog_array", MapIndexes: []uint32{tailSendBin}, ProgName: "send_bin"},
+				},
+			},
+		},
+		CaptureBpf: {
+			ID32Bit:  sys32undefined,
+			Name:     "capture_bpf",
+			Internal: true,
+			Probes: []probeDependency{
+				{Handle: probes.SecurityBPF, Required: true},
+			},
 			Dependencies: dependencies{
 				TailCalls: []TailCall{
 					{MapName: "prog_array", MapIndexes: []uint32{tailSendBin}, ProgName: "send_bin"},

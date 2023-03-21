@@ -1,11 +1,13 @@
 package ebpf
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -66,6 +68,7 @@ func (t *Tracee) processFileWrites(ctx context.Context) {
 			filename := ""
 			metaBuffDecoder := bufferdecoder.New(meta.Metadata[:])
 			var kernelModuleMeta bufferdecoder.KernelModuleMeta
+			var bpfObjectMeta bufferdecoder.BpfObjectMeta
 			if meta.BinType == bufferdecoder.SendVfsWrite {
 				var vfsMeta bufferdecoder.VfsWriteMeta
 				err = metaBuffDecoder.DecodeVfsWriteMeta(&vfsMeta)
@@ -106,6 +109,18 @@ func (t *Tracee) processFileWrites(ctx context.Context) {
 				if kernelModuleMeta.Pid != 0 {
 					filename = fmt.Sprintf("%s.pid-%d", filename, kernelModuleMeta.Pid)
 				}
+			} else if meta.BinType == bufferdecoder.SendBpfObject {
+				err = metaBuffDecoder.DecodeBpfObjectMeta(&bpfObjectMeta)
+				if err != nil {
+					t.handleError(err)
+					continue
+				}
+				bpfName := string(bytes.TrimRight(bpfObjectMeta.Name[:], "\x00"))
+				filename = fmt.Sprintf("bpf.name-%s", bpfName)
+				if bpfObjectMeta.Pid != 0 {
+					filename = fmt.Sprintf("%s.pid-%d", filename, bpfObjectMeta.Pid)
+				}
+				filename = fmt.Sprintf("%s.%d", filename, bpfObjectMeta.Rand)
 			} else {
 				t.handleError(errfmt.Errorf("unknown binary type: %d", meta.BinType))
 				continue
@@ -156,16 +171,24 @@ func (t *Tracee) processFileWrites(ctx context.Context) {
 				continue
 			}
 			// Rename the file to add hash when last chunk was received
-			if meta.BinType == bufferdecoder.SendKernelModule {
-				if uint64(meta.Size)+meta.Off == kernelModuleMeta.Size {
-					fileHash, _ := t.computeOutFileHash(fullname)
-					err := utils.RenameAt(t.outDir, fullname, t.outDir, fullname+"."+fileHash)
-					if err != nil {
-						t.handleError(err)
-						continue
-					}
+			if meta.BinType == bufferdecoder.SendKernelModule && uint32(meta.Size)+uint32(meta.Off) == kernelModuleMeta.Size {
+				fileHash, _ := t.computeOutFileHash(fullname)
+				err := utils.RenameAt(t.outDir, fullname, t.outDir, fullname+"."+fileHash)
+				if err != nil {
+					t.handleError(err)
+					continue
+				}
+			} else if meta.BinType == bufferdecoder.SendBpfObject && (uint32(meta.Size)+uint32(meta.Off)) == bpfObjectMeta.Size {
+				fileHash, _ := t.computeOutFileHash(fullname)
+				// Delete the random int used to differentiate files
+				dotIndex := strings.LastIndex(fullname, ".")
+				err := utils.RenameAt(t.outDir, fullname, t.outDir, fullname[:dotIndex]+"."+fileHash)
+				if err != nil {
+					t.handleError(err)
+					continue
 				}
 			}
+
 		case lost := <-t.lostWrChannel:
 			// When terminating tracee-ebpf the lost channel receives multiple "0 lost events" events.
 			// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:

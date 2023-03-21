@@ -12,6 +12,7 @@ const (
 	SendVfsWrite BinType = iota + 1
 	SendMprotect
 	SendKernelModule
+	SendBpfObject
 )
 
 // PLEASE NOTE, YOU MUST UPDATE THE DECODER IF ANY CHANGE TO THIS STRUCT IS DONE.
@@ -53,13 +54,13 @@ func (Context) GetSizeBytes() uint32 {
 type ChunkMeta struct {
 	BinType  BinType
 	CgroupID uint64
-	Metadata [24]byte
+	Metadata [28]byte
 	Size     int32
 	Off      uint64
 }
 
 func (ChunkMeta) GetSizeBytes() uint32 {
-	return 45
+	return 49
 }
 
 type VfsWriteMeta struct {
@@ -77,11 +78,22 @@ type KernelModuleMeta struct {
 	DevID uint32
 	Inode uint64
 	Pid   uint32
-	Size  uint64
+	Size  uint32
 }
 
 func (KernelModuleMeta) GetSizeBytes() uint32 {
-	return 24
+	return 20
+}
+
+type BpfObjectMeta struct {
+	Name [16]byte
+	Rand uint32
+	Pid  uint32
+	Size uint32
+}
+
+func (BpfObjectMeta) GetSizeBytes() uint32 {
+	return 28
 }
 
 type MprotectWriteMeta struct {

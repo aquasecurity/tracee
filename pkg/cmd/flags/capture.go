@@ -19,6 +19,7 @@ Possible options:
 [artifact:]write[=/path/prefix*]              capture written files. A filter can be given to only capture file writes whose path starts with some prefix (up to 50 characters). Up to 3 filters can be given.
 [artifact:]exec                               capture executed files.
 [artifact:]module                             capture loaded kernel modules.
+[artifact:]bpf                                capture loaded BPF programs bytecode.
 [artifact:]mem                                capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.
 [artifact:]network                            capture network traffic. Only TCP/UDP/ICMP protocols are currently supported.
 
@@ -104,6 +105,8 @@ func PrepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 			capture.Module = true
 		} else if cap == "mem" {
 			capture.Mem = true
+		} else if cap == "bpf" {
+			capture.Bpf = true
 		} else if cap == "network" || cap == "net" || cap == "pcap" {
 			// default capture mode: a single pcap file with all traffic
 			capture.Net.CaptureSingle = true

@@ -286,9 +286,9 @@ func (decoder *EbpfDecoder) DecodeChunkMeta(chunkMeta *ChunkMeta) error {
 	}
 	chunkMeta.BinType = BinType(decoder.buffer[offset])
 	chunkMeta.CgroupID = binary.LittleEndian.Uint64(decoder.buffer[offset+1 : offset+9])
-	_ = copy(chunkMeta.Metadata[:], decoder.buffer[offset+9:offset+33])
-	chunkMeta.Size = int32(binary.LittleEndian.Uint32(decoder.buffer[offset+33 : offset+37]))
-	chunkMeta.Off = binary.LittleEndian.Uint64(decoder.buffer[offset+37 : offset+45])
+	_ = copy(chunkMeta.Metadata[:], decoder.buffer[offset+9:offset+37])
+	chunkMeta.Size = int32(binary.LittleEndian.Uint32(decoder.buffer[offset+37 : offset+41]))
+	chunkMeta.Off = binary.LittleEndian.Uint64(decoder.buffer[offset+41 : offset+49])
 	decoder.cursor += int(chunkMeta.GetSizeBytes())
 	return nil
 }
@@ -316,8 +316,22 @@ func (decoder *EbpfDecoder) DecodeKernelModuleMeta(kernelModuleMeta *KernelModul
 	kernelModuleMeta.DevID = binary.LittleEndian.Uint32(decoder.buffer[offset : offset+4])
 	kernelModuleMeta.Inode = binary.LittleEndian.Uint64(decoder.buffer[offset+4 : offset+12])
 	kernelModuleMeta.Pid = binary.LittleEndian.Uint32(decoder.buffer[offset+12 : offset+16])
-	kernelModuleMeta.Size = binary.LittleEndian.Uint64(decoder.buffer[offset+16 : offset+24])
+	kernelModuleMeta.Size = binary.LittleEndian.Uint32(decoder.buffer[offset+16 : offset+20])
 	decoder.cursor += int(kernelModuleMeta.GetSizeBytes())
+	return nil
+}
+
+// DecodeBpfObjectMeta translates data from the decoder buffer, starting from the decoder cursor, to bufferdecoder.BpfObjectMeta struct.
+func (decoder *EbpfDecoder) DecodeBpfObjectMeta(bpfObjectMeta *BpfObjectMeta) error {
+	offset := decoder.cursor
+	if len(decoder.buffer[offset:]) < int(bpfObjectMeta.GetSizeBytes()) {
+		return errfmt.Errorf("can't read context from buffer: buffer too short")
+	}
+	_ = copy(bpfObjectMeta.Name[:], decoder.buffer[offset:offset+16])
+	bpfObjectMeta.Rand = binary.LittleEndian.Uint32(decoder.buffer[offset+16 : offset+20])
+	bpfObjectMeta.Pid = binary.LittleEndian.Uint32(decoder.buffer[offset+20 : offset+24])
+	bpfObjectMeta.Size = binary.LittleEndian.Uint32(decoder.buffer[offset+24 : offset+28])
+	decoder.cursor += int(bpfObjectMeta.GetSizeBytes())
 	return nil
 }
 
