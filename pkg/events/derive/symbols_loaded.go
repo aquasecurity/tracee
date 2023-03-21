@@ -4,6 +4,7 @@ import (
 	"path"
 	"strings"
 
+	lru "github.com/hashicorp/golang-lru"
 	"golang.org/x/exp/maps"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -71,6 +72,7 @@ type symbolsLoadedEventGenerator struct {
 	pathPrefixWhitelist []string
 	librariesWhitelist  []string
 	returnedErrors      map[string]bool
+	libsCache           *lru.Cache
 }
 
 func initSymbolsLoadedEventGenerator(
@@ -85,13 +87,15 @@ func initSymbolsLoadedEventGenerator(
 	}
 
 	var libraries, prefixes []string
-	for _, path := range whitelistedLibsPrefixes {
-		if strings.HasPrefix(path, "/") {
-			prefixes = append(prefixes, path)
+	for _, wlPath := range whitelistedLibsPrefixes {
+		if strings.HasPrefix(wlPath, "/") {
+			prefixes = append(prefixes, wlPath)
 		} else {
-			libraries = append(libraries, path)
+			libraries = append(libraries, wlPath)
 		}
 	}
+
+	cacheLRU, _ := lru.New(1024)
 
 	return &symbolsLoadedEventGenerator{
 		soLoader:            soLoader,
@@ -99,6 +103,7 @@ func initSymbolsLoadedEventGenerator(
 		pathPrefixWhitelist: prefixes,
 		librariesWhitelist:  libraries,
 		returnedErrors:      make(map[string]bool),
+		libsCache:           cacheLRU,
 	}
 }
 
@@ -113,6 +118,15 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(
 
 	if symbsLoadedGen.isWhitelist(loadingObjectInfo.Path) {
 		return nil, nil
+	}
+
+	matchedSyms, ok := symbsLoadedGen.getSymbolsFromCache(loadingObjectInfo.Id)
+	if ok {
+		if len(matchedSyms) > 0 {
+			return []interface{}{loadingObjectInfo.Path, matchedSyms}, nil
+		} else {
+			return nil, nil
+		}
 	}
 
 	soSyms, err := symbsLoadedGen.soLoader.GetExportedSymbols(loadingObjectInfo)
@@ -138,6 +152,7 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(
 		}
 	}
 
+	symbsLoadedGen.libsCache.Add(loadingObjectInfo.Id, exportedWatchSymbols)
 	if len(exportedWatchSymbols) > 0 {
 		return []interface{}{loadingObjectInfo.Path, exportedWatchSymbols}, nil
 	}
@@ -176,6 +191,21 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) isWhitelist(soPath string) bo
 	}
 
 	return false
+}
+
+// getSymbolsFromCache query the cache for check results of specified object.
+// Return the watched symbols found in the object, and if it was found in the cache.
+func (symbsLoadedGen *symbolsLoadedEventGenerator) getSymbolsFromCache(id sharedobjs.ObjID) ([]string, bool) {
+	cachedSyms, ok := symbsLoadedGen.libsCache.Get(id)
+	if !ok {
+		return nil, false
+	}
+	cachedSymsList, ok := cachedSyms.([]string)
+	if !ok {
+		logger.Errorw("Unexpected cached type")
+		return nil, false
+	}
+	return cachedSymsList, true
 }
 
 // getSharedObjectInfo extract from SO loading event the information available about the SO
