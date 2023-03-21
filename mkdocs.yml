@@ -497,6 +497,11 @@ nav:
           - Custom Events:
               - Go: docs/events/custom/golang.md
               - Rego: docs/events/custom/rego.md
+      - Policies:
+        - Overview: docs/policies/index.md
+        - Scopes: docs/policies/scopes.md
+        - Rules: docs/policies/rules.md
+        - Actions: docs/policies/actions.md
       - Filters:
           - Filtering: docs/filters/filtering.md
       - Outputs:
