@@ -1671,7 +1671,18 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 				}
 				symbol, err := t.kernelSymbols.GetSymbolByName(owner, name)
 				if err != nil {
-					return errfmt.WrapError(err)
+					// Checking if the user specified a syscall name
+					if owner == "system" {
+						for _, prefix := range []string{"sys_", "__x64_sys_", "__arm64_sys_"} {
+							symbol, err = t.kernelSymbols.GetSymbolByName(owner, prefix+name)
+							if err == nil {
+								break
+							}
+						}
+					}
+					if err != nil {
+						return errfmt.WrapError(err)
+					}
 				}
 				_ = t.triggerMemDumpCall(symbol.Address, length, uint64(eventHandle))
 			}
