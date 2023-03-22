@@ -179,11 +179,17 @@ func TestPrepareLogger(t *testing.T) {
 			},
 			expectedError: nil,
 		},
+		{
+			testName:       "invalid log file",
+			logOptions:     []string{"file:"},
+			expectedReturn: nil,
+			expectedError:  flags.InvalidLogOption("file:"),
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			logCfg, err := flags.PrepareLogger(tc.logOptions, nil)
+			logCfg, err := flags.PrepareLogger(tc.logOptions)
 			if tc.expectedError != nil {
 				require.Nil(t, logCfg)
 				require.Error(t, err)

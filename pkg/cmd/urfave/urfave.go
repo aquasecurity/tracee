@@ -44,7 +44,7 @@ func GetTraceeRunner(c *cli.Context, version string, newBinary bool) (cmd.Runner
 
 	// Log command line flags
 
-	logCfg, err := flags.PrepareLogger(c.StringSlice("log"), output.LogFile)
+	logCfg, err := flags.PrepareLogger(c.StringSlice("log"))
 	if err != nil {
 		return runner, err
 	}
