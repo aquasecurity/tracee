@@ -32,6 +32,15 @@ func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
 		return true
 	}
 
+	// TODO: remove once events params are introduced
+	//       i.e. print_mem_dump.params.symbol_name=system:security_file_open
+	// events.PrintMemDump bypass was added due to issue #2546
+	// because it uses usermode applied filters as parameters for the event,
+	// which occurs after filtering
+	if eventID == events.PrintMemDump {
+		return true
+	}
+
 	for argName, filter := range filter.filters[eventID] {
 		found := false
 		var argVal interface{}
@@ -43,11 +52,7 @@ func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
 			}
 		}
 		if !found {
-			// TODO: remove once events arguments are introduced
-			// filter if argument does not exist
-			// the events.PrintMemDump bypass was added due to issue #2546
-			// because it uses usermode applied filters as parameters for the event, which occurs after filtering
-			return eventID == events.PrintMemDump
+			return false
 		}
 		// TODO: use type assertion instead of string conversion
 		if argName != "syscall" {
