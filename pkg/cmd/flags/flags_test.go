@@ -584,40 +584,27 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "invalid output option",
 			outputSlice: []string{"foo"},
 			// it's not the preparer job to validate input. in this case foo is considered an implicit output format.
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-			},
 			expectedError: errors.New("unrecognized output format: foo. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info"),
 		},
 		{
-			testName:    "invalid output option",
-			outputSlice: []string{"option:"},
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-			},
+			testName:      "invalid output option",
+			outputSlice:   []string{"option:"},
 			expectedError: errors.New("invalid output option: , use '--output help' for more info"),
 		},
 		{
-			testName:    "invalid output option 2",
-			outputSlice: []string{"option:foo"},
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-			},
+			testName:      "invalid output option 2",
+			outputSlice:   []string{"option:foo"},
 			expectedError: errors.New("invalid output option: foo, use '--output help' for more info"),
 		},
 		{
-			testName:    "empty val",
-			outputSlice: []string{"out-file"},
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-			},
+			testName:      "empty val",
+			outputSlice:   []string{"out-file"},
 			expectedError: errors.New("unrecognized output format: out-file. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info"),
 		},
 		{
 			testName:    "default format",
 			outputSlice: []string{},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				TraceeConfig: &tracee.OutputConfig{
 					ParseArguments: true,
 				},
@@ -627,7 +614,6 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "table format always parse arguments",
 			outputSlice: []string{"table"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				TraceeConfig: &tracee.OutputConfig{
 					ParseArguments: true,
 				},
@@ -637,7 +623,6 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "option stack-addresses",
 			outputSlice: []string{"option:stack-addresses"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				TraceeConfig: &tracee.OutputConfig{
 					StackAddresses: true,
 					ParseArguments: true,
@@ -648,7 +633,6 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "option exec-env",
 			outputSlice: []string{"option:exec-env"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				TraceeConfig: &tracee.OutputConfig{
 					ExecEnv:        true,
 					ParseArguments: true,
@@ -659,8 +643,6 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "option relative-time",
 			outputSlice: []string{"json", "option:relative-time"},
 			expectedOutput: flags.OutputConfig{
-
-				LogFile: os.Stderr,
 				TraceeConfig: &tracee.OutputConfig{
 					RelativeTime: true,
 				},
@@ -670,8 +652,6 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "option exec-hash",
 			outputSlice: []string{"option:exec-hash"},
 			expectedOutput: flags.OutputConfig{
-
-				LogFile: os.Stderr,
 				TraceeConfig: &tracee.OutputConfig{
 					ExecHash:       true,
 					ParseArguments: true,
@@ -682,8 +662,6 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "option parse-arguments",
 			outputSlice: []string{"json", "option:parse-arguments"},
 			expectedOutput: flags.OutputConfig{
-
-				LogFile: os.Stderr,
 				TraceeConfig: &tracee.OutputConfig{
 					ParseArguments: true,
 				},
@@ -693,8 +671,6 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "option parse-arguments-fds",
 			outputSlice: []string{"json", "option:parse-arguments-fds"},
 			expectedOutput: flags.OutputConfig{
-
-				LogFile: os.Stderr,
 				TraceeConfig: &tracee.OutputConfig{
 					ParseArguments:    true,
 					ParseArgumentsFDs: true,
@@ -705,7 +681,6 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "option sort-events",
 			outputSlice: []string{"option:sort-events"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				TraceeConfig: &tracee.OutputConfig{
 					ParseArguments: true,
 					EventsSorting:  true,
@@ -725,7 +700,6 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 				"option:sort-events",
 			},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				TraceeConfig: &tracee.OutputConfig{
 					StackAddresses:    true,
 					ExecEnv:           true,
@@ -744,7 +718,6 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			if err != nil {
 				assert.ErrorContains(t, err, testcase.expectedError.Error())
 			} else {
-				assert.Equal(t, testcase.expectedOutput.LogFile, output.LogFile)
 				assert.Equal(t, testcase.expectedOutput.TraceeConfig, output.TraceeConfig)
 			}
 		})
@@ -760,43 +733,28 @@ func TestPrepareOutput(t *testing.T) {
 	}{
 		// validations
 		{
-			testName:    "invalid output flag",
-			outputSlice: []string{"foo"},
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-			},
+			testName:      "invalid output flag",
+			outputSlice:   []string{"foo"},
 			expectedError: errors.New("invalid output flag: foo, use '--output help' for more info"),
 		},
 		{
-			testName:    "empty option flag",
-			outputSlice: []string{"option"},
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-			},
+			testName:      "empty option flag",
+			outputSlice:   []string{"option"},
 			expectedError: errors.New("flags.parseOption: option flag can't be empty, use '--output help' for more info"),
 		},
 		{
-			testName:    "empty option flag 2",
-			outputSlice: []string{"option:"},
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-			},
+			testName:      "empty option flag 2",
+			outputSlice:   []string{"option:"},
 			expectedError: errors.New("flags.parseOption: option flag can't be empty, use '--output help' for more info"),
 		},
 		{
-			testName:    "invalid option value",
-			outputSlice: []string{"option:foo"},
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-			},
+			testName:      "invalid option value",
+			outputSlice:   []string{"option:foo"},
 			expectedError: errors.New("flags.setOption: invalid output option: foo, use '--output help' for more info"),
 		},
 		{
-			testName:    "empty file for format",
-			outputSlice: []string{"json:"},
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-			},
+			testName:      "empty file for format",
+			outputSlice:   []string{"json:"},
 			expectedError: errors.New("flags.parseFormat: format flag can't be empty, use '--output help' for more info"),
 		},
 		// formats
@@ -804,7 +762,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "default format",
 			outputSlice: []string{},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "table", OutPath: "stdout"},
 				},
@@ -817,7 +774,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "table to stdout",
 			outputSlice: []string{"table"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "table", OutPath: "stdout"},
 				},
@@ -830,7 +786,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "table to /tmp/table",
 			outputSlice: []string{"table:/tmp/table"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "table", OutPath: "/tmp/table"},
 				},
@@ -843,7 +798,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "table to stdout, and to /tmp/table",
 			outputSlice: []string{"table", "table:/tmp/table"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "table", OutPath: "stdout"},
 					{Kind: "table", OutPath: "/tmp/table"},
@@ -857,7 +811,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "json to stdout",
 			outputSlice: []string{"json"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "json", OutPath: "stdout"},
 				},
@@ -868,7 +821,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "json to /tmp/json, and json to /tmp/json2",
 			outputSlice: []string{"json:/tmp/json", "json:/tmp/json2"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "json", OutPath: "/tmp/json"},
 					{Kind: "json", OutPath: "/tmp/json2"},
@@ -880,7 +832,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "gob to stdout",
 			outputSlice: []string{"gob"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "gob", OutPath: "stdout"},
 				},
@@ -891,7 +842,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "gob to stdout",
 			outputSlice: []string{"gob"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "gob", OutPath: "stdout"},
 				},
@@ -902,7 +852,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "gob to /tmp/gob1,/tmp/gob2",
 			outputSlice: []string{"gob:/tmp/gob1,/tmp/gob2"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "gob", OutPath: "/tmp/gob1"},
 					{Kind: "gob", OutPath: "/tmp/gob2"},
@@ -914,7 +863,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "table-verbose to stdout",
 			outputSlice: []string{"table-verbose"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "table-verbose", OutPath: "stdout"},
 				},
@@ -925,7 +873,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "gotemplate to stdout",
 			outputSlice: []string{"gotemplate=template.tmpl"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "gotemplate=template.tmpl", OutPath: "stdout"},
 				},
@@ -936,7 +883,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "gotemplate to multiple files",
 			outputSlice: []string{"gotemplate=template.tmpl:/tmp/gotemplate1,/tmp/gotemplate2"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "gotemplate=template.tmpl", OutPath: "/tmp/gotemplate1"},
 					{Kind: "gotemplate=template.tmpl", OutPath: "/tmp/gotemplate2"},
@@ -953,7 +899,6 @@ func TestPrepareOutput(t *testing.T) {
 				"gotemplate=template.tmpl:/tmp/gotemplate1",
 			},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "table", OutPath: "stdout"},
 					{Kind: "json", OutPath: "/tmp/json"},
@@ -967,37 +912,24 @@ func TestPrepareOutput(t *testing.T) {
 			},
 		},
 		{
-			testName:    "two formats for stdout",
-			outputSlice: []string{"table", "json"},
-			expectedOutput: flags.OutputConfig{
-				LogFile:      os.Stderr,
-				TraceeConfig: &tracee.OutputConfig{},
-			},
+			testName:      "two formats for stdout",
+			outputSlice:   []string{"table", "json"},
 			expectedError: errors.New("flags.parseFormat: cannot use the same path for multiple outputs: stdout, use '--output help' for more info"),
 		},
 		{
-			testName:    "format for the same file twice",
-			outputSlice: []string{"table:/tmp/test,/tmp/test"},
-			expectedOutput: flags.OutputConfig{
-				LogFile:      os.Stderr,
-				TraceeConfig: &tracee.OutputConfig{},
-			},
+			testName:      "format for the same file twice",
+			outputSlice:   []string{"table:/tmp/test,/tmp/test"},
 			expectedError: errors.New("flags.parseFormat: cannot use the same path for multiple outputs: /tmp/test, use '--output help' for more info"),
 		},
 		{
-			testName:    "two differents formats for the same file",
-			outputSlice: []string{"table:/tmp/test", "json:/tmp/test"},
-			expectedOutput: flags.OutputConfig{
-				LogFile:      os.Stderr,
-				TraceeConfig: &tracee.OutputConfig{},
-			},
+			testName:      "two differents formats for the same file",
+			outputSlice:   []string{"table:/tmp/test", "json:/tmp/test"},
 			expectedError: errors.New("flags.parseFormat: cannot use the same path for multiple outputs: /tmp/test, use '--output help' for more info"),
 		},
 		{
 			testName:    "none",
 			outputSlice: []string{"none"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "ignore", OutPath: "stdout"},
 				},
@@ -1005,67 +937,35 @@ func TestPrepareOutput(t *testing.T) {
 			},
 		},
 		{
-			testName:    "invalid value for none format",
-			outputSlice: []string{"none:"},
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-			},
+			testName:      "invalid value for none format",
+			outputSlice:   []string{"none:"},
 			expectedError: errors.New("none output does not support path. Use '--output help' for more info"),
 		},
 		{
-			testName:    "invalid value for none format 2",
-			outputSlice: []string{"none:/tmp/test"},
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-			},
+			testName:      "invalid value for none format 2",
+			outputSlice:   []string{"none:/tmp/test"},
 			expectedError: errors.New("none output does not support path. Use '--output help' for more info"),
-		},
-		{
-			testName:    "invalid value for log-file",
-			outputSlice: []string{"log-file"},
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-			},
-			expectedError: errors.New("flags.validateLogfile: log-file flag can't be empty, use '--output help' for more info"),
-		},
-		{
-			testName:    "invalid value for log-file 2",
-			outputSlice: []string{"log-file:"},
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-			},
-			expectedError: errors.New("flags.validateLogfile: log-file flag can't be empty, use '--output help' for more info"),
 		},
 		// forward
 		{
-			testName:    "empty forward flag",
-			outputSlice: []string{"forward"},
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-			},
+			testName:      "empty forward flag",
+			outputSlice:   []string{"forward"},
 			expectedError: errors.New("flags.validateURL: forward flag can't be empty, use '--output help' for more info"),
 		},
 		{
-			testName:    "empty forward flag",
-			outputSlice: []string{"forward:"},
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-			},
+			testName:      "empty forward flag",
+			outputSlice:   []string{"forward:"},
 			expectedError: errors.New("flags.validateURL: forward flag can't be empty, use '--output help' for more info"),
 		},
 		{
-			testName:    "invalid forward url",
-			outputSlice: []string{"forward:lalala"},
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-			},
+			testName:      "invalid forward url",
+			outputSlice:   []string{"forward:lalala"},
 			expectedError: errors.New("flags.validateURL: invalid uri for forward output \"lalala\". Use '--output help' for more info"),
 		},
 		{
 			testName:    "forward",
 			outputSlice: []string{"forward:tcp://localhost:1234"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "forward", OutPath: "tcp://localhost:1234"},
 				},
@@ -1074,34 +974,24 @@ func TestPrepareOutput(t *testing.T) {
 		},
 		// webhook
 		{
-			testName:    "empty webhook flag",
-			outputSlice: []string{"webhook"},
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-			},
+			testName:      "empty webhook flag",
+			outputSlice:   []string{"webhook"},
 			expectedError: errors.New("flags.validateURL: webhook flag can't be empty, use '--output help' for more info"),
 		},
 		{
-			testName:    "empty webhook flag",
-			outputSlice: []string{"webhook:"},
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-			},
+			testName:      "empty webhook flag",
+			outputSlice:   []string{"webhook:"},
 			expectedError: errors.New("flags.validateURL: webhook flag can't be empty, use '--output help' for more info"),
 		},
 		{
-			testName:    "invalid webhook url",
-			outputSlice: []string{"webhook:lalala"},
-			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
-			},
+			testName:      "invalid webhook url",
+			outputSlice:   []string{"webhook:lalala"},
 			expectedError: errors.New("flags.validateURL: invalid uri for webhook output \"lalala\". Use '--output help' for more info"),
 		},
 		{
 			testName:    "webhook",
 			outputSlice: []string{"webhook:http://localhost:8080"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "webhook", OutPath: "http://localhost:8080"},
 				},
@@ -1113,7 +1003,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option stack-addresses",
 			outputSlice: []string{"option:stack-addresses"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "table", OutPath: "stdout"},
 				},
@@ -1127,7 +1016,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option exec-env",
 			outputSlice: []string{"option:exec-env"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "table", OutPath: "stdout"},
 				},
@@ -1144,7 +1032,6 @@ func TestPrepareOutput(t *testing.T) {
 				PrinterConfigs: []printer.Config{
 					{Kind: "json", OutPath: "stdout", RelativeTS: true},
 				},
-				LogFile: os.Stderr,
 				TraceeConfig: &tracee.OutputConfig{
 					RelativeTime: true,
 				},
@@ -1157,7 +1044,6 @@ func TestPrepareOutput(t *testing.T) {
 				PrinterConfigs: []printer.Config{
 					{Kind: "table", OutPath: "stdout"},
 				},
-				LogFile: os.Stderr,
 				TraceeConfig: &tracee.OutputConfig{
 					ExecHash:       true,
 					ParseArguments: true,
@@ -1171,7 +1057,6 @@ func TestPrepareOutput(t *testing.T) {
 				PrinterConfigs: []printer.Config{
 					{Kind: "json", OutPath: "stdout"},
 				},
-				LogFile: os.Stderr,
 				TraceeConfig: &tracee.OutputConfig{
 					ParseArguments: true,
 				},
@@ -1184,7 +1069,6 @@ func TestPrepareOutput(t *testing.T) {
 				PrinterConfigs: []printer.Config{
 					{Kind: "json", OutPath: "stdout"},
 				},
-				LogFile: os.Stderr,
 				TraceeConfig: &tracee.OutputConfig{
 					ParseArguments:    true,
 					ParseArgumentsFDs: true,
@@ -1195,7 +1079,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option sort-events",
 			outputSlice: []string{"option:sort-events"},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "table", OutPath: "stdout"},
 				},
@@ -1218,7 +1101,6 @@ func TestPrepareOutput(t *testing.T) {
 				"option:sort-events",
 			},
 			expectedOutput: flags.OutputConfig{
-				LogFile: os.Stderr,
 				PrinterConfigs: []printer.Config{
 					{Kind: "json", OutPath: "stdout", RelativeTS: true},
 				},
@@ -1240,7 +1122,6 @@ func TestPrepareOutput(t *testing.T) {
 			if err != nil {
 				assert.Equal(t, testcase.expectedError, err)
 			} else {
-				assert.Equal(t, testcase.expectedOutput.LogFile, output.LogFile)
 				assert.Equal(t, testcase.expectedOutput.TraceeConfig, output.TraceeConfig)
 
 				assertPrinterConfigs(t, testcase.expectedOutput.PrinterConfigs, output.PrinterConfigs)

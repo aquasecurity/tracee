@@ -29,9 +29,6 @@ forward:url                                        send events in json format us
 Webhook options:
 webhook:url                                        send events in json format to the webhook url
 
-Log options:
-log-file:/path/to/file                             write the logs to a specified file. create/trim the file if exists (default: stderr)
-
 Other options:
 option:{stack-addresses,exec-env,relative-time,exec-hash,parse-arguments,sort-events}
                                                    augment output according to given options (default: none)
@@ -47,7 +44,7 @@ Examples:
   --output json                                                  | output as json to stdout
   --output json:/my/out                                          | output as json to /my/out
   --output gotemplate=/path/to/my.tmpl                           | output as the provided go template to stdout
-  --output gob:/my/out --output log-file:/my/log                 | output gob to /my/out and logs to /my/log
+  --output gob:/my/out                                           | output gob to /my/out
   --output json --output gob:/my/out                             | output as json to stdout and as gob to /my/out
   --output json:/my/out1,/my/out2                                | output as json to both /my/out and /my/out2
   --output none                                                  | ignore events output
@@ -63,14 +60,11 @@ Use this flag multiple times to choose multiple output options
 type OutputConfig struct {
 	TraceeConfig   *tracee.OutputConfig
 	PrinterConfigs []printer.Config
-	LogFile        *os.File
 }
 
 func PrepareOutput(outputSlice []string) (OutputConfig, error) {
 	outConfig := OutputConfig{}
 	traceeConfig := &tracee.OutputConfig{}
-
-	var logPath string
 
 	//outpath:format
 	printerMap := make(map[string]string)
@@ -111,12 +105,6 @@ func PrepareOutput(outputSlice []string) (OutputConfig, error) {
 			}
 
 			printerMap[outputParts[1]] = "webhook"
-		case "log-file":
-			err := validateLogfile(outputParts)
-			if err != nil {
-				return outConfig, err
-			}
-			logPath = outputParts[1]
 		case "option":
 			err := parseOption(outputParts, traceeConfig)
 			if err != nil {
@@ -135,17 +123,6 @@ func PrepareOutput(outputSlice []string) (OutputConfig, error) {
 	printerConfigs, err := getPrinterConfigs(printerMap, traceeConfig)
 	if err != nil {
 		return outConfig, err
-	}
-
-	if logPath == "" {
-		outConfig.LogFile = os.Stderr
-	} else {
-		file, err := createFile(logPath)
-		if err != nil {
-			return outConfig, err
-		}
-
-		outConfig.LogFile = file
 	}
 
 	outConfig.TraceeConfig = traceeConfig
@@ -244,15 +221,6 @@ func parseOption(outputParts []string, traceeConfig *tracee.OutputConfig) error 
 		if err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-// validateLogfile validates the given logfile
-func validateLogfile(outputParts []string) error {
-	if len(outputParts) == 1 || outputParts[1] == "" {
-		return errfmt.Errorf("log-file flag can't be empty, use '--output help' for more info")
 	}
 
 	return nil
