@@ -479,8 +479,8 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 		return errfmt.WrapError(err)
 	}
 	arch = string(bytes.TrimRight(utsName.Machine[:], "\x00"))
-	event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "arch", Type: "char*"}, Value: arch})
-	event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "symbol_name", Type: "char*"}, Value: symbol.Name})
-	event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "symbol_owner", Type: "char*"}, Value: symbol.Owner})
+	event.Args[4].Value = arch
+	event.Args[5].Value = symbol.Name
+	event.Args[6].Value = symbol.Owner
 	return nil
 }
