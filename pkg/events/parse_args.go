@@ -246,7 +246,7 @@ func ParseArgs(event *trace.Event) error {
 				if err != nil {
 					return err
 				}
-				helpersArg.Type = "char*"
+				helpersArg.Type = "const char**"
 				helpersArg.Value = parsedHelpersList
 			}
 		}
@@ -272,7 +272,7 @@ func ParseArgs(event *trace.Event) error {
 				if err != nil {
 					return err
 				}
-				helpersArg.Type = "char*"
+				helpersArg.Type = "const char**"
 				helpersArg.Value = parsedHelpersList
 			}
 		}
