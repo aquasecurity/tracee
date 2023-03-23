@@ -25,7 +25,7 @@ func deriveContainerCreateArgs(containers *containers.Containers) func(event tra
 		if err != nil {
 			return nil, errfmt.WrapError(err)
 		}
-		if info := containers.GetCgroupInfo(cgroupId); info.Container.ContainerId != "" {
+		if info := containers.GetCgroupInfo(cgroupId); info.ContainerRoot {
 			args := []interface{}{
 				info.Runtime.String(),
 				info.Container.ContainerId,

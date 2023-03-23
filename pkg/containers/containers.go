@@ -34,11 +34,12 @@ type Containers struct {
 
 // CgroupInfo represents a cgroup dir (might describe a container cgroup dir).
 type CgroupInfo struct {
-	Path      string
-	Container cruntime.ContainerMetadata
-	Runtime   cruntime.RuntimeId
-	Ctime     time.Time
-	expiresAt time.Time
+	Path          string
+	Container     cruntime.ContainerMetadata
+	Runtime       cruntime.RuntimeId
+	ContainerRoot bool // is the cgroup directory the root of its container
+	Ctime         time.Time
+	expiresAt     time.Time
 }
 
 // New initializes a Containers object and returns a pointer to it.
@@ -119,7 +120,7 @@ func GetContainerIdFromTaskDir(taskPath string) (string, error) {
 	}()
 	scanner := bufio.NewScanner(cgroupFile)
 	for scanner.Scan() {
-		containerId, _ := getContainerIdFromCgroup(scanner.Text())
+		containerId, _, _ := getContainerIdFromCgroup(scanner.Text())
 		if containerId != "" {
 			break
 		}
@@ -158,16 +159,17 @@ func (c *Containers) populate() error {
 // saving container information in Containers CgroupInfo map.
 // NOTE: ALL given cgroup dir paths are stored in CgroupInfo map.
 func (c *Containers) CgroupUpdate(cgroupId uint64, path string, ctime time.Time) (CgroupInfo, error) {
-	containerId, containerRuntime := getContainerIdFromCgroup(path)
+	containerId, containerRuntime, isRoot := getContainerIdFromCgroup(path)
 	container := cruntime.ContainerMetadata{
 		ContainerId: containerId,
 	}
 
 	info := CgroupInfo{
-		Path:      path,
-		Container: container,
-		Runtime:   containerRuntime,
-		Ctime:     ctime,
+		Path:          path,
+		Container:     container,
+		Runtime:       containerRuntime,
+		ContainerRoot: isRoot,
+		Ctime:         ctime,
 	}
 
 	c.mtx.Lock()
@@ -229,11 +231,14 @@ var (
 
 // getContainerIdFromCgroup extracts container id and its runtime from path.
 // It returns (containerId, runtime string).
-func getContainerIdFromCgroup(cgroupPath string) (string, cruntime.RuntimeId) {
-	prevPathComp := ""
-	for _, pc := range strings.Split(cgroupPath, "/") {
+func getContainerIdFromCgroup(cgroupPath string) (string, cruntime.RuntimeId, bool) {
+	cgroupParts := strings.Split(cgroupPath, "/")
+
+	// search from the end to get the most inner container id
+	for i := len(cgroupParts) - 1; i >= 0; i = i - 1 {
+		pc := cgroupParts[i]
+		// container id is at least 64 characters long
 		if len(pc) < 64 {
-			prevPathComp = pc
 			continue
 		}
 
@@ -258,23 +263,20 @@ func getContainerIdFromCgroup(cgroupPath string) (string, cruntime.RuntimeId) {
 			id = strings.TrimPrefix(id, "libpod-")
 		}
 
-		regex := containerIdFromCgroupRegex
-		if matched := regex.MatchString(id); matched {
-			if runtime == cruntime.Unknown && prevPathComp == "docker" {
+		if matched := containerIdFromCgroupRegex.MatchString(id); matched {
+			if runtime == cruntime.Unknown && i > 0 && cgroupParts[i-1] == "docker" {
 				// non-systemd docker with format: .../docker/01adbf...f26db7f/
 				runtime = cruntime.Docker
 			}
 
 			// return first match: closest to root dir path component
 			// (to have container id of the outer container)
-			return id, runtime
+			// container root determined by being matched on the last path part
+			return id, runtime, i == len(cgroupParts)-1
 		}
-
-		prevPathComp = pc
 	}
-
 	// cgroup dirs unrelated to containers provides empty (containerId, runtime)
-	return "", cruntime.Unknown
+	return "", cruntime.Unknown, false
 }
 
 // CgroupRemove removes cgroupInfo of deleted cgroup dir from Containers struct.
@@ -388,7 +390,7 @@ func (c *Containers) GetContainers() map[uint32]CgroupInfo {
 	c.mtx.RLock()
 	defer c.mtx.RUnlock()
 	for id, v := range c.cgroupsMap {
-		if v.Container.ContainerId != "" && v.expiresAt.IsZero() {
+		if v.ContainerRoot && v.expiresAt.IsZero() {
 			conts[id] = v
 		}
 	}
@@ -417,7 +419,7 @@ func (c *Containers) PopulateBpfMap(bpfModule *libbpfgo.Module) error {
 
 	c.mtx.RLock()
 	for cgroupIdLsb, info := range c.cgroupsMap {
-		if info.Container.ContainerId != "" {
+		if info.ContainerRoot {
 			state := containerExisted
 			err = containersMap.Update(unsafe.Pointer(&cgroupIdLsb), unsafe.Pointer(&state))
 		}
