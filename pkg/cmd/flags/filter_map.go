@@ -1,12 +1,9 @@
 package flags
 
 import (
-	"fmt"
-	"strconv"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/filters"
-	"github.com/aquasecurity/tracee/pkg/policy"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
 // FilterMap holds pre-parsed filter flag fields
@@ -22,90 +19,58 @@ type filterFlag struct {
 	policyName string
 }
 
+// parseFilterFlag parses a filter flag and returns a filterFlag struct with
+// pre-parsed fields, or an error if the flag is invalid.
+// policyIdx and policyName are always set to 0 and "" respectively, since this
+// function is used for parsing cli filter flags only.
+// For policy workloads, see PrepareFilterMapFromPolicies.
 func parseFilterFlag(flag string) (*filterFlag, error) {
-	var (
-		policyID          int // stores the parsed policy index, not its flag position
-		filterName        string
-		operatorAndValues string
+	if len(flag) == 0 {
+		return nil, errfmt.WrapError(InvalidFlagEmpty())
+	}
 
-		policyEndIdx     int // stores ':' flag index (end of the policy value)
-		filterNameIdx    int
-		filterNameEndIdx int
-		operatorIdx      int
-		err              error
-	)
+	operatorIdx := strings.IndexAny(flag, "=!<>")
 
-	policyEndIdx = strings.Index(flag, ":")
-	operatorIdx = strings.IndexAny(flag, "=!<>")
+	if operatorIdx == -1 || // no operator, as a set flag
+		(operatorIdx == 0 && flag[0] == '!') { // negation, as an unset flag
 
-	if policyEndIdx == -1 && operatorIdx == -1 {
 		return &filterFlag{
 			full:              flag,
 			filterName:        flag,
 			operatorAndValues: "",
-			policyIdx:         policyID,
+			policyIdx:         0,
+			policyName:        "",
 		}, nil
 	}
 
-	if operatorIdx != -1 {
-		operatorAndValues = flag[operatorIdx:]
-		filterNameEndIdx = operatorIdx
-	} else {
-		operatorIdx = len(flag) - 1
-		filterNameEndIdx = len(flag)
+	filterName := flag[:operatorIdx]
+	operatorAndValues := flag[operatorIdx:]
+
+	operatorEndIdx := strings.LastIndexAny(operatorAndValues, "=!<>")
+	operator := operatorAndValues[:operatorEndIdx+1]
+	switch operator {
+	case "=", "!=", "<", "<=", ">", ">=":
+		// valid operators
+	default:
+		return nil, errfmt.WrapError(InvalidFlagOperator(flag))
 	}
 
-	// check operators
-	if len(operatorAndValues) == 1 ||
-		operatorAndValues == "!=" ||
-		operatorAndValues == "<=" ||
-		operatorAndValues == ">=" {
-
-		return nil, filters.InvalidExpression(flag)
+	value := operatorAndValues[operatorEndIdx+1:]
+	if len(value) == 0 {
+		return nil, errfmt.WrapError(InvalidFlagValue(flag))
 	}
 
-	if policyEndIdx != -1 && policyEndIdx < operatorIdx {
-		// parse its ID
-		policyID, err = strconv.Atoi(flag[:policyEndIdx])
-		if err != nil {
-			return nil, filters.InvalidPolicy(fmt.Sprintf("%s - %s", flag, err))
-		}
+	if strings.HasPrefix(value, " ") || strings.HasPrefix(value, "\t") ||
+		strings.HasSuffix(value, " ") || strings.HasSuffix(value, "\t") {
 
-		// now consider it as a policy index
-		policyID--
-		if policyID < 0 || policyID > policy.MaxPolicies-1 {
-			return nil, filters.InvalidPolicy(fmt.Sprintf("%s - policies must be between 1 and %d", flag, policy.MaxPolicies))
-		}
-
-		filterNameIdx = policyEndIdx + 1
+		return nil, errfmt.WrapError(InvalidFlagValue(flag))
 	}
-
-	if len(operatorAndValues) >= 2 &&
-		operatorAndValues[0] == '!' &&
-		operatorAndValues[1] != '=' {
-
-		filterName = flag[filterNameIdx:]
-		if strings.HasSuffix(filterName, "follow") ||
-			strings.HasSuffix(filterName, "container") {
-
-			return &filterFlag{
-				full:              flag,
-				filterName:        filterName,
-				operatorAndValues: "",
-				policyIdx:         policyID,
-			}, nil
-		}
-
-		return nil, filters.InvalidExpression(flag)
-	}
-
-	// parse filter name
-	filterName = flag[filterNameIdx:filterNameEndIdx]
 
 	return &filterFlag{
 		full:              flag,
 		filterName:        filterName,
 		operatorAndValues: operatorAndValues,
-		policyIdx:         policyID,
+		policyIdx:         0,
+		policyName:        "",
 	}, nil
 }

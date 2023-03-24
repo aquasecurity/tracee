@@ -87,29 +87,6 @@ Examples:
   --filter security_file_open.context.container                 | only trace 'security_file_open' events coming from a container
   --filter comm=bash --filter follow                            | trace all events that originated from bash or from one of the processes spawned by bash
 
-Filters can also be configured within up to 64 policies.
-Events that match all filter expressions within a single policy will be filtered.
-To find out which policies an event is related to, read the bitmask in one of these ways:
-
-- using '-o format:json', matchedPolicies JSON field (in decimal)
-- using '-o format:table-verbose', POLICIES column (in hexadecimal)
-
-Examples:
-
-  -f 42:event=sched_process_exec -f 42:binary=/usr/bin/ls      | trace in policy 42 sched_process_exec event from /usr/bin/ls binary
-
-  -f 3:event=openat -f 3:comm=id -f 9:event=close -f 9:comm=ls - trace in policy 3 only openat event from id command
-                                                               | and
-                                                               - trace in policy 9 only close event from ls command
-
-  -f 6:event=openat -f 6:comm=id -f 7:event=close -f 7:comm=id - trace in policy 6 only openat event from id command
-                                                               | and
-                                                               _ trace in policy 7 only close event from id command
-
-  -f 3:event=openat -f 3:comm=id -f 9:event=close              - trace in policy 3 only openat event from id command
-                                                               | and
-                                                               - trace in policy 9 only close event from all
-
 Note: some of the above operators have special meanings in different shells.
 To 'escape' those operators, please use single quotes, e.g.: 'uid>0', '/tmp*'
 `
