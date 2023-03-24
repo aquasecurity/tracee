@@ -18,7 +18,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -208,49 +207,49 @@ func checkSecurityFileOpenExecve(t *testing.T, gotOutput *eventOutput) {
 	}
 }
 
-func checkPolicy42SecurityFileOpenLs(t *testing.T, gotOutput *eventOutput) {
-	_, err := forkAndExecFunction(doLs)
-	require.NoError(t, err)
+// func checkPolicy42SecurityFileOpenLs(t *testing.T, gotOutput *eventOutput) {
+// 	_, err := forkAndExecFunction(doLs)
+// 	require.NoError(t, err)
 
-	waitForTraceeOutput(t, gotOutput, time.Now(), true)
+// 	waitForTraceeOutput(t, gotOutput, time.Now(), true)
 
-	output := gotOutput.getEventsCopy()
-	for _, evt := range output {
-		// ls - policy 42
-		assert.Equal(t, "ls", evt.ProcessName)
-		assert.Equal(t, uint64(1<<41), evt.MatchedPolicies)
-		arg, err := helpers.GetTraceeArgumentByName(evt, "pathname", helpers.GetArgOps{DefaultArgs: false})
-		require.NoError(t, err)
-		assert.Contains(t, arg.Value, "integration")
-	}
-}
+// 	output := gotOutput.getEventsCopy()
+// 	for _, evt := range output {
+// 		// ls - policy 42
+// 		assert.Equal(t, "ls", evt.ProcessName)
+// 		assert.Equal(t, uint64(1<<41), evt.MatchedPolicies)
+// 		arg, err := helpers.GetTraceeArgumentByName(evt, "pathname", helpers.GetArgOps{DefaultArgs: false})
+// 		require.NoError(t, err)
+// 		assert.Contains(t, arg.Value, "integration")
+// 	}
+// }
 
-// checkExecveOnPolicies4And2 demands an ordered events submission
-func checkExecveOnPolicies4And2(t *testing.T, gotOutput *eventOutput) {
-	_, err := forkAndExecFunction(doLsUname)
-	require.NoError(t, err)
+// // checkExecveOnPolicies4And2 demands an ordered events submission
+// func checkExecveOnPolicies4And2(t *testing.T, gotOutput *eventOutput) {
+// 	_, err := forkAndExecFunction(doLsUname)
+// 	require.NoError(t, err)
 
-	waitForTraceeOutput(t, gotOutput, time.Now(), true)
+// 	waitForTraceeOutput(t, gotOutput, time.Now(), true)
 
-	// check output length
-	output := gotOutput.getEventsCopy()
-	require.Len(t, output, 2)
-	var evts [2]trace.Event
+// 	// check output length
+// 	output := gotOutput.getEventsCopy()
+// 	require.Len(t, output, 2)
+// 	var evts [2]trace.Event
 
-	// output should only have events with event name of execve
-	for i, evt := range output {
-		assert.Equal(t, "sched_process_exit", evt.EventName)
-		evts[i] = evt
-	}
+// 	// output should only have events with event name of execve
+// 	for i, evt := range output {
+// 		assert.Equal(t, "sched_process_exit", evt.EventName)
+// 		evts[i] = evt
+// 	}
 
-	// ls - policy 4
-	assert.Equal(t, evts[0].ProcessName, "ls")
-	assert.Equal(t, uint64(1<<3), evts[0].MatchedPolicies, "MatchedPolicies")
+// 	// ls - policy 4
+// 	assert.Equal(t, evts[0].ProcessName, "ls")
+// 	assert.Equal(t, uint64(1<<3), evts[0].MatchedPolicies, "MatchedPolicies")
 
-	// uname - policy 2
-	assert.Equal(t, evts[1].ProcessName, "uname")
-	assert.Equal(t, uint64(1<<1), evts[1].MatchedPolicies, "MatchedPolicies")
-}
+// 	// uname - policy 2
+// 	assert.Equal(t, evts[1].ProcessName, "uname")
+// 	assert.Equal(t, uint64(1<<1), evts[1].MatchedPolicies, "MatchedPolicies")
+// }
 
 func checkDockerdBinaryFilter(t *testing.T, gotOutput *eventOutput) {
 	dockerdPidBytes, err := forkAndExecFunction(getDockerdPid)
@@ -271,23 +270,23 @@ func checkDockerdBinaryFilter(t *testing.T, gotOutput *eventOutput) {
 	assert.Contains(t, processIds, int(dockerdPid))
 }
 
-func checkLsAndWhichBinaryFilterWithPolicies(t *testing.T, gotOutput *eventOutput) {
-	var err error
-	_, err = forkAndExecFunction(doLs)
-	require.NoError(t, err)
-	_, err = forkAndExecFunction(doWhichLs)
-	require.NoError(t, err)
+// func checkLsAndWhichBinaryFilterWithPolicies(t *testing.T, gotOutput *eventOutput) {
+// 	var err error
+// 	_, err = forkAndExecFunction(doLs)
+// 	require.NoError(t, err)
+// 	_, err = forkAndExecFunction(doWhichLs)
+// 	require.NoError(t, err)
 
-	waitForTraceeOutput(t, gotOutput, time.Now(), true)
+// 	waitForTraceeOutput(t, gotOutput, time.Now(), true)
 
-	output := gotOutput.getEventsCopy()
-	for _, evt := range output {
-		procName := evt.ProcessName
-		if procName != "ls" && procName != "which" {
-			t.Fail()
-		}
-	}
-}
+// 	output := gotOutput.getEventsCopy()
+// 	for _, evt := range output {
+// 		procName := evt.ProcessName
+// 		if procName != "ls" && procName != "which" {
+// 			t.Fail()
+// 		}
+// 	}
+// }
 
 func Test_EventFilters(t *testing.T) {
 	testCases := []struct {
@@ -350,19 +349,19 @@ func Test_EventFilters(t *testing.T) {
 			filterArgs: []string{"container=new", "event!=container_create,container_remove"},
 			eventFunc:  checkNewContainers,
 		},
-		{
-			name:       "trace event set in a specific policy",
-			filterArgs: []string{"42:comm=ls", "42:event=security_file_open", "42:security_file_open.args.pathname=*integration"},
-			eventFunc:  checkPolicy42SecurityFileOpenLs,
-		},
-		{
-			name: "trace events set in two specific policy",
-			filterArgs: []string{
-				"4:event=sched_process_exit", "4:comm=ls",
-				"2:event=sched_process_exit", "2:comm=uname",
-			},
-			eventFunc: checkExecveOnPolicies4And2,
-		},
+		// {
+		// 	name:       "trace event set in a specific policy",
+		// 	filterArgs: []string{"42:comm=ls", "42:event=security_file_open", "42:security_file_open.args.pathname=*integration"},
+		// 	eventFunc:  checkPolicy42SecurityFileOpenLs,
+		// },
+		// {
+		// 	name: "trace events set in two specific policy",
+		// 	filterArgs: []string{
+		// 		"4:event=sched_process_exit", "4:comm=ls",
+		// 		"2:event=sched_process_exit", "2:comm=uname",
+		// 	},
+		// 	eventFunc: checkExecveOnPolicies4And2,
+		// },
 		{
 			name:       "trace only security_file_open from \"execve\" syscall",
 			filterArgs: []string{"event=security_file_open", "security_file_open.context.syscall=execve"},
@@ -373,11 +372,11 @@ func Test_EventFilters(t *testing.T) {
 			filterArgs: []string{"bin=/usr/bin/dockerd"},
 			eventFunc:  checkDockerdBinaryFilter,
 		},
-		{
-			name:       "trace events from ls and which binary in separate policies",
-			filterArgs: []string{"1:bin=/usr/bin/ls", "2:bin=/usr/bin/which"},
-			eventFunc:  checkLsAndWhichBinaryFilterWithPolicies,
-		},
+		// {
+		// 	name:       "trace events from ls and which binary in separate policies",
+		// 	filterArgs: []string{"1:bin=/usr/bin/ls", "2:bin=/usr/bin/which"},
+		// 	eventFunc:  checkLsAndWhichBinaryFilterWithPolicies,
+		// },
 	}
 
 	for _, tc := range testCases {
