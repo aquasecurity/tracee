@@ -19,3 +19,15 @@ func InvalidEventExcludeError(event string) error {
 func InvalidFilterOptionError(expr string) error {
 	return fmt.Errorf("invalid filter option specified (%s), use '--filter help' for more info", expr)
 }
+
+func InvalidFlagEmpty() error {
+	return fmt.Errorf("empty flag")
+}
+
+func InvalidFlagOperator(expression string) error {
+	return fmt.Errorf("invalid flag operator: %s", expression)
+}
+
+func InvalidFlagValue(expression string) error {
+	return fmt.Errorf("invalid flag value: %s", expression)
+}

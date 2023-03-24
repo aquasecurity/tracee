@@ -1,4 +1,4 @@
-package flags_test
+package flags
 
 import (
 	"errors"
@@ -9,61 +9,316 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
-	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/signatures/rego"
 )
 
-// This will only test failure cases since success cases are covered in the filter tests themselves
-func TestPrepareFilterMapFromFlags(t *testing.T) {
+func TestParseFilterFlag(t *testing.T) {
 	testCases := []struct {
-		testName      string
-		filters       []string
-		expectedError error
+		name           string
+		flag           string
+		expectedResult *filterFlag
+		expectedError  error
 	}{
+		// Valid
 		{
-			testName:      "invalid policy id 1",
-			filters:       []string{":comm=bash"},
-			expectedError: filters.InvalidPolicy(":comm=bash"),
+			name: "Valid flag without operatorAndValues",
+			flag: "filterName",
+			expectedResult: &filterFlag{
+				full:              "filterName",
+				filterName:        "filterName",
+				operatorAndValues: "",
+				policyIdx:         0,
+				policyName:        "",
+			},
+			expectedError: nil,
 		},
 		{
-			testName:      "invalid policy id 2",
-			filters:       []string{"0:comm=bash"},
-			expectedError: filters.InvalidPolicy("0:comm=bash"),
+			name: "Valid flag without operatorAndValues",
+			flag: "!filterName",
+			expectedResult: &filterFlag{
+				full:              "!filterName",
+				filterName:        "!filterName",
+				operatorAndValues: "",
+				policyIdx:         0,
+				policyName:        "",
+			},
+			expectedError: nil,
 		},
 		{
-			testName:      "invalid policy id 3",
-			filters:       []string{fmt.Sprintf("%d:comm=bash", policy.MaxPolicies+1)},
-			expectedError: filters.InvalidPolicy(fmt.Sprintf("%d:comm=bash", policy.MaxPolicies+1)),
+			name: "Valid flag with operatorAndValues",
+			flag: "filterName=v",
+			expectedResult: &filterFlag{
+				full:              "filterName=v",
+				filterName:        "filterName",
+				operatorAndValues: "=v",
+				policyIdx:         0,
+				policyName:        "",
+			},
+			expectedError: nil,
 		},
 		{
-			testName:      "invalid mntns 1",
-			filters:       []string{"mntns="},
-			expectedError: filters.InvalidExpression("mntns="),
+			name: "Valid flag with operatorAndValues",
+			flag: "filterName!=v",
+			expectedResult: &filterFlag{
+				full:              "filterName!=v",
+				filterName:        "filterName",
+				operatorAndValues: "!=v",
+				policyIdx:         0,
+				policyName:        "",
+			},
+			expectedError: nil,
 		},
 		{
-			testName:      "invalid - uid>=",
-			filters:       []string{"uid>="},
-			expectedError: filters.InvalidExpression("uid>="),
+			name: "Valid flag with operatorAndValues",
+			flag: "filterName>v",
+			expectedResult: &filterFlag{
+				full:              "filterName>v",
+				filterName:        "filterName",
+				operatorAndValues: ">v",
+				policyIdx:         0,
+				policyName:        "",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Valid flag with operatorAndValues",
+			flag: "filterName<v",
+			expectedResult: &filterFlag{
+				full:              "filterName<v",
+				filterName:        "filterName",
+				operatorAndValues: "<v",
+				policyIdx:         0,
+				policyName:        "",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Valid flag with operatorAndValues",
+			flag: "filterName>=v",
+			expectedResult: &filterFlag{
+				full:              "filterName>=v",
+				filterName:        "filterName",
+				operatorAndValues: ">=v",
+				policyIdx:         0,
+				policyName:        "",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Valid flag with operatorAndValues",
+			flag: "filterName<=v",
+			expectedResult: &filterFlag{
+				full:              "filterName<=v",
+				filterName:        "filterName",
+				operatorAndValues: "<=v",
+				policyIdx:         0,
+				policyName:        "",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Valid flag with operatorAndValues",
+			flag: "filterName=value",
+			expectedResult: &filterFlag{
+				full:              "filterName=value",
+				filterName:        "filterName",
+				operatorAndValues: "=value",
+				policyIdx:         0,
+				policyName:        "",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Valid flag with operatorAndValues",
+			flag: "filterName!=value",
+			expectedResult: &filterFlag{
+				full:              "filterName!=value",
+				filterName:        "filterName",
+				operatorAndValues: "!=value",
+				policyIdx:         0,
+				policyName:        "",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Valid flag with operatorAndValues",
+			flag: "filterName>value",
+			expectedResult: &filterFlag{
+				full:              "filterName>value",
+				filterName:        "filterName",
+				operatorAndValues: ">value",
+				policyIdx:         0,
+				policyName:        "",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Valid flag with operatorAndValues",
+			flag: "filterName<value",
+			expectedResult: &filterFlag{
+				full:              "filterName<value",
+				filterName:        "filterName",
+				operatorAndValues: "<value",
+				policyIdx:         0,
+				policyName:        "",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Valid flag with operatorAndValues",
+			flag: "filterName>=value",
+			expectedResult: &filterFlag{
+				full:              "filterName>=value",
+				filterName:        "filterName",
+				operatorAndValues: ">=value",
+				policyIdx:         0,
+				policyName:        "",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Valid flag with operatorAndValues",
+			flag: "filterName<=value",
+			expectedResult: &filterFlag{
+				full:              "filterName<=value",
+				filterName:        "filterName",
+				operatorAndValues: "<=value",
+				policyIdx:         0,
+				policyName:        "",
+			},
+			expectedError: nil,
+		},
+
+		// Invalid flag
+		{
+			name:           "Invalid flag - empty",
+			flag:           "",
+			expectedResult: nil,
+			expectedError:  InvalidFlagEmpty(),
+		},
+		// Invalid operator
+		{
+			name:           "Invalid operator",
+			flag:           "filterName==value",
+			expectedResult: nil,
+			expectedError:  InvalidFlagOperator("filterName==value"),
+		},
+		{
+			name:           "Invalid operator",
+			flag:           "filterName=!value",
+			expectedResult: nil,
+			expectedError:  InvalidFlagOperator("filterName=!value"),
+		},
+		{
+			name:           "Invalid operator",
+			flag:           "filterName!!value",
+			expectedResult: nil,
+			expectedError:  InvalidFlagOperator("filterName!!value"),
+		},
+		{
+			name:           "Invalid operator",
+			flag:           "filterName>>value",
+			expectedResult: nil,
+			expectedError:  InvalidFlagOperator("filterName>>value"),
+		},
+		{
+			name:           "Invalid operator",
+			flag:           "filterName<>value",
+			expectedResult: nil,
+			expectedError:  InvalidFlagOperator("filterName<>value"),
+		},
+		{
+			name:           "Invalid operator",
+			flag:           "filterName>!value",
+			expectedResult: nil,
+			expectedError:  InvalidFlagOperator("filterName>!value"),
+		},
+		{
+			name:           "Invalid operator",
+			flag:           "filterName!<value",
+			expectedResult: nil,
+			expectedError:  InvalidFlagOperator("filterName!<value"),
+		},
+		// Invalid value
+		{
+			name:           "Invalid value",
+			flag:           "filterName=",
+			expectedResult: nil,
+			expectedError:  InvalidFlagValue("filterName="),
+		},
+		{
+			name:           "Invalid value",
+			flag:           "filterName!=",
+			expectedResult: nil,
+			expectedError:  InvalidFlagValue("filterName!="),
+		},
+		{
+			name:           "Invalid value",
+			flag:           "filterName<",
+			expectedResult: nil,
+			expectedError:  InvalidFlagValue("filterName<"),
+		},
+		{
+			name:           "Invalid value",
+			flag:           "filterName>",
+			expectedResult: nil,
+			expectedError:  InvalidFlagValue("filterName>"),
+		},
+		{
+			name:           "Invalid value",
+			flag:           "filterName>=",
+			expectedResult: nil,
+			expectedError:  InvalidFlagValue("filterName>="),
+		},
+		{
+			name:           "Invalid value",
+			flag:           "filterName<=",
+			expectedResult: nil,
+			expectedError:  InvalidFlagValue("filterName<="),
+		},
+		{
+			name:           "Invalid value",
+			flag:           "filterName< value",
+			expectedResult: nil,
+			expectedError:  InvalidFlagValue("filterName< value"),
+		},
+		{
+			name:           "Invalid value",
+			flag:           "filterName>=value ",
+			expectedResult: nil,
+			expectedError:  InvalidFlagValue("filterName>=value "),
+		},
+		{
+			name:           "Invalid value",
+			flag:           "filterName=\tvalue",
+			expectedResult: nil,
+			expectedError:  InvalidFlagValue("filterName=\tvalue"),
+		},
+		{
+			name:           "Invalid value",
+			flag:           "filterName=value\t",
+			expectedResult: nil,
+			expectedError:  InvalidFlagValue("filterName=value\t"),
 		},
 	}
-	for _, tc := range testCases {
-		t.Run(tc.testName, func(t *testing.T) {
-			_, err := flags.PrepareFilterMapFromFlags(tc.filters)
-			if tc.expectedError != nil {
-				require.Error(t, err)
-				assert.ErrorContains(t, err, tc.expectedError.Error())
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := parseFilterFlag(tt.flag)
+			if err != nil {
+				require.Contains(t, err.Error(), tt.expectedError.Error())
+			} else {
+				assert.Equal(t, tt.expectedResult, result)
 			}
 		})
 	}
 }
 
-// This will only test failure cases since success cases are covered in the filter tests themselves
 func TestCreatePolicies(t *testing.T) {
 	testCases := []struct {
 		testName      string
@@ -83,7 +338,7 @@ func TestCreatePolicies(t *testing.T) {
 		{
 			testName:      "invalid argfilter 3",
 			filters:       []string{"open.bla=5"},
-			expectedError: flags.InvalidFilterOptionError("open.bla=5"),
+			expectedError: InvalidFilterOptionError("open.bla=5"),
 		},
 		{
 			testName:      "invalid context filter 1",
@@ -103,7 +358,7 @@ func TestCreatePolicies(t *testing.T) {
 		{
 			testName:      "invalid filter",
 			filters:       []string{"blabla=5"},
-			expectedError: flags.InvalidFilterOptionError("blabla=5"),
+			expectedError: InvalidFilterOptionError("blabla=5"),
 		},
 		{
 			testName:      "invalid retfilter 1",
@@ -118,27 +373,27 @@ func TestCreatePolicies(t *testing.T) {
 		{
 			testName:      "invalid operator",
 			filters:       []string{"uid\t0"},
-			expectedError: flags.InvalidFilterOptionError("uid\t0"),
+			expectedError: InvalidFilterOptionError("uid\t0"),
 		},
 		{
 			testName:      "invalid operator",
 			filters:       []string{"mntns\t0"},
-			expectedError: flags.InvalidFilterOptionError("mntns\t0"),
+			expectedError: InvalidFilterOptionError("mntns\t0"),
 		},
 		{
 			testName:      "invalid filter type",
 			filters:       []string{"UID>0"},
-			expectedError: flags.InvalidFilterOptionError("UID>0"),
+			expectedError: InvalidFilterOptionError("UID>0"),
 		},
 		{
 			testName:      "invalid filter type",
 			filters:       []string{"test=0"},
-			expectedError: flags.InvalidFilterOptionError("test=0"),
+			expectedError: InvalidFilterOptionError("test=0"),
 		},
 		{
 			testName:      "invalid filter type",
 			filters:       []string{"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=0"},
-			expectedError: flags.InvalidFilterOptionError("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=0"),
+			expectedError: InvalidFilterOptionError("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=0"),
 		},
 		{
 			testName:      "invalid mntns 2",
@@ -147,31 +402,13 @@ func TestCreatePolicies(t *testing.T) {
 		},
 		{
 			testName:      "invalid uid 1",
-			filters:       []string{"uid=\t"},
-			expectedError: filters.InvalidValue("\t"),
-		},
-		{
-			testName:      "invalid uid 2",
 			filters:       []string{"uid=4294967296"},
 			expectedError: filters.InvalidValue("4294967296"),
 		},
 		{
-			testName:      "invalid uid 3",
+			testName:      "invalid uid 2",
 			filters:       []string{"uid=-1"},
 			expectedError: filters.InvalidValue("-1"),
-		},
-		{
-			testName:      "invalid uid 4",
-			filters:       []string{"uid=-1\t"},
-			expectedError: filters.InvalidValue("-1\t"),
-		},
-		{
-			testName: "success - policy 1",
-			filters:  []string{"1:uid=4294967296"},
-		},
-		{
-			testName: "success - policy 2",
-			filters:  []string{"2:pid>50000"},
 		},
 		{
 			testName: "success - large uid filter",
@@ -210,10 +447,6 @@ func TestCreatePolicies(t *testing.T) {
 			filters:  []string{"binary=/usr/bin/ls"},
 		},
 		{
-			testName: "success - policy 2:binary=host:/usr/bin/ls",
-			filters:  []string{"2:binary=host:/usr/bin/ls"},
-		},
-		{
 			testName: "success - uts!=deadbeaf",
 			filters:  []string{"uts!=deadbeaf"},
 		},
@@ -230,92 +463,36 @@ func TestCreatePolicies(t *testing.T) {
 			filters:  []string{"container"},
 		},
 		{
-			testName: "2:container",
-			filters:  []string{"2:container"},
-		},
-		{
 			testName: "container=new",
 			filters:  []string{"container=new"},
-		},
-		{
-			testName: "2:container=new",
-			filters:  []string{"2:container=new"},
 		},
 		{
 			testName: "pid=new",
 			filters:  []string{"pid=new"},
 		},
 		{
-			testName: "2:pid=new",
-			filters:  []string{"2:pid=new"},
-		},
-		{
 			testName: "container=abcd123",
 			filters:  []string{"container=abcd123"},
-		},
-		{
-			testName: "2:container=abcd123",
-			filters:  []string{"2:container=abcd123"},
 		},
 		{
 			testName: "argfilter",
 			filters:  []string{"openat.pathname=/bin/ls,/tmp/tracee", "openat.pathname!=/etc/passwd"},
 		},
 		{
-			testName: "argfilter policy",
-			filters:  []string{"2:openat.pathname=/bin/ls,/tmp/tracee", "2:openat.pathname!=/etc/passwd"},
-		},
-		{
 			testName: "retfilter",
 			filters:  []string{"openat.retval=2", "openat.retval>1"},
-		},
-		{
-			testName: "retfilter policy",
-			filters:  []string{"2:openat.retval=2", "2:openat.retval>1"},
 		},
 		{
 			testName: "wildcard filter",
 			filters:  []string{"event=open*"},
 		},
 		{
-			testName: "wildcard filter policy",
-			filters:  []string{"2:event=open*"},
-		},
-		{
 			testName: "wildcard not filter",
 			filters:  []string{"event!=*"},
 		},
 		{
-			testName: "wildcard not filter policy",
-			filters:  []string{"2:event!=*"},
-		},
-		{
 			testName: "multiple filters",
 			filters:  []string{"uid<1", "mntns=5", "pidns!=3", "pid!=10", "comm=ps", "uts!=abc"},
-		},
-		{
-			testName: "multiple filters policy",
-			filters:  []string{"2:uid<1", "2:mntns=5", "2:pidns!=3", "2:pid!=10", "2:comm=ps", "2:uts!=abc"},
-		},
-		{
-			testName:      "invalid value - extra operator",
-			filters:       []string{"uid==0"},
-			expectedError: filters.InvalidValue("=0"),
-		},
-		{
-			testName:      "invalid value policy - extra operator",
-			filters:       []string{"2:uid==0"},
-			expectedError: filters.InvalidValue("=0"),
-		},
-		{
-			testName:      "invalid value - extra operator",
-			filters:       []string{"uid>>>>>>>>>>>>>>>>>>>>>>>>>>>>>0"},
-			expectedError: filters.InvalidValue(">>>>>>>>>>>>>>>>>>>>>>>>>>>>0"),
-		},
-		{
-			testName:      "invalid value policy - extra operator",
-			filters:       []string{"2:uid>>>>>>>>>>>>>>>>>>>>>>>>>>>>>0"},
-			expectedError: filters.InvalidValue(">>>>>>>>>>>>>>>>>>>>>>>>>>>>0"),
 		},
 		{
 			testName:      "invalid value - string in numeric filter",
@@ -323,18 +500,8 @@ func TestCreatePolicies(t *testing.T) {
 			expectedError: filters.InvalidValue("a"),
 		},
 		{
-			testName:      "invalid value policy - string in numeric filter",
-			filters:       []string{"2:uid=a"},
-			expectedError: filters.InvalidValue("a"),
-		},
-		{
 			testName:      "invalid pidns",
 			filters:       []string{"pidns=a"},
-			expectedError: filters.InvalidValue("a"),
-		},
-		{
-			testName:      "invalid pidns policy",
-			filters:       []string{"2:pidns=a"},
 			expectedError: filters.InvalidValue("a"),
 		},
 
@@ -343,25 +510,12 @@ func TestCreatePolicies(t *testing.T) {
 			filters:  []string{"pid>12"},
 		},
 		{
-			testName: "valid pid policy",
-			filters:  []string{"2:pid>12"},
-		},
-		{
 			testName: "adding retval filter then argfilter",
 			filters:  []string{"open.retval=5", "security_file_open.pathname=/etc/shadow"},
 		},
 		{
-			testName: "adding retval filter then argfilter policy",
-			filters:  []string{"2:open.retval=5", "2:security_file_open.pathname=/etc/shadow"},
-		},
-		{
 			testName:      "invalid wildcard",
 			filters:       []string{"event=blah*"},
-			expectedError: errors.New("invalid event to trace: blah"),
-		},
-		{
-			testName:      "invalid wildcard policy",
-			filters:       []string{"2:event=blah*"},
 			expectedError: errors.New("invalid event to trace: blah"),
 		},
 		{
@@ -370,18 +524,8 @@ func TestCreatePolicies(t *testing.T) {
 			expectedError: errors.New("invalid event to trace: bl*ah"),
 		},
 		{
-			testName:      "invalid wildcard policy 2",
-			filters:       []string{"2:event=bl*ah"},
-			expectedError: errors.New("invalid event to trace: bl*ah"),
-		},
-		{
 			testName:      "internal event selection",
 			filters:       []string{"event=print_syscall_table"},
-			expectedError: errors.New("invalid event to trace: print_syscall_table"),
-		},
-		{
-			testName:      "internal event selection policy",
-			filters:       []string{"2:event=print_syscall_table"},
 			expectedError: errors.New("invalid event to trace: print_syscall_table"),
 		},
 		{
@@ -390,27 +534,17 @@ func TestCreatePolicies(t *testing.T) {
 			expectedError: errors.New("invalid event to exclude: blah"),
 		},
 		{
-			testName:      "invalid not wildcard policy",
-			filters:       []string{"2:event!=blah*"},
-			expectedError: errors.New("invalid event to exclude: blah"),
-		},
-		{
 			testName:      "invalid not wildcard 2",
 			filters:       []string{"event!=bl*ah"},
-			expectedError: errors.New("invalid event to exclude: bl*ah"),
-		},
-		{
-			testName:      "invalid not wildcard policy 2",
-			filters:       []string{"2:event!=bl*ah"},
 			expectedError: errors.New("invalid event to exclude: bl*ah"),
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			filterMap, err := flags.PrepareFilterMapFromFlags(tc.filters)
+			filterMap, err := PrepareFilterMapFromFlags(tc.filters)
 			assert.NoError(t, err)
 
-			_, err = flags.CreatePolicies(filterMap)
+			_, err = CreatePolicies(filterMap)
 			if tc.expectedError != nil {
 				require.Error(t, err)
 				assert.ErrorContains(t, err, tc.expectedError.Error())
@@ -574,7 +708,7 @@ func TestPrepareCapture(t *testing.T) {
 		}
 		for _, tc := range testCases {
 			t.Run(tc.testName, func(t *testing.T) {
-				capture, err := flags.PrepareCapture(tc.captureSlice)
+				capture, err := PrepareCapture(tc.captureSlice)
 				if tc.expectedError == nil {
 					require.NoError(t, err)
 					assert.Equal(t, tc.expectedCapture, capture, tc.testName)
@@ -588,7 +722,7 @@ func TestPrepareCapture(t *testing.T) {
 
 	t.Run("clear dir", func(t *testing.T) {
 		d, _ := os.CreateTemp("", "TestPrepareCapture-*")
-		capture, err := flags.PrepareCapture([]string{fmt.Sprintf("dir:%s", d.Name()), "clear-dir"})
+		capture, err := PrepareCapture([]string{fmt.Sprintf("dir:%s", d.Name()), "clear-dir"})
 		require.NoError(t, err)
 		assert.Equal(t, tracee.CaptureConfig{OutputPath: fmt.Sprintf("%s/out", d.Name())}, capture)
 		require.NoDirExists(t, d.Name()+"out")
@@ -599,7 +733,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 	testCases := []struct {
 		testName       string
 		outputSlice    []string
-		expectedOutput flags.OutputConfig
+		expectedOutput OutputConfig
 		expectedError  error
 	}{
 		{
@@ -626,7 +760,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 		{
 			testName:    "default format",
 			outputSlice: []string{},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				TraceeConfig: &tracee.OutputConfig{
 					ParseArguments: true,
 				},
@@ -635,7 +769,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 		{
 			testName:    "table format always parse arguments",
 			outputSlice: []string{"table"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				TraceeConfig: &tracee.OutputConfig{
 					ParseArguments: true,
 				},
@@ -644,7 +778,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 		{
 			testName:    "option stack-addresses",
 			outputSlice: []string{"option:stack-addresses"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				TraceeConfig: &tracee.OutputConfig{
 					StackAddresses: true,
 					ParseArguments: true,
@@ -654,7 +788,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 		{
 			testName:    "option exec-env",
 			outputSlice: []string{"option:exec-env"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				TraceeConfig: &tracee.OutputConfig{
 					ExecEnv:        true,
 					ParseArguments: true,
@@ -664,7 +798,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 		{
 			testName:    "option relative-time",
 			outputSlice: []string{"json", "option:relative-time"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				TraceeConfig: &tracee.OutputConfig{
 					RelativeTime: true,
 				},
@@ -673,7 +807,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 		{
 			testName:    "option exec-hash",
 			outputSlice: []string{"option:exec-hash"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				TraceeConfig: &tracee.OutputConfig{
 					ExecHash:       true,
 					ParseArguments: true,
@@ -683,7 +817,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 		{
 			testName:    "option parse-arguments",
 			outputSlice: []string{"json", "option:parse-arguments"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				TraceeConfig: &tracee.OutputConfig{
 					ParseArguments: true,
 				},
@@ -692,7 +826,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 		{
 			testName:    "option parse-arguments-fds",
 			outputSlice: []string{"json", "option:parse-arguments-fds"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				TraceeConfig: &tracee.OutputConfig{
 					ParseArguments:    true,
 					ParseArgumentsFDs: true,
@@ -702,7 +836,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 		{
 			testName:    "option sort-events",
 			outputSlice: []string{"option:sort-events"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				TraceeConfig: &tracee.OutputConfig{
 					ParseArguments: true,
 					EventsSorting:  true,
@@ -721,7 +855,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 				"option:parse-arguments-fds",
 				"option:sort-events",
 			},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				TraceeConfig: &tracee.OutputConfig{
 					StackAddresses:    true,
 					ExecEnv:           true,
@@ -736,7 +870,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 	}
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
-			output, err := flags.TraceeEbpfPrepareOutput(testcase.outputSlice)
+			output, err := TraceeEbpfPrepareOutput(testcase.outputSlice)
 			if err != nil {
 				assert.ErrorContains(t, err, testcase.expectedError.Error())
 			} else {
@@ -750,7 +884,7 @@ func TestPrepareOutput(t *testing.T) {
 	testCases := []struct {
 		testName       string
 		outputSlice    []string
-		expectedOutput flags.OutputConfig
+		expectedOutput OutputConfig
 		expectedError  error
 	}{
 		// validations
@@ -762,28 +896,28 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:      "empty option flag",
 			outputSlice:   []string{"option"},
-			expectedError: errors.New("flags.parseOption: option flag can't be empty, use '--output help' for more info"),
+			expectedError: errors.New("parseOption: option flag can't be empty, use '--output help' for more info"),
 		},
 		{
 			testName:      "empty option flag 2",
 			outputSlice:   []string{"option:"},
-			expectedError: errors.New("flags.parseOption: option flag can't be empty, use '--output help' for more info"),
+			expectedError: errors.New("parseOption: option flag can't be empty, use '--output help' for more info"),
 		},
 		{
 			testName:      "invalid option value",
 			outputSlice:   []string{"option:foo"},
-			expectedError: errors.New("flags.setOption: invalid output option: foo, use '--output help' for more info"),
+			expectedError: errors.New("setOption: invalid output option: foo, use '--output help' for more info"),
 		},
 		{
 			testName:      "empty file for format",
 			outputSlice:   []string{"json:"},
-			expectedError: errors.New("flags.parseFormat: format flag can't be empty, use '--output help' for more info"),
+			expectedError: errors.New("parseFormat: format flag can't be empty, use '--output help' for more info"),
 		},
 		// formats
 		{
 			testName:    "default format",
 			outputSlice: []string{},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "table", OutPath: "stdout"},
 				},
@@ -795,7 +929,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "table to stdout",
 			outputSlice: []string{"table"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "table", OutPath: "stdout"},
 				},
@@ -807,7 +941,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "table to /tmp/table",
 			outputSlice: []string{"table:/tmp/table"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "table", OutPath: "/tmp/table"},
 				},
@@ -819,7 +953,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "table to stdout, and to /tmp/table",
 			outputSlice: []string{"table", "table:/tmp/table"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "table", OutPath: "stdout"},
 					{Kind: "table", OutPath: "/tmp/table"},
@@ -832,7 +966,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "json to stdout",
 			outputSlice: []string{"json"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "json", OutPath: "stdout"},
 				},
@@ -842,7 +976,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "json to /tmp/json, and json to /tmp/json2",
 			outputSlice: []string{"json:/tmp/json", "json:/tmp/json2"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "json", OutPath: "/tmp/json"},
 					{Kind: "json", OutPath: "/tmp/json2"},
@@ -853,7 +987,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "gob to stdout",
 			outputSlice: []string{"gob"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "gob", OutPath: "stdout"},
 				},
@@ -863,7 +997,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "gob to stdout",
 			outputSlice: []string{"gob"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "gob", OutPath: "stdout"},
 				},
@@ -873,7 +1007,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "gob to /tmp/gob1,/tmp/gob2",
 			outputSlice: []string{"gob:/tmp/gob1,/tmp/gob2"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "gob", OutPath: "/tmp/gob1"},
 					{Kind: "gob", OutPath: "/tmp/gob2"},
@@ -884,7 +1018,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "table-verbose to stdout",
 			outputSlice: []string{"table-verbose"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "table-verbose", OutPath: "stdout"},
 				},
@@ -894,7 +1028,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "gotemplate to stdout",
 			outputSlice: []string{"gotemplate=template.tmpl"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "gotemplate=template.tmpl", OutPath: "stdout"},
 				},
@@ -904,7 +1038,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "gotemplate to multiple files",
 			outputSlice: []string{"gotemplate=template.tmpl:/tmp/gotemplate1,/tmp/gotemplate2"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "gotemplate=template.tmpl", OutPath: "/tmp/gotemplate1"},
 					{Kind: "gotemplate=template.tmpl", OutPath: "/tmp/gotemplate2"},
@@ -920,7 +1054,7 @@ func TestPrepareOutput(t *testing.T) {
 				"gob:/tmp/gob1",
 				"gotemplate=template.tmpl:/tmp/gotemplate1",
 			},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "table", OutPath: "stdout"},
 					{Kind: "json", OutPath: "/tmp/json"},
@@ -936,22 +1070,22 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:      "two formats for stdout",
 			outputSlice:   []string{"table", "json"},
-			expectedError: errors.New("flags.parseFormat: cannot use the same path for multiple outputs: stdout, use '--output help' for more info"),
+			expectedError: errors.New("parseFormat: cannot use the same path for multiple outputs: stdout, use '--output help' for more info"),
 		},
 		{
 			testName:      "format for the same file twice",
 			outputSlice:   []string{"table:/tmp/test,/tmp/test"},
-			expectedError: errors.New("flags.parseFormat: cannot use the same path for multiple outputs: /tmp/test, use '--output help' for more info"),
+			expectedError: errors.New("parseFormat: cannot use the same path for multiple outputs: /tmp/test, use '--output help' for more info"),
 		},
 		{
 			testName:      "two differents formats for the same file",
 			outputSlice:   []string{"table:/tmp/test", "json:/tmp/test"},
-			expectedError: errors.New("flags.parseFormat: cannot use the same path for multiple outputs: /tmp/test, use '--output help' for more info"),
+			expectedError: errors.New("parseFormat: cannot use the same path for multiple outputs: /tmp/test, use '--output help' for more info"),
 		},
 		{
 			testName:    "none",
 			outputSlice: []string{"none"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "ignore", OutPath: "stdout"},
 				},
@@ -972,22 +1106,22 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:      "empty forward flag",
 			outputSlice:   []string{"forward"},
-			expectedError: errors.New("flags.validateURL: forward flag can't be empty, use '--output help' for more info"),
+			expectedError: errors.New("validateURL: forward flag can't be empty, use '--output help' for more info"),
 		},
 		{
 			testName:      "empty forward flag",
 			outputSlice:   []string{"forward:"},
-			expectedError: errors.New("flags.validateURL: forward flag can't be empty, use '--output help' for more info"),
+			expectedError: errors.New("validateURL: forward flag can't be empty, use '--output help' for more info"),
 		},
 		{
 			testName:      "invalid forward url",
 			outputSlice:   []string{"forward:lalala"},
-			expectedError: errors.New("flags.validateURL: invalid uri for forward output \"lalala\". Use '--output help' for more info"),
+			expectedError: errors.New("validateURL: invalid uri for forward output \"lalala\". Use '--output help' for more info"),
 		},
 		{
 			testName:    "forward",
 			outputSlice: []string{"forward:tcp://localhost:1234"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "forward", OutPath: "tcp://localhost:1234"},
 				},
@@ -998,22 +1132,22 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:      "empty webhook flag",
 			outputSlice:   []string{"webhook"},
-			expectedError: errors.New("flags.validateURL: webhook flag can't be empty, use '--output help' for more info"),
+			expectedError: errors.New("validateURL: webhook flag can't be empty, use '--output help' for more info"),
 		},
 		{
 			testName:      "empty webhook flag",
 			outputSlice:   []string{"webhook:"},
-			expectedError: errors.New("flags.validateURL: webhook flag can't be empty, use '--output help' for more info"),
+			expectedError: errors.New("validateURL: webhook flag can't be empty, use '--output help' for more info"),
 		},
 		{
 			testName:      "invalid webhook url",
 			outputSlice:   []string{"webhook:lalala"},
-			expectedError: errors.New("flags.validateURL: invalid uri for webhook output \"lalala\". Use '--output help' for more info"),
+			expectedError: errors.New("validateURL: invalid uri for webhook output \"lalala\". Use '--output help' for more info"),
 		},
 		{
 			testName:    "webhook",
 			outputSlice: []string{"webhook:http://localhost:8080"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "webhook", OutPath: "http://localhost:8080"},
 				},
@@ -1024,7 +1158,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "option stack-addresses",
 			outputSlice: []string{"option:stack-addresses"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "table", OutPath: "stdout"},
 				},
@@ -1037,7 +1171,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "option exec-env",
 			outputSlice: []string{"option:exec-env"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "table", OutPath: "stdout"},
 				},
@@ -1050,7 +1184,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "option relative-time",
 			outputSlice: []string{"json", "option:relative-time"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "json", OutPath: "stdout", RelativeTS: true},
 				},
@@ -1062,7 +1196,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "option exec-hash",
 			outputSlice: []string{"option:exec-hash"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "table", OutPath: "stdout"},
 				},
@@ -1075,7 +1209,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "option parse-arguments",
 			outputSlice: []string{"json", "option:parse-arguments"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "json", OutPath: "stdout"},
 				},
@@ -1087,7 +1221,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "option parse-arguments-fds",
 			outputSlice: []string{"json", "option:parse-arguments-fds"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "json", OutPath: "stdout"},
 				},
@@ -1100,7 +1234,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "option sort-events",
 			outputSlice: []string{"option:sort-events"},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "table", OutPath: "stdout"},
 				},
@@ -1122,7 +1256,7 @@ func TestPrepareOutput(t *testing.T) {
 				"option:parse-arguments-fds",
 				"option:sort-events",
 			},
-			expectedOutput: flags.OutputConfig{
+			expectedOutput: OutputConfig{
 				PrinterConfigs: []printer.Config{
 					{Kind: "json", OutPath: "stdout", RelativeTS: true},
 				},
@@ -1140,9 +1274,9 @@ func TestPrepareOutput(t *testing.T) {
 	}
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
-			output, err := flags.PrepareOutput(testcase.outputSlice)
+			output, err := PrepareOutput(testcase.outputSlice)
 			if err != nil {
-				assert.Equal(t, testcase.expectedError, err)
+				assert.Contains(t, err.Error(), testcase.expectedError.Error())
 			} else {
 				assert.Equal(t, testcase.expectedOutput.TraceeConfig, output.TraceeConfig)
 
@@ -1216,7 +1350,7 @@ func TestPrepareCache(t *testing.T) {
 
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
-			cache, err := flags.PrepareCache(testcase.cacheSlice)
+			cache, err := PrepareCache(testcase.cacheSlice)
 			if testcase.expectedError != nil {
 				assert.ErrorContains(t, err, testcase.expectedError.Error())
 			}
@@ -1267,7 +1401,7 @@ func TestPrepareRego(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.testName, func(t *testing.T) {
-				rego, err := flags.PrepareRego(tc.regoSlice)
+				rego, err := PrepareRego(tc.regoSlice)
 				if tc.expectedError == nil {
 					require.NoError(t, err)
 					assert.Equal(t, tc.expectedRego, rego, tc.testName)

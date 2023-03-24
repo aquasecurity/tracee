@@ -39,7 +39,7 @@ func PrepareFilterMapFromPolicies(policies []PolicyFile) (FilterMap, error) {
 
 	policyNames := make(map[string]bool)
 
-	for i, p := range policies {
+	for pIdx, p := range policies {
 		err := validatePolicy(p)
 		if err != nil {
 			return nil, err
@@ -97,7 +97,7 @@ func PrepareFilterMapFromPolicies(policies []PolicyFile) (FilterMap, error) {
 				full:              s,
 				filterName:        filterName,
 				operatorAndValues: operatorAndValues,
-				policyIdx:         i,
+				policyIdx:         pIdx,
 				policyName:        p.Name,
 			})
 		}
@@ -122,7 +122,7 @@ func PrepareFilterMapFromPolicies(policies []PolicyFile) (FilterMap, error) {
 				full:              fmt.Sprintf("event=%s", r.Event),
 				filterName:        "event",
 				operatorAndValues: fmt.Sprintf("=%s", r.Event),
-				policyIdx:         i,
+				policyIdx:         pIdx,
 				policyName:        p.Name,
 			})
 
@@ -144,7 +144,7 @@ func PrepareFilterMapFromPolicies(policies []PolicyFile) (FilterMap, error) {
 						full:              fmt.Sprintf("%s.%s", r.Event, f),
 						filterName:        fmt.Sprintf("%s.%s", r.Event, filterName),
 						operatorAndValues: operatorAndValues,
-						policyIdx:         i,
+						policyIdx:         pIdx,
 						policyName:        p.Name,
 					})
 
@@ -157,7 +157,7 @@ func PrepareFilterMapFromPolicies(policies []PolicyFile) (FilterMap, error) {
 						full:              fmt.Sprintf("%s.%s", r.Event, f),
 						filterName:        fmt.Sprintf("%s.%s", r.Event, filterName),
 						operatorAndValues: operatorAndValues,
-						policyIdx:         i,
+						policyIdx:         pIdx,
 						policyName:        p.Name,
 					})
 					continue
@@ -173,13 +173,13 @@ func PrepareFilterMapFromPolicies(policies []PolicyFile) (FilterMap, error) {
 					full:              fmt.Sprintf("%s.context.%s", r.Event, f),
 					filterName:        fmt.Sprintf("%s.context.%s", r.Event, filterName),
 					operatorAndValues: operatorAndValues,
-					policyIdx:         i,
+					policyIdx:         pIdx,
 					policyName:        p.Name,
 				})
 			}
 		}
 
-		filterMap[i] = filterFlags
+		filterMap[pIdx] = filterFlags
 	}
 
 	return filterMap, nil
