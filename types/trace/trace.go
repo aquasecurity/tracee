@@ -28,13 +28,8 @@ type Event struct {
 	PIDNS               int          `json:"pidNamespace"`
 	ProcessName         string       `json:"processName"`
 	HostName            string       `json:"hostName"`
-	ContainerID         string       `json:"containerId"`
-	ContainerImage      string       `json:"containerImage"`
-	ContainerName       string       `json:"containerName"`
-	PodName             string       `json:"podName"`
-	PodNamespace        string       `json:"podNamespace"`
-	PodUID              string       `json:"podUID"`
-	PodSandbox          bool         `json:"podSandbox"`
+	Container           Container    `json:"container,omitempty"`
+	Kubernetes          Kubernetes   `json:"kubernetes,omitempty"`
 	EventID             int          `json:"eventId,string"`
 	EventName           string       `json:"eventName"`
 	MatchedPolicies     uint64       `json:"matchedPolicies"`
@@ -45,6 +40,20 @@ type Event struct {
 	ContextFlags        ContextFlags `json:"contextFlags"`
 	Args                []Argument   `json:"args"` //Arguments are ordered according their appearance in the original event
 	Metadata            *Metadata    `json:"metadata,omitempty"`
+}
+
+type Container struct {
+	ID          string `json:"id,omitempty"`
+	Name        string `json:"name,omitempty"`
+	ImageName   string `json:"image,omitempty"`
+	ImageDigest string `json:"imageDigest,omitempty"`
+}
+
+type Kubernetes struct {
+	PodName      string `json:"podName,omitempty"`
+	PodNamespace string `json:"podNamespace,omitempty"`
+	PodUID       string `json:"podUID,omitempty"`
+	PodSandbox   bool   `json:"podSandbox,omitempty"`
 }
 
 // Metadata is a struct that holds metadata about an event
@@ -75,7 +84,7 @@ func (e Event) Origin() EventOrigin {
 	if e.ContextFlags.ContainerStarted {
 		return ContainerOrigin
 	}
-	if e.ContainerID != "" {
+	if e.Container.ID != "" {
 		return ContainerInitOrigin
 	}
 	return HostOrigin
