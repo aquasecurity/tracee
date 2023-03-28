@@ -86,7 +86,8 @@ func ClearModulesState(modsMap *bpf.BPFMap) {
 }
 
 func FillModulesFromProcFs(kernelSymbols helpers.KernelSymbolTable, modulesFromProcFs *bpf.BPFMap) error {
-	err := capabilities.GetInstance().Requested(
+
+	return capabilities.GetInstance().Specific(
 		func() error {
 			file, err := os.Open("/proc/modules")
 			if err != nil {
@@ -149,6 +150,4 @@ func FillModulesFromProcFs(kernelSymbols helpers.KernelSymbolTable, modulesFromP
 		},
 		cap.DAC_OVERRIDE,
 	)
-	return err
-
 }

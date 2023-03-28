@@ -284,8 +284,9 @@ func (t *Tracee) handleEventsDependencies(eventId events.ID, submitMap uint64) {
 	}
 }
 
-// New creates a new Tracee instance based on a given valid Config. It' expected
-// that it won't cause external system side effects (reads, writes, etc.)
+// New creates a new Tracee instance based on a given valid Config. It is
+// expected that it won't cause external system side effects (reads, writes,
+// etc.)
 func New(cfg Config) (*Tracee, error) {
 	err := cfg.Validate()
 	if err != nil {
@@ -336,7 +337,7 @@ func New(cfg Config) (*Tracee, error) {
 		t.handleEventsDependencies(id, evt.submit)
 	}
 
-	// Add Required (by enabled events) capabilities to its ring
+	// Add enabled events needed Base capabilities (always effective)
 
 	for id := range t.events {
 		evt, ok := events.Definitions.GetSafe(id)
@@ -344,19 +345,20 @@ func New(cfg Config) (*Tracee, error) {
 			return t, errfmt.Errorf("could not get event %d", id)
 		}
 		for _, capArray := range evt.Dependencies.Capabilities {
-			if err := caps.Require(capArray); err != nil {
+			err := caps.BaseRingAdd(capArray)
+			if err != nil {
 				return t, errfmt.WrapError(err)
 			}
 		}
 	}
 
-	// Add/Drop Required (by the user) capabilities to/from its ring
+	// Add/Drop capabilities to/from the Base ring (always effective)
 
 	capsToAdd, err := capabilities.ReqByString(t.config.Capabilities.AddCaps...)
 	if err != nil {
 		return t, errfmt.WrapError(err)
 	}
-	err = caps.Require(capsToAdd...)
+	err = caps.BaseRingAdd(capsToAdd...)
 	if err != nil {
 		return t, errfmt.WrapError(err)
 	}
@@ -365,7 +367,7 @@ func New(cfg Config) (*Tracee, error) {
 	if err != nil {
 		return t, errfmt.WrapError(err)
 	}
-	err = caps.Unrequire(capsToDrop...)
+	err = caps.BaseRingRemove(capsToDrop...)
 	if err != nil {
 		return t, errfmt.WrapError(err)
 	}
@@ -397,7 +399,7 @@ func (t *Tracee) Init() error {
 	// Init kernel symbols map
 
 	if initReq.kallsyms {
-		err = capabilities.GetInstance().Requested(
+		err = capabilities.GetInstance().Specific(
 			func() error {
 				return t.NewKernelSymbols()
 			},
@@ -420,7 +422,7 @@ func (t *Tracee) Init() error {
 
 	t.pidsInMntns.Init(t.config.maxPidsCache)
 
-	err = capabilities.GetInstance().Requested(
+	err = capabilities.GetInstance().Specific(
 		func() error {
 			mntNSProcs, err = proc.GetMountNSFirstProcesses()
 			return err
@@ -470,7 +472,7 @@ func (t *Tracee) Init() error {
 
 	// Initialize eBPF programs and maps
 
-	err = capabilities.GetInstance().Required(
+	err = capabilities.GetInstance().EBPF(
 		func() error {
 			return t.initBPF()
 		},

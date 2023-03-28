@@ -80,7 +80,7 @@ func (m *MountOnce) Mount() error {
 
 	// mount the filesystem to the target dir
 
-	err = capabilities.GetInstance().Requested(
+	err = capabilities.GetInstance().Specific(
 		func() error {
 			return syscall.Mount(m.fsType, m.target, m.fsType, 0, m.data)
 		},
@@ -105,7 +105,7 @@ func (m *MountOnce) Umount() error {
 
 		// umount the filesystem from the target dir
 
-		err := capabilities.GetInstance().Requested(
+		err := capabilities.GetInstance().Specific(
 			func() error {
 				return syscall.Unmount(m.target, 0)
 			},

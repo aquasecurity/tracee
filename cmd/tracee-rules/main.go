@@ -73,7 +73,7 @@ func main() {
 			}
 
 			var loadedSigIDs []string
-			err = capabilities.GetInstance().Requested(
+			err = capabilities.GetInstance().Specific(
 				func() error {
 					for _, s := range sigs {
 						m, err := s.GetMetadata()

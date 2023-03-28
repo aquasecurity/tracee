@@ -61,7 +61,7 @@ func Find(target string, partialEval bool, signaturesDir string, signatures []st
 
 func findGoSigs(dir string) ([]detect.Signature, error) {
 	var res []detect.Signature
-	err := capabilities.GetInstance().Requested(
+	err := capabilities.GetInstance().Specific(
 		func() error {
 			err := filepath.WalkDir(dir,
 				func(path string, d fs.DirEntry, err error) error {
@@ -107,7 +107,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 
 	regoHelpers := []string{embedded.RegoHelpersCode}
 
-	err := capabilities.GetInstance().Requested(
+	err := capabilities.GetInstance().Specific(
 		func() error {
 			errWD := filepath.WalkDir(dir,
 				func(path string, d fs.DirEntry, err error) error {

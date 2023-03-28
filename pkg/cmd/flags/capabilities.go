@@ -26,7 +26,7 @@ Available capabilities:
 
 func PrepareCapabilities(capsSlice []string) (tracee.CapabilitiesConfig, error) {
 	capsConfig := tracee.CapabilitiesConfig{
-		BypassCaps: false, // bypass capabilities by default
+		BypassCaps: false, // do not bypass capabilities by default
 	}
 
 	for _, slice := range capsSlice {

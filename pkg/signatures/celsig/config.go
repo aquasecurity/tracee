@@ -105,7 +105,7 @@ func NewConfigsFromDir(dirPath string) ([]SignaturesConfig, error) {
 func walkFilesWithExtensions(rootDir string, extensions []string) ([]string, error) {
 	var files []string
 
-	err := capabilities.GetInstance().Requested(
+	err := capabilities.GetInstance().Specific(
 		func() error {
 			err := filepath.WalkDir(rootDir,
 				func(path string, d fs.DirEntry, err error) error {
