@@ -9,13 +9,14 @@ do_ls() {
     ls > /dev/null
 }
 
-do_which_ls() {
-    which ls > /dev/nul
-}
-
 do_ls_uname() {
     # run on the same core to ensure event order
     taskset -c 0 ls; uname
+} > /dev/null
+
+do_uname_who() {
+    # run on the same core to ensure event order
+    taskset -c 0 uname; who
 } > /dev/null
 
 do_docker_run() {
