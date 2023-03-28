@@ -18,6 +18,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/policy"
+	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -207,50 +209,6 @@ func checkSecurityFileOpenExecve(t *testing.T, gotOutput *eventOutput) {
 	}
 }
 
-// func checkPolicy42SecurityFileOpenLs(t *testing.T, gotOutput *eventOutput) {
-// 	_, err := forkAndExecFunction(doLs)
-// 	require.NoError(t, err)
-
-// 	waitForTraceeOutput(t, gotOutput, time.Now(), true)
-
-// 	output := gotOutput.getEventsCopy()
-// 	for _, evt := range output {
-// 		// ls - policy 42
-// 		assert.Equal(t, "ls", evt.ProcessName)
-// 		assert.Equal(t, uint64(1<<41), evt.MatchedPolicies)
-// 		arg, err := helpers.GetTraceeArgumentByName(evt, "pathname", helpers.GetArgOps{DefaultArgs: false})
-// 		require.NoError(t, err)
-// 		assert.Contains(t, arg.Value, "integration")
-// 	}
-// }
-
-// // checkExecveOnPolicies4And2 demands an ordered events submission
-// func checkExecveOnPolicies4And2(t *testing.T, gotOutput *eventOutput) {
-// 	_, err := forkAndExecFunction(doLsUname)
-// 	require.NoError(t, err)
-
-// 	waitForTraceeOutput(t, gotOutput, time.Now(), true)
-
-// 	// check output length
-// 	output := gotOutput.getEventsCopy()
-// 	require.Len(t, output, 2)
-// 	var evts [2]trace.Event
-
-// 	// output should only have events with event name of execve
-// 	for i, evt := range output {
-// 		assert.Equal(t, "sched_process_exit", evt.EventName)
-// 		evts[i] = evt
-// 	}
-
-// 	// ls - policy 4
-// 	assert.Equal(t, evts[0].ProcessName, "ls")
-// 	assert.Equal(t, uint64(1<<3), evts[0].MatchedPolicies, "MatchedPolicies")
-
-// 	// uname - policy 2
-// 	assert.Equal(t, evts[1].ProcessName, "uname")
-// 	assert.Equal(t, uint64(1<<1), evts[1].MatchedPolicies, "MatchedPolicies")
-// }
-
 func checkDockerdBinaryFilter(t *testing.T, gotOutput *eventOutput) {
 	dockerdPidBytes, err := forkAndExecFunction(getDockerdPid)
 	require.NoError(t, err)
@@ -270,25 +228,7 @@ func checkDockerdBinaryFilter(t *testing.T, gotOutput *eventOutput) {
 	assert.Contains(t, processIds, int(dockerdPid))
 }
 
-// func checkLsAndWhichBinaryFilterWithPolicies(t *testing.T, gotOutput *eventOutput) {
-// 	var err error
-// 	_, err = forkAndExecFunction(doLs)
-// 	require.NoError(t, err)
-// 	_, err = forkAndExecFunction(doWhichLs)
-// 	require.NoError(t, err)
-
-// 	waitForTraceeOutput(t, gotOutput, time.Now(), true)
-
-// 	output := gotOutput.getEventsCopy()
-// 	for _, evt := range output {
-// 		procName := evt.ProcessName
-// 		if procName != "ls" && procName != "which" {
-// 			t.Fail()
-// 		}
-// 	}
-// }
-
-func Test_EventFilters(t *testing.T) {
+func TestEventFilters(t *testing.T) {
 	testCases := []struct {
 		name       string
 		filterArgs []string
@@ -349,19 +289,6 @@ func Test_EventFilters(t *testing.T) {
 			filterArgs: []string{"container=new", "event!=container_create,container_remove"},
 			eventFunc:  checkNewContainers,
 		},
-		// {
-		// 	name:       "trace event set in a specific policy",
-		// 	filterArgs: []string{"42:comm=ls", "42:event=security_file_open", "42:security_file_open.args.pathname=*integration"},
-		// 	eventFunc:  checkPolicy42SecurityFileOpenLs,
-		// },
-		// {
-		// 	name: "trace events set in two specific policy",
-		// 	filterArgs: []string{
-		// 		"4:event=sched_process_exit", "4:comm=ls",
-		// 		"2:event=sched_process_exit", "2:comm=uname",
-		// 	},
-		// 	eventFunc: checkExecveOnPolicies4And2,
-		// },
 		{
 			name:       "trace only security_file_open from \"execve\" syscall",
 			filterArgs: []string{"event=security_file_open", "security_file_open.context.syscall=execve"},
@@ -372,11 +299,6 @@ func Test_EventFilters(t *testing.T) {
 			filterArgs: []string{"bin=/usr/bin/dockerd"},
 			eventFunc:  checkDockerdBinaryFilter,
 		},
-		// {
-		// 	name:       "trace events from ls and which binary in separate policies",
-		// 	filterArgs: []string{"1:bin=/usr/bin/ls", "2:bin=/usr/bin/which"},
-		// 	eventFunc:  checkLsAndWhichBinaryFilterWithPolicies,
-		// },
 	}
 
 	for _, tc := range testCases {
@@ -426,16 +348,216 @@ func Test_EventFilters(t *testing.T) {
 	}
 }
 
+func checkPolicySecurityFileOpenLs(t *testing.T, pols *policy.Policies, gotOutput *eventOutput) {
+	_, err := forkAndExecFunction(doLs)
+	require.NoError(t, err)
+
+	waitForTraceeOutput(t, gotOutput, time.Now(), true)
+
+	output := gotOutput.getEventsCopy()
+	pol1, err := pols.Lookup(0)
+	require.NoError(t, err)
+	for _, evt := range output {
+		// ls - policy 1
+		assert.Equal(t, "ls", evt.ProcessName, "ProcessName")
+		assert.Equal(t, uint64(1<<0), evt.MatchedPolicies, "MatchedPolicies")
+		assert.Equal(t, []string{pol1.Name}, evt.MatchedPoliciesNames, "MatchedPoliciesNames")
+		arg, err := helpers.GetTraceeArgumentByName(evt, "pathname", helpers.GetArgOps{DefaultArgs: false})
+		require.NoError(t, err)
+		assert.Contains(t, arg.Value, "integration")
+	}
+}
+
+// checkExecveOnPolicies1And2 demands an ordered events submission
+func checkExecveOnPolicies1And2(t *testing.T, pols *policy.Policies, gotOutput *eventOutput) {
+	_, err := forkAndExecFunction(doLsUname)
+	require.NoError(t, err)
+
+	waitForTraceeOutput(t, gotOutput, time.Now(), true)
+
+	// check output length
+	output := gotOutput.getEventsCopy()
+	require.Len(t, output, 2)
+	var evts [2]trace.Event
+
+	// output should only have events with event name of execve
+	for i, evt := range output {
+		assert.Equal(t, "sched_process_exit", evt.EventName)
+		evts[i] = evt
+	}
+	pol1, err := pols.Lookup(0)
+	require.NoError(t, err)
+	pol2, err := pols.Lookup(1)
+	require.NoError(t, err)
+
+	// ls - policy 1
+	assert.Equal(t, evts[0].ProcessName, "ls")
+	assert.Equal(t, uint64(1<<0), evts[0].MatchedPolicies, "MatchedPolicies")
+	assert.Equal(t, []string{pol1.Name}, evts[0].MatchedPoliciesNames, "MatchedPoliciesNames")
+
+	// uname - policy 2
+	assert.Equal(t, evts[1].ProcessName, "uname")
+	assert.Equal(t, uint64(1<<1), evts[1].MatchedPolicies, "MatchedPolicies")
+	assert.Equal(t, []string{pol2.Name}, evts[1].MatchedPoliciesNames, "MatchedPoliciesNames")
+}
+
+func checkUnameAndWhoOnPoliciesWithBinaryScope(t *testing.T, pols *policy.Policies, gotOutput *eventOutput) {
+	var err error
+	_, err = forkAndExecFunction(doUnameWho)
+	require.NoError(t, err)
+
+	waitForTraceeOutput(t, gotOutput, time.Now(), true)
+
+	output := gotOutput.getEventsCopy()
+	for _, evt := range output {
+		procName := evt.ProcessName
+		if procName != "uname" && procName != "who" {
+			t.Fail()
+		}
+	}
+}
+
+func TestEventPolicies(t *testing.T) {
+	testCases := []struct {
+		name      string
+		policies  []flags.PolicyFile
+		eventFunc func(*testing.T, *policy.Policies, *eventOutput)
+	}{
+		{
+			name: "global scope - single event - args",
+			policies: []flags.PolicyFile{
+				{
+					Name:          "global_scope_single_event",
+					Description:   "global scope - single event",
+					Scope:         []string{"global"},
+					DefaultAction: "log",
+					Rules: []flags.Rule{
+						{
+							Event:  "security_file_open",
+							Filter: []string{"args.pathname=*integration"},
+						},
+					},
+				},
+			},
+			eventFunc: checkPolicySecurityFileOpenLs,
+		},
+		{
+			name: "global scope - single event - comm",
+			policies: []flags.PolicyFile{
+				{
+					Name:          "global_scope_single_event_1",
+					Description:   "global scope - single event 1",
+					Scope:         []string{"global"},
+					DefaultAction: "log",
+					Rules: []flags.Rule{
+						{
+							Event:  "sched_process_exit",
+							Filter: []string{"comm=ls"},
+						},
+					},
+				},
+				{
+					Name:          "global_scope_single_event_2",
+					Description:   "global scope - single event 2",
+					Scope:         []string{"global"},
+					DefaultAction: "log",
+					Rules: []flags.Rule{
+						{
+							Event:  "sched_process_exit",
+							Filter: []string{"comm=uname"},
+						},
+					},
+				},
+			},
+			eventFunc: checkExecveOnPolicies1And2,
+		},
+		{
+			name: "binary scope - single event",
+			policies: []flags.PolicyFile{
+				{
+					Name:          "binary_scope_single_event_1",
+					Description:   "binary scope - single event 1",
+					Scope:         []string{"binary=/usr/bin/uname"},
+					DefaultAction: "log",
+					Rules: []flags.Rule{
+						{
+							Event: "sched_process_exit",
+						},
+					},
+				},
+				{
+					Name:          "binary_scope_single_event_2",
+					Description:   "binary scope - single event 2",
+					Scope:         []string{"binary=/usr/bin/who"},
+					DefaultAction: "log",
+					Rules: []flags.Rule{
+						{
+							Event: "sched_process_exit",
+						},
+					},
+				},
+			},
+			eventFunc: checkUnameAndWhoOnPoliciesWithBinaryScope,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			filterMap, err := flags.PrepareFilterMapFromPolicies(tc.policies)
+			require.NoError(t, err)
+
+			policies, err := flags.CreatePolicies(filterMap)
+			require.NoError(t, err)
+
+			ctx, cancel := context.WithCancel(context.Background())
+
+			eventChan := make(chan trace.Event, 1000)
+			config := tracee.Config{
+				ChanEvents: eventChan,
+				Capabilities: &tracee.CapabilitiesConfig{
+					BypassCaps: true,
+				},
+			}
+			config.Policies = policies
+			eventOutput := &eventOutput{}
+
+			go func() {
+				for {
+					select {
+					case evt, ok := <-eventChan:
+						if !ok {
+							return
+						}
+						eventOutput.addEvent(evt)
+
+					case <-ctx.Done():
+						return
+					}
+				}
+			}()
+
+			trc := startTracee(t, ctx, config, nil, nil)
+
+			waitforTraceeStart(t, trc, time.Now())
+
+			tc.eventFunc(t, policies, eventOutput)
+
+			cancel()
+		})
+	}
+}
+
 type testFunc string
 
 const (
 	doMagicWrite  testFunc = "do_magic_write"
 	doLs          testFunc = "do_ls"
 	doLsUname     testFunc = "do_ls_uname"
+	doUnameWho    testFunc = "do_uname_who"
 	doDockerRun   testFunc = "do_docker_run"
 	doFileOpen    testFunc = "do_file_open"
 	getDockerdPid testFunc = "get_dockerd_pid"
-	doWhichLs     testFunc = "do_which_ls"
 )
 
 //go:embed tester.sh
