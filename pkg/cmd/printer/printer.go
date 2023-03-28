@@ -118,9 +118,8 @@ func (p tableEventPrinter) Preamble() {
 		switch p.containerMode {
 		case ContainerModeDisabled:
 			fmt.Fprintf(p.out,
-				"%-16s %-17s %-17s %-13s %-12s %-12s %-6s %-16s %-7s %-7s %-7s %-16s %-25s %s",
+				"%-16s %-17s %-13s %-12s %-12s %-6s %-16s %-7s %-7s %-7s %-16s %-25s %s",
 				"TIME",
-				"POLICIES",
 				"UTS_NAME",
 				"CONTAINER_ID",
 				"MNT_NS",
@@ -136,9 +135,8 @@ func (p tableEventPrinter) Preamble() {
 			)
 		case ContainerModeEnabled:
 			fmt.Fprintf(p.out,
-				"%-16s %-17s %-17s %-13s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-25s %s",
+				"%-16s %-17s %-13s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-25s %s",
 				"TIME",
-				"POLICIES",
 				"UTS_NAME",
 				"CONTAINER_ID",
 				"MNT_NS",
@@ -154,9 +152,8 @@ func (p tableEventPrinter) Preamble() {
 			)
 		case ContainerModeEnriched:
 			fmt.Fprintf(p.out,
-				"%-16s %-17s %-17s %-13s %-16s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-25s %s",
+				"%-16s %-17s %-13s %-16s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-25s %s",
 				"TIME",
-				"POLICIES",
 				"UTS_NAME",
 				"CONTAINER_ID",
 				"IMAGE",
@@ -243,9 +240,8 @@ func (p tableEventPrinter) Print(event trace.Event) {
 		switch p.containerMode {
 		case ContainerModeDisabled:
 			fmt.Fprintf(p.out,
-				"%-16s %016x  %-16s %-13s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-25s ",
+				"%-16s %-17s %-13s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-25s ",
 				timestamp,
-				event.MatchedPolicies,
 				event.HostName,
 				containerId,
 				event.MountNS,
@@ -260,9 +256,8 @@ func (p tableEventPrinter) Print(event trace.Event) {
 			)
 		case ContainerModeEnabled:
 			fmt.Fprintf(p.out,
-				"%-16s %016x  %-16s %-13s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-25s ",
+				"%-16s %-17s %-13s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-25s ",
 				timestamp,
-				event.MatchedPolicies,
 				event.HostName,
 				containerId,
 				event.MountNS,
@@ -280,9 +275,8 @@ func (p tableEventPrinter) Print(event trace.Event) {
 			)
 		case ContainerModeEnriched:
 			fmt.Fprintf(p.out,
-				"%-16s %016x  %-16s %-13s %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-25s ",
+				"%-16s %-17s %-13s %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-25s ",
 				timestamp,
-				event.MatchedPolicies,
 				event.HostName,
 				containerId,
 				event.Container.ImageName,
