@@ -206,7 +206,10 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 				// don't capture same file twice unless it was modified
 				lastCtime, ok := t.capturedFiles[capturedFileID]
 				if !ok || lastCtime != castedSourceFileCtime {
-					// capture (ring1)
+					// capture (SchedProcessExec sets base capabilities to have
+					// cap.SYS_PTRACE. This is needed at this point because
+					// raising and dropping capabilities too frequently would
+					// have performance impact)
 					err := utils.CopyRegularFileByRelativePath(
 						sourceFilePath,
 						t.outDir,
@@ -274,7 +277,12 @@ func (t *Tracee) processCgroupMkdir(event *trace.Event) error {
 		// If cgroupId is from a regular cgroup directory, and not the
 		// container base directory (from known runtimes), it should be
 		// removed from the containers bpf map.
-		if err := t.containers.RemoveFromBpfMap(t.bpfModule, cgroupId, hId); err != nil {
+		err := capabilities.GetInstance().EBPF(
+			func() error {
+				return t.containers.RemoveFromBpfMap(t.bpfModule, cgroupId, hId)
+			},
+		)
+		if err != nil {
 			// If the cgroupId was not found in bpf map, this could mean that
 			// it is not a container cgroup and, as a systemd cgroup, could have been
 			// created and removed very quickly.
@@ -309,7 +317,7 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 	_, okMemDump := t.events[events.PrintMemDump]
 
 	if okSyscalls || okSeqOps || okProcFops {
-		err := capabilities.GetInstance().Required(
+		err := capabilities.GetInstance().EBPF(
 			func() error {
 				return t.UpdateKallsyms()
 			},

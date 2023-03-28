@@ -13,22 +13,17 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
-var once sync.Once
 var caps *Capabilities // singleton for all packages
 
-//
-// "Effective" might be at protection rings 0,1,2,3
-// "Permitted" is always at ring0 (so effective can migrate rings)
-// "Bound" will bet set to unprivileged so exec() can't inherit capabilities.
-//
+var once sync.Once
 
 type ringType int
 
 const (
-	Privileged   ringType = iota // ring0 (all capabilities enabled, startup/shutdown)
-	Required                     // ring1 (needed capabilities only: config time)
-	Requested                    // ring2 (temporary specific capabilities)
-	Unprivileged                 // ring3 (minimum required capabilities: runtime)
+	Full     ringType = iota // All capabilties are effective
+	EBPF                     // eBPF needed capabilities are effective
+	Specific                 // Specific requested capabilities are effective
+	Base                     // Capabilities that are always effective
 )
 
 type Capabilities struct {
@@ -74,8 +69,8 @@ func (c *Capabilities) initialize(bypass bool) error {
 
 	for v := cap.Value(0); v < cap.MaxBits(); v++ {
 		c.all[v] = make(map[ringType]bool)
-		c.all[v][Privileged] = true // all capabilities are enabled
-		// Required, Requested and Unprivileged is false by default
+		c.all[v][Full] = true // all capabilities are effective in Full
+		// all other ring types are false by default
 	}
 
 	err := c.getProc()
@@ -95,14 +90,14 @@ func (c *Capabilities) initialize(bypass bool) error {
 		return errfmt.WrapError(err)
 	}
 
-	// The base for required capabilities (ring1) depends on the following:
+	// Add eBPF related capabilities to eBPF ring
 
-	err = c.Require(
+	err = c.EBPFRingAdd(
 		cap.IPC_LOCK,
 		cap.SYS_RESOURCE,
 	)
 	if err != nil {
-		logger.Fatalw("Requiring capabilities", "error", err)
+		logger.Fatalw("Adding initial capabilities to EBPF ring", "error", err)
 	}
 
 	// Kernels bellow v5.8 do not support cap.BPF + cap.PERFMON (instead of
@@ -121,40 +116,47 @@ func (c *Capabilities) initialize(bypass bool) error {
 		if err != nil {
 			logger.Fatalw("Requiring capabilities", "error", err)
 		}
+	} else {
+		logger.Debugw("Paranoid value", "value", paranoid)
 	}
 
 	hasBPF, _ := c.have.GetFlag(cap.Permitted, cap.BPF)
 	if hasBPF {
-		err = c.Require(
-			cap.BPF,
-			cap.PERFMON,
-		)
+		if paranoid < 2 {
+			err = c.EBPFRingAdd(
+				cap.BPF,
+				cap.PERFMON,
+			)
+		} else {
+			err = c.EBPFRingAdd(
+				cap.SYS_ADMIN,
+			)
+		}
 		if err != nil {
-			logger.Fatalw("Requiring capabilities", "error", err)
+			logger.Fatalw("Adding eBPF capabilities to EBPF ring", "error", err)
 		}
 	} else {
-		err = c.Require(
+		err = c.EBPFRingAdd(
 			cap.SYS_ADMIN,
 		)
 		if err != nil {
-			logger.Fatalw("Requiring capabilities", "error", err)
+			logger.Fatalw("Adding eBPF capabilities to EBPF ring", "error", err)
 		}
 	}
 
-	return c.apply(Unprivileged) // ring3 as effective
+	return c.apply(Base) // Base ring is always effective
 }
 
 // Public Methods
 
-// Privileged is a protection ring with all caps set as Effective.
-func (c *Capabilities) Privileged(cb func() error) error {
+func (c *Capabilities) Full(cb func() error) error {
 	var err error
 
 	if !c.bypass {
 		c.lock.Lock()
 		defer c.lock.Unlock()
 
-		err = c.apply(Privileged) // ring0 as effective for callback exec
+		err = c.apply(Full) // move to ring Full
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -163,7 +165,7 @@ func (c *Capabilities) Privileged(cb func() error) error {
 	errCb := cb() // callback
 
 	if !c.bypass {
-		err = c.apply(Unprivileged) // back to ring3
+		err = c.apply(Base) // back to ring Base
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -172,15 +174,14 @@ func (c *Capabilities) Privileged(cb func() error) error {
 	return errCb
 }
 
-// Required is a protection ring with only the required caps set as Effective.
-func (c *Capabilities) Required(cb func() error) error {
+func (c *Capabilities) EBPF(cb func() error) error {
 	var err error
 
 	if !c.bypass {
 		c.lock.Lock()
 		defer c.lock.Unlock()
 
-		err = c.apply(Required) // ring1 as effective
+		err = c.apply(EBPF) // move to ring EBPF
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -189,7 +190,7 @@ func (c *Capabilities) Required(cb func() error) error {
 	errCb := cb() // callback
 
 	if !c.bypass {
-		err = c.apply(Unprivileged) // back to ring3
+		err = c.apply(Base) // back to ring Base
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -198,27 +199,22 @@ func (c *Capabilities) Required(cb func() error) error {
 	return errCb
 }
 
-// Requested is a protection ring that needs configuration each time it is
-// called. Instead of making Required capabilities Effective, like Required(),
-// it sets as Effective only given capabilities, for a single time, until the
-// next ring is called. It is specially needed for startup/shutdown actions that
-// might require specific capabilities Effective.
-func (c *Capabilities) Requested(cb func() error, values ...cap.Value) error {
+func (c *Capabilities) Specific(cb func() error, values ...cap.Value) error {
 	var err error
 
 	if !c.bypass {
 		c.lock.Lock()
 		defer c.lock.Unlock()
 
-		err = c.set(Requested, values...)
+		err = c.set(Specific, values...)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
-		err = c.apply(Requested) // ring2 as effective
+		err = c.apply(Specific) // move to ring Specific
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
-		err = c.unset(Requested, values...) // clean requested (for next calls)
+		err = c.unset(Specific, values...) // clean specific ring for next calls
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -226,11 +222,11 @@ func (c *Capabilities) Requested(cb func() error, values ...cap.Value) error {
 
 	errCb := cb()
 	if errCb != nil {
-		logger.Debugw("Caps Requested cb func", "error", errCb)
+		logger.Debugw("Capabilities specific ring callback", "error", errCb)
 	}
 
 	if !c.bypass {
-		err = c.apply(Unprivileged)
+		err = c.apply(Base) // back to ring Base
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -241,42 +237,87 @@ func (c *Capabilities) Requested(cb func() error, values ...cap.Value) error {
 
 // setters/getters
 
-// Require is called after initialization, configures all required capabilities,
-// and those required capabilities are set as Effective each time Required() is
-// called.
-func (c *Capabilities) Require(values ...cap.Value) error {
-	var err error
+func (c *Capabilities) EBPFRingAdd(values ...cap.Value) error {
+	logger.Debugw("Adding capabilities to EBPF ring", "capability", values)
 
-	if c.bypass {
-		return nil
-	}
-
-	c.lock.Lock()                    // do not change caps while in a protective ring
-	err = c.set(Required, values...) // populate ring1 (Required)
-	c.lock.Unlock()
-
-	return errfmt.WrapError(err)
+	return c.ringAdd(EBPF, values...)
 }
 
-// Unrequire is only called when command line "capabilities drop=X" is given.
-// It works by removing, from the required ring, the capabilities given by the
-// user. This way, when tracee shifts to ring1 (Required), that capability won't
-// be Effective.
-func (c *Capabilities) Unrequire(values ...cap.Value) error {
-	var err error
+func (c *Capabilities) EBPFRingRemove(values ...cap.Value) error {
+	logger.Debugw("Removing capabilities from the EBPF ring", "capability", values)
 
-	if c.bypass {
-		return nil
+	return c.ringRemove(EBPF, values...)
+}
+
+func (c *Capabilities) BaseRingAdd(values ...cap.Value) error {
+	logger.Debugw("Adding capabilities to base ring", "capability", values)
+
+	rings := []ringType{
+		Base,
+		EBPF,
+		Specific,
 	}
 
-	c.lock.Lock()                      // do not change caps while in an protective ring
-	err = c.unset(Required, values...) // unpopulate ring1 (Required)
-	c.lock.Unlock()
+	for _, r := range rings {
+		err := c.ringAdd(r, values...) // all rings should also have base caps
+		if err != nil {
+			return err
+		}
+	}
 
-	return errfmt.WrapError(err)
+	// immediate effect (always called from the Base ring context)
+	return c.apply(Base)
+}
+
+func (c *Capabilities) BaseRingRemove(values ...cap.Value) error {
+	logger.Debugw("Removing capabilities from the base ring", "capability", values)
+
+	rings := []ringType{
+		Base,
+		EBPF,
+		Specific,
+	}
+
+	for _, r := range rings {
+		err := c.ringRemove(r, values...) // all rings should have same base caps
+		if err != nil {
+			return err
+		}
+	}
+
+	// immediate effect (always called from the Base ring context)
+	return c.apply(Base)
 }
 
 // Private Methods
+
+func (c *Capabilities) ringAdd(ring ringType, values ...cap.Value) error {
+	var err error
+
+	if c.bypass {
+		return nil
+	}
+
+	c.lock.Lock()
+	err = c.set(ring, values...)
+	c.lock.Unlock()
+
+	return errfmt.WrapError(err)
+}
+
+func (c *Capabilities) ringRemove(ring ringType, values ...cap.Value) error {
+	var err error
+
+	if c.bypass {
+		return nil
+	}
+
+	c.lock.Lock()
+	err = c.unset(ring, values...)
+	c.lock.Unlock()
+
+	return errfmt.WrapError(err)
+}
 
 func (c *Capabilities) getProc() error {
 	var err error
@@ -325,9 +366,9 @@ func (c *Capabilities) apply(t ringType) error {
 	logger.Debugw("Capabilities change")
 
 	for k, v := range c.all {
-		// if v[t] {
-		// 	logger.Debugw("Enabling cap", "cap", k)
-		// }
+		if v[t] {
+			logger.Debugw("Enabling cap", "cap", k)
+		}
 		err = c.have.SetFlag(cap.Effective, v[t], k)
 		if err != nil {
 			return errfmt.WrapError(err)

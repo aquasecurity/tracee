@@ -77,7 +77,7 @@ func fetchInitNamespaces() map[string]uint32 {
 	initNamespacesMap := make(map[string]uint32)
 	namespaceValueReg := regexp.MustCompile(":[[[:digit:]]*]")
 
-	err = capabilities.GetInstance().Requested(
+	err = capabilities.GetInstance().Specific(
 		func() error {
 			namespacesLinks, err = os.ReadDir(InitProcNsDir)
 			if err != nil {

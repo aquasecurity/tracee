@@ -100,7 +100,9 @@ func CopyRegularFileByPath(src, dst string) error {
 	return nil
 }
 
-// CopyRegularFileByRelativePath copies a file from src to dst, where destination is relative to a given directory
+// CopyRegularFileByRelativePath copies a file from src to dst, where
+// destination is relative to a given directory. This function needs needed
+// capabilities to be set before it is called.
 func CopyRegularFileByRelativePath(srcName string, dstDir *os.File, dstName string) error {
 	sourceFileStat, err := os.Stat(srcName)
 	if err != nil {

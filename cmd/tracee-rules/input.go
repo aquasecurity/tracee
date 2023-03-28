@@ -180,7 +180,7 @@ func parseTraceeInputFile(option *traceeInputOptions, fileOpt string) error {
 		option.inputFile = os.Stdin
 		return nil
 	}
-	err := capabilities.GetInstance().Requested(
+	err := capabilities.GetInstance().Specific(
 		func() error {
 			_, err := os.Stat(fileOpt)
 			if err != nil {

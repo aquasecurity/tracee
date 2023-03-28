@@ -5047,6 +5047,7 @@ var Definitions = eventDefinitions{
 				TailCalls: []TailCall{
 					{MapName: "prog_array_tp", MapIndexes: []uint32{tailSchedProcessExecEventSubmit}, ProgName: "sched_process_exec_event_submit_tail"},
 				},
+				Capabilities: []cap.Value{cap.SYS_PTRACE}, // CopyRegularFileByRelativePath()
 			},
 			Sets: []string{"default", "proc"},
 			Params: []trace.ArgMeta{
@@ -5885,6 +5886,9 @@ var Definitions = eventDefinitions{
 			Name:    "shared_object_loaded",
 			Probes: []probeDependency{
 				{Handle: probes.SecurityMmapFile, Required: true},
+			},
+			Dependencies: dependencies{
+				Capabilities: []cap.Value{cap.SYS_PTRACE}, // loadSharedObjectDynamicSymbols()
 			},
 			Sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
 			Params: []trace.ArgMeta{

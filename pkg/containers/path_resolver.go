@@ -6,10 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"kernel.org/pub/linux/libs/security/libcap/cap"
-
 	"github.com/aquasecurity/tracee/pkg/bucketscache"
-	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
@@ -36,8 +33,6 @@ func InitContainerPathResolver(mountNSPIDsCache *bucketscache.BucketsCache) *Con
 func (cPathRes *ContainerPathResolver) GetHostAbsPath(mountNSAbsolutePath string, mountNS int) (
 	string, error,
 ) {
-	var err error
-
 	// path should be absolute, except, for example, memfd_create files
 	if mountNSAbsolutePath == "" || mountNSAbsolutePath[0] != '/' {
 		return "", errfmt.Errorf("file path is not absolute in its container mount point")
@@ -48,34 +43,29 @@ func (cPathRes *ContainerPathResolver) GetHostAbsPath(mountNSAbsolutePath string
 
 	pids := cPathRes.mountNSPIDsCache.GetBucket(uint32(mountNS))
 
-	retMountNSAbsolutePath := ""
+	for _, pid := range pids {
 
-	err = capabilities.GetInstance().Requested(
-		func() error {
+		// cap.SYS_PTRACE is needed here. Instead of raising privileges, since
+		// this is called too frequently, if the needed event is being traced,
+		// the needed capabilities are added to the Base ring and are always set
+		// as effective.
+		//
+		// (Note: To change this behavior we need a privileged process/server)
 
-			for _, pid := range pids {
-				procRootPath := fmt.Sprintf("/proc/%d/root", int(pid))
-				// fs.FS interface requires relative paths, so the '/' prefix should be trimmed.
-				entries, err := fs.ReadDir(cPathRes.fs, strings.TrimPrefix(procRootPath, "/"))
-				if err != nil {
-					return errfmt.WrapError(err)
-				}
-				if len(entries) == 0 {
-					return errfmt.Errorf("empty directory")
-				}
-				if err == nil {
-					retMountNSAbsolutePath = fmt.Sprintf("%s%s", procRootPath, mountNSAbsolutePath)
-					return nil
-				}
-			}
-			return errfmt.Errorf("has no access to container fs - no living task of mountns %d", mountNS)
+		procRootPath := fmt.Sprintf("/proc/%d/root", int(pid))
 
-		},
-		cap.SYS_PTRACE,
-	)
-	if err == nil {
-		return retMountNSAbsolutePath, nil
+		// fs.FS interface requires relative paths, so the '/' prefix should be trimmed.
+		entries, err := fs.ReadDir(cPathRes.fs, strings.TrimPrefix(procRootPath, "/"))
+		if err != nil {
+			return "", errfmt.WrapError(err)
+		}
+		if len(entries) == 0 {
+			return "", errfmt.Errorf("empty directory")
+		}
+		if err == nil {
+			return fmt.Sprintf("%s%s", procRootPath, mountNSAbsolutePath), nil
+		}
 	}
 
-	return "", err
+	return "", errfmt.Errorf("has no access to container fs - no living task of mountns %d", mountNS)
 }

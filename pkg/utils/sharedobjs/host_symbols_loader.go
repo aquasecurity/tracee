@@ -6,10 +6,8 @@ import (
 	"github.com/hashicorp/golang-lru/simplelru"
 	"golang.org/x/exp/maps"
 
-	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 // HostSymbolsLoader is responsible for efficient reading of shared object's symbols.
@@ -110,13 +108,13 @@ func loadSharedObjectDynamicSymbols(path string) (*dynamicSymbols, error) {
 	var err error
 	var loadedObject *elf.File
 
-	err = capabilities.GetInstance().Requested(
-		func() error {
-			loadedObject, err = elf.Open(path)
-			return err
-		},
-		cap.SYS_PTRACE,
-	)
+	// cap.SYS_PTRACE is needed here. Instead of raising privileges, since this
+	// is called too frequently, if the needed event is being traced, the needed
+	// capabilities are added to the Base ring and are always set as effective.
+	//
+	// (Note: To change this behavior we need a privileged process/server)
+
+	loadedObject, err = elf.Open(path)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
