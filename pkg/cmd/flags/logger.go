@@ -16,6 +16,7 @@ func logHelp() string {
 Possible options:
   --log aggregate[:interval]          | turns log aggregation on, delaying output optional interval (s, m) (default is off)
   --log <debug|info|warn|error|panic> | set log level, info is the default
+  --log libbpfgo-filters-off          | disable libbpfgo callback filters (print all libbpf output)
   --log file:/path/to/file            | write the logs to a specified file. create/trim the file if exists (default: stderr)
 
 Examples:
@@ -30,13 +31,17 @@ func InvalidLogOption(opt string) error {
 	return errfmt.Errorf("invalid log option: %s, use '--log help' for more info", opt)
 }
 
-func PrepareLogger(logOptions []string) (*logger.LoggerConfig, error) {
+// PrepareLogger parses the log options returning a logger config,
+// a boolean indicating if libbpfgo should filter libbpf logs and an error if any.
+func PrepareLogger(logOptions []string) (*logger.LoggerConfig, bool, error) {
 	var (
+		w        = os.Stderr
+		lvl      = logger.DefaultLevel
 		agg      bool
 		interval = logger.DefaultFlushInterval
-		lvl      = logger.DefaultLevel
-		err      error
-		w        = os.Stderr
+
+		filterLibbpfgo = true // default is to filter libbpf logs
+		err            error
 	)
 
 	for _, opt := range logOptions {
@@ -45,12 +50,12 @@ func PrepareLogger(logOptions []string) (*logger.LoggerConfig, error) {
 			vals := strings.Split(opt, ":")
 
 			if len(vals) == 1 || vals[1] == "" {
-				return nil, InvalidLogOption(opt)
+				return nil, false, InvalidLogOption(opt)
 			}
 
 			w, err = createFile(vals[1])
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 
 			continue
@@ -61,28 +66,37 @@ func PrepareLogger(logOptions []string) (*logger.LoggerConfig, error) {
 			if !strings.HasSuffix(opt, "aggregate") {
 				vals := strings.Split(opt, ":")
 				if len(vals) != 2 || len(vals[1]) <= 1 {
-					return nil, InvalidLogOption(opt)
+					return nil, false, InvalidLogOption(opt)
 				}
 
 				// handle only seconds and minutes
 				timeSuffix := vals[1][len(vals[1])-1:][0]
 				if timeSuffix != 's' && timeSuffix != 'm' {
-					return nil, InvalidLogOption(opt)
+					return nil, false, InvalidLogOption(opt)
 				}
 				prevByte := vals[1][len(vals[1])-2:][0]
 				if timeSuffix == 's' && !unicode.IsDigit(rune(prevByte)) {
-					return nil, InvalidLogOption(opt)
+					return nil, false, InvalidLogOption(opt)
 				}
 
 				interval, err = time.ParseDuration(vals[1])
 				if err != nil {
-					return nil, InvalidLogOption(opt)
+					return nil, false, InvalidLogOption(opt)
 				}
 			}
+
 			agg = true
 			continue
 		}
 
+		// parse libbpfgo-filters-off option
+		// this option is used to disable libbpfgo callback filters
+		if opt == "libbpfgo-filters-off" {
+			filterLibbpfgo = false
+			continue
+		}
+
+		// levels
 		switch opt {
 		case "debug":
 			lvl = logger.DebugLevel
@@ -95,7 +109,7 @@ func PrepareLogger(logOptions []string) (*logger.LoggerConfig, error) {
 		case "fatal":
 			lvl = logger.FatalLevel
 		default:
-			return nil, InvalidLogOption(opt)
+			return nil, false, InvalidLogOption(opt)
 		}
 	}
 
@@ -111,5 +125,5 @@ func PrepareLogger(logOptions []string) (*logger.LoggerConfig, error) {
 		cfg.Encoder = logger.NewJSONEncoder(logger.NewProductionEncoderConfig())
 	}
 
-	return cfg, nil
+	return cfg, filterLibbpfgo, nil
 }

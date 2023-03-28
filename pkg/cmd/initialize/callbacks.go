@@ -43,56 +43,80 @@ var (
 	libbpfgoBpfCreateMapXattrRegexp = regexp.MustCompile(`libbpf:.*bpf_create_map_xattr\((sys_enter_init_tail|sys_enter_submit_tail|sys_enter_tails|sys_exit_init_tail|sys_exit_submit_tail|sys_exit_tails|prog_array_tp|prog_array)\)`)
 )
 
-// SetLibbpfgoCallbacks sets libbpfgo logger callbacks
-func SetLibbpfgoCallbacks() {
-	libbpfgo.SetLoggerCbs(libbpfgo.Callbacks{
-		Log: func(libLevel int, msg string) {
-			lvl := logger.ErrorLevel
+// libMatchRegexes matches libbpf outputs that are not relevant to tracee.
+func libMatchRegexes(msg string) bool {
+	// BUG: https:/github.com/aquasecurity/tracee/issues/1676
+	if libbpfgoKernelExclusivityFlagOnRegexp.MatchString(msg) {
+		return true
+	}
 
-			switch libLevel {
-			case libbpfgo.LibbpfWarnLevel:
-				lvl = logger.WarnLevel
-			case libbpfgo.LibbpfInfoLevel:
-				lvl = logger.InfoLevel
-			case libbpfgo.LibbpfDebugLevel:
-				lvl = logger.DebugLevel
+	// BUGS: https://github.com/aquasecurity/tracee/issues/2446
+	//       https://github.com/aquasecurity/tracee/issues/2754
+	if libbpfgoKprobePerfEventRegexp.MatchString(msg) {
+		return true
+	}
+
+	// AttachCgroupLegacy() will first try AttachCgroup() and it might fail. This
+	// is not an error and is the best way of probing for eBPF cgroup attachment
+	// link existence.
+	if libbpfgoAttachCgroupRegexp.MatchString(msg) {
+		return true
+	}
+
+	// BUG: https://github.com/aquasecurity/tracee/issues/1602
+	if libbpfgoBpfCreateMapXattrRegexp.MatchString(msg) {
+		return true
+	}
+
+	// output is not filtered
+	return false
+}
+
+// libDefaultFilter returns the default libbpfgo log filter.
+func libDefaultFilter(libbpfLvl int, msg string) bool {
+	if libbpfLvl != libbpfgo.LibbpfWarnLevel {
+		return true
+	}
+
+	return libMatchRegexes(msg)
+}
+
+// libLogFilters returns libbpfgo log filters callbacks.
+func libLogFilters(filter bool) []func(int, string) bool {
+	return []func(int, string) bool{
+		func(libLvl int, msg string) bool {
+			if !filter {
+				return false // no filtering
 			}
 
-			logger.Log(lvl, false, msg)
+			return libDefaultFilter(libLvl, msg)
 		},
-		LogFilters: []func(libLevel int, msg string) bool{
-			// Ignore libbpf outputs that are not relevant to tracee
-			func(libLevel int, msg string) bool {
-				if libLevel != libbpfgo.LibbpfWarnLevel {
-					return true
-				}
+	}
+}
 
-				// BUG: https:/github.com/aquasecurity/tracee/issues/1676
-				if libbpfgoKernelExclusivityFlagOnRegexp.MatchString(msg) {
-					return true
-				}
+// libLog returns libbpfgo log callback.
+func libLog() func(int, string) {
+	return func(libbpfLvl int, msg string) {
+		logLvl := logger.ErrorLevel
 
-				// BUGS: https://github.com/aquasecurity/tracee/issues/2446
-				//       https://github.com/aquasecurity/tracee/issues/2754
-				if libbpfgoKprobePerfEventRegexp.MatchString(msg) {
-					return true
-				}
+		switch libbpfLvl {
+		case libbpfgo.LibbpfWarnLevel:
+			logLvl = logger.WarnLevel
+		case libbpfgo.LibbpfInfoLevel:
+			logLvl = logger.InfoLevel
+		case libbpfgo.LibbpfDebugLevel:
+			logLvl = logger.DebugLevel
+		}
 
-				// AttachCgroupLegacy() will first try AttachCgroup() and it might fail. This
-				// is not an error and is the best way of probing for eBPF cgroup attachment
-				// link existence.
-				if libbpfgoAttachCgroupRegexp.MatchString(msg) {
-					return true
-				}
+		logger.Log(logLvl, false, msg)
+	}
+}
 
-				// BUG: https://github.com/aquasecurity/tracee/issues/1602
-				if libbpfgoBpfCreateMapXattrRegexp.MatchString(msg) {
-					return true
-				}
-
-				// output is not filtered
-				return false
-			},
-		},
+// SetLibbpfgoCallbacks sets libbpfgo logger callbacks.
+// If filter is true, libbpfgo logs will be filtered using libLogFilters().
+func SetLibbpfgoCallbacks(filter bool) {
+	libbpfgo.SetLoggerCbs(libbpfgo.Callbacks{
+		Log:        libLog(),
+		LogFilters: libLogFilters(filter),
 	})
 }

@@ -49,10 +49,11 @@ func GetTraceeRunner(c *cli.Context, version string, newBinary bool) (cmd.Runner
 
 	// Log command line flags
 
-	logCfg, err := flags.PrepareLogger(c.StringSlice("log"))
+	logCfg, filter, err := flags.PrepareLogger(c.StringSlice("log"))
 	if err != nil {
 		return runner, err
 	}
+	initialize.SetLibbpfgoCallbacks(filter)
 	logger.Init(logCfg)
 
 	// OS release information

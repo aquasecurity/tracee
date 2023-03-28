@@ -11,7 +11,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
-	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/cmd/urfave"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
@@ -30,8 +29,6 @@ func init() {
 			},
 		)
 	}
-
-	initialize.SetLibbpfgoCallbacks()
 }
 
 var version string

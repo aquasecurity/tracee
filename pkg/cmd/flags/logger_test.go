@@ -189,7 +189,7 @@ func TestPrepareLogger(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			logCfg, err := flags.PrepareLogger(tc.logOptions)
+			logCfg, filter, err := flags.PrepareLogger(tc.logOptions)
 			if tc.expectedError != nil {
 				require.Nil(t, logCfg)
 				require.Error(t, err)
@@ -197,6 +197,7 @@ func TestPrepareLogger(t *testing.T) {
 			}
 			if tc.expectedError == nil {
 				require.Nil(t, err)
+				require.Equal(t, true, filter)
 				require.NotNil(t, logCfg)
 				assert.Equal(t, tc.expectedReturn.Level, logCfg.Level)
 				assert.Equal(t, tc.expectedReturn.Aggregate, logCfg.Aggregate)
