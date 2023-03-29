@@ -38,9 +38,7 @@ func main() {
 
 			// Capabilities command line flags
 
-			// if the user is not root, we will bypass capabilities raising,
-			// which means default capabilities will be used
-			bypass := c.Bool("allcaps") || !isRoot()
+			bypass := c.Bool("allcaps") || !isRoot() // non root has no practical use for capabilities drop
 			err := capabilities.Initialize(bypass)
 			if err != nil {
 				return err

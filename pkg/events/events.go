@@ -13,7 +13,7 @@ type dependencies struct {
 	Events       []eventDependency    // Events required to be loaded and/or submitted for the event to happen
 	KSymbols     *[]kSymbolDependency // nil pointer means no symbols needed, empty slice indicates for dynamic symbols which their names aren't known at the time of compilation
 	TailCalls    []TailCall
-	Capabilities []cap.Value
+	Capabilities []cap.Value // Capabilities needed in events processor or derivation phases
 }
 
 type probeDependency struct {
@@ -5578,12 +5578,10 @@ var Definitions = eventDefinitions{
 			},
 		},
 		InitNamespaces: {
-			ID32Bit: sys32undefined,
-			Name:    "init_namespaces",
-			Sets:    []string{},
-			Dependencies: dependencies{
-				Capabilities: []cap.Value{cap.SYS_PTRACE},
-			},
+			ID32Bit:      sys32undefined,
+			Name:         "init_namespaces",
+			Sets:         []string{},
+			Dependencies: dependencies{},
 			Params: []trace.ArgMeta{
 				{Type: "u32", Name: "cgroup"},
 				{Type: "u32", Name: "ipc"},
@@ -5836,6 +5834,7 @@ var Definitions = eventDefinitions{
 					{EventID: DoInitModule},
 					{EventID: PrintSyscallTable},
 				},
+				Capabilities: []cap.Value{cap.SYSLOG}, // read /proc/kallsyms
 			},
 			Sets: []string{},
 			Params: []trace.ArgMeta{
@@ -5906,10 +5905,7 @@ var Definitions = eventDefinitions{
 					{EventID: SharedObjectLoaded},
 					{EventID: SchedProcessExec}, // Used to get mount namespace cache
 				},
-				Capabilities: []cap.Value{
-					cap.SYS_PTRACE,   // Used to get host mount NS for bucket cache
-					cap.DAC_OVERRIDE, // Used to open files across the system
-				},
+				Capabilities: []cap.Value{},
 			},
 			Sets: []string{"derived", "fs", "security_alert"},
 			Params: []trace.ArgMeta{
@@ -5927,10 +5923,7 @@ var Definitions = eventDefinitions{
 					{EventID: SharedObjectLoaded},
 					{EventID: SchedProcessExec}, // Used to get mount namespace cache
 				},
-				Capabilities: []cap.Value{
-					cap.SYS_PTRACE,   // Used to get host mount NS for bucket cache
-					cap.DAC_OVERRIDE, // Used to open files across the system
-				},
+				Capabilities: []cap.Value{},
 			},
 			Sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
 			Params: []trace.ArgMeta{
@@ -5965,11 +5958,8 @@ var Definitions = eventDefinitions{
 			Name:     "capture_exec",
 			Internal: true,
 			Dependencies: dependencies{
-				Events: []eventDependency{{EventID: SchedProcessExec}},
-				Capabilities: []cap.Value{
-					cap.SYS_PTRACE,
-					cap.DAC_OVERRIDE,
-				},
+				Events:       []eventDependency{{EventID: SchedProcessExec}},
+				Capabilities: []cap.Value{},
 			},
 		},
 		CaptureModule: {
@@ -6079,6 +6069,7 @@ var Definitions = eventDefinitions{
 				Events: []eventDependency{
 					{EventID: DoInitModule},
 				},
+				Capabilities: []cap.Value{cap.SYSLOG}, // read /proc/kallsyms
 			},
 			Sets: []string{},
 			Params: []trace.ArgMeta{
@@ -6120,6 +6111,7 @@ var Definitions = eventDefinitions{
 					{EventID: PrintNetSeqOps},
 					{EventID: DoInitModule},
 				},
+				Capabilities: []cap.Value{cap.SYSLOG}, // read /proc/kallsyms
 			},
 			Sets: []string{},
 			Params: []trace.ArgMeta{

@@ -130,6 +130,7 @@ func GetContainerIdFromTaskDir(taskPath string) (string, error) {
 
 // populate walks the cgroup fs informing CgroupUpdate() about existing dirs.
 func (c *Containers) populate() error {
+
 	fn := func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			logger.Errorw("WalkDir func", "error", err)

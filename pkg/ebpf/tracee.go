@@ -284,8 +284,8 @@ func (t *Tracee) handleEventsDependencies(eventId events.ID, submitMap uint64) {
 	}
 }
 
-// New creates a new Tracee instance based on a given valid Config
-// It is expected that New will not cause external system side effects (reads, writes, etc.)
+// New creates a new Tracee instance based on a given valid Config. It' expected
+// that it won't cause external system side effects (reads, writes, etc.)
 func New(cfg Config) (*Tracee, error) {
 	err := cfg.Validate()
 	if err != nil {
@@ -293,6 +293,7 @@ func New(cfg Config) (*Tracee, error) {
 	}
 
 	// Create Tracee
+
 	t := &Tracee{
 		config:        cfg,
 		writtenFiles:  make(map[string]string),
@@ -301,6 +302,7 @@ func New(cfg Config) (*Tracee, error) {
 	}
 
 	// Initialize capabilities rings soon
+
 	err = capabilities.Initialize(t.config.Capabilities.BypassCaps)
 	if err != nil {
 		return t, errfmt.WrapError(err)
@@ -308,11 +310,13 @@ func New(cfg Config) (*Tracee, error) {
 	caps := capabilities.GetInstance()
 
 	// Pseudo events added by capture
+
 	for eventID, eCfg := range GetCaptureEventsList(cfg) {
 		t.events[eventID] = eCfg
 	}
 
 	// Events chosen by the user
+
 	for p := range t.config.Policies.Map() {
 		for e := range p.EventsToTrace {
 			var submit, emit uint64
@@ -326,7 +330,8 @@ func New(cfg Config) (*Tracee, error) {
 		}
 	}
 
-	// Handles all essential events dependencies
+	// Handle all essential events dependencies
+
 	for id, evt := range t.events {
 		t.handleEventsDependencies(id, evt.submit)
 	}
@@ -366,7 +371,10 @@ func New(cfg Config) (*Tracee, error) {
 	}
 
 	// Register default event processors
+
 	t.registerEventProcessors()
+
+	// Start event triggering logic context
 
 	t.triggerContexts = trigger.NewContext()
 
@@ -389,7 +397,12 @@ func (t *Tracee) Init() error {
 	// Init kernel symbols map
 
 	if initReq.kallsyms {
-		err = t.NewKernelSymbols()
+		err = capabilities.GetInstance().Requested(
+			func() error {
+				return t.NewKernelSymbols()
+			},
+			cap.SYSLOG,
+		)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -399,17 +412,20 @@ func (t *Tracee) Init() error {
 
 	// Initialize buckets cache
 
+	var mntNSProcs map[int]int
+
 	if t.config.maxPidsCache == 0 {
-		t.config.maxPidsCache = 5 // default value for config.maxPidsCache
+		t.config.maxPidsCache = 5 // TODO: configure this ? never set, default = 5
 	}
+
 	t.pidsInMntns.Init(t.config.maxPidsCache)
 
-	var mntNSProcs map[int]int
-	err = capabilities.GetInstance().Requested(func() error {
-		mntNSProcs, err = proc.GetMountNSFirstProcesses()
-		return errfmt.WrapError(err)
-	},
-		cap.DAC_READ_SEARCH,
+	err = capabilities.GetInstance().Requested(
+		func() error {
+			mntNSProcs, err = proc.GetMountNSFirstProcesses()
+			return err
+		},
+		cap.DAC_OVERRIDE,
 		cap.SYS_PTRACE,
 	)
 	if err == nil {
@@ -417,7 +433,7 @@ func (t *Tracee) Init() error {
 			t.pidsInMntns.AddBucketItem(uint32(mountNS), uint32(pid))
 		}
 	} else {
-		logger.Debugw("Requesting capabilities", "error", err)
+		logger.Debugw("Initializing buckets cache", "error", errfmt.WrapError(err))
 	}
 
 	// Initialize cgroups filesystems
@@ -454,7 +470,11 @@ func (t *Tracee) Init() error {
 
 	// Initialize eBPF programs and maps
 
-	err = t.initBPF()
+	err = capabilities.GetInstance().Required(
+		func() error {
+			return t.initBPF()
+		},
+	)
 	if err != nil {
 		t.Close()
 		return errfmt.WrapError(err)
@@ -591,9 +611,9 @@ func (t *Tracee) initTailCall(mapName string, mapIndexes []uint32, progName stri
 	return nil
 }
 
-// initDerivationTable initializes tracee's events.DerivationTable.
-// we declare for each Event (represented through it's ID) to which other
-// events it can be derived and the corresponding function to derive into that Event.
+// initDerivationTable initializes tracee's events.DerivationTable. For each
+// event, represented through its ID, we declare to which other events it can be
+// derived and the corresponding function to derive into that Event.
 func (t *Tracee) initDerivationTable() error {
 
 	t.eventDerivations = derive.Table{
@@ -916,8 +936,9 @@ func (t *Tracee) computeConfigValues() []byte {
 	return configVal
 }
 
-// validateKallsymsDependencies load all symbols required by events' dependencies from the kallsyms file to check for missing symbols.
-// If some symbols are missing, it will cancel their event with informative error message.
+// validateKallsymsDependencies load all symbols required by events dependencies
+// from the kallsyms file to check for missing symbols. If some symbols are
+// missing, it will cancel their event with informative error message.
 func (t *Tracee) validateKallsymsDependencies() {
 	var reqKsyms []string
 	symsToDependentEvents := make(map[string][]events.ID)
@@ -1251,119 +1272,115 @@ func (t *Tracee) initBPF() error {
 
 	// Execute code with higher privileges: ring1 (required)
 
-	err = capabilities.GetInstance().Required(func() error {
+	newModuleArgs := bpf.NewModuleArgs{
+		KConfigFilePath: t.config.KernelConfig.GetKernelConfigFilePath(),
+		BTFObjPath:      t.config.BTFObjPath,
+		BPFObjBuff:      t.config.BPFObjBytes,
+		BPFObjName:      t.config.BPFObjPath,
+	}
 
-		newModuleArgs := bpf.NewModuleArgs{
-			KConfigFilePath: t.config.KernelConfig.GetKernelConfigFilePath(),
-			BTFObjPath:      t.config.BTFObjPath,
-			BPFObjBuff:      t.config.BPFObjBytes,
-			BPFObjName:      t.config.BPFObjPath,
-		}
+	// Open the eBPF object file (create a new module)
 
-		// Open the eBPF object file (create a new module)
+	t.bpfModule, err = bpf.NewModuleFromBufferArgs(newModuleArgs)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
 
-		t.bpfModule, err = bpf.NewModuleFromBufferArgs(newModuleArgs)
+	// Initialize probes
+
+	t.probes, err = probes.Init(t.bpfModule, t.netEnabled())
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Load the eBPF object into kernel
+
+	err = t.bpfModule.BPFLoadObject()
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Populate eBPF maps with initial data
+
+	err = t.populateBPFMaps()
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Attach eBPF programs to selected event's probes
+
+	err = t.attachProbes()
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Update all ProcessTreeFilters after probes are attached: reduce the
+	// possible race window between the bpf programs updating the maps and
+	// userland reading procfs and also dealing with same maps.
+
+	for p := range t.config.Policies.Map() {
+		err = p.ProcessTreeFilter.UpdateBPF(t.bpfModule, uint(p.ID))
 		if err != nil {
-			return errfmt.WrapError(err)
+			return errfmt.Errorf("error building process tree: %v", err)
 		}
+	}
 
-		// Initialize probes
+	// Initialize perf buffers and needed channels
 
-		t.probes, err = probes.Init(t.bpfModule, t.netEnabled())
+	t.eventsChannel = make(chan []byte, 1000)
+	t.lostEvChannel = make(chan uint64)
+	if t.config.PerfBufferSize < 1 {
+		return errfmt.Errorf("invalid perf buffer size: %d", t.config.PerfBufferSize)
+	}
+	t.eventsPerfMap, err = t.bpfModule.InitPerfBuf(
+		"events",
+		t.eventsChannel,
+		t.lostEvChannel,
+		t.config.PerfBufferSize,
+	)
+	if err != nil {
+		return errfmt.Errorf("error initializing events perf map: %v", err)
+	}
+
+	if t.config.BlobPerfBufferSize > 0 {
+		t.fileWrChannel = make(chan []byte, 1000)
+		t.lostWrChannel = make(chan uint64)
+		t.fileWrPerfMap, err = t.bpfModule.InitPerfBuf(
+			"file_writes",
+			t.fileWrChannel,
+			t.lostWrChannel,
+			t.config.BlobPerfBufferSize,
+		)
 		if err != nil {
-			return errfmt.WrapError(err)
+			return errfmt.Errorf("error initializing file_writes perf map: %v", err)
 		}
+	}
 
-		// Load the eBPF object into kernel
-
-		err = t.bpfModule.BPFLoadObject()
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-
-		// Populate eBPF maps with initial data
-
-		err = t.populateBPFMaps()
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-
-		// Attach eBPF programs to selected event's probes
-
-		err = t.attachProbes()
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-
-		// Update all ProcessTreeFilters after probes are attached: reduce the
-		// possible race window between the bpf programs updating the maps and
-		// userland reading procfs and also dealing with same maps.
-		for p := range t.config.Policies.Map() {
-			err = p.ProcessTreeFilter.UpdateBPF(t.bpfModule, uint(p.ID))
-			if err != nil {
-				return errfmt.Errorf("error building process tree: %v", err)
-			}
-		}
-
-		// Initialize perf buffers
-
-		t.eventsChannel = make(chan []byte, 1000)
-		t.lostEvChannel = make(chan uint64)
-		if t.config.PerfBufferSize < 1 {
-			return errfmt.Errorf("invalid perf buffer size: %d", t.config.PerfBufferSize)
-		}
-		t.eventsPerfMap, err = t.bpfModule.InitPerfBuf(
-			"events",
-			t.eventsChannel,
-			t.lostEvChannel,
+	if pcaps.PcapsEnabled(t.config.Capture.Net) {
+		t.netCapChannel = make(chan []byte, 1000)
+		t.lostNetCapChannel = make(chan uint64)
+		t.netCapPerfMap, err = t.bpfModule.InitPerfBuf(
+			"net_cap_events",
+			t.netCapChannel,
+			t.lostNetCapChannel,
 			t.config.PerfBufferSize,
 		)
 		if err != nil {
-			return errfmt.Errorf("error initializing events perf map: %v", err)
+			return errfmt.Errorf("error initializing net capture perf map: %v", err)
 		}
+	}
 
-		if t.config.BlobPerfBufferSize > 0 {
-			t.fileWrChannel = make(chan []byte, 1000)
-			t.lostWrChannel = make(chan uint64)
-			t.fileWrPerfMap, err = t.bpfModule.InitPerfBuf(
-				"file_writes",
-				t.fileWrChannel,
-				t.lostWrChannel,
-				t.config.BlobPerfBufferSize,
-			)
-			if err != nil {
-				return errfmt.Errorf("error initializing file_writes perf map: %v", err)
-			}
-		}
-
-		if pcaps.PcapsEnabled(t.config.Capture.Net) {
-			t.netCapChannel = make(chan []byte, 1000)
-			t.lostNetCapChannel = make(chan uint64)
-			t.netCapPerfMap, err = t.bpfModule.InitPerfBuf(
-				"net_cap_events",
-				t.netCapChannel,
-				t.lostNetCapChannel,
-				t.config.PerfBufferSize,
-			)
-			if err != nil {
-				return errfmt.Errorf("error initializing net capture perf map: %v", err)
-			}
-		}
-
-		t.bpfLogsChannel = make(chan []byte, 1000)
-		t.lostBPFLogChannel = make(chan uint64)
-		t.bpfLogsPerfMap, err = t.bpfModule.InitPerfBuf(
-			"logs",
-			t.bpfLogsChannel,
-			t.lostBPFLogChannel,
-			t.config.PerfBufferSize,
-		)
-		if err != nil {
-			return errfmt.Errorf("error initializing logs perf map: %v", err)
-		}
-
-		return nil
-	})
+	t.bpfLogsChannel = make(chan []byte, 1000)
+	t.lostBPFLogChannel = make(chan uint64)
+	t.bpfLogsPerfMap, err = t.bpfModule.InitPerfBuf(
+		"logs",
+		t.bpfLogsChannel,
+		t.lostBPFLogChannel,
+		t.config.PerfBufferSize,
+	)
+	if err != nil {
+		return errfmt.Errorf("error initializing logs perf map: %v", err)
+	}
 
 	return errfmt.WrapError(err)
 }
@@ -1484,31 +1501,22 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 // Close cleans up created resources
 func (t *Tracee) Close() {
-	err := capabilities.GetInstance().Required(
-		func() error {
-			if t.probes != nil {
-				err := t.probes.DetachAll()
-				if err != nil {
-					return errfmt.Errorf("failed to detach probes when closing tracee: %s", err)
-				}
-			}
-			if t.bpfModule != nil {
-				t.bpfModule.Close()
-			}
-			if t.containers != nil {
-				err := t.containers.Close()
-				if err != nil {
-					return errfmt.Errorf("failed to clean containers module when closing tracee: %s", err)
-				}
-			}
-			return nil
-		},
-	)
-	if err != nil {
-		logger.Errorw("Capabilities", "error", err)
+	if t.probes != nil {
+		err := t.probes.DetachAll()
+		if err != nil {
+			logger.Errorw("failed to detach probes when closing tracee", "err", err)
+		}
 	}
-
-	err = t.cgroups.Destroy()
+	if t.bpfModule != nil {
+		t.bpfModule.Close()
+	}
+	if t.containers != nil {
+		err := t.containers.Close()
+		if err != nil {
+			logger.Errorw("failed to clean containers module when closing tracee", "err", err)
+		}
+	}
+	err := t.cgroups.Destroy()
 	if err != nil {
 		logger.Errorw("Cgroups destroy", "error", err)
 	}
@@ -1559,14 +1567,8 @@ func computeFileHash(file *os.File) (string, error) {
 
 func (t *Tracee) invokeInitEvents() {
 	if t.events[events.InitNamespaces].emit > 0 {
-		err := capabilities.GetInstance().Requested(func() error { // ring2
-			systemInfoEvent := events.InitNamespacesEvent()
-			t.config.ChanEvents <- systemInfoEvent
-			return nil
-		}, cap.SYS_PTRACE)
-		if err != nil {
-			logger.Debugw("Requesting capabilities", "error", err)
-		}
+		systemInfoEvent := events.InitNamespacesEvent()
+		t.config.ChanEvents <- systemInfoEvent
 		_ = t.stats.EventCount.Increment()
 	}
 	if t.events[events.ExistingContainer].emit > 0 {

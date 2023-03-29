@@ -28,7 +28,7 @@ const (
 	Privileged   ringType = iota // ring0 (all capabilities enabled, startup/shutdown)
 	Required                     // ring1 (needed capabilities only: config time)
 	Requested                    // ring2 (temporary specific capabilities)
-	Unprivileged                 // ring3 (no capabilities: runtime)
+	Unprivileged                 // ring3 (minimum required capabilities: runtime)
 )
 
 type Capabilities struct {
@@ -118,7 +118,6 @@ func (c *Capabilities) initialize(bypass bool) error {
 		logger.Debugw("Paranoid: Value in /proc/sys/kernel/perf_event_paranoid is > 2")
 		logger.Debugw("Paranoid: Tracee needs CAP_SYS_ADMIN instead of CAP_BPF + CAP_PERFMON")
 		logger.Debugw("Paranoid: To change that behavior set perf_event_paranoid to 2 or less.")
-		err = c.Require(cap.SYS_ADMIN)
 		if err != nil {
 			logger.Fatalw("Requiring capabilities", "error", err)
 		}
@@ -326,9 +325,9 @@ func (c *Capabilities) apply(t ringType) error {
 	logger.Debugw("Capabilities change")
 
 	for k, v := range c.all {
-		if v[t] {
-			logger.Debugw("Enabling cap", "cap", k)
-		}
+		// if v[t] {
+		// 	logger.Debugw("Enabling cap", "cap", k)
+		// }
 		err = c.have.SetFlag(cap.Effective, v[t], k)
 		if err != nil {
 			return errfmt.WrapError(err)

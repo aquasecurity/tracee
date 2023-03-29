@@ -199,23 +199,22 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 				if err := utils.MkdirAtExist(t.outDir, destinationDirPath, 0755); err != nil {
 					return errfmt.WrapError(err)
 				}
-				destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", event.Timestamp, filepath.Base(filePath)))
+				destinationFilePath := filepath.Join(
+					destinationDirPath,
+					fmt.Sprintf("exec.%d.%s", event.Timestamp, filepath.Base(filePath)),
+				)
 				// don't capture same file twice unless it was modified
 				lastCtime, ok := t.capturedFiles[capturedFileID]
 				if !ok || lastCtime != castedSourceFileCtime {
-
 					// capture (ring1)
-					err = capabilities.GetInstance().Required(func() error {
-						return utils.CopyRegularFileByRelativePath(
-							sourceFilePath,
-							t.outDir,
-							destinationFilePath,
-						)
-					})
+					err := utils.CopyRegularFileByRelativePath(
+						sourceFilePath,
+						t.outDir,
+						destinationFilePath,
+					)
 					if err != nil {
 						return errfmt.WrapError(err)
 					}
-
 					// mark this file as captured
 					t.capturedFiles[capturedFileID] = castedSourceFileCtime
 				}
@@ -232,18 +231,10 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 				if ok && hashInfoObj.LastCtime == castedSourceFileCtime {
 					currentHash = hashInfoObj.Hash
 				} else {
-
-					// ring1
-					err = capabilities.GetInstance().Required(func() error {
-						currentHash, err = computeFileHashAtPath(sourceFilePath)
-						if err == nil {
-							hashInfoObj = fileExecInfo{castedSourceFileCtime, currentHash}
-							t.fileHashes.Add(capturedFileID, hashInfoObj)
-						}
-						return nil
-					})
-					if err != nil {
-						logger.Errorw("Requiring capabilities", "error", err)
+					currentHash, err = computeFileHashAtPath(sourceFilePath)
+					if err == nil {
+						hashInfoObj = fileExecInfo{castedSourceFileCtime, currentHash}
+						t.fileHashes.Add(capturedFileID, hashInfoObj)
 					}
 				}
 				event.Args = append(event.Args, trace.Argument{
@@ -316,8 +307,16 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 	_, okSeqOps := t.events[events.HookedSeqOps]
 	_, okProcFops := t.events[events.HookedProcFops]
 	_, okMemDump := t.events[events.PrintMemDump]
+
 	if okSyscalls || okSeqOps || okProcFops {
-		err := t.UpdateKallsyms()
+		err := capabilities.GetInstance().Required(
+			func() error {
+				return t.UpdateKallsyms()
+			},
+		)
+		if err != nil {
+			return errfmt.WrapError(err)
+		}
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -334,6 +333,7 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 			}
 		}
 	}
+
 	return nil
 }
 
