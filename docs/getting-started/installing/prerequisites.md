@@ -1,6 +1,6 @@
 # Prerequisites for running Tracee
 
-A long-term supported kernel: 5.4, 5.10, 5.15, 5.18, 5.19. Check
+A longterm supported kernel: 5.4, 5.10, 5.15, 5.18, 6.1, 6.2. Check
 [kernel.org](https://kernel.org) for current supported kernels.
 
 !!! Note
@@ -30,7 +30,7 @@ capabilities:
 * Load and Attach eBPF programs:
     1. `CAP_BPF`+`CAP_PERFMON` for recent kernels (>=5.8) where the kernel perf paranoid value in `/proc/sys/kernel/perf_event_paranoid` is equal to 2 or less
     2. or `CAP_SYS_ADMIN` otherwise
-* `CAP_SYS_PTRACE` (to collect information about processes upon startup)
+* `CAP_SYS_PTRACE` (to collect information about processes)
 * `CAP_NET_ADMIN` (to use tc for packets capture)
 * `CAP_SETPCAP` (if given - used to reduce bounding set capabilities)
 * `CAP_SYSLOG` (to access kernel symbols through /proc/kallsyms)
@@ -38,7 +38,7 @@ capabilities:
 * On cgroup v1 environments, `CAP_SYS_ADMIN` is recommended if running from a
   container in order to allow tracee to mount the cpuset cgroup controller.
 
-> Alternatively, run as `root` or with **Docker** `--pid=host --cgroupns=host --privileged` flags.
+> Alternatively, you may [bypass the capabilities dropping feature](../../docs/deep-dive/dropping-capabilities.md) if facing any issue.
 
 [libbpf CO-RE documentation]: https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere
 [BTFHUB]: https://github.com/aquasecurity/btfhub-archive

@@ -5,10 +5,12 @@
 For the purpose of performing permission checks, traditional UNIX
 implementations distinguish two categories of processes: privileged processes
 (whose effective user ID is 0, referred to as superuser or root), and
-unprivileged processes (whose effective UID is nonzero). Privileged processes
-bypass all kernel permission checks, while unprivileged processes are subject to
-full permission checking based on the process's credentials (usually: effective
-UID, effective GID, and supplementary group list).
+unprivileged processes (whose effective UID is nonzero).
+
+Privileged processes bypass all kernel permission checks, while unprivileged
+processes are subject to full permission checking based on the process's
+credentials (usually: effective UID, effective GID, and supplementary group
+list).
 
 Linux divides the privileges traditionally associated with superuser into
 distinct units, known as capabilities, which can be independently enabled and
@@ -35,13 +37,14 @@ the capabilities that are gained during execve(2).
 
 ## Tracee and capabilities
 
-**tracee** tries to reduce their capabilities during their execution. 
-The way does it is through "protection rings":
+**tracee**, **tracee-ebpf**, and **tracee-rules**, try to reduce their
+capabilities during their execution. The way they do is through different 
+"execution protection rings":
 
-* Privileged   (ring 0): all capabilities are Effective (almost never)
-* Required     (ring 1): only required (by events) capabilities are Effective (during config)
-* Requested    (ring 2): single time requested capabilities are Effective (special needs)
-* Unprivileged (ring 3): no capabilities are Effective at all (most of the time)
+* Full:     All capabilities are effective (less secure)
+* EBPF:     eBPF needed capabilities + Base capabilities
+* Specific: Specific capabilities (from time to time) + Base Capabilities
+* Base:     None or Some capabilities always effective (more secure)
 
 ## Listing available capabilities
 
@@ -56,8 +59,9 @@ command line flag.
 ## Bypass capabilities dropping feature
 
 !!! Attention
-    This session is important if you're facing errors while **tracee** is
-    trying to drop its capabilities or any other permissions errors.
+    This session is important if you're facing errors while **tracee** or 
+    **tracee-ebpf** are trying to drop its capabilities or any other permissions
+    errors.
 
 Some environments **won't allow capabilities dropping** because of permission
 issues (for example - **AWS Lambdas**).
@@ -69,14 +73,17 @@ Failure in capabilities dropping will result tracee's exit with a matching
 error, to **guarantee that tracee isn't running with excess capabilities
 without the user agreement**.
 
-To **allow tracee to run with high capabilities**, and prevent those
-errors, the `--capabilities bypass=1` flag can be used. For the docker
-container users, the environment variable `CAPABILITIES_BYPASS=0|1` will have
-the same effect.
+To **allow tracee to run with high capabilities**, and prevent those errors, the
+`--capabilities bypass=true` flag can be used. For the docker container users,
+the environment variable `CAPABILITIES_BYPASS=0|1` will have the same effect.
+
+> For tracee-rules, CAPABILITIES_BYPASS=1 will set the "--allcaps" command line
+> flag and allow it to run with full capabilities.
 
 !!! Note
-    Bypassing the capabilities drop will run tracee with all capabilities set as Effective 
-		and it is only recommended if you know what you are doing.
+    Bypassing the capabilities drop will run tracee-ebpf and/or tracee-rules
+    with all capabilities set as Effective and it is only recommended if you
+    know what you are doing.
 
 ## Capabilities Errors (Missing or Too Permissive)
 
@@ -90,5 +97,9 @@ is to rely on following 2 command line flags:
 - `--capabilities add=cap_X,cap_Y` (docker env variable CAPABILITIES_ADD)
 - `--capabilities drop=cap_Y,capZ` (docker env variable CAPABILITIES_DROP)
 
-The first will add given capabilities to the Required ring (so events might be
-able to work). The last will remove the capabilities from that same ring.
+The first will add given capabilities to the Base ring, the ring that describe
+capabilities that will always be effective while tracee is running, so events
+might be able to work. The last will remove the capabilities from that same
+ring.
+
+> Tracee-rules do not support adding or removing specific capabilities.
