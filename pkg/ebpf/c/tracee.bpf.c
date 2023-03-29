@@ -4233,6 +4233,105 @@ int BPF_KPROBE(trace_ret_inotify_find_inode)
     return events_perf_submit(&p, INOTIFY_WATCH, 0);
 }
 
+SEC("kprobe/exec_binprm")
+TRACE_ENT_FUNC(exec_binprm, EXEC_BINPRM);
+
+SEC("kretprobe/exec_binprm")
+int BPF_KPROBE(trace_ret_exec_binprm)
+{
+    args_t saved_args;
+    if (load_args(&saved_args, EXEC_BINPRM) != 0) {
+        // missed entry or not traced
+        return 0;
+    }
+    del_args(EXEC_BINPRM);
+
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    if (!should_trace(&p))
+        return 0;
+
+    if (!should_submit(PROCESS_EXECUTION_FAILED, p.event))
+        return 0;
+
+    int ret_val = PT_REGS_RC(ctx);
+    if (ret_val == 0)
+        return 0; // not interested of successful execution - for that we have sched_process_exec
+
+    struct linux_binprm *bprm = (struct linux_binprm *) saved_args.args[0];
+    if (bprm == NULL) {
+        return -1;
+    }
+
+    struct file *file = get_file_ptr_from_bprm(bprm);
+
+    const char *path = get_binprm_filename(bprm);
+    save_str_to_buf(p.event, (void *) path, 0);
+
+    void *binary_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+    save_str_to_buf(p.event, binary_path, 1);
+
+    dev_t binary_device_id = get_dev_from_file(file);
+    save_to_submit_buf(p.event, &binary_device_id, sizeof(dev_t), 2);
+
+    unsigned long binary_inode_number = get_inode_nr_from_file(file);
+    save_to_submit_buf(p.event, &binary_inode_number, sizeof(unsigned long), 3);
+
+    u64 binary_ctime = get_ctime_nanosec_from_file(file);
+    save_to_submit_buf(p.event, &binary_ctime, sizeof(u64), 4);
+
+    umode_t binary_inode_mode = get_inode_mode_from_file(file);
+    save_to_submit_buf(p.event, &binary_inode_mode, sizeof(umode_t), 5);
+
+    const char *interpreter_path = get_binprm_interp(bprm);
+    save_str_to_buf(p.event, (void *) interpreter_path, 6);
+
+    bpf_tail_call(ctx, &prog_array, TAIL_EXEC_BINPRM1);
+    return -1;
+}
+
+SEC("kretprobe/trace_ret_exec_binprm1")
+int BPF_KPROBE(trace_ret_exec_binprm1)
+{
+    program_data_t p = {};
+    if (!init_tailcall_program_data(&p, ctx))
+        return -1;
+
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task();
+    struct file *stdin_file = get_struct_file_from_fd(0);
+
+    unsigned short stdin_type = get_inode_mode_from_file(stdin_file) & S_IFMT;
+    save_to_submit_buf(p.event, &stdin_type, sizeof(unsigned short), 7);
+
+    void *stdin_path = get_path_str(GET_FIELD_ADDR(stdin_file->f_path));
+    save_str_to_buf(p.event, stdin_path, 8);
+
+    int kernel_invoked = (get_task_parent_flags(task) & PF_KTHREAD) ? 1 : 0;
+    save_to_submit_buf(p.event, &kernel_invoked, sizeof(int), 9);
+
+    bpf_tail_call(ctx, &prog_array, TAIL_EXEC_BINPRM2);
+    return -1;
+}
+
+SEC("kretprobe/trace_ret_exec_binprm2")
+int BPF_KPROBE(trace_ret_exec_binprm2)
+{
+    program_data_t p = {};
+    if (!init_tailcall_program_data(&p, ctx))
+        return -1;
+
+    syscall_data_t *sys = &p.task_info->syscall_data;
+    save_str_arr_to_buf(p.event, (const char *const *) sys->args.args[1], 10); // userspace argv
+
+    if (p.config->options & OPT_EXEC_ENV) {
+        save_str_arr_to_buf(p.event, (const char *const *) sys->args.args[2], 11); // userspace envp
+    }
+
+    return events_perf_submit(&p, PROCESS_EXECUTION_FAILED, PT_REGS_RC(ctx));
+}
+
 // clang-format off
 
 // Network Packets (works from ~5.2 and beyond)

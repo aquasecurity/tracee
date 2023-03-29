@@ -64,6 +64,8 @@ const (
 	tailSchedProcessExecEventSubmit
 	tailVfsRead
 	tailVfsReadv
+	TailExecBinprm1
+	TailExecBinprm2
 	MaxTail
 )
 
@@ -264,6 +266,7 @@ const (
 	FileModification
 	InotifyWatch
 	SecurityBpfProg
+	ProcessExecuteFailed
 	MaxCommonID
 )
 
@@ -6297,6 +6300,36 @@ var Definitions = eventDefinitions{
 				{Type: "unsigned long[]", Name: "helpers"},
 				{Type: "u32", Name: "id"},
 				{Type: "bool", Name: "load"},
+			},
+		},
+		ProcessExecuteFailed: {
+			ID32Bit: sys32undefined,
+			Name:    "process_execute_failed",
+			Sets:    []string{"proc"},
+			Dependencies: dependencies{
+				TailCalls: []TailCall{
+					{MapName: "sys_enter_init_tail", MapIndexes: []uint32{uint32(Execve), uint32(Execveat)}, ProgName: "sys_enter_init"},
+					{MapName: "prog_array", MapIndexes: []uint32{TailExecBinprm1}, ProgName: "trace_ret_exec_binprm1"},
+					{MapName: "prog_array", MapIndexes: []uint32{TailExecBinprm2}, ProgName: "trace_ret_exec_binprm2"},
+				},
+			},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "path"},
+				{Type: "const char*", Name: "binary.path"},
+				{Type: "dev_t", Name: "binary.device_id"},
+				{Type: "unsigned long", Name: "binary.inode_number"},
+				{Type: "unsigned long", Name: "binary.ctime"},
+				{Type: "umode_t", Name: "binary.inode_mode"},
+				{Type: "const char*", Name: "interpreter_path"},
+				{Type: "umode_t", Name: "stdin_type"},
+				{Type: "char*", Name: "stdin_path"},
+				{Type: "int", Name: "kernel_invoked"},
+				{Type: "const char*const*", Name: "binary.arguments"},
+				{Type: "const char*const*", Name: "environment"},
+			},
+			Probes: []probeDependency{
+				{Handle: probes.ExecBinprm, Required: true},
+				{Handle: probes.ExecBinprmRet, Required: true},
 			},
 		},
 		//
