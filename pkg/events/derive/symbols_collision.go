@@ -402,9 +402,16 @@ func (so *loadingSharedObj) FilterSymbols(filterSymbols map[string]bool) {
 
 // FilterOutSymbols removes all exported symbols which ARE in the filter map.
 func (so *loadingSharedObj) FilterOutSymbols(filterSymbols map[string]bool) {
+	if len(filterSymbols) == 0 {
+		return
+	}
+
+	filteredSymbols := make(map[string]bool)
 	for exSymbol := range so.exportedSymbols {
-		if filterSymbols[exSymbol] {
-			delete(so.exportedSymbols, exSymbol)
+		if !filterSymbols[exSymbol] {
+			filteredSymbols[exSymbol] = true
 		}
 	}
+
+	so.exportedSymbols = filteredSymbols
 }
