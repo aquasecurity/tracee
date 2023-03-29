@@ -9,6 +9,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 // HostSymbolsLoader is responsible for efficient reading of shared object's symbols.
@@ -104,15 +105,18 @@ func (soCache *dynamicSymbolsLRUCache) Add(obj ObjInfo, dynamicSymbols *dynamicS
 	soCache.lru.Add(obj.Id, dynamicSymbols)
 }
 
-// loadSharedObjectDynamicSymbols load all dynamic symbols of a shared object file in given path.
+// loadSharedObjectDynamicSymbols loads all dynamic symbols of a shared object file in given path.
 func loadSharedObjectDynamicSymbols(path string) (*dynamicSymbols, error) {
+	var err error
 	var loadedObject *elf.File
 
-	err := capabilities.GetInstance().Required(func() error {
-		var e error
-		loadedObject, e = elf.Open(path)
-		return e
-	})
+	err = capabilities.GetInstance().Requested(
+		func() error {
+			loadedObject, err = elf.Open(path)
+			return err
+		},
+		cap.SYS_PTRACE,
+	)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
@@ -126,6 +130,7 @@ func loadSharedObjectDynamicSymbols(path string) (*dynamicSymbols, error) {
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
+
 	return parseDynamicSymbols(dynamicSymbols), nil
 }
 

@@ -53,17 +53,15 @@ func ValidateKsymbolsTable(ksyms helpers.KernelSymbolTable) bool {
 }
 
 func (t *Tracee) NewKernelSymbols() error {
-	var kernelSymbols helpers.KernelSymbolTable
-	var err error
 
-	kernelSymbols, err = helpers.NewLazyKernelSymbolsMap()
+	// reading kallsyms needs CAP_SYSLOG
+	kernelSymbols, err := helpers.NewLazyKernelSymbolsMap()
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	if !ValidateKsymbolsTable(kernelSymbols) {
-		// debug.PrintStack()
-		return errfmt.Errorf("invalid ksymbol table")
+		return errfmt.Errorf("invalid ksymbol table (capabilities issue ?)")
 	}
 	t.kernelSymbols = kernelSymbols
 

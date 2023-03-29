@@ -6,11 +6,8 @@ import (
 	"strings"
 	"unsafe"
 
-	"kernel.org/pub/linux/libs/security/libcap/cap"
-
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
@@ -39,15 +36,9 @@ func getHostMntNS() (uint32, error) {
 	var ns int
 	var err error
 
-	err = capabilities.GetInstance().Requested(func() error {
-		ns, err = proc.GetProcNS(1, "mnt")
-		return errfmt.WrapError(err)
-	},
-		cap.DAC_READ_SEARCH,
-		cap.SYS_PTRACE,
-	)
+	ns, err = proc.GetProcNS(1, "mnt")
 	if err != nil {
-		return 0, err
+		return 0, errfmt.WrapError(err)
 	}
 
 	return uint32(ns), nil

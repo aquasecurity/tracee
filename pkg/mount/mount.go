@@ -79,7 +79,8 @@ func (m *MountOnce) Mount() error {
 	m.target = mp
 
 	// mount the filesystem to the target dir
-	err = capabilities.GetInstance().Requested( // ring2
+
+	err = capabilities.GetInstance().Requested(
 		func() error {
 			return syscall.Mount(m.fsType, m.target, m.fsType, 0, m.data)
 		},
@@ -101,8 +102,10 @@ func (m *MountOnce) Mount() error {
 
 func (m *MountOnce) Umount() error {
 	if m.managed && m.mounted {
+
 		// umount the filesystem from the target dir
-		err := capabilities.GetInstance().Requested( // ring2
+
+		err := capabilities.GetInstance().Requested(
 			func() error {
 				return syscall.Unmount(m.target, 0)
 			},
