@@ -266,6 +266,30 @@ func TestPolicyScopes(t *testing.T) {
 			},
 		},
 		{
+			testName: "container",
+			policy: PolicyFile{
+				Name:          "container_scope",
+				Description:   "container scope",
+				Scope:         []string{"container"},
+				DefaultAction: "log",
+				Rules: []Rule{
+					{Event: "write"},
+				},
+			},
+			expected: FilterMap{
+				0: {
+					{
+						full:              "container",
+						filterName:        "container",
+						operatorAndValues: "",
+						policyIdx:         0,
+						policyName:        "container_scope",
+					},
+					newFilterFlagBasedOn(writeFlag, "container_scope"),
+				},
+			},
+		},
+		{
 			testName: "tree=3213,5200",
 			policy: PolicyFile{
 				Name:          "tree_scope",

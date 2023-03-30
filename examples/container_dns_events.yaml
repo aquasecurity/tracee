@@ -1,0 +1,8 @@
+name: container_dns_events
+description: traces dns events from containers
+scope:
+  - container
+defaultAction: log
+rules:
+  - event: net_packet_dns_request
+  - event: net_packet_dns_response

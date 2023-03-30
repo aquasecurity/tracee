@@ -72,7 +72,7 @@ func PrepareFilterMapFromPolicies(policies []PolicyFile) (FilterMap, error) {
 			var scope, filterName, operatorAndValues string
 
 			switch s {
-			case "follow", "!container":
+			case "follow", "!container", "container":
 				scope = s
 				filterName = s
 				operatorAndValues = ""
