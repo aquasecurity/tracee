@@ -1,8 +1,8 @@
 # Tracing Event Filtering
 
-```
-$ sudo ./dist/tracee --filter help
-$ sudo ./dist/tracee --filter xxx
+```console
+sudo ./dist/tracee --filter help
+sudo ./dist/tracee --filter xxx
 ```
 
 Tracee output might become too hard to consume when tracing all the events from
@@ -21,8 +21,8 @@ capabilities. Only events that match given criteria will be traced.
 All the examples bellow this item can be executed with the following tracee
 prefix command:
 
-```text
-$ sudo ./dist/tracee \
+```console
+sudo ./dist/tracee \
     --output json \
     --filter comm=bash \
     --filter follow
@@ -38,13 +38,13 @@ expected.
 
 1. **Event** `(Operators: =, != and "follow". Prefix/Suffix: *)`
 
-     ```text
-     1) --filter event=openat
-     2) --filter event=execve,open
-     3) --filter event='open*'
-     4) --filter event!='open*,dup*'
-     5) --filter follow
-     ```
+    ```text
+    1) --filter event=openat
+    2) --filter event=execve,open
+    3) --filter event='open*'
+    4) --filter event!='open*,dup*'
+    5) --filter follow
+    ```
 
     !!! Note
         The "follow" operator will make tracee follow all newly created
@@ -52,11 +52,11 @@ expected.
 
 1. **Event Arguments** `(Operators: =, !=. Prefix/Suffix: *)`
 
-     ```text
-     1) --filter event=openat --filter openat.args.pathname=/etc/shadow
-     2) --filter event=openat --filter openat.args.pathname='/tmp*'
-     3) --filter event=openat --filter openat.args.pathname!=/tmp/1,/bin/ls
-     ```
+    ```text
+    1) --filter event=openat --filter openat.args.pathname=/etc/shadow
+    2) --filter event=openat --filter openat.args.pathname='/tmp*'
+    3) --filter event=openat --filter openat.args.pathname!=/tmp/1,/bin/ls
+    ```
 
     !!! Note
         Multiple values are ORed if used with = operator  

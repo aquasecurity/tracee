@@ -58,13 +58,13 @@ probe_tracee_ebpf() {
         already_probed=1
         tracee_ret=2 # pretend it has probed and found non CO-RE is needed
 
-    else # check if non CO-RE obj is needed (tracee-ebpf ret code is 2)
+    else # check if non CO-RE obj is needed (tracee ret code is 2)
 
         tracee_ret=0 # clear ret code for the second call
 
         if [ $already_probed -eq 0 ]; then
 
-            echo "INFO: probing tracee-ebpf capabilities..."
+            echo "INFO: probing tracee capabilities..."
 
             timeout --preserve-status "$EBPF_PROBE_TIMEOUT" \
                 "$TRACEE_EBPF_EXE" --metrics --output=none \

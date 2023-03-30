@@ -70,19 +70,23 @@ docker container images being published during a release:
 
 1. **tracee:latest**
 
-    ```text
-    $ BTFHUB={0,1} make -f builder/Makefile.tracee-container build-tracee
+    ```console
+    make -f builder/Makefile.tracee-container build-tracee
     ```
 
 2. **tracee:full**
 
-    ```text
-    $ BTFHUB={0,1} make -f builder/Makefile.tracee-container build-tracee-full
+    ```console
+    make -f builder/Makefile.tracee-container build-tracee-full
     ```
 
     !!! Note
         `BTFHUB=1` adds support to some [older kernels](https://github.com/aquasecurity/btfhub/blob/main/docs/supported-distros.md)
-        so user doesn't need to build specific non CO-RE eBPF objects to them.
+        so user doesn't need to build specific non CO-RE eBPF objects to them. e.g.:
+        
+        ```console
+        BTFHUB=1 make -f builder/Makefile.tracee-container build-tracee
+        ```
 
 ## Running Generated Tracee Containers
 
@@ -96,44 +100,42 @@ the "run" targets:
 
 1. To run the **tracee:latest** container:
 
-    ```text
-    $ make -f builder/Makefile.tracee-container run-tracee
+    ```console
+    make -f builder/Makefile.tracee-container run-tracee
     ```
 
 2. To run the **tracee:full** container:
 
-    ```text
-    $ make -f builder/Makefile.tracee-container run-tracee-full
+    ```console
+    make -f builder/Makefile.tracee-container run-tracee-full
     ```
 
     !!! note
-        Tracee-ebpf arguments are passed through the `ARG` variable:
-        ```text
-        $ make -f builder/Makefile.tracee-container run-tracee ARG="--help"
+        Tracee arguments are passed through the `ARG` variable:
+        ```console
+        make -f builder/Makefile.tracee-container run-tracee ARG="--help"
         ```
 
-## Running Tracee-eBPF Only
+## Running Tracee
 
 Generated containers allow user to run Tracee, as a complete security solution
-(**tracee-ebpf** passes events to **tracee-rules** and **tracee-rules** process
-events based on existing security signatures) or to run **tracee-ebpf** only,
-as an introspection tool.
+(processing events based on existing security signatures) or only as an introspection tool.
 
-1. To run the `tracee:latest` container with **tracee-ebpf** only:
+1. To run the `tracee:latest` container with only introspection:
 
-   ```text
-   $ make -f builder/Makefile.tracee-container run-tracee-ebpf
+   ```console
+   make -f builder/Makefile.tracee-container run-tracee
    ```
 
-2. To run the `tracee:full` container with **tracee-ebpf** only:
+2. To run the `tracee:full` container with only introspection:
 
-   ```text
-   $ make -f builder/Makefile.tracee-container run-tracee-ebpf-full
+   ```console
+   make -f builder/Makefile.tracee-container run-tracee-full
    ```
 
 !!! note
-    Tracee-ebpf arguments are passed through the `ARG` variable:
+    Tracee arguments are passed through the `ARG` variable:
 
-    ```text
-    $ make -f builder/Makefile.tracee-container run-tracee-ebpf ARG="--log debug"
+    ```console
+    make -f builder/Makefile.tracee-container run-tracee ARG="--log debug"
     ```

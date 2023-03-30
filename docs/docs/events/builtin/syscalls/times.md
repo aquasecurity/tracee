@@ -9,7 +9,7 @@ The `times()` syscall retrieves the running times of the current process and of 
 
 A `struct tms` value has the following form:
 
-```
+```c
 struct tms {
 	clock_t tms_utime; // user time
 	clock_t tms_stime; // system time
@@ -38,9 +38,10 @@ Hooked to record timing information for the `times()` syscall.
 ## Example Use Case
 The `times()` syscall can be used in the following example to get more insight into a process and child processes running times:
 
-```
+```c
 struct tms t;
-if(times(&t) != -1){
+
+if (times(&t) != -1) {
 	printf("User time of this process: %lld ms\n", t.tms_utime * MSEC_PER_SEC);
 	printf("System time of this process: %lld ms\n", t.tms_stime * MSEC_PER_SEC);
 	printf("User time of this process and its childrens: %lld ms\n", t.tms_cutime * MSEC_PER_SEC);

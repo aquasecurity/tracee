@@ -3,8 +3,8 @@
 Tracee has an events caching (in-memory) mechanism. In order to check latest
 caching options you may execute:
 
-```
-$ ./dist/tracee --cache help
+```console
+./dist/tracee --cache help
 ```
 
 !!! Read Important
@@ -37,8 +37,8 @@ The effects of this are the following:
 Example using **1GB cache**, container **enrichment** in the pipeline, argument
 **parsing** so arguments are formatted in a human consumable way:
 
-```text
-$ sudo ./dist/tracee \
+```console
+sudo ./dist/tracee \
     --cache cache-type=mem \
     --cache mem-cache-size=1024 \
     --containers -o format:json \
@@ -47,15 +47,11 @@ $ sudo ./dist/tracee \
     --crs docker:/var/run/docker.sock
 ```
 
-> We are using most of the options that could cause latencies in the event
-> pipeline BUT we're not piping the events to **tracee-rules**.
-
 !!! Attention
     If you pipe **tracee** output to another tool, like `jq`:
-    ```text
+    ```console
     | jq -c '. | {cgroupid, processname, containername}'
     ```
     You may cause latencies in **tracee** pipeline because the event json
     processing from `jq` might not be as fast as how **tracee** is capable
-    of writing events to it (just like **tracee-rules** could do if being slow
-    evaluating events).
+    of writing events to it.

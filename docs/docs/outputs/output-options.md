@@ -8,8 +8,8 @@ Available options:
 
     Pick stack memory address from each event
 
-    ```text
-    $ sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=openat --output option:stack-addresses
+    ```console
+    sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=openat --output option:stack-addresses
     ```
 
     ```json
@@ -22,9 +22,10 @@ Available options:
     **tracee**, you may opt to parse event arguments to a **human
     *readable** format.
 
-    ```text
-    $ sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=security_file_open --output option:parse-arguments
+    ```console
+    sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=security_file_open --output option:parse-arguments
     ```
+
     ```json
     {"timestamp":1657292314817581101,"threadStartTime":617395606682013,"processorId":9,"processId":2045288,"cgroupId":1,"threadId":2045288,"parentProcessId":3795408,"hostProcessId":2045288,"hostThreadId":2045288,"hostParentProcessId":3795408,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"bash","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"722","eventName":"security_file_open","argsNum":7,"returnValue":0,"stackAddresses":null,"syscall":"execve","contextFlags":{"containerStarted":false,"isCompat":false},"args":[{"name":"pathname","type":"const char*","value":"/usr/bin/exa"},{"name":"flags","type":"string","value":"O_RDONLY|O_LARGEFILE"},{"name":"dev","type":"dev_t","value":271581185},{"name":"inode","type":"unsigned long","value":2493759},{"name":"ctime","type":"unsigned long","value":1653730234432691496},{"name":"syscall_pathname","type":"const char*","value":""}]}
     {"timestamp":1657292314817690279,"threadStartTime":617395606682013,"processorId":9,"processId":2045288,"cgroupId":1,"threadId":2045288,"parentProcessId":3795408,"hostProcessId":2045288,"hostThreadId":2045288,"hostParentProcessId":3795408,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"bash","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"722","eventName":"security_file_open","argsNum":7,"returnValue":0,"stackAddresses":null,"syscall":"execve","contextFlags":{"containerStarted":false,"isCompat":false},"args":[{"name":"pathname","type":"const char*","value":"/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2"},{"name":"flags","type":"string","value":"O_RDONLY|O_LARGEFILE"},{"name":"dev","type":"dev_t","value":271581185},{"name":"inode","type":"unsigned long","value":2752590},{"name":"ctime","type":"unsigned long","value":1653730015033811838},{"name":"syscall_pathname","type":"const char*","value":""}]}
@@ -43,18 +44,13 @@ Available options:
     **tracee**, you may opt to parse event fd arguments to be
     enriched with **file paths**. This option also enables `parse-arguments`.
 
-    ```text
-    $ sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=read --output option:parse-arguments-fds
-    ```
-
-    ```text
-    $ cat /etc/passwd
+    ```console
+    sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=read --output option:parse-arguments-fds
     ```
 
     ```json
     {"timestamp":1658356809979365547,"threadStartTime":11570447751601,"processorId":1,"processId":239413,"cgroupId":10575,"threadId":239413,"parentProcessId":91515,"hostProcessId":239413,"hostThreadId":239413,"hostParentProcessId":91515,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"cat","hostName":"ubuntu-impish","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"0","eventName":"read","argsNum":3,"returnValue":0,"stackAddresses":null,"syscall":"read","contextFlags":{"containerStarted":false,"isCompat":false},"args":[{"name":"fd","type":"int","value":"3=/etc/locale.alias"},{"name":"buf","type":"void*","value":93921853269152},{"name":"count","type":"size_t","value":4096}]}
     {"timestamp":1658356809979748006,"threadStartTime":11570447751601,"processorId":1,"processId":239413,"cgroupId":10575,"threadId":239413,"parentProcessId":91515,"hostProcessId":239413,"hostThreadId":239413,"hostParentProcessId":91515,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"cat","hostName":"ubuntu-impish","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"0","eventName":"read","argsNum":3,"returnValue":1867,"stackAddresses":null,"syscall":"read","contextFlags":{"containerStarted":false,"isCompat":false},"args":[{"name":"fd","type":"int","value":"3=/etc/passwd"},{"name":"buf","type":"void*","value":139658814046208},{"name":"count","type":"size_t","value":131072}]}
-
     ```
 
     As you can see now, the value of fd is enriched with its file path following the `"fd=filepath"` format (string type in JSON).
@@ -71,8 +67,8 @@ Available options:
     Sometimes it is also important to know the execution environment variables
     whenever an event is detected, specially when deteting **execve** event.
 
-    ```text
-    $ sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=execve --output option:parse-arguments --output option:exec-env
+    ```console
+    sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=execve --output option:parse-arguments --output option:exec-env
     ```
 
     ```json
@@ -93,8 +89,8 @@ Available options:
     would like to compare executed binaries from a list of known hashes, for
     example).
 
-    ```text
-    $ sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=sched_process_exec --output option:parse-arguments --output option:exec-hash
+    ```console
+    sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=sched_process_exec --output option:parse-arguments --output option:exec-hash
     ```
 
     ```json

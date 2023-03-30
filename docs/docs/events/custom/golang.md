@@ -16,89 +16,89 @@ There are 2 ways you can get your own golang signatures working with tracee.
     !!! Signature Example
         ```golang
         package main
-        
+
         import (
-        	"fmt"
-        	"strings"
-        
-        	"github.com/aquasecurity/tracee/signatures/helpers"
-        	"github.com/aquasecurity/tracee/types/detect"
-        	"github.com/aquasecurity/tracee/types/protocol"
-        	"github.com/aquasecurity/tracee/types/trace"
+            "fmt"
+            "strings"
+
+            "github.com/aquasecurity/tracee/signatures/helpers"
+            "github.com/aquasecurity/tracee/types/detect"
+            "github.com/aquasecurity/tracee/types/protocol"
+            "github.com/aquasecurity/tracee/types/trace"
         )
-        
+
         type signatureExample struct {
-        	cb detect.SignatureHandler
+            cb detect.SignatureHandler
         }
-        
-        func (sig *signatureExample) Init(cb detect.SignatureHandler) error {
-        	sig.cb = cb
-        
-        	return nil
+
+        func (sig *signatureExample) Init(ctx detect.SignatureContext) error {
+            sig.cb = ctx.Callback
+
+            return nil
         }
-        
+
         func (sig *signatureExample) GetMetadata() (
-        	detect.SignatureMetadata,
-        	error,
+            detect.SignatureMetadata,
+            error,
         ) {
-        	return detect.SignatureMetadata{
-        		ID:          "Mine-0.1.0",
-        		Version:     "0.1.0",
-        		Name:        "My Own Signature",
-        		Description: "My Own Signature Detects Stuff",
-        		Tags:        []string{"linux"},
-        	}, nil
+            return detect.SignatureMetadata{
+                ID:          "Mine-0.1.0",
+                Version:     "0.1.0",
+                Name:        "My Own Signature",
+                EventName:   "mine",
+                Description: "My Own Signature Detects Stuff",
+            }, nil
         }
-        
+
         func (sig *signatureExample) GetSelectedEvents() (
-        	[]detect.SignatureEventSelector,
-        	error,
+            []detect.SignatureEventSelector,
+            error,
         ) {
-        
-        	return []detect.SignatureEventSelector{
-        		{Source: "tracee", Name: "openat"},
-        		{Source: "tracee", Name: "execve"},
-        	}, nil
+
+            return []detect.SignatureEventSelector{
+                {Source: "tracee", Name: "openat"},
+                {Source: "tracee", Name: "execve"},
+            }, nil
         }
-        
+
         func (sig *signatureExample) OnEvent(event protocol.Event) error {
-        	switch e := event.Payload.(type) {
-        	case trace.Event:
-        		if e.ArgsNum == 0 {
-        			return nil
-        		}
-        
-        		switch e.EventName {
-        		case "openat", "execve":
-        			arg, err := helpers.GetTraceeArgumentByName(e, "pathname", helpers.GetArgOps{DefaultArgs: false})
-        			if err != nil {
-        				return err
-        			}
-        
-        			if s, ok := arg.Value.(string); ok {
-        				if strings.Contains(s, "/etc/passwd") {
-        					m, _ := sig.GetMetadata()
-        
-        					found := detect.Finding{
-        						Event:       event,
-        						SigMetadata: m,
-        					}
-        
-        					sig.cb(found)
-        				}
-        			}
-        		}
-        	default:
-        		return fmt.Errorf("failed to cast event's payload")
-        	}
-        
-        	return nil
+            switch e := event.Payload.(type) {
+            case trace.Event:
+                if e.ArgsNum == 0 {
+                    return nil
+                }
+
+                switch e.EventName {
+                case "openat", "execve":
+                    arg, err := helpers.GetTraceeArgumentByName(e, "pathname", helpers.GetArgOps{DefaultArgs: false})
+                    if err != nil {
+                        return err
+                    }
+
+                    if s, ok := arg.Value.(string); ok {
+                        if strings.Contains(s, "/etc/passwd") {
+                            m, _ := sig.GetMetadata()
+
+                            found := detect.Finding{
+                                Event:       event,
+                                SigMetadata: m,
+                            }
+
+                            sig.cb(found)
+                        }
+                    }
+                }
+            default:
+                return fmt.Errorf("failed to cast event's payload")
+            }
+
+            return nil
         }
-        
+
         func (sig *signatureExample) OnSignal(s detect.Signal) error {
-        	return nil
+            return nil
         }
-        
+
         func (sig *signatureExample) Close() {}
         ```
 
@@ -106,36 +106,22 @@ There are 2 ways you can get your own golang signatures working with tracee.
 
     ```golang
     var ExportedSignatures = []detect.Signature{
+        ...
         &signatureExample{},
     }
     ```
 
-    Follow instructions on [how to build Tracee] and you will find your new
-    signature included in **tracee-rules**. You may even select only the
-    signatures you created:
+    Follow instructions on [how to build Tracee] and you will get your new signature
+    available to use. You may even select only the signatures you created:
 
-    ```text
-    $ sudo ./dist/tracee-ebpf \
+    ```console
+    sudo ./dist/tracee \
         --output json \
-        --filter comm=bash \
-        --filter follow \
-        --output option:parse-arguments \
-        -trace event=$(./dist/tracee-rules --rules Mine-0.1.0 --list-events) \
-        | ./dist/tracee-rules \
-        --input-tracee \
-        format:json \
-        --input-tracee file:stdin \
-        --rules Mine-0.1.0
+        --filter event=mine
+    ```
 
-    Loaded 1 signature(s): [Mine-0.1.0]
-    
-    *** Detection ***
-    Time: 2022-07-10T04:25:44Z
-    Signature ID: Mine-0.1.0
-    Signature: My Own Signature
-    Data: map[]
-    Command: batcat
-    Hostname: fujitsu
+    ```json
+    {"timestamp":1680191445996958642,"threadStartTime":1680191445994222553,"processorId":4,"processId":329031,"cgroupId":10793,"threadId":329031,"parentProcessId":45580,"hostProcessId":329031,"hostThreadId":329031,"hostParentProcessId":45580,"userId":1000,"mountNamespace":4026531841,"pidNamespace":4026531836,"processName":"zsh","hostName":"hb","container":{},"kubernetes":{},"eventId":"6030","eventName":"mine","matchedPolicies":[""],"argsNum":0,"returnValue":11,"syscall":"","stackAddresses":null,"contextFlags":{"containerStarted":false,"isCompat":false},"args":[],"metadata":{"Version":"0.1.0","Description":"My Own Signature Detects Stuff","Tags":null,"Properties":{"signatureID":"Mine-0.1.0","signatureName":"My Own Signature"}}}
     ```
 
     **Be creative!** You can create signatures that would do pretty much

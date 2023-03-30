@@ -5,10 +5,12 @@
 
 Example:
 
+```console
+tracee --healthz
+curl http://localhost:3366/healthz
 ```
-$ tracee --healthz
-$ curl http://localhost:3366/healthz
 
+```text
 OK
 ```
 
@@ -17,10 +19,12 @@ It can be customized with the flag `--listen-addr`.
 
 Example:
 
+```console
+tracee --healthz --listen-addr=:8080
+curl http://localhost:8080/healthz
 ```
-$ tracee --healthz --listen-addr=:8080
-$ curl http://localhost:8080/healthz
 
+```text
 OK
 ```
 

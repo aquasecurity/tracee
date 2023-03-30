@@ -20,14 +20,14 @@ the detections in your preferred way (e.g. Slack, E-mail, JIRA and more).
 
 	1. Add Aqua chart repository:
 
-		```
+		```console
 		helm repo add aqua https://aquasecurity.github.io/helm-charts/
 		helm repo update
 		```
 
 		or clone the Helm chart:
 
-		```text
+		```console
 		git clone --depth 1 --branch {{ git.tag }} https://github.com/aquasecurity/tracee.git
 		cd tracee
 		```
@@ -35,7 +35,7 @@ the detections in your preferred way (e.g. Slack, E-mail, JIRA and more).
 
 	2. Install the chart from the Aqua chart repository:
 
-		```
+		```console
 		helm install tracee aqua/tracee \
 				--namespace tracee-system --create-namespace \
 				--set hostPID=true
@@ -43,7 +43,7 @@ the detections in your preferred way (e.g. Slack, E-mail, JIRA and more).
   
 		or install the Helm chart from a local directory:
 
-		```text
+		```console
 		helm repo add aqua https://aquasecurity.github.io/helm-charts/
 		helm dependency update ./deploy/helm/tracee
 		helm install tracee ./deploy/helm/tracee \
@@ -56,7 +56,7 @@ the detections in your preferred way (e.g. Slack, E-mail, JIRA and more).
     To install Tracee with [Postee](https://github.com/aquasecurity/postee),
     simply run:
     
-    ```text
+    ````console
     kubectl create namespace tracee-system
     kubectl create -n tracee-system \
         -f https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml \

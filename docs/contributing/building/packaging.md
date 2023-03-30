@@ -1,8 +1,8 @@
 # Creating Tracee Linux packages
 
 > These instructions are meant to describe how to build Linux distributions
-> packages. If you would like to have a local building building and execution
-> environment, [read this](./environment.md) instead.
+> packages. If you would like to have a local build and execution environment,
+> [read this](./environment.md) instead.
 
 ## Ubuntu
 
@@ -16,14 +16,14 @@ to install build depencies in your OS.
 
         * Focal (LTS)
 
-        ```text
-        $ make -f builder/Makefile.packaging ubuntu-bin-focal
+        ```console
+        make -f builder/Makefile.packaging ubuntu-bin-focal
         ```
 
         * Jammy (LTS)
 
-        ```text
-        $ make -f builder/Makefile.packaging ubuntu-bin-jammy
+        ```console
+        make -f builder/Makefile.packaging ubuntu-bin-jammy
         ```
 
     !!! Versioning
@@ -36,8 +36,7 @@ to install build depencies in your OS.
 
         ```text
         # focal
-        tracee-ebpf_0.6.5-111~20.04~2201281302-3a6874a_amd64.deb
-        tracee-rules_0.6.5-111~20.04~2201281302-3a6874a_amd64.deb
+        tracee_0.6.5-111~20.04~2201281302-3a6874a_amd64.deb
 
         ...
         ```
@@ -61,13 +60,13 @@ to install build depencies in your OS.
 
         * 36 (still maintained)
 
-        ```text
+        ```console
         make -f builder/makefile.packaging fedora-bin-36
         ```
 
         * 37 (latest)
 
-        ```text
+        ```console
         make -f builder/makefile.packaging fedora-bin-37
         ```
 
@@ -81,12 +80,10 @@ to install build depencies in your OS.
 
         ```text
         # f36
-        tracee-ebpf-0.6.5.163-f36.2202140514.ef35306d.x86_64.rpm
-        tracee-rules-0.6.5.163-f36.2202140514.ef35306d.x86_64.rpm
+        tracee-0.6.5.163-f36.2202140514.ef35306d.x86_64.rpm
 
         # f37
-        tracee-ebpf-0.8.0.rc-f37.2207080417.07c8af7.x86_64.rpm
-        tracee-rules-0.8.0.rc-f37.2207080417.07c8af7.x86_64.rpm
+        tracee-0.8.0.rc-f37.2207080417.07c8af7.x86_64.rpm
         ...
         ```
 

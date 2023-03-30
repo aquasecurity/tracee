@@ -1,6 +1,6 @@
 # Documentation
 
-`tracee-bench` is a promQL based tool to query `tracee-ebpf` runtime performance metrics.
+`tracee-bench` is a promQL based tool to query `tracee` runtime performance metrics.
 It can be used to benchmark tracee's event pipeline's (see [here](https://aquasecurity.github.io/tracee/dev/architecture/)) performance on your environment.
 
 ## Enabling Prometheus

@@ -18,14 +18,14 @@ be on their way.
 
 Clone and change directory to Tracee Git repository:
 
-```
+```console
 git clone --branch {{ git.tag }} https://github.com/aquasecurity/tracee.git
 cd tracee
 ```
 
 Create and configure development machine according to the `Vagrantfile`:
 
-```
+```console
 vagrant up
 ```
 
@@ -33,28 +33,11 @@ If everything goes well, you can SSH into a running development machine and
 access its shell:
 
 ```console
-$ vagrant ssh
-Welcome to Ubuntu 21.10 (GNU/Linux 5.13.0-35-generic x86_64)
+vagrant ssh
+```
 
- * Documentation:  https://help.ubuntu.com
- * Management:     https://landscape.canonical.com
- * Support:        https://ubuntu.com/advantage
-
-  System information as of Sat Mar 26 18:08:08 UTC 2022
-
-  System load:  0.94               Processes:                153
-  Usage of /:   14.7% of 38.71GB   Users logged in:          1
-  Memory usage: 59%                IPv4 address for docker0: 172.17.0.1
-  Swap usage:   0%                 IPv4 address for enp0s3:  10.0.2.15
-
-
-9 updates can be applied immediately.
-9 of these updates are standard security updates.
-To see these additional updates run: apt list --upgradable
-
-
-Last login: Sat Mar 26 17:14:16 2022 from 10.0.2.2
-vagrant@ubuntu-impish:~$
+```text
+vagrant@ubuntu-jammy:/vagrant$
 ```
 
 !!! tip
@@ -69,83 +52,92 @@ on your host machine, but use the resources in the development machine to
 compile or run Tracee.
 
 By default, Vagrant will share Tracee project directory (the directory with the
-`Vagrantfile`) to `/vagrant`. To get started, change directory to `/vagrant`
-and list files:
+`Vagrantfile`) to `/vagrant`. To get started list files:
 
 ```console
-$ ls -l
-total 204
-drwxr-xr-x 1 vagrant vagrant    224 Mar 17 14:31 3rdparty
--rw-r--r-- 1 vagrant vagrant   3474 Mar 17 14:31 CONTRIBUTING.md
--rw-r--r-- 1 vagrant vagrant  11358 Mar 17 14:31 LICENSE
--rw-r--r-- 1 vagrant vagrant  16529 Mar 25 07:46 Makefile
--rw-r--r-- 1 vagrant vagrant    133 Mar 17 14:31 NOTICE
--rw-r--r-- 1 vagrant vagrant   2116 Mar 26 16:41 RELEASING.md
--rw-r--r-- 1 vagrant vagrant   4097 Mar 17 14:31 Readme.md
--rw-r--r-- 1 vagrant vagrant   2732 Mar 26 16:41 Vagrantfile
-drwxr-xr-x 1 vagrant vagrant    384 Mar 26 16:41 builder
-drwxr-xr-x 1 vagrant vagrant    128 Dec 14 15:27 cmd
-drwxr-xr-x 1 vagrant vagrant     96 Dec  8 14:20 deploy
-drwxr-xr-x 1 vagrant vagrant    288 Mar 25 10:51 dist
-drwxr-xr-x 1 vagrant vagrant    448 Mar 26 16:44 docs
--rw-r--r-- 1 vagrant vagrant    164 Mar 17 14:31 embedded-ebpf.go
--rw-r--r-- 1 vagrant vagrant    101 Mar 17 14:31 embedded.go
--rw-r--r-- 1 vagrant vagrant   4382 Mar 24 14:13 go.mod
--rw-r--r-- 1 vagrant vagrant 129439 Mar 24 14:13 go.sum
--rw-r--r-- 1 vagrant vagrant   1546 Mar 26 18:20 mkdocs.yml
-drwxr-xr-x 1 vagrant vagrant    256 Mar 22 14:08 packaging
-drwxr-xr-x 1 vagrant vagrant    416 Mar 24 14:13 pkg
-drwxr-xr-x 1 vagrant vagrant    192 Dec 14 13:02 signatures
-drwxr-xr-x 1 vagrant vagrant    160 Mar 24 14:13 tests
-drwxr-xr-x 1 vagrant vagrant    224 Mar 24 11:59 types
+ls -l
+```
+
+```text
+total 648
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 3rdparty
+-rw-r--r-- 1 vagrant vagrant  11358 Mar 18 14:45 LICENSE
+-rw-r--r-- 1 vagrant vagrant  21821 Mar 27 13:40 Makefile
+-rw-r--r-- 1 vagrant vagrant    133 Mar 18 14:45 NOTICE
+-rw-r--r-- 1 vagrant vagrant   2643 Mar 29 18:30 RELEASING.md
+-rw-r--r-- 1 vagrant vagrant   2238 Mar 22 23:43 Readme.md
+-rw-r--r-- 1 vagrant vagrant   3337 Mar 22 23:43 Vagrantfile
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 29 18:05 brand
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 builder
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 cmd
+-rw-r--r-- 1 vagrant vagrant 415013 Mar 28 23:17 coverage.txt
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 18 14:45 deploy
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 29 18:15 dist
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 docs
+-rw-r--r-- 1 vagrant vagrant    164 Mar 18 14:45 embedded-ebpf.go
+-rw-r--r-- 1 vagrant vagrant    101 Mar 18 14:45 embedded.go
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 27 12:08 examples
+-rw-r--r-- 1 vagrant vagrant   5599 Mar 29 17:22 go.mod
+-rw-r--r-- 1 vagrant vagrant  77170 Mar 29 17:22 go.sum
+-rw-r--r-- 1 vagrant vagrant  40206 Mar 22 23:43 mkdocs.yml
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 packaging
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 pkg
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 18 14:45 signatures
+-rw-r--r-- 1 vagrant vagrant    157 Mar 22 23:43 staticcheck.conf
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 24 15:44 tests
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 types
 ```
 
 As you can see the `/vagrant` directory contains source code of Tracee cloned
 from GitHub.
 
-## Build and Run Tracee-eBPF and Tracee-Rules
+## Build and Run Tracee
 
 To build **tracee** executable binary, run the
 default make target:
 
-```
+```console
 make
 ```
 
 Build targets are saved in the `/vagrant/dist` directory:
 
 ```console
-$ ls -l dist/
-total 47972
-drwxr-xr-x 1 vagrant vagrant       96 Mar 25 10:45 btfhub
-drwxr-xr-x 1 vagrant vagrant      224 Mar 25 10:45 libbpf
-drwxr-xr-x 1 vagrant vagrant      512 Mar 25 10:46 rules
--rwxr-xr-x 1 vagrant vagrant 17876784 Mar 26 18:32 tracee
-drwxr-xr-x 1 vagrant vagrant      544 Mar 26 18:31 tracee.bpf
--rw-r--r-- 1 vagrant vagrant  4232032 Mar 26 18:31 tracee.bpf.core.o
+ls -l dist/
+```
+
+```text
+total 161096
+drwxr-xr-x 1 vagrant vagrant     4096 Mar 29 19:06 btfhub
+drwxr-xr-x 1 vagrant vagrant     4096 Mar 29 19:06 libbpf
+drwxr-xr-x 1 vagrant vagrant     4096 Mar 29 19:08 signatures
+-rwxr-xr-x 1 vagrant vagrant 62619312 Mar 29 19:08 tracee
+-rw-r--r-- 1 vagrant vagrant 10753624 Mar 29 19:06 tracee.bpf.core.o
 ```
 
 You can now run Tracee and see events printed to the standard output in a tabular format:
 
 ```console
-$ sudo ./dist/tracee
-TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
-18:39:43:781824  0      mkdocs           1       19      0                stat                 pathname: /docs/docs, statbuf: 0x7f851365eb20
-18:39:43:782125  0      mkdocs           1       19      0                security_file_open   pathname: /docs/docs, flags: O_RDONLY|O_LARGEFILE|O_DIRECTORY, dev: 43, inode: 47, ctime: 1648313072000000000
-18:39:43:782008  0      mkdocs           1       19      6                open                 pathname: /docs/docs, flags: O_RDONLY|O_LARGEFILE|O_DIRECTORY|O_CLOEXEC, mode: 0
-18:39:43:783200  0      mkdocs           1       19      464              getdents64           fd: 6, dirp: 0x7f8513d8e0b8, count: 2048
-18:39:43:783232  0      mkdocs           1       19      0                getdents64           fd: 6, dirp: 0x7f8513d8e0b8, count: 2048
-18:39:43:783259  0      mkdocs           1       19      0                close                fd: 6
-18:39:43:783271  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/architecture.md, statbuf: 0x7f851365e9b0
-18:39:43:783734  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/install, statbuf: 0x7f851365e9b0
-18:39:43:784163  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/images, statbuf: 0x7f851365e9b0
-18:39:43:784589  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/integrations.md, statbuf: 0x7f851365e9b0
-18:39:43:784906  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/faq.md, statbuf: 0x7f851365e9b0
+sudo ./dist/tracee
+```
+
+```text
+TIME             UID    COMM             PID     TID     RET              EVENT                     ARGS
+19:10:09:453832  0      coredns          1       8       0                security_socket_connect   sockfd: 13, remote_addr: map[sa_family:AF_INET sin_addr:0.0.0.0 sin_port:8080]
+19:10:09:454179  0      coredns          1       9       0                security_socket_accept    sockfd: 8, local_addr: map[sa_family:AF_INET6 sin6_addr::: sin6_flowinfo:0 sin6_port:8080 sin6_scopeid:0]
+19:10:09:454265  0      coredns          1       9       0                security_socket_accept    sockfd: 8, local_addr: map[sa_family:AF_INET6 sin6_addr::: sin6_flowinfo:0 sin6_port:8080 sin6_scopeid:0]
+19:10:09:454478  0      coredns          1       14      0                net_packet_http_request   metadata: {127.0.0.1 127.0.0.1 43306 8080 6 144 any}, http_request: &{GET HTTP/1.1 :8080 /health map[Accept-Encoding:[gzip] User-Agent:[Go-http-client/1.1]] 0}
+19:10:09:454774  0      coredns          1       14      0                net_packet_http_response  metadata: {127.0.0.1 127.0.0.1 8080 43306 6 170 any}, http_response: &{200 OK 200 HTTP/1.1 map[Content-Length:[2] Content-Type:[text/plain; charset=utf-8] Date:[Wed, 29 Mar 2023 19:10:09 GMT]] 2}
+19:10:10:452992  0      coredns          1       14      0                security_socket_connect   sockfd: 13, remote_addr: map[sa_family:AF_INET sin_addr:0.0.0.0 sin_port:8080]
+19:10:10:453850  0      coredns          1       1       0                security_socket_accept    sockfd: 8, local_addr: map[sa_family:AF_INET6 sin6_addr::: sin6_flowinfo:0 sin6_port:8080 sin6_scopeid:0]
+19:10:10:453983  0      coredns          1       1       0                security_socket_accept    sockfd: 8, local_addr: map[sa_family:AF_INET6 sin6_addr::: sin6_flowinfo:0 sin6_port:8080 sin6_scopeid:0]
+19:10:10:454612  0      coredns          1       9       0                net_packet_http_request   metadata: {127.0.0.1 127.0.0.1 43318 8080 6 144 any}, http_request: &{GET HTTP/1.1 :8080 /health map[Accept-Encoding:[gzip] User-Agent:[Go-http-client/1.1]] 0}
+19:10:10:455114  0      coredns          1       9       0                net_packet_http_response  metadata: {127.0.0.1 127.0.0.1 8080 43318 6 170 any}, http_response: &{200 OK 200 HTTP/1.1 map[Content-Length:[2] Content-Type:[text/plain; charset=utf-8] Date:[Wed, 29 Mar 2023 19:10:10 GMT]] 2}
 ```
 
 ## Switch Between CO-RE and non CO-RE Linux Distribution
 
-By default, the development machine is running Ubuntu Linux 21.10 Impish Indri.
+By default, the development machine is running Ubuntu Linux 22.04 Jammy Jellyfish.
 You can see that it has a BTF-enabled kernel by checking the existence of the
 `/sys/kernel/btf/vmlinux` file.
 
@@ -153,8 +145,9 @@ You can see that it has a BTF-enabled kernel by checking the existence of the
 Vagrant.configure("2") do |config|
   # config.vm.box = "ubuntu/focal64"     # Ubuntu 20.04 Focal Fossa (non CO-RE)
   # config.vm.box = "ubuntu/hirsute64"   # Ubuntu 21.04 Hirsute Hippo (CO-RE)
-  config.vm.box = "ubuntu/impish64"      # Ubuntu 21.10 Impish Indri (CO-RE)
-end
+  # config.vm.box = "ubuntu/impish64"    # Ubuntu 21.10 Impish Indri (CO-RE)
+  config.vm.box = "ubuntu/jammy64"       # Ubuntu 22.04 Jammy Jellyfish (CO-RE)
+...
 ```
 
 Sometimes you may want to test Tracee with a non CO-RE distribution. You can do
@@ -166,12 +159,13 @@ Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/focal64"       # Ubuntu 20.04 Focal Fossa (non CO-RE)
   # config.vm.box = "ubuntu/hirsute64"   # Ubuntu 21.04 Hirsute Hippo (CO-RE)
   # config.vm.box = "ubuntu/impish64"    # Ubuntu 21.10 Impish Indri (CO-RE)
-end
+  # config.vm.box = "ubuntu/jammy64"     # Ubuntu 22.04 Jammy Jellyfish (CO-RE)
+...
 ```
 
 This change requires reprovisioning the development machine:
 
-```
+```console
 vagrant destroy
 vagrant up
 ```
@@ -188,32 +182,39 @@ The development machine described by Vagrantfile preinstalls [MicroK8s]
 Kubernetes cluster, which is suitable for testing Tracee.
 
 ```console
-$ microk8s status
+microk8s status
+```
+
+```text
 microk8s is running
 high-availability: no
   datastore master nodes: 127.0.0.1:19001
   datastore standby nodes: none
+...
 ```
 
 There's also the [kubectl] command installed and configured to communicate with
 the cluster:
 
 ```console
-$ kubectl get nodes -o wide
-NAME            STATUS   ROLES    AGE    VERSION                    INTERNAL-IP   EXTERNAL-IP   OS-IMAGE       KERNEL-VERSION      CONTAINER-RUNTIME
-ubuntu-impish   Ready    <none>   139m   v1.23.4-2+98fc2022f3ad3e   10.0.2.15     <none>        Ubuntu 21.10   5.13.0-35-generic   containerd://1.5.9
+kubectl get nodes -o wide
+```
+
+```
+NAME           STATUS   ROLES    AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
+ubuntu-jammy   Ready    <none>   40m   v1.26.1   10.0.2.15     <none>        Ubuntu 22.04.2 LTS   5.15.0-69-generic   containerd://1.6.8
 ```
 
 Create a new namespace called `tracee-system`:
 
-```
+```console
 kubectl create ns tracee-system
 ```
 
 Create Postee Persistent Volumes and StatefulSet in the `tracee-system`
 namespace:
 
-```
+```console
 kubectl apply -n tracee-system \
   -f https://raw.githubusercontent.com/aquasecurity/postee/v2.2.0/deploy/kubernetes/hostPath/postee-pv.yaml \
   -f https://raw.githubusercontent.com/aquasecurity/postee/v2.2.0/deploy/kubernetes/postee.yaml
@@ -223,7 +224,7 @@ Create Tracee DaemonSet in the `tracee-system`, which is preconfigured to print
 detections to the standard output and send them over to Postee webhook on
 http://postee-svc:8082:
 
-```
+```console
 kubectl apply -n tracee-system -f deploy/kubernetes/tracee-postee/tracee.yaml
 ```
 
@@ -231,17 +232,17 @@ kubectl apply -n tracee-system -f deploy/kubernetes/tracee-postee/tracee.yaml
     To test code that hasn't been released yet do the following:
 
     1. Build the `tracee:latest` container image from the current Git revision:
-       ```
+       ```console
        make -f builder/Makefile.tracee-container build-tracee
        ```
     2. Import the container image to MicroK8s registry:
-       ```
+       ```console
        docker image save -o /tmp/tracee-latest.tar tracee:latest
        microk8s ctr images import /tmp/tracee-latest.tar
        rm /tmp/tracee-latest.tar
        ```
     3. Create Tracee DaemonSet using `tracee:latest` as container image:
-       ```
+       ```console
        kubectl apply -n tracee-system -k deploy/kubernetes/tracee-postee
        ```
 
@@ -249,42 +250,30 @@ While Tracee pod is running, run `strace ls` command and observe detection
 printed to the standard output.
 
 ```console
-$ kubectl logs n tracee-system -f daemonset/tracee
-INFO: probing tracee-ebpf capabilities...
-INFO: starting tracee-ebpf...
-INFO: starting tracee-rules...
-Loaded 14 signature(s): [TRC-1 TRC-13 TRC-2 TRC-14 TRC-3 TRC-11 TRC-9 TRC-4 TRC-5 TRC-12 TRC-8 TRC-6 TRC-10 TRC-7]
-Serving metrics endpoint at :3366
+kubectl logs -n tracee-system -f daemonset/tracee
+```
 
-*** Detection ***
-Time: 2022-03-29T08:26:32Z
-Signature ID: TRC-2
-Signature: Anti-Debugging
-Data: map[]
-Command: strace
-Hostname: ubuntu-impish
+```text
+INFO: probing tracee capabilities...
+INFO: starting tracee...
+{"timestamp":1680119087787203746,"threadStartTime":1680119087787109775,"processorId":0,"processId":95599,"cgroupId":9789,"threadId":95599,"parentProcessId":95597,"hostProcessId":95599,"hostThreadId":95599,"hostParentProcessId":95597,"userId":1000,"mountNamespace":4026531841,"pidNamespace":4026531836,"processName":"strace","hostName":"ubuntu-jammy","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","podSandbox":false,"eventId":"6018","eventName":"Anti-Debugging detected","matchedScopes":1,"argsNum":0,"returnValue":0,"syscall":"","stackAddresses":null,"contextFlags":{"containerStarted":false,"isCompat":false},"args":[],"metadata":{"Version":"1","Description":"A process used anti-debugging techniques to block a debugger. Malware use anti-debugging to stay invisible and inhibit analysis of their behavior.","Tags":null,"Properties":{"Category":"defense-evasion","Kubernetes_Technique":"","Severity":1,"Technique":"Debugger Evasion","external_id":"T1622","id":"attack-pattern--e4dc8c01-417f-458d-9ee0-bb0617c1b391","signatureID":"TRC-102","signatureName":"Anti-Debugging detected"}}}
 ```
 
 If everything is configured properly, you can find the same detection in Postee
 logs:
 
 ```console
-$ kubectl -n tracee-system logs -f postee-0
-2022/03/29 08:26:32 {"Data":null,"Context":{"timestamp":1648542392170684298,"processorId":1,"processId":90731,"threadId"
-:90731,"parentProcessId":90729,"hostProcessId":90731,"hostThreadId":90731,"hostParentProcessId":90729,"userId":1000,"mou
-ntNamespace":4026531840,"pidNamespace":4026531836,"processName":"strace","hostName":"ubuntu-impish","containerId":"","ev
-entId":"101","eventName":"ptrace","argsNum":4,"returnValue":0,"stackAddresses":null,"syscall":"ptrace","contextFlags":{"
-containerStarted":false,"isCompat":false},"args":[{"name":"request","type":"string","value":"PTRACE_TRACEME"},{"name":"p
-id","type":"pid_t","value":0},{"name":"addr","type":"void*","value":"0x0"},{"name":"data","type":"void*","value":"0x0"}]
-},"SigMetadata":{"ID":"TRC-2","Version":"0.1.0","Name":"Anti-Debugging","Description":"Process uses anti-debugging techn
-ique to block debugger","Tags":["linux","container"],"Properties":{"MITRE ATT\u0026CK":"Defense Evasion: Execution Guard
-rails","Severity":3}}}
+kubectl -n tracee-system logs -f postee-0
+```
+
+```text
+2023/03/29 19:44:47 {"timestamp":1680119087787203746,"threadStartTime":1680119087787109775,"processorId":0,"processId":95599,"cgroupId":9789,"threadId":95599,"parentProcessId":95597,"hostProcessId":95599,"hostThreadId":95599,"hostParentProcessId":95597,"userId":1000,"mountNamespace":4026531841,"pidNamespace":4026531836,"processName":"strace","hostName":"ubuntu-jammy","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","podSandbox":false,"eventId":"6018","eventName":"Anti-Debugging detected","matchedScopes":1,"argsNum":0,"returnValue":0,"syscall":"","stackAddresses":null,"contextFlags":{"containerStarted":false,"isCompat":false},"args":[],"metadata":{"Version":"1","Description":"A process used anti-debugging techniques to block a debugger. Malware use anti-debugging to stay invisible and inhibit analysis of their behavior.","Tags":null,"Properties":{"Category":"defense-evasion","Kubernetes_Technique":"","Severity":1,"Technique":"Debugger Evasion","external_id":"T1622","id":"attack-pattern--e4dc8c01-417f-458d-9ee0-bb0617c1b391","signatureID":"TRC-102","signatureName":"Anti-Debugging detected"}}}
 ```
 
 As an alternative to static deployment descriptors you can install Tracee and
 Postee with Helm:
 
-```
+```console
 helm repo add aqua https://aquasecurity.github.io/helm-charts
 helm dependency update ./deploy/helm/tracee
 helm install tracee ./deploy/helm/tracee \
@@ -298,7 +287,7 @@ helm install tracee ./deploy/helm/tracee \
 Use the following command to get the token required to log in to the
 [Kubernetes Dashboard]:
 
-```
+```console
 kubectl -n kube-system describe secret \
   $(kubectl -n kube-system get secret | grep default-token | cut -d " " -f1)
 ```
@@ -306,7 +295,7 @@ kubectl -n kube-system describe secret \
 Forward port 10443 in the development machine to the Kubernetes Dashboard's
 pod:
 
-```
+```console
 kubectl port-forward --address 0.0.0.0 -n kube-system service/kubernetes-dashboard 10443:443
 ```
 
@@ -323,7 +312,7 @@ Kubernetes Dashboard.
 
 You can run [MkDocs] server and preview documentation on your host:
 
-```
+```console
 make -f builder/Makefile.mkdocs
 ```
 

@@ -32,23 +32,28 @@ Also, used to maintain the cache used by the event for performance improvement.
 
 ## Example Use Case
 Could be used for example to catch collision between a shared object and `libc.so`, overwriting libc symbols:
-```shell
+
+```console
 ./dist/tracee -f e=symbols_collision -f symbols_collision.args.loaded_path=/usr/lib/libc.so.6
 ```
 
 Running this line will give a lot of spam symbols collision, for example collisions of `libc` with `libm`:
-```shell
+
+```text
 TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
 14:41:48:296325  1000   xfce4-panel      6808    6808    0                symbols_collision    loaded_path: /usr/lib/libc.so.6, collision_path: /usr/lib/libm.so.6, symbols: [finitel __signbitf finite frexpl frexp scalbn __finite copysignl scalbnf __signbitl scalbnl copysign copysignf ldexpf modff modf ldexp ldexpl finitef frexpf __finitel modfl __finitef __signbit]
 ```
 
 To reduce the spam collisions, we can configure the event to not print the collision using two ways:
 1. Whitelist the collided symbols:
-```shell
+
+```console
 ./dist/tracee -f e=symbols_collision -f symbols_collision.args.loaded_path=/usr/lib/libc.so.6 -f symbols_collision.args.symbols!=finitel,__signbitf,finite,frexpl,frexp,scalbn,__finite,copysignl,scalbnf,__signbitl,scalbnl,copysign,copysignf,ldexpf,modff,modf,ldexp,ldexpl,finitef,frexpf,__finitel,modfl,__finitef,__signbit
 ```
+
 2. Whitelist the library `libm`:
-```shell
+
+```console
 ./dist/tracee -f e=symbols_collision -f symbols_collision.args.loaded_path=/usr/lib/libc.so.6 -f symbols_collision.args.collision_path!=/usr/lib/libm.so.6
 ```
 

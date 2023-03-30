@@ -27,8 +27,8 @@ through docker or installed/built on your machine.
 Tracee can be most easily deployed with metrics enabled by default and port
 forwarded through the following commands:
 
-```text
-$ docker run \
+```console
+docker run \
     --name tracee --rm --pid=host \
     --cgroupns=host --privileged \
     -v /tmp/tracee:/tmp/tracee  \
@@ -48,7 +48,7 @@ overriden with the `--listen-addr` flag.
 Install prometheus or pull it's docker image. Then create the following
 configuration file, call it `prometheus.yml` to scrape Tracee:
 
-```text
+```yaml
 # A scrape configuration containing exactly one endpoint to scrape:
 # Here it's Tracee.
 scrape_configs:
@@ -66,13 +66,13 @@ scrape_configs:
 
 We must then start prometheus with the following command:
 
-```
+```console
 prometheus --config.file=/path/to/prometheus.yml
 ```
 
 Or alternatively with docker:
 
-```
+```console
 docker run -p 9090:9090 -v /path/to/config:/etc/prometheus prom/prometheus
 ```
 
