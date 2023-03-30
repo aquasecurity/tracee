@@ -70,8 +70,6 @@ github.com/aquasecurity/libbpfgo v0.4.6-libbpf-1.1.0 h1:b4RQasaC8u+zvCFJO6z4e+Xo
 github.com/aquasecurity/libbpfgo v0.4.6-libbpf-1.1.0/go.mod h1:v+Nk+v6BtHLfdT4kVdsp+fYt4AeUa3cIG2P0y+nBuuY=
 github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230321190037-f591a2c5734f h1:l127H3NqJBmw+XMt+haBOeZIrBppuw7TJz26cWMI9kY=
 github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230321190037-f591a2c5734f/go.mod h1:j/TQLmsZpOIdF3CnJODzYngG4yu1YoDCoRMELxkQSSA=
-github.com/aquasecurity/tracee/types v0.0.0-20230328124919-cb54a2ce5a87 h1:C8K+Zauh3UdRZ/6Nn/W/wxiqEK/0wev3p/9GW3VSi8A=
-github.com/aquasecurity/tracee/types v0.0.0-20230328124919-cb54a2ce5a87/go.mod h1:kHvgUMXGq5QEqSLPgu4RwGSJEoCuMQJnEkGk8OAcSUc=
 github.com/arbovm/levenshtein v0.0.0-20160628152529-48b4e1c0c4d0 h1:jfIu9sQUG6Ig+0+Ap1h4unLjW6YQJpKZVmUzxsD4E/Q=
 github.com/arbovm/levenshtein v0.0.0-20160628152529-48b4e1c0c4d0/go.mod h1:t2tdKJDJF9BV14lnkjHmOQgcvEKgtqs5a1N3LNdJhGE=
 github.com/benbjohnson/clock v1.1.0 h1:Q92kusRqC1XV2MjkWETPvjJVqKetz1OzxZB7mHJLju8=
@@ -404,6 +402,8 @@ github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6L
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.9.0 h1:73kH8U+JUqXU8lRuOHeVHaa/SZPifC7BkcraZVejAe8=
 github.com/rogpeppe/go-internal v1.9.0/go.mod h1:WtVeX8xhTBvf0smdhujwtBcq4Qrzq/fJaraNFVN+nFs=
+github.com/roikol/tracee/types v0.0.0-20230413091201-39df5b2a07b5 h1:IGh2/xx7GqZuu9L1Ew7IcSnrCHpcDER5q3Dp9jILtD4=
+github.com/roikol/tracee/types v0.0.0-20230413091201-39df5b2a07b5/go.mod h1:kHvgUMXGq5QEqSLPgu4RwGSJEoCuMQJnEkGk8OAcSUc=
 github.com/russross/blackfriday/v2 v2.0.1/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/russross/blackfriday/v2 v2.1.0 h1:JIOH55/0cWyOuilr9/qlrm0BSXldqnqwMsf35Ld67mk=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
