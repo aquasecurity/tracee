@@ -92,6 +92,7 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		Filldir64:                  &traceProbe{eventName: "filldir64", probeType: kprobe, programName: "trace_filldir64"},
 		TaskRename:                 &traceProbe{eventName: "task:task_rename", probeType: rawTracepoint, programName: "tracepoint__task__task_rename"},
 		PrintSyscallTable:          &uProbe{eventName: "print_syscall_table", binaryPath: binaryPath, symbolName: "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerSyscallsIntegrityCheckCall", programName: "uprobe_syscall_trigger"},
+		HiddenKernelModuleSeeker:   &uProbe{eventName: "hidden_kernel_module", binaryPath: binaryPath, symbolName: "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerKernelModuleSeeker", programName: "uprobe_lkm_seeker"},
 		PrintNetSeqOps:             &uProbe{eventName: "print_net_seq_ops", binaryPath: binaryPath, symbolName: "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerSeqOpsIntegrityCheckCall", programName: "uprobe_seq_ops_trigger"},
 		PrintMemDump:               &uProbe{eventName: "print_mem_dump", binaryPath: binaryPath, symbolName: "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerMemDumpCall", programName: "uprobe_mem_dump_trigger"},
 		SecurityInodeRename:        &traceProbe{eventName: "security_inode_rename", probeType: kprobe, programName: "trace_security_inode_rename"},
@@ -331,4 +332,5 @@ const (
 	BpfCheck
 	ExecBinprm
 	ExecBinprmRet
+	HiddenKernelModuleSeeker
 )

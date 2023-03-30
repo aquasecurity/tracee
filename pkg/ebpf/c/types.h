@@ -122,6 +122,7 @@ enum event_id_e
     INOTIFY_WATCH,
     SECURITY_BPF_PROG,
     PROCESS_EXECUTION_FAILED,
+    HIDDEN_KERNEL_MODULE_SEEKER,
     MAX_EVENT_ID,
 };
 
@@ -455,6 +456,15 @@ typedef struct net_ctx_ext {
     char comm[TASK_COMM_LEN];
     __be16 local_port;
 } net_ctx_ext_t;
+
+typedef struct kernel_mod {
+    bool seen_proc_modules;
+    bool seen_modules_list;
+} kernel_module_t;
+
+typedef struct rb_node_stack {
+    struct rb_node *node;
+} rb_node_t;
 
 // version is not size limited - save only first 32 bytes.
 // srcversion is not size limited - modpost calculates srcversion with size: 25.

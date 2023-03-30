@@ -66,6 +66,9 @@ const (
 	tailVfsReadv
 	TailExecBinprm1
 	TailExecBinprm2
+	tailHiddenKernelModuleProc
+	tailHiddenKernelModuleKset
+	tailHiddenKernelModuleModTree
 	MaxTail
 )
 
@@ -267,6 +270,7 @@ const (
 	InotifyWatch
 	SecurityBpfProg
 	ProcessExecuteFailed
+	HiddenKernelModuleSeeker
 	MaxCommonID
 )
 
@@ -293,6 +297,7 @@ const (
 	HookedSeqOps
 	SymbolsLoaded
 	SymbolsCollision
+	HiddenKernelModule
 	MaxUserSpace
 )
 
@@ -5778,6 +5783,45 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "unsigned long[]", Name: "syscalls_addresses"},
 				{Type: "unsigned long", Name: trigger.ContextArgName},
+			},
+		},
+		HiddenKernelModule: {
+			ID32Bit: sys32undefined,
+			Name:    "hidden_kernel_module",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: HiddenKernelModuleSeeker},
+				},
+			},
+			Sets: []string{},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "address"},
+				{Type: "const char*", Name: "name"},
+			},
+		},
+		HiddenKernelModuleSeeker: {
+			ID32Bit:  sys32undefined,
+			Name:     "hidden_kernel_module_seeker",
+			Internal: true,
+			Probes: []probeDependency{
+				{Handle: probes.HiddenKernelModuleSeeker, Required: true},
+			},
+			Dependencies: dependencies{
+				KSymbols: &[]kSymbolDependency{
+					{Symbol: "modules", Required: true},
+					{Symbol: "module_kset", Required: true},
+					{Symbol: "mod_tree", Required: true},
+				},
+				TailCalls: []TailCall{
+					{MapName: "prog_array", MapIndexes: []uint32{tailHiddenKernelModuleProc}, ProgName: "lkm_seeker_proc_tail"},
+					{MapName: "prog_array", MapIndexes: []uint32{tailHiddenKernelModuleKset}, ProgName: "lkm_seeker_kset_tail"},
+					{MapName: "prog_array", MapIndexes: []uint32{tailHiddenKernelModuleModTree}, ProgName: "lkm_seeker_mod_tree_tail"},
+				},
+			},
+			Sets: []string{},
+			Params: []trace.ArgMeta{
+				{Type: "unsigned long", Name: "address"},
+				{Type: "bytes", Name: "name"},
 			},
 		},
 		HookedSyscalls: {

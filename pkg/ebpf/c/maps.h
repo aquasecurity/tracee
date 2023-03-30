@@ -25,6 +25,13 @@
         __type(value, _value_type);                                                                \
     } _name SEC(".maps");
 
+#define BPF_MAP_NO_KEY(_name, _type, _value_type, _max_entries)                                    \
+    struct {                                                                                       \
+        __uint(type, _type);                                                                       \
+        __uint(max_entries, _max_entries);                                                         \
+        __type(value, _value_type);                                                                \
+    } _name SEC(".maps");
+
 #define BPF_HASH(_name, _key_type, _value_type, _max_entries)                                      \
     BPF_MAP(_name, BPF_MAP_TYPE_HASH, _key_type, _value_type, _max_entries)
 
@@ -42,6 +49,14 @@
 
 #define BPF_PERF_OUTPUT(_name, _max_entries)                                                       \
     BPF_MAP(_name, BPF_MAP_TYPE_PERF_EVENT_ARRAY, int, __u32, _max_entries)
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 20, 0) || defined(CORE)
+    #define BPF_QUEUE(_name, _value_type, _max_entries)                                            \
+        BPF_MAP_NO_KEY(_name, BPF_MAP_TYPE_QUEUE, _value_type, _max_entries)
+
+    #define BPF_STACK(_name, _value_type, _max_entries)                                            \
+        BPF_MAP_NO_KEY(_name, BPF_MAP_TYPE_STACK, _value_type, _max_entries)
+#endif
 
 // stack traces: the value is 1 big byte array of the stack addresses
 typedef __u64 stack_trace_t[MAX_STACK_DEPTH];
@@ -71,6 +86,9 @@ enum tail_call_id_e
     TAIL_VFS_READV,
     TAIL_EXEC_BINPRM1,
     TAIL_EXEC_BINPRM2,
+    TAIL_HIDDEN_KERNEL_MODULE_PROC,
+    TAIL_HIDDEN_KERNEL_MODULE_KSET,
+    TAIL_HIDDEN_KERNEL_MODULE_MOD_TREE,
     MAX_TAIL_CALL
 };
 
