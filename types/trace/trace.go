@@ -194,14 +194,162 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("unrecognized argument type %s of argument %s", arg.Type, arg.Name)
 		}
 	}
-	if arg.Type == "const char*const*" || arg.Type == "const char**" {
+
+	// handle other types (not numbers)
+
+	switch arg.Type {
+	case "const char*const*", "const char**":
 		argValue := arg.Value.([]interface{})
 		tmp := make([]string, len(argValue))
 		for i, v := range argValue {
 			tmp[i] = fmt.Sprint(v)
 		}
 		arg.Value = tmp
+
+		break
+
+	case "[]trace.HookedSymbolData":
+		var hookedSymbolData []HookedSymbolData
+		err := json.Unmarshal(b, &hookedSymbolData)
+		if err != nil {
+			break
+		}
+		arg.Value = hookedSymbolData
+
+		break
+
+	case "trace.ProtoIPv4":
+		var protoIpv4 ProtoIPv4
+		err := json.Unmarshal(b, &protoIpv4)
+		if err != nil {
+			break
+		}
+		arg.Value = protoIpv4
+
+		break
+
+	case "trace.ProtoIPv6":
+		var protoIpv6 ProtoIPv6
+		err := json.Unmarshal(b, &protoIpv6)
+		if err != nil {
+			break
+		}
+		arg.Value = protoIpv6
+
+		break
+
+	case "trace.ProtoTCP":
+		var protoTcp ProtoTCP
+		err := json.Unmarshal(b, &protoTcp)
+		if err != nil {
+			break
+		}
+		arg.Value = protoTcp
+
+		break
+
+	case "trace.ProtoUDP":
+		var protoUdp ProtoUDP
+		err := json.Unmarshal(b, &protoUdp)
+		if err != nil {
+			break
+		}
+		arg.Value = protoUdp
+
+		break
+
+	case "trace.ProtoICMP":
+		var protoIcmp ProtoICMP
+		err := json.Unmarshal(b, &protoIcmp)
+		if err != nil {
+			break
+		}
+		arg.Value = protoIcmp
+
+		break
+
+	case "trace.ProtoICMPv6":
+		var protoIcmpv6 ProtoICMPv6
+		err := json.Unmarshal(b, &protoIcmpv6)
+		if err != nil {
+			break
+		}
+		arg.Value = protoIcmpv6
+
+		break
+
+	case "trace.ProtoDNS":
+		var protoDns ProtoDNS
+		err := json.Unmarshal(b, &protoDns)
+		if err != nil {
+			break
+		}
+		arg.Value = protoDns
+
+		break
+
+	case "trace.PktMeta":
+		var pktMeta PktMeta
+		err := json.Unmarshal(b, &pktMeta)
+		if err != nil {
+			break
+		}
+		arg.Value = pktMeta
+
+		break
+
+	case "[]trace.DnsQueryData":
+		var dnsQueryData []DnsQueryData
+		err := json.Unmarshal(b, &dnsQueryData)
+		if err != nil {
+			break
+		}
+		arg.Value = dnsQueryData
+
+		break
+
+	case "[]trace.DnsResponseData":
+		var dnsResponseData []DnsResponseData
+		err := json.Unmarshal(b, &dnsResponseData)
+		if err != nil {
+			break
+		}
+		arg.Value = dnsResponseData
+
+		break
+
+	case "trace.ProtoHTTP":
+		var protoHttp ProtoHTTP
+		err := json.Unmarshal(b, &protoHttp)
+		if err != nil {
+			break
+		}
+		arg.Value = protoHttp
+
+		break
+
+	case "trace.ProtoHTTPRequest":
+		var protoHttpReq ProtoHTTPRequest
+		err := json.Unmarshal(b, &protoHttpReq)
+		if err != nil {
+			break
+		}
+		arg.Value = protoHttpReq
+
+		break
+
+	case "trace.ProtoHTTPResponse":
+		var protoHttpRes ProtoHTTPResponse
+		err := json.Unmarshal(b, &protoHttpRes)
+		if err != nil {
+			break
+		}
+		arg.Value = protoHttpRes
+
+		break
+
 	}
+
 	return nil
 }
 
