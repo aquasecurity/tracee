@@ -85,9 +85,6 @@
     #define _IOW(type, nr, size)   _IOC(_IOC_WRITE, (type), (nr), (_IOC_TYPECHECK(size)))
     #define PERF_EVENT_IOC_SET_BPF _IOW('$', 8, __u32)
 
-    #define BPF_FUNC_probe_write_user 36
-    #define BPF_FUNC_override_return  58
-
 enum perf_type_id
 {
     PERF_TYPE_HARDWARE = 0,

@@ -139,4 +139,13 @@ static __inline int has_prefix(char *prefix, char *str, int n)
     #define unlikely(x) __builtin_expect((x), 0)
 #endif
 
+// helpers for iterating over a list_head struct
+#define list_entry_ebpf(ptr, type, member) container_of(ptr, type, member)
+
+#define list_next_entry_ebpf(pos, member)                                                          \
+    list_entry_ebpf(READ_KERN((pos)->member.next), typeof(*(pos)), member)
+
+#define list_first_entry_ebpf(ptr, type, member)                                                   \
+    list_entry_ebpf(READ_KERN((ptr)->next), type, member)
+
 #endif // __TRACEE_COMMON_H__

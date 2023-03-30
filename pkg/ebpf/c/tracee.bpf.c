@@ -651,6 +651,356 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     return 0;
 }
 
+// number of iterations - value that the verifier was seen to cope with - the higher, the better
+#define MAX_NUM_MODULES 600
+
+// This map is only used from kernels 5.2 and above.
+// If we won't create the map, the userspace will receive an error when interacting with it,
+// and since the userspace is not kernel version aware, it won't know whether it's because
+// the map simply wasn't created due to kernel version, or something unexpected failed.
+BPF_HASH(modules_map, u64, kernel_module_t, MAX_NUM_MODULES);
+
+void __always_inline send_hidden_module(u64 mod_addr, char *mod_name, program_data_t *p)
+{
+    reset_event_args(p);
+    save_to_submit_buf(p->event, &mod_addr, sizeof(u64), 0);
+    save_bytes_to_buf(p->event,
+                      (void *) mod_name,
+                      MODULE_NAME_LEN & MAX_MEM_DUMP_SIZE,
+                      1); // this is actually a string, the argument is saved as bytes since the
+                          // verifier didn't like it as str
+
+    events_perf_submit(p, HIDDEN_KERNEL_MODULE_SEEKER, 0);
+}
+
+// Populate all the modules to an efficient query-able hash map.
+// We can't read it once and then hook on do_init_module and free_module since a hidden module will
+// remove itself from the list directly and we wouldn't know (hence from our perspective the module
+// will reside in the modules list, which could be false). So on every trigger, we go over the
+// modules list and populate the map. It gets clean in userspace before every run.
+// Since this mechanism is suppose to be triggered every once in a while,
+// this should be ok.
+static __always_inline bool init_shown_modules()
+{
+    char modules_sym[8] = "modules";
+    struct list_head *head = (struct list_head *) get_symbol_addr(modules_sym);
+    bool iterated_all_modules = false;
+    struct module *pos, *n;
+    kernel_module_t *mod_from_map;
+
+    pos = list_first_entry_ebpf(head, typeof(*pos), list);
+    n = pos;
+
+#pragma unroll
+    for (int i = 0; i < MAX_NUM_MODULES; i++) {
+        pos = n;
+        n = list_next_entry_ebpf(n, list);
+
+        if (&pos->list == head) {
+            iterated_all_modules = true;
+            break;
+        }
+        mod_from_map = bpf_map_lookup_elem(&modules_map, &pos);
+        if (mod_from_map == NULL) {
+            kernel_module_t m = {.seen_modules_list = true};
+            bpf_map_update_elem(&modules_map, &pos, &m, BPF_ANY);
+        } else {
+            mod_from_map->seen_modules_list = true; // updates the entry in map
+        }
+    }
+
+    return !iterated_all_modules; // false is valid value
+}
+
+static __always_inline bool is_hidden(u64 mod)
+{
+    kernel_module_t *mod_from_map = bpf_map_lookup_elem(&modules_map, &mod);
+    if (mod_from_map == NULL) {
+        return true; // if we don't find the module in our map, it means the module is hidden
+    } else {
+        return !mod_from_map->seen_modules_list; // if it wasn't seen in modules list, it's hidden
+    }
+}
+
+static __always_inline bool find_modules_from_module_kset_list(program_data_t *p)
+{
+    char module_kset_sym[12] = "module_kset";
+    struct kset *mod_kset = (struct kset *) get_symbol_addr(module_kset_sym);
+    struct list_head *head = &(mod_kset->list);
+    struct kobject *pos = list_first_entry_ebpf(head, typeof(*pos), entry);
+    struct kobject *n = list_next_entry_ebpf(pos, entry);
+    bool finished_iterating = false;
+
+#pragma unroll
+    for (int i = 0; i < MAX_NUM_MODULES; i++) {
+        if (READ_KERN(n->name) == NULL) { // Without this the list seems infinite. Also, using pos
+                                          // here seems incorrect as it starts from a weird member
+            finished_iterating = true;
+            break;
+        }
+
+        struct module_kobject *mod_kobj =
+            (struct module_kobject *) container_of(n, struct module_kobject, kobj);
+        if (mod_kobj) {
+            struct module *mod = READ_KERN(mod_kobj->mod);
+            if (mod) {
+                if (is_hidden((u64) mod)) {
+                    send_hidden_module((u64) mod, mod->name, p);
+                }
+            }
+        }
+
+        pos = n;
+        n = list_next_entry_ebpf(n, entry);
+    }
+
+    return !finished_iterating;
+}
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 20, 0) || defined(CORE)
+BPF_QUEUE(walk_mod_tree_queue, rb_node_t, 2048); // used to walk a rb tree
+
+    #ifdef CORE // in non CORE builds it's already defined
+static __always_inline struct latch_tree_node *__lt_from_rb(struct rb_node *node, int idx)
+{
+    return container_of(node, struct latch_tree_node, node[idx]);
+}
+    #endif
+
+static __always_inline bool walk_mod_tree(program_data_t *p, struct rb_node *root, int idx)
+{
+    struct latch_tree_node *ltn;
+    struct module *mod;
+    bool finished_iterating = false;
+    struct rb_node *curr = root;
+
+    #pragma unroll
+    for (int i = 0; i < MAX_NUM_MODULES; i++) {
+        if (curr != NULL) {
+            rb_node_t rb_nod = {.node = curr};
+            bpf_map_push_elem(&walk_mod_tree_queue, &rb_nod, BPF_EXIST);
+
+            curr = READ_KERN(curr->rb_left); // Move left
+        } else {
+            rb_node_t rb_nod;
+            if (bpf_map_pop_elem(&walk_mod_tree_queue, &rb_nod) != 0) {
+                finished_iterating = true;
+                break;
+            } else {
+                curr = rb_nod.node;
+                ltn = __lt_from_rb(curr, idx);
+                mod = READ_KERN(container_of(ltn, struct mod_tree_node, node)->mod);
+
+                if (is_hidden((u64) mod)) {
+                    send_hidden_module((u64) mod, mod->name, p);
+                }
+
+                /* We have visited the node and its left subtree.
+                Now, it's right subtree's turn */
+                curr = READ_KERN(curr->rb_right);
+            }
+        }
+    }
+
+    return !finished_iterating;
+}
+
+struct mod_tree_root {
+    struct latch_tree_root root;
+};
+
+static __always_inline bool find_modules_from_mod_tree(program_data_t *p)
+{
+    char mod_tree_sym[9] = "mod_tree";
+    struct mod_tree_root *m_tree = (struct mod_tree_root *) get_symbol_addr(mod_tree_sym);
+    unsigned int seq;
+    #ifdef CORE
+    if (bpf_core_field_exists(m_tree->root.seq.sequence)) {
+        seq = READ_KERN(m_tree->root.seq.sequence); // below 5.10
+    } else {
+        seq = READ_KERN(m_tree->root.seq.seqcount.sequence); // version >= v5.10
+    }
+    #else
+        #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 10, 0))
+    seq = READ_KERN(m_tree->root.seq.sequence);
+        #else
+    seq = READ_KERN(m_tree->root.seq.seqcount.sequence);
+        #endif
+    #endif
+
+    struct rb_node *node = READ_KERN(m_tree->root.tree[seq & 1].rb_node);
+
+    return walk_mod_tree(p, node, seq & 1);
+}
+#endif
+
+static __always_inline bool check_is_proc_modules_hooked(program_data_t *p)
+{
+    struct module *pos, *n;
+    bool finished_iterating = false;
+    char modules_sym[8] = "modules";
+    kernel_module_t *mod_from_map;
+    struct list_head *head = (struct list_head *) get_symbol_addr(modules_sym);
+
+    pos = list_first_entry_ebpf(head, typeof(*pos), list);
+    n = pos;
+
+#pragma unroll
+    for (int i = 0; i < MAX_NUM_MODULES; i++) {
+        pos = n;
+        n = list_next_entry_ebpf(n, list);
+        if (&pos->list == head) {
+            finished_iterating = true;
+            break;
+        }
+
+        u64 key = (u64) pos;
+        mod_from_map = bpf_map_lookup_elem(&modules_map, &key);
+        if ((mod_from_map == NULL) || (mod_from_map != NULL && !mod_from_map->seen_proc_modules)) {
+            // Check again with the address being the start of the memory area, since
+            // there's a chance the module is in /proc/modules but not in /proc/kallsyms (since the
+            // file can be hooked).
+            key = (u64) READ_KERN(pos->core_layout.base);
+            mod_from_map = bpf_map_lookup_elem(&modules_map, &key);
+            // No need to check for seen_proc_modules flag here since if it IS in the map
+            // with the address being the start of the memory area, it necessarily got inserted
+            // to the map via the /proc/modules userspace logic.
+            if (mod_from_map == NULL) {
+                // Module was not seen in proc modules, report.
+                send_hidden_module((u64) pos, pos->name, p);
+            }
+
+            // We couldn't resolve the address from kallsyms but we did see the module in
+            // /proc/modules. This probably means that /proc/kallsyms is hooked, but we consider
+            // this module not hidden, as tools like lsmod will show it. Thus we gracefully continue
+            // and don't report this.
+        }
+    }
+
+    return !finished_iterating;
+}
+
+static __always_inline bool kern_ver_below_min_lkm(struct pt_regs *ctx)
+{
+// If we're below kernel version 5.2, propogate error to userspace and return
+#ifdef CORE
+    if (!bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_sk_storage_get)) {
+        goto below_threshold;
+    }
+#else
+    #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0))
+    goto below_threshold;
+    #endif
+#endif
+
+    return false; // lkm seeker may run!
+
+below_threshold:
+    tracee_log(ctx,
+               BPF_LOG_LVL_ERROR,
+               BPF_LOG_ID_UNSPEC,
+               -1); // notify the user that the event logic isn't loaded even though it's requested
+    return true;
+}
+
+SEC("uprobe/lkm_seeker")
+int uprobe_lkm_seeker(struct pt_regs *ctx)
+{
+    if (kern_ver_below_min_lkm(ctx))
+        return 0;
+
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    // Uprobes are not triggered by syscalls, so we need to override the false value.
+    p.event->context.syscall = NO_SYSCALL;
+    p.event->context.matched_policies = ULLONG_MAX;
+
+    u32 trigger_pid = bpf_get_current_pid_tgid() >> 32;
+    // uprobe was triggered from other tracee instance
+    if (p.config->tracee_pid != trigger_pid) {
+        return 0;
+    }
+
+    if (init_shown_modules() != 0) {
+        tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_UNSPEC, 1);
+        return 1;
+    }
+
+    bpf_tail_call(ctx, &prog_array, TAIL_HIDDEN_KERNEL_MODULE_PROC);
+
+    return -1;
+}
+
+SEC("uprobe/lkm_seeker_proc_tail")
+int lkm_seeker_proc_tail(struct pt_regs *ctx)
+{
+    // This check is to satisfy the verifier for kernels older than 5.2
+    // as in runtime we'll never get here (the tail call doesn't happen)
+    if (kern_ver_below_min_lkm(ctx))
+        return 0;
+
+    program_data_t p = {};
+    if (!init_tailcall_program_data(&p, ctx))
+        return -1;
+
+    if (check_is_proc_modules_hooked(&p) != 0) {
+        tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_UNSPEC, 2);
+        return 1;
+    }
+
+    bpf_tail_call(ctx, &prog_array, TAIL_HIDDEN_KERNEL_MODULE_KSET);
+
+    return -1;
+}
+
+SEC("uprobe/lkm_seeker_kset_tail")
+int lkm_seeker_kset_tail(struct pt_regs *ctx)
+{
+    // This check is to satisfy the verifier for kernels older than 5.2
+    // as in runtime we'll never get here (the tail call doesn't happen)
+    if (kern_ver_below_min_lkm(ctx))
+        return 0;
+
+    program_data_t p = {};
+    if (!init_tailcall_program_data(&p, ctx))
+        return -1;
+
+    if (find_modules_from_module_kset_list(&p) != 0) {
+        tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_UNSPEC, 3);
+        return 1;
+    }
+
+    bpf_tail_call(ctx, &prog_array, TAIL_HIDDEN_KERNEL_MODULE_MOD_TREE);
+
+    return -1;
+}
+
+SEC("uprobe/lkm_seeker_mod_tree_tail")
+int lkm_seeker_mod_tree_tail(struct pt_regs *ctx)
+{
+    // This check is to satisfy the verifier for kernels older than 5.2
+    // as in runtime we'll never get here (the tail call doesn't happen)
+    if (kern_ver_below_min_lkm(ctx))
+        return 0;
+
+    program_data_t p = {};
+    if (!init_tailcall_program_data(&p, ctx))
+        return -1;
+
+        // This method is efficient only when the kernel is compiled with
+        // CONFIG_MODULES_TREE_LOOKUP=y
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 20, 0) || defined(CORE)
+    if (find_modules_from_mod_tree(&p) != 0) {
+        tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_UNSPEC, 4);
+        return 1;
+    }
+#endif
+
+    return 0;
+}
+
 // trace/events/sched.h: TP_PROTO(struct task_struct *p, pid_t old_pid, struct linux_binprm *bprm)
 SEC("raw_tracepoint/sched_process_exec")
 int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)

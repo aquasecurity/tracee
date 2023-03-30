@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
@@ -618,6 +619,12 @@ func (t *Tracee) initDerivationTable() error {
 			events.HookedSeqOps: {
 				Enabled:        func() bool { return t.events[events.HookedSeqOps].submit > 0 },
 				DeriveFunction: derive.HookedSeqOps(t.kernelSymbols),
+			},
+		},
+		events.HiddenKernelModuleSeeker: {
+			events.HiddenKernelModule: {
+				Enabled:        func() bool { return t.events[events.HiddenKernelModuleSeeker].submit > 0 },
+				DeriveFunction: derive.HiddenKernelModule(),
 			},
 		},
 		events.SharedObjectLoaded: {
@@ -1361,6 +1368,38 @@ func (t *Tracee) initBPF() error {
 	return errfmt.WrapError(err)
 }
 
+func (t *Tracee) lkmSeekerRoutine() {
+	if t.events[events.HiddenKernelModule].emit == 0 {
+		return
+	}
+
+	err := derive.InitFoundHiddenModulesCache()
+	if err != nil {
+		logger.Errorw("err occurred initializing kernel hidden modules cache: " + err.Error())
+		return
+	}
+
+	modsMap, err := t.bpfModule.GetMap("modules_map")
+	if err != nil {
+		logger.Errorw("err occurred GetMap: " + err.Error())
+		return
+	}
+
+	for {
+		derive.ClearModulesState(modsMap)
+		err = derive.FillModulesFromProcFs(t.kernelSymbols, modsMap)
+		if err != nil {
+			logger.Errorw("hidden kernel module seeker stopped!: " + err.Error())
+			return
+		}
+
+		t.triggerKernelModuleSeeker()
+
+		r := rand.Intn(300) + 10 // min 10 seconds sleep
+		time.Sleep(time.Duration(r) * time.Second)
+	}
+}
+
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.invokeInitEvents()
@@ -1370,6 +1409,9 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	if err != nil {
 		logger.Warnw("Memory dump", "error", err)
 	}
+
+	go t.lkmSeekerRoutine()
+
 	t.eventsPerfMap.Start()
 	go t.processLostEvents(ctx)
 	go t.handleEvents(ctx)
@@ -1571,6 +1613,10 @@ func (t *Tracee) triggerSyscallsIntegrityCheck(event trace.Event) {
 func (t *Tracee) triggerSyscallsIntegrityCheckCall(
 	magicNumber uint64, // 1st arg: allow handler to detect calling convention
 	eventHandle uint64) {
+}
+
+//go:noinline
+func (t *Tracee) triggerKernelModuleSeeker() {
 }
 
 // triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program

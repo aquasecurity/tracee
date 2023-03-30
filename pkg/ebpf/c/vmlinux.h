@@ -512,6 +512,7 @@ struct sock_common {
 
 struct kobject {
     const char *name;
+    struct list_head entry;
 };
 
 struct device {
@@ -669,13 +670,68 @@ struct dentry {
     struct inode *d_inode;
 };
 
+enum bpf_func_id
+{
+    BPF_FUNC_probe_write_user = 36,
+    BPF_FUNC_override_return = 58,
+    BPF_FUNC_sk_storage_get = 107,
+    BPF_FUNC_copy_from_user = 148,
+};
+
 #define MODULE_NAME_LEN (64 - sizeof(unsigned long))
+
+struct module_kobject {
+    struct kobject kobj;
+    struct module *mod;
+};
+
+struct kset {
+    struct list_head list;
+};
+
+struct module_layout {
+    void *base;
+};
 
 struct module {
     struct list_head list;
     char name[MODULE_NAME_LEN];
     const char *version;
     const char *srcversion;
+    struct module_kobject mkobj;
+    struct module_layout core_layout;
+};
+
+struct rb_node {
+    struct rb_node *rb_right;
+    struct rb_node *rb_left;
+} __attribute__((aligned(sizeof(long))));
+
+struct latch_tree_node {
+    struct rb_node node[2];
+};
+
+struct rb_root {
+    struct rb_node *rb_node;
+};
+
+typedef struct seqcount {
+    unsigned sequence;
+} seqcount_t;
+
+typedef struct {
+    seqcount_t seqcount; // kernels equal and above 5.10
+    unsigned sequence;   // kernels below 5.10
+} seqcount_latch_t;
+
+struct latch_tree_root {
+    seqcount_latch_t seq;
+    struct rb_root tree[2];
+};
+
+struct mod_tree_node {
+    struct module *mod;
+    struct latch_tree_node node;
 };
 
 struct user_namespace {
