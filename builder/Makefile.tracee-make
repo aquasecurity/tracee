@@ -15,6 +15,28 @@ SHELL = /bin/sh
 MAKEFLAGS += --no-print-directory
 
 #
+# environment
+#
+
+UNAME_M := $(shell uname -m)
+UNAME_R := $(shell uname -r)
+
+ifeq ($(UNAME_M),x86_64)
+	ARCH = x86_64
+	ALTARCH = amd64
+endif
+
+ifeq ($(UNAME_M),aarch64)
+	ARCH = aarch64
+	ALTARCH = arm64
+endif
+
+ifeq ($(ALTARCH),)
+	@echo "can't find architecture"
+	exit 1
+endif
+
+#
 # tools
 #
 
@@ -106,8 +128,7 @@ alpine-prepare: \
 	| .check_$(CMD_DOCKER) \
 	.check_tree
 #
-	$(CMD_DOCKER) \
-		build \
+	$(CMD_DOCKER) build \
 		-f $(ALPINE_MAKE_DOCKERFILE) \
 		-t $(ALPINE_MAKE_CONTNAME):latest \
 		--build-arg uid=$(UID) \
@@ -122,8 +143,7 @@ ubuntu-prepare: \
 	| .check_$(CMD_DOCKER) \
 	.check_tree
 #
-	$(CMD_DOCKER) \
-		build \
+	$(CMD_DOCKER) build \
 		-f $(UBUNTU_MAKE_DOCKERFILE) \
 		-t $(UBUNTU_MAKE_CONTNAME):latest \
 		--build-arg uid=$(UID) \
