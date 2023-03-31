@@ -15647,7 +15647,9 @@
   <h1>Overview</h1>
 
 <p>In this section you can find the reference documentation for Tracee's policies.</p>
-<p>A sample policy with all its features:</p>
+<p>A policy is a yaml document where you can specify a scope and associate it with a set of rules. A scope defines the workloads to which the policy applies. A rule defines events to be matched and actions to take on them.</p>
+<p>You can load multiple (up to 64) policies into Tracee using the --policy flag providing a path to the policy file.</p>
+<p>Following is a sample policy:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">overview policy</span>
 <span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sample overview policy</span>
 <span class="nt">scope</span><span class="p">:</span>
@@ -15665,7 +15667,16 @@
 <span class="w">    </span><span class="nt">filter</span><span class="p">:</span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">retval!=0</span>
 </code></pre></div>
-<p>Policies must have <code>name</code>, <code>description</code>, <code>scope</code>, <code>defaultAction</code>, and <code>rules</code>.</p>
+<p>This policy applies to any workload (global) and will log the dropped_executable, security_file_open, sched_process_exec and close events. Several filters are set to log only specific events:
+- An argument filter (args.pathname) is set on the security_file_open event to log only files which were opened from the /tmp directory
+- A context filter (uid) is set on the sched_process_exec event to log only processes executed by the root user (uid 0)
+- A return value filter (retval) is set on the close event to log only failed close syscalls</p>
+<p>While specifying event filters is optional, policies must have the <code>name</code>, <code>description</code>, <code>scope</code>, <code>defaultAction</code>, and <code>rules</code> fields.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A current limitation is that only one rule can be defined per any event type in a policy</p>
+</div>
+<p>More information about defining a scope and the available filters can be found in the next sections.</p>
 
 
 
