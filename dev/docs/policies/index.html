@@ -15667,10 +15667,18 @@
 <span class="w">    </span><span class="nt">filter</span><span class="p">:</span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">retval!=0</span>
 </code></pre></div>
-<p>This policy applies to any workload (global) and will log the dropped_executable, security_file_open, sched_process_exec and close events. Several filters are set to log only specific events:
-- An argument filter (args.pathname) is set on the security_file_open event to log only files which were opened from the /tmp directory
-- A context filter (uid) is set on the sched_process_exec event to log only processes executed by the root user (uid 0)
-- A return value filter (retval) is set on the close event to log only failed close syscalls</p>
+<p>This policy applies to any workload (global) and will log the dropped_executable, security_file_open, sched_process_exec and close events. Several filters are set to log only specific events:</p>
+<ol>
+<li>
+<p>An argument filter (args.pathname) is set on the security_file_open event to log only files which were opened from the /tmp directory</p>
+</li>
+<li>
+<p>A context filter (uid) is set on the sched_process_exec event to log only processes executed by the root user (uid 0)</p>
+</li>
+<li>
+<p>A return value filter (retval) is set on the close event to log only failed close syscalls</p>
+</li>
+</ol>
 <p>While specifying event filters is optional, policies must have the <code>name</code>, <code>description</code>, <code>scope</code>, <code>defaultAction</code>, and <code>rules</code> fields.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
