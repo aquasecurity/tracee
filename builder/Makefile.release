@@ -237,7 +237,7 @@ ifeq ($(ARCH),x86_64)
 	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):aarch64-$(IMAGE_TAG)-full`' >> $(RELEASE_NOTES);
 	echo '  ' >> $(RELEASE_NOTES);
 	echo '> The regular image is built with an embedded portable CO-RE eBPF object and BTFHub (for kernels not supporting BTF info).' >> $(RELEASE_NOTES);
-    echo '> The full image is built with an embedded portable CO-RE eBPF object and it is capable of building a per kernel non CO-RE eBPF object.' >> $(RELEASE_NOTES);
+	echo '> The full image is built with an embedded portable CO-RE eBPF object and it is capable of building a per kernel non CO-RE eBPF object.' >> $(RELEASE_NOTES);
 endif
 #
 # release it (x86_64 only, other arches will be added after release)
