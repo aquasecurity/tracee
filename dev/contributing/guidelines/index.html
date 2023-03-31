@@ -15722,8 +15722,9 @@ changes, you run the following command:</p>
 </ol>
 <div class="admonition check-fmt example">
 <p class="admonition-title">Check-fmt</p>
-<div class="highlight"><pre><span></span><code>$ make check-fmt
-Checking C and eBPF files and headers formatting...
+<div class="highlight"><pre><span></span><code><span class="go">make check-fmt</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Checking C and eBPF files and headers formatting...
 Checking golang files formatting...
 </code></pre></div>
 <blockquote>
@@ -15735,9 +15736,9 @@ Checking golang files formatting...
 </ol>
 <div class="admonition fix-fmt example">
 <p class="admonition-title">Fix-fmt</p>
-<div class="highlight"><pre><span></span><code>$ make fix-fmt
-
-Fixing C and eBPF files and headers formatting...
+<div class="highlight"><pre><span></span><code><span class="go">make fix-fmt</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Fixing C and eBPF files and headers formatting...
 Formatting ./pkg/ebpf/c/missing_definitions.h
 Formatting ./pkg/ebpf/c/struct_flavors.h
 Formatting ./pkg/ebpf/c/tracee.bpf.c
@@ -15745,9 +15746,10 @@ Formatting ./pkg/ebpf/c/vmlinux.h
 
 Fixing golang files formatting...
 patching file pkg/ebpf/tracee.go
-
-$ git status -s
- M Makefile
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">git status -s</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code> M Makefile
  M builder/Makefile.checkers
  M pkg/ebpf/c/missing_definitions.h
  M pkg/ebpf/c/struct_flavors.h
@@ -15760,9 +15762,9 @@ $ git status -s
 </ol>
 <div class="admonition check-code example">
 <p class="admonition-title">Check-code</p>
-<div class="highlight"><pre><span></span><code>$ make check-code
-
-Checking Golang vet...
+<div class="highlight"><pre><span></span><code><span class="go">make check-code</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Checking Golang vet...
 make[2]: warning: jobserver unavailable: using -j1.  Add &#39;+&#39; to parent make rule.
 GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS=&quot;-I/home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf&quot; CGO_LDFLAGS=&quot;-lelf -lz /home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf/libbpf.a&quot; \
 go vet \

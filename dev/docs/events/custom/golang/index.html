@@ -15687,8 +15687,8 @@ following code in it:</p>
 <span class="w">    </span><span class="nx">cb</span><span class="w"> </span><span class="nx">detect</span><span class="p">.</span><span class="nx">SignatureHandler</span>
 <span class="p">}</span>
 
-<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">sig</span><span class="w"> </span><span class="o">*</span><span class="nx">signatureExample</span><span class="p">)</span><span class="w"> </span><span class="nx">Init</span><span class="p">(</span><span class="nx">cb</span><span class="w"> </span><span class="nx">detect</span><span class="p">.</span><span class="nx">SignatureHandler</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">sig</span><span class="p">.</span><span class="nx">cb</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">cb</span>
+<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">sig</span><span class="w"> </span><span class="o">*</span><span class="nx">signatureExample</span><span class="p">)</span><span class="w"> </span><span class="nx">Init</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">detect</span><span class="p">.</span><span class="nx">SignatureContext</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">sig</span><span class="p">.</span><span class="nx">cb</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Callback</span>
 
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span>
 <span class="p">}</span>
@@ -15701,8 +15701,8 @@ following code in it:</p>
 <span class="w">        </span><span class="nx">ID</span><span class="p">:</span><span class="w">          </span><span class="s">&quot;Mine-0.1.0&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="nx">Version</span><span class="p">:</span><span class="w">     </span><span class="s">&quot;0.1.0&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="nx">Name</span><span class="p">:</span><span class="w">        </span><span class="s">&quot;My Own Signature&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">EventName</span><span class="p">:</span><span class="w">   </span><span class="s">&quot;mine&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="nx">Description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;My Own Signature Detects Stuff&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">Tags</span><span class="p">:</span><span class="w">        </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;linux&quot;</span><span class="p">},</span>
 <span class="w">    </span><span class="p">},</span><span class="w"> </span><span class="kc">nil</span>
 <span class="p">}</span>
 
@@ -15760,33 +15760,17 @@ following code in it:</p>
 </div>
 <p>Then, edit <code>signatures/golang/export.go</code> and place your new signature there:</p>
 <div class="highlight"><pre><span></span><code><span class="kd">var</span><span class="w"> </span><span class="nx">ExportedSignatures</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">[]</span><span class="nx">detect</span><span class="p">.</span><span class="nx">Signature</span><span class="p">{</span>
+<span class="w">    </span><span class="o">...</span>
 <span class="w">    </span><span class="o">&amp;</span><span class="nx">signatureExample</span><span class="p">{},</span>
 <span class="p">}</span>
 </code></pre></div>
-<p>Follow instructions on <a href="../../../../contributing/building/building/">how to build Tracee</a> and you will find your new
-signature included in <strong>tracee-rules</strong>. You may even select only the
-signatures you created:</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
-    --output json \
-    --filter comm=bash \
-    --filter follow \
-    --output option:parse-arguments \
-    -trace event=$(./dist/tracee-rules --rules Mine-0.1.0 --list-events) \
-    | ./dist/tracee-rules \
-    --input-tracee \
-    format:json \
-    --input-tracee file:stdin \
-    --rules Mine-0.1.0
-
-Loaded 1 signature(s): [Mine-0.1.0]
-
-*** Detection ***
-Time: 2022-07-10T04:25:44Z
-Signature ID: Mine-0.1.0
-Signature: My Own Signature
-Data: map[]
-Command: batcat
-Hostname: fujitsu
+<p>Follow instructions on <a href="../../../../contributing/building/building/">how to build Tracee</a> and you will get your new signature
+available to use. You may even select only the signatures you created:</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">    --output json \</span>
+<span class="go">    --filter event=mine</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="mi">1680191445996958642</span><span class="p">,</span><span class="nt">&quot;threadStartTime&quot;</span><span class="p">:</span><span class="mi">1680191445994222553</span><span class="p">,</span><span class="nt">&quot;processorId&quot;</span><span class="p">:</span><span class="mi">4</span><span class="p">,</span><span class="nt">&quot;processId&quot;</span><span class="p">:</span><span class="mi">329031</span><span class="p">,</span><span class="nt">&quot;cgroupId&quot;</span><span class="p">:</span><span class="mi">10793</span><span class="p">,</span><span class="nt">&quot;threadId&quot;</span><span class="p">:</span><span class="mi">329031</span><span class="p">,</span><span class="nt">&quot;parentProcessId&quot;</span><span class="p">:</span><span class="mi">45580</span><span class="p">,</span><span class="nt">&quot;hostProcessId&quot;</span><span class="p">:</span><span class="mi">329031</span><span class="p">,</span><span class="nt">&quot;hostThreadId&quot;</span><span class="p">:</span><span class="mi">329031</span><span class="p">,</span><span class="nt">&quot;hostParentProcessId&quot;</span><span class="p">:</span><span class="mi">45580</span><span class="p">,</span><span class="nt">&quot;userId&quot;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span><span class="nt">&quot;mountNamespace&quot;</span><span class="p">:</span><span class="mi">4026531841</span><span class="p">,</span><span class="nt">&quot;pidNamespace&quot;</span><span class="p">:</span><span class="mi">4026531836</span><span class="p">,</span><span class="nt">&quot;processName&quot;</span><span class="p">:</span><span class="s2">&quot;zsh&quot;</span><span class="p">,</span><span class="nt">&quot;hostName&quot;</span><span class="p">:</span><span class="s2">&quot;hb&quot;</span><span class="p">,</span><span class="nt">&quot;container&quot;</span><span class="p">:{},</span><span class="nt">&quot;kubernetes&quot;</span><span class="p">:{},</span><span class="nt">&quot;eventId&quot;</span><span class="p">:</span><span class="s2">&quot;6030&quot;</span><span class="p">,</span><span class="nt">&quot;eventName&quot;</span><span class="p">:</span><span class="s2">&quot;mine&quot;</span><span class="p">,</span><span class="nt">&quot;matchedPolicies&quot;</span><span class="p">:[</span><span class="s2">&quot;&quot;</span><span class="p">],</span><span class="nt">&quot;argsNum&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span><span class="nt">&quot;returnValue&quot;</span><span class="p">:</span><span class="mi">11</span><span class="p">,</span><span class="nt">&quot;syscall&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;stackAddresses&quot;</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">&quot;contextFlags&quot;</span><span class="p">:{</span><span class="nt">&quot;containerStarted&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span><span class="nt">&quot;isCompat&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">},</span><span class="nt">&quot;args&quot;</span><span class="p">:[],</span><span class="nt">&quot;metadata&quot;</span><span class="p">:{</span><span class="nt">&quot;Version&quot;</span><span class="p">:</span><span class="s2">&quot;0.1.0&quot;</span><span class="p">,</span><span class="nt">&quot;Description&quot;</span><span class="p">:</span><span class="s2">&quot;My Own Signature Detects Stuff&quot;</span><span class="p">,</span><span class="nt">&quot;Tags&quot;</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">&quot;Properties&quot;</span><span class="p">:{</span><span class="nt">&quot;signatureID&quot;</span><span class="p">:</span><span class="s2">&quot;Mine-0.1.0&quot;</span><span class="p">,</span><span class="nt">&quot;signatureName&quot;</span><span class="p">:</span><span class="s2">&quot;My Own Signature&quot;</span><span class="p">}}}</span>
 </code></pre></div>
 <p><strong>Be creative!</strong> You can create signatures that would do pretty much
 anything! Examples of such signatures would: for every X event, connect to

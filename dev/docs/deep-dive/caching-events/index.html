@@ -15722,7 +15722,7 @@
 <h1 id="special-caching-events">Special: Caching Events<a class="headerlink" href="#special-caching-events" title="Permanent link">&para;</a></h1>
 <p>Tracee has an events caching (in-memory) mechanism. In order to check latest
 caching options you may execute:</p>
-<div class="highlight"><pre><span></span><code>$ ./dist/tracee --cache help
+<div class="highlight"><pre><span></span><code><span class="go">./dist/tracee --cache help</span>
 </code></pre></div>
 <div class="admonition read important">
 <p class="admonition-title">Read</p>
@@ -15752,27 +15752,22 @@ they're not lost (if cache isn't full).</p>
 <h2 id="use-caching">Use caching<a class="headerlink" href="#use-caching" title="Permanent link">&para;</a></h2>
 <p>Example using <strong>1GB cache</strong>, container <strong>enrichment</strong> in the pipeline, argument
 <strong>parsing</strong> so arguments are formatted in a human consumable way:</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee \
-    --cache cache-type=mem \
-    --cache mem-cache-size=1024 \
-    --containers -o format:json \
-    -o option:parse-arguments \
-    -trace container \
-    --crs docker:/var/run/docker.sock
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">    --cache cache-type=mem \</span>
+<span class="go">    --cache mem-cache-size=1024 \</span>
+<span class="go">    --containers -o format:json \</span>
+<span class="go">    -o option:parse-arguments \</span>
+<span class="go">    -trace container \</span>
+<span class="go">    --crs docker:/var/run/docker.sock</span>
 </code></pre></div>
-<blockquote>
-<p>We are using most of the options that could cause latencies in the event
-pipeline BUT we're not piping the events to <strong>tracee-rules</strong>.</p>
-</blockquote>
 <div class="admonition attention">
 <p class="admonition-title">Attention</p>
 <p>If you pipe <strong>tracee</strong> output to another tool, like <code>jq</code>:
-<div class="highlight"><pre><span></span><code>| jq -c &#39;. | {cgroupid, processname, containername}&#39;
+<div class="highlight"><pre><span></span><code><span class="go">| jq -c &#39;. | {cgroupid, processname, containername}&#39;</span>
 </code></pre></div>
 You may cause latencies in <strong>tracee</strong> pipeline because the event json
 processing from <code>jq</code> might not be as fast as how <strong>tracee</strong> is capable
-of writing events to it (just like <strong>tracee-rules</strong> could do if being slow
-evaluating events).</p>
+of writing events to it.</p>
 </div>
 
 

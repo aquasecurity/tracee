@@ -15450,10 +15450,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#build-and-run-tracee-ebpf-and-tracee-rules" class="md-nav__link">
+  <a href="#build-and-run-tracee" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Build and Run Tracee-eBPF and Tracee-Rules
+        Build and Run Tracee
       
     </span>
   </a>
@@ -15785,10 +15785,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#build-and-run-tracee-ebpf-and-tracee-rules" class="md-nav__link">
+  <a href="#build-and-run-tracee" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Build and Run Tracee-eBPF and Tracee-Rules
+        Build and Run Tracee
       
     </span>
   </a>
@@ -15876,36 +15876,17 @@ be on their way.</p>
 </ul>
 <h2 id="create-development-machine">Create Development Machine<a class="headerlink" href="#create-development-machine" title="Permanent link">&para;</a></h2>
 <p>Clone and change directory to Tracee Git repository:</p>
-<div class="highlight"><pre><span></span><code>git clone --branch v0.12.0 https://github.com/aquasecurity/tracee.git
-cd tracee
+<div class="highlight"><pre><span></span><code><span class="go">git clone --branch v0.12.0 https://github.com/aquasecurity/tracee.git</span>
+<span class="go">cd tracee</span>
 </code></pre></div>
 <p>Create and configure development machine according to the <code>Vagrantfile</code>:</p>
-<div class="highlight"><pre><span></span><code>vagrant up
+<div class="highlight"><pre><span></span><code><span class="go">vagrant up</span>
 </code></pre></div>
 <p>If everything goes well, you can SSH into a running development machine and
 access its shell:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>vagrant<span class="w"> </span>ssh
-<span class="go">Welcome to Ubuntu 21.10 (GNU/Linux 5.13.0-35-generic x86_64)</span>
-
-<span class="go"> * Documentation:  https://help.ubuntu.com</span>
-<span class="go"> * Management:     https://landscape.canonical.com</span>
-<span class="go"> * Support:        https://ubuntu.com/advantage</span>
-
-<span class="go">  System information as of Sat Mar 26 18:08:08 UTC 2022</span>
-
-<span class="go">  System load:  0.94               Processes:                153</span>
-<span class="go">  Usage of /:   14.7% of 38.71GB   Users logged in:          1</span>
-<span class="go">  Memory usage: 59%                IPv4 address for docker0: 172.17.0.1</span>
-<span class="go">  Swap usage:   0%                 IPv4 address for enp0s3:  10.0.2.15</span>
-
-
-<span class="go">9 updates can be applied immediately.</span>
-<span class="go">9 of these updates are standard security updates.</span>
-<span class="go">To see these additional updates run: apt list --upgradable</span>
-
-
-<span class="go">Last login: Sat Mar 26 17:14:16 2022 from 10.0.2.2</span>
-<span class="gp">vagrant@ubuntu-impish:~$</span>
+<div class="highlight"><pre><span></span><code><span class="go">vagrant ssh</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>vagrant@ubuntu-jammy:/vagrant$
 </code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
@@ -15919,75 +15900,79 @@ development machine, allowing you to continue working on your project's files
 on your host machine, but use the resources in the development machine to
 compile or run Tracee.</p>
 <p>By default, Vagrant will share Tracee project directory (the directory with the
-<code>Vagrantfile</code>) to <code>/vagrant</code>. To get started, change directory to <code>/vagrant</code>
-and list files:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>ls<span class="w"> </span>-l
-<span class="go">total 204</span>
-<span class="go">drwxr-xr-x 1 vagrant vagrant    224 Mar 17 14:31 3rdparty</span>
-<span class="go">-rw-r--r-- 1 vagrant vagrant   3474 Mar 17 14:31 CONTRIBUTING.md</span>
-<span class="go">-rw-r--r-- 1 vagrant vagrant  11358 Mar 17 14:31 LICENSE</span>
-<span class="go">-rw-r--r-- 1 vagrant vagrant  16529 Mar 25 07:46 Makefile</span>
-<span class="go">-rw-r--r-- 1 vagrant vagrant    133 Mar 17 14:31 NOTICE</span>
-<span class="go">-rw-r--r-- 1 vagrant vagrant   2116 Mar 26 16:41 RELEASING.md</span>
-<span class="go">-rw-r--r-- 1 vagrant vagrant   4097 Mar 17 14:31 Readme.md</span>
-<span class="go">-rw-r--r-- 1 vagrant vagrant   2732 Mar 26 16:41 Vagrantfile</span>
-<span class="go">drwxr-xr-x 1 vagrant vagrant    384 Mar 26 16:41 builder</span>
-<span class="go">drwxr-xr-x 1 vagrant vagrant    128 Dec 14 15:27 cmd</span>
-<span class="go">drwxr-xr-x 1 vagrant vagrant     96 Dec  8 14:20 deploy</span>
-<span class="go">drwxr-xr-x 1 vagrant vagrant    288 Mar 25 10:51 dist</span>
-<span class="go">drwxr-xr-x 1 vagrant vagrant    448 Mar 26 16:44 docs</span>
-<span class="go">-rw-r--r-- 1 vagrant vagrant    164 Mar 17 14:31 embedded-ebpf.go</span>
-<span class="go">-rw-r--r-- 1 vagrant vagrant    101 Mar 17 14:31 embedded.go</span>
-<span class="go">-rw-r--r-- 1 vagrant vagrant   4382 Mar 24 14:13 go.mod</span>
-<span class="go">-rw-r--r-- 1 vagrant vagrant 129439 Mar 24 14:13 go.sum</span>
-<span class="go">-rw-r--r-- 1 vagrant vagrant   1546 Mar 26 18:20 mkdocs.yml</span>
-<span class="go">drwxr-xr-x 1 vagrant vagrant    256 Mar 22 14:08 packaging</span>
-<span class="go">drwxr-xr-x 1 vagrant vagrant    416 Mar 24 14:13 pkg</span>
-<span class="go">drwxr-xr-x 1 vagrant vagrant    192 Dec 14 13:02 signatures</span>
-<span class="go">drwxr-xr-x 1 vagrant vagrant    160 Mar 24 14:13 tests</span>
-<span class="go">drwxr-xr-x 1 vagrant vagrant    224 Mar 24 11:59 types</span>
+<code>Vagrantfile</code>) to <code>/vagrant</code>. To get started list files:</p>
+<div class="highlight"><pre><span></span><code><span class="go">ls -l</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>total 648
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 3rdparty
+-rw-r--r-- 1 vagrant vagrant  11358 Mar 18 14:45 LICENSE
+-rw-r--r-- 1 vagrant vagrant  21821 Mar 27 13:40 Makefile
+-rw-r--r-- 1 vagrant vagrant    133 Mar 18 14:45 NOTICE
+-rw-r--r-- 1 vagrant vagrant   2643 Mar 29 18:30 RELEASING.md
+-rw-r--r-- 1 vagrant vagrant   2238 Mar 22 23:43 Readme.md
+-rw-r--r-- 1 vagrant vagrant   3337 Mar 22 23:43 Vagrantfile
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 29 18:05 brand
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 builder
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 cmd
+-rw-r--r-- 1 vagrant vagrant 415013 Mar 28 23:17 coverage.txt
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 18 14:45 deploy
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 29 18:15 dist
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 docs
+-rw-r--r-- 1 vagrant vagrant    164 Mar 18 14:45 embedded-ebpf.go
+-rw-r--r-- 1 vagrant vagrant    101 Mar 18 14:45 embedded.go
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 27 12:08 examples
+-rw-r--r-- 1 vagrant vagrant   5599 Mar 29 17:22 go.mod
+-rw-r--r-- 1 vagrant vagrant  77170 Mar 29 17:22 go.sum
+-rw-r--r-- 1 vagrant vagrant  40206 Mar 22 23:43 mkdocs.yml
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 packaging
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 pkg
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 18 14:45 signatures
+-rw-r--r-- 1 vagrant vagrant    157 Mar 22 23:43 staticcheck.conf
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 24 15:44 tests
+drwxr-xr-x 1 vagrant vagrant   4096 Mar 22 23:43 types
 </code></pre></div>
 <p>As you can see the <code>/vagrant</code> directory contains source code of Tracee cloned
 from GitHub.</p>
-<h2 id="build-and-run-tracee-ebpf-and-tracee-rules">Build and Run Tracee-eBPF and Tracee-Rules<a class="headerlink" href="#build-and-run-tracee-ebpf-and-tracee-rules" title="Permanent link">&para;</a></h2>
+<h2 id="build-and-run-tracee">Build and Run Tracee<a class="headerlink" href="#build-and-run-tracee" title="Permanent link">&para;</a></h2>
 <p>To build <strong>tracee</strong> executable binary, run the
 default make target:</p>
-<div class="highlight"><pre><span></span><code>make
+<div class="highlight"><pre><span></span><code><span class="go">make</span>
 </code></pre></div>
 <p>Build targets are saved in the <code>/vagrant/dist</code> directory:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>ls<span class="w"> </span>-l<span class="w"> </span>dist/
-<span class="go">total 47972</span>
-<span class="go">drwxr-xr-x 1 vagrant vagrant       96 Mar 25 10:45 btfhub</span>
-<span class="go">drwxr-xr-x 1 vagrant vagrant      224 Mar 25 10:45 libbpf</span>
-<span class="go">drwxr-xr-x 1 vagrant vagrant      512 Mar 25 10:46 rules</span>
-<span class="go">-rwxr-xr-x 1 vagrant vagrant 17876784 Mar 26 18:32 tracee</span>
-<span class="go">drwxr-xr-x 1 vagrant vagrant      544 Mar 26 18:31 tracee.bpf</span>
-<span class="go">-rw-r--r-- 1 vagrant vagrant  4232032 Mar 26 18:31 tracee.bpf.core.o</span>
+<div class="highlight"><pre><span></span><code><span class="go">ls -l dist/</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>total 161096
+drwxr-xr-x 1 vagrant vagrant     4096 Mar 29 19:06 btfhub
+drwxr-xr-x 1 vagrant vagrant     4096 Mar 29 19:06 libbpf
+drwxr-xr-x 1 vagrant vagrant     4096 Mar 29 19:08 signatures
+-rwxr-xr-x 1 vagrant vagrant 62619312 Mar 29 19:08 tracee
+-rw-r--r-- 1 vagrant vagrant 10753624 Mar 29 19:06 tracee.bpf.core.o
 </code></pre></div>
 <p>You can now run Tracee and see events printed to the standard output in a tabular format:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>sudo<span class="w"> </span>./dist/tracee
-<span class="go">TIME             UID    COMM             PID     TID     RET              EVENT                ARGS</span>
-<span class="go">18:39:43:781824  0      mkdocs           1       19      0                stat                 pathname: /docs/docs, statbuf: 0x7f851365eb20</span>
-<span class="go">18:39:43:782125  0      mkdocs           1       19      0                security_file_open   pathname: /docs/docs, flags: O_RDONLY|O_LARGEFILE|O_DIRECTORY, dev: 43, inode: 47, ctime: 1648313072000000000</span>
-<span class="go">18:39:43:782008  0      mkdocs           1       19      6                open                 pathname: /docs/docs, flags: O_RDONLY|O_LARGEFILE|O_DIRECTORY|O_CLOEXEC, mode: 0</span>
-<span class="go">18:39:43:783200  0      mkdocs           1       19      464              getdents64           fd: 6, dirp: 0x7f8513d8e0b8, count: 2048</span>
-<span class="go">18:39:43:783232  0      mkdocs           1       19      0                getdents64           fd: 6, dirp: 0x7f8513d8e0b8, count: 2048</span>
-<span class="go">18:39:43:783259  0      mkdocs           1       19      0                close                fd: 6</span>
-<span class="go">18:39:43:783271  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/architecture.md, statbuf: 0x7f851365e9b0</span>
-<span class="go">18:39:43:783734  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/install, statbuf: 0x7f851365e9b0</span>
-<span class="go">18:39:43:784163  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/images, statbuf: 0x7f851365e9b0</span>
-<span class="go">18:39:43:784589  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/integrations.md, statbuf: 0x7f851365e9b0</span>
-<span class="go">18:39:43:784906  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/faq.md, statbuf: 0x7f851365e9b0</span>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>TIME             UID    COMM             PID     TID     RET              EVENT                     ARGS
+19:10:09:453832  0      coredns          1       8       0                security_socket_connect   sockfd: 13, remote_addr: map[sa_family:AF_INET sin_addr:0.0.0.0 sin_port:8080]
+19:10:09:454179  0      coredns          1       9       0                security_socket_accept    sockfd: 8, local_addr: map[sa_family:AF_INET6 sin6_addr::: sin6_flowinfo:0 sin6_port:8080 sin6_scopeid:0]
+19:10:09:454265  0      coredns          1       9       0                security_socket_accept    sockfd: 8, local_addr: map[sa_family:AF_INET6 sin6_addr::: sin6_flowinfo:0 sin6_port:8080 sin6_scopeid:0]
+19:10:09:454478  0      coredns          1       14      0                net_packet_http_request   metadata: {127.0.0.1 127.0.0.1 43306 8080 6 144 any}, http_request: &amp;{GET HTTP/1.1 :8080 /health map[Accept-Encoding:[gzip] User-Agent:[Go-http-client/1.1]] 0}
+19:10:09:454774  0      coredns          1       14      0                net_packet_http_response  metadata: {127.0.0.1 127.0.0.1 8080 43306 6 170 any}, http_response: &amp;{200 OK 200 HTTP/1.1 map[Content-Length:[2] Content-Type:[text/plain; charset=utf-8] Date:[Wed, 29 Mar 2023 19:10:09 GMT]] 2}
+19:10:10:452992  0      coredns          1       14      0                security_socket_connect   sockfd: 13, remote_addr: map[sa_family:AF_INET sin_addr:0.0.0.0 sin_port:8080]
+19:10:10:453850  0      coredns          1       1       0                security_socket_accept    sockfd: 8, local_addr: map[sa_family:AF_INET6 sin6_addr::: sin6_flowinfo:0 sin6_port:8080 sin6_scopeid:0]
+19:10:10:453983  0      coredns          1       1       0                security_socket_accept    sockfd: 8, local_addr: map[sa_family:AF_INET6 sin6_addr::: sin6_flowinfo:0 sin6_port:8080 sin6_scopeid:0]
+19:10:10:454612  0      coredns          1       9       0                net_packet_http_request   metadata: {127.0.0.1 127.0.0.1 43318 8080 6 144 any}, http_request: &amp;{GET HTTP/1.1 :8080 /health map[Accept-Encoding:[gzip] User-Agent:[Go-http-client/1.1]] 0}
+19:10:10:455114  0      coredns          1       9       0                net_packet_http_response  metadata: {127.0.0.1 127.0.0.1 8080 43318 6 170 any}, http_response: &amp;{200 OK 200 HTTP/1.1 map[Content-Length:[2] Content-Type:[text/plain; charset=utf-8] Date:[Wed, 29 Mar 2023 19:10:10 GMT]] 2}
 </code></pre></div>
 <h2 id="switch-between-co-re-and-non-co-re-linux-distribution">Switch Between CO-RE and non CO-RE Linux Distribution<a class="headerlink" href="#switch-between-co-re-and-non-co-re-linux-distribution" title="Permanent link">&para;</a></h2>
-<p>By default, the development machine is running Ubuntu Linux 21.10 Impish Indri.
+<p>By default, the development machine is running Ubuntu Linux 22.04 Jammy Jellyfish.
 You can see that it has a BTF-enabled kernel by checking the existence of the
 <code>/sys/kernel/btf/vmlinux</code> file.</p>
 <div class="highlight"><pre><span></span><code><span class="no">Vagrant</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="s2">&quot;2&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="o">|</span><span class="n">config</span><span class="o">|</span>
 <span class="w">  </span><span class="c1"># config.vm.box = &quot;ubuntu/focal64&quot;     # Ubuntu 20.04 Focal Fossa (non CO-RE)</span>
 <span class="w">  </span><span class="c1"># config.vm.box = &quot;ubuntu/hirsute64&quot;   # Ubuntu 21.04 Hirsute Hippo (CO-RE)</span>
-<span class="w">  </span><span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ubuntu/impish64&quot;</span><span class="w">      </span><span class="c1"># Ubuntu 21.10 Impish Indri (CO-RE)</span>
-<span class="k">end</span>
+<span class="w">  </span><span class="c1"># config.vm.box = &quot;ubuntu/impish64&quot;    # Ubuntu 21.10 Impish Indri (CO-RE)</span>
+<span class="w">  </span><span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ubuntu/jammy64&quot;</span><span class="w">       </span><span class="c1"># Ubuntu 22.04 Jammy Jellyfish (CO-RE)</span>
+<span class="o">...</span>
 </code></pre></div>
 <p>Sometimes you may want to test Tracee with a non CO-RE distribution. You can do
 that by editing the Vagrantfile and modifying the <code>config.vm.box</code> property. For
@@ -15996,11 +15981,12 @@ example, you can switch to Ubuntu Linux 20.04 Focal Fossa as follows:</p>
 <span class="w">  </span><span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ubuntu/focal64&quot;</span><span class="w">       </span><span class="c1"># Ubuntu 20.04 Focal Fossa (non CO-RE)</span>
 <span class="w">  </span><span class="c1"># config.vm.box = &quot;ubuntu/hirsute64&quot;   # Ubuntu 21.04 Hirsute Hippo (CO-RE)</span>
 <span class="w">  </span><span class="c1"># config.vm.box = &quot;ubuntu/impish64&quot;    # Ubuntu 21.10 Impish Indri (CO-RE)</span>
-<span class="k">end</span>
+<span class="w">  </span><span class="c1"># config.vm.box = &quot;ubuntu/jammy64&quot;     # Ubuntu 22.04 Jammy Jellyfish (CO-RE)</span>
+<span class="o">...</span>
 </code></pre></div>
 <p>This change requires reprovisioning the development machine:</p>
-<div class="highlight"><pre><span></span><code>vagrant destroy
-vagrant up
+<div class="highlight"><pre><span></span><code><span class="go">vagrant destroy</span>
+<span class="go">vagrant up</span>
 </code></pre></div>
 <div class="admonition attention">
 <p class="admonition-title">Attention</p>
@@ -16012,97 +15998,84 @@ the <code>/sys/kernel/btf/vmlinux</code> file.</p>
 <h2 id="deploy-tracee-with-postee-on-kubernetes">Deploy Tracee with Postee on Kubernetes<a class="headerlink" href="#deploy-tracee-with-postee-on-kubernetes" title="Permanent link">&para;</a></h2>
 <p>The development machine described by Vagrantfile preinstalls <a href="https://microk8s.io">MicroK8s</a>
 Kubernetes cluster, which is suitable for testing Tracee.</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>microk8s<span class="w"> </span>status
-<span class="go">microk8s is running</span>
-<span class="go">high-availability: no</span>
-<span class="go">  datastore master nodes: 127.0.0.1:19001</span>
-<span class="go">  datastore standby nodes: none</span>
+<div class="highlight"><pre><span></span><code><span class="go">microk8s status</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>microk8s is running
+high-availability: no
+  datastore master nodes: 127.0.0.1:19001
+  datastore standby nodes: none
+...
 </code></pre></div>
 <p>There's also the <a href="https://kubernetes.io/docs/tasks/tools/#kubectl">kubectl</a> command installed and configured to communicate with
 the cluster:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>kubectl<span class="w"> </span>get<span class="w"> </span>nodes<span class="w"> </span>-o<span class="w"> </span>wide
-<span class="go">NAME            STATUS   ROLES    AGE    VERSION                    INTERNAL-IP   EXTERNAL-IP   OS-IMAGE       KERNEL-VERSION      CONTAINER-RUNTIME</span>
-<span class="go">ubuntu-impish   Ready    &lt;none&gt;   139m   v1.23.4-2+98fc2022f3ad3e   10.0.2.15     &lt;none&gt;        Ubuntu 21.10   5.13.0-35-generic   containerd://1.5.9</span>
+<div class="highlight"><pre><span></span><code><span class="go">kubectl get nodes -o wide</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>NAME           STATUS   ROLES    AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
+ubuntu-jammy   Ready    &lt;none&gt;   40m   v1.26.1   10.0.2.15     &lt;none&gt;        Ubuntu 22.04.2 LTS   5.15.0-69-generic   containerd://1.6.8
 </code></pre></div>
 <p>Create a new namespace called <code>tracee-system</code>:</p>
-<div class="highlight"><pre><span></span><code>kubectl create ns tracee-system
+<div class="highlight"><pre><span></span><code><span class="go">kubectl create ns tracee-system</span>
 </code></pre></div>
 <p>Create Postee Persistent Volumes and StatefulSet in the <code>tracee-system</code>
 namespace:</p>
-<div class="highlight"><pre><span></span><code>kubectl apply -n tracee-system \
-  -f https://raw.githubusercontent.com/aquasecurity/postee/v2.2.0/deploy/kubernetes/hostPath/postee-pv.yaml \
-  -f https://raw.githubusercontent.com/aquasecurity/postee/v2.2.0/deploy/kubernetes/postee.yaml
+<div class="highlight"><pre><span></span><code><span class="go">kubectl apply -n tracee-system \</span>
+<span class="go">  -f https://raw.githubusercontent.com/aquasecurity/postee/v2.2.0/deploy/kubernetes/hostPath/postee-pv.yaml \</span>
+<span class="go">  -f https://raw.githubusercontent.com/aquasecurity/postee/v2.2.0/deploy/kubernetes/postee.yaml</span>
 </code></pre></div>
 <p>Create Tracee DaemonSet in the <code>tracee-system</code>, which is preconfigured to print
 detections to the standard output and send them over to Postee webhook on
 http://postee-svc:8082:</p>
-<div class="highlight"><pre><span></span><code>kubectl apply -n tracee-system -f deploy/kubernetes/tracee-postee/tracee.yaml
+<div class="highlight"><pre><span></span><code><span class="go">kubectl apply -n tracee-system -f deploy/kubernetes/tracee-postee/tracee.yaml</span>
 </code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>To test code that hasn't been released yet do the following:</p>
 <ol>
 <li>Build the <code>tracee:latest</code> container image from the current Git revision:
-   <div class="highlight"><pre><span></span><code>make -f builder/Makefile.tracee-container build-tracee
+   <div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-container build-tracee</span>
 </code></pre></div></li>
 <li>Import the container image to MicroK8s registry:
-   <div class="highlight"><pre><span></span><code>docker image save -o /tmp/tracee-latest.tar tracee:latest
-microk8s ctr images import /tmp/tracee-latest.tar
-rm /tmp/tracee-latest.tar
+   <div class="highlight"><pre><span></span><code><span class="go">docker image save -o /tmp/tracee-latest.tar tracee:latest</span>
+<span class="go">microk8s ctr images import /tmp/tracee-latest.tar</span>
+<span class="go">rm /tmp/tracee-latest.tar</span>
 </code></pre></div></li>
 <li>Create Tracee DaemonSet using <code>tracee:latest</code> as container image:
-   <div class="highlight"><pre><span></span><code>kubectl apply -n tracee-system -k deploy/kubernetes/tracee-postee
+   <div class="highlight"><pre><span></span><code><span class="go">kubectl apply -n tracee-system -k deploy/kubernetes/tracee-postee</span>
 </code></pre></div></li>
 </ol>
 </div>
 <p>While Tracee pod is running, run <code>strace ls</code> command and observe detection
 printed to the standard output.</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>kubectl<span class="w"> </span>logs<span class="w"> </span>n<span class="w"> </span>tracee-system<span class="w"> </span>-f<span class="w"> </span>daemonset/tracee
-<span class="go">INFO: probing tracee-ebpf capabilities...</span>
-<span class="go">INFO: starting tracee-ebpf...</span>
-<span class="go">INFO: starting tracee-rules...</span>
-<span class="go">Loaded 14 signature(s): [TRC-1 TRC-13 TRC-2 TRC-14 TRC-3 TRC-11 TRC-9 TRC-4 TRC-5 TRC-12 TRC-8 TRC-6 TRC-10 TRC-7]</span>
-<span class="go">Serving metrics endpoint at :3366</span>
-
-<span class="go">*** Detection ***</span>
-<span class="go">Time: 2022-03-29T08:26:32Z</span>
-<span class="go">Signature ID: TRC-2</span>
-<span class="go">Signature: Anti-Debugging</span>
-<span class="go">Data: map[]</span>
-<span class="go">Command: strace</span>
-<span class="go">Hostname: ubuntu-impish</span>
+<div class="highlight"><pre><span></span><code><span class="go">kubectl logs -n tracee-system -f daemonset/tracee</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>INFO: probing tracee capabilities...
+INFO: starting tracee...
+{&quot;timestamp&quot;:1680119087787203746,&quot;threadStartTime&quot;:1680119087787109775,&quot;processorId&quot;:0,&quot;processId&quot;:95599,&quot;cgroupId&quot;:9789,&quot;threadId&quot;:95599,&quot;parentProcessId&quot;:95597,&quot;hostProcessId&quot;:95599,&quot;hostThreadId&quot;:95599,&quot;hostParentProcessId&quot;:95597,&quot;userId&quot;:1000,&quot;mountNamespace&quot;:4026531841,&quot;pidNamespace&quot;:4026531836,&quot;processName&quot;:&quot;strace&quot;,&quot;hostName&quot;:&quot;ubuntu-jammy&quot;,&quot;containerId&quot;:&quot;&quot;,&quot;containerImage&quot;:&quot;&quot;,&quot;containerName&quot;:&quot;&quot;,&quot;podName&quot;:&quot;&quot;,&quot;podNamespace&quot;:&quot;&quot;,&quot;podUID&quot;:&quot;&quot;,&quot;podSandbox&quot;:false,&quot;eventId&quot;:&quot;6018&quot;,&quot;eventName&quot;:&quot;Anti-Debugging detected&quot;,&quot;matchedScopes&quot;:1,&quot;argsNum&quot;:0,&quot;returnValue&quot;:0,&quot;syscall&quot;:&quot;&quot;,&quot;stackAddresses&quot;:null,&quot;contextFlags&quot;:{&quot;containerStarted&quot;:false,&quot;isCompat&quot;:false},&quot;args&quot;:[],&quot;metadata&quot;:{&quot;Version&quot;:&quot;1&quot;,&quot;Description&quot;:&quot;A process used anti-debugging techniques to block a debugger. Malware use anti-debugging to stay invisible and inhibit analysis of their behavior.&quot;,&quot;Tags&quot;:null,&quot;Properties&quot;:{&quot;Category&quot;:&quot;defense-evasion&quot;,&quot;Kubernetes_Technique&quot;:&quot;&quot;,&quot;Severity&quot;:1,&quot;Technique&quot;:&quot;Debugger Evasion&quot;,&quot;external_id&quot;:&quot;T1622&quot;,&quot;id&quot;:&quot;attack-pattern--e4dc8c01-417f-458d-9ee0-bb0617c1b391&quot;,&quot;signatureID&quot;:&quot;TRC-102&quot;,&quot;signatureName&quot;:&quot;Anti-Debugging detected&quot;}}}
 </code></pre></div>
 <p>If everything is configured properly, you can find the same detection in Postee
 logs:</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>kubectl<span class="w"> </span>-n<span class="w"> </span>tracee-system<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>postee-0
-<span class="go">2022/03/29 08:26:32 {&quot;Data&quot;:null,&quot;Context&quot;:{&quot;timestamp&quot;:1648542392170684298,&quot;processorId&quot;:1,&quot;processId&quot;:90731,&quot;threadId&quot;</span>
-<span class="go">:90731,&quot;parentProcessId&quot;:90729,&quot;hostProcessId&quot;:90731,&quot;hostThreadId&quot;:90731,&quot;hostParentProcessId&quot;:90729,&quot;userId&quot;:1000,&quot;mou</span>
-<span class="go">ntNamespace&quot;:4026531840,&quot;pidNamespace&quot;:4026531836,&quot;processName&quot;:&quot;strace&quot;,&quot;hostName&quot;:&quot;ubuntu-impish&quot;,&quot;containerId&quot;:&quot;&quot;,&quot;ev</span>
-<span class="go">entId&quot;:&quot;101&quot;,&quot;eventName&quot;:&quot;ptrace&quot;,&quot;argsNum&quot;:4,&quot;returnValue&quot;:0,&quot;stackAddresses&quot;:null,&quot;syscall&quot;:&quot;ptrace&quot;,&quot;contextFlags&quot;:{&quot;</span>
-<span class="go">containerStarted&quot;:false,&quot;isCompat&quot;:false},&quot;args&quot;:[{&quot;name&quot;:&quot;request&quot;,&quot;type&quot;:&quot;string&quot;,&quot;value&quot;:&quot;PTRACE_TRACEME&quot;},{&quot;name&quot;:&quot;p</span>
-<span class="go">id&quot;,&quot;type&quot;:&quot;pid_t&quot;,&quot;value&quot;:0},{&quot;name&quot;:&quot;addr&quot;,&quot;type&quot;:&quot;void*&quot;,&quot;value&quot;:&quot;0x0&quot;},{&quot;name&quot;:&quot;data&quot;,&quot;type&quot;:&quot;void*&quot;,&quot;value&quot;:&quot;0x0&quot;}]</span>
-<span class="go">},&quot;SigMetadata&quot;:{&quot;ID&quot;:&quot;TRC-2&quot;,&quot;Version&quot;:&quot;0.1.0&quot;,&quot;Name&quot;:&quot;Anti-Debugging&quot;,&quot;Description&quot;:&quot;Process uses anti-debugging techn</span>
-<span class="go">ique to block debugger&quot;,&quot;Tags&quot;:[&quot;linux&quot;,&quot;container&quot;],&quot;Properties&quot;:{&quot;MITRE ATT\u0026CK&quot;:&quot;Defense Evasion: Execution Guard</span>
-<span class="go">rails&quot;,&quot;Severity&quot;:3}}}</span>
+<div class="highlight"><pre><span></span><code><span class="go">kubectl -n tracee-system logs -f postee-0</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>2023/03/29 19:44:47 {&quot;timestamp&quot;:1680119087787203746,&quot;threadStartTime&quot;:1680119087787109775,&quot;processorId&quot;:0,&quot;processId&quot;:95599,&quot;cgroupId&quot;:9789,&quot;threadId&quot;:95599,&quot;parentProcessId&quot;:95597,&quot;hostProcessId&quot;:95599,&quot;hostThreadId&quot;:95599,&quot;hostParentProcessId&quot;:95597,&quot;userId&quot;:1000,&quot;mountNamespace&quot;:4026531841,&quot;pidNamespace&quot;:4026531836,&quot;processName&quot;:&quot;strace&quot;,&quot;hostName&quot;:&quot;ubuntu-jammy&quot;,&quot;containerId&quot;:&quot;&quot;,&quot;containerImage&quot;:&quot;&quot;,&quot;containerName&quot;:&quot;&quot;,&quot;podName&quot;:&quot;&quot;,&quot;podNamespace&quot;:&quot;&quot;,&quot;podUID&quot;:&quot;&quot;,&quot;podSandbox&quot;:false,&quot;eventId&quot;:&quot;6018&quot;,&quot;eventName&quot;:&quot;Anti-Debugging detected&quot;,&quot;matchedScopes&quot;:1,&quot;argsNum&quot;:0,&quot;returnValue&quot;:0,&quot;syscall&quot;:&quot;&quot;,&quot;stackAddresses&quot;:null,&quot;contextFlags&quot;:{&quot;containerStarted&quot;:false,&quot;isCompat&quot;:false},&quot;args&quot;:[],&quot;metadata&quot;:{&quot;Version&quot;:&quot;1&quot;,&quot;Description&quot;:&quot;A process used anti-debugging techniques to block a debugger. Malware use anti-debugging to stay invisible and inhibit analysis of their behavior.&quot;,&quot;Tags&quot;:null,&quot;Properties&quot;:{&quot;Category&quot;:&quot;defense-evasion&quot;,&quot;Kubernetes_Technique&quot;:&quot;&quot;,&quot;Severity&quot;:1,&quot;Technique&quot;:&quot;Debugger Evasion&quot;,&quot;external_id&quot;:&quot;T1622&quot;,&quot;id&quot;:&quot;attack-pattern--e4dc8c01-417f-458d-9ee0-bb0617c1b391&quot;,&quot;signatureID&quot;:&quot;TRC-102&quot;,&quot;signatureName&quot;:&quot;Anti-Debugging detected&quot;}}}
 </code></pre></div>
 <p>As an alternative to static deployment descriptors you can install Tracee and
 Postee with Helm:</p>
-<div class="highlight"><pre><span></span><code>helm repo add aqua https://aquasecurity.github.io/helm-charts
-helm dependency update ./deploy/helm/tracee
-helm install tracee ./deploy/helm/tracee \
-  --namespace tracee-system --create-namespace \
-  --set hostPID=true \
-  --set postee.enabled=true
+<div class="highlight"><pre><span></span><code><span class="go">helm repo add aqua https://aquasecurity.github.io/helm-charts</span>
+<span class="go">helm dependency update ./deploy/helm/tracee</span>
+<span class="go">helm install tracee ./deploy/helm/tracee \</span>
+<span class="go">  --namespace tracee-system --create-namespace \</span>
+<span class="go">  --set hostPID=true \</span>
+<span class="go">  --set postee.enabled=true</span>
 </code></pre></div>
 <h3 id="access-kubernetes-dashboard">Access Kubernetes Dashboard<a class="headerlink" href="#access-kubernetes-dashboard" title="Permanent link">&para;</a></h3>
 <p>Use the following command to get the token required to log in to the
 <a href="https://github.com/kubernetes/dashboard">Kubernetes Dashboard</a>:</p>
-<div class="highlight"><pre><span></span><code>kubectl -n kube-system describe secret \
-  $(kubectl -n kube-system get secret | grep default-token | cut -d &quot; &quot; -f1)
+<div class="highlight"><pre><span></span><code><span class="go">kubectl -n kube-system describe secret \</span>
+<span class="gp">  $</span><span class="o">(</span>kubectl<span class="w"> </span>-n<span class="w"> </span>kube-system<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>default-token<span class="w"> </span><span class="p">|</span><span class="w"> </span>cut<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot; &quot;</span><span class="w"> </span>-f1<span class="o">)</span>
 </code></pre></div>
 <p>Forward port 10443 in the development machine to the Kubernetes Dashboard's
 pod:</p>
-<div class="highlight"><pre><span></span><code>kubectl port-forward --address 0.0.0.0 -n kube-system service/kubernetes-dashboard 10443:443
+<div class="highlight"><pre><span></span><code><span class="go">kubectl port-forward --address 0.0.0.0 -n kube-system service/kubernetes-dashboard 10443:443</span>
 </code></pre></div>
 <p>Since port 10443 is forwarded to port 10443 on your host, you can open your
 browser to <a href="https://localhost:10443">https://localhost:10443</a> and access
@@ -16115,7 +16088,7 @@ Chrome you may allow insecure TLS connections at
 </div>
 <h2 id="preview-tracee-documentation">Preview Tracee Documentation<a class="headerlink" href="#preview-tracee-documentation" title="Permanent link">&para;</a></h2>
 <p>You can run <a href="https://www.mkdocs.org">MkDocs</a> server and preview documentation on your host:</p>
-<div class="highlight"><pre><span></span><code>make -f builder/Makefile.mkdocs
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.mkdocs</span>
 </code></pre></div>
 <p>The development machine is running the MkDocs server listening on port 8000,
 which is forwarded to port 8000 on your host. Therefore, you can open your

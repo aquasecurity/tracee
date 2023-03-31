@@ -15987,12 +15987,12 @@
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
 <p>The <code>times()</code> syscall retrieves the running times of the current process and of given child processes. Upon successful completion, the <code>buf</code> argument, if it is not NULL, is filled with an array of <code>struct tms</code> values.</p>
 <p>A <code>struct tms</code> value has the following form:</p>
-<div class="highlight"><pre><span></span><code>struct tms {
-    clock_t tms_utime; // user time
-    clock_t tms_stime; // system time
-    clock_t tms_cutime; // user time of process and child processes
-    clock_t tms_cstime; // system time of process and child processes
-};
+<div class="highlight"><pre><span></span><code><span class="k">struct</span><span class="w"> </span><span class="nc">tms</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">clock_t</span><span class="w"> </span><span class="n">tms_utime</span><span class="p">;</span><span class="w"> </span><span class="c1">// user time</span>
+<span class="w">    </span><span class="kt">clock_t</span><span class="w"> </span><span class="n">tms_stime</span><span class="p">;</span><span class="w"> </span><span class="c1">// system time</span>
+<span class="w">    </span><span class="kt">clock_t</span><span class="w"> </span><span class="n">tms_cutime</span><span class="p">;</span><span class="w"> </span><span class="c1">// user time of process and child processes</span>
+<span class="w">    </span><span class="kt">clock_t</span><span class="w"> </span><span class="n">tms_cstime</span><span class="p">;</span><span class="w"> </span><span class="c1">// system time of process and child processes</span>
+<span class="p">};</span>
 </code></pre></div>
 <p>The <code>clock_t</code> type is an arithmetic type which is capable of representing times.</p>
 <p>This syscall is useful for profiling applications or to measure their running time. It can also be used to get an idea of the time a process and its children spent in user and system mode.</p>
@@ -16012,13 +16012,14 @@
 <p>Hooked to record timing information for the <code>times()</code> syscall.</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
 <p>The <code>times()</code> syscall can be used in the following example to get more insight into a process and child processes running times:</p>
-<div class="highlight"><pre><span></span><code>struct tms t;
-if(times(&amp;t) != -1){
-    printf(&quot;User time of this process: %lld ms\n&quot;, t.tms_utime * MSEC_PER_SEC);
-    printf(&quot;System time of this process: %lld ms\n&quot;, t.tms_stime * MSEC_PER_SEC);
-    printf(&quot;User time of this process and its childrens: %lld ms\n&quot;, t.tms_cutime * MSEC_PER_SEC);
-    printf(&quot;System time of this process and its childrens: %lld ms\n&quot;, t.tms_cstime * MSEC_PER_SEC);
-}
+<div class="highlight"><pre><span></span><code><span class="k">struct</span><span class="w"> </span><span class="nc">tms</span><span class="w"> </span><span class="n">t</span><span class="p">;</span>
+
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">times</span><span class="p">(</span><span class="o">&amp;</span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">-1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;User time of this process: %lld ms</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">tms_utime</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">MSEC_PER_SEC</span><span class="p">);</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;System time of this process: %lld ms</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">tms_stime</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">MSEC_PER_SEC</span><span class="p">);</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;User time of this process and its childrens: %lld ms</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">tms_cutime</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">MSEC_PER_SEC</span><span class="p">);</span>
+<span class="w">    </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;System time of this process and its childrens: %lld ms</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">tms_cstime</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">MSEC_PER_SEC</span><span class="p">);</span>
+<span class="p">}</span>
 </code></pre></div>
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
 <p>None.</p>

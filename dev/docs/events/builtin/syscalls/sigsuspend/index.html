@@ -15986,8 +15986,8 @@
 <p>sigsuspend - temporarily replaces the signal mask of the executing thread with the given set of signals.</p>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
 <p>The sigsuspend() system call suspends the caller until a signal is received. It is equivalent to</p>
-<div class="highlight"><pre><span></span><code>sigprocmask(SIG_SETMASK, &amp;mask, NULL);
-pause();
+<div class="highlight"><pre><span></span><code><span class="n">sigprocmask</span><span class="p">(</span><span class="n">SIG_SETMASK</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">mask</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">);</span>
+<span class="n">pause</span><span class="p">();</span>
 </code></pre></div>
 <p>The mask given as argument is used as the signal mask of the process during the period of suspension; upon return from the call it is restored to the previous value. While sigsuspend() is being executed, any signal may be accepted, except SIGKILL and SIGSTOP.</p>
 <p>The sigsuspend() function shall not return if it is interrupted by a signal handler and the signal handler does not return.</p>

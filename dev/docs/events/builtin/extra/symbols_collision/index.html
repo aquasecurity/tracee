@@ -16085,20 +16085,22 @@ shared object necessary to examine its exported symbols.</p>
 <p>Used by tracee to maintain mount NS cache, used in this event to get to processes file system.
 Also, used to maintain the cache used by the event for performance improvement.</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
-<p>Could be used for example to catch collision between a shared object and <code>libc.so</code>, overwriting libc symbols:
-<div class="highlight"><pre><span></span><code>./dist/tracee<span class="w"> </span>-f<span class="w"> </span><span class="nv">e</span><span class="o">=</span>symbols_collision<span class="w"> </span>-f<span class="w"> </span>symbols_collision.args.loaded_path<span class="o">=</span>/usr/lib/libc.so.6
-</code></pre></div></p>
-<p>Running this line will give a lot of spam symbols collision, for example collisions of <code>libc</code> with <code>libm</code>:
-<div class="highlight"><pre><span></span><code>TIME<span class="w">             </span>UID<span class="w">    </span>COMM<span class="w">             </span>PID<span class="w">     </span>TID<span class="w">     </span>RET<span class="w">              </span>EVENT<span class="w">                </span>ARGS
-<span class="m">14</span>:41:48:296325<span class="w">  </span><span class="m">1000</span><span class="w">   </span>xfce4-panel<span class="w">      </span><span class="m">6808</span><span class="w">    </span><span class="m">6808</span><span class="w">    </span><span class="m">0</span><span class="w">                </span>symbols_collision<span class="w">    </span>loaded_path:<span class="w"> </span>/usr/lib/libc.so.6,<span class="w"> </span>collision_path:<span class="w"> </span>/usr/lib/libm.so.6,<span class="w"> </span>symbols:<span class="w"> </span><span class="o">[</span>finitel<span class="w"> </span>__signbitf<span class="w"> </span>finite<span class="w"> </span>frexpl<span class="w"> </span>frexp<span class="w"> </span>scalbn<span class="w"> </span>__finite<span class="w"> </span>copysignl<span class="w"> </span>scalbnf<span class="w"> </span>__signbitl<span class="w"> </span>scalbnl<span class="w"> </span>copysign<span class="w"> </span>copysignf<span class="w"> </span>ldexpf<span class="w"> </span>modff<span class="w"> </span>modf<span class="w"> </span>ldexp<span class="w"> </span>ldexpl<span class="w"> </span>finitef<span class="w"> </span>frexpf<span class="w"> </span>__finitel<span class="w"> </span>modfl<span class="w"> </span>__finitef<span class="w"> </span>__signbit<span class="o">]</span>
-</code></pre></div></p>
-<p>To reduce the spam collisions, we can configure the event to not print the collision using two ways:
-1. Whitelist the collided symbols:
-<div class="highlight"><pre><span></span><code>./dist/tracee<span class="w"> </span>-f<span class="w"> </span><span class="nv">e</span><span class="o">=</span>symbols_collision<span class="w"> </span>-f<span class="w"> </span>symbols_collision.args.loaded_path<span class="o">=</span>/usr/lib/libc.so.6<span class="w"> </span>-f<span class="w"> </span>symbols_collision.args.symbols!<span class="o">=</span>finitel,__signbitf,finite,frexpl,frexp,scalbn,__finite,copysignl,scalbnf,__signbitl,scalbnl,copysign,copysignf,ldexpf,modff,modf,ldexp,ldexpl,finitef,frexpf,__finitel,modfl,__finitef,__signbit
+<p>Could be used for example to catch collision between a shared object and <code>libc.so</code>, overwriting libc symbols:</p>
+<div class="highlight"><pre><span></span><code><span class="go">./dist/tracee -f e=symbols_collision -f symbols_collision.args.loaded_path=/usr/lib/libc.so.6</span>
 </code></pre></div>
-2. Whitelist the library <code>libm</code>:
-<div class="highlight"><pre><span></span><code>./dist/tracee<span class="w"> </span>-f<span class="w"> </span><span class="nv">e</span><span class="o">=</span>symbols_collision<span class="w"> </span>-f<span class="w"> </span>symbols_collision.args.loaded_path<span class="o">=</span>/usr/lib/libc.so.6<span class="w"> </span>-f<span class="w"> </span>symbols_collision.args.collision_path!<span class="o">=</span>/usr/lib/libm.so.6
-</code></pre></div></p>
+<p>Running this line will give a lot of spam symbols collision, for example collisions of <code>libc</code> with <code>libm</code>:</p>
+<div class="highlight"><pre><span></span><code>TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
+14:41:48:296325  1000   xfce4-panel      6808    6808    0                symbols_collision    loaded_path: /usr/lib/libc.so.6, collision_path: /usr/lib/libm.so.6, symbols: [finitel __signbitf finite frexpl frexp scalbn __finite copysignl scalbnf __signbitl scalbnl copysign copysignf ldexpf modff modf ldexp ldexpl finitef frexpf __finitel modfl __finitef __signbit]
+</code></pre></div>
+<p>To reduce the spam collisions, we can configure the event to not print the collision using two ways:
+1. Whitelist the collided symbols:</p>
+<div class="highlight"><pre><span></span><code><span class="go">./dist/tracee -f e=symbols_collision -f symbols_collision.args.loaded_path=/usr/lib/libc.so.6 -f symbols_collision.args.symbols!=finitel,__signbitf,finite,frexpl,frexp,scalbn,__finite,copysignl,scalbnf,__signbitl,scalbnl,copysign,copysignf,ldexpf,modff,modf,ldexp,ldexpl,finitef,frexpf,__finitel,modfl,__finitef,__signbit</span>
+</code></pre></div>
+<ol>
+<li>Whitelist the library <code>libm</code>:</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="go">./dist/tracee -f e=symbols_collision -f symbols_collision.args.loaded_path=/usr/lib/libc.so.6 -f symbols_collision.args.collision_path!=/usr/lib/libm.so.6</span>
+</code></pre></div>
 <p>The first approach is recommended when dealing with common symbols like 'setup_', 'finish_' etc. because it will reduce
 the overall noise and also reduce the event processing time, in contrast to the second filter which only works after processing the event.</p>
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>

@@ -15843,15 +15843,16 @@ gmake</code>) and configure such environment by using Docker.</p>
 <ul>
 <li>
 <p>Build and execute <strong>tracee</strong>:</p>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-make alpine-prepare
-$ make -f builder/Makefile.tracee-make alpine-shell
-
-tracee@f64bb4a2f0b1[/tracee]$ make clean
-tracee@f64bb4a2f0b1[/tracee]$ make tracee
-tracee@f64bb4a2f0b1[/tracee]$ sudo ./dist/tracee \
-    -o option:parse-arguments \
-    --filter comm=bash \
-    --filter follow
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-make alpine-prepare</span>
+<span class="go">make -f builder/Makefile.tracee-make alpine-shell</span>
+</code></pre></div>
+<p>and inside the container:</p>
+<div class="highlight"><pre><span></span><code><span class="go">make clean</span>
+<span class="go">make tracee</span>
+<span class="go">sudo ./dist/tracee \</span>
+<span class="go">    -o option:parse-arguments \</span>
+<span class="go">    --filter comm=bash \</span>
+<span class="go">    --filter follow</span>
 </code></pre></div>
 </li>
 </ul>
@@ -15860,16 +15861,17 @@ tracee@f64bb4a2f0b1[/tracee]$ sudo ./dist/tracee \
 <ul>
 <li>
 <p>Build and execute <strong>tracee</strong>:</p>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-make alpine-prepare
-$ make -f builder/Makefile.tracee-make alpine-shell
-
-tracee@f64bb4a2f0b1[/tracee]$ make clean
-tracee@f64bb4a2f0b1[/tracee]$ make all
-tracee@f64bb4a2f0b1[/tracee]$ sudo ./dist/tracee \
-    -o format:json \
-    -o option:parse-arguments \
-    --filter comm=bash \
-    --filter follow 
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-make alpine-prepare</span>
+<span class="go">make -f builder/Makefile.tracee-make alpine-shell</span>
+</code></pre></div>
+<p>and inside the container:</p>
+<div class="highlight"><pre><span></span><code><span class="go">make clean</span>
+<span class="go">make all</span>
+<span class="go">sudo ./dist/tracee \</span>
+<span class="go">    -o format:json \</span>
+<span class="go">    -o option:parse-arguments \</span>
+<span class="go">    --filter comm=bash \</span>
+<span class="go">    --filter follow </span>
 </code></pre></div>
 </li>
 </ul>
@@ -15902,12 +15904,12 @@ might not be compatible to the Linux distribution from your host OS.</p>
 <ul>
 <li>
 <p>To create an <strong>alpine-tracee-make</strong> container:</p>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-make alpine-prepare
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-make alpine-prepare</span>
 </code></pre></div>
 </li>
 <li>
 <p>To create an <strong>ubuntu-tracee-make</strong> container:</p>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-make ubuntu-prepare
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-make ubuntu-prepare</span>
 </code></pre></div>
 </li>
 </ul>
@@ -15915,30 +15917,30 @@ might not be compatible to the Linux distribution from your host OS.</p>
 <ul>
 <li>
 <p>To execute an <strong>alpine-tracee-make</strong> shell:</p>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-make alpine-shell
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-make alpine-shell</span>
 </code></pre></div>
 </li>
 <li>
 <p>To execute an <strong>ubuntu-tracee-make</strong> shell:</p>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-make ubuntu-shell
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-make ubuntu-shell</span>
 </code></pre></div>
 </li>
 </ul>
 <h3 id="using-build-environment-as-a-make-replacement">Using build environment as a <strong>make</strong> replacement<a class="headerlink" href="#using-build-environment-as-a-make-replacement" title="Permanent link">&para;</a></h3>
 <p>Instead of executing a builder shell, you may use <code>alpine-tracee-make</code>, or
 <code>ubuntu-tracee-make</code>, as a replacement for the <code>make</code> command:</p>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-make ubuntu-prepare
-$ make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;help&quot;
-$ make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;clean&quot;
-$ make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;bpf-core&quot;
-$ make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;tracee&quot;
-$ make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;all&quot;
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-make ubuntu-prepare</span>
+<span class="go">make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;help&quot;</span>
+<span class="go">make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;clean&quot;</span>
+<span class="go">make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;bpf-core&quot;</span>
+<span class="go">make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;tracee&quot;</span>
+<span class="go">make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;all&quot;</span>
 </code></pre></div>
 <p>And, after the compilation, run the commands directly in your host:</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee \
-    -o option:parse-arguments \
-    --filter comm=bash \
-    --filter follow
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">    -o option:parse-arguments \</span>
+<span class="go">    --filter comm=bash \</span>
+<span class="go">    --filter follow</span>
 </code></pre></div>
 <blockquote>
 <p><strong>Note</strong>: the generated binary must be compatible to your host (depending on
@@ -15948,13 +15950,14 @@ glibc version, for example).</p>
 the <code>alpine-tracee-make</code> container as a replacement for <code>make</code>, and your host
 is not an <strong>Alpine Linux</strong>, then you may set <code>STATIC=1</code> variable so you can run
 compiled binaries in your host:</p>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-make alpine-prepare
-$ make -f builder/Makefile.tracee-make alpine-make ARG=&quot;help&quot;
-$ STATIC=1 make -f builder/Makefile.tracee-make alpine-make ARG=&quot;all&quot;
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-make alpine-prepare</span>
+<span class="go">make -f builder/Makefile.tracee-make alpine-make ARG=&quot;help&quot;</span>
+<span class="go">STATIC=1 make -f builder/Makefile.tracee-make alpine-make ARG=&quot;all&quot;</span>
 </code></pre></div>
 <p>and execute the static binary from your host:</p>
-<div class="highlight"><pre><span></span><code>$ ldd dist/tracee
-  not a dynamic executable
+<div class="highlight"><pre><span></span><code><span class="go">ldd dist/tracee</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>not a dynamic executable
 </code></pre></div>
 <div class="admonition attention">
 <p class="admonition-title">Attention</p>

@@ -16000,11 +16000,11 @@ calling process with <code>shmdt</code>.</p>
 <li><code>shmaddr</code>:<code>const void*</code>[U] - If not NULL, address the segment should
                     be attached at.</li>
 <li><code>shmflg</code>:<code>int</code>[K] - Specifies various flags for the attachment:
-                    <div class="highlight"><pre><span></span><code>SHM_RDONLY = 0x001  - Segment attached read-only
-SHM_RND    = 0x002  - Round addr to SHMLBA boundary
-SHM_REMAP  = 0x004  - Map into current address space
-SHM_RXAREA = 0x008  - Force/allow read/execute
-SHM_EXEC   = 0x010  - Segment attached execute-only
+                    <div class="highlight"><pre><span></span><code><span class="n">SHM_RDONLY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x001</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="n">Segment</span><span class="w"> </span><span class="n">attached</span><span class="w"> </span><span class="n">read</span><span class="o">-</span><span class="n">only</span>
+<span class="n">SHM_RND</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="mh">0x002</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="n">Round</span><span class="w"> </span><span class="n">addr</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">SHMLBA</span><span class="w"> </span><span class="n">boundary</span>
+<span class="n">SHM_REMAP</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mh">0x004</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="n">Map</span><span class="w"> </span><span class="n">into</span><span class="w"> </span><span class="n">current</span><span class="w"> </span><span class="n">address</span><span class="w"> </span><span class="n">space</span>
+<span class="n">SHM_RXAREA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x008</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="n">Force</span><span class="o">/</span><span class="n">allow</span><span class="w"> </span><span class="n">read</span><span class="o">/</span><span class="n">execute</span>
+<span class="n">SHM_EXEC</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mh">0x010</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="n">Segment</span><span class="w"> </span><span class="n">attached</span><span class="w"> </span><span class="n">execute</span><span class="o">-</span><span class="n">only</span>
 </code></pre></div></li>
 </ul>
 <h3 id="available-tags">Available Tags<a class="headerlink" href="#available-tags" title="Permanent link">&para;</a></h3>

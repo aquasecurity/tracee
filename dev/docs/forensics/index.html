@@ -15722,8 +15722,8 @@
 <h1 id="getting-started-with-forensics">Getting Started with Forensics<a class="headerlink" href="#getting-started-with-forensics" title="Permanent link">&para;</a></h1>
 <p>Tracee has a unique feature that lets you capture interesting artifacts from
 running applications, using the <code>--capture</code> flag.</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee --capture help
-$ sudo ./dist/tracee --capture xxx
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --capture help</span>
+<span class="go">sudo ./dist/tracee --capture xxx</span>
 </code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
@@ -15738,17 +15738,17 @@ to be cleared every time you execute tracee.</p>
 <li>
 <p><strong>Written Files</strong></p>
 <p>Anytime a file is being written to, the contents of the file
- will be captured. Written files can be filtered using an optional path
- prefix.</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee \
-   --output json \
-   --filter comm=bash \
-   --filter follow \
-   --output option:parse-arguments \
-   --capture dir:/tmp/tracee/ \
-   --capture write=&#39;/tmp/*&#39;
-
-$ echo testing 123 &gt; /tmp/testing.txt
+will be captured. Written files can be filtered using an optional path
+prefix.</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">   --output json \</span>
+<span class="go">   --filter comm=bash \</span>
+<span class="go">   --filter follow \</span>
+<span class="go">   --output option:parse-arguments \</span>
+<span class="go">   --capture dir:/tmp/tracee/ \</span>
+<span class="go">   --capture write=&#39;/tmp/*&#39;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">echo testing 123 &gt; /tmp/testing.txt</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="mi">1657321167356748797</span><span class="p">,</span><span class="nt">&quot;threadStartTime&quot;</span><span class="p">:</span><span class="mi">620311624458929</span><span class="p">,</span><span class="nt">&quot;processorId&quot;</span><span class="p">:</span><span class="mi">7</span><span class="p">,</span><span class="nt">&quot;processId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;cgroupId&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;threadId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;parentProcessId&quot;</span><span class="p">:</span><span class="mi">2578237</span><span class="p">,</span><span class="nt">&quot;hostProcessId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;hostThreadId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;hostParentProcessId&quot;</span><span class="p">:</span><span class="mi">2578237</span><span class="p">,</span><span class="nt">&quot;userId&quot;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span><span class="nt">&quot;mountNamespace&quot;</span><span class="p">:</span><span class="mi">4026531840</span><span class="p">,</span><span class="nt">&quot;pidNamespace&quot;</span><span class="p">:</span><span class="mi">4026531836</span><span class="p">,</span><span class="nt">&quot;processName&quot;</span><span class="p">:</span><span class="s2">&quot;bash&quot;</span><span class="p">,</span><span class="nt">&quot;hostName&quot;</span><span class="p">:</span><span class="s2">&quot;fujitsu&quot;</span><span class="p">,</span><span class="nt">&quot;containerId&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerImage&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podUID&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;eventId&quot;</span><span class="p">:</span><span class="s2">&quot;722&quot;</span><span class="p">,</span><span class="nt">&quot;eventName&quot;</span><span class="p">:</span><span class="s2">&quot;security_file_open&quot;</span><span class="p">,</span><span class="nt">&quot;argsNum&quot;</span><span class="p">:</span><span class="mi">6</span><span class="p">,</span><span class="nt">&quot;returnValue&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span><span class="nt">&quot;stackAddresses&quot;</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">&quot;syscall&quot;</span><span class="p">:</span><span class="s2">&quot;openat&quot;</span><span class="p">,</span><span class="nt">&quot;contextFlags&quot;</span><span class="p">:{</span><span class="nt">&quot;containerStarted&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span><span class="nt">&quot;isCompat&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">},</span><span class="nt">&quot;args&quot;</span><span class="p">:[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;pathname&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;const char*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;/tmp/testing.txt&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;flags&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;string&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;dev&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;dev_t&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">271581185</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;inode&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;unsigned long&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">1966101</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;ctime&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;unsigned long&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">1657321027326584850</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;syscall_pathname&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;const char*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;/tmp/testing.txt&quot;</span><span class="p">}]}</span>
 <span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="mi">1657321167356729582</span><span class="p">,</span><span class="nt">&quot;threadStartTime&quot;</span><span class="p">:</span><span class="mi">620311624458929</span><span class="p">,</span><span class="nt">&quot;processorId&quot;</span><span class="p">:</span><span class="mi">7</span><span class="p">,</span><span class="nt">&quot;processId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;cgroupId&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;threadId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;parentProcessId&quot;</span><span class="p">:</span><span class="mi">2578237</span><span class="p">,</span><span class="nt">&quot;hostProcessId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;hostThreadId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;hostParentProcessId&quot;</span><span class="p">:</span><span class="mi">2578237</span><span class="p">,</span><span class="nt">&quot;userId&quot;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span><span class="nt">&quot;mountNamespace&quot;</span><span class="p">:</span><span class="mi">4026531840</span><span class="p">,</span><span class="nt">&quot;pidNamespace&quot;</span><span class="p">:</span><span class="mi">4026531836</span><span class="p">,</span><span class="nt">&quot;processName&quot;</span><span class="p">:</span><span class="s2">&quot;bash&quot;</span><span class="p">,</span><span class="nt">&quot;hostName&quot;</span><span class="p">:</span><span class="s2">&quot;fujitsu&quot;</span><span class="p">,</span><span class="nt">&quot;containerId&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerImage&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podUID&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;eventId&quot;</span><span class="p">:</span><span class="s2">&quot;257&quot;</span><span class="p">,</span><span class="nt">&quot;eventName&quot;</span><span class="p">:</span><span class="s2">&quot;openat&quot;</span><span class="p">,</span><span class="nt">&quot;argsNum&quot;</span><span class="p">:</span><span class="mi">4</span><span class="p">,</span><span class="nt">&quot;returnValue&quot;</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span><span class="nt">&quot;stackAddresses&quot;</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">&quot;syscall&quot;</span><span class="p">:</span><span class="s2">&quot;openat&quot;</span><span class="p">,</span><span class="nt">&quot;contextFlags&quot;</span><span class="p">:{</span><span class="nt">&quot;containerStarted&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span><span class="nt">&quot;isCompat&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">},</span><span class="nt">&quot;args&quot;</span><span class="p">:[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;dirfd&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;int&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">-100</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;pathname&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;const char*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;/tmp/testing.txt&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;flags&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;string&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;O_WRONLY|O_CREAT|O_TRUNC&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;mode_t&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">438</span><span class="p">}]}</span>
@@ -15756,24 +15756,25 @@ $ echo testing 123 &gt; /tmp/testing.txt
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>You can read captured files written at <code>/tmp/tracee/out</code>:
-<div class="highlight"><pre><span></span><code>$ sudo cat /tmp/tracee/out/host/write.dev-271581185.inode-1966101
-testing 123
+<div class="highlight"><pre><span></span><code><span class="go">sudo cat /tmp/tracee/out/host/write.dev-271581185.inode-1966101</span>
 </code></pre></div></p>
+<div class="highlight"><pre><span></span><code>testing 123
+</code></pre></div>
 </div>
 </li>
 <li>
 <p><strong>Executed Files</strong></p>
 <p>Anytime a <strong>binary is executed</strong>, the binary file will be captured. If the
- same binary is executed multiple times, it will be captured just once.</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee \
-   --output json \
-   --filter comm=bash \
-   --filter follow \
-   --output option:parse-arguments \
-   --capture dir:/tmp/tracee/ \
-   --capture exec
-
-$ /bin/ls
+same binary is executed multiple times, it will be captured just once.</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">   --output json \</span>
+<span class="go">   --filter comm=bash \</span>
+<span class="go">   --filter follow \</span>
+<span class="go">   --output option:parse-arguments \</span>
+<span class="go">   --capture dir:/tmp/tracee/ \</span>
+<span class="go">   --capture exec</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">/bin/ls</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="mi">1657322300531713371</span><span class="p">,</span><span class="nt">&quot;threadStartTime&quot;</span><span class="p">:</span><span class="mi">620311624458929</span><span class="p">,</span><span class="nt">&quot;processorId&quot;</span><span class="p">:</span><span class="mi">21</span><span class="p">,</span><span class="nt">&quot;processId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;cgroupId&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;threadId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;parentProcessId&quot;</span><span class="p">:</span><span class="mi">2578237</span><span class="p">,</span><span class="nt">&quot;hostProcessId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;hostThreadId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;hostParentProcessId&quot;</span><span class="p">:</span><span class="mi">2578237</span><span class="p">,</span><span class="nt">&quot;userId&quot;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span><span class="nt">&quot;mountNamespace&quot;</span><span class="p">:</span><span class="mi">4026531840</span><span class="p">,</span><span class="nt">&quot;pidNamespace&quot;</span><span class="p">:</span><span class="mi">4026531836</span><span class="p">,</span><span class="nt">&quot;processName&quot;</span><span class="p">:</span><span class="s2">&quot;bash&quot;</span><span class="p">,</span><span class="nt">&quot;hostName&quot;</span><span class="p">:</span><span class="s2">&quot;fujitsu&quot;</span><span class="p">,</span><span class="nt">&quot;containerId&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerImage&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podUID&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;eventId&quot;</span><span class="p">:</span><span class="s2">&quot;56&quot;</span><span class="p">,</span><span class="nt">&quot;eventName&quot;</span><span class="p">:</span><span class="s2">&quot;clone&quot;</span><span class="p">,</span><span class="nt">&quot;argsNum&quot;</span><span class="p">:</span><span class="mi">5</span><span class="p">,</span><span class="nt">&quot;returnValue&quot;</span><span class="p">:</span><span class="mi">3331757</span><span class="p">,</span><span class="nt">&quot;stackAddresses&quot;</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">&quot;syscall&quot;</span><span class="p">:</span><span class="s2">&quot;clone&quot;</span><span class="p">,</span><span class="nt">&quot;contextFlags&quot;</span><span class="p">:{</span><span class="nt">&quot;containerStarted&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span><span class="nt">&quot;isCompat&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">},</span><span class="nt">&quot;args&quot;</span><span class="p">:[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;flags&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;string&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;stack&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;void*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;0x0&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;parent_tid&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;int*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;0x0&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;child_tid&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;int*&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;0x7fd7ce0d3a10&quot;</span><span class="p">},{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;tls&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;unsigned long&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">}]}</span>
 <span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="mi">1657322300534562489</span><span class="p">,</span><span class="nt">&quot;threadStartTime&quot;</span><span class="p">:</span><span class="mi">620311624458929</span><span class="p">,</span><span class="nt">&quot;processorId&quot;</span><span class="p">:</span><span class="mi">21</span><span class="p">,</span><span class="nt">&quot;processId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;cgroupId&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;threadId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;parentProcessId&quot;</span><span class="p">:</span><span class="mi">2578237</span><span class="p">,</span><span class="nt">&quot;hostProcessId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;hostThreadId&quot;</span><span class="p">:</span><span class="mi">2578238</span><span class="p">,</span><span class="nt">&quot;hostParentProcessId&quot;</span><span class="p">:</span><span class="mi">2578237</span><span class="p">,</span><span class="nt">&quot;userId&quot;</span><span class="p">:</span><span class="mi">1000</span><span class="p">,</span><span class="nt">&quot;mountNamespace&quot;</span><span class="p">:</span><span class="mi">4026531840</span><span class="p">,</span><span class="nt">&quot;pidNamespace&quot;</span><span class="p">:</span><span class="mi">4026531836</span><span class="p">,</span><span class="nt">&quot;processName&quot;</span><span class="p">:</span><span class="s2">&quot;bash&quot;</span><span class="p">,</span><span class="nt">&quot;hostName&quot;</span><span class="p">:</span><span class="s2">&quot;fujitsu&quot;</span><span class="p">,</span><span class="nt">&quot;containerId&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerImage&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;containerName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;podUID&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;eventId&quot;</span><span class="p">:</span><span class="s2">&quot;3&quot;</span><span class="p">,</span><span class="nt">&quot;eventName&quot;</span><span class="p">:</span><span class="s2">&quot;close&quot;</span><span class="p">,</span><span class="nt">&quot;argsNum&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="nt">&quot;returnValue&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span><span class="nt">&quot;stackAddresses&quot;</span><span class="p">:</span><span class="kc">null</span><span class="p">,</span><span class="nt">&quot;syscall&quot;</span><span class="p">:</span><span class="s2">&quot;close&quot;</span><span class="p">,</span><span class="nt">&quot;contextFlags&quot;</span><span class="p">:{</span><span class="nt">&quot;containerStarted&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span><span class="nt">&quot;isCompat&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">},</span><span class="nt">&quot;args&quot;</span><span class="p">:[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;fd&quot;</span><span class="p">,</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="s2">&quot;int&quot;</span><span class="p">,</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">3</span><span class="p">}]}</span>
@@ -15781,36 +15782,39 @@ $ /bin/ls
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>You will have a copy of each executed file written at <code>/tmp/tracee/out</code>:
-<div class="highlight"><pre><span></span><code>$ ldd /bin/ls
-linux-vdso.so.1 (0x00007ffca632c000)
+<div class="highlight"><pre><span></span><code><span class="go">ldd /bin/ls</span>
+</code></pre></div></p>
+<div class="highlight"><pre><span></span><code>linux-vdso.so.1 (0x00007ffca632c000)
 libselinux.so.1 =&gt; /lib/x86_64-linux-gnu/libselinux.so.1 (0x00007f9a930d5000)
 libc.so.6 =&gt; /lib/x86_64-linux-gnu/libc.so.6 (0x00007f9a92ead000)
 libpcre2-8.so.0 =&gt; /lib/x86_64-linux-gnu/libpcre2-8.so.0 (0x00007f9a92e16000)
 /lib64/ld-linux-x86-64.so.2 (0x00007f9a93136000)
-
-$ ldd /tmp/tracee/out/host/exec.1657322052835478987.ls
-linux-vdso.so.1 (0x00007ffe337fb000)
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">ldd /tmp/tracee/out/host/exec.1657322052835478987.ls</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>linux-vdso.so.1 (0x00007ffe337fb000)
 libselinux.so.1 =&gt; /lib/x86_64-linux-gnu/libselinux.so.1 (0x00007feeb1fa5000)
 libc.so.6 =&gt; /lib/x86_64-linux-gnu/libc.so.6 (0x00007feeb1d7d000)
 libpcre2-8.so.0 =&gt; /lib/x86_64-linux-gnu/libpcre2-8.so.0 (0x00007feeb1ce6000)
 /lib64/ld-linux-x86-64.so.2 (0x00007feeb2006000)
 
-$ sudo chmod +x /tmp/tracee/out/host/exec.1657322052835478987.ls
-$ /tmp/tracee/out/host/exec.1657322052835478987.ls
-</code></pre></div></p>
+```console
+sudo chmod +x /tmp/tracee/out/host/exec.1657322052835478987.ls
+/tmp/tracee/out/host/exec.1657322052835478987.ls
+</code></pre></div>
 </div>
 </li>
 <li>
 <p><strong>Memory Files</strong></p>
 <p>Anytime a <strong>memory unpacker</strong> is detected, the suspicious <strong>memory region</strong>
- will be captured. This is triggered when memory protection changes from
- <strong>Write+Execute</strong> to <strong>Write</strong>.</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee \
-   --output none \
-   --filter comm=bash \
-   --filter follow \
-   --capture dir:/tmp/tracee/ \
-   --capture mem
+will be captured. This is triggered when memory protection changes from
+<strong>Write+Execute</strong> to <strong>Write</strong>.</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">   --output none \</span>
+<span class="go">   --filter comm=bash \</span>
+<span class="go">   --filter follow \</span>
+<span class="go">   --capture dir:/tmp/tracee/ \</span>
+<span class="go">   --capture mem</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -15821,7 +15825,7 @@ command flag is given. This makes tracee to work in capture mode only.</p>
 <li>
 <p><strong>Network PCAP Files</strong></p>
 <p>Anytime a <strong>network packet</strong> is delivered to a process, traced by tracee,
- this packet might be captured into one or multiple pcap files.</p>
+this packet might be captured into one or multiple pcap files.</p>
 <div class="admonition attention">
 <p class="admonition-title">Attention</p>
 <p>The default behavior when capturing network traffic is to capture
@@ -15833,56 +15837,58 @@ net_packet_XXX events will be captured (IPv4, IPv6, TCP, UDP,
 ICMP, ICMPv6, DNS, HTTP, etc).</p>
 </div>
 <p>A good way to test this behavior is to execute:</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee \
-    --filter event=net_packet_ipv4 \
-    --capture network \
-    --capture pcap-options:filtered
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">    --filter event=net_packet_ipv4 \</span>
+<span class="go">    --capture network \</span>
+<span class="go">    --capture pcap-options:filtered</span>
 </code></pre></div>
 <p>and observe a single <strong>pcap file</strong> for all ipv4 packets created:</p>
-<div class="highlight"><pre><span></span><code>$ find /tmp/tracee/out/pcap/
-/tmp/tracee/out/pcap/
+<div class="highlight"><pre><span></span><code><span class="go">find /tmp/tracee/out/pcap/</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>/tmp/tracee/out/pcap/
 /tmp/tracee/out/pcap/single.pcap
 </code></pre></div>
 <p>You can select only dns packets, for example:</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee \
-    --filter event=net_packet_dns \
-    --capture network \
-    --capture pcap-options:filtered
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">    --filter event=net_packet_dns \</span>
+<span class="go">    --capture network \</span>
+<span class="go">    --capture pcap-options:filtered</span>
 </code></pre></div>
 <p>and the file <code>/tmp/tracee/out/pcap/single.pcap</code> would only contain DNS
- related packets:</p>
-<div class="highlight"><pre><span></span><code>$ find /tmp/tracee/out/pcap/
-/tmp/tracee/out/pcap/
+related packets:</p>
+<div class="highlight"><pre><span></span><code><span class="go">find /tmp/tracee/out/pcap/</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>/tmp/tracee/out/pcap/
 /tmp/tracee/out/pcap/single.pcap
-
-$ sudo tcpdump -n -r /tmp/tracee/out/pcap/single.pcap | head -2
-reading from file /tmp/tracee/out/pcap/single.pcap, link-type NULL (BSD loopback), snapshot length 262144
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">sudo tcpdump -n -r /tmp/tracee/out/pcap/single.pcap | head -2</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>reading from file /tmp/tracee/out/pcap/single.pcap, link-type NULL (BSD loopback), snapshot length 262144
 16:53:48.870629 IP 127.0.0.1.55569 &gt; 127.0.0.53.53: 33361+ [1au] A? www.uol.com.br. (43)
-16:53:48.870690 IP 127.0.0.1.55569 &gt; 127.0.0.53.53: 25943+ [1au] AAAA? www.uol.com.br. (43) ```
-
-A great thing is that you may have multiple pcap files, divided by:
-
-1. single: a single pcap file containing all packets (the default)
-1. process: one file per process executed, ordered by host and container
-1. container: one file for the host and one pcap file per container
-1. per-command: one file per command executed (even if multiple times)
-
-and you can even have multiple ways at the same time. Example: a ping
+16:53:48.870690 IP 127.0.0.1.55569 &gt; 127.0.0.53.53: 25943+ [1au] AAAA? www.uol.com.br. (43)
+</code></pre></div>
+<p>A great thing is that you may have multiple pcap files, divided by:</p>
+<ol>
+<li>single: a single pcap file containing all packets (the default)</li>
+<li>process: one file per process executed, ordered by host and container</li>
+<li>container: one file for the host and one pcap file per container</li>
+<li>per-command: one file per command executed (even if multiple times)</li>
+</ol>
+<p>and you can even have multiple ways at the same time. Example: a ping
 command is executed inside a container. You want to summarize captured
 traffic per container and per command. You will find the same captured
-data for that ping command inside `commands/container_id/ping.pcap` and
-inside `containers/container_id.pcap`.
-
-```text
-$ sudo ./dist/tracee \
-    --filter event=net_packet_icmp \
-    --capture network \
-    --capture pcap-options:filtered \
-    --capture pcap:process,container,command
+data for that ping command inside <code>commands/container_id/ping.pcap</code> and
+inside <code>containers/container_id.pcap</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">    --filter event=net_packet_icmp \</span>
+<span class="go">    --capture network \</span>
+<span class="go">    --capture pcap-options:filtered \</span>
+<span class="go">    --capture pcap:process,container,command</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>$ cd /tmp/tracee/out
-$ find pcap
-pcap
+<div class="highlight"><pre><span></span><code><span class="go">cd /tmp/tracee/out</span>
+<span class="go">find pcap</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>pcap
 pcap/commands
 pcap/commands/b86533d11f3
 pcap/commands/b86533d11f3/ping.pcap
@@ -15908,8 +15914,9 @@ pcap/containers/b86533d11f3.pcap
 pcap/containers/fd95a035ce5.pcap
 </code></pre></div>
 <p>you can see the packets by executing tcpdump on any pcap file:</p>
-<div class="highlight"><pre><span></span><code>$ tcpdump -r pcap/containers/b86533d11f3.pcap
-reading from file pcap/containers/b86533d11f3.pcap, link-type NULL (BSD loopback), snapshot length 65535
+<div class="highlight"><pre><span></span><code><span class="go">tcpdump -r pcap/containers/b86533d11f3.pcap</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>reading from file pcap/containers/b86533d11f3.pcap, link-type NULL (BSD loopback), snapshot length 65535
 02:52:00.524035 IP 172.17.0.3 &gt; dns.google: ICMP echo request, id 5, seq 476, length 64
 02:52:00.533145 IP dns.google &gt; 172.17.0.3: ICMP echo reply, id 5, seq 476, length 64
 02:52:01.525455 IP 172.17.0.3 &gt; dns.google: ICMP echo request, id 5, seq 477, length 64
@@ -15918,9 +15925,10 @@ reading from file pcap/containers/b86533d11f3.pcap, link-type NULL (BSD loopback
 02:52:02.536444 IP dns.google &gt; 172.17.0.3: ICMP echo reply, id 5, seq 478, length 64
 02:52:03.528739 IP 172.17.0.3 &gt; dns.google: ICMP echo request, id 5, seq 479, length 64
 02:52:03.538622 IP dns.google &gt; 172.17.0.3: ICMP echo reply, id 5, seq 479, length 64
-
-$ tcpdump -r pcap/commands/b86533d11f3/ping.pcap
-reading from file pcap/commands/b86533d11f3/ping.pcap, link-type NULL (BSD loopback), snapshot length 65535
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">tcpdump -r pcap/commands/b86533d11f3/ping.pcap</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>reading from file pcap/commands/b86533d11f3/ping.pcap, link-type NULL (BSD loopback), snapshot length 65535
 02:52:00.524035 IP 172.17.0.3 &gt; dns.google: ICMP echo request, id 5, seq 476, length 64
 02:52:00.533145 IP dns.google &gt; 172.17.0.3: ICMP echo reply, id 5, seq 476, length 64
 02:52:01.525455 IP 172.17.0.3 &gt; dns.google: ICMP echo request, id 5, seq 477, length 64
@@ -15956,12 +15964,12 @@ interested in a few bytes of the captured packet (or event it all). Next
 item shows how to capture a specific packet payload size.</p>
 </div>
 <p>In order to capture a specific payload size you may specify:</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee \
-    --filter event=net_packet_tcp \
-    --capture network \
-    --capture pcap-options:filtered \
-    --capture pcap:single,command \
-    --capture pcap-snaplen:default
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">    --filter event=net_packet_tcp \</span>
+<span class="go">    --capture network \</span>
+<span class="go">    --capture pcap-options:filtered \</span>
+<span class="go">    --capture pcap:single,command \</span>
+<span class="go">    --capture pcap-snaplen:default</span>
 </code></pre></div>
 <p>To capture packet headers + 96 bytes of payload. Or replace <code>default</code> by:</p>
 <ol>
@@ -15978,25 +15986,30 @@ headers (and not the entire packet length).</p>
 <li>
 <p><strong>Loaded Kernel Modules</strong></p>
 <p>Anytime a <strong>kernel module</strong> is loaded, the binary file will be captured.
- If the same binary is loaded multiple times, it will be captured just once.</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee \
-   --output none \
-   --filter comm=bash \
-   --filter follow \
-   --capture clear-dir \
-   --capture module
+If the same binary is loaded multiple times, it will be captured just once.</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">    --output none \</span>
+<span class="go">    --filter comm=bash \</span>
+<span class="go">    --filter follow \</span>
+<span class="go">    --capture clear-dir \</span>
+<span class="go">    --capture module</span>
 </code></pre></div>
 <p>Captured module will be found in tracee destination directory, just like
- any other captured file would be:</p>
-<div class="highlight"><pre><span></span><code>$ sudo ls /tmp/tracee/out/host
-  module.dev-271581185.inode-4071826.pid-3668786.c8b62228208f4bdbf21df09c01046b73dd44733841675bf3c0ff969fbedab616
+any other captured file would be:</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ls /tmp/tracee/out/host</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>module.dev-271581185.inode-4071826.pid-3668786.c8b62228208f4bdbf21df09c01046b73dd44733841675bf3c0ff969fbedab616
 </code></pre></div>
 <p>AND, the captured module is an exact copy of the loaded module:</p>
-<div class="highlight"><pre><span></span><code>$ sudo rmmod lkm_example
-$ sudo insmod /tmp/tracee/out/host/module.dev-271581185.inode-4071826.pid-3668786.c8b62228208f4bdbf21df09c01046b73dd44733841675bf3c0ff969fbedab616
-$ lsmod | grep example
-lkm_example            16384  0
-$ sudo rmmod lkm_example
+<div class="highlight"><pre><span></span><code><span class="go">sudo rmmod lkm_example</span>
+<span class="go">sudo insmod /tmp/tracee/out/host/module.dev-271581185.inode-4071826.pid-3668786.c8b62228208f4bdbf21df09c01046b73dd44733841675bf3c0ff969fbedab616</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">lsmod | grep example</span>
+
+<span class="go">```text</span>
+<span class="go">lkm_example            16384  0</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">sudo rmmod lkm_example</span>
 </code></pre></div>
 <p>you can even load/unload it.</p>
 <div class="admonition note">

@@ -15744,8 +15744,8 @@
 <h1 id="creating-tracee-linux-packages">Creating Tracee Linux packages<a class="headerlink" href="#creating-tracee-linux-packages" title="Permanent link">&para;</a></h1>
 <blockquote>
 <p>These instructions are meant to describe how to build Linux distributions
-packages. If you would like to have a local building building and execution
-environment, <a href="../environment/">read this</a> instead.</p>
+packages. If you would like to have a local build and execution environment,
+<a href="../environment/">read this</a> instead.</p>
 </blockquote>
 <h2 id="ubuntu">Ubuntu<a class="headerlink" href="#ubuntu" title="Permanent link">&para;</a></h2>
 <p>You may use <code>builder/Makefile.packaging</code> to generate Ubuntu deb packages. It
@@ -15758,12 +15758,12 @@ to install build depencies in your OS.</p>
 <ul>
 <li>Focal (LTS)</li>
 </ul>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.packaging ubuntu-bin-focal
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.packaging ubuntu-bin-focal</span>
 </code></pre></div>
 <ul>
 <li>Jammy (LTS)</li>
 </ul>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.packaging ubuntu-bin-jammy
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.packaging ubuntu-bin-jammy</span>
 </code></pre></div>
 </div>
 <div class="admonition versioning">
@@ -15772,8 +15772,7 @@ to install build depencies in your OS.</p>
 <p><code>tracee-{ebpf,rules}_version~ubuntuver~builddate-lastcommit_arch.deb</code></p>
 <p>Examples:</p>
 <div class="highlight"><pre><span></span><code># focal
-tracee-ebpf_0.6.5-111~20.04~2201281302-3a6874a_amd64.deb
-tracee-rules_0.6.5-111~20.04~2201281302-3a6874a_amd64.deb
+tracee_0.6.5-111~20.04~2201281302-3a6874a_amd64.deb
 
 ...
 </code></pre></div>
@@ -15796,12 +15795,12 @@ to install build depencies in your OS.</p>
 <ul>
 <li>36 (still maintained)</li>
 </ul>
-<div class="highlight"><pre><span></span><code>make -f builder/makefile.packaging fedora-bin-36
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/makefile.packaging fedora-bin-36</span>
 </code></pre></div>
 <ul>
 <li>37 (latest)</li>
 </ul>
-<div class="highlight"><pre><span></span><code>make -f builder/makefile.packaging fedora-bin-37
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/makefile.packaging fedora-bin-37</span>
 </code></pre></div>
 </div>
 <div class="admonition versioning note">
@@ -15810,12 +15809,10 @@ to install build depencies in your OS.</p>
 <p><code>tracee-{ebpf,rules}-version-f{34,35,36}.builddate.lastcommit.arch.rpm</code></p>
 <p>Examples:</p>
 <div class="highlight"><pre><span></span><code># f36
-tracee-ebpf-0.6.5.163-f36.2202140514.ef35306d.x86_64.rpm
-tracee-rules-0.6.5.163-f36.2202140514.ef35306d.x86_64.rpm
+tracee-0.6.5.163-f36.2202140514.ef35306d.x86_64.rpm
 
 # f37
-tracee-ebpf-0.8.0.rc-f37.2207080417.07c8af7.x86_64.rpm
-tracee-rules-0.8.0.rc-f37.2207080417.07c8af7.x86_64.rpm
+tracee-0.8.0.rc-f37.2207080417.07c8af7.x86_64.rpm
 ...
 </code></pre></div>
 <p>This allows upgrades among future releases of tracee AND fedora. It also allows

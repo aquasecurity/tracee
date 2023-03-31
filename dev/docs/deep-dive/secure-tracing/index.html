@@ -15661,7 +15661,7 @@
 <strong>race condition</strong> where the user program might be able to change the arguments
 after <strong>tracee</strong> read them.</p>
 <p>For example, a program invoked:</p>
-<div class="highlight"><pre><span></span><code>execve(&quot;/bin/ls&quot;, NULL, 0)
+<div class="highlight"><pre><span></span><code><span class="n">execve</span><span class="p">(</span><span class="s">&quot;/bin/ls&quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
 </code></pre></div>
 <p>Tracee picked that up and will report that, then the program changed the
 first argument from <code>/bin/ls</code> to <code>/bin/bash</code>, and this is what the kernel

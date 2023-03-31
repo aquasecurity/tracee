@@ -15824,13 +15824,13 @@ through docker or installed/built on your machine.</p>
 <h2 id="run-tracee-with-metrics-enabled">Run Tracee with Metrics Enabled<a class="headerlink" href="#run-tracee-with-metrics-enabled" title="Permanent link">&para;</a></h2>
 <p>Tracee can be most easily deployed with metrics enabled by default and port
 forwarded through the following commands:</p>
-<div class="highlight"><pre><span></span><code>$ docker run \
-    --name tracee --rm --pid=host \
-    --cgroupns=host --privileged \
-    -v /tmp/tracee:/tmp/tracee  \
-    -v /etc/os-release:/etc/os-release-host:ro \
-    -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-    -it -p 3366:3366 aquasec/tracee:v0.12.0
+<div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
+<span class="go">    --name tracee --rm --pid=host \</span>
+<span class="go">    --cgroupns=host --privileged \</span>
+<span class="go">    -v /tmp/tracee:/tmp/tracee  \</span>
+<span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
+<span class="go">    -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \</span>
+<span class="go">    -it -p 3366:3366 aquasec/tracee:v0.12.0</span>
 </code></pre></div>
 <p>Of course, the forwarded metrics ports can be changed, but you should note that
 some of the later instructions depend on these ports.</p>
@@ -15839,25 +15839,25 @@ overriden with the <code>--listen-addr</code> flag.</p>
 <h2 id="run-prometheus-and-configure-it-to-scrape-tracee">Run Prometheus and Configure it to Scrape Tracee<a class="headerlink" href="#run-prometheus-and-configure-it-to-scrape-tracee" title="Permanent link">&para;</a></h2>
 <p>Install prometheus or pull it's docker image. Then create the following
 configuration file, call it <code>prometheus.yml</code> to scrape Tracee:</p>
-<div class="highlight"><pre><span></span><code># A scrape configuration containing exactly one endpoint to scrape:
-# Here it&#39;s Tracee.
-scrape_configs:
-  # The job name is added as a label `job=&lt;job_name&gt;` to any timeseries scraped from this config.
-  - job_name: &#39;prometheus&#39;
+<div class="highlight"><pre><span></span><code><span class="c1"># A scrape configuration containing exactly one endpoint to scrape:</span>
+<span class="c1"># Here it&#39;s Tracee.</span>
+<span class="nt">scrape_configs</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># The job name is added as a label `job=&lt;job_name&gt;` to any timeseries scraped from this config.</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;prometheus&#39;</span>
 
-    # Override the global default and scrape targets from this job every 5 seconds.
-    scrape_interval: 5s
+<span class="w">    </span><span class="c1"># Override the global default and scrape targets from this job every 5 seconds.</span>
+<span class="w">    </span><span class="nt">scrape_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5s</span>
 
-    #Scrape tracee&#39;s default metrics hosts.
-    #If forwarding different ports make sure to change these addresses.
-    static_configs:
-      - targets: [&#39;localhost:3366&#39;]
+<span class="w">    </span><span class="c1">#Scrape tracee&#39;s default metrics hosts.</span>
+<span class="w">    </span><span class="c1">#If forwarding different ports make sure to change these addresses.</span>
+<span class="w">    </span><span class="nt">static_configs</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;localhost:3366&#39;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 <p>We must then start prometheus with the following command:</p>
-<div class="highlight"><pre><span></span><code>prometheus --config.file=/path/to/prometheus.yml
+<div class="highlight"><pre><span></span><code><span class="go">prometheus --config.file=/path/to/prometheus.yml</span>
 </code></pre></div>
 <p>Or alternatively with docker:</p>
-<div class="highlight"><pre><span></span><code>docker run -p 9090:9090 -v /path/to/config:/etc/prometheus prom/prometheus
+<div class="highlight"><pre><span></span><code><span class="go">docker run -p 9090:9090 -v /path/to/config:/etc/prometheus prom/prometheus</span>
 </code></pre></div>
 <p>Then, try to access prometheus through <code>http://localhost:9090</code>. If succesful,
 move to the next step, otherwise consult with prometheus documentation.</p>

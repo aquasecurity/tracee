@@ -15693,8 +15693,9 @@ building environment:</p>
 </li>
 <li>
 <p><strong>Clone</strong> <a href="https://github.com/aquasecurity/tracee/">tracee repository</a></p>
-<div class="highlight"><pre><span></span><code>$ git clone git@github.com:aquasecurity/tracee
-Cloning into &#39;tracee&#39;...
+<div class="highlight"><pre><span></span><code><span class="go">git clone git@github.com:aquasecurity/tracee</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Cloning into &#39;tracee&#39;...
 remote: Enumerating objects: 13251, done.
 remote: Counting objects: 100% (555/555), done.
 remote: Compressing objects: 100% (240/240), done.
@@ -15705,9 +15706,9 @@ Resolving deltas: 100% (8105/8105), done.
 </li>
 <li>
 <p>All makefiles have a <strong>help</strong> target to give you needed instrutions</p>
-<div class="highlight"><pre><span></span><code>$ make help
-
-# environment
+<div class="highlight"><pre><span></span><code><span class="go">make help</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code># environment
 
     $ make env                      # show makefile environment/variables
 
@@ -15756,8 +15757,9 @@ Resolving deltas: 100% (8105/8105), done.
 </li>
 <li>
 <p>Build <strong>all</strong> targets at once (but bpf-nocore)</p>
-<div class="highlight"><pre><span></span><code>$ make all
-Submodule &#39;libbpf&#39; (https://github.com/libbpf/libbpf.git) registered for path &#39;3rdparty/libbpf&#39;
+<div class="highlight"><pre><span></span><code><span class="go">make all</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Submodule &#39;libbpf&#39; (https://github.com/libbpf/libbpf.git) registered for path &#39;3rdparty/libbpf&#39;
 Cloning into &#39;/home/rafaeldtinoco/tracee/3rdparty/libbpf&#39;...
 mkdir -p dist/signatures
 GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS= CGO_LDFLAGS= go build \
@@ -15768,8 +15770,9 @@ GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS= CGO_LDFLAGS= go build \
 </li>
 <li>
 <p>Build a <strong>static binary</strong> by setting <code>STATIC=1</code></p>
-<div class="highlight"><pre><span></span><code>$ STATIC=1 make all
-CC=&quot;clang&quot; \
+<div class="highlight"><pre><span></span><code><span class="go">STATIC=1 make all</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>CC=&quot;clang&quot; \
     CFLAGS=&quot;&quot;-fPIC&quot;&quot; \
     LD_FLAGS=&quot;&quot; \
     make \
@@ -15784,8 +15787,9 @@ CC=&quot;clang&quot; \
 </li>
 <li>
 <p>Build a <strong>static binary</strong> with <a href="https://github.com/aquasecurity/btfhub">BTFHUB Support</a></p>
-<div class="highlight"><pre><span></span><code>$ BTFHUB=1 STATIC=1 make all
-Cloning into &#39;/home/rafaeldtinoco/tracee/3rdparty/btfhub&#39;...
+<div class="highlight"><pre><span></span><code><span class="go">BTFHUB=1 STATIC=1 make all</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Cloning into &#39;/home/rafaeldtinoco/tracee/3rdparty/btfhub&#39;...
 remote: Enumerating objects: 205, done.
 remote: Counting objects: 100% (16/16), done.
 remote: Compressing objects: 100% (12/12), done.
@@ -15801,7 +15805,7 @@ Receiving objects:  15% (301/1993), 154.97 MiB | 15.72 MiB/s
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>BTFHUB support will embed several very small files (BTF files) into your
-final binary. Those files will allow <strong>tracee-ebpf</strong> binary to be executed
+final binary. Those files will allow <strong>tracee</strong> binary to be executed
 in kernels that doesn't have embedded BTF information (the ones described
 at the BTFHUB repository)</p>
 </div>
@@ -15818,16 +15822,16 @@ plugin.Open(&quot;/tracee/dist/signatures/builtin.so&quot;): Dynamic loading not
 </li>
 <li>
 <p>Build a <strong>debuggable binary</strong> with DWARF generation by setting <code>DEBUG=1</code></p>
-<div class="highlight"><pre><span></span><code>$ DEBUG=1 make
-...
-GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS=&quot;-I/home/gg/code/tracee/dist/libbpf&quot; CGO_LDFLAGS=&quot;-lelf  -lz  /home/gg/code/tracee/dist/libbpf/libbpf.a&quot; go build \
+<div class="highlight"><pre><span></span><code><span class="go">DEBUG=1 make</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS=&quot;-I/home/gg/code/tracee/dist/libbpf&quot; CGO_LDFLAGS=&quot;-lelf  -lz  /home/gg/code/tracee/dist/libbpf/libbpf.a&quot; go build \
     -tags core,ebpf \
     -ldflags=&quot; \
          -extldflags \&quot;\&quot; \
          -X main.version=\&quot;v0.8.0-107-g121efeb\&quot; \
         &quot; \
-    -v -o dist/tracee-ebpf \
-   ./cmd/tracee-ebpf
+    -v -o dist/tracee \
+   ./cmd/tracee
 </code></pre></div>
 </li>
 </ol>

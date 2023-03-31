@@ -15598,10 +15598,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#running-tracee-ebpf-only" class="md-nav__link">
+  <a href="#running-tracee" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Running Tracee-eBPF Only
+        Running Tracee
       
     </span>
   </a>
@@ -15781,10 +15781,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#running-tracee-ebpf-only" class="md-nav__link">
+  <a href="#running-tracee" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Running Tracee-eBPF Only
+        Running Tracee
       
     </span>
   </a>
@@ -15883,17 +15883,19 @@ docker container images being published during a release:</p>
 <ol>
 <li>
 <p><strong>tracee:latest</strong></p>
-<div class="highlight"><pre><span></span><code>$ BTFHUB={0,1} make -f builder/Makefile.tracee-container build-tracee
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-container build-tracee</span>
 </code></pre></div>
 </li>
 <li>
 <p><strong>tracee:full</strong></p>
-<div class="highlight"><pre><span></span><code>$ BTFHUB={0,1} make -f builder/Makefile.tracee-container build-tracee-full
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-container build-tracee-full</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p><code>BTFHUB=1</code> adds support to some <a href="https://github.com/aquasecurity/btfhub/blob/main/docs/supported-distros.md">older kernels</a>
-so user doesn't need to build specific non CO-RE eBPF objects to them.</p>
+so user doesn't need to build specific non CO-RE eBPF objects to them. e.g.:</p>
+<div class="highlight"><pre><span></span><code><span class="go">BTFHUB=1 make -f builder/Makefile.tracee-container build-tracee</span>
+</code></pre></div>
 </div>
 </li>
 </ol>
@@ -15907,40 +15909,38 @@ the "run" targets:</p>
 <ol>
 <li>
 <p>To run the <strong>tracee:latest</strong> container:</p>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-tracee
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-container run-tracee</span>
 </code></pre></div>
 </li>
 <li>
 <p>To run the <strong>tracee:full</strong> container:</p>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-tracee-full
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-container run-tracee-full</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Tracee-ebpf arguments are passed through the <code>ARG</code> variable:
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-tracee ARG=&quot;--help&quot;
+<p>Tracee arguments are passed through the <code>ARG</code> variable:
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-container run-tracee ARG=&quot;--help&quot;</span>
 </code></pre></div></p>
 </div>
 </li>
 </ol>
-<h2 id="running-tracee-ebpf-only">Running Tracee-eBPF Only<a class="headerlink" href="#running-tracee-ebpf-only" title="Permanent link">&para;</a></h2>
+<h2 id="running-tracee">Running Tracee<a class="headerlink" href="#running-tracee" title="Permanent link">&para;</a></h2>
 <p>Generated containers allow user to run Tracee, as a complete security solution
-(<strong>tracee-ebpf</strong> passes events to <strong>tracee-rules</strong> and <strong>tracee-rules</strong> process
-events based on existing security signatures) or to run <strong>tracee-ebpf</strong> only,
-as an introspection tool.</p>
+(processing events based on existing security signatures) or only as an introspection tool.</p>
 <ol>
-<li>To run the <code>tracee:latest</code> container with <strong>tracee-ebpf</strong> only:</li>
+<li>To run the <code>tracee:latest</code> container with only introspection:</li>
 </ol>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-tracee-ebpf
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-container run-tracee</span>
 </code></pre></div>
 <ol>
-<li>To run the <code>tracee:full</code> container with <strong>tracee-ebpf</strong> only:</li>
+<li>To run the <code>tracee:full</code> container with only introspection:</li>
 </ol>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-tracee-ebpf-full
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-container run-tracee-full</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Tracee-ebpf arguments are passed through the <code>ARG</code> variable:</p>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-tracee-ebpf ARG=&quot;--log debug&quot;
+<p>Tracee arguments are passed through the <code>ARG</code> variable:</p>
+<div class="highlight"><pre><span></span><code><span class="go">make -f builder/Makefile.tracee-container run-tracee ARG=&quot;--log debug&quot;</span>
 </code></pre></div>
 </div>
 

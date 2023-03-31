@@ -15671,12 +15671,12 @@ Tracee provides a rich filtering mechanism that allows you to eliminate noise an
 <p>To learn more about Tracee, check out the <a href="https://aquasecurity.github.io/tracee/">documentation</a>.</p>
 <h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
 <p>You can easily start experimenting with Tracee using the Docker image as follows:</p>
-<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--name<span class="w"> </span>tracee<span class="w"> </span>--rm<span class="w"> </span>-it<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--pid<span class="o">=</span>host<span class="w"> </span>--cgroupns<span class="o">=</span>host<span class="w"> </span>--privileged<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-v<span class="w"> </span>/etc/os-release:/etc/os-release-host:ro<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-e<span class="w"> </span><span class="nv">LIBBPFGO_OSRELEASE_FILE</span><span class="o">=</span>/etc/os-release-host<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>aquasec/tracee:latest
+<div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
+<span class="go">  --name tracee --rm -it \</span>
+<span class="go">  --pid=host --cgroupns=host --privileged \</span>
+<span class="go">  -v /etc/os-release:/etc/os-release-host:ro \</span>
+<span class="go">  -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \</span>
+<span class="go">  aquasec/tracee:latest</span>
 </code></pre></div>
 <p>To learn how to install Tracee in a production environment, <a href="./getting-started/kubernetes-quickstart">check out the Kubernetes guide</a>.</p>
 <h2 id="pipeline-protection-with-tracee">Pipeline protection with Tracee<a class="headerlink" href="#pipeline-protection-with-tracee" title="Permanent link">&para;</a></h2>

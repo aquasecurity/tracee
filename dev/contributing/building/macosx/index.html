@@ -15822,18 +15822,18 @@
 <p>Just like as described at <a href="../environment/">building environment</a>,
 under OSX you may create your local building environment by using the same
 make targets:</p>
-<div class="highlight"><pre><span></span><code>$ gmake -f builder/Makefile.tracee-make alpine-prepare
-$ gmake -f builder/Makefile.tracee-make alpine-shell
+<div class="highlight"><pre><span></span><code><span class="go">gmake -f builder/Makefile.tracee-make alpine-prepare</span>
+<span class="go">gmake -f builder/Makefile.tracee-make alpine-shell</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>$ gmake -f builder/Makefile.tracee-make ubuntu-prepare
-$ gmake -f builder/Makefile.tracee-make ubuntu-shell
+<div class="highlight"><pre><span></span><code><span class="go">gmake -f builder/Makefile.tracee-make ubuntu-prepare</span>
+<span class="go">gmake -f builder/Makefile.tracee-make ubuntu-shell</span>
 </code></pre></div>
 <h2 id="executing-tracee-in-the-building-environment">Executing tracee in the building environment<a class="headerlink" href="#executing-tracee-in-the-building-environment" title="Permanent link">&para;</a></h2>
-<p>Tracee isn't meant to run in OSX but, with Docker, you're able to test building
-it. If you try to run it from the building environment you may get the following
-error:</p>
-<div class="highlight"><pre><span></span><code>tracee@5fb7cc667842[/tracee]$ sudo ./dist/tracee
-BPF: open /tmp/tracee/tracee.bpf.5_10_104-linuxkit.v0_8_0-rc-1-24-g72e0d02.o: no such file or directory
+<p>Tracee isn't meant to run in OSX but, with Docker, you can test building it.
+If you try to run it from the build environment you may get the following error:</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>BPF: open /tmp/tracee/tracee.bpf.5_10_104-linuxkit.v0_8_0-rc-1-24-g72e0d02.o: no such file or directory
 BPF: ATTENTION:
 BPF: It seems tracee can&#39;t load CO-RE eBPF obj and could not find
 BPF: the non CO-RE object in /tmp/tracee. You may build a non CO-RE eBPF
@@ -15854,28 +15854,28 @@ to execute non CO-RE Tracee:</p>
 <ol>
 <li>
 <p>Identify your docker version:</p>
-<div class="highlight"><pre><span></span><code>$ dockerver=$(docker version | grep  Version | head -n 1 | cut -d &#39;:&#39; -f 2 | xargs)
+<div class="highlight"><pre><span></span><code><span class="go">dockerver=$(docker version | grep  Version | head -n 1 | cut -d &#39;:&#39; -f 2 | xargs)</span>
 </code></pre></div>
 </li>
 <li>
 <p>Run a container with Docker CLI, while mounting to the host path:</p>
-<div class="highlight"><pre><span></span><code>$ docker run -it -v /:/host \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    docker:$dockerver /bin/sh
+<div class="highlight"><pre><span></span><code><span class="go">docker run -it -v /:/host \</span>
+<span class="go">    -v /var/run/docker.sock:/var/run/docker.sock \</span>
+<span class="go">    docker:$dockerver /bin/sh</span>
 </code></pre></div>
 </li>
 <li>
 <p>Get the Kernel Header files from the linuxkit Docker image and copy it to the
    host /usr/src path:</p>
-<div class="highlight"><pre><span></span><code>$ mkdir /host/kheader
-$ cd /host/kheader
-$ linux_version=&quot;${VERSION:-$(uname -r | cut -d - -f 1)}&quot;
-$ docker pull &quot;linuxkit/kernel:$linux_version&quot;
-$ docker save &quot;linuxkit/kernel:$linux_version&quot; &gt; &quot;linuxkit.tar&quot;
-$ tar -xf &quot;linuxkit.tar&quot;
-$ layertar=$(find . -name layer.tar)
-$ tar -xf &quot;$layertar&quot;
-$ tar -xf &quot;kernel-dev.tar&quot; --directory /host/
+<div class="highlight"><pre><span></span><code><span class="go">mkdir /host/kheader</span>
+<span class="go">cd /host/kheader</span>
+<span class="gp">linux_version=&quot;${VERSION:-$</span><span class="o">(</span>uname<span class="w"> </span>-r<span class="w"> </span><span class="p">|</span><span class="w"> </span>cut<span class="w"> </span>-d<span class="w"> </span>-<span class="w"> </span>-f<span class="w"> </span><span class="m">1</span><span class="o">)}</span><span class="s2">&quot;</span>
+<span class="go">docker pull &quot;linuxkit/kernel:$linux_version&quot;</span>
+<span class="go">docker save &quot;linuxkit/kernel:$linux_version&quot; &gt; &quot;linuxkit.tar&quot;</span>
+<span class="go">tar -xf &quot;linuxkit.tar&quot;</span>
+<span class="go">layertar=$(find . -name layer.tar)</span>
+<span class="go">tar -xf &quot;$layertar&quot;</span>
+<span class="go">tar -xf &quot;kernel-dev.tar&quot; --directory /host/</span>
 </code></pre></div>
 </li>
 <li>

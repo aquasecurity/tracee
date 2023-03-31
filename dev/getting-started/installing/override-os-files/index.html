@@ -15754,8 +15754,9 @@ program in any environment it is executed.</p>
 <h2 id="os-release">OS-RELEASE<a class="headerlink" href="#os-release" title="Permanent link">&para;</a></h2>
 <p>Tracee will show you collected information about the running Linux OS with the
 <code>--log debug</code> argument:</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee --log debug --filter uid=1000 --filter pid=new --filter event=execve
-{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670976393.7308447,&quot;msg&quot;:&quot;osinfo&quot;,&quot;ARCH&quot;:&quot;x86_64&quot;,&quot;PRETTY_NAME&quot;:&quot;\&quot;Manjaro Linux\&quot;&quot;,&quot;ID&quot;:&quot;manjaro&quot;,&quot;ID_LIKE&quot;:&quot;arch&quot;,&quot;BUILD_ID&quot;:&quot;rolling&quot;,&quot;KERNEL_RELEASE&quot;:&quot;5.15.81-1-MANJARO&quot;,&quot;pkg&quot;:&quot;urfave&quot;,&quot;file&quot;:&quot;urfave.go&quot;,&quot;line&quot;:53}
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --log debug --filter uid=1000 --filter pid=new --filter event=execve</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670976393.7308447,&quot;msg&quot;:&quot;osinfo&quot;,&quot;ARCH&quot;:&quot;x86_64&quot;,&quot;PRETTY_NAME&quot;:&quot;\&quot;Manjaro Linux\&quot;&quot;,&quot;ID&quot;:&quot;manjaro&quot;,&quot;ID_LIKE&quot;:&quot;arch&quot;,&quot;BUILD_ID&quot;:&quot;rolling&quot;,&quot;KERNEL_RELEASE&quot;:&quot;5.15.81-1-MANJARO&quot;,&quot;pkg&quot;:&quot;urfave&quot;,&quot;file&quot;:&quot;urfave.go&quot;,&quot;line&quot;:53}
 {&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670976393.73088,&quot;msg&quot;:&quot;RuntimeSockets: failed to register default&quot;,&quot;socket&quot;:&quot;containerd&quot;,&quot;error&quot;:&quot;failed to register runtime socket stat /var/run/containerd/containerd.sock: no such file or directory&quot;,&quot;pkg&quot;:&quot;flags&quot;,&quot;file&quot;:&quot;containers.go&quot;,&quot;line&quot;:45}
 {&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670976393.730894,&quot;msg&quot;:&quot;RuntimeSockets: failed to register default&quot;,&quot;socket&quot;:&quot;crio&quot;,&quot;error&quot;:&quot;failed to register runtime socket stat /var/run/crio/crio.sock: no such file or directory&quot;,&quot;pkg&quot;:&quot;flags&quot;,&quot;file&quot;:&quot;containers.go&quot;,&quot;line&quot;:45}
 {&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670976393.7309017,&quot;msg&quot;:&quot;RuntimeSockets: failed to register default&quot;,&quot;socket&quot;:&quot;podman&quot;,&quot;error&quot;:&quot;failed to register runtime socket stat /var/run/podman/podman.sock: no such file or directory&quot;,&quot;pkg&quot;:&quot;flags&quot;,&quot;file&quot;:&quot;containers.go&quot;,&quot;line&quot;:45}
@@ -15771,8 +15772,9 @@ TIME             UID    COMM             PID     TID     RET              EVENT 
 <p>Because you're running in a distribution that does not have /etc/os-release, or
 because you're running inside a container that does not support it, you may
 face the following error:</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee --log debug --filter uid=1000 --filter pid=new --filter event=execve
-{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670976530.5685039,&quot;msg&quot;:&quot;osinfo&quot;, &quot;warning: os-release file could not be found&quot;,&quot;error&quot;,&quot;open /etc/os-release: no such file or directory&quot;,&quot;pkg&quot;:&quot;urfave&quot;,&quot;file&quot;:&quot;urfave.go&quot;,&quot;line&quot;:33}
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --log debug --filter uid=1000 --filter pid=new --filter event=execve</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670976530.5685039,&quot;msg&quot;:&quot;osinfo&quot;, &quot;warning: os-release file could not be found&quot;,&quot;error&quot;,&quot;open /etc/os-release: no such file or directory&quot;,&quot;pkg&quot;:&quot;urfave&quot;,&quot;file&quot;:&quot;urfave.go&quot;,&quot;line&quot;:33}
 ...
 TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
 ...
@@ -15789,7 +15791,7 @@ KERNEL_RELEASE OSInfo option).</p>
 running inside a container that already has /etc/os-release file, for example,
 you may create another os-release file and inform tracee by using
 LIBBPFGO's environment variable <code>LIBBPFGO_OSRELEASE_FILE</code>:</p>
-<div class="highlight"><pre><span></span><code>$ sudo LIBBPFGO_OSRELEASE_FILE=/etc/os-release.orig ./dist/tracee --filter uid=1000 --filter pid=new --filter event=execve
+<div class="highlight"><pre><span></span><code><span class="go">sudo LIBBPFGO_OSRELEASE_FILE=/etc/os-release.orig ./dist/tracee --filter uid=1000 --filter pid=new --filter event=execve</span>
 </code></pre></div>
 <blockquote>
 <p>If you're running tracee inside a docker container, you can simply bind mount
@@ -15805,8 +15807,9 @@ inform that through the <code>LIBBPFGO_OSRELEASE_FILE</code> environment variabl
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Tracee <strong>should NOT fail</strong> when it cannot find a kconfig file:</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee --log debug --filter uid=1000 --filter pid=new --filter event=execve
-{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670976875.7735798,&quot;msg&quot;:&quot;osinfo&quot;,&quot;VERSION&quot;:&quot;\&quot;20.04.5 LTS (Focal Fossa)\&quot;&quot;,&quot;ID&quot;:&quot;ubuntu&quot;,&quot;ID_LIKE&quot;:&quot;debian&quot;,&quot;PRETTY_NAME&quot;:&quot;\&quot;Ubuntu 20.04.5 LTS\&quot;&quot;,&quot;VERSION_ID&quot;:&quot;\&quot;20.04\&quot;&quot;,&quot;VERSION_CODENAME&quot;:&quot;focal&quot;,&quot;KERNEL_RELEASE&quot;:&quot;5.4.0-91-generic&quot;,&quot;ARCH&quot;:&quot;x86_64&quot;,&quot;pkg&quot;:&quot;urfave&quot;,&quot;file&quot;:&quot;urfave.go&quot;,&quot;line&quot;:53}
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --log debug --filter uid=1000 --filter pid=new --filter event=execve</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670976875.7735798,&quot;msg&quot;:&quot;osinfo&quot;,&quot;VERSION&quot;:&quot;\&quot;20.04.5 LTS (Focal Fossa)\&quot;&quot;,&quot;ID&quot;:&quot;ubuntu&quot;,&quot;ID_LIKE&quot;:&quot;debian&quot;,&quot;PRETTY_NAME&quot;:&quot;\&quot;Ubuntu 20.04.5 LTS\&quot;&quot;,&quot;VERSION_ID&quot;:&quot;\&quot;20.04\&quot;&quot;,&quot;VERSION_CODENAME&quot;:&quot;focal&quot;,&quot;KERNEL_RELEASE&quot;:&quot;5.4.0-91-generic&quot;,&quot;ARCH&quot;:&quot;x86_64&quot;,&quot;pkg&quot;:&quot;urfave&quot;,&quot;file&quot;:&quot;urfave.go&quot;,&quot;line&quot;:53}
 ...
 {&quot;level&quot;:&quot;warn&quot;,&quot;ts&quot;:1670976875.7762284,&quot;msg&quot;:&quot;KConfig: could not check enabled kconfig features&quot;,&quot;error&quot;:&quot;could not read /boot/config-5.4.0-91-generic: stat /boot/config-5.4.0-91-generic: no such file or directory&quot;}
 {&quot;level&quot;:&quot;warn&quot;,&quot;ts&quot;:1670976875.7762842,&quot;msg&quot;:&quot;KConfig: assuming kconfig values, might have unexpected behavior&quot;}
@@ -15822,8 +15825,9 @@ its behavior might have inconsistencies.</p>
 kconfig file location to tracee through the <code>LIBBPFGO_KCONFIG_FILE</code> environment
 variable:</p>
 </div>
-<div class="highlight"><pre><span></span><code>$ sudo LIBBPFGO_KCONFIG_FILE=/boot/config-other -E ./dist/tracee --log debug --filter uid=1000 --filter pid=new --filter event=execve
-{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670979362.3586345,&quot;msg&quot;:&quot;osinfo&quot;,&quot;VERSION_ID&quot;:&quot;\&quot;20.04\&quot;&quot;,&quot;VERSION_CODENAME&quot;:&quot;focal&quot;,&quot;KERNEL_RELEASE&quot;:&quot;5.4.0-91-generic&quot;,&quot;ARCH&quot;:&quot;x86_64&quot;,&quot;VERSION&quot;:&quot;\&quot;20.04.5 LTS (Focal Fossa)\&quot;&quot;,&quot;ID&quot;:&quot;ubuntu&quot;,&quot;ID_LIKE&quot;:&quot;debian&quot;,&quot;PRETTY_NAME&quot;:&quot;\&quot;Ubuntu 20.04.5 LTS\&quot;&quot;,&quot;pkg&quot;:&quot;urfave&quot;,&quot;file&quot;:&quot;urfave.go&quot;,&quot;line&quot;:53}
+<div class="highlight"><pre><span></span><code><span class="go">sudo LIBBPFGO_KCONFIG_FILE=/boot/config-other -E ./dist/tracee --log debug --filter uid=1000 --filter pid=new --filter event=execve</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670979362.3586345,&quot;msg&quot;:&quot;osinfo&quot;,&quot;VERSION_ID&quot;:&quot;\&quot;20.04\&quot;&quot;,&quot;VERSION_CODENAME&quot;:&quot;focal&quot;,&quot;KERNEL_RELEASE&quot;:&quot;5.4.0-91-generic&quot;,&quot;ARCH&quot;:&quot;x86_64&quot;,&quot;VERSION&quot;:&quot;\&quot;20.04.5 LTS (Focal Fossa)\&quot;&quot;,&quot;ID&quot;:&quot;ubuntu&quot;,&quot;ID_LIKE&quot;:&quot;debian&quot;,&quot;PRETTY_NAME&quot;:&quot;\&quot;Ubuntu 20.04.5 LTS\&quot;&quot;,&quot;pkg&quot;:&quot;urfave&quot;,&quot;file&quot;:&quot;urfave.go&quot;,&quot;line&quot;:53}
 {&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670979362.358663,&quot;msg&quot;:&quot;RuntimeSockets: failed to register default&quot;,&quot;socket&quot;:&quot;containerd&quot;,&quot;error&quot;:&quot;failed to register runtime socket stat /var/run/containerd/containerd.sock: no such file or directory&quot;,&quot;pkg&quot;:&quot;flags&quot;,&quot;file&quot;:&quot;containers.go&quot;,&quot;line&quot;:45}
 {&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670979362.3586702,&quot;msg&quot;:&quot;RuntimeSockets: failed to register default&quot;,&quot;socket&quot;:&quot;docker&quot;,&quot;error&quot;:&quot;failed to register runtime socket stat /var/run/docker.sock: no such file or directory&quot;,&quot;pkg&quot;:&quot;flags&quot;,&quot;file&quot;:&quot;containers.go&quot;,&quot;line&quot;:45}
 {&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670979362.3586755,&quot;msg&quot;:&quot;RuntimeSockets: failed to register default&quot;,&quot;socket&quot;:&quot;crio&quot;,&quot;error&quot;:&quot;failed to register runtime socket stat /var/run/crio/crio.sock: no such file or directory&quot;,&quot;pkg&quot;:&quot;flags&quot;,&quot;file&quot;:&quot;containers.go&quot;,&quot;line&quot;:45}

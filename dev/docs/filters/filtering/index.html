@@ -15742,8 +15742,8 @@
 
 
 <h1 id="tracing-event-filtering">Tracing Event Filtering<a class="headerlink" href="#tracing-event-filtering" title="Permanent link">&para;</a></h1>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee --filter help
-$ sudo ./dist/tracee --filter xxx
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --filter help</span>
+<span class="go">sudo ./dist/tracee --filter xxx</span>
 </code></pre></div>
 <p>Tracee output might become too hard to consume when tracing all the events from
 a system. Luckily, Tracee has a powerful mechanism to accurately filter just the
@@ -15758,12 +15758,12 @@ capabilities. Only events that match given criteria will be traced.</p>
 <h2 id="initial-example">Initial Example<a class="headerlink" href="#initial-example" title="Permanent link">&para;</a></h2>
 <p>All the examples bellow this item can be executed with the following tracee
 prefix command:</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee \
-    --output json \
-    --filter comm=bash \
-    --filter follow
-    --output option:parse-arguments \
-    &lt;rest of filters&gt;
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
+<span class="go">    --output json \</span>
+<span class="go">    --filter comm=bash \</span>
+<span class="go">    --filter follow</span>
+<span class="go">    --output option:parse-arguments \</span>
+<span class="go">    &lt;rest of filters&gt;</span>
 </code></pre></div>
 <p>This will allow you to test the filtering rules by executing a new process in
 any running shell and might serve as a good indicative if your filter works as

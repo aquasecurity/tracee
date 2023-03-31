@@ -15845,12 +15845,12 @@
 <p>Please make sure to have 
 - Kubectl installed and connected to a Kubernetes cluster (any cluster will work for this purpose)
 - The Helm CLI installed</p>
-<p>To ensure everything is installed properly, please run the following command:
-<div class="highlight"><pre><span></span><code>kubectl get nodes
-</code></pre></div></p>
-<p>and
-<div class="highlight"><pre><span></span><code>helm version
-</code></pre></div></p>
+<p>To ensure everything is installed properly, please run the following command:</p>
+<div class="highlight"><pre><span></span><code><span class="go">kubectl get nodes</span>
+</code></pre></div>
+<p>and</p>
+<div class="highlight"><pre><span></span><code><span class="go">helm version</span>
+</code></pre></div>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <p>We need to install an observability stack to access the logs of the pods inside our cluster. This will consist of:
 - Grafana (for Dashboards and querying logs)
@@ -15861,70 +15861,70 @@
 <h3 id="grafana-and-prometheus">Grafana and Prometheus<a class="headerlink" href="#grafana-and-prometheus" title="Permanent link">&para;</a></h3>
 <p>First, we are going to install the kube-prometheus-stack chart with Promtheus and Grafana.</p>
 <p>For this, we will need to specify some custom values that we will pass into the Helm Chart. </p>
-<p>Create a new file called <code>grafana-config.yaml</code> with the following content:
-<div class="highlight"><pre><span></span><code>prometheus:
-  prometheusSpec:
-    serviceMonitorSelectorNilUsesHelmValues: false
-    serviceMonitorSelector: {}
-    serviceMonitorNamespaceSelector: {}
+<p>Create a new file called <code>grafana-config.yaml</code> with the following content:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">prometheus</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">prometheusSpec</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">serviceMonitorSelectorNilUsesHelmValues</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">serviceMonitorSelector</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="w">    </span><span class="nt">serviceMonitorNamespaceSelector</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
 
-grafana:
-  sidecar:
-    datasources:
-      defaultDatasourceEnabled: true
-  additionalDataSources:
-    - name: Loki
-      type: loki
-      url: http://loki-loki-distributed-query-frontend.monitoring:3100
-</code></pre></div></p>
+<span class="nt">grafana</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">sidecar</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">datasources</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">defaultDatasourceEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">additionalDataSources</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Loki</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loki</span>
+<span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://loki-loki-distributed-query-frontend.monitoring:3100</span>
+</code></pre></div>
 <p>Next, we can install the kube-prometheus-stack chart into our cluster with the following commands:</p>
-<p>Create a namespace for all the monitoring tools
-<div class="highlight"><pre><span></span><code>kubectl create ns monitoring
-</code></pre></div></p>
-<p>Add the kube-prometheus-stack Helm Chart to your Helm repository list:
-<div class="highlight"><pre><span></span><code>helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-</code></pre></div></p>
-<p>Ensure you have the latest version of all your repositories:
-<div class="highlight"><pre><span></span><code>helm repo update
-</code></pre></div></p>
-<p>Install the kube-prometheus-stack Helm Chart:
-<div class="highlight"><pre><span></span><code>helm upgrade --install prom prometheus-community/kube-prometheus-stack -n monitoring --values grafana-config.yaml
-</code></pre></div></p>
-<p>Lastly, confirm that all the pods have been created properly by querying the namespace:
-<div class="highlight"><pre><span></span><code>kubectl get all -n monitoring
-</code></pre></div></p>
+<p>Create a namespace for all the monitoring tools</p>
+<div class="highlight"><pre><span></span><code><span class="go">kubectl create ns monitoring</span>
+</code></pre></div>
+<p>Add the kube-prometheus-stack Helm Chart to your Helm repository list:</p>
+<div class="highlight"><pre><span></span><code><span class="go">helm repo add prometheus-community https://prometheus-community.github.io/helm-charts</span>
+</code></pre></div>
+<p>Ensure you have the latest version of all your repositories:</p>
+<div class="highlight"><pre><span></span><code><span class="go">helm repo update</span>
+</code></pre></div>
+<p>Install the kube-prometheus-stack Helm Chart:</p>
+<div class="highlight"><pre><span></span><code><span class="go">helm upgrade --install prom prometheus-community/kube-prometheus-stack -n monitoring --values grafana-config.yaml</span>
+</code></pre></div>
+<p>Lastly, confirm that all the pods have been created properly by querying the namespace:</p>
+<div class="highlight"><pre><span></span><code><span class="go">kubectl get all -n monitoring</span>
+</code></pre></div>
 <h3 id="promtail-and-loki">Promtail and Loki<a class="headerlink" href="#promtail-and-loki" title="Permanent link">&para;</a></h3>
 <p>Next, we need to install Promtail and Loki inside the cluster to actually access logs.</p>
-<p>For this, first add the Grafana Helm Chart repository to you repository list:
-<div class="highlight"><pre><span></span><code>helm repo add grafana https://grafana.github.io/helm-charts
-</code></pre></div></p>
-<p>Update your Helm repository list:
-<div class="highlight"><pre><span></span><code>helm repo update
-</code></pre></div></p>
-<p>Next, create a file with the Helm Chart configuration for Prometail in a promtail-config.yaml:
-<div class="highlight"><pre><span></span><code>config:
-  serverPort: 8080
-  clients:
-    - url: http://loki-loki-distributed-gateway/loki/api/v1/push
-</code></pre></div></p>
-<p>Now we can install the Promtail Helm Chart inside our cluster:
-<div class="highlight"><pre><span></span><code>helm upgrade --install promtail grafana/promtail --values promtail-config.yaml -n monitoring
-</code></pre></div></p>
-<p>Make sure that Promtail is running the same number of pods as there are nodes on the cluster since Promtail has to run one pod per node:
-<div class="highlight"><pre><span></span><code>k get pods -n monitoring
-</code></pre></div></p>
+<p>For this, first add the Grafana Helm Chart repository to you repository list:</p>
+<div class="highlight"><pre><span></span><code><span class="go">helm repo add grafana https://grafana.github.io/helm-charts</span>
+</code></pre></div>
+<p>Update your Helm repository list:</p>
+<div class="highlight"><pre><span></span><code><span class="go">helm repo update</span>
+</code></pre></div>
+<p>Next, create a file with the Helm Chart configuration for Prometail in a promtail-config.yaml:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">config</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">serverPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8080</span>
+<span class="w">  </span><span class="nt">clients</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://loki-loki-distributed-gateway/loki/api/v1/push</span>
+</code></pre></div>
+<p>Now we can install the Promtail Helm Chart inside our cluster:</p>
+<div class="highlight"><pre><span></span><code><span class="go">helm upgrade --install promtail grafana/promtail --values promtail-config.yaml -n monitoring</span>
+</code></pre></div>
+<p>Make sure that Promtail is running the same number of pods as there are nodes on the cluster since Promtail has to run one pod per node:</p>
+<div class="highlight"><pre><span></span><code><span class="go">k get pods -n monitoring</span>
+</code></pre></div>
 <p>For instance, if the cluster consists of three nodes, then there should be three Promtails pods inside of the monitoring namespace.</p>
-<p>Now, we can install Loki. Loki's job is to collect the logs from Promtail and forward them to Grafana.
-<div class="highlight"><pre><span></span><code>helm upgrade --install loki grafana/loki-distributed -n monitoring
-</code></pre></div></p>
-<p>Loki will install a variety of components inside your cluster, so don't be alarmed by the number of pods it is starting, namely:
+<p>Now, we can install Loki. Loki's job is to collect the logs from Promtail and forward them to Grafana.</p>
+<div class="highlight"><pre><span></span><code><span class="go">helm upgrade --install loki grafana/loki-distributed -n monitoring</span>
+</code></pre></div>
+<p>Loki will install a variety of components inside your cluster, so don't be alarmed by the number of pods it is starting, namely:</p>
 <div class="highlight"><pre><span></span><code>loki-loki-distributed-distributor-5db986bb4f-x444n
 loki-loki-distributed-query-frontend-bd6845f89-z6nx6
 loki-loki-distributed-gateway-79d4d4ff5d-sxx58
 loki-loki-distributed-querier-0
 loki-loki-distributed-ingester-0    
-</code></pre></div></p>
-<p>At this point, the following pods should be running inside the Kubernetes cluster:
+</code></pre></div>
+<p>At this point, the following pods should be running inside the Kubernetes cluster:</p>
 <div class="highlight"><pre><span></span><code>NAME                                                     READY   STATUS    RESTARTS      AGE
 prom-prometheus-node-exporter-l4cm4                      1/1     Running   0             22m
 prom-kube-prometheus-stack-operator-84cf966ff5-96xdp     1/1     Running   0             22m
@@ -15938,11 +15938,11 @@ loki-loki-distributed-distributor-5db986bb4f-x444n       1/1     Running   0    
 loki-loki-distributed-query-frontend-bd6845f89-z6nx6     1/1     Running   0             72s
 loki-loki-distributed-querier-0                          1/1     Running   0             72s
 loki-loki-distributed-ingester-0                         1/1     Running   0             72s
-</code></pre></div></p>
+</code></pre></div>
 <p>Since everything is running properly, we need to ensure that we can access Loki as a data source inside of Grafana.</p>
-<p>For this, port-forward to Grafana:
-<div class="highlight"><pre><span></span><code>kubectl port-forward service/prom-grafana -n monitoring 3000:80
-</code></pre></div></p>
+<p>For this, port-forward to Grafana:</p>
+<div class="highlight"><pre><span></span><code><span class="go">kubectl port-forward service/prom-grafana -n monitoring 3000:80</span>
+</code></pre></div>
 <p>and open the Grafana UI on localhost:3000.</p>
 <p>Here, you will need the username and the password:
 username: admin
@@ -15953,24 +15953,24 @@ Here select Loki as a data source.</p>
 <h3 id="tracee">Tracee<a class="headerlink" href="#tracee" title="Permanent link">&para;</a></h3>
 <p>Right now, we cannot access any logs from our cluster since we do not have any application that actively produces logs.
 Thus, we will install Tracee inside our cluster through the Tracee Helm Chart.</p>
-<p>Add the Tracee Helm Chart:
-<div class="highlight"><pre><span></span><code>helm repo add aqua https://aquasecurity.github.io/helm-charts/
-</code></pre></div></p>
-<p>Update the repository list on Helm:
-<div class="highlight"><pre><span></span><code>helm repo update
-</code></pre></div></p>
-<p>Install the Tracee Helm Chart inside your Kubernetes cluster:
-<div class="highlight"><pre><span></span><code>helm install tracee aqua/tracee \
-        --namespace tracee-system --create-namespace \
-        --set hostPID=true
-</code></pre></div></p>
-<p>Now, ensure that Tracee is running inside the <code>tracee-system</code> namespace:
-<div class="highlight"><pre><span></span><code>kubectl get all -n tracee-system
-</code></pre></div></p>
+<p>Add the Tracee Helm Chart:</p>
+<div class="highlight"><pre><span></span><code><span class="go">helm repo add aqua https://aquasecurity.github.io/helm-charts/</span>
+</code></pre></div>
+<p>Update the repository list on Helm:</p>
+<div class="highlight"><pre><span></span><code><span class="go">helm repo update</span>
+</code></pre></div>
+<p>Install the Tracee Helm Chart inside your Kubernetes cluster:</p>
+<div class="highlight"><pre><span></span><code><span class="go">helm install tracee aqua/tracee \</span>
+<span class="go">        --namespace tracee-system --create-namespace \</span>
+<span class="go">        --set hostPID=true</span>
+</code></pre></div>
+<p>Now, ensure that Tracee is running inside the <code>tracee-system</code> namespace:</p>
+<div class="highlight"><pre><span></span><code><span class="go">kubectl get all -n tracee-system</span>
+</code></pre></div>
 <p>Similar to Promtail, also for Tracee one pod should run on each node of the Kubernetes cluster.</p>
 <h2 id="accessing-tracee-logs">Accessing Tracee Logs<a class="headerlink" href="#accessing-tracee-logs" title="Permanent link">&para;</a></h2>
 <p>Generally, it is possible to access logs from the Tracee pods directly through kubectl:</p>
-<div class="highlight"><pre><span></span><code>kubectl logs -f daemonset/tracee -n tracee-system
+<div class="highlight"><pre><span></span><code><span class="go">kubectl logs -f daemonset/tracee -n tracee-system</span>
 </code></pre></div>
 <p>However, once you have all the above components installed, you can open the Grafana Dashbord, on the left, go to "Explore". There, you should be able to select Loki as a Datasource.</p>
 <p>Now, you can write log queries in LogQL to access the logs that are stored in the Tracee pods:</p>
