@@ -49,7 +49,7 @@ tracee-fcjmp   1/1     Running   0          4m11s
 
 ## Interacting with Tracee
 
-Once installed, Tracee immidiately starts producing system activity events, such as processes and containers activity, network activity, and more. To see the events that Tracee produces, use can use the `kubectl logs` command.
+Once installed, Tracee immediately starts producing system activity events, such as processes and containers activity, network activity, and more. To see the events that Tracee produces, use can use the `kubectl logs` command.
 
 ```console
 kubectl logs -f daemonset/tracee -n tracee-system

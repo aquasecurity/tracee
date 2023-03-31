@@ -31,5 +31,5 @@ func InvalidContextField(field string) error {
 }
 
 func FailedToRetreiveHostNS() error {
-	return fmt.Errorf("failed to retreive host mount namespace")
+	return fmt.Errorf("failed to retrieve host mount namespace")
 }

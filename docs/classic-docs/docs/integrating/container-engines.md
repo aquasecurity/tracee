@@ -41,8 +41,7 @@ those events by communicating with the relevant container's runtime and SDK.
 
 ## Supported Container Runtime Engines
 
-Currently, tracee will look in the following paths for autodiscovering the
-listed runtimes:
+Currently, tracee will look in the following paths for auto discovering the listed runtimes:
 
 1. Docker:     `/var/run/docker.sock`
 

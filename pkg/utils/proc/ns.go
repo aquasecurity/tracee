@@ -81,7 +81,7 @@ func GetProcessStartTime(pid uint) (int, error) {
 	// We want to remove the comm from the string, because it can contain a space which will change the offsets after split
 	splitByComm := bytes.SplitN(stat, []byte{')', ' '}, 2)
 	if len(splitByComm) != 2 {
-		return 0, errfmt.Errorf("error in parsing /proc/<pid>/stat format - comm name is not surounded by parentheses as expected")
+		return 0, errfmt.Errorf("error in parsing /proc/<pid>/stat format - comm name is not surrounded by parentheses as expected")
 	}
 	newStartTimeOffset := startTimeOffset - commOffset
 	splitStat := bytes.SplitN(splitByComm[1], []byte{' '}, newStartTimeOffset+1)

@@ -48,7 +48,7 @@ func NewMountOnce(source, fstype, data, where string) (*MountOnce, error) {
 		data:   data,   // extra data
 	}
 
-	// already mounted filesystems will be like mounted ones, but unmanaged
+	// already mounted filesystems will be like mounted ones, but un-managed
 	alreadyMounted, err := m.isMountedByOS(where)
 	if err != nil {
 		return nil, errfmt.WrapError(err)

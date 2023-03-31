@@ -8,7 +8,7 @@
 
 You may use `builder/Makefile.packaging` to generate Ubuntu deb packages. It
 will use docker containers to generate appropriate packages, so you don't need
-to install build depencies in your OS.
+to install build dependencies in your OS.
 
 !!! Ubuntu Note
 
@@ -52,7 +52,7 @@ to install build depencies in your OS.
 
 You may use `builder/Makefile.packaging` to generate Fedora rpm packages. It
 will use docker containers to generate appropriate packages, so you don't need
-to install build depencies in your OS.
+to install build dependencies in your OS.
 
 !!! Fedora Note
 

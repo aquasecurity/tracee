@@ -11,7 +11,7 @@ type Sockets struct {
 	sockets map[RuntimeId]string
 }
 
-// Register attempts to associate a file path with a container runtime, if the path doens't exist registration will fail
+// Register attempts to associate a file path with a container runtime, if the path doesn't exist registration will fail
 func (s *Sockets) Register(runtime RuntimeId, socket string) error {
 	if s.sockets == nil {
 		s.sockets = make(map[RuntimeId]string)

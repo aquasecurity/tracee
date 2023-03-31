@@ -46,7 +46,7 @@
     Resolving deltas: 100% (8105/8105), done.
     ```
 
-4. All makefiles have a **help** target to give you needed instrutions
+4. All makefiles have a **help** target to give you needed instructions
 
     ```console
     make help
@@ -171,7 +171,7 @@
         >plugin.Open("/tracee/dist/signatures/builtin.so"): Dynamic loading not supported
         >```
 
-8. Build a **debuggable binary** with DWARF generation by setting `DEBUG=1`
+8. Build a **debugable binary** with DWARF generation by setting `DEBUG=1`
 
     ```console
     DEBUG=1 make

@@ -1261,7 +1261,7 @@ func GetProtoDNSURI(
 		stringTypes[key] = val
 	}
 
-	// uint16 converstion
+	// uint16 conversion
 	uint16Types := map[string]uint16{
 		"priority": 0,
 		"weight":   0,

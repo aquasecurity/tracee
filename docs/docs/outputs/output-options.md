@@ -65,7 +65,7 @@ Available options:
 4. **option:exec-env**
 
     Sometimes it is also important to know the execution environment variables
-    whenever an event is detected, specially when deteting **execve** event.
+    whenever an event is detected, specially when detecting **execve** event.
 
     ```console
     sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=execve --output option:parse-arguments --output option:exec-env

@@ -317,7 +317,7 @@ func TestPolicyScopes(t *testing.T) {
 			testName: "scope with space",
 			policy: PolicyFile{
 				Name:          "scope_with_space",
-				Description:   "scope with sace",
+				Description:   "scope with space",
 				Scope:         []string{"tree = 3213"},
 				DefaultAction: "log",
 				Rules: []Rule{
@@ -1406,11 +1406,11 @@ func TestPrepareFilterScopesForPolicyValidations(t *testing.T) {
 			testName: "empty description",
 			policies: []PolicyFile{
 				{
-					Name:        "empty_descritpion",
+					Name:        "empty_description",
 					Description: "",
 				},
 			},
-			expectedError: errors.New("flags.validatePolicy: policy empty_descritpion, description cannot be empty"),
+			expectedError: errors.New("flags.validatePolicy: policy empty_description, description cannot be empty"),
 		},
 		{
 			testName: "empty scope",

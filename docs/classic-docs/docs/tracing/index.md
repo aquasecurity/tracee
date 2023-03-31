@@ -15,7 +15,7 @@ This might be useful for:
 
 1. **debugging**
 1. **troubleshooting**
-1. **analysing executions**
+1. **analyzing executions**
 1. **security research**
 1. **education**
 

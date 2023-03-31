@@ -20,7 +20,7 @@ func TestContext_Apply(t *testing.T) {
 		expectedError error
 	}{
 		{
-			name: "happy path - succesful apply",
+			name: "happy path - successful apply",
 			invokingEvent: trace.Event{
 				EventID:     int(events.Open),
 				EventName:   "open",

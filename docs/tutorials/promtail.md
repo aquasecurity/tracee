@@ -29,11 +29,11 @@ We need to install an observability stack to access the logs of the pods inside 
 
 And since it is easier to install Grafana together with Prometheus, we are also going to install Prometheus.
 
-If you are completely new to Loki, have a look at the following presentation:  [Learning the tricks of Grafana Loki for distributed logging at scale in a Kubernetes environmen](https://youtu.be/jmtYUiBd_z0) 
+If you are completely new to Loki, have a look at the following presentation:  [Learning the tricks of Grafana Loki for distributed logging at scale in a Kubernetes environment](https://youtu.be/jmtYUiBd_z0) 
 
 ### Grafana and Prometheus
 
-First, we are going to install the kube-prometheus-stack chart with Promtheus and Grafana.
+First, we are going to install the kube-prometheus-stack chart with Prometheus and Grafana.
 
 For this, we will need to specify some custom values that we will pass into the Helm Chart. 
 
@@ -221,7 +221,7 @@ Generally, it is possible to access logs from the Tracee pods directly through k
 kubectl logs -f daemonset/tracee -n tracee-system
 ```
 
-However, once you have all the above components installed, you can open the Grafana Dashbord, on the left, go to "Explore". There, you should be able to select Loki as a Datasource.
+However, once you have all the above components installed, you can open the Grafana Dashboard, on the left, go to "Explore". There, you should be able to select Loki as a Datasource.
 
 Now, you can write log queries in LogQL to access the logs that are stored in the Tracee pods:
 

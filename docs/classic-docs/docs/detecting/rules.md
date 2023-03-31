@@ -3,7 +3,7 @@
 !!! Tip
     To view the list of available rules, run Tracee with the `--list` flag.
 
-Tracee currently distributes **fully functional signatures** that detect potentially malicous behavior.
+Tracee currently distributes **fully functional signatures** that detect potentially malicious behavior.
 
 ## Signatures in Aqua Vulnerability Database (AVD)
 
@@ -18,7 +18,7 @@ the table below:
 
 Name   |Description                               |Full Description
 -------|------------------------------------------|----
-TRC-101 | Process standard input/output over socket detected | A process has its standard input/output redirected to a socket. This behaviour is the base of a Reverse Shell attack, which is when an interactive shell being invoked from a target machine back to the attacker's machine, giving it interactive control over the target. Adversaries may use a Reverse Shell to retain control over a compromised target while bypassing security measures like network firewalls.
+TRC-101 | Process standard input/output over socket detected | A process has its standard input/output redirected to a socket. This behavior is the base of a Reverse Shell attack, which is when an interactive shell being invoked from a target machine back to the attacker's machine, giving it interactive control over the target. Adversaries may use a Reverse Shell to retain control over a compromised target while bypassing security measures like network firewalls.
 TRC-102 | Anti-Debugging detected | A process used anti-debugging techniques to block a debugger. Malware use anti-debugging to stay invisible and inhibit analysis of their behavior.
 TRC-103 | Code injection detected using ptrace | Possible code injection into another process was detected. Code injection is an exploitation technique used to run malicious code, adversaries may use it in order to execute their malware.
 TRC-104 | Dynamic code loading detected |  Possible dynamic code loading was detected as the binary's memory is both writable and executable. Writing to an executable allocated memory region could be a technique used by adversaries to run code undetected and without dropping executables.

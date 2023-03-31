@@ -11,7 +11,7 @@
 * findutils (`brew install findutils`)
 * make (`brew install make`)
 
-## Creating a local building enviroment
+## Creating a local building environment
 
 Just like as described at [building environment](../building/environment.md),
 under OSX you may create your local building environment by using the same

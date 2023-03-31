@@ -331,7 +331,7 @@ Tracee can capture the following types of artifacts:
     Anytime a **BPF program** is loaded, the BPF bytecode will be captured.
     The bytecode is either a JIT or assembly BPF bytecode. This is the BPF program as it was loaded by the loading process.
     The bytecode is basically the BPF section of the compiled ELF that loads the BPF program, which contains the program instructions themselves.
-    You can disassemble the bytecode with the help of `binutils-bpf` package and the following commandline:
+    You can disassemble the bytecode with the help of `binutils-bpf` package and the following command line:
     `objdump -D -b binary -m bpf <path>`
 
      ```text

@@ -55,7 +55,7 @@ func parsePossibleCPUAmountFromCPUFileFormat(cpuFileContent string) (int, error)
 	case rangeValuesWithGroups:
 		return 0, errfmt.Errorf("possible cpus should be following indexes, but received groups format")
 	default:
-		return 0, errfmt.Errorf("unkown possible cpu file format")
+		return 0, errfmt.Errorf("unknown possible cpu file format")
 	}
 	return cpusAmount, nil
 }

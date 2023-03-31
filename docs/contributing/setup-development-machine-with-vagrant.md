@@ -163,7 +163,7 @@ Vagrant.configure("2") do |config|
 ...
 ```
 
-This change requires reprovisioning the development machine:
+This change requires re-provisioning the development machine:
 
 ```console
 vagrant destroy
@@ -178,8 +178,7 @@ vagrant up
 
 ## Deploy Tracee with Postee on Kubernetes
 
-The development machine described by Vagrantfile preinstalls [MicroK8s]
-Kubernetes cluster, which is suitable for testing Tracee.
+The development machine described by Vagrantfile pre-installs [MicroK8s] Kubernetes cluster, which is suitable for testing Tracee.
 
 ```console
 microk8s status

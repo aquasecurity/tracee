@@ -1078,7 +1078,7 @@ func TestPrepareOutput(t *testing.T) {
 			expectedError: errors.New("parseFormat: cannot use the same path for multiple outputs: /tmp/test, use '--output help' for more info"),
 		},
 		{
-			testName:      "two differents formats for the same file",
+			testName:      "two different formats for the same file",
 			outputSlice:   []string{"table:/tmp/test", "json:/tmp/test"},
 			expectedError: errors.New("parseFormat: cannot use the same path for multiple outputs: /tmp/test, use '--output help' for more info"),
 		},

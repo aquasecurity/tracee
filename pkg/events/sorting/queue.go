@@ -49,7 +49,7 @@ func (eq *eventsQueue) Get() (*trace.Event, error) {
 	headNode := eq.head
 	if headNode == eq.tail {
 		if headNode.next != nil || headNode.previous != nil {
-			return nil, errfmt.Errorf("bug: last existing node still conneced")
+			return nil, errfmt.Errorf("bug: last existing node still connected")
 		}
 		eq.tail = nil
 		eq.head = nil

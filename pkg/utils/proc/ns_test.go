@@ -21,7 +21,7 @@ func TestExtractNSFromLink(t *testing.T) {
 			expectedNS:    4026531840,
 		},
 		{
-			name:          "Ilegal NS link",
+			name:          "Illegal NS link",
 			link:          "4026531840",
 			expectedError: true,
 			expectedNS:    0,
