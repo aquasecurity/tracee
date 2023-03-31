@@ -26,9 +26,12 @@ rules:
 ```
 
 This policy applies to any workload (global) and will log the dropped_executable, security_file_open, sched_process_exec and close events. Several filters are set to log only specific events:
-- An argument filter (args.pathname) is set on the security_file_open event to log only files which were opened from the /tmp directory
-- A context filter (uid) is set on the sched_process_exec event to log only processes executed by the root user (uid 0)
-- A return value filter (retval) is set on the close event to log only failed close syscalls
+
+1. An argument filter (args.pathname) is set on the security_file_open event to log only files which were opened from the /tmp directory
+
+2. A context filter (uid) is set on the sched_process_exec event to log only processes executed by the root user (uid 0)
+
+3. A return value filter (retval) is set on the close event to log only failed close syscalls
 
 While specifying event filters is optional, policies must have the `name`, `description`, `scope`, `defaultAction`, and `rules` fields.
 
