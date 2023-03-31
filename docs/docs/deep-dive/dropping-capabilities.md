@@ -47,7 +47,7 @@ The way does it is through "protection rings":
 
 You may see all available capabilities in the running environment by running:
 
-```
+```console
 --capabilities help
 ```
 

@@ -3,7 +3,7 @@
 Package sorting feature is responsible for sorting incoming events from the BPF
 programs chronologically.
 
-```
+```console
 sudo ./dist/tracee \
     -o json \
     -o option:parse-arguments \
@@ -50,7 +50,7 @@ Tn = Timestamp (n == TOD)
 
 1. Initial State
 
-    ```
+    ```text
            [ CPU 0 ]    [ CPU 1 ]    [ CPU 2 ]
       HEAD    T1           T2           T4
               T3           T5
@@ -60,7 +60,7 @@ Tn = Timestamp (n == TOD)
 
 2. Scheduler Tick #1
 
-    ```
+    ```text
     Incoming events: T9#1, T11#2, T13#1, T10#2, T12#2
     
     Queues state after insert:
@@ -79,7 +79,7 @@ Tn = Timestamp (n == TOD)
 
 3. Scheduler Tick #2
 
-    ```
+    ```text
     Incoming events: T7#0, T22#1, T23#2, T20#0, T25#1, T24#2, T21#0
     
     Queues state after insert:
@@ -103,7 +103,7 @@ Tn = Timestamp (n == TOD)
 
 4. Scheduler Tick #3
 
-    ```
+    ```text
     Incoming events: T30#0, T34#1, T35#2, T31#0, T36#2, T32#0, T37#2, T33#0, T38#2, T50#1, T51#1
     
     Queues state after insert:

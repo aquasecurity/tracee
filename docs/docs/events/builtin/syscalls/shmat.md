@@ -21,7 +21,7 @@ calling process with `shmdt`.
 * `shmaddr`:`const void*`[U] - If not NULL, address the segment should
                     be attached at.
 * `shmflg`:`int`[K] - Specifies various flags for the attachment:
-                    ```
+                    ```c
                     SHM_RDONLY = 0x001  - Segment attached read-only
                     SHM_RND    = 0x002  - Round addr to SHMLBA boundary
                     SHM_REMAP  = 0x004  - Map into current address space

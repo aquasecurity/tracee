@@ -10,7 +10,7 @@ those events by communicating with the relevant container's runtime and SDK.
     container image, setting the `CONTAINERS_ENRICHMENT` environment flag (see
     example bellow).
 
-1. Running **tracee** (with or without tracee-rules) manually
+1. Running **tracee** manually
 
     If running tracee directly (not in a container), it will automatically
     search for known supported runtimes in their socket's default locations.
@@ -23,8 +23,8 @@ those events by communicating with the relevant container's runtime and SDK.
     Using containerd as our runtime for example, this can be done by running
     tracee like:
     
-    ```text
-    $ docker run \
+    ```console
+    docker run \
         --name tracee --rm -it \
         --pid=host --cgroupns=host --privileged \
         -v /etc/os-release:/etc/os-release-host:ro \
@@ -62,9 +62,10 @@ listed runtimes:
 
 As a user, when container enrichment is enabled the event output will include enriched fields in these cases:
 
-1. Running **tracee** with a json format will include all container enriched fields 
-    text```
-    $ docker run \
+1. Running **tracee** with a json format will include all container enriched fields
+
+    ```console
+    docker run \
         --name tracee --rm -it \
         --pid=host --cgroupns=host --privileged \
         -v /etc/os-release:/etc/os-release-host:ro \
@@ -75,8 +76,9 @@ As a user, when container enrichment is enabled the event output will include en
     ```
 
 2. Running in container filtering mode and with enrichment enabled will add the image name to the table printer
-    text```
-    $ docker run \
+
+    ```console
+    docker run \
         --name tracee --rm -it \
         --pid=host --cgroupns=host --privileged \
         -v /etc/os-release:/etc/os-release-host:ro \

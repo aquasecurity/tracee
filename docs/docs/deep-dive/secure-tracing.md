@@ -8,7 +8,7 @@
 
     For example, a program invoked:
 
-    ```
+    ```c
     execve("/bin/ls", NULL, 0)
     ```
 

@@ -17,8 +17,11 @@ The following output formats are supported:
 
 ### Table
 
+```console
+sudo ./dist/tracee --output table --filter comm=bash --filter follow --filter event=openat
+```
+
 ```text
-$ sudo ./dist/tracee --output table --filter comm=bash --filter follow --filter event=openat
 TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
 11:21:51:254199  1000   exa              1639459 1639459 3                openat               dirfd: -100, pathname: /etc/ld.so.cache, flags: O_RDONLY|O_CLOEXEC, mode: 0
 11:21:51:254285  1000   exa              1639459 1639459 3                openat               dirfd: -100, pathname: /lib/x86_64-linux-gnu/libgcc_s.so.1, flags: O_RDONLY|O_CLOEXEC, mode: 0
@@ -30,8 +33,11 @@ Stats: {EventCount:3 EventsFiltered:0 NetCapCount:0 BPFLogsCount:0 ErrorCount:0 
 
 ### Table (Verbose)
 
+    ```console
+    sudo ./dist/tracee --output table-verbose --filter comm=bash --filter follow --filter event=openat
+    ```
+
     ```text
-    $ sudo ./dist/tracee --output table-verbose --filter comm=bash --filter follow --filter event=openat
     TIME             UTS_NAME         CONTAINER_ID  MNT_NS       PID_NS       UID    COMM             PID     TID     PPID    RET              EVENT                ARGS
     11:22:16:970700  fujitsu                        4026531840   4026531836   1000   exa              1643836 1643836 3795408 3                openat               dirfd: -100, pathname: /etc/ld.so.cache, flags: 524288, mode: 0
     11:22:16:970783  fujitsu                        4026531840   4026531836   1000   exa              1643836 1643836 3795408 3                openat               dirfd: -100, pathname: /lib/x86_64-linux-gnu/libgcc_s.so.1, flags: 524288, mode: 0
@@ -43,8 +49,8 @@ Stats: {EventCount:3 EventsFiltered:0 NetCapCount:0 BPFLogsCount:0 ErrorCount:0 
 
 ### JSON
 
-```text
-$ sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=openat
+```console
+sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=openat
 ```
 
 ```json
@@ -55,7 +61,7 @@ $ sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter e
 !!! Tip
     A good tip is to pipe **tracee** json output to [jq]() tool, this way
     you can select fields, rename them, filter values, and many other things:
-    > ```text
+    > ```console
     > sudo ./dist/tracee -o json -o option:parse-arguments
     > -trace comm=ping | jq -c '. | {eventId, hostName, processName,
     > hostProcessId,UserId}'
@@ -63,8 +69,8 @@ $ sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter e
 
 ### GOB
 
-```text
-$ sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=openat
+```console
+sudo ./dist/tracee --output json --filter comm=bash --filter follow --filter event=openat
 ```
 
 ### GOTEMPLATE
@@ -79,6 +85,6 @@ For example templates, see [tracee/cmd/tracee-rules/templates](https://github.co
 
 Redirect logs to a file if needed:
 
-```text
-$ sudo TRACEE_BPF_FILE=do-not-exist ./dist/tracee --filter comm=bash --filter follow --filter event=openat --output json:/tmp/tracee.events --output log-file:/tmp/tracee.log
+```console
+sudo TRACEE_BPF_FILE=do-not-exist ./dist/tracee --filter comm=bash --filter follow --filter event=openat --output json:/tmp/tracee.events --output log-file:/tmp/tracee.log
 ```

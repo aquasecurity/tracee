@@ -28,7 +28,7 @@ To learn more about Tracee, check out the [documentation](https://aquasecurity.g
 
 You can easily start experimenting with Tracee using the Docker image as follows:
 
-```shell
+```console
 docker run \
   --name tracee --rm -it \
   --pid=host --cgroupns=host --privileged \

@@ -7,7 +7,7 @@ sigsuspend - temporarily replaces the signal mask of the executing thread with t
 ## Description
 The sigsuspend() system call suspends the caller until a signal is received. It is equivalent to
 
-```
+```c
 sigprocmask(SIG_SETMASK, &mask, NULL);
 pause();
 ```

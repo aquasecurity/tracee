@@ -9,22 +9,19 @@
 !!! Introduction
     As you are probably already aware, **Tracee** consists of:
     
-    !!! tracee-ebpf Tip
+    !!! tracee Tip
 
         - Userspace agent  
-            1. Handles lifecycle of ebpf programs  
-            1. Receives events from eBPF programs  
-        - eBPF code  
+            1. Handles lifecycle of ebpf programs
+            1. Receives and detects events from eBPF programs
+        - eBPF code
             1. Programs loaded in the kernel for event collection
-    
-    !!! tracee-rules Tip
-
         - OPA signatures
         - Golang signatures
-        - Go-Cel signatures (tech-preview)
+        - Go-Cel signatures
 
-**tracee-ebpf** leverages Linux's eBPF technology, which requires some kernel
-level integration. **Tracee** supports two eBPF integration modes:
+**Tracee** leverages Linux's eBPF technology, which requires some kernel level
+integration, supporting two eBPF integration modes:
 
 1. **CO-RE**: a **portable mode**, which will seamlessly run on all supported
    envs.
@@ -33,7 +30,7 @@ level integration. **Tracee** supports two eBPF integration modes:
     requires that your operating system support
     [BTF](https://nakryiko.com/posts/btf-dedup/) (BPF Type Format). Tracee will
     automatically run in CO-RE mode if it detects that the environment supports
-    it. The **tracee-ebpf** binary has a CO-RE eBPF object embedded on it. When
+    it. The **tracee** binary has a CO-RE eBPF object embedded on it. When
     executed, it loads the CO-RE eBPF object into the kernel and each of its
     object's eBPF programs are executed when triggered by kernel probes, or
     tracepoints, for example.
@@ -55,7 +52,7 @@ level integration. **Tracee** supports two eBPF integration modes:
 ## The need for a non CO-RE eBPF object build
 
 Until [recently](https://github.com/aquasecurity/tracee/commit/20549fabefa37b70ca1b8bade8ae39ef0b934942),
-**tracee-ebpf** was capable of building a non CO-RE (portable) eBPF object when
+**tracee** was capable of building a non CO-RE (portable) eBPF object when
 the running kernel did not support BTF, one of the kernel features needed for
 eBPF portability among different kernels.
 
@@ -67,11 +64,11 @@ embedded CO-RE eBPF object, as a last resource if there is no:
 
 1. BTF file available in running kernel (`/sys/kernel/btf/vmlinux`).
 1. BTF file pointed by `TRACEE_BTF_FILE` environment variable.
-1. BTF file embedded into "tracee-ebpf" binary ([BTFHUB](https://github.com/aquasecurity/btfhub)).
+1. BTF file embedded into "tracee" binary ([BTFHUB](https://github.com/aquasecurity/btfhub)).
 
 !!! Note
     Installing the non CO-RE eBPF object in the environment does not mean will
-    will run **tracee-ebpf** with it by default. If your system supports CO-RE
+    will run **tracee** with it by default. If your system supports CO-RE
     eBPF objects it will be chosen instead. If your system supports CO-RE eBPF
     but does not contain embedded BTF information, but is support by BTFHUB,
     then the CO-RE eBPF object will be used by default. The only way you can
@@ -81,7 +78,7 @@ embedded CO-RE eBPF object, as a last resource if there is no:
 **Reasoning behind this change**
 
 With [BTFHUB](https://github.com/aquasecurity/btfhub), it is now possible to
-run **tracee-ebpf** without compiling the eBPF object to each different kernel,
+run **tracee** without compiling the eBPF object to each different kernel,
 thus removing the automatic builds (although the functionality is still kept
 through the Makefile).
 
@@ -89,17 +86,20 @@ through the Makefile).
 
 By running:
 
-```text
-$ make clean
-$ make all
-$ make install-bpf-nocore
+```console
+make clean
+make all
+make install-bpf-nocore
 ```
 
 make installs an eBPF object file under `/tmp/tracee` for the current running
 kernel. Example:
 
+```console
+find /tmp/tracee
+```
+
 ```text
-$ find /tmp/tracee
 /tmp/tracee
 /tmp/tracee/tracee.bpf.5_4_0-91-generic.v0_6_5-80-ge723a22.o
 ```
@@ -109,16 +109,19 @@ $ find /tmp/tracee
     but the kernel does not have embedded BTF information available. In cases
     like this, the user may opt to either use [BTFHUB](https://github.com/aquasecurity/btfhub)
     btf files (with an environment variable TRACEE_BTF_FILE=.../5.4.0-91-generic.btf)
-    OR to install the non CO-RE eBPF object and run **tracee-ebpf** command
+    OR to install the non CO-RE eBPF object and run **tracee** command
     without an env variable.
 
-## Run non CO-RE tracee-ebpf
+## Run non CO-RE tracee
 
-If you install the non CO-RE eBPF object and run **tracee-ebpf** in an
-environment that needs it, then the debug output will look like:
+If you install the non CO-RE eBPF object and run **tracee** in an environment
+that needs it, then the debug output will look like:
+
+```console
+sudo ./dist/tracee --log debug
+```
 
 ```text
-$ sudo ./dist/tracee-ebpf --log debug
 {"level":"debug","ts":1670972052.3996286,"msg":"osinfo","VERSION_CODENAME":"focal","KERNEL_RELEASE":"5.4.0-91-generic","ARCH":"x86_64","VERSION":"\"20.04.5 LTS (Focal Fossa)\"","ID":"ubuntu","ID_LIKE":"debian","PRETTY_NAME":"\"Ubuntu 20.04.5 LTS\"","VERSION_ID":"\"20.04\"","pkg":"urfave","file":"urfave.go","line":53}
 {"level":"debug","ts":1670972052.3996587,"msg":"RuntimeSockets: failed to register default","socket":"crio","error":"failed to register runtime socket stat /var/run/crio/crio.sock: no such file or directory","pkg":"flags","file":"containers.go","line":45}
 {"level":"debug","ts":1670972052.3996656,"msg":"RuntimeSockets: failed to register default","socket":"podman","error":"failed to register runtime socket stat /var/run/podman/podman.sock: no such file or directory","pkg":"flags","file":"containers.go","line":45}
@@ -130,11 +133,14 @@ TIME             UID    COMM             PID     TID     RET              EVENT 
 ...
 ```
 
-One way of forcing **tracee-ebpf** to use non CO-RE eBPF object, even in a kernel
+One way of forcing **tracee** to use non CO-RE eBPF object, even in a kernel
 that supports CO-RE, is by setting the `TRACEE_BPF_FILE` environment, like this:
 
+```console
+sudo TRACEE_BPF_FILE=/tmp/tracee/tracee.bpf.5_4_0-91-generic.v0_8_0-rc-2-363-g3e73eeb1.o ./dist/tracee --log debug -o option:parse-arguments --filter comm=bash --filter follow
 ```
-$ sudo TRACEE_BPF_FILE=/tmp/tracee/tracee.bpf.5_4_0-91-generic.v0_8_0-rc-2-363-g3e73eeb1.o ./dist/tracee-ebpf --log debug -o option:parse-arguments --filter comm=bash --filter follow
+
+```text
 {"level":"debug","ts":1670972956.7201664,"msg":"osinfo","VERSION_CODENAME":"focal","KERNEL_RELEASE":"5.4.0-91-generic","ARCH":"x86_64","VERSION":"\"20.04.5 LTS (Focal Fossa)\"","ID":"ubuntu","ID_LIKE":"debian","PRETTY_NAME":"\"Ubuntu 20.04.5 LTS\"","VERSION_ID":"\"20.04\"","pkg":"urfave","file":"urfave.go","line":53}
 {"level":"debug","ts":1670972956.7202075,"msg":"RuntimeSockets: failed to register default","socket":"crio","error":"failed to register runtime socket stat /var/run/crio/crio.sock: no such file or directory","pkg":"flags","file":"containers.go","line":45}
 {"level":"debug","ts":1670972956.7202215,"msg":"RuntimeSockets: failed to register default","socket":"podman","error":"failed to register runtime socket stat /var/run/podman/podman.sock: no such file or directory","pkg":"flags","file":"containers.go","line":45}
@@ -150,24 +156,28 @@ TIME             UID    COMM             PID     TID     RET              EVENT 
 If you're willing to generate the non CO-RE eBPF object using the `tracee-make`
 building environment container, you're able to by doing:
 
-```text
-$ make -f builder/Makefile.tracee-make alpine-prepare
-$ make -f builder/Makefile.tracee-make alpine-shell
+```console
+make -f builder/Makefile.tracee-make alpine-prepare
+make -f builder/Makefile.tracee-make alpine-shell
 ```
+
 or
-```text
-$ make -f builder/Makefile.tracee-make ubuntu-prepare
-$ make -f builder/Makefile.tracee-make ubuntu-shell
+
+```console
+make -f builder/Makefile.tracee-make ubuntu-prepare
+make -f builder/Makefile.tracee-make ubuntu-shell
 ```
 
-and then, inside the docker container:
+and then, **inside** the docker container:
+
+```console
+make clean
+make tracee
+make install-bpf-nocore
+sudo ./dist/tracee --log debug
+```
 
 ```text
-tracee@f65bab137305[/tracee]$ make clean
-tracee@f65bab137305[/tracee]$ make tracee-ebpf
-tracee@f65bab137305[/tracee]$ make install-bpf-nocore
-
-tracee@f65bab137305[/tracee]$ sudo ./dist/tracee-ebpf --log debug
 {"level":"debug","ts":1670973357.226559,"msg":"osinfo","VERSION_CODENAME":"focal","KERNEL_RELEASE":"5.4.0-91-generic","ARCH":"x86_64","VERSION":"\"20.04.5 LTS (Focal Fossa)\"","ID":"ubuntu","ID_LIKE":"debian","PRETTY_NAME":"\"Ubuntu 20.04.5 LTS\"","VERSION_ID":"\"20.04\"","pkg":"urfave","file":"urfave.go","line":53}
 {"level":"debug","ts":1670973357.2265916,"msg":"RuntimeSockets: failed to register default","socket":"containerd","error":"failed to register runtime socket stat /var/run/containerd/containerd.sock: no such file or directory","pkg":"flags","file":"containers.go","line":45}
 {"level":"debug","ts":1670973357.2266004,"msg":"RuntimeSockets: failed to register default","socket":"docker","error":"failed to register runtime socket stat /var/run/docker.sock: no such file or directory","pkg":"flags","file":"containers.go","line":45}

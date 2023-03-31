@@ -21,13 +21,17 @@
 
     * Build and execute **tracee**:
     
-        ```text
-        $ make -f builder/Makefile.tracee-make alpine-prepare
-        $ make -f builder/Makefile.tracee-make alpine-shell
-        
-        tracee@f64bb4a2f0b1[/tracee]$ make clean
-        tracee@f64bb4a2f0b1[/tracee]$ make tracee
-        tracee@f64bb4a2f0b1[/tracee]$ sudo ./dist/tracee \
+        ```console
+        make -f builder/Makefile.tracee-make alpine-prepare
+        make -f builder/Makefile.tracee-make alpine-shell
+        ```
+
+        and inside the container:
+
+        ```console
+        make clean
+        make tracee
+        sudo ./dist/tracee \
             -o option:parse-arguments \
             --filter comm=bash \
             --filter follow
@@ -38,13 +42,17 @@
     
     * Build and execute **tracee**:
     
-        ```text
-        $ make -f builder/Makefile.tracee-make alpine-prepare
-        $ make -f builder/Makefile.tracee-make alpine-shell
-        
-        tracee@f64bb4a2f0b1[/tracee]$ make clean
-        tracee@f64bb4a2f0b1[/tracee]$ make all
-        tracee@f64bb4a2f0b1[/tracee]$ sudo ./dist/tracee \
+        ```console
+        make -f builder/Makefile.tracee-make alpine-prepare
+        make -f builder/Makefile.tracee-make alpine-shell
+        ```
+
+        and inside the container:
+
+        ```console
+        make clean
+        make all
+        sudo ./dist/tracee \
             -o format:json \
             -o option:parse-arguments \
             --filter comm=bash \
@@ -83,28 +91,28 @@ builds (and executes) correctly in both environments.
 
 * To create an **alpine-tracee-make** container:
 
-    ```text
-    $ make -f builder/Makefile.tracee-make alpine-prepare
+    ```console
+    make -f builder/Makefile.tracee-make alpine-prepare
     ```
 
 * To create an **ubuntu-tracee-make** container:
 
-    ```text
-    $ make -f builder/Makefile.tracee-make ubuntu-prepare
+    ```console
+    make -f builder/Makefile.tracee-make ubuntu-prepare
     ```
 
 ### Executing a builder environment
 
 * To execute an **alpine-tracee-make** shell:
 
-    ```text
-    $ make -f builder/Makefile.tracee-make alpine-shell
+    ```console
+    make -f builder/Makefile.tracee-make alpine-shell
     ```
 
 * To execute an **ubuntu-tracee-make** shell:
 
-    ```text
-    $ make -f builder/Makefile.tracee-make ubuntu-shell
+    ```console
+    make -f builder/Makefile.tracee-make ubuntu-shell
     ```
 
 ### Using build environment as a **make** replacement
@@ -112,19 +120,19 @@ builds (and executes) correctly in both environments.
 Instead of executing a builder shell, you may use `alpine-tracee-make`, or
 `ubuntu-tracee-make`, as a replacement for the `make` command:
 
-```text
-$ make -f builder/Makefile.tracee-make ubuntu-prepare
-$ make -f builder/Makefile.tracee-make ubuntu-make ARG="help"
-$ make -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
-$ make -f builder/Makefile.tracee-make ubuntu-make ARG="bpf-core"
-$ make -f builder/Makefile.tracee-make ubuntu-make ARG="tracee"
-$ make -f builder/Makefile.tracee-make ubuntu-make ARG="all"
+```console
+make -f builder/Makefile.tracee-make ubuntu-prepare
+make -f builder/Makefile.tracee-make ubuntu-make ARG="help"
+make -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
+make -f builder/Makefile.tracee-make ubuntu-make ARG="bpf-core"
+make -f builder/Makefile.tracee-make ubuntu-make ARG="tracee"
+make -f builder/Makefile.tracee-make ubuntu-make ARG="all"
 ```
 
 And, after the compilation, run the commands directly in your host:
 
-```text
-$ sudo ./dist/tracee \
+```console
+sudo ./dist/tracee \
     -o option:parse-arguments \
     --filter comm=bash \
     --filter follow
@@ -138,17 +146,20 @@ the `alpine-tracee-make` container as a replacement for `make`, and your host
 is not an **Alpine Linux**, then you may set `STATIC=1` variable so you can run
 compiled binaries in your host:
 
-```text
-$ make -f builder/Makefile.tracee-make alpine-prepare
-$ make -f builder/Makefile.tracee-make alpine-make ARG="help"
-$ STATIC=1 make -f builder/Makefile.tracee-make alpine-make ARG="all"
+```console
+make -f builder/Makefile.tracee-make alpine-prepare
+make -f builder/Makefile.tracee-make alpine-make ARG="help"
+STATIC=1 make -f builder/Makefile.tracee-make alpine-make ARG="all"
 ```
 
 and execute the static binary from your host:
 
+```console
+ldd dist/tracee
+```
+
 ```text
-$ ldd dist/tracee
-  not a dynamic executable
+not a dynamic executable
 ```
 
 !!! Attention

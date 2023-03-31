@@ -17,24 +17,26 @@ Just like as described at [building environment](../building/environment.md),
 under OSX you may create your local building environment by using the same
 make targets:
 
-```text
-$ gmake -f builder/Makefile.tracee-make alpine-prepare
-$ gmake -f builder/Makefile.tracee-make alpine-shell
+```console
+gmake -f builder/Makefile.tracee-make alpine-prepare
+gmake -f builder/Makefile.tracee-make alpine-shell
 ```
     
-```text
-$ gmake -f builder/Makefile.tracee-make ubuntu-prepare
-$ gmake -f builder/Makefile.tracee-make ubuntu-shell
+```console
+gmake -f builder/Makefile.tracee-make ubuntu-prepare
+gmake -f builder/Makefile.tracee-make ubuntu-shell
 ```
 
 ## Executing tracee in the building environment
 
-Tracee isn't meant to run in OSX but, with Docker, you're able to test building
-it. If you try to run it from the building environment you may get the following
-error:
+Tracee isn't meant to run in OSX but, with Docker, you can test building it.
+If you try to run it from the build environment you may get the following error:
+
+```console
+sudo ./dist/tracee
+```
 
 ```text
-tracee@5fb7cc667842[/tracee]$ sudo ./dist/tracee
 BPF: open /tmp/tracee/tracee.bpf.5_10_104-linuxkit.v0_8_0-rc-1-24-g72e0d02.o: no such file or directory
 BPF: ATTENTION:
 BPF: It seems tracee can't load CO-RE eBPF obj and could not find
@@ -60,14 +62,14 @@ to execute non CO-RE Tracee:
 
 1. Identify your docker version:
 
-    ```text
-    $ dockerver=$(docker version | grep  Version | head -n 1 | cut -d ':' -f 2 | xargs)
+    ```console
+    dockerver=$(docker version | grep  Version | head -n 1 | cut -d ':' -f 2 | xargs)
     ```
 
 2. Run a container with Docker CLI, while mounting to the host path:
 
-    ```text
-    $ docker run -it -v /:/host \
+    ```console
+    docker run -it -v /:/host \
         -v /var/run/docker.sock:/var/run/docker.sock \
         docker:$dockerver /bin/sh
     ```
@@ -75,16 +77,16 @@ to execute non CO-RE Tracee:
 3. Get the Kernel Header files from the linuxkit Docker image and copy it to the
    host /usr/src path:
 
-    ```text
-    $ mkdir /host/kheader
-    $ cd /host/kheader
-    $ linux_version="${VERSION:-$(uname -r | cut -d - -f 1)}"
-    $ docker pull "linuxkit/kernel:$linux_version"
-    $ docker save "linuxkit/kernel:$linux_version" > "linuxkit.tar"
-    $ tar -xf "linuxkit.tar"
-    $ layertar=$(find . -name layer.tar)
-    $ tar -xf "$layertar"
-    $ tar -xf "kernel-dev.tar" --directory /host/
+    ```console
+    mkdir /host/kheader
+    cd /host/kheader
+    linux_version="${VERSION:-$(uname -r | cut -d - -f 1)}"
+    docker pull "linuxkit/kernel:$linux_version"
+    docker save "linuxkit/kernel:$linux_version" > "linuxkit.tar"
+    tar -xf "linuxkit.tar"
+    layertar=$(find . -name layer.tar)
+    tar -xf "$layertar"
+    tar -xf "kernel-dev.tar" --directory /host/
     ```
 
 4. You can now run Tracee on your Docker for Mac

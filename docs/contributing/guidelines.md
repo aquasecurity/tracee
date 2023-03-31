@@ -8,8 +8,11 @@ changes, you run the following command:
 
 !!! check-fmt Example
 
+    ```console
+    make check-fmt
     ```
-    $ make check-fmt
+
+    ```text
     Checking C and eBPF files and headers formatting...
     Checking golang files formatting...
     ```
@@ -20,9 +23,11 @@ changes, you run the following command:
 
 !!! fix-fmt Example
 
+    ```console
+    make fix-fmt
     ```
-    $ make fix-fmt
-    
+
+    ```text
     Fixing C and eBPF files and headers formatting...
     Formatting ./pkg/ebpf/c/missing_definitions.h
     Formatting ./pkg/ebpf/c/struct_flavors.h
@@ -31,8 +36,13 @@ changes, you run the following command:
     
     Fixing golang files formatting...
     patching file pkg/ebpf/tracee.go
-    
-    $ git status -s
+    ```
+
+    ```console
+    git status -s
+    ```
+
+    ```text
      M Makefile
      M builder/Makefile.checkers
      M pkg/ebpf/c/missing_definitions.h
@@ -46,9 +56,11 @@ changes, you run the following command:
 
 !!! check-code Example
 
+    ```console
+    make check-code
     ```
-    $ make check-code
-    
+
+    ```text
     Checking Golang vet...
     make[2]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
     GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS="-I/home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf" CGO_LDFLAGS="-lelf -lz /home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf/libbpf.a" \

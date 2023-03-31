@@ -4,7 +4,7 @@ The `tracee-rules` binary implements pluggable heuristics to detect suspicious b
 collected by the `tracee-ebpf` binary. By default, `tracee-ebpf` binary prints events to the standard output, which is
 redirected to the standard input of the `tracee-rules` binary:
 
-```
+```console
 tracee-ebpf --output=format:gob --filter event=mem_prot_alert | tracee-rules --input-tracee=file:stdin --input-tracee=format:gob
 ```
 
@@ -104,7 +104,10 @@ There are two types of benchmark tests:
 #### Go Noop
 
 ```console
-$ go test -bench=EngineWithNSignatures/noop -benchtime=100x -benchmem
+go test -bench=EngineWithNSignatures/noop -benchtime=100x -benchmem
+```
+
+```text
 goos: darwin
 goarch: amd64
 pkg: github.com/aquasecurity/tracee/pkg/rules/benchmark
@@ -123,7 +126,10 @@ ok  	github.com/aquasecurity/tracee/pkg/rules/benchmark	1.639s
 #### Go
 
 ```console
-$ go test -bench=EngineWithNSignatures/golang -benchtime=100x -benchmem
+go test -bench=EngineWithNSignatures/golang -benchtime=100x -benchmem
+```
+
+```text
 goos: darwin
 goarch: amd64
 pkg: github.com/aquasecurity/tracee/pkg/rules/benchmark
@@ -142,7 +148,10 @@ ok  	github.com/aquasecurity/tracee/pkg/rules/benchmark	8.415s
 #### OPA `rego` Target
 
 ```console
-$ go test -bench=EngineWithNSignatures/rego -benchtime=100x -benchmem
+go test -bench=EngineWithNSignatures/rego -benchtime=100x -benchmem
+```
+
+```text
 goos: darwin
 goarch: amd64
 pkg: github.com/aquasecurity/tracee/pkg/rules/benchmark
@@ -161,7 +170,10 @@ ok  	github.com/aquasecurity/tracee/pkg/rules/benchmark	66.856s
 #### OPA `wasm` Target
 
 ```console
-$ go test -tags=opa_wasm -bench=EngineWithNSignatures/wasm -benchmem
+go test -tags=opa_wasm -bench=EngineWithNSignatures/wasm -benchmem
+```
+
+```text
 goos: darwin
 goarch: amd64
 pkg: github.com/aquasecurity/tracee/pkg/rules/benchmark
@@ -180,7 +192,10 @@ ok  	github.com/aquasecurity/tracee/pkg/rules/benchmark	118.785s
 ### OPA Overhead
 
 ```console
-$ go test -tags=opa_wasm -bench=OnEventWithCodeInjectionSignature -benchtime=1000x -benchmem
+go test -tags=opa_wasm -bench=OnEventWithCodeInjectionSignature -benchtime=1000x -benchmem
+```
+
+```text
 goos: darwin
 goarch: amd64
 pkg: github.com/aquasecurity/tracee/pkg/rules/benchmark
@@ -204,13 +219,16 @@ Some observations running the CPU and memory profiler on `BenchmarkOnEvent*` tes
 
 #### OPA `wasm` Target
 
-```
+```console
 go test -tags=opa_wasm -bench=OnEventWithCodeInjectionSignature/wasm -benchtime=10000x \
   -cpuprofile wasm.cpu.prof -memprofile wasm.mem.prof
 ```
 
 ```console
-$ go tool pprof wasm.cpu.prof
+go tool pprof wasm.cpu.prof
+```
+
+```text
 Type: cpu
 Time: Jul 5, 2021 at 11:51pm (CEST)
 Duration: 5.11s, Total samples = 7.50s (146.91%)
@@ -233,7 +251,10 @@ Showing top 10 nodes out of 117
 ```
 
 ```console
-$ go tool pprof wasm.mem.prof
+go tool pprof wasm.mem.prof
+```
+
+```text
 Type: alloc_space
 Time: Jul 5, 2021 at 11:51pm (CEST)
 Entering interactive mode (type "help" for commands, "o" for options)
@@ -256,13 +277,16 @@ Showing top 10 nodes out of 135
 
 #### OPA `rego` Target
 
-```
+```console
 go test -bench=OnEventWithCodeInjectionSignature/rego -benchtime=10000x \
   -cpuprofile rego.cpu.prof -memprofile rego.mem.prof
 ```
 
 ```console
-$ go tool pprof rego.cpu.prof
+go tool pprof rego.cpu.prof
+```
+
+```text
 Type: cpu
 Time: Jul 5, 2021 at 11:59pm (CEST)
 Duration: 500.28ms, Total samples = 610ms (121.93%)
@@ -284,7 +308,10 @@ Showing top 10 nodes out of 103
 ```
 
 ```console
-$ go tool pprof rego.mem.prof
+go tool pprof rego.mem.prof
+```
+
+```text
 Type: alloc_space
 Time: Jul 5, 2021 at 11:59pm (CEST)
 Entering interactive mode (type "help" for commands, "o" for options)
@@ -307,13 +334,16 @@ Showing top 10 nodes out of 110
 
 #### Go
 
-```
+```console
 go test -bench=OnEventWithCodeInjectionSignature/golang -benchtime=1000000x \
   -cpuprofile golang.cpu.prof -memprofile golang.mem.prof
 ```
 
 ```console
-$ go tool pprof golang.cpu.prof
+go tool pprof golang.cpu.prof
+```
+
+```text
 Type: cpu
 Time: Jul 6, 2021 at 12:05am (CEST)
 Duration: 801.38ms, Total samples = 790ms (98.58%)
@@ -335,7 +365,10 @@ Showing top 10 nodes out of 95
 ```
 
 ```console
-$ go tool pprof golang.mem.prof
+go tool pprof golang.mem.prof
+```
+
+```text
 Type: alloc_space
 Time: Jul 6, 2021 at 12:05am (CEST)
 Entering interactive mode (type "help" for commands, "o" for options)
@@ -351,12 +384,12 @@ Dropped 7 nodes (cum <= 3.80MB)
 
 ## Running Tests
 
-```
+```console
 git clone https://github.com/aquasecurity/tracee.git
 cd tracee/tracee-rules/benchmark
 ```
 
-```
+```console
 # Run all benchmark tests in the current directory
 go test -tags=opa_wasm -bench=. -benchmem
 # Run all benchmark tests in the current directory and specify b.N to equal 100

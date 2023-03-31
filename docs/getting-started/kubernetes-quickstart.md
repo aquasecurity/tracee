@@ -9,13 +9,11 @@ This guide was tested using [minikube](https://github.com/kubernetes/minikube), 
 
 <details>
   <summary>Verify step</summary>
-```shell
-minikube start
+```console
+minikube start && kubectl get po -A
 ```
 
-```
-kubectl get po -A
- 
+```text
 NAMESPACE     NAME                               READY   STATUS    RESTARTS   AGE 
 kube-system   coredns-565d847f94-kd9xx           1/1     Running   0          15s 
 kube-system   etcd-minikube                      1/1     Running   0          26s 
@@ -31,7 +29,7 @@ kube-system   storage-provisioner                1/1     Running   0          15
 
 The provided Helm chart will install Tracee as a DaemonSet so that it's tracing all the nodes in the cluster.
 
-```shell
+```console
 helm repo add aqua https://aquasecurity.github.io/helm-charts/
 helm repo update
 helm install tracee aqua/tracee  --namespace tracee-system --create-namespace
@@ -39,11 +37,11 @@ helm install tracee aqua/tracee  --namespace tracee-system --create-namespace
 
 <details>
   <summary>Verify step</summary>
-```shell
+```console
 kubectl get pods
 ```
 
-```
+```text
 NAME           READY   STATUS    RESTARTS   AGE 
 tracee-fcjmp   1/1     Running   0          4m11s
 ```
@@ -53,7 +51,7 @@ tracee-fcjmp   1/1     Running   0          4m11s
 
 Once installed, Tracee immidiately starts producing system activity events, such as processes and containers activity, network activity, and more. To see the events that Tracee produces, use can use the `kubectl logs` command.
 
-```shell
+```console
 kubectl logs -f daemonset/tracee -n tracee-system
 ```
 
@@ -63,19 +61,19 @@ In production scenario you would want to collect and ship the events to a persis
 
 To see Tracee in action, let's simulate a security event. We'll do a "file-less" execution, which is a common evasion technique used by some malware, and is flagged by Tracee as suspicious activity. To simulate this, we'll use the [tracee-tester](https://registry.hub.docker.com/r/aquasec/tracee-tester) example image it will simulate the suspicious activity without harming your environment.
 
-```shell
+```console
 kubectl run tracee-tester --image=aquasec/tracee-tester -- TRC-105
 ```
 
 You can see the event in the logs:
 
-```shell
+```console
 kubectl -n tracee-system logs -f ds/tracee | grep fileless_execution 
 ```
 
 <details>
   <summary>Result</summary>
-```
+```json
 {
   "timestamp": 1671119128028881186,
   "threadStartTime": 883410317491,
