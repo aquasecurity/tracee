@@ -9,7 +9,7 @@
     1. Kernel eBPF programs **GENERATE** Tracee Events to Userland:
         1. Tracepoints
         1. Probes
-        1. Trafic Control Hooks
+        1. Traffic Control Hooks
     
     1. Userland events are **COLLECTED and ENRICHED** with more information:
         1. Kernel Events (Syscalls, Tracepoints, Kprobes)

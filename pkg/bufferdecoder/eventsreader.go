@@ -418,7 +418,7 @@ func PrintUint32IP(in uint32) string {
 }
 
 // Print16BytesSliceIP prints the IP address encoded as 16 bytes long PrintBytesSliceIP
-// It would be more correct to accept a [16]byte instead of variable lenth slice, but that would cause unnecessary memory copying and type conversions
+// It would be more correct to accept a [16]byte instead of variable length slice, but that would cause unnecessary memory copying and type conversions
 func Print16BytesSliceIP(in []byte) string {
 	ip := net.IP(in)
 	return ip.String()

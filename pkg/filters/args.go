@@ -22,7 +22,7 @@ func NewArgFilter() *ArgFilter {
 }
 
 // GetEventFilters returns the argument filters map for a specific event
-// writing to the map may have unintentional consenquences, avoid doing so
+// writing to the map may have unintentional consequences, avoid doing so
 func (filter *ArgFilter) GetEventFilters(eventID events.ID) map[string]Filter {
 	return filter.filters[eventID]
 }

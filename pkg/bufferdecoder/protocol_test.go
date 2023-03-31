@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Note: because of memory allignment, unsafe.Sizeof doesn't return the sum of byte size of each fields.
-// Thus, in order to the test to be appropiate (and fail if any change to the struct is done without updating GetSizeBytes), we need
+// Note: because of memory alignment, unsafe.Sizeof doesn't return the sum of byte size of each fields.
+// Thus, in order to the test to be appropriate (and fail if any change to the struct is done without updating GetSizeBytes), we need
 // to find a function that relates GetSizeBytes and the actual size of the struct calculated with unsafe.Sizeof.
 
 // If the test is failing then this means you added/moved the fields inside in the type of variable v.

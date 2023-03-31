@@ -136,13 +136,13 @@ func (e *eventDefinitions) Add(eventId ID, evt Event) error {
 	return nil
 }
 
-// Get gets the event without checking for Event existance
+// Get gets the event without checking for Event existence
 func (e *eventDefinitions) Get(eventId ID) Event {
 	evt := e.events[eventId]
 	return evt
 }
 
-// GetSafe gets the Event and also returns bool to check for existance
+// GetSafe gets the Event and also returns bool to check for existence
 func (e *eventDefinitions) GetSafe(eventId ID) (Event, bool) {
 	evt, ok := e.events[eventId]
 	return evt, ok

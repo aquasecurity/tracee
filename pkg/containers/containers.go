@@ -203,7 +203,7 @@ func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetada
 	}
 
 	//There might be a performance overhead with the cancel
-	//But, I think it will be negligable since this code path shouldn't be reached too frequently
+	//But, I think it will be negligible since this code path shouldn't be reached too frequently
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	metadata, err := c.enricher.Get(containerId, runtime, ctx)
 	defer cancel()

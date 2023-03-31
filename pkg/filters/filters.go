@@ -47,7 +47,7 @@ func stringToOperator(op string) Operator {
 	return Equal
 }
 
-// This is a generic represantation which cannot be implemented
+// This is a generic representation which cannot be implemented
 // With generics this may be a viable interface, with T replacing interface{}
 // Filters can be enabled or disabled - if a filter is enabled it will be skipped
 type Filter interface {

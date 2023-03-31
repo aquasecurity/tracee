@@ -164,7 +164,7 @@ type callerInfo struct {
 	functions []string
 }
 
-// getCallerInfo retuns package, file and line from a function
+// getCallerInfo returns package, file and line from a function
 // based on the given number of skips (stack frames).
 func getCallerInfo(skip int) *callerInfo {
 	var (
@@ -526,7 +526,7 @@ func Base() *Logger {
 }
 
 // SetBase sets package-level base logger
-// It's not thread safe so if required use it always at the beggining
+// It's not thread safe so if required use it always at the beginning
 func SetBase(l *Logger) {
 	if l == nil {
 		panic("Logger cannot be nil")
@@ -536,7 +536,7 @@ func SetBase(l *Logger) {
 }
 
 // Init sets the package-level base logger using given config
-// It's not thread safe so if required use it always at the beggining
+// It's not thread safe so if required use it always at the beginning
 func Init(cfg *LoggerConfig) {
 	if cfg == nil {
 		panic("LoggerConfig cannot be nil")

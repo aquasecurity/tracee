@@ -1,6 +1,6 @@
 # Deploy Grafana Dashboard
 
-Grafana is a visualization tools for exported metrics and logs, most commomly
+Grafana is a visualization tools for exported metrics and logs, most commonly
 used alongside prometheus.
 
 Since version 0.7.0, tracee exports useful runtime metrics to prometheus.
@@ -13,7 +13,7 @@ enabled using the `--metrics`.
 By using grafana and the new metrics from tracee, we can deploy a simple
 dashboard which tracks your tracee's instance performance and outputs.
 
-## Prequisites
+## Pre-requisites
 
 The following tools must be available for use, they can all be installed either
 through docker or installed/built on your machine.
@@ -41,7 +41,7 @@ Of course, the forwarded metrics ports can be changed, but you should note that
 some of the later instructions depend on these ports.
 
 If running Tracee locally through built binaries, the metrics address may be
-overriden with the `--listen-addr` flag.
+overrides with the `--listen-addr` flag.
 
 ## Run Prometheus and Configure it to Scrape Tracee
 
@@ -76,12 +76,12 @@ Or alternatively with docker:
 docker run -p 9090:9090 -v /path/to/config:/etc/prometheus prom/prometheus
 ```
 
-Then, try to access prometheus through `http://localhost:9090`. If succesful,
+Then, try to access prometheus through `http://localhost:9090`. If successful,
 move to the next step, otherwise consult with prometheus documentation.
 
 ## Run Grafana to display Tracee's Prometheus Metrics
 
-After succesfuly deploying Tracee and Prometheus we may now run Grafana to
+After successfully deploying Tracee and Prometheus we may now run Grafana to
 visualize it's metrics.
 
 Install grafana using their instructions and enter the now available grafana

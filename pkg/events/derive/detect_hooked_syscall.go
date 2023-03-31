@@ -39,7 +39,7 @@ func analyzeHookedAddresses(addresses []uint64, kernelSymbols helpers.KernelSymb
 		}
 		syscallsToCheck := events.SyscallsToCheck()
 		if idx > len(syscallsToCheck) {
-			return nil, errfmt.Errorf("syscall inedx out of the syscalls to check list")
+			return nil, errfmt.Errorf("syscall index out of the syscalls to check list")
 		}
 		hookingFunction := utils.ParseSymbol(syscallAddress, kernelSymbols)
 		syscallNumber := syscallsToCheck[idx]

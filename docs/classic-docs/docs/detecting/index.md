@@ -14,7 +14,7 @@ primarily made to leverage events collected with **tracee-ebpf** into a
 There are 3 basic concepts for **tracee-rules**:
 
 1. **Inputs** - Event sources to be processed.
-    1. **tracee-ebpf** only current supported ource
+    1. **tracee-ebpf** only current supported source
 
 2. **Rules (a.k.a Signatures)** - behavioral pattern to detect from the input
    source. Signatures can be authored in:
@@ -122,7 +122,7 @@ meaningful events (for the loaded signature(s)) you may request from
     TRC-5      Fileless Execution                  0.1.0   Executing a process from memory, without a file in the disk
     TRC-12     Illegitimate Shell                  0.1.0   A program on your server spawned a shell program. Shell is the linux command-line program, server programs usually don't run shell programs, so this alert might indicate an adversary is exploiting a server program to spawn a shell on your server.
     TRC-6      kernel module loading               0.1.0   Attempt to load a kernel module detection
-    TRC-10     K8S TLS Certificate Theft Detected  0.1.0   Kubernetes TLS certificate theft was detected. TLS certificates are used to establish trust between systems, the kubernetes certificate is used to to enable secured communication between kubernetes components, like the kubelet, scheduler, controller and API server. An adversary may steal a kubernetes certificate on a compromised system to impersonate kuberentes components within the cluster.
+    TRC-10     K8S TLS Certificate Theft Detected  0.1.0   Kubernetes TLS certificate theft was detected. TLS certificates are used to establish trust between systems, the kubernetes certificate is used to to enable secured communication between kubernetes components, like the kubelet, scheduler, controller and API server. An adversary may steal a kubernetes certificate on a compromised system to impersonate kubernetes components within the cluster.
     TRC-7      LD_PRELOAD                          0.1.0   Usage of LD_PRELOAD to allow hooks on process
     TRC-15     Hooking system calls by overriding the system call table entries 0.1.0   Usage of kernel modules to hook system calls
     ```
@@ -150,7 +150,7 @@ meaningful events (for the loaded signature(s)) you may request from
 
 !!! Example
     Let's pretend we would like to pick TRC-2 signature only and monitor all
-    new processes happening as childs of all running `bash` processes.
+    new processes happening as children of all running `bash` processes.
 
     ```text
     $ sudo ./dist/tracee-ebpf --output json --filter comm=bash --filter follow --output option:parse-arguments --output option:exec-env --filter event=$(./dist/tracee-rules --rules TRC-2 --list-events) | ./dist/tracee-rules --input-tracee format:json --input-tracee file:stdin --rules TRC-2

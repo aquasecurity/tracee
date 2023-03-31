@@ -196,7 +196,7 @@ func TestDeriveMultipleEvents(t *testing.T) {
 		DerivedEventsAmount int
 	}{
 		{
-			Name:           "Hapfapy flow - derive 1 event",
+			Name:           "Happy flow - derive 1 event",
 			ExpectedErrors: nil,
 			ArgsDeriveFunc: func(event trace.Event) ([][]interface{}, []error) {
 				return [][]interface{}{{1, 2}}, nil
@@ -204,7 +204,7 @@ func TestDeriveMultipleEvents(t *testing.T) {
 			DerivedEventsAmount: 1,
 		},
 		{
-			Name:           "Hapfapy flow - derive 2 event",
+			Name:           "Happy flow - derive 2 event",
 			ExpectedErrors: nil,
 			ArgsDeriveFunc: func(event trace.Event) ([][]interface{}, []error) {
 				return [][]interface{}{{1, 2}, {3, 4}}, nil

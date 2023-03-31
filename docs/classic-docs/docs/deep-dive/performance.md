@@ -49,7 +49,7 @@ From the **tracee** pipeline concept page, you learned that there might be
     1. eBPF programs already do filtering in-kernel but not for all
        possible filter inputs (this is being improved for next releases).
 
-2. Path in betwen **tracee-ebpf** and **tracee-rules**:
+2. Path in between **tracee-ebpf** and **tracee-rules**:
 
     1. From measurements, the pipe used in between **tracee-ebpf** and
        **tracee-rules** processes is NOT a bottleneck BUT the **gob** output

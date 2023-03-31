@@ -108,7 +108,7 @@ func main() {
 				Name:    "list",
 				Aliases: []string{"l"},
 				Value:   false,
-				Usage:   "list tracable events",
+				Usage:   "list traceable events",
 			},
 			&cli.StringSliceFlag{
 				Name:    "policy",
@@ -153,12 +153,12 @@ func main() {
 			&cli.IntFlag{
 				Name:    "perf-buffer-size",
 				Aliases: []string{"b"},
-				Value:   1024, // 4 MB of contigous pages
+				Value:   1024, // 4 MB of contiguous pages
 				Usage:   "size, in pages, of the internal perf ring buffer used to submit events from the kernel",
 			},
 			&cli.IntFlag{
 				Name:  "blob-perf-buffer-size",
-				Value: 1024, // 4 MB of contigous pages
+				Value: 1024, // 4 MB of contiguous pages
 				Usage: "size, in pages, of the internal perf ring buffer used to send blobs from the kernel",
 			},
 			&cli.StringFlag{

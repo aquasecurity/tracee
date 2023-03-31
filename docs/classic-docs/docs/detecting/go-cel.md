@@ -80,7 +80,7 @@ Hostname: fujitsu
        `tracee.Event` into `protobuf` so the evaluations can happen (check
        files inside `pkg/signatures/celsig/wrapper/` directory.
 
-    2. When writting your signature, it might happen that the event you're
+    2. When writing your signature, it might happen that the event you're
        filtering for does not have all of its arguments types wrapper into
        the protobuf wrapper. You may face errors such as:
        ```

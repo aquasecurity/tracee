@@ -1,10 +1,10 @@
 # Prerequisites for running Tracee
 
-A longterm supported kernel: 5.4, 5.10, 5.15, 5.18, 5.19. Check
+A long-term supported kernel: 5.4, 5.10, 5.15, 5.18, 5.19. Check
 [kernel.org](https://kernel.org) for current supported kernels.
 
 !!! Note
-    Most distributions longterm supported kernels are supported as well,
+    Most distributions long-term supported kernels are supported as well,
     including CentOS8 4.18 kernel.
 
 1. For **tracee:{{ git.tag }}** docker image, you should have one of the two:

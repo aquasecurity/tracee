@@ -50,7 +50,7 @@ Stats: {EventCount:1 ErrorCount:0 LostEvCount:0 LostWrCount:0 LostNtCount:0}
     But do note that **tracee-ebpf shall continue working** (informing only the
     KERNEL_RELEASE OSInfo option).
 
-If you need to override the underlaying Linux OS information, because you're
+If you need to override the underlying Linux OS information, because you're
 running inside a container that already has /etc/os-release file, for example,
 you may create another os-release file and inform tracee-ebpf by using
 LIBBPFGO's environment variable `LIBBPFGO_OSRELEASE_FILE`:

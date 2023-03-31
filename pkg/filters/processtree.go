@@ -17,7 +17,7 @@ import (
 )
 
 type ProcessTreeFilter struct {
-	PIDs    map[uint32]bool // PIDs is a map where k=pid and v represents whether it and its descendents should be traced or not
+	PIDs    map[uint32]bool // PIDs is a map where k=pid and v represents whether it and its descendent should be traced or not
 	enabled bool
 	mapName string
 }

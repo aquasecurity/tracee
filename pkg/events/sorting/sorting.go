@@ -296,7 +296,7 @@ func (sorter *EventsChronologicalSorter) getMostRecentEventTimestamp() (int, err
 		}
 	}
 	if mostRecentEventTimestamp == 0 {
-		return 0, errfmt.Errorf("all CPU queques are empty")
+		return 0, errfmt.Errorf("all CPU queues are empty")
 	}
 	return mostRecentEventTimestamp, nil
 }

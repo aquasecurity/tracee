@@ -53,7 +53,7 @@ type Cgroups struct {
 	cgroupv1 Cgroup
 	cgroupv2 Cgroup
 	cgroup   *Cgroup // pointer to default cgroup version
-	hid      int     // default cgroup controller hiearchy ID
+	hid      int     // default cgroup controller hierarchy ID
 }
 
 func NewCgroups() (*Cgroups, error) {
@@ -67,7 +67,7 @@ func NewCgroups() (*Cgroups, error) {
 		return nil, errfmt.WrapError(err)
 	}
 
-	// only start cgroupv1 if it is the OS default (orelse it isn't needed)
+	// only start cgroupv1 if it is the OS default (or else it isn't needed)
 	if defaultVersion == CgroupVersion1 {
 		cgroupv1, err = NewCgroup(CgroupVersion1)
 		if err != nil {
@@ -345,7 +345,7 @@ func GetCgroupDefaultVersion() (CgroupVersion, error) {
 
 // IsCgroupV2MountedAndDefault tests if cgroup2 is mounted and is the default
 // cgroup version being used by the running environment. It does so by checking
-// the existance of a "cgroup.controllers" file in default cgroupfs mountpoint.
+// the existence of a "cgroup.controllers" file in default cgroupfs mountpoint.
 func IsCgroupV2MountedAndDefault() (bool, error) {
 	_, err := os.Stat(CgroupControllersFile)
 	if os.IsNotExist(err) {

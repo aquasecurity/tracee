@@ -206,7 +206,7 @@ that will describe an event from a tracing software. This event comes from a
 syscall being executed and has the same name, or similar, as the syscall name.
 The event arguments are related to the syscall arguments. All the contents of
 the markdown file should come from the linux manual page of the given syscall or
-given information. The hooked function item is the kernel entry pooint for the
+given information. The hooked function item is the kernel entry point for the
 given syscall. The template for this markdown file is the following:
 `
 	templateYaml := fmt.Sprintf("```yaml\n%s\n```", template[:])
