@@ -15705,7 +15705,7 @@ Resolving deltas: 100% (8105/8105), done.
 </code></pre></div>
 </li>
 <li>
-<p>All makefiles have a <strong>help</strong> target to give you needed instrutions</p>
+<p>All makefiles have a <strong>help</strong> target to give you needed instructions</p>
 <div class="highlight"><pre><span></span><code><span class="go">make help</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code># environment
@@ -15821,7 +15821,7 @@ plugin.Open(&quot;/tracee/dist/signatures/builtin.so&quot;): Dynamic loading not
 </div>
 </li>
 <li>
-<p>Build a <strong>debuggable binary</strong> with DWARF generation by setting <code>DEBUG=1</code></p>
+<p>Build a <strong>debugable binary</strong> with DWARF generation by setting <code>DEBUG=1</code></p>
 <div class="highlight"><pre><span></span><code><span class="go">DEBUG=1 make</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS=&quot;-I/home/gg/code/tracee/dist/libbpf&quot; CGO_LDFLAGS=&quot;-lelf  -lz  /home/gg/code/tracee/dist/libbpf/libbpf.a&quot; go build \

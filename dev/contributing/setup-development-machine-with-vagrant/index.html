@@ -15984,7 +15984,7 @@ example, you can switch to Ubuntu Linux 20.04 Focal Fossa as follows:</p>
 <span class="w">  </span><span class="c1"># config.vm.box = &quot;ubuntu/jammy64&quot;     # Ubuntu 22.04 Jammy Jellyfish (CO-RE)</span>
 <span class="o">...</span>
 </code></pre></div>
-<p>This change requires reprovisioning the development machine:</p>
+<p>This change requires re-provisioning the development machine:</p>
 <div class="highlight"><pre><span></span><code><span class="go">vagrant destroy</span>
 <span class="go">vagrant up</span>
 </code></pre></div>
@@ -15996,8 +15996,7 @@ non CO-RE kernels, make sure to use an older kernel that does not provide
 the <code>/sys/kernel/btf/vmlinux</code> file.</p>
 </div>
 <h2 id="deploy-tracee-with-postee-on-kubernetes">Deploy Tracee with Postee on Kubernetes<a class="headerlink" href="#deploy-tracee-with-postee-on-kubernetes" title="Permanent link">&para;</a></h2>
-<p>The development machine described by Vagrantfile preinstalls <a href="https://microk8s.io">MicroK8s</a>
-Kubernetes cluster, which is suitable for testing Tracee.</p>
+<p>The development machine described by Vagrantfile pre-installs <a href="https://microk8s.io">MicroK8s</a> Kubernetes cluster, which is suitable for testing Tracee.</p>
 <div class="highlight"><pre><span></span><code><span class="go">microk8s status</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>microk8s is running

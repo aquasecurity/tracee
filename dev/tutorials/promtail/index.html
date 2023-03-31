@@ -15857,9 +15857,9 @@
 - Promtail for collecting logs from the pods on each node
 - Loki, which is feeding the logs inot Grafana</p>
 <p>And since it is easier to install Grafana together with Prometheus, we are also going to install Prometheus.</p>
-<p>If you are completely new to Loki, have a look at the following presentation:  <a href="https://youtu.be/jmtYUiBd_z0">Learning the tricks of Grafana Loki for distributed logging at scale in a Kubernetes environmen</a> </p>
+<p>If you are completely new to Loki, have a look at the following presentation:  <a href="https://youtu.be/jmtYUiBd_z0">Learning the tricks of Grafana Loki for distributed logging at scale in a Kubernetes environment</a> </p>
 <h3 id="grafana-and-prometheus">Grafana and Prometheus<a class="headerlink" href="#grafana-and-prometheus" title="Permanent link">&para;</a></h3>
-<p>First, we are going to install the kube-prometheus-stack chart with Promtheus and Grafana.</p>
+<p>First, we are going to install the kube-prometheus-stack chart with Prometheus and Grafana.</p>
 <p>For this, we will need to specify some custom values that we will pass into the Helm Chart. </p>
 <p>Create a new file called <code>grafana-config.yaml</code> with the following content:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">prometheus</span><span class="p">:</span>
@@ -15972,7 +15972,7 @@ Thus, we will install Tracee inside our cluster through the Tracee Helm Chart.</
 <p>Generally, it is possible to access logs from the Tracee pods directly through kubectl:</p>
 <div class="highlight"><pre><span></span><code><span class="go">kubectl logs -f daemonset/tracee -n tracee-system</span>
 </code></pre></div>
-<p>However, once you have all the above components installed, you can open the Grafana Dashbord, on the left, go to "Explore". There, you should be able to select Loki as a Datasource.</p>
+<p>However, once you have all the above components installed, you can open the Grafana Dashboard, on the left, go to "Explore". There, you should be able to select Loki as a Datasource.</p>
 <p>Now, you can write log queries in LogQL to access the logs that are stored in the Tracee pods:</p>
 <p><img alt="Screenshot from Grafana, accessing Tracee logs through Loki" src="../../images/loki.png" /></p>
 

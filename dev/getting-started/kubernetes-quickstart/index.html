@@ -15845,7 +15845,7 @@ tracee-fcjmp   1/1     Running   0          4m11s
 </details>
 
 <h2 id="interacting-with-tracee">Interacting with Tracee<a class="headerlink" href="#interacting-with-tracee" title="Permanent link">&para;</a></h2>
-<p>Once installed, Tracee immidiately starts producing system activity events, such as processes and containers activity, network activity, and more. To see the events that Tracee produces, use can use the <code>kubectl logs</code> command.</p>
+<p>Once installed, Tracee immediately starts producing system activity events, such as processes and containers activity, network activity, and more. To see the events that Tracee produces, use can use the <code>kubectl logs</code> command.</p>
 <div class="highlight"><pre><span></span><code><span class="go">kubectl logs -f daemonset/tracee -n tracee-system</span>
 </code></pre></div>
 <p>In production scenario you would want to collect and ship the events to a persistent storage. Check out the <a href="../docs/integrating/">Integration</a> section for more information.</p>
