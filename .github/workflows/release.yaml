@@ -9,6 +9,8 @@ on:
 jobs:
   release:
     name: Release X64 (Default)
+    env:
+      GH_TOKEN: ${{ github.token }}
     runs-on:
       [
         "github-self-hosted_ami-0f66f3ab4856ffc3f_${{ github.event.number }}-${{ github.run_id }}",
@@ -48,10 +50,10 @@ jobs:
           docker image push aquasec/tracee:full
           docker image push aquasec/tracee:${ARCH}-full
           docker image push aquasec/tracee:${ARCH}-${TAG}-full
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   release-arm64:
     name: Release ARM64
+    env:
+      GH_TOKEN: ${{ github.token }}
     # only runs after x64 released (x64 is still the "default" arch)
     needs:
       - release
@@ -90,5 +92,3 @@ jobs:
           docker image tag tracee:full aquasec/tracee:${ARCH}-${TAG}-full
           docker image push aquasec/tracee:${ARCH}-full
           docker image push aquasec/tracee:${ARCH}-${TAG}-full
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

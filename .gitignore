@@ -26,3 +26,6 @@ compile_commands.json
 
 # binaries and build files
 dist
+
+# release files
+release_notes.txt
