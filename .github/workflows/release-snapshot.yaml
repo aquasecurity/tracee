@@ -59,7 +59,6 @@ jobs:
           docker image push aquasec/tracee:x86_64-dev-full
   release-snapshot-arm64:
     name: Release Snapshot ARM64
-    # only runs after x64 released (x64 is still the "default" arch)
     runs-on:
       [
         "github-self-hosted_ami-0226a47b9804ee055_${{ github.event.number }}-${{ github.run_id }}",
