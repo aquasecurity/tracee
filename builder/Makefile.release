@@ -174,18 +174,18 @@ release: \
 #
 # prepare builder
 #
-	$(MAKE) -f builder/Makefile.tracee-make ubuntu-prepare
 	$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
+	$(MAKE) -f builder/Makefile.tracee-make ubuntu-prepare
 #
 # build official full container image (CO-RE + non CO-RE on-demand build)
 #
 	$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
 	BTFHUB=0 $(MAKE) -f builder/Makefile.tracee-container build-tracee-full
 #
-# build official slim container image (CO-RE + BTFHUB). TODO: re-enable BTFHUB
+# build official slim container image (CO-RE + BTFHUB).
 #
 	$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
-	BTFHUB=0 $(MAKE) -f builder/Makefile.tracee-container build-tracee
+	BTFHUB=1 $(MAKE) -f builder/Makefile.tracee-container build-tracee
 
 #
 # build binaries (tracee-ebpf, tracee-rules, rules)
