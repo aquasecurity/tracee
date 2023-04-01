@@ -172,20 +172,10 @@ release: \
 #
 # ----
 #
-# build binaries (tracee-ebpf, tracee-rules, rules)
+# prepare builder
 #
 	$(MAKE) -f builder/Makefile.tracee-make ubuntu-prepare
 	$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
-	BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee-ebpf"
-	BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee"
-	$(CMD_MV) dist/tracee-ebpf dist/tracee-ebpf-static
-	$(CMD_MV) dist/tracee dist/tracee-static
-	BTFHUB=0 STATIC=0 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="all"
-#
-# create the tar ball and checksum files
-#
-	$(CMD_TAR) -cvzf $(OUT_ARCHIVE) $(RELEASE_FILES)
-	$(CMD_CHECKSUM) $(OUT_ARCHIVE) > $(OUT_CHECKSUMS)
 #
 # build official full container image (CO-RE + non CO-RE on-demand build)
 #
@@ -196,6 +186,22 @@ release: \
 #
 	$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
 	BTFHUB=0 $(MAKE) -f builder/Makefile.tracee-container build-tracee
+
+#
+# build binaries (tracee-ebpf, tracee-rules, rules)
+#
+	$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
+	BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee-ebpf"
+	BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee"
+	$(CMD_MV) dist/tracee-ebpf dist/tracee-ebpf-static
+	$(CMD_MV) dist/tracee dist/tracee-static
+	BTFHUB=0 STATIC=0 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="all"
+#
+# create the tarball and checksum files
+#
+	$(CMD_TAR) -cvzf $(OUT_ARCHIVE) $(RELEASE_FILES)
+	$(CMD_CHECKSUM) $(OUT_ARCHIVE) > $(OUT_CHECKSUMS)
+
 #
 # note: the dev tags will be created by release-snapshot workflow
 #
