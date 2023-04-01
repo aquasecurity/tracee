@@ -27,6 +27,7 @@ CMD_RM ?= rm
 CMD_TOUCH ?= touch
 CMD_MKDIR ?= mkdir
 CMD_COSIGN ?= cosign
+CMD_MV ?= mv
 
 .ONESHELL:
 .check_%:
@@ -147,10 +148,12 @@ endif
 
 RELEASE_FILES = LICENSE
 RELEASE_FILES += $(OUTPUT_DIR)/tracee-ebpf
+RELEASE_FILES += $(OUTPUT_DIR)/tracee-ebpf-static
 RELEASE_FILES += $(OUTPUT_DIR)/tracee-rules
 RELEASE_FILES += $(OUTPUT_DIR)/tracee
-RELEASE_FILES += $(OUTPUT_DIR)/rules
-RELEASE_FILES += $(OUTPUT_DIR)/tracee.bpf.core.o
+RELEASE_FILES += $(OUTPUT_DIR)/tracee-static
+RELEASE_FILES += $(OUTPUT_DIR)/signatures
+#RELEASE_FILES += $(OUTPUT_DIR)/tracee.bpf.core.o
 
 OUT_ARCHIVE := $(OUTPUT_DIR)/tracee-$(ARCH).$(SNAPSHOT_VERSION).tar.gz
 OUT_CHECKSUMS := $(OUTPUT_DIR)/checksum-$(ARCH).$(SNAPSHOT_VERSION).txt
@@ -174,20 +177,26 @@ release: \
 #
 	$(MAKE) -f builder/Makefile.tracee-make ubuntu-prepare
 	$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
-	BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="all"
+	BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee-ebpf"
+	BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee"
+	$(CMD_MV) dist/tracee-ebpf dist/tracee-ebpf-static
+	$(CMD_MV) dist/tracee dist/tracee-static
+	BTFHUB=0 STATIC=0 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="all"
 #
 # create the tar ball and checksum files
 #
-	$(CMD_TAR) -czf $(OUT_ARCHIVE) $(RELEASE_FILES)
+	$(CMD_TAR) -cvzf $(OUT_ARCHIVE) $(RELEASE_FILES)
 	$(CMD_CHECKSUM) $(OUT_ARCHIVE) > $(OUT_CHECKSUMS)
-#
-# build official slim container image (CO-RE + BTFHUB)
-#
-	BTFHUB=1 $(MAKE) -f builder/Makefile.tracee-container build-tracee
 #
 # build official full container image (CO-RE + non CO-RE on-demand build)
 #
+	$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
 	BTFHUB=0 $(MAKE) -f builder/Makefile.tracee-container build-tracee-full
+#
+# build official slim container image (CO-RE + BTFHUB). TODO: re-enable BTFHUB
+#
+	$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
+	BTFHUB=0 $(MAKE) -f builder/Makefile.tracee-container build-tracee
 #
 # note: the dev tags will be created by release-snapshot workflow
 #
@@ -196,32 +205,6 @@ release: \
 # RELEASE
 #
 ifneq ("$(SNAPSHOT)", "1")
-#
-# tag container images
-#
-ifeq ($(ARCH),x86_64)
-	$(CMD_DOCKER) tag tracee:latest $(PUSH_DOCKER_REPO):latest
-	$(CMD_DOCKER) tag tracee:full $(PUSH_DOCKER_REPO):full
-	$(CMD_DOCKER) tag tracee:latest $(PUSH_DOCKER_REPO):$(IMAGE_TAG)
-	$(CMD_DOCKER) tag tracee:full $(PUSH_DOCKER_REPO):$(IMAGE_TAG)-full
-endif
-	$(CMD_DOCKER) tag tracee:latest $(PUSH_DOCKER_REPO):$(ARCH)
-	$(CMD_DOCKER) tag tracee:full $(PUSH_DOCKER_REPO):$(ARCH)-full
-	$(CMD_DOCKER) tag tracee:latest $(PUSH_DOCKER_REPO):$(ARCH)-$(IMAGE_TAG)
-	$(CMD_DOCKER) tag tracee:full $(PUSH_DOCKER_REPO):$(ARCH)-$(IMAGE_TAG)-full
-#
-# push container images to docker hub
-#
-ifeq ($(ARCH),x86_64)
-	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):latest
-	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):$(IMAGE_TAG)
-	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):full
-	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):$(IMAGE_TAG)-full
-endif
-	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):$(ARCH)
-	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):$(ARCH)-full
-	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):$(ARCH)-$(IMAGE_TAG)
-	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):$(ARCH)-$(IMAGE_TAG)-full
 #
 # create release notes (x86_64 only, other arches will be added after release)
 #
