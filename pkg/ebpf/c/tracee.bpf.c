@@ -4679,7 +4679,9 @@ int BPF_KPROBE(trace_ret_exec_binprm2)
         save_str_arr_to_buf(p.event, (const char *const *) sys->args.args[2], 11); // userspace envp
     }
 
-    return events_perf_submit(&p, PROCESS_EXECUTION_FAILED, PT_REGS_RC(ctx));
+    int ret = PT_REGS_RC(ctx); // needs to be int
+
+    return events_perf_submit(&p, PROCESS_EXECUTION_FAILED, ret);
 }
 
 // clang-format off
