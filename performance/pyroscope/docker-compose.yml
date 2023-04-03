@@ -1,0 +1,88 @@
+version: '3.8'
+
+volumes:
+  prometheus_data: {}
+
+services:
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: tracee-node
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.disable-defaults'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--collector.cpu'
+      - '--collector.ethtool'
+      - '--collector.loadavg'
+      - '--collector.meminfo'
+      - '--collector.meminfo_numa'
+      - '--collector.netdev'
+      - '--collector.netstat'
+      - '--collector.os'
+      - '--collector.pressure'
+      - '--collector.processes'
+      - '--collector.sockstat'
+      - '--collector.softnet'
+      - '--collector.tcpstat'
+    expose:
+      - 9100
+    network_mode: "host"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: tracee-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    expose:
+      - 9090
+    network_mode: "host"
+
+  grafana:
+    image: grafana/grafana:main
+    container_name: tracee-grafana
+    restart: unless-stopped
+    volumes:
+      - ./provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=pyroscope
+      - GF_INSTALL_PLUGINS=https://github.com/pyroscope-io/grafana-panel-plugin/releases/download/v1.1.0/pyroscope-panel-1.1.0.zip;pyroscope-panel,https://github.com/pyroscope-io/grafana-datasource-plugin/releases/download/v1.1.0/pyroscope-datasource-1.1.0.zip;pyroscope-datasource
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_NAME=Main Org.
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+      - GF_AUTH_OAUTH_AUTO_LOGIN=true
+      - GF_EXPLORE_ENABLED=false
+      - GF_ALERTING_ENABLED=false
+      - GF_UNIFIED_ALERTING_ENABLED=false
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/tracee.json
+    expose:
+      - 3000
+    network_mode: "host"
+
+  pyroscope:
+    image: pyroscope/pyroscope:latest
+    container_name: tracee-pyroscope
+    restart: unless-stopped
+    environment:
+        - PYROSCOPE_LOG_LEVEL=info
+    expose:
+      - 4040
+    command:
+      - "server"
+    network_mode: "host"

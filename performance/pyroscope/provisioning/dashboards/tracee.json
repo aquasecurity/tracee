@@ -1,0 +1,680 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "dark-green",
+            "mode": "fixed"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "series",
+            "axisGridShow": true,
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 50,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "area"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "dark-green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "rate(tracee_ebpf_events_total[$__rate_interval])",
+          "legendFormat": "TOTAL",
+          "range": true,
+          "refId": "TOTAL"
+        }
+      ],
+      "title": "TOTAL EVENTS",
+      "transparent": true,
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "dark-blue",
+            "mode": "fixed"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "series",
+            "axisGridShow": true,
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 50,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "area"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "dark-blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "rate(tracee_ebpf_events_filtered[$__rate_interval])",
+          "legendFormat": "FILTERED",
+          "range": true,
+          "refId": "FILTERED"
+        }
+      ],
+      "title": "FILTERED EVENTS",
+      "transparent": true,
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "dark-red",
+            "mode": "fixed"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "series",
+            "axisGridShow": true,
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 50,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "area"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "dark-red",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "rate(tracee_ebpf_lostevents_total[$__rate_interval])",
+          "legendFormat": "LOST",
+          "range": true,
+          "refId": "LOST"
+        }
+      ],
+      "title": "LOST EVENTS",
+      "transparent": true,
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PROMETHEUS"
+      },
+      "description": "Each line represents ONE SPECIFIC CPU percentage, and all of them are summing ALL USER CPU TIME in a stack.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisGridShow": true,
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 8,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "area"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS"
+          },
+          "editorMode": "code",
+          "expr": "rate(node_cpu_seconds_total{mode=\"user\"}[$__rate_interval])*100",
+          "legendFormat": "USER",
+          "range": true,
+          "refId": "USER"
+        }
+      ],
+      "title": "USER PER CPU TIME STACKED",
+      "transparent": true,
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PDC1078F23EBDF0E5"
+      },
+      "description": "Each line represents ONE SPECIFIC CPU percentage, and all of them are summing ALL SYSTEM CPU TIME in a stack.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisGridShow": true,
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 8,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "area"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PROMETHEUS"
+          },
+          "editorMode": "code",
+          "expr": "rate(node_cpu_seconds_total{mode=\"system\"}[$__rate_interval])*100",
+          "legendFormat": "SYSTEM",
+          "range": true,
+          "refId": "SYSTEM"
+        }
+      ],
+      "title": "SYSTEM PERCPU TIME STACKED",
+      "transparent": true,
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PDC1078F23EBDF0E5"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisGridShow": true,
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 8,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "area"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC1078F23EBDF0E5"
+          },
+          "editorMode": "code",
+          "expr": "node_memory_MemTotal_bytes/1024/1024/1024",
+          "hide": false,
+          "legendFormat": "TOTAL",
+          "range": true,
+          "refId": "TOTAL"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC1078F23EBDF0E5"
+          },
+          "editorMode": "code",
+          "expr": "node_memory_MemFree_bytes/1024/1024/1024",
+          "hide": false,
+          "legendFormat": "FREE",
+          "range": true,
+          "refId": "FREE"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC1078F23EBDF0E5"
+          },
+          "editorMode": "code",
+          "expr": "(node_memory_SReclaimable_bytes+node_memory_KReclaimable_bytes)/1024/1024/1024",
+          "hide": false,
+          "legendFormat": "RECLAIMABLE",
+          "range": true,
+          "refId": "RECLAIMABLE"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC1078F23EBDF0E5"
+          },
+          "editorMode": "code",
+          "expr": "node_memory_Active_bytes/1024/1024/1024",
+          "hide": false,
+          "legendFormat": "ACTIVE",
+          "range": true,
+          "refId": "ACTIVE"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC1078F23EBDF0E5"
+          },
+          "editorMode": "code",
+          "expr": "node_memory_Inactive_bytes/1024/1024/1024",
+          "hide": false,
+          "legendFormat": "INACTIVE",
+          "range": true,
+          "refId": "INACTIVE"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC1078F23EBDF0E5"
+          },
+          "editorMode": "code",
+          "expr": "(node_memory_Cached_bytes+node_memory_Buffers_bytes)/1024/1024/1024",
+          "hide": false,
+          "legendFormat": "FS CACHE + BUFFERS",
+          "range": true,
+          "refId": "FS CACHE + BUFFERS"
+        }
+      ],
+      "title": "HOST MEMORY IN GB",
+      "transparent": true,
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "pyroscope-datasource",
+        "uid": "P08ABB48F481CB846"
+      },
+      "gridPos": {
+        "h": 27,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "id": 7,
+      "options": {
+        "showToolbar": false
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "pyroscope-datasource",
+            "uid": "P08ABB48F481CB846"
+          },
+          "format": "json",
+          "from": "now-1h",
+          "name": "tracee.cpu",
+          "refId": "CPUFLAME",
+          "until": "now"
+        }
+      ],
+      "transparent": true,
+      "type": "pyroscope-panel"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": [],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-5m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "TRACEE",
+  "uid": "e5e610df-57b9-4b6d-a75c-b5870023387d",
+  "version": 1,
+  "weekStart": ""
+}
