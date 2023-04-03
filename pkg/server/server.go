@@ -7,6 +7,7 @@ import (
 	"net/http/pprof"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/pyroscope-io/pyroscope/pkg/agent/profiler"
 
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
@@ -16,6 +17,7 @@ type Server struct {
 	hs             *http.Server
 	mux            *http.ServeMux // just an exposed copy of hs.Handler
 	metricsEnabled bool
+	pyroProfiler   *profiler.Profiler
 }
 
 // New creates a new server
@@ -83,6 +85,20 @@ func (s *Server) EnablePProfEndpoint() {
 	s.mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
 	s.mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 	s.mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+}
+
+// EnablePyroAgent enables pyroscope agent in golang push mode
+// TODO: make this configurable
+func (s *Server) EnablePyroAgent() error {
+	profiler, err := profiler.Start(
+		profiler.Config{
+			ApplicationName: "tracee",
+			ServerAddress:   "http://localhost:4040",
+		},
+	)
+	s.pyroProfiler = profiler
+
+	return err
 }
 
 // MetricsEndpointEnabled returns true if metrics endpoint is enabled

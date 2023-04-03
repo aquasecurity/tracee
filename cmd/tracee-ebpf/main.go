@@ -138,6 +138,11 @@ func main() {
 				Usage: "enable pprof endpoints",
 				Value: false,
 			},
+			&cli.BoolFlag{
+				Name:  server.PyroscopeAgentFlag,
+				Usage: "enable pyroscope agent",
+				Value: false,
+			},
 			&cli.StringFlag{
 				Name:  server.ListenEndpointFlag,
 				Usage: "listening address of the metrics endpoint server",

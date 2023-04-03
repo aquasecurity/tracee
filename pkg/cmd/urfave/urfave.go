@@ -193,6 +193,7 @@ func GetTraceeRunner(c *cli.Context, version string, newBinary bool) (cmd.Runner
 		c.Bool(server.MetricsEndpointFlag),
 		c.Bool(server.HealthzEndpointFlag),
 		c.Bool(server.PProfEndpointFlag),
+		c.Bool(server.PyroscopeAgentFlag),
 	)
 
 	if err != nil {
