@@ -1,0 +1,12 @@
+apiVersion: 1
+
+deleteDatasources:
+  - name: PYROSCOPE
+    orgId: 1
+
+datasources:
+  - name: PYROSCOPE
+    type: pyroscope-datasource
+    jsonData:
+      path: "http://localhost:4040"
+    editable: true

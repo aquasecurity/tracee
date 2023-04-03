@@ -1,0 +1,120 @@
+.PHONY: all
+all:
+	@$(MAKE) help
+
+#
+# make
+#
+
+.ONESHELL:
+SHELL = /bin/bash
+
+MAKE = make -f $(shell find . -name Makefile.performance)
+GENERAL_MAKE = MAKEFLAGS="-j1 --no-print-directory" make
+MAKEFLAGS += --no-print-directory
+
+#
+# environment
+#
+
+PERFDIR := ./performance
+PYRODIR := $(PERFDIR)/pyroscope
+
+#
+# tools
+#
+
+CMD_DOCKER := docker
+CMD_PS := ps
+
+.check_%:
+#
+	@command -v $* >/dev/null
+	if [ $$? -ne 0 ]; then
+		echo "missing required tool $*"
+		exit 1
+	else
+		touch $@ # avoid target rebuilds due to inexistent file
+	fi
+
+#
+# usage
+#
+
+.PHONY: help
+help:
+	@echo ""
+	@echo "To view current host metrics and CPU flame graph:"
+	@echo ""
+	@echo "    $$ make -f builder/Makefile.performance pyroscope-start"
+	@echo "    $$ make -f builder/Makefile.performance pyroscope-stop"
+	@echo ""
+	@echo "Note: tracee should BE RUNNING before starting pyroscope."
+	@echo "Note: run tracee with --pyroscope cmd line option."
+	@echo ""
+
+#
+# requirements
+#
+
+.PHONY: .check_tree
+.check_tree:
+#
+	@if [ ! -d ./builder ]; then
+		echo "you must be in the root directory"
+		exit 1
+	fi
+	if [ ! -d $(PYRODIR) ]; then
+		echo "pyroscope directory not found"
+		exit 1
+	fi
+
+#
+# pyroscope
+#
+
+.PHONY: pyroscope-start
+pyroscope-start: | \
+	.check_tree \
+	.check_$(CMD_DOCKER)
+#
+	@if [ $(shell $(CMD_PS) -axho comm | grep [t]racee | wc -l) -eq 0 ]; then
+		echo "tracee is NOT RUNNING"
+		exit 0
+	fi
+	if [ $(shell $(CMD_PS) -axho args | grep -- "-[p]yroscope" | wc -l) -eq 0 ]; then
+		echo "tracee is NOT RUNNING with --pyroscope"
+		exit 0
+	fi
+	if [ $(shell $(CMD_PS) -axho args | grep -- "-[p]prof" | wc -l) -eq 0 ]; then
+		echo "tracee is NOT RUNNING with --pprof"
+		exit 0
+	fi
+	echo ""
+	echo "STARTING Node Exporter, Prometheus, Grafana and Pyroscope"
+	echo ""
+	cd $(PYRODIR)
+	$(CMD_DOCKER) compose up -d
+	echo ""
+	echo "You may now access the DASHBOARD at: http://localhost:3000/"
+	echo ""
+
+.PHONY: pyroscope-stop
+pyroscope-stop: | \
+	.check_tree \
+	.check_$(CMD_DOCKER)
+#
+	@if [ $(shell $(CMD_DOCKER) ps -q -f 'name=tracee' | wc -l) -eq 0 ]; then
+		echo "pyroscope already STOPPED"
+		exit 0
+	fi
+	echo "STOPPING Node Exporter, Prometheus, Grafana and Pyroscope"
+	$(CMD_DOCKER) ps -q -f 'name=tracee' | xargs docker rm -f
+#
+# clean
+#
+
+.PHONY: clean
+clean:
+	rm -f .check_tree
+	rm -f .check_$(CMD_CLANG_FMT)
