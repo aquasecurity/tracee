@@ -159,6 +159,7 @@ func main() {
 				c.Bool(server.MetricsEndpointFlag),
 				c.Bool(server.HealthzEndpointFlag),
 				c.Bool(server.PProfEndpointFlag),
+				c.Bool(server.PyroscopeAgentFlag),
 			)
 
 			if err != nil {
@@ -216,6 +217,11 @@ func main() {
 			&cli.BoolFlag{
 				Name:  server.PProfEndpointFlag,
 				Usage: "enable pprof endpoints",
+				Value: false,
+			},
+			&cli.BoolFlag{
+				Name:  server.PyroscopeAgentFlag,
+				Usage: "enable pyroscope agent",
 				Value: false,
 			},
 			&cli.BoolFlag{
