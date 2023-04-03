@@ -71,7 +71,18 @@ func (r Runner) Run(ctx context.Context) error {
 		}
 	}()
 
-	return t.Run(ctx) // return when context is cancelled by signal
+	// This will block until the context is done
+	err = t.Run(ctx)
+
+	// Drain and print the remaining channel events that were sent before full termination
+	for {
+		select {
+		case event := <-r.TraceeConfig.ChanEvents:
+			broadcast.Print(event)
+		default:
+			return err
+		}
+	}
 }
 
 func PrintEventList(printRulesSet bool) {

@@ -1513,7 +1513,7 @@ func (t *Tracee) Close() {
 		logger.Errorw("Cgroups destroy", "error", err)
 	}
 
-	// set running to false only if there were no errors
+	// set running to false only after all resources are cleaned
 	t.running.Store(false)
 }
 
