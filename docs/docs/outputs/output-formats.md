@@ -80,11 +80,3 @@ When authoring a Go template the data source is Tracee's `trace.Event` struct, w
 Go template can utilize helper functions from [Sprig](http://masterminds.github.io/sprig/).
 
 For example templates, see [tracee/cmd/tracee-rules/templates](https://github.com/aquasecurity/tracee/tree/main/cmd/tracee-rules/templates).
-
-## Logging
-
-Redirect logs to a file if needed:
-
-```console
-sudo TRACEE_BPF_FILE=do-not-exist ./dist/tracee --filter comm=bash --filter follow --filter event=openat --output json:/tmp/tracee.events --output log-file:/tmp/tracee.log
-```
