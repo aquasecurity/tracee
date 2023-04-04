@@ -19,6 +19,10 @@ do_uname_who() {
     taskset -c 0 uname; who
 } > /dev/null
 
+do_docker_pull_alpine() {
+    docker pull alpine
+} > /dev/null
+
 do_docker_run() {
     outputFileName=$1
     output=$(docker run -d --rm alpine)
