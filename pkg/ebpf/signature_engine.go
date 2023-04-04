@@ -29,6 +29,10 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 		for {
 			select {
 			case event := <-in:
+				if event == nil {
+					continue // might happen during initialization (ctrl+c seg faults)
+				}
+
 				id := events.ID(event.EventID)
 
 				// if the event is marked as submit, we pass it to the engine

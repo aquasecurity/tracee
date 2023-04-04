@@ -444,6 +444,10 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 		for {
 			select {
 			case event := <-in:
+				if event == nil {
+					continue // might happen during initialization (ctrl+c seg faults)
+				}
+
 				// Get a copy of our event before sending it down the pipeline.
 				// This is needed because later modification of the event (in
 				// particular of the matched policies) can affect the derivation
