@@ -110,8 +110,8 @@ func PrepareFilterMapFromPolicies(policies []PolicyFile) (FilterMap, error) {
 				return nil, err
 			}
 
-			// currently an event can only be used once in the policy,
-			// this might change in the future to allow multiple times the same event with different filters
+			// Currently, an event can only be used once in the policy. Support for using the same
+			// event, multiple times, with different filters, shall be implemented in the future.
 			if _, ok := events[r.Event]; ok {
 				return nil, errfmt.Errorf("policy %s, event %s is duplicated", p.Name, r.Event)
 			}
@@ -132,7 +132,7 @@ func PrepareFilterMapFromPolicies(policies []PolicyFile) (FilterMap, error) {
 				operatorIdx := strings.IndexAny(f, "=!<>")
 
 				if operatorIdx == -1 {
-					return nil, errfmt.Errorf("invalid filter: %s", f)
+					return nil, errfmt.Errorf("invalid filter operator: %s", f)
 				}
 
 				filterName := f[:operatorIdx]
@@ -227,7 +227,7 @@ func validateScope(policyName, s string) error {
 	scopes := []string{
 		"uid",
 		"pid",
-		"mntNS",
+		"mntns",
 		"pidns",
 		"uts",
 		"comm",

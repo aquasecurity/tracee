@@ -35,9 +35,10 @@ func newFilterFlagBasedOn(f *filterFlag, policyName string) *filterFlag {
 
 func TestPolicyScopes(t *testing.T) {
 	tests := []struct {
-		testName string
-		policy   PolicyFile
-		expected FilterMap
+		testName           string
+		policy             PolicyFile
+		expected           FilterMap
+		skipPolicyCreation bool
 	}{
 		{
 			testName: "global scope - single event",
@@ -122,11 +123,11 @@ func TestPolicyScopes(t *testing.T) {
 			},
 		},
 		{
-			testName: "mntNS scope",
+			testName: "mntns scope",
 			policy: PolicyFile{
-				Name:          "mntNS_scope",
-				Description:   "mntNS scope",
-				Scope:         []string{"mntNS=4026531840"},
+				Name:          "mntns",
+				Description:   "mntns scope",
+				Scope:         []string{"mntns=4026531840"},
 				DefaultAction: "log",
 				Rules: []Rule{
 					{Event: "write"},
@@ -135,13 +136,13 @@ func TestPolicyScopes(t *testing.T) {
 			expected: FilterMap{
 				0: {
 					{
-						full:              "mntNS=4026531840",
-						filterName:        "mntNS",
+						full:              "mntns=4026531840",
+						filterName:        "mntns",
 						operatorAndValues: "=4026531840",
 						policyIdx:         0,
-						policyName:        "mntNS_scope",
+						policyName:        "mntns",
 					},
-					newFilterFlagBasedOn(writeFlag, "mntNS_scope"),
+					newFilterFlagBasedOn(writeFlag, "mntns"),
 				},
 			},
 		},
@@ -360,6 +361,7 @@ func TestPolicyScopes(t *testing.T) {
 					newFilterFlagBasedOn(writeFlag, "binary_scope"),
 				},
 			},
+			skipPolicyCreation: true, // needs root privileges
 		},
 		{
 			testName: "bin=4026532448:/usr/bin/ls",
@@ -465,6 +467,11 @@ func TestPolicyScopes(t *testing.T) {
 				assert.Equal(t, v, filterMap[k])
 			}
 
+			if !test.skipPolicyCreation {
+				p, err := CreatePolicies(filterMap)
+				assert.NotNil(t, p)
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
@@ -1393,9 +1400,10 @@ func TestPolicyEventFilter(t *testing.T) {
 
 func TestPrepareFilterScopesForPolicyValidations(t *testing.T) {
 	tests := []struct {
-		testName      string
-		policies      []PolicyFile
-		expectedError error
+		testName            string
+		policies            []PolicyFile
+		expectedError       error
+		expectedPolicyError bool
 	}{
 		{
 			testName:      "empty name",
@@ -1546,7 +1554,7 @@ func TestPrepareFilterScopesForPolicyValidations(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("flags.PrepareFilterMapFromPolicies: invalid filter: random"),
+			expectedError: errors.New("flags.PrepareFilterMapFromPolicies: invalid filter operator: random"),
 		},
 		{
 			testName: "invalid filter",
