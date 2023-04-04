@@ -28,12 +28,12 @@ scope:
     - pid=1000
 ```
 
-### mntNS
+### mntns
 Events are collected from the mount namespace:
 
 ```yaml
 scope:
-    - mntNS=4026531840
+    - mntns=4026531840
 ```
 
 ### pidns
