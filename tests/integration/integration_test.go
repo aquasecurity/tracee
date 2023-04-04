@@ -174,6 +174,12 @@ func checkSetFs(t *testing.T, gotOutput *eventOutput) {
 }
 
 func checkNewContainers(t *testing.T, gotOutput *eventOutput) {
+	// pull alpine image first otherwise pull might happen
+	// on docker run and cause output to be too delayed
+	_, err := forkAndExecFunction(doPullAlpine)
+	require.NoError(t, err)
+
+	// start test
 	containerIdBytes, err := forkAndExecFunction(doDockerRun)
 	require.NoError(t, err)
 	containerId := strings.TrimSuffix(string(containerIdBytes), "\n")
@@ -557,6 +563,7 @@ const (
 	doLsUname     testFunc = "do_ls_uname"
 	doUnameWho    testFunc = "do_uname_who"
 	doDockerRun   testFunc = "do_docker_run"
+	doPullAlpine  testFunc = "do_docker_pull_alpine"
 	doFileOpen    testFunc = "do_file_open"
 	getDockerdPid testFunc = "get_dockerd_pid"
 )
