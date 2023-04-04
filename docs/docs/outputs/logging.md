@@ -1,7 +1,7 @@
 Configure log severity:
 
 ```console
-sudo ./distr/tracee --log debug
+sudo ./dist/tracee --log debug
 ```
 
 Redirect logs to a file if needed:
@@ -13,7 +13,7 @@ sudo ./dist/tracee --filter comm=bash --filter follow --filter event=openat --ou
 Logs can be aggregated for a given interval to delay its output:
 
 ```console
-sudo ./distr/tracee --log debug --log aggregate:5s
+sudo ./dist/tracee --log debug --log aggregate:5s
 ```
 
 
