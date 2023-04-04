@@ -371,3 +371,29 @@ Tracee can capture the following types of artifacts:
         Example kernel module taken from [this blog]
 
 [this blog]: https://blog.sourcerer.io/writing-a-simple-linux-kernel-module-d9dc3762c234
+
+1. **BPF programs**
+
+    Wheneber a **BPF program** is loaded, the BPF bytecode will be captured.
+    This captured bytecode represents the BPF program as it was loaded by the loading process.
+    It is basically the BPF section of the compiled ELF that loads the BPF program, which contains the program instructions themselves.
+    You can disassemble the bytecode with the help of `binutils-bpf` package and the following command line:
+    `objdump -D -b binary -m bpf <path>`
+
+     ```text
+     $ sudo ./dist/tracee-ebpf \
+        --output none \
+        --filter comm=bash \
+        --filter follow \
+        --capture clear-dir \
+        --capture bpf
+     ```
+
+    Captured bpf bytecode will be found in tracee destination directory, just like
+    any other captured file would be:
+
+     ```text
+     $ sudo ls /tmp/tracee/out/host
+       bpf.name-test_prog.pid-3668786.c8b62228208f4bdbf21df09c01046b73dd44733841675bf3c0ff969fbedab616
+     ```
+   The hex value after the last "." is the hash of the bpf bytecode.
