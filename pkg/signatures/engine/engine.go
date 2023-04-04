@@ -143,6 +143,55 @@ func (engine *Engine) checkCompletion() bool {
 	return false
 }
 
+func (engine *Engine) processEvent(event protocol.Event) {
+	engine.signaturesMutex.RLock()
+	defer engine.signaturesMutex.RUnlock()
+
+	signatureSelector := detect.SignatureEventSelector{
+		Source: event.Headers.Selector.Source,
+		Name:   event.Headers.Selector.Name,
+		Origin: event.Headers.Selector.Origin,
+	}
+	_ = engine.stats.Events.Increment()
+
+	// Check the selector for every case and partial case
+
+	// Match full selector
+	for _, s := range engine.signaturesIndex[signatureSelector] {
+		engine.dispatchEvent(s, event)
+	}
+
+	// Match partial selector, select for all origins
+	partialSigEvtSelector := detect.SignatureEventSelector{
+		Source: signatureSelector.Source,
+		Name:   signatureSelector.Name,
+		Origin: ALL_EVENT_ORIGINS,
+	}
+	for _, s := range engine.signaturesIndex[partialSigEvtSelector] {
+		engine.dispatchEvent(s, event)
+	}
+
+	// Match partial selector, select for event names
+	partialSigEvtSelector = detect.SignatureEventSelector{
+		Source: signatureSelector.Source,
+		Name:   ALL_EVENT_TYPES,
+		Origin: signatureSelector.Origin,
+	}
+	for _, s := range engine.signaturesIndex[partialSigEvtSelector] {
+		engine.dispatchEvent(s, event)
+	}
+
+	// Match partial selector, select for all origins and event names
+	partialSigEvtSelector = detect.SignatureEventSelector{
+		Source: signatureSelector.Source,
+		Name:   ALL_EVENT_TYPES,
+		Origin: ALL_EVENT_ORIGINS,
+	}
+	for _, s := range engine.signaturesIndex[partialSigEvtSelector] {
+		engine.dispatchEvent(s, event)
+	}
+}
+
 // consumeSources starts consuming the input sources
 // it runs continuously until stopped by the done channel
 func (engine *Engine) consumeSources(ctx context.Context) {
@@ -169,40 +218,24 @@ func (engine *Engine) consumeSources(ctx context.Context) {
 				if engine.checkCompletion() {
 					return
 				}
-			} else {
-				engine.signaturesMutex.RLock()
-				signatureSelector := detect.SignatureEventSelector{
-					Origin: event.Headers.Selector.Origin,
-					Name:   event.Headers.Selector.Name,
-					Source: event.Headers.Selector.Source,
-				}
-				source := signatureSelector.Source
-				_ = engine.stats.Events.Increment()
 
-				//Check the selector for every case and partial case
-
-				//Match full selector
-				for _, s := range engine.signaturesIndex[signatureSelector] {
-					engine.dispatchEvent(s, event)
-				}
-
-				//Match partial selector, select for all origins
-				for _, s := range engine.signaturesIndex[detect.SignatureEventSelector{Source: source, Name: signatureSelector.Name, Origin: ALL_EVENT_ORIGINS}] {
-					engine.dispatchEvent(s, event)
-				}
-
-				//Match partial selector, select for event names
-				for _, s := range engine.signaturesIndex[detect.SignatureEventSelector{Source: source, Name: ALL_EVENT_TYPES, Origin: signatureSelector.Origin}] {
-					engine.dispatchEvent(s, event)
-				}
-
-				//Match partial selector, select for all origins and event names
-				for _, s := range engine.signaturesIndex[detect.SignatureEventSelector{Source: source, Name: ALL_EVENT_TYPES, Origin: ALL_EVENT_ORIGINS}] {
-					engine.dispatchEvent(s, event)
-				}
-				engine.signaturesMutex.RUnlock()
+				continue
 			}
+			engine.processEvent(event)
+
 		case <-ctx.Done():
+			goto drain
+		}
+	}
+
+drain:
+	// drain and process all remaining events
+	for {
+		select {
+		case event := <-engine.inputs.Tracee:
+			engine.processEvent(event)
+
+		default:
 			return
 		}
 	}

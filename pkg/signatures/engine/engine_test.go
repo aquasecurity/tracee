@@ -307,32 +307,36 @@ func TestEngine_ConsumeSources(t *testing.T) {
 	emptyEvent := protocol.Event{}
 
 	for _, tc := range testCases {
-		inputs := EventSources{}
-		inputs.Tracee = make(chan protocol.Event, 1)
-		outputChan := make(chan detect.Finding, 1)
-		ctx, cancel := context.WithCancel(context.Background())
-		var logBuf []byte
-		loggerBuf := bytes.NewBuffer(logBuf)
-		logger.Init(
-			logger.LoggingConfig{
-				Logger: logger.NewLogger(logger.LoggerConfig{
-					Writer:  loggerBuf,
-					Level:   logger.InfoLevel,
-					Encoder: logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
-				}),
-				Aggregate: false,
-			},
-		)
-
 		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			inputs := EventSources{}
+			inputs.Tracee = make(chan protocol.Event, 1)
+			outputChan := make(chan detect.Finding, 1)
+
 			defer func() {
 				// signal the end
 				cancel()
 
+				// give some time for the goroutine to finish
+				time.Sleep(1 * time.Second)
+
 				// cleanup
-				close(outputChan)
 				close(inputs.Tracee)
+				close(outputChan)
 			}()
+
+			var logBuf []byte
+			loggerBuf := bytes.NewBuffer(logBuf)
+			logger.Init(
+				logger.LoggingConfig{
+					Logger: logger.NewLogger(logger.LoggerConfig{
+						Writer:  loggerBuf,
+						Level:   logger.InfoLevel,
+						Encoder: logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
+					}),
+					Aggregate: false,
+				},
+			)
 
 			var sigs []detect.Signature
 			sigs = append(sigs, &tc.inputSignature)
