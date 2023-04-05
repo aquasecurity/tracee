@@ -626,47 +626,51 @@ func (t *Tracee) initTailCall(mapName string, mapIndexes []uint32, progName stri
 // derived and the corresponding function to derive into that Event.
 func (t *Tracee) initDerivationTable() error {
 
+	shouldSubmit := func(id events.ID) func() bool {
+		return func() bool { return t.events[id].submit > 0 }
+	}
+
 	t.eventDerivations = derive.Table{
 		events.CgroupMkdir: {
 			events.ContainerCreate: {
-				Enabled:        func() bool { return t.events[events.ContainerCreate].submit > 0 },
+				Enabled:        shouldSubmit(events.ContainerCreate),
 				DeriveFunction: derive.ContainerCreate(t.containers),
 			},
 		},
 		events.CgroupRmdir: {
 			events.ContainerRemove: {
-				Enabled:        func() bool { return t.events[events.ContainerRemove].submit > 0 },
+				Enabled:        shouldSubmit(events.ContainerRemove),
 				DeriveFunction: derive.ContainerRemove(t.containers),
 			},
 		},
 		events.PrintSyscallTable: {
 			events.HookedSyscalls: {
-				Enabled:        func() bool { return t.events[events.PrintSyscallTable].submit > 0 },
+				Enabled:        shouldSubmit(events.PrintSyscallTable),
 				DeriveFunction: derive.DetectHookedSyscall(t.kernelSymbols),
 			},
 		},
 		events.PrintNetSeqOps: {
 			events.HookedSeqOps: {
-				Enabled:        func() bool { return t.events[events.HookedSeqOps].submit > 0 },
+				Enabled:        shouldSubmit(events.HookedSeqOps),
 				DeriveFunction: derive.HookedSeqOps(t.kernelSymbols),
 			},
 		},
 		events.HiddenKernelModuleSeeker: {
 			events.HiddenKernelModule: {
-				Enabled:        func() bool { return t.events[events.HiddenKernelModuleSeeker].submit > 0 },
+				Enabled:        shouldSubmit(events.HiddenKernelModuleSeeker),
 				DeriveFunction: derive.HiddenKernelModule(),
 			},
 		},
 		events.SharedObjectLoaded: {
 			events.SymbolsLoaded: {
-				Enabled: func() bool { return t.events[events.SymbolsLoaded].submit > 0 },
+				Enabled: shouldSubmit(events.SymbolsLoaded),
 				DeriveFunction: derive.SymbolsLoaded(
 					t.contSymbolsLoader,
 					t.config.Policies,
 				),
 			},
 			events.SymbolsCollision: {
-				Enabled: func() bool { return t.events[events.SymbolsCollision].submit > 0 },
+				Enabled: shouldSubmit(events.SymbolsCollision),
 				DeriveFunction: derive.SymbolsCollision(
 					t.contSymbolsLoader,
 					t.config.Policies,
@@ -675,7 +679,7 @@ func (t *Tracee) initDerivationTable() error {
 		},
 		events.SchedProcessExec: {
 			events.SymbolsCollision: {
-				Enabled: func() bool { return t.events[events.SymbolsCollision].submit > 0 },
+				Enabled: shouldSubmit(events.SymbolsCollision),
 				DeriveFunction: derive.SymbolsCollision(
 					t.contSymbolsLoader,
 					t.config.Policies,
@@ -687,63 +691,63 @@ func (t *Tracee) initDerivationTable() error {
 		//
 		events.NetPacketIPBase: {
 			events.NetPacketIPv4: {
-				Enabled:        func() bool { return t.events[events.NetPacketIPv4].submit > 0 },
+				Enabled:        shouldSubmit(events.NetPacketIPv4),
 				DeriveFunction: derive.NetPacketIPv4(),
 			},
 			events.NetPacketIPv6: {
-				Enabled:        func() bool { return t.events[events.NetPacketIPv6].submit > 0 },
+				Enabled:        shouldSubmit(events.NetPacketIPv6),
 				DeriveFunction: derive.NetPacketIPv6(),
 			},
 		},
 		events.NetPacketTCPBase: {
 			events.NetPacketTCP: {
-				Enabled:        func() bool { return t.events[events.NetPacketTCP].submit > 0 },
+				Enabled:        shouldSubmit(events.NetPacketTCP),
 				DeriveFunction: derive.NetPacketTCP(),
 			},
 		},
 		events.NetPacketUDPBase: {
 			events.NetPacketUDP: {
-				Enabled:        func() bool { return t.events[events.NetPacketUDP].submit > 0 },
+				Enabled:        shouldSubmit(events.NetPacketUDP),
 				DeriveFunction: derive.NetPacketUDP(),
 			},
 		},
 		events.NetPacketICMPBase: {
 			events.NetPacketICMP: {
-				Enabled:        func() bool { return t.events[events.NetPacketICMP].submit > 0 },
+				Enabled:        shouldSubmit(events.NetPacketICMP),
 				DeriveFunction: derive.NetPacketICMP(),
 			},
 		},
 		events.NetPacketICMPv6Base: {
 			events.NetPacketICMPv6: {
-				Enabled:        func() bool { return t.events[events.NetPacketICMPv6].submit > 0 },
+				Enabled:        shouldSubmit(events.NetPacketICMPv6),
 				DeriveFunction: derive.NetPacketICMPv6(),
 			},
 		},
 		events.NetPacketDNSBase: {
 			events.NetPacketDNS: {
-				Enabled:        func() bool { return t.events[events.NetPacketDNS].submit > 0 },
+				Enabled:        shouldSubmit(events.NetPacketDNS),
 				DeriveFunction: derive.NetPacketDNS(),
 			},
 			events.NetPacketDNSRequest: {
-				Enabled:        func() bool { return t.events[events.NetPacketDNSRequest].submit > 0 },
+				Enabled:        shouldSubmit(events.NetPacketDNSRequest),
 				DeriveFunction: derive.NetPacketDNSRequest(),
 			},
 			events.NetPacketDNSResponse: {
-				Enabled:        func() bool { return t.events[events.NetPacketDNSResponse].submit > 0 },
+				Enabled:        shouldSubmit(events.NetPacketDNSResponse),
 				DeriveFunction: derive.NetPacketDNSResponse(),
 			},
 		},
 		events.NetPacketHTTPBase: {
 			events.NetPacketHTTP: {
-				Enabled:        func() bool { return t.events[events.NetPacketHTTP].submit > 0 },
+				Enabled:        shouldSubmit(events.NetPacketHTTP),
 				DeriveFunction: derive.NetPacketHTTP(),
 			},
 			events.NetPacketHTTPRequest: {
-				Enabled:        func() bool { return t.events[events.NetPacketHTTPRequest].submit > 0 },
+				Enabled:        shouldSubmit(events.NetPacketHTTPRequest),
 				DeriveFunction: derive.NetPacketHTTPRequest(),
 			},
 			events.NetPacketHTTPResponse: {
-				Enabled:        func() bool { return t.events[events.NetPacketHTTPResponse].submit > 0 },
+				Enabled:        shouldSubmit(events.NetPacketHTTPResponse),
 				DeriveFunction: derive.NetPacketHTTPResponse(),
 			},
 		},
