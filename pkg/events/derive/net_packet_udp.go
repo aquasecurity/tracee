@@ -49,7 +49,7 @@ func deriveNetPacketUDPArgs() deriveArgsFunction {
 		// parse packet
 
 		packet := gopacket.NewPacket(
-			payload[4:payloadSize], // base event argument is: |sizeof|[]byte|
+			payload,
 			layerType,
 			gopacket.Default,
 		)

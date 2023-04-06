@@ -44,7 +44,7 @@ func deriveNetPacketICMPArgs() deriveArgsFunction {
 		// parse packet
 
 		packet := gopacket.NewPacket(
-			payload[4:payloadSize], // base event argument is: |sizeof|[]byte|
+			payload,
 			layers.LayerTypeIPv4,
 			gopacket.Default,
 		)

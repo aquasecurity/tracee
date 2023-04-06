@@ -89,9 +89,12 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 
 	switch eventId {
 	case events.NetPacketCapture:
-		var ok bool
-		var payload []byte
-		var layerType gopacket.LayerType
+		var (
+			ok            bool
+			payloadLayer3 []byte
+			payloadLayer2 []byte
+			layerType     gopacket.LayerType
+		)
 
 		// sanity checks
 
@@ -100,12 +103,12 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 			logger.Debugw("Network capture: no payload packet")
 			return
 		}
-		if payload, ok = payloadArg.Value.([]byte); !ok {
+		if payloadLayer3, ok = payloadArg.Value.([]byte); !ok {
 			logger.Debugw("Network capture: non []byte argument")
 			return
 		}
-		payloadSize := len(payload)
-		if payloadSize < 1 {
+		payloadLayer3Size := len(payloadLayer3)
+		if payloadLayer3Size < 1 {
 			logger.Debugw("Network capture: empty payload")
 			return
 		}
@@ -120,10 +123,15 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 			logger.Debugw("Unsupported layer3 protocol")
 		}
 
+		// make room for fake layer 2 header
+
+		layer2Slice := make([]byte, 4)
+		payloadLayer2 = append(layer2Slice[:], payloadLayer3...)
+
 		// parse packet
 
 		packet := gopacket.NewPacket(
-			payload[4:payloadSize], // base event argument is: |sizeof|[]byte|
+			payloadLayer2[4:payloadLayer3Size],
 			layerType,
 			gopacket.Default,
 		)
@@ -186,7 +194,7 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 
 		case (*layers.IPv4):
 			// Fake L2 header: IPv4 (BSD encap header spec)
-			binary.BigEndian.PutUint32(payload, 2) // set value 2 to first 4 bytes (uint32)
+			binary.BigEndian.PutUint32(payloadLayer2, 2) // set value 2 to first 4 bytes (uint32)
 
 			// IP header depends on IHL flag (default: 5 * 4 = 20 bytes)
 			ipHeaderLength += uint32(v.IHL) * 4
@@ -211,7 +219,7 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 			udpHeaderLengthValue += captureLength
 
 			// capture length is bigger than the pkt payload: no need for mangling
-			if ipHeaderLengthValue != uint32(len(payload[4:])) {
+			if ipHeaderLengthValue != uint32(len(payloadLayer2[4:])) {
 				break
 			} // else: mangle the packet (below) due to capture length
 
@@ -221,7 +229,7 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 			}
 
 			// change IPv4 total length field for the correct (new) packet size
-			binary.BigEndian.PutUint16(payload[6:], uint16(ipHeaderLengthValue))
+			binary.BigEndian.PutUint16(payloadLayer2[6:], uint16(ipHeaderLengthValue))
 			// no flags, frag offset OR checksum changes (tcpdump does not complain)
 
 			switch v.Protocol {
@@ -240,14 +248,14 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 				//
 				// change UDP header length field for the correct (new) size
 				binary.BigEndian.PutUint16(
-					payload[4+ipHeaderLength+4:],
+					payloadLayer2[4+ipHeaderLength+4:],
 					uint16(udpHeaderLengthValue),
 				)
 			}
 
 		case (*layers.IPv6):
 			// Fake L2 header: IPv6 (BSD encap header spec)
-			binary.BigEndian.PutUint32(payload, 28) // set value 28 to first 4 bytes (uint32)
+			binary.BigEndian.PutUint32(payloadLayer2, 28) // set value 28 to first 4 bytes (uint32)
 
 			ipHeaderLength = uint32(40) // IPv6 does not have an IHL field
 			ipHeaderLengthValue += ipHeaderLength
@@ -271,7 +279,7 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 			udpHeaderLengthValue += captureLength
 
 			// capture length is bigger than the pkt payload: no need for mangling
-			if ipHeaderLengthValue != uint32(len(payload[4:])) {
+			if ipHeaderLengthValue != uint32(len(payloadLayer2[4:])) {
 				break
 			} // else: mangle the packet (below) due to capture length
 
@@ -281,7 +289,7 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 			}
 
 			// change IPv6 payload length field for the correct (new) packet size
-			binary.BigEndian.PutUint16(payload[12:], uint16(ipHeaderLengthValue))
+			binary.BigEndian.PutUint16(payloadLayer2[12:], uint16(ipHeaderLengthValue))
 			// no flags, frag offset OR checksum changes (tcpdump does not complain)
 
 			switch v.NextHeader {
@@ -291,7 +299,7 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 				// NOTE: same as IPv4 note
 				// change UDP header length field for the correct (new) size
 				binary.BigEndian.PutUint16(
-					payload[4+ipHeaderLength+4:],
+					payloadLayer2[4+ipHeaderLength+4:],
 					uint16(udpHeaderLengthValue),
 				)
 			}
@@ -311,7 +319,7 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 
 		// capture the packet to all enabled pcap files
 
-		err := t.netCapturePcap.Write(event, payload)
+		err := t.netCapturePcap.Write(event, payloadLayer2)
 		if err != nil {
 			logger.Errorw("Could not write pcap data", "err", err)
 		}

@@ -113,7 +113,7 @@ func parseUntilLayer7(event *trace.Event, pair *netPair) (gopacket.ApplicationLa
 	// parse packet with gopacket
 
 	packet := gopacket.NewPacket(
-		payload[4:payloadSize], // base event argument is: |sizeof|[]byte|
+		payload,
 		layerType,
 		gopacket.Default,
 	)

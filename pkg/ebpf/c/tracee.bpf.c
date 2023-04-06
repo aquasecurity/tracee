@@ -4810,6 +4810,12 @@ static __always_inline enum event_id_e net_packet_to_net_event(net_packet_t pack
     return MAX_EVENT_ID;
 }
 
+// The address of &neteventctx->eventctx will be aligned as eventctx is the
+// first member of that packed struct. This is a false positive as we do need
+// the neteventctx struct to be all packed.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Waddress-of-packed-member"
+
 static __always_inline int should_submit_net_event(net_event_context_t *neteventctx,
                                                    net_packet_t packet_type)
 {
@@ -4824,6 +4830,8 @@ static __always_inline int should_submit_net_event(net_event_context_t *netevent
     }
     return 0;
 }
+
+#pragma clang diagnostic pop
 
 static __always_inline int should_capture_net_event(net_event_context_t *neteventctx,
                                                     net_packet_t packet_type)
@@ -4884,7 +4892,7 @@ static __always_inline u32 cgroup_skb_submit(void *map,
     }
 
     flags |= (u64) size << 32;
-    neteventctx->bytes = size + sizeof(u32);
+    neteventctx->bytes = size;
 
     // set the event type before submitting event
     neteventctx->eventctx.eventid = event_type;
@@ -5066,6 +5074,7 @@ int BPF_KPROBE(trace_security_socket_sendmsg)
 // Socket Ingress/Egress eBPF program loader (right before and right after eBPF)
 //
 
+
 SEC("kprobe/__cgroup_bpf_run_filter_skb")
 int BPF_KPROBE(cgroup_bpf_run_filter_skb)
 {
@@ -5128,6 +5137,10 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     if (!netctx)
         return 0; // e.g. task isn't being traced
 
+// CHECK: should_submit_net_event() for more info
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Waddress-of-packed-member"
+
     //
     // PREPARE SKG PROGRAM EVENT CONTEXT (cgrpctxmap value)
     //
@@ -5139,6 +5152,8 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
 
     net_event_context_t neteventctx = {0}; // to be sent by cgroup/skb program
     event_context_t *eventctx = &neteventctx.eventctx;
+
+#pragma clang diagnostic pop
 
     // copy orig task ctx (from the netctx) to event ctx and build the rest
     __builtin_memcpy(&eventctx->task, &netctx->taskctx, sizeof(task_context_t));
