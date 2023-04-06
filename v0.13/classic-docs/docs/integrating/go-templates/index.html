@@ -13676,6 +13676,32 @@
 
               
             
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../docs/outputs/logging/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -15767,7 +15793,7 @@ available for use under the <code>/tracee/templates/</code> directory in the con
 <td>rawjson.tmpl</td>
 <td>Dumps the Finding object as raw JSON</td>
 <td><code>application/json</code></td>
-<td><a href="https://github.com/aquasecurity/tracee/blob/v0.13.0/cmd/tracee-rules/templates/rawjson.tmpl">source</a></td>
+<td><a href="https://github.com/aquasecurity/tracee/blob/v0.13.1/cmd/tracee-rules/templates/rawjson.tmpl">source</a></td>
 </tr>
 </tbody>
 </table>
@@ -15781,7 +15807,7 @@ available for use under the <code>/tracee/templates/</code> directory in the con
     --pid=host --cgroupns=host --privileged \
     -v /etc/os-release:/etc/os-release-host:ro \
     -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-    aquasec/tracee:0.13.0 \
+    aquasec/tracee:0.13.1 \
     --output-template /tracee/templates/rawjson.tmpl
 </code></pre></div>
 <div class="admonition postee tip">
@@ -15810,7 +15836,7 @@ the <code>rawjson.tmpl</code> go template.</p>
 <span class="p">}</span>
 </code></pre></div>
 <p>The Go template can utilize helper functions from <a href="http://masterminds.github.io/sprig/">Sprig</a>.</p>
-<p>For example templates, see <a href="https://github.com/aquasecurity/tracee/tree/v0.13.0/cmd/tracee-rules/templates">tracee/cmd/tracee-rules/templates</a>.</p>
+<p>For example templates, see <a href="https://github.com/aquasecurity/tracee/tree/v0.13.1/cmd/tracee-rules/templates">tracee/cmd/tracee-rules/templates</a>.</p>
 
 
 

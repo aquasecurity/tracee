@@ -13676,6 +13676,32 @@
 
               
             
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../docs/outputs/logging/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -15771,7 +15797,7 @@ tracee like:</p>
     -v /var/run/containerd:/var/run/containerd \
     -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
     -e CONTAINERS_ENRICHMENT=1 \
-    aquasec/tracee:v0.13.0
+    aquasec/tracee:v0.13.1
 </code></pre></div>
 <p>Most container runtimes have their sockets installed by default in
 <code>/var/run</code>. If your system includes multiple container runtimes, tracee can
@@ -15813,7 +15839,7 @@ to enrich all containers correctly.</p>
         -v /etc/os-release:/etc/os-release-host:ro \
         -v /var/run/docker.sock:/var/run/docker.sock \
         -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-        aquasec/tracee:v0.13.0 \
+        aquasec/tracee:v0.13.1 \
         trace --output json --containers</code></p>
 </li>
 <li>
@@ -15824,7 +15850,7 @@ to enrich all containers correctly.</p>
         -v /etc/os-release:/etc/os-release-host:ro \
         -v /var/run/containerd:/var/run/containerd \
         -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-        aquasec/tracee:v0.13.0 \
+        aquasec/tracee:v0.13.1 \
         trace --filter container --containers</code></p>
 </li>
 </ol>

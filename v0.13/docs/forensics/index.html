@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://aquasecurity.github.io/tracee/v0.13/docs/forensics/">
       
       
-        <link rel="prev" href="../outputs/output-options/">
+        <link rel="prev" href="../outputs/logging/">
       
       
         <link rel="next" href="../integrating/container-engines/">
@@ -13678,6 +13678,32 @@
 
               
             
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../outputs/logging/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -16016,6 +16042,27 @@ any other captured file would be:</p>
 <p class="admonition-title">Note</p>
 <p>Example kernel module taken from <a href="https://blog.sourcerer.io/writing-a-simple-linux-kernel-module-d9dc3762c234">this blog</a></p>
 </div>
+</li>
+<li>
+<p><strong>BPF programs</strong></p>
+<p>Wheneber a <strong>BPF program</strong> is loaded, the BPF bytecode will be captured.
+This captured bytecode represents the BPF program as it was loaded by the loading process.
+It is basically the BPF section of the compiled ELF that loads the BPF program, which contains the program instructions themselves.
+You can disassemble the bytecode with the help of <code>binutils-bpf</code> package and the following command line:
+<code>objdump -D -b binary -m bpf &lt;path&gt;</code></p>
+<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
+   --output none \
+   --filter comm=bash \
+   --filter follow \
+   --capture clear-dir \
+   --capture bpf
+</code></pre></div>
+<p>Captured bpf bytecode will be found in tracee destination directory, just like
+any other captured file would be:</p>
+<p><div class="highlight"><pre><span></span><code>$ sudo ls /tmp/tracee/out/host
+  bpf.name-test_prog.pid-3668786.c8b62228208f4bdbf21df09c01046b73dd44733841675bf3c0ff969fbedab616
+</code></pre></div>
+   The hex value after the last "." is the hash of the bpf bytecode.</p>
 </li>
 </ol>
 

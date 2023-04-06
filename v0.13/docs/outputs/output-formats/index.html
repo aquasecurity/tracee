@@ -13763,17 +13763,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#logging" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Logging
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -13796,6 +13785,32 @@
     
   
     Output Options
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logging/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging
   
 
     
@@ -15836,17 +15851,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#logging" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Logging
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -15927,10 +15931,6 @@ you can select fields, rename them, filter values, and many other things:</p>
 <p>When authoring a Go template the data source is Tracee's <code>trace.Event</code> struct, which is defined in <code>https://github.com/aquasecurity/tracee/blob/main/types/trace/trace.go#L15</code>.</p>
 <p>Go template can utilize helper functions from <a href="http://masterminds.github.io/sprig/">Sprig</a>.</p>
 <p>For example templates, see <a href="https://github.com/aquasecurity/tracee/tree/main/cmd/tracee-rules/templates">tracee/cmd/tracee-rules/templates</a>.</p>
-<h2 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">&para;</a></h2>
-<p>Redirect logs to a file if needed:</p>
-<div class="highlight"><pre><span></span><code><span class="go">sudo TRACEE_BPF_FILE=do-not-exist ./dist/tracee --filter comm=bash --filter follow --filter event=openat --output json:/tmp/tracee.events --output log-file:/tmp/tracee.log</span>
-</code></pre></div>
 
 
 
