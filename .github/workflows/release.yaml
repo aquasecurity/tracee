@@ -36,10 +36,11 @@ jobs:
         # use :x86_64-v0.xx.0 for versioned image
       - name: Publish to docker.io registry
         run: |
-          TAG=$(git describe --tags --abbrev=0)
+          TAG=$(git describe --tags --abbrev=0 | sed -e "s/v//gI")
           ARCH=$(uname -m)
           docker image tag tracee:latest aquasec/tracee:latest
           docker image tag tracee:latest aquasec/tracee:${ARCH}
+          docker image tag tracee:latest aquasec/tracee:${TAG}
           docker image tag tracee:latest aquasec/tracee:${ARCH}-${TAG}
           docker image push aquasec/tracee:latest
           docker image push aquasec/tracee:${ARCH}
@@ -82,7 +83,7 @@ jobs:
         # use :aarch64-v0.xx.0 for versioned image
       - name: Publish to docker.io registry
         run: |
-          TAG=$(git describe --tags --abbrev=0)
+          TAG=$(git describe --tags --abbrev=0 | sed -e "s/v//gI")
           ARCH=$(uname -m)
           docker image tag tracee:latest aquasec/tracee:${ARCH}
           docker image tag tracee:latest aquasec/tracee:${ARCH}-${TAG}
