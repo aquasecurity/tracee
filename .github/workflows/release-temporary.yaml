@@ -2,50 +2,6 @@ name: Release Temporary
 on:
   workflow_dispatch: {}
 jobs:
-  release-temporary:
-    name: Release Temporary X64 (Default)
-    runs-on:
-      [
-        "github-self-hosted_ami-0f66f3ab4856ffc3f_${{ github.event.number }}-${{ github.run_id }}",
-      ]
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-        with:
-          submodules: true
-      - name: Login to docker.io registry
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: 0.13.0
-        run: |
-          docker pull docker.io/aquasec/tracee:x86_64-v0.13.0
-          docker pull docker.io/aquasec/tracee:x86_64-v0.13.0-full
-          docker tag docker.io/aquasec/tracee:x86_64-v0.13.0 docker.io/aquasec/tracee:0.13.0
-          docker tag docker.io/aquasec/tracee:x86_64-v0.13.0-full docker.io/aquasec/tracee:0.13.0-full
-          docker tag docker.io/aquasec/tracee:x86_64-v0.13.0 docker.io/aquasec/tracee:x86_64-0.13.0
-          docker tag docker.io/aquasec/tracee:x86_64-v0.13.0-full docker.io/aquasec/tracee:x86_64-0.13.0-full
-          docker push docker.io/aquasec/tracee:0.13.0
-          docker push docker.io/aquasec/tracee:0.13.0-full
-          docker push docker.io/aquasec/tracee:x86_64-0.13.0
-          docker push docker.io/aquasec/tracee:x86_64-0.13.0-full
-      - name: 0.13.1
-        run: |
-          docker pull docker.io/aquasec/tracee:x86_64-v0.13.1
-          docker pull docker.io/aquasec/tracee:x86_64-v0.13.1-full
-          docker tag docker.io/aquasec/tracee:x86_64-v0.13.1 docker.io/aquasec/tracee:0.13.1
-          docker tag docker.io/aquasec/tracee:x86_64-v0.13.1-full docker.io/aquasec/tracee:0.13.1-full
-          docker tag docker.io/aquasec/tracee:x86_64-v0.13.1 docker.io/aquasec/tracee:x86_64-0.13.1
-          docker tag docker.io/aquasec/tracee:x86_64-v0.13.1-full docker.io/aquasec/tracee:x86_64-0.13.1-full
-          docker tag docker.io/aquasec/tracee:x86_64-v0.13.1 docker.io/aquasec/tracee:latest
-          docker tag docker.io/aquasec/tracee:x86_64-v0.13.1-full docker.io/aquasec/tracee:full
-          docker push docker.io/aquasec/tracee:0.13.1
-          docker push docker.io/aquasec/tracee:0.13.1-full
-          docker push docker.io/aquasec/tracee:x86_64-0.13.1
-          docker push docker.io/aquasec/tracee:x86_64-0.13.1-full
-          docker push docker.io/aquasec/tracee:latest
-          docker push docker.io/aquasec/tracee:full
   release-temporary-arm64:
     name: Release Temporary ARM64
     runs-on:
@@ -77,4 +33,4 @@ jobs:
           docker tag docker.io/aquasec/tracee:aarch64-v0.13.1 docker.io/aquasec/tracee:aarch64-0.13.1
           docker tag docker.io/aquasec/tracee:aarch64-v0.13.1-full docker.io/aquasec/tracee:aarch64-0.13.1-full
           docker push docker.io/aquasec/tracee:aarch64-0.13.1
-          docker push docker.io/aquasec/tracee:aarch640.13.1-full
+          docker push docker.io/aquasec/tracee:aarch64-0.13.1-full
