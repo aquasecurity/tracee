@@ -83,7 +83,6 @@ typedef struct net_event_contextmd {
     u8 submit;
     u32 header_size;
     u8 captured;
-    u8 padding;
 } __attribute__((__packed__)) net_event_contextmd_t;
 
 typedef struct net_event_context {
@@ -95,7 +94,7 @@ typedef struct net_event_context {
     } __attribute__((__packed__)); // ... avoid address-of-packed-member warns
     // members bellow this point are metadata (not part of event to be sent)
     net_event_contextmd_t md;
-} net_event_context_t;
+} __attribute__((__packed__)) net_event_context_t;
 
 // network related maps
 
