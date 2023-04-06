@@ -43,12 +43,16 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 						continue
 					}
 
+					// Get a copy of our event before sending it down the pipeline.
+					// This is needed because a later modification of the event (in
+					// particular of the matched policies) can affect engine stage.
+					eventCopy := *event
 					// pass the event to the sink stage, if the event is also marked as emit
 					// it will be sent to print by the sink stage
 					out <- event
 
 					// send the event to the rule event
-					engineInput <- event.ToProtocol()
+					engineInput <- eventCopy.ToProtocol()
 				}
 			case <-ctx.Done():
 				return
