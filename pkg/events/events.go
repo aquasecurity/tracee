@@ -5579,10 +5579,12 @@ var Definitions = eventDefinitions{
 			},
 		},
 		InitNamespaces: {
-			ID32Bit:      sys32undefined,
-			Name:         "init_namespaces",
-			Sets:         []string{},
-			Dependencies: dependencies{},
+			ID32Bit: sys32undefined,
+			Name:    "init_namespaces",
+			Sets:    []string{},
+			Dependencies: dependencies{
+				Capabilities: []cap.Value{cap.SYS_PTRACE},
+			},
 			Params: []trace.ArgMeta{
 				{Type: "u32", Name: "cgroup"},
 				{Type: "u32", Name: "ipc"},
