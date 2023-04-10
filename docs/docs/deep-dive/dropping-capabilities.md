@@ -37,9 +37,8 @@ the capabilities that are gained during execve(2).
 
 ## Tracee and capabilities
 
-**tracee**, **tracee-ebpf**, and **tracee-rules**, try to reduce their
-capabilities during their execution. The way they do is through different 
-"execution protection rings":
+**tracee** tries to reduce its capabilities during their execution. The way they
+do is through different "execution protection rings":
 
 * Full:     All capabilities are effective (less secure)
 * EBPF:     eBPF needed capabilities + Base capabilities
@@ -59,9 +58,8 @@ command line flag.
 ## Bypass capabilities dropping feature
 
 !!! Attention
-    This session is important if you're facing errors while **tracee** or 
-    **tracee-ebpf** are trying to drop its capabilities or any other permissions
-    errors.
+    This session is important if you're facing errors related to **tracee**
+    dropping its capabilities OR any other permission related errors.
 
 Some environments **won't allow capabilities dropping** because of permission
 issues (for example - **AWS Lambdas**).
@@ -77,13 +75,9 @@ To **allow tracee to run with high capabilities**, and prevent those errors, the
 `--capabilities bypass=true` flag can be used. For the docker container users,
 the environment variable `CAPABILITIES_BYPASS=0|1` will have the same effect.
 
-> For tracee-rules, CAPABILITIES_BYPASS=1 will set the "--allcaps" command line
-> flag and allow it to run with full capabilities.
-
 !!! Note
-    Bypassing the capabilities drop will run tracee-ebpf and/or tracee-rules
-    with all capabilities set as Effective and it is only recommended if you
-    know what you are doing.
+    Bypassing the capabilities drop will run **tracee** with all capabilities
+    set as Effective and it is only recommended if you know what you are doing.
 
 ## Capabilities Errors (Missing or Too Permissive)
 
@@ -101,5 +95,3 @@ The first will add given capabilities to the Base ring, the ring that describe
 capabilities that will always be effective while tracee is running, so events
 might be able to work. The last will remove the capabilities from that same
 ring.
-
-> Tracee-rules do not support adding or removing specific capabilities.
