@@ -17,10 +17,10 @@ var caps *Capabilities // singleton for all packages
 
 var once sync.Once
 
-type ringType int
+type RingType int
 
 const (
-	Full     ringType = iota // All capabilties are effective
+	Full     RingType = iota // All capabilties are effective
 	EBPF                     // eBPF needed capabilities are effective
 	Specific                 // Specific requested capabilities are effective
 	Base                     // Capabilities that are always effective
@@ -28,7 +28,7 @@ const (
 
 type Capabilities struct {
 	have   *cap.Set
-	all    map[cap.Value]map[ringType]bool
+	all    map[cap.Value]map[RingType]bool
 	bypass bool
 	lock   *sync.Mutex // big lock to guarantee all threads are on the same ring
 }
@@ -65,10 +65,10 @@ func (c *Capabilities) initialize(bypass bool) error {
 	}
 
 	c.lock = new(sync.Mutex)
-	c.all = make(map[cap.Value]map[ringType]bool)
+	c.all = make(map[cap.Value]map[RingType]bool)
 
 	for v := cap.Value(0); v < cap.MaxBits(); v++ {
-		c.all[v] = make(map[ringType]bool)
+		c.all[v] = make(map[RingType]bool)
 		c.all[v][Full] = true // all capabilities are effective in Full
 		// all other ring types are false by default
 	}
@@ -252,7 +252,7 @@ func (c *Capabilities) EBPFRingRemove(values ...cap.Value) error {
 func (c *Capabilities) BaseRingAdd(values ...cap.Value) error {
 	logger.Debugw("Adding capabilities to base ring", "capability", values)
 
-	rings := []ringType{
+	rings := []RingType{
 		Base,
 		EBPF,
 		Specific,
@@ -272,7 +272,7 @@ func (c *Capabilities) BaseRingAdd(values ...cap.Value) error {
 func (c *Capabilities) BaseRingRemove(values ...cap.Value) error {
 	logger.Debugw("Removing capabilities from the base ring", "capability", values)
 
-	rings := []ringType{
+	rings := []RingType{
 		Base,
 		EBPF,
 		Specific,
@@ -291,7 +291,7 @@ func (c *Capabilities) BaseRingRemove(values ...cap.Value) error {
 
 // Private Methods
 
-func (c *Capabilities) ringAdd(ring ringType, values ...cap.Value) error {
+func (c *Capabilities) ringAdd(ring RingType, values ...cap.Value) error {
 	var err error
 
 	if c.bypass {
@@ -305,7 +305,7 @@ func (c *Capabilities) ringAdd(ring ringType, values ...cap.Value) error {
 	return errfmt.WrapError(err)
 }
 
-func (c *Capabilities) ringRemove(ring ringType, values ...cap.Value) error {
+func (c *Capabilities) ringRemove(ring RingType, values ...cap.Value) error {
 	var err error
 
 	if c.bypass {
@@ -339,7 +339,7 @@ func (c *Capabilities) setProc() error {
 	return nil
 }
 
-func (c *Capabilities) set(t ringType, values ...cap.Value) error {
+func (c *Capabilities) set(t RingType, values ...cap.Value) error {
 	for _, v := range values {
 		c.all[v][t] = true
 	}
@@ -347,7 +347,7 @@ func (c *Capabilities) set(t ringType, values ...cap.Value) error {
 	return nil
 }
 
-func (c *Capabilities) unset(t ringType, values ...cap.Value) error {
+func (c *Capabilities) unset(t RingType, values ...cap.Value) error {
 	for _, v := range values {
 		c.all[v][t] = false
 	}
@@ -355,7 +355,7 @@ func (c *Capabilities) unset(t ringType, values ...cap.Value) error {
 	return nil
 }
 
-func (c *Capabilities) apply(t ringType) error {
+func (c *Capabilities) apply(t RingType) error {
 	var err error
 
 	err = c.getProc()

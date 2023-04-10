@@ -93,10 +93,11 @@ type CapabilitiesConfig struct {
 }
 
 type OutputConfig struct {
-	StackAddresses    bool
-	ExecEnv           bool
-	RelativeTime      bool
-	ExecHash          bool
+	StackAddresses bool
+	ExecEnv        bool
+	RelativeTime   bool
+	ExecHash       bool
+
 	ParseArguments    bool
 	ParseArgumentsFDs bool
 	EventsSorting     bool
@@ -337,15 +338,22 @@ func New(cfg Config) (*Tracee, error) {
 		t.handleEventsDependencies(id, evt.submit)
 	}
 
-	// Add enabled events needed Base capabilities (always effective)
+	// Update capabilities rings with all events dependencies
 
 	for id := range t.events {
 		evt, ok := events.Definitions.GetSafe(id)
 		if !ok {
 			return t, errfmt.Errorf("could not get event %d", id)
 		}
-		for _, capArray := range evt.Dependencies.Capabilities {
-			err := caps.BaseRingAdd(capArray)
+		for ringType, capArray := range evt.Dependencies.Capabilities {
+			var f func(values ...cap.Value) error
+			switch ringType {
+			case capabilities.Base:
+				f = caps.BaseRingAdd
+			case capabilities.EBPF:
+				f = caps.EBPFRingAdd
+			}
+			err = f(capArray[:]...)
 			if err != nil {
 				return t, errfmt.WrapError(err)
 			}
