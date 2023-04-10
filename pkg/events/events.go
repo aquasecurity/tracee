@@ -3,6 +3,7 @@ package events
 import (
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
+	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
@@ -12,8 +13,8 @@ import (
 type dependencies struct {
 	Events       []eventDependency    // Events required to be loaded and/or submitted for the event to happen
 	KSymbols     *[]kSymbolDependency // nil pointer means no symbols needed, empty slice indicates for dynamic symbols which their names aren't known at the time of compilation
-	TailCalls    []TailCall
-	Capabilities []cap.Value // Capabilities needed in events processor or derivation phases
+	TailCalls    []TailCall           // Map containing tail calls programs, index containing given program
+	Capabilities capDependency        // Capabilities needed in events processor or derivation phases
 }
 
 type probeDependency struct {
@@ -29,6 +30,8 @@ type kSymbolDependency struct {
 type eventDependency struct {
 	EventID ID
 }
+
+type capDependency map[capabilities.RingType][]cap.Value // array of needed capabilities per ring type
 
 type TailCall struct {
 	MapName    string
@@ -5047,7 +5050,13 @@ var Definitions = eventDefinitions{
 				TailCalls: []TailCall{
 					{MapName: "prog_array_tp", MapIndexes: []uint32{tailSchedProcessExecEventSubmit}, ProgName: "sched_process_exec_event_submit_tail"},
 				},
-				Capabilities: []cap.Value{cap.SYS_PTRACE}, // CopyRegularFileByRelativePath()
+				Capabilities: capDependency{
+					capabilities.Base: []cap.Value{
+						// 1. set by processSchedProcessFork IF ExecHash enabled
+						// 2. set by processSchedProcessExec by CaptureExec if needed
+						// cap.SYS_PTRACE,
+					},
+				},
 			},
 			Sets: []string{"default", "proc"},
 			Params: []trace.ArgMeta{
@@ -5583,7 +5592,11 @@ var Definitions = eventDefinitions{
 			Name:    "init_namespaces",
 			Sets:    []string{},
 			Dependencies: dependencies{
-				Capabilities: []cap.Value{cap.SYS_PTRACE},
+				Capabilities: capDependency{
+					capabilities.Base: []cap.Value{
+						cap.SYS_PTRACE,
+					},
+				},
 			},
 			Params: []trace.ArgMeta{
 				{Type: "u32", Name: "cgroup"},
@@ -5837,7 +5850,11 @@ var Definitions = eventDefinitions{
 					{EventID: DoInitModule},
 					{EventID: PrintSyscallTable},
 				},
-				Capabilities: []cap.Value{cap.SYSLOG}, // read /proc/kallsyms
+				Capabilities: capDependency{
+					capabilities.Base: []cap.Value{
+						cap.SYSLOG, // read /proc/kallsyms
+					},
+				},
 			},
 			Sets: []string{},
 			Params: []trace.ArgMeta{
@@ -5890,7 +5907,11 @@ var Definitions = eventDefinitions{
 				{Handle: probes.SecurityMmapFile, Required: true},
 			},
 			Dependencies: dependencies{
-				Capabilities: []cap.Value{cap.SYS_PTRACE}, // loadSharedObjectDynamicSymbols()
+				Capabilities: capDependency{
+					capabilities.Base: []cap.Value{
+						cap.SYS_PTRACE, // loadSharedObjectDynamicSymbols()
+					},
+				},
 			},
 			Sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
 			Params: []trace.ArgMeta{
@@ -5911,7 +5932,6 @@ var Definitions = eventDefinitions{
 					{EventID: SharedObjectLoaded},
 					{EventID: SchedProcessExec}, // Used to get mount namespace cache
 				},
-				Capabilities: []cap.Value{},
 			},
 			Sets: []string{"derived", "fs", "security_alert"},
 			Params: []trace.ArgMeta{
@@ -5929,7 +5949,6 @@ var Definitions = eventDefinitions{
 					{EventID: SharedObjectLoaded},
 					{EventID: SchedProcessExec}, // Used to get mount namespace cache
 				},
-				Capabilities: []cap.Value{},
 			},
 			Sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
 			Params: []trace.ArgMeta{
@@ -5964,8 +5983,16 @@ var Definitions = eventDefinitions{
 			Name:     "capture_exec",
 			Internal: true,
 			Dependencies: dependencies{
-				Events:       []eventDependency{{EventID: SchedProcessExec}},
-				Capabilities: []cap.Value{},
+				Events: []eventDependency{
+					{
+						EventID: SchedProcessExec,
+					},
+				},
+				Capabilities: capDependency{
+					capabilities.Base: []cap.Value{
+						cap.SYS_PTRACE, // processSchedProcessExec() performance
+					},
+				},
 			},
 		},
 		CaptureModule: {
@@ -6075,7 +6102,11 @@ var Definitions = eventDefinitions{
 				Events: []eventDependency{
 					{EventID: DoInitModule},
 				},
-				Capabilities: []cap.Value{cap.SYSLOG}, // read /proc/kallsyms
+				Capabilities: capDependency{
+					capabilities.Base: []cap.Value{
+						cap.SYSLOG, // read /proc/kallsyms
+					},
+				},
 			},
 			Sets: []string{},
 			Params: []trace.ArgMeta{
@@ -6117,7 +6148,11 @@ var Definitions = eventDefinitions{
 					{EventID: PrintNetSeqOps},
 					{EventID: DoInitModule},
 				},
-				Capabilities: []cap.Value{cap.SYSLOG}, // read /proc/kallsyms
+				Capabilities: capDependency{
+					capabilities.Base: []cap.Value{
+						cap.SYSLOG, // read /proc/kallsyms
+					},
+				},
 			},
 			Sets: []string{},
 			Params: []trace.ArgMeta{
@@ -6382,7 +6417,11 @@ var Definitions = eventDefinitions{
 			Name:     "net_packet_base",
 			Internal: true,
 			Dependencies: dependencies{
-				Capabilities: []cap.Value{cap.NET_ADMIN},
+				Capabilities: capDependency{
+					capabilities.EBPF: []cap.Value{
+						cap.NET_ADMIN, // needed for BPF_PROG_TYPE_CGROUP_SKB
+					},
+				},
 			},
 			Probes: []probeDependency{
 				{Handle: probes.CgroupSKBIngress, Required: true},

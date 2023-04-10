@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"sync"
 
 	"golang.org/x/sys/unix"
+	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 
@@ -20,8 +22,12 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-// initializing kernelReadFileTypes once at init.
-var kernelReadFileTypes map[int32]trace.KernelReadType
+var (
+	// initializing kernelReadFileTypes once at init.
+	kernelReadFileTypes map[int32]trace.KernelReadType
+	// exec hash might add capabilities to base ring
+	onceExecHash sync.Once
+)
 
 func init() {
 	initKernelReadFileTypes()
@@ -207,9 +213,9 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 				lastCtime, ok := t.capturedFiles[capturedFileID]
 				if !ok || lastCtime != castedSourceFileCtime {
 					// capture (SchedProcessExec sets base capabilities to have
-					// cap.SYS_PTRACE. This is needed at this point because
+					// cap.SYS_PTRACE set. This is needed at this point because
 					// raising and dropping capabilities too frequently would
-					// have performance impact)
+					// have a big performance impact)
 					err := utils.CopyRegularFileByRelativePath(
 						sourceFilePath,
 						t.outDir,
@@ -234,6 +240,17 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 				if ok && hashInfoObj.LastCtime == castedSourceFileCtime {
 					currentHash = hashInfoObj.Hash
 				} else {
+					// if ExecHash is enabled, we need to make sure base ring
+					// has the needed capabilities (cap.SYS_PTRACE), since it
+					// might not always have been enabled by event capabilities
+					// requirements (there is no "exec hash" event) from
+					// SchedProcessExec event.
+					onceExecHash.Do(func() {
+						err = capabilities.GetInstance().BaseRingAdd(cap.SYS_PTRACE)
+						if err != nil {
+							logger.Errorw("error adding cap.SYS_PTRACE to base ring", "error", err)
+						}
+					})
 					currentHash, err = computeFileHashAtPath(sourceFilePath)
 					if err == nil {
 						hashInfoObj = fileExecInfo{castedSourceFileCtime, currentHash}

@@ -37,8 +37,8 @@ the capabilities that are gained during execve(2).
 
 ## Tracee and capabilities
 
-**tracee** tries to reduce its capabilities during their execution. The way they
-do is through different "execution protection rings":
+**tracee** tries to reduce its capabilities during its execution. The way it
+does is through different "execution protection rings":
 
 * Full:     All capabilities are effective (less secure)
 * EBPF:     eBPF needed capabilities + Base capabilities
