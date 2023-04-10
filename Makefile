@@ -720,6 +720,7 @@ test-unit: \
 	$(CMD_GO) test \
 		-tags ebpf \
 		-short \
+		-race \
 		-v \
 		-coverprofile=coverage.txt \
 		./cmd/... \
@@ -733,6 +734,7 @@ test-types: \
 	# Note that we must changed the directory here because types is a standalone Go module.
 	cd ./types && $(CMD_GO) test \
 		-short \
+		-race \
 		-v \
 		-coverprofile=coverage.txt \
 		./...
