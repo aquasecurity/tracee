@@ -1418,7 +1418,7 @@ func TestPrepareFilterScopesForPolicyValidations(t *testing.T) {
 					Description: "",
 				},
 			},
-			expectedError: errors.New("flags.validatePolicy: policy empty_description, description cannot be empty"),
+			expectedError: errors.New("policy empty_description, description cannot be empty"),
 		},
 		{
 			testName: "empty scope",
@@ -1458,7 +1458,7 @@ func TestPrepareFilterScopesForPolicyValidations(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("flags.validateEvent: policy empty_event_name, event cannot be empty"),
+			expectedError: errors.New("policy empty_event_name, event cannot be empty"),
 		},
 		{
 			testName: "invalid event name",
@@ -1473,7 +1473,7 @@ func TestPrepareFilterScopesForPolicyValidations(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("flags.validateEvent: policy invalid_event_name, event non_existing_event is not valid"),
+			expectedError: errors.New("policy invalid_event_name, event non_existing_event is not valid"),
 		},
 		{
 			testName: "invalid_scope_operator",
@@ -1488,7 +1488,7 @@ func TestPrepareFilterScopesForPolicyValidations(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("flags.PrepareFilterMapFromPolicies: policy invalid_scope_operator, scope random is not valid"),
+			expectedError: errors.New("policy invalid_scope_operator, scope random is not valid"),
 		},
 		{
 			testName: "invalid_scope",
@@ -1503,7 +1503,7 @@ func TestPrepareFilterScopesForPolicyValidations(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("flags.validateScope: policy invalid_scope, scope random is not valid"),
+			expectedError: errors.New("policy invalid_scope, scope random is not valid"),
 		},
 		{
 			testName: "global scope must be unique",
@@ -1554,7 +1554,7 @@ func TestPrepareFilterScopesForPolicyValidations(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("flags.PrepareFilterMapFromPolicies: invalid filter operator: random"),
+			expectedError: errors.New("invalid filter operator: random"),
 		},
 		{
 			testName: "invalid filter",
@@ -1574,7 +1574,7 @@ func TestPrepareFilterScopesForPolicyValidations(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("flags.validateContext: policy invalid_filter, filter random is not valid"),
+			expectedError: errors.New("policy invalid_filter, filter random is not valid"),
 		},
 		{
 			testName: "empty policy action",
@@ -1588,7 +1588,7 @@ func TestPrepareFilterScopesForPolicyValidations(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("flags.validatePolicy: policy empty_policy_action, default action cannot be empty"),
+			expectedError: errors.New("policy empty_policy_action, default action cannot be empty"),
 		},
 		{
 			testName: "invalid policy action",
@@ -1603,7 +1603,7 @@ func TestPrepareFilterScopesForPolicyValidations(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("flags.validateAction: policy invalid_policy_action, action audit is not valid"),
+			expectedError: errors.New("policy invalid_policy_action, action audit is not valid"),
 		},
 		{
 			testName: "duplicated policy name",
@@ -1627,7 +1627,7 @@ func TestPrepareFilterScopesForPolicyValidations(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("flags.PrepareFilterMapFromPolicies: policy duplicated_policy_name already exist"),
+			expectedError: errors.New("policy duplicated_policy_name already exist"),
 		},
 
 		// invalid args?

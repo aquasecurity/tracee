@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 // funcName returns the name of the function that called it based on the
@@ -20,6 +22,11 @@ func funcName(skip int) string {
 // prefixFunc prefixes a given string with the name of the function that
 // called it based on the skip value.
 func prefixFunc(msg string, skip int) error {
+	// If the current log level is not debug, return the error as is.
+	if logger.Current().Level() > logger.DebugLevel {
+		return fmt.Errorf("%v", msg)
+	}
+
 	fName := funcName(skip + 1)
 
 	return fmt.Errorf("%v: %v", fName, msg)

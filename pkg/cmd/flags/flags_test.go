@@ -896,22 +896,22 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:      "empty option flag",
 			outputSlice:   []string{"option"},
-			expectedError: errors.New("parseOption: option flag can't be empty, use '--output help' for more info"),
+			expectedError: errors.New("option flag can't be empty, use '--output help' for more info"),
 		},
 		{
 			testName:      "empty option flag 2",
 			outputSlice:   []string{"option:"},
-			expectedError: errors.New("parseOption: option flag can't be empty, use '--output help' for more info"),
+			expectedError: errors.New("option flag can't be empty, use '--output help' for more info"),
 		},
 		{
 			testName:      "invalid option value",
 			outputSlice:   []string{"option:foo"},
-			expectedError: errors.New("setOption: invalid output option: foo, use '--output help' for more info"),
+			expectedError: errors.New("invalid output option: foo, use '--output help' for more info"),
 		},
 		{
 			testName:      "empty file for format",
 			outputSlice:   []string{"json:"},
-			expectedError: errors.New("parseFormat: format flag can't be empty, use '--output help' for more info"),
+			expectedError: errors.New("format flag can't be empty, use '--output help' for more info"),
 		},
 		// formats
 		{
@@ -1070,17 +1070,17 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:      "two formats for stdout",
 			outputSlice:   []string{"table", "json"},
-			expectedError: errors.New("parseFormat: cannot use the same path for multiple outputs: stdout, use '--output help' for more info"),
+			expectedError: errors.New("cannot use the same path for multiple outputs: stdout, use '--output help' for more info"),
 		},
 		{
 			testName:      "format for the same file twice",
 			outputSlice:   []string{"table:/tmp/test,/tmp/test"},
-			expectedError: errors.New("parseFormat: cannot use the same path for multiple outputs: /tmp/test, use '--output help' for more info"),
+			expectedError: errors.New("cannot use the same path for multiple outputs: /tmp/test, use '--output help' for more info"),
 		},
 		{
 			testName:      "two different formats for the same file",
 			outputSlice:   []string{"table:/tmp/test", "json:/tmp/test"},
-			expectedError: errors.New("parseFormat: cannot use the same path for multiple outputs: /tmp/test, use '--output help' for more info"),
+			expectedError: errors.New("cannot use the same path for multiple outputs: /tmp/test, use '--output help' for more info"),
 		},
 		{
 			testName:    "none",
@@ -1106,17 +1106,17 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:      "empty forward flag",
 			outputSlice:   []string{"forward"},
-			expectedError: errors.New("validateURL: forward flag can't be empty, use '--output help' for more info"),
+			expectedError: errors.New("forward flag can't be empty, use '--output help' for more info"),
 		},
 		{
 			testName:      "empty forward flag",
 			outputSlice:   []string{"forward:"},
-			expectedError: errors.New("validateURL: forward flag can't be empty, use '--output help' for more info"),
+			expectedError: errors.New("forward flag can't be empty, use '--output help' for more info"),
 		},
 		{
 			testName:      "invalid forward url",
 			outputSlice:   []string{"forward:lalala"},
-			expectedError: errors.New("validateURL: invalid uri for forward output \"lalala\". Use '--output help' for more info"),
+			expectedError: errors.New("invalid uri for forward output \"lalala\". Use '--output help' for more info"),
 		},
 		{
 			testName:    "forward",
@@ -1132,17 +1132,17 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:      "empty webhook flag",
 			outputSlice:   []string{"webhook"},
-			expectedError: errors.New("validateURL: webhook flag can't be empty, use '--output help' for more info"),
+			expectedError: errors.New("webhook flag can't be empty, use '--output help' for more info"),
 		},
 		{
 			testName:      "empty webhook flag",
 			outputSlice:   []string{"webhook:"},
-			expectedError: errors.New("validateURL: webhook flag can't be empty, use '--output help' for more info"),
+			expectedError: errors.New("webhook flag can't be empty, use '--output help' for more info"),
 		},
 		{
 			testName:      "invalid webhook url",
 			outputSlice:   []string{"webhook:lalala"},
-			expectedError: errors.New("validateURL: invalid uri for webhook output \"lalala\". Use '--output help' for more info"),
+			expectedError: errors.New("invalid uri for webhook output \"lalala\". Use '--output help' for more info"),
 		},
 		{
 			testName:    "webhook",

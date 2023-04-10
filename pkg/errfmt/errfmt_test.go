@@ -6,9 +6,18 @@ import (
 	"testing"
 
 	"gotest.tools/assert"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 func TestErrorf(t *testing.T) {
+	// Initialize the logger to debug level, so that the error messages
+	// are prefixed with the function name.
+	logger.Init(logger.LoggingConfig{
+		Logger: logger.NewLogger(logger.NewDefaultLoggerConfig()),
+		Level:  logger.DebugLevel,
+	})
+
 	tests := []struct {
 		name   string
 		format string

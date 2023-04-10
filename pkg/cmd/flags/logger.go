@@ -113,6 +113,7 @@ func PrepareLogger(logOptions []string) (logger.LoggingConfig, error) {
 	return logger.LoggingConfig{
 		Logger:        llogger,
 		Aggregate:     agg,
+		Level:         lvl,
 		FlushInterval: interval,
 	}, nil
 }

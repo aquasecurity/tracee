@@ -87,6 +87,7 @@ const (
 type LoggingConfig struct {
 	Logger        LoggerInterface
 	Aggregate     bool
+	Level         Level
 	FlushInterval time.Duration
 }
 
@@ -283,6 +284,11 @@ func (l *Logger) Sync() error {
 	return l.l.Sync()
 }
 
+// Level returns the current logging level
+func (l *Logger) Level() Level {
+	return l.cfg.Level
+}
+
 var (
 	// Package-level Logger
 	pkgLogger *Logger = &Logger{}
@@ -306,12 +312,12 @@ func SetLogger(l LoggerInterface) {
 // Init sets the package-level base logger using given config
 // It's not thread safe so if required use it always at the beginning
 func Init(cfg LoggingConfig) {
-	// set the config
-	pkgLogger.cfg = cfg
-
 	if cfg.Logger == nil {
 		panic("can't initialize a nil Logger")
 	}
+
+	// set the config
+	pkgLogger.cfg = cfg
 
 	pkgLogger.l = cfg.Logger
 	pkgLogger.logCount = newLogCounter()
