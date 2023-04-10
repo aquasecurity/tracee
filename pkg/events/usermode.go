@@ -23,9 +23,6 @@ import (
 	"strings"
 	"time"
 
-	"kernel.org/pub/linux/libs/security/libcap/cap"
-
-	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -77,24 +74,15 @@ func fetchInitNamespaces() map[string]uint32 {
 	initNamespacesMap := make(map[string]uint32)
 	namespaceValueReg := regexp.MustCompile(":[[[:digit:]]*]")
 
-	err = capabilities.GetInstance().Specific(
-		func() error {
-			namespacesLinks, err = os.ReadDir(InitProcNsDir)
-			if err != nil {
-				return err
-			}
-			for _, namespaceLink := range namespacesLinks {
-				linkString, _ := os.Readlink(filepath.Join(InitProcNsDir, namespaceLink.Name()))
-				trim := strings.Trim(namespaceValueReg.FindString(linkString), "[]:")
-				namespaceNumber, _ := strconv.ParseUint(trim, 10, 32)
-				initNamespacesMap[namespaceLink.Name()] = uint32(namespaceNumber)
-			}
-			return nil
-		},
-		cap.SYS_PTRACE,
-	)
+	namespacesLinks, err = os.ReadDir(InitProcNsDir)
 	if err != nil {
 		logger.Errorw("fetching init namespaces", "error", err)
+	}
+	for _, namespaceLink := range namespacesLinks {
+		linkString, _ := os.Readlink(filepath.Join(InitProcNsDir, namespaceLink.Name()))
+		trim := strings.Trim(namespaceValueReg.FindString(linkString), "[]:")
+		namespaceNumber, _ := strconv.ParseUint(trim, 10, 32)
+		initNamespacesMap[namespaceLink.Name()] = uint32(namespaceNumber)
 	}
 
 	return initNamespacesMap
