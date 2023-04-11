@@ -17,8 +17,12 @@
 // clang-format off
 
 //
-// Network packet related events (TODO: spin off all net_packet related code)
+// Network packet related events
 //
+
+// Function Prototypes
+
+static __always_inline u32 update_net_inodemap(struct socket *, event_data_t *);
 
 // NOTE: proto header structs need full type in vmlinux.h (for correct skb copy)
 
@@ -130,6 +134,15 @@ struct {
     __type(key, u64);                       // socket inode number ...
     __type(value, struct net_task_context); // ... linked to a task context
 } inodemap SEC(".maps");                    // relate sockets and tasks
+
+// sockmap (map two cloned "socket" representation structs ("sock"))
+
+struct {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 65535); // 9 MB     // simultaneous sockets being cloned
+    __type(key, u64);                       // *(struct sock *newsock) ...
+    __type(value, u64);                     // ... old sock->socket inode number
+} sockmap SEC(".maps");                     // relate a cloned sock struct with
 
 // entrymap
 

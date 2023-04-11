@@ -6431,6 +6431,7 @@ var Definitions = eventDefinitions{
 				{Handle: probes.CgroupBPFRunFilterSKB, Required: true},
 				{Handle: probes.SecuritySocketRecvmsg, Required: true},
 				{Handle: probes.SecuritySocketSendmsg, Required: true},
+				{Handle: probes.SecuritySkClone, Required: true},
 			},
 			Sets:   []string{"network_events"},
 			Params: []trace.ArgMeta{},

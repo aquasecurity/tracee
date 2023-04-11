@@ -2428,7 +2428,6 @@ int BPF_KPROBE(trace_security_socket_accept)
         return 0;
 
     struct socket *sock = (struct socket *) PT_REGS_PARM1(ctx);
-
     struct socket *new_sock = (struct socket *) PT_REGS_PARM2(ctx);
 
     // save sockets for "socket_accept event"
@@ -5016,7 +5015,64 @@ int BPF_KRETPROBE(trace_ret_sock_alloc_file)
     return 0;
 }
 
-static __always_inline u32 security_socket_send_recv_msg(struct socket *sock, event_data_t *event)
+SEC("kprobe/security_sk_clone")
+int BPF_KPROBE(trace_security_sk_clone)
+{
+    // When a "sock" is cloned because of a SYN packet, a new "sock" is created
+    // and the return value is the new "sock" (not the original one).
+    //
+    // There is a problem though, the "sock" does not contain a valid "socket"
+    // associated to it yet (sk_socket is NULL as this is running with SoftIRQ
+    // context). Without a "socket" we also don't have a "file" associated to
+    // it, nor an inode associated to that file. This is the way tracee links
+    // a network flow (packets) to a task.
+    //
+    // The only way we can relate this new "sock", just cloned by a kernel
+    // thread, to a task, is through the existence of the old "sock" struct,
+    // describing the listening socket (one accept() was called for).
+    //
+    // Then, by knowing the old "sock" (with an existing socket, an existing
+    // file, an existing inode), we're able to link this new "sock" to the task
+    // we're tracing for the old "sock".
+    //
+    // In bullets:
+    //
+    // - tracing a process that has a socket listening for connections.
+    // - it receives a SYN packet and a new socket can be created (accept).
+    // - a sock (socket descriptor) is created for the socket to be created.
+    // - no socket/inode exists yet (sock->sk_socket is NULL).
+    // - accept() traces are too late for initial pkts (socked does not exist).
+    // - by linking old "sock" to the new "sock" we can relate the task.
+    // - some of the initial packets, sometimes with big length, are traced now.
+    //
+    // More at: https://github.com/aquasecurity/tracee/issues/2739
+
+    struct sock *osock = (void *) PT_REGS_PARM1(ctx);
+    struct sock *nsock = (void *) PT_REGS_PARM2(ctx);
+
+    // obtain old socket inode
+    u64 inode = BPF_READ(osock, sk_socket, file, f_inode, i_ino);
+    if (inode == 0)
+        return 0;
+
+    // if the original socket isn't linked to a task, then the newly cloned
+    // socket won't need to be linked as well: return in that case
+
+    net_task_context_t *netctx = bpf_map_lookup_elem(&inodemap, &inode);
+    if (!netctx) {
+        return 0; // e.g. task isn't being traced
+    }
+
+    u64 nsockptr = (u64)(void *) nsock;
+
+    // link the new "sock" to the old inode, so it can be linked to a task later
+
+    bpf_map_update_elem(&sockmap, &nsockptr, &inode, BPF_ANY);
+
+    return 0;
+}
+
+static __always_inline u32 update_net_inodemap(struct socket *sock, event_data_t *event)
 {
     if (!is_family_supported(sock))
         return 0;
@@ -5035,6 +5091,7 @@ static __always_inline u32 security_socket_send_recv_msg(struct socket *sock, ev
     // save updated context to the inode map (inode <=> task ctx relation)
     net_task_context_t netctx = {0};
     set_net_task_context(event, &netctx);
+
     bpf_map_update_elem(&inodemap, &inode, &netctx, BPF_ANY);
 
     return 0;
@@ -5052,7 +5109,7 @@ int BPF_KPROBE(trace_security_socket_recvmsg)
 
     struct socket *sock = (void *) PT_REGS_PARM1(ctx);
 
-    return security_socket_send_recv_msg(sock, p.event);
+    return update_net_inodemap(sock, p.event);
 }
 
 SEC("kprobe/security_socket_sendmsg")
@@ -5067,13 +5124,12 @@ int BPF_KPROBE(trace_security_socket_sendmsg)
 
     struct socket *sock = (void *) PT_REGS_PARM1(ctx);
 
-    return security_socket_send_recv_msg(sock, p.event);
+    return update_net_inodemap(sock, p.event);
 }
 
 //
 // Socket Ingress/Egress eBPF program loader (right before and right after eBPF)
 //
-
 
 SEC("kprobe/__cgroup_bpf_run_filter_skb")
 int BPF_KPROBE(cgroup_bpf_run_filter_skb)
@@ -5082,7 +5138,13 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
 
     void *cgrpctxmap = NULL;
 
+    struct sock *sk = (void *) PT_REGS_PARM1(ctx);
+    struct sk_buff *skb = (void *) PT_REGS_PARM2(ctx);
     int type = PT_REGS_PARM3(ctx);
+
+    if (!sk || !skb)
+        return 0;
+
     switch (type) {
         case BPF_CGROUP_INET_INGRESS:
             cgrpctxmap = &cgrpctxmap_in;
@@ -5093,9 +5155,6 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
         default:
             return 0; // other attachment type, return fast
     }
-
-    struct sock *sk = (void *) PT_REGS_PARM1(ctx);
-    struct sk_buff *skb = (void *) PT_REGS_PARM2(ctx);
 
     struct sock_common *common = (void *) sk;
     u8 family = BPF_READ(common, skc_family);
@@ -5109,13 +5168,14 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     }
 
     //
-    // EVENT CONTEXT (from current task)
+    // EVENT CONTEXT (from current task, might be a kernel context/thread)
     //
 
     u32 zero = 0;
     event_data_t *e = bpf_map_lookup_elem(&net_heap_event, &zero);
     if (unlikely(e == NULL))
         return 0;
+
     scratch_t *s = bpf_map_lookup_elem(&net_heap_scratch, &zero);
     if (unlikely(s == NULL))
         return 0;
@@ -5127,15 +5187,48 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     if (!init_program_data(&p, ctx))
         return 0;
 
-    // obtain socket inode
+    bool mightbecloned = false; // cloned sock structs come from accept()
+
+    // obtain the socket inode using current "sock" structure
+
     u64 inode = BPF_READ(sk, sk_socket, file, f_inode, i_ino);
     if (inode == 0)
-        return 0; // e.g. vhost kernel threads might not have an inode
+        mightbecloned = true; // kernel threads might have zero inode
 
-    // pick network context from the inodemap (inode <=> task)
-    net_task_context_t *netctx = bpf_map_lookup_elem(&inodemap, &inode);
-    if (!netctx)
-        return 0; // e.g. task isn't being traced
+    struct net_task_context *netctx;
+
+    // obtain the task ctx using the obtained socket inode
+
+    if (!mightbecloned) {
+        // pick network context from the inodemap (inode <=> task)
+        netctx = bpf_map_lookup_elem(&inodemap, &inode);
+        if (!netctx)
+            mightbecloned = true; // e.g. task isn't being traced
+    }
+
+    // If inode is zero, or task context couldn't be found, try to find it using
+    // the "sock" pointer from sockmap (this sock struct might be new, just
+    // cloned, and a socket might not exist yet, but the sockmap is likely to
+    // have the entry). Check trace_security_sk_clone() for more details.
+    //
+
+    if (mightbecloned) {
+        // pick network context from the sockmap (new sockptr <=> old inode <=> task)
+        u64 skptr = (u64) (void *) sk;
+        u64 *o= bpf_map_lookup_elem(&sockmap, &skptr);
+        if (o == 0)
+            return 0;
+        u64 oinode = *o;
+
+        // with the old inode, find the netctx for the task
+
+        netctx = bpf_map_lookup_elem(&inodemap, &oinode);
+        if (!netctx)
+            return 0; // old inode wasn't being traced as well
+
+        // update inodemap w/ new inode <=> task context (faster path next time)
+        bpf_map_update_elem(&inodemap, &oinode, netctx, BPF_ANY);
+    }
 
 // CHECK: should_submit_net_event() for more info
 #pragma clang diagnostic push
