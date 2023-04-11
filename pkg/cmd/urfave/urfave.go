@@ -297,12 +297,12 @@ func getPoliciesFromFile(filePath string) (flags.PolicyFile, error) {
 
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return p, err
+		return p, errfmt.Errorf("error reading %s: %v", filePath, err)
 	}
 
 	err = yaml.Unmarshal(data, &p)
 	if err != nil {
-		return p, err
+		return p, errfmt.Errorf("error parsing %s: %v", filePath, err)
 	}
 
 	return p, nil
