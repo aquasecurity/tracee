@@ -314,7 +314,7 @@ func TestEventFilters(t *testing.T) {
 			filterMap, err := flags.PrepareFilterMapFromFlags(tc.filterArgs)
 			require.NoError(t, err)
 
-			policies, err := flags.CreatePolicies(filterMap)
+			policies, err := flags.CreatePolicies(filterMap, false)
 
 			require.NoError(t, err)
 
@@ -512,7 +512,7 @@ func TestEventPolicies(t *testing.T) {
 			filterMap, err := flags.PrepareFilterMapFromPolicies(tc.policies)
 			require.NoError(t, err)
 
-			policies, err := flags.CreatePolicies(filterMap)
+			policies, err := flags.CreatePolicies(filterMap, false)
 			require.NoError(t, err)
 
 			ctx, cancel := context.WithCancel(context.Background())

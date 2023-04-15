@@ -62,7 +62,7 @@ func TestTraceeEbpfPrepareOutputPrinterConfig(t *testing.T) {
 	}
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
-			outputConfig, err := flags.TraceeEbpfPrepareOutput(testcase.outputSlice)
+			outputConfig, err := flags.TraceeEbpfPrepareOutput(testcase.outputSlice, false)
 			if err != nil {
 				assert.ErrorContains(t, err, testcase.expectedError.Error())
 			} else {

@@ -338,7 +338,7 @@ func TestCreatePolicies(t *testing.T) {
 		{
 			testName:      "invalid argfilter 3",
 			filters:       []string{"open.bla=5"},
-			expectedError: InvalidFilterOptionError("open.bla=5"),
+			expectedError: InvalidFilterOptionError("open.bla=5", false),
 		},
 		{
 			testName:      "invalid context filter 1",
@@ -358,7 +358,7 @@ func TestCreatePolicies(t *testing.T) {
 		{
 			testName:      "invalid filter",
 			filters:       []string{"blabla=5"},
-			expectedError: InvalidFilterOptionError("blabla=5"),
+			expectedError: InvalidFilterOptionError("blabla=5", false),
 		},
 		{
 			testName:      "invalid retfilter 1",
@@ -373,27 +373,27 @@ func TestCreatePolicies(t *testing.T) {
 		{
 			testName:      "invalid operator",
 			filters:       []string{"uid\t0"},
-			expectedError: InvalidFilterOptionError("uid\t0"),
+			expectedError: InvalidFilterOptionError("uid\t0", false),
 		},
 		{
 			testName:      "invalid operator",
 			filters:       []string{"mntns\t0"},
-			expectedError: InvalidFilterOptionError("mntns\t0"),
+			expectedError: InvalidFilterOptionError("mntns\t0", false),
 		},
 		{
 			testName:      "invalid filter type",
 			filters:       []string{"UID>0"},
-			expectedError: InvalidFilterOptionError("UID>0"),
+			expectedError: InvalidFilterOptionError("UID>0", false),
 		},
 		{
 			testName:      "invalid filter type",
 			filters:       []string{"test=0"},
-			expectedError: InvalidFilterOptionError("test=0"),
+			expectedError: InvalidFilterOptionError("test=0", false),
 		},
 		{
 			testName:      "invalid filter type",
 			filters:       []string{"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=0"},
-			expectedError: InvalidFilterOptionError("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=0"),
+			expectedError: InvalidFilterOptionError("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=0", false),
 		},
 		{
 			testName:      "invalid mntns 2",
@@ -544,7 +544,7 @@ func TestCreatePolicies(t *testing.T) {
 			filterMap, err := PrepareFilterMapFromFlags(tc.filters)
 			assert.NoError(t, err)
 
-			_, err = CreatePolicies(filterMap)
+			_, err = CreatePolicies(filterMap, false)
 			if tc.expectedError != nil {
 				require.Error(t, err)
 				assert.ErrorContains(t, err, tc.expectedError.Error())
@@ -708,7 +708,7 @@ func TestPrepareCapture(t *testing.T) {
 		}
 		for _, tc := range testCases {
 			t.Run(tc.testName, func(t *testing.T) {
-				capture, err := PrepareCapture(tc.captureSlice)
+				capture, err := PrepareCapture(tc.captureSlice, false)
 				if tc.expectedError == nil {
 					require.NoError(t, err)
 					assert.Equal(t, tc.expectedCapture, capture, tc.testName)
@@ -722,7 +722,7 @@ func TestPrepareCapture(t *testing.T) {
 
 	t.Run("clear dir", func(t *testing.T) {
 		d, _ := os.CreateTemp("", "TestPrepareCapture-*")
-		capture, err := PrepareCapture([]string{fmt.Sprintf("dir:%s", d.Name()), "clear-dir"})
+		capture, err := PrepareCapture([]string{fmt.Sprintf("dir:%s", d.Name()), "clear-dir"}, false)
 		require.NoError(t, err)
 		assert.Equal(t, tracee.CaptureConfig{OutputPath: fmt.Sprintf("%s/out", d.Name())}, capture)
 		require.NoDirExists(t, d.Name()+"out")
@@ -870,7 +870,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 	}
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
-			output, err := TraceeEbpfPrepareOutput(testcase.outputSlice)
+			output, err := TraceeEbpfPrepareOutput(testcase.outputSlice, false)
 			if err != nil {
 				assert.ErrorContains(t, err, testcase.expectedError.Error())
 			} else {
@@ -1274,7 +1274,7 @@ func TestPrepareOutput(t *testing.T) {
 	}
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
-			output, err := PrepareOutput(testcase.outputSlice)
+			output, err := PrepareOutput(testcase.outputSlice, false)
 			if err != nil {
 				assert.Contains(t, err.Error(), testcase.expectedError.Error())
 			} else {
@@ -1369,7 +1369,7 @@ func TestPrepareRego(t *testing.T) {
 			{
 				testName:      "invalid rego option",
 				regoSlice:     []string{"foo"},
-				expectedError: errors.New("invalid rego option specified, use '--rego help' for more info"),
+				expectedError: errors.New("invalid rego option specified"),
 			},
 			{
 				testName:  "default options",

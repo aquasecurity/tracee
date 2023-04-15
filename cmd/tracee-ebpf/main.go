@@ -39,7 +39,7 @@ func main() {
 			}
 			initialize.SetLibbpfgoCallbacks()
 
-			runner, err := urfave.GetTraceeRunner(c, version, false)
+			runner, err := urfave.GetTraceeRunner(c, version)
 			if err != nil {
 				return err
 			}

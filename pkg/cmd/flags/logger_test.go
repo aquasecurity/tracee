@@ -69,13 +69,13 @@ func TestPrepareLogger(t *testing.T) {
 			testName:       "invalid log level",
 			logOptions:     []string{"invalid-level"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  flags.InvalidLogOption("invalid-level"),
+			expectedError:  flags.InvalidLogOption("invalid-level", false),
 		},
 		{
 			testName:       "invalid log level",
 			logOptions:     []string{""},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  flags.InvalidLogOption(""),
+			expectedError:  flags.InvalidLogOption("", false),
 		},
 
 		// valid log aggregate
@@ -111,43 +111,43 @@ func TestPrepareLogger(t *testing.T) {
 			testName:       "invalid log aggregate",
 			logOptions:     []string{"invalid-aggregate"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  flags.InvalidLogOption("invalid-aggregate"),
+			expectedError:  flags.InvalidLogOption("invalid-aggregate", false),
 		},
 		{
 			testName:       "invalid log aggregate",
 			logOptions:     []string{"aggregate:"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  flags.InvalidLogOption("aggregate:"),
+			expectedError:  flags.InvalidLogOption("aggregate:", false),
 		},
 		{
 			testName:       "invalid log aggregate",
 			logOptions:     []string{"aggregate:s"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  flags.InvalidLogOption("aggregate:s"),
+			expectedError:  flags.InvalidLogOption("aggregate:s", false),
 		},
 		{
 			testName:       "invalid log aggregate",
 			logOptions:     []string{"aggregate:-1"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  flags.InvalidLogOption("aggregate:-1"),
+			expectedError:  flags.InvalidLogOption("aggregate:-1", false),
 		},
 		{
 			testName:       "invalid log aggregate",
 			logOptions:     []string{"aggregate:abc"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  flags.InvalidLogOption("aggregate:abc"),
+			expectedError:  flags.InvalidLogOption("aggregate:abc", false),
 		},
 		{
 			testName:       "invalid log aggregate",
 			logOptions:     []string{"aggregate:15"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  flags.InvalidLogOption("aggregate:15"),
+			expectedError:  flags.InvalidLogOption("aggregate:15", false),
 		},
 		{
 			testName:       "invalid log aggregate",
 			logOptions:     []string{"aggregate:1ms"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  flags.InvalidLogOption("aggregate:1ms"),
+			expectedError:  flags.InvalidLogOption("aggregate:1ms", false),
 		},
 
 		// valid log level + aggregate
@@ -173,13 +173,13 @@ func TestPrepareLogger(t *testing.T) {
 			testName:       "invalid log file",
 			logOptions:     []string{"file:"},
 			expectedReturn: logger.LoggingConfig{},
-			expectedError:  flags.InvalidLogOption("file:"),
+			expectedError:  flags.InvalidLogOption("file:", false),
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			logCfg, err := flags.PrepareLogger(tc.logOptions)
+			logCfg, err := flags.PrepareLogger(tc.logOptions, false)
 			if tc.expectedError != nil {
 				require.Equal(t, logger.LoggingConfig{}, logCfg)
 				require.Error(t, err)

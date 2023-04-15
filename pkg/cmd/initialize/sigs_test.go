@@ -1,4 +1,4 @@
-package main
+package initialize
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ import (
 	"github.com/aquasecurity/tracee/types/detect"
 )
 
-func Test_createEventsFromSigs(t *testing.T) {
+func Test_CreateEventsFromSigs(t *testing.T) {
 	tests := []struct {
 		startId        events.ID
 		signatures     []detect.Signature
@@ -48,7 +48,7 @@ func Test_createEventsFromSigs(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		createEventsFromSignatures(test.startId, test.signatures)
+		CreateEventsFromSignatures(test.startId, test.signatures)
 
 		for _, expected := range test.expectedEvents {
 			eventID, ok := events.Definitions.GetID(expected.Name)

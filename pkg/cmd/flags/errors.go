@@ -16,7 +16,11 @@ func InvalidEventExcludeError(event string) error {
 	return fmt.Errorf("invalid event to exclude: %s", event)
 }
 
-func InvalidFilterOptionError(expr string) error {
+func InvalidFilterOptionError(expr string, newBinary bool) error {
+	if newBinary {
+		return fmt.Errorf("invalid filter option specified (%s), use '--help filter' for more info", expr)
+	}
+
 	return fmt.Errorf("invalid filter option specified (%s), use '--filter help' for more info", expr)
 }
 

@@ -21,7 +21,7 @@ func PrintAndExitIfHelp(ctx *cli.Context, newBinary bool) {
 
 	for _, k := range keys {
 		if checkIsHelp(ctx, k) {
-			fmt.Print(getHelpString(k, newBinary))
+			fmt.Print(GetHelpString(k, newBinary))
 			os.Exit(0)
 		}
 	}
@@ -40,8 +40,10 @@ func checkIsHelp(ctx *cli.Context, k string) bool {
 	return v == "help"
 }
 
-func getHelpString(key string, newBinary bool) string {
+func GetHelpString(key string, newBinary bool) string {
 	switch key {
+	case "config":
+		return configHelp()
 	case "crs":
 		return containersHelp()
 	case "cache":
