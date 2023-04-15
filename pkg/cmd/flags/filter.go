@@ -112,7 +112,7 @@ func PrepareFilterMapFromFlags(filtersArr []string) (FilterMap, error) {
 	return filterMap, nil
 }
 
-func CreatePolicies(filterMap FilterMap) (*policy.Policies, error) {
+func CreatePolicies(filterMap FilterMap, newBinary bool) (*policy.Policies, error) {
 	eventsNameToID := events.Definitions.NamesToIDs()
 	// remove internal events since they shouldn't be accessible by users
 	for event, id := range eventsNameToID {
@@ -308,7 +308,7 @@ func CreatePolicies(filterMap FilterMap) (*policy.Policies, error) {
 				continue
 			}
 
-			return nil, InvalidFilterOptionError(filterFlag.full)
+			return nil, InvalidFilterOptionError(filterFlag.full, newBinary)
 		}
 
 		var err error

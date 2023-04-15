@@ -75,7 +75,7 @@ Network notes worth mentioning:
 `
 }
 
-func PrepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
+func PrepareCapture(captureSlice []string, newBinary bool) (tracee.CaptureConfig, error) {
 	capture := tracee.CaptureConfig{}
 
 	outDir := "/tmp/tracee"
@@ -176,6 +176,10 @@ func PrepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 				return tracee.CaptureConfig{}, errfmt.Errorf("capture output dir cannot be empty")
 			}
 		} else {
+			if newBinary {
+				return tracee.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, use '--help capture' for more info")
+			}
+
 			return tracee.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, use '--capture help' for more info")
 		}
 	}

@@ -468,7 +468,7 @@ func TestPolicyScopes(t *testing.T) {
 			}
 
 			if !test.skipPolicyCreation {
-				p, err := CreatePolicies(filterMap)
+				p, err := CreatePolicies(filterMap, false)
 				assert.NotNil(t, p)
 				assert.NoError(t, err)
 			}

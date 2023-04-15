@@ -10,7 +10,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/aquasecurity/tracee/pkg/cmd/urfave"
+	"github.com/aquasecurity/tracee/pkg/cmd"
 )
 
 const (
@@ -67,7 +67,7 @@ func main() {
 			}
 			events := c.StringSlice(givenEvents)
 
-			runner, err := urfave.GetGPTDocsRunner(key, temp, token, events)
+			runner, err := getGPTDocsRunner(key, temp, token, events)
 			if err != nil {
 				return err
 			}
@@ -93,4 +93,15 @@ func printAndExitIfHelp(c *cli.Context, exit bool) {
 			os.Exit(0)
 		}
 	}
+}
+
+func getGPTDocsRunner(k string, t float64, m int, e []string) (
+	*cmd.GPTDocsRunner, error,
+) {
+	return &cmd.GPTDocsRunner{
+		OpenAIKey:         k,
+		OpenAITemperature: t,
+		OpenAIMaxTokens:   m,
+		GivenEvents:       e,
+	}, nil
 }

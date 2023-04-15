@@ -438,7 +438,7 @@ $(OUTPUT_DIR)/tracee: \
 		-tags $(GO_TAGS_EBPF) \
 		-ldflags="$(GO_DEBUG_FLAG) \
 			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
-			-X main.version=\"$(VERSION)\" \
+			-X github.com/aquasecurity/tracee/cmd/tracee/cmd.version=\"$(VERSION)\" \
 			" \
 		-v -o $@ \
 		./cmd/tracee

@@ -37,7 +37,7 @@ Use this flag multiple times to choose multiple output options
 `
 }
 
-func TraceeEbpfPrepareOutput(outputSlice []string) (OutputConfig, error) {
+func TraceeEbpfPrepareOutput(outputSlice []string, newBinary bool) (OutputConfig, error) {
 	outConfig := OutputConfig{}
 	traceeConfig := &tracee.OutputConfig{}
 
@@ -64,7 +64,7 @@ func TraceeEbpfPrepareOutput(outputSlice []string) (OutputConfig, error) {
 		case "out-file":
 			outPath = outputParts[1]
 		case "option":
-			err := setOption(traceeConfig, outputParts[1])
+			err := setOption(traceeConfig, outputParts[1], newBinary)
 			if err != nil {
 				return outConfig, err
 			}
@@ -76,7 +76,7 @@ func TraceeEbpfPrepareOutput(outputSlice []string) (OutputConfig, error) {
 	printerConfigs := make([]printer.Config, 0)
 
 	if printerKind == "table" {
-		if err := setOption(traceeConfig, "parse-arguments"); err != nil {
+		if err := setOption(traceeConfig, "parse-arguments", newBinary); err != nil {
 			return outConfig, err
 		}
 	}
