@@ -4868,6 +4868,8 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6);
 // Network submission functions
 //
 
+// TODO: check if TCP needs a LRU map of sent events by pkt ID (avoid dups)
+
 static __always_inline u32 cgroup_skb_submit(void *map,
                                              struct __sk_buff *ctx,
                                              net_event_context_t *neteventctx,
@@ -4904,6 +4906,8 @@ static __always_inline u32 cgroup_skb_submit(void *map,
 }
 
 #define cgroup_skb_submit_event(a,b,c,d) cgroup_skb_submit(&events,a,b,c,d)
+
+// TODO: check if TCP needs a LRU map of sent events by pkt ID (avoid dups)
 
 static __always_inline u32 cgroup_skb_capture_event(struct __sk_buff *ctx,
                                                     net_event_context_t *neteventctx,
@@ -5050,9 +5054,17 @@ int BPF_KPROBE(trace_security_sk_clone)
     struct sock *osock = (void *) PT_REGS_PARM1(ctx);
     struct sock *nsock = (void *) PT_REGS_PARM2(ctx);
 
+    struct socket *osocket = BPF_READ(osock, sk_socket);
+    if (!osocket)
+        return 0;
+
     // obtain old socket inode
-    u64 inode = BPF_READ(osock, sk_socket, file, f_inode, i_ino);
+    u64 inode = BPF_READ(osocket, file, f_inode, i_ino);
     if (inode == 0)
+        return 0;
+
+    // check if old socket family is supported
+    if (!is_family_supported(osocket))
         return 0;
 
     // if the original socket isn't linked to a task, then the newly cloned
@@ -5221,7 +5233,6 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
         u64 oinode = *o;
 
         // with the old inode, find the netctx for the task
-
         netctx = bpf_map_lookup_elem(&inodemap, &oinode);
         if (!netctx)
             return 0; // old inode wasn't being traced as well
