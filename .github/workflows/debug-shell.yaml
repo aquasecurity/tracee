@@ -1,0 +1,262 @@
+name: Debug Distro Shell
+on:
+  workflow_dispatch:
+    inputs:
+      distro:
+        type: choice
+        description: Distro Image to Debug
+        required: true
+        options:
+          - alma418
+          - alma418-arm64
+          - amzn2510
+          - amzn2510-arm64
+          - gke54
+          - gke510
+          - gke515
+          - gke515-arm64
+          - focal54
+          - focal54-arm64
+          - focal513
+          - focal513-arm64
+          - jammy515
+          - jammy515-arm64
+          - jammy519
+          - jammy519-arm64
+          - focal419
+          - focal419-arm64
+jobs:
+  alma418:
+    if: ${{ github.event.inputs.distro == 'alma418' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-0256d27c94fd8654b_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
+  alma418-arm64:
+    if: ${{ github.event.inputs.distro == 'alma418-arm64' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-06bf1de0491bed185_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
+  amzn2510:
+    if: ${{ github.event.inputs.distro == 'amzn2510' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-0d099424e2075f1a4_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
+  amzn2510-arm64:
+    if: ${{ github.event.inputs.distro == 'amzn2510-arm64' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-00c130a5b3b61db15_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
+  gke54:
+    if: ${{ github.event.inputs.distro == 'gke54' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-0ba301555616a1dbd_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
+  gke510:
+    if: ${{ github.event.inputs.distro == 'gke510' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-060404a5b1dc571e6_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
+  gke515:
+    if: ${{ github.event.inputs.distro == 'gke515' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-0d96f848dbe84ee3e_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
+  gke515-arm64:
+    if: ${{ github.event.inputs.distro == 'gke515-arm64' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-0ffd52e93f1a0370b_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
+  focal54:
+    if: ${{ github.event.inputs.distro == 'focal54' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-0215ef3ceac330d0a_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
+  focal54-arm64:
+    if: ${{ github.event.inputs.distro == 'focal54-arm64' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-0964f99b81de934a3_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
+  focal513:
+    if: ${{ github.event.inputs.distro == 'focal513' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-0f23165db12015479_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
+  focal513-arm64:
+    if: ${{ github.event.inputs.distro == 'focal513-arm64' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-0f12d300b01df6d27_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
+  jammy515:
+    if: ${{ github.event.inputs.distro == 'jammy515' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-0238444dc8524d8c7_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
+  jammy515-arm64:
+    if: ${{ github.event.inputs.distro == 'jammy515-arm64' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-0870bd48b77710358_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
+  jammy519:
+    if: ${{ github.event.inputs.distro == 'jammy519' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-0f14a28ff0b2d6279_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
+  jammy519-arm64:
+    if: ${{ github.event.inputs.distro == 'jammy519-arm64' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-0d40904002284d8de_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
+  focal419:
+    if: ${{ github.event.inputs.distro == 'focal419' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-06c844d8e084a6328_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
+  focal419-arm64:
+    if: ${{ github.event.inputs.distro == 'focal419-arm64' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-0956bf30569c0bce9_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
