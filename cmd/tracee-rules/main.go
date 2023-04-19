@@ -38,14 +38,8 @@ func main() {
 
 			// Capabilities command line flags
 
-			bypass := c.Bool("allcaps") || !isRoot() // non root has no practical use for capabilities drop
-			err := capabilities.Initialize(bypass)
-			if err != nil {
-				return err
-			}
-
 			if c.NumFlags() == 0 {
-				if err = cli.ShowAppHelp(c); err != nil {
+				if err := cli.ShowAppHelp(c); err != nil {
 					logger.Errorw("Failed to show app help", "error", err)
 				}
 				return errors.New("no flags specified")
@@ -68,6 +62,17 @@ func main() {
 				c.StringSlice("rules"),
 				c.Bool("rego-aio"),
 			)
+			if err != nil {
+				return err
+			}
+
+			// can't drop privileges before this point due to signature.Find(),
+			// orelse we would have to raise capabilities in Find() and it can't
+			// be done in the single binary case (capabilities initialization
+			// happens after Find() is called) in that case.
+
+			bypass := c.Bool("allcaps") || !isRoot()
+			err = capabilities.Initialize(bypass)
 			if err != nil {
 				return err
 			}
