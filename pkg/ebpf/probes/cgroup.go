@@ -3,6 +3,7 @@ package probes
 import (
 	bpf "github.com/aquasecurity/libbpfgo"
 
+	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/cgroup"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
@@ -85,7 +86,15 @@ func (p *cgroupProbe) detach(args ...interface{}) error {
 		return nil // already detached, it is ok to call detach again
 	}
 
-	err = p.bpfLink.Destroy()
+	// Legacy attachments (for now cgroupv2 prog attachments under older
+	// kernels) might not be done using BpfLink logic. Without a file
+	// descriptor for the link, tracee needs to raise its capabilities
+	// in order to call bpf() syscall for the legacy detachment.
+	err = capabilities.GetInstance().EBPF(
+		func() error {
+			return p.bpfLink.Destroy()
+		},
+	)
 	if err != nil {
 		return errfmt.Errorf("failed to detach program: %s (%v)", p.programName, err)
 	}
