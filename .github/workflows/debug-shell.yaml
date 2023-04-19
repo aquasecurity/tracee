@@ -32,6 +32,7 @@ jobs:
       [
         "github-self-hosted_ami-0256d27c94fd8654b_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    timeout-minutes: 50400
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
@@ -45,6 +46,7 @@ jobs:
       [
         "github-self-hosted_ami-06bf1de0491bed185_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    timeout-minutes: 50400
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
@@ -58,6 +60,7 @@ jobs:
       [
         "github-self-hosted_ami-0d099424e2075f1a4_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    timeout-minutes: 50400
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
@@ -71,6 +74,7 @@ jobs:
       [
         "github-self-hosted_ami-00c130a5b3b61db15_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    timeout-minutes: 50400
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
@@ -84,6 +88,7 @@ jobs:
       [
         "github-self-hosted_ami-0ba301555616a1dbd_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    timeout-minutes: 50400
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
@@ -97,6 +102,7 @@ jobs:
       [
         "github-self-hosted_ami-060404a5b1dc571e6_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    timeout-minutes: 50400
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
@@ -110,6 +116,7 @@ jobs:
       [
         "github-self-hosted_ami-0d96f848dbe84ee3e_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    timeout-minutes: 50400
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
@@ -123,6 +130,7 @@ jobs:
       [
         "github-self-hosted_ami-0ffd52e93f1a0370b_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    timeout-minutes: 50400
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
@@ -136,6 +144,7 @@ jobs:
       [
         "github-self-hosted_ami-0215ef3ceac330d0a_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    timeout-minutes: 50400
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
@@ -149,6 +158,7 @@ jobs:
       [
         "github-self-hosted_ami-0964f99b81de934a3_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    timeout-minutes: 50400
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
@@ -162,6 +172,7 @@ jobs:
       [
         "github-self-hosted_ami-0f23165db12015479_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    timeout-minutes: 50400
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
@@ -175,6 +186,7 @@ jobs:
       [
         "github-self-hosted_ami-0f12d300b01df6d27_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    timeout-minutes: 50400
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
@@ -188,6 +200,7 @@ jobs:
       [
         "github-self-hosted_ami-0238444dc8524d8c7_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    timeout-minutes: 50400
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
@@ -201,6 +214,7 @@ jobs:
       [
         "github-self-hosted_ami-0870bd48b77710358_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    timeout-minutes: 50400
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
@@ -214,6 +228,7 @@ jobs:
       [
         "github-self-hosted_ami-0f14a28ff0b2d6279_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    timeout-minutes: 50400
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
@@ -227,6 +242,7 @@ jobs:
       [
         "github-self-hosted_ami-0d40904002284d8de_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    timeout-minutes: 50400
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
@@ -240,6 +256,7 @@ jobs:
       [
         "github-self-hosted_ami-06c844d8e084a6328_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    timeout-minutes: 50400
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
@@ -253,6 +270,7 @@ jobs:
       [
         "github-self-hosted_ami-0956bf30569c0bce9_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    timeout-minutes: 50400
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
