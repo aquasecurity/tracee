@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -195,162 +196,1368 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		}
 	}
 
-	// handle other types (not numbers)
-
 	switch arg.Type {
 	case "const char*const*", "const char**":
 		argValue := arg.Value.([]interface{})
-		tmp := make([]string, len(argValue))
-		for i, v := range argValue {
-			tmp[i] = fmt.Sprint(v)
-		}
-		arg.Value = tmp
-
-		break
-
-	case "[]trace.HookedSymbolData":
-		var hookedSymbolData []HookedSymbolData
-		err := json.Unmarshal(b, &hookedSymbolData)
-		if err != nil {
-			break
-		}
-		arg.Value = hookedSymbolData
+		arg.Value = jsonConvertToStringSlice(argValue)
 
 		break
 
 	case "trace.ProtoIPv4":
-		var protoIpv4 ProtoIPv4
-		err := json.Unmarshal(b, &protoIpv4)
-		if err != nil {
-			break
+		protoIPv4Map, ok := arg.Value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("protocol IPv4: type error")
 		}
-		arg.Value = protoIpv4
+		argProtoIPv4, err := jsonConvertToProtoIPv4Arg(protoIPv4Map)
+		if err != nil {
+			return err
+		}
+
+		arg.Value = argProtoIPv4
 
 		break
 
 	case "trace.ProtoIPv6":
-		var protoIpv6 ProtoIPv6
-		err := json.Unmarshal(b, &protoIpv6)
-		if err != nil {
-			break
+		protoIPv6Map, ok := arg.Value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("protocol IPv6: type error")
 		}
-		arg.Value = protoIpv6
+		argProtoIPv6, err := jsonConvertToProtoIPv6Arg(protoIPv6Map)
+		if err != nil {
+			return err
+		}
+
+		arg.Value = argProtoIPv6
 
 		break
 
 	case "trace.ProtoTCP":
-		var protoTcp ProtoTCP
-		err := json.Unmarshal(b, &protoTcp)
-		if err != nil {
-			break
+		protoTCPMap, ok := arg.Value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("protocol TCP: type error")
 		}
-		arg.Value = protoTcp
+		argProtoTCP, err := jsonConvertToProtoTCPArg(protoTCPMap)
+		if err != nil {
+			return err
+		}
+
+		arg.Value = argProtoTCP
 
 		break
 
 	case "trace.ProtoUDP":
-		var protoUdp ProtoUDP
-		err := json.Unmarshal(b, &protoUdp)
-		if err != nil {
-			break
+		protoUDPMap, ok := arg.Value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("protocol UDP: type error")
 		}
-		arg.Value = protoUdp
+		argProtoUDP, err := jsonConvertToProtoUDPArg(protoUDPMap)
+		if err != nil {
+			return err
+		}
+
+		arg.Value = argProtoUDP
 
 		break
 
 	case "trace.ProtoICMP":
-		var protoIcmp ProtoICMP
-		err := json.Unmarshal(b, &protoIcmp)
-		if err != nil {
-			break
+		protoICMPMap, ok := arg.Value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("protocol ICMP: type error")
 		}
-		arg.Value = protoIcmp
+		argProtoICMP, err := jsonConvertToProtoICMPArg(protoICMPMap)
+		if err != nil {
+			return err
+		}
+
+		arg.Value = argProtoICMP
 
 		break
 
 	case "trace.ProtoICMPv6":
-		var protoIcmpv6 ProtoICMPv6
-		err := json.Unmarshal(b, &protoIcmpv6)
-		if err != nil {
-			break
+		protoICMPv6Map, ok := arg.Value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("protocol ICMPv6: type error")
 		}
-		arg.Value = protoIcmpv6
-
-		break
-
-	case "trace.ProtoDNS":
-		var protoDns ProtoDNS
-		err := json.Unmarshal(b, &protoDns)
+		argProtoICMPv6, err := jsonConvertToProtoICMPv6Arg(protoICMPv6Map)
 		if err != nil {
-			break
+			return err
 		}
-		arg.Value = protoDns
+
+		arg.Value = argProtoICMPv6
 
 		break
 
 	case "trace.PktMeta":
-		var pktMeta PktMeta
-		err := json.Unmarshal(b, &pktMeta)
-		if err != nil {
-			break
+		argPktMetaMap, ok := arg.Value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("PktMeta: type error")
 		}
-		arg.Value = pktMeta
+		argPktMeta, err := jsonConvertToPktMetaArg(argPktMetaMap)
+		if err != nil {
+			return err
+		}
+
+		arg.Value = argPktMeta
+
+		break
+
+	case "trace.ProtoDNS":
+		argProtoDnsMap, ok := arg.Value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("protocol DNS: type error")
+		}
+		argProtoDNS, err := jsonConvertToProtoDNSArg(argProtoDnsMap)
+		if err != nil {
+			return err
+		}
+
+		arg.Value = argProtoDNS
 
 		break
 
 	case "[]trace.DnsQueryData":
-		var dnsQueryData []DnsQueryData
-		err := json.Unmarshal(b, &dnsQueryData)
-		if err != nil {
-			break
+		argDnsQueryDataSlice, ok := arg.Value.([]interface{})
+		if !ok {
+			return fmt.Errorf("protocol Dns Query Data: type error")
 		}
-		arg.Value = dnsQueryData
+
+		var dnsQuries []DnsQueryData
+		for _, dnsQueryDataElem := range argDnsQueryDataSlice {
+			argDnsQueryDataMap, ok := dnsQueryDataElem.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("protocol Dns Query Data: type error")
+			}
+
+			dnsQuery, err := jsonConvertToDnsQuertDataType(argDnsQueryDataMap)
+			if err != nil {
+				return err
+			}
+
+			dnsQuries = append(dnsQuries, dnsQuery)
+		}
+
+		arg.Value = dnsQuries
 
 		break
 
 	case "[]trace.DnsResponseData":
-		var dnsResponseData []DnsResponseData
-		err := json.Unmarshal(b, &dnsResponseData)
-		if err != nil {
-			break
+		argDnsResponseDataSlice, ok := arg.Value.([]interface{})
+		if !ok {
+			return fmt.Errorf("protocol Dns Response Data: type error")
 		}
-		arg.Value = dnsResponseData
+
+		var dnsResponses []DnsResponseData
+		for _, dnsResponseDataElem := range argDnsResponseDataSlice {
+			dnsResponseDataMap, ok := dnsResponseDataElem.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("protocol Dns Response Data: type error")
+			}
+
+			dnsResponseData, err := jsonConvertToDnsResponseDataType(dnsResponseDataMap)
+			if err != nil {
+				return err
+			}
+
+			dnsResponses = append(dnsResponses, dnsResponseData)
+		}
+
+		arg.Value = dnsResponses
 
 		break
 
 	case "trace.ProtoHTTP":
-		var protoHttp ProtoHTTP
-		err := json.Unmarshal(b, &protoHttp)
-		if err != nil {
-			break
+		argProtoHTTPMap, ok := arg.Value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("protocol HTTP: type error")
 		}
-		arg.Value = protoHttp
+		argProtoHTTP, err := jsonConvertToProtoHTTPArg(argProtoHTTPMap)
+		if err != nil {
+			return err
+		}
+
+		arg.Value = argProtoHTTP
 
 		break
 
 	case "trace.ProtoHTTPRequest":
-		var protoHttpReq ProtoHTTPRequest
-		err := json.Unmarshal(b, &protoHttpReq)
-		if err != nil {
-			break
+		argProtoHTTPRequestMap, ok := arg.Value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("protocol HTTP Request: type error")
 		}
-		arg.Value = protoHttpReq
+		argProtoHTTPRequest, err := jsonConvertToProtoHTTPRequestArg(argProtoHTTPRequestMap)
+		if err != nil {
+			return err
+		}
+
+		arg.Value = argProtoHTTPRequest
 
 		break
 
 	case "trace.ProtoHTTPResponse":
-		var protoHttpRes ProtoHTTPResponse
-		err := json.Unmarshal(b, &protoHttpRes)
-		if err != nil {
-			break
+		argProtoHTTPResponseMap, ok := arg.Value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("protocol HTTP Response: type error")
 		}
-		arg.Value = protoHttpRes
+		argProtoHTTPResponse, err := jsonConvertToProtoHTTPResponseArg(argProtoHTTPResponseMap)
+		if err != nil {
+			return err
+		}
+
+		arg.Value = argProtoHTTPResponse
 
 		break
 
 	}
 
 	return nil
+}
+
+func jsonConvertToProtoIPv4Arg(argMap map[string]interface{}) (ProtoIPv4, error) {
+	// string conversion
+	stringTypes := map[string]string{
+		"protocol": "",
+		"srcIP":    "",
+		"dstIP":    "",
+	}
+	stringTypes, err := jsonConvertToStringTypes(argMap, stringTypes)
+	if err != nil {
+		return ProtoIPv4{}, err
+	}
+
+	// uint8 conversion
+	uint8Types := map[string]uint8{
+		"version": 0,
+		"IHL":     0,
+		"TOS":     0,
+		"flags":   0,
+		"TTL":     0,
+	}
+	uint8Types, err = jsonConvertToUint8Types(argMap, uint8Types)
+	if err != nil {
+		return ProtoIPv4{}, err
+	}
+
+	// uint16 conversion
+	uint16Types := map[string]uint16{
+		"length":     0,
+		"id":         0,
+		"fragOffset": 0,
+		"checksum":   0,
+	}
+	uint16Types, err = jsonConvertToUint16Types(argMap, uint16Types)
+	if err != nil {
+		return ProtoIPv4{}, err
+	}
+
+	return ProtoIPv4{
+		Version:    uint8Types["version"],
+		IHL:        uint8Types["IHL"],
+		TOS:        uint8Types["TOS"],
+		Length:     uint16Types["length"],
+		Id:         uint16Types["id"],
+		Flags:      uint8Types["flags"],
+		FragOffset: uint16Types["fragOffset"],
+		TTL:        uint8Types["TTL"],
+		Protocol:   stringTypes["protocol"],
+		Checksum:   uint16Types["checksum"],
+		SrcIP:      stringTypes["srcIP"],
+		DstIP:      stringTypes["dstIP"],
+	}, nil
+}
+
+func jsonConvertToProtoIPv6Arg(argMap map[string]interface{}) (ProtoIPv6, error) {
+	stringTypes := map[string]string{
+		"nextHeader": "",
+		"srcIP":      "",
+		"dstIP":      "",
+	}
+	stringTypes, err := jsonConvertToStringTypes(argMap, stringTypes)
+	if err != nil {
+		return ProtoIPv6{}, err
+	}
+
+	// uint8 conversion
+	uint8Types := map[string]uint8{
+		"version":      0,
+		"trafficClass": 0,
+		"hopLimit":     0,
+	}
+	uint8Types, err = jsonConvertToUint8Types(argMap, uint8Types)
+	if err != nil {
+		return ProtoIPv6{}, err
+	}
+
+	// uint16 conversion
+	uint16Types := map[string]uint16{
+		"length": 0,
+	}
+	uint16Types, err = jsonConvertToUint16Types(argMap, uint16Types)
+	if err != nil {
+		return ProtoIPv6{}, err
+	}
+
+	// uint32 conversion
+	uint32Types := map[string]uint32{
+		"flowLabel": 0,
+	}
+	uint32Types, err = jsonConvertToUint32Types(argMap, uint32Types)
+	if err != nil {
+		return ProtoIPv6{}, err
+	}
+
+	return ProtoIPv6{
+		Version:      uint8Types["version"],
+		TrafficClass: uint8Types["trafficClass"],
+		FlowLabel:    uint32Types["flowLabel"],
+		Length:       uint16Types["length"],
+		NextHeader:   stringTypes["nextHeader"],
+		HopLimit:     uint8Types["hopLimit"],
+		SrcIP:        stringTypes["srcIP"],
+		DstIP:        stringTypes["dstIP"],
+	}, nil
+}
+
+func jsonConvertToProtoTCPArg(argMap map[string]interface{}) (ProtoTCP, error) {
+	// uint8 conversion
+	uint8Types := map[string]uint8{
+		"dataOffset": 0,
+		"FIN":        0,
+		"SYN":        0,
+		"RST":        0,
+		"PSH":        0,
+		"ACK":        0,
+		"URG":        0,
+		"ECE":        0,
+		"CWR":        0,
+		"NS":         0,
+	}
+	uint8Types, err := jsonConvertToUint8Types(argMap, uint8Types)
+	if err != nil {
+		return ProtoTCP{}, err
+	}
+
+	// uint16 conversion
+	uint16Types := map[string]uint16{
+		"srcPort":  0,
+		"dstPort":  0,
+		"window":   0,
+		"checksum": 0,
+		"urgent":   0,
+	}
+	uint16Types, err = jsonConvertToUint16Types(argMap, uint16Types)
+	if err != nil {
+		return ProtoTCP{}, err
+	}
+
+	// uint32 conversion
+	uint32Types := map[string]uint32{
+		"seq": 0,
+		"ack": 0,
+	}
+	uint32Types, err = jsonConvertToUint32Types(argMap, uint32Types)
+	if err != nil {
+		return ProtoTCP{}, err
+	}
+
+	return ProtoTCP{
+		SrcPort:    uint16Types["srcPort"],
+		DstPort:    uint16Types["dstPort"],
+		Seq:        uint32Types["seq"],
+		Ack:        uint32Types["ack"],
+		DataOffset: uint8Types["dataOffset"],
+		FIN:        uint8Types["FIN"],
+		SYN:        uint8Types["SYN"],
+		RST:        uint8Types["RST"],
+		PSH:        uint8Types["PSH"],
+		ACK:        uint8Types["ACK"],
+		URG:        uint8Types["URG"],
+		ECE:        uint8Types["ECE"],
+		CWR:        uint8Types["CWR"],
+		NS:         uint8Types["NS"],
+		Window:     uint16Types["window"],
+		Checksum:   uint16Types["checksum"],
+		Urgent:     uint16Types["urgent"],
+	}, nil
+}
+
+func jsonConvertToProtoUDPArg(argMap map[string]interface{}) (ProtoUDP, error) {
+	// uint16 conversion
+	uint16Types := map[string]uint16{
+		"srcPort":  0,
+		"dstPort":  0,
+		"length":   0,
+		"checksum": 0,
+	}
+	uint16Types, err := jsonConvertToUint16Types(argMap, uint16Types)
+	if err != nil {
+		return ProtoUDP{}, err
+	}
+
+	return ProtoUDP{
+		SrcPort:  uint16Types["srcPort"],
+		DstPort:  uint16Types["dstPort"],
+		Length:   uint16Types["length"],
+		Checksum: uint16Types["checksum"],
+	}, nil
+}
+
+func jsonConvertToProtoICMPArg(argMap map[string]interface{}) (ProtoICMP, error) {
+	// string conversion
+	stringTypes := map[string]string{
+		"typeCode": "",
+	}
+	stringTypes, err := jsonConvertToStringTypes(argMap, stringTypes)
+	if err != nil {
+		return ProtoICMP{}, err
+	}
+
+	// uint16 conversion
+	uint16Types := map[string]uint16{
+		"checksum": 0,
+		"id":       0,
+		"seq":      0,
+	}
+	uint16Types, err = jsonConvertToUint16Types(argMap, uint16Types)
+	if err != nil {
+		return ProtoICMP{}, err
+	}
+
+	return ProtoICMP{
+		TypeCode: stringTypes["typeCode"],
+		Checksum: uint16Types["checksum"],
+		Id:       uint16Types["id"],
+		Seq:      uint16Types["seq"],
+	}, nil
+}
+
+func jsonConvertToProtoICMPv6Arg(argMap map[string]interface{}) (ProtoICMPv6, error) {
+	// string conversion
+	stringTypes := map[string]string{
+		"typeCode": "",
+	}
+	stringTypes, err := jsonConvertToStringTypes(argMap, stringTypes)
+	if err != nil {
+		return ProtoICMPv6{}, err
+	}
+
+	// uint16 conversion
+	uint16Types := map[string]uint16{
+		"checksum": 0,
+	}
+	uint16Types, err = jsonConvertToUint16Types(argMap, uint16Types)
+	if err != nil {
+		return ProtoICMPv6{}, err
+	}
+
+	return ProtoICMPv6{
+		TypeCode: stringTypes["typeCode"],
+		Checksum: uint16Types["checksum"],
+	}, nil
+}
+
+func jsonConvertToProtoDNSArg(argMap map[string]interface{}) (ProtoDNS, error) {
+	// uint8 conversion
+	uint8Types := map[string]uint8{
+		"QR": 0,
+		"AA": 0,
+		"TC": 0,
+		"RD": 0,
+		"RA": 0,
+		"Z":  0,
+	}
+	uint8Types, err := jsonConvertToUint8Types(argMap, uint8Types)
+	if err != nil {
+		return ProtoDNS{}, err
+	}
+
+	// uint16 conversion
+	uint16Types := map[string]uint16{
+		"ID":      0,
+		"QDCount": 0,
+		"ANCount": 0,
+		"NSCount": 0,
+		"ARCount": 0,
+	}
+	uint16Types, err = jsonConvertToUint16Types(argMap, uint16Types)
+	if err != nil {
+		return ProtoDNS{}, err
+	}
+
+	// string conversion
+	stringTypes := map[string]string{
+		"opCode":       "",
+		"responseCode": "",
+	}
+	stringTypes, err = jsonConvertToStringTypes(argMap, stringTypes)
+	if err != nil {
+		return ProtoDNS{}, err
+	}
+
+	// questions conversion
+	questions, exists := argMap["questions"]
+	if !exists {
+		return ProtoDNS{}, fmt.Errorf("questions not found in ProtoDNS arg")
+	}
+	questionsSlice, ok := questions.([]interface{})
+	if !ok {
+		return ProtoDNS{}, fmt.Errorf("questions from ProtoDNS: type error")
+	}
+
+	var dnsQuestions []ProtoDNSQuestion
+	for _, questionsElem := range questionsSlice {
+		questionsElemMap, ok := questionsElem.(map[string]interface{})
+		if !ok {
+			return ProtoDNS{}, fmt.Errorf("questions from ProtoDNS: type error")
+		}
+
+		question, err := jsonConvertToProtoDNSQuestionType(questionsElemMap)
+		if err != nil {
+			return ProtoDNS{}, err
+		}
+
+		dnsQuestions = append(dnsQuestions, question)
+	}
+
+	// answers conversion
+	answers, exists := argMap["answers"]
+	if !exists {
+		return ProtoDNS{}, fmt.Errorf("answers not found in ProtoDNS arg")
+	}
+	answersSlice, ok := answers.([]interface{})
+	if !ok {
+		return ProtoDNS{}, fmt.Errorf("answers from ProtoDNS: type error")
+	}
+
+	var dnsAnswers []ProtoDNSResourceRecord
+	for _, answersElem := range answersSlice {
+		answersElemMap, ok := answersElem.(map[string]interface{})
+		if !ok {
+			return ProtoDNS{}, fmt.Errorf("answers from ProtoDNS: type error")
+		}
+
+		answer, err := jsonConvertToProtoDNSResourceRecordType(answersElemMap)
+		if err != nil {
+			return ProtoDNS{}, err
+		}
+
+		dnsAnswers = append(dnsAnswers, answer)
+	}
+
+	// authorities conversion
+	authorities, exists := argMap["authorities"]
+	if !exists {
+		return ProtoDNS{}, fmt.Errorf("authorities not found in ProtoDNS arg")
+	}
+	authoritiesSlice, ok := authorities.([]interface{})
+	if !ok {
+		return ProtoDNS{}, fmt.Errorf("authorities from ProtoDNS: type error")
+	}
+
+	var dnsAuthorities []ProtoDNSResourceRecord
+	for _, authoritiesElem := range authoritiesSlice {
+		authoritiesElemMap, ok := authoritiesElem.(map[string]interface{})
+		if !ok {
+			return ProtoDNS{}, fmt.Errorf("authorities from ProtoDNS: type error")
+		}
+
+		authority, err := jsonConvertToProtoDNSResourceRecordType(authoritiesElemMap)
+		if err != nil {
+			return ProtoDNS{}, err
+		}
+
+		dnsAuthorities = append(dnsAuthorities, authority)
+	}
+
+	// additionals conversion
+	additionals, exists := argMap["additionals"]
+	if !exists {
+		return ProtoDNS{}, fmt.Errorf("additionals not found in ProtoDNS arg")
+	}
+	additionalsSlice, ok := additionals.([]interface{})
+	if !ok {
+		return ProtoDNS{}, fmt.Errorf("additionals from ProtoDNS: type error")
+	}
+
+	var dnsAdditionals []ProtoDNSResourceRecord
+	for _, additionalsElem := range additionalsSlice {
+		additionalsElemMap, ok := additionalsElem.(map[string]interface{})
+		if !ok {
+			return ProtoDNS{}, fmt.Errorf("additionals from ProtoDNS: type error")
+		}
+
+		additional, err := jsonConvertToProtoDNSResourceRecordType(additionalsElemMap)
+		if err != nil {
+			return ProtoDNS{}, err
+		}
+
+		dnsAdditionals = append(dnsAdditionals, additional)
+	}
+
+	return ProtoDNS{
+		ID:           uint16Types["ID"],
+		QR:           uint8Types["QR"],
+		OpCode:       stringTypes["opCode"],
+		AA:           uint8Types["AA"],
+		TC:           uint8Types["TC"],
+		RD:           uint8Types["RD"],
+		RA:           uint8Types["RA"],
+		Z:            uint8Types["Z"],
+		ResponseCode: stringTypes["responseCode"],
+		QDCount:      uint16Types["QDCount"],
+		ANCount:      uint16Types["ANCount"],
+		NSCount:      uint16Types["NSCount"],
+		ARCount:      uint16Types["ARCount"],
+		Questions:    dnsQuestions,
+		Answers:      dnsAnswers,
+		Authorities:  dnsAuthorities,
+		Additionals:  dnsAdditionals,
+	}, nil
+}
+
+func jsonConvertToProtoDNSQuestionType(argMap map[string]interface{}) (ProtoDNSQuestion, error) {
+	// string conversion
+	stringTypes := map[string]string{
+		"name":  "",
+		"type":  "",
+		"class": "",
+	}
+	stringTypes, err := jsonConvertToStringTypes(argMap, stringTypes)
+	if err != nil {
+		return ProtoDNSQuestion{}, err
+	}
+
+	return ProtoDNSQuestion{
+		Name:  stringTypes["name"],
+		Type:  stringTypes["type"],
+		Class: stringTypes["class"],
+	}, nil
+}
+
+func jsonConvertToProtoDNSResourceRecordType(argMap map[string]interface{}) (ProtoDNSResourceRecord, error) {
+	// string conversion
+	stringTypes := map[string]string{
+		"name":  "",
+		"type":  "",
+		"class": "",
+		"IP":    "",
+		"NS":    "",
+		"CNAME": "",
+		"PTR":   "",
+		"TXT":   "",
+	}
+	stringTypes, err := jsonConvertToStringTypes(argMap, stringTypes)
+	if err != nil {
+		return ProtoDNSResourceRecord{}, err
+	}
+
+	// uint32 conversion
+	uint32Types := map[string]uint32{
+		"TTL": 0,
+	}
+	uint32Types, err = jsonConvertToUint32Types(argMap, uint32Types)
+	if err != nil {
+		return ProtoDNSResourceRecord{}, err
+	}
+
+	// []string conversion
+	txts, exists := argMap["TXTs"]
+	if !exists {
+		return ProtoDNSResourceRecord{}, fmt.Errorf("TXTs not found in ProtoDNSResourceRecord arg")
+	}
+
+	var txtsValue []string
+	if txts == nil {
+		txtsValue = nil
+	} else {
+		txtsInterfaceSlice, ok := txts.([]interface{})
+		if !ok {
+			return ProtoDNSResourceRecord{}, fmt.Errorf("TXTs from ProtoDNSResourceRecord: type error")
+		}
+
+		txtsValue = jsonConvertToStringSlice(txtsInterfaceSlice)
+		if err != nil {
+			return ProtoDNSResourceRecord{}, err
+		}
+	}
+
+	// SOA conversion
+	soa, exists := argMap["SOA"]
+	if !exists {
+		return ProtoDNSResourceRecord{}, fmt.Errorf("SOA not found in ProtoDNSResourceRecord arg")
+	}
+	soaMap, ok := soa.(map[string]interface{})
+	if !ok {
+		return ProtoDNSResourceRecord{}, fmt.Errorf("SOA from ProtoDNSResourceRecord: type error")
+	}
+
+	protoDNSSOA, err := jsonConvertToProtoDNSSOAType(soaMap)
+	if err != nil {
+		return ProtoDNSResourceRecord{}, err
+	}
+
+	// SRV conversion
+	srv, exists := argMap["SRV"]
+	if !exists {
+		return ProtoDNSResourceRecord{}, fmt.Errorf("SRV not found in ProtoDNSResourceRecord arg")
+	}
+	srvMap, ok := srv.(map[string]interface{})
+	if !ok {
+		return ProtoDNSResourceRecord{}, fmt.Errorf("SRV from ProtoDNSResourceRecord: type error")
+	}
+
+	protoDNSSRV, err := jsonConvertToProtoDNSSRVType(srvMap)
+	if err != nil {
+		return ProtoDNSResourceRecord{}, err
+	}
+
+	// MX conversion
+	mx, exists := argMap["MX"]
+	if !exists {
+		return ProtoDNSResourceRecord{}, fmt.Errorf("MX not found in ProtoDNSResourceRecord arg")
+	}
+	mxMap, ok := mx.(map[string]interface{})
+	if !ok {
+		return ProtoDNSResourceRecord{}, fmt.Errorf("MX from ProtoDNSResourceRecord: type error")
+	}
+
+	protoDNSMX, err := jsonConvertToProtoDNSMXType(mxMap)
+	if err != nil {
+		return ProtoDNSResourceRecord{}, err
+	}
+
+	// OPT conversion
+	opt, exists := argMap["OPT"]
+	if !exists {
+		return ProtoDNSResourceRecord{}, fmt.Errorf("OPT not found in ProtoDNSResourceRecord arg")
+	}
+	optSlice, ok := opt.([]interface{})
+	if !ok {
+		return ProtoDNSResourceRecord{}, fmt.Errorf("OPT from ProtoDNSResourceRecord: type error")
+	}
+
+	var dnsOpts []ProtoDNSOPT
+	for _, optElem := range optSlice {
+		optElemMap, ok := optElem.(map[string]interface{})
+		if !ok {
+			return ProtoDNSResourceRecord{}, fmt.Errorf("OPT from ProtoDNSResourceRecord: type error")
+		}
+
+		dnsOpt, err := jsonConvertToProtoDNSOPTType(optElemMap)
+		if err != nil {
+			return ProtoDNSResourceRecord{}, err
+		}
+
+		dnsOpts = append(dnsOpts, dnsOpt)
+	}
+
+	// URI conversion
+	uri, exists := argMap["URI"]
+	if !exists {
+		return ProtoDNSResourceRecord{}, fmt.Errorf("URI not found in ProtoDNSResourceRecord arg")
+	}
+	uriMap, ok := uri.(map[string]interface{})
+	if !ok {
+		return ProtoDNSResourceRecord{}, fmt.Errorf("URI from ProtoDNSResourceRecord: type error")
+	}
+
+	protoDNSURI, err := jsonConvertToProtoDNSURIType(uriMap)
+	if err != nil {
+		return ProtoDNSResourceRecord{}, err
+	}
+
+	return ProtoDNSResourceRecord{
+		Name:  stringTypes["name"],
+		Type:  stringTypes["type"],
+		Class: stringTypes["class"],
+		TTL:   uint32Types["TTL"],
+		IP:    stringTypes["IP"],
+		NS:    stringTypes["NS"],
+		CNAME: stringTypes["CNAME"],
+		PTR:   stringTypes["PTR"],
+		TXTs:  txtsValue,
+		SOA:   protoDNSSOA,
+		SRV:   protoDNSSRV,
+		MX:    protoDNSMX,
+		OPT:   dnsOpts,
+		URI:   protoDNSURI,
+		TXT:   stringTypes["TXT"],
+	}, nil
+}
+
+func jsonConvertToProtoDNSSOAType(argMap map[string]interface{}) (ProtoDNSSOA, error) {
+	// string conversion
+	stringTypes := map[string]string{
+		"MName": "",
+		"RName": "",
+	}
+	stringTypes, err := jsonConvertToStringTypes(argMap, stringTypes)
+	if err != nil {
+		return ProtoDNSSOA{}, err
+	}
+
+	// uint32 conversion
+	uint32Types := map[string]uint32{
+		"serial":  0,
+		"refresh": 0,
+		"retry":   0,
+		"expire":  0,
+		"minimum": 0,
+	}
+	uint32Types, err = jsonConvertToUint32Types(argMap, uint32Types)
+	if err != nil {
+		return ProtoDNSSOA{}, err
+	}
+
+	return ProtoDNSSOA{
+		MName:   stringTypes["MName"],
+		RName:   stringTypes["RName"],
+		Serial:  uint32Types["serial"],
+		Refresh: uint32Types["refresh"],
+		Retry:   uint32Types["retry"],
+		Expire:  uint32Types["expire"],
+		Minimum: uint32Types["minimum"],
+	}, nil
+}
+
+func jsonConvertToProtoDNSSRVType(argMap map[string]interface{}) (ProtoDNSSRV, error) {
+	// string conversion
+	stringTypes := map[string]string{
+		"name": "",
+	}
+	stringTypes, err := jsonConvertToStringTypes(argMap, stringTypes)
+	if err != nil {
+		return ProtoDNSSRV{}, err
+	}
+
+	// uint16 conversion
+	uint16Types := map[string]uint16{
+		"priority": 0,
+		"weight":   0,
+		"port":     0,
+	}
+	uint16Types, err = jsonConvertToUint16Types(argMap, uint16Types)
+	if err != nil {
+		return ProtoDNSSRV{}, err
+	}
+
+	return ProtoDNSSRV{
+		Priority: uint16Types["priority"],
+		Weight:   uint16Types["weight"],
+		Port:     uint16Types["port"],
+		Name:     stringTypes["name"],
+	}, nil
+}
+
+func jsonConvertToProtoDNSMXType(argMap map[string]interface{}) (ProtoDNSMX, error) {
+	// string conversion
+	stringTypes := map[string]string{
+		"name": "",
+	}
+	stringTypes, err := jsonConvertToStringTypes(argMap, stringTypes)
+	if err != nil {
+		return ProtoDNSMX{}, err
+	}
+
+	// uint16 conversion
+	uint16Types := map[string]uint16{
+		"preference": 0,
+	}
+	uint16Types, err = jsonConvertToUint16Types(argMap, uint16Types)
+	if err != nil {
+		return ProtoDNSMX{}, err
+	}
+
+	return ProtoDNSMX{
+		Preference: uint16Types["preference"],
+		Name:       stringTypes["name"],
+	}, nil
+}
+
+func jsonConvertToProtoDNSOPTType(argMap map[string]interface{}) (ProtoDNSOPT, error) {
+	// string conversion
+	stringTypes := map[string]string{
+		"code": "",
+		"data": "",
+	}
+	stringTypes, err := jsonConvertToStringTypes(argMap, stringTypes)
+	if err != nil {
+		return ProtoDNSOPT{}, err
+	}
+
+	return ProtoDNSOPT{
+		Code: stringTypes["code"],
+		Data: stringTypes["data"],
+	}, nil
+}
+
+func jsonConvertToProtoDNSURIType(argMap map[string]interface{}) (ProtoDNSURI, error) {
+	// string conversion
+	stringTypes := map[string]string{
+		"target": "",
+	}
+	stringTypes, err := jsonConvertToStringTypes(argMap, stringTypes)
+	if err != nil {
+		return ProtoDNSURI{}, err
+	}
+
+	// uint16 conversion
+	uint16Types := map[string]uint16{
+		"priority": 0,
+		"weight":   0,
+	}
+	uint16Types, err = jsonConvertToUint16Types(argMap, uint16Types)
+	if err != nil {
+		return ProtoDNSURI{}, err
+	}
+
+	return ProtoDNSURI{
+		Priority: uint16Types["priority"],
+		Weight:   uint16Types["weight"],
+		Target:   stringTypes["target"],
+	}, nil
+}
+
+func jsonConvertToPktMetaArg(argMap map[string]interface{}) (PktMeta, error) {
+	// string conversion
+	stringTypes := map[string]string{
+		"src_ip": "",
+		"dst_ip": "",
+		"iface":  "",
+	}
+	stringTypes, err := jsonConvertToStringTypes(argMap, stringTypes)
+	if err != nil {
+		return PktMeta{}, err
+	}
+
+	// uint16 conversion
+	uint16Types := map[string]uint16{
+		"src_port": 0,
+		"dst_port": 0,
+	}
+	uint16Types, err = jsonConvertToUint16Types(argMap, uint16Types)
+	if err != nil {
+		return PktMeta{}, err
+	}
+
+	// uint8 conversion
+	uint8Types := map[string]uint8{
+		"protocol": 0,
+	}
+	uint8Types, err = jsonConvertToUint8Types(argMap, uint8Types)
+	if err != nil {
+		return PktMeta{}, err
+	}
+
+	// uint32 conversion
+	uint32Types := map[string]uint32{
+		"packet_len": 0,
+	}
+	uint32Types, err = jsonConvertToUint32Types(argMap, uint32Types)
+	if err != nil {
+		return PktMeta{}, err
+	}
+
+	return PktMeta{
+		SrcIP:     stringTypes["src_ip"],
+		DstIP:     stringTypes["dst_ip"],
+		SrcPort:   uint16Types["src_port"],
+		DstPort:   uint16Types["dst_port"],
+		Protocol:  uint8Types["protocol"],
+		PacketLen: uint32Types["packet_len"],
+		Iface:     stringTypes["iface"],
+	}, nil
+}
+
+func jsonConvertToDnsResponseDataType(argMap map[string]interface{}) (DnsResponseData, error) {
+
+	// convert query_data
+
+	queryData, exists := argMap["query_data"]
+	if !exists {
+		return DnsResponseData{}, fmt.Errorf("query_data not found in DnsResponseData arg")
+	}
+	queryDataMap, ok := queryData.(map[string]interface{})
+	if !ok {
+		return DnsResponseData{}, fmt.Errorf("query_data from DnsResponseData: type error")
+	}
+
+	dnsQuery, err := jsonConvertToDnsQuertDataType(queryDataMap)
+	if err != nil {
+		return DnsResponseData{}, err
+	}
+
+	// convert dns_answer
+
+	dnsAnswer, exists := argMap["dns_answer"]
+	if !exists {
+		return DnsResponseData{}, fmt.Errorf("dns_answer not found in DnsResponseData arg")
+	}
+	dnsAnswerSlice, ok := dnsAnswer.([]interface{})
+	if !ok {
+		return DnsResponseData{}, fmt.Errorf("dns_answer from DnsResponseData: type error")
+	}
+
+	var dnsAnswers []DnsAnswer
+	for _, dnsAnswerElem := range dnsAnswerSlice {
+		dnsAnswerElemMap, ok := dnsAnswerElem.(map[string]interface{})
+		if !ok {
+			return DnsResponseData{}, fmt.Errorf("dns_answer from DnsResponseData: type error")
+		}
+
+		dnsAns, err := jsonConvertToDnsAnswerType(dnsAnswerElemMap)
+		if err != nil {
+			return DnsResponseData{}, err
+		}
+
+		dnsAnswers = append(dnsAnswers, dnsAns)
+	}
+
+	return DnsResponseData{
+		QueryData: dnsQuery,
+		DnsAnswer: dnsAnswers,
+	}, nil
+}
+
+func jsonConvertToDnsQuertDataType(argMap map[string]interface{}) (DnsQueryData, error) {
+	// string conversion
+	stringTypes := map[string]string{
+		"query":       "",
+		"query_type":  "",
+		"query_class": "",
+	}
+	stringTypes, err := jsonConvertToStringTypes(argMap, stringTypes)
+	if err != nil {
+		return DnsQueryData{}, err
+	}
+
+	return DnsQueryData{
+		Query:      stringTypes["query"],
+		QueryType:  stringTypes["query_type"],
+		QueryClass: stringTypes["query_class"],
+	}, nil
+}
+
+func jsonConvertToDnsAnswerType(argMap map[string]interface{}) (DnsAnswer, error) {
+	// string conversion
+	dnsAnswerStringTypes := map[string]string{
+		"answer_type": "",
+		"answer":      "",
+	}
+	dnsAnswerStringTypes, err := jsonConvertToStringTypes(argMap, dnsAnswerStringTypes)
+	if err != nil {
+		return DnsAnswer{}, err
+	}
+
+	// uint32 conversion
+	dnsAnswerUint32Types := map[string]uint32{
+		"ttl": 0,
+	}
+	dnsAnswerUint32Types, err = jsonConvertToUint32Types(argMap, dnsAnswerUint32Types)
+	if err != nil {
+		return DnsAnswer{}, err
+	}
+
+	return DnsAnswer{
+		Type:   dnsAnswerStringTypes["answer_type"],
+		Ttl:    dnsAnswerUint32Types["ttl"],
+		Answer: dnsAnswerStringTypes["answer"],
+	}, nil
+}
+
+func jsonConvertToProtoHTTPArg(argMap map[string]interface{}) (ProtoHTTP, error) {
+	// string conversion
+	stringTypes := map[string]string{
+		"direction": "",
+		"method":    "",
+		"protocol":  "",
+		"host":      "",
+		"uri_path":  "",
+		"status":    "",
+	}
+	stringTypes, err := jsonConvertToStringTypes(argMap, stringTypes)
+	if err != nil {
+		return ProtoHTTP{}, err
+	}
+
+	// int conversion
+	intTypes := map[string]int{
+		"status_code": 0,
+	}
+	intTypes, err = jsonConvertToIntTypes(argMap, intTypes)
+	if err != nil {
+		return ProtoHTTP{}, err
+	}
+
+	// int64 conversion
+	int64Types := map[string]int64{
+		"content_length": 0,
+	}
+	int64Types, err = jsonConvertToInt64Types(argMap, int64Types)
+	if err != nil {
+		return ProtoHTTP{}, err
+	}
+
+	// headers conversion
+	headerTypes := map[string]http.Header{
+		"headers": {},
+	}
+	headerTypes, err = jsonConvertToHttpHeaderTypes(argMap, headerTypes)
+	if err != nil {
+		return ProtoHTTP{}, err
+	}
+
+	return ProtoHTTP{
+		Direction:     stringTypes["direction"],
+		Method:        stringTypes["method"],
+		Protocol:      stringTypes["protocol"],
+		Host:          stringTypes["host"],
+		URIPath:       stringTypes["uri_path"],
+		Status:        stringTypes["status"],
+		StatusCode:    intTypes["status_code"],
+		Headers:       headerTypes["headers"],
+		ContentLength: int64Types["content_length"],
+	}, nil
+}
+
+func jsonConvertToProtoHTTPRequestArg(argMap map[string]interface{}) (ProtoHTTPRequest, error) {
+	// string conversion
+	stringTypes := map[string]string{
+		"method":   "",
+		"protocol": "",
+		"host":     "",
+		"uri_path": "",
+	}
+	stringTypes, err := jsonConvertToStringTypes(argMap, stringTypes)
+	if err != nil {
+		return ProtoHTTPRequest{}, err
+	}
+
+	// int64 conversion
+	int64Types := map[string]int64{
+		"content_length": 0,
+	}
+	int64Types, err = jsonConvertToInt64Types(argMap, int64Types)
+	if err != nil {
+		return ProtoHTTPRequest{}, err
+	}
+
+	// headers conversion
+	headerTypes := map[string]http.Header{
+		"headers": {},
+	}
+	headerTypes, err = jsonConvertToHttpHeaderTypes(argMap, headerTypes)
+	if err != nil {
+		return ProtoHTTPRequest{}, err
+	}
+
+	return ProtoHTTPRequest{
+		Method:        stringTypes["method"],
+		Protocol:      stringTypes["protocol"],
+		Host:          stringTypes["host"],
+		URIPath:       stringTypes["uri_path"],
+		Headers:       headerTypes["headers"],
+		ContentLength: int64Types["content_length"],
+	}, nil
+}
+
+func jsonConvertToProtoHTTPResponseArg(argMap map[string]interface{}) (ProtoHTTPResponse, error) {
+	// string conversion
+	stringTypes := map[string]string{
+		"status":   "",
+		"protocol": "",
+	}
+	stringTypes, err := jsonConvertToStringTypes(argMap, stringTypes)
+	if err != nil {
+		return ProtoHTTPResponse{}, err
+	}
+
+	// int conversion
+	intTypes := map[string]int{
+		"status_code": 0,
+	}
+	intTypes, err = jsonConvertToIntTypes(argMap, intTypes)
+	if err != nil {
+		return ProtoHTTPResponse{}, err
+	}
+
+	// int64 conversion
+	int64Types := map[string]int64{
+		"content_length": 0,
+	}
+	int64Types, err = jsonConvertToInt64Types(argMap, int64Types)
+	if err != nil {
+		return ProtoHTTPResponse{}, err
+	}
+
+	// headers conversion
+	headerTypes := map[string]http.Header{
+		"headers": {},
+	}
+	headerTypes, err = jsonConvertToHttpHeaderTypes(argMap, headerTypes)
+	if err != nil {
+		return ProtoHTTPResponse{}, err
+	}
+
+	return ProtoHTTPResponse{
+		Status:        stringTypes["status"],
+		StatusCode:    intTypes["status_code"],
+		Protocol:      stringTypes["protocol"],
+		Headers:       headerTypes["headers"],
+		ContentLength: int64Types["content_length"],
+	}, nil
+}
+
+func jsonConvertToStringTypes(argMap map[string]interface{}, stringTypes map[string]string) (map[string]string, error) {
+	for key := range stringTypes {
+		val, ok := argMap[key]
+		if !ok {
+			return stringTypes, fmt.Errorf("key not found in argMap %s", key)
+		}
+		valString, ok := val.(string)
+		if !ok {
+			return stringTypes, fmt.Errorf("couldn't convert key to string %s", key)
+		}
+		stringTypes[key] = valString
+	}
+
+	return stringTypes, nil
+}
+
+func jsonConvertToStringSlice(interfaceSlice []interface{}) []string {
+	stringSlice := make([]string, len(interfaceSlice))
+	for i, v := range interfaceSlice {
+		stringSlice[i] = fmt.Sprint(v)
+	}
+	return stringSlice
+}
+
+func jsonConvertToIntTypes(argMap map[string]interface{}, intTypes map[string]int) (map[string]int, error) {
+	for key := range intTypes {
+		val, ok := argMap[key]
+		if !ok {
+			return intTypes, fmt.Errorf("key not found in argMap %s", key)
+		}
+		valJsonNum, ok := val.(json.Number)
+		if !ok {
+			return intTypes, fmt.Errorf("couldn't convert key to int %s", key)
+		}
+		int64Val, err := valJsonNum.Int64()
+		if err != nil {
+			return intTypes, err
+		}
+		intTypes[key] = int(int64Val)
+	}
+
+	return intTypes, nil
+}
+
+func jsonConvertToUint8Types(argMap map[string]interface{}, uint8Types map[string]uint8) (map[string]uint8, error) {
+	for key := range uint8Types {
+		val, ok := argMap[key]
+		if !ok {
+			return uint8Types, fmt.Errorf("key not found in argMap %s", key)
+		}
+		valJsonNum, ok := val.(json.Number)
+		if !ok {
+			return uint8Types, fmt.Errorf("couldn't convert key to uint8 %s", key)
+		}
+		int64Val, err := valJsonNum.Int64()
+		if err != nil {
+			return uint8Types, err
+		}
+		uint8Types[key] = uint8(int64Val)
+	}
+
+	return uint8Types, nil
+}
+
+func jsonConvertToUint16Types(argMap map[string]interface{}, uint16Types map[string]uint16) (map[string]uint16, error) {
+	for key := range uint16Types {
+		val, ok := argMap[key]
+		if !ok {
+			return uint16Types, fmt.Errorf("key not found in argMap %s", key)
+		}
+		valJsonNum, ok := val.(json.Number)
+		if !ok {
+			return uint16Types, fmt.Errorf("couldn't convert key to uint16 %s", key)
+		}
+		int64Val, err := valJsonNum.Int64()
+		if err != nil {
+			return uint16Types, err
+		}
+		uint16Types[key] = uint16(int64Val)
+	}
+
+	return uint16Types, nil
+}
+
+func jsonConvertToUint32Types(argMap map[string]interface{}, uint32Types map[string]uint32) (map[string]uint32, error) {
+	for key := range uint32Types {
+		val, ok := argMap[key]
+		if !ok {
+			return uint32Types, fmt.Errorf("key not found in argMap %s", key)
+		}
+		valJsonNum, ok := val.(json.Number)
+		if !ok {
+			return uint32Types, fmt.Errorf("couldn't convert key to uint32 %s", key)
+		}
+		int64Val, err := valJsonNum.Int64()
+		if err != nil {
+			return uint32Types, err
+		}
+		uint32Types[key] = uint32(int64Val)
+	}
+
+	return uint32Types, nil
+}
+
+func jsonConvertToInt64Types(argMap map[string]interface{}, int64Types map[string]int64) (map[string]int64, error) {
+	for key := range int64Types {
+		val, ok := argMap[key]
+		if !ok {
+			return int64Types, fmt.Errorf("key not found in argMap %s", key)
+		}
+		valJsonNum, ok := val.(json.Number)
+		if !ok {
+			return int64Types, fmt.Errorf("couldn't convert key to int64 %s", key)
+		}
+		int64Val, err := valJsonNum.Int64()
+		if err != nil {
+			return int64Types, err
+		}
+		int64Types[key] = int64Val
+	}
+
+	return int64Types, nil
+}
+
+func jsonConvertToHttpHeaderTypes(argMap map[string]interface{}, httpHeaderTypes map[string]http.Header) (map[string]http.Header, error) {
+	for key := range httpHeaderTypes {
+		val, ok := argMap[key]
+		if !ok {
+			return httpHeaderTypes, fmt.Errorf("key not found in argMap %s", key)
+		}
+
+		headerMap, ok := val.(map[string]interface{})
+		if !ok {
+			return httpHeaderTypes, fmt.Errorf("couldn't convert key to http.Header %s", key)
+		}
+
+		for headerKey, headerValInterface := range headerMap {
+			headerValInterfaceSlice, ok := headerValInterface.([]interface{})
+			if !ok {
+				return httpHeaderTypes, fmt.Errorf("couldn't convert key to http.Header %s", key)
+			}
+
+			var headerVals []string
+			for _, headerValInterfaceElem := range headerValInterfaceSlice {
+				headerVals = append(headerVals, headerValInterfaceElem.(string))
+			}
+			httpHeaderTypes[key][headerKey] = headerVals
+		}
+	}
+
+	return httpHeaderTypes, nil
 }
 
 // SlimCred struct is a slim version of the kernel's cred struct
