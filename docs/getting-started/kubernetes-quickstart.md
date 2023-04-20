@@ -55,7 +55,7 @@ Once installed, Tracee immediately starts producing system activity events, such
 kubectl logs -f daemonset/tracee -n tracee-system
 ```
 
-In production scenario you would want to collect and ship the events to a persistent storage. Check out the [Integration](../docs/integrating/) section for more information.
+In production scenario you would want to collect and ship the events to a persistent storage. Check out the [Integration](../../docs/docs/integrating/) section for more information.
 
 ## Exercising a security event
 
@@ -191,11 +191,9 @@ kubectl -n tracee-system logs -f ds/tracee | grep fileless_execution
 
 ## Next steps
 
-Familiarize with the different events, filters, and configuration options in the [documentation](../docs/).
+Familiarize with the different events, filters, and configuration options in the [documentation](./../docs/overview.md).
 
-Choose a way to collect and ship the events to a persistent storage. Check out the [Integration](../docs/integrating/) section for more information.
-
-Read other [tutorial](../tutorials/).
+Read other [tutorial](./../tutorials/overview.md).
 
 For help and support, feel free to use [GitHub Discussions](https://github.com/aquasecurity/tracee/discussions).
 
