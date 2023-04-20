@@ -196,21 +196,30 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		}
 	}
 
+	var err error
+
 	switch arg.Type {
 	case "const char*const*", "const char**":
-		argValue := arg.Value.([]interface{})
-		arg.Value = jsonConvertToStringSlice(argValue)
+		if arg.Value != nil {
+			argValue := arg.Value.([]interface{})
+			arg.Value = jsonConvertToStringSlice(argValue)
+		} else {
+			arg.Value = []string{}
+		}
 
 		break
 
 	case "trace.ProtoIPv4":
-		protoIPv4Map, ok := arg.Value.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("protocol IPv4: type error")
-		}
-		argProtoIPv4, err := jsonConvertToProtoIPv4Arg(protoIPv4Map)
-		if err != nil {
-			return err
+		var argProtoIPv4 ProtoIPv4
+		if arg.Value != nil {
+			protoIPv4Map, ok := arg.Value.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("protocol IPv4: type error")
+			}
+			argProtoIPv4, err = jsonConvertToProtoIPv4Arg(protoIPv4Map)
+			if err != nil {
+				return err
+			}
 		}
 
 		arg.Value = argProtoIPv4
@@ -218,13 +227,16 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		break
 
 	case "trace.ProtoIPv6":
-		protoIPv6Map, ok := arg.Value.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("protocol IPv6: type error")
-		}
-		argProtoIPv6, err := jsonConvertToProtoIPv6Arg(protoIPv6Map)
-		if err != nil {
-			return err
+		var argProtoIPv6 ProtoIPv6
+		if arg.Value != nil {
+			protoIPv6Map, ok := arg.Value.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("protocol IPv6: type error")
+			}
+			argProtoIPv6, err = jsonConvertToProtoIPv6Arg(protoIPv6Map)
+			if err != nil {
+				return err
+			}
 		}
 
 		arg.Value = argProtoIPv6
@@ -232,13 +244,16 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		break
 
 	case "trace.ProtoTCP":
-		protoTCPMap, ok := arg.Value.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("protocol TCP: type error")
-		}
-		argProtoTCP, err := jsonConvertToProtoTCPArg(protoTCPMap)
-		if err != nil {
-			return err
+		var argProtoTCP ProtoTCP
+		if arg.Value != nil {
+			protoTCPMap, ok := arg.Value.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("protocol TCP: type error")
+			}
+			argProtoTCP, err = jsonConvertToProtoTCPArg(protoTCPMap)
+			if err != nil {
+				return err
+			}
 		}
 
 		arg.Value = argProtoTCP
@@ -246,13 +261,16 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		break
 
 	case "trace.ProtoUDP":
-		protoUDPMap, ok := arg.Value.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("protocol UDP: type error")
-		}
-		argProtoUDP, err := jsonConvertToProtoUDPArg(protoUDPMap)
-		if err != nil {
-			return err
+		var argProtoUDP ProtoUDP
+		if arg.Value != nil {
+			protoUDPMap, ok := arg.Value.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("protocol UDP: type error")
+			}
+			argProtoUDP, err = jsonConvertToProtoUDPArg(protoUDPMap)
+			if err != nil {
+				return err
+			}
 		}
 
 		arg.Value = argProtoUDP
@@ -260,13 +278,16 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		break
 
 	case "trace.ProtoICMP":
-		protoICMPMap, ok := arg.Value.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("protocol ICMP: type error")
-		}
-		argProtoICMP, err := jsonConvertToProtoICMPArg(protoICMPMap)
-		if err != nil {
-			return err
+		var argProtoICMP ProtoICMP
+		if arg.Value != nil {
+			protoICMPMap, ok := arg.Value.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("protocol ICMP: type error")
+			}
+			argProtoICMP, err = jsonConvertToProtoICMPArg(protoICMPMap)
+			if err != nil {
+				return err
+			}
 		}
 
 		arg.Value = argProtoICMP
@@ -274,13 +295,16 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		break
 
 	case "trace.ProtoICMPv6":
-		protoICMPv6Map, ok := arg.Value.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("protocol ICMPv6: type error")
-		}
-		argProtoICMPv6, err := jsonConvertToProtoICMPv6Arg(protoICMPv6Map)
-		if err != nil {
-			return err
+		var argProtoICMPv6 ProtoICMPv6
+		if arg.Value != nil {
+			protoICMPv6Map, ok := arg.Value.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("protocol ICMPv6: type error")
+			}
+			argProtoICMPv6, err = jsonConvertToProtoICMPv6Arg(protoICMPv6Map)
+			if err != nil {
+				return err
+			}
 		}
 
 		arg.Value = argProtoICMPv6
@@ -288,13 +312,16 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		break
 
 	case "trace.PktMeta":
-		argPktMetaMap, ok := arg.Value.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("PktMeta: type error")
-		}
-		argPktMeta, err := jsonConvertToPktMetaArg(argPktMetaMap)
-		if err != nil {
-			return err
+		var argPktMeta PktMeta
+		if arg.Value != nil {
+			argPktMetaMap, ok := arg.Value.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("PktMeta: type error")
+			}
+			argPktMeta, err = jsonConvertToPktMetaArg(argPktMetaMap)
+			if err != nil {
+				return err
+			}
 		}
 
 		arg.Value = argPktMeta
@@ -302,13 +329,16 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		break
 
 	case "trace.ProtoDNS":
-		argProtoDnsMap, ok := arg.Value.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("protocol DNS: type error")
-		}
-		argProtoDNS, err := jsonConvertToProtoDNSArg(argProtoDnsMap)
-		if err != nil {
-			return err
+		var argProtoDNS ProtoDNS
+		if arg.Value != nil {
+			argProtoDnsMap, ok := arg.Value.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("protocol DNS: type error")
+			}
+			argProtoDNS, err = jsonConvertToProtoDNSArg(argProtoDnsMap)
+			if err != nil {
+				return err
+			}
 		}
 
 		arg.Value = argProtoDNS
@@ -316,24 +346,26 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		break
 
 	case "[]trace.DnsQueryData":
-		argDnsQueryDataSlice, ok := arg.Value.([]interface{})
-		if !ok {
-			return fmt.Errorf("protocol Dns Query Data: type error")
-		}
-
 		var dnsQuries []DnsQueryData
-		for _, dnsQueryDataElem := range argDnsQueryDataSlice {
-			argDnsQueryDataMap, ok := dnsQueryDataElem.(map[string]interface{})
+		if arg.Value != nil {
+			argDnsQueryDataSlice, ok := arg.Value.([]interface{})
 			if !ok {
 				return fmt.Errorf("protocol Dns Query Data: type error")
 			}
 
-			dnsQuery, err := jsonConvertToDnsQuertDataType(argDnsQueryDataMap)
-			if err != nil {
-				return err
-			}
+			for _, dnsQueryDataElem := range argDnsQueryDataSlice {
+				argDnsQueryDataMap, ok := dnsQueryDataElem.(map[string]interface{})
+				if !ok {
+					return fmt.Errorf("protocol Dns Query Data: type error")
+				}
 
-			dnsQuries = append(dnsQuries, dnsQuery)
+				dnsQuery, err := jsonConvertToDnsQuertDataType(argDnsQueryDataMap)
+				if err != nil {
+					return err
+				}
+
+				dnsQuries = append(dnsQuries, dnsQuery)
+			}
 		}
 
 		arg.Value = dnsQuries
@@ -341,24 +373,26 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		break
 
 	case "[]trace.DnsResponseData":
-		argDnsResponseDataSlice, ok := arg.Value.([]interface{})
-		if !ok {
-			return fmt.Errorf("protocol Dns Response Data: type error")
-		}
-
 		var dnsResponses []DnsResponseData
-		for _, dnsResponseDataElem := range argDnsResponseDataSlice {
-			dnsResponseDataMap, ok := dnsResponseDataElem.(map[string]interface{})
+		if arg.Value != nil {
+			argDnsResponseDataSlice, ok := arg.Value.([]interface{})
 			if !ok {
 				return fmt.Errorf("protocol Dns Response Data: type error")
 			}
 
-			dnsResponseData, err := jsonConvertToDnsResponseDataType(dnsResponseDataMap)
-			if err != nil {
-				return err
-			}
+			for _, dnsResponseDataElem := range argDnsResponseDataSlice {
+				dnsResponseDataMap, ok := dnsResponseDataElem.(map[string]interface{})
+				if !ok {
+					return fmt.Errorf("protocol Dns Response Data: type error")
+				}
 
-			dnsResponses = append(dnsResponses, dnsResponseData)
+				dnsResponseData, err := jsonConvertToDnsResponseDataType(dnsResponseDataMap)
+				if err != nil {
+					return err
+				}
+
+				dnsResponses = append(dnsResponses, dnsResponseData)
+			}
 		}
 
 		arg.Value = dnsResponses
@@ -366,13 +400,16 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		break
 
 	case "trace.ProtoHTTP":
-		argProtoHTTPMap, ok := arg.Value.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("protocol HTTP: type error")
-		}
-		argProtoHTTP, err := jsonConvertToProtoHTTPArg(argProtoHTTPMap)
-		if err != nil {
-			return err
+		var argProtoHTTP ProtoHTTP
+		if arg.Value != nil {
+			argProtoHTTPMap, ok := arg.Value.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("protocol HTTP: type error")
+			}
+			argProtoHTTP, err = jsonConvertToProtoHTTPArg(argProtoHTTPMap)
+			if err != nil {
+				return err
+			}
 		}
 
 		arg.Value = argProtoHTTP
@@ -380,13 +417,16 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		break
 
 	case "trace.ProtoHTTPRequest":
-		argProtoHTTPRequestMap, ok := arg.Value.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("protocol HTTP Request: type error")
-		}
-		argProtoHTTPRequest, err := jsonConvertToProtoHTTPRequestArg(argProtoHTTPRequestMap)
-		if err != nil {
-			return err
+		var argProtoHTTPRequest ProtoHTTPRequest
+		if arg.Value != nil {
+			argProtoHTTPRequestMap, ok := arg.Value.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("protocol HTTP Request: type error")
+			}
+			argProtoHTTPRequest, err = jsonConvertToProtoHTTPRequestArg(argProtoHTTPRequestMap)
+			if err != nil {
+				return err
+			}
 		}
 
 		arg.Value = argProtoHTTPRequest
@@ -394,13 +434,16 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		break
 
 	case "trace.ProtoHTTPResponse":
-		argProtoHTTPResponseMap, ok := arg.Value.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("protocol HTTP Response: type error")
-		}
-		argProtoHTTPResponse, err := jsonConvertToProtoHTTPResponseArg(argProtoHTTPResponseMap)
-		if err != nil {
-			return err
+		var argProtoHTTPResponse ProtoHTTPResponse
+		if arg.Value != nil {
+			argProtoHTTPResponseMap, ok := arg.Value.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("protocol HTTP Response: type error")
+			}
+			argProtoHTTPResponse, err = jsonConvertToProtoHTTPResponseArg(argProtoHTTPResponseMap)
+			if err != nil {
+				return err
+			}
 		}
 
 		arg.Value = argProtoHTTPResponse
@@ -698,24 +741,27 @@ func jsonConvertToProtoDNSArg(argMap map[string]interface{}) (ProtoDNS, error) {
 	if !exists {
 		return ProtoDNS{}, fmt.Errorf("questions not found in ProtoDNS arg")
 	}
-	questionsSlice, ok := questions.([]interface{})
-	if !ok {
-		return ProtoDNS{}, fmt.Errorf("questions from ProtoDNS: type error")
-	}
 
 	var dnsQuestions []ProtoDNSQuestion
-	for _, questionsElem := range questionsSlice {
-		questionsElemMap, ok := questionsElem.(map[string]interface{})
+	if questions != nil {
+		questionsSlice, ok := questions.([]interface{})
 		if !ok {
 			return ProtoDNS{}, fmt.Errorf("questions from ProtoDNS: type error")
 		}
 
-		question, err := jsonConvertToProtoDNSQuestionType(questionsElemMap)
-		if err != nil {
-			return ProtoDNS{}, err
-		}
+		for _, questionsElem := range questionsSlice {
+			questionsElemMap, ok := questionsElem.(map[string]interface{})
+			if !ok {
+				return ProtoDNS{}, fmt.Errorf("questions from ProtoDNS: type error")
+			}
 
-		dnsQuestions = append(dnsQuestions, question)
+			question, err := jsonConvertToProtoDNSQuestionType(questionsElemMap)
+			if err != nil {
+				return ProtoDNS{}, err
+			}
+
+			dnsQuestions = append(dnsQuestions, question)
+		}
 	}
 
 	// answers conversion
@@ -723,24 +769,27 @@ func jsonConvertToProtoDNSArg(argMap map[string]interface{}) (ProtoDNS, error) {
 	if !exists {
 		return ProtoDNS{}, fmt.Errorf("answers not found in ProtoDNS arg")
 	}
-	answersSlice, ok := answers.([]interface{})
-	if !ok {
-		return ProtoDNS{}, fmt.Errorf("answers from ProtoDNS: type error")
-	}
 
 	var dnsAnswers []ProtoDNSResourceRecord
-	for _, answersElem := range answersSlice {
-		answersElemMap, ok := answersElem.(map[string]interface{})
+	if answers != nil {
+		answersSlice, ok := answers.([]interface{})
 		if !ok {
 			return ProtoDNS{}, fmt.Errorf("answers from ProtoDNS: type error")
 		}
 
-		answer, err := jsonConvertToProtoDNSResourceRecordType(answersElemMap)
-		if err != nil {
-			return ProtoDNS{}, err
-		}
+		for _, answersElem := range answersSlice {
+			answersElemMap, ok := answersElem.(map[string]interface{})
+			if !ok {
+				return ProtoDNS{}, fmt.Errorf("answers from ProtoDNS: type error")
+			}
 
-		dnsAnswers = append(dnsAnswers, answer)
+			answer, err := jsonConvertToProtoDNSResourceRecordType(answersElemMap)
+			if err != nil {
+				return ProtoDNS{}, err
+			}
+
+			dnsAnswers = append(dnsAnswers, answer)
+		}
 	}
 
 	// authorities conversion
@@ -748,24 +797,27 @@ func jsonConvertToProtoDNSArg(argMap map[string]interface{}) (ProtoDNS, error) {
 	if !exists {
 		return ProtoDNS{}, fmt.Errorf("authorities not found in ProtoDNS arg")
 	}
-	authoritiesSlice, ok := authorities.([]interface{})
-	if !ok {
-		return ProtoDNS{}, fmt.Errorf("authorities from ProtoDNS: type error")
-	}
 
 	var dnsAuthorities []ProtoDNSResourceRecord
-	for _, authoritiesElem := range authoritiesSlice {
-		authoritiesElemMap, ok := authoritiesElem.(map[string]interface{})
+	if authorities != nil {
+		authoritiesSlice, ok := authorities.([]interface{})
 		if !ok {
 			return ProtoDNS{}, fmt.Errorf("authorities from ProtoDNS: type error")
 		}
 
-		authority, err := jsonConvertToProtoDNSResourceRecordType(authoritiesElemMap)
-		if err != nil {
-			return ProtoDNS{}, err
-		}
+		for _, authoritiesElem := range authoritiesSlice {
+			authoritiesElemMap, ok := authoritiesElem.(map[string]interface{})
+			if !ok {
+				return ProtoDNS{}, fmt.Errorf("authorities from ProtoDNS: type error")
+			}
 
-		dnsAuthorities = append(dnsAuthorities, authority)
+			authority, err := jsonConvertToProtoDNSResourceRecordType(authoritiesElemMap)
+			if err != nil {
+				return ProtoDNS{}, err
+			}
+
+			dnsAuthorities = append(dnsAuthorities, authority)
+		}
 	}
 
 	// additionals conversion
@@ -773,24 +825,27 @@ func jsonConvertToProtoDNSArg(argMap map[string]interface{}) (ProtoDNS, error) {
 	if !exists {
 		return ProtoDNS{}, fmt.Errorf("additionals not found in ProtoDNS arg")
 	}
-	additionalsSlice, ok := additionals.([]interface{})
-	if !ok {
-		return ProtoDNS{}, fmt.Errorf("additionals from ProtoDNS: type error")
-	}
 
 	var dnsAdditionals []ProtoDNSResourceRecord
-	for _, additionalsElem := range additionalsSlice {
-		additionalsElemMap, ok := additionalsElem.(map[string]interface{})
+	if additionals != nil {
+		additionalsSlice, ok := additionals.([]interface{})
 		if !ok {
 			return ProtoDNS{}, fmt.Errorf("additionals from ProtoDNS: type error")
 		}
 
-		additional, err := jsonConvertToProtoDNSResourceRecordType(additionalsElemMap)
-		if err != nil {
-			return ProtoDNS{}, err
-		}
+		for _, additionalsElem := range additionalsSlice {
+			additionalsElemMap, ok := additionalsElem.(map[string]interface{})
+			if !ok {
+				return ProtoDNS{}, fmt.Errorf("additionals from ProtoDNS: type error")
+			}
 
-		dnsAdditionals = append(dnsAdditionals, additional)
+			additional, err := jsonConvertToProtoDNSResourceRecordType(additionalsElemMap)
+			if err != nil {
+				return ProtoDNS{}, err
+			}
+
+			dnsAdditionals = append(dnsAdditionals, additional)
+		}
 	}
 
 	return ProtoDNS{
@@ -866,9 +921,7 @@ func jsonConvertToProtoDNSResourceRecordType(argMap map[string]interface{}) (Pro
 	}
 
 	var txtsValue []string
-	if txts == nil {
-		txtsValue = nil
-	} else {
+	if txts != nil {
 		txtsInterfaceSlice, ok := txts.([]interface{})
 		if !ok {
 			return ProtoDNSResourceRecord{}, fmt.Errorf("TXTs from ProtoDNSResourceRecord: type error")
@@ -885,14 +938,18 @@ func jsonConvertToProtoDNSResourceRecordType(argMap map[string]interface{}) (Pro
 	if !exists {
 		return ProtoDNSResourceRecord{}, fmt.Errorf("SOA not found in ProtoDNSResourceRecord arg")
 	}
-	soaMap, ok := soa.(map[string]interface{})
-	if !ok {
-		return ProtoDNSResourceRecord{}, fmt.Errorf("SOA from ProtoDNSResourceRecord: type error")
-	}
 
-	protoDNSSOA, err := jsonConvertToProtoDNSSOAType(soaMap)
-	if err != nil {
-		return ProtoDNSResourceRecord{}, err
+	var protoDNSSOA ProtoDNSSOA
+	if soa != nil {
+		soaMap, ok := soa.(map[string]interface{})
+		if !ok {
+			return ProtoDNSResourceRecord{}, fmt.Errorf("SOA from ProtoDNSResourceRecord: type error")
+		}
+
+		protoDNSSOA, err = jsonConvertToProtoDNSSOAType(soaMap)
+		if err != nil {
+			return ProtoDNSResourceRecord{}, err
+		}
 	}
 
 	// SRV conversion
@@ -900,14 +957,18 @@ func jsonConvertToProtoDNSResourceRecordType(argMap map[string]interface{}) (Pro
 	if !exists {
 		return ProtoDNSResourceRecord{}, fmt.Errorf("SRV not found in ProtoDNSResourceRecord arg")
 	}
-	srvMap, ok := srv.(map[string]interface{})
-	if !ok {
-		return ProtoDNSResourceRecord{}, fmt.Errorf("SRV from ProtoDNSResourceRecord: type error")
-	}
 
-	protoDNSSRV, err := jsonConvertToProtoDNSSRVType(srvMap)
-	if err != nil {
-		return ProtoDNSResourceRecord{}, err
+	var protoDNSSRV ProtoDNSSRV
+	if srv != nil {
+		srvMap, ok := srv.(map[string]interface{})
+		if !ok {
+			return ProtoDNSResourceRecord{}, fmt.Errorf("SRV from ProtoDNSResourceRecord: type error")
+		}
+
+		protoDNSSRV, err = jsonConvertToProtoDNSSRVType(srvMap)
+		if err != nil {
+			return ProtoDNSResourceRecord{}, err
+		}
 	}
 
 	// MX conversion
@@ -915,14 +976,18 @@ func jsonConvertToProtoDNSResourceRecordType(argMap map[string]interface{}) (Pro
 	if !exists {
 		return ProtoDNSResourceRecord{}, fmt.Errorf("MX not found in ProtoDNSResourceRecord arg")
 	}
-	mxMap, ok := mx.(map[string]interface{})
-	if !ok {
-		return ProtoDNSResourceRecord{}, fmt.Errorf("MX from ProtoDNSResourceRecord: type error")
-	}
 
-	protoDNSMX, err := jsonConvertToProtoDNSMXType(mxMap)
-	if err != nil {
-		return ProtoDNSResourceRecord{}, err
+	var protoDNSMX ProtoDNSMX
+	if mx != nil {
+		mxMap, ok := mx.(map[string]interface{})
+		if !ok {
+			return ProtoDNSResourceRecord{}, fmt.Errorf("MX from ProtoDNSResourceRecord: type error")
+		}
+
+		protoDNSMX, err = jsonConvertToProtoDNSMXType(mxMap)
+		if err != nil {
+			return ProtoDNSResourceRecord{}, err
+		}
 	}
 
 	// OPT conversion
@@ -930,24 +995,27 @@ func jsonConvertToProtoDNSResourceRecordType(argMap map[string]interface{}) (Pro
 	if !exists {
 		return ProtoDNSResourceRecord{}, fmt.Errorf("OPT not found in ProtoDNSResourceRecord arg")
 	}
-	optSlice, ok := opt.([]interface{})
-	if !ok {
-		return ProtoDNSResourceRecord{}, fmt.Errorf("OPT from ProtoDNSResourceRecord: type error")
-	}
 
 	var dnsOpts []ProtoDNSOPT
-	for _, optElem := range optSlice {
-		optElemMap, ok := optElem.(map[string]interface{})
+	if opt != nil {
+		optSlice, ok := opt.([]interface{})
 		if !ok {
 			return ProtoDNSResourceRecord{}, fmt.Errorf("OPT from ProtoDNSResourceRecord: type error")
 		}
 
-		dnsOpt, err := jsonConvertToProtoDNSOPTType(optElemMap)
-		if err != nil {
-			return ProtoDNSResourceRecord{}, err
-		}
+		for _, optElem := range optSlice {
+			optElemMap, ok := optElem.(map[string]interface{})
+			if !ok {
+				return ProtoDNSResourceRecord{}, fmt.Errorf("OPT from ProtoDNSResourceRecord: type error")
+			}
 
-		dnsOpts = append(dnsOpts, dnsOpt)
+			dnsOpt, err := jsonConvertToProtoDNSOPTType(optElemMap)
+			if err != nil {
+				return ProtoDNSResourceRecord{}, err
+			}
+
+			dnsOpts = append(dnsOpts, dnsOpt)
+		}
 	}
 
 	// URI conversion
@@ -955,14 +1023,18 @@ func jsonConvertToProtoDNSResourceRecordType(argMap map[string]interface{}) (Pro
 	if !exists {
 		return ProtoDNSResourceRecord{}, fmt.Errorf("URI not found in ProtoDNSResourceRecord arg")
 	}
-	uriMap, ok := uri.(map[string]interface{})
-	if !ok {
-		return ProtoDNSResourceRecord{}, fmt.Errorf("URI from ProtoDNSResourceRecord: type error")
-	}
 
-	protoDNSURI, err := jsonConvertToProtoDNSURIType(uriMap)
-	if err != nil {
-		return ProtoDNSResourceRecord{}, err
+	var protoDNSURI ProtoDNSURI
+	if uri != nil {
+		uriMap, ok := uri.(map[string]interface{})
+		if !ok {
+			return ProtoDNSResourceRecord{}, fmt.Errorf("URI from ProtoDNSResourceRecord: type error")
+		}
+
+		protoDNSURI, err = jsonConvertToProtoDNSURIType(uriMap)
+		if err != nil {
+			return ProtoDNSResourceRecord{}, err
+		}
 	}
 
 	return ProtoDNSResourceRecord{
@@ -1176,14 +1248,19 @@ func jsonConvertToDnsResponseDataType(argMap map[string]interface{}) (DnsRespons
 	if !exists {
 		return DnsResponseData{}, fmt.Errorf("query_data not found in DnsResponseData arg")
 	}
-	queryDataMap, ok := queryData.(map[string]interface{})
-	if !ok {
-		return DnsResponseData{}, fmt.Errorf("query_data from DnsResponseData: type error")
-	}
 
-	dnsQuery, err := jsonConvertToDnsQuertDataType(queryDataMap)
-	if err != nil {
-		return DnsResponseData{}, err
+	var dnsQuery DnsQueryData
+	if queryData != nil {
+		queryDataMap, ok := queryData.(map[string]interface{})
+		if !ok {
+			return DnsResponseData{}, fmt.Errorf("query_data from DnsResponseData: type error")
+		}
+
+		var err error
+		dnsQuery, err = jsonConvertToDnsQuertDataType(queryDataMap)
+		if err != nil {
+			return DnsResponseData{}, err
+		}
 	}
 
 	// convert dns_answer
@@ -1192,24 +1269,27 @@ func jsonConvertToDnsResponseDataType(argMap map[string]interface{}) (DnsRespons
 	if !exists {
 		return DnsResponseData{}, fmt.Errorf("dns_answer not found in DnsResponseData arg")
 	}
-	dnsAnswerSlice, ok := dnsAnswer.([]interface{})
-	if !ok {
-		return DnsResponseData{}, fmt.Errorf("dns_answer from DnsResponseData: type error")
-	}
 
 	var dnsAnswers []DnsAnswer
-	for _, dnsAnswerElem := range dnsAnswerSlice {
-		dnsAnswerElemMap, ok := dnsAnswerElem.(map[string]interface{})
+	if dnsAnswer != nil {
+		dnsAnswerSlice, ok := dnsAnswer.([]interface{})
 		if !ok {
 			return DnsResponseData{}, fmt.Errorf("dns_answer from DnsResponseData: type error")
 		}
 
-		dnsAns, err := jsonConvertToDnsAnswerType(dnsAnswerElemMap)
-		if err != nil {
-			return DnsResponseData{}, err
-		}
+		for _, dnsAnswerElem := range dnsAnswerSlice {
+			dnsAnswerElemMap, ok := dnsAnswerElem.(map[string]interface{})
+			if !ok {
+				return DnsResponseData{}, fmt.Errorf("dns_answer from DnsResponseData: type error")
+			}
 
-		dnsAnswers = append(dnsAnswers, dnsAns)
+			dnsAns, err := jsonConvertToDnsAnswerType(dnsAnswerElemMap)
+			if err != nil {
+				return DnsResponseData{}, err
+			}
+
+			dnsAnswers = append(dnsAnswers, dnsAns)
+		}
 	}
 
 	return DnsResponseData{
@@ -1413,10 +1493,15 @@ func jsonConvertToStringTypes(argMap map[string]interface{}, stringTypes map[str
 		if !ok {
 			return stringTypes, fmt.Errorf("key not found in argMap %s", key)
 		}
-		valString, ok := val.(string)
-		if !ok {
-			return stringTypes, fmt.Errorf("couldn't convert key to string %s", key)
+
+		var valString string
+		if val != nil {
+			valString, ok = val.(string)
+			if !ok {
+				return stringTypes, fmt.Errorf("couldn't convert key to string %s", key)
+			}
 		}
+
 		stringTypes[key] = valString
 	}
 
@@ -1437,14 +1522,21 @@ func jsonConvertToIntTypes(argMap map[string]interface{}, intTypes map[string]in
 		if !ok {
 			return intTypes, fmt.Errorf("key not found in argMap %s", key)
 		}
-		valJsonNum, ok := val.(json.Number)
-		if !ok {
-			return intTypes, fmt.Errorf("couldn't convert key to int %s", key)
+
+		var int64Val int64
+		if val != nil {
+			valJsonNum, ok := val.(json.Number)
+			if !ok {
+				return intTypes, fmt.Errorf("couldn't convert key to int %s", key)
+			}
+
+			var err error
+			int64Val, err = valJsonNum.Int64()
+			if err != nil {
+				return intTypes, err
+			}
 		}
-		int64Val, err := valJsonNum.Int64()
-		if err != nil {
-			return intTypes, err
-		}
+
 		intTypes[key] = int(int64Val)
 	}
 
@@ -1457,14 +1549,21 @@ func jsonConvertToUint8Types(argMap map[string]interface{}, uint8Types map[strin
 		if !ok {
 			return uint8Types, fmt.Errorf("key not found in argMap %s", key)
 		}
-		valJsonNum, ok := val.(json.Number)
-		if !ok {
-			return uint8Types, fmt.Errorf("couldn't convert key to uint8 %s", key)
+
+		var int64Val int64
+		if val != nil {
+			valJsonNum, ok := val.(json.Number)
+			if !ok {
+				return uint8Types, fmt.Errorf("couldn't convert key to uint8 %s", key)
+			}
+
+			var err error
+			int64Val, err = valJsonNum.Int64()
+			if err != nil {
+				return uint8Types, err
+			}
 		}
-		int64Val, err := valJsonNum.Int64()
-		if err != nil {
-			return uint8Types, err
-		}
+
 		uint8Types[key] = uint8(int64Val)
 	}
 
@@ -1477,14 +1576,21 @@ func jsonConvertToUint16Types(argMap map[string]interface{}, uint16Types map[str
 		if !ok {
 			return uint16Types, fmt.Errorf("key not found in argMap %s", key)
 		}
-		valJsonNum, ok := val.(json.Number)
-		if !ok {
-			return uint16Types, fmt.Errorf("couldn't convert key to uint16 %s", key)
+
+		var int64Val int64
+		if val != nil {
+			valJsonNum, ok := val.(json.Number)
+			if !ok {
+				return uint16Types, fmt.Errorf("couldn't convert key to uint16 %s", key)
+			}
+
+			var err error
+			int64Val, err = valJsonNum.Int64()
+			if err != nil {
+				return uint16Types, err
+			}
 		}
-		int64Val, err := valJsonNum.Int64()
-		if err != nil {
-			return uint16Types, err
-		}
+
 		uint16Types[key] = uint16(int64Val)
 	}
 
@@ -1497,14 +1603,21 @@ func jsonConvertToUint32Types(argMap map[string]interface{}, uint32Types map[str
 		if !ok {
 			return uint32Types, fmt.Errorf("key not found in argMap %s", key)
 		}
-		valJsonNum, ok := val.(json.Number)
-		if !ok {
-			return uint32Types, fmt.Errorf("couldn't convert key to uint32 %s", key)
+
+		var int64Val int64
+		if val != nil {
+			valJsonNum, ok := val.(json.Number)
+			if !ok {
+				return uint32Types, fmt.Errorf("couldn't convert key to uint32 %s", key)
+			}
+
+			var err error
+			int64Val, err = valJsonNum.Int64()
+			if err != nil {
+				return uint32Types, err
+			}
 		}
-		int64Val, err := valJsonNum.Int64()
-		if err != nil {
-			return uint32Types, err
-		}
+
 		uint32Types[key] = uint32(int64Val)
 	}
 
@@ -1517,14 +1630,21 @@ func jsonConvertToInt64Types(argMap map[string]interface{}, int64Types map[strin
 		if !ok {
 			return int64Types, fmt.Errorf("key not found in argMap %s", key)
 		}
-		valJsonNum, ok := val.(json.Number)
-		if !ok {
-			return int64Types, fmt.Errorf("couldn't convert key to int64 %s", key)
+
+		var int64Val int64
+		if val != nil {
+			valJsonNum, ok := val.(json.Number)
+			if !ok {
+				return int64Types, fmt.Errorf("couldn't convert key to int64 %s", key)
+			}
+
+			var err error
+			int64Val, err = valJsonNum.Int64()
+			if err != nil {
+				return int64Types, err
+			}
 		}
-		int64Val, err := valJsonNum.Int64()
-		if err != nil {
-			return int64Types, err
-		}
+
 		int64Types[key] = int64Val
 	}
 
@@ -1538,22 +1658,24 @@ func jsonConvertToHttpHeaderTypes(argMap map[string]interface{}, httpHeaderTypes
 			return httpHeaderTypes, fmt.Errorf("key not found in argMap %s", key)
 		}
 
-		headerMap, ok := val.(map[string]interface{})
-		if !ok {
-			return httpHeaderTypes, fmt.Errorf("couldn't convert key to http.Header %s", key)
-		}
-
-		for headerKey, headerValInterface := range headerMap {
-			headerValInterfaceSlice, ok := headerValInterface.([]interface{})
+		if val != nil {
+			headerMap, ok := val.(map[string]interface{})
 			if !ok {
 				return httpHeaderTypes, fmt.Errorf("couldn't convert key to http.Header %s", key)
 			}
 
-			var headerVals []string
-			for _, headerValInterfaceElem := range headerValInterfaceSlice {
-				headerVals = append(headerVals, headerValInterfaceElem.(string))
+			for headerKey, headerValInterface := range headerMap {
+				headerValInterfaceSlice, ok := headerValInterface.([]interface{})
+				if !ok {
+					return httpHeaderTypes, fmt.Errorf("couldn't convert key to http.Header %s", key)
+				}
+
+				var headerVals []string
+				for _, headerValInterfaceElem := range headerValInterfaceSlice {
+					headerVals = append(headerVals, headerValInterfaceElem.(string))
+				}
+				httpHeaderTypes[key][headerKey] = headerVals
 			}
-			httpHeaderTypes[key][headerKey] = headerVals
 		}
 	}
 
