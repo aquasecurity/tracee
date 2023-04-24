@@ -42,15 +42,6 @@ fi
 
 # run CO-RE IPv4 test only by default
 TESTS=${NETTESTS:=IPv4}
-ISNONCORE=${ISNONCORE:=0}
-DONTSLEEP=${DONTSLEEP:=1}
-
-# randomize start point (for parallel runners)
-if [[ $DONTSLEEP -ne 1 ]]; then
-    rand=$(($RANDOM % 10))
-    info "sleeping for $rand seconds"
-    sleep $rand
-fi
 
 # startup needs
 rm -rf $TRACEE_TMP_DIR/* || error_exit "could not delete $TRACEE_TMP_DIR"
@@ -60,7 +51,6 @@ info
 info "= ENVIRONMENT ================================================="
 info
 info "KERNEL: $(uname -r)"
-info "NON CO-RE: $ISNONCORE"
 info "CLANG: $(clang --version)"
 info "GO: $(go version)"
 info
@@ -81,14 +71,6 @@ make e2e-net-signatures
 set +e
 if [[ ! -x ./dist/tracee-ebpf || ! -x ./dist/tracee-rules ]]; then
     error_exit "could not find tracee executables"
-fi
-if [[ $ISNONCORE -eq 1 ]]; then
-    info "STATE: Compiling non CO-RE eBPF object"
-    make clean-bpf-nocore
-    set -e
-    make install-bpf-nocore
-    set +e
-    export TRACEE_BPF_FILE=$(ls -1tr $TRACEE_TMP_DIR/*tracee.bpf*.o | head -n1)
 fi
 
 # if any test has failed
