@@ -1728,8 +1728,6 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 			continue
 		}
 
-		eventHandle := t.triggerContexts.Store(event)
-
 		lengthFilter, ok := printMemDumpFilters["length"].(*filters.StringFilter)
 		var length uint64
 		var err error
@@ -1753,7 +1751,8 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 				if err != nil {
 					return errfmt.WrapError(err)
 				}
-				_ = t.triggerMemDumpCall(address, length, uint64(eventHandle))
+				eventHandle := t.triggerContexts.Store(event)
+				_ = t.triggerMemDumpCall(address, length, eventHandle)
 			}
 		}
 
@@ -1788,6 +1787,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 						return errfmt.WrapError(err)
 					}
 				}
+				eventHandle := t.triggerContexts.Store(event)
 				_ = t.triggerMemDumpCall(symbol.Address, length, uint64(eventHandle))
 			}
 		}
