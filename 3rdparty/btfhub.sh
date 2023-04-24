@@ -21,7 +21,7 @@ cd ${BASEDIR}
 BTFHUB_REPO="https://github.com/aquasecurity/btfhub.git"
 BTFHUB_ARCH_REPO="https://github.com/aquasecurity/btfhub-archive.git"
 
-TRACEE_BPF_CORE="${BASEDIR}/dist/tracee.bpf.core.o"
+TRACEE_BPF_CORE="${BASEDIR}/dist/tracee.bpf.o"
 
 BTFHUB_DIR="${BASEDIR}/3rdparty/btfhub"
 BTFHUB_ARCH_DIR="${BASEDIR}/3rdparty/btfhub-archive"

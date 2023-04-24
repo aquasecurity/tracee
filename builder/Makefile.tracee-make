@@ -86,7 +86,7 @@ help:
 	@echo "  1. Example of how to use an UBUNTU building env as the \"MAKE\" command:"
 	@echo ""
 	@echo "    $$ make -f builder/Makefile.tracee-make ubuntu-make ARG=\"clean\""
-	@echo "    $$ make -f builder/Makefile.tracee-make ubuntu-make ARG=\"bpf-core\""
+	@echo "    $$ make -f builder/Makefile.tracee-make ubuntu-make ARG=\"bpf\""
 	@echo "    $$ make -f builder/Makefile.tracee-make ubuntu-make ARG=\"tracee\""
 	@echo ""
 	@echo "    > This will generate UBUNTU binaries in the working ./dist directory".
@@ -129,6 +129,7 @@ alpine-prepare: \
 	.check_tree
 #
 	$(CMD_DOCKER) build \
+		--network host \
 		-f $(ALPINE_MAKE_DOCKERFILE) \
 		-t $(ALPINE_MAKE_CONTNAME):latest \
 		--build-arg uid=$(UID) \
@@ -144,6 +145,7 @@ ubuntu-prepare: \
 	.check_tree
 #
 	$(CMD_DOCKER) build \
+		--network host \
 		-f $(UBUNTU_MAKE_DOCKERFILE) \
 		-t $(UBUNTU_MAKE_CONTNAME):latest \
 		--build-arg uid=$(UID) \
@@ -165,16 +167,14 @@ ifeq ($(BTFHUB), 1)
 endif
 
 DOCKER_RUN_ARGS = run --rm \
-	--pid=host --cgroupns=host --privileged \
+	--pid=host --cgroupns=host --network=host --privileged \
 	-v /etc/os-release:/etc/os-release-host:ro \
 	-v /boot/config-$(UNAME_R):/boot/config-$(UNAME_R):ro \
 	-v $(PWD):/tracee \
 	-v /sys/kernel/security:/sys/kernel/security:ro \
 	-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
 	$(DOCKER_RUN_ENV) \
-	-v /tmp/tracee:/tmp/tracee:rw \
-	-v /lib/modules:/lib/modules:ro \
-	-v /usr/src:/usr/src:ro \
+	-v /tmp/tracee:/tmp/tracee:rw
 
 #
 # tracee-make's shell

@@ -7,7 +7,7 @@ import (
 	"embed"
 )
 
-//go:embed "dist/tracee.bpf.core.o"
+//go:embed "dist/tracee.bpf.o"
 //go:embed "dist/btfhub/*"
 
 var BPFBundleInjected embed.FS

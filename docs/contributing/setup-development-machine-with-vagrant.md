@@ -112,7 +112,7 @@ drwxr-xr-x 1 vagrant vagrant     4096 Mar 29 19:06 btfhub
 drwxr-xr-x 1 vagrant vagrant     4096 Mar 29 19:06 libbpf
 drwxr-xr-x 1 vagrant vagrant     4096 Mar 29 19:08 signatures
 -rwxr-xr-x 1 vagrant vagrant 62619312 Mar 29 19:08 tracee
--rw-r--r-- 1 vagrant vagrant 10753624 Mar 29 19:06 tracee.bpf.core.o
+-rw-r--r-- 1 vagrant vagrant 10753624 Mar 29 19:06 tracee.bpf.o
 ```
 
 You can now run Tracee and see events printed to the standard output in a tabular format:
