@@ -41,22 +41,12 @@ jobs:
           image-ref: "tracee:latest"
           severity: "CRITICAL"
           exit-code: "1"
-      - name: Scan Docker Image for Vulnerabilities
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: "tracee:full"
-          severity: "CRITICAL"
-          exit-code: "1"
       - name: Publish to docker.io registry
         run: |
           docker image tag tracee:latest aquasec/tracee:dev
-          docker image tag tracee:full   aquasec/tracee:dev-full
           docker image tag tracee:latest aquasec/tracee:x86_64-dev
-          docker image tag tracee:full   aquasec/tracee:x86_64-dev-full
           docker image push aquasec/tracee:dev
-          docker image push aquasec/tracee:dev-full
           docker image push aquasec/tracee:x86_64-dev
-          docker image push aquasec/tracee:x86_64-dev-full
   release-snapshot-arm64:
     name: Release Snapshot ARM64
     runs-on:
@@ -85,15 +75,7 @@ jobs:
           image-ref: "tracee:latest"
           severity: "CRITICAL"
           exit-code: "1"
-      - name: Scan Docker Image for Vulnerabilities
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: "tracee:full"
-          severity: "CRITICAL"
-          exit-code: "1"
       - name: Publish to docker.io registry
         run: |
           docker image tag tracee:latest aquasec/tracee:aarch64-dev
-          docker image tag tracee:full   aquasec/tracee:aarch64-dev-full
           docker image push aquasec/tracee:aarch64-dev
-          docker image push aquasec/tracee:aarch64-dev-full

@@ -31,7 +31,7 @@ jobs:
       - name: Build
         run: |
           make -f builder/Makefile.release
-        # tracee:latest and tracee:full for historical reasons
+        # tracee:latest for historical reasons
         # use :x86_64 as tag for the latest image
         # use :x86_64-v0.xx.0 for versioned image
       - name: Publish to docker.io registry
@@ -45,12 +45,6 @@ jobs:
           docker image push aquasec/tracee:latest
           docker image push aquasec/tracee:${ARCH}
           docker image push aquasec/tracee:${ARCH}-${TAG}
-          docker image tag tracee:full aquasec/tracee:full
-          docker image tag tracee:full aquasec/tracee:${ARCH}-full
-          docker image tag tracee:full aquasec/tracee:${ARCH}-${TAG}-full
-          docker image push aquasec/tracee:full
-          docker image push aquasec/tracee:${ARCH}-full
-          docker image push aquasec/tracee:${ARCH}-${TAG}-full
   release-arm64:
     name: Release ARM64
     env:
@@ -78,7 +72,7 @@ jobs:
       - name: Build
         run: |
           make -f builder/Makefile.release
-        # NO tracee:latest and tracee:full (historical reason: amd64 only)
+        # NO tracee:latest (historical reason: amd64 only)
         # use :aarch64 as tag for the latest image
         # use :aarch64-v0.xx.0 for versioned image
       - name: Publish to docker.io registry
@@ -89,7 +83,3 @@ jobs:
           docker image tag tracee:latest aquasec/tracee:${ARCH}-${TAG}
           docker image push aquasec/tracee:${ARCH}
           docker image push aquasec/tracee:${ARCH}-${TAG}
-          docker image tag tracee:full aquasec/tracee:${ARCH}-full
-          docker image tag tracee:full aquasec/tracee:${ARCH}-${TAG}-full
-          docker image push aquasec/tracee:${ARCH}-full
-          docker image push aquasec/tracee:${ARCH}-${TAG}-full
