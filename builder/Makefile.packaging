@@ -51,16 +51,16 @@ help:
 	@echo "  * Jammy (LTS)"
 	@echo "    $ make -f builder/Makefile.packaging ubuntu-bin-jammy"
 	@echo ""
-	@echo "  * Kinetic (latest)"
-	@echo "    $ make -f builder/Makefile.packaging ubuntu-bin-kinetic"
-	@echo ""
 	@echo "FEDORA:"
 	@echo ""
-	@echo "  * 36 (still maintained)"
+	@echo "  * 36 (supported)"
 	@echo "    $ make -f builder/Makefile.packaging fedora-bin-36"
 	@echo ""
-	@echo "  * 37 (latest)"
+	@echo "  * 37 (supported)"
 	@echo "    $ make -f builder/Makefile.packaging fedora-bin-37"
+	@echo ""
+	@echo "  * 38 (latest)"
+	@echo "    $ make -f builder/Makefile.packaging fedora-bin-38"
 	@echo ""
 
 #
@@ -80,7 +80,7 @@ help:
 #
 
 # workdir has to be /tracee/tracee because of .deb default generation in ../
-DOCKER_RUN_ARGS = run --rm --pid=host --privileged \
+DOCKER_RUN_ARGS = run --rm --pid=host --network=host --privileged \
                 -v /etc/os-release:/etc/os-release-host:ro \
                 -v $(PWD):/tracee/tracee \
                 -v /lib/modules:/lib/modules:ro \
@@ -112,6 +112,7 @@ UBUNTU_PKGS_DOCKERFILE = $(abspath $(shell $(CMD_FIND) -name Dockerfile.ubuntu-p
 #
 	$(CMD_DOCKER) \
 		build \
+		--network=host \
 		-f $(UBUNTU_PKGS_DOCKERFILE) \
 		-t $(UBUNTU_PKGS_CONTNAME):$* \
 		--build-arg uid=$(UID) \
