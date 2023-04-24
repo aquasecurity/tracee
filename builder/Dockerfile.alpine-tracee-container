@@ -2,9 +2,6 @@
 # Creates the official tracee containers.
 #
 
-# tracee-core      entrypoint: tracee-ebpf + tracee-rules + tracee
-# tracee-nocore    entrypoint: install-bpf-nocore + tracee-ebpf + tracee-rules + tracee
-
 ARG BTFHUB=0
 ARG FLAVOR=tracee-ebpf-core
 
@@ -87,26 +84,6 @@ COPY --from=tracee-make /tracee/dist/tracee /tracee
 COPY --from=tracee-make /tracee/dist/tracee-ebpf /tracee
 COPY --from=tracee-make /tracee/dist/tracee-rules /tracee
 COPY --from=tracee-make /tracee/dist/signatures/ /tracee/signatures/
-COPY --from=tracee-make /tracee/builder/entrypoint.sh /tracee/entrypoint.sh
-COPY --from=tracee-make /tracee/cmd/tracee-rules/templates/ /tracee/templates/
-
-ENTRYPOINT ["/tracee/entrypoint.sh"]
-
-#
-# tracee-nocore (tracee-make as base)
-#
-
-FROM tracee-make-base as tracee-nocore
-LABEL AS=tracee-nocore
-USER root
-ENV HOME /tracee
-WORKDIR /tracee
-
-COPY --from=tracee-make /tracee /tracee/src
-COPY --from=tracee-make /tracee/dist/tracee /tracee
-COPY --from=tracee-make /tracee/dist/tracee-ebpf /tracee
-COPY --from=tracee-make /tracee/dist/tracee-rules /tracee
-COPY --from=tracee-make /tracee/dist/signatures/ /tracee/signatures
 COPY --from=tracee-make /tracee/builder/entrypoint.sh /tracee/entrypoint.sh
 COPY --from=tracee-make /tracee/cmd/tracee-rules/templates/ /tracee/templates/
 

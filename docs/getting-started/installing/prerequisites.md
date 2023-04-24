@@ -7,19 +7,11 @@ A longterm supported kernel: 5.4, 5.10, 5.15, 5.18, 6.1, 6.2. Check
     Most distributions long-term supported kernels are supported as well,
     including CentOS8 4.18 kernel.
 
-1. For **tracee:{{ git.tag }}** docker image, you should have one of the two:
+- For **tracee:{{ git.tag }}** docker image, you should have one of the two:
 
     1. A kernel that has `/sys/kernel/btf/vmlinux` file available
     2. A kernel supported through [BTFHUB]
     > see [libbpf CO-RE documentation] for more info
-
-2. For **tracee:full** docker image:
-
-    1. **kernel readers** (most distros provide packages)
-    2. **clang** (12, 13 or 14)
-    3. **golang** (1.19)
-    4. **libelf** and **libelf-dev** (or elfutils-libelf and elfutils-libelf-devel)
-    5. **zlib1g** and **lib1g-dev** (or zlib and zlib-devel)
 
 ## Permissions
 

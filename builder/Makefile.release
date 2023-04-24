@@ -18,16 +18,16 @@ MAKEFLAGS += --no-print-directory
 # tools
 #
 
-CMD_DOCKER ?= docker
 CMD_CHECKSUM ?= sha256sum
-CMD_GITHUB ?= gh
-CMD_TAR ?= tar
-CMD_GIT ?= git
-CMD_RM ?= rm
-CMD_TOUCH ?= touch
-CMD_MKDIR ?= mkdir
 CMD_COSIGN ?= cosign
+CMD_DOCKER ?= docker
+CMD_GIT ?= git
+CMD_GITHUB ?= gh
+CMD_MKDIR ?= mkdir
 CMD_MV ?= mv
+CMD_RM ?= rm
+CMD_TAR ?= tar
+CMD_TOUCH ?= touch
 
 .ONESHELL:
 .check_%:
@@ -62,21 +62,6 @@ ifeq ($(ALTARCH),)
 	exit 1
 endif
 
-.PHONY: env
-env:
-	@echo ---------------------------------------
-	@echo "CMD_CHECKSUM          $(CMD_CHECKSUM)"
-	@echo "CMD_DOCKER            $(CMD_DOCKER)"
-	@echo "CMD_GIT               $(CMD_GIT)"
-	@echo "CMD_GITHUB            $(CMD_GITHUB)"
-	@echo "CMD_TAR               $(CMD_TAR)"
-	@echo "CMD_TOUCH             $(CMD_TOUCH)"
-	@echo "CMD_RM                $(CMD_RM)"
-	@echo "CMD_MKDIR             $(CMD_MKDIR)"
-	@echo ---------------------------------------
-	@echo "PUSH_DOCKER_REPO      $(PUSH_DOCKER_REPO)"
-	@echo ---------------------------------------
-
 #
 # usage
 #
@@ -90,14 +75,13 @@ help:
 	@echo ""
 	@echo "  $$ SNAPSHOT=1 make -f builder/Makefile.release"
 	@echo ""
-	@echo "  > Compiles tracee-ebpf, tracee-rules and rules"
+	@echo "  > Compiles tracee, tracee-ebpf, tracee-rules and rules"
 	@echo "  > Creates an archive of build artifacts along with license"
 	@echo "  > Takes a checksum of the archive"
 	@echo ""
 	@echo "Container images are:"
 	@echo ""
 	@echo "  - aquasec/tracee:latest (embedded eBPF CO-RE obj with BTFHUB support)"
-	@echo "  - aquasec/tracee:full   (compiles non CO-RE eBPF object on startup if needed)"
 	@echo ""
 	@echo "To PUBLISH a release:"
 	@echo ""
@@ -152,7 +136,7 @@ RELEASE_FILES += $(OUTPUT_DIR)/tracee-rules
 RELEASE_FILES += $(OUTPUT_DIR)/tracee
 RELEASE_FILES += $(OUTPUT_DIR)/tracee-static
 RELEASE_FILES += $(OUTPUT_DIR)/signatures
-#RELEASE_FILES += $(OUTPUT_DIR)/tracee.bpf.core.o
+#RELEASE_FILES += $(OUTPUT_DIR)/tracee.bpf.o
 
 OUT_ARCHIVE := $(OUTPUT_DIR)/tracee-$(ARCH).$(SNAPSHOT_VERSION).tar.gz
 OUT_CHECKSUMS := $(OUTPUT_DIR)/checksum-$(ARCH).$(SNAPSHOT_VERSION).txt
@@ -170,63 +154,49 @@ release: \
 #
 # SNAPSHOT
 #
-# ----
-#
-# prepare builder
-#
-	$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
-	$(MAKE) -f builder/Makefile.tracee-make ubuntu-prepare
-#
-# build official full container image (CO-RE + non CO-RE on-demand build)
-#
-	$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
-	BTFHUB=0 $(MAKE) -f builder/Makefile.tracee-container build-tracee-full
-#
-# build official slim container image (CO-RE + BTFHUB).
-#
-	$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
-	BTFHUB=1 $(MAKE) -f builder/Makefile.tracee-container build-tracee
 
 #
-# build binaries (tracee-ebpf, tracee-rules, rules)
+# build official container image (CO-RE + BTFHUB).
 #
+	$(MAKE) -f builder/Makefile.tracee-make alpine-prepare
+	$(MAKE) -f builder/Makefile.tracee-make alpine-make ARG="clean"
+#
+	BTFHUB=1 $(MAKE) -f builder/Makefile.tracee-container build-tracee
+#
+# build binaries (tracee, tracee-ebpf, tracee-rules, rules)
+#
+	$(MAKE) -f builder/Makefile.tracee-make ubuntu-prepare
 	$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
+# static
 	BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee-ebpf"
 	BTFHUB=0 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee"
 	$(CMD_MV) dist/tracee-ebpf dist/tracee-ebpf-static
 	$(CMD_MV) dist/tracee dist/tracee-static
+# shared libs
 	BTFHUB=0 STATIC=0 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="all"
-#
-# create the tarball and checksum files
-#
+# tarball
 	$(CMD_TAR) -cvzf $(OUT_ARCHIVE) $(RELEASE_FILES)
 	$(CMD_CHECKSUM) $(OUT_ARCHIVE) > $(OUT_CHECKSUMS)
+#
+# note: TAGS created by release-snapshot workflow
+#
 
-#
-# note: the dev tags will be created by release-snapshot workflow
-#
-# ----
 #
 # RELEASE
 #
+
 ifneq ("$(SNAPSHOT)", "1")
 #
 # create release notes (x86_64 only, other arches will be added after release)
 #
 ifeq ($(ARCH),x86_64)
 	$(CMD_TOUCH) $(RELEASE_NOTES)
-	echo '## Docker Images (x86_64 only)  ' >> $(RELEASE_NOTES)
+	echo '## Docker Image (x86_64 only)  ' >> $(RELEASE_NOTES)
 	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):$(IMAGE_TAG)`' >> $(RELEASE_NOTES);
-	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):$(IMAGE_TAG)-full`' >> $(RELEASE_NOTES);
 	echo '  ' >> $(RELEASE_NOTES);
 	echo '## Docker Images (per architecture)  ' >> $(RELEASE_NOTES)
 	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):x86_64-$(IMAGE_TAG)`' >> $(RELEASE_NOTES);
-	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):x86_64-$(IMAGE_TAG)-full`' >> $(RELEASE_NOTES);
 	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):aarch64-$(IMAGE_TAG)`' >> $(RELEASE_NOTES);
-	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):aarch64-$(IMAGE_TAG)-full`' >> $(RELEASE_NOTES);
-	echo '  ' >> $(RELEASE_NOTES);
-	echo '> The regular image is built with an embedded portable CO-RE eBPF object and BTFHub (for kernels not supporting BTF info).' >> $(RELEASE_NOTES);
-	echo '> The full image is built with an embedded portable CO-RE eBPF object and it is capable of building a per kernel non CO-RE eBPF object.' >> $(RELEASE_NOTES);
 endif
 #
 # release it (x86_64 only, other arches will be added after release)
@@ -234,7 +204,9 @@ endif
 ifeq ($(ARCH),x86_64)
 	$(CMD_GITHUB) release create $(SNAPSHOT_VERSION) $(OUT_ARCHIVE) $(OUT_CHECKSUMS) --title $(SNAPSHOT_VERSION) --notes-file $(RELEASE_NOTES)
 endif
+#
 # add artifacts to the already created release (by x86_64 arch)
+#
 ifeq ($(ARCH),aarch64)
 	$(CMD_GITHUB) release upload $(SNAPSHOT_VERSION) $(OUT_ARCHIVE) $(OUT_CHECKSUMS)
 endif

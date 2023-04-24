@@ -124,7 +124,7 @@ Instead of executing a builder shell, you may use `alpine-tracee-make`, or
 make -f builder/Makefile.tracee-make ubuntu-prepare
 make -f builder/Makefile.tracee-make ubuntu-make ARG="help"
 make -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
-make -f builder/Makefile.tracee-make ubuntu-make ARG="bpf-core"
+make -f builder/Makefile.tracee-make ubuntu-make ARG="bpf"
 make -f builder/Makefile.tracee-make ubuntu-make ARG="tracee"
 make -f builder/Makefile.tracee-make ubuntu-make ARG="all"
 ```

@@ -16,26 +16,26 @@ MAKEFLAGS += --no-print-directory
 # tools
 #
 
-CMD_TR ?= tr
-CMD_CUT ?= cut
 CMD_AWK ?= awk
-CMD_SED ?= sed
-CMD_GIT ?= git
+CMD_CAT ?= cat
 CMD_CLANG ?= clang
-CMD_LLC ?= llc
-CMD_STRIP ?= llvm-strip
-CMD_RM ?= rm
-CMD_INSTALL ?= install
-CMD_MKDIR ?= mkdir
-CMD_TOUCH ?= touch
-CMD_PKGCONFIG ?= pkg-config
+CMD_CUT ?= cut
+CMD_ERRCHECK ?= errcheck
+CMD_GIT ?= git
 CMD_GO ?= go
 CMD_GREP ?= grep
-CMD_CAT ?= cat
+CMD_INSTALL ?= install
+CMD_LLC ?= llc
 CMD_MD5 ?= md5sum
+CMD_MKDIR ?= mkdir
 CMD_OPA ?= opa
+CMD_PKGCONFIG ?= pkg-config
+CMD_RM ?= rm
+CMD_SED ?= sed
 CMD_STATICCHECK ?= staticcheck
-CMD_ERRCHECK ?= errcheck
+CMD_STRIP ?= llvm-strip
+CMD_TOUCH ?= touch
+CMD_TR ?= tr
 
 .check_%:
 #
@@ -145,22 +145,32 @@ env:
 	@echo "CLANG_VERSION            $(CLANG_VERSION)"
 	@echo "GO_VERSION               $(GO_VERSION)"
 	@echo ---------------------------------------
+	@echo "CMD_AWK                  $(CMD_AWK)"
+	@echo "CMD_CAT                  $(CMD_CAT)"
 	@echo "CMD_CLANG                $(CMD_CLANG)"
+	@echo "CMD_CUT                  $(CMD_CUT)"
+	@echo "CMD_ERRCHECK             $(CMD_ERRCHECK)"
 	@echo "CMD_GIT                  $(CMD_GIT)"
 	@echo "CMD_GO                   $(CMD_GO)"
+	@echo "CMD_GREP                 $(CMD_GREP)"
 	@echo "CMD_INSTALL              $(CMD_INSTALL)"
 	@echo "CMD_LLC                  $(CMD_LLC)"
 	@echo "CMD_MD5                  $(CMD_MD5)"
+	@echo "CMD_MKDIR                $(CMD_MKDIR)"
 	@echo "CMD_OPA                  $(CMD_OPA)"
 	@echo "CMD_PKGCONFIG            $(CMD_PKGCONFIG)"
+	@echo "CMD_RM                   $(CMD_RM)"
+	@echo "CMD_SED                  $(CMD_SED)"
+	@echo "CMD_STATICCHECK          $(CMD_STATICCHECK)"
 	@echo "CMD_STRIP                $(CMD_STRIP)"
+	@echo "CMD_TOUCH                $(CMD_TOUCH)"
+	@echo "CMD_TR                   $(CMD_TR)"
 	@echo ---------------------------------------
 	@echo "LIB_ELF                  $(LIB_ELF)"
 	@echo "LIB_ZLIB                 $(LIB_ZLIB)"
 	@echo ---------------------------------------
 	@echo "VERSION                  $(VERSION)"
 	@echo "LAST_GIT_TAG             $(LAST_GIT_TAG)"
-	@echo "BPF_NOCORE_TAG           $(BPF_NOCORE_TAG)"
 	@echo ---------------------------------------
 	@echo "UNAME_M                  $(UNAME_M)"
 	@echo "UNAME_R                  $(UNAME_R)"
@@ -168,10 +178,6 @@ env:
 	@echo "LINUX_ARCH               $(LINUX_ARCH)"
 	@echo ---------------------------------------
 	@echo "OUTPUT_DIR               $(OUTPUT_DIR)"
-	@echo ---------------------------------------
-	@echo "KERN_RELEASE             $(KERN_RELEASE)"
-	@echo "KERN_BUILD_PATH          $(KERN_BUILD_PATH)"
-	@echo "KERN_SRC_PATH            $(KERN_SRC_PATH)"
 	@echo ---------------------------------------
 	@echo "LIBBPF_CFLAGS            $(LIBBPF_CFLAGS)"
 	@echo "LIBBPF_LDLAGS            $(LIBBPF_LDFLAGS)"
@@ -181,6 +187,7 @@ env:
 	@echo ---------------------------------------
 	@echo "BPF_VCPU                 $(BPF_VCPU)"
 	@echo "TRACEE_EBPF_OBJ_SRC      $(TRACEE_EBPF_OBJ_SRC)"
+	@echo "TRACEE_EBPF_OBJ_HEADERS  $(TRACEE_EBPF_OBJ_HEADERS)"
 	@echo ---------------------------------------
 	@echo "GO_ARCH                  $(GO_ARCH)"
 	@echo "GO_TAGS_EBPF             $(GO_TAGS_EBPF)"
@@ -197,17 +204,28 @@ env:
 	@echo "GO_ENV_EBPF              $(GO_ENV_EBPF)"
 	@echo "GO_ENV_RULES             $(GO_ENV_RULES)"
 	@echo ---------------------------------------
-	@echo "TRACEE_EBPF_SRC          $(TRACEE_EBPF_SRC)"
-	@echo "TRACEE_EBPF_SRC_DIRS     $(TRACEE_EBPF_SRC_DIRS)"
+	@echo "TRACEE_SRC               $(TRACEE_SRC)"
+	@echo "TRACEE_SRC_DIRS          $(TRACEE_SRC_DIRS)"
 	@echo ---------------------------------------
-	@echo "TRACEE_RULES_SRC         $(TRACEE_RULES_SRC)"
 	@echo "TRACEE_RULES_SRC_DIRS    $(TRACEE_RULES_SRC_DIRS)"
+	@echo "TRACEE_RULES_SRC         $(TRACEE_RULES_SRC)"
+	@echo ---------------------------------------
+	@echo "TRACEE_BENCH_SRC_DIRS    $(TRACEE_BENCH_SRC_DIRS)"
+	@echo "TRACEE_BENCH_SRC         $(TRACEE_BENCH_SRC)"
+	@echo ---------------------------------------
+	@echo "TRACEE_GPTDOCS_SRC_DIRS  $(TRACEE_GPTDOCS_SRC_DIRS)"
+	@echo "TRACEE_GPTDOCS_SRC       $(TRACEE_GPTDOCS_SRC)"
 	@echo ---------------------------------------
 	@echo "GOSIGNATURES_DIR         $(GOSIGNATURES_DIR)"
 	@echo "GOSIGNATURES_SRC         $(GOSIGNATURES_SRC)"
 	@echo ---------------------------------------
 	@echo "REGO_SIGNATURES_DIR      $(REGO_SIGNATURES_DIR)"
 	@echo "REGO_SIGNATURES_SRC      $(REGO_SIGNATURES_SRC)"
+	@echo ---------------------------------------
+	@echo "E2E_NET_DIR              $(E2E_NET_DIR)"
+	@echo "E2E_NET_SRC              $(E2E_NET_SRC)"
+	@echo "E2E_INST_DIR             $(E2E_INST_DIR)"
+	@echo "E2E_INST_SRC             $(E2E_INST_SRC)"
 	@echo ---------------------------------------
 
 #
@@ -224,8 +242,7 @@ help:
 	@echo "# build"
 	@echo ""
 	@echo "    $$ make all                      		# build tracee-ebpf, tracee-rules & signatures"
-	@echo "    $$ make bpf-core                 		# build ./dist/tracee.bpf.core.o"
-	@echo "    $$ make bpf-nocore               		# build ./dist/tracee.bpf.XXX.o"
+	@echo "    $$ make bpf                      		# build ./dist/tracee.bpf.o"
 	@echo "    $$ make tracee-ebpf              		# build ./dist/tracee-ebpf"
 	@echo "    $$ make tracee-rules             		# build ./dist/tracee-rules"
 	@echo "    $$ make tracee-bench             		# build ./dist/tracee-bench"
@@ -235,16 +252,10 @@ help:
 	@echo "    $$ make e2e-instrumentation-signatures	# build ./dist/e2e-instrumentation-signatures"
 	@echo "    $$ make tracee                   		# build ./dist/tracee"
 	@echo ""
-	@echo "# install"
-	@echo ""
-	@echo "    $$ make install-bpf-nocore       # install BPF no CO-RE obj into /tmp/tracee"
-	@echo "    $$ make uninstall-bpf-nocore     # uninstall BPF no CO-RE obj from /tmp/tracee"
-	@echo ""
 	@echo "# clean"
 	@echo ""
 	@echo "    $$ make clean                    # wipe ./dist/"
-	@echo "    $$ make clean-bpf-core           # wipe ./dist/tracee.bpf.core.o"
-	@echo "    $$ make clean-bpf-nocore         # wipe ./dist/tracee.bpf.XXX.o"
+	@echo "    $$ make clean-bpf                # wipe ./dist/tracee.bpf.o"
 	@echo "    $$ make clean-tracee-ebpf        # wipe ./dist/tracee-ebpf"
 	@echo "    $$ make clean-tracee-rules       # wipe ./dist/tracee-rules"
 	@echo "    $$ make clean-tracee-bench       # wipe ./dist/tracee-bench"
@@ -280,8 +291,8 @@ OUTPUT_DIR = ./dist
 $(OUTPUT_DIR):
 #
 	@$(CMD_MKDIR) -p $@
-	@$(CMD_MKDIR) -p $@/libbpf
-	@$(CMD_MKDIR) -p $@/libbpf/obj
+	$(CMD_MKDIR) -p $@/libbpf
+	$(CMD_MKDIR) -p $@/libbpf/obj
 
 #
 # embedded btfhub
@@ -290,10 +301,10 @@ $(OUTPUT_DIR):
 $(OUTPUT_DIR)/btfhub:
 #
 	@$(CMD_MKDIR) -p $@
-	@$(CMD_TOUCH) $@/.place-holder # needed for embed.FS
+	$(CMD_TOUCH) $@/.place-holder
 
 #
-# libbpf
+# libbpf (statically linked)
 #
 
 LIBBPF_CFLAGS = "-fPIC"
@@ -324,104 +335,19 @@ ifeq ($(wildcard $@), )
 endif
 
 #
-# non co-re ebpf
+# ebpf object
 #
 
 TRACEE_EBPF_OBJ_SRC = ./pkg/ebpf/c/tracee.bpf.c
+TRACEE_EBPF_OBJ_HEADERS = $(shell find pkg/ebpf/c -name *.h)
 
-KERN_RELEASE ?= $(UNAME_R)
-KERN_BUILD_PATH ?= $(if $(KERN_HEADERS),$(KERN_HEADERS),/lib/modules/$(KERN_RELEASE)/build)
-KERN_SRC_PATH ?= $(if $(KERN_HEADERS),$(KERN_HEADERS),$(if $(wildcard /lib/modules/$(KERN_RELEASE)/source),/lib/modules/$(KERN_RELEASE)/source,$(KERN_BUILD_PATH)))
+.PHONY: bpf
+bpf: $(OUTPUT_DIR)/tracee.bpf.o
 
-BPF_NOCORE_TAG = $(subst .,_,$(KERN_RELEASE)).$(subst .,_,$(VERSION))
-
-.PHONY: bpf-nocore
-bpf-nocore: $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o
-
-$(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o: \
-	$(OUTPUT_DIR)/libbpf/libbpf.a \
-	$(TRACEE_EBPF_OBJ_SRC)
-#
-	MAKEFLAGS="--no-print-directory"
-	$(CMD_CLANG) -S -nostdinc \
-		-D__TARGET_ARCH_$(LINUX_ARCH) \
-		-D__BPF_TRACING__ \
-		-D__KERNEL__ \
-		-include $(KERN_SRC_PATH)/include/linux/kconfig.h \
-		-I $(KERN_SRC_PATH)/arch/$(LINUX_ARCH)/include \
-		-I $(KERN_SRC_PATH)/arch/$(LINUX_ARCH)/include/uapi \
-		-I $(KERN_BUILD_PATH)/arch/$(LINUX_ARCH)/include/generated \
-		-I $(KERN_BUILD_PATH)/arch/$(LINUX_ARCH)/include/generated/uapi \
-		-I $(KERN_SRC_PATH)/include \
-		-I $(KERN_BUILD_PATH)/include \
-		-I $(KERN_SRC_PATH)/include/uapi \
-		-I $(KERN_BUILD_PATH)/include/generated \
-		-I $(KERN_BUILD_PATH)/include/generated/uapi \
-		-I ./pkg/ebpf/c/ \
-		-I $(OUTPUT_DIR)/libbpf \
-		-I ./3rdparty/include \
-		-Wunused \
-		-Wall \
-		-Wno-frame-address \
-		-Wno-unused-value \
-		-Wno-unknown-warning-option \
-		-Wno-pragma-once-outside-header \
-		-Wno-pointer-sign \
-		-Wno-gnu-variable-sized-type-not-at-end \
-		-Wno-deprecated-declarations \
-		-Wno-compare-distinct-pointer-types \
-		-Wno-address-of-packed-member \
-		-fno-stack-protector \
-		-fno-jump-tables \
-		-fno-unwind-tables \
-		-fno-asynchronous-unwind-tables \
-		-xc -O2 -g -emit-llvm \
-		-c $(TRACEE_EBPF_OBJ_SRC) \
-		-o $(@:.o=.ll)
-	$(CMD_LLC) \
-		-march=bpf -mcpu=$(BPF_VCPU) \
-		-filetype=obj \
-		-o $@ \
-		$(@:.o=.ll)
-	$(CMD_RM) $(@:.o=.ll)
-
-.PHONY: clean-bpf-nocore
-clean-bpf-nocore:
-#
-	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o
-
-TMP_DIR = /tmp/tracee
-
-.PHONY: install-bpf-nocore
-install-bpf-nocore: \
-	$(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o \
-	| .check_$(CMD_INSTALL) \
-	.check_$(CMD_RM) \
-	.check_$(CMD_MKDIR) \
-#
-	@$(CMD_MKDIR) -p $(TMP_DIR)
-	$(CMD_RM) -f $(TMP_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o
-	$(CMD_INSTALL) -m 0644 $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o $(TMP_DIR)
-
-.PHONY: uninstall-bpf-nocore
-uninstall-bpf-nocore: \
-	| .check_$(CMD_RM)
-#
-	$(CMD_RM) -f $(TMP_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o
-
-#
-# co-re ebpf
-#
-
-TRACEE_EBPF_OBJ_CORE_HEADERS = $(shell find pkg/ebpf/c -name *.h)
-
-.PHONY: bpf-core
-bpf-core: $(OUTPUT_DIR)/tracee.bpf.core.o
-
-$(OUTPUT_DIR)/tracee.bpf.core.o: \
+$(OUTPUT_DIR)/tracee.bpf.o: \
 	$(OUTPUT_DIR)/libbpf/libbpf.a \
 	$(TRACEE_EBPF_OBJ_SRC) \
-	$(TRACEE_EBPF_OBJ_CORE_HEADERS)
+	$(TRACEE_EBPF_OBJ_HEADERS)
 #
 	$(CMD_CLANG) \
 		-D__TARGET_ARCH_$(LINUX_ARCH) \
@@ -436,13 +362,13 @@ $(OUTPUT_DIR)/tracee.bpf.core.o: \
 		-c $(TRACEE_EBPF_OBJ_SRC) \
 		-o $@
 
-.PHONY: clean-bpf-core
-clean-bpf-core:
+.PHONY: clean-bpf
+clean-bpf:
 #
-	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee.bpf.core.o
+	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee.bpf.o
 
 #
-# tracee-ebpf
+# common variables
 #
 
 STATIC ?= 0
@@ -454,6 +380,9 @@ ifeq ($(STATIC), 1)
     GO_TAGS_EBPF := $(GO_TAGS_EBPF),netgo
 endif
 
+TRACEE_SRC_DIRS = ./cmd/tracee/ ./pkg/ ./signatures/
+TRACEE_SRC = $(shell find $(TRACEE_SRC_DIRS) -type f -name '*.go' ! -name '*_test.go')
+
 CUSTOM_CGO_CFLAGS = "-I$(abspath $(OUTPUT_DIR)/libbpf)"
 CUSTOM_CGO_LDFLAGS = "$(shell $(call pkg_config, $(LIB_ELF))) $(shell $(call pkg_config, $(LIB_ZLIB))) $(abspath $(OUTPUT_DIR)/libbpf/libbpf.a)"
 
@@ -464,16 +393,72 @@ GO_ENV_EBPF += GOARCH=$(GO_ARCH)
 GO_ENV_EBPF += CGO_CFLAGS=$(CUSTOM_CGO_CFLAGS)
 GO_ENV_EBPF += CGO_LDFLAGS=$(CUSTOM_CGO_LDFLAGS)
 
-TRACEE_EBPF_SRC_DIRS = ./cmd/tracee-ebpf/ ./pkg/ebpf ./pkg ./signatures/helpers
-TRACEE_EBPF_SRC = $(shell find $(TRACEE_EBPF_SRC_DIRS) -type f -name '*.go' ! -name '*_test.go')
+#
+# btfhub (expensive: only run if ebpf obj changed)
+#
+
+SH_BTFHUB = ./3rdparty/btfhub.sh
+
+.PHONY: btfhub
+btfhub: \
+	$(OUTPUT_DIR)/tracee.bpf.o \
+	| .check_$(CMD_MD5)
+#
+ifeq ($(BTFHUB), 1)
+	@new=$($(CMD_MD5) -b $< | cut -d' ' -f1)
+	@if [ -f ".$(notdir $<).md5" ]; then
+		old=$($(CMD_CAT) .$(notdir $<).md5)
+		if [ "$$old" != "$$new" ]; then
+			$(SH_BTFHUB) && echo $$new > .$(notdir $<).md5
+		fi
+	else
+		$(SH_BTFHUB) && echo $$new > .$(notdir $<).md5
+	fi
+endif
+
+#
+# tracee (single binary)
+#
+
+.PHONY: tracee
+tracee: $(OUTPUT_DIR)/tracee
+
+$(OUTPUT_DIR)/tracee: \
+	$(OUTPUT_DIR)/tracee.bpf.o \
+	$(TRACEE_SRC) \
+	| .checkver_$(CMD_GO) \
+	.checklib_$(LIB_ELF) \
+	.checklib_$(LIB_ZLIB) \
+	btfhub \
+	signatures
+#
+	$(MAKE) $(OUTPUT_DIR)/btfhub
+	$(MAKE) btfhub
+	$(GO_ENV_EBPF) $(CMD_GO) build \
+		-tags $(GO_TAGS_EBPF) \
+		-ldflags="$(GO_DEBUG_FLAG) \
+			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
+			-X main.version=\"$(VERSION)\" \
+			" \
+		-v -o $@ \
+		./cmd/tracee
+
+.PHONY: clean-tracee
+clean-tracee:
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee
+	$(CMD_RM) -rf .*.md5
+
+#
+# tracee-ebpf (deprecated)
+#
 
 .PHONY: tracee-ebpf
 tracee-ebpf: $(OUTPUT_DIR)/tracee-ebpf
 
 $(OUTPUT_DIR)/tracee-ebpf: \
-	$(OUTPUT_DIR)/tracee.bpf.core.o \
-	$(TRACEE_EBPF_SRC) \
-	./embedded-ebpf.go \
+	$(OUTPUT_DIR)/tracee.bpf.o \
+	$(TRACEE_SRC) \
 	| .checkver_$(CMD_GO) \
 	.checklib_$(LIB_ELF) \
 	.checklib_$(LIB_ZLIB) \
@@ -497,30 +482,7 @@ clean-tracee-ebpf:
 	$(CMD_RM) -rf .*.md5
 
 #
-# btfhub (expensive: only run if core obj changed)
-#
-
-SH_BTFHUB = ./3rdparty/btfhub.sh
-
-.PHONY: btfhub
-btfhub: \
-	$(OUTPUT_DIR)/tracee.bpf.core.o \
-	| .check_$(CMD_MD5)
-#
-ifeq ($(BTFHUB), 1)
-	@new=$($(CMD_MD5) -b $< | cut -d' ' -f1)
-	@if [ -f ".$(notdir $<).md5" ]; then
-		old=$($(CMD_CAT) .$(notdir $<).md5)
-		if [ "$$old" != "$$new" ]; then
-			$(SH_BTFHUB) && echo $$new > .$(notdir $<).md5
-		fi
-	else
-		$(SH_BTFHUB) && echo $$new > .$(notdir $<).md5
-	fi
-endif
-
-#
-# tracee-rules
+# tracee-rules (deprecated)
 #
 
 STATIC ?= 0
@@ -608,8 +570,73 @@ clean-signatures:
 	$(CMD_RM) -rf $(OUTPUT_DIR)/signatures
 
 #
-# e2e network signatures
+# other commands
 #
+
+# tracee-bench
+
+TRACEE_BENCH_SRC_DIRS = ./cmd/tracee-bench/
+TRACEE_BENCH_SRC = $(shell find $(TRACEE_BENCH_SRC_DIRS) \
+			-type f \
+			-name '*.go' \
+			! -name '*_test.go' \
+			)
+
+.PHONY: tracee-bench
+tracee-bench: $(OUTPUT_DIR)/tracee-bench
+
+$(OUTPUT_DIR)/tracee-bench: \
+	.checkver_$(CMD_GO) \
+	$(TRACEE_BENCH_SRC) \
+	| $(OUTPUT_DIR)
+#
+	$(CMD_GO) build \
+		-v -o $@ \
+		./cmd/tracee-bench
+
+.PHONY: clean-tracee-bench
+clean-tracee-bench:
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-bench
+
+# tracee-gptdocs
+
+TRACEE_GPTDOCS_SRC_DIRS = ./cmd/tracee-gptdocs/ ./pkg/cmd/
+TRACEE_GPTDOCS_SRC = $(shell find $(TRACEE_GPTDOCS_SRC_DIRS) \
+			-type f \
+			-name '*.go' \
+			! -name '*_test.go' \
+			)
+
+.PHONY: tracee-gptdocs
+tracee-gptdocs: $(OUTPUT_DIR)/tracee-gptdocs
+
+$(OUTPUT_DIR)/tracee-gptdocs: \
+	.checkver_$(CMD_GO) \
+	$(TRACEE_GPTDOCS_SRC) \
+	| $(OUTPUT_DIR)
+#
+	$(MAKE) $(OUTPUT_DIR)/btfhub
+	$(MAKE) btfhub
+	$(GO_ENV_EBPF) $(CMD_GO) build \
+		-tags $(GO_TAGS_EBPF) \
+		-ldflags="$(GO_DEBUG_FLAG) \
+			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
+			-X main.version=\"$(VERSION)\" \
+			" \
+		-v -o $@ \
+		./cmd/tracee-gptdocs
+
+.PHONY: clean-tracee-gptdocs
+clean-tracee-gptdocs:
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-gptdocs
+
+#
+# functional tests (using test signatures)
+#
+
+# e2e network signatures
 
 E2E_NET_DIR ?= tests/e2e-net-signatures
 E2E_NET_SRC := $(shell find $(E2E_NET_DIR) \
@@ -638,9 +665,7 @@ clean-e2e-net-signatures:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/e2e-net-signatures
 
-#
 # e2e instrumentation signatures
-#
 
 E2E_INST_DIR ?= tests/e2e-instrumentation-signatures
 E2E_INST_SRC := $(shell find $(E2E_INST_DIR) \
@@ -668,43 +693,6 @@ $(OUTPUT_DIR)/e2e-instrumentation-signatures: \
 clean-e2e-instrumentation-signatures:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/e2e-instrumentation-signatures
-
-#
-# tracee
-#
-
-TRACEE_SRC_DIRS = ./cmd/tracee/ ./pkg/
-TRACEE_SRC = $(shell find $(TRACEE_SRC_DIRS) -type f -name '*.go' ! -name '*_test.go')
-
-.PHONY: tracee
-tracee: $(OUTPUT_DIR)/tracee
-
-$(OUTPUT_DIR)/tracee: \
-	$(OUTPUT_DIR)/tracee.bpf.core.o \
-	$(TRACEE_SRC) \
-	./embedded-ebpf.go \
-	| .checkver_$(CMD_GO) \
-	.checklib_$(LIB_ELF) \
-	.checklib_$(LIB_ZLIB) \
-	btfhub \
-	signatures
-#
-	$(MAKE) $(OUTPUT_DIR)/btfhub
-	$(MAKE) btfhub
-	$(GO_ENV_EBPF) $(CMD_GO) build \
-		-tags $(GO_TAGS_EBPF) \
-		-ldflags="$(GO_DEBUG_FLAG) \
-			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
-			-X main.version=\"$(VERSION)\" \
-			" \
-		-v -o $@ \
-		./cmd/tracee
-
-.PHONY: clean-tracee
-clean-tracee:
-#
-	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee
-	$(CMD_RM) -rf .*.md5
 
 #
 # tests
@@ -823,69 +811,6 @@ check-err: \
 		-ignore '[rR]ead|[wW]rite' \
 		-ignore 'RegisterEventProcessor' \
 		./...
-
-#
-# tracee-bench
-#
-
-TRACEE_BENCH_SRC_DIRS = ./cmd/tracee-bench/
-TRACEE_BENCH_SRC = $(shell find $(TRACEE_BENCH_SRC_DIRS) \
-			-type f \
-			-name '*.go' \
-			! -name '*_test.go' \
-			)
-
-.PHONY: tracee-bench
-tracee-bench: $(OUTPUT_DIR)/tracee-bench
-
-$(OUTPUT_DIR)/tracee-bench: \
-	.checkver_$(CMD_GO) \
-	$(TRACEE_BENCH_SRC) \
-	| $(OUTPUT_DIR)
-#
-	$(CMD_GO) build \
-		-v -o $@ \
-		./cmd/tracee-bench
-
-.PHONY: clean-tracee-bench
-clean-tracee-bench:
-#
-	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-bench
-
-#
-# tracee-gptdocs
-#
-
-TRACEE_GPTDOCS_SRC_DIRS = ./cmd/tracee-gptdocs/ ./pkg/cmd/
-TRACEE_GPTDOCS_SRC = $(shell find $(TRACEE_GPTDOCS_SRC_DIRS) \
-			-type f \
-			-name '*.go' \
-			! -name '*_test.go' \
-			)
-
-.PHONY: tracee-gptdocs
-tracee-gptdocs: $(OUTPUT_DIR)/tracee-gptdocs
-
-$(OUTPUT_DIR)/tracee-gptdocs: \
-	.checkver_$(CMD_GO) \
-	$(TRACEE_GPTDOCS_SRC) \
-	| $(OUTPUT_DIR)
-#
-	$(MAKE) $(OUTPUT_DIR)/btfhub
-	$(MAKE) btfhub
-	$(GO_ENV_EBPF) $(CMD_GO) build \
-		-tags $(GO_TAGS_EBPF) \
-		-ldflags="$(GO_DEBUG_FLAG) \
-			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
-			-X main.version=\"$(VERSION)\" \
-			" \
-		-v -o $@ \
-		./cmd/tracee-gptdocs
-
-.PHONY: clean-tracee-gptdocs
-clean-tracee-gptdocs:
-#
-	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-gptdocs
 
 #
 # clean

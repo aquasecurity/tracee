@@ -20,7 +20,6 @@ nav:
               - Ubuntu: getting-started/installing/distros/ubuntu.md
               - Fedora: getting-started/installing/distros/fedora.md
               - NixOS: getting-started/installing/distros/nix-nixos.md
-          - Linux Headers: getting-started/installing/headers.md
   - Tutorials: 
       - Overview: tutorials/overview.md
       - Deploy Tracee Grafana Dashboard: tutorials/deploy-grafana-dashboard.md
@@ -564,9 +563,7 @@ nav:
           - Building Tracee: contributing/building/building.md
           - Building Environment: contributing/building/environment.md
           - Building Containers: contributing/building/containers.md
-          - Building non CO-RE: contributing/building/nocore-ebpf.md
           - OS Packaging: contributing/building/packaging.md
-          - Building on OSX: contributing/building/macosx.md
 theme:
   name: material
   language: "en"

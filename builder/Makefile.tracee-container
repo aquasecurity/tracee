@@ -41,7 +41,6 @@ endif
 #
 
 CMD_DOCKER ?= docker
-CMD_RM ?= rm
 
 .check_%:
 #
@@ -60,39 +59,25 @@ CMD_RM ?= rm
 .PHONY: help
 help:
 	@echo ""
-	@echo "CREATES THE OFFICIAL TRACEE CONTAINER IMAGES"
+	@echo "CREATES THE OFFICIAL TRACEE CONTAINER IMAGE"
 	@echo ""
-	@echo "To GENERATE tracee containers:"
+	@echo "To GENERATE tracee container:"
 	@echo ""
 	@echo "    $$ make -f builder/Makefile.tracee-container build-tracee"
-	@echo "    $$ make -f builder/Makefile.tracee-container build-tracee-full"
 	@echo ""
-	@echo "To EXECUTE tracee containers:"
-	@echo ""
-	@echo "  Tracee CO-RE version (small and portable):"
+	@echo "To EXECUTE tracee container:"
 	@echo ""
 	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee"
-	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee-ebpf"
-	@echo ""
-	@echo "  Tracee FULL version (Tries CO-RE, compiles NON CO-RE object if needed):"
-	@echo ""
-	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee-full"
-	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee-ebpf-full"
-	@echo ""
-	@echo "  Tracee NON CO-RE FULL (Forces NON CO-RE eBPF object compilation and use):"
-	@echo ""
-	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee-full-noncore"
-	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee-ebpf-full-noncore"
 	@echo ""
 	@echo "NOTES:"
 	@echo ""
 	@echo "  1. You may provide \"run\" arguments using the ARG variable. Example:"
 	@echo ""
 	@echo "    $$ make -f builder/Makefile.tracee-container build-tracee"
-	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee ARG=\"--help\""
-	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee-ebpf ARG=\"--help\""
 	@echo ""
-	@echo "    > This will run tracee or tracee-ebpf using provided arguments."
+	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee ARG=\"--help\""
+	@echo ""
+	@echo "    > This will run tracee using provided arguments."
 	@echo ""
 
 #
@@ -108,19 +93,15 @@ help:
 	fi
 
 #
-# create tracee & tracee-full
+# create tracee
 #
 
-# BTFHUB is not set by default, but both of the official images, slim and full,
-# should be built with BTFHUB=1. This will maximize chances of end user using
-# the slim image AND also allow end user to pick the full image for all use
-# cases (if that is what one wants).
+# BTFHUB is not set by default, but image should be built with BTFHUB=1.
 ifeq ($(BTFHUB),)
 BTFHUB=0
 endif
 
 TRACEE_CONT_NAME = tracee:latest
-TRACEE_FULL_CONT_NAME = tracee:full
 TRACEE_CONT_DOCKERFILE = builder/Dockerfile.alpine-tracee-container
 
 .PHONY: build-tracee
@@ -129,6 +110,7 @@ build-tracee: \
 	.check_tree
 #
 	$(CMD_DOCKER) build \
+		--network host \
 		-f $(TRACEE_CONT_DOCKERFILE) \
 		-t $(TRACEE_CONT_NAME) \
 		--build-arg=BTFHUB=$(BTFHUB) \
@@ -136,34 +118,17 @@ build-tracee: \
 		--target tracee-core \
 		.
 
-.PHONY: build-tracee-full
-build-tracee-full: \
-	| .check_$(CMD_DOCKER) \
-	.check_tree
 #
-	$(CMD_DOCKER) build \
-		-f $(TRACEE_CONT_DOCKERFILE) \
-		-t $(TRACEE_FULL_CONT_NAME) \
-		--build-arg=BTFHUB=$(BTFHUB) \
-		--build-arg=FLAVOR=tracee-nocore \
-		--target tracee-nocore \
-		.
-
-#
-# run tracee and tracee-full
+# run tracee
 #
 
 DOCKER_RUN_ARGS = run --rm \
-	--pid=host --cgroupns=host --privileged \
+	--pid=host --cgroupns=host --network host --privileged \
 	-v /etc/os-release:/etc/os-release-host:ro \
 	-v /boot/config-$(UNAME_R):/boot/config-$(UNAME_R):ro \
 	-v /sys/kernel/security:/sys/kernel/security:ro \
 	-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
 	-v /tmp/tracee:/tmp/tracee:rw
-
-DOCKER_RUN_ARGS_FULL = $(DOCKER_RUN_ARGS) \
-	-v /lib/modules:/lib/modules:ro \
-	-v /usr/src:/usr/src:ro
 
 .PHONY: run-tracee
 run-tracee: \
@@ -172,71 +137,7 @@ run-tracee: \
 #
 	$(CMD_DOCKER) \
 		$(DOCKER_RUN_ARGS) \
-		-e TRACEE_EBPF_ONLY=0 \
 		--rm -it $(TRACEE_CONT_NAME) \
-		$(ARG)
-
-.PHONY: run-tracee-full
-run-tracee-full: \
-	| .check_$(CMD_DOCKER) \
-	.check_tree
-#
-	$(CMD_DOCKER) \
-		$(DOCKER_RUN_ARGS_FULL) \
-		-e TRACEE_EBPF_ONLY=0 \
-		-e FORCE_NONCORE=0 \
-		--rm -it $(TRACEE_FULL_CONT_NAME) \
-		$(ARG)
-
-.PHONY: run-tracee-full-noncore
-run-tracee-full-noncore: \
-	| .check_$(CMD_DOCKER) \
-	.check_tree
-#
-	$(CMD_DOCKER) \
-		$(DOCKER_RUN_ARGS_FULL) \
-		-e TRACEE_EBPF_ONLY=0 \
-		-e FORCE_NONCORE=1 \
-		--rm -it $(TRACEE_FULL_CONT_NAME) \
-		$(ARG)
-
-#
-# run tracee-ebpf or tracee-ebpf-full
-#
-
-.PHONY: run-tracee-ebpf
-run-tracee-ebpf: \
-	| .check_$(CMD_DOCKER) \
-	.check_tree
-#
-	$(CMD_DOCKER) \
-		$(DOCKER_RUN_ARGS) \
-		-e TRACEE_EBPF_ONLY=1 \
-		--rm -it $(TRACEE_CONT_NAME) \
-		$(ARG)
-
-.PHONY: run-tracee-ebpf-full
-run-tracee-ebpf-full: \
-	| .check_$(CMD_DOCKER) \
-	.check_tree
-#
-	$(CMD_DOCKER) \
-		$(DOCKER_RUN_ARGS_FULL) \
-		-e TRACEE_EBPF_ONLY=1 \
-		-e FORCE_NONCORE=0 \
-		--rm -it $(TRACEE_FULL_CONT_NAME) \
-		$(ARG)
-
-.PHONY: run-tracee-ebpf-full-noncore
-run-tracee-ebpf-full-noncore: \
-	| .check_$(CMD_DOCKER) \
-	.check_tree
-#
-	$(CMD_DOCKER) \
-		$(DOCKER_RUN_ARGS_FULL) \
-		-e TRACEE_EBPF_ONLY=1 \
-		-e FORCE_NONCORE=1 \
-		--rm -it $(TRACEE_FULL_CONT_NAME) \
 		$(ARG)
 
 #

@@ -6,7 +6,7 @@ libbpf CO-RE support, see Tracee's [prerequisites] for more info.
 [prerequisites]: ../../installing/prerequisites.md
 
 Direct issues installing **tracee** via **nix** through the channels mentioned
-[here](https://nixos.wiki/wiki/Support) (**non-CO-RE not supported**)
+[here](https://nixos.wiki/wiki/Support).
 
 ```console
 nix-env --install -A nixpkgs.tracee

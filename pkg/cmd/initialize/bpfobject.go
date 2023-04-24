@@ -137,7 +137,7 @@ func checkEnvPath(env string) (string, error) {
 }
 
 func unpackCOREBinary() ([]byte, error) {
-	b, err := embed.BPFBundleInjected.ReadFile("dist/tracee.bpf.core.o")
+	b, err := embed.BPFBundleInjected.ReadFile("dist/tracee.bpf.o")
 	if err != nil {
 		return nil, err
 	}

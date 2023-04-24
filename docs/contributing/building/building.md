@@ -19,7 +19,6 @@
     1. **zlib1g** and **zlib1g-dev**  
        (or zlib and zlib-devel)
     1. **clang-format-12** (specific version) for `fix-fmt`
-    1. **kernel readers** [if no CO-RE is needed](./nocore-ebpf.md)
 
     > You might take a look at the following files to understand how to have a
     > building environment:
@@ -60,8 +59,7 @@
     # build
 
         $ make all                                  # build tracee-ebpf, tracee-rules & signatures
-        $ make bpf-core                             # build ./dist/tracee.bpf.core.o
-        $ make bpf-nocore                           # build ./dist/tracee.bpf.XXX.o
+        $ make bpf                                  # build ./dist/tracee.bpf.o
         $ make tracee-ebpf                          # build ./dist/tracee-ebpf
         $ make tracee-rules                         # build ./dist/tracee-rules
         $ make tracee-bench                         # build ./dist/tracee-bench
@@ -70,16 +68,10 @@
         $ make e2e-instrumentation-signatures       # build ./dist/e2e-instrumentation-signatures
         $ make tracee                               # build ./dist/tracee
 
-    # install
-
-        $ make install-bpf-nocore       # install BPF no CO-RE obj into /tmp/tracee
-        $ make uninstall-bpf-nocore     # uninstall BPF no CO-RE obj from /tmp/tracee
-
     # clean
 
         $ make clean                    # wipe ./dist/
-        $ make clean-bpf-core           # wipe ./dist/tracee.bpf.core.o
-        $ make clean-bpf-nocore         # wipe ./dist/tracee.bpf.XXX.o
+        $ make clean-bpf                # wipe ./dist/tracee.bpf.o
         $ make clean-tracee-ebpf        # wipe ./dist/tracee-ebpf
         $ make clean-tracee-rules       # wipe ./dist/tracee-rules
         $ make clean-tracee-bench       # wipe ./dist/tracee-bench
@@ -100,7 +92,7 @@
         $ DEBUG=1 make ...              # build binaries with debug symbols
     ```
 
-5. Build **all** targets at once (but bpf-nocore)
+5. Build **all** targets at once
 
     ```console
     make all
