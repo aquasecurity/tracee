@@ -270,6 +270,11 @@ func getContainerIdFromCgroup(cgroupPath string) (string, cruntime.RuntimeId, bo
 				runtime = cruntime.Docker
 			}
 
+			if runtime == cruntime.Unknown && i > 0 && cgroupParts[i-1] == "actions_job" {
+				// non-systemd docker with format in GitHub Actions: .../actions_job/01adbf...f26db7f/
+				runtime = cruntime.Docker
+			}
+
 			// return first match: closest to root dir path component
 			// (to have container id of the outer container)
 			// container root determined by being matched on the last path part
