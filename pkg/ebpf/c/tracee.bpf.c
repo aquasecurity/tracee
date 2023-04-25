@@ -2890,7 +2890,7 @@ static __always_inline int capture_file_write(struct pt_regs *ctx, u32 event_id)
         if (p.event->buf_off > ARGS_BUF_SIZE - MAX_STRING_SIZE)
             break;
 
-        if (has_prefix(
+        if (has_prefix_unrolled(
                 filter_p->path, (char *) &p.event->args[p.event->buf_off], MAX_PATH_PREF_SIZE)) {
             filter_match = true;
             break;
