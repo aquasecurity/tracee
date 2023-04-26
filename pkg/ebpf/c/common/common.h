@@ -4,74 +4,34 @@
 #include <bpf/bpf_helpers.h>
 #include "maps.h"
 
-#ifndef CORE
-    #include <linux/device.h>
-    #include <linux/types.h>
-#else
-    // CO:RE is enabled
-    #include <vmlinux.h>
-#endif
+#include <vmlinux.h>
 
-#ifndef CORE
+#include <bpf/bpf_core_read.h>
 
-    #define GET_FIELD_ADDR(field) &field
+#define READ_KERN(ptr)                                                                             \
+    ({                                                                                             \
+        typeof(ptr) _val;                                                                          \
+        __builtin_memset((void *) &_val, 0, sizeof(_val));                                         \
+        bpf_core_read((void *) &_val, sizeof(_val), &ptr);                                         \
+        _val;                                                                                      \
+    })
 
-    #define READ_KERN(ptr)                                                                         \
-        ({                                                                                         \
-            typeof(ptr) _val;                                                                      \
-            __builtin_memset((void *) &_val, 0, sizeof(_val));                                     \
-            bpf_probe_read((void *) &_val, sizeof(_val), &ptr);                                    \
-            _val;                                                                                  \
-        })
+#define READ_KERN_STR_INTO(dst, src) bpf_core_read_str((void *) &dst, sizeof(dst), src)
 
-    #define READ_KERN_STR_INTO(dst, src) bpf_probe_read_str((void *) &dst, sizeof(dst), src)
+#define READ_USER(ptr)                                                                             \
+    ({                                                                                             \
+        typeof(ptr) _val;                                                                          \
+        __builtin_memset((void *) &_val, 0, sizeof(_val));                                         \
+        bpf_core_read_user((void *) &_val, sizeof(_val), &ptr);                                    \
+        _val;                                                                                      \
+    })
 
-    #define READ_USER(ptr)                                                                         \
-        ({                                                                                         \
-            typeof(ptr) _val;                                                                      \
-            __builtin_memset((void *) &_val, 0, sizeof(_val));                                     \
-            bpf_probe_read_user((void *) &_val, sizeof(_val), &ptr);                               \
-            _val;                                                                                  \
-        })
-
-    #define BPF_READ(src, a, ...)                                                                  \
-        ({                                                                                         \
-            ___type((src), a, ##__VA_ARGS__) __r;                                                  \
-            BPF_PROBE_READ_INTO(&__r, (src), a, ##__VA_ARGS__);                                    \
-            __r;                                                                                   \
-        })
-
-#else // CORE
-    #include <bpf/bpf_core_read.h>
-
-    #define GET_FIELD_ADDR(field) __builtin_preserve_access_index(&field)
-
-    #define READ_KERN(ptr)                                                                         \
-        ({                                                                                         \
-            typeof(ptr) _val;                                                                      \
-            __builtin_memset((void *) &_val, 0, sizeof(_val));                                     \
-            bpf_core_read((void *) &_val, sizeof(_val), &ptr);                                     \
-            _val;                                                                                  \
-        })
-
-    #define READ_KERN_STR_INTO(dst, src) bpf_core_read_str((void *) &dst, sizeof(dst), src)
-
-    #define READ_USER(ptr)                                                                         \
-        ({                                                                                         \
-            typeof(ptr) _val;                                                                      \
-            __builtin_memset((void *) &_val, 0, sizeof(_val));                                     \
-            bpf_core_read_user((void *) &_val, sizeof(_val), &ptr);                                \
-            _val;                                                                                  \
-        })
-
-    #define BPF_READ(src, a, ...)                                                                  \
-        ({                                                                                         \
-            ___type((src), a, ##__VA_ARGS__) __r;                                                  \
-            BPF_CORE_READ_INTO(&__r, (src), a, ##__VA_ARGS__);                                     \
-            __r;                                                                                   \
-        })
-
-#endif
+#define BPF_READ(src, a, ...)                                                                      \
+    ({                                                                                             \
+        ___type((src), a, ##__VA_ARGS__) __r;                                                      \
+        BPF_CORE_READ_INTO(&__r, (src), a, ##__VA_ARGS__);                                         \
+        __r;                                                                                       \
+    })
 
 // HELPERS: DEVICES --------------------------------------------------------------------------------
 

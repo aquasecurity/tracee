@@ -1,11 +1,7 @@
 #ifndef __TRACEE_LOGGING_H__
 #define __TRACEE_LOGGING_H__
 
-#ifndef CORE
-    #include <linux/types.h>
-#else // CO:RE is enabled
-    #include <vmlinux.h>
-#endif
+#include <vmlinux.h>
 
 #include <bpf/bpf_helpers.h>
 #include "maps.h"

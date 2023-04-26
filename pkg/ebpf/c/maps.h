@@ -1,13 +1,8 @@
 #ifndef __MAPS_H__
 #define __MAPS_H__
 
-#ifndef CORE
-    #include "missing_noncore_definitions.h"
-#else
-    // CO:RE is enabled
-    #include <vmlinux.h>
-    #include <missing_definitions.h>
-#endif
+#include <vmlinux.h>
+#include <missing_definitions.h>
 
 #include <bpf/bpf_helpers.h>
 #include "types.h"
@@ -50,29 +45,16 @@
 #define BPF_PERF_OUTPUT(_name, _max_entries)                                                       \
     BPF_MAP(_name, BPF_MAP_TYPE_PERF_EVENT_ARRAY, int, __u32, _max_entries)
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 20, 0) || defined(CORE)
-    #define BPF_QUEUE(_name, _value_type, _max_entries)                                            \
-        BPF_MAP_NO_KEY(_name, BPF_MAP_TYPE_QUEUE, _value_type, _max_entries)
+#define BPF_QUEUE(_name, _value_type, _max_entries)                                                \
+    BPF_MAP_NO_KEY(_name, BPF_MAP_TYPE_QUEUE, _value_type, _max_entries)
 
-    #define BPF_STACK(_name, _value_type, _max_entries)                                            \
-        BPF_MAP_NO_KEY(_name, BPF_MAP_TYPE_STACK, _value_type, _max_entries)
-#endif
+#define BPF_STACK(_name, _value_type, _max_entries)                                                \
+    BPF_MAP_NO_KEY(_name, BPF_MAP_TYPE_STACK, _value_type, _max_entries)
 
 // stack traces: the value is 1 big byte array of the stack addresses
 typedef __u64 stack_trace_t[MAX_STACK_DEPTH];
 #define BPF_STACK_TRACE(_name, _max_entries)                                                       \
     BPF_MAP(_name, BPF_MAP_TYPE_STACK_TRACE, u32, stack_trace_t, _max_entries)
-
-#ifndef CORE
-    #ifdef RHEL_RELEASE_CODE
-        #if (RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(8, 0))
-            #define RHEL_RELEASE_GT_8_0
-        #endif
-    #endif
-    #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0)
-        #error Minimal required kernel version is 4.18
-    #endif
-#endif
 
 enum tail_call_id_e
 {

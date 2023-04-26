@@ -1,13 +1,8 @@
 #ifndef __TRACEE_NETWORK_H__
 #define __TRACEE_NETWORK_H__
 
-#ifndef CORE
-    #include "missing_noncore_definitions.h"
-#else
-    // CO:RE is enabled
-    #include <vmlinux.h>
-    #include <missing_definitions.h>
-#endif
+#include <vmlinux.h>
+#include <missing_definitions.h>
 
 #include <bpf/bpf_helpers.h>
 #include "common/common.h"
@@ -25,8 +20,6 @@
 static __always_inline u32 update_net_inodemap(struct socket *, event_data_t *);
 
 // NOTE: proto header structs need full type in vmlinux.h (for correct skb copy)
-
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(5, 1, 0) || defined(CORE)) || defined(RHEL_RELEASE_CODE)
 
 // network retval values
 #define family_ipv4     (1 << 0)
@@ -182,9 +175,7 @@ struct {
     __type(value, event_data_t);            // ... linked to a scratch area
 } net_heap_event SEC(".maps");
 
-    // clang-format on
-
-#endif
+// clang-format on
 
 //
 // Regular events related to network
@@ -234,16 +225,6 @@ static __always_inline u16 get_sock_protocol(struct sock *sock)
 {
     u16 protocol = 0;
 
-#ifndef CORE
-    #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0))
-    // kernel 4.18-5.5: sk_protocol bit-field: use sk_gso_max_segs field and go
-    // back 24 bits to reach sk_protocol field index.
-    bpf_probe_read(&protocol, 1, (void *) (&sock->sk_gso_max_segs) - 3);
-    #else
-    // kernel 5.6
-    protocol = READ_KERN(sock->sk_protocol);
-    #endif
-#else // CORE
     // commit bf9765145b85 ("sock: Make sk_protocol a 16-bit value")
     struct sock___old *check = NULL;
     if (bpf_core_field_exists(check->__sk_flags_offset)) {
@@ -252,7 +233,6 @@ static __always_inline u16 get_sock_protocol(struct sock *sock)
     } else {
         protocol = READ_KERN(sock->sk_protocol);
     }
-#endif
 
     return protocol;
 }

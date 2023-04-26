@@ -4,74 +4,8 @@
 // SPDX-License-Identifier: GPL-2.0
 // Copyright (C) Aqua Security inc.
 
-#ifndef CORE
-    #include <uapi/linux/magic.h>
-    #include <uapi/linux/ptrace.h>
-    #include <uapi/linux/in.h>
-    #include <uapi/linux/in6.h>
-    #include <uapi/linux/uio.h>
-    #include <uapi/linux/un.h>
-    #include <uapi/linux/utsname.h>
-    #include <uapi/linux/stat.h>
-    #include <linux/binfmts.h>
-    #include <linux/cred.h>
-    #include <linux/sched.h>
-    #include <linux/signal.h>
-    #include <linux/fs.h>
-    #include <linux/mm_types.h>
-    #include <linux/time.h>
-    #include <linux/mount.h>
-    #include <linux/nsproxy.h>
-    #include <linux/ns_common.h>
-    #include <linux/pid_namespace.h>
-    #include <linux/ipc_namespace.h>
-    #include <net/net_namespace.h>
-    #include <linux/utsname.h>
-    #include <linux/cgroup.h>
-    #include <linux/security.h>
-    #include <linux/socket.h>
-    #include <linux/version.h>
-    #include <linux/fdtable.h>
-    #define KBUILD_MODNAME "tracee"
-    #include <net/af_unix.h>
-    #include <net/sock.h>
-    #include <net/inet_sock.h>
-    #include <net/ipv6.h>
-    #include <net/tcp_states.h>
-    #include <linux/ipv6.h>
-    #include <uapi/linux/icmp.h>
-    #include <uapi/linux/icmpv6.h>
-
-    #include <uapi/linux/bpf.h>
-    #include <linux/bpf.h>
-    #include <linux/kconfig.h>
-    #include <linux/version.h>
-
-    #include <linux/if_ether.h>
-    #include <linux/in.h>
-    #include <linux/ip.h>
-    #include <linux/ipv6.h>
-    #include <linux/pkt_cls.h>
-    #include <linux/tcp.h>
-
-    #if defined(CONFIG_FUNCTION_TRACER)
-        #define CC_USING_FENTRY
-    #endif
-
-    #include <linux/perf_event.h>
-    #include <linux/kprobes.h>
-    #include <linux/uprobes.h>
-    #include <linux/trace_events.h>
-    #include <linux/bpf_verifier.h>
-
-    #include "missing_noncore_definitions.h"
-
-#else
-    // CO:RE is enabled
-    #include <vmlinux.h>
-    #include <missing_definitions.h>
-
-#endif
+#include <vmlinux.h>
+#include <missing_definitions.h>
 
 #undef container_of
 #include <bpf/bpf_core_read.h>
@@ -99,9 +33,6 @@
 #include "common/bpf_prog.h"
 
 char LICENSE[] SEC("license") = "GPL";
-#ifndef CORE
-int KERNEL_VERSION SEC("version") = LINUX_VERSION_CODE;
-#endif
 
 // SYSCALL HOOKS -----------------------------------------------------------------------------------
 
@@ -231,7 +162,7 @@ int sys_enter_submit(struct bpf_raw_tracepoint_args *ctx)
             };
 
             fd_arg_path_t fd_arg_path = {};
-            void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+            void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
 
             bpf_probe_read_str(&fd_arg_path.path, sizeof(fd_arg_path.path), file_path);
             bpf_map_update_elem(&fd_arg_path_map, &fd_arg_task, &fd_arg_path, BPF_ANY);
@@ -757,15 +688,12 @@ static __always_inline bool find_modules_from_module_kset_list(program_data_t *p
     return !finished_iterating;
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 20, 0) || defined(CORE)
 BPF_QUEUE(walk_mod_tree_queue, rb_node_t, 2048); // used to walk a rb tree
 
-    #ifdef CORE // in non CORE builds it's already defined
 static __always_inline struct latch_tree_node *__lt_from_rb(struct rb_node *node, int idx)
 {
     return container_of(node, struct latch_tree_node, node[idx]);
 }
-    #endif
 
 static __always_inline bool walk_mod_tree(program_data_t *p, struct rb_node *root, int idx)
 {
@@ -774,7 +702,7 @@ static __always_inline bool walk_mod_tree(program_data_t *p, struct rb_node *roo
     bool finished_iterating = false;
     struct rb_node *curr = root;
 
-    #pragma unroll
+#pragma unroll
     for (int i = 0; i < MAX_NUM_MODULES; i++) {
         if (curr != NULL) {
             rb_node_t rb_nod = {.node = curr};
@@ -814,25 +742,17 @@ static __always_inline bool find_modules_from_mod_tree(program_data_t *p)
     char mod_tree_sym[9] = "mod_tree";
     struct mod_tree_root *m_tree = (struct mod_tree_root *) get_symbol_addr(mod_tree_sym);
     unsigned int seq;
-    #ifdef CORE
+
     if (bpf_core_field_exists(m_tree->root.seq.sequence)) {
         seq = READ_KERN(m_tree->root.seq.sequence); // below 5.10
     } else {
         seq = READ_KERN(m_tree->root.seq.seqcount.sequence); // version >= v5.10
     }
-    #else
-        #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 10, 0))
-    seq = READ_KERN(m_tree->root.seq.sequence);
-        #else
-    seq = READ_KERN(m_tree->root.seq.seqcount.sequence);
-        #endif
-    #endif
 
     struct rb_node *node = READ_KERN(m_tree->root.tree[seq & 1].rb_node);
 
     return walk_mod_tree(p, node, seq & 1);
 }
-#endif
 
 static __always_inline bool check_is_proc_modules_hooked(program_data_t *p)
 {
@@ -882,16 +802,10 @@ static __always_inline bool check_is_proc_modules_hooked(program_data_t *p)
 
 static __always_inline bool kern_ver_below_min_lkm(struct pt_regs *ctx)
 {
-// If we're below kernel version 5.2, propogate error to userspace and return
-#ifdef CORE
+    // If we're below kernel version 5.2, propogate error to userspace and return
     if (!bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_sk_storage_get)) {
         goto below_threshold;
     }
-#else
-    #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0))
-    goto below_threshold;
-    #endif
-#endif
 
     return false; // lkm seeker may run!
 
@@ -989,14 +903,12 @@ int lkm_seeker_mod_tree_tail(struct pt_regs *ctx)
     if (!init_tailcall_program_data(&p, ctx))
         return -1;
 
-        // This method is efficient only when the kernel is compiled with
-        // CONFIG_MODULES_TREE_LOOKUP=y
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 20, 0) || defined(CORE)
+    // This method is efficient only when the kernel is compiled with
+    // CONFIG_MODULES_TREE_LOOKUP=y
     if (find_modules_from_mod_tree(&p) != 0) {
         tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_UNSPEC, 4);
         return 1;
     }
-#endif
 
     return 0;
 }
@@ -1033,7 +945,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
         return -1;
     }
     struct file *file = get_file_ptr_from_bprm(bprm);
-    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+    void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
 
     proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &p.event->context.task.host_pid);
     if (proc_info == NULL) {
@@ -1113,7 +1025,7 @@ int sched_process_exec_event_submit_tail(struct bpf_raw_tracepoint_args *ctx)
 
     struct file *stdin_file = get_struct_file_from_fd(0);
     unsigned short stdin_type = get_inode_mode_from_file(stdin_file) & S_IFMT;
-    void *stdin_path = get_path_str(GET_FIELD_ADDR(stdin_file->f_path));
+    void *stdin_path = get_path_str(__builtin_preserve_access_index(&stdin_file->f_path));
     const char *interp = get_binprm_interp(bprm);
 
     int invoked_from_kernel = 0;
@@ -1625,15 +1537,6 @@ static __always_inline void *get_trace_probe_from_trace_event_call(struct trace_
 {
     void *tracep_ptr;
 
-#ifndef CORE
-    #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0))
-    tracep_ptr = container_of(call, struct trace_probe, call);
-    #else
-    struct trace_probe_event *tpe = container_of(call, struct trace_probe_event, call);
-    struct list_head probes = READ_KERN(tpe->probes);
-    tracep_ptr = container_of(probes.next, struct trace_probe, list);
-    #endif
-#else
     struct trace_probe___v53 *legacy_tracep;
     if (bpf_core_field_exists(legacy_tracep->call)) {
         tracep_ptr = container_of(call, struct trace_probe___v53, call);
@@ -1642,7 +1545,6 @@ static __always_inline void *get_trace_probe_from_trace_event_call(struct trace_
         struct list_head probes = READ_KERN(tpe->probes);
         tracep_ptr = container_of(probes.next, struct trace_probe, list);
     }
-#endif
 
     return tracep_ptr;
 }
@@ -1665,9 +1567,8 @@ send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf
         return 0;
     }
 
-// get real values of TRACE_EVENT_FL_KPROBE and TRACE_EVENT_FL_UPROBE.
-// these values were changed in kernels >= 5.15.
-#ifdef CORE
+    // get real values of TRACE_EVENT_FL_KPROBE and TRACE_EVENT_FL_UPROBE.
+    // these values were changed in kernels >= 5.15.
     int TRACE_EVENT_FL_KPROBE_BIT;
     int TRACE_EVENT_FL_UPROBE_BIT;
     if (bpf_core_field_exists(((struct trace_event_call *) 0)->module)) { // kernel >= 5.15
@@ -1679,15 +1580,13 @@ send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf
     }
     int TRACE_EVENT_FL_KPROBE = (1 << TRACE_EVENT_FL_KPROBE_BIT);
     int TRACE_EVENT_FL_UPROBE = (1 << TRACE_EVENT_FL_UPROBE_BIT);
-#endif
 
     // get perf event details
 
 // clang-format off
-#define MAX_PERF_EVENT_NAME ((MAX_PATH_PREF_SIZE > MAX_KSYM_NAME_SIZE) ? \
-    MAX_PATH_PREF_SIZE : MAX_KSYM_NAME_SIZE)
-// clang-format on
+#define MAX_PERF_EVENT_NAME ((MAX_PATH_PREF_SIZE > MAX_KSYM_NAME_SIZE) ? MAX_PATH_PREF_SIZE : MAX_KSYM_NAME_SIZE)
 #define REQUIRED_SYSTEM_LENGTH 9
+    // clang-format on
 
     struct perf_event *event = (struct perf_event *) READ_KERN(perf_event_file->private_data);
     struct trace_event_call *tp_event = READ_KERN(event->tp_event);
@@ -1940,7 +1839,7 @@ int BPF_KPROBE(trace_security_bprm_check)
     struct file *file = get_file_ptr_from_bprm(bprm);
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
-    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+    void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
 
     save_str_to_buf(p.event, file_path, 0);
     save_to_submit_buf(p.event, &s_dev, sizeof(dev_t), 1);
@@ -1965,7 +1864,7 @@ int BPF_KPROBE(trace_security_file_open)
     struct file *file = (struct file *) PT_REGS_PARM1(ctx);
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
-    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+    void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
     u64 ctime = get_ctime_nanosec_from_file(file);
 
     // Load the arguments given to the open syscall (which eventually invokes this function)
@@ -1987,7 +1886,8 @@ int BPF_KPROBE(trace_security_file_open)
     }
 
     save_str_to_buf(p.event, file_path, 0);
-    save_to_submit_buf(p.event, (void *) GET_FIELD_ADDR(file->f_flags), sizeof(int), 1);
+    save_to_submit_buf(
+        p.event, (void *) __builtin_preserve_access_index(&file->f_flags), sizeof(int), 1);
     save_to_submit_buf(p.event, &s_dev, sizeof(dev_t), 2);
     save_to_submit_buf(p.event, &inode_nr, sizeof(unsigned long), 3);
     save_to_submit_buf(p.event, &ctime, sizeof(u64), 4);
@@ -2788,7 +2688,7 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
     file_info_t file_info;
 
     struct file *file = (struct file *) saved_args.args[0];
-    file_info.pathname_p = get_path_str(GET_FIELD_ADDR(file->f_path));
+    file_info.pathname_p = get_path_str(__builtin_preserve_access_index(&file->f_path));
 
     io_data.is_buf = is_buf;
     io_data.ptr = (void *) saved_args.args[1];
@@ -2869,7 +2769,7 @@ static __always_inline int capture_file_write(struct pt_regs *ctx, u32 event_id)
     }
     loff_t *pos = (loff_t *) saved_args.args[3];
 
-    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+    void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
     if (p.event->buf_off > ARGS_BUF_SIZE - MAX_STRING_SIZE)
         return -1;
     bpf_probe_read_str(&(p.event->args[p.event->buf_off]), MAX_STRING_SIZE, file_path);
@@ -3089,7 +2989,7 @@ int BPF_KPROBE(trace_ret_do_mmap)
     if (file != NULL) {
         s_dev = get_dev_from_file(file);
         inode_nr = get_inode_nr_from_file(file);
-        file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+        file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
         ctime = get_ctime_nanosec_from_file(file);
     }
     unsigned long len = (unsigned long) saved_args.args[2];
@@ -3135,13 +3035,14 @@ int BPF_KPROBE(trace_security_mmap_file)
         return 0;
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
-    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+    void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
     u64 ctime = get_ctime_nanosec_from_file(file);
     unsigned long prot = (unsigned long) PT_REGS_PARM2(ctx);
     unsigned long mmap_flags = (unsigned long) PT_REGS_PARM3(ctx);
 
     save_str_to_buf(p.event, file_path, 0);
-    save_to_submit_buf(p.event, (void *) GET_FIELD_ADDR(file->f_flags), sizeof(int), 1);
+    save_to_submit_buf(
+        p.event, (void *) __builtin_preserve_access_index(&file->f_flags), sizeof(int), 1);
     save_to_submit_buf(p.event, &s_dev, sizeof(dev_t), 2);
     save_to_submit_buf(p.event, &inode_nr, sizeof(unsigned long), 3);
     save_to_submit_buf(p.event, &ctime, sizeof(u64), 4);
@@ -3298,9 +3199,6 @@ int syscall__init_module(void *ctx)
     return 0;
 }
 
-// Check (CORE || (!CORE && kernel >= 5.7)) to compile successfully.
-// (compiler will try to compile the func even if no execution path leads to it).
-#if defined(CORE) || (!defined(CORE) && (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0)))
 static __always_inline int do_check_bpf_link(program_data_t *p, union bpf_attr *attr, int cmd)
 {
     if (cmd == BPF_LINK_CREATE) {
@@ -3315,21 +3213,15 @@ static __always_inline int do_check_bpf_link(program_data_t *p, union bpf_attr *
 
     return 0;
 }
-#endif
 
 static __always_inline int check_bpf_link(program_data_t *p, union bpf_attr *attr, int cmd)
 {
-// BPF_LINK_CREATE command was only introduced in kernel 5.7.
-// nothing to check for kernels < 5.7.
-#ifdef CORE
+    // BPF_LINK_CREATE command was only introduced in kernel 5.7.
+    // nothing to check for kernels < 5.7.
+
     if (bpf_core_field_exists(attr->link_create)) {
         do_check_bpf_link(p, attr, cmd);
     }
-#else
-    #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0))
-    do_check_bpf_link(p, attr, cmd);
-    #endif
-#endif
 
     return 0;
 }
@@ -3450,9 +3342,9 @@ int BPF_KPROBE(trace_security_bpf_map)
     struct bpf_map *map = (struct bpf_map *) PT_REGS_PARM1(ctx);
 
     // 1st argument == map_id (u32)
-    save_to_submit_buf(p.event, (void *) GET_FIELD_ADDR(map->id), sizeof(int), 0);
+    save_to_submit_buf(p.event, (void *) __builtin_preserve_access_index(&map->id), sizeof(int), 0);
     // 2nd argument == map_name (const char *)
-    save_str_to_buf(p.event, (void *) GET_FIELD_ADDR(map->name), 1);
+    save_str_to_buf(p.event, (void *) __builtin_preserve_access_index(&map->name), 1);
 
     return events_perf_submit(&p, SECURITY_BPF_MAP, 0);
 }
@@ -3649,7 +3541,7 @@ int BPF_KPROBE(trace_security_kernel_read_file)
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
     enum kernel_read_file_id type_id = (enum kernel_read_file_id) PT_REGS_PARM2(ctx);
-    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+    void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
     u64 ctime = get_ctime_nanosec_from_file(file);
 
     save_str_to_buf(p.event, file_path, 0);
@@ -3809,19 +3701,6 @@ static __always_inline struct pipe_buffer *get_last_write_pipe_buffer(struct pip
     struct pipe_buffer *bufs = READ_KERN(pipe->bufs);
     unsigned int curbuf;
 
-#ifndef CORE
-    #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0))
-    unsigned int nrbufs = READ_KERN(pipe->nrbufs);
-    if (nrbufs > 0) {
-        nrbufs--;
-    }
-    curbuf = (READ_KERN(pipe->curbuf) + nrbufs) & (READ_KERN(pipe->buffers) - 1);
-    #else
-    int head = READ_KERN(pipe->head);
-    int ring_size = READ_KERN(pipe->ring_size);
-    curbuf = (head - 1) & (ring_size - 1);
-    #endif
-#else // CORE
     struct pipe_inode_info___v54 *legacy_pipe = (struct pipe_inode_info___v54 *) pipe;
     if (bpf_core_field_exists(legacy_pipe->nrbufs)) {
         unsigned int nrbufs = READ_KERN(legacy_pipe->nrbufs);
@@ -3834,7 +3713,6 @@ static __always_inline struct pipe_buffer *get_last_write_pipe_buffer(struct pip
         int ring_size = READ_KERN(pipe->ring_size);
         curbuf = (head - 1) & (ring_size - 1);
     }
-#endif
 
     struct pipe_buffer *current_buffer = get_node_addr(bufs, curbuf);
     return current_buffer;
@@ -3846,24 +3724,22 @@ TRACE_ENT_FUNC(do_splice, DIRTY_PIPE_SPLICE);
 SEC("kretprobe/do_splice")
 int BPF_KPROBE(trace_ret_do_splice)
 {
-// The Dirty Pipe vulnerability exist in the kernel since version 5.8, so there is not use to do
-// logic if version is too old. In non-CORE, it will even mean using defines which are not available
-// in the kernel headers, which will cause bugs.
-#if !defined(CORE) && (LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0))
-    del_args(DIRTY_PIPE_SPLICE);
-    return 0;
-#else
-    #ifdef CORE
-    // Check if field of struct exist to determine kernel version - some fields change between
-    // versions. In version 5.8 of the kernel, the field "high_zoneidx" changed its name to
-    // "highest_zoneidx". This means that the existence of the field "high_zoneidx" can indicate
-    // that the kernel version is lower than v5.8
+    // The Dirty Pipe vulnerability exist in the kernel since version 5.8, so
+    // there is not use to do logic if version is too old. In non-CORE, it will
+    // even mean using defines which are not available in the kernel headers,
+    // which will cause bugs.
+
+    // Check if field of struct exist to determine kernel version - some fields
+    // change between versions. In version 5.8 of the kernel, the field
+    // "high_zoneidx" changed its name to "highest_zoneidx". This means that the
+    // existence of the field "high_zoneidx" can indicate that the kernel
+    // version is lower than v5.8
+
     struct alloc_context *check_508;
     if (bpf_core_field_exists(check_508->high_zoneidx)) {
         del_args(DIRTY_PIPE_SPLICE);
         return 0;
     }
-    #endif // CORE
 
     args_t saved_args;
     if (load_args(&saved_args, DIRTY_PIPE_SPLICE) != 0) {
@@ -3906,20 +3782,14 @@ int BPF_KPROBE(trace_ret_do_splice)
     struct inode *in_inode = READ_KERN(in_file->f_inode);
     u64 in_inode_number = READ_KERN(in_inode->i_ino);
     unsigned short in_file_type = READ_KERN(in_inode->i_mode) & S_IFMT;
-    void *in_file_path = get_path_str(GET_FIELD_ADDR(in_file->f_path));
+    void *in_file_path = get_path_str(__builtin_preserve_access_index(&in_file->f_path));
     size_t write_len = (size_t) saved_args.args[4];
 
     loff_t *off_in_addr = (loff_t *) saved_args.args[1];
     // In kernel v5.10 the pointer passed was no longer of the user, so flexibility is needed to
     // read it
     loff_t off_in;
-    #ifndef CORE
-        #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 10, 0)
-    off_in = READ_USER(*off_in_addr);
-        #else
-    off_in = READ_KERN(*off_in_addr);
-        #endif
-    #else  // CORE
+
     //
     // Check if field of struct exist to determine kernel version - some fields change between
     // versions. Field 'data' of struct 'public_key_signature' was introduced between v5.9 and
@@ -3934,7 +3804,6 @@ int BPF_KPROBE(trace_ret_do_splice)
     } else { // version >= v5.10
         off_in = READ_KERN(*off_in_addr);
     }
-    #endif // CORE
 
     struct inode *out_inode = READ_KERN(out_file->f_inode);
     u64 out_inode_number = READ_KERN(out_inode->i_ino);
@@ -3958,7 +3827,6 @@ int BPF_KPROBE(trace_ret_do_splice)
     save_to_submit_buf(p.event, &out_pipe_last_buffer_flags, sizeof(unsigned int), 6);
 
     return events_perf_submit(&p, DIRTY_PIPE_SPLICE, 0);
-#endif     // CORE && Version < 5.8
 }
 
 SEC("kprobe/do_init_module")
@@ -4053,7 +3921,8 @@ int BPF_KPROBE(trace_load_elf_phdrs)
     }
 
     struct file *loaded_elf = (struct file *) PT_REGS_PARM2(ctx);
-    const char *elf_pathname = (char *) get_path_str(GET_FIELD_ADDR(loaded_elf->f_path));
+    const char *elf_pathname =
+        (char *) get_path_str(__builtin_preserve_access_index(&loaded_elf->f_path));
 
     // The interpreter field will be updated for any loading of an elf, both for the binary
     // and for the interpreter. Because the interpreter is loaded only after the executed elf is
@@ -4213,10 +4082,8 @@ int BPF_KPROBE(trace_ret_kallsyms_lookup_name)
 
 enum signal_handling_method_e
 {
-#ifdef CORE
     SIG_DFL,
     SIG_IGN,
-#endif
     SIG_HND = 2 // Doesn't exist in the kernel, but signifies that the method is through
                 // user-defined handler
 };
@@ -4505,22 +4372,16 @@ int BPF_KPROBE(trace_ret_file_update_time)
 SEC("kprobe/file_modified")
 int BPF_KPROBE(trace_file_modified)
 {
-/*
- * we want this probe to run only on kernel versions >= 6.
- * this is because on older kernels the file_modified() function calls the file_update_time()
- * function. in those cases, we don't need this probe active.
- */
-#ifndef CORE
-    #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
-    return common_file_modification_ent(ctx);
-    #endif
-#else /* CORE */
+    /*
+     * we want this probe to run only on kernel versions >= 6.
+     * this is because on older kernels the file_modified() function calls the file_update_time()
+     * function. in those cases, we don't need this probe active.
+     */
     struct file *file = (struct file *) PT_REGS_PARM1(ctx);
     if (bpf_core_field_exists(file->f_iocb_flags)) {
         /* kernel version >= 6 */
         return common_file_modification_ent(ctx);
     }
-#endif
 
     return 0;
 }
@@ -4528,16 +4389,11 @@ int BPF_KPROBE(trace_file_modified)
 SEC("kretprobe/file_modified")
 int BPF_KPROBE(trace_ret_file_modified)
 {
-/*
- * we want this probe to run only on kernel versions >= 6.
- * this is because on older kernels the file_modified() function calls the file_update_time()
- * function. in those cases, we don't need this probe active.
- */
-#ifndef CORE
-    #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
-    return common_file_modification_ent(ctx);
-    #endif
-#else /* CORE */
+    /*
+     * we want this probe to run only on kernel versions >= 6.
+     * this is because on older kernels the file_modified() function calls the file_update_time()
+     * function. in those cases, we don't need this probe active.
+     */
     args_t saved_args;
     if (load_args(&saved_args, FILE_MODIFICATION) != 0)
         return 0;
@@ -4547,7 +4403,6 @@ int BPF_KPROBE(trace_ret_file_modified)
         /* kernel version >= 6 */
         return common_file_modification_ent(ctx);
     }
-#endif
 
     return 0;
 }
@@ -4619,7 +4474,7 @@ int BPF_KPROBE(trace_ret_exec_binprm)
     const char *path = get_binprm_filename(bprm);
     save_str_to_buf(p.event, (void *) path, 0);
 
-    void *binary_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+    void *binary_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
     save_str_to_buf(p.event, binary_path, 1);
 
     dev_t binary_device_id = get_dev_from_file(file);
@@ -4654,7 +4509,7 @@ int BPF_KPROBE(trace_ret_exec_binprm1)
     unsigned short stdin_type = get_inode_mode_from_file(stdin_file) & S_IFMT;
     save_to_submit_buf(p.event, &stdin_type, sizeof(unsigned short), 7);
 
-    void *stdin_path = get_path_str(GET_FIELD_ADDR(stdin_file->f_path));
+    void *stdin_path = get_path_str(__builtin_preserve_access_index(&stdin_file->f_path));
     save_str_to_buf(p.event, stdin_path, 8);
 
     int kernel_invoked = (get_task_parent_flags(task) & PF_KTHREAD) ? 1 : 0;
@@ -4686,8 +4541,6 @@ int BPF_KPROBE(trace_ret_exec_binprm2)
 // clang-format off
 
 // Network Packets (works from ~5.2 and beyond)
-
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(5, 1, 0) || defined(CORE)) || defined(RHEL_RELEASE_CODE)
 
 // To track ingress/egress traffic we always need to link a flow to its related
 // task (particularly when hooking ingress skb bpf programs, where the current
@@ -5868,5 +5721,3 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_http)
 }
 
 // clang-format on
-
-#endif

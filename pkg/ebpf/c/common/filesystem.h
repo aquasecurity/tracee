@@ -1,12 +1,8 @@
 #ifndef __TRACEE_FILESYSTEM_H__
 #define __TRACEE_FILESYSTEM_H__
 
-#ifndef CORE
-    #include <missing_noncore_definitions.h>
-#else
-    #include <missing_definitions.h>
-    #include <vmlinux.h>
-#endif
+#include <missing_definitions.h>
+#include <vmlinux.h>
 
 #include <bpf/bpf_helpers.h>
 #include "common/buffer.h"
@@ -289,7 +285,7 @@ static __always_inline file_info_t get_file_info(struct file *file)
 {
     file_info_t file_info = {};
     if (file != NULL) {
-        file_info.pathname_p = get_path_str(GET_FIELD_ADDR(file->f_path));
+        file_info.pathname_p = get_path_str(__builtin_preserve_access_index(&file->f_path));
         file_info.ctime = get_ctime_nanosec_from_file(file);
         file_info.device = get_dev_from_file(file);
         file_info.inode = get_inode_nr_from_file(file);

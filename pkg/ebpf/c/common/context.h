@@ -1,13 +1,7 @@
 #ifndef __EVENT_INIT_H__
 #define __EVENT_INIT_H__
 
-#ifndef CORE
-    #include <linux/sched.h>
-    #include <linux/types.h>
-#else
-    // CO:RE is enabled
-    #include <vmlinux.h>
-#endif
+#include <vmlinux.h>
 
 #include <bpf/bpf_helpers.h>
 #include <common/common.h>

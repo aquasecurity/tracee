@@ -1,13 +1,8 @@
 #ifndef __TRACEE_CGROUPS_H__
 #define __TRACEE_CGROUPS_H__
 
-#ifndef CORE
-    #include <linux/types.h>
-    #include <linux/cgroup.h>
-    #include <linux/sched.h>
-#else
-    #include <vmlinux.h>
-#endif
+#include <vmlinux.h>
+
 #include <bpf/bpf_helpers.h>
 #include "common/common.h"
 
@@ -30,7 +25,6 @@ static __always_inline const u64 get_cgroup_id(struct cgroup *cgrp)
 
     u64 id; // was union kernfs_node_id before 5.5, can read it as u64 in both situations
 
-#ifdef CORE
     if (bpf_core_type_exists(union kernfs_node_id)) {
         struct kernfs_node___older_v55 *kn_old = (void *) kn;
         struct kernfs_node___rh8 *kn_rh8 = (void *) kn;
@@ -50,9 +44,6 @@ static __always_inline const u64 get_cgroup_id(struct cgroup *cgrp)
         // kernel v5.5 and above
         bpf_core_read(&id, sizeof(u64), &kn->id);
     }
-#else
-    bpf_probe_read(&id, sizeof(u64), &kn->id);
-#endif
 
     return id;
 }

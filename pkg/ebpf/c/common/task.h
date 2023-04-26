@@ -1,12 +1,7 @@
 #ifndef __TRACEE_TASK_H__
 #define __TRACEE_TASK_H__
 
-#ifndef CORE
-    #include <linux/sched.h>
-#else
-    // CO:RE is enabled
-    #include <vmlinux.h>
-#endif
+#include <vmlinux.h>
 
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_helpers.h>
@@ -45,20 +40,12 @@ static __always_inline u32 get_task_pid_ns_id(struct task_struct *task)
     struct pid *pid = NULL;
     struct pid_namespace *ns = NULL;
 
-#ifndef CORE
-    #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0))
-    pid = READ_KERN(task->pids[PIDTYPE_PID].pid);
-    #else
-    pid = READ_KERN(task->thread_pid);
-    #endif
-#else
     if (bpf_core_type_exists(struct pid_link)) {
         struct task_struct___older_v50 *t = (void *) task;
         pid = READ_KERN(t->pids[PIDTYPE_PID].pid);
     } else {
         pid = READ_KERN(task->thread_pid);
     }
-#endif
 
     level = READ_KERN(pid->level);
     ns = READ_KERN(pid->numbers[level].ns);
@@ -90,20 +77,12 @@ static __always_inline u32 get_task_pid_vnr(struct task_struct *task)
     unsigned int level = 0;
     struct pid *pid = NULL;
 
-#ifndef CORE
-    #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0))
-    pid = READ_KERN(task->pids[PIDTYPE_PID].pid);
-    #else
-    pid = READ_KERN(task->thread_pid);
-    #endif
-#else
     if (bpf_core_type_exists(struct pid_link)) {
         struct task_struct___older_v50 *t = (void *) task;
         pid = READ_KERN(t->pids[PIDTYPE_PID].pid);
     } else {
         pid = READ_KERN(task->thread_pid);
     }
-#endif
 
     level = READ_KERN(pid->level);
     return READ_KERN(pid->numbers[level].nr);

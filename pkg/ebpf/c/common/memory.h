@@ -1,12 +1,8 @@
 #ifndef __TRACEE_MEMORY_H__
 #define __TRACEE_MEMORY_H__
-#ifndef CORE
-    #include <linux/sched.h>
-    #include <linux/mm_types.h>
-#else
-    // CO:RE is enabled
-    #include <vmlinux.h>
-#endif
+
+#include <vmlinux.h>
+
 #include <bpf/bpf_helpers.h>
 #include "common/common.h"
 
