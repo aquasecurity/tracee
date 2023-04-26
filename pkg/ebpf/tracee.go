@@ -65,7 +65,6 @@ type Config struct {
 	BlobPerfBufferSize int
 	maxPidsCache       int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
 	BTFObjPath         string
-	BPFObjPath         string
 	BPFObjBytes        []byte
 	KernelConfig       *helpers.KernelConfig
 	ChanEvents         chan trace.Event
@@ -1332,7 +1331,6 @@ func (t *Tracee) initBPF() error {
 		KConfigFilePath: t.config.KernelConfig.GetKernelConfigFilePath(),
 		BTFObjPath:      t.config.BTFObjPath,
 		BPFObjBuff:      t.config.BPFObjBytes,
-		BPFObjName:      t.config.BPFObjPath,
 	}
 
 	// Open the eBPF object file (create a new module)
