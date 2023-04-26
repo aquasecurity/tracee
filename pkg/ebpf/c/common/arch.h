@@ -1,12 +1,7 @@
 #ifndef __TRACEE_ARCH_H__
 #define __TRACEE_ARCH_H__
 
-#ifndef CORE
-    #include <missing_noncore_definitions.h>
-    #include <linux/sched.h>
-#else
-    #include <missing_definitions.h>
-#endif
+#include <missing_definitions.h>
 
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>

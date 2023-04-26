@@ -1,11 +1,7 @@
 #ifndef __FILTERING_H__
 #define __FILTERING_H__
 
-#ifndef CORE
-    #include <linux/types.h>
-#else
-    #include <vmlinux.h>
-#endif
+#include <vmlinux.h>
 
 #include "maps.h"
 

@@ -21,28 +21,11 @@
 
 // clang-format on
 
-#ifndef CORE
-    #if LINUX_VERSION_CODE <                                                                       \
-        KERNEL_VERSION(5, 2, 0) // lower values in old kernels (instr lim is 4096)
-        #define MAX_STR_ARR_ELEM      38
-        #define MAX_ARGS_STR_ARR_ELEM 15
-        #define MAX_PATH_PREF_SIZE    64
-        #define MAX_PATH_COMPONENTS   20
-        #define MAX_BIN_CHUNKS        110
-    #else // complexity limit of 1M verified instructions
-        #define MAX_STR_ARR_ELEM      128
-        #define MAX_ARGS_STR_ARR_ELEM 128
-        #define MAX_PATH_PREF_SIZE    128
-        #define MAX_PATH_COMPONENTS   48
-        #define MAX_BIN_CHUNKS        256
-    #endif
-#else                                // CORE
-    #define MAX_STR_ARR_ELEM      38 // TODO: turn this into global variables set w/ libbpfgo
-    #define MAX_ARGS_STR_ARR_ELEM 15
-    #define MAX_PATH_PREF_SIZE    64
-    #define MAX_PATH_COMPONENTS   20
-    #define MAX_BIN_CHUNKS        110
-#endif
+#define MAX_STR_ARR_ELEM      38 // TODO: turn this into global variables set w/ libbpfgo
+#define MAX_ARGS_STR_ARR_ELEM 15
+#define MAX_PATH_PREF_SIZE    64
+#define MAX_PATH_COMPONENTS   20
+#define MAX_BIN_CHUNKS        110
 
 #define CAPTURE_IFACE (1 << 0)
 #define TRACE_IFACE   (1 << 1)

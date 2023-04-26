@@ -1,13 +1,8 @@
 #ifndef __TRACEE_TYPES_H__
 #define __TRACEE_TYPES_H__
 
-#ifndef CORE
-    #include "missing_noncore_definitions.h"
-#else
-    // CO:RE is enabled
-    #include <vmlinux.h>
-    #include <missing_definitions.h>
-#endif
+#include <vmlinux.h>
+#include <missing_definitions.h>
 
 #include "common/consts.h"
 
@@ -503,27 +498,5 @@ enum file_modification_op
     FILE_MODIFICATION_SUBMIT = 0,
     FILE_MODIFICATION_DONE,
 };
-
-// KERNEL STRUCTS ----------------------------------------------------------------------------------
-
-#ifndef CORE
-struct mnt_namespace {
-    atomic_t count;
-    struct ns_common ns;
-    // ...
-};
-
-struct mount {
-    struct hlist_node mnt_hash;
-    struct mount *mnt_parent;
-    struct dentry *mnt_mountpoint;
-    struct vfsmount mnt;
-    // ...
-};
-
-    #define get_type_size(x)            sizeof(x)
-    #define get_node_addr(array, index) &array[index]
-
-#endif
 
 #endif

@@ -1,13 +1,8 @@
 #ifndef __TRACEE_NAMESPACES_H__
 #define __TRACEE_NAMESPACES_H__
 
-#ifndef CORE
-    #include <linux/nsproxy.h>
-    #include <linux/types.h>
-#else
-    // CO:RE is enabled
-    #include <vmlinux.h>
-#endif
+#include <vmlinux.h>
+
 #include <bpf/bpf_helpers.h>
 #include "common/common.h"
 
