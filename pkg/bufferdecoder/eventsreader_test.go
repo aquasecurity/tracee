@@ -175,9 +175,8 @@ func TestReadArgFromBuff(t *testing.T) {
 
 		if tc.name == "unknown" {
 			continue
-		} else {
-			assert.Empty(t, decoder.BuffLen()-decoder.ReadAmountBytes(), tc.name) // passed in buffer should be emptied out
 		}
+		assert.Empty(t, decoder.BuffLen()-decoder.ReadAmountBytes(), tc.name) // passed in buffer should be emptied out
 	}
 }
 
