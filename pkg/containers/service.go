@@ -21,16 +21,16 @@ func RuntimeInfoService(sockets runtime.Sockets) runtimeInfoService {
 }
 
 // Register associates some ContainerEnricher with a runtime, the service can then use it for relevant queries
-func (e *runtimeInfoService) Register(runtime runtime.RuntimeId, enricherBuilder func(socket string) (runtime.ContainerEnricher, error)) error {
-	if !e.sockets.Supports(runtime) {
-		return errfmt.Errorf("error registering enricher: unsupported runtime %s", runtime.String())
+func (e *runtimeInfoService) Register(rtime runtime.RuntimeId, enricherBuilder func(socket string) (runtime.ContainerEnricher, error)) error {
+	if !e.sockets.Supports(rtime) {
+		return errfmt.Errorf("error registering enricher: unsupported runtime %s", rtime.String())
 	}
-	socket := e.sockets.Socket(runtime)
+	socket := e.sockets.Socket(rtime)
 	enricher, err := enricherBuilder(socket)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-	e.enrichers[runtime] = enricher
+	e.enrichers[rtime] = enricher
 	return nil
 }
 

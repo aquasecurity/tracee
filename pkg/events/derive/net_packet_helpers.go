@@ -69,14 +69,14 @@ const (
 // convertNetPairToPktMeta converts the local netPair type, used by this code,
 // to PktMeta type, expected by the old dns events, which, for now, we want the
 // new network packet simple dns events to be compatible with.
-func convertNetPairToPktMeta(net *netPair) *trace.PktMeta {
+func convertNetPairToPktMeta(n *netPair) *trace.PktMeta {
 	return &trace.PktMeta{
-		SrcIP:     net.srcIP.String(),
-		DstIP:     net.dstIP.String(),
-		SrcPort:   net.srcPort,
-		DstPort:   net.dstPort,
-		Protocol:  net.proto,
-		PacketLen: net.length,
+		SrcIP:     n.srcIP.String(),
+		DstIP:     n.dstIP.String(),
+		SrcPort:   n.srcPort,
+		DstPort:   n.dstPort,
+		Protocol:  n.proto,
+		PacketLen: n.length,
 		Iface:     "any", // TODO: pick iface index from the kernel ?
 	}
 }

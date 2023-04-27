@@ -90,13 +90,13 @@ func (s *Server) EnablePProfEndpoint() {
 // EnablePyroAgent enables pyroscope agent in golang push mode
 // TODO: make this configurable
 func (s *Server) EnablePyroAgent() error {
-	profiler, err := profiler.Start(
+	p, err := profiler.Start(
 		profiler.Config{
 			ApplicationName: "tracee",
 			ServerAddress:   "http://localhost:4040",
 		},
 	)
-	s.pyroProfiler = profiler
+	s.pyroProfiler = p
 
 	return err
 }

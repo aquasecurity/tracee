@@ -79,19 +79,19 @@ type signature struct {
 
 func NewSignature(metadata detect.SignatureMetadata, selector []detect.SignatureEventSelector, regoCodes []string) (detect.Signature, error) {
 	compiledRego, pkgName := compileRego(regoCodes)
-	rego := rego.New(
+	r := rego.New(
 		rego.Compiler(compiledRego),
 		rego.Query(fmt.Sprintf("data.%s.tracee_match = x", pkgName)),
 		rego.Target("wasm"),
 	)
-	pq, err := rego.PrepareForEval(context.Background())
+	pq, err := r.PrepareForEval(context.Background())
 	if err != nil {
 		return nil, err
 	}
 	return &signature{
 		metadata: metadata,
 		selector: selector,
-		rego:     rego,
+		rego:     r,
 		pq:       pq,
 	}, nil
 }

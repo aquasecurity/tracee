@@ -102,7 +102,7 @@ func PrepareFilterMapFromPolicies(policies []PolicyFile) (FilterMap, error) {
 			})
 		}
 
-		events := make(map[string]bool)
+		evts := make(map[string]bool)
 
 		for _, r := range p.Rules {
 			err := validateEvent(p.Name, r.Event)
@@ -112,11 +112,11 @@ func PrepareFilterMapFromPolicies(policies []PolicyFile) (FilterMap, error) {
 
 			// Currently, an event can only be used once in the policy. Support for using the same
 			// event, multiple times, with different filters, shall be implemented in the future.
-			if _, ok := events[r.Event]; ok {
+			if _, ok := evts[r.Event]; ok {
 				return nil, errfmt.Errorf("policy %s, event %s is duplicated", p.Name, r.Event)
 			}
 
-			events[r.Event] = true
+			evts[r.Event] = true
 
 			filterFlags = append(filterFlags, &filterFlag{
 				full:              fmt.Sprintf("event=%s", r.Event),
