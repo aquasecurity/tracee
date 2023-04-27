@@ -17,7 +17,7 @@ import (
 )
 
 // load tracee into memory with args
-func startTracee(t *testing.T, ctx context.Context, config tracee.Config, output *tracee.OutputConfig, capture *tracee.CaptureConfig) *tracee.Tracee {
+func startTracee(ctx context.Context, t *testing.T, config tracee.Config, output *tracee.OutputConfig, capture *tracee.CaptureConfig) *tracee.Tracee {
 	initialize.SetLibbpfgoCallbacks()
 
 	kernelConfig, err := initialize.KernelConfig()

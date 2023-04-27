@@ -31,7 +31,7 @@ const (
 )
 
 type ContainerEnricher interface {
-	Get(containerId string, ctx context.Context) (ContainerMetadata, error)
+	Get(ctx context.Context, containerId string) (ContainerMetadata, error)
 }
 
 // Represents the internal ID of a container runtime

@@ -344,7 +344,7 @@ func TestEventFilters(t *testing.T) {
 				}
 			}()
 
-			trc := startTracee(t, ctx, config, nil, nil)
+			trc := startTracee(ctx, t, config, nil, nil)
 
 			waitforTraceeStart(t, trc, time.Now())
 
@@ -544,7 +544,7 @@ func TestEventPolicies(t *testing.T) {
 				}
 			}()
 
-			trc := startTracee(t, ctx, config, nil, nil)
+			trc := startTracee(ctx, t, config, nil, nil)
 
 			waitforTraceeStart(t, trc, time.Now())
 

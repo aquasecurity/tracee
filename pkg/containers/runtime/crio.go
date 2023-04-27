@@ -30,7 +30,7 @@ func CrioEnricher(socket string) (ContainerEnricher, error) {
 	return enricher, nil
 }
 
-func (e *crioEnricher) Get(containerId string, ctx context.Context) (ContainerMetadata, error) {
+func (e *crioEnricher) Get(ctx context.Context, containerId string) (ContainerMetadata, error) {
 	metadata := ContainerMetadata{
 		ContainerId: containerId,
 	}

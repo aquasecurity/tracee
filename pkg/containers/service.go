@@ -36,27 +36,27 @@ func (e *runtimeInfoService) Register(runtime runtime.RuntimeId, enricherBuilder
 
 // Get calls the inner enricher's Get, based on the containerRuntime parameter if a relevant enricher was registered
 // If an unknown runtime is received, enrichment will be attempted through all registered enrichers
-func (e *runtimeInfoService) Get(containerId string, containerRuntime runtime.RuntimeId, ctx context.Context) (runtime.ContainerMetadata, error) {
+func (e *runtimeInfoService) Get(ctx context.Context, containerId string, containerRuntime runtime.RuntimeId) (runtime.ContainerMetadata, error) {
 	if containerRuntime == runtime.Unknown {
-		return e.getFromUnknownRuntime(containerId, ctx)
+		return e.getFromUnknownRuntime(ctx, containerId)
 	}
 
-	return e.getFromKnownRuntime(containerId, containerRuntime, ctx)
+	return e.getFromKnownRuntime(ctx, containerId, containerRuntime)
 }
 
 // standard case when we can query the known runtime from the get go
-func (e *runtimeInfoService) getFromKnownRuntime(containerId string, containerRuntime runtime.RuntimeId, ctx context.Context) (runtime.ContainerMetadata, error) {
+func (e *runtimeInfoService) getFromKnownRuntime(ctx context.Context, containerId string, containerRuntime runtime.RuntimeId) (runtime.ContainerMetadata, error) {
 	enricher := e.enrichers[containerRuntime]
 	if enricher != nil {
-		return enricher.Get(containerId, ctx)
+		return enricher.Get(ctx, containerId)
 	}
 	return runtime.ContainerMetadata{}, errfmt.Errorf("unsupported runtime")
 }
 
 // in case where we don't know the container's runtime, we query through all the registered enrichers
-func (e *runtimeInfoService) getFromUnknownRuntime(containerId string, ctx context.Context) (runtime.ContainerMetadata, error) {
+func (e *runtimeInfoService) getFromUnknownRuntime(ctx context.Context, containerId string) (runtime.ContainerMetadata, error) {
 	for _, enricher := range e.enrichers {
-		metadata, err := enricher.Get(containerId, ctx)
+		metadata, err := enricher.Get(ctx, containerId)
 
 		if err == nil {
 			return metadata, nil

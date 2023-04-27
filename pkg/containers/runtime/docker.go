@@ -26,7 +26,7 @@ func DockerEnricher(socket string) (ContainerEnricher, error) {
 	return enricher, nil
 }
 
-func (e *dockerEnricher) Get(containerId string, ctx context.Context) (ContainerMetadata, error) {
+func (e *dockerEnricher) Get(ctx context.Context, containerId string) (ContainerMetadata, error) {
 	metadata := ContainerMetadata{
 		ContainerId: containerId,
 	}
