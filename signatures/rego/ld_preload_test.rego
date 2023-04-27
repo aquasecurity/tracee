@@ -4,7 +4,7 @@ test_match_1 {
 	tracee_match with input as {
 		"eventName": "execve",
 		"argsNum": 2,
-		"args": [
+		"parsedArgs": [
 			{
 				"name": "envp",
 				"value": ["FOO=BAR", "LD_PRELOAD=/something"],
@@ -21,7 +21,7 @@ test_match_2 {
 	tracee_match with input as {
 		"eventName": "security_file_open",
 		"argsNum": 4,
-		"args": [
+		"parsedArgs": [
 			{
 				"name": "flags",
 				"value": "o_rdwr",
@@ -46,7 +46,7 @@ test_match_no_ld_preload {
 	not tracee_match with input as {
 		"eventName": "execve",
 		"argsNum": 2,
-		"args": [
+		"parsedArgs": [
 			{
 				"name": "envp",
 				"value": ["FOO=BAR"],
@@ -63,7 +63,7 @@ test_match_wrong_path {
 	not tracee_match with input as {
 		"eventName": "security_file_open",
 		"argsNum": 4,
-		"args": [
+		"parsedArgs": [
 			{
 				"name": "flags",
 				"value": "o_rdwr",

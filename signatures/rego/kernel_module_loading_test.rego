@@ -11,7 +11,7 @@ test_match_2 {
 	tracee_match with input as {
 		"eventName": "security_kernel_read_file",
 		"argsNum": 4,
-		"args": [
+		"parsedArgs": [
 			{
 				"name": "pathname",
 				"value": "/path/to/kernel/module.ko",
@@ -43,7 +43,7 @@ test_match_wrong_event {
 	not tracee_match with input as {
 		"eventName": "ptrace",
 		"argsNum": 1,
-		"args": [{
+		"parsedArgs": [{
 			"name": "request",
 			"value": "PTRACE_PEEKDATA",
 		}],
@@ -54,7 +54,7 @@ test_match_wrong_type {
 	not tracee_match with input as {
 		"eventName": "security_kernel_read_file",
 		"argsNum": 4,
-		"args": [
+		"parsedArgs": [
 			{
 				"name": "pathname",
 				"value": "/path/to/kernel/module.ko",

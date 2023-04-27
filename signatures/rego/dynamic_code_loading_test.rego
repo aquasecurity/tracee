@@ -1,34 +1,57 @@
-package tracee.TRC_4
+package tracee.TRC_11
 
 test_match_1 {
 	tracee_match with input as {
-		"eventName": "mem_prot_alert",
+		"processName": "mal",
+		"threadId": 8,
+		"eventName": "security_sb_mount",
 		"argsNum": 1,
-		"args": [{
-			"name": "alert",
-			"value": "Protection changed from W to E!",
+		"parsedArgs": [{
+			"name": "dev_name",
+			"type": "const char*",
+			"value": "/dev/sda3",
 		}],
 	}
 }
 
-test_match_wrong_message {
-	not tracee_match with input as {
-		"eventName": "mem_prot_alert",
+test_match_2 {
+	tracee_match with input as {
+		"processName": "runc:[init]",
+		"threadId": 8,
+		"eventName": "security_sb_mount",
 		"argsNum": 1,
-		"args": [{
-			"name": "alert",
-			"value": "Protection changed to Executable!",
+		"parsedArgs": [{
+			"name": "dev_name",
+			"type": "const char*",
+			"value": "/dev/vda1",
 		}],
 	}
 }
 
-test_match_wrong_event {
+test_match_wrong_device {
 	not tracee_match with input as {
-		"eventName": "ptrace",
+		"processName": "proc",
+		"threadId": 8,
+		"eventName": "security_sb_mount",
 		"argsNum": 1,
-		"args": [{
-			"name": "request",
-			"value": "PTRACE_PEEKDATA",
+		"parsedArgs": [{
+			"name": "dev_name",
+			"type": "const char*",
+			"value": "/disk",
+		}],
+	}
+}
+
+test_match_wrong_proc {
+	not tracee_match with input as {
+		"processName": "runc:[init]",
+		"threadId": 1,
+		"eventName": "security_sb_mount",
+		"argsNum": 1,
+		"parsedArgs": [{
+			"name": "dev_name",
+			"type": "const char*",
+			"value": "/dev/vda1",
 		}],
 	}
 }

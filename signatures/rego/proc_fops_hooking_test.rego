@@ -1,23 +1,57 @@
-package tracee.TRC_16
+package tracee.TRC_11
 
-test_match_rootkit_output {
+test_match_1 {
 	tracee_match with input as {
-		"eventName": "hooked_proc_fops",
+		"processName": "mal",
+		"threadId": 8,
+		"eventName": "security_sb_mount",
 		"argsNum": 1,
-		"args": [{
-			"name": "hooked_fops_pointers",
-			"value": [{"SymbolName": "struct file_operations pointer", "ModuleOwner": "phide"}, {"SymbolName": "iterate_shared", "ModuleOwner": "phide"}, {"SymbolName": "iterate", "ModuleOwner": "phide"}],
+		"parsedArgs": [{
+			"name": "dev_name",
+			"type": "const char*",
+			"value": "/dev/sda3",
 		}],
 	}
 }
 
-test_match_empty_array {
-	not tracee_match with input as {
-		"eventName": "hooked_proc_fops",
+test_match_2 {
+	tracee_match with input as {
+		"processName": "runc:[init]",
+		"threadId": 8,
+		"eventName": "security_sb_mount",
 		"argsNum": 1,
-		"args": [{
-			"name": "hooked_fops_pointers",
-			"value": [],
+		"parsedArgs": [{
+			"name": "dev_name",
+			"type": "const char*",
+			"value": "/dev/vda1",
+		}],
+	}
+}
+
+test_match_wrong_device {
+	not tracee_match with input as {
+		"processName": "proc",
+		"threadId": 8,
+		"eventName": "security_sb_mount",
+		"argsNum": 1,
+		"parsedArgs": [{
+			"name": "dev_name",
+			"type": "const char*",
+			"value": "/disk",
+		}],
+	}
+}
+
+test_match_wrong_proc {
+	not tracee_match with input as {
+		"processName": "runc:[init]",
+		"threadId": 1,
+		"eventName": "security_sb_mount",
+		"argsNum": 1,
+		"parsedArgs": [{
+			"name": "dev_name",
+			"type": "const char*",
+			"value": "/dev/vda1",
 		}],
 	}
 }

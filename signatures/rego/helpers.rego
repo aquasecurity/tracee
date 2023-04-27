@@ -1,7 +1,7 @@
 package tracee.helpers
 
 get_tracee_argument(arg_name) = res {
-	arg := input.args[_]
+	arg := input.parsedArgs[_]
 	arg.name == arg_name
 	res := arg.value
 }

@@ -1,34 +1,57 @@
-package tracee.TRC_15
+package tracee.TRC_11
 
-test_match_diamorphine_rootkit_output {
+test_match_1 {
 	tracee_match with input as {
-		"eventName": "hooked_syscalls",
+		"processName": "mal",
+		"threadId": 8,
+		"eventName": "security_sb_mount",
 		"argsNum": 1,
-		"args": [{
-			"name": "hooked_syscalls",
-			"value": [{"SymbolName": "kill", "ModuleOwner": "diamorphine"}, {"SymbolName": "getdents", "ModuleOwner": "diamorphine"}, {"SymbolName": "getdents64", "ModuleOwner": "diamorphine"}],
+		"parsedArgs": [{
+			"name": "dev_name",
+			"type": "const char*",
+			"value": "/dev/sda3",
 		}],
 	}
 }
 
-test_match_custom_output {
+test_match_2 {
 	tracee_match with input as {
-		"eventName": "hooked_syscalls",
+		"processName": "runc:[init]",
+		"threadId": 8,
+		"eventName": "security_sb_mount",
 		"argsNum": 1,
-		"args": [{
-			"name": "hooked_syscalls",
-			"value": [{"SymbolName": "open", "ModuleOwner": "diamorphine"}, {"SymbolName": "read", "ModuleOwner": "diamorphine"}],
+		"parsedArgs": [{
+			"name": "dev_name",
+			"type": "const char*",
+			"value": "/dev/vda1",
 		}],
 	}
 }
 
-test_match_empty_array {
+test_match_wrong_device {
 	not tracee_match with input as {
-		"eventName": "hooked_syscalls",
+		"processName": "proc",
+		"threadId": 8,
+		"eventName": "security_sb_mount",
 		"argsNum": 1,
-		"args": [{
-			"name": "hooked_syscalls",
-			"value": [],
+		"parsedArgs": [{
+			"name": "dev_name",
+			"type": "const char*",
+			"value": "/disk",
+		}],
+	}
+}
+
+test_match_wrong_proc {
+	not tracee_match with input as {
+		"processName": "runc:[init]",
+		"threadId": 1,
+		"eventName": "security_sb_mount",
+		"argsNum": 1,
+		"parsedArgs": [{
+			"name": "dev_name",
+			"type": "const char*",
+			"value": "/dev/vda1",
 		}],
 	}
 }
