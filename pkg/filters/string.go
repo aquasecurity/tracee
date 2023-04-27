@@ -213,8 +213,8 @@ func (f *StringFilter) NotEqual() []string {
 	return res
 }
 
-func (filter *StringFilter) FilterOut() bool {
-	if len(filter.Equal()) > 0 && len(filter.NotEqual()) == 0 {
+func (f *StringFilter) FilterOut() bool {
+	if len(f.Equal()) > 0 && len(f.NotEqual()) == 0 {
 		return false
 	}
 	return true

@@ -15,20 +15,20 @@ func NewBoolFilter() *BoolFilter {
 	return &BoolFilter{}
 }
 
-func (filter *BoolFilter) Filter(val interface{}) bool {
+func (f *BoolFilter) Filter(val interface{}) bool {
 	filterable, ok := val.(bool)
 	if !ok {
 		return false
 	}
-	return filter.filter(filterable)
+	return f.filter(filterable)
 }
 
-func (filter *BoolFilter) filter(val bool) bool {
-	if !filter.Enabled() {
+func (f *BoolFilter) filter(val bool) bool {
+	if !f.Enabled() {
 		return true
 	}
-	trueEnabled := filter.trueEnabled
-	falseEnabled := filter.falseEnabled
+	trueEnabled := f.trueEnabled
+	falseEnabled := f.falseEnabled
 	if trueEnabled && falseEnabled {
 		return true
 	}
@@ -49,12 +49,12 @@ func (filter *BoolFilter) filter(val bool) bool {
 // field=false
 // field!=true
 // field!=false
-func (filter *BoolFilter) Parse(operatorAndValues string) error {
+func (f *BoolFilter) Parse(operatorAndValues string) error {
 	if len(operatorAndValues) < 1 {
 		return InvalidExpression(operatorAndValues)
 	}
 
-	filter.Enable()
+	f.Enable()
 
 	// case of =bools...
 	if operatorAndValues[0] == '=' {
@@ -65,7 +65,7 @@ func (filter *BoolFilter) Parse(operatorAndValues string) error {
 			if err != nil {
 				return InvalidValue(val)
 			}
-			if err = filter.add(boolVal, Equal); err != nil {
+			if err = f.add(boolVal, Equal); err != nil {
 				return err
 			}
 		}
@@ -84,7 +84,7 @@ func (filter *BoolFilter) Parse(operatorAndValues string) error {
 			if err != nil {
 				return InvalidValue(val)
 			}
-			if err = filter.add(boolVal, NotEqual); err != nil {
+			if err = f.add(boolVal, NotEqual); err != nil {
 				return err
 			}
 		}
@@ -93,29 +93,29 @@ func (filter *BoolFilter) Parse(operatorAndValues string) error {
 
 	// case of !field
 	if operatorAndValues[0] == '!' {
-		filter.falseEnabled = true
+		f.falseEnabled = true
 		return nil
 	}
 
 	// final case just field
-	filter.trueEnabled = true
+	f.trueEnabled = true
 
 	return nil
 }
 
-func (filter *BoolFilter) add(val bool, operator Operator) error {
+func (f *BoolFilter) add(val bool, operator Operator) error {
 	switch operator {
 	case Equal:
 		if val {
-			filter.trueEnabled = true
+			f.trueEnabled = true
 		} else {
-			filter.falseEnabled = true
+			f.falseEnabled = true
 		}
 	case NotEqual:
 		if val {
-			filter.falseEnabled = true
+			f.falseEnabled = true
 		} else {
-			filter.trueEnabled = true
+			f.trueEnabled = true
 		}
 	default:
 		return UnsupportedOperator(operator)
@@ -135,12 +135,12 @@ func (f *BoolFilter) Enabled() bool {
 	return f.enabled
 }
 
-func (filter *BoolFilter) Value() bool {
-	return filter.trueEnabled
+func (f *BoolFilter) Value() bool {
+	return f.trueEnabled
 }
 
-func (filter *BoolFilter) FilterOut() bool {
-	if filter.Value() {
+func (f *BoolFilter) FilterOut() bool {
+	if f.Value() {
 		return false
 	}
 	return true

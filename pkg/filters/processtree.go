@@ -42,7 +42,7 @@ func (f *ProcessTreeFilter) Enabled() bool {
 	return f.enabled
 }
 
-func (filter *ProcessTreeFilter) Parse(operatorAndValues string) error {
+func (f *ProcessTreeFilter) Parse(operatorAndValues string) error {
 	if len(operatorAndValues) < 2 {
 		return InvalidExpression(operatorAndValues)
 	}
@@ -71,20 +71,20 @@ func (filter *ProcessTreeFilter) Parse(operatorAndValues string) error {
 		if err != nil {
 			return errfmt.Errorf("invalid PID given to filter: %s", valuesString)
 		}
-		filter.PIDs[uint32(pid)] = equalityOperator
+		f.PIDs[uint32(pid)] = equalityOperator
 	}
 
-	filter.Enable()
+	f.Enable()
 
 	return nil
 }
 
-func (filter *ProcessTreeFilter) UpdateBPF(bpfModule *bpf.Module, policyID uint) error {
-	if !filter.Enabled() {
+func (f *ProcessTreeFilter) UpdateBPF(bpfModule *bpf.Module, policyID uint) error {
+	if !f.Enabled() {
 		return nil
 	}
 
-	processTreeBPFMap, err := bpfModule.GetMap(filter.mapName)
+	processTreeBPFMap, err := bpfModule.GetMap(f.mapName)
 	if err != nil {
 		return errfmt.Errorf("could not find bpf process_tree_map: %v", err)
 	}
@@ -153,7 +153,7 @@ func (filter *ProcessTreeFilter) UpdateBPF(bpfModule *bpf.Module, policyID uint)
 				return
 			}
 
-			if shouldBeTraced, ok := filter.PIDs[uint32(ppid)]; ok {
+			if shouldBeTraced, ok := f.PIDs[uint32(ppid)]; ok {
 				updateBPF(shouldBeTraced, pid)
 				return
 			}
@@ -162,20 +162,20 @@ func (filter *ProcessTreeFilter) UpdateBPF(bpfModule *bpf.Module, policyID uint)
 		fn(uint32(pid))
 	}
 
-	for pid, shouldBeTraced := range filter.PIDs {
+	for pid, shouldBeTraced := range f.PIDs {
 		updateBPF(shouldBeTraced, uint64(pid))
 	}
 
 	return nil
 }
 
-func (filter *ProcessTreeFilter) FilterOut() bool {
+func (f *ProcessTreeFilter) FilterOut() bool {
 	// Determine the default filter for PIDs that aren't specified with a proc tree filter
 	// - If one or more '=' filters, default is '!='
 	// - If one or more '!=' filters, default is '='
 	// - If a mix of filters, the default is '='
 	var filterIn = true
-	for _, v := range filter.PIDs {
+	for _, v := range f.PIDs {
 		filterIn = filterIn && v
 	}
 	return !filterIn

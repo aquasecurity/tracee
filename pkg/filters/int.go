@@ -141,7 +141,7 @@ func (f *IntFilter[T]) add(val int64, operator Operator) error {
 	return nil
 }
 
-func (filter *IntFilter[T]) Parse(operatorAndValues string) error {
+func (f *IntFilter[T]) Parse(operatorAndValues string) error {
 	if len(operatorAndValues) < 2 {
 		return InvalidExpression(operatorAndValues)
 	}
@@ -174,13 +174,13 @@ func (filter *IntFilter[T]) Parse(operatorAndValues string) error {
 		if err != nil {
 			return InvalidValue(val)
 		}
-		err = filter.add(valInt, operator)
+		err = f.add(valInt, operator)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
 	}
 
-	filter.Enable()
+	f.Enable()
 
 	return nil
 }
