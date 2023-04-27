@@ -43,7 +43,6 @@ type WorkRet struct {
 var once sync.Once
 
 func (r GPTDocsRunner) Run(ctx context.Context) error {
-
 	template, err := os.ReadFile(eventsTemplate)
 	if err != nil {
 		return fmt.Errorf("error reading events template: %v", err)
@@ -177,7 +176,6 @@ func (r GPTDocsRunner) GenerateSyscall(
 ) (
 	string, error,
 ) {
-
 	once.Do(func() {
 		if os.MkdirAll(outputDirectory, 0755) != nil {
 			logger.Errorw("Error creating output directory")

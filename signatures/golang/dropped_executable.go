@@ -43,16 +43,13 @@ func (sig *DroppedExecutable) GetSelectedEvents() ([]detect.SignatureEventSelect
 }
 
 func (sig *DroppedExecutable) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
 
 	switch eventObj.EventName {
-
 	case "magic_write":
-
 		bytes, err := helpers.GetTraceeBytesSliceArgumentByName(eventObj, "bytes")
 		if err != nil {
 			return err
@@ -76,7 +73,6 @@ func (sig *DroppedExecutable) OnEvent(event protocol.Event) error {
 				},
 			})
 		}
-
 	}
 	return nil
 }

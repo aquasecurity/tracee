@@ -114,7 +114,6 @@ func TestEventsChronologicalSorter_addEvent(t *testing.T) {
 				assert.Equal(t, testCase.expectedCpuQueuesLens[cpuid], eventsCounter)
 			}
 		})
-
 	}
 }
 

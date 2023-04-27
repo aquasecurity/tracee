@@ -65,7 +65,6 @@ func newFakeSignature(name string, deps []string) detect.Signature {
 			return detect.SignatureMetadata{
 				EventName: name,
 			}, nil
-
 		},
 		FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 			selectedEvents := make([]detect.SignatureEventSelector, 0, len(deps))

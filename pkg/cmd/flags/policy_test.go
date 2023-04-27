@@ -1393,7 +1393,6 @@ func TestPolicyEventFilter(t *testing.T) {
 			for k, v := range test.expected {
 				assert.Equal(t, v, filterMap[k])
 			}
-
 		})
 	}
 }

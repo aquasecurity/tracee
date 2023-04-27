@@ -88,7 +88,6 @@ func NewCgroups() (*Cgroups, error) {
 	// at least one (or both) has to be supported
 	if cgroupv1 == nil && cgroupv2 == nil {
 		return nil, NoCgroupSupport()
-
 	}
 
 	hid := 0
@@ -191,7 +190,6 @@ type CgroupV1 struct {
 }
 
 func (c *CgroupV1) init() error {
-
 	// 0. check if cgroup type is supported
 	supported, err := mount.IsFileSystemSupported(CgroupVersion1.String())
 	if err != nil {

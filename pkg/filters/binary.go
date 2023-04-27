@@ -180,7 +180,6 @@ func (f *BPFBinaryFilter) UpdateBPF(bpfModule *bpf.Module, policyID uint) error 
 }
 
 func (f *BPFBinaryFilter) populateBinaryMap(bpfModule *bpf.Module, policyID uint) error {
-
 	binMap, err := bpfModule.GetMap(f.binaryMapName)
 	if err != nil {
 		return errfmt.WrapError(err)

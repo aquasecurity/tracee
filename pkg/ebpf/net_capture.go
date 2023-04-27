@@ -191,7 +191,6 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 		udpHeaderLengthValue := uint32(0)
 
 		switch v := layer3.(type) {
-
 		case (*layers.IPv4):
 			// Fake L2 header: IPv4 (BSD encap header spec)
 			binary.BigEndian.PutUint32(payloadLayer2, 2) // set value 2 to first 4 bytes (uint32)

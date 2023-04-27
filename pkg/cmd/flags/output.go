@@ -196,7 +196,6 @@ func parseFormat(outputParts []string, printerMap map[string]string) error {
 	}
 
 	for _, outPath := range strings.Split(outputParts[1], ",") {
-
 		if outPath == "" {
 			return errfmt.Errorf("format flag can't be empty, use '--output help' for more info")
 		}

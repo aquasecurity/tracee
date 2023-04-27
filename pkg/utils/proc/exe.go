@@ -34,7 +34,6 @@ func GetAllBinaryProcs() (map[string][]uint32, error) {
 	procs, err := procDir.Readdirnames(-1)
 	if err != nil {
 		return nil, errfmt.Errorf("could not open procfs dir: %v", err)
-
 	}
 	binProcs := map[string][]uint32{}
 	for _, proc := range procs {

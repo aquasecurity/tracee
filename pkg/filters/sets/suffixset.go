@@ -35,7 +35,6 @@ func (set *SuffixSet) Put(suffix string) {
 	if suffixLength < set.minLen {
 		set.minLen = suffixLength
 	}
-
 }
 
 func (set *SuffixSet) Exists(suffix string) bool {

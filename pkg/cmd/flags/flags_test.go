@@ -1281,7 +1281,6 @@ func TestPrepareOutput(t *testing.T) {
 				assert.Equal(t, testcase.expectedOutput.TraceeConfig, output.TraceeConfig)
 
 				assertPrinterConfigs(t, testcase.expectedOutput.PrinterConfigs, output.PrinterConfigs)
-
 			}
 		})
 	}

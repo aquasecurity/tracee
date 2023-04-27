@@ -47,7 +47,6 @@ func (sig *DockerAbuse) GetSelectedEvents() ([]detect.SignatureEventSelector, er
 }
 
 func (sig *DockerAbuse) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
@@ -56,9 +55,7 @@ func (sig *DockerAbuse) OnEvent(event protocol.Event) error {
 	path := ""
 
 	switch eventObj.EventName {
-
 	case "security_file_open":
-
 		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
 		if err != nil {
 			return err
@@ -72,9 +69,7 @@ func (sig *DockerAbuse) OnEvent(event protocol.Event) error {
 		if helpers.IsFileWrite(flags) {
 			path = pathname
 		}
-
 	case "security_socket_connect":
-
 		addr, err := helpers.GetRawAddrArgumentByName(eventObj, "remote_addr")
 		if err != nil {
 			return err

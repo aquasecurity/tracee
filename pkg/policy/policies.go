@@ -89,7 +89,6 @@ func (ps *Policies) Compute() {
 			p.ContextFilter.Enabled() ||
 			(p.UIDFilter.Enabled() && ps.UIDFilterableInUserSpace()) ||
 			(p.PIDFilter.Enabled() && ps.PIDFilterableInUserSpace()) {
-
 			userSpaceMap[p] = p.ID
 		}
 	}

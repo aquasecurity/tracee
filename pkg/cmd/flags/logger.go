@@ -40,7 +40,6 @@ func PrepareLogger(logOptions []string) (logger.LoggingConfig, error) {
 	)
 
 	for _, opt := range logOptions {
-
 		if strings.HasPrefix(opt, "file") {
 			vals := strings.Split(opt, ":")
 

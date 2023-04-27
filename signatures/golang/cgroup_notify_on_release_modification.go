@@ -46,16 +46,13 @@ func (sig *CgroupNotifyOnReleaseModification) GetSelectedEvents() ([]detect.Sign
 }
 
 func (sig *CgroupNotifyOnReleaseModification) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
 
 	switch eventObj.EventName {
-
 	case "security_file_open":
-
 		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
 		if err != nil {
 			return err
@@ -79,6 +76,7 @@ func (sig *CgroupNotifyOnReleaseModification) OnEvent(event protocol.Event) erro
 			})
 		}
 	}
+
 	return nil
 }
 

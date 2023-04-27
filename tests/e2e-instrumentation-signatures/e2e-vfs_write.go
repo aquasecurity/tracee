@@ -42,9 +42,7 @@ func (sig *e2eVfsWrite) OnEvent(event protocol.Event) error {
 	}
 
 	switch eventObj.EventName {
-
 	case "vfs_write":
-
 		filePath, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
 		if err != nil {
 			return err

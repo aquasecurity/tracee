@@ -46,16 +46,13 @@ func (sig *DiskMount) GetSelectedEvents() ([]detect.SignatureEventSelector, erro
 }
 
 func (sig *DiskMount) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
 
 	switch eventObj.EventName {
-
 	case "security_sb_mount":
-
 		if !eventObj.ContextFlags.ContainerStarted {
 			return nil
 		}
@@ -76,7 +73,6 @@ func (sig *DiskMount) OnEvent(event protocol.Event) error {
 				Data:        nil,
 			})
 		}
-
 	}
 
 	return nil

@@ -327,7 +327,6 @@ func TestDecodeIntArray(t *testing.T) {
 	assert.Equal(t, nil, err)
 	// checking decoding works as expected
 	assert.Equal(t, expected, obtained)
-
 }
 
 func TestDecodeSlimCred(t *testing.T) {
@@ -445,7 +444,6 @@ func TestDecodeMprotectWriteMeta(t *testing.T) {
 	err = d.DecodeMprotectWriteMeta(&obtained)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, expected, obtained)
-
 }
 
 func BenchmarkDecodeContext(*testing.B) {
@@ -926,7 +924,6 @@ func BenchmarkBinaryKernelModuleMeta(*testing.B) {
 }
 
 func BenchmarkDecodeMprotectWriteMeta(*testing.B) {
-
 	/*
 		s := MprotectWriteMeta{
 			Ts: 123,
@@ -944,7 +941,6 @@ func BenchmarkDecodeMprotectWriteMeta(*testing.B) {
 }
 
 func BenchmarkBinaryMprotectWriteMeta(*testing.B) {
-
 	/*
 		s := MprotectWriteMeta{
 			Ts: 123,

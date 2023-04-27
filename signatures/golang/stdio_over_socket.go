@@ -46,7 +46,6 @@ func (sig *StdioOverSocket) GetSelectedEvents() ([]detect.SignatureEventSelector
 }
 
 func (sig *StdioOverSocket) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
@@ -56,21 +55,16 @@ func (sig *StdioOverSocket) OnEvent(event protocol.Event) error {
 	var err error
 
 	switch eventObj.EventName {
-
 	case "security_socket_connect":
-
 		sockfd, err = helpers.GetTraceeIntArgumentByName(eventObj, "sockfd")
 		if err != nil {
 			return err
 		}
-
 	case "socket_dup":
-
 		sockfd, err = helpers.GetTraceeIntArgumentByName(eventObj, "newfd")
 		if err != nil {
 			return err
 		}
-
 	}
 
 	if sockfd != 0 && sockfd != 1 && sockfd != 2 {

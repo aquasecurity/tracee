@@ -102,7 +102,6 @@ func (m *MountOnce) Mount() error {
 
 func (m *MountOnce) Umount() error {
 	if m.managed && m.mounted {
-
 		// umount the filesystem from the target dir
 
 		err := capabilities.GetInstance().Specific(

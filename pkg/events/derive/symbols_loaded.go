@@ -21,7 +21,6 @@ func SymbolsLoaded(
 	soLoader sharedobjs.DynamicSymbolsLoader,
 	policies *policy.Policies,
 ) DeriveFunction {
-
 	symbolsLoadedFilters := map[string]filters.Filter{}
 
 	for p := range policies.Map() {
@@ -80,7 +79,6 @@ func initSymbolsLoadedEventGenerator(
 	watchedSymbols []string,
 	whitelistedLibsPrefixes []string,
 ) *symbolsLoadedEventGenerator {
-
 	watchedSymbolsMap := make(map[string]bool)
 	for _, sym := range watchedSymbols {
 		watchedSymbolsMap[sym] = true
@@ -109,8 +107,9 @@ func initSymbolsLoadedEventGenerator(
 
 func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(
 	event trace.Event,
-) ([]interface{}, error) {
-
+) (
+	[]interface{}, error,
+) {
 	loadingObjectInfo, err := getSharedObjectInfo(event)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
@@ -162,7 +161,6 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(
 
 // isWhitelist check if a SO's path is in the whitelist given in initialization
 func (symbsLoadedGen *symbolsLoadedEventGenerator) isWhitelist(soPath string) bool {
-
 	// Check absolute path libraries whitelist
 	for _, prefix := range symbsLoadedGen.pathPrefixWhitelist {
 		if strings.HasPrefix(soPath, prefix) {

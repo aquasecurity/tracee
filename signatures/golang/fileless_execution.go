@@ -43,16 +43,13 @@ func (sig *FilelessExecution) GetSelectedEvents() ([]detect.SignatureEventSelect
 }
 
 func (sig *FilelessExecution) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
 
 	switch eventObj.EventName {
-
 	case "sched_process_exec":
-
 		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
 		if err != nil {
 			return err
@@ -69,7 +66,6 @@ func (sig *FilelessExecution) OnEvent(event protocol.Event) error {
 				Data:        nil,
 			})
 		}
-
 	}
 
 	return nil

@@ -41,9 +41,7 @@ func (sig *e2eTCP) OnEvent(event protocol.Event) error {
 	}
 
 	switch eventObj.EventName {
-
 	case "net_packet_tcp":
-
 		src, err := helpers.GetTraceeStringArgumentByName(eventObj, "src")
 		if err != nil {
 			return err

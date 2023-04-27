@@ -43,16 +43,13 @@ func (sig *SyscallTableHooking) GetSelectedEvents() ([]detect.SignatureEventSele
 }
 
 func (sig *SyscallTableHooking) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
 
 	switch eventObj.EventName {
-
 	case "hooked_syscalls":
-
 		hookedSymbolSlice, err := helpers.GetTraceeHookedSymbolDataArgumentByName(eventObj, "hooked_syscalls")
 		if err != nil {
 			return err
@@ -69,7 +66,6 @@ func (sig *SyscallTableHooking) OnEvent(event protocol.Event) error {
 				Data:        map[string]interface{}{"Hooked syscalls": hookedSymbolSlice},
 			})
 		}
-
 	}
 
 	return nil

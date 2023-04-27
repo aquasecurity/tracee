@@ -15,7 +15,6 @@ import (
 )
 
 func TestParseTraceeInputOptions(t *testing.T) {
-
 	testCases := []struct {
 		testName              string
 		optionStringSlice     []string
@@ -94,7 +93,6 @@ func TestParseTraceeInputOptions(t *testing.T) {
 }
 
 func TestSetupTraceeJSONInputSource(t *testing.T) {
-
 	testCases := []struct {
 		testName      string
 		events        []trace.Event
@@ -125,7 +123,6 @@ func TestSetupTraceeJSONInputSource(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.testName, func(t *testing.T) {
-
 			// Setup temp file that tracee-rules reads from
 			f, err := os.CreateTemp("", "TestSetupTraceeJSONInputSource-")
 			if err != nil {
@@ -169,7 +166,6 @@ func TestSetupTraceeJSONInputSource(t *testing.T) {
 }
 
 func TestSetupTraceeGobInputSource(t *testing.T) {
-
 	testCases := []struct {
 		testName      string
 		events        []trace.Event
@@ -215,7 +211,6 @@ func TestSetupTraceeGobInputSource(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.testName, func(t *testing.T) {
-
 			// Setup temp file that tracee-rules reads from
 			f, err := os.CreateTemp("", "TestSetupTraceeGobInputSource-")
 			if err != nil {

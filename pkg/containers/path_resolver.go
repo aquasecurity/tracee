@@ -44,7 +44,6 @@ func (cPathRes *ContainerPathResolver) GetHostAbsPath(mountNSAbsolutePath string
 	pids := cPathRes.mountNSPIDsCache.GetBucket(uint32(mountNS))
 
 	for _, pid := range pids {
-
 		// cap.SYS_PTRACE is needed here. Instead of raising privileges, since
 		// this is called too frequently, if the needed event is being traced,
 		// the needed capabilities are added to the Base ring and are always set

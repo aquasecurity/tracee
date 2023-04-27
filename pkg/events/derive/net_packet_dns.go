@@ -182,7 +182,6 @@ func eventToProtoDNS(event *trace.Event) (*netPair, *trace.ProtoDNS, error) {
 func convertProtoDNSQuestionToDnsRequest(
 	questions []trace.ProtoDNSQuestion,
 ) []trace.DnsQueryData {
-
 	var requests []trace.DnsQueryData
 
 	for _, question := range questions {
@@ -204,7 +203,6 @@ func convertProtoDNSResourceRecordToDnsResponse(
 	dnsQueryData trace.DnsQueryData,
 	dnsResourceRecord []trace.ProtoDNSResourceRecord,
 ) []trace.DnsResponseData {
-
 	var dnsAnswers []trace.DnsAnswer
 
 	for _, record := range dnsResourceRecord {

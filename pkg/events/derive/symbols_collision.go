@@ -26,7 +26,6 @@ import (
 
 func SymbolsCollision(soLoader sharedobjs.DynamicSymbolsLoader, policies *policy.Policies,
 ) DeriveFunction {
-
 	symbolsCollisionFilters := map[string]filters.Filter{}
 
 	// pick white and black lists from the filters (TODO: change this)
@@ -69,7 +68,6 @@ func initSOCollisionsEventGenerator(
 	symbolsBlackList []string,
 	symbolsWhiteList []string,
 ) *SymbolsCollisionArgsGenerator {
-
 	noCallback := simplelru.EvictCallback(func(key interface{}, value interface{}) {})
 	loadedObsPerProcessLRU, _ := simplelru.NewLRU(1024, noCallback)
 	collisionChecksLRU, _ := simplelru.NewLRU(1024, noCallback)

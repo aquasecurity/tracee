@@ -49,7 +49,6 @@ func (sig *KubernetesCertificateTheftAttempt) GetSelectedEvents() ([]detect.Sign
 }
 
 func (sig *KubernetesCertificateTheftAttempt) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
@@ -58,9 +57,7 @@ func (sig *KubernetesCertificateTheftAttempt) OnEvent(event protocol.Event) erro
 	path := ""
 
 	switch eventObj.EventName {
-
 	case "security_file_open":
-
 		// check process touching certificate is not on allow list
 		for _, legitProc := range sig.legitProcs {
 			if legitProc == eventObj.ProcessName {
@@ -81,16 +78,13 @@ func (sig *KubernetesCertificateTheftAttempt) OnEvent(event protocol.Event) erro
 
 			path = pathname
 		}
-
 	case "security_inode_rename":
-
 		oldPath, err := helpers.GetTraceeStringArgumentByName(eventObj, "old_path")
 		if err != nil {
 			return err
 		}
 
 		path = oldPath
-
 	}
 
 	if strings.HasPrefix(path, sig.k8sCertificatesDir) {

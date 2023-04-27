@@ -91,5 +91,4 @@ func TestAdd(t *testing.T) {
 			assert.Equal(t, test.evt, event)
 		})
 	}
-
 }

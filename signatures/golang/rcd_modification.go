@@ -53,16 +53,13 @@ func (sig *RcdModification) GetSelectedEvents() ([]detect.SignatureEventSelector
 }
 
 func (sig *RcdModification) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
 
 	switch eventObj.EventName {
-
 	case "security_file_open":
-
 		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
 		if err != nil {
 			return err
@@ -76,18 +73,14 @@ func (sig *RcdModification) OnEvent(event protocol.Event) error {
 		if helpers.IsFileWrite(flags) {
 			return sig.checkFileOrDir(event, pathname)
 		}
-
 	case "security_inode_rename":
-
 		newPath, err := helpers.GetTraceeStringArgumentByName(eventObj, "new_path")
 		if err != nil {
 			return err
 		}
 
 		return sig.checkFileOrDir(event, newPath)
-
 	case "sched_process_exec":
-
 		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
 		if err != nil {
 			return err
@@ -97,8 +90,8 @@ func (sig *RcdModification) OnEvent(event protocol.Event) error {
 		if basename == sig.rcdCommand {
 			return sig.match(event)
 		}
-
 	}
+
 	return nil
 }
 

@@ -24,7 +24,6 @@ func main() {
 		Usage:   "Trace OS events and syscalls using eBPF",
 		Version: version,
 		Action: func(c *cli.Context) error {
-
 			if c.NArg() > 0 {
 				return cli.ShowAppHelp(c) // no args, only flags supported
 			}
@@ -49,7 +48,6 @@ func main() {
 			defer stop()
 
 			return runner.Run(ctx)
-
 		},
 		Flags: []cli.Flag{
 			&cli.BoolFlag{

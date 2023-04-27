@@ -45,7 +45,6 @@ func (sig *K8sApiConnection) GetSelectedEvents() ([]detect.SignatureEventSelecto
 }
 
 func (sig *K8sApiConnection) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("failed to cast event's payload")
@@ -57,9 +56,7 @@ func (sig *K8sApiConnection) OnEvent(event protocol.Event) error {
 	}
 
 	switch eventObj.EventName {
-
 	case "sched_process_exec":
-
 		envVars, err := helpers.GetTraceeSliceStringArgumentByName(eventObj, "env")
 		if err != nil {
 			return nil
@@ -69,9 +66,7 @@ func (sig *K8sApiConnection) OnEvent(event protocol.Event) error {
 		if apiIPAddress != "" {
 			sig.apiAddressContainerId[containerID] = apiIPAddress
 		}
-
 	case "security_socket_connect":
-
 		apiAddress, exists := sig.apiAddressContainerId[containerID]
 		if !exists {
 			return nil
@@ -106,6 +101,7 @@ func (sig *K8sApiConnection) OnEvent(event protocol.Event) error {
 			})
 		}
 	}
+
 	return nil
 }
 

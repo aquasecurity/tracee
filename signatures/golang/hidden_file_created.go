@@ -46,16 +46,13 @@ func (sig *HiddenFileCreated) GetSelectedEvents() ([]detect.SignatureEventSelect
 }
 
 func (sig *HiddenFileCreated) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
 
 	switch eventObj.EventName {
-
 	case "magic_write":
-
 		bytes, err := helpers.GetTraceeBytesSliceArgumentByName(eventObj, "bytes")
 		if err != nil {
 			return err
@@ -77,7 +74,6 @@ func (sig *HiddenFileCreated) OnEvent(event protocol.Event) error {
 				Data:        nil,
 			})
 		}
-
 	}
 
 	return nil

@@ -156,7 +156,6 @@ func TestEvent_Origin(t *testing.T) {
 	for _, tc := range testCases {
 		assert.Equal(t, tc.expected, tc.event.Origin())
 	}
-
 }
 
 func TestEvent_ToProtocol(t *testing.T) {

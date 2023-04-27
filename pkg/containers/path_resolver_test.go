@@ -149,5 +149,4 @@ func TestPathResolver_ResolveAbsolutePath(t *testing.T) {
 			})
 		}
 	})
-
 }
