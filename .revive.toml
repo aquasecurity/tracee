@@ -1,28 +1,28 @@
 severity = "warning"
 confidence = 0.8
-errorCode = 0
-warningCode = 0
+errorCode = 1
+warningCode = 1
 
 # Enable all available rules
 enableAllRules = true
 
-# Disabled rules
 [rule.add-constant]
     Disabled = true
 [rule.argument-limit]
-    Disabled = true
+    Disabled = false
+    Arguments = [5]
 [rule.atomic]
-    Disabled = true
+    Disabled = false
 [rule.bare-return]
-    Disabled = true
+    Disabled = false
 [rule.banned-characters]
     Disabled = true
 [rule.blank-imports]
-    Disabled = true
+    Disabled = false
 [rule.bool-literal-in-expr]
-    Disabled = true
+    Disabled = false
 [rule.call-to-gc]
-    Disabled = true
+    Disabled = false
 [rule.confusing-naming]
     Disabled = true
 [rule.comment-spacings]
@@ -32,130 +32,121 @@ enableAllRules = true
 [rule.cognitive-complexity]
     Disabled = true
 [rule.constant-logical-expr]
-    Disabled = true
+    Disabled = false
 [rule.context-as-argument]
-    Disabled = true
+    Disabled = false
 [rule.context-keys-type]
-    Disabled = true
+    Disabled = false
 [rule.cyclomatic]
     Disabled = true
 [rule.datarace]
-    Disabled = true
+    Disabled = false
 [rule.deep-exit]
     Disabled = true
 [rule.defer]
-    Disabled = true
+    Disabled = false
 [rule.dot-imports]
-    Disabled = true
+    Disabled = false
 [rule.duplicated-imports]
-    Disabled = true
+    Disabled = false
 [rule.early-return]
-    Disabled = true
+    Disabled = false
 [rule.empty-block]
-    Disabled = true
+    Disabled = false
 [rule.empty-lines]
-    Disabled = true
+    Disabled = false
 [rule.error-naming]
-    Disabled = true
+    Disabled = false
 [rule.error-return]
-    Disabled = true
+    Disabled = false
 [rule.error-strings]
-    Disabled = true
+    Disabled = false
 [rule.errorf]
-    Disabled = true
+    Disabled = false
 [rule.exported]
-    Disabled = true
+    Disabled = true # TODO: add comments to exported functions
 [rule.file-header]
     Disabled = true
 [rule.flag-parameter]
     Disabled = true
 [rule.function-result-limit]
-    Disabled = true
+    Disabled = false
+    Arguments = [3]
 [rule.function-length]
     Disabled = true
 [rule.get-return]
-    Disabled = true
+    Disabled = false
 [rule.identical-branches]
-    Disabled = true
+    Disabled = false
 [rule.if-return]
-    Disabled = true
+    Disabled = false
 [rule.increment-decrement]
-    Disabled = true
+    Disabled = false
 [rule.indent-error-flow]
-    Disabled = true
+    Disabled = false
 [rule.imports-blacklist]
     Disabled = true
 [rule.import-shadowing]
-    Disabled = true
+    Disabled = false
 [rule.line-length-limit]
-    Disabled = true
+    Disabled = true # TODO: set max length to 100 max
 [rule.max-public-structs]
     Disabled = true
 [rule.modifies-parameter]
-    Disabled = true
+    Disabled = false
 [rule.modifies-value-receiver]
     Disabled = true
 [rule.nested-structs]
     Disabled = true
 [rule.optimize-operands-order]
-    Disabled = true
+    Disabled = false
 [rule.package-comments]
-    Disabled = true
+    Disabled = true # TODO: add comments to all packages
 [rule.range]
-    Disabled = true
+    Disabled = false
 [rule.range-val-in-closure]
-    Disabled = true
+    Disabled = false
 [rule.range-val-address]
-    Disabled = true
+    Disabled = false
 [rule.receiver-naming]
-    Disabled = true
+    Disabled = false
 [rule.redefines-builtin-id]
     Disabled = true
 [rule.string-of-int]
     Disabled = true
 [rule.struct-tag]
-    Disabled = true
+    Disabled = true # TODO: interesting to check
 [rule.string-format]
-    Disabled = true
+    Disabled = true # TODO: interesting to check
 [rule.superfluous-else]
-    Disabled = true
+    Disabled = false
 [rule.time-equal]
-    Disabled = true
+    Disabled = false
 [rule.time-naming]
-    Disabled = true
+    Disabled = false
 [rule.var-naming]
-    Disabled = true
+    Disabled = true # TODO: rename variables correctly
 [rule.var-declaration]
-    Disabled = true
+    Disabled = false
 [rule.unconditional-recursion]
-    Disabled = true
+    Disabled = false
 [rule.unexported-naming]
-    Disabled = true
+    Disabled = false
 [rule.unexported-return]
-    Disabled = true
+    Disabled = true # TODO: consider enabling this
 [rule.unhandled-error]
-    Disabled = true
+    Disabled = true # TODO: already being done by errcheck (change ?)
 [rule.unnecessary-stmt]
     Disabled = true
 [rule.unreachable-code]
-    Disabled = true
+    Disabled = false
 [rule.unused-parameter]
     Disabled = true
 [rule.unused-receiver]
     Disabled = true
 [rule.use-any]
-    Disabled = true
+    Disabled = true # TODO: should we rename interface{} to any ?
 [rule.useless-break]
-    Disabled = true
+    Disabled = false
 [rule.waitgroup-by-value]
-    Disabled = true
-
-# Rule tunning
-# [rule.argument-limit]
-#     Arguments = [5]
-# [rule.cyclomatic]
-#     Arguments = [10]
-# [rule.cognitive-complexity]
-#     Arguments = [7]
-# [rule.function-result-limit]
-#     Arguments = [3]
+    Disabled = false

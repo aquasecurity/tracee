@@ -771,11 +771,17 @@ fix-fmt::
 #
 	@$(MAKE) -f builder/Makefile.checkers fmt-fix
 
+.PHONY: check-lint
+check-lint::
+#
+	@$(MAKE) -f builder/Makefile.checkers lint-check
+
 .PHONY: check-code
 check-code:: \
 	tracee-ebpf
 #
 	@$(MAKE) -f builder/Makefile.checkers code-check
+
 
 .PHONY: check-vet
 check-vet: \
