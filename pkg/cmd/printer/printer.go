@@ -323,7 +323,7 @@ func (p tableEventPrinter) Print(event trace.Event) {
 			)
 		}
 	}
-	for i, arg := range event.Args {
+	for i, arg := range event.ParsedArgs {
 		if i == 0 {
 			fmt.Fprintf(p.out, "%s: %v", arg.Name, arg.Value)
 		} else {
