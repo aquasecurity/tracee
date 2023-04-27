@@ -2,7 +2,6 @@ package signature
 
 import (
 	"bytes"
-	_ "embed"
 	"fmt"
 	"io/fs"
 	"os"
