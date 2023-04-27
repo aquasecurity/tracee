@@ -5,7 +5,7 @@ test_match_1 {
 		"eventName": "sched_process_exec",
 		"argsNum": 1,
 		"containerId": "someContainer",
-		"args": [{
+		"parsedArgs": [{
 			"name": "pathname",
 			"value": "memfd://something/something",
 		}],
@@ -17,7 +17,7 @@ test_match_2 {
 		"eventName": "sched_process_exec",
 		"argsNum": 1,
 		"containerId": "someContainer",
-		"args": [{
+		"parsedArgs": [{
 			"name": "pathname",
 			"value": "memfd:runc",
 		}],
@@ -29,7 +29,7 @@ test_match_3 {
 		"eventName": "sched_process_exec",
 		"argsNum": 1,
 		"containerId": "",
-		"args": [{
+		"parsedArgs": [{
 			"name": "pathname",
 			"value": "memfd://something/something",
 		}],
@@ -41,7 +41,7 @@ test_match_4 {
 		"eventName": "sched_process_exec",
 		"argsNum": 1,
 		"containerId": "",
-		"args": [{
+		"parsedArgs": [{
 			"name": "pathname",
 			"value": "memfd:runc",
 		}],
@@ -53,7 +53,7 @@ test_match_5 {
 		"eventName": "sched_process_exec",
 		"argsNum": 1,
 		"containerId": "someContainer",
-		"args": [{
+		"parsedArgs": [{
 			"name": "pathname",
 			"value": "/dev/shm/something",
 		}],
@@ -65,7 +65,7 @@ test_match_6 {
 		"eventName": "sched_process_exec",
 		"argsNum": 1,
 		"containerId": "someContainer",
-		"args": [{
+		"parsedArgs": [{
 			"name": "pathname",
 			"value": "/run/shm/something",
 		}],
@@ -77,7 +77,7 @@ test_match_wrong_pathname {
 		"eventName": "sched_process_exec",
 		"argsNum": 1,
 		"containerId": "someContainer",
-		"args": [{
+		"parsedArgs": [{
 			"name": "pathname",
 			"value": "/something/something",
 		}],

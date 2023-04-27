@@ -4,7 +4,7 @@ test_match_1 {
 	tracee_match with input as {
 		"eventName": "ptrace",
 		"argsNum": 1,
-		"args": [{
+		"parsedArgs": [{
 			"name": "request",
 			"value": "PTRACE_POKETEXT",
 		}],
@@ -15,7 +15,7 @@ test_match_2 {
 	tracee_match with input as {
 		"eventName": "security_file_open",
 		"argsNum": 4,
-		"args": [
+		"parsedArgs": [
 			{
 				"name": "flags",
 				"value": "o_rdwr",
@@ -41,7 +41,7 @@ test_match_3 {
 		"eventName": "process_vm_writev",
 		"processId": 109,
 		"argsNum": 1,
-		"args": [{
+		"parsedArgs": [{
 			"name": "pid",
 			"value": 101,
 		}],
@@ -52,7 +52,7 @@ test_match_wrong_request {
 	not tracee_match with input as {
 		"eventName": "ptrace",
 		"argsNum": 1,
-		"args": [{
+		"parsedArgs": [{
 			"name": "request",
 			"value": "PTRACE_PEEKDATA",
 		}],
@@ -63,7 +63,7 @@ test_match_wrong_pathname {
 	not tracee_match with input as {
 		"eventName": "security_file_open",
 		"argsNum": 4,
-		"args": [
+		"parsedArgs": [
 			{
 				"name": "flags",
 				"value": "o_rdwr",
@@ -89,7 +89,7 @@ test_match_pid {
 		"eventName": "process_vm_writev",
 		"processId": 101,
 		"argsNum": 1,
-		"args": [{
+		"parsedArgs": [{
 			"name": "pid",
 			"value": 101,
 		}],

@@ -4,7 +4,7 @@ test_match_1 {
 	tracee_match with input as {
 		"eventName": "security_file_open",
 		"argsNum": 2,
-		"args": [
+		"parsedArgs": [
 			{
 				"name": "pathname",
 				"type": "const char*",
@@ -23,7 +23,7 @@ test_match_wrong_request {
 	not tracee_match with input as {
 		"eventName": "security_file_open",
 		"argsNum": 2,
-		"args": [
+		"parsedArgs": [
 			{
 				"name": "pathname",
 				"type": "const char*",

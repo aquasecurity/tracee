@@ -1,5 +1,7 @@
 package tracee.TRC_2
 
+import data.tracee.helpers
+
 __rego_metadoc__ := {
 	"id": "TRC-2",
 	"version": "0.1.0",
@@ -22,7 +24,6 @@ tracee_selected_events[eventSelector] {
 
 tracee_match {
 	input.eventName == "ptrace"
-	arg := input.args[_]
-	arg.name == "request"
-	arg.value == "PTRACE_TRACEME"
+	request := helpers.get_tracee_argument("request")
+	request == "PTRACE_TRACEME"
 }
