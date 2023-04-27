@@ -161,7 +161,7 @@ func (f *UIntFilter[T]) add(val uint64, operator Operator) error {
 	return nil
 }
 
-func (filter *UIntFilter[T]) Parse(operatorAndValues string) error {
+func (f *UIntFilter[T]) Parse(operatorAndValues string) error {
 	if len(operatorAndValues) < 2 {
 		return InvalidExpression(operatorAndValues)
 	}
@@ -198,13 +198,13 @@ func (filter *UIntFilter[T]) Parse(operatorAndValues string) error {
 		if operator == Lower && valInt == 0 {
 			return InvalidExpression(operatorAndValues)
 		}
-		err = filter.add(valInt, operator)
+		err = f.add(valInt, operator)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
 	}
 
-	filter.Enable()
+	f.Enable()
 
 	return nil
 }
@@ -305,8 +305,8 @@ func (filter *BPFUIntFilter[T]) UpdateBPF(bpfModule *bpf.Module, policyID uint) 
 	return nil
 }
 
-func (filter *UIntFilter[T]) FilterOut() bool {
-	if len(filter.equal) > 0 && len(filter.notEqual) == 0 && filter.min == MinNotSetUInt && filter.max == MaxNotSetUInt {
+func (f *UIntFilter[T]) FilterOut() bool {
+	if len(f.equal) > 0 && len(f.notEqual) == 0 && f.min == MinNotSetUInt && f.max == MaxNotSetUInt {
 		return false
 	}
 	return true
