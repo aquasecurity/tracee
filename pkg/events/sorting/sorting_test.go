@@ -297,9 +297,8 @@ func retrieveEventsFromSorter(expectedEventsAmount int, sorterOutputChan <-chan 
 		case <-ticker.C:
 			if eventsReceived != expectedEventsAmount {
 				return nil, fmt.Errorf("not all events received until timeout")
-			} else {
-				return outputList, nil
 			}
+			return outputList, nil
 		}
 	}
 }

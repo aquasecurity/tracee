@@ -45,9 +45,9 @@ func deriveHiddenKernelModulesArgs() deriveArgsFunction {
 
 		if _, found := foundHiddenKernModsCache.Get(address); found {
 			return nil, nil // already reported this event - no need to report again
-		} else {
-			foundHiddenKernModsCache.Add(address, struct{}{}) // so we won't report multiple times
 		}
+
+		foundHiddenKernModsCache.Add(address, struct{}{}) // so we won't report multiple times
 
 		addrHex := fmt.Sprintf("0x%x", address)
 		if len(addrHex) == 2 {

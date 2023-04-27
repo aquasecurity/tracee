@@ -123,9 +123,8 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(
 	if ok {
 		if len(matchedSyms) > 0 {
 			return []interface{}{loadingObjectInfo.Path, matchedSyms}, nil
-		} else {
-			return nil, nil
 		}
+		return nil, nil
 	}
 
 	soSyms, err := symbsLoadedGen.soLoader.GetExportedSymbols(loadingObjectInfo)

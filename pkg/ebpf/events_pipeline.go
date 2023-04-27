@@ -365,21 +365,18 @@ func parseSyscallID(syscallID int, isCompat bool, compatTranslationMap map[event
 		def, ok := events.Definitions.GetSafe(events.ID(syscallID))
 		if ok {
 			return def.Name, nil
-		} else {
-			return "", errfmt.Errorf("no syscall event with syscall id %d", syscallID)
 		}
-	} else {
-		id, ok := compatTranslationMap[events.ID(syscallID)]
-		if ok {
-			def, ok := events.Definitions.GetSafe(id)
-			if !ok { // Should never happen, as the translation map should be initialized from events.Definition
-				return "", errfmt.Errorf("no syscall event with compat syscall id %d, translated to ID %d", syscallID, id)
-			}
-			return def.Name, nil
-		} else {
-			return "", errfmt.Errorf("no syscall event with compat syscall id %d", syscallID)
-		}
+		return "", errfmt.Errorf("no syscall event with syscall id %d", syscallID)
 	}
+	id, ok := compatTranslationMap[events.ID(syscallID)]
+	if ok {
+		def, ok := events.Definitions.GetSafe(id)
+		if !ok { // Should never happen, as the translation map should be initialized from events.Definition
+			return "", errfmt.Errorf("no syscall event with compat syscall id %d, translated to ID %d", syscallID, id)
+		}
+		return def.Name, nil
+	}
+	return "", errfmt.Errorf("no syscall event with compat syscall id %d", syscallID)
 }
 
 func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (<-chan *trace.Event, <-chan error) {

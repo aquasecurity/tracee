@@ -127,18 +127,18 @@ func GetTraceeHookedSymbolDataArgumentByName(event trace.Event, argName string) 
 	hookedSymbols, ok := hookedSymbolsPtr.Value.([]trace.HookedSymbolData)
 	if ok {
 		return hookedSymbols, nil
-	} else {
-		argSlice, ok := hookedSymbolsPtr.Value.([]interface{})
-		if ok {
-			for _, v := range argSlice {
-				hookedSymbol, err := getHookedSymbolData(v)
-				if err != nil {
-					continue
-				}
-				hookedSymbols = append(hookedSymbols, hookedSymbol)
+	}
+
+	argSlice, ok := hookedSymbolsPtr.Value.([]interface{})
+	if ok {
+		for _, v := range argSlice {
+			hookedSymbol, err := getHookedSymbolData(v)
+			if err != nil {
+				continue
 			}
-			return hookedSymbols, nil
+			hookedSymbols = append(hookedSymbols, hookedSymbol)
 		}
+		return hookedSymbols, nil
 	}
 
 	return hookedSymbols, fmt.Errorf("can't convert argument %v to []trace.HookedSymbolData", argName)

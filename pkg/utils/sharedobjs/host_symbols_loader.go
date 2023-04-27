@@ -94,9 +94,9 @@ func (soCache *dynamicSymbolsLRUCache) Get(objID ObjID) (*dynamicSymbols, bool) 
 	if ok {
 		objInfo := objInfoIface.(*dynamicSymbols)
 		return objInfo, true
-	} else {
-		return nil, false
 	}
+
+	return nil, false
 }
 
 func (soCache *dynamicSymbolsLRUCache) Add(obj ObjInfo, dynamicSymbols *dynamicSymbols) {

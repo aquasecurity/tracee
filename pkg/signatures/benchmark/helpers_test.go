@@ -194,14 +194,13 @@ func ProduceEventsFromGobFile(n int, path string) (engine.EventSources, error) {
 		var event trace.Event
 		err := dec.Decode(&event)
 		if err != nil {
-			if err == io.EOF {
-				break
+			if err != io.EOF {
+				return engine.EventSources{}, fmt.Errorf("decoding event: %v", err)
 			}
-			return engine.EventSources{}, fmt.Errorf("decoding event: %v", err)
-		} else {
-			e := event.ToProtocol()
-			eventsCh <- e
+			break
 		}
+		e := event.ToProtocol()
+		eventsCh <- e
 	}
 
 	close(eventsCh)

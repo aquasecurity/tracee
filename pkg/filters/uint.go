@@ -308,7 +308,6 @@ func (filter *BPFUIntFilter[T]) UpdateBPF(bpfModule *bpf.Module, policyID uint) 
 func (filter *UIntFilter[T]) FilterOut() bool {
 	if len(filter.equal) > 0 && len(filter.notEqual) == 0 && filter.min == MinNotSetUInt && filter.max == MaxNotSetUInt {
 		return false
-	} else {
-		return true
 	}
+	return true
 }
