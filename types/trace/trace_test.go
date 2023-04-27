@@ -33,11 +33,10 @@ func TestEventUnmarshalJSON(t *testing.T) {
 		var res Event
 		err := json.Unmarshal([]byte(tc.json), &res)
 		if err != nil {
-			if !tc.expectError {
-				t.Error(err)
-			} else {
+			if tc.expectError {
 				continue
 			}
+			t.Error(err)
 		}
 		if !reflect.DeepEqual(tc.expect, res) {
 			for _, arg := range res.Args {
@@ -108,11 +107,10 @@ func TestArgumentUnmarshalJSON(t *testing.T) {
 		var res Argument
 		err := json.Unmarshal([]byte(tc.json), &res)
 		if err != nil {
-			if !tc.expectError {
-				t.Error(err)
-			} else {
+			if tc.expectError {
 				continue
 			}
+			t.Error(err)
 		}
 		if !reflect.DeepEqual(tc.expect, res) {
 			t.Errorf("want %v (Value type %T), have %v (Value type %T)", tc.expect, tc.expect.Value, res, res.Value)

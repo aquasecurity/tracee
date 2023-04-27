@@ -56,11 +56,10 @@ func (c *BucketsCache) addBucketItem(key uint32, value uint32, force bool) {
 		c.bucketsMutex.Unlock()
 	}
 	if len(b) >= c.bucketLimit {
-		if force {
-			b[0] = value
-		} else {
+		if !force {
 			return
 		}
+		b[0] = value
 	} else {
 		c.bucketsMutex.Lock()
 		c.buckets[key] = append(b, value)
