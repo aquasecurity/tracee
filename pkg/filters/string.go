@@ -216,9 +216,8 @@ func (f *StringFilter) NotEqual() []string {
 func (filter *StringFilter) FilterOut() bool {
 	if len(filter.Equal()) > 0 && len(filter.NotEqual()) == 0 {
 		return false
-	} else {
-		return true
 	}
+	return true
 }
 
 type BPFStringFilter struct {

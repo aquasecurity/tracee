@@ -140,9 +140,8 @@ func (f *BinaryFilter) Enabled() bool {
 func (f *BinaryFilter) FilterOut() bool {
 	if len(f.equal) > 0 && len(f.notEqual) == 0 {
 		return false
-	} else {
-		return true
 	}
+	return true
 }
 
 type BPFBinaryFilter struct {

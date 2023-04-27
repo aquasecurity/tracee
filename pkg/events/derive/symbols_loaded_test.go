@@ -30,17 +30,15 @@ func initLoaderMock(shouldFail bool) symbolsLoaderMock {
 func (loader symbolsLoaderMock) GetDynamicSymbols(info sharedobjs.ObjInfo) (map[string]bool, error) {
 	if loader.shouldFail {
 		return nil, errors.New("loading error")
-	} else {
-		return loader.cache[info], nil
 	}
+	return loader.cache[info], nil
 }
 
 func (loader symbolsLoaderMock) GetExportedSymbols(info sharedobjs.ObjInfo) (map[string]bool, error) {
 	if loader.shouldFail {
 		return nil, errors.New("loading error")
-	} else {
-		return loader.cache[info], nil
 	}
+	return loader.cache[info], nil
 }
 
 func (loader symbolsLoaderMock) GetImportedSymbols(info sharedobjs.ObjInfo) (map[string]bool, error) {
