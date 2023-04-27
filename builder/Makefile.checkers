@@ -23,13 +23,10 @@ CMD_SED ?= sed
 CMD_TR ?= tr
 CMD_FIND ?= find
 CMD_CLANG ?= clang
-# clang-format-12 is mandatory for now (enum declarations incompatibilities w/ 13 and newer)
-CMD_CLANG_FMT ?= clang-format-12
+CMD_CLANG_FMT ?= clang-format-12 # mandatory for now, incompatible with 13 and newer
 CMD_GOFMT ?= gofmt
-# goimports-reviser
 CMD_GOIMPORTS ?= goimports-reviser
-CMD_GOIMPORTS_COMPANY_PREFIXES ?= "github.com/aquasecurity"
-CMD_GOIMPORTS_PROJECT ?= "github.com/aquasecurity/tracee"
+CMD_REVIVE ?= revive
 
 .check_%:
 #
@@ -81,6 +78,9 @@ help:
 #
 
 C_FILES_TO_BE_CHECKED = $(shell find ./pkg/ebpf/c/ -regextype posix-extended -regex '.*\.(h|c)' | xargs)
+
+CMD_GOIMPORTS_COMPANY_PREFIXES ?= "github.com/aquasecurity"
+CMD_GOIMPORTS_PROJECT ?= "github.com/aquasecurity/tracee"
 
 .PHONY: fmt-check
 fmt-check: | \
@@ -139,6 +139,19 @@ fmt-check: | \
 		exit 1
 	fi
 	rm -f /tmp/check-go-fmt
+
+#
+# golang linting (revive)
+#
+
+.PHONY: lint-check
+lint-check: | \
+	.check_tree \
+	.check_$(CMD_REVIVE)
+#
+	@errors=0
+	echo "Linting golang code..."
+	$(CMD_REVIVE) -config .revive.toml ./...
 
 #
 # fix formatting (clang-format, goimports-reviser, gofmt)

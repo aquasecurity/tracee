@@ -60,6 +60,9 @@ jobs:
             gofmt -s -d .
             exit 1
           fi
+      - name: Lint (Revive)
+        run: |
+          make check-lint
       - name: Check Code Style
         run: |
           make check-fmt
