@@ -266,11 +266,11 @@ func TestEventFilters(t *testing.T) {
 			filterArgs: []string{"uid>0", "comm=ls"},
 			eventFunc:  checkUidNonZero,
 		},
-		//TODO: Add pid=0,1
-		//TODO: Add pid=0 pid=1
-		//TODO: Add uid>0
-		//TODO: Add pid>0 pid<1000
-		//TODO: Add u>0 u!=1000
+		// TODO: Add pid=0,1
+		// TODO: Add pid=0 pid=1
+		// TODO: Add uid>0
+		// TODO: Add pid>0 pid<1000
+		// TODO: Add u>0 u!=1000
 		{
 			name:       "trace filesystem events from comm ls",
 			filterArgs: []string{"s=fs", "comm=ls"},

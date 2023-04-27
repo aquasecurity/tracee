@@ -42,7 +42,7 @@ func (e *crioEnricher) Get(containerId string, ctx context.Context) (ContainerMe
 		return metadata, errfmt.WrapError(err)
 	}
 
-	//if in k8s we can extract pod info from labels
+	// if in k8s we can extract pod info from labels
 	labels := resp.Status.Labels
 	if labels != nil {
 		metadata.Pod = PodMetadata{

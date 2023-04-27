@@ -61,7 +61,7 @@ func New(
 
 	runtimeService := RuntimeInfoService(sockets)
 
-	//attempt to register for all supported runtimes
+	// attempt to register for all supported runtimes
 	err := runtimeService.Register(cruntime.Containerd, cruntime.ContainerdEnricher)
 	if err != nil {
 		logger.Debugw("Enricher", "error", err)
@@ -191,7 +191,7 @@ func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetada
 	info, ok := c.cgroupsMap[uint32(cgroupId)]
 	c.mtx.RUnlock()
 
-	//if there is no cgroup anymore for some reason, return early
+	// if there is no cgroup anymore for some reason, return early
 	if !ok {
 		return metadata, errfmt.Errorf("no cgroup to enrich")
 	}
@@ -203,20 +203,20 @@ func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetada
 		return metadata, errfmt.Errorf("no containerId")
 	}
 
-	//There might be a performance overhead with the cancel
-	//But, I think it will be negligible since this code path shouldn't be reached too frequently
+	// There might be a performance overhead with the cancel
+	// But, I think it will be negligible since this code path shouldn't be reached too frequently
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	metadata, err := c.enricher.Get(containerId, runtime, ctx)
 	defer cancel()
-	//if enrichment fails, just return early
+	// if enrichment fails, just return early
 	if err != nil {
 		return metadata, errfmt.WrapError(err)
 	}
 
 	info.Container = metadata
 	c.mtx.Lock()
-	//we read the dictionary again to make sure the cgroup still exists
-	//otherwise we risk reintroducing it despite not existing
+	// we read the dictionary again to make sure the cgroup still exists
+	// otherwise we risk reintroducing it despite not existing
 	_, ok = c.cgroupsMap[uint32(cgroupId)]
 	if ok {
 		c.cgroupsMap[uint32(cgroupId)] = info

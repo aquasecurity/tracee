@@ -57,13 +57,13 @@ func (e *containerdEnricher) Get(containerId string, ctx context.Context) (Conta
 		nsCtx := namespaces.WithNamespace(ctx, namespace)
 		container, err := e.containers.Get(nsCtx, containerId)
 		if err != nil {
-			//if containers is not in current namespace, search the next one
+			// if containers is not in current namespace, search the next one
 			continue
 		} else {
 			imageName := container.Image
 			imageDigest := container.Image
 			image := container.Image
-			//container may not have image name as id, if so fetch from the sha256 id
+			// container may not have image name as id, if so fetch from the sha256 id
 			if strings.HasPrefix(image, "sha256:") {
 				imageInfo, err := e.images.ImageStatus(ctx, &cri.ImageStatusRequest{
 					Image: &cri.ImageSpec{
@@ -83,7 +83,7 @@ func (e *containerdEnricher) Get(containerId string, ctx context.Context) (Conta
 				}
 			}
 
-			//if in k8s we can extract pod info from labels
+			// if in k8s we can extract pod info from labels
 			if container.Labels != nil {
 				labels := container.Labels
 
@@ -94,7 +94,7 @@ func (e *containerdEnricher) Get(containerId string, ctx context.Context) (Conta
 					Sandbox:   e.isSandbox(labels),
 				}
 
-				//containerd containers normally have no names unless set from k8s
+				// containerd containers normally have no names unless set from k8s
 				metadata.Name = labels[ContainerNameLabel]
 			}
 			metadata.Image = imageName

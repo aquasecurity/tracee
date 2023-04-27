@@ -477,7 +477,7 @@ func TestEngine_LoadSignature(t *testing.T) {
 				assert.Equal(t, metadata.ID, id)
 			}
 
-			//check that signature stats were correctly incremented
+			// check that signature stats were correctly incremented
 			assert.Equal(t, tc.expectedCount, int(engine.Stats().Signatures.Read()))
 			close(input)
 		})

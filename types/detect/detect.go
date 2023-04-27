@@ -7,17 +7,17 @@ import (
 
 // Signature is the basic unit of business logic for the rule-engine
 type Signature interface {
-	//GetMetadata allows the signature to declare information about itself
+	// GetMetadata allows the signature to declare information about itself
 	GetMetadata() (SignatureMetadata, error)
-	//GetSelectedEvents allows the signature to declare which events it subscribes to
+	// GetSelectedEvents allows the signature to declare which events it subscribes to
 	GetSelectedEvents() ([]SignatureEventSelector, error)
-	//Init allows the signature to initialize its internal state
+	// Init allows the signature to initialize its internal state
 	Init(ctx SignatureContext) error
-	//Close cleans the signature after Init operation
+	// Close cleans the signature after Init operation
 	Close()
-	//OnEvent allows the signature to process events passed by the Engine. this is the business logic of the signature
+	// OnEvent allows the signature to process events passed by the Engine. this is the business logic of the signature
 	OnEvent(event protocol.Event) error
-	//OnSignal allows the signature to handle lifecycle events of the signature
+	// OnSignal allows the signature to handle lifecycle events of the signature
 	OnSignal(signal Signal) error
 }
 
@@ -56,7 +56,7 @@ type SignalSourceComplete string
 // Finding is the main output of a signature. It represents a match result for the signature business logic
 type Finding struct {
 	Data        map[string]interface{}
-	Event       protocol.Event //Event is the causal event of the Finding
+	Event       protocol.Event // Event is the causal event of the Finding
 	SigMetadata SignatureMetadata
 }
 

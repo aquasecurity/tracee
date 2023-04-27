@@ -66,7 +66,7 @@ func PrepareOutput(outputSlice []string) (OutputConfig, error) {
 	outConfig := OutputConfig{}
 	traceeConfig := &tracee.OutputConfig{}
 
-	//outpath:format
+	// outpath:format
 	printerMap := make(map[string]string)
 
 	for _, o := range outputSlice {
