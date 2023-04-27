@@ -1,10 +1,10 @@
-#ifndef __TRACEE_TYPES_H__
-#define __TRACEE_TYPES_H__
+#ifndef __TYPES_H__
+#define __TYPES_H__
 
 #include <vmlinux.h>
-#include <missing_definitions.h>
+#include <vmlinux_missing.h>
 
-#include "common/consts.h"
+#include <common/consts.h>
 
 typedef struct task_context {
     u64 start_time; // thread's start time

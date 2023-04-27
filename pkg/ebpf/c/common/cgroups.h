@@ -1,10 +1,10 @@
-#ifndef __TRACEE_CGROUPS_H__
-#define __TRACEE_CGROUPS_H__
+#ifndef __COMMON_CGROUPS_H__
+#define __COMMON_CGROUPS_H__
 
 #include <vmlinux.h>
+#include <vmlinux_flavors.h>
 
-#include <bpf/bpf_helpers.h>
-#include "common/common.h"
+#include <common/common.h>
 
 static __always_inline const char *get_cgroup_dirname(struct cgroup *cgrp)
 {

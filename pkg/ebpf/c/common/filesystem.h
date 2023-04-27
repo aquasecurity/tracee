@@ -1,15 +1,10 @@
-#ifndef __TRACEE_FILESYSTEM_H__
-#define __TRACEE_FILESYSTEM_H__
+#ifndef __COMMON_FILESYSTEM_H__
+#define __COMMON_FILESYSTEM_H__
 
-#include <missing_definitions.h>
 #include <vmlinux.h>
 
-#include <bpf/bpf_helpers.h>
-#include "common/buffer.h"
-#include "common/common.h"
-#include "consts.h"
-#include "memory.h"
-#include "maps.h"
+#include <common/buffer.h>
+#include <common/memory.h>
 
 static __always_inline u64 get_time_nanosec_timespec(struct timespec64 *ts)
 {

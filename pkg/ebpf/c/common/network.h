@@ -1,13 +1,12 @@
-#ifndef __TRACEE_NETWORK_H__
-#define __TRACEE_NETWORK_H__
+#ifndef __COMMON_NETWORK_H__
+#define __COMMON_NETWORK_H__
 
 #include <vmlinux.h>
-#include <missing_definitions.h>
+#include <vmlinux_flavors.h>
 
-#include <bpf/bpf_helpers.h>
-#include "common/common.h"
-#include "types.h"
-#include "maps.h"
+#include <bpf/bpf_endian.h>
+
+#include <common/common.h>
 
 // clang-format off
 

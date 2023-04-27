@@ -1,5 +1,5 @@
-#ifndef __TRACEE_CONSTS_H__
-#define __TRACEE_CONSTS_H__
+#ifndef __COMMON_CONSTS_H__
+#define __COMMON_CONSTS_H__
 
 // clang-format off
 #define MAX_PERCPU_BUFSIZE (1 << 15)  // set by the kernel as an upper bound
@@ -47,4 +47,4 @@ enum buf_idx_e
     MAX_BUFFERS
 };
 
-#endif // __TRACEE_CONSTS_H__
+#endif

@@ -1,5 +1,9 @@
-#ifndef __TRACEE_BPF_H__
-#define __TRACEE_BPF_H__
+#ifndef __COMMON_PROG_H__
+#define __COMMON_PROG_H__
+
+#include <vmlinux.h>
+
+#include <common/common.h>
 
 #define BPF_PROG_LOAD 5
 
@@ -13,4 +17,4 @@ static __always_inline const struct bpf_insn *get_attr_insns(union bpf_attr *att
     return (const struct bpf_insn *) READ_KERN(attr->insns);
 }
 
-#endif // __TRACEE_BPF_H__
+#endif

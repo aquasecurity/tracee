@@ -1,14 +1,9 @@
-#ifndef __TRACEE_BUFFER_H__
-#define __TRACEE_BUFFER_H__
+#ifndef __COMMON_BUFFER_H__
+#define __COMMON_BUFFER_H__
 
 #include <vmlinux.h>
-#include <missing_definitions.h>
 
-#include <bpf/bpf_helpers.h>
-#include "types.h"
-#include "common/common.h"
-#include "common/network.h"
-#include "maps.h"
+#include <common/network.h>
 
 static __always_inline buf_t *get_buf(int idx)
 {

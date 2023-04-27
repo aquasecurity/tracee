@@ -1,9 +1,9 @@
-#ifndef __TRACEE_KCONFIG_H__
-#define __TRACEE_KCONFIG_H__
+#ifndef __COMMON_KCONFIG_H__
+#define __COMMON_KCONFIG_H__
 
 #include <vmlinux.h>
 
-#include <bpf/bpf_helpers.h>
+#include <maps.h>
 
 #define get_kconfig(x) get_kconfig_val(x)
 

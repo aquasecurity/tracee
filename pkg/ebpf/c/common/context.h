@@ -1,15 +1,10 @@
-#ifndef __EVENT_INIT_H__
-#define __EVENT_INIT_H__
+#ifndef __COMMON_CONTEXT_H__
+#define __COMMON_CONTEXT_H__
 
 #include <vmlinux.h>
 
-#include <bpf/bpf_helpers.h>
-#include <common/common.h>
 #include <common/task.h>
-#include <common/consts.h>
 #include <common/cgroups.h>
-#include <types.h>
-#include <maps.h>
 
 static __always_inline int
 init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 options)

@@ -1,13 +1,11 @@
-#ifndef __TRACEE_TASK_H__
-#define __TRACEE_TASK_H__
+#ifndef __COMMON_TASK_H__
+#define __COMMON_TASK_H__
 
 #include <vmlinux.h>
+#include <vmlinux_flavors.h>
 
-#include <bpf/bpf_core_read.h>
-#include <bpf/bpf_helpers.h>
-#include "common/arch.h"
-#include "common/common.h"
-#include "namespaces.h"
+#include <common/arch.h>
+#include <common/namespaces.h>
 
 static __always_inline int get_task_flags(struct task_struct *task)
 {

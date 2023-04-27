@@ -2,10 +2,10 @@
 #define __MAPS_H__
 
 #include <vmlinux.h>
-#include <missing_definitions.h>
 
 #include <bpf/bpf_helpers.h>
-#include "types.h"
+
+#include <types.h>
 
 #define MAX_STACK_ADDRESSES 1024 // max amount of diff stack trace addrs to buffer
 #define MAX_STACK_DEPTH     20   // max depth of each stack trace to track

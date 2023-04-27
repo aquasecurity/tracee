@@ -1,9 +1,9 @@
-#ifndef __FILTERING_H__
-#define __FILTERING_H__
+#ifndef __COMMON_FILTERING_H__
+#define __COMMON_FILTERING_H__
 
 #include <vmlinux.h>
 
-#include "maps.h"
+#include <maps.h>
 
 #define FILTER_UID_ENABLED       (1 << 0)
 #define FILTER_UID_OUT           (1 << 1)
