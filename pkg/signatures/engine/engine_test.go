@@ -482,5 +482,4 @@ func TestEngine_LoadSignature(t *testing.T) {
 			close(input)
 		})
 	}
-
 }

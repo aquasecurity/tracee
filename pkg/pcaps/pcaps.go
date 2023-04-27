@@ -71,7 +71,6 @@ func New(simple Config, output *os.File) (*Pcaps, error) {
 
 // Write writes a packet to all opened pcap files from all supported pcap types
 func (p *Pcaps) Write(event *trace.Event, payload []byte) error {
-
 	// sanity check
 	if events.ID(event.EventID) != events.NetPacketCapture {
 		return errfmt.Errorf("wrong event type given to pcap")
@@ -93,7 +92,6 @@ func (p *Pcaps) Write(event *trace.Event, payload []byte) error {
 
 // Destroy destroys all opened pcap files from all supported pcap types
 func (p *Pcaps) Destroy() error {
-
 	for k := range p.pcapCaches {
 		err := p.pcapCaches[k].destroy()
 		if err != nil {

@@ -42,7 +42,6 @@ func TestInitNamespacesEvent(t *testing.T) {
 
 // small set of actions to trigger a magic write event
 func checkMagicwrite(t *testing.T, gotOutput *eventOutput) {
-
 	_, err := forkAndExecFunction(doMagicWrite)
 	require.NoError(t, err)
 
@@ -510,7 +509,6 @@ func TestEventPolicies(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			filterMap, err := flags.PrepareFilterMapFromPolicies(tc.policies)
 			require.NoError(t, err)
 
@@ -575,7 +573,6 @@ var testerscript []byte
 // This is so Tracee running in the current pid can pick the command up.
 // It returns the output of the process and a possible error.
 func forkAndExecFunction(funcName testFunc) ([]byte, error) {
-
 	f, err := os.CreateTemp("", "tracee-integration-test-script")
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create temp file for script: %w", err)

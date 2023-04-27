@@ -53,8 +53,8 @@ func GetInstance() *Capabilities {
 		if err != nil {
 			return nil
 		}
-
 	}
+
 	return caps
 }
 

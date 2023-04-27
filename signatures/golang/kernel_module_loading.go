@@ -44,14 +44,12 @@ func (sig *KernelModuleLoading) GetSelectedEvents() ([]detect.SignatureEventSele
 }
 
 func (sig *KernelModuleLoading) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
 
 	switch eventObj.EventName {
-
 	case "init_module":
 		metadata, err := sig.GetMetadata()
 		if err != nil {
@@ -62,9 +60,7 @@ func (sig *KernelModuleLoading) OnEvent(event protocol.Event) error {
 			Event:       event,
 			Data:        nil,
 		})
-
 	case "security_kernel_read_file":
-
 		loadedType, err := helpers.GetTraceeStringArgumentByName(eventObj, "type")
 		if err != nil {
 			return err
@@ -81,7 +77,6 @@ func (sig *KernelModuleLoading) OnEvent(event protocol.Event) error {
 				Data:        nil,
 			})
 		}
-
 	}
 
 	return nil

@@ -45,16 +45,13 @@ func (sig *DynamicCodeLoading) GetSelectedEvents() ([]detect.SignatureEventSelec
 }
 
 func (sig *DynamicCodeLoading) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
 
 	switch eventObj.EventName {
-
 	case "mem_prot_alert":
-
 		alert, err := helpers.GetTraceeStringArgumentByName(eventObj, "alert")
 		if err != nil {
 			return err
@@ -71,7 +68,6 @@ func (sig *DynamicCodeLoading) OnEvent(event protocol.Event) error {
 				Data:        nil,
 			})
 		}
-
 	}
 
 	return nil

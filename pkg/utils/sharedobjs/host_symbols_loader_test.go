@@ -146,7 +146,6 @@ func TestHostSharedObjectSymbolsLoader_GetImportedSymbols(t *testing.T) {
 }
 
 func TestHostSharedObjectSymbolsLoader_loadSOSymbols(t *testing.T) {
-
 	t.Run("Cached SO", func(t *testing.T) {
 		failLoadingFunc := func(path string) (*dynamicSymbols, error) {
 			return nil, errors.New("no SO")

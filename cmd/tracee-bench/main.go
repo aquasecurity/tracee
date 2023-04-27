@@ -118,7 +118,6 @@ func main() {
 						}
 					case now := <-ticker.C:
 						{
-
 							measurement := measurement{}
 							wg := sync.WaitGroup{}
 							wg.Add((len(queries)))

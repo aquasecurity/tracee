@@ -43,7 +43,6 @@ func SendKsymbolsToMap(bpfKsymsMap *libbpfgo.BPFMap, ksymbols map[string]*helper
 // given. The chosen symbol used here is "security_file_open" because it is a
 // must-have symbol for tracee to run.
 func ValidateKsymbolsTable(ksyms helpers.KernelSymbolTable) bool {
-
 	sym, err := ksyms.GetSymbolByName(globalSymbolOwner, "security_file_open")
 	if err != nil || sym.Address == 0 {
 		return false
@@ -53,7 +52,6 @@ func ValidateKsymbolsTable(ksyms helpers.KernelSymbolTable) bool {
 }
 
 func (t *Tracee) NewKernelSymbols() error {
-
 	// reading kallsyms needs CAP_SYSLOG
 	kernelSymbols, err := helpers.NewLazyKernelSymbolsMap()
 	if err != nil {

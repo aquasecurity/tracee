@@ -51,14 +51,12 @@ func (sig *K8SServiceAccountToken) GetSelectedEvents() ([]detect.SignatureEventS
 }
 
 func (sig *K8SServiceAccountToken) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
 
 	switch eventObj.EventName {
-
 	case "security_file_open":
 		// check process touching token is not on allow list
 		for _, legitProc := range sig.legitProcs {
@@ -89,6 +87,7 @@ func (sig *K8SServiceAccountToken) OnEvent(event protocol.Event) error {
 			})
 		}
 	}
+
 	return nil
 }
 

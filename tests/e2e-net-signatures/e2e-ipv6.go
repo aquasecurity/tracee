@@ -41,9 +41,7 @@ func (sig *e2eIPv6) OnEvent(event protocol.Event) error {
 	}
 
 	switch eventObj.EventName {
-
 	case "net_packet_ipv6":
-
 		src, err := helpers.GetTraceeStringArgumentByName(eventObj, "src")
 		if err != nil {
 			return err

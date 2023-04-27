@@ -130,23 +130,19 @@ func eventToProtoHTTP(event *trace.Event) (*netPair, *trace.ProtoHTTP, error) {
 
 		// event retval encodes HTTP direction
 		if event.ReturnValue&protoHttpRequest == protoHttpRequest {
-
 			httpReq, err = http.ReadRequest(reader)
 			if err != nil {
 				return nil, nil, errfmt.WrapError(err)
 			}
 
 			copyHTTPReqToProtoHTTP(httpReq, &protoHttp)
-
 		} else if event.ReturnValue&protoHttpResponse == protoHttpResponse {
-
 			httpRes, err = http.ReadResponse(reader, nil)
 			if err != nil {
 				return nil, nil, errfmt.WrapError(err)
 			}
 
 			copyHTTPResToProtoHTTP(httpRes, &protoHttp)
-
 		} else {
 			return &httpNetPair, nil, errfmt.Errorf("unspecified direction for HTTP packet")
 		}

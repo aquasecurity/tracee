@@ -22,5 +22,4 @@ func ErrorParsingFile(file string, err error) error {
 
 func CouldNotOpenFile(file string, err error) error {
 	return fmt.Errorf("could not open %s: %w", file, err)
-
 }

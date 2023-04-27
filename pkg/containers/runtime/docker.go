@@ -49,7 +49,6 @@ func (e *dockerEnricher) Get(ctx context.Context, containerId string) (Container
 
 		// if in k8s extract pod data from the labels
 		if resp.Config.Labels != nil {
-
 			labels := resp.Config.Labels
 			metadata.Pod = PodMetadata{
 				Name:      labels[PodNameLabel],
@@ -58,7 +57,6 @@ func (e *dockerEnricher) Get(ctx context.Context, containerId string) (Container
 				Sandbox:   e.isSandbox(labels),
 			}
 		}
-
 	}
 
 	// attempt to get image name from registry (image from config usually has tag as sha/no tag at all)

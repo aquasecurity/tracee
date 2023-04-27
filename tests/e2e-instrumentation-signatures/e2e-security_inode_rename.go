@@ -41,9 +41,7 @@ func (sig *e2eSecurityInodeRename) OnEvent(event protocol.Event) error {
 	}
 
 	switch eventObj.EventName {
-
 	case "security_inode_rename":
-
 		oldPath, err := helpers.GetTraceeStringArgumentByName(eventObj, "old_path")
 		if err != nil {
 			return err

@@ -9,7 +9,6 @@ import (
 )
 
 func capabilitiesHelp() string {
-
 	availCaps := strings.Join(capabilities.ListAvailCaps(), "\n  ")
 
 	return `

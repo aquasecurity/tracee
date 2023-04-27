@@ -47,7 +47,6 @@ func (sig *CgroupReleaseAgentModification) GetSelectedEvents() ([]detect.Signatu
 }
 
 func (sig *CgroupReleaseAgentModification) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
@@ -56,9 +55,7 @@ func (sig *CgroupReleaseAgentModification) OnEvent(event protocol.Event) error {
 	basename := ""
 
 	switch eventObj.EventName {
-
 	case "security_file_open":
-
 		flags, err := helpers.GetTraceeStringArgumentByName(eventObj, "flags")
 		if err != nil {
 			return err
@@ -72,16 +69,13 @@ func (sig *CgroupReleaseAgentModification) OnEvent(event protocol.Event) error {
 
 			basename = path.Base(pathname)
 		}
-
 	case "security_inode_rename":
-
 		newPath, err := helpers.GetTraceeStringArgumentByName(eventObj, "new_path")
 		if err != nil {
 			return err
 		}
 
 		basename = path.Base(newPath)
-
 	}
 
 	if basename == sig.releaseAgentName {

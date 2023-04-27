@@ -73,7 +73,6 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 	parts := strings.Split(filterName, ".")
 	if len(parts) != 3 {
 		return InvalidExpression(filterName + operatorAndValues)
-
 	}
 	if parts[1] != "args" {
 		return InvalidExpression(filterName + operatorAndValues)

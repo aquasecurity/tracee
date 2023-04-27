@@ -156,7 +156,6 @@ func GetTraceeRunner(c *cli.Context, version string, newBinary bool) (cmd.Runner
 	}
 	if err == nil && lockdown == helpers.CONFIDENTIALITY {
 		return runner, errfmt.Errorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
-
 	}
 
 	logger.Debugw("OSInfo", "security_lockdown", lockdown)
@@ -276,9 +275,7 @@ func getPolicies(paths []string) ([]flags.PolicyFile, error) {
 			}
 
 			// TODO: support json
-			if strings.HasSuffix(file.Name(), ".yaml") ||
-				strings.HasSuffix(file.Name(), ".yml") {
-
+			if strings.HasSuffix(file.Name(), ".yaml") || strings.HasSuffix(file.Name(), ".yml") {
 				policy, err := getPoliciesFromFile(filepath.Join(path, file.Name()))
 				if err != nil {
 					return nil, err

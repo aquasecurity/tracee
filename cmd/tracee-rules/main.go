@@ -32,7 +32,6 @@ func main() {
 		Name:  "tracee-rules",
 		Usage: "A rule engine for Runtime Security",
 		Action: func(c *cli.Context) error {
-
 			// Logger Setup
 			logger.Init(logger.NewDefaultLoggingConfig())
 

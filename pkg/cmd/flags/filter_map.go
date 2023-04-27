@@ -33,7 +33,6 @@ func parseFilterFlag(flag string) (*filterFlag, error) {
 
 	if operatorIdx == -1 || // no operator, as a set flag
 		(operatorIdx == 0 && flag[0] == '!') { // negation, as an unset flag
-
 		return &filterFlag{
 			full:              flag,
 			filterName:        flag,
@@ -62,7 +61,6 @@ func parseFilterFlag(flag string) (*filterFlag, error) {
 
 	if strings.HasPrefix(value, " ") || strings.HasPrefix(value, "\t") ||
 		strings.HasSuffix(value, " ") || strings.HasSuffix(value, "\t") {
-
 		return nil, errfmt.WrapError(InvalidFlagValue(flag))
 	}
 

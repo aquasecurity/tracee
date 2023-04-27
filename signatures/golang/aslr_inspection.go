@@ -45,16 +45,13 @@ func (sig *AslrInspection) GetSelectedEvents() ([]detect.SignatureEventSelector,
 }
 
 func (sig *AslrInspection) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("failed to cast event's payload")
 	}
 
 	switch eventObj.EventName {
-
 	case "security_file_open":
-
 		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
 		if err != nil {
 			return err

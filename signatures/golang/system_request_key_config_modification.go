@@ -45,16 +45,13 @@ func (sig *SystemRequestKeyConfigModification) GetSelectedEvents() ([]detect.Sig
 }
 
 func (sig *SystemRequestKeyConfigModification) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
 
 	switch eventObj.EventName {
-
 	case "security_file_open":
-
 		flags, err := helpers.GetTraceeStringArgumentByName(eventObj, "flags")
 		if err != nil {
 			return err
@@ -82,7 +79,6 @@ func (sig *SystemRequestKeyConfigModification) OnEvent(event protocol.Event) err
 				}
 			}
 		}
-
 	}
 
 	return nil

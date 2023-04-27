@@ -48,16 +48,13 @@ func (sig *IllegitimateShell) GetSelectedEvents() ([]detect.SignatureEventSelect
 }
 
 func (sig *IllegitimateShell) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
 
 	switch eventObj.EventName {
-
 	case "security_bprm_check":
-
 		for _, webServersProcessName := range sig.webServersProcessNames {
 			if webServersProcessName == eventObj.ProcessName {
 				pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
@@ -82,7 +79,6 @@ func (sig *IllegitimateShell) OnEvent(event protocol.Event) error {
 				}
 			}
 		}
-
 	}
 
 	return nil

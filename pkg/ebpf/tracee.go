@@ -396,7 +396,6 @@ func New(cfg Config) (*Tracee, error) {
 // initialization logic, especially one that causes side effects, should go
 // here and not New().
 func (t *Tracee) Init() error {
-
 	// Initialize needed values
 
 	initReq, err := t.generateInitValues()
@@ -625,7 +624,6 @@ func (t *Tracee) initTailCall(mapName string, mapIndexes []uint32, progName stri
 // event, represented through its ID, we declare to which other events it can be
 // derived and the corresponding function to derive into that Event.
 func (t *Tracee) initDerivationTable() error {
-
 	shouldSubmit := func(id events.ID) func() bool {
 		return func() bool { return t.events[id].submit > 0 }
 	}
@@ -1202,7 +1200,6 @@ func (t *Tracee) populateBPFMaps() error {
 // data saving in their probe (for example security_file_open needs open, openat
 // and openat2).
 func getTailCalls(eventConfigs map[events.ID]eventConfig) ([]events.TailCall, error) {
-
 	enterInitTailCall := events.TailCall{
 		MapName:    "sys_enter_init_tail",
 		MapIndexes: []uint32{},

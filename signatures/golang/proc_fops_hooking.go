@@ -43,16 +43,13 @@ func (sig *ProcFopsHooking) GetSelectedEvents() ([]detect.SignatureEventSelector
 }
 
 func (sig *ProcFopsHooking) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
 
 	switch eventObj.EventName {
-
 	case "hooked_proc_fops":
-
 		hookedSymbolSlice, err := helpers.GetTraceeHookedSymbolDataArgumentByName(eventObj, "hooked_fops_pointers")
 		if err != nil {
 			return err
@@ -69,7 +66,6 @@ func (sig *ProcFopsHooking) OnEvent(event protocol.Event) error {
 				Data:        map[string]interface{}{"Hooked proc file operations": hookedSymbolSlice},
 			})
 		}
-
 	}
 
 	return nil

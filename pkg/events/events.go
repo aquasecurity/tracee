@@ -89,7 +89,6 @@ type Event struct {
 }
 
 func (e *Event) IsASignatureEvent() bool {
-
 	for _, s := range e.Sets {
 		if s == "signatures" {
 			return true

@@ -50,7 +50,6 @@ func (sig *LdPreload) GetSelectedEvents() ([]detect.SignatureEventSelector, erro
 }
 
 func (sig *LdPreload) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
@@ -58,7 +57,6 @@ func (sig *LdPreload) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "sched_process_exec":
-
 		envVars, err := helpers.GetTraceeSliceStringArgumentByName(eventObj, "env")
 		if err != nil {
 			return nil
@@ -81,9 +79,7 @@ func (sig *LdPreload) OnEvent(event protocol.Event) error {
 				}
 			}
 		}
-
 	case "security_file_open":
-
 		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
 		if err != nil {
 			return err
@@ -105,9 +101,7 @@ func (sig *LdPreload) OnEvent(event protocol.Event) error {
 				Data:        nil,
 			})
 		}
-
 	case "security_inode_rename":
-
 		newPath, err := helpers.GetTraceeStringArgumentByName(eventObj, "new_path")
 		if err != nil {
 			return err
@@ -124,7 +118,6 @@ func (sig *LdPreload) OnEvent(event protocol.Event) error {
 				Data:        nil,
 			})
 		}
-
 	}
 
 	return nil

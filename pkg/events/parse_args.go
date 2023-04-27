@@ -324,7 +324,6 @@ func (arg CustomFunctionArgument) Value() uint64 {
 }
 
 func parseBpfHelpersUsage(helpersList []uint64) ([]string, error) {
-
 	var usedHelpers []string
 
 	for i := 0; i < len(helpersList)*64; i++ {

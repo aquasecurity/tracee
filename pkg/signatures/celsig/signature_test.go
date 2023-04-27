@@ -212,7 +212,6 @@ input.sockaddrArg('addr').sin_addr == "216.58.215.110"`,
 			assert.Equal(t, tc.finding, holder.FirstValue())
 		})
 	}
-
 }
 
 // go test -run=XXX -bench=. -benchmem -cpu=1

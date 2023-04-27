@@ -49,7 +49,6 @@ func (sig *SudoersModification) GetSelectedEvents() ([]detect.SignatureEventSele
 }
 
 func (sig *SudoersModification) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
@@ -58,7 +57,6 @@ func (sig *SudoersModification) OnEvent(event protocol.Event) error {
 	path := ""
 
 	switch eventObj.EventName {
-
 	case "security_file_open":
 
 		flags, err := helpers.GetTraceeStringArgumentByName(eventObj, "flags")
@@ -74,9 +72,7 @@ func (sig *SudoersModification) OnEvent(event protocol.Event) error {
 
 			path = pathname
 		}
-
 	case "security_inode_rename":
-
 		newPath, err := helpers.GetTraceeStringArgumentByName(eventObj, "new_path")
 		if err != nil {
 			return err

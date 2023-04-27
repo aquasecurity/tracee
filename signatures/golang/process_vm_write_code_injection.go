@@ -44,16 +44,13 @@ func (sig *ProcessVmWriteCodeInjection) GetSelectedEvents() ([]detect.SignatureE
 }
 
 func (sig *ProcessVmWriteCodeInjection) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
 
 	switch eventObj.EventName {
-
 	case "process_vm_writev":
-
 		dstPid, err := helpers.GetTraceeIntArgumentByName(eventObj, "pid")
 		if err != nil {
 			return err
@@ -70,8 +67,8 @@ func (sig *ProcessVmWriteCodeInjection) OnEvent(event protocol.Event) error {
 				Data:        nil,
 			})
 		}
-
 	}
+
 	return nil
 }
 

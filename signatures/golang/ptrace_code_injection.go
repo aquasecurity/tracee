@@ -47,14 +47,12 @@ func (sig *PtraceCodeInjection) GetSelectedEvents() ([]detect.SignatureEventSele
 }
 
 func (sig *PtraceCodeInjection) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
 
 	switch eventObj.EventName {
-
 	case "ptrace":
 		requestArg, err := helpers.GetTraceeStringArgumentByName(eventObj, "request")
 		if err != nil {
@@ -72,8 +70,8 @@ func (sig *PtraceCodeInjection) OnEvent(event protocol.Event) error {
 				Data:        nil,
 			})
 		}
-
 	}
+
 	return nil
 }
 

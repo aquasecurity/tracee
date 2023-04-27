@@ -45,14 +45,12 @@ func (sig *AntiDebuggingPtraceme) GetSelectedEvents() ([]detect.SignatureEventSe
 }
 
 func (sig *AntiDebuggingPtraceme) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
 
 	switch eventObj.EventName {
-
 	case "ptrace":
 		requestArg, err := helpers.GetTraceeStringArgumentByName(eventObj, "request")
 		if err != nil {
@@ -70,8 +68,8 @@ func (sig *AntiDebuggingPtraceme) OnEvent(event protocol.Event) error {
 				Data:        nil,
 			})
 		}
-
 	}
+
 	return nil
 }
 

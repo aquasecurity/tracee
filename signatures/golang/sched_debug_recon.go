@@ -45,16 +45,13 @@ func (sig *SchedDebugRecon) GetSelectedEvents() ([]detect.SignatureEventSelector
 }
 
 func (sig *SchedDebugRecon) OnEvent(event protocol.Event) error {
-
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
 
 	switch eventObj.EventName {
-
 	case "security_file_open":
-
 		pathname, err := helpers.GetTraceeStringArgumentByName(eventObj, "pathname")
 		if err != nil {
 			return err
@@ -66,7 +63,6 @@ func (sig *SchedDebugRecon) OnEvent(event protocol.Event) error {
 		}
 
 		if helpers.IsFileRead(flags) {
-
 			for _, schedDebugPath := range sig.schedDebugPaths {
 				if pathname == schedDebugPath {
 					metadata, err := sig.GetMetadata()

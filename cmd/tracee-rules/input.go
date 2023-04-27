@@ -34,7 +34,6 @@ type traceeInputOptions struct {
 }
 
 func setupTraceeInputSource(opts *traceeInputOptions) (chan protocol.Event, error) {
-
 	if opts.inputFormat == jsonInputFormat {
 		return setupTraceeJSONInputSource(opts)
 	}
@@ -133,7 +132,6 @@ func setupTraceeJSONInputSource(opts *traceeInputOptions) (chan protocol.Event, 
 }
 
 func parseTraceeInputOptions(inputOptions []string) (*traceeInputOptions, error) {
-
 	var (
 		inputSourceOptions traceeInputOptions
 		err                error

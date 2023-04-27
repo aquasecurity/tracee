@@ -15,7 +15,6 @@ type PcapCache struct {
 }
 
 func newPcapCache(itemType PcapType) (*PcapCache, error) {
-
 	cache, err := lru.NewWithEvict(
 		pcapsToCache,
 		func(_ interface{}, value interface{},
@@ -67,7 +66,6 @@ func (p *PcapCache) get(event *trace.Event) (*Pcap, error) {
 }
 
 func (p *PcapCache) destroy() error {
-
 	for _, k := range p.itemCache.Keys() {
 		switch key := k.(type) {
 		case *Pcap:

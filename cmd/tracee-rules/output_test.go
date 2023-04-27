@@ -205,7 +205,6 @@ func Test_sendToWebhook(t *testing.T) {
 				assert.NoError(t, actualError, tc.name)
 			}
 		})
-
 	}
 }
 
@@ -276,7 +275,6 @@ func TestOutputTemplates(t *testing.T) {
 			assert.JSONEq(t, tc.expectedJson, buf.String())
 		})
 	}
-
 }
 
 type SyncBuffer struct {

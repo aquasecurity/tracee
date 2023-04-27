@@ -55,7 +55,6 @@ func (filter *ContextFilter) Parse(filterName string, operatorAndValues string) 
 	parts := strings.Split(filterName, ".")
 	if len(parts) != 3 {
 		return InvalidExpression(filterName + operatorAndValues)
-
 	}
 	if parts[1] != "context" {
 		return InvalidExpression(filterName + operatorAndValues)
