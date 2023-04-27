@@ -43,6 +43,7 @@ type Event struct {
 	StackAddresses        []uint64     `json:"stackAddresses"`
 	ContextFlags          ContextFlags `json:"contextFlags"`
 	Args                  []Argument   `json:"args"` // Arguments are ordered according their appearance in the original event
+	ParsedArgs            []Argument   `json:"parsedArgs,omitempty"`
 	Metadata              *Metadata    `json:"metadata,omitempty"`
 }
 
