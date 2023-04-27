@@ -104,11 +104,11 @@ func TestEventsChronologicalSorter_addEvent(t *testing.T) {
 				require.Contains(t, testCase.expectedCpuQueuesLens, cpuid)
 				eventsCounter := 0
 				if cpuEventsQueue.head != nil {
-					eventsCounter += 1
+					eventsCounter++
 					for testEvent := cpuEventsQueue.head; testEvent.previous != nil; testEvent = testEvent.previous {
 						require.NotEqual(t, testEvent, testEvent.previous) // Prevent infinite loops
 						assert.True(t, testEvent.event.Timestamp < testEvent.previous.event.Timestamp)
-						eventsCounter += 1
+						eventsCounter++
 					}
 				}
 				assert.Equal(t, testCase.expectedCpuQueuesLens[cpuid], eventsCounter)
@@ -288,7 +288,7 @@ func retrieveEventsFromSorter(expectedEventsAmount int, sorterOutputChan <-chan 
 				return outputList, nil
 			}
 			outputList = append(outputList, *event)
-			eventsReceived += 1
+			eventsReceived++
 			if eventsReceived > expectedEventsAmount {
 				return outputList, fmt.Errorf("more events returned from sorter than expected")
 			}

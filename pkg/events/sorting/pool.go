@@ -26,7 +26,7 @@ type eventsPool struct {
 // If there isn't, it will allocate new one.
 func (p *eventsPool) Alloc(event *trace.Event) (*eventNode, error) {
 	p.poolMutex.Lock()
-	p.allocationsCount += 1
+	p.allocationsCount++
 	node := p.head
 	if node != nil {
 		if node.isAllocated {
@@ -38,7 +38,7 @@ func (p *eventsPool) Alloc(event *trace.Event) (*eventNode, error) {
 		node.isAllocated = true
 		node.previous = nil
 		node.next = nil
-		p.poolSize -= 1
+		p.poolSize--
 		p.poolMutex.Unlock()
 		return node, nil
 	}
@@ -62,7 +62,7 @@ func (p *eventsPool) Free(node *eventNode) error {
 	node.isAllocated = false
 	node.previous = nil
 	node.next = nil
-	p.allocationsCount -= 1
+	p.allocationsCount--
 	// Free memory in case of pooling too many nodes
 	if p.poolSize >= p.allocationsCount &&
 		p.poolSize >= minPoolFreeingSize {
@@ -79,7 +79,7 @@ func (p *eventsPool) Free(node *eventNode) error {
 			p.head.next = node
 			p.head = node
 		}
-		p.poolSize += 1
+		p.poolSize++
 	}
 	return nil
 }
