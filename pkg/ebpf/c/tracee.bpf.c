@@ -5,15 +5,19 @@
 // Copyright (C) Aqua Security inc.
 
 #include <vmlinux.h>
-#include <missing_definitions.h>
+#include <vmlinux_flavors.h>
+#include <vmlinux_missing.h>
 
 #undef container_of
+
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_endian.h>
-#include "maps.h"
-#include "types.h"
+
+#include <maps.h>
+#include <types.h>
+
 #include "common/arch.h"
 #include "common/arguments.h"
 #include "common/binprm.h"

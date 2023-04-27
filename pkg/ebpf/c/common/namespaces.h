@@ -1,10 +1,9 @@
-#ifndef __TRACEE_NAMESPACES_H__
-#define __TRACEE_NAMESPACES_H__
+#ifndef __COMMON_NAMESPACES_H__
+#define __COMMON_NAMESPACES_H__
 
 #include <vmlinux.h>
 
-#include <bpf/bpf_helpers.h>
-#include "common/common.h"
+#include <common/common.h>
 
 static __always_inline u32 get_mnt_ns_id(struct nsproxy *ns)
 {

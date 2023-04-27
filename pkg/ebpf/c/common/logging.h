@@ -1,12 +1,9 @@
-#ifndef __TRACEE_LOGGING_H__
-#define __TRACEE_LOGGING_H__
+#ifndef __COMMON_LOGGING_H__
+#define __COMMON_LOGGING_H__
 
 #include <vmlinux.h>
 
-#include <bpf/bpf_helpers.h>
-#include "maps.h"
-#include "common.h"
-#include "types.h"
+#include <common/common.h>
 
 static __always_inline void do_tracee_log(
     void *ctx, enum bpf_log_level level, enum bpf_log_id id, s64 ret, u32 line, void *file)

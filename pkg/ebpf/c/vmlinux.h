@@ -1215,8 +1215,6 @@ struct icmp6hdr {
     } icmp6_dataun;
 };
 
-#include <struct_flavors.h>
-
 #pragma clang attribute pop
 
-#endif /* __VMLINUX_H__ */
+#endif

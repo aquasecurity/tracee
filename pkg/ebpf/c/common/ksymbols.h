@@ -1,10 +1,9 @@
-#ifndef __TRACEE_KSYMBOLS_H__
-#define __TRACEE_KSYMBOLS_H__
+#ifndef __COMMON_KSYMBOLS_H__
+#define __COMMON_KSYMBOLS_H__
 
-#include "common/consts.h"
-#include "common/common.h"
-#include <bpf/bpf_helpers.h>
-#include "maps.h"
+#include <vmlinux.h>
+
+#include <common/common.h>
 
 static __always_inline void *get_symbol_addr(char *symbol_name)
 {

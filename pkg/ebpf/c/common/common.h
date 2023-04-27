@@ -1,12 +1,11 @@
-#ifndef __TRACEE_COMMON_H__
-#define __TRACEE_COMMON_H__
-
-#include <bpf/bpf_helpers.h>
-#include "maps.h"
+#ifndef __COMMON_COMMON_H__
+#define __COMMON_COMMON_H__
 
 #include <vmlinux.h>
 
 #include <bpf/bpf_core_read.h>
+
+#include <maps.h>
 
 #define READ_KERN(ptr)                                                                             \
     ({                                                                                             \
@@ -108,4 +107,4 @@ static __inline int has_prefix(char *prefix, char *str, int n)
 #define list_first_entry_ebpf(ptr, type, member)                                                   \
     list_entry_ebpf(READ_KERN((ptr)->next), type, member)
 
-#endif // __TRACEE_COMMON_H__
+#endif

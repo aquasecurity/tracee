@@ -1,8 +1,14 @@
-#ifndef __TRACEE_PROBES_H__
-#define __TRACEE_PROBES_H__
+#ifndef __COMMON_PROBES_H__
+#define __COMMON_PROBES_H__
 
-#include "common/arch.h"
-#include "types.h"
+#include <vmlinux.h>
+
+#include <bpf/bpf_tracing.h>
+
+#include <common/arguments.h>
+#include <common/buffer.h>
+#include <common/context.h>
+#include <common/filtering.h>
 
 #define TRACE_ENT_FUNC(name, id)                                                                   \
     int trace_##name(struct pt_regs *ctx)                                                          \

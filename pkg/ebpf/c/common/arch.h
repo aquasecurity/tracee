@@ -1,11 +1,11 @@
-#ifndef __TRACEE_ARCH_H__
-#define __TRACEE_ARCH_H__
+#ifndef __COMMON_ARCH_H__
+#define __COMMON_ARCH_H__
 
-#include <missing_definitions.h>
+#include <vmlinux.h>
 
-#include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
-#include "common/common.h"
+
+#include <common/common.h>
 
 #if defined(bpf_target_x86)
     #define PT_REGS_PARM6(ctx) ((ctx)->r9)

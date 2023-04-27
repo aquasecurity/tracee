@@ -1,7 +1,9 @@
-#ifndef __TRACEE_BINPRM_H__
-#define __TRACEE_BINPRM_H__
+#ifndef __COMMON_BINPRM_H__
+#define __COMMON_BINPRM_H__
 
-#include <bpf/bpf_helpers.h>
+#include <vmlinux.h>
+
+#include <common/common.h>
 
 static __always_inline const char *get_binprm_filename(struct linux_binprm *bprm)
 {

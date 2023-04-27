@@ -1,8 +1,9 @@
-#ifndef __TRACEE_EVENTS_ARGS_H__
-#define __TRACEE_EVENTS_ARGS_H__
+#ifndef __COMMON_ARGUMENTS_H__
+#define __COMMON_ARGUMENTS_H__
 
-#include <bpf/bpf_helpers.h>
-#include "maps.h"
+#include <vmlinux.h>
+
+#include <maps.h>
 
 static __always_inline int save_args(args_t *args, u32 event_id)
 {

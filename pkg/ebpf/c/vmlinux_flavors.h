@@ -1,6 +1,10 @@
-#ifndef __VMLINUX_FLAVORED_H__
-#define __VMLINUX_FLAVORED_H__
+#ifndef __VMLINUX_FLAVORS_H__
+#define __VMLINUX_FLAVORS_H__
 
+#include <vmlinux.h>
+
+;
+; // don't remove: clangd parsing bug https://github.com/clangd/clangd/issues/1167
 #pragma clang attribute push(__attribute__((preserve_access_index)), apply_to = record)
 
 // (struct kernfs_node *)->id was union kernfs_node_id before 5.5

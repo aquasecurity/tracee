@@ -1,10 +1,9 @@
-#ifndef __TRACEE_MEMORY_H__
-#define __TRACEE_MEMORY_H__
+#ifndef __COMMON_MEMORY_H__
+#define __COMMON_MEMORY_H__
 
 #include <vmlinux.h>
 
-#include <bpf/bpf_helpers.h>
-#include "common/common.h"
+#include <common/common.h>
 
 static __always_inline struct mm_struct *get_mm_from_task(struct task_struct *task)
 {
