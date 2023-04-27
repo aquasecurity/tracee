@@ -24,8 +24,7 @@ func (lc *logCounter) Lookup(key logOrigin) (count uint32, found bool) {
 	lc.rwMutex.RLock()
 	defer lc.rwMutex.RUnlock()
 	count, found = lc.data[key]
-
-	return
+	return count, found
 }
 
 func (lc *logCounter) dump(flush bool) map[logOrigin]uint32 {

@@ -155,5 +155,5 @@ func getPad(padChar string, padLength int) (pad string) {
 	for i := 0; i < padLength; i++ {
 		pad += padChar
 	}
-	return
+	return pad
 }
