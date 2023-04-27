@@ -57,19 +57,19 @@ func GetTraceeRunner(c *cli.Context, version string, newBinary bool) (cmd.Runner
 
 	// OS release information
 
-	OSInfo, err := helpers.GetOSInfo()
+	osInfo, err := helpers.GetOSInfo()
 	if err != nil {
 		logger.Debugw("OSInfo", "warning: os-release file could not be found", "error", err) // only to be enforced when BTF needs to be downloaded, later on
-		logger.Debugw("OSInfo", "os_release_field", helpers.OS_KERNEL_RELEASE, "OS_KERNEL_RELEASE", OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
+		logger.Debugw("OSInfo", "os_release_field", helpers.OS_KERNEL_RELEASE, "OS_KERNEL_RELEASE", osInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
 	} else {
 		osInfoSlice := make([]interface{}, 0)
-		for k, v := range OSInfo.GetOSReleaseAllFieldValues() {
+		for k, v := range osInfo.GetOSReleaseAllFieldValues() {
 			osInfoSlice = append(osInfoSlice, k.String(), v)
 		}
 		logger.Debugw("OSInfo", osInfoSlice...)
 	}
 
-	cfg.OSInfo = OSInfo
+	cfg.OSInfo = osInfo
 
 	// Container Runtime command line flags
 
@@ -180,7 +180,7 @@ func GetTraceeRunner(c *cli.Context, version string, newBinary bool) (cmd.Runner
 	// Decide BTF & BPF files to use (based in the kconfig, release & environment info)
 
 	traceeInstallPath := c.String("install-path")
-	err = initialize.BpfObject(&cfg, kernelConfig, OSInfo, traceeInstallPath, version)
+	err = initialize.BpfObject(&cfg, kernelConfig, osInfo, traceeInstallPath, version)
 	if err != nil {
 		return runner, errfmt.Errorf("failed preparing BPF object: %v", err)
 	}

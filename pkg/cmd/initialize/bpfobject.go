@@ -21,7 +21,7 @@ import (
 // installation path and a version string. The function unpacks the CO-RE eBPF
 // object binary, checks if BTF is enabled, unpacks the BTF file from BTF Hub if
 // necessary, and assigns the kernel configuration and BPF object bytes.
-func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSInfo *helpers.OSInfo, installPath string, version string) error {
+func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, osInfo *helpers.OSInfo, installPath string, version string) error {
 	btfFilePath, err := checkEnvPath("TRACEE_BTF_FILE")
 	if btfFilePath == "" && err != nil {
 		return errfmt.WrapError(err)
@@ -39,7 +39,7 @@ func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSInfo *hel
 	// BTF unavailable: check embedded BTF files
 	if !helpers.OSBTFEnabled() && btfFilePath != "" {
 		unpackBTFFile := filepath.Join(installPath, "/tracee.btf")
-		err = unpackBTFHub(unpackBTFFile, OSInfo)
+		err = unpackBTFHub(unpackBTFFile, osInfo)
 		if err == nil {
 			logger.Debugw("BTF: btfhub embedded BTF file", "file", unpackBTFFile)
 			config.BTFObjPath = unpackBTFFile
@@ -82,13 +82,13 @@ func unpackCOREBinary() ([]byte, error) {
 // an OSInfo struct containing information about the OS, including OS ID,
 // version ID, kernel release, and architecture. It returns an error if any of
 // the directory creation, file opening, or file copying operations fail.
-func unpackBTFHub(outFilePath string, OSInfo *helpers.OSInfo) error {
+func unpackBTFHub(outFilePath string, osInfo *helpers.OSInfo) error {
 	var btfFilePath string
 
-	osId := OSInfo.GetOSReleaseFieldValue(helpers.OS_ID)
-	versionId := strings.Replace(OSInfo.GetOSReleaseFieldValue(helpers.OS_VERSION_ID), "\"", "", -1)
-	kernelRelease := OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE)
-	arch := OSInfo.GetOSReleaseFieldValue(helpers.OS_ARCH)
+	osId := osInfo.GetOSReleaseFieldValue(helpers.OS_ID)
+	versionId := strings.Replace(osInfo.GetOSReleaseFieldValue(helpers.OS_VERSION_ID), "\"", "", -1)
+	kernelRelease := osInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE)
+	arch := osInfo.GetOSReleaseFieldValue(helpers.OS_ARCH)
 
 	if err := os.MkdirAll(filepath.Dir(outFilePath), 0755); err != nil {
 		return errfmt.Errorf("could not create temp dir: %s", err.Error())

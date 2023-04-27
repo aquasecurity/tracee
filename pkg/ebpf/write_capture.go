@@ -20,14 +20,14 @@ func (t *Tracee) processFileWrites(ctx context.Context) {
 	defer logger.Debugw("Stopped processFileWrites go routine")
 
 	const (
-		// S_IFMT uint32 = 0170000 // bit mask for the file type bit field
-		S_IFSOCK uint32 = 0140000 // socket
-		S_IFLNK  uint32 = 0120000 // symbolic link
-		S_IFREG  uint32 = 0100000 // regular file
-		S_IFBLK  uint32 = 0060000 // block device
-		S_IFDIR  uint32 = 0040000 // directory
-		S_IFCHR  uint32 = 0020000 // character device
-		S_IFIFO  uint32 = 0010000 // FIFO
+		// stat_S_IFMT uint32 = 0170000 // bit mask for the file type bit field
+		_S_IFSOCK uint32 = 0140000 // socket
+		_S_IFLNK  uint32 = 0120000 // symbolic link
+		_S_IFREG  uint32 = 0100000 // regular file
+		_S_IFBLK  uint32 = 0060000 // block device
+		_S_IFDIR  uint32 = 0040000 // directory
+		_S_IFCHR  uint32 = 0020000 // character device
+		_S_IFIFO  uint32 = 0010000 // FIFO
 	)
 
 	for {
@@ -76,7 +76,7 @@ func (t *Tracee) processFileWrites(ctx context.Context) {
 					t.handleError(err)
 					continue
 				}
-				if vfsMeta.Mode&S_IFSOCK == S_IFSOCK || vfsMeta.Mode&S_IFCHR == S_IFCHR || vfsMeta.Mode&S_IFIFO == S_IFIFO {
+				if vfsMeta.Mode&_S_IFSOCK == _S_IFSOCK || vfsMeta.Mode&_S_IFCHR == _S_IFCHR || vfsMeta.Mode&_S_IFIFO == _S_IFIFO {
 					appendFile = true
 				}
 				if vfsMeta.Pid == 0 {

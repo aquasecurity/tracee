@@ -1040,9 +1040,9 @@ func (t *Tracee) populateBPFMaps() error {
 		return errfmt.WrapError(err)
 	}
 	for id, event := range events.Definitions.Events() {
-		ID32BitU32 := uint32(event.ID32Bit) // ID32Bit is int32
-		IDU32 := uint32(id)                 // ID is int32
-		if err := sys32to64BPFMap.Update(unsafe.Pointer(&ID32BitU32), unsafe.Pointer(&IDU32)); err != nil {
+		id32BitU32 := uint32(event.ID32Bit) // ID32Bit is int32
+		idU32 := uint32(id)                 // ID is int32
+		if err := sys32to64BPFMap.Update(unsafe.Pointer(&id32BitU32), unsafe.Pointer(&idU32)); err != nil {
 			return errfmt.WrapError(err)
 		}
 	}
@@ -1144,8 +1144,8 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	for i := uint32(0); i < uint32(len(t.config.Capture.FilterFileWrite)); i++ {
-		FilterFileWriteBytes := []byte(t.config.Capture.FilterFileWrite[i])
-		if err = fileFilterMap.Update(unsafe.Pointer(&i), unsafe.Pointer(&FilterFileWriteBytes[0])); err != nil {
+		filterFileWriteBytes := []byte(t.config.Capture.FilterFileWrite[i])
+		if err = fileFilterMap.Update(unsafe.Pointer(&i), unsafe.Pointer(&filterFileWriteBytes[0])); err != nil {
 			return errfmt.WrapError(err)
 		}
 	}

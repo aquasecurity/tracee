@@ -170,14 +170,14 @@ func (e *eventDefinitions) NamesToIDs() map[string]ID {
 }
 
 func (e *eventDefinitions) IDs32ToIDs() map[ID]ID {
-	IDs32ToIDs := make(map[ID]ID, len(e.events))
+	idS32ToIDs := make(map[ID]ID, len(e.events))
 
 	for id, evt := range e.events {
 		if evt.ID32Bit != sys32undefined {
-			IDs32ToIDs[evt.ID32Bit] = id
+			idS32ToIDs[evt.ID32Bit] = id
 		}
 	}
-	return IDs32ToIDs
+	return idS32ToIDs
 }
 
 func (e *eventDefinitions) GetID(eventName string) (ID, bool) {

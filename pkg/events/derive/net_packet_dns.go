@@ -154,9 +154,9 @@ func deriveDNSResponseEvents(event trace.Event) ([]interface{}, error) {
 // eventToProtoDNS turns a trace event into a ProtoDNS type, a type used by the
 // new network code for DNS events
 func eventToProtoDNS(event *trace.Event) (*netPair, *trace.ProtoDNS, error) {
-	var DnsNetPair netPair
+	var dnsNetPair netPair
 
-	layer7, err := parseUntilLayer7(event, &DnsNetPair)
+	layer7, err := parseUntilLayer7(event, &dnsNetPair)
 	if err != nil {
 		return nil, nil, errfmt.WrapError(err)
 	}
@@ -165,15 +165,15 @@ func eventToProtoDNS(event *trace.Event) (*netPair, *trace.ProtoDNS, error) {
 	case (*layers.DNS):
 		var dns trace.ProtoDNS
 		copyDNSToProtoDNS(l7, &dns)
-		return &DnsNetPair, &dns, nil
+		return &dnsNetPair, &dns, nil
 	default:
-		if DnsNetPair.srcPort != 53 && DnsNetPair.dstPort != 53 {
+		if dnsNetPair.srcPort != 53 && dnsNetPair.dstPort != 53 {
 			// TCP packets (connection related), no event
-			return &DnsNetPair, nil, notProtoPacketError("DNS")
+			return &dnsNetPair, nil, notProtoPacketError("DNS")
 		}
 	}
 
-	return &DnsNetPair, nil, nil
+	return &dnsNetPair, nil, nil
 }
 
 // convertProtoDNSQuestionToDnsRequest converts the network packet dns event

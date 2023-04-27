@@ -188,9 +188,9 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 			}
 
 			// Add stack trace if needed
-			var StackAddresses []uint64
+			var stackAddresses []uint64
 			if t.config.Output.StackAddresses {
-				StackAddresses, _ = t.getStackAddresses(ctx.StackID)
+				stackAddresses, _ = t.getStackAddresses(ctx.StackID)
 			}
 
 			// Currently, the timestamp received from the bpf code is of the monotonic clock.
@@ -253,7 +253,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				ArgsNum:             int(ctx.Argnum),
 				ReturnValue:         int(ctx.Retval),
 				Args:                args,
-				StackAddresses:      StackAddresses,
+				StackAddresses:      stackAddresses,
 				ContextFlags:        flags,
 				Syscall:             syscall,
 			}
@@ -350,11 +350,11 @@ func (t *Tracee) shouldProcessEvent(event *trace.Event) bool {
 
 func parseContextFlags(flags uint32) trace.ContextFlags {
 	const (
-		ContainerStartFlag = 1 << iota
+		contStartFlag = 1 << iota
 		IsCompatFlag
 	)
 	return trace.ContextFlags{
-		ContainerStarted: (flags & ContainerStartFlag) != 0,
+		ContainerStarted: (flags & contStartFlag) != 0,
 		IsCompat:         (flags & IsCompatFlag) != 0,
 	}
 }
@@ -525,34 +525,34 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 	return errc
 }
 
-func (t *Tracee) getStackAddresses(StackID uint32) ([]uint64, error) {
-	StackAddresses := make([]uint64, maxStackDepth)
+func (t *Tracee) getStackAddresses(stackID uint32) ([]uint64, error) {
+	stackAddresses := make([]uint64, maxStackDepth)
 	stackFrameSize := (strconv.IntSize / 8)
 
 	// Lookup the StackID in the map
 	// The ID could have aged out of the Map, as it only holds a finite number of
 	// Stack IDs in it's Map
-	stackBytes, err := t.StackAddressesMap.GetValue(unsafe.Pointer(&StackID))
+	stackBytes, err := t.StackAddressesMap.GetValue(unsafe.Pointer(&stackID))
 	if err != nil {
-		return StackAddresses[0:0], nil
+		return stackAddresses[0:0], nil
 	}
 
 	stackCounter := 0
 	for i := 0; i < len(stackBytes); i += stackFrameSize {
-		StackAddresses[stackCounter] = 0
+		stackAddresses[stackCounter] = 0
 		stackAddr := binary.LittleEndian.Uint64(stackBytes[i : i+stackFrameSize])
 		if stackAddr == 0 {
 			break
 		}
-		StackAddresses[stackCounter] = stackAddr
+		stackAddresses[stackCounter] = stackAddr
 		stackCounter++
 	}
 
 	// Attempt to remove the ID from the map so we don't fill it up
 	// But if this fails continue on
-	_ = t.StackAddressesMap.DeleteKey(unsafe.Pointer(&StackID))
+	_ = t.StackAddressesMap.DeleteKey(unsafe.Pointer(&stackID))
 
-	return StackAddresses[0:stackCounter], nil
+	return stackAddresses[0:stackCounter], nil
 }
 
 // WaitForPipeline waits for results from all error channels.
