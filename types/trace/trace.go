@@ -207,8 +207,6 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 			arg.Value = []string{}
 		}
 
-		break
-
 	case "trace.ProtoIPv4":
 		var argProtoIPv4 ProtoIPv4
 		if arg.Value != nil {
@@ -223,8 +221,6 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		}
 
 		arg.Value = argProtoIPv4
-
-		break
 
 	case "trace.ProtoIPv6":
 		var argProtoIPv6 ProtoIPv6
@@ -241,8 +237,6 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 
 		arg.Value = argProtoIPv6
 
-		break
-
 	case "trace.ProtoTCP":
 		var argProtoTCP ProtoTCP
 		if arg.Value != nil {
@@ -257,8 +251,6 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		}
 
 		arg.Value = argProtoTCP
-
-		break
 
 	case "trace.ProtoUDP":
 		var argProtoUDP ProtoUDP
@@ -275,8 +267,6 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 
 		arg.Value = argProtoUDP
 
-		break
-
 	case "trace.ProtoICMP":
 		var argProtoICMP ProtoICMP
 		if arg.Value != nil {
@@ -291,8 +281,6 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		}
 
 		arg.Value = argProtoICMP
-
-		break
 
 	case "trace.ProtoICMPv6":
 		var argProtoICMPv6 ProtoICMPv6
@@ -309,8 +297,6 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 
 		arg.Value = argProtoICMPv6
 
-		break
-
 	case "trace.PktMeta":
 		var argPktMeta PktMeta
 		if arg.Value != nil {
@@ -326,8 +312,6 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 
 		arg.Value = argPktMeta
 
-		break
-
 	case "trace.ProtoDNS":
 		var argProtoDNS ProtoDNS
 		if arg.Value != nil {
@@ -342,8 +326,6 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		}
 
 		arg.Value = argProtoDNS
-
-		break
 
 	case "[]trace.DnsQueryData":
 		var dnsQuries []DnsQueryData
@@ -370,8 +352,6 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 
 		arg.Value = dnsQuries
 
-		break
-
 	case "[]trace.DnsResponseData":
 		var dnsResponses []DnsResponseData
 		if arg.Value != nil {
@@ -397,8 +377,6 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 
 		arg.Value = dnsResponses
 
-		break
-
 	case "trace.ProtoHTTP":
 		var argProtoHTTP ProtoHTTP
 		if arg.Value != nil {
@@ -413,8 +391,6 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		}
 
 		arg.Value = argProtoHTTP
-
-		break
 
 	case "trace.ProtoHTTPRequest":
 		var argProtoHTTPRequest ProtoHTTPRequest
@@ -431,8 +407,6 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 
 		arg.Value = argProtoHTTPRequest
 
-		break
-
 	case "trace.ProtoHTTPResponse":
 		var argProtoHTTPResponse ProtoHTTPResponse
 		if arg.Value != nil {
@@ -447,8 +421,6 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		}
 
 		arg.Value = argProtoHTTPResponse
-
-		break
 
 	}
 
