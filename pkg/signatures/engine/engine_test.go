@@ -22,7 +22,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 	testCases := []struct {
 		name              string
 		inputEvent        protocol.Event
-		inputSignature    signature.FakeSignature
+		inputSignature    *signature.FakeSignature
 		expectedNumEvents int
 		expectedError     string
 		expectedEvent     interface{}
@@ -43,7 +43,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 					},
 				},
 			}.ToProtocol(),
-			inputSignature: signature.FakeSignature{
+			inputSignature: &signature.FakeSignature{
 				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
@@ -64,7 +64,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			inputEvent: trace.Event{
 				EventName: "execve",
 			}.ToProtocol(),
-			inputSignature: signature.FakeSignature{
+			inputSignature: &signature.FakeSignature{
 				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
@@ -81,7 +81,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			inputEvent: trace.Event{
 				EventName: "execve",
 			}.ToProtocol(),
-			inputSignature: signature.FakeSignature{
+			inputSignature: &signature.FakeSignature{
 				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
@@ -99,7 +99,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		{
 			name:       "happy path - with all events selector, no name",
 			inputEvent: trace.Event{EventName: "execve"}.ToProtocol(),
-			inputSignature: signature.FakeSignature{
+			inputSignature: &signature.FakeSignature{
 				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
@@ -129,7 +129,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 					},
 				},
 			}.ToProtocol(),
-			inputSignature: signature.FakeSignature{
+			inputSignature: &signature.FakeSignature{
 				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
@@ -164,7 +164,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 					},
 				},
 			}.ToProtocol(),
-			inputSignature: signature.FakeSignature{
+			inputSignature: &signature.FakeSignature{
 				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
@@ -194,7 +194,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 					},
 				},
 			}.ToProtocol(),
-			inputSignature: signature.FakeSignature{
+			inputSignature: &signature.FakeSignature{
 				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
@@ -213,7 +213,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		},
 		{
 			name: "sad path - with all events selector, no source",
-			inputSignature: signature.FakeSignature{
+			inputSignature: &signature.FakeSignature{
 				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
@@ -226,7 +226,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		},
 		{
 			name: "sad path - signature init fails",
-			inputSignature: signature.FakeSignature{
+			inputSignature: &signature.FakeSignature{
 				FakeInit: func(ctx detect.SignatureContext) error {
 					return errors.New("init failed")
 				},
@@ -236,7 +236,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		},
 		{
 			name: "sad path - getSelectedEvents returns an error",
-			inputSignature: signature.FakeSignature{
+			inputSignature: &signature.FakeSignature{
 				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return nil, errors.New("getSelectedEvents error")
 				},
@@ -245,7 +245,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		},
 		{
 			name: "sad path - getMetadata returns an error",
-			inputSignature: signature.FakeSignature{
+			inputSignature: &signature.FakeSignature{
 				FakeGetMetadata: func() (detect.SignatureMetadata, error) {
 					return detect.SignatureMetadata{}, errors.New("getMetadata error")
 				},
@@ -264,7 +264,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 				},
 				Payload: "a great payload",
 			},
-			inputSignature: signature.FakeSignature{
+			inputSignature: &signature.FakeSignature{
 				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
@@ -289,7 +289,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 				},
 				Payload: "a great payload",
 			},
-			inputSignature: signature.FakeSignature{
+			inputSignature: &signature.FakeSignature{
 				FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
 						{
@@ -339,7 +339,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			)
 
 			var sigs []detect.Signature
-			sigs = append(sigs, &tc.inputSignature)
+			sigs = append(sigs, tc.inputSignature)
 
 			// FIXME We should use another Go concurrency pattern to make this test logically correct.
 			//       The gotNumEvents variable is causing data race, because it's accessed
