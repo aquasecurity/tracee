@@ -3,6 +3,8 @@ package golang
 import (
 	"fmt"
 
+	libbpfgo "github.com/aquasecurity/libbpfgo/helpers"
+
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -52,21 +54,22 @@ func (sig *antiDebugging) OnEvent(event protocol.Event) error {
 	if ee.EventName != "ptrace" {
 		return nil
 	}
-	request, err := helpers.GetTraceeArgumentByName(ee, "request", helpers.GetArgOps{DefaultArgs: false})
+	requestArg, err := helpers.GetTraceeIntArgumentByName(ee, "request")
 	if err != nil {
 		return err
 	}
-	requestString := request.Value.(string)
-	if requestString != "PTRACE_TRACEME" {
-		return nil
+
+	if requestArg == int(libbpfgo.PTRACE_TRACEME.Value()) {
+		metadata, err := sig.GetMetadata()
+		if err != nil {
+			return err
+		}
+		sig.cb(detect.Finding{
+			SigMetadata: metadata,
+			Event:       event,
+			Data:        nil,
+		})
 	}
-	sig.cb(detect.Finding{
-		SigMetadata: sig.metadata,
-		Event:       event,
-		Data: map[string]interface{}{
-			"ptrace request": requestString,
-		},
-	})
 	return nil
 }
 
