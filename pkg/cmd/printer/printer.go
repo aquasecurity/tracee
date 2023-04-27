@@ -365,15 +365,15 @@ type templateEventPrinter struct {
 
 func (p *templateEventPrinter) Init() error {
 	tmplPath := p.templatePath
-	if tmplPath != "" {
-		tmpl, err := template.ParseFiles(tmplPath)
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-		p.templateObj = &tmpl
-	} else {
+	if tmplPath == "" {
 		return errfmt.Errorf("please specify a gotemplate for event-based output")
 	}
+	tmpl, err := template.ParseFiles(tmplPath)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+	p.templateObj = &tmpl
+
 	return nil
 }
 

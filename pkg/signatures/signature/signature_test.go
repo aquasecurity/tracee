@@ -124,11 +124,10 @@ func Test_findRegoSigs(t *testing.T) {
 func copyExampleSig(exampleName, destDir string) error {
 	var exampleDir string
 	extension := filepath.Ext(exampleName)
-	if extension == ".rego" {
-		exampleDir = exampleRulesDir + "/%s"
-	} else {
+	if extension != ".rego" {
 		return errors.New("unsupported signature type")
 	}
+	exampleDir = exampleRulesDir + "/%s"
 
 	// copy example signature
 	exampleFile := fmt.Sprintf(exampleDir, exampleName)

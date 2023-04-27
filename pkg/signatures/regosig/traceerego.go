@@ -46,11 +46,10 @@ func NewRegoSignature(target string, partialEval bool, regoCodes ...string) (det
 	for _, regoCode := range regoCodes {
 		var regoModuleName string
 		splittedName := strings.Split(re.FindString(regoCode), " ")
-		if len(splittedName) > 1 {
-			regoModuleName = splittedName[1]
-		} else {
+		if len(splittedName) <= 1 {
 			return nil, fmt.Errorf("invalid rego code received")
 		}
+		regoModuleName = splittedName[1]
 		if !strings.Contains(regoCode, "package tracee.helpers") {
 			pkgName = regoModuleName
 		}

@@ -372,11 +372,10 @@ func parseSyscallID(syscallID int, isCompat bool, compatTranslationMap map[event
 		id, ok := compatTranslationMap[events.ID(syscallID)]
 		if ok {
 			def, ok := events.Definitions.GetSafe(id)
-			if ok {
-				return def.Name, nil
-			} else { // Should never happen, as the translation map should be initialized from events.Definition
+			if !ok { // Should never happen, as the translation map should be initialized from events.Definition
 				return "", errfmt.Errorf("no syscall event with compat syscall id %d, translated to ID %d", syscallID, id)
 			}
+			return def.Name, nil
 		} else {
 			return "", errfmt.Errorf("no syscall event with compat syscall id %d", syscallID)
 		}
