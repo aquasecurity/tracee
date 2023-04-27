@@ -45,7 +45,7 @@ func ContainerdEnricher(socket string) (ContainerEnricher, error) {
 	return &enricher, nil
 }
 
-func (e *containerdEnricher) Get(containerId string, ctx context.Context) (ContainerMetadata, error) {
+func (e *containerdEnricher) Get(ctx context.Context, containerId string) (ContainerMetadata, error) {
 	metadata := ContainerMetadata{
 		ContainerId: containerId,
 	}
