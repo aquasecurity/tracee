@@ -1679,7 +1679,7 @@ const (
 	ProtAlertMmapWX
 	ProtAlertMprotectToX
 	ProtAlertMprotectXToWX
-	ProtAlertMprotectWXToX
+	ProtAlertMprotectWToX
 	ProtAlertLast
 )
 
@@ -1691,7 +1691,7 @@ func (alert MemProtAlert) String() string {
 		return "Protection changed to Executable!"
 	case ProtAlertMprotectXToWX:
 		return "Protection changed from E to W+E!"
-	case ProtAlertMprotectWXToX:
+	case ProtAlertMprotectWToX:
 		return "Protection changed from W to E!"
 	default:
 		return "Unknown alert"

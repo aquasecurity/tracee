@@ -65,7 +65,7 @@ func (sig *KubernetesCertificateTheftAttempt) OnEvent(event protocol.Event) erro
 			}
 		}
 
-		flags, err := helpers.GetTraceeStringArgumentByName(eventObj, "flags")
+		flags, err := helpers.GetTraceeIntArgumentByName(eventObj, "flags")
 		if err != nil {
 			return err
 		}
