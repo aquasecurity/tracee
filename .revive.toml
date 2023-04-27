@@ -1,0 +1,161 @@
+severity = "warning"
+confidence = 0.8
+errorCode = 0
+warningCode = 0
+
+# Enable all available rules
+enableAllRules = true
+
+# Disabled rules
+[rule.add-constant]
+    Disabled = true
+[rule.argument-limit]
+    Disabled = true
+[rule.atomic]
+    Disabled = true
+[rule.bare-return]
+    Disabled = true
+[rule.banned-characters]
+    Disabled = true
+[rule.blank-imports]
+    Disabled = true
+[rule.bool-literal-in-expr]
+    Disabled = true
+[rule.call-to-gc]
+    Disabled = true
+[rule.confusing-naming]
+    Disabled = true
+[rule.comment-spacings]
+    Disabled = false
+[rule.confusing-results]
+    Disabled = true
+[rule.cognitive-complexity]
+    Disabled = true
+[rule.constant-logical-expr]
+    Disabled = true
+[rule.context-as-argument]
+    Disabled = true
+[rule.context-keys-type]
+    Disabled = true
+[rule.cyclomatic]
+    Disabled = true
+[rule.datarace]
+    Disabled = true
+[rule.deep-exit]
+    Disabled = true
+[rule.defer]
+    Disabled = true
+[rule.dot-imports]
+    Disabled = true
+[rule.duplicated-imports]
+    Disabled = true
+[rule.early-return]
+    Disabled = true
+[rule.empty-block]
+    Disabled = true
+[rule.empty-lines]
+    Disabled = true
+[rule.error-naming]
+    Disabled = true
+[rule.error-return]
+    Disabled = true
+[rule.error-strings]
+    Disabled = true
+[rule.errorf]
+    Disabled = true
+[rule.exported]
+    Disabled = true
+[rule.file-header]
+    Disabled = true
+[rule.flag-parameter]
+    Disabled = true
+[rule.function-result-limit]
+    Disabled = true
+[rule.function-length]
+    Disabled = true
+[rule.get-return]
+    Disabled = true
+[rule.identical-branches]
+    Disabled = true
+[rule.if-return]
+    Disabled = true
+[rule.increment-decrement]
+    Disabled = true
+[rule.indent-error-flow]
+    Disabled = true
+[rule.imports-blacklist]
+    Disabled = true
+[rule.import-shadowing]
+    Disabled = true
+[rule.line-length-limit]
+    Disabled = true
+[rule.max-public-structs]
+    Disabled = true
+[rule.modifies-parameter]
+    Disabled = true
+[rule.modifies-value-receiver]
+    Disabled = true
+[rule.nested-structs]
+    Disabled = true
+[rule.optimize-operands-order]
+    Disabled = true
+[rule.package-comments]
+    Disabled = true
+[rule.range]
+    Disabled = true
+[rule.range-val-in-closure]
+    Disabled = true
+[rule.range-val-address]
+    Disabled = true
+[rule.receiver-naming]
+    Disabled = true
+[rule.redefines-builtin-id]
+    Disabled = true
+[rule.string-of-int]
+    Disabled = true
+[rule.struct-tag]
+    Disabled = true
+[rule.string-format]
+    Disabled = true
+[rule.superfluous-else]
+    Disabled = true
+[rule.time-equal]
+    Disabled = true
+[rule.time-naming]
+    Disabled = true
+[rule.var-naming]
+    Disabled = true
+[rule.var-declaration]
+    Disabled = true
+[rule.unconditional-recursion]
+    Disabled = true
+[rule.unexported-naming]
+    Disabled = true
+[rule.unexported-return]
+    Disabled = true
+[rule.unhandled-error]
+    Disabled = true
+[rule.unnecessary-stmt]
+    Disabled = true
+[rule.unreachable-code]
+    Disabled = true
+[rule.unused-parameter]
+    Disabled = true
+[rule.unused-receiver]
+    Disabled = true
+[rule.use-any]
+    Disabled = true
+[rule.useless-break]
+    Disabled = true
+[rule.waitgroup-by-value]
+    Disabled = true
+
+# Rule tunning
+# [rule.argument-limit]
+#     Arguments = [5]
+# [rule.cyclomatic]
+#     Arguments = [10]
+# [rule.cognitive-complexity]
+#     Arguments = [7]
+# [rule.function-result-limit]
+#     Arguments = [3]
