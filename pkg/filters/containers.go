@@ -21,7 +21,7 @@ func NewContainerFilter(mapName string) *ContainerFilter {
 	}
 }
 
-func (f *ContainerFilter) UpdateBPF(bpfModule *bpf.Module, containers *containers.Containers, policyID uint) error {
+func (f *ContainerFilter) UpdateBPF(bpfModule *bpf.Module, cts *containers.Containers, policyID uint) error {
 	if !f.Enabled() {
 		return nil
 	}
@@ -35,7 +35,7 @@ func (f *ContainerFilter) UpdateBPF(bpfModule *bpf.Module, containers *container
 
 	// first initialize notEqual values since equality should take precedence
 	for _, notEqualFilter := range f.NotEqual() {
-		cgroupIDs := containers.FindContainerCgroupID32LSB(notEqualFilter)
+		cgroupIDs := cts.FindContainerCgroupID32LSB(notEqualFilter)
 		if cgroupIDs == nil {
 			return errfmt.Errorf("container id not found: %s", notEqualFilter)
 		}
@@ -63,7 +63,7 @@ func (f *ContainerFilter) UpdateBPF(bpfModule *bpf.Module, containers *container
 
 	// now - setup equality filters
 	for _, equalFilter := range f.Equal() {
-		cgroupIDs := containers.FindContainerCgroupID32LSB(equalFilter)
+		cgroupIDs := cts.FindContainerCgroupID32LSB(equalFilter)
 		if cgroupIDs == nil {
 			return errfmt.Errorf("container id not found: %s", equalFilter)
 		}

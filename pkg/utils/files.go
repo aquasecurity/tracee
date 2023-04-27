@@ -13,12 +13,12 @@ import (
 )
 
 // OpenExistingDir open a directory with given path, and return the os.File of it.
-func OpenExistingDir(path string) (*os.File, error) {
-	outDirFD, err := unix.Open(path, unix.O_DIRECTORY|unix.O_PATH, 0)
+func OpenExistingDir(p string) (*os.File, error) {
+	outDirFD, err := unix.Open(p, unix.O_DIRECTORY|unix.O_PATH, 0)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	return os.NewFile(uintptr(outDirFD), path), nil
+	return os.NewFile(uintptr(outDirFD), p), nil
 }
 
 // OpenAt is a wrapper function to the `openat` syscall using golang types.

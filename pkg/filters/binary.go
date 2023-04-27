@@ -257,7 +257,7 @@ func (f *BPFBinaryFilter) populateProcInfoMap(bpfModule *bpf.Module) error {
 
 	for _, bin := range binsToTrack {
 		procs := binsProcs[bin.path]
-		for _, proc := range procs {
+		for _, p := range procs {
 			binBytes := make([]byte, maxBpfBinPathSize)
 			copy(binBytes, bin.path)
 			binBytesCopy := (*[maxBpfBinPathSize]byte)(binBytes)
@@ -268,7 +268,7 @@ func (f *BPFBinaryFilter) populateProcInfoMap(bpfModule *bpf.Module) error {
 				binaryBytes:    *binBytesCopy,
 				binNoMnt:       0, // always 0, see bin_no_mnt in tracee.bpf.c
 			}
-			err := procInfoMap.Update(unsafe.Pointer(&proc), unsafe.Pointer(&procInfo))
+			err := procInfoMap.Update(unsafe.Pointer(&p), unsafe.Pointer(&procInfo))
 			if err != nil {
 				return errfmt.WrapError(err)
 			}

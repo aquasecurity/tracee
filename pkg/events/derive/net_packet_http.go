@@ -25,11 +25,11 @@ func deriveHTTP() deriveArgsFunction {
 }
 
 func deriveHTTPEvents(event trace.Event) ([]interface{}, error) {
-	net, http, err := eventToProtoHTTP(&event)
+	net, h, err := eventToProtoHTTP(&event)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	if http == nil {
+	if h == nil {
 		return nil, nil // connection related packets
 	}
 	if net == nil {
@@ -41,7 +41,7 @@ func deriveHTTPEvents(event trace.Event) ([]interface{}, error) {
 		net.dstIP,
 		net.srcPort,
 		net.dstPort,
-		http,
+		h,
 	}, nil
 }
 
@@ -58,11 +58,11 @@ func deriveHTTPRequest() deriveArgsFunction {
 }
 
 func deriveHTTPRequestEvents(event trace.Event) ([]interface{}, error) {
-	net, http, err := eventToProtoHTTPRequest(&event)
+	net, h, err := eventToProtoHTTPRequest(&event)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	if http == nil {
+	if h == nil {
 		return nil, nil // not a request
 	}
 	if net == nil {
@@ -73,7 +73,7 @@ func deriveHTTPRequestEvents(event trace.Event) ([]interface{}, error) {
 
 	return []interface{}{
 		*meta,
-		http,
+		h,
 	}, nil
 }
 
@@ -90,11 +90,11 @@ func deriveHTTPResponse() deriveArgsFunction {
 }
 
 func deriveHTTPResponseEvents(event trace.Event) ([]interface{}, error) {
-	net, http, err := eventToProtoHTTPResponse(&event)
+	net, h, err := eventToProtoHTTPResponse(&event)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	if http == nil {
+	if h == nil {
 		return nil, nil // // not a response
 	}
 	if net == nil {
@@ -105,7 +105,7 @@ func deriveHTTPResponseEvents(event trace.Event) ([]interface{}, error) {
 
 	return []interface{}{
 		*meta,
-		http,
+		h,
 	}, nil
 }
 

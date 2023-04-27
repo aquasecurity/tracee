@@ -11,8 +11,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/filters"
 )
 
-func matchFilter(filters []string, argValStr string) bool {
-	for _, f := range filters {
+func matchFilter(fils []string, argValStr string) bool {
+	for _, f := range fils {
 		prefixCheck := f[len(f)-1] == '*'
 		if prefixCheck {
 			f = f[0 : len(f)-1]
@@ -34,9 +34,9 @@ func matchFilter(filters []string, argValStr string) bool {
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 // generate random strings with 50% to match a prefix
-func randStringRunes(n int, filters []string) string {
+func randStringRunes(n int, fs []string) string {
 	symbols := []string{}
-	for _, filter := range filters {
+	for _, filter := range fs {
 		symbol := strings.TrimSuffix(filter, "*")
 		symbol = strings.TrimPrefix(symbol, "*")
 		symbols = append(symbols, symbol)

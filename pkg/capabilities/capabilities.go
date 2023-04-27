@@ -382,8 +382,8 @@ func (c *Capabilities) apply(t RingType) error {
 // Error Functions
 //
 
-func couldNotFindCapability(cap string) error {
-	return fmt.Errorf("could not find capability: %v", cap)
+func couldNotFindCapability(c string) error {
+	return fmt.Errorf("could not find capability: %v", c)
 }
 
 func couldNotReadPerfEventParanoid() error {

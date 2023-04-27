@@ -11,21 +11,21 @@ import (
 
 // ContainerCreate receives a containers as a closure argument to track it's containers.
 // If it receives a cgroup_mkdir event, it can derive a container_create event from it.
-func ContainerCreate(containers *containers.Containers) DeriveFunction {
-	return deriveSingleEvent(events.ContainerCreate, deriveContainerCreateArgs(containers))
+func ContainerCreate(cts *containers.Containers) DeriveFunction {
+	return deriveSingleEvent(events.ContainerCreate, deriveContainerCreateArgs(cts))
 }
 
-func deriveContainerCreateArgs(containers *containers.Containers) func(event trace.Event) ([]interface{}, error) {
+func deriveContainerCreateArgs(cts *containers.Containers) func(event trace.Event) ([]interface{}, error) {
 	return func(event trace.Event) ([]interface{}, error) {
 		// if cgroup_id is from non default hid (v1 case), the cgroup info query will fail, so we skip
-		if check, err := isCgroupEventInHid(&event, containers); !check {
+		if check, err := isCgroupEventInHid(&event, cts); !check {
 			return nil, errfmt.WrapError(err)
 		}
 		cgroupId, err := parse.ArgVal[uint64](&event, "cgroup_id")
 		if err != nil {
 			return nil, errfmt.WrapError(err)
 		}
-		if info := containers.GetCgroupInfo(cgroupId); info.ContainerRoot {
+		if info := cts.GetCgroupInfo(cgroupId); info.ContainerRoot {
 			args := []interface{}{
 				info.Runtime.String(),
 				info.Container.ContainerId,
@@ -47,13 +47,13 @@ func deriveContainerCreateArgs(containers *containers.Containers) func(event tra
 // isCgroupEventInHid checks if cgroup event is relevant for deriving container event in it's hierarchy id.
 // in tracee we only care about containers inside the cpuset controller, as such other hierarchy ids will lead
 // to a failed query.
-func isCgroupEventInHid(event *trace.Event, containers *containers.Containers) (bool, error) {
-	if containers.GetCgroupVersion() == cgroup.CgroupVersion2 {
+func isCgroupEventInHid(event *trace.Event, cts *containers.Containers) (bool, error) {
+	if cts.GetCgroupVersion() == cgroup.CgroupVersion2 {
 		return true, nil
 	}
 	hierarchyID, err := parse.ArgVal[uint32](event, "hierarchy_id")
 	if err != nil {
 		return false, errfmt.WrapError(err)
 	}
-	return containers.GetDefaultCgroupHierarchyID() == int(hierarchyID), nil
+	return cts.GetDefaultCgroupHierarchyID() == int(hierarchyID), nil
 }

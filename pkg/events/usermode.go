@@ -89,15 +89,15 @@ func fetchInitNamespaces() map[string]uint32 {
 }
 
 // ExistingContainersEvents returns a list of events for each existing container
-func ExistingContainersEvents(containers *containers.Containers, enrich bool) []trace.Event {
+func ExistingContainersEvents(cts *containers.Containers, enrich bool) []trace.Event {
 	var events []trace.Event
 
 	def := Definitions.Get(ExistingContainer)
 
-	for id, info := range containers.GetContainers() {
+	for id, info := range cts.GetContainers() {
 		container := runtime.ContainerMetadata{}
 		if enrich {
-			container, _ = containers.EnrichCgroupInfo(uint64(id))
+			container, _ = cts.EnrichCgroupInfo(uint64(id))
 		}
 		args := []trace.Argument{
 			{ArgMeta: def.Params[0], Value: info.Runtime.String()},
