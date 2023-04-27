@@ -444,16 +444,16 @@ func getKernelPerfEventParanoidValue() (int, error) {
 	//  2 = disallow kernel profiling for unpriv
 	//  4 = disallow all unpriv perf event use (not in all distros)
 	//
-	const MaxParanoiaLevel = 4
+	const maxParanoiaLevel = 4
 
 	value, err := os.ReadFile("/proc/sys/kernel/perf_event_paranoid")
 	if err != nil {
-		return MaxParanoiaLevel, couldNotReadPerfEventParanoid()
+		return maxParanoiaLevel, couldNotReadPerfEventParanoid()
 	}
 
 	intVal, err := strconv.ParseInt(strings.TrimSuffix(string(value), "\n"), 0, 16)
 	if err != nil {
-		return MaxParanoiaLevel, couldNotReadPerfEventParanoid()
+		return maxParanoiaLevel, couldNotReadPerfEventParanoid()
 	}
 
 	return int(intVal), nil

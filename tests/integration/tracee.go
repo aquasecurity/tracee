@@ -25,10 +25,10 @@ func startTracee(ctx context.Context, t *testing.T, config tracee.Config, output
 
 	config.KernelConfig = kernelConfig
 
-	OSInfo, err := helpers.GetOSInfo()
+	osInfo, err := helpers.GetOSInfo()
 	require.NoError(t, err)
 
-	err = initialize.BpfObject(&config, kernelConfig, OSInfo, "/tmp/tracee", "")
+	err = initialize.BpfObject(&config, kernelConfig, osInfo, "/tmp/tracee", "")
 	require.NoError(t, err)
 
 	if capture == nil {
@@ -121,12 +121,12 @@ func (e *eventOutput) len() int {
 
 // wait for tracee buffer to fill or timeout to occur, whichever comes first
 func waitForTraceeOutput(t *testing.T, gotOutput *eventOutput, now time.Time, failOnTimeout bool) {
-	const CheckTimeout = 5 * time.Second
+	const checkTimeout = 5 * time.Second
 	for {
 		if gotOutput.len() > 0 {
 			break
 		}
-		if time.Since(now) > CheckTimeout {
+		if time.Since(now) > checkTimeout {
 			if failOnTimeout {
 				t.Logf("timed out on output\n")
 				t.FailNow()
@@ -137,12 +137,12 @@ func waitForTraceeOutput(t *testing.T, gotOutput *eventOutput, now time.Time, fa
 }
 
 func waitforTraceeStart(t *testing.T, trc *tracee.Tracee, now time.Time) {
-	const CheckTimeout = 10 * time.Second
+	const checkTimeout = 10 * time.Second
 	for {
 		if trc.Running() {
 			break
 		}
-		if time.Since(now) > CheckTimeout {
+		if time.Since(now) > checkTimeout {
 			t.Logf("timed out on running tracee\n")
 			t.FailNow()
 		}

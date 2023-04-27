@@ -85,35 +85,35 @@ func (q *eventQueueMem) getQueueSizeInEvents() int {
 	// each cached event (defined by experimentation)
 	eventSize := 1024
 
-	KBtoB := func(amountInKB int) int {
+	kbToB := func(amountInKB int) int {
 		return amountInKB * 1024
 	}
-	MBtoKB := func(amountInMB int) int {
+	mbToKB := func(amountInMB int) int {
 		return amountInMB * 1024
 	}
-	GBtoMB := func(amountInGB int) int {
+	gbToMB := func(amountInGB int) int {
 		return amountInGB * 1024
 	}
-	AmountOfEvents := func(amountInMB int) int {
-		return MBtoKB(KBtoB(amountInMB)) / eventSize
+	amountOfEvents := func(amountInMB int) int {
+		return mbToKB(kbToB(amountInMB)) / eventSize
 	}
 
 	// EventsCacheMemSize was provided, return exact amount of events for it
 	if q.eventsCacheMemSizeMB > 0 {
-		return AmountOfEvents(q.eventsCacheMemSizeMB)
+		return amountOfEvents(q.eventsCacheMemSizeMB)
 	}
 
 	switch {
-	case q.eventsCacheMemSizeMB <= GBtoMB(1): // up to 1GB, cache = ~256MB in events #
-		return AmountOfEvents(256)
-	case q.eventsCacheMemSizeMB <= GBtoMB(4): // up to 4GB, cache = ~512MB in events #
-		return AmountOfEvents(512)
-	case q.eventsCacheMemSizeMB <= GBtoMB(8): // up to 8GB, cache = ~1GB in events #
-		return AmountOfEvents(GBtoMB(1))
-	case q.eventsCacheMemSizeMB <= GBtoMB(16): // up to 16GB, cache = ~2GB in events #
-		return AmountOfEvents(GBtoMB(2))
+	case q.eventsCacheMemSizeMB <= gbToMB(1): // up to 1GB, cache = ~256MB in events #
+		return amountOfEvents(256)
+	case q.eventsCacheMemSizeMB <= gbToMB(4): // up to 4GB, cache = ~512MB in events #
+		return amountOfEvents(512)
+	case q.eventsCacheMemSizeMB <= gbToMB(8): // up to 8GB, cache = ~1GB in events #
+		return amountOfEvents(gbToMB(1))
+	case q.eventsCacheMemSizeMB <= gbToMB(16): // up to 16GB, cache = ~2GB in events #
+		return amountOfEvents(gbToMB(2))
 	}
 
 	// bigger hosts, cache = ~4GB in events #
-	return AmountOfEvents(GBtoMB(4))
+	return amountOfEvents(gbToMB(4))
 }
