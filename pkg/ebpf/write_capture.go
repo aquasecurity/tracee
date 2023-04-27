@@ -20,7 +20,7 @@ func (t *Tracee) processFileWrites(ctx context.Context) {
 	defer logger.Debugw("Stopped processFileWrites go routine")
 
 	const (
-		//S_IFMT uint32 = 0170000 // bit mask for the file type bit field
+		// S_IFMT uint32 = 0170000 // bit mask for the file type bit field
 		S_IFSOCK uint32 = 0140000 // socket
 		S_IFLNK  uint32 = 0120000 // symbolic link
 		S_IFREG  uint32 = 0100000 // regular file

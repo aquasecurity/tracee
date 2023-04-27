@@ -43,11 +43,11 @@ func (e *dockerEnricher) Get(containerId string, ctx context.Context) (Container
 		metadata.Name = container.Name[1:]
 	}
 
-	//get initial image name from docker's container config
+	// get initial image name from docker's container config
 	if resp.Config != nil {
 		metadata.Image = resp.Config.Image
 
-		//if in k8s extract pod data from the labels
+		// if in k8s extract pod data from the labels
 		if resp.Config.Labels != nil {
 
 			labels := resp.Config.Labels
@@ -61,11 +61,11 @@ func (e *dockerEnricher) Get(containerId string, ctx context.Context) (Container
 
 	}
 
-	//attempt to get image name from registry (image from config usually has tag as sha/no tag at all)
+	// attempt to get image name from registry (image from config usually has tag as sha/no tag at all)
 	imageId := container.Image
 	image, _, err := e.client.ImageInspectWithRaw(ctx, imageId)
 	if err != nil {
-		//if we can't fetch the image or image has no name, return the metadata with the image found in config
+		// if we can't fetch the image or image has no name, return the metadata with the image found in config
 		return metadata, nil
 	}
 

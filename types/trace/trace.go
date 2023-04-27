@@ -40,7 +40,7 @@ type Event struct {
 	Syscall              string       `json:"syscall"`
 	StackAddresses       []uint64     `json:"stackAddresses"`
 	ContextFlags         ContextFlags `json:"contextFlags"`
-	Args                 []Argument   `json:"args"` //Arguments are ordered according their appearance in the original event
+	Args                 []Argument   `json:"args"` // Arguments are ordered according their appearance in the original event
 	Metadata             *Metadata    `json:"metadata,omitempty"`
 }
 
@@ -124,7 +124,7 @@ type ArgMeta struct {
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (arg *Argument) UnmarshalJSON(b []byte) error {
-	type argument Argument //alias Argument so we can unmarshal it within the unmarshaler implementation
+	type argument Argument // alias Argument so we can unmarshal it within the unmarshaler implementation
 	d := json.NewDecoder(bytes.NewReader(b))
 	d.UseNumber()
 	if err := d.Decode((*argument)(arg)); err != nil {

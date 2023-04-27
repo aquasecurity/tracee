@@ -38,7 +38,7 @@ func (filter *BoolFilter) filter(val bool) bool {
 	if !trueEnabled && falseEnabled {
 		return !val
 	}
-	return false //last case is !trueEnabled && !falseEnabled which means no filter was added
+	return false // last case is !trueEnabled && !falseEnabled which means no filter was added
 }
 
 // BoolFilter can support the following expressions

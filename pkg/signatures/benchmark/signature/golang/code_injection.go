@@ -76,7 +76,7 @@ func (sig *codeInjection) OnEvent(event protocol.Event) error {
 			}
 			if sig.processMemFileRegexp.MatchString(pathname.Value.(string)) {
 				sig.cb(detect.Finding{
-					//Signature: sig,
+					// Signature: sig,
 					SigMetadata: sig.metadata,
 					Event:       event,
 					Data: map[string]interface{}{
@@ -94,7 +94,7 @@ func (sig *codeInjection) OnEvent(event protocol.Event) error {
 		requestString := request.Value.(string)
 		if requestString == "PTRACE_POKETEXT" || requestString == "PTRACE_POKEDATA" {
 			sig.cb(detect.Finding{
-				//Signature: sig,
+				// Signature: sig,
 				SigMetadata: sig.metadata,
 				Event:       event,
 				Data: map[string]interface{}{
@@ -103,7 +103,8 @@ func (sig *codeInjection) OnEvent(event protocol.Event) error {
 			})
 		}
 		// TODO Commenting out the execve case to make it equivalent to Rego signature
-		//case "execve":
+		//
+		// case "execve":
 		//	envs, err := helpers.GetTraceeArgumentByName(ee, "envp", helpers.GetArgOps{DefaultArgs: false})
 		//	if err != nil {
 		//		break
@@ -116,7 +117,7 @@ func (sig *codeInjection) OnEvent(event protocol.Event) error {
 		//				return err
 		//			}
 		//			sig.cb(detect.Finding{
-		//				//Signature: sig,
+		// Signature: sig,
 		//				SigMetadata: sig.metadata,
 		//				Payload:     ee,
 		//				Data: map[string]interface{}{

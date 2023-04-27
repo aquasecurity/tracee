@@ -37,14 +37,14 @@ type Context struct {
 	Comm            [16]byte
 	UtsName         [16]byte
 	Flags           uint32
-	EventID         events.ID //int32
+	EventID         events.ID // int32
 	Syscall         int32
 	MatchedPolicies uint64
 	Retval          int64
 	StackID         uint32
 	ProcessorId     uint16
 	Argnum          uint8
-	_               [1]byte //padding
+	_               [1]byte // padding
 }
 
 func (Context) GetSizeBytes() uint32 {

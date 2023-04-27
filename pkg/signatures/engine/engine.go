@@ -279,7 +279,7 @@ func (engine *Engine) loadSignature(signature detect.Signature) (string, error) 
 	}
 	engine.signaturesMutex.RUnlock()
 	if err := signature.Init(detect.SignatureContext{Callback: engine.matchHandler, Logger: logger.Current()}); err != nil {
-		//failed to initialize
+		// failed to initialize
 		return "", fmt.Errorf("error initializing signature %s: %w", metadata.Name, err)
 	}
 	c := make(chan protocol.Event, engine.config.SignatureBufferSize)

@@ -108,7 +108,7 @@ func ReadArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.A
 	case credT:
 		var data SlimCred
 		err = ebpfMsgDecoder.DecodeSlimCred(&data)
-		res = trace.SlimCred(data) //here we cast to trace.SlimCred to ensure we send the public interface and not bufferdecoder.SlimCred
+		res = trace.SlimCred(data) // here we cast to trace.SlimCred to ensure we send the public interface and not bufferdecoder.SlimCred
 	case strT:
 		res, err = readStringFromBuff(ebpfMsgDecoder)
 	case strArrT:
@@ -291,7 +291,7 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 				sa_family_t    sin_family; // address family: AF_INET
 				in_port_t      sin_port;   // port in network byte order
 				struct in_addr sin_addr;   // internet address
-				// byte        padding[8]; //https://elixir.bootlin.com/linux/v4.20.17/source/include/uapi/linux/in.h#L232
+				// byte        padding[8];// https://elixir.bootlin.com/linux/v4.20.17/source/include/uapi/linux/in.h#L232
 			};
 			struct in_addr {
 				uint32_t       s_addr;     // address in network byte order
@@ -365,7 +365,7 @@ func readStringFromBuff(ebpfMsgDecoder *EbpfDecoder) (string, error) {
 	if size > 4096 {
 		return "", errfmt.Errorf("string size too big: %d", size)
 	}
-	res, err := ReadByteSliceFromBuff(ebpfMsgDecoder, int(size-1)) //last byte is string terminating null
+	res, err := ReadByteSliceFromBuff(ebpfMsgDecoder, int(size-1)) // last byte is string terminating null
 	defer func() {
 		var dummy int8
 		err := ebpfMsgDecoder.DecodeInt8(&dummy) // discard last byte which is string terminating null
