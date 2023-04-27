@@ -83,37 +83,37 @@ func PrepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 
 	var filterFileWrite []string
 	for i := range captureSlice {
-		cap := captureSlice[i]
-		if strings.HasPrefix(cap, "artifact:write") ||
-			strings.HasPrefix(cap, "artifact:exec") ||
-			strings.HasPrefix(cap, "artifact:mem") ||
-			strings.HasPrefix(cap, "artifact:module") {
-			cap = strings.TrimPrefix(cap, "artifact:")
+		c := captureSlice[i]
+		if strings.HasPrefix(c, "artifact:write") ||
+			strings.HasPrefix(c, "artifact:exec") ||
+			strings.HasPrefix(c, "artifact:mem") ||
+			strings.HasPrefix(c, "artifact:module") {
+			c = strings.TrimPrefix(c, "artifact:")
 		}
-		if cap == "write" {
+		if c == "write" {
 			capture.FileWrite = true
-		} else if strings.HasPrefix(cap, "write=") && strings.HasSuffix(cap, "*") {
+		} else if strings.HasPrefix(c, "write=") && strings.HasSuffix(c, "*") {
 			capture.FileWrite = true
-			pathPrefix := strings.TrimSuffix(strings.TrimPrefix(cap, "write="), "*")
+			pathPrefix := strings.TrimSuffix(strings.TrimPrefix(c, "write="), "*")
 			if len(pathPrefix) == 0 {
 				return tracee.CaptureConfig{}, errfmt.Errorf("capture write filter cannot be empty")
 			}
 			filterFileWrite = append(filterFileWrite, pathPrefix)
-		} else if cap == "exec" {
+		} else if c == "exec" {
 			capture.Exec = true
-		} else if cap == "module" {
+		} else if c == "module" {
 			capture.Module = true
-		} else if cap == "mem" {
+		} else if c == "mem" {
 			capture.Mem = true
-		} else if cap == "bpf" {
+		} else if c == "bpf" {
 			capture.Bpf = true
-		} else if cap == "network" || cap == "net" || cap == "pcap" {
+		} else if c == "network" || c == "net" || c == "pcap" {
 			// default capture mode: a single pcap file with all traffic
 			capture.Net.CaptureSingle = true
 			capture.Net.CaptureLength = 96 // default payload
-		} else if strings.HasPrefix(cap, "pcap:") {
+		} else if strings.HasPrefix(c, "pcap:") {
 			capture.Net.CaptureSingle = false // remove default mode
-			context := strings.TrimPrefix(cap, "pcap:")
+			context := strings.TrimPrefix(c, "pcap:")
 			fields := strings.Split(context, ",")
 			for _, field := range fields {
 				if field == "single" {
@@ -130,16 +130,16 @@ func PrepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 				}
 			}
 			capture.Net.CaptureLength = 96 // default payload
-		} else if strings.HasPrefix(cap, "pcap-options:") {
-			context := strings.TrimPrefix(cap, "pcap-options:")
+		} else if strings.HasPrefix(c, "pcap-options:") {
+			context := strings.TrimPrefix(c, "pcap-options:")
 			context = strings.ToLower(context) // normalize
 			if context == "none" {
 				capture.Net.CaptureFiltered = false // proforma
 			} else if context == "filtered" {
 				capture.Net.CaptureFiltered = true
 			}
-		} else if strings.HasPrefix(cap, "pcap-snaplen:") {
-			context := strings.TrimPrefix(cap, "pcap-snaplen:")
+		} else if strings.HasPrefix(c, "pcap-snaplen:") {
+			context := strings.TrimPrefix(c, "pcap-snaplen:")
 			var amount uint64
 			var err error
 			context = strings.ToLower(context) // normalize
@@ -168,10 +168,10 @@ func PrepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 				amount = (1 << 16) - 1
 			}
 			capture.Net.CaptureLength = uint32(amount) // of packet length to be captured in bytes
-		} else if cap == "clear-dir" {
+		} else if c == "clear-dir" {
 			clearDir = true
-		} else if strings.HasPrefix(cap, "dir:") {
-			outDir = strings.TrimPrefix(cap, "dir:")
+		} else if strings.HasPrefix(c, "dir:") {
+			outDir = strings.TrimPrefix(c, "dir:")
 			if len(outDir) == 0 {
 				return tracee.CaptureConfig{}, errfmt.Errorf("capture output dir cannot be empty")
 			}

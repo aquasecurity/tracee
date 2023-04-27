@@ -49,12 +49,12 @@ func (p *PcapCache) get(event *trace.Event) (*Pcap, error) {
 	i, ok = p.itemCache.Get(getItemIndexFromEvent(event, p.itemType))
 	if !ok {
 		// create an item and return it
-		new, err := NewPcap(event, p.itemType)
+		n, err := NewPcap(event, p.itemType)
 		if err != nil {
 			return nil, errfmt.WrapError(err)
 		}
-		p.itemCache.Add(getItemIndexFromEvent(event, p.itemType), new)
-		item = new
+		p.itemCache.Add(getItemIndexFromEvent(event, p.itemType), n)
+		item = n
 	} else {
 		// return the cached item
 		item, ok = i.(*Pcap)
