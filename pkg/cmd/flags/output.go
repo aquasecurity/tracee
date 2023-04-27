@@ -36,7 +36,7 @@ option:{stack-addresses,exec-env,relative-time,exec-hash,parse-arguments,sort-ev
   exec-env                                         when tracing execve/execveat, show the environment variables that were used for execution
   relative-time                                    use relative timestamp instead of wall timestamp for events
   exec-hash                                        when tracing sched_process_exec, show the file hash(sha256) and ctime
-  parse-arguments                                  do not show raw machine-readable values for event arguments, instead parse into human readable strings
+  parse-arguments                                  populate parsed argument list which includes all events arguments parsed into human readable strings
   parse-arguments-fds                              enable parse-arguments and enrich fd with its file path translation. This can cause pipeline slowdowns.
   sort-events                                      enable sorting events before passing to them output. This will decrease the overall program efficiency.
 

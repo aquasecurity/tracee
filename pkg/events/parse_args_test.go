@@ -105,7 +105,7 @@ func TestParseArgs(t *testing.T) {
 			err := ParseArgs(&event)
 			require.NoError(t, err)
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(&event, expArg.Name)
+				arg := getParsedArg(&event, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		}
@@ -183,7 +183,7 @@ func TestParseArgs(t *testing.T) {
 			err := ParseArgs(event)
 			require.NoError(t, err)
 			for _, expArg := range testCase.expectedArgs {
-				arg := GetArg(event, expArg.Name)
+				arg := getParsedArg(event, expArg.Name)
 				assert.Equal(t, expArg, *arg)
 			}
 		}
