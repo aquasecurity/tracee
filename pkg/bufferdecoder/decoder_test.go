@@ -249,7 +249,7 @@ func TestDecodeInt64(t *testing.T) {
 
 func TestDecodeBoolTrue(t *testing.T) {
 	buf := new(bytes.Buffer)
-	var expected bool = true
+	expected := true
 	err := binary.Write(buf, binary.LittleEndian, expected)
 	// checking no error
 	assert.Equal(t, nil, err)
@@ -269,7 +269,7 @@ func TestDecodeBoolTrue(t *testing.T) {
 
 func TestDecodeBoolFalse(t *testing.T) {
 	buf := new(bytes.Buffer)
-	var expected bool = false
+	expected := false
 	err := binary.Write(buf, binary.LittleEndian, expected)
 	// checking no error
 	assert.Equal(t, nil, err)
@@ -320,7 +320,7 @@ func TestDecodeIntArray(t *testing.T) {
 	var obtained [2]int32
 	err := decoder.DecodeIntArray(obtained[:], 2)
 	assert.Equal(t, nil, err)
-	var rawcp []byte = append(raw, 1, 2, 3, 4, 5, 6, 7, 8)
+	rawcp := append(raw, 1, 2, 3, 4, 5, 6, 7, 8)
 	dataBuff := bytes.NewBuffer(rawcp)
 	var expected [2]int32
 	err = binary.Read(dataBuff, binary.LittleEndian, &expected)
