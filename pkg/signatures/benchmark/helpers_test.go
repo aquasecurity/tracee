@@ -196,9 +196,8 @@ func ProduceEventsFromGobFile(n int, path string) (engine.EventSources, error) {
 		if err != nil {
 			if err == io.EOF {
 				break
-			} else {
-				return engine.EventSources{}, fmt.Errorf("decoding event: %v", err)
 			}
+			return engine.EventSources{}, fmt.Errorf("decoding event: %v", err)
 		} else {
 			e := event.ToProtocol()
 			eventsCh <- e

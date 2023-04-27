@@ -96,9 +96,8 @@ func setupTraceeGobInputSource(opts *traceeInputOptions) (chan protocol.Event, e
 			if err != nil {
 				if err == io.EOF {
 					break
-				} else {
-					logger.Errorw("Decoding event: " + err.Error())
 				}
+				logger.Errorw("Decoding event: " + err.Error())
 			} else {
 				res <- event.ToProtocol()
 			}
