@@ -243,7 +243,7 @@ func (sorter *EventsChronologicalSorter) updateSavedTimestamps() {
 // It also returns the timestamp of its head event, to be used for race condition checks.
 // Return nil and timestamp of 0 if no valid queue found.
 func (sorter *EventsChronologicalSorter) getMostDelayingEventCPUQueue() (*cpuEventsQueue, int, error) {
-	var mostDelayingEventQueue *cpuEventsQueue = nil
+	var mostDelayingEventQueue *cpuEventsQueue
 	mostDelayingEventQueueHeadTimestamp := 0
 	for i := 0; i < len(sorter.cpuEventsQueues); i++ {
 		cq := &sorter.cpuEventsQueues[i]

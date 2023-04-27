@@ -285,7 +285,7 @@ func (l *Logger) Sync() error {
 
 var (
 	// Package-level Logger
-	pkgLogger *Logger = &Logger{}
+	pkgLogger = &Logger{}
 )
 
 // Current returns the package-level base logger
