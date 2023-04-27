@@ -206,7 +206,7 @@ func (decoder *EbpfDecoder) DecodeBool(msg *bool) error {
 		return errfmt.Errorf("can't read context from buffer: buffer too short")
 	}
 	*msg = (decoder.buffer[offset] != 0)
-	decoder.cursor += 1
+	decoder.cursor++
 	return nil
 }
 

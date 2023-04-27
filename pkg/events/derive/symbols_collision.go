@@ -363,7 +363,7 @@ func (so *loadingSharedObj) GetSymbols() []string {
 	i := 0
 	for sym := range so.exportedSymbols {
 		symbols[i] = sym
-		i += 1
+		i++
 	}
 
 	return symbols

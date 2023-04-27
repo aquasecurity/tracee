@@ -261,7 +261,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 					ArgMeta: trace.ArgMeta{Name: "sha256", Type: "const char*"},
 					Value:   currentHash,
 				})
-				event.ArgsNum += 1
+				event.ArgsNum++
 			}
 			if true { // so loop is conditionally terminated (#SA4044)
 				break
