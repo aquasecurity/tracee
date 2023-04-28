@@ -1723,19 +1723,17 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 			continue
 		}
 
-		lengthFilter, ok := printMemDumpFilters["length"].(*filters.StringFilter)
 		var length uint64
 		var err error
+
+		lengthFilter, ok := printMemDumpFilters["length"].(*filters.StringFilter)
 		if lengthFilter == nil || !ok || len(lengthFilter.Equal()) == 0 {
 			length = maxMemDumpLength // default mem dump length
 		} else {
-			for _, field := range lengthFilter.Equal() {
-				length, err = strconv.ParseUint(field, 10, 64)
-				if err != nil {
-					return errfmt.WrapError(err)
-				}
-				// lint:ignore SA4004 we only want the first argument
-				break
+			field := lengthFilter.Equal()[0]
+			length, err = strconv.ParseUint(field, 10, 64)
+			if err != nil {
+				return errfmt.WrapError(err)
 			}
 		}
 
