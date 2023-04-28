@@ -140,8 +140,5 @@ func (f *BoolFilter) Value() bool {
 }
 
 func (f *BoolFilter) FilterOut() bool {
-	if f.Value() {
-		return false
-	}
-	return true
+	return !f.Value()
 }
