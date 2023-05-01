@@ -2,6 +2,8 @@
 package detect
 
 import (
+	"errors"
+
 	"github.com/aquasecurity/tracee/types/protocol"
 )
 
@@ -22,8 +24,9 @@ type Signature interface {
 }
 
 type SignatureContext struct {
-	Callback SignatureHandler
-	Logger   Logger
+	Callback      SignatureHandler
+	Logger        Logger
+	GetDataSource func(namespace string, id string) (DataSource, bool)
 }
 
 // SignatureMetadata represents information about the signature
@@ -67,3 +70,27 @@ type Logger interface {
 	Warnw(format string, v ...interface{})
 	Errorw(format string, v ...interface{})
 }
+
+type DataSource interface {
+	// Get a value from the data source. Make sure the key matches one of the keys allowed in Keys.
+	// The following errors should be returned for the appropriate cases:
+	//
+	//	- ErrDataNotFound - When the key does not match to any existing data
+	//	- ErrKeyNotSupported - When the key used does not match to a support key
+	//	- Otherwise errors may vary.
+	Get(interface{}) (map[string]interface{}, error)
+	// Version of the data fetched. Whenever the schema has a breaking change the version should be incremented.
+	// Consumers of the data source should verify they are running against a support version before using it.
+	Version() uint
+	// The types of keys the data source supports.
+	Keys() []string
+	// JSON Schema of the data source's result. All Get results should conform to the schema described.
+	Schema() string
+	// Namespace of the data source (to avoid ID collisions)
+	Namespace() string
+	// ID of the data source, any unique name works.
+	ID() string
+}
+
+var ErrDataNotFound = errors.New("requested data was not found")
+var ErrKeyNotSupported = errors.New("queried key is not supported")
