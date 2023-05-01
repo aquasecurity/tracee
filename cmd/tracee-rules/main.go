@@ -137,6 +137,7 @@ func main() {
 			config := engine.Config{
 				SignatureBufferSize: c.Uint(signatureBufferFlag),
 				Signatures:          sigs,
+				DataSources:         []detect.DataSource{},
 			}
 			e, err := engine.NewEngine(config, inputs, output)
 			if err != nil {

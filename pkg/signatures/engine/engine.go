@@ -22,18 +22,21 @@ type Config struct {
 	Enabled             bool
 	SignatureBufferSize uint
 	Signatures          []detect.Signature
+	DataSources         []detect.DataSource
 }
 
 // Engine is a signatures-engine that can process events coming from a set of input sources against a set of loaded signatures, and report the signatures' findings
 type Engine struct {
-	signatures      map[detect.Signature]chan protocol.Event
-	signaturesIndex map[detect.SignatureEventSelector][]detect.Signature
-	signaturesMutex sync.RWMutex
-	inputs          EventSources
-	output          chan detect.Finding
-	waitGroup       sync.WaitGroup
-	config          Config
-	stats           metrics.Stats
+	signatures       map[detect.Signature]chan protocol.Event
+	signaturesIndex  map[detect.SignatureEventSelector][]detect.Signature
+	signaturesMutex  sync.RWMutex
+	inputs           EventSources
+	output           chan detect.Finding
+	waitGroup        sync.WaitGroup
+	config           Config
+	stats            metrics.Stats
+	dataSources      map[string]map[string]detect.DataSource
+	dataSourcesMutex sync.RWMutex
 }
 
 // EventSources is a bundle of input sources used to configure the Engine
@@ -57,10 +60,23 @@ func NewEngine(config Config, sources EventSources, output chan detect.Finding) 
 	engine.inputs = sources
 	engine.output = output
 	engine.config = config
+
 	engine.signaturesMutex.Lock()
 	engine.signatures = make(map[detect.Signature]chan protocol.Event)
 	engine.signaturesIndex = make(map[detect.SignatureEventSelector][]detect.Signature)
 	engine.signaturesMutex.Unlock()
+
+	engine.dataSourcesMutex.Lock()
+	engine.dataSources = map[string]map[string]detect.DataSource{}
+	engine.dataSourcesMutex.Unlock()
+
+	for _, datasource := range config.DataSources {
+		err := engine.RegisterDataSource(datasource)
+		if err != nil {
+			logger.Errorw("Loading signatures data source: " + err.Error())
+		}
+	}
+
 	for _, sig := range config.Signatures {
 		_, err := engine.loadSignature(sig)
 		if err != nil {
@@ -259,7 +275,14 @@ func (engine *Engine) loadSignature(signature detect.Signature) (string, error) 
 		return "", fmt.Errorf("failed to store signature: signature \"%s\" already loaded", metadata.Name)
 	}
 	engine.signaturesMutex.RUnlock()
-	if err := signature.Init(detect.SignatureContext{Callback: engine.matchHandler, Logger: logger.Current()}); err != nil {
+	signatureCtx := detect.SignatureContext{
+		Callback: engine.matchHandler,
+		Logger:   logger.Current(),
+		GetDataSource: func(namespace, id string) (detect.DataSource, bool) {
+			return engine.GetDataSource(namespace, id)
+		},
+	}
+	if err := signature.Init(signatureCtx); err != nil {
 		// failed to initialize
 		return "", fmt.Errorf("error initializing signature %s: %w", metadata.Name, err)
 	}
@@ -343,4 +366,37 @@ func (engine *Engine) GetSelectedEvents() []detect.SignatureEventSelector {
 		res = append(res, k)
 	}
 	return res
+}
+
+func (engine *Engine) RegisterDataSource(dataSource detect.DataSource) error {
+	engine.dataSourcesMutex.Lock()
+	defer engine.dataSourcesMutex.Unlock()
+
+	namespace := dataSource.Namespace()
+	id := dataSource.ID()
+
+	if _, ok := engine.dataSources[namespace]; !ok {
+		engine.dataSources[namespace] = map[string]detect.DataSource{}
+	}
+
+	_, exists := engine.dataSources[namespace][id]
+	if exists {
+		return fmt.Errorf("failed to register data source: data source with name \"%s\" already exists in namespace \"%s\"", id, namespace)
+	}
+	engine.dataSources[namespace][id] = dataSource
+	return nil
+}
+
+func (engine *Engine) GetDataSource(namespace string, id string) (detect.DataSource, bool) {
+	engine.dataSourcesMutex.RLock()
+	defer engine.dataSourcesMutex.RUnlock()
+
+	namespaceCaches, ok := engine.dataSources[namespace]
+	if !ok {
+		return nil, false
+	}
+
+	cache, ok := namespaceCaches[id]
+
+	return cache, ok
 }
