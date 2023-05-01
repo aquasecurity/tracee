@@ -3,6 +3,7 @@ package ebpf
 import (
 	"context"
 
+	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
@@ -19,6 +20,9 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 	engineOutput := make(chan detect.Finding, 100)
 	engineInput := make(chan protocol.Event)
 	source := engine.EventSources{Tracee: engineInput}
+
+	t.config.EngineConfig.DataSources = append(t.config.EngineConfig.DataSources, containers.NewDataSource(t.containers))
+
 	sigEngine, err := engine.NewEngine(t.config.EngineConfig, source, engineOutput)
 	if err != nil {
 		logger.Fatalw("failed to start signature engine in \"everything is an event\" mode", "error", err)
