@@ -14,7 +14,7 @@ import (
 	"time"
 	"unsafe"
 
-	lru "github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"golang.org/x/sys/unix"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
@@ -76,7 +76,7 @@ type Tracee struct {
 	eventProcessor   map[events.ID][]func(evt *trace.Event) error
 	eventDerivations derive.Table
 	// Artifacts
-	fileHashes     *lru.Cache
+	fileHashes     *lru.Cache[string, fileExecInfo]
 	capturedFiles  map[string]int64
 	writtenFiles   map[string]string
 	netCapturePcap *pcaps.Pcaps
@@ -408,7 +408,7 @@ func (t *Tracee) Init() error {
 
 	// Initialize hashes for files
 
-	t.fileHashes, err = lru.New(1024)
+	t.fileHashes, err = lru.New[string, fileExecInfo](1024)
 	if err != nil {
 		t.Close()
 		return errfmt.WrapError(err)

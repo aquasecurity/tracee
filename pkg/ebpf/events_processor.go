@@ -270,10 +270,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 			if t.config.Output.ExecHash {
 				var hashInfoObj fileExecInfo
 				var currentHash string
-				hashInfoInterface, ok := t.fileHashes.Get(capturedFileID)
-				if ok {
-					hashInfoObj = hashInfoInterface.(fileExecInfo)
-				}
+				hashInfoObj, ok := t.fileHashes.Get(capturedFileID)
 				// check if cache can be used
 				if ok && hashInfoObj.LastCtime == castedSourceFileCtime {
 					currentHash = hashInfoObj.Hash
