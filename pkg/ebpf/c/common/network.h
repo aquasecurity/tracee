@@ -186,6 +186,52 @@ struct {
 
 #endif
 
+// DECLARATIONS -----------------------------------------------------------------------------------
+
+static __always_inline u32 get_inet_rcv_saddr(struct inet_sock *inet);
+static __always_inline u32 get_inet_saddr(struct inet_sock *inet);
+static __always_inline u32 get_inet_daddr(struct inet_sock *inet);
+static __always_inline u16 get_inet_sport(struct inet_sock *inet);
+static __always_inline u16 get_inet_num(struct inet_sock *inet);
+static __always_inline u16 get_inet_dport(struct inet_sock *inet);
+static __always_inline struct sock *get_socket_sock(struct socket *socket);
+static __always_inline u16 get_sock_family(struct sock *sock);
+static __always_inline u16 get_sock_protocol(struct sock *sock);
+static __always_inline u16 get_sockaddr_family(struct sockaddr *address);
+static __always_inline struct in6_addr get_sock_v6_rcv_saddr(struct sock *sock);
+static __always_inline struct in6_addr get_ipv6_pinfo_saddr(struct ipv6_pinfo *np);
+static __always_inline struct in6_addr get_sock_v6_daddr(struct sock *sock);
+static __always_inline struct ipv6_pinfo *get_inet_pinet6(struct inet_sock *inet);
+static __always_inline struct sockaddr_un get_unix_sock_addr(struct unix_sock *sock);
+static __always_inline int
+get_network_details_from_sock_v4(struct sock *sk, net_conn_v4_t *net_details, int peer);
+static __always_inline struct ipv6_pinfo *inet6_sk_own_impl(struct sock *__sk,
+                                                            struct inet_sock *inet);
+static __always_inline int
+get_network_details_from_sock_v6(struct sock *sk, net_conn_v6_t *net_details, int peer);
+static __always_inline int get_local_sockaddr_in_from_network_details(struct sockaddr_in *addr,
+                                                                      net_conn_v4_t *net_details,
+                                                                      u16 family);
+static __always_inline int get_remote_sockaddr_in_from_network_details(struct sockaddr_in *addr,
+                                                                       net_conn_v4_t *net_details,
+                                                                       u16 family);
+static __always_inline int get_local_sockaddr_in6_from_network_details(struct sockaddr_in6 *addr,
+                                                                       net_conn_v6_t *net_details,
+                                                                       u16 family);
+static __always_inline int get_remote_sockaddr_in6_from_network_details(struct sockaddr_in6 *addr,
+                                                                        net_conn_v6_t *net_details,
+                                                                        u16 family);
+static __always_inline int get_local_net_id_from_network_details_v4(struct sock *sk,
+                                                                    net_id_t *connect_id,
+                                                                    net_conn_v4_t *net_details,
+                                                                    u16 family);
+static __always_inline int get_local_net_id_from_network_details_v6(struct sock *sk,
+                                                                    net_id_t *connect_id,
+                                                                    net_conn_v6_t *net_details,
+                                                                    u16 family);
+
+// IMPLEMENTATIONS -----------------------------------------------------------------------------------
+
 //
 // Regular events related to network
 //

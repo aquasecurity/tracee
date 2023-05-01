@@ -74,10 +74,13 @@
 #endif
 
 #undef container_of
+
+
 #include <bpf/bpf_core_read.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_endian.h>
+#include "tracee.bpf.h"
 #include "maps.h"
 #include "types.h"
 #include "common/arch.h"
@@ -2751,14 +2754,6 @@ static __always_inline bool should_submit_io_event(u32 event_id, program_data_t 
             should_submit(event_id, p->event));
 }
 
-/** do_file_io_operation - generic file IO (read and write) event creator.
- *
- * @ctx:            the state of the registers prior the hook.
- * @event_id:       the ID of the event to be created.
- * @tail_call_id:   the ID of the tail call to be called before function return.
- * @is_read:        true if the operation is read. False if write.
- * @is_buf:         true if the non-file side of the operation is a buffer. False if io_vector.
- */
 static __always_inline int
 do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool is_read, bool is_buf)
 {
@@ -2829,10 +2824,6 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
     return 0;
 }
 
-// Capture file write
-// Will only capture if:
-// 1. File write capture was configured
-// 2. File matches the filters given
 static __always_inline int capture_file_write(struct pt_regs *ctx, u32 event_id)
 {
     program_data_t p = {};
@@ -3384,8 +3375,6 @@ int BPF_KPROBE(trace_security_bpf)
     }
     return 0;
 }
-
-// arm_kprobe can't be hooked in arm64 architecture, use enable logic instead
 
 static __always_inline int arm_kprobe_handler(struct pt_regs *ctx)
 {

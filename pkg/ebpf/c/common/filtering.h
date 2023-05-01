@@ -38,6 +38,19 @@
 #define FILTER_MAX_NOT_SET 0
 #define FILTER_MIN_NOT_SET ULLONG_MAX
 
+// DECLARATIONS -----------------------------------------------------------------------------------
+
+static __always_inline u64
+uint_filter_range_matches(u64 filter_out_scopes, void *filter_map, u64 value, u64 max, u64 min);
+static __always_inline u64 binary_filter_matches(u64 filter_out_scopes, proc_info_t *proc_info);
+static __always_inline u64 bool_filter_matches(u64 filter_out_scopes, bool val);
+static __always_inline u64 compute_scopes(program_data_t *p);
+static __always_inline u64 should_trace(program_data_t *p);
+static __always_inline u64 should_submit(u32 event_id, event_data_t *event);
+static __always_inline u64 should_submit_by_ctx(u32 event_id, event_context_t *ctx);
+
+// IMPLEMENTATIONS -----------------------------------------------------------------------------------
+
 static __always_inline u64
 uint_filter_range_matches(u64 filter_out_scopes, void *filter_map, u64 value, u64 max, u64 min)
 {

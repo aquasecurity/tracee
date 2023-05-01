@@ -15,6 +15,26 @@
 #include "common/network.h"
 #include "maps.h"
 
+// DECLARATIONS -----------------------------------------------------------------------------------
+
+static __always_inline buf_t *get_buf(int idx);
+static __always_inline int save_to_submit_buf(event_data_t *event, void *ptr, u32 size, u8 index);
+static __always_inline int save_bytes_to_buf(event_data_t *event, void *ptr, u32 size, u8 index);
+static __always_inline int save_str_to_buf(event_data_t *event, void *ptr, u8 index);
+static __always_inline int
+add_u64_elements_to_buf(event_data_t *event, const u64 __user *ptr, int len, volatile u32 count_off);
+static __always_inline int
+save_u64_arr_to_buf(event_data_t *event, const u64 __user *ptr, int len, u8 index);
+static __always_inline int
+save_str_arr_to_buf(event_data_t *event, const char __user *const __user *ptr, u8 index);
+static __always_inline int save_args_str_arr_to_buf(
+    event_data_t *event, const char *start, const char *end, int elem_num, u8 index);
+static __always_inline int save_sockaddr_to_buf(event_data_t *event, struct socket *sock, u8 index);
+static __always_inline int events_perf_submit(program_data_t *p, u32 id, long ret);
+static __always_inline int save_args_to_submit_buf(event_data_t *event, args_t *args);
+
+// IMPLEMENTATIONS -----------------------------------------------------------------------------------
+
 static __always_inline buf_t *get_buf(int idx)
 {
     return bpf_map_lookup_elem(&bufs, &idx);

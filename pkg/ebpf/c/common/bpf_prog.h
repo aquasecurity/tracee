@@ -1,5 +1,5 @@
-#ifndef __TRACEE_BPF_H__
-#define __TRACEE_BPF_H__
+#ifndef __TRACEE_BPF_PROG_H__
+#define __TRACEE_BPF_PROG_H__
 
 #define BPF_PROG_LOAD 5
 

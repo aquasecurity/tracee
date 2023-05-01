@@ -6,6 +6,15 @@
 #include <bpf/bpf_helpers.h>
 #include "maps.h"
 
+// DECLARATIONS -----------------------------------------------------------------------------------
+
+static __always_inline void *get_symbol_addr(char *symbol_name);
+static __always_inline void *get_stext_addr();
+static __always_inline void *get_etext_addr();
+static __always_inline struct pipe_inode_info *get_file_pipe_info(struct file *file);
+
+// IMPLEMENTATIONS -----------------------------------------------------------------------------------
+
 static __always_inline void *get_symbol_addr(char *symbol_name)
 {
     char new_ksym_name[MAX_KSYM_NAME_SIZE] = {};

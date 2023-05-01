@@ -17,6 +17,18 @@
 #include <types.h>
 #include <maps.h>
 
+
+// DECLARATIONS -----------------------------------------------------------------------------------
+
+static __always_inline int
+init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 options);
+static __always_inline bool context_changed(task_context_t *old, task_context_t *new);
+static __always_inline int init_program_data(program_data_t *p, void *ctx);
+static __always_inline int init_tailcall_program_data(program_data_t *p, void *ctx);
+static __always_inline void reset_event_args(program_data_t *p);
+
+// IMPLEMENTATIONS -----------------------------------------------------------------------------------
+
 static __always_inline int
 init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 options)
 {

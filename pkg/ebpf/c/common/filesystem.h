@@ -15,6 +15,28 @@
 #include "memory.h"
 #include "maps.h"
 
+// DECLARATIONS -----------------------------------------------------------------------------------
+
+static __always_inline u64 get_time_nanosec_timespec(struct timespec64 *ts);
+static __always_inline u64 get_ctime_nanosec_from_inode(struct inode *inode);
+static __always_inline struct dentry *get_mnt_root_ptr_from_vfsmnt(struct vfsmount *vfsmnt);
+static __always_inline struct dentry *get_d_parent_ptr_from_dentry(struct dentry *dentry);
+static __always_inline struct qstr get_d_name_from_dentry(struct dentry *dentry);
+static __always_inline dev_t get_dev_from_file(struct file *file);
+static __always_inline u64 get_ctime_nanosec_from_file(struct file *file);
+static __always_inline struct path get_path_from_file(struct file *file);
+static __always_inline struct file *get_struct_file_from_fd(u64 fd_num);
+static __always_inline int check_fd_type(u64 fd, u16 type);
+static __always_inline dev_t get_dev_from_dentry(struct dentry *dentry);
+static __always_inline u64 get_ctime_nanosec_from_dentry(struct dentry *dentry);
+static __always_inline void *get_path_str(struct path *path);
+static __always_inline void *get_dentry_path_str(struct dentry *dentry);
+static __always_inline file_info_t get_file_info(struct file *file);
+static __always_inline struct inode *get_inode_from_file(struct file *file);
+static __always_inline struct super_block *get_super_block_from_inode(struct inode *f_inode);
+
+// IMPLEMENTATIONS -----------------------------------------------------------------------------------
+
 static __always_inline u64 get_time_nanosec_timespec(struct timespec64 *ts)
 {
     time64_t sec = READ_KERN(ts->tv_sec);
