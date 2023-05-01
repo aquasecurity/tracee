@@ -459,8 +459,8 @@ func initKernelReadFileTypes() {
 			7: trace.KernelReadSecurityPolicy,
 			8: trace.KernelReadx509Certificate,
 		}
-	} else if kernel5818ComparedToRunningKernel == helpers.KernelVersionEqual /* Running kernel is 5.8.18*/ &&
-		(kernel570ComparedToRunningKernel == helpers.KernelVersionNewer && /* Running kernel is older than 5.7.0*/
+	} else if kernel5818ComparedToRunningKernel == helpers.KernelVersionEqual /* Running kernel is 5.8.18 */ ||
+		(kernel570ComparedToRunningKernel == helpers.KernelVersionNewer && /* Running kernel is older than 5.7.0 */
 			kernel4180ComparedToRunningKernel != helpers.KernelVersionOlder) /* Running kernel is 4.18 or newer */ {
 		// running kernel version: ==5.8.18 || (<5.7 && >=4.18)
 		kernelReadFileTypes = map[int32]trace.KernelReadType{
