@@ -70,25 +70,6 @@ func NewEngine(config Config, sources EventSources, output chan detect.Finding) 
 	return &engine, nil
 }
 
-// StartPipeline receives an input channel, and returns an output channel
-// allowing the signatures engine to be used in the events pipeline
-func StartPipeline(ctx context.Context, cfg Config, input chan protocol.Event) <-chan detect.Finding {
-	output := make(chan detect.Finding)
-
-	source := EventSources{Tracee: input}
-	engine, err := NewEngine(cfg, source, output)
-	if err != nil {
-		logger.Fatalw("Error creating engine: " + err.Error())
-	}
-
-	go func() {
-		defer close(output)
-		engine.Start(ctx)
-	}()
-
-	return output
-}
-
 // signatureStart is the signature handling business logics.
 func signatureStart(signature detect.Signature, c chan protocol.Event, wg *sync.WaitGroup) {
 	wg.Add(1)

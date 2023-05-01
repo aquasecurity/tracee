@@ -4,7 +4,9 @@ import (
 	"context"
 
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
+	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -13,9 +15,17 @@ import (
 func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-chan *trace.Event, <-chan error) {
 	out := make(chan *trace.Event)
 	errc := make(chan error, 1)
-	engineInput := make(chan protocol.Event)
 
-	engineOutput := engine.StartPipeline(ctx, t.config.EngineConfig, engineInput)
+	engineOutput := make(chan detect.Finding, 100)
+	engineInput := make(chan protocol.Event)
+	source := engine.EventSources{Tracee: engineInput}
+	sigEngine, err := engine.NewEngine(t.config.EngineConfig, source, engineOutput)
+	if err != nil {
+		logger.Fatalw("failed to start signature engine in \"everything is an event\" mode", "error", err)
+	}
+	t.sigEngine = sigEngine
+
+	go t.sigEngine.Start(ctx)
 
 	// TODO: in the upcoming releases, the rule engine should be changed to receive trace.Event,
 	// and return a trace.Event, which should remove the necessity of converting trace.Event to protocol.Event,
@@ -25,6 +35,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 		defer close(out)
 		defer close(errc)
 		defer close(engineInput)
+		defer close(engineOutput)
 
 		for {
 			select {

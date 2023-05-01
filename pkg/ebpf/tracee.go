@@ -168,6 +168,7 @@ type Tracee struct {
 	running   atomic.Bool
 	outDir    *os.File // use utils.XXX functions to access this file
 	stats     metrics.Stats
+	sigEngine *engine.Engine
 	// Events
 	events           map[events.ID]eventConfig
 	eventsSorter     *sorting.EventsChronologicalSorter
