@@ -20,6 +20,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
+	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -250,6 +251,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		// This used to be a flag, we have removed the flag from this binary to test
 		// if users do use it or not.
 		SignatureBufferSize: 1000,
+		DataSources:         []detect.DataSource{},
 	}
 
 	return runner, nil
