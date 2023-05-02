@@ -4,6 +4,7 @@
 #include <vmlinux.h>
 #include <vmlinux_missing.h>
 
+#include <linux/limits.h>
 #include <common/consts.h>
 
 typedef struct task_context {
@@ -206,14 +207,18 @@ typedef struct task_info {
     u8 container_state;   // the state of the container the task resides in
 } task_info_t;
 
+typedef struct file_id {
+    dev_t device;
+    unsigned long inode;
+    u64 ctime;
+} file_id_t;
+
 typedef struct file_info {
     union {
         char pathname[MAX_CACHED_PATH_SIZE];
         char *pathname_p;
     };
-    dev_t device;
-    unsigned long inode;
-    u64 ctime;
+    file_id_t id;
 } file_info_t;
 
 typedef struct binary {
@@ -249,6 +254,10 @@ typedef struct bin_args {
 typedef struct simple_buf {
     u8 buf[MAX_PERCPU_BUFSIZE];
 } buf_t;
+
+typedef struct path_buf {
+    u8 buf[PATH_MAX];
+} path_buf_t;
 
 typedef struct path_filter {
     char path[MAX_PATH_PREF_SIZE];

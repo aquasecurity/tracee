@@ -989,12 +989,12 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     save_to_submit_buf(p.event, &inode_mode, sizeof(umode_t), 5);
     // If the interpreter file is the same as the executed one, it means that there is no
     // interpreter. For more information, see the load_elf_phdrs kprobe program.
-    if (proc_info->interpreter.inode != 0 &&
-        (proc_info->interpreter.device != s_dev || proc_info->interpreter.inode != inode_nr)) {
+    if (proc_info->interpreter.id.inode != 0 && (proc_info->interpreter.id.device != s_dev ||
+                                                 proc_info->interpreter.id.inode != inode_nr)) {
         save_str_to_buf(p.event, &proc_info->interpreter.pathname, 6);
-        save_to_submit_buf(p.event, &proc_info->interpreter.device, sizeof(dev_t), 7);
-        save_to_submit_buf(p.event, &proc_info->interpreter.inode, sizeof(unsigned long), 8);
-        save_to_submit_buf(p.event, &proc_info->interpreter.ctime, sizeof(u64), 9);
+        save_to_submit_buf(p.event, &proc_info->interpreter.id.device, sizeof(dev_t), 7);
+        save_to_submit_buf(p.event, &proc_info->interpreter.id.inode, sizeof(unsigned long), 8);
+        save_to_submit_buf(p.event, &proc_info->interpreter.id.ctime, sizeof(u64), 9);
     }
 
     bpf_tail_call(ctx, &prog_array_tp, TAIL_SCHED_PROCESS_EXEC_EVENT_SUBMIT);
@@ -2672,8 +2672,8 @@ submit_magic_write(program_data_t *p, file_info_t *file_info, io_data_t io_data,
     }
 
     save_bytes_to_buf(p->event, header, header_bytes, 1);
-    save_to_submit_buf(p->event, &file_info->device, sizeof(dev_t), 2);
-    save_to_submit_buf(p->event, &file_info->inode, sizeof(unsigned long), 3);
+    save_to_submit_buf(p->event, &file_info->id.device, sizeof(dev_t), 2);
+    save_to_submit_buf(p->event, &file_info->id.inode, sizeof(unsigned long), 3);
 
     // Submit magic_write event
     return events_perf_submit(p, MAGIC_WRITE, bytes_written);
@@ -2723,7 +2723,7 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
     file_info_t file_info;
 
     struct file *file = (struct file *) saved_args.args[0];
-    file_info.pathname_p = get_path_str(__builtin_preserve_access_index(&file->f_path));
+    file_info.pathname_p = get_path_str_cached(file);
 
     io_data.is_buf = is_buf;
     io_data.ptr = (void *) saved_args.args[1];
@@ -2731,8 +2731,8 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
     loff_t *pos = (loff_t *) saved_args.args[3];
 
     // Extract device id, inode number, and pos (offset)
-    file_info.device = get_dev_from_file(file);
-    file_info.inode = get_inode_nr_from_file(file);
+    file_info.id.device = get_dev_from_file(file);
+    file_info.id.inode = get_inode_nr_from_file(file);
     bpf_probe_read(&start_pos, sizeof(off_t), pos);
 
     bool char_dev = (start_pos == 0);
@@ -2744,8 +2744,8 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
 
     if (should_submit_io) {
         save_str_to_buf(p.event, file_info.pathname_p, 0);
-        save_to_submit_buf(p.event, &file_info.device, sizeof(dev_t), 1);
-        save_to_submit_buf(p.event, &file_info.inode, sizeof(unsigned long), 2);
+        save_to_submit_buf(p.event, &file_info.id.device, sizeof(dev_t), 1);
+        save_to_submit_buf(p.event, &file_info.id.inode, sizeof(unsigned long), 2);
         save_to_submit_buf(p.event, &io_data.len, sizeof(unsigned long), 3);
         save_to_submit_buf(p.event, &start_pos, sizeof(off_t), 4);
 
@@ -2780,12 +2780,7 @@ extract_vfs_ret_io_data(struct pt_regs *ctx, args_t *saved_args, io_data_t *io_d
 // Filter capture of file writes according to path prefix, type and fd.
 statfunc bool filter_file_write_capture(program_data_t *p, struct file *file)
 {
-    // Get per-cpu string buffer
-    buf_t *string_p = get_buf(STRING_BUF_IDX);
-    if (string_p == NULL)
-        return NULL;
-    size_t buf_off = get_path_str_buf(__builtin_preserve_access_index(&file->f_path), string_p);
-    return filter_file_path(p->ctx, &file_write_path_filter, string_p, buf_off) ||
+    return filter_file_path(p->ctx, &file_write_path_filter, file) ||
            filter_file_type(p->ctx, &file_type_filter, CAPTURE_WRITE_TYPE_FILTER_IDX, file) ||
            filter_file_fd(p->ctx, &file_type_filter, CAPTURE_WRITE_TYPE_FILTER_IDX, file);
 }
@@ -2830,12 +2825,8 @@ statfunc int capture_file_write(struct pt_regs *ctx, u32 event_id, bool is_buf)
     // to the inode-device only. In the case of writes to /dev/null, we want to pass the PID because
     // otherwise the capture will overwrite itself.
     int pid = 0;
-    buf_t *string_p = get_buf(STRING_BUF_IDX);
-    if (string_p == NULL)
-        return -1;
-    size_t buf_off = get_path_str_buf(__builtin_preserve_access_index(&file->f_path), string_p);
-    if ((buf_off < MAX_PERCPU_BUFSIZE - 10) &&
-        !has_prefix("/dev/null", (char *) &string_p->buf[buf_off], 10)) {
+    void *path_buf = get_path_str_cached(file);
+    if (path_buf != NULL && !has_prefix("/dev/null", (char *) &path_buf, 10)) {
         pid = p.event->context.task.pid;
     }
 
@@ -2851,12 +2842,7 @@ statfunc int capture_file_write(struct pt_regs *ctx, u32 event_id, bool is_buf)
 // Filter capture of file reads according to path prefix, type and fd.
 statfunc bool filter_file_read_capture(program_data_t *p, struct file *file)
 {
-    // Get per-cpu string buffer
-    buf_t *string_p = get_buf(STRING_BUF_IDX);
-    if (string_p == NULL)
-        return false;
-    size_t buf_off = get_path_str_buf(__builtin_preserve_access_index(&file->f_path), string_p);
-    return filter_file_path(p->ctx, &file_read_path_filter, string_p, buf_off) ||
+    return filter_file_path(p->ctx, &file_read_path_filter, file) ||
            filter_file_type(p->ctx, &file_type_filter, CAPTURE_READ_TYPE_FILTER_IDX, file) ||
            filter_file_fd(p->ctx, &file_type_filter, CAPTURE_READ_TYPE_FILTER_IDX, file);
 }
@@ -2986,9 +2972,9 @@ int BPF_KPROBE(trace_ret_vfs_readv_tail)
         save_to_submit_buf(event, &previous_prot, sizeof(int), 4);                                 \
         if (file_info.pathname_p != NULL) {                                                        \
             save_str_to_buf(event, file_info.pathname_p, 5);                                       \
-            save_to_submit_buf(event, &file_info.device, sizeof(dev_t), 6);                        \
-            save_to_submit_buf(event, &file_info.inode, sizeof(unsigned long), 7);                 \
-            save_to_submit_buf(event, &file_info.ctime, sizeof(u64), 8);                           \
+            save_to_submit_buf(event, &file_info.id.device, sizeof(dev_t), 6);                     \
+            save_to_submit_buf(event, &file_info.id.inode, sizeof(unsigned long), 7);              \
+            save_to_submit_buf(event, &file_info.id.ctime, sizeof(u64), 8);                        \
         }                                                                                          \
         events_perf_submit(&p, MEM_PROT_ALERT, 0);                                                 \
     }
@@ -3165,7 +3151,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
 
         save_str_to_buf(p.event, file_info.pathname_p, 0);
         save_to_submit_buf(p.event, &reqprot, sizeof(int), 1);
-        save_to_submit_buf(p.event, &file_info.ctime, sizeof(u64), 2);
+        save_to_submit_buf(p.event, &file_info.id.ctime, sizeof(u64), 2);
         save_to_submit_buf(p.event, &prev_prot, sizeof(int), 3);
         save_to_submit_buf(p.event, &addr, sizeof(void *), 4);
         save_to_submit_buf(p.event, &len, sizeof(size_t), 5);
@@ -4002,14 +3988,14 @@ int BPF_KPROBE(trace_load_elf_phdrs)
     // loaded, the value of the executed binary should be overridden by the interpreter.
     size_t sz = sizeof(proc_info->interpreter.pathname);
     bpf_probe_read_str(proc_info->interpreter.pathname, sz, elf_pathname);
-    proc_info->interpreter.device = get_dev_from_file(loaded_elf);
-    proc_info->interpreter.inode = get_inode_nr_from_file(loaded_elf);
-    proc_info->interpreter.ctime = get_ctime_nanosec_from_file(loaded_elf);
+    proc_info->interpreter.id.device = get_dev_from_file(loaded_elf);
+    proc_info->interpreter.id.inode = get_inode_nr_from_file(loaded_elf);
+    proc_info->interpreter.id.ctime = get_ctime_nanosec_from_file(loaded_elf);
 
     if (should_submit(LOAD_ELF_PHDRS, p.event)) {
         save_str_to_buf(p.event, (void *) elf_pathname, 0);
-        save_to_submit_buf(p.event, &proc_info->interpreter.device, sizeof(dev_t), 1);
-        save_to_submit_buf(p.event, &proc_info->interpreter.inode, sizeof(unsigned long), 2);
+        save_to_submit_buf(p.event, &proc_info->interpreter.id.device, sizeof(dev_t), 1);
+        save_to_submit_buf(p.event, &proc_info->interpreter.id.inode, sizeof(unsigned long), 2);
 
         events_perf_submit(&p, LOAD_ELF_PHDRS, 0);
     }
@@ -4331,7 +4317,7 @@ int BPF_KPROBE(trace_fd_install)
     file_info_t file_info = get_file_info(file);
 
     file_mod_key_t file_mod_key = {
-        p.task_info->context.host_pid, file_info.device, file_info.inode};
+        p.task_info->context.host_pid, file_info.id.device, file_info.id.inode};
     int op = FILE_MODIFICATION_SUBMIT;
 
     bpf_map_update_elem(&file_modification_map, &file_mod_key, &op, BPF_ANY);
@@ -4353,7 +4339,7 @@ int BPF_KPROBE(trace_filp_close)
     file_info_t file_info = get_file_info(file);
 
     file_mod_key_t file_mod_key = {
-        p.task_info->context.host_pid, file_info.device, file_info.inode};
+        p.task_info->context.host_pid, file_info.id.device, file_info.id.inode};
 
     bpf_map_delete_elem(&file_modification_map, &file_mod_key);
 
@@ -4407,7 +4393,7 @@ statfunc int common_file_modification_ret(struct pt_regs *ctx)
     file_info_t file_info = get_file_info(file);
 
     file_mod_key_t file_mod_key = {
-        p.task_info->context.host_pid, file_info.device, file_info.inode};
+        p.task_info->context.host_pid, file_info.id.device, file_info.id.inode};
 
     int *op = bpf_map_lookup_elem(&file_modification_map, &file_mod_key);
     if (op == NULL || *op == FILE_MODIFICATION_SUBMIT) {
@@ -4420,10 +4406,10 @@ statfunc int common_file_modification_ret(struct pt_regs *ctx)
     }
 
     save_str_to_buf(p.event, file_info.pathname_p, 0);
-    save_to_submit_buf(p.event, &file_info.device, sizeof(dev_t), 1);
-    save_to_submit_buf(p.event, &file_info.inode, sizeof(unsigned long), 2);
+    save_to_submit_buf(p.event, &file_info.id.device, sizeof(dev_t), 1);
+    save_to_submit_buf(p.event, &file_info.id.inode, sizeof(unsigned long), 2);
     save_to_submit_buf(p.event, &old_ctime, sizeof(u64), 3);
-    save_to_submit_buf(p.event, &file_info.ctime, sizeof(u64), 4);
+    save_to_submit_buf(p.event, &file_info.id.ctime, sizeof(u64), 4);
 
     events_perf_submit(&p, FILE_MODIFICATION, 0);
 

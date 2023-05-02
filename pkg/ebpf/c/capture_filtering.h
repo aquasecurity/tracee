@@ -27,7 +27,7 @@
 
 // PROTOTYPES
 
-statfunc bool filter_file_path(void *, void *, buf_t *, size_t);
+statfunc bool filter_file_path(void *, void *, struct file *);
 statfunc bool filter_file_type(void *, void *, size_t, struct file *);
 statfunc bool filter_file_fd(void *, void *, size_t, struct file *);
 
@@ -35,9 +35,10 @@ statfunc bool filter_file_fd(void *, void *, size_t, struct file *);
 
 // Return if the file does not match any given prefix filters in the filter map (so it should be
 // filtered out). The result will be false if no filter exist.
-statfunc bool filter_file_path(void *ctx, void *filter_map, buf_t *path_buf, size_t buf_off)
+statfunc bool filter_file_path(void *ctx, void *filter_map, struct file *file)
 {
-    if ((path_buf == NULL) || (buf_off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)) {
+    path_buf_t *path_buf = get_path_str_cached(file);
+    if (path_buf == NULL) {
         return false;
     }
 
@@ -60,7 +61,7 @@ statfunc bool filter_file_path(void *ctx, void *filter_map, buf_t *path_buf, siz
 
         has_filter = true;
 
-        if (has_prefix(filter_p->path, (char *) &path_buf->buf[buf_off], MAX_PATH_PREF_SIZE)) {
+        if (has_prefix(filter_p->path, (char *) &path_buf->buf, MAX_PATH_PREF_SIZE)) {
             filter_match = true;
             break;
         }

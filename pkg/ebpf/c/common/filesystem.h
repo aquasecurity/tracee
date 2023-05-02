@@ -27,6 +27,8 @@ statfunc dev_t get_dev_from_dentry(struct dentry *);
 statfunc u64 get_ctime_nanosec_from_dentry(struct dentry *);
 statfunc size_t get_path_str_buf(struct path *, buf_t *);
 statfunc void *get_path_str(struct path *);
+statfunc file_id_t get_file_id(struct file *);
+statfunc void *get_path_str_cached(struct file *);
 statfunc void *get_dentry_path_str(struct dentry *);
 statfunc file_info_t get_file_info(struct file *);
 statfunc struct inode *get_inode_from_file(struct file *);
@@ -245,6 +247,39 @@ statfunc void *get_path_str(struct path *path)
     return &string_p->buf[buf_off];
 }
 
+statfunc file_id_t get_file_id(struct file *file)
+{
+    file_id_t file_id = {};
+    if (file != NULL) {
+        file_id.ctime = get_ctime_nanosec_from_file(file);
+        file_id.device = get_dev_from_file(file);
+        file_id.inode = get_inode_nr_from_file(file);
+    }
+    return file_id;
+}
+
+// get_path_str_cached - get the path of a specific file, using and updating cache map.
+statfunc void *get_path_str_cached(struct file *file)
+{
+    file_id_t file_id = get_file_id(file);
+    path_buf_t *path = bpf_map_lookup_elem(&io_file_path_cache_map, &file_id);
+    if (path == NULL) {
+        // Get per-cpu string buffer
+        buf_t *string_p = get_buf(STRING_BUF_IDX);
+        if (string_p == NULL)
+            return NULL;
+
+        size_t buf_off = get_path_str_buf(__builtin_preserve_access_index(&file->f_path), string_p);
+        if (likely(sizeof(string_p->buf) > buf_off + sizeof(path_buf_t))) {
+            path = (path_buf_t *) (&string_p->buf[0] + buf_off);
+            bpf_map_update_elem(&io_file_path_cache_map, &file_id, path, BPF_ANY);
+        } else {
+            return NULL;
+        }
+    }
+    return &path->buf;
+}
+
 statfunc void *get_dentry_path_str(struct dentry *dentry)
 {
     char slash = '/';
@@ -307,9 +342,7 @@ statfunc file_info_t get_file_info(struct file *file)
     file_info_t file_info = {};
     if (file != NULL) {
         file_info.pathname_p = get_path_str(__builtin_preserve_access_index(&file->f_path));
-        file_info.ctime = get_ctime_nanosec_from_file(file);
-        file_info.device = get_dev_from_file(file);
-        file_info.inode = get_inode_nr_from_file(file);
+        file_info.id = get_file_id(file);
     }
     return file_info;
 }
