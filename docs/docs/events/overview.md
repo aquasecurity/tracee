@@ -6,7 +6,7 @@ This section documents all of the different events that Tracee exposes.
 
 ## Read in CLI
 
-You can also view the list of available events and their schema by running `tracee --list` command.
+You can also view the list of available events and their schema by running `tracee list` command.
 
 # Read in AVD
 
