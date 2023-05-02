@@ -20,6 +20,8 @@ fi
 TRACEE_STARTUP_TIMEOUT=30
 SCRIPT_TMP_DIR=/tmp
 TRACEE_TMP_DIR=/tmp/tracee
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SIG_DIR=$(realpath $SCRIPT_DIR/../dist/e2e-instrumentation-signatures)
 
 info() {
     echo -n "INFO: "
@@ -61,8 +63,8 @@ set -e
 make -j$(nproc) all
 make e2e-instrumentation-signatures
 set +e
-if [[ ! -x ./dist/tracee-ebpf || ! -x ./dist/tracee-rules ]]; then
-    error_exit "could not find tracee executables"
+if [[ ! -x ./dist/tracee ]]; then
+    error_exit "could not find tracee executable"
 fi
 
 # if any test has failed
@@ -76,26 +78,18 @@ for TEST in $TESTS; do
     info
 
     rm -f $SCRIPT_TMP_DIR/build-$$
-    rm -f $SCRIPT_TMP_DIR/ebpf-$$
+    rm -f $SCRIPT_TMP_DIR/tracee-log-$$
 
-    events=$(./dist/tracee-rules --allcaps --rules-dir ./dist/e2e-instrumentation-signatures/ --rules $TEST --list-events)
-
-    ./dist/tracee-ebpf \
+    ./dist/tracee \
         --install-path $TRACEE_TMP_DIR \
         --cache cache-type=mem \
         --cache mem-cache-size=512 \
-        --output format:json \
+        --output json:$SCRIPT_TMP_DIR/build-$$ \
         --output option:parse-arguments \
-        --filter comm=echo,mv \
-        --filter event=$events \
-        2>$SCRIPT_TMP_DIR/ebpf-$$ |
-        ./dist/tracee-rules \
-            --rules-dir ./dist/e2e-instrumentation-signatures/ \
-            --input-tracee=file:stdin \
-            --input-tracee format:json \
-            --rules $TEST \
-            --allcaps 2>&1 |
-        tee $SCRIPT_TMP_DIR/build-$$ 2>&1 &
+        --log file:$SCRIPT_TMP_DIR/tracee-log-$$ \
+        --signatures-dir $SIG_DIR \
+        --filter comm=echo,mv,ls \
+        --filter set=signatures &
 
     # wait tracee-ebpf to be started (30 sec most)
     times=0
@@ -121,7 +115,7 @@ for TEST in $TESTS; do
         info
         info "$TEST: FAILED. ERRORS:"
         info
-        cat $SCRIPT_TMP_DIR/ebpf-$$
+        cat $SCRIPT_TMP_DIR/tracee-log-$$
 
         anyerror="${anyerror}$TEST,"
         continue
@@ -139,33 +133,30 @@ for TEST in $TESTS; do
     ## cleanup at EXIT
 
     found=0
-    cat $SCRIPT_TMP_DIR/build-$$ | grep "Signature ID: $TEST" -B2 | head -3 | grep -q "\*\*\* Detection" && found=1
+    cat $SCRIPT_TMP_DIR/build-$$ | jq .eventName | grep $TEST && found=1
     info
     if [[ $found -eq 1 ]]; then
         info "$TEST: SUCCESS"
     else
         anyerror="${anyerror}$TEST,"
-        info "$TEST: FAILED, stderr from tracee-ebpf:"
-        cat $SCRIPT_TMP_DIR/ebpf-$$
+        info "$TEST: FAILED, stderr from tracee:"
+        cat $SCRIPT_TMP_DIR/tracee-log-$$
         info
     fi
     info
 
     rm -f $SCRIPT_TMP_DIR/build-$$
-    rm -f $SCRIPT_TMP_DIR/ebpf-$$
+    rm -f $SCRIPT_TMP_DIR/tracee-log-$$
 
     # make sure we exit both to start them again
 
-    pid_rules=$(pidof tracee-rules)
-    pid_ebpf=$(pidof tracee-ebpf)
+    pid_tracee=$(pidof tracee)
 
-    kill -2 $pid_rules
-    kill -2 $pid_ebpf
+    kill -2 $pid_tracee
 
     sleep 5 # wait for cleanup
 
-    kill -9 $pid_rules >/dev/null 2>&1
-    kill -9 $pid_ebpf >/dev/null 2>&1
+    kill -9 $pid_tracee >/dev/null 2>&1
 
     # give a little break for OS noise to reduce
     sleep 3
