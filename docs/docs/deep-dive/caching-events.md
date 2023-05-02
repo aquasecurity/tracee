@@ -4,7 +4,7 @@ Tracee has an events caching (in-memory) mechanism. In order to check latest
 caching options you may execute:
 
 ```console
-./dist/tracee --cache help
+./dist/tracee --help cache
 ```
 
 !!! Read Important

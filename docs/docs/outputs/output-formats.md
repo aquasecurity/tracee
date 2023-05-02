@@ -1,6 +1,6 @@
 # Tracing Output Formats
 
-The `--output` flag controls where and how Tracee will output events, by specifying `--output <format>:<destination>`.  You can use the `--output` flag multiple times to output events in multiple ways. To see all output options you can run `tracee --output help`.
+The `--output` flag controls where and how Tracee will output events, by specifying `--output <format>:<destination>`.  You can use the `--output` flag multiple times to output events in multiple ways. To see all output options you can run `tracee --help output`.
 
 The following output formats are supported:
 
