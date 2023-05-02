@@ -507,6 +507,8 @@ nav:
           - Output Formats: docs/outputs/output-formats.md
           - Output Options: docs/outputs/output-options.md
           - Logging: docs/outputs/logging.md
+      - Config:
+          - Overview: docs/config/overview.md
       - Forensics:
           - Getting Started: docs/forensics/index.md
       - Integrations:
