@@ -11,30 +11,30 @@
 #undef container_of
 
 #include <bpf/bpf_core_read.h>
+#include <bpf/bpf_endian.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
-#include <bpf/bpf_endian.h>
 
 #include <maps.h>
 #include <types.h>
 
-#include "common/arch.h"
-#include "common/arguments.h"
-#include "common/binprm.h"
-#include "common/buffer.h"
-#include "common/cgroups.h"
-#include "common/common.h"
-#include "common/consts.h"
-#include "common/context.h"
-#include "common/filesystem.h"
-#include "common/filtering.h"
-#include "common/kconfig.h"
-#include "common/ksymbols.h"
-#include "common/logging.h"
-#include "common/memory.h"
-#include "common/network.h"
-#include "common/probes.h"
-#include "common/bpf_prog.h"
+#include <common/arch.h>
+#include <common/arguments.h>
+#include <common/binprm.h>
+#include <common/bpf_prog.h>
+#include <common/buffer.h>
+#include <common/cgroups.h>
+#include <common/common.h>
+#include <common/consts.h>
+#include <common/context.h>
+#include <common/filesystem.h>
+#include <common/filtering.h>
+#include <common/kconfig.h>
+#include <common/ksymbols.h>
+#include <common/logging.h>
+#include <common/memory.h>
+#include <common/network.h>
+#include <common/probes.h>
 
 char LICENSE[] SEC("license") = "GPL";
 
