@@ -21,6 +21,7 @@ func (sig *e2eSecurityInodeRename) Init(ctx detect.SignatureContext) error {
 func (sig *e2eSecurityInodeRename) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
 		ID:          "SECURITY_INODE_RENAME",
+		EventName:   "SECURITY_INODE_RENAME",
 		Version:     "0.1.0",
 		Name:        "security_inode_rename Test",
 		Description: "Instrumentation events E2E Tests: security_inode_rename",

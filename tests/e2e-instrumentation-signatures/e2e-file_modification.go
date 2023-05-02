@@ -22,6 +22,7 @@ func (sig *e2eFileModification) Init(ctx detect.SignatureContext) error {
 func (sig *e2eFileModification) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
 		ID:          "FILE_MODIFICATION",
+		EventName:   "FILE_MODIFICATION",
 		Version:     "0.1.0",
 		Name:        "File Modification Test",
 		Description: "Instrumentation events E2E Tests: File Modification",

@@ -22,6 +22,7 @@ func (sig *e2eVfsWrite) Init(ctx detect.SignatureContext) error {
 func (sig *e2eVfsWrite) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
 		ID:          "VFS_WRITE",
+		EventName:   "VFS_WRITE",
 		Version:     "0.1.0",
 		Name:        "Vfs Write Test",
 		Description: "Instrumentation events E2E Tests: Vfs Write",
