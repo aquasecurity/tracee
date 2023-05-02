@@ -1,6 +1,6 @@
 # Tracing Output Options
 
-Tracee supports different output options for customizing the way events are printed. For a complete list of available options, run `tracee --output help`.
+Tracee supports different output options for customizing the way events are printed. For a complete list of available options, run `tracee --help output`.
 
 Available options:
 

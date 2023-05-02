@@ -1,7 +1,7 @@
 # Tracing Event Filtering
 
 ```console
-sudo ./dist/tracee --filter help
+sudo ./dist/tracee --help filter
 sudo ./dist/tracee --filter xxx
 ```
 
@@ -115,7 +115,7 @@ expected.
 
     !!! Note
         Selects a set of events to tracee according to pre-defined sets which
-        can be listed by using `--list` command line argument.
+        can be listed by using `list` command line argument.
 
 1. **Container** `(Operators: =, != and "new". Boolean)`
 
