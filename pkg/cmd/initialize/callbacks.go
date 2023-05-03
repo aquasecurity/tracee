@@ -2,6 +2,7 @@ package initialize
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/aquasecurity/libbpfgo"
 
@@ -58,6 +59,7 @@ func SetLibbpfgoCallbacks() {
 				lvl = logger.DebugLevel
 			}
 
+			msg = strings.TrimSuffix(msg, "\n")
 			logger.Log(lvl, false, msg)
 		},
 		LogFilters: []func(libLevel int, msg string) bool{
