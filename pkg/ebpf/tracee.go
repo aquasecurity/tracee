@@ -1469,6 +1469,8 @@ func (t *Tracee) lkmSeekerRoutine() {
 	}
 }
 
+const pollTimeout int = 300
+
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.invokeInitEvents()
@@ -1481,18 +1483,18 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 	go t.lkmSeekerRoutine()
 
-	t.eventsPerfMap.Start()
+	t.eventsPerfMap.Poll(pollTimeout)
 	go t.processLostEvents(ctx)
 	go t.handleEvents(ctx)
 	if t.config.BlobPerfBufferSize > 0 {
-		t.fileWrPerfMap.Start()
+		t.fileWrPerfMap.Poll(pollTimeout)
 		go t.processFileWrites(ctx)
 	}
 	if pcaps.PcapsEnabled(t.config.Capture.Net) {
-		t.netCapPerfMap.Start()
+		t.netCapPerfMap.Poll(pollTimeout)
 		go t.processNetCaptureEvents(ctx)
 	}
-	t.bpfLogsPerfMap.Start()
+	t.bpfLogsPerfMap.Poll(pollTimeout)
 	go t.processBPFLogs(ctx)
 
 	// write pid file
