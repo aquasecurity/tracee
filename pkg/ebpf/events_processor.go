@@ -333,7 +333,7 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 	_, okProcFops := t.events[events.HookedProcFops]
 	_, okMemDump := t.events[events.PrintMemDump]
 
-	if okSyscalls || okSeqOps || okProcFops {
+	if okSyscalls || okSeqOps || okProcFops || okMemDump {
 		err := capabilities.GetInstance().EBPF(
 			func() error {
 				return t.UpdateKallsyms()

@@ -6260,6 +6260,11 @@ var Definitions = eventDefinitions{
 					{EventID: DoInitModule},
 				},
 				KSymbols: &[]kSymbolDependency{},
+				Capabilities: capDependency{
+					capabilities.Base: []cap.Value{
+						cap.SYSLOG, // read /proc/kallsyms
+					},
+				},
 			},
 		},
 		VfsRead: {
