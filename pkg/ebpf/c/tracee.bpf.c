@@ -835,9 +835,9 @@ int uprobe_lkm_seeker(struct pt_regs *ctx)
     p.event->context.syscall = NO_SYSCALL;
     p.event->context.matched_policies = ULLONG_MAX;
 
-    u32 trigger_pid = bpf_get_current_pid_tgid() >> 32;
     // uprobe was triggered from other tracee instance
-    if (p.config->tracee_pid != trigger_pid) {
+    if (p.config->tracee_pid != p.task_info->context.pid &&
+        p.config->tracee_pid != p.task_info->context.host_pid) {
         return 0;
     }
 
@@ -1286,7 +1286,6 @@ SEC("uprobe/trigger_syscall_event")
 int uprobe_syscall_trigger(struct pt_regs *ctx)
 {
     u64 caller_ctx_id = 0;
-    u32 trigger_pid = bpf_get_current_pid_tgid() >> 32;
 
     // clang-format off
     //
@@ -1323,7 +1322,8 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
     p.event->context.matched_policies = ULLONG_MAX;
 
     // uprobe was triggered from other tracee instance
-    if (p.config->tracee_pid != trigger_pid)
+    if (p.config->tracee_pid != p.task_info->context.pid &&
+        p.config->tracee_pid != p.task_info->context.host_pid)
         return 0;
 
     int key = 0;
@@ -1380,7 +1380,6 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
     u64 caller_ctx_id = 0;
     u64 *address_array = NULL;
     u64 struct_address;
-    u32 trigger_pid = bpf_get_current_pid_tgid() >> 32;
 
     // clang-format off
     //
@@ -1420,7 +1419,8 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
     p.event->context.matched_policies = ULLONG_MAX;
 
     // uprobe was triggered from other tracee instance
-    if (p.config->tracee_pid != trigger_pid)
+    if (p.config->tracee_pid != p.task_info->context.pid &&
+        p.config->tracee_pid != p.task_info->context.host_pid)
         return 0;
 
     void *stext_addr = get_stext_addr();
@@ -1478,7 +1478,6 @@ int uprobe_mem_dump_trigger(struct pt_regs *ctx)
     u64 address = 0;
     u64 size = 0;
     u64 caller_ctx_id = 0;
-    u32 trigger_pid = bpf_get_current_pid_tgid() >> 32;
 
 #if defined(bpf_target_x86)
     address = ctx->bx;       // 1st arg
@@ -1501,7 +1500,8 @@ int uprobe_mem_dump_trigger(struct pt_regs *ctx)
     p.event->context.matched_policies = ULLONG_MAX;
 
     // uprobe was triggered from other tracee instance
-    if (p.config->tracee_pid != trigger_pid)
+    if (p.config->tracee_pid != p.task_info->context.pid &&
+        p.config->tracee_pid != p.task_info->context.host_pid)
         return 0;
 
     if (size <= 0)
