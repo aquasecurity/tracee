@@ -73,6 +73,10 @@ github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220418222510-f25a4f6275ed h1:u
 github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220418222510-f25a4f6275ed/go.mod h1:F7bn7fEU90QkQ3tnmaTx3LTKLEDqnwWODIYppRQ5hnY=
 github.com/aquasecurity/libbpfgo v0.4.6-libbpf-1.1.0 h1:b4RQasaC8u+zvCFJO6z4e+XoDJ3XEwxcMSdrbT1GFnk=
 github.com/aquasecurity/libbpfgo v0.4.6-libbpf-1.1.0/go.mod h1:v+Nk+v6BtHLfdT4kVdsp+fYt4AeUa3cIG2P0y+nBuuY=
+github.com/aquasecurity/libbpfgo v0.4.7-libbpf-1.1.0-41-gb2e29a1.0.20230503013646-0238ec325a96 h1:thUSO5if8YAieXF9hnqGz0j5nKPakuYNS5dgSGilgB8=
+github.com/aquasecurity/libbpfgo v0.4.7-libbpf-1.1.0-41-gb2e29a1.0.20230503013646-0238ec325a96/go.mod h1:UD3Mfr+JZ/ASK2VMucI/zAdEhb35LtvYXvAUdrdqE9s=
+github.com/aquasecurity/libbpfgo v0.4.8-libbpf-1.2.0 h1:EHEt0EborDDPU0Bn84kkzaGUA+u3alWynjIfSJDCpcw=
+github.com/aquasecurity/libbpfgo v0.4.8-libbpf-1.2.0/go.mod h1:UD3Mfr+JZ/ASK2VMucI/zAdEhb35LtvYXvAUdrdqE9s=
 github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230321190037-f591a2c5734f h1:l127H3NqJBmw+XMt+haBOeZIrBppuw7TJz26cWMI9kY=
 github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230321190037-f591a2c5734f/go.mod h1:j/TQLmsZpOIdF3CnJODzYngG4yu1YoDCoRMELxkQSSA=
 github.com/aquasecurity/tracee/types v0.0.0-20230420201357-51135cc9bc89 h1:Ko35zMOJE90+KM/NebyzT2SvQko67rM4CfVhN1bVpDU=
