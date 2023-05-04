@@ -1549,8 +1549,9 @@ static __always_inline void *get_trace_probe_from_trace_event_call(struct trace_
     return tracep_ptr;
 }
 
-enum perf_type_e
+enum bpf_attach_type_e
 {
+    BPF_RAW_TRACEPOINT,
     PERF_TRACEPOINT,
     PERF_KPROBE,
     PERF_KRETPROBE,
@@ -1558,10 +1559,48 @@ enum perf_type_e
     PERF_URETPROBE
 };
 
+static __always_inline int send_bpf_attach(
+    program_data_t *p, struct bpf_prog *prog, void *event_name, u64 probe_addr, int perf_type)
+{
+    if (!should_submit(BPF_ATTACH, p->event)) {
+        return 0;
+    }
+
+    // get bpf prog details
+
+    int prog_type = READ_KERN(prog->type);
+    struct bpf_prog_aux *prog_aux = READ_KERN(prog->aux);
+    u32 prog_id = READ_KERN(prog_aux->id);
+    char prog_name[BPF_OBJ_NAME_LEN];
+    bpf_probe_read_str(&prog_name, BPF_OBJ_NAME_LEN, prog_aux->name);
+
+    // get usage of helpers
+    bpf_used_helpers_t *val = bpf_map_lookup_elem(&bpf_attach_map, &prog_id);
+    if (val == NULL)
+        return 0;
+
+    // submit the event
+
+    save_to_submit_buf(p->event, &prog_type, sizeof(int), 0);
+    save_str_to_buf(p->event, (void *) &prog_name, 1);
+    save_to_submit_buf(p->event, &prog_id, sizeof(u32), 2);
+    save_u64_arr_to_buf(p->event, (const u64 *) val->helpers, 4, 3);
+    save_str_to_buf(p->event, event_name, 4);
+    save_to_submit_buf(p->event, &probe_addr, sizeof(u64), 5);
+    save_to_submit_buf(p->event, &perf_type, sizeof(int), 6);
+
+    events_perf_submit(p, BPF_ATTACH, 0);
+
+    // delete from map
+    bpf_map_delete_elem(&bpf_attach_map, &prog_id);
+
+    return 0;
+}
+
 // Inspired by bpf_get_perf_event_info() kernel func.
 // https://elixir.bootlin.com/linux/v5.19.2/source/kernel/trace/bpf_trace.c#L2123
 static __always_inline int
-send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf_event_file)
+send_bpf_perf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf_event_file)
 {
     if (!should_submit(BPF_ATTACH, p->event)) {
         return 0;
@@ -1670,36 +1709,9 @@ send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf
         }
     }
 
-    // get bpf prog details
-
     struct bpf_prog *prog = (struct bpf_prog *) READ_KERN(bpf_prog_file->private_data);
-    int prog_type = READ_KERN(prog->type);
-    struct bpf_prog_aux *prog_aux = READ_KERN(prog->aux);
-    u32 prog_id = READ_KERN(prog_aux->id);
-    char prog_name[BPF_OBJ_NAME_LEN];
-    bpf_probe_read_str(&prog_name, BPF_OBJ_NAME_LEN, prog_aux->name);
 
-    // get usage of helpers
-    bpf_used_helpers_t *val = bpf_map_lookup_elem(&bpf_attach_map, &prog_id);
-    if (val == NULL)
-        return 0;
-
-    // submit the event
-
-    save_to_submit_buf(p->event, &prog_type, sizeof(int), 0);
-    save_str_to_buf(p->event, (void *) &prog_name, 1);
-    save_to_submit_buf(p->event, &prog_id, sizeof(u32), 2);
-    save_u64_arr_to_buf(p->event, (const u64 *) val->helpers, 4, 3);
-    save_str_to_buf(p->event, (void *) &event_name, 4);
-    save_to_submit_buf(p->event, &probe_addr, sizeof(u64), 5);
-    save_to_submit_buf(p->event, &perf_type, sizeof(int), 6);
-
-    events_perf_submit(p, BPF_ATTACH, 0);
-
-    // delete from map
-    bpf_map_delete_elem(&bpf_attach_map, &prog_id);
-
-    return 0;
+    return send_bpf_attach(p, prog, &event_name, probe_addr, perf_type);
 }
 
 SEC("kprobe/security_file_ioctl")
@@ -1719,10 +1731,32 @@ int BPF_KPROBE(trace_security_file_ioctl)
         unsigned long fd = PT_REGS_PARM3(ctx);
         struct file *bpf_prog_file = get_struct_file_from_fd(fd);
 
-        send_bpf_attach(&p, bpf_prog_file, perf_event_file);
+        send_bpf_perf_attach(&p, bpf_prog_file, perf_event_file);
     }
 
     return 0;
+}
+
+SEC("kprobe/tracepoint_probe_register_prio_may_exist")
+int BPF_KPROBE(trace_tracepoint_probe_register_prio_may_exist)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    if (!should_trace(&p))
+        return 0;
+
+    struct tracepoint *tp = (struct tracepoint *) PT_REGS_PARM1(ctx);
+    struct bpf_prog *prog = (struct bpf_prog *) PT_REGS_PARM3(ctx);
+
+    char event_name[MAX_PERF_EVENT_NAME];
+    bpf_probe_read_str(&event_name, MAX_KSYM_NAME_SIZE, READ_KERN(tp->name));
+
+    int perf_type = BPF_RAW_TRACEPOINT;
+    u64 probe_addr = 0;
+
+    return send_bpf_attach(&p, prog, &event_name, probe_addr, perf_type);
 }
 
 // trace/events/cgroup.h:
@@ -3206,7 +3240,7 @@ static __always_inline int do_check_bpf_link(program_data_t *p, union bpf_attr *
         struct file *bpf_prog_file = get_struct_file_from_fd(prog_fd);
         struct file *perf_event_file = get_struct_file_from_fd(perf_fd);
 
-        send_bpf_attach(p, bpf_prog_file, perf_event_file);
+        send_bpf_perf_attach(p, bpf_prog_file, perf_event_file);
     }
 
     return 0;
