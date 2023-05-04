@@ -1,0 +1,25 @@
+name: Release Temporary
+on:
+  workflow_dispatch: {}
+jobs:
+  release-temporary:
+    name: Release Temporary X64 (Default)
+    runs-on:
+      [
+        "github-self-hosted_ami-0f66f3ab4856ffc3f_${{ github.event.number }}-${{ github.run_id }}",
+      ]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Login to docker.io registry
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: 0.14.0
+        run: |
+          docker pull aquasec/tracee:x86_64-0.14.0
+          docker tag aquasec/tracee:x86_64-0.14.0 aquasec/tracee:0.14.0
+          docker push aquasec/tracee:0.14.0
