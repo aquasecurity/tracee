@@ -25,6 +25,13 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 	}
 	t.sigEngine = sigEngine
 
+	if t.config.MetricsEnabled {
+		err := t.sigEngine.Stats().RegisterPrometheus()
+		if err != nil {
+			logger.Errorw("Registering signature engine prometheus metrics", "error", err)
+		}
+	}
+
 	go t.sigEngine.Start(ctx)
 
 	// TODO: in the upcoming releases, the rule engine should be changed to receive trace.Event,

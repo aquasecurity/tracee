@@ -9,7 +9,6 @@ import (
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/server"
 )
 
@@ -20,24 +19,21 @@ type Runner struct {
 }
 
 func (r Runner) Run(ctx context.Context) error {
+	// Decide if HTTP server should be started
+
+	if r.Server != nil {
+		if r.Server.MetricsEndpointEnabled() {
+			r.TraceeConfig.MetricsEnabled = true
+		}
+
+		go r.Server.Start(ctx)
+	}
+
 	// Create Tracee Singleton
 
 	t, err := tracee.New(r.TraceeConfig)
 	if err != nil {
 		return errfmt.Errorf("error creating Tracee: %v", err)
-	}
-
-	// Decide if HTTP server should be started
-
-	if r.Server != nil {
-		if r.Server.MetricsEndpointEnabled() {
-			err := t.Stats().RegisterPrometheus()
-			if err != nil {
-				logger.Errorw("Registering prometheus metrics", "error", err)
-			}
-		}
-
-		go r.Server.Start(ctx)
 	}
 
 	// Print statistics at the end

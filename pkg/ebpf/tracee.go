@@ -72,6 +72,7 @@ type Config struct {
 	Sockets            runtime.Sockets
 	ContainersEnrich   bool
 	EngineConfig       engine.Config
+	MetricsEnabled     bool
 }
 
 type CaptureConfig struct {
@@ -387,6 +388,15 @@ func New(cfg Config) (*Tracee, error) {
 	// Start event triggering logic context
 
 	t.triggerContexts = trigger.NewContext()
+
+	// Export metrics to prometheus if enabled
+
+	if t.config.MetricsEnabled {
+		err := t.Stats().RegisterPrometheus()
+		if err != nil {
+			logger.Errorw("Registering prometheus metrics", "error", err)
+		}
+	}
 
 	return t, nil
 }
