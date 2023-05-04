@@ -53,7 +53,7 @@ func (r Runner) Run(ctx context.Context) error {
 		return errfmt.Errorf("error initializing Tracee: %v", err)
 	}
 
-	broadcast := printer.NewBroadcast(ctx, r.Printers)
+	broadcast := printer.NewBroadcast(r.Printers)
 
 	// Start event channel reception
 	go func() {
@@ -76,6 +76,7 @@ func (r Runner) Run(ctx context.Context) error {
 		case event := <-r.TraceeConfig.ChanEvents:
 			broadcast.Print(event)
 		default:
+			broadcast.Close()
 			return err
 		}
 	}
