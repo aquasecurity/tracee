@@ -284,6 +284,8 @@ func initCmd() error {
 		return errfmt.WrapError(err)
 	}
 
+	rootCmd.Flags().SortFlags = false
+
 	return nil
 }
 
