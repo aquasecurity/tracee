@@ -1447,7 +1447,9 @@ func (t *Tracee) initBPF() error {
 	return errfmt.WrapError(err)
 }
 
-func (t *Tracee) lkmSeekerRoutine() {
+func (t *Tracee) lkmSeekerRoutine(ctx gocontext.Context) {
+	logger.Debugw("Starting lkmSeekerRoutine go routine")
+	defer logger.Debugw("Stopped lkmSeekerRoutine go routine")
 	if t.events[events.HiddenKernelModule].emit == 0 {
 		return
 	}
@@ -1464,6 +1466,15 @@ func (t *Tracee) lkmSeekerRoutine() {
 		return
 	}
 
+	// randomDuration returns a random duration between min and max, inclusive
+	randomDuration := func(min, max int) time.Duration {
+		randDuration := time.Duration(rand.Intn(max-min+1)+min) * time.Second
+		return randDuration
+	}
+
+	// get a random duration between 10 and 310 seconds
+	waitDuration := randomDuration(10, 310)
+
 	for {
 		derive.ClearModulesState(modsMap)
 		err = derive.FillModulesFromProcFs(t.kernelSymbols, modsMap)
@@ -1474,8 +1485,15 @@ func (t *Tracee) lkmSeekerRoutine() {
 
 		t.triggerKernelModuleSeeker()
 
-		r := rand.Intn(300) + 10 // min 10 seconds sleep
-		time.Sleep(time.Duration(r) * time.Second)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(waitDuration):
+			// continue
+		}
+
+		// renew wait duration
+		waitDuration = randomDuration(10, 310)
 	}
 }
 
@@ -1491,10 +1509,11 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 		logger.Warnw("Memory dump", "error", err)
 	}
 
-	go t.lkmSeekerRoutine()
+	go t.lkmSeekerRoutine(ctx)
 
 	t.eventsPerfMap.Poll(pollTimeout)
 	go t.processLostEvents(ctx)
+
 	go t.handleEvents(ctx)
 	if t.config.BlobPerfBufferSize > 0 {
 		t.fileWrPerfMap.Poll(pollTimeout)
