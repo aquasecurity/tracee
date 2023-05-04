@@ -44,6 +44,7 @@ jobs:
           docker image tag tracee:latest aquasec/tracee:${ARCH}-${TAG}
           docker image push aquasec/tracee:latest
           docker image push aquasec/tracee:${ARCH}
+          docker image push aquasec/tracee:${TAG}
           docker image push aquasec/tracee:${ARCH}-${TAG}
   release-arm64:
     name: Release ARM64
