@@ -13,7 +13,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     runs-on:
       [
-        "github-self-hosted_ami-0f66f3ab4856ffc3f_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0f4881c8d69684001_${{ github.event.number }}-${{ github.run_id }}",
       ]
     steps:
       - name: Checkout Code
@@ -55,7 +55,7 @@ jobs:
       - release
     runs-on:
       [
-        "github-self-hosted_ami-0226a47b9804ee055_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0f4881c8d69684001_${{ github.event.number }}-${{ github.run_id }}",
       ]
     steps:
       - name: Checkout Code
