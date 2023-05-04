@@ -131,6 +131,7 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		BpfCheck:                   &traceProbe{eventName: "bpf_check", probeType: kprobe, programName: "trace_bpf_check"},
 		ExecBinprm:                 &traceProbe{eventName: "exec_binprm", probeType: kprobe, programName: "trace_exec_binprm"},
 		ExecBinprmRet:              &traceProbe{eventName: "exec_binprm", probeType: kretprobe, programName: "trace_ret_exec_binprm"},
+		TpProbeRegPrioMayExist:     &traceProbe{eventName: "tracepoint_probe_register_prio_may_exist", probeType: kprobe, programName: "trace_tracepoint_probe_register_prio_may_exist"},
 	}
 
 	if !netEnabled {
@@ -335,4 +336,5 @@ const (
 	ExecBinprm
 	ExecBinprmRet
 	HiddenKernelModuleSeeker
+	TpProbeRegPrioMayExist
 )

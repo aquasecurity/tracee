@@ -40,7 +40,7 @@ statfunc bool check_is_proc_modules_hooked(program_data_t *);
 
 // TODO: related to bpf tracing
 
-statfunc int send_bpf_attach(program_data_t *, struct file *, struct file *);
+statfunc int send_bpf_attach(program_data_t *, struct bpf_prog *, void *, u64, int);
 statfunc int check_bpf_link(program_data_t *, union bpf_attr *, int);
 statfunc int handle_bpf_helper_func_id(u32, int);
 statfunc struct trace_kprobe *get_trace_kprobe_from_trace_probe(void *);
