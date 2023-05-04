@@ -26,18 +26,24 @@ var (
 		Short: "Trace OS events and syscalls using eBPF",
 		Long: `Tracee uses eBPF technology to tap into your system and give you
 access to hundreds of events that help you understand how your system behaves.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
+			logger.Init(logger.NewDefaultLoggingConfig())
 			initialize.SetLibbpfgoCallbacks()
 
 			runner, err := cmdcobra.GetTraceeRunner(cmd, version)
 			if err != nil {
-				return err
+				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+				os.Exit(1)
 			}
 
 			ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 			defer stop()
 
-			return runner.Run(ctx)
+			err = runner.Run(ctx)
+			if err != nil {
+				logger.Fatalw("Tracee runner failed", "error", err)
+				os.Exit(1)
+			}
 		},
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -294,27 +300,31 @@ func initConfig() {
 
 	cfgFile, err := filepath.Abs(cfgFile)
 	if err != nil {
-		logger.Fatalw("Config", "error", err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", errfmt.WrapError(err))
 		os.Exit(1)
 	}
 
 	_, err = os.Stat(cfgFile)
 	if err != nil {
-		logger.Fatalw("Config", "error", err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", errfmt.WrapError(err))
 		os.Exit(1)
 	}
 
 	viper.SetConfigFile(cfgFile)
 	if err := viper.ReadInConfig(); err != nil {
-		logger.Fatalw("Config", "error", err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", errfmt.WrapError(err))
 		os.Exit(1)
 	}
 }
 
-func Execute() error {
+func Execute() {
 	if err := initCmd(); err != nil {
-		return err
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		return
 	}
 
-	return rootCmd.Execute()
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		return
+	}
 }
