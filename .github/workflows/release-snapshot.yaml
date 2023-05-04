@@ -17,7 +17,7 @@ jobs:
     name: Release Snapshot X64 (Default)
     runs-on:
       [
-        "github-self-hosted_ami-0f66f3ab4856ffc3f_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-0f4881c8d69684001_${{ github.event.number }}-${{ github.run_id }}",
       ]
     steps:
       - name: Checkout Code
@@ -51,7 +51,7 @@ jobs:
     name: Release Snapshot ARM64
     runs-on:
       [
-        "github-self-hosted_ami-0226a47b9804ee055_${{ github.event.number }}-${{ github.run_id }}",
+        "github-self-hosted_ami-03217ce7c37572c4d_${{ github.event.number }}-${{ github.run_id }}",
       ]
     steps:
       - name: Checkout Code
