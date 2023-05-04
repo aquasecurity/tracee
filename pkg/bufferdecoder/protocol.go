@@ -97,11 +97,12 @@ func (BpfObjectMeta) GetSizeBytes() uint32 {
 }
 
 type MprotectWriteMeta struct {
-	Ts uint64
+	Ts  uint64
+	Pid uint32
 }
 
 func (MprotectWriteMeta) GetSizeBytes() uint32 {
-	return 8
+	return 12
 }
 
 // SlimCred struct is a slim version of the kernel's cred struct

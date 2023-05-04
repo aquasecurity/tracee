@@ -3157,8 +3157,10 @@ int BPF_KPROBE(trace_security_file_mprotect)
             submit_mem_prot_alert_event(p.event, alert, addr, len, reqprot, prev_prot, file_info);
         }
         if (should_extract_code) {
+            u32 pid = p.event->context.task.host_pid;
             bin_args.type = SEND_MPROTECT;
             bpf_probe_read(bin_args.metadata, sizeof(u64), &p.event->context.ts);
+            bpf_probe_read(&bin_args.metadata[8], 4, &pid);
             bin_args.ptr = (char *) addr;
             bin_args.start_off = 0;
             bin_args.full_size = len;

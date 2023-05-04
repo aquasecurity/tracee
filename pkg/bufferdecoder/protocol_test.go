@@ -46,5 +46,5 @@ func TestBpfObjectMetaSize(t *testing.T) {
 func TestMprotectWriteMetaSize(t *testing.T) {
 	var v MprotectWriteMeta
 	size := int(unsafe.Sizeof(v))
-	assert.Equal(t, size, int(v.GetSizeBytes()))
+	assert.Equal(t, size-4, int(v.GetSizeBytes()))
 }
