@@ -96,17 +96,12 @@ int sys_enter_init(struct bpf_raw_tracepoint_args *ctx)
             sys->args.args[5] = READ_KERN(regs->bp);
 #endif // bpf_target_x86
         } else {
-            sys->args.args[0] = READ_KERN(PT_REGS_PARM1(regs));
-            sys->args.args[1] = READ_KERN(PT_REGS_PARM2(regs));
-            sys->args.args[2] = READ_KERN(PT_REGS_PARM3(regs));
-#if defined(bpf_target_x86)
-            // x86-64: r10 used instead of rcx (4th param to a syscall)
-            sys->args.args[3] = READ_KERN(regs->r10);
-#else
-            sys->args.args[3] = READ_KERN(PT_REGS_PARM4(regs));
-#endif
-            sys->args.args[4] = READ_KERN(PT_REGS_PARM5(regs));
-            sys->args.args[5] = READ_KERN(PT_REGS_PARM6(regs));
+            sys->args.args[0] = PT_REGS_PARM1_CORE_SYSCALL(regs);
+            sys->args.args[1] = PT_REGS_PARM2_CORE_SYSCALL(regs);
+            sys->args.args[2] = PT_REGS_PARM3_CORE_SYSCALL(regs);
+            sys->args.args[3] = PT_REGS_PARM4_CORE_SYSCALL(regs);
+            sys->args.args[4] = PT_REGS_PARM5_CORE_SYSCALL(regs);
+            sys->args.args[5] = PT_REGS_PARM6_CORE_SYSCALL(regs);
         }
     } else {
         bpf_probe_read(sys->args.args, sizeof(6 * sizeof(u64)), (void *) ctx->args);
