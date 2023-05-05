@@ -52,8 +52,8 @@ func (s *Server) Start(ctx context.Context) {
 	defer srvCancel()
 
 	go func() {
-		logger.Debugw("Starting serving metrics endpoint go routine", "address", s.hs.Addr)
-		defer logger.Debugw("Stopped serving metrics endpoint")
+		logger.Debugw("Starting serving metrics endpoint goroutine", "address", s.hs.Addr)
+		defer logger.Debugw("Stopped serving metrics endpoint goroutine")
 
 		if err := s.hs.ListenAndServe(); err != http.ErrServerClosed {
 			logger.Errorw("Serving metrics endpoint", "error", err)

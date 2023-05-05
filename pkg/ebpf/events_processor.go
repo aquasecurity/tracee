@@ -33,8 +33,8 @@ func init() {
 }
 
 func (t *Tracee) processLostEvents() {
-	logger.Debugw("Starting processLostEvents go routine")
-	defer logger.Debugw("Stopped processLostEvents go routine")
+	logger.Debugw("Starting processLostEvents goroutine")
+	defer logger.Debugw("Stopped processLostEvents goroutine")
 
 	for {
 		select {
@@ -48,7 +48,7 @@ func (t *Tracee) processLostEvents() {
 				}
 				logger.Warnw(fmt.Sprintf("Lost %d events", lost))
 			}
-		// Since this is an end-state go routine, it should be terminated only when Tracee done channel is closed.
+		// Since this is an end-state goroutine, it should be terminated only when Tracee done channel is closed.
 		case <-t.done:
 			return
 		}

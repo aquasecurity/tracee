@@ -30,8 +30,8 @@ const (
 )
 
 func (t *Tracee) processNetCaptureEvents(ctx context.Context) {
-	logger.Debugw("Starting processNetCaptureEvents go routine")
-	defer logger.Debugw("Stopped processNetCaptureEvents go routine")
+	logger.Debugw("Starting processNetCaptureEvents goroutine")
+	defer logger.Debugw("Stopped processNetCaptureEvents goroutine")
 
 	var errChanList []<-chan error
 

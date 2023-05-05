@@ -16,8 +16,8 @@ import (
 )
 
 func (t *Tracee) processFileWrites(ctx context.Context) {
-	logger.Debugw("Starting processFileWrites go routine")
-	defer logger.Debugw("Stopped processFileWrites go routine")
+	logger.Debugw("Starting processFileWrites goroutine")
+	defer logger.Debugw("Stopped processFileWrites goroutine")
 
 	const (
 		// stat_S_IFMT uint32 = 0170000 // bit mask for the file type bit field

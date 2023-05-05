@@ -160,8 +160,8 @@ func (b *BPFLog) Decode(rawBuffer []byte) error {
 }
 
 func (t *Tracee) processBPFLogs(ctx context.Context) {
-	logger.Debugw("Starting processBPFLogs go routine")
-	defer logger.Debugw("Stopped processBPFLogs go routine")
+	logger.Debugw("Starting processBPFLogs goroutine")
+	defer logger.Debugw("Stopped processBPFLogs goroutine")
 
 	for {
 		select {
