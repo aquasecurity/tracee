@@ -1440,8 +1440,9 @@ func (t *Tracee) initBPF() error {
 }
 
 func (t *Tracee) lkmSeekerRoutine(ctx gocontext.Context) {
-	logger.Debugw("Starting lkmSeekerRoutine go routine")
-	defer logger.Debugw("Stopped lkmSeekerRoutine go routine")
+	logger.Debugw("Starting lkmSeekerRoutine goroutine")
+	defer logger.Debugw("Stopped lkmSeekerRoutine goroutine")
+
 	if t.events[events.HiddenKernelModule].emit == 0 {
 		return
 	}

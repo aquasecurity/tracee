@@ -25,6 +25,9 @@ const noSyscall int32 = -1
 
 // handleEvents is a high-level function that starts all operations related to events processing
 func (t *Tracee) handleEvents(ctx context.Context) {
+	logger.Debugw("Starting handleEvents goroutine")
+	defer logger.Debugw("Stopped handleEvents goroutine")
+
 	var errcList []<-chan error
 
 	// Source pipeline stage.
