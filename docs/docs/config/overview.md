@@ -23,7 +23,7 @@ sudo ./dist/tracee --config ./examples/global_config.yaml --log info
 
 ## Configuration File Format
 
-The configuration file can be in any format supported by the [viper](https://github.com/spf13/viper) library, which includes YAML, JSON, TOML, INI, HCL and Java properties. The configuration file should contain a mapping of flag names to their values. For example, to output aggregated debug level logs every default seconds `--log debug,aggregate`, you would add the following to your configuration file:
+The configuration file can be in any format supported by the [viper](https://github.com/spf13/viper) library, which includes YAML, JSON, TOML, INI, HCL and Java properties. The configuration file should contain a mapping of flag names to their values. For example, to output aggregated debug level logs every default seconds `--log debug --log aggregate`, you would add the following to your configuration file:
 
 ```yaml
 log:

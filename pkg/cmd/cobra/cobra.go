@@ -112,7 +112,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Capture command line flags - via cobra flag
 
-	captureFlags, err := c.Flags().GetStringSlice("capture")
+	captureFlags, err := c.Flags().GetStringArray("capture")
 	if err != nil {
 		return runner, err
 	}
@@ -133,12 +133,12 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Policy/Filter command line flags - via cobra flag
 
-	policyFlags, err := c.Flags().GetStringSlice("policy")
+	policyFlags, err := c.Flags().GetStringArray("policy")
 	if err != nil {
 		return runner, err
 	}
 
-	filterFlags, err := c.Flags().GetStringSlice("filter")
+	filterFlags, err := c.Flags().GetStringArray("filter")
 	if err != nil {
 		return runner, err
 	}
