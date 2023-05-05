@@ -78,7 +78,7 @@ func initCmd() error {
 	// Filter/Policy flags
 
 	// filter is not bound to viper
-	rootCmd.Flags().StringSliceP(
+	rootCmd.Flags().StringArrayP(
 		"filter",
 		"f",
 		[]string{},
@@ -86,7 +86,7 @@ func initCmd() error {
 	)
 
 	// policy is not bound to viper
-	rootCmd.Flags().StringSliceP(
+	rootCmd.Flags().StringArrayP(
 		"policy",
 		"p",
 		[]string{},
@@ -95,7 +95,7 @@ func initCmd() error {
 
 	// Output flags
 
-	rootCmd.Flags().StringSliceP(
+	rootCmd.Flags().StringArrayP(
 		"output",
 		"o",
 		[]string{"table"},
@@ -107,7 +107,7 @@ func initCmd() error {
 	}
 
 	// capture is not bound to viper
-	rootCmd.Flags().StringSliceP(
+	rootCmd.Flags().StringArrayP(
 		"capture",
 		"c",
 		[]string{},
@@ -136,7 +136,7 @@ func initCmd() error {
 		return errfmt.WrapError(err)
 	}
 
-	rootCmd.Flags().StringSlice(
+	rootCmd.Flags().StringArray(
 		"crs",
 		[]string{},
 		"Define connected container runtimes",
@@ -158,7 +158,7 @@ func initCmd() error {
 		return errfmt.WrapError(err)
 	}
 
-	rootCmd.Flags().StringSlice(
+	rootCmd.Flags().StringArray(
 		"rego",
 		[]string{},
 		"Control event rego settings",
@@ -191,7 +191,7 @@ func initCmd() error {
 		return errfmt.WrapError(err)
 	}
 
-	rootCmd.Flags().StringSliceP(
+	rootCmd.Flags().StringArrayP(
 		"cache",
 		"a",
 		[]string{"none"},
@@ -258,7 +258,7 @@ func initCmd() error {
 
 	// Other flags
 
-	rootCmd.Flags().StringSliceP(
+	rootCmd.Flags().StringArrayP(
 		"capabilities",
 		"C",
 		[]string{},
@@ -279,7 +279,7 @@ func initCmd() error {
 		return errfmt.WrapError(err)
 	}
 
-	rootCmd.Flags().StringSliceP(
+	rootCmd.Flags().StringArrayP(
 		"log",
 		"l",
 		[]string{"info"},
