@@ -160,7 +160,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 			return runner, err
 		}
 	} else {
-		filterMap, err = flags.PrepareFilterMapFromFlags(filterFlags)
+		filterMap, err = flags.PrepareFilterMapFromCobraFlags(filterFlags)
 		if err != nil {
 			return runner, err
 		}

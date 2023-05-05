@@ -1,6 +1,7 @@
 package flags
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
@@ -92,6 +93,78 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0', '/tmp*'
 `
 }
 
+// StringHasOperPrefix checks if a string has an operator prefix.
+func StringHasOperPrefix(str string) bool {
+	opPrefixes := []string{"=", "!", "<", ">", "."}
+	for _, o := range opPrefixes {
+		if strings.Contains(str, o) {
+			return true
+		}
+	}
+	return false
+}
+
+// PrepareFilterMapFromCobraFlags wraps cobra filter string slice into
+// parseFilterFlag expected input (keep compatibility with urfave cli).
+func PrepareFilterMapFromCobraFlags(filtersArr []string) (FilterMap, error) {
+	//
+	// given cmdline:
+	//
+	// --filter event=one,two        \
+	// --filter event=three          \
+	// --filter comm=cmd01           \
+	// --filter event!=four,five,six \
+	// --filter comm=cmd02,cmd03
+	//
+	// - cobra string slices:
+	//
+	//    event=one   ==> filter slice index 0 event=one
+	//    two         ==> filter slice index 0 event=one,two
+	//    event=three ==> filter slice index 1 event=three
+	//    comm=cmd01
+	//    event!=four ==> filter slice index 2 event!=four
+	//    five        ==> filter slice index 2 event!=four,five
+	//    six         ==> filter slice index 2 event!=four,five,six
+	//    comm=cmd02
+	//    cmd03
+	//
+	// - need to be the same as urfave string slices:
+	//
+	//    event=one,two
+	//    event=three
+	//    event!=four,five,six
+
+	c := make(map[int]string) // map filter slice index to filters
+	idx := -1
+	on := false
+
+	for _, j := range filtersArr {
+		if StringHasOperPrefix(j) {
+			idx++
+			c[idx] = j
+			on = true // current filter type string slice
+		} else {
+			if StringHasOperPrefix(j) {
+				on = false // next filter type string slice
+			}
+			if on {
+				c[idx] = fmt.Sprintf("%s,%s", c[idx], j)
+			}
+		}
+	}
+
+	// c == map[0:event=one,two 1:event=three 2:comm=cmd01 3:event!=four,five,six 4:comm=cmd02,cmd03]
+
+	var f []string
+	for _, v := range c {
+		f = append(f, v)
+	}
+
+	return PrepareFilterMapFromFlags(f)
+}
+
+// PrepareFilterMapFromFlags parses a slice of filter flags and returns a
+// FilterMap to be used as input for the filtering engine.
 func PrepareFilterMapFromFlags(filtersArr []string) (FilterMap, error) {
 	// parse and store filters by policy
 	filterMap := make(FilterMap)

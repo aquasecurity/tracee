@@ -24,8 +24,7 @@ var (
 	rootCmd = &cobra.Command{
 		Use:   "tracee",
 		Short: "Trace OS events and syscalls using eBPF",
-		Long: `Tracee uses eBPF technology to tap into your system and give you
-access to hundreds of events that help you understand how your system behaves.`,
+		Long:  `Tracee uses eBPF technology to tap into your system and give you access to hundreds of events that help you understand how your system behaves.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			logger.Init(logger.NewDefaultLoggingConfig())
 			initialize.SetLibbpfgoCallbacks()
