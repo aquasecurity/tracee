@@ -167,7 +167,8 @@ type Tracee struct {
 	bootTime  uint64
 	startTime uint64
 	running   atomic.Bool
-	outDir    *os.File // use utils.XXX functions to access this file
+	done      chan struct{} // signal to safely stop end-stage processing
+	outDir    *os.File      // use utils.XXX functions to access this file
 	stats     metrics.Stats
 	sigEngine *engine.Engine
 	// Events
@@ -299,6 +300,7 @@ func New(cfg Config) (*Tracee, error) {
 
 	t := &Tracee{
 		config:        cfg,
+		done:          make(chan struct{}),
 		writtenFiles:  make(map[string]string),
 		capturedFiles: make(map[string]int64),
 		events:        GetEssentialEventsList(),
@@ -1512,7 +1514,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	go t.lkmSeekerRoutine(ctx)
 
 	t.eventsPerfMap.Poll(pollTimeout)
-	go t.processLostEvents(ctx)
+	go t.processLostEvents() // its termination is signaled by closing t.done
 
 	go t.handleEvents(ctx)
 	if t.config.BlobPerfBufferSize > 0 {
@@ -1604,8 +1606,9 @@ func (t *Tracee) Close() {
 		logger.Errorw("Cgroups destroy", "error", err)
 	}
 
-	// set running to false only after all resources are cleaned
+	// set 'running' to false and close 'done' channel only after attempting to close all resources
 	t.running.Store(false)
+	close(t.done)
 }
 
 // Running returns true if the tracee is running

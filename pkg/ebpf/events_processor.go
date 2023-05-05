@@ -2,7 +2,6 @@ package ebpf
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -33,7 +32,7 @@ func init() {
 	initKernelReadFileTypes()
 }
 
-func (t *Tracee) processLostEvents(ctx context.Context) {
+func (t *Tracee) processLostEvents() {
 	logger.Debugw("Starting processLostEvents go routine")
 	defer logger.Debugw("Stopped processLostEvents go routine")
 
@@ -49,7 +48,8 @@ func (t *Tracee) processLostEvents(ctx context.Context) {
 				}
 				logger.Warnw(fmt.Sprintf("Lost %d events", lost))
 			}
-		case <-ctx.Done():
+		// Since this is an end-state go routine, it should be terminated only when Tracee done channel is closed.
+		case <-t.done:
 			return
 		}
 	}
