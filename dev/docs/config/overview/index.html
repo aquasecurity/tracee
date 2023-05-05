@@ -15842,7 +15842,7 @@
 <p>Any flags specified on the command line will take precedence over the values specified in the configuration file.</p>
 </div>
 <h2 id="configuration-file-format">Configuration File Format<a class="headerlink" href="#configuration-file-format" title="Permanent link">&para;</a></h2>
-<p>The configuration file can be in any format supported by the <a href="https://github.com/spf13/viper">viper</a> library, which includes YAML, JSON, TOML, INI, HCL and Java properties. The configuration file should contain a mapping of flag names to their values. For example, to output aggregated debug level logs every default seconds <code>--log debug,aggregate</code>, you would add the following to your configuration file:</p>
+<p>The configuration file can be in any format supported by the <a href="https://github.com/spf13/viper">viper</a> library, which includes YAML, JSON, TOML, INI, HCL and Java properties. The configuration file should contain a mapping of flag names to their values. For example, to output aggregated debug level logs every default seconds <code>--log debug --log aggregate</code>, you would add the following to your configuration file:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">log</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">debug</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aggregate</span>
