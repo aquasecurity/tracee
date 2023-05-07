@@ -7,7 +7,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/aquasecurity/libbpfgo v0.4.8-libbpf-1.2.0
 	github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230321190037-f591a2c5734f
-	github.com/aquasecurity/tracee/types v0.0.0-20230505183714-439e698f1ea0
+	github.com/aquasecurity/tracee/types v0.0.0-20230509064557-880c7642f59f
 	github.com/containerd/containerd v1.7.0
 	github.com/docker/docker v23.0.5+incompatible
 	github.com/golang/protobuf v1.5.3
