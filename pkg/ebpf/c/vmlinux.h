@@ -676,6 +676,7 @@ enum bpf_func_id
     BPF_FUNC_override_return = 58,
     BPF_FUNC_sk_storage_get = 107,
     BPF_FUNC_copy_from_user = 148,
+    BPF_FUNC_for_each_map_elem = 164,
 };
 
 #define MODULE_NAME_LEN (64 - sizeof(unsigned long))
