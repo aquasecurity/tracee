@@ -169,6 +169,9 @@ for TEST in $TESTS; do
 
     # give a little break for OS noise to reduce
     sleep 3
+
+    # cleanup leftovers
+    rm -rf $TRACEE_TMP_DIR
 done
 
 info
