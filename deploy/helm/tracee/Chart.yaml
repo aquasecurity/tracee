@@ -25,10 +25,3 @@ version: "0.14.2"
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
 appVersion: "0.14.2"
-
-dependencies:
-  - name: postee
-    version: "~2.9.0"
-    # helm repo add aqua https://aquasecurity.github.io/helm-charts/
-    repository: "@aqua"
-    condition: postee.enabled

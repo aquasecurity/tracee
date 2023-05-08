@@ -1,6 +1,0 @@
-dependencies:
-- name: postee
-  repository: https://aquasecurity.github.io/helm-charts
-  version: v2.9.0
-digest: sha256:c92fc39eb4e4be6d29764e5dbfabf809ddbef35e5c769772edad31f5c1ce3142
-generated: "2023-04-05T15:36:19.729270885-03:00"

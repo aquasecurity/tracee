@@ -54,11 +54,7 @@ tolerations:
 
 affinity: {}
 
-postee:
-  # enabled is a flag to install Postee subchart and configure Tracee to forward
-  # threat detections to the Postee webhook endpoint.
-  enabled: false
-  webhook: http://tracee-postee:8082
+webhook: ""
 
 signatures:
   # config defines Common Expression Language (CEL) signatures that are loaded
