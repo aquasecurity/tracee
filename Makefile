@@ -380,7 +380,7 @@ ifeq ($(STATIC), 1)
     GO_TAGS_EBPF := $(GO_TAGS_EBPF),netgo
 endif
 
-TRACEE_SRC_DIRS = ./cmd/tracee/ ./pkg/ ./signatures/
+TRACEE_SRC_DIRS = ./cmd/ ./pkg/ ./signatures/
 TRACEE_SRC = $(shell find $(TRACEE_SRC_DIRS) -type f -name '*.go' ! -name '*_test.go')
 
 CUSTOM_CGO_CFLAGS = "-I$(abspath $(OUTPUT_DIR)/libbpf)"
