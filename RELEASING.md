@@ -12,9 +12,7 @@
    1. Check if a libbpfgo update is needed (needs to be released first).
    1. Check if libbpf version is the same as libbpfgo's libbpf version.
    1. Update types module to latest.
-   1. Update the container image tag, with the one to be released, at:
-      1. `deploy/kubernetes/kustomize/base/tracee.yaml`
-      1. `cd deploy/kubernetes/ && ./update-static.sh` (generate static files)
+   1. Update the container image tag, with the one to be released, at: `deploy/kubernetes/tracee/tracee.yaml`
    1. Update `home`, `version` and `appVersion` properties in [`deploy/helm/tracee/Chart.yaml`] -
       [example](https://github.com/aquasecurity/tracee/pull/2195)
    1. Create a PR with the tags bump

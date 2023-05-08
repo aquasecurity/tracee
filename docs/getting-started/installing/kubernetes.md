@@ -60,8 +60,16 @@ the detections in your preferred way (e.g. Slack, E-mail, JIRA and more).
     kubectl create namespace tracee-system
     kubectl create -n tracee-system \
         -f https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml \
-        -f https://raw.githubusercontent.com/aquasecurity/tracee/{{ git.tag }}/deploy/kubernetes/tracee-postee/tracee.yaml
     ```
+
+		```console
+		helm install tracee aqua/tracee \
+				--namespace tracee-system --create-namespace \
+				--set hostPID=true \
+				--set webhook=http://postee-svc:8082
+		```
+  
+
 
 3. After Installation
 

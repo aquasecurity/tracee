@@ -23,7 +23,6 @@
         
     1. Let other tools to **CONSUME** detection events:
         1. [Filters](../docs/filters/filtering.md)
-        1. [Postee](../docs/integrating/postee.md)
     
     1. **ENFORCE**
         1. Work in Progress

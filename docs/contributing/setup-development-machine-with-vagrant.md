@@ -219,12 +219,16 @@ kubectl apply -n tracee-system \
   -f https://raw.githubusercontent.com/aquasecurity/postee/v2.2.0/deploy/kubernetes/postee.yaml
 ```
 
-Create Tracee DaemonSet in the `tracee-system`, which is preconfigured to print
+Create Tracee DaemonSet in the `tracee-system`, configuring it to send 
 detections to the standard output and send them over to Postee webhook on
 http://postee-svc:8082:
 
 ```console
-kubectl apply -n tracee-system -f deploy/kubernetes/tracee-postee/tracee.yaml
+helm repo add aqua https://aquasecurity.github.io/helm-charts
+helm install tracee ./deploy/helm/tracee \
+  --namespace tracee-system \
+  --set hostPID=true \
+  --set webhook=http://postee-svc:8082
 ```
 
 !!! tip
@@ -242,7 +246,7 @@ kubectl apply -n tracee-system -f deploy/kubernetes/tracee-postee/tracee.yaml
        ```
     3. Create Tracee DaemonSet using `tracee:latest` as container image:
        ```console
-       kubectl apply -n tracee-system -k deploy/kubernetes/tracee-postee
+       kubectl apply -n tracee-system -k deploy/kubernetes/tracee
        ```
 
 While Tracee pod is running, run `strace ls` command and observe detection
@@ -267,18 +271,6 @@ kubectl -n tracee-system logs -f postee-0
 
 ```text
 2023/03/29 19:44:47 {"timestamp":1680119087787203746,"threadStartTime":1680119087787109775,"processorId":0,"processId":95599,"cgroupId":9789,"threadId":95599,"parentProcessId":95597,"hostProcessId":95599,"hostThreadId":95599,"hostParentProcessId":95597,"userId":1000,"mountNamespace":4026531841,"pidNamespace":4026531836,"processName":"strace","hostName":"ubuntu-jammy","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","podSandbox":false,"eventId":"6018","eventName":"Anti-Debugging detected","matchedScopes":1,"argsNum":0,"returnValue":0,"syscall":"","stackAddresses":null,"contextFlags":{"containerStarted":false,"isCompat":false},"args":[],"metadata":{"Version":"1","Description":"A process used anti-debugging techniques to block a debugger. Malware use anti-debugging to stay invisible and inhibit analysis of their behavior.","Tags":null,"Properties":{"Category":"defense-evasion","Kubernetes_Technique":"","Severity":1,"Technique":"Debugger Evasion","external_id":"T1622","id":"attack-pattern--e4dc8c01-417f-458d-9ee0-bb0617c1b391","signatureID":"TRC-102","signatureName":"Anti-Debugging detected"}}}
-```
-
-As an alternative to static deployment descriptors you can install Tracee and
-Postee with Helm:
-
-```console
-helm repo add aqua https://aquasecurity.github.io/helm-charts
-helm dependency update ./deploy/helm/tracee
-helm install tracee ./deploy/helm/tracee \
-  --namespace tracee-system --create-namespace \
-  --set hostPID=true \
-  --set postee.enabled=true
 ```
 
 ### Access Kubernetes Dashboard
