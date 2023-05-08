@@ -25,6 +25,8 @@ on:
           - jammy519-arm64
           - focal419
           - focal419-arm64
+          - jammy6127
+          - jammy6301
 jobs:
   alma418:
     if: ${{ github.event.inputs.distro == 'alma418' }}
@@ -243,6 +245,32 @@ jobs:
         "github-self-hosted_ami-07271263d87a0e883_${{ github.event.number }}-${{ github.run_id }}_arm64c",
       ]
     timeout-minutes: 50400
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
+  jammy6127-core:
+    if: ${{ github.event.inputs.distro == 'jammy6127' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-0469948ef83c039e9_${{ github.event.number }}-${{ github.run_id }}_x64c",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Executing Debug Shell"
+        run: ./tests/remotessh.sh
+  jammy6301-core:
+    if: ${{ github.event.inputs.distro == 'jammy6301' }}
+    runs-on:
+      [
+        "github-self-hosted_ami-05bc39f8670e0c226_${{ github.event.number }}-${{ github.run_id }}_x64c",
+      ]
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
