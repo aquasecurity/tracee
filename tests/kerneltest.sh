@@ -167,6 +167,9 @@ for TEST in $TESTS; do
     # make sure tracee is exited with SIGKILL
     kill -9 $rules_pid >/dev/null 2>&1
     kill -9 $tracee_pid >/dev/null 2>&1
+
+    # cleanup leftovers
+    rm -rf $TRACEE_TMP_DIR
 done
 
 info
