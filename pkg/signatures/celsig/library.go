@@ -47,6 +47,8 @@ func (c *customLib) CompileOptions() []cel.EnvOption {
 
 func (c *customLib) ProgramOptions() []cel.ProgramOption {
 	return []cel.ProgramOption{
+		// revive:disable (TODO: cel.Functions is deprecated)
+		//lint:ignore SA1019 deprecated
 		cel.Functions(
 			&functions.Overload{
 				Operator: "wrapper.Event_stringArg_string",
@@ -57,6 +59,7 @@ func (c *customLib) ProgramOptions() []cel.ProgramOption {
 				Binary:   c.sockaddrArg,
 			},
 		),
+		// revive:enable
 	}
 }
 
