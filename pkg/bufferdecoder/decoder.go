@@ -342,6 +342,8 @@ func (decoder *EbpfDecoder) DecodeMprotectWriteMeta(mprotectWriteMeta *MprotectW
 		return errfmt.Errorf("can't read context from buffer: buffer too short")
 	}
 	mprotectWriteMeta.Ts = binary.LittleEndian.Uint64(decoder.buffer[offset : offset+8])
+	mprotectWriteMeta.Pid = binary.LittleEndian.Uint32(decoder.buffer[offset+8 : offset+12])
+
 	decoder.cursor += int(mprotectWriteMeta.GetSizeBytes())
 	return nil
 }

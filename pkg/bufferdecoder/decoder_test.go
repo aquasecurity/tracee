@@ -434,7 +434,8 @@ func TestDecodeBpfObjectMeta(t *testing.T) {
 func TestDecodeMprotectWriteMeta(t *testing.T) {
 	buf := new(bytes.Buffer)
 	expected := MprotectWriteMeta{
-		Ts: 6789,
+		Pid: 12,
+		Ts:  6789,
 	}
 	err := binary.Write(buf, binary.LittleEndian, expected)
 	assert.Equal(t, nil, err)
