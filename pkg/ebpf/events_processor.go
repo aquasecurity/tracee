@@ -202,7 +202,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 			// capture exec'ed files ?
 			if t.config.Capture.Exec {
 				destinationDirPath := containerId
-				if err := utils.MkdirAtExist(t.outDir, destinationDirPath, 0755); err != nil {
+				if err := utils.MkdirAtExist(t.OutDir, destinationDirPath, 0755); err != nil {
 					return errfmt.WrapError(err)
 				}
 				destinationFilePath := filepath.Join(
@@ -218,7 +218,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 					// have a big performance impact)
 					err := utils.CopyRegularFileByRelativePath(
 						sourceFilePath,
-						t.outDir,
+						t.OutDir,
 						destinationFilePath,
 					)
 					if err != nil {

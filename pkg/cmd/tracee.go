@@ -3,13 +3,18 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/server"
+	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 type Runner struct {
@@ -52,6 +57,16 @@ func (r Runner) Run(ctx context.Context) error {
 	if err != nil {
 		return errfmt.Errorf("error initializing Tracee: %v", err)
 	}
+
+	// Manage PID file
+	if err := writePidFile(t.OutDir); err != nil {
+		return errfmt.WrapError(err)
+	}
+	defer func() {
+		if err := removePidFile(t.OutDir); err != nil {
+			logger.Errorw("error removing pid file", "error", err)
+		}
+	}()
 
 	broadcast := printer.NewBroadcast(r.Printers)
 
@@ -172,4 +187,30 @@ func GetContainerMode(cfg tracee.Config) printer.ContainerMode {
 	}
 
 	return containerMode
+}
+
+const pidFileName = "tracee.pid"
+
+// Initialize PID file
+func writePidFile(dir *os.File) error {
+	pidFile, err := utils.OpenAt(dir, pidFileName, syscall.O_WRONLY|syscall.O_CREAT, 0640)
+	if err != nil {
+		return errfmt.Errorf("error creating readiness file: %v", err)
+	}
+
+	_, err = pidFile.Write([]byte(strconv.Itoa(os.Getpid()) + "\n"))
+	if err != nil {
+		return errfmt.Errorf("error writing to readiness file: %v", err)
+	}
+
+	return nil
+}
+
+// Remove PID file
+func removePidFile(dir *os.File) error {
+	if err := utils.RemoveAt(dir, pidFileName, 0); err != nil {
+		return errfmt.Errorf("%v", err)
+	}
+
+	return nil
 }

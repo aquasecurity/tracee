@@ -30,6 +30,15 @@ func OpenAt(dir *os.File, relativePath string, flags int, perm fs.FileMode) (*os
 	return os.NewFile(uintptr(pidFileFD), path.Join(dir.Name(), relativePath)), nil
 }
 
+// RemoveAt is a wrapper function to the `unlinkat` syscall using golang types.
+func RemoveAt(dir *os.File, relativePath string, flags int) error {
+	if err := unix.Unlinkat(int(dir.Fd()), relativePath, flags); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	return nil
+}
+
 // MkdirAt is a wrapper function to the `mkdirat` syscall using golang types.
 func MkdirAt(dir *os.File, relativePath string, perm fs.FileMode) error {
 	return unix.Mkdirat(int(dir.Fd()), relativePath, uint32(perm))

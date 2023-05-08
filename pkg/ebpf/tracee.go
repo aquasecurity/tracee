@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
-	"syscall"
 	"time"
 	"unsafe"
 
@@ -168,7 +167,7 @@ type Tracee struct {
 	startTime uint64
 	running   atomic.Bool
 	done      chan struct{} // signal to safely stop end-stage processing
-	outDir    *os.File      // use utils.XXX functions to access this file
+	OutDir    *os.File      // use utils.XXX functions to create or write to this file
 	stats     metrics.Stats
 	sigEngine *engine.Engine
 	// Events
@@ -516,7 +515,7 @@ func (t *Tracee) Init() error {
 		return errfmt.Errorf("error creating output path: %v", err)
 	}
 
-	t.outDir, err = utils.OpenExistingDir(t.config.Capture.OutputPath)
+	t.OutDir, err = utils.OpenExistingDir(t.config.Capture.OutputPath)
 	if err != nil {
 		t.Close()
 		return errfmt.Errorf("error opening out directory: %v", err)
@@ -524,7 +523,7 @@ func (t *Tracee) Init() error {
 
 	// Initialize network capture (all needed pcap files)
 
-	t.netCapturePcap, err = pcaps.New(t.config.Capture.Net, t.outDir)
+	t.netCapturePcap, err = pcaps.New(t.config.Capture.Net, t.OutDir)
 	if err != nil {
 		t.Close()
 		return errfmt.Errorf("error initializing network capture: %v", err)
@@ -1529,13 +1528,6 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.bpfLogsPerfMap.Poll(pollTimeout)
 	go t.processBPFLogs(ctx)
 
-	// write pid file
-	err = t.writePid()
-	if err != nil {
-		// not able to write pid, abort
-		return errfmt.WrapError(err)
-	}
-
 	// set running state after writing pid file
 	t.running.Store(true)
 
@@ -1554,7 +1546,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	// record index of written files
 	if t.config.Capture.FileWrite {
 		destinationFilePath := "written_files"
-		f, err := utils.OpenAt(t.outDir, destinationFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		f, err := utils.OpenAt(t.OutDir, destinationFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			return errfmt.Errorf("error logging written files")
 		}
@@ -1602,8 +1594,7 @@ func (t *Tracee) Close() {
 			logger.Errorw("failed to clean containers module when closing tracee", "err", err)
 		}
 	}
-	err := t.cgroups.Destroy()
-	if err != nil {
+	if err := t.cgroups.Destroy(); err != nil {
 		logger.Errorw("Cgroups destroy", "error", err)
 	}
 
@@ -1618,7 +1609,7 @@ func (t *Tracee) Running() bool {
 }
 
 func (t *Tracee) computeOutFileHash(fileName string) (string, error) {
-	f, err := utils.OpenAt(t.outDir, fileName, os.O_RDONLY, 0)
+	f, err := utils.OpenAt(t.OutDir, fileName, os.O_RDONLY, 0)
 	if err != nil {
 		return "", errfmt.WrapError(err)
 	}
@@ -1833,20 +1824,5 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 
 //go:noinline
 func (t *Tracee) triggerMemDumpCall(address uint64, length uint64, eventHandle uint64) error {
-	return nil
-}
-
-// Initialize PID file
-func (t *Tracee) writePid() error {
-	pidFile, err := utils.OpenAt(t.outDir, "tracee.pid", syscall.O_WRONLY|syscall.O_CREAT, 0640)
-	if err != nil {
-		return errfmt.Errorf("error creating readiness file: %v", err)
-	}
-
-	_, err = pidFile.Write([]byte(strconv.Itoa(os.Getpid()) + "\n"))
-	if err != nil {
-		return errfmt.Errorf("error writing to readiness file: %v", err)
-	}
-
 	return nil
 }
