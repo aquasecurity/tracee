@@ -252,7 +252,7 @@ jobs:
           submodules: true
       - name: "Executing Debug Shell"
         run: ./tests/remotessh.sh
-  jammy6127-core:
+  jammy6127:
     if: ${{ github.event.inputs.distro == 'jammy6127' }}
     runs-on:
       [
@@ -265,7 +265,7 @@ jobs:
           submodules: true
       - name: "Executing Debug Shell"
         run: ./tests/remotessh.sh
-  jammy6301-core:
+  jammy6301:
     if: ${{ github.event.inputs.distro == 'jammy6301' }}
     runs-on:
       [
