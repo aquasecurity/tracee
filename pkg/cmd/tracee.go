@@ -64,7 +64,7 @@ func (r Runner) Run(ctx context.Context) error {
 	}
 	defer func() {
 		if err := removePidFile(t.OutDir); err != nil {
-			logger.Errorw("error removing pid file", "error", err)
+			logger.Warnw("error removing pid file", "error", err)
 		}
 	}()
 
