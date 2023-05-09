@@ -1691,7 +1691,7 @@ func (alert MemProtAlert) String() string {
 	case ProtAlertMprotectXToWX:
 		return "Protection changed from E to W+E!"
 	case ProtAlertMprotectWXToX:
-		return "Protection changed from W+E to E!"
+		return "Protection changed from W to E!"
 	default:
 		return "Unknown alert"
 	}
