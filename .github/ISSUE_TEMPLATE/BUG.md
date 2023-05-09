@@ -8,7 +8,7 @@ about: If something isn't working as expected.
 
 <!-- include steps to reproduce, error message you received, etc -->
 
-## Output of `tracee -v`:
+## Output of `tracee version`:
 
 ```
 (paste your output here)
