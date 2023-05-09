@@ -3512,12 +3512,13 @@ int BPF_KPROBE(trace_check_helper_call)
 
     int func_id;
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 13, 0))
-    func_id = (int) PT_REGS_PARM2(ctx);
-#else
-    struct bpf_insn *insn = (struct bpf_insn *) PT_REGS_PARM2(ctx);
-    func_id = READ_KERN(insn->imm);
-#endif
+    if (!bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_for_each_map_elem)) {
+        // if BPF_FUNC_for_each_map_elem doesn't exist under bpf_func_id - kernel version < 5.13
+        func_id = (int) PT_REGS_PARM2(ctx);
+    } else {
+        struct bpf_insn *insn = (struct bpf_insn *) PT_REGS_PARM2(ctx);
+        func_id = READ_KERN(insn->imm);
+    }
 
     return handle_bpf_helper_func_id(p.event->context.task.host_tid, func_id);
 }
