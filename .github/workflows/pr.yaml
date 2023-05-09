@@ -678,67 +678,67 @@ jobs:
       - name: "Instrumentation"
         run: |
           ./tests/e2e-instrumentation-test.sh
-  # #
-  # # JAMMY v6.1
-  # #
-  # jammy6127-core:
-  #   name: Jammy 6.1.27 X64
-  #   needs:
-  #     - unit-tests
-  #     - verify-signatures
-  #     - verify-tools
-  #   env:
-  #     HOME: "/tmp/root"
-  #     GOPATH: "/tmp/go"
-  #     GOCACHE: "/tmp/go-cache"
-  #     GOROOT: "/usr/local/go"
-  #   runs-on:
-  #     [
-  #       "github-self-hosted_ami-0469948ef83c039e9_${{ github.event.number }}-${{ github.run_id }}_x64c",
-  #     ]
-  #   steps:
-  #     - name: "Checkout"
-  #       uses: actions/checkout@v3
-  #       with:
-  #         submodules: true
-  #     - name: "Kernel"
-  #       run: |
-  #         ./tests/kerneltest.sh
-  #     - name: "Network"
-  #       run: |
-  #         ./tests/e2e-net-test.sh
-  #     - name: "Instrumentation"
-  #       run: |
-  #         ./tests/e2e-instrumentation-test.sh
-  # #
-  # # JAMMY v6.3
-  # #
-  # jammy6301-core:
-  #   name: Jammy 6.3.1 X64
-  #   needs:
-  #     - unit-tests
-  #     - verify-signatures
-  #     - verify-tools
-  #   env:
-  #     HOME: "/tmp/root"
-  #     GOPATH: "/tmp/go"
-  #     GOCACHE: "/tmp/go-cache"
-  #     GOROOT: "/usr/local/go"
-  #   runs-on:
-  #     [
-  #       "github-self-hosted_ami-05bc39f8670e0c226_${{ github.event.number }}-${{ github.run_id }}_x64c",
-  #     ]
-  #   steps:
-  #     - name: "Checkout"
-  #       uses: actions/checkout@v3
-  #       with:
-  #         submodules: true
-  #     - name: "Kernel"
-  #       run: |
-  #         ./tests/kerneltest.sh
-  #     - name: "Network"
-  #       run: |
-  #         ./tests/e2e-net-test.sh
-  #     - name: "Instrumentation"
-  #       run: |
-  #         ./tests/e2e-instrumentation-test.sh
+  #
+  # JAMMY v6.1
+  #
+  jammy6127-core:
+    name: Jammy 6.1.27 X64
+    needs:
+      - unit-tests
+      - verify-signatures
+      - verify-tools
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
+    runs-on:
+      [
+        "github-self-hosted_ami-0469948ef83c039e9_${{ github.event.number }}-${{ github.run_id }}_x64c",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Kernel"
+        run: |
+          ./tests/kerneltest.sh
+      - name: "Network"
+        run: |
+          ./tests/e2e-net-test.sh
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-instrumentation-test.sh
+  #
+  # JAMMY v6.3
+  #
+  jammy6301-core:
+    name: Jammy 6.3.1 X64
+    needs:
+      - unit-tests
+      - verify-signatures
+      - verify-tools
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
+    runs-on:
+      [
+        "github-self-hosted_ami-05bc39f8670e0c226_${{ github.event.number }}-${{ github.run_id }}_x64c",
+      ]
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: "Kernel"
+        run: |
+          ./tests/kerneltest.sh
+      - name: "Network"
+        run: |
+          ./tests/e2e-net-test.sh
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-instrumentation-test.sh
