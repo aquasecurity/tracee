@@ -27,7 +27,7 @@ func TestDynamicCodeLoading(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "alert",
 							},
-							Value: interface{}("Protection changed from W+E to E!"),
+							Value: interface{}("Protection changed from W to E!"),
 						},
 					},
 				},
@@ -42,7 +42,7 @@ func TestDynamicCodeLoading(t *testing.T) {
 								ArgMeta: trace.ArgMeta{
 									Name: "alert",
 								},
-								Value: interface{}("Protection changed from W+E to E!"),
+								Value: interface{}("Protection changed from W to E!"),
 							},
 						},
 					}.ToProtocol(),

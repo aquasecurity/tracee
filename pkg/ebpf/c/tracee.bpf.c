@@ -3138,8 +3138,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
             should_alert = true;
         }
 
-        if (((prev_prot & (VM_WRITE | VM_EXEC)) == (VM_WRITE | VM_EXEC)) && (reqprot & VM_EXEC) &&
-            !(reqprot & VM_WRITE)) {
+        if ((prev_prot & VM_WRITE) && (reqprot & VM_EXEC) && !(reqprot & VM_WRITE)) {
             alert = ALERT_MPROT_W_REM;
             should_alert = true;
 

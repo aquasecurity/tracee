@@ -27,5 +27,5 @@ tracee_selected_events[eventSelector] {
 tracee_match {
 	input.eventName == "mem_prot_alert"
 	message := helpers.get_tracee_argument("alert")
-	message == "Protection changed from W+E to E!"
+	message == "Protection changed from W to E!"
 }

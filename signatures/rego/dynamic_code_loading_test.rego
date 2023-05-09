@@ -6,7 +6,7 @@ test_match_1 {
 		"argsNum": 1,
 		"args": [{
 			"name": "alert",
-			"value": "Protection changed from W+E to E!",
+			"value": "Protection changed from W to E!",
 		}],
 	}
 }

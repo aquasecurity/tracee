@@ -25,7 +25,7 @@ Here are the current possible values:
 * "Mmaped region with W+E permissions!" - a mmap operation creating a memory that is exposed to dynamic code execution.
 * "Protection changed to Executable!" - the access protection of the memory region expose it to execution, after some different access protection in the past.
 * "Protection changed from E to W+E!" - the access protection of the memory region now enable dynamic modification and execution, enabling dynamic code execution.
-* "Protection changed from W+E to E!" - the access protection of the memory region reduced from dynamic code execution, but still exposed to execution of pre-written code. Might be some evasion attempt.
+* "Protection changed from W to E!" - the access protection of the memory region reduced from dynamic code execution, but still exposed to execution of pre-written code. Might be some evasion attempt.
 
 ## Hooks
 ### security_mmap_addr

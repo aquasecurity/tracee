@@ -16,7 +16,7 @@ type DynamicCodeLoading struct {
 
 func (sig *DynamicCodeLoading) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
-	sig.alertText = "Protection changed from W+E to E!"
+	sig.alertText = "Protection changed from W to E!"
 	return nil
 }
 
