@@ -49,7 +49,6 @@ func main() {
 
 			return runner.Run(ctx)
 		},
-		SliceFlagSeparator: " ",
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:    "list",

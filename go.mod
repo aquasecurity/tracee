@@ -22,7 +22,7 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.2
-	github.com/urfave/cli/v2 v2.25.3
+	github.com/urfave/cli/v2 v2.3.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/sys v0.8.0
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1
@@ -74,7 +74,6 @@ require (
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opentelemetry.io/otel v1.15.1 // indirect
 	go.opentelemetry.io/otel/trace v1.15.1 // indirect
