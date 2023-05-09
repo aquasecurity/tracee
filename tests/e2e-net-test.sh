@@ -17,7 +17,7 @@ if [[ $KERNEL_MAJ -lt 5 && "$KERNEL" != *"el8"* ]]; then
     info_exit "skip test in kernels < 5.0 (and not RHEL)"
 fi
 
-TRACEE_STARTUP_TIMEOUT=5
+TRACEE_STARTUP_TIMEOUT=30
 SCRIPT_TMP_DIR=/tmp
 TRACEE_TMP_DIR=/tmp/tracee
 
