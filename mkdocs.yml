@@ -509,6 +509,7 @@ nav:
           - Logging: docs/outputs/logging.md
       - Config:
           - Overview: docs/config/overview.md
+          - Kubernetes: docs/config/kubernetes.md
       - Forensics:
           - Getting Started: docs/forensics/index.md
       - Integrations:
