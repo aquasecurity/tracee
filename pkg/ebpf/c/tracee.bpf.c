@@ -23,6 +23,7 @@
 #include <common/binprm.h>
 #include <common/bpf_prog.h>
 #include <common/buffer.h>
+#include <common/capabilities.h>
 #include <common/cgroups.h>
 #include <common/common.h>
 #include <common/consts.h>
@@ -1964,78 +1965,75 @@ int BPF_KPROBE(trace_commit_creds)
     if (!should_submit(COMMIT_CREDS, p.event))
         return 0;
 
-    struct cred *new = (struct cred *) PT_REGS_PARM1(ctx);
-    struct cred *old = (struct cred *) get_task_real_cred(p.event->task);
+    struct cred *new_cred = (struct cred *) PT_REGS_PARM1(ctx);
+    struct cred *old_cred = (struct cred *) get_task_real_cred(p.event->task);
 
     slim_cred_t old_slim = {0};
     slim_cred_t new_slim = {0};
 
-    struct user_namespace *userns_old = READ_KERN(old->user_ns);
-    struct user_namespace *userns_new = READ_KERN(new->user_ns);
+    struct user_namespace *userns_old = READ_KERN(old_cred->user_ns);
+    struct user_namespace *userns_new = READ_KERN(new_cred->user_ns);
 
-    old_slim.uid = READ_KERN(old->uid.val);
-    old_slim.gid = READ_KERN(old->gid.val);
-    old_slim.suid = READ_KERN(old->suid.val);
-    old_slim.sgid = READ_KERN(old->sgid.val);
-    old_slim.euid = READ_KERN(old->euid.val);
-    old_slim.egid = READ_KERN(old->egid.val);
-    old_slim.fsuid = READ_KERN(old->fsuid.val);
-    old_slim.fsgid = READ_KERN(old->fsgid.val);
+    // old credentials
+
+    old_slim.uid = READ_KERN(old_cred->uid.val);
+    old_slim.gid = READ_KERN(old_cred->gid.val);
+    old_slim.suid = READ_KERN(old_cred->suid.val);
+    old_slim.sgid = READ_KERN(old_cred->sgid.val);
+    old_slim.euid = READ_KERN(old_cred->euid.val);
+    old_slim.egid = READ_KERN(old_cred->egid.val);
+    old_slim.fsuid = READ_KERN(old_cred->fsuid.val);
+    old_slim.fsgid = READ_KERN(old_cred->fsgid.val);
     old_slim.user_ns = READ_KERN(userns_old->ns.inum);
-    old_slim.securebits = READ_KERN(old->securebits);
+    old_slim.securebits = READ_KERN(old_cred->securebits);
 
-    new_slim.uid = READ_KERN(new->uid.val);
-    new_slim.gid = READ_KERN(new->gid.val);
-    new_slim.suid = READ_KERN(new->suid.val);
-    new_slim.sgid = READ_KERN(new->sgid.val);
-    new_slim.euid = READ_KERN(new->euid.val);
-    new_slim.egid = READ_KERN(new->egid.val);
-    new_slim.fsuid = READ_KERN(new->fsuid.val);
-    new_slim.fsgid = READ_KERN(new->fsgid.val);
+    old_slim.cap_inheritable = credcap_to_slimcap(&old_cred->cap_inheritable);
+    old_slim.cap_permitted = credcap_to_slimcap(&old_cred->cap_permitted);
+    old_slim.cap_effective = credcap_to_slimcap(&old_cred->cap_effective);
+    old_slim.cap_bset = credcap_to_slimcap(&old_cred->cap_bset);
+    old_slim.cap_ambient = credcap_to_slimcap(&old_cred->cap_ambient);
+
+    // new credentials
+
+    new_slim.uid = READ_KERN(new_cred->uid.val);
+    new_slim.gid = READ_KERN(new_cred->gid.val);
+    new_slim.suid = READ_KERN(new_cred->suid.val);
+    new_slim.sgid = READ_KERN(new_cred->sgid.val);
+    new_slim.euid = READ_KERN(new_cred->euid.val);
+    new_slim.egid = READ_KERN(new_cred->egid.val);
+    new_slim.fsuid = READ_KERN(new_cred->fsuid.val);
+    new_slim.fsgid = READ_KERN(new_cred->fsgid.val);
     new_slim.user_ns = READ_KERN(userns_new->ns.inum);
-    new_slim.securebits = READ_KERN(new->securebits);
+    new_slim.securebits = READ_KERN(new_cred->securebits);
 
-    // Currently, (2021), there are ~40 capabilities in the Linux kernel which are stored in an u32
-    // array of length 2. This might change in the (not so near) future as more capabilities will be
-    // added. For now, we use u64 to store this array in one piece
-
-    kernel_cap_t caps;
-    caps = READ_KERN(old->cap_inheritable);
-    old_slim.cap_inheritable = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
-    caps = READ_KERN(old->cap_permitted);
-    old_slim.cap_permitted = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
-    caps = READ_KERN(old->cap_effective);
-    old_slim.cap_effective = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
-    caps = READ_KERN(old->cap_bset);
-    old_slim.cap_bset = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
-    caps = READ_KERN(old->cap_ambient);
-    old_slim.cap_ambient = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
-
-    caps = READ_KERN(new->cap_inheritable);
-    new_slim.cap_inheritable = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
-    caps = READ_KERN(new->cap_permitted);
-    new_slim.cap_permitted = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
-    caps = READ_KERN(new->cap_effective);
-    new_slim.cap_effective = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
-    caps = READ_KERN(new->cap_bset);
-    new_slim.cap_bset = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
-    caps = READ_KERN(new->cap_ambient);
-    new_slim.cap_ambient = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
+    new_slim.cap_inheritable = credcap_to_slimcap(&new_cred->cap_inheritable);
+    new_slim.cap_permitted = credcap_to_slimcap(&new_cred->cap_permitted);
+    new_slim.cap_effective = credcap_to_slimcap(&new_cred->cap_effective);
+    new_slim.cap_bset = credcap_to_slimcap(&new_cred->cap_bset);
+    new_slim.cap_ambient = credcap_to_slimcap(&new_cred->cap_ambient);
 
     save_to_submit_buf(p.event, (void *) &old_slim, sizeof(slim_cred_t), 0);
     save_to_submit_buf(p.event, (void *) &new_slim, sizeof(slim_cred_t), 1);
 
-    if ((old_slim.uid != new_slim.uid) || (old_slim.gid != new_slim.gid) ||
-        (old_slim.suid != new_slim.suid) || (old_slim.sgid != new_slim.sgid) ||
-        (old_slim.euid != new_slim.euid) || (old_slim.egid != new_slim.egid) ||
-        (old_slim.fsuid != new_slim.fsuid) || (old_slim.fsgid != new_slim.fsgid) ||
-        (old_slim.cap_inheritable != new_slim.cap_inheritable) ||
-        (old_slim.cap_permitted != new_slim.cap_permitted) ||
-        (old_slim.cap_effective != new_slim.cap_effective) ||
-        (old_slim.cap_bset != new_slim.cap_bset) ||
-        (old_slim.cap_ambient != new_slim.cap_ambient)) {
+    // clang-format off
+    if (
+        (old_slim.uid != new_slim.uid)                          ||
+        (old_slim.gid != new_slim.gid)                          ||
+        (old_slim.suid != new_slim.suid)                        ||
+        (old_slim.sgid != new_slim.sgid)                        ||
+        (old_slim.euid != new_slim.euid)                        ||
+        (old_slim.egid != new_slim.egid)                        ||
+        (old_slim.fsuid != new_slim.fsuid)                      ||
+        (old_slim.fsgid != new_slim.fsgid)                      ||
+        (old_slim.cap_inheritable != new_slim.cap_inheritable)  ||
+        (old_slim.cap_permitted != new_slim.cap_permitted)      ||
+        (old_slim.cap_effective != new_slim.cap_effective)      ||
+        (old_slim.cap_bset != new_slim.cap_bset)                ||
+        (old_slim.cap_ambient != new_slim.cap_ambient)
+    ) {
         events_perf_submit(&p, COMMIT_CREDS, 0);
     }
+    // clang-format on
 
     return 0;
 }

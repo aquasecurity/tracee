@@ -77,6 +77,14 @@ struct trace_probe___v53 {
     struct trace_event_call call;
 };
 
+// kernel >= 6.1 kernel_cap_t type change
+
+struct kernel_cap_struct___older {
+    __u32 cap[2];
+};
+
+typedef struct kernel_cap_struct___older kernel_cap_t___older;
+
 #pragma clang attribute pop
 
 #endif
