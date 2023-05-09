@@ -297,11 +297,9 @@ typedef struct {
     gid_t val;
 } kgid_t;
 
-struct kernel_cap_struct {
-    __u32 cap[2];
-};
-
-typedef struct kernel_cap_struct kernel_cap_t;
+typedef struct {
+    u64 val;
+} kernel_cap_t;
 
 struct cred {
     kuid_t uid;
