@@ -29,6 +29,14 @@ import (
 func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	var runner cmd.Runner
 
+	// Log command line flags
+
+	logCfg, err := flags.PrepareLogger(viper.GetStringSlice("log"), true)
+	if err != nil {
+		return runner, err
+	}
+	logger.Init(logCfg)
+
 	// Rego command line flags
 
 	rego, err := flags.PrepareRego(viper.GetStringSlice("rego"))
@@ -66,14 +74,6 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 	cfg.Output = output.TraceeConfig
-
-	// Log command line flags
-
-	logCfg, err := flags.PrepareLogger(viper.GetStringSlice("log"), true)
-	if err != nil {
-		return runner, err
-	}
-	logger.Init(logCfg)
 
 	// OS release information
 
