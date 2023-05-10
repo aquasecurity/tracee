@@ -1,17 +1,40 @@
 package printer
 
 import (
+	"sync"
+
+	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // Broadcast is a printer that broadcasts events to multiple printers
 type Broadcast struct {
-	eventsChan []chan trace.Event
-	done       chan struct{}
+	PrinterConfigs []Config
+	printers       []EventPrinter
+	wg             *sync.WaitGroup
+	eventsChan     []chan trace.Event
+	done           chan struct{}
 }
 
 // NewBroadcast creates a new Broadcast printer
-func NewBroadcast(printers []EventPrinter) *Broadcast {
+func NewBroadcast(printerConfigs []Config) (*Broadcast, error) {
+	b := &Broadcast{PrinterConfigs: printerConfigs}
+	return b, b.Init()
+}
+
+func (b *Broadcast) Init() error {
+	printers := make([]EventPrinter, 0, len(b.PrinterConfigs))
+	wg := &sync.WaitGroup{}
+
+	for _, pConfig := range b.PrinterConfigs {
+		p, err := New(pConfig)
+		if err != nil {
+			return err
+		}
+
+		printers = append(printers, p)
+	}
+
 	eventsChan := make([]chan trace.Event, 0, len(printers))
 	done := make(chan struct{})
 
@@ -21,12 +44,21 @@ func NewBroadcast(printers []EventPrinter) *Broadcast {
 		eventChan := make(chan trace.Event, 1000)
 		eventsChan = append(eventsChan, eventChan)
 
-		go startPrinter(done, eventChan, printer)
+		wg.Add(1)
+		go startPrinter(wg, done, eventChan, printer)
 	}
 
-	return &Broadcast{
-		eventsChan: eventsChan,
-		done:       done,
+	b.printers = printers
+	b.eventsChan = eventsChan
+	b.wg = wg
+	b.done = done
+
+	return nil
+}
+
+func (b *Broadcast) Preamble() {
+	for _, p := range b.printers {
+		p.Preamble()
 	}
 }
 
@@ -38,18 +70,30 @@ func (b *Broadcast) Print(event trace.Event) {
 	}
 }
 
-// Close closes Broadcast printer
-func (b *Broadcast) Close() {
+func (b *Broadcast) Epilogue(stats metrics.Stats) {
+	// if you execute epilogue no other events should be sent to the printers,
+	// so we finish the events goroutines
 	close(b.done)
+
+	b.wg.Wait()
+
+	for _, p := range b.printers {
+		p.Epilogue(stats)
+	}
 }
 
-func startPrinter(done chan struct{}, c chan trace.Event, p EventPrinter) {
-	// Print the preamble and start event channel reception
-	p.Preamble()
+// Close closes Broadcast printer
+func (b *Broadcast) Close() {
+	for _, p := range b.printers {
+		p.Close()
+	}
+}
 
+func startPrinter(wg *sync.WaitGroup, done chan struct{}, c chan trace.Event, p EventPrinter) {
 	for {
 		select {
 		case <-done:
+			wg.Done()
 			return
 		case event := <-c:
 			p.Print(event)
