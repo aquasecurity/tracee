@@ -27,10 +27,7 @@ func (r Runner) Run(ctx context.Context) error {
 	// Decide if HTTP server should be started
 
 	if r.Server != nil {
-		if r.Server.MetricsEndpointEnabled() {
-			r.TraceeConfig.MetricsEnabled = true
-		}
-
+		r.TraceeConfig.MetricsEnabled = r.Server.MetricsEndpointEnabled()
 		go r.Server.Start(ctx)
 	}
 
