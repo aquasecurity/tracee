@@ -21,6 +21,9 @@ jobs:
       - name: AWS Environment
         run: |
           dmidecode
+      - name: Fetch all tags for sure
+        run: |
+          git fetch --tags
       - name: Login to docker.io registry
         uses: docker/login-action@v2
         with:
