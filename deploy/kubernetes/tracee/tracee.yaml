@@ -23,7 +23,7 @@ spec:
         env:
         - name: LIBBPFGO_OSRELEASE_FILE
           value: /etc/os-release-host
-        image: docker.io/aquasec/tracee:0.14.0
+        image: docker.io/aquasec/tracee:0.14.1
         imagePullPolicy: IfNotPresent
         name: tracee
         securityContext:
