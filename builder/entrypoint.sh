@@ -25,16 +25,21 @@ run_tracee() {
 
     echo "INFO: starting tracee..."
 
-    $TRACEE_EXE \
-        --metrics \
-        --output=option:parse-arguments \
-        --cache cache-type=mem \
-        --cache mem-cache-size=512 \
-        --containers=$CONTAINERS_ENRICHMENT \
-        --capabilities bypass=$CAPABILITIES_BYPASS \
-        --capabilities add=$CAPABILITIES_ADD \
-        --capabilities drop=$CAPABILITIES_DROP \
-        $@
+    if [[ $# -ne 0 ]]; then
+        # no default arguments, just given ones
+        $TRACEE_EXE $@
+    else
+        # default arguments
+        $TRACEE_EXE \
+            --metrics \
+            --output=option:parse-arguments \
+            --cache cache-type=mem \
+            --cache mem-cache-size=512 \
+            --containers=$CONTAINERS_ENRICHMENT \
+            --capabilities bypass=$CAPABILITIES_BYPASS \
+            --capabilities add=$CAPABILITIES_ADD \
+            --capabilities drop=$CAPABILITIES_DROP
+    fi
 
     tracee_ret=$?
 }
