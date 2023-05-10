@@ -31,6 +31,8 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Log command line flags
 
+	// Logger initialization must be the first thing to be done,
+	// so all other packages can use it
 	logCfg, err := flags.PrepareLogger(viper.GetStringSlice("log"), true)
 	if err != nil {
 		return runner, err
