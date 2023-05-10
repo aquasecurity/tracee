@@ -20,12 +20,10 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+          fetch-depth: 0
       - name: AWS Environment
         run: |
           dmidecode
-      - name: Fetch all tags for sure
-        run: |
-          git fetch --tags
       - name: Login to docker.io registry
         uses: docker/login-action@v2
         with:
@@ -65,12 +63,10 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+          fetch-depth: 0
       - name: AWS Environment
         run: |
           dmidecode
-      - name: Fetch all tags for sure
-        run: |
-          git fetch --tags
       - name: Login to docker.io registry
         uses: docker/login-action@v2
         with:
