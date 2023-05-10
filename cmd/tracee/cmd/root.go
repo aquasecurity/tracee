@@ -204,8 +204,6 @@ func initCmd() error {
 
 	// Server flags
 
-	// TODO: add webhook
-
 	rootCmd.Flags().Bool(
 		server.MetricsEndpointFlag,
 		false,
