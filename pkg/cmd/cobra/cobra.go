@@ -177,17 +177,15 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Container information printer flag
 
+	// TODO: set this on the printer config creation
 	containerMode := cmd.GetContainerMode(cfg)
-	printers := make([]printer.EventPrinter, 0, len(output.PrinterConfigs))
 	for _, pConfig := range output.PrinterConfigs {
 		pConfig.ContainerMode = containerMode
+	}
 
-		p, err := printer.New(pConfig)
-		if err != nil {
-			return runner, err
-		}
-
-		printers = append(printers, p)
+	broadcast, err := printer.NewBroadcast(output.PrinterConfigs)
+	if err != nil {
+		return runner, err
 	}
 
 	// Check kernel lockdown
@@ -244,7 +242,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	runner.Server = httpServer
 	runner.TraceeConfig = cfg
-	runner.Printers = printers
+	runner.Printer = broadcast
 
 	// parse arguments must be enabled if the rule engine is part of the pipeline
 	runner.TraceeConfig.Output.ParseArguments = true

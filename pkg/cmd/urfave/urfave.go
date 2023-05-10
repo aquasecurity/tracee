@@ -115,16 +115,13 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	// Container information printer flag
 	containerMode := cmd.GetContainerMode(cfg)
-	printers := make([]printer.EventPrinter, 0, len(output.PrinterConfigs))
 	for _, pConfig := range output.PrinterConfigs {
 		pConfig.ContainerMode = containerMode
+	}
 
-		p, err := printer.New(pConfig)
-		if err != nil {
-			return runner, err
-		}
-
-		printers = append(printers, p)
+	broadcast, err := printer.NewBroadcast(output.PrinterConfigs)
+	if err != nil {
+		return runner, err
 	}
 
 	// Check kernel lockdown
@@ -180,7 +177,7 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	runner.Server = httpServer
 	runner.TraceeConfig = cfg
-	runner.Printers = printers
+	runner.Printer = broadcast
 
 	return runner, nil
 }

@@ -19,7 +19,7 @@ import (
 
 type Runner struct {
 	TraceeConfig tracee.Config
-	Printers     []printer.EventPrinter
+	Printer      printer.EventPrinter
 	Server       *server.Server
 }
 
@@ -38,16 +38,6 @@ func (r Runner) Run(ctx context.Context) error {
 		return errfmt.Errorf("error creating Tracee: %v", err)
 	}
 
-	// Print statistics at the end
-
-	defer func() {
-		for _, p := range r.Printers {
-			stats := t.Stats()
-			p.Epilogue(*stats)
-			p.Close()
-		}
-	}()
-
 	// Initialize tracee
 
 	err = t.Init()
@@ -65,14 +55,16 @@ func (r Runner) Run(ctx context.Context) error {
 		}
 	}()
 
-	broadcast := printer.NewBroadcast(r.Printers)
+	// preeamble
+
+	r.Printer.Preamble()
 
 	// Start event channel reception
 	go func() {
 		for {
 			select {
 			case event := <-r.TraceeConfig.ChanEvents:
-				broadcast.Print(event)
+				r.Printer.Print(event)
 			case <-ctx.Done():
 				return
 			}
@@ -86,9 +78,12 @@ func (r Runner) Run(ctx context.Context) error {
 	for {
 		select {
 		case event := <-r.TraceeConfig.ChanEvents:
-			broadcast.Print(event)
+			r.Printer.Print(event)
 		default:
-			broadcast.Close()
+			// Print statistics at the end
+			stats := t.Stats()
+			r.Printer.Epilogue(*stats)
+			r.Printer.Close()
 			return err
 		}
 	}
