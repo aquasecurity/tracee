@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.9+insiders-4.32.6">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.11+insiders-4.33.1">
     
     
       
@@ -51,7 +51,6 @@
     
       
 
-    
     
     
   </head>
@@ -15791,7 +15790,7 @@ tracee like:</p>
 <span class="go">    -v /var/run/containerd:/var/run/containerd \</span>
 <span class="go">    -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \</span>
 <span class="go">    -e CONTAINERS_ENRICHMENT=1 \</span>
-<span class="go">    aquasec/tracee:v0.14.0</span>
+<span class="go">    aquasec/tracee:v0.14.1</span>
 </code></pre></div>
 <p>Most container runtimes have their sockets installed by default in
 <code>/var/run</code>. If your system includes multiple container runtimes, tracee can
@@ -15833,7 +15832,7 @@ to enrich all containers correctly.</p>
 <span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
 <span class="go">    -v /var/run/docker.sock:/var/run/docker.sock \</span>
 <span class="go">    -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \</span>
-<span class="go">    aquasec/tracee:v0.14.0 \</span>
+<span class="go">    aquasec/tracee:v0.14.1 \</span>
 <span class="go">    trace --output json --containers</span>
 </code></pre></div>
 </li>
@@ -15845,7 +15844,7 @@ to enrich all containers correctly.</p>
 <span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
 <span class="go">    -v /var/run/containerd:/var/run/containerd \</span>
 <span class="go">    -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \</span>
-<span class="go">    aquasec/tracee:v0.14.0 \</span>
+<span class="go">    aquasec/tracee:v0.14.1 \</span>
 <span class="go">    trace --filter container --containers</span>
 </code></pre></div>
 </li>

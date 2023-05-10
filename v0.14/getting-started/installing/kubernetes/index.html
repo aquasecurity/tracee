@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.9+insiders-4.32.6">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.11+insiders-4.33.1">
     
     
       
@@ -51,7 +51,6 @@
     
       
 
-    
     
     
   </head>
@@ -15740,7 +15739,7 @@
 
 
 <h1 id="install-tracee-on-kubernetes">Install <strong>Tracee</strong> on Kubernetes<a class="headerlink" href="#install-tracee-on-kubernetes" title="Permanent link">&para;</a></h1>
-<p>In the <a href="https://github.com/aquasecurity/tracee/blob/v0.14.0/deploy/kubernetes">deploy/kubernetes</a> directory you will find Yaml files to deploy Tracee
+<p>In the <a href="https://github.com/aquasecurity/tracee/blob/v0.14.1/deploy/kubernetes">deploy/kubernetes</a> directory you will find Yaml files to deploy Tracee
 in a Kubernetes environment. These files will deploy Tracee as a DaemonSet
 alongside a message routing application (<a href="https://github.com/aquasecurity/postee">Postee</a>) that will help you consume
 the detections in your preferred way (e.g. Slack, E-mail, JIRA and more). </p>
@@ -15763,7 +15762,7 @@ daemonset/tracee logs with <code>kubectl logs -f daemonset/tracee -n tracee-syst
 <span class="go">helm repo update</span>
 </code></pre></div>
 <p>or clone the Helm chart:</p>
-<div class="highlight"><pre><span></span><code><span class="go">git clone --depth 1 --branch v0.14.0 https://github.com/aquasecurity/tracee.git</span>
+<div class="highlight"><pre><span></span><code><span class="go">git clone --depth 1 --branch v0.14.1 https://github.com/aquasecurity/tracee.git</span>
 <span class="go">cd tracee</span>
 </code></pre></div>
 </li>
@@ -15791,7 +15790,7 @@ simply run:</p>
 kubectl create namespace tracee-system
 kubectl create -n tracee-system \
     -f https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml \
-    -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.14.0/deploy/kubernetes/tracee-postee/tracee.yaml</code></p>
+    -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.14.1/deploy/kubernetes/tracee-postee/tracee.yaml</code></p>
 </li>
 <li>
 <p>After Installation</p>
