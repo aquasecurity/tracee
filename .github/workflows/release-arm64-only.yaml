@@ -9,9 +9,6 @@ jobs:
     name: Release ARM64
     env:
       GH_TOKEN: ${{ github.token }}
-    # only runs after x64 released (x64 is still the "default" arch)
-    needs:
-      - release
     runs-on:
       [
         "github-self-hosted_ami-03217ce7c37572c4d_${{ github.event.number }}-${{ github.run_id }}",
