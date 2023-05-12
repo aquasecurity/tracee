@@ -26,6 +26,7 @@ func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, osInfo *hel
 	if btfFilePath == "" && err != nil {
 		return errfmt.WrapError(err)
 	}
+
 	if btfFilePath != "" {
 		logger.Debugw("BTF", "BTF environment variable set", "path", btfFilePath)
 		config.BTFObjPath = btfFilePath
@@ -37,7 +38,8 @@ func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, osInfo *hel
 	}
 
 	// BTF unavailable: check embedded BTF files
-	if !helpers.OSBTFEnabled() && btfFilePath != "" {
+
+	if !helpers.OSBTFEnabled() && btfFilePath == "" {
 		unpackBTFFile := filepath.Join(installPath, "/tracee.btf")
 		err = unpackBTFHub(unpackBTFFile, osInfo)
 		if err == nil {
