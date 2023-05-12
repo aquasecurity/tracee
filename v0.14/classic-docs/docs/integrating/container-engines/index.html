@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.11+insiders-4.33.1">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.12+insiders-4.33.2">
     
     
       
@@ -15790,7 +15790,7 @@ tracee like:</p>
     -v /var/run/containerd:/var/run/containerd \
     -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
     -e CONTAINERS_ENRICHMENT=1 \
-    aquasec/tracee:v0.14.1
+    aquasec/tracee:v0.14.2
 </code></pre></div>
 <p>Most container runtimes have their sockets installed by default in
 <code>/var/run</code>. If your system includes multiple container runtimes, tracee can
@@ -15832,7 +15832,7 @@ to enrich all containers correctly.</p>
         -v /etc/os-release:/etc/os-release-host:ro \
         -v /var/run/docker.sock:/var/run/docker.sock \
         -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-        aquasec/tracee:v0.14.1 \
+        aquasec/tracee:v0.14.2 \
         trace --output json --containers</code></p>
 </li>
 <li>
@@ -15843,7 +15843,7 @@ to enrich all containers correctly.</p>
         -v /etc/os-release:/etc/os-release-host:ro \
         -v /var/run/containerd:/var/run/containerd \
         -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-        aquasec/tracee:v0.14.1 \
+        aquasec/tracee:v0.14.2 \
         trace --filter container --containers</code></p>
 </li>
 </ol>
@@ -15886,7 +15886,7 @@ to enrich all containers correctly.</p>
     <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../../assets/javascripts/workers/search.6c7302c4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.2047e101.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.4a387975.min.js"></script>
       
     
   </body>
