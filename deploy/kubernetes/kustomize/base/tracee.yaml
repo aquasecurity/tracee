@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: tracee
-        image: docker.io/aquasec/tracee:0.14.1
+        image: docker.io/aquasec/tracee:0.14.2
         imagePullPolicy: IfNotPresent
         args:
           - --filter set=signatures
