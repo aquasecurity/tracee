@@ -43,6 +43,8 @@ func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, osInfo *hel
 		if err == nil {
 			logger.Debugw("BTF: btfhub embedded BTF file", "file", unpackBTFFile)
 			config.BTFObjPath = unpackBTFFile
+		} else {
+			logger.Debugw("BTF: error unpacking embedded BTFHUB file", "error", err)
 		}
 	}
 

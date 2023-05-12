@@ -63,10 +63,10 @@ WORKDIR /tracee
 COPY . /tracee
 
 RUN make clean && \
+    BTFHUB=$BTFHUB make tracee && \
     BTFHUB=$BTFHUB make tracee-ebpf && \
     make tracee-rules && \
     make signatures && \
-    make tracee && \
     rm -rf ./3rdparty/btfhub/ && \
     rm -rf ./3rdparty/btfhub-archive/
 
