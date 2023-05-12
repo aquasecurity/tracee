@@ -1,6 +1,6 @@
-./dist/*
-./3rdparty/btfhub
-./3rdparty/btfhub/*
-./3rdparty/btfhub-archive
-./3rdparty/btfhub-archive/*
-./tests/distro-tester/*
+dist/*
+3rdparty/btfhub
+3rdparty/btfhub/*
+3rdparty/btfhub-archive
+3rdparty/btfhub-archive/*
+tests/distro-tester/*
