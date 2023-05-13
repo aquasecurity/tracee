@@ -17,12 +17,12 @@ func getConfigAndPrinterFromPoliciesFlags(cfg tracee.Config, policyFlags, output
 		return cfg, nil, err
 	}
 
-	filterMap, err := flags.PrepareFilterMapFromPolicies(policyFiles)
+	policyScopeMap, policyEventsMap, err := flags.PrepareFilterMapsFromPolicies(policyFiles)
 	if err != nil {
 		return cfg, nil, err
 	}
 
-	policies, err := flags.CreatePolicies(filterMap, true)
+	policies, err := flags.CreatePolicies(policyScopeMap, policyEventsMap, true)
 	if err != nil {
 		return cfg, nil, err
 	}
@@ -50,13 +50,18 @@ func getConfigAndPrinterFromPoliciesFlags(cfg tracee.Config, policyFlags, output
 	return cfg, p, err
 }
 
-func getConfigAndPrinterFromFilterFlags(cfg tracee.Config, filterFlags, outputFlags []string) (tracee.Config, printer.EventPrinter, error) {
-	filterMap, err := flags.PrepareFilterMapFromFlags(filterFlags)
+func getConfigAndPrinterFromFilterFlags(cfg tracee.Config, scopeFlags, eventFlags, outputFlags []string) (tracee.Config, printer.EventPrinter, error) {
+	policyScopeMap, err := flags.PrepareFilterMapFromFlags(scopeFlags)
 	if err != nil {
 		return cfg, nil, err
 	}
 
-	policies, err := flags.CreatePolicies(filterMap, true)
+	policyEventsMap, err := flags.PrepareEventMapFromFlags(eventFlags)
+	if err != nil {
+		return cfg, nil, err
+	}
+
+	policies, err := flags.CreatePolicies(policyScopeMap, policyEventsMap, true)
 	if err != nil {
 		return cfg, nil, err
 	}

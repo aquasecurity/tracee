@@ -271,6 +271,9 @@ func validateEventArg(policyName, eventName, argName string) error {
 	return errfmt.Errorf("policy %s, event %s does not have argument %s", policyName, eventName, argName)
 }
 
+// todo: check if we really need this here? it will be tested later when creating policies anyway
+// also - we don't check for validity of args and retval - so why should we check this?
+// also - having this here is a duplication of checking the event flag - so let's do it in one place
 func validateContext(policyName, c string) error {
 	contexts := []string{
 		"timestamp",

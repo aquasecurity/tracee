@@ -4,10 +4,6 @@ import (
 	"fmt"
 )
 
-func InvalidSetError(set string) error {
-	return fmt.Errorf("invalid set to trace: %s", set)
-}
-
 func InvalidEventError(event string) error {
 	return fmt.Errorf("invalid event to trace: %s", event)
 }

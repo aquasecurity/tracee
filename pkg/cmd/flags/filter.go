@@ -5,13 +5,14 @@ import (
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/policy"
 )
 
+// todo: update the help
+// todo: rename filter to scope
 func filterHelp() string {
 	return `Select which events to trace by defining filter expressions that operate on events or process metadata.
 Only events that match all filter expressions will be traced (filter flags are ANDed).
@@ -110,7 +111,13 @@ func PrepareFilterMapFromFlags(filtersArr []string) (PolicyFilterMap, error) {
 	return filterMap, nil
 }
 
-func CreatePolicies(filterMap PolicyFilterMap, newBinary bool) (*policy.Policies, error) {
+type eventFilter struct {
+	Equal    []string
+	NotEqual []string
+}
+
+// todo: move this into policy.go
+func CreatePolicies(policyScopeMap PolicyFilterMap, policyEventsMap PolicyEventMap, newBinary bool) (*policy.Policies, error) {
 	eventsNameToID := events.Definitions.NamesToIDs()
 	// remove internal events since they shouldn't be accessible by users
 	for event, id := range eventsNameToID {
@@ -119,46 +126,19 @@ func CreatePolicies(filterMap PolicyFilterMap, newBinary bool) (*policy.Policies
 		}
 	}
 
+	// todo: we now have both policyScopeMap and policyEventsMap instead of filterMap - validate their correct usage!
+	// these maps length should be identical (every policy must have both scope and events parts)
+
+	// todo: remove all occurances of "--filter"
+	// todo: fix tests
+
 	policies := policy.NewPolicies()
-	for policyIdx, policyFilters := range filterMap {
+	for policyIdx, policyScopeFilters := range policyScopeMap {
 		p := policy.NewPolicy()
 		p.ID = policyIdx
-		p.Name = policyFilters.policyName
+		p.Name = policyScopeFilters.policyName
 
-		eventFilter := cliFilter{
-			Equal:    []string{},
-			NotEqual: []string{},
-		}
-		setFilter := cliFilter{
-			Equal:    []string{},
-			NotEqual: []string{},
-		}
-
-		for _, filterFlag := range policyFilters.filterFlags {
-			if strings.Contains(filterFlag.full, ".retval") {
-				err := p.RetFilter.Parse(filterFlag.filterName, filterFlag.operatorAndValues, eventsNameToID)
-				if err != nil {
-					return nil, err
-				}
-				continue
-			}
-
-			if strings.Contains(filterFlag.full, ".context") {
-				err := p.ContextFilter.Parse(filterFlag.filterName, filterFlag.operatorAndValues)
-				if err != nil {
-					return nil, err
-				}
-				continue
-			}
-
-			if strings.Contains(filterFlag.full, ".args") {
-				err := p.ArgFilter.Parse(filterFlag.filterName, filterFlag.operatorAndValues, eventsNameToID)
-				if err != nil {
-					return nil, err
-				}
-				continue
-			}
-
+		for _, filterFlag := range policyScopeFilters.filterFlags {
 			// The filters which are more common (container, event, pid, set, uid) can be given using a prefix of them.
 			// Other filters should be given using their full name.
 			// To avoid collisions between filters that share the same prefix, put the filters which should have an exact match first!
@@ -219,14 +199,6 @@ func CreatePolicies(filterMap PolicyFilterMap, newBinary bool) (*policy.Policies
 				continue
 			}
 
-			if strings.HasPrefix("event", filterFlag.filterName) {
-				err := eventFilter.Parse(filterFlag.operatorAndValues)
-				if err != nil {
-					return nil, err
-				}
-				continue
-			}
-
 			if filterFlag.filterName == "mntns" {
 				if strings.ContainsAny(filterFlag.operatorAndValues, "<>") {
 					return nil, filters.InvalidExpression(filterFlag.operatorAndValues)
@@ -277,14 +249,6 @@ func CreatePolicies(filterMap PolicyFilterMap, newBinary bool) (*policy.Policies
 				continue
 			}
 
-			if strings.HasPrefix("set", filterFlag.filterName) {
-				err := setFilter.Parse(filterFlag.operatorAndValues)
-				if err != nil {
-					return nil, err
-				}
-				continue
-			}
-
 			if filterFlag.filterName == "uts" {
 				err := p.UTSFilter.Parse(filterFlag.operatorAndValues)
 				if err != nil {
@@ -309,8 +273,62 @@ func CreatePolicies(filterMap PolicyFilterMap, newBinary bool) (*policy.Policies
 			return nil, InvalidFilterOptionError(filterFlag.full, newBinary)
 		}
 
+		eventFilter := eventFilter{
+			Equal:    []string{},
+			NotEqual: []string{},
+		}
+
+		policyEvents, ok := policyEventsMap[policyIdx]
+		if !ok {
+			// todo: we should actually return invalid policy since every scope has exactly one matching entry in policyEventsMap
+		  return nil, InvalidFlagEmpty()
+		}
+
+		// todo: fix filterName and operatorAndValues to be eventName and filter (like defined in eventFilter)
+		for _, eventFlag := range policyEvents.eventFlags {
+			operatorIdx := strings.IndexAny(eventFlag.full, "=!<>")
+
+			if operatorIdx == -1 { // no operator - this is a simple event filter
+				if !strings.HasPrefix(eventFlag.full, "-") {
+					eventFilter.Equal = append(eventFilter.Equal, eventFlag.full)
+				} else {
+					eventFilter.NotEqual = append(eventFilter.NotEqual, eventFlag.full[1:])
+				}
+				continue
+			}
+
+			filterName := eventFlag.full[:operatorIdx]
+			operatorAndValues := eventFlag.full[operatorIdx:]
+
+			if strings.Contains(eventFlag.full, ".retval") {
+				err := p.RetFilter.Parse(filterName, operatorAndValues, eventsNameToID)
+				if err != nil {
+					return nil, err
+				}
+				continue
+			}
+
+			if strings.Contains(eventFlag.full, ".context") {
+				err := p.ContextFilter.Parse(filterName, operatorAndValues)
+				if err != nil {
+					return nil, err
+				}
+				continue
+			}
+
+			if strings.Contains(eventFlag.full, ".args") {
+				err := p.ArgFilter.Parse(filterName, operatorAndValues, eventsNameToID)
+				if err != nil {
+					return nil, err
+				}
+				continue
+			}
+
+			// todo: return error
+		}
+
 		var err error
-		p.EventsToTrace, err = prepareEventsToTrace(eventFilter, setFilter, eventsNameToID)
+		p.EventsToTrace, err = prepareEventsToTrace(eventFilter, eventsNameToID)
 		if err != nil {
 			return nil, err
 		}
@@ -323,18 +341,14 @@ func CreatePolicies(filterMap PolicyFilterMap, newBinary bool) (*policy.Policies
 
 	if len(policies.Map()) == 0 {
 		// If nothing was set, let us consider it as a single default policy
-		eventFilter := cliFilter{
-			Equal:    []string{},
-			NotEqual: []string{},
-		}
-		setFilter := cliFilter{
+		eventFilter := eventFilter{
 			Equal:    []string{},
 			NotEqual: []string{},
 		}
 
 		var err error
 		newPolicy := policy.NewPolicy()
-		newPolicy.EventsToTrace, err = prepareEventsToTrace(eventFilter, setFilter, eventsNameToID)
+		newPolicy.EventsToTrace, err = prepareEventsToTrace(eventFilter, eventsNameToID)
 		if err != nil {
 			return nil, err
 		}
@@ -348,14 +362,10 @@ func CreatePolicies(filterMap PolicyFilterMap, newBinary bool) (*policy.Policies
 	return policies, nil
 }
 
-func prepareEventsToTrace(
-	eventFilter cliFilter, setFilter cliFilter, eventsNameToID map[string]events.ID,
-) (
-	map[events.ID]string, error,
-) {
+func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]events.ID) (map[events.ID]string, error) {
 	eventsToTrace := eventFilter.Equal
 	excludeEvents := eventFilter.NotEqual
-	setsToTrace := setFilter.Equal
+	var setsToTrace []string
 
 	var res map[events.ID]string
 	setsToEvents := make(map[string][]events.ID)
@@ -417,7 +427,7 @@ func prepareEventsToTrace(
 	}
 
 	// if no events were specified, add all events from the default set
-	if len(eventsToTrace) == 0 && len(setsToTrace) == 0 {
+	if len(eventsToTrace) == 0 {
 		setsToTrace = append(setsToTrace, "default")
 	}
 
@@ -439,6 +449,11 @@ func prepareEventsToTrace(
 		} else {
 			id, ok := eventsNameToID[name]
 			if !ok {
+				// no matching event - maybe it is actually a set?
+				if _, ok = setsToEvents[name]; ok {
+					setsToTrace = append(setsToTrace, name)
+					continue
+				}
 				return nil, InvalidEventError(name)
 			}
 			res[id] = name
@@ -447,10 +462,7 @@ func prepareEventsToTrace(
 
 	// add events from sets to the map containing events to trace
 	for _, set := range setsToTrace {
-		setEvents, ok := setsToEvents[set]
-		if !ok {
-			return nil, InvalidSetError(set)
-		}
+		setEvents := setsToEvents[set]
 		for _, id := range setEvents {
 			if !isExcluded[id] {
 				res[id] = events.Definitions.Get(id).Name
@@ -459,37 +471,4 @@ func prepareEventsToTrace(
 	}
 
 	return res, nil
-}
-
-type cliFilter struct {
-	Equal    []string
-	NotEqual []string
-}
-
-func (filter *cliFilter) Parse(operatorAndValues string) error {
-	valuesString := string(operatorAndValues[1:])
-	operatorString := string(operatorAndValues[0])
-
-	if operatorString == "!" {
-		if len(operatorAndValues) < 3 {
-			return errfmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
-		}
-		operatorString = operatorAndValues[0:2]
-		valuesString = operatorAndValues[2:]
-	}
-
-	values := strings.Split(valuesString, ",")
-
-	for i := range values {
-		switch operatorString {
-		case "=":
-			filter.Equal = append(filter.Equal, values[i])
-		case "!=":
-			filter.NotEqual = append(filter.NotEqual, values[i])
-		default:
-			return errfmt.Errorf("invalid filter operator: %s", operatorString)
-		}
-	}
-
-	return nil
 }

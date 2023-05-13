@@ -99,14 +99,20 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	// Filter command line flags
 
-	var filterMap flags.PolicyFilterMap
+	var policyScopeMap flags.PolicyFilterMap
+	var policyEventsMap flags.PolicyEventMap
 
-	filterMap, err = flags.PrepareFilterMapFromFlags(c.StringSlice("filter"))
+	policyScopeMap, err = flags.PrepareFilterMapFromFlags(c.StringSlice("scope"))
 	if err != nil {
 		return runner, err
 	}
 
-	policies, err := flags.CreatePolicies(filterMap, false)
+	policyEventsMap, err = flags.PrepareEventMapFromFlags(c.StringSlice("event"))
+	if err != nil {
+		return runner, err
+	}
+
+	policies, err := flags.CreatePolicies(policyScopeMap, policyEventsMap, false)
 	if err != nil {
 		return runner, err
 	}
