@@ -20,6 +20,10 @@ jobs:
         "github-self-hosted_ami-0f4881c8d69684001_${{ github.event.number }}-${{ github.run_id }}",
       ]
     steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@main
+        with:
+          cosign-release: 'v2.0.2'
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
@@ -48,6 +52,9 @@ jobs:
           docker image tag tracee:latest aquasec/tracee:x86_64-dev
           docker image push aquasec/tracee:dev
           docker image push aquasec/tracee:x86_64-dev
+      - name: docker inspect
+        run: |
+          docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:dev
   release-snapshot-arm64:
     name: Release Snapshot ARM64
     runs-on:
@@ -55,6 +62,10 @@ jobs:
         "github-self-hosted_ami-03217ce7c37572c4d_${{ github.event.number }}-${{ github.run_id }}",
       ]
     steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@main
+        with:
+          cosign-release: 'v2.0.2'
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
@@ -81,3 +92,6 @@ jobs:
         run: |
           docker image tag tracee:latest aquasec/tracee:aarch64-dev
           docker image push aquasec/tracee:aarch64-dev
+      - name: docker inspect
+        run: |
+          docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:aarch64-dev
