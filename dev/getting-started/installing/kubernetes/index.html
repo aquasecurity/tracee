@@ -15789,8 +15789,14 @@ simply run:</p>
 <p><code>`console
 kubectl create namespace tracee-system
 kubectl create -n tracee-system \
-    -f https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml \
-    -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.14.2/deploy/kubernetes/tracee-postee/tracee.yaml</code></p>
+    -f https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml \</code></p>
+<div class="highlight"><pre><span></span><code>```console
+helm install tracee aqua/tracee \
+        --namespace tracee-system --create-namespace \
+        --set hostPID=true \
+        --set webhook=http://postee-svc:8082
+```
+</code></pre></div>
 </li>
 <li>
 <p>After Installation</p>

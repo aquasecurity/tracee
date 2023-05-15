@@ -16040,10 +16040,14 @@ namespace:</p>
 <span class="go">  -f https://raw.githubusercontent.com/aquasecurity/postee/v2.2.0/deploy/kubernetes/hostPath/postee-pv.yaml \</span>
 <span class="go">  -f https://raw.githubusercontent.com/aquasecurity/postee/v2.2.0/deploy/kubernetes/postee.yaml</span>
 </code></pre></div>
-<p>Create Tracee DaemonSet in the <code>tracee-system</code>, which is preconfigured to print
+<p>Create Tracee DaemonSet in the <code>tracee-system</code>, configuring it to send 
 detections to the standard output and send them over to Postee webhook on
 http://postee-svc:8082:</p>
-<div class="highlight"><pre><span></span><code><span class="go">kubectl apply -n tracee-system -f deploy/kubernetes/tracee-postee/tracee.yaml</span>
+<div class="highlight"><pre><span></span><code><span class="go">helm repo add aqua https://aquasecurity.github.io/helm-charts</span>
+<span class="go">helm install tracee ./deploy/helm/tracee \</span>
+<span class="go">  --namespace tracee-system \</span>
+<span class="go">  --set hostPID=true \</span>
+<span class="go">  --set webhook=http://postee-svc:8082</span>
 </code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
@@ -16058,7 +16062,7 @@ http://postee-svc:8082:</p>
 <span class="go">rm /tmp/tracee-latest.tar</span>
 </code></pre></div></li>
 <li>Create Tracee DaemonSet using <code>tracee:latest</code> as container image:
-   <div class="highlight"><pre><span></span><code><span class="go">kubectl apply -n tracee-system -k deploy/kubernetes/tracee-postee</span>
+   <div class="highlight"><pre><span></span><code><span class="go">kubectl apply -n tracee-system -k deploy/kubernetes/tracee</span>
 </code></pre></div></li>
 </ol>
 </div>
@@ -16075,15 +16079,6 @@ logs:</p>
 <div class="highlight"><pre><span></span><code><span class="go">kubectl -n tracee-system logs -f postee-0</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>2023/03/29 19:44:47 {&quot;timestamp&quot;:1680119087787203746,&quot;threadStartTime&quot;:1680119087787109775,&quot;processorId&quot;:0,&quot;processId&quot;:95599,&quot;cgroupId&quot;:9789,&quot;threadId&quot;:95599,&quot;parentProcessId&quot;:95597,&quot;hostProcessId&quot;:95599,&quot;hostThreadId&quot;:95599,&quot;hostParentProcessId&quot;:95597,&quot;userId&quot;:1000,&quot;mountNamespace&quot;:4026531841,&quot;pidNamespace&quot;:4026531836,&quot;processName&quot;:&quot;strace&quot;,&quot;hostName&quot;:&quot;ubuntu-jammy&quot;,&quot;containerId&quot;:&quot;&quot;,&quot;containerImage&quot;:&quot;&quot;,&quot;containerName&quot;:&quot;&quot;,&quot;podName&quot;:&quot;&quot;,&quot;podNamespace&quot;:&quot;&quot;,&quot;podUID&quot;:&quot;&quot;,&quot;podSandbox&quot;:false,&quot;eventId&quot;:&quot;6018&quot;,&quot;eventName&quot;:&quot;Anti-Debugging detected&quot;,&quot;matchedScopes&quot;:1,&quot;argsNum&quot;:0,&quot;returnValue&quot;:0,&quot;syscall&quot;:&quot;&quot;,&quot;stackAddresses&quot;:null,&quot;contextFlags&quot;:{&quot;containerStarted&quot;:false,&quot;isCompat&quot;:false},&quot;args&quot;:[],&quot;metadata&quot;:{&quot;Version&quot;:&quot;1&quot;,&quot;Description&quot;:&quot;A process used anti-debugging techniques to block a debugger. Malware use anti-debugging to stay invisible and inhibit analysis of their behavior.&quot;,&quot;Tags&quot;:null,&quot;Properties&quot;:{&quot;Category&quot;:&quot;defense-evasion&quot;,&quot;Kubernetes_Technique&quot;:&quot;&quot;,&quot;Severity&quot;:1,&quot;Technique&quot;:&quot;Debugger Evasion&quot;,&quot;external_id&quot;:&quot;T1622&quot;,&quot;id&quot;:&quot;attack-pattern--e4dc8c01-417f-458d-9ee0-bb0617c1b391&quot;,&quot;signatureID&quot;:&quot;TRC-102&quot;,&quot;signatureName&quot;:&quot;Anti-Debugging detected&quot;}}}
-</code></pre></div>
-<p>As an alternative to static deployment descriptors you can install Tracee and
-Postee with Helm:</p>
-<div class="highlight"><pre><span></span><code><span class="go">helm repo add aqua https://aquasecurity.github.io/helm-charts</span>
-<span class="go">helm dependency update ./deploy/helm/tracee</span>
-<span class="go">helm install tracee ./deploy/helm/tracee \</span>
-<span class="go">  --namespace tracee-system --create-namespace \</span>
-<span class="go">  --set hostPID=true \</span>
-<span class="go">  --set postee.enabled=true</span>
 </code></pre></div>
 <h3 id="access-kubernetes-dashboard">Access Kubernetes Dashboard<a class="headerlink" href="#access-kubernetes-dashboard" title="Permanent link">&para;</a></h3>
 <p>Use the following command to get the token required to log in to the
