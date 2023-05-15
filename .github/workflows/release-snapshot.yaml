@@ -59,6 +59,7 @@ jobs:
       - name: Sign Docker image
         run: |
           cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:dev)
+          cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:x86_64-dev)
   release-snapshot-arm64:
     name: Release Snapshot ARM64
     runs-on:
