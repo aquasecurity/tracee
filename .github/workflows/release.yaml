@@ -15,12 +15,20 @@ jobs:
       [
         "github-self-hosted_ami-0f4881c8d69684001_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
           submodules: true
           fetch-depth: 0
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@main
+        with:
+          cosign-release: 'v2.0.2'
       - name: AWS Environment
         run: |
           dmidecode
@@ -47,6 +55,12 @@ jobs:
           docker image push aquasec/tracee:${ARCH}
           docker image push aquasec/tracee:${TAG}
           docker image push aquasec/tracee:${ARCH}-${TAG}
+      - name: Sign Docker image
+        run: |
+          cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:latest)
+          cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${ARCH})
+          cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${TAG})
+          cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${ARCH}-${TAG})
   release-arm64:
     name: Release ARM64
     env:
@@ -58,12 +72,20 @@ jobs:
       [
         "github-self-hosted_ami-03217ce7c37572c4d_${{ github.event.number }}-${{ github.run_id }}",
       ]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
           submodules: true
           fetch-depth: 0
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@main
+        with:
+          cosign-release: 'v2.0.2'
       - name: AWS Environment
         run: |
           dmidecode
@@ -86,3 +108,7 @@ jobs:
           docker image tag tracee:latest aquasec/tracee:${ARCH}-${TAG}
           docker image push aquasec/tracee:${ARCH}
           docker image push aquasec/tracee:${ARCH}-${TAG}
+      - name: Sign Docker image
+        run: |
+          cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${ARCH})
+          cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${ARCH}-${TAG})
