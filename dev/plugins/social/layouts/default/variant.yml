@@ -137,7 +137,9 @@ definitions:
 
   # Logo
   - &logo >-
-    {{ config.theme.logo or "" }}
+    {%- if config.theme.logo -%}
+      {{ config.docs_dir }}/{{ config.theme.logo }}
+    {%- endif -%}
 
   # Logo (icon)
   - &logo_icon >-
