@@ -14,34 +14,46 @@ import (
 
 // Event is a single result of an ebpf event process. It is used as a payload later delivered to tracee-rules.
 type Event struct {
-	Timestamp            int          `json:"timestamp"`
-	ThreadStartTime      int          `json:"threadStartTime"`
-	ProcessorID          int          `json:"processorId"`
-	ProcessID            int          `json:"processId"`
-	CgroupID             uint         `json:"cgroupId"`
-	ThreadID             int          `json:"threadId"`
-	ParentProcessID      int          `json:"parentProcessId"`
-	HostProcessID        int          `json:"hostProcessId"`
-	HostThreadID         int          `json:"hostThreadId"`
-	HostParentProcessID  int          `json:"hostParentProcessId"`
-	UserID               int          `json:"userId"`
-	MountNS              int          `json:"mountNamespace"`
-	PIDNS                int          `json:"pidNamespace"`
-	ProcessName          string       `json:"processName"`
-	HostName             string       `json:"hostName"`
-	Container            Container    `json:"container,omitempty"`
-	Kubernetes           Kubernetes   `json:"kubernetes,omitempty"`
-	EventID              int          `json:"eventId,string"`
-	EventName            string       `json:"eventName"`
-	MatchedPolicies      uint64       `json:"-"` // omit bitmask of matched policies
-	MatchedPoliciesNames []string     `json:"matchedPolicies,omitempty"`
-	ArgsNum              int          `json:"argsNum"`
-	ReturnValue          int          `json:"returnValue"`
-	Syscall              string       `json:"syscall"`
-	StackAddresses       []uint64     `json:"stackAddresses"`
-	ContextFlags         ContextFlags `json:"contextFlags"`
-	Args                 []Argument   `json:"args"` // Arguments are ordered according their appearance in the original event
-	Metadata             *Metadata    `json:"metadata,omitempty"`
+	Timestamp int `json:"timestamp"`
+
+	EventID   int    `json:"eventId,string"`
+	EventName string `json:"eventName"`
+
+	Context  Context   `json:"context,omitempty"`
+	Metadata *Metadata `json:"metadata,omitempty"`
+
+	MatchedPolicies      uint64   `json:"-"` // omit bitmask of matched policies
+	MatchedPoliciesNames []string `json:"matchedPolicies,omitempty"`
+
+	ArgsNum     int        `json:"argsNum"`
+	ReturnValue int        `json:"returnValue"`
+	Args        []Argument `json:"args"` // Arguments are ordered according their appearance in the original event
+}
+
+type Context struct {
+	Process        Process    `json:"process"`
+	Container      Container  `json:"container,omitempty"`
+	Kubernetes     Kubernetes `json:"kubernetes,omitempty"`
+	Syscall        string     `json:"syscall"`
+	StackAddresses []uint64   `json:"stackAddresses"`
+	Flags          Flags      `json:"flags"`
+	ProcessorID    int        `json:"processorId"`
+}
+
+type Process struct {
+	ProcessID           int    `json:"processId"`
+	ProcessName         string `json:"processName"`
+	CgroupID            uint   `json:"cgroupId"`
+	ThreadID            int    `json:"threadId"`
+	ParentProcessID     int    `json:"parentProcessId"`
+	HostProcessID       int    `json:"hostProcessId"`
+	HostThreadID        int    `json:"hostThreadId"`
+	HostParentProcessID int    `json:"hostParentProcessId"`
+	UserID              int    `json:"userId"`
+	MountNS             int    `json:"mountNamespace"`
+	PIDNS               int    `json:"pidNamespace"`
+	HostName            string `json:"hostName"`
+	ThreadStartTime     int    `json:"threadStartTime"`
 }
 
 type Container struct {
@@ -66,8 +78,8 @@ type Metadata struct {
 	Properties  map[string]interface{}
 }
 
-// ContextFlags are flags representing event context
-type ContextFlags struct {
+// Flags are flags representing event context
+type Flags struct {
 	ContainerStarted bool `json:"containerStarted"`
 	IsCompat         bool `json:"isCompat"`
 }
@@ -83,10 +95,10 @@ const (
 
 // Origin derive the EventOrigin of a trace.Event
 func (e Event) Origin() EventOrigin {
-	if e.ContextFlags.ContainerStarted {
+	if e.Context.Flags.ContainerStarted {
 		return ContainerOrigin
 	}
-	if e.Container.ID != "" {
+	if e.Context.Container.ID != "" {
 		return ContainerInitOrigin
 	}
 	return HostOrigin
