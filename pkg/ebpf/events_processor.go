@@ -149,7 +149,7 @@ func (t *Tracee) processWriteEvent(event *trace.Event) error {
 	}
 
 	// stop processing if write was already indexed
-	containerId := event.Container.ID
+	containerId := event.Context.Container.ID
 	if containerId == "" {
 		containerId = "host"
 	}
@@ -166,10 +166,10 @@ func (t *Tracee) processWriteEvent(event *trace.Event) error {
 
 func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 	// cache this pid by it's mnt ns
-	if event.ProcessID == 1 {
-		t.pidsInMntns.ForceAddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
+	if event.Context.Process.ProcessID == 1 {
+		t.pidsInMntns.ForceAddBucketItem(uint32(event.Context.Process.MountNS), uint32(event.Context.Process.HostProcessID))
 	} else {
-		t.pidsInMntns.AddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
+		t.pidsInMntns.AddBucketItem(uint32(event.Context.Process.MountNS), uint32(event.Context.Process.HostProcessID))
 	}
 	// capture executed files
 	if t.config.Capture.Exec || t.config.Output.ExecHash {
@@ -184,7 +184,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 		// try to access the root fs via another process in the same mount
 		// namespace (as the process from the current event might have
 		// already died)
-		pids := t.pidsInMntns.GetBucket(uint32(event.MountNS))
+		pids := t.pidsInMntns.GetBucket(uint32(event.Context.Process.MountNS))
 		for _, pid := range pids { // will break on success
 			err = nil
 			sourceFilePath := fmt.Sprintf("/proc/%s/root%s", strconv.Itoa(int(pid)), filePath)
@@ -194,7 +194,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 			}
 			castedSourceFileCtime := int64(sourceFileCtime)
 
-			containerId := event.Container.ID
+			containerId := event.Context.Container.ID
 			if containerId == "" {
 				containerId = "host"
 			}

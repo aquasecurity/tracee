@@ -36,9 +36,9 @@ func TestEventsChronologicalSorter_addEvent(t *testing.T) {
 		name                  string
 	}{{
 		events: []trace.Event{
-			{ProcessorID: 0, Timestamp: 1},
-			{ProcessorID: 0, Timestamp: 2},
-			{ProcessorID: 0, Timestamp: 3},
+			{Timestamp: 1, Context: trace.Context{ProcessorID: 0}},
+			{Timestamp: 2, Context: trace.Context{ProcessorID: 0}},
+			{Timestamp: 3, Context: trace.Context{ProcessorID: 0}},
 		},
 		expectedCpuQueuesLens: map[int]int{
 			0: 3,
@@ -48,9 +48,9 @@ func TestEventsChronologicalSorter_addEvent(t *testing.T) {
 	},
 		{
 			events: []trace.Event{
-				{ProcessorID: 0, Timestamp: 1},
-				{ProcessorID: 1, Timestamp: 2},
-				{ProcessorID: 0, Timestamp: 3},
+				{Timestamp: 1, Context: trace.Context{ProcessorID: 0}},
+				{Timestamp: 2, Context: trace.Context{ProcessorID: 1}},
+				{Timestamp: 3, Context: trace.Context{ProcessorID: 0}},
 			},
 			expectedCpuQueuesLens: map[int]int{
 				0: 2,
@@ -60,11 +60,11 @@ func TestEventsChronologicalSorter_addEvent(t *testing.T) {
 		},
 		{
 			events: []trace.Event{
-				{ProcessorID: 0, Timestamp: 2},
-				{ProcessorID: 0, Timestamp: 3},
-				{ProcessorID: 0, Timestamp: 4},
-				{ProcessorID: 0, Timestamp: 5},
-				{ProcessorID: 0, Timestamp: 1},
+				{Timestamp: 2, Context: trace.Context{ProcessorID: 0}},
+				{Timestamp: 3, Context: trace.Context{ProcessorID: 0}},
+				{Timestamp: 4, Context: trace.Context{ProcessorID: 0}},
+				{Timestamp: 5, Context: trace.Context{ProcessorID: 0}},
+				{Timestamp: 1, Context: trace.Context{ProcessorID: 0}},
 			},
 			expectedCpuQueuesLens: map[int]int{
 				0: 5,
@@ -74,11 +74,11 @@ func TestEventsChronologicalSorter_addEvent(t *testing.T) {
 		},
 		{
 			events: []trace.Event{
-				{ProcessorID: 0, Timestamp: 2},
-				{ProcessorID: 0, Timestamp: 3},
-				{ProcessorID: 1, Timestamp: 4},
-				{ProcessorID: 1, Timestamp: 5},
-				{ProcessorID: 1, Timestamp: 1},
+				{Timestamp: 2, Context: trace.Context{ProcessorID: 0}},
+				{Timestamp: 3, Context: trace.Context{ProcessorID: 0}},
+				{Timestamp: 4, Context: trace.Context{ProcessorID: 1}},
+				{Timestamp: 5, Context: trace.Context{ProcessorID: 1}},
+				{Timestamp: 1, Context: trace.Context{ProcessorID: 1}},
 			},
 			expectedCpuQueuesLens: map[int]int{
 				0: 2,
@@ -137,9 +137,9 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 				{
 					delay: 0,
 					events: []trace.Event{
-						{ProcessorID: 0, Timestamp: 1},
-						{ProcessorID: 0, Timestamp: 2},
-						{ProcessorID: 0, Timestamp: 3},
+						{Timestamp: 1, Context: trace.Context{ProcessorID: 0}},
+						{Timestamp: 2, Context: trace.Context{ProcessorID: 0}},
+						{Timestamp: 3, Context: trace.Context{ProcessorID: 0}},
 					},
 				},
 			},
@@ -152,9 +152,9 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 				{
 					delay: 0,
 					events: []trace.Event{
-						{ProcessorID: 0, Timestamp: 1},
-						{ProcessorID: 1, Timestamp: 2},
-						{ProcessorID: 0, Timestamp: 3},
+						{Timestamp: 1, Context: trace.Context{ProcessorID: 0}},
+						{Timestamp: 2, Context: trace.Context{ProcessorID: 1}},
+						{Timestamp: 3, Context: trace.Context{ProcessorID: 0}},
 					},
 				},
 			},
@@ -167,11 +167,11 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 				{
 					delay: 0,
 					events: []trace.Event{
-						{ProcessorID: 0, Timestamp: 2},
-						{ProcessorID: 0, Timestamp: 3},
-						{ProcessorID: 0, Timestamp: 4},
-						{ProcessorID: 0, Timestamp: 5},
-						{ProcessorID: 0, Timestamp: 1},
+						{Timestamp: 2, Context: trace.Context{ProcessorID: 0}},
+						{Timestamp: 3, Context: trace.Context{ProcessorID: 0}},
+						{Timestamp: 4, Context: trace.Context{ProcessorID: 0}},
+						{Timestamp: 5, Context: trace.Context{ProcessorID: 0}},
+						{Timestamp: 1, Context: trace.Context{ProcessorID: 0}},
 					},
 				},
 			},
@@ -184,11 +184,11 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 				{
 					delay: 0,
 					events: []trace.Event{
-						{ProcessorID: 0, Timestamp: 2},
-						{ProcessorID: 0, Timestamp: 3},
-						{ProcessorID: 1, Timestamp: 4},
-						{ProcessorID: 1, Timestamp: 5},
-						{ProcessorID: 1, Timestamp: 1},
+						{Timestamp: 2, Context: trace.Context{ProcessorID: 0}},
+						{Timestamp: 3, Context: trace.Context{ProcessorID: 0}},
+						{Timestamp: 4, Context: trace.Context{ProcessorID: 1}},
+						{Timestamp: 5, Context: trace.Context{ProcessorID: 1}},
+						{Timestamp: 1, Context: trace.Context{ProcessorID: 1}},
 					},
 				},
 			},
@@ -201,19 +201,19 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 				{
 					delay: 0,
 					events: []trace.Event{
-						{ProcessorID: 0, Timestamp: 2},
-						{ProcessorID: 0, Timestamp: 3},
-						{ProcessorID: 1, Timestamp: 4},
-						{ProcessorID: 1, Timestamp: 5},
-						{ProcessorID: 0, Timestamp: 7},
+						{Timestamp: 2, Context: trace.Context{ProcessorID: 0}},
+						{Timestamp: 3, Context: trace.Context{ProcessorID: 0}},
+						{Timestamp: 4, Context: trace.Context{ProcessorID: 1}},
+						{Timestamp: 5, Context: trace.Context{ProcessorID: 1}},
+						{Timestamp: 7, Context: trace.Context{ProcessorID: 0}},
 					},
 				},
 				{
 					delay: sendingInterval - time.Millisecond,
 					events: []trace.Event{
-						{ProcessorID: 1, Timestamp: 10},
-						{ProcessorID: 1, Timestamp: 11},
-						{ProcessorID: 1, Timestamp: 6},
+						{Timestamp: 10, Context: trace.Context{ProcessorID: 1}},
+						{Timestamp: 11, Context: trace.Context{ProcessorID: 1}},
+						{Timestamp: 6, Context: trace.Context{ProcessorID: 1}},
 					},
 				},
 			},
@@ -232,19 +232,19 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 				{
 					delay: sendingInterval,
 					events: []trace.Event{
-						{ProcessorID: 0, Timestamp: 1},
+						{Timestamp: 1, Context: trace.Context{ProcessorID: 0}},
 					},
 				},
 				{
 					delay: 3 * sendingInterval,
 					events: []trace.Event{
-						{ProcessorID: 0, Timestamp: 2},
+						{Timestamp: 2, Context: trace.Context{ProcessorID: 0}},
 					},
 				},
 				{
 					delay: 3 * sendingInterval,
 					events: []trace.Event{
-						{ProcessorID: 0, Timestamp: 3},
+						{Timestamp: 3, Context: trace.Context{ProcessorID: 0}},
 					},
 				},
 			},

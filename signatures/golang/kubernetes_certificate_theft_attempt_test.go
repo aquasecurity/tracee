@@ -21,8 +21,12 @@ func TestKubernetesCertificateTheftAttempt(t *testing.T) {
 			Name: "should trigger detection - security_file_open",
 			Events: []trace.Event{
 				{
-					ProcessName: "malware",
-					EventName:   "security_file_open",
+					Context: trace.Context{
+						Process: trace.Process{
+							ProcessName: "malware",
+						},
+					},
+					EventName: "security_file_open",
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -43,8 +47,12 @@ func TestKubernetesCertificateTheftAttempt(t *testing.T) {
 				"TRC-1018": {
 					Data: nil,
 					Event: trace.Event{
-						ProcessName: "malware",
-						EventName:   "security_file_open",
+						Context: trace.Context{
+							Process: trace.Process{
+								ProcessName: "malware",
+							},
+						},
+						EventName: "security_file_open",
 						Args: []trace.Argument{
 							{
 								ArgMeta: trace.ArgMeta{
@@ -129,8 +137,12 @@ func TestKubernetesCertificateTheftAttempt(t *testing.T) {
 			Name: "should not trigger detection - security_file_open wrong open flags",
 			Events: []trace.Event{
 				{
-					ProcessName: "test",
-					EventName:   "security_file_open",
+					Context: trace.Context{
+						Process: trace.Process{
+							ProcessName: "test",
+						},
+					},
+					EventName: "security_file_open",
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -153,8 +165,12 @@ func TestKubernetesCertificateTheftAttempt(t *testing.T) {
 			Name: "should not trigger detection - security_file_open wrong path",
 			Events: []trace.Event{
 				{
-					ProcessName: "test",
-					EventName:   "security_file_open",
+					Context: trace.Context{
+						Process: trace.Process{
+							ProcessName: "test",
+						},
+					},
+					EventName: "security_file_open",
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -177,8 +193,12 @@ func TestKubernetesCertificateTheftAttempt(t *testing.T) {
 			Name: "should not trigger detection - security_file_open legit proc",
 			Events: []trace.Event{
 				{
-					ProcessName: "kube-apiserver",
-					EventName:   "security_file_open",
+					Context: trace.Context{
+						Process: trace.Process{
+							ProcessName: "kube-apiserver",
+						},
+					},
+					EventName: "security_file_open",
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{

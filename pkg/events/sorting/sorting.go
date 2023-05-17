@@ -184,7 +184,7 @@ func (sorter *EventsChronologicalSorter) Start(in <-chan *trace.Event, out chan<
 
 // addEvent add a new event to the appropriate place in queue according to its timestamp
 func (sorter *EventsChronologicalSorter) addEvent(newEvent *trace.Event) {
-	cq := &sorter.cpuEventsQueues[newEvent.ProcessorID]
+	cq := &sorter.cpuEventsQueues[newEvent.Context.ProcessorID]
 	err := cq.InsertByTimestamp(newEvent)
 	if err != nil {
 		sorter.errorChan <- err

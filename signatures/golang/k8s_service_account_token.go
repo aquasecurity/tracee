@@ -60,7 +60,7 @@ func (sig *K8SServiceAccountToken) OnEvent(event protocol.Event) error {
 	case "security_file_open":
 		// check process touching token is not on allow list
 		for _, legitProc := range sig.legitProcs {
-			if legitProc == eventObj.ProcessName {
+			if legitProc == eventObj.Context.Process.ProcessName {
 				return nil
 			}
 		}

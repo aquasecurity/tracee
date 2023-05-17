@@ -15,22 +15,26 @@ import (
 
 var (
 	innocentEvent = trace.Event{
-		Timestamp:           7126141189,
-		ProcessID:           1,
-		ThreadID:            1,
-		ParentProcessID:     4798,
-		HostProcessID:       4819,
-		HostThreadID:        4819,
-		HostParentProcessID: 4798,
-		UserID:              0,
-		MountNS:             4026532256,
-		PIDNS:               4026532259,
-		ProcessName:         "cadvisor",
-		HostName:            "4213291591ab",
-		EventID:             257,
-		EventName:           "openat",
-		ArgsNum:             4,
-		ReturnValue:         14,
+		Timestamp: 7126141189,
+		Context: trace.Context{
+			Process: trace.Process{
+				ProcessID:           1,
+				ThreadID:            1,
+				ParentProcessID:     4798,
+				HostProcessID:       4819,
+				HostThreadID:        4819,
+				HostParentProcessID: 4798,
+				UserID:              0,
+				MountNS:             4026532256,
+				PIDNS:               4026532259,
+				ProcessName:         "cadvisor",
+				HostName:            "4213291591ab",
+			},
+		},
+		EventID:     257,
+		EventName:   "openat",
+		ArgsNum:     4,
+		ReturnValue: 14,
 		Args: []trace.Argument{
 			{
 				ArgMeta: trace.ArgMeta{
@@ -64,22 +68,26 @@ var (
 	}
 
 	triggerCodeInjectorPtraceEvent = trace.Event{
-		Timestamp:           6123321183,
-		ProcessID:           1,
-		ThreadID:            1,
-		ParentProcessID:     3788,
-		HostProcessID:       3217,
-		HostThreadID:        3217,
-		HostParentProcessID: 3788,
-		UserID:              0,
-		MountNS:             2983424533,
-		PIDNS:               2983424536,
-		ProcessName:         "injector",
-		HostName:            "234134134ab",
-		EventID:             328,
-		EventName:           "ptrace",
-		ArgsNum:             2,
-		ReturnValue:         0,
+		Timestamp: 6123321183,
+		Context: trace.Context{
+			Process: trace.Process{
+				ProcessID:           1,
+				ThreadID:            1,
+				ParentProcessID:     3788,
+				HostProcessID:       3217,
+				HostThreadID:        3217,
+				HostParentProcessID: 3788,
+				UserID:              0,
+				MountNS:             2983424533,
+				PIDNS:               2983424536,
+				ProcessName:         "injector",
+				HostName:            "234134134ab",
+			},
+		},
+		EventID:     328,
+		EventName:   "ptrace",
+		ArgsNum:     2,
+		ReturnValue: 0,
 		Args: []trace.Argument{
 			{
 				ArgMeta: trace.ArgMeta{
@@ -90,22 +98,26 @@ var (
 		},
 	}
 	triggerCodeInjectorOpenEvent = trace.Event{
-		Timestamp:           5123321532,
-		ProcessID:           1,
-		ThreadID:            1,
-		ParentProcessID:     3788,
-		HostProcessID:       3217,
-		HostThreadID:        3217,
-		HostParentProcessID: 3788,
-		UserID:              0,
-		MountNS:             2983424533,
-		PIDNS:               2983424536,
-		ProcessName:         "injector",
-		HostName:            "234134134ab",
-		EventID:             477,
-		EventName:           "open",
-		ArgsNum:             2,
-		ReturnValue:         0,
+		Timestamp: 5123321532,
+		Context: trace.Context{
+			Process: trace.Process{
+				ProcessID:           1,
+				ThreadID:            1,
+				ParentProcessID:     3788,
+				HostProcessID:       3217,
+				HostThreadID:        3217,
+				HostParentProcessID: 3788,
+				UserID:              0,
+				MountNS:             2983424533,
+				PIDNS:               2983424536,
+				ProcessName:         "injector",
+				HostName:            "234134134ab",
+			},
+		},
+		EventID:     477,
+		EventName:   "open",
+		ArgsNum:     2,
+		ReturnValue: 0,
 		Args: []trace.Argument{
 			{
 				ArgMeta: trace.ArgMeta{
@@ -123,22 +135,26 @@ var (
 	}
 
 	triggerAntiDebuggingEvent = trace.Event{
-		Timestamp:           5323321532,
-		ProcessID:           1,
-		ThreadID:            1,
-		ParentProcessID:     3788,
-		HostProcessID:       3217,
-		HostThreadID:        3217,
-		HostParentProcessID: 3788,
-		UserID:              0,
-		MountNS:             2983424533,
-		PIDNS:               2983424536,
-		ProcessName:         "malware",
-		HostName:            "234134134ab",
-		EventID:             521,
-		EventName:           "ptrace",
-		ArgsNum:             2,
-		ReturnValue:         124,
+		Timestamp: 5323321532,
+		Context: trace.Context{
+			Process: trace.Process{
+				ProcessID:           1,
+				ThreadID:            1,
+				ParentProcessID:     3788,
+				HostProcessID:       3217,
+				HostThreadID:        3217,
+				HostParentProcessID: 3788,
+				UserID:              0,
+				MountNS:             2983424533,
+				PIDNS:               2983424536,
+				ProcessName:         "malware",
+				HostName:            "234134134ab",
+			},
+		},
+		EventID:     521,
+		EventName:   "ptrace",
+		ArgsNum:     2,
+		ReturnValue: 124,
 		Args: []trace.Argument{
 			{
 				ArgMeta: trace.ArgMeta{

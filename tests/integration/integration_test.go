@@ -65,7 +65,7 @@ func checkExeccommand(t *testing.T, gotOutput *eventOutput) {
 	processNames := []string{}
 	output := gotOutput.getEventsCopy()
 	for _, evt := range output {
-		processNames = append(processNames, evt.ProcessName)
+		processNames = append(processNames, evt.Context.Process.ProcessName)
 	}
 	for _, pname := range processNames {
 		assert.Equal(t, "ls", pname)
@@ -85,8 +85,8 @@ func checkPidnew(t *testing.T, gotOutput *eventOutput) {
 	pids := []int{}
 	output := gotOutput.getEventsCopy()
 	for _, evt := range output {
-		if evt.ProcessName == "ls" {
-			pids = append(pids, evt.ProcessID)
+		if evt.Context.Process.ProcessName == "ls" {
+			pids = append(pids, evt.Context.Process.ProcessID)
 		}
 	}
 	for _, pid := range pids {
@@ -108,7 +108,7 @@ func checkUidZero(t *testing.T, gotOutput *eventOutput) {
 	uids := []int{}
 	output := gotOutput.getEventsCopy()
 	for _, evt := range output {
-		uids = append(uids, evt.UserID)
+		uids = append(uids, evt.Context.Process.UserID)
 	}
 	for _, uid := range uids {
 		require.Zero(t, uid)
@@ -186,7 +186,7 @@ func checkNewContainers(t *testing.T, gotOutput *eventOutput) {
 	containerIds := []string{}
 	output := gotOutput.getEventsCopy()
 	for _, evt := range output {
-		containerIds = append(containerIds, evt.Container.ID)
+		containerIds = append(containerIds, evt.Context.Container.ID)
 	}
 	for _, id := range containerIds {
 		assert.Equal(t, containerId, id)
@@ -211,7 +211,7 @@ func checkSecurityFileOpenExecve(t *testing.T, gotOutput *eventOutput) {
 
 	output := gotOutput.getEventsCopy()
 	for _, evt := range output {
-		assert.Equal(t, "execve", evt.Syscall)
+		assert.Equal(t, "execve", evt.Context.Syscall)
 	}
 }
 
@@ -229,7 +229,7 @@ func checkDockerdBinaryFilter(t *testing.T, gotOutput *eventOutput) {
 	processIds := []int{}
 	output := gotOutput.getEventsCopy()
 	for _, evt := range output {
-		processIds = append(processIds, evt.ProcessID)
+		processIds = append(processIds, evt.Context.Process.ProcessID)
 	}
 	assert.Contains(t, processIds, int(dockerdPid))
 }
@@ -365,7 +365,7 @@ func checkPolicySecurityFileOpenLs(t *testing.T, pols *policy.Policies, gotOutpu
 	require.NoError(t, err)
 	for _, evt := range output {
 		// ls - policy 1
-		assert.Equal(t, "ls", evt.ProcessName, "ProcessName")
+		assert.Equal(t, "ls", evt.Context.Process.ProcessName, "ProcessName")
 		assert.Equal(t, uint64(1<<0), evt.MatchedPolicies, "MatchedPolicies")
 		assert.Equal(t, []string{pol1.Name}, evt.MatchedPoliciesNames, "MatchedPoliciesNames")
 		arg, err := helpers.GetTraceeArgumentByName(evt, "pathname", helpers.GetArgOps{DefaultArgs: false})
@@ -397,12 +397,12 @@ func checkExecveOnPolicies1And2(t *testing.T, pols *policy.Policies, gotOutput *
 	require.NoError(t, err)
 
 	// ls - policy 1
-	assert.Equal(t, evts[0].ProcessName, "ls")
+	assert.Equal(t, evts[0].Context.Process.ProcessName, "ls")
 	assert.Equal(t, uint64(1<<0), evts[0].MatchedPolicies, "MatchedPolicies")
 	assert.Equal(t, []string{pol1.Name}, evts[0].MatchedPoliciesNames, "MatchedPoliciesNames")
 
 	// uname - policy 2
-	assert.Equal(t, evts[1].ProcessName, "uname")
+	assert.Equal(t, evts[1].Context.Process.ProcessName, "uname")
 	assert.Equal(t, uint64(1<<1), evts[1].MatchedPolicies, "MatchedPolicies")
 	assert.Equal(t, []string{pol2.Name}, evts[1].MatchedPoliciesNames, "MatchedPoliciesNames")
 }
@@ -416,7 +416,7 @@ func checkUnameAndWhoOnPoliciesWithBinaryScope(t *testing.T, pols *policy.Polici
 
 	output := gotOutput.getEventsCopy()
 	for _, evt := range output {
-		procName := evt.ProcessName
+		procName := evt.Context.Process.ProcessName
 		if procName != "uname" && procName != "who" {
 			t.Fail()
 		}

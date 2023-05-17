@@ -285,8 +285,8 @@ func ParseArgsFDs(event *trace.Event, fdArgPathMap *bpf.BPFMap) error {
 	if fdArg := GetArg(event, "fd"); fdArg != nil {
 		if fd, isInt32 := fdArg.Value.(int32); isInt32 {
 			fdArgTask := &fdArgTask{
-				PID: uint32(event.ProcessID),
-				TID: uint32(event.ThreadID),
+				PID: uint32(event.Context.Process.ProcessID),
+				TID: uint32(event.Context.Process.ThreadID),
 				FD:  fd,
 			}
 			bs, err := fdArgPathMap.GetValue(unsafe.Pointer(fdArgTask))

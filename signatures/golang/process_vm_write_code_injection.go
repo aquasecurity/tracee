@@ -56,7 +56,7 @@ func (sig *ProcessVmWriteCodeInjection) OnEvent(event protocol.Event) error {
 			return err
 		}
 
-		if eventObj.ProcessID != dstPid {
+		if eventObj.Context.Process.ProcessID != dstPid {
 			metadata, err := sig.GetMetadata()
 			if err != nil {
 				return err

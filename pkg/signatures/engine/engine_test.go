@@ -31,9 +31,13 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		{
 			name: "happy path - with one matching selector",
 			inputEvent: trace.Event{
-				EventName:       "test_event",
-				ProcessID:       2,
-				ParentProcessID: 1,
+				EventName: "test_event",
+				Context: trace.Context{
+					Process: trace.Process{
+						ProcessID:       2,
+						ParentProcessID: 1,
+					},
+				},
 				Args: []trace.Argument{
 					{
 						ArgMeta: trace.ArgMeta{
@@ -55,7 +59,14 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			},
 			expectedNumEvents: 1,
 			expectedEvent: trace.Event{
-				ProcessID: 2, ParentProcessID: 1, Args: []trace.Argument{{ArgMeta: trace.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
+				Context: trace.Context{
+					Process: trace.Process{
+						ProcessID: 2, ParentProcessID: 1,
+					},
+				},
+				Args: []trace.Argument{
+					{ArgMeta: trace.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"},
+				},
 				EventName: "test_event",
 			},
 		},
@@ -114,12 +125,16 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		{
 			name: "happy path - with one matching selector including event origin from container",
 			inputEvent: trace.Event{
-				EventName:       "test_event",
-				ProcessID:       2,
-				HostProcessID:   1002,
-				ParentProcessID: 1,
-				Container:       trace.Container{ID: "container ID"},
-				ContextFlags:    trace.ContextFlags{ContainerStarted: true},
+				EventName: "test_event",
+				Context: trace.Context{
+					Process: trace.Process{
+						ProcessID:       2,
+						HostProcessID:   1002,
+						ParentProcessID: 1,
+					},
+					Container: trace.Container{ID: "container ID"},
+					Flags:     trace.Flags{ContainerStarted: true},
+				},
 				Args: []trace.Argument{
 					{
 						ArgMeta: trace.ArgMeta{
@@ -142,19 +157,34 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			},
 			expectedNumEvents: 1,
 			expectedEvent: trace.Event{
-				ProcessID: 2, ParentProcessID: 1, HostProcessID: 1002, Container: trace.Container{ID: "container ID"}, ContextFlags: trace.ContextFlags{ContainerStarted: true}, Args: []trace.Argument{{ArgMeta: trace.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
+				Context: trace.Context{
+					Process: trace.Process{
+						ProcessID:       2,
+						ParentProcessID: 1,
+						HostProcessID:   1002,
+					},
+					Container: trace.Container{ID: "container ID"},
+					Flags:     trace.Flags{ContainerStarted: true},
+				},
+				Args: []trace.Argument{
+					{ArgMeta: trace.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"},
+				},
 				EventName: "test_event",
 			},
 		},
 		{
 			name: "happy path - with one matching selector with mismatching event origin from container",
 			inputEvent: trace.Event{
-				EventName:       "test_event",
-				ProcessID:       2,
-				HostProcessID:   1002,
-				ParentProcessID: 1,
-				Container:       trace.Container{ID: "container ID"},
-				ContextFlags:    trace.ContextFlags{ContainerStarted: true},
+				EventName: "test_event",
+				Context: trace.Context{
+					Process: trace.Process{
+						ProcessID:       2,
+						HostProcessID:   1002,
+						ParentProcessID: 1,
+					},
+					Container: trace.Container{ID: "container ID"},
+					Flags:     trace.Flags{ContainerStarted: true},
+				},
 				Args: []trace.Argument{
 					{
 						ArgMeta: trace.ArgMeta{
@@ -180,11 +210,15 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		{
 			name: "happy path - with one matching selector including event origin from host",
 			inputEvent: trace.Event{
-				EventName:       "test_event",
-				ProcessID:       2,
-				HostProcessID:   2,
-				ParentProcessID: 2,
-				ContextFlags:    trace.ContextFlags{ContainerStarted: false},
+				EventName: "test_event",
+				Context: trace.Context{
+					Process: trace.Process{
+						ProcessID:       2,
+						HostProcessID:   2,
+						ParentProcessID: 2,
+					},
+					Flags: trace.Flags{ContainerStarted: false},
+				},
 				Args: []trace.Argument{
 					{
 						ArgMeta: trace.ArgMeta{
@@ -207,7 +241,16 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			},
 			expectedNumEvents: 1,
 			expectedEvent: trace.Event{
-				ProcessID: 2, ParentProcessID: 2, HostProcessID: 2, Args: []trace.Argument{{ArgMeta: trace.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
+				Context: trace.Context{
+					Process: trace.Process{
+						ProcessID:       2,
+						ParentProcessID: 2,
+						HostProcessID:   2,
+					},
+				},
+				Args: []trace.Argument{
+					{ArgMeta: trace.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"},
+				},
 				EventName: "test_event",
 			},
 		},

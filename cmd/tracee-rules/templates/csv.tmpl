@@ -1,1 +1,1 @@
-{{ dateInZone "2006-01-02T15:04:05Z" (now) "UTC" }},{{ .Event.Payload.ProcessName }},{{ .Event.Payload.HostName }}
+{{ dateInZone "2006-01-02T15:04:05Z" (now) "UTC" }},{{ .Event.Payload.Context.Process.ProcessName }},{{ .Event.Payload.Context.Process.HostName }}

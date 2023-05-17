@@ -55,10 +55,14 @@ func (loader symbolsLoaderMock) addSOSymbols(info testSOInstance) {
 
 func generateSOLoadedEvent(pid int, so sharedobjs.ObjInfo) trace.Event {
 	return trace.Event{
-		EventName:     "shared_object_loaded",
-		EventID:       int(events.SharedObjectLoaded),
-		HostProcessID: pid,
-		ProcessID:     pid,
+		EventName: "shared_object_loaded",
+		EventID:   int(events.SharedObjectLoaded),
+		Context: trace.Context{
+			Process: trace.Process{
+				HostProcessID: pid,
+				ProcessID:     pid,
+			},
+		},
 		Args: []trace.Argument{
 			{ArgMeta: trace.ArgMeta{Type: "const char*", Name: "pathname"}, Value: so.Path},
 			{ArgMeta: trace.ArgMeta{Type: "int", Name: "flags"}, Value: 0},

@@ -22,8 +22,8 @@ Time: {{ dateInZone "2006-01-02T15:04:05Z" (now) "UTC" }}
 Signature ID: {{ .SigMetadata.ID }}
 Signature: {{ .SigMetadata.Name }}
 Data: {{ .Data }}
-Command: {{ .Event.Payload.ProcessName }}
-Hostname: {{ .Event.Payload.HostName }}
+Command: {{ .Event.Payload.Context.Process.ProcessName }}
+Hostname: {{ .Event.Payload.Context.Process.HostName }}
 `
 
 func setupTemplate(inputTemplateFile string) (*template.Template, error) {

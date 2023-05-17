@@ -253,8 +253,12 @@ input.processName in ['nginx', 'httpd', 'httpd-foregroun', 'lighttpd', 'apache',
 			},
 			input: protocol.Event{
 				Payload: trace.Event{
-					EventName:   "security_bprm_check",
-					ProcessName: "nginx",
+					EventName: "security_bprm_check",
+					Context: trace.Context{
+						Process: trace.Process{
+							ProcessName: "nginx",
+						},
+					},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -296,7 +300,9 @@ input.processName in ['nginx', 'httpd', 'httpd-foregroun', 'lighttpd', 'apache',
 				Payload: trace.Event{
 					EventName: "sched_process_exec",
 					ArgsNum:   1,
-					Container: trace.Container{ID: "someContainer"},
+					Context: trace.Context{
+						Container: trace.Container{ID: "someContainer"},
+					},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{

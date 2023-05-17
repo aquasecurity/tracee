@@ -21,10 +21,14 @@ func TestDiskMount(t *testing.T) {
 			Name: "should trigger detection",
 			Events: []trace.Event{
 				{
-					ProcessName:  "mal",
-					ThreadID:     8,
-					ContextFlags: trace.ContextFlags{ContainerStarted: true},
-					EventName:    "security_sb_mount",
+					EventName: "security_sb_mount",
+					Context: trace.Context{
+						Process: trace.Process{
+							ProcessName: "mal",
+							ThreadID:    8,
+						},
+						Flags: trace.Flags{ContainerStarted: true},
+					},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -39,10 +43,14 @@ func TestDiskMount(t *testing.T) {
 				"TRC-1014": {
 					Data: nil,
 					Event: trace.Event{
-						ProcessName:  "mal",
-						ThreadID:     8,
-						ContextFlags: trace.ContextFlags{ContainerStarted: true},
-						EventName:    "security_sb_mount",
+						EventName: "security_sb_mount",
+						Context: trace.Context{
+							Process: trace.Process{
+								ProcessName: "mal",
+								ThreadID:    8,
+							},
+							Flags: trace.Flags{ContainerStarted: true},
+						},
 						Args: []trace.Argument{
 							{
 								ArgMeta: trace.ArgMeta{
@@ -74,10 +82,15 @@ func TestDiskMount(t *testing.T) {
 			Name: "should not trigger detection - container not started",
 			Events: []trace.Event{
 				{
-					ProcessName:  "runc:[init]",
-					ThreadID:     1,
-					ContextFlags: trace.ContextFlags{ContainerStarted: false},
-					EventName:    "security_sb_mount",
+					EventName: "security_sb_mount",
+					Context: trace.Context{
+						Process: trace.Process{
+							ProcessName: "runc:[init]",
+							ThreadID:    1,
+						},
+						Flags: trace.Flags{ContainerStarted: false},
+					},
+
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -94,10 +107,14 @@ func TestDiskMount(t *testing.T) {
 			Name: "should not trigger detection - wrong path",
 			Events: []trace.Event{
 				{
-					ProcessName:  "runc:[init]",
-					ThreadID:     8,
-					ContextFlags: trace.ContextFlags{ContainerStarted: true},
-					EventName:    "security_sb_mount",
+					EventName: "security_sb_mount",
+					Context: trace.Context{
+						Process: trace.Process{
+							ProcessName: "runc:[init]",
+							ThreadID:    8,
+						},
+						Flags: trace.Flags{ContainerStarted: true},
+					},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{

@@ -22,7 +22,9 @@ func TestDockerAbuse(t *testing.T) {
 			Events: []trace.Event{
 				{
 					EventName: "security_file_open",
-					Container: trace.Container{ID: "dockercontainer"},
+					Context: trace.Context{
+						Container: trace.Container{ID: "dockercontainer"},
+					},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -44,7 +46,9 @@ func TestDockerAbuse(t *testing.T) {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_file_open",
-						Container: trace.Container{ID: "dockercontainer"},
+						Context: trace.Context{
+							Container: trace.Container{ID: "dockercontainer"},
+						},
 						Args: []trace.Argument{
 							{
 								ArgMeta: trace.ArgMeta{
@@ -83,7 +87,9 @@ func TestDockerAbuse(t *testing.T) {
 			Events: []trace.Event{
 				{
 					EventName: "security_socket_connect",
-					Container: trace.Container{ID: "dockercontainer"},
+					Context: trace.Context{
+						Container: trace.Container{ID: "dockercontainer"},
+					},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -99,7 +105,9 @@ func TestDockerAbuse(t *testing.T) {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_socket_connect",
-						Container: trace.Container{ID: "dockercontainer"},
+						Context: trace.Context{
+							Container: trace.Container{ID: "dockercontainer"},
+						},
 						Args: []trace.Argument{
 							{
 								ArgMeta: trace.ArgMeta{
@@ -132,7 +140,9 @@ func TestDockerAbuse(t *testing.T) {
 			Events: []trace.Event{
 				{
 					EventName: "security_file_open",
-					Container: trace.Container{ID: "dockercontainer"},
+					Context: trace.Context{
+						Container: trace.Container{ID: "dockercontainer"},
+					},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -156,7 +166,9 @@ func TestDockerAbuse(t *testing.T) {
 			Events: []trace.Event{
 				{
 					EventName: "security_file_open",
-					Container: trace.Container{ID: "dockercontainer"},
+					Context: trace.Context{
+						Container: trace.Container{ID: "dockercontainer"},
+					},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -180,7 +192,9 @@ func TestDockerAbuse(t *testing.T) {
 			Events: []trace.Event{
 				{
 					EventName: "security_socket_connect",
-					Container: trace.Container{ID: "dockercontainer"},
+					Context: trace.Context{
+						Container: trace.Container{ID: "dockercontainer"},
+					},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{

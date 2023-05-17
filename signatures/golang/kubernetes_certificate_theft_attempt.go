@@ -60,7 +60,7 @@ func (sig *KubernetesCertificateTheftAttempt) OnEvent(event protocol.Event) erro
 	case "security_file_open":
 		// check process touching certificate is not on allow list
 		for _, legitProc := range sig.legitProcs {
-			if legitProc == eventObj.ProcessName {
+			if legitProc == eventObj.Context.Process.ProcessName {
 				return nil
 			}
 		}

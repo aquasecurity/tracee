@@ -334,7 +334,7 @@ func TestNewEvent(t *testing.T) {
 			temp.EventID = baseEvent.EventID
 			temp.Args = baseEvent.Args
 			temp.ArgsNum = baseEvent.ArgsNum
-			temp.StackAddresses = baseEvent.StackAddresses
+			temp.Context.StackAddresses = baseEvent.Context.StackAddresses
 			temp.ReturnValue = baseEvent.ReturnValue
 			assert.Equal(t, baseEvent, temp)
 		})
@@ -343,37 +343,42 @@ func TestNewEvent(t *testing.T) {
 
 func getTestEvent() trace.Event {
 	return trace.Event{
-		Timestamp:           100000,
-		ProcessorID:         1,
-		ProcessID:           13,
-		CgroupID:            12345,
-		ThreadID:            13,
-		ParentProcessID:     12,
-		HostProcessID:       13,
-		HostThreadID:        13,
-		HostParentProcessID: 12,
-		UserID:              1,
-		MountNS:             12345,
-		PIDNS:               23456,
-		ProcessName:         "test",
-		HostName:            "test",
-		Container: trace.Container{
-			ID:          "test",
-			Name:        "test",
-			ImageName:   "test",
-			ImageDigest: "test",
+		Timestamp: 100000,
+		Context: trace.Context{
+			ProcessorID: 1,
+			Process: trace.Process{
+
+				ProcessID:           13,
+				CgroupID:            12345,
+				ThreadID:            13,
+				ParentProcessID:     12,
+				HostProcessID:       13,
+				HostThreadID:        13,
+				HostParentProcessID: 12,
+				UserID:              1,
+				MountNS:             12345,
+				PIDNS:               23456,
+				ProcessName:         "test",
+				HostName:            "test",
+			},
+			Container: trace.Container{
+				ID:          "test",
+				Name:        "test",
+				ImageName:   "test",
+				ImageDigest: "test",
+			},
+			Kubernetes: trace.Kubernetes{
+				PodName:      "test",
+				PodNamespace: "test",
+				PodUID:       "test",
+				PodSandbox:   false,
+			},
+			StackAddresses: []uint64{4444},
 		},
-		Kubernetes: trace.Kubernetes{
-			PodName:      "test",
-			PodNamespace: "test",
-			PodUID:       "test",
-			PodSandbox:   false,
-		},
-		EventID:        123,
-		EventName:      "test_event",
-		ArgsNum:        1,
-		ReturnValue:    1,
-		StackAddresses: []uint64{4444},
+		EventID:     123,
+		EventName:   "test_event",
+		ArgsNum:     1,
+		ReturnValue: 1,
 		Args: []trace.Argument{
 			{
 				ArgMeta: trace.ArgMeta{

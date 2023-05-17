@@ -38,13 +38,14 @@ func InitNamespacesEvent() trace.Event {
 	initNamespacesArgs := getInitNamespaceArguments()
 
 	initNamespacesEvent := trace.Event{
-		Timestamp:   int(time.Now().UnixNano()),
-		ProcessName: "tracee-ebpf",
-		EventID:     int(InitNamespaces),
-		EventName:   initNamespacesDef.Name,
-		ArgsNum:     len(initNamespacesArgs),
-		Args:        initNamespacesArgs,
+		Timestamp: int(time.Now().UnixNano()),
+		EventID:   int(InitNamespaces),
+		EventName: initNamespacesDef.Name,
+		ArgsNum:   len(initNamespacesArgs),
+		Args:      initNamespacesArgs,
 	}
+
+	initNamespacesEvent.Context.Process.ProcessName = "tracee-ebpf"
 
 	return initNamespacesEvent
 }
@@ -112,13 +113,15 @@ func ExistingContainersEvents(cts *containers.Containers, enrich bool) []trace.E
 			{ArgMeta: def.Params[8], Value: container.Pod.Sandbox},
 		}
 		existingContainerEvent := trace.Event{
-			Timestamp:   int(time.Now().UnixNano()),
-			ProcessName: "tracee-ebpf",
-			EventID:     int(ExistingContainer),
-			EventName:   def.Name,
-			ArgsNum:     len(args),
-			Args:        args,
+			Timestamp: int(time.Now().UnixNano()),
+			EventID:   int(ExistingContainer),
+			EventName: def.Name,
+			ArgsNum:   len(args),
+			Args:      args,
 		}
+
+		existingContainerEvent.Context.Process.ProcessName = "tracee-ebpf"
+
 		events = append(events, existingContainerEvent)
 	}
 

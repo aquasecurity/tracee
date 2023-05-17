@@ -22,7 +22,11 @@ func TestProcessVmWriteCodeInjection(t *testing.T) {
 			Events: []trace.Event{
 				{
 					EventName: "process_vm_writev",
-					ProcessID: 109,
+					Context: trace.Context{
+						Process: trace.Process{
+							ProcessID: 109,
+						},
+					},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -38,7 +42,11 @@ func TestProcessVmWriteCodeInjection(t *testing.T) {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "process_vm_writev",
-						ProcessID: 109,
+						Context: trace.Context{
+							Process: trace.Process{
+								ProcessID: 109,
+							},
+						},
 						Args: []trace.Argument{
 							{
 								ArgMeta: trace.ArgMeta{
@@ -71,7 +79,11 @@ func TestProcessVmWriteCodeInjection(t *testing.T) {
 			Events: []trace.Event{
 				{
 					EventName: "process_vm_writev",
-					ProcessID: 109,
+					Context: trace.Context{
+						Process: trace.Process{
+							ProcessID: 109,
+						},
+					},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{

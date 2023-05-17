@@ -30,8 +30,12 @@ func Test_setupOutput(t *testing.T) {
 		{
 			name: "happy path with tracee event and default output",
 			inputEvent: trace.Event{
-				ProcessName: "foobar.exe",
-				HostName:    "foobar.local",
+				Context: trace.Context{
+					Process: trace.Process{
+						ProcessName: "foobar.exe",
+						HostName:    "foobar.local",
+					},
+				},
 			}.ToProtocol(),
 			expectedOutput: `
 *** Detection ***
@@ -46,8 +50,12 @@ Hostname: foobar.local
 		{
 			name: "happy path with tracee event and simple custom output template",
 			inputEvent: trace.Event{
-				ProcessName: "foobar.exe",
-				HostName:    "foobar.local",
+				Context: trace.Context{
+					Process: trace.Process{
+						ProcessName: "foobar.exe",
+						HostName:    "foobar.local",
+					},
+				},
 			}.ToProtocol(),
 			expectedOutput: `*** Detection ***
 Timestamp: 2021-02-23T01:54:57Z
@@ -73,8 +81,12 @@ HostName: foobar.local
 		{
 			name: "sad path with invalid custom template",
 			inputEvent: trace.Event{
-				ProcessName: "foobar.exe",
-				HostName:    "foobar.local",
+				Context: trace.Context{
+					Process: trace.Process{
+						ProcessName: "foobar.exe",
+						HostName:    "foobar.local",
+					},
+				},
 			}.ToProtocol(),
 			outputFormat: "testdata/goldens/broken.tmpl",
 		},
@@ -192,8 +204,12 @@ func Test_sendToWebhook(t *testing.T) {
 					"foo2": []string{"bar2", "baz2"},
 				},
 				Event: trace.Event{
-					ProcessName: "foobar.exe",
-					HostName:    "foobar.local",
+					Context: trace.Context{
+						Process: trace.Process{
+							ProcessName: "foobar.exe",
+							HostName:    "foobar.local",
+						},
+					},
 				}.ToProtocol(),
 				SigMetadata: m,
 			}, ts.URL, tc.inputTemplateFile, tc.contentType)
@@ -227,15 +243,20 @@ func TestOutputTemplates(t *testing.T) {
 					},
 				},
 				Event: trace.Event{
-					ProcessID: 21312,
 					Timestamp: 1321321,
-					UserID:    0,
-					Container: trace.Container{
-						ID: "abbc123",
+					EventName: "execve",
+					Context: trace.Context{
+						Process: trace.Process{
+							ProcessID: 21312,
+							UserID:    0,
+						},
+						Container: trace.Container{
+							ID: "abbc123",
+						},
+
+						Syscall: "execve",
+						Flags:   trace.Flags{ContainerStarted: true},
 					},
-					EventName:    "execve",
-					Syscall:      "execve",
-					ContextFlags: trace.ContextFlags{ContainerStarted: true},
 				}.ToProtocol(),
 				SigMetadata: detect.SignatureMetadata{
 					ID:          "TRC-1",
@@ -255,7 +276,7 @@ func TestOutputTemplates(t *testing.T) {
 					"a":123,"b":"c","d":true,"f":{"123":"456","foo":"bar"}
 				},
 				"Context":{
-					"timestamp":1321321,"processorId":0,"processId":21312,"threadId":0,"threadStartTime":0,"parentProcessId":0,"hostProcessId":0,"hostThreadId":0,"hostParentProcessId":0,"userId":0,"mountNamespace":0,"pidNamespace":0,"processName":"","hostName":"","cgroupId":0,"container":{"id":"abbc123"},"kubernetes":{},"eventId":"0","eventName":"execve","argsNum":0,"returnValue":0,"syscall":"execve","stackAddresses":null,"args":null,"contextFlags":{"containerStarted":true,"isCompat":false}
+					"timestamp":1321321,"context":{"processorId":0,"process":{"processId":21312,"threadId":0,"threadStartTime":0,"parentProcessId":0,"hostProcessId":0,"hostThreadId":0,"hostParentProcessId":0,"userId":0,"mountNamespace":0,"pidNamespace":0,"processName":"","hostName":"","cgroupId":0},"container":{"id":"abbc123"},"kubernetes":{},"flags":{"containerStarted":true,"isCompat":false}, "syscall":"execve","stackAddresses":null},"eventId":"0","eventName":"execve","argsNum":0,"returnValue":0,"args":null
 				},
 				"SigMetadata":{
 					"ID":"TRC-1","EventName": "stdio","Version":"0.1.0","Name":"Standard Input/Output Over Socket","Description":"Redirection of process's standard input/output to socket","Tags":["linux","container"],"Properties":{"MITRE ATT\u0026CK":"Persistence: Server Software Component","Severity":3}

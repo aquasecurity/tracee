@@ -1,4 +1,4 @@
 *** Detection ***
 Timestamp: {{ dateInZone "2006-01-02T15:04:05Z" (now) "UTC" }}
-ProcessName: {{ .Event.Payload.ProcessName }}
-HostName: {{ .Event.Payload.HostName }}
+ProcessName: {{ .Event.Payload.Context.Process.ProcessName }}
+HostName: {{ .Event.Payload.Context.Process.HostName }}

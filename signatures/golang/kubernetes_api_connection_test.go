@@ -22,7 +22,9 @@ func TestK8sApiConnection(t *testing.T) {
 			Events: []trace.Event{
 				{
 					EventName: "sched_process_exec",
-					Container: trace.Container{ID: "0907ef86d7be"},
+					Context: trace.Context{
+						Container: trace.Container{ID: "0907ef86d7be"},
+					},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -40,7 +42,9 @@ func TestK8sApiConnection(t *testing.T) {
 				},
 				{
 					EventName: "security_socket_connect",
-					Container: trace.Container{ID: "0907ef86d7be"},
+					Context: trace.Context{
+						Container: trace.Container{ID: "0907ef86d7be"},
+					},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -62,7 +66,9 @@ func TestK8sApiConnection(t *testing.T) {
 					},
 					Event: trace.Event{
 						EventName: "security_socket_connect",
-						Container: trace.Container{ID: "0907ef86d7be"},
+						Context: trace.Context{
+							Container: trace.Container{ID: "0907ef86d7be"},
+						},
 						Args: []trace.Argument{
 							{
 								ArgMeta: trace.ArgMeta{
@@ -96,7 +102,9 @@ func TestK8sApiConnection(t *testing.T) {
 			Events: []trace.Event{
 				{
 					EventName: "sched_process_exec",
-					Container: trace.Container{ID: "0907ef86d7be"},
+					Context: trace.Context{
+						Container: trace.Container{ID: "0907ef86d7be"},
+					},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -114,7 +122,9 @@ func TestK8sApiConnection(t *testing.T) {
 				},
 				{
 					EventName: "security_socket_connect",
-					Container: trace.Container{ID: "0907ef86d7be"},
+					Context: trace.Context{
+						Container: trace.Container{ID: "0907ef86d7be"},
+					},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{

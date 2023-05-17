@@ -135,7 +135,7 @@ func buildDerivedEvent(baseEvent *trace.Event, skeleton deriveBase, argsValues [
 	de.EventID = skeleton.ID
 	de.EventName = skeleton.Name
 	de.ReturnValue = 0
-	de.StackAddresses = make([]uint64, 1)
+	de.Context.StackAddresses = make([]uint64, 1)
 	de.Args = make([]trace.Argument, len(skeleton.Params))
 	for i, value := range argsValues {
 		de.Args[i] = trace.Argument{ArgMeta: skeleton.Params[i], Value: value}

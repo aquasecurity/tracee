@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
  <detection timestamp="{{ dateInZone "2006-01-02T15:04:05Z" (now) "UTC" }}">
-    <processname>{{ .Event.Payload.ProcessName }}</processname>
-    <hostname>{{ .Event.Payload.HostName }}</hostname>
+    <processname>{{ .Event.Payload.Context.Process.ProcessName }}</processname>
+    <hostname>{{ .Event.Payload.Context.Process.HostName }}</hostname>
  </detection>

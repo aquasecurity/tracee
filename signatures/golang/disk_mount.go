@@ -53,7 +53,7 @@ func (sig *DiskMount) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 	case "security_sb_mount":
-		if !eventObj.ContextFlags.ContainerStarted {
+		if !eventObj.Context.Flags.ContainerStarted {
 			return nil
 		}
 

@@ -21,8 +21,12 @@ func TestIllegitimateShell(t *testing.T) {
 			Name: "should trigger detection",
 			Events: []trace.Event{
 				{
-					EventName:   "security_bprm_check",
-					ProcessName: "apache2",
+					EventName: "security_bprm_check",
+					Context: trace.Context{
+						Process: trace.Process{
+							ProcessName: "apache2",
+						},
+					},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -37,8 +41,12 @@ func TestIllegitimateShell(t *testing.T) {
 				"TRC-1016": {
 					Data: nil,
 					Event: trace.Event{
-						EventName:   "security_bprm_check",
-						ProcessName: "apache2",
+						EventName: "security_bprm_check",
+						Context: trace.Context{
+							Process: trace.Process{
+								ProcessName: "apache2",
+							},
+						},
 						Args: []trace.Argument{
 							{
 								ArgMeta: trace.ArgMeta{
@@ -70,8 +78,12 @@ func TestIllegitimateShell(t *testing.T) {
 			Name: "should not trigger detection - wrong path",
 			Events: []trace.Event{
 				{
-					EventName:   "security_bprm_check",
-					ProcessName: "apache2",
+					EventName: "security_bprm_check",
+					Context: trace.Context{
+						Process: trace.Process{
+							ProcessName: "apache2",
+						},
+					},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -88,8 +100,12 @@ func TestIllegitimateShell(t *testing.T) {
 			Name: "should not trigger detection - wrong process name",
 			Events: []trace.Event{
 				{
-					EventName:   "security_bprm_check",
-					ProcessName: "bash",
+					EventName: "security_bprm_check",
+					Context: trace.Context{
+						Process: trace.Process{
+							ProcessName: "bash",
+						},
+					},
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{

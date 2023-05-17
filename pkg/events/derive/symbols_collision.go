@@ -118,14 +118,14 @@ func (gen *SymbolsCollisionArgsGenerator) handleShObjLoaded(event trace.Event) (
 	}
 
 	// pick loaded shared objects of the process
-	loadedShObjsInfo, ok := gen.loadedObjsPerProcCache.GetLoadedObjsPerProcess(event.HostProcessID)
+	loadedShObjsInfo, ok := gen.loadedObjsPerProcCache.GetLoadedObjsPerProcess(event.Context.Process.HostProcessID)
 	if !ok {
 		loadedShObjsInfo = []sharedobjs.ObjInfo{}
 	}
 
 	// new list including object being loaded, add new list to shared objects cache per process
 	newLoadedObjs := append(loadedShObjsInfo, loadingObjectInfo)
-	gen.loadedObjsPerProcCache.SetProcessLoadedObjects(event.HostProcessID, newLoadedObjs)
+	gen.loadedObjsPerProcCache.SetProcessLoadedObjects(event.Context.Process.HostProcessID, newLoadedObjs)
 
 	loadingObject := &loadingSharedObj{
 		ObjInfo: loadingObjectInfo,
@@ -229,7 +229,7 @@ func (gen *SymbolsCollisionArgsGenerator) handleExec(event trace.Event) (
 	// Delete (set to empty) a process saved data (loaded shared objects information) for the
 	// process if it calls execve(). This is needed because all the virtual memory address space of
 	// such process will vanish and the saved data will be useless.
-	gen.loadedObjsPerProcCache.SetProcessLoadedObjects(event.HostProcessID, []sharedobjs.ObjInfo{})
+	gen.loadedObjsPerProcCache.SetProcessLoadedObjects(event.Context.Process.HostProcessID, []sharedobjs.ObjInfo{})
 
 	return nil, nil
 }

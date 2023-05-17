@@ -152,28 +152,28 @@ func (f *eventCtxFilter) Filter(evt trace.Event) bool {
 	// TODO: optimize the order of filter calls
 	// if we order this by most to least likely filter to be set
 	// we can short circuit this logic.
-	return f.containerFilter.Filter(evt.Container.ID != "") &&
-		f.processNameFilter.Filter(evt.ProcessName) &&
+	return f.containerFilter.Filter(evt.Context.Container.ID != "") &&
+		f.processNameFilter.Filter(evt.Context.Process.ProcessName) &&
 		f.timestampFilter.Filter(int64(evt.Timestamp)) &&
-		f.cgroupIDFilter.Filter(uint64(evt.CgroupID)) &&
-		f.containerIDFilter.Filter(evt.Container.ID) &&
-		f.containerImageFilter.Filter(evt.Container.ImageName) &&
-		f.containerNameFilter.Filter(evt.Container.Name) &&
-		f.hostNameFilter.Filter(evt.HostName) &&
-		f.hostPidFilter.Filter(int64(evt.HostProcessID)) &&
-		f.hostPpidFilter.Filter(int64(evt.HostParentProcessID)) &&
-		f.syscallFilter.Filter(evt.Syscall) &&
-		f.hostTidFilter.Filter(int64(evt.HostThreadID)) &&
-		f.mntNSFilter.Filter(int64(evt.MountNS)) &&
-		f.pidFilter.Filter(int64(evt.ProcessID)) &&
-		f.ppidFilter.Filter(int64(evt.ParentProcessID)) &&
-		f.pidNSFilter.Filter(int64(evt.PIDNS)) &&
-		f.processorIDFilter.Filter(int64(evt.ProcessorID)) &&
-		f.podNameFilter.Filter(evt.Kubernetes.PodName) &&
-		f.podNSFilter.Filter(evt.Kubernetes.PodNamespace) &&
-		f.podUIDFilter.Filter(evt.Kubernetes.PodUID) &&
-		f.tidFilter.Filter(int64(evt.ThreadID)) &&
-		f.uidFilter.Filter(int64(evt.UserID))
+		f.cgroupIDFilter.Filter(uint64(evt.Context.Process.CgroupID)) &&
+		f.containerIDFilter.Filter(evt.Context.Container.ID) &&
+		f.containerImageFilter.Filter(evt.Context.Container.ImageName) &&
+		f.containerNameFilter.Filter(evt.Context.Container.Name) &&
+		f.hostNameFilter.Filter(evt.Context.Process.HostName) &&
+		f.hostPidFilter.Filter(int64(evt.Context.Process.HostProcessID)) &&
+		f.hostPpidFilter.Filter(int64(evt.Context.Process.HostParentProcessID)) &&
+		f.syscallFilter.Filter(evt.Context.Syscall) &&
+		f.hostTidFilter.Filter(int64(evt.Context.Process.HostThreadID)) &&
+		f.mntNSFilter.Filter(int64(evt.Context.Process.MountNS)) &&
+		f.pidFilter.Filter(int64(evt.Context.Process.ProcessID)) &&
+		f.ppidFilter.Filter(int64(evt.Context.Process.ParentProcessID)) &&
+		f.pidNSFilter.Filter(int64(evt.Context.Process.PIDNS)) &&
+		f.processorIDFilter.Filter(int64(evt.Context.ProcessorID)) &&
+		f.podNameFilter.Filter(evt.Context.Kubernetes.PodName) &&
+		f.podNSFilter.Filter(evt.Context.Kubernetes.PodNamespace) &&
+		f.podUIDFilter.Filter(evt.Context.Kubernetes.PodUID) &&
+		f.tidFilter.Filter(int64(evt.Context.Process.ThreadID)) &&
+		f.uidFilter.Filter(int64(evt.Context.Process.UserID))
 }
 
 func (f *eventCtxFilter) Parse(field string, operatorAndValues string) error {

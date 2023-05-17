@@ -233,32 +233,37 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 			}
 
 			evt := trace.Event{
-				Timestamp:           int(ctx.Ts),
-				ThreadStartTime:     int(ctx.StartTime),
-				ProcessorID:         int(ctx.ProcessorId),
-				ProcessID:           int(ctx.Pid),
-				ThreadID:            int(ctx.Tid),
-				ParentProcessID:     int(ctx.Ppid),
-				HostProcessID:       int(ctx.HostPid),
-				HostThreadID:        int(ctx.HostTid),
-				HostParentProcessID: int(ctx.HostPpid),
-				UserID:              int(ctx.Uid),
-				MountNS:             int(ctx.MntID),
-				PIDNS:               int(ctx.PidID),
-				ProcessName:         string(bytes.TrimRight(ctx.Comm[:], "\x00")),
-				HostName:            string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
-				CgroupID:            uint(ctx.CgroupID),
-				Container:           containerData,
-				Kubernetes:          kubernetesData,
-				EventID:             int(ctx.EventID),
-				EventName:           eventDefinition.Name,
-				MatchedPolicies:     ctx.MatchedPolicies,
-				ArgsNum:             int(ctx.Argnum),
-				ReturnValue:         int(ctx.Retval),
-				Args:                args,
-				StackAddresses:      stackAddresses,
-				ContextFlags:        flags,
-				Syscall:             syscall,
+				Timestamp: int(ctx.Ts),
+				Context: trace.Context{
+					Process: trace.Process{
+						ThreadStartTime:     int(ctx.StartTime),
+						ProcessID:           int(ctx.Pid),
+						ThreadID:            int(ctx.Tid),
+						ParentProcessID:     int(ctx.Ppid),
+						HostProcessID:       int(ctx.HostPid),
+						HostThreadID:        int(ctx.HostTid),
+						HostParentProcessID: int(ctx.HostPpid),
+						UserID:              int(ctx.Uid),
+						MountNS:             int(ctx.MntID),
+						PIDNS:               int(ctx.PidID),
+						ProcessName:         string(bytes.TrimRight(ctx.Comm[:], "\x00")),
+						HostName:            string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
+						CgroupID:            uint(ctx.CgroupID),
+					},
+					Container:      containerData,
+					Kubernetes:     kubernetesData,
+					ProcessorID:    int(ctx.ProcessorId),
+					StackAddresses: stackAddresses,
+					Flags:          flags,
+					Syscall:        syscall,
+				},
+
+				EventID:         int(ctx.EventID),
+				EventName:       eventDefinition.Name,
+				MatchedPolicies: ctx.MatchedPolicies,
+				ArgsNum:         int(ctx.Argnum),
+				ReturnValue:     int(ctx.Retval),
+				Args:            args,
 			}
 
 			if !t.shouldProcessEvent(&evt) {
@@ -326,13 +331,13 @@ func (t *Tracee) computePolicies(event *trace.Event) (uint64, []string) {
 		// So a who command with pid 150 is a match only for the policy 59
 
 		if p.UIDFilter.Enabled() &&
-			!p.UIDFilter.InMinMaxRange(uint32(event.UserID)) {
+			!p.UIDFilter.InMinMaxRange(uint32(event.Context.Process.UserID)) {
 			utils.ClearBit(&matchedPolicies, bitOffset)
 			continue
 		}
 
 		if p.PIDFilter.Enabled() &&
-			!p.PIDFilter.InMinMaxRange(uint32(event.HostProcessID)) {
+			!p.PIDFilter.InMinMaxRange(uint32(event.Context.Process.HostProcessID)) {
 			utils.ClearBit(&matchedPolicies, bitOffset)
 			continue
 		}
@@ -351,12 +356,12 @@ func (t *Tracee) shouldProcessEvent(event *trace.Event) bool {
 	return event.MatchedPolicies != 0
 }
 
-func parseContextFlags(flags uint32) trace.ContextFlags {
+func parseContextFlags(flags uint32) trace.Flags {
 	const (
 		contStartFlag = 1 << iota
 		IsCompatFlag
 	)
-	return trace.ContextFlags{
+	return trace.Flags{
 		ContainerStarted: (flags & contStartFlag) != 0,
 		IsCompat:         (flags & IsCompatFlag) != 0,
 	}
@@ -399,7 +404,7 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (<-c
 
 			// store the atomic read
 			policiesWithContainerFilter := t.config.Policies.ContainerFilterEnabled()
-			if policiesWithContainerFilter > 0 && event.Container.ID == "" {
+			if policiesWithContainerFilter > 0 && event.Context.Container.ID == "" {
 				// Don't trace false container positives -
 				// a container filter is set by the user, but this event wasn't originated in a container.
 				// Although kernel filters shouldn't submit such events, we do this check to be on the safe side.

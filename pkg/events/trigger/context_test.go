@@ -22,22 +22,31 @@ func TestContext_Apply(t *testing.T) {
 		{
 			name: "happy path - successful apply",
 			invokingEvent: trace.Event{
-				EventID:     int(events.Open),
-				EventName:   "open",
-				Timestamp:   123,
-				ProcessID:   5,
-				Container:   trace.Container{ID: "abc123"},
-				ProcessName: "insmod",
+				EventID:   int(events.Open),
+				EventName: "open",
+				Timestamp: 123,
+				Context: trace.Context{
+					Process: trace.Process{
+						ProcessID:   5,
+						ProcessName: "insmod",
+					},
+					Container: trace.Container{ID: "abc123"},
+				},
+
 				ReturnValue: 2,
 			},
 			inputEvent: trace.Event{
-				EventID:     int(events.PrintNetSeqOps),
-				EventName:   "print_net_seq_ops",
-				Timestamp:   187,
-				ProcessID:   0,
-				ArgsNum:     3,
-				Container:   trace.Container{ID: ""},
-				ProcessName: "tracee-ebpf",
+				EventID:   int(events.PrintNetSeqOps),
+				EventName: "print_net_seq_ops",
+				Timestamp: 187,
+				Context: trace.Context{
+					Process: trace.Process{
+						ProcessID:   0,
+						ProcessName: "tracee-ebpf",
+					},
+					Container: trace.Container{ID: ""},
+				},
+				ArgsNum: 3,
 				Args: []trace.Argument{
 					{
 						ArgMeta: trace.ArgMeta{
@@ -63,13 +72,17 @@ func TestContext_Apply(t *testing.T) {
 				},
 			},
 			expectedEvent: trace.Event{
-				EventID:     int(events.PrintNetSeqOps),
-				EventName:   "print_net_seq_ops",
-				Timestamp:   123,
-				ProcessID:   5,
+				EventID:   int(events.PrintNetSeqOps),
+				EventName: "print_net_seq_ops",
+				Timestamp: 123,
+				Context: trace.Context{
+					Process: trace.Process{
+						ProcessID:   5,
+						ProcessName: "insmod",
+					},
+					Container: trace.Container{ID: "abc123"},
+				},
 				ReturnValue: 0,
-				Container:   trace.Container{ID: "abc123"},
-				ProcessName: "insmod",
 				ArgsNum:     3,
 				Args: []trace.Argument{
 					{
@@ -99,18 +112,26 @@ func TestContext_Apply(t *testing.T) {
 		{
 			name: "error path - wrong context id argument",
 			invokingEvent: trace.Event{
-				EventID:     int(events.Open),
-				EventName:   "open",
-				Timestamp:   123,
-				ProcessID:   5,
+				EventID:   int(events.Open),
+				EventName: "open",
+				Timestamp: 123,
+				Context: trace.Context{
+					Process: trace.Process{
+						ProcessID: 5,
+					},
+				},
 				ReturnValue: 2,
 			},
 			inputEvent: trace.Event{
 				EventID:   int(events.PrintNetSeqOps),
 				EventName: "print_net_seq_ops",
 				Timestamp: 187,
-				ProcessID: 0,
-				ArgsNum:   3,
+				Context: trace.Context{
+					Process: trace.Process{
+						ProcessID: 0,
+					},
+				},
+				ArgsNum: 3,
 				Args: []trace.Argument{
 					{
 						ArgMeta: trace.ArgMeta{

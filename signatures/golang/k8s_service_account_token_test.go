@@ -21,8 +21,12 @@ func TestK8SServiceAccountToken(t *testing.T) {
 			Name: "should trigger detection",
 			Events: []trace.Event{
 				{
-					ProcessName: "test",
-					EventName:   "security_file_open",
+					Context: trace.Context{
+						Process: trace.Process{
+							ProcessName: "test",
+						},
+					},
+					EventName: "security_file_open",
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -43,8 +47,12 @@ func TestK8SServiceAccountToken(t *testing.T) {
 				"TRC-108": {
 					Data: nil,
 					Event: trace.Event{
-						ProcessName: "test",
-						EventName:   "security_file_open",
+						Context: trace.Context{
+							Process: trace.Process{
+								ProcessName: "test",
+							},
+						},
+						EventName: "security_file_open",
 						Args: []trace.Argument{
 							{
 								ArgMeta: trace.ArgMeta{
@@ -82,8 +90,12 @@ func TestK8SServiceAccountToken(t *testing.T) {
 			Name: "should not trigger detection - wrong open flags",
 			Events: []trace.Event{
 				{
-					ProcessName: "test",
-					EventName:   "security_file_open",
+					Context: trace.Context{
+						Process: trace.Process{
+							ProcessName: "test",
+						},
+					},
+					EventName: "security_file_open",
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -106,8 +118,12 @@ func TestK8SServiceAccountToken(t *testing.T) {
 			Name: "should not trigger detection - wrong path",
 			Events: []trace.Event{
 				{
-					ProcessName: "test",
-					EventName:   "security_file_open",
+					Context: trace.Context{
+						Process: trace.Process{
+							ProcessName: "test",
+						},
+					},
+					EventName: "security_file_open",
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
@@ -130,8 +146,12 @@ func TestK8SServiceAccountToken(t *testing.T) {
 			Name: "should not trigger detection - legit proc",
 			Events: []trace.Event{
 				{
-					ProcessName: "flanneld",
-					EventName:   "security_file_open",
+					Context: trace.Context{
+						Process: trace.Process{
+							ProcessName: "flanneld",
+						},
+					},
+					EventName: "security_file_open",
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
