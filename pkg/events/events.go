@@ -6144,6 +6144,7 @@ var Definitions = eventDefinitions{
 			},
 			Sets: []string{},
 			Params: []trace.ArgMeta{
+				{Type: "[]char*", Name: "check_syscalls"},
 				{Type: "[]trace.HookedSymbolData", Name: "hooked_syscalls"},
 			},
 		},
