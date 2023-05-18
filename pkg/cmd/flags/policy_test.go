@@ -1355,33 +1355,6 @@ func TestPolicyEventFilter(t *testing.T) {
 				},
 			},
 		},
-		{
-			testName: "filter with spaces",
-			policy: PolicyFile{
-				Name:          "filter_with_spaces",
-				Description:   "filter with spaces",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
-				Rules: []Rule{
-					{
-						Event:  "read",
-						Filter: []string{"podUid = poduid"},
-					},
-				},
-			},
-			expected: FilterMap{
-				0: {
-					newFilterFlagBasedOn(readFlag, "filter_with_spaces"),
-					{
-						full:              "read.context.podUid=poduid",
-						filterName:        "read.context.podUid",
-						operatorAndValues: "=poduid",
-						policyIdx:         0,
-						policyName:        "filter_with_spaces",
-					},
-				},
-			},
-		},
 		// TODO: does syscall filter make sense for policy?
 	}
 

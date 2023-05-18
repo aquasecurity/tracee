@@ -127,8 +127,6 @@ func PrepareFilterMapFromPolicies(policies []PolicyFile) (FilterMap, error) {
 			})
 
 			for _, f := range r.Filter {
-				f = strings.ReplaceAll(f, " ", "")
-
 				operatorIdx := strings.IndexAny(f, "=!<>")
 
 				if operatorIdx == -1 {
