@@ -211,6 +211,7 @@ type Tracee struct {
 	contSymbolsLoader *sharedobjs.ContainersSymbolsLoader
 	// Specific Events Needs
 	triggerContexts trigger.Context
+	readyCallback   func(gocontext.Context)
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -1531,6 +1532,9 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	// set running state after writing pid file
 	t.running.Store(true)
 
+	// executes ready callback, non blocking
+	t.ready(ctx)
+
 	// block until ctx is cancelled elsewhere
 	<-ctx.Done()
 
@@ -1820,6 +1824,20 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 	}
 
 	return nil
+}
+
+// AddReadyCallback sets a callback function to be called when the tracee started all its probes
+// and is ready to receive events
+func (t *Tracee) AddReadyCallback(f func(ctx gocontext.Context)) {
+	t.readyCallback = f
+}
+
+// ready executes the ready callback if it was set.
+// doesn't block the execution of the tracee
+func (t *Tracee) ready(ctx gocontext.Context) {
+	if t.readyCallback != nil {
+		go t.readyCallback(ctx)
+	}
 }
 
 //go:noinline

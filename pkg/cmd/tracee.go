@@ -24,19 +24,23 @@ type Runner struct {
 }
 
 func (r Runner) Run(ctx context.Context) error {
-	// Decide if HTTP server should be started
-
-	if r.Server != nil {
-		r.TraceeConfig.MetricsEnabled = r.Server.MetricsEndpointEnabled()
-		go r.Server.Start(ctx)
-	}
-
 	// Create Tracee Singleton
 
 	t, err := tracee.New(r.TraceeConfig)
 	if err != nil {
 		return errfmt.Errorf("error creating Tracee: %v", err)
 	}
+
+	// start the server and write pid file only after tracee is ready
+	t.AddReadyCallback(func(ctx context.Context) {
+		logger.Debugw("Tracee is ready callback")
+
+		// start server if one is configured
+		if r.Server != nil {
+			r.TraceeConfig.MetricsEnabled = r.Server.MetricsEndpointEnabled()
+			go r.Server.Start(ctx)
+		}
+	})
 
 	// Initialize tracee
 
@@ -46,6 +50,7 @@ func (r Runner) Run(ctx context.Context) error {
 	}
 
 	// Manage PID file
+	// write pid file
 	if err := writePidFile(t.OutDir); err != nil {
 		return errfmt.WrapError(err)
 	}
