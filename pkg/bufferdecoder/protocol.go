@@ -52,15 +52,16 @@ func (Context) GetSizeBytes() uint32 {
 }
 
 type ChunkMeta struct {
-	BinType  BinType
-	CgroupID uint64
-	Metadata [28]byte
-	Size     int32
-	Off      uint64
+	BinType         BinType
+	CgroupID        uint64
+	MatchedPolicies uint64
+	Metadata        [28]byte
+	Size            int32
+	Off             uint64
 }
 
 func (ChunkMeta) GetSizeBytes() uint32 {
-	return 49
+	return 57
 }
 
 type VfsWriteMeta struct {

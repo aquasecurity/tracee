@@ -133,6 +133,11 @@ func (t *Tracee) processFileWrites(ctx context.Context) {
 				continue
 			}
 
+			polNames := t.config.Policies.MatchedNames(meta.MatchedPolicies)
+			if len(polNames) > 0 && polNames[0] != "" {
+				filename = fmt.Sprintf("%s.policies-%v", filename, polNames)
+			}
+
 			fullname := path.Join(pathname, filename)
 
 			f, err := utils.OpenAt(t.OutDir, fullname, os.O_CREATE|os.O_WRONLY, 0640)

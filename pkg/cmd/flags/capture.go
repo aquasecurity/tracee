@@ -43,7 +43,7 @@ pcap-snaplen:[default, headers, max or SIZE]  sets captured payload from each pa
 Examples:
   --capture exec                                           | capture executed files into the default output directory
   --capture exec --capture dir:/my/dir --capture clear-dir | delete /my/dir/out and then capture executed files into it
-  --capture write=/usr/bin/* --capture write=/etc/*        | capture files that were written into anywhere under /usr/bin/ or /etc/
+  --capture write='/usr/bin/*' --capture write='/etc/*'    | capture files that were written into anywhere under /usr/bin/ or /etc/
   --capture exec --output none                             | capture executed files into the default output directory not printing the stream of events
 
 Network Examples:

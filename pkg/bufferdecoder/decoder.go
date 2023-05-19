@@ -286,9 +286,10 @@ func (decoder *EbpfDecoder) DecodeChunkMeta(chunkMeta *ChunkMeta) error {
 	}
 	chunkMeta.BinType = BinType(decoder.buffer[offset])
 	chunkMeta.CgroupID = binary.LittleEndian.Uint64(decoder.buffer[offset+1 : offset+9])
-	_ = copy(chunkMeta.Metadata[:], decoder.buffer[offset+9:offset+37])
-	chunkMeta.Size = int32(binary.LittleEndian.Uint32(decoder.buffer[offset+37 : offset+41]))
-	chunkMeta.Off = binary.LittleEndian.Uint64(decoder.buffer[offset+41 : offset+49])
+	chunkMeta.MatchedPolicies = binary.LittleEndian.Uint64(decoder.buffer[offset+9 : offset+17])
+	_ = copy(chunkMeta.Metadata[:], decoder.buffer[offset+17:offset+45])
+	chunkMeta.Size = int32(binary.LittleEndian.Uint32(decoder.buffer[offset+45 : offset+49]))
+	chunkMeta.Off = binary.LittleEndian.Uint64(decoder.buffer[offset+49 : offset+57])
 	decoder.cursor += int(chunkMeta.GetSizeBytes())
 	return nil
 }

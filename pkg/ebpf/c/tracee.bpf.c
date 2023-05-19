@@ -2515,18 +2515,23 @@ static __always_inline u32 send_bin_helper(void *ctx, void *prog_array, int tail
     if (file_buf_p == NULL)
         return 0;
 
-#define F_SEND_TYPE  0
-#define F_CGROUP_ID  (F_SEND_TYPE + sizeof(u8))
-#define F_META_OFF   (F_CGROUP_ID + sizeof(u64))
-#define F_SZ_OFF     (F_META_OFF + SEND_META_SIZE)
-#define F_POS_OFF    (F_SZ_OFF + sizeof(unsigned int))
-#define F_CHUNK_OFF  (F_POS_OFF + sizeof(off_t))
-#define F_CHUNK_SIZE (MAX_PERCPU_BUFSIZE >> 1)
+#define F_SEND_TYPE      0
+#define F_CGROUP_ID      (F_SEND_TYPE + sizeof(u8))
+#define F_MATCH_POLS_OFF (F_CGROUP_ID + sizeof(u64))
+#define F_META_OFF       (F_MATCH_POLS_OFF + sizeof(u64))
+#define F_SZ_OFF         (F_META_OFF + SEND_META_SIZE)
+#define F_POS_OFF        (F_SZ_OFF + sizeof(unsigned int))
+#define F_CHUNK_OFF      (F_POS_OFF + sizeof(off_t))
+#define F_CHUNK_SIZE     (MAX_PERCPU_BUFSIZE >> 1)
 
     bpf_probe_read((void **) &(file_buf_p->buf[F_SEND_TYPE]), sizeof(u8), &bin_args->type);
 
     u64 cgroup_id = event->context.task.cgroup_id;
     bpf_probe_read((void **) &(file_buf_p->buf[F_CGROUP_ID]), sizeof(u64), &cgroup_id);
+
+    // Save matched policies
+    u64 matched_policies = event->context.matched_policies;
+    bpf_probe_read((void **) &(file_buf_p->buf[F_MATCH_POLS_OFF]), sizeof(u64), &matched_policies);
 
     // Save metadata to be used in filename
     bpf_probe_read((void **) &(file_buf_p->buf[F_META_OFF]), SEND_META_SIZE, bin_args->metadata);
