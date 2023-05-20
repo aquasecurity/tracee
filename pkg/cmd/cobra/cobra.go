@@ -17,7 +17,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 	"github.com/aquasecurity/tracee/types/detect"
@@ -66,14 +65,6 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		BlobPerfBufferSize: viper.GetInt("blob-perf-buffer-size"),
 		ContainersEnrich:   viper.GetBool("containers"),
 	}
-
-	// Output command line flags
-
-	output, err := flags.PrepareOutput(viper.GetStringSlice("output"), true)
-	if err != nil {
-		return runner, err
-	}
-	cfg.Output = output.TraceeConfig
 
 	// OS release information
 
@@ -147,43 +138,25 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, errors.New("policy and filter flags cannot be used together")
 	}
 
-	var filterMap flags.FilterMap
+	outputFlags, err := c.Flags().GetStringArray("output")
+	if err != nil {
+		return runner, err
+	}
+
+	var p printer.EventPrinter
 
 	if len(policyFlags) > 0 {
-		policies, err := policy.PoliciesFromPaths(policyFlags)
-		if err != nil {
-			return runner, err
-		}
-
-		filterMap, err = flags.PrepareFilterMapFromPolicies(policies)
+		// configure policies, output, and creates printer
+		cfg, p, err = getConfigAndPrinterFromPoliciesFlags(cfg, policyFlags, outputFlags)
 		if err != nil {
 			return runner, err
 		}
 	} else {
-		filterMap, err = flags.PrepareFilterMapFromFlags(filterFlags)
+		// configure policies, output, and creates printer
+		cfg, p, err = getConfigAndPrinterFromFilterFlags(cfg, filterFlags, outputFlags)
 		if err != nil {
 			return runner, err
 		}
-	}
-
-	policies, err := flags.CreatePolicies(filterMap, true)
-	if err != nil {
-		return runner, err
-	}
-
-	cfg.Policies = policies
-
-	// Container information printer flag
-
-	// TODO: set this on the printer config creation
-	containerMode := cmd.GetContainerMode(cfg)
-	for _, pConfig := range output.PrinterConfigs {
-		pConfig.ContainerMode = containerMode
-	}
-
-	broadcast, err := printer.NewBroadcast(output.PrinterConfigs)
-	if err != nil {
-		return runner, err
 	}
 
 	// Check kernel lockdown
@@ -240,7 +213,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	runner.Server = httpServer
 	runner.TraceeConfig = cfg
-	runner.Printer = broadcast
+	runner.Printer = p
 
 	// parse arguments must be enabled if the rule engine is part of the pipeline
 	runner.TraceeConfig.Output.ParseArguments = true

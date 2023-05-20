@@ -113,13 +113,7 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	cfg.Policies = policies
 
-	// Container information printer flag
-	containerMode := cmd.GetContainerMode(cfg)
-	for _, pConfig := range output.PrinterConfigs {
-		pConfig.ContainerMode = containerMode
-	}
-
-	broadcast, err := printer.NewBroadcast(output.PrinterConfigs)
+	broadcast, err := printer.NewBroadcast(output.PrinterConfigs, cmd.GetContainerMode(cfg))
 	if err != nil {
 		return runner, err
 	}

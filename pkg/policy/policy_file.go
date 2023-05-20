@@ -66,10 +66,12 @@ func (p PolicyFile) validateDefaultAction() error {
 func validateAction(policyName, a string) error {
 	actions := []string{
 		"log",
+		"webhook:",
+		"forward:",
 	}
 
 	for _, action := range actions {
-		if a == action {
+		if strings.HasPrefix(a, action) {
 			return nil
 		}
 	}
