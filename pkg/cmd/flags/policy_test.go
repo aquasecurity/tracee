@@ -1,10 +1,11 @@
 package flags
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/aquasecurity/tracee/pkg/policy"
 )
 
 var writeFlag = &filterFlag{
@@ -36,18 +37,18 @@ func newFilterFlagBasedOn(f *filterFlag, policyName string) *filterFlag {
 func TestPolicyScopes(t *testing.T) {
 	tests := []struct {
 		testName           string
-		policy             PolicyFile
+		policy             policy.PolicyFile
 		expected           FilterMap
 		skipPolicyCreation bool
 	}{
 		{
 			testName: "global scope - single event",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "global_scope_single_event",
 				Description:   "global scope - single event",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{Event: "write"},
 				},
 			},
@@ -57,12 +58,12 @@ func TestPolicyScopes(t *testing.T) {
 		},
 		{
 			testName: "global scope - multiple events",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "global_scope_multiple_events",
 				Description:   "global scope - multiple events",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{Event: "write"},
 					{Event: "read"},
 				},
@@ -76,12 +77,12 @@ func TestPolicyScopes(t *testing.T) {
 		},
 		{
 			testName: "uid scope",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "uid_scope",
 				Description:   "uid scope",
 				Scope:         []string{"uid>=1000"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{Event: "write"},
 				},
 			},
@@ -100,12 +101,12 @@ func TestPolicyScopes(t *testing.T) {
 		},
 		{
 			testName: "pid scope",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "pid_scope",
 				Description:   "pid scope",
 				Scope:         []string{"pid<=10"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{Event: "write"},
 				},
 			},
@@ -124,12 +125,12 @@ func TestPolicyScopes(t *testing.T) {
 		},
 		{
 			testName: "mntns scope",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "mntns",
 				Description:   "mntns scope",
 				Scope:         []string{"mntns=4026531840"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{Event: "write"},
 				},
 			},
@@ -148,12 +149,12 @@ func TestPolicyScopes(t *testing.T) {
 		},
 		{
 			testName: "pidns scope",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "pidns_scope",
 				Description:   "pidns scope",
 				Scope:         []string{"pidns!=4026531836"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{Event: "write"},
 				},
 			},
@@ -172,12 +173,12 @@ func TestPolicyScopes(t *testing.T) {
 		},
 		{
 			testName: "uts scope",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "uts_scope",
 				Description:   "uts scope",
 				Scope:         []string{"uts!=ab356bc4dd554"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{Event: "write"},
 				},
 			},
@@ -196,12 +197,12 @@ func TestPolicyScopes(t *testing.T) {
 		},
 		{
 			testName: "comm=bash",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "comm_scope",
 				Description:   "comm scope",
 				Scope:         []string{"comm=bash"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{Event: "write"},
 				},
 			},
@@ -220,12 +221,12 @@ func TestPolicyScopes(t *testing.T) {
 		},
 		{
 			testName: "container=new",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "container_scope",
 				Description:   "container scope",
 				Scope:         []string{"container=new"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{Event: "write"},
 				},
 			},
@@ -244,12 +245,12 @@ func TestPolicyScopes(t *testing.T) {
 		},
 		{
 			testName: "!container",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "!container_scope",
 				Description:   "!container scope",
 				Scope:         []string{"!container"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{Event: "write"},
 				},
 			},
@@ -268,12 +269,12 @@ func TestPolicyScopes(t *testing.T) {
 		},
 		{
 			testName: "container",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "container_scope",
 				Description:   "container scope",
 				Scope:         []string{"container"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{Event: "write"},
 				},
 			},
@@ -292,12 +293,12 @@ func TestPolicyScopes(t *testing.T) {
 		},
 		{
 			testName: "tree=3213,5200",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "tree_scope",
 				Description:   "tree scope",
 				Scope:         []string{"tree=3213,5200"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{Event: "write"},
 				},
 			},
@@ -316,12 +317,12 @@ func TestPolicyScopes(t *testing.T) {
 		},
 		{
 			testName: "scope with space",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "scope_with_space",
 				Description:   "scope with space",
 				Scope:         []string{"tree = 3213"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{Event: "write"},
 				},
 			},
@@ -340,12 +341,12 @@ func TestPolicyScopes(t *testing.T) {
 		},
 		{
 			testName: "binary=host:/usr/bin/ls",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "binary_scope",
 				Description:   "binary scope",
 				Scope:         []string{"binary=host:/usr/bin/ls"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{Event: "write"},
 				},
 			},
@@ -365,12 +366,12 @@ func TestPolicyScopes(t *testing.T) {
 		},
 		{
 			testName: "bin=4026532448:/usr/bin/ls",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "bin_scope",
 				Description:   "bin scope",
 				Scope:         []string{"bin=4026532448:/usr/bin/ls"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{Event: "write"},
 				},
 			},
@@ -389,12 +390,12 @@ func TestPolicyScopes(t *testing.T) {
 		},
 		{
 			testName: "follow",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "follow_scope",
 				Description:   "follow scope",
 				Scope:         []string{"follow"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{Event: "write"},
 				},
 			},
@@ -413,12 +414,12 @@ func TestPolicyScopes(t *testing.T) {
 		},
 		{
 			testName: "multiple scopes",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "multiple_scope",
 				Description:   "multiple scope",
 				Scope:         []string{"comm=bash", "follow", "!container", "uid=1000"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{Event: "write"},
 				},
 			},
@@ -460,7 +461,7 @@ func TestPolicyScopes(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			filterMap, err := PrepareFilterMapFromPolicies([]PolicyFile{test.policy})
+			filterMap, err := PrepareFilterMapFromPolicies([]policy.PolicyFile{test.policy})
 			assert.NoError(t, err)
 
 			for k, v := range test.expected {
@@ -479,18 +480,18 @@ func TestPolicyScopes(t *testing.T) {
 func TestPolicyEventFilter(t *testing.T) {
 	tests := []struct {
 		testName string
-		policy   PolicyFile
+		policy   policy.PolicyFile
 		expected FilterMap
 	}{
 		// args filter
 		{
 			testName: "args filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "args_filter",
 				Description:   "args filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "security_file_open",
 						Filter: []string{"args.pathname=/etc/passwd"},
@@ -519,12 +520,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		// return filter
 		{
 			testName: "return filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "return_filter",
 				Description:   "return filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "write",
 						Filter: []string{"retval=-1"},
@@ -547,12 +548,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		// context filter
 		{
 			testName: "timestamp filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "timestamp_filter",
 				Description:   "timestamp filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "write",
 						Filter: []string{"timestamp>1234567890"},
@@ -574,12 +575,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "processorId filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "processorId_filter",
 				Description:   "processorId filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "write",
 						Filter: []string{"processorId>=1234567890"},
@@ -601,12 +602,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "p filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "p_filter",
 				Description:   "p filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "write",
 						Filter: []string{"p<=10"},
@@ -628,12 +629,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "pid filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "pid_filter",
 				Description:   "pid filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "write",
 						Filter: []string{"pid!=1"},
@@ -655,12 +656,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "processId filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "processId_filter",
 				Description:   "processId filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "write",
 						Filter: []string{"processId=1387"},
@@ -682,12 +683,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "tid filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "tid_filter",
 				Description:   "tid filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "write",
 						Filter: []string{"tid=1388"},
@@ -709,12 +710,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "threadId filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "threadId_filter",
 				Description:   "threadId filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "write",
 						Filter: []string{"threadId!=1388"},
@@ -736,12 +737,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "ppid filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "ppid_filter",
 				Description:   "ppid filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "write",
 						Filter: []string{"ppid=1"},
@@ -763,12 +764,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "parentProcessId filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "parentProcessId_filter",
 				Description:   "parentProcessId filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "write",
 						Filter: []string{"parentProcessId>1455"},
@@ -790,12 +791,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "hostTid filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "hostTid_filter",
 				Description:   "hostTid filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"hostTid=2455"},
@@ -817,12 +818,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "hostThreadId filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "hostThreadId_filter",
 				Description:   "hostThreadId filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"hostThreadId!=2455"},
@@ -844,12 +845,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "hostPid filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "hostPid_filter",
 				Description:   "hostPid filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"hostPid=333"},
@@ -871,12 +872,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "hostParentProcessID filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "hostParentProcessId_filter",
 				Description:   "hostParentProcessId filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"hostParentProcessId!=333"},
@@ -898,12 +899,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "userId filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "userId_filter",
 				Description:   "userId filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"userId=1000"},
@@ -925,12 +926,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "mntns filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "mntns_filter",
 				Description:   "mntns filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"mntns=4026531840"},
@@ -952,12 +953,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "mountNamespace filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "mountNamespace_filter",
 				Description:   "mountNamespace filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"mountNamespace!=4026531840"},
@@ -979,12 +980,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "pidns filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "pidns_filter",
 				Description:   "pidns filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"pidns=4026531836"},
@@ -1006,12 +1007,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "pidNamespace filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "pidNamespace_filter",
 				Description:   "pidNamespace filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"pidNamespace!=4026531836"},
@@ -1033,12 +1034,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "processName filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "processName_filter",
 				Description:   "processName filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"processName=uname"},
@@ -1060,12 +1061,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "comm filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "comm_filter",
 				Description:   "comm filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"comm!=uname"},
@@ -1087,12 +1088,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "hostName filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "hostName_filter",
 				Description:   "hostName filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"hostName=test"},
@@ -1114,12 +1115,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "cgroupId filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "cgroupId",
 				Description:   "cgroupId filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"cgroupId=test"},
@@ -1141,12 +1142,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "host filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "host",
 				Description:   "host filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"host=test"},
@@ -1168,12 +1169,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "container filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "container_filter",
 				Description:   "container filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"container=c"},
@@ -1195,12 +1196,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "containerId filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "containerId_filter",
 				Description:   "containerId filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"containerId=da91bf3df3dc"},
@@ -1222,12 +1223,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "containerImage filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "containerImage_filter",
 				Description:   "containerImage filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"containerImage=tracee:latest"},
@@ -1249,12 +1250,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "containerName filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "containerName_filter",
 				Description:   "containerName filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"containerName=tracee"},
@@ -1276,12 +1277,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "podName filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "podName_filter",
 				Description:   "podName filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"podName=daemonset/tracee"},
@@ -1303,12 +1304,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "podNamespace filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "podNamespace_filter",
 				Description:   "podNamespace filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"podNamespace=production"},
@@ -1330,12 +1331,12 @@ func TestPolicyEventFilter(t *testing.T) {
 		},
 		{
 			testName: "podUid filter",
-			policy: PolicyFile{
+			policy: policy.PolicyFile{
 				Name:          "podUid_filter",
 				Description:   "podUid filter",
 				Scope:         []string{"global"},
 				DefaultAction: "log",
-				Rules: []Rule{
+				Rules: []policy.Rule{
 					{
 						Event:  "read",
 						Filter: []string{"podUid=poduid"},
@@ -1360,257 +1361,11 @@ func TestPolicyEventFilter(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			filterMap, err := PrepareFilterMapFromPolicies([]PolicyFile{test.policy})
+			filterMap, err := PrepareFilterMapFromPolicies([]policy.PolicyFile{test.policy})
 			assert.NoError(t, err)
 
 			for k, v := range test.expected {
 				assert.Equal(t, v, filterMap[k])
-			}
-		})
-	}
-}
-
-func TestPrepareFilterScopesForPolicyValidations(t *testing.T) {
-	tests := []struct {
-		testName            string
-		policies            []PolicyFile
-		expectedError       error
-		expectedPolicyError bool
-	}{
-		{
-			testName:      "empty name",
-			policies:      []PolicyFile{{Name: ""}},
-			expectedError: errors.New("policy name cannot be empty"),
-		},
-		{
-			testName: "empty description",
-			policies: []PolicyFile{
-				{
-					Name:        "empty_description",
-					Description: "",
-				},
-			},
-			expectedError: errors.New("flags.validatePolicy: policy empty_description, description cannot be empty"),
-		},
-		{
-			testName: "empty scope",
-			policies: []PolicyFile{
-				{
-					Name:          "empty_scope",
-					Description:   "empty scope",
-					Scope:         []string{},
-					DefaultAction: "log",
-				},
-			},
-			expectedError: errors.New("policy empty_scope, scope cannot be empty"),
-		},
-		{
-			testName: "empty rules",
-			policies: []PolicyFile{
-				{
-					Name:          "empty_rules",
-					Description:   "empty rules",
-					Scope:         []string{"global"},
-					DefaultAction: "log",
-					Rules:         []Rule{},
-				},
-			},
-			expectedError: errors.New("policy empty_rules, rules cannot be empty"),
-		},
-		{
-			testName: "empty event name",
-			policies: []PolicyFile{
-				{
-					Name:          "empty_event_name",
-					Description:   "empty event name",
-					Scope:         []string{"global"},
-					DefaultAction: "log",
-					Rules: []Rule{
-						{Event: ""},
-					},
-				},
-			},
-			expectedError: errors.New("flags.validateEvent: policy empty_event_name, event cannot be empty"),
-		},
-		{
-			testName: "invalid event name",
-			policies: []PolicyFile{
-				{
-					Name:          "invalid_event_name",
-					Description:   "invalid event name",
-					Scope:         []string{"global"},
-					DefaultAction: "log",
-					Rules: []Rule{
-						{Event: "non_existing_event"},
-					},
-				},
-			},
-			expectedError: errors.New("flags.validateEvent: policy invalid_event_name, event non_existing_event is not valid"),
-		},
-		{
-			testName: "invalid_scope_operator",
-			policies: []PolicyFile{
-				{
-					Name:          "invalid_scope_operator",
-					Description:   "invalid scope operator",
-					Scope:         []string{"random"},
-					DefaultAction: "log",
-					Rules: []Rule{
-						{Event: "write"},
-					},
-				},
-			},
-			expectedError: errors.New("flags.PrepareFilterMapFromPolicies: policy invalid_scope_operator, scope random is not valid"),
-		},
-		{
-			testName: "invalid_scope",
-			policies: []PolicyFile{
-				{
-					Name:          "invalid_scope",
-					Description:   "invalid scope",
-					Scope:         []string{"random!=0"},
-					DefaultAction: "log",
-					Rules: []Rule{
-						{Event: "write"},
-					},
-				},
-			},
-			expectedError: errors.New("flags.validateScope: policy invalid_scope, scope random is not valid"),
-		},
-		{
-			testName: "global scope must be unique",
-			policies: []PolicyFile{
-				{
-					Name:          "global_scope_must_be_unique",
-					Description:   "global scope must be unique",
-					Scope:         []string{"global", "uid=1000"},
-					DefaultAction: "log",
-					Rules: []Rule{
-						{Event: "write"},
-					},
-				},
-			},
-			expectedError: errors.New("policy global_scope_must_be_unique, global scope must be unique"),
-		},
-		{
-			testName: "duplicated event",
-			policies: []PolicyFile{
-				{
-					Name:          "duplicated_event",
-					Description:   "duplicated event",
-					Scope:         []string{"global"},
-					DefaultAction: "log",
-					Rules: []Rule{
-						{Event: "write"},
-						{Event: "write"},
-					},
-				},
-			},
-			expectedError: errors.New("policy duplicated_event, event write is duplicated"),
-		},
-		{
-			testName: "invalid filter operator",
-			policies: []PolicyFile{
-				{
-					Name:          "invalid_filter_operator",
-					Description:   "invalid filter operator",
-					Scope:         []string{"global"},
-					DefaultAction: "log",
-					Rules: []Rule{
-						{
-							Event: "write",
-							Filter: []string{
-								"random",
-							},
-						},
-					},
-				},
-			},
-			expectedError: errors.New("flags.PrepareFilterMapFromPolicies: invalid filter operator: random"),
-		},
-		{
-			testName: "invalid filter",
-			policies: []PolicyFile{
-				{
-					Name:          "invalid_filter",
-					Description:   "invalid filter",
-					Scope:         []string{"global"},
-					DefaultAction: "log",
-					Rules: []Rule{
-						{
-							Event: "write",
-							Filter: []string{
-								"random!=0",
-							},
-						},
-					},
-				},
-			},
-			expectedError: errors.New("flags.validateContext: policy invalid_filter, filter random is not valid"),
-		},
-		{
-			testName: "empty policy action",
-			policies: []PolicyFile{
-				{
-					Name:        "empty_policy_action",
-					Description: "empty policy action",
-					Scope:       []string{"global"},
-					Rules: []Rule{
-						{Event: "write"},
-					},
-				},
-			},
-			expectedError: errors.New("flags.validatePolicy: policy empty_policy_action, default action cannot be empty"),
-		},
-		{
-			testName: "invalid policy action",
-			policies: []PolicyFile{
-				{
-					Name:          "invalid_policy_action",
-					Description:   "invalid policy action",
-					Scope:         []string{"global"},
-					DefaultAction: "audit",
-					Rules: []Rule{
-						{Event: "write"},
-					},
-				},
-			},
-			expectedError: errors.New("flags.validateAction: policy invalid_policy_action, action audit is not valid"),
-		},
-		{
-			testName: "duplicated policy name",
-			policies: []PolicyFile{
-				{
-					Name:          "duplicated_policy_name",
-					Description:   "duplicated policy name",
-					Scope:         []string{"global"},
-					DefaultAction: "log",
-					Rules: []Rule{
-						{Event: "write"},
-					},
-				},
-				{
-					Name:          "duplicated_policy_name",
-					Description:   "duplicated policy name",
-					Scope:         []string{"global"},
-					DefaultAction: "log",
-					Rules: []Rule{
-						{Event: "write"},
-					},
-				},
-			},
-			expectedError: errors.New("flags.PrepareFilterMapFromPolicies: policy duplicated_policy_name already exist"),
-		},
-
-		// invalid args?
-		// invalid retval?
-	}
-
-	for _, test := range tests {
-		t.Run(test.testName, func(t *testing.T) {
-			_, err := PrepareFilterMapFromPolicies(test.policies)
-			if test.expectedError != nil {
-				assert.ErrorContains(t, err, test.expectedError.Error())
 			}
 		})
 	}

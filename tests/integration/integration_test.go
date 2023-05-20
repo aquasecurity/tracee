@@ -426,18 +426,18 @@ func checkUnameAndWhoOnPoliciesWithBinaryScope(t *testing.T, pols *policy.Polici
 func TestEventPolicies(t *testing.T) {
 	testCases := []struct {
 		name      string
-		policies  []flags.PolicyFile
+		policies  []policy.PolicyFile
 		eventFunc func(*testing.T, *policy.Policies, *eventOutput)
 	}{
 		{
 			name: "global scope - single event - args",
-			policies: []flags.PolicyFile{
+			policies: []policy.PolicyFile{
 				{
 					Name:          "global_scope_single_event",
 					Description:   "global scope - single event",
 					Scope:         []string{"global"},
 					DefaultAction: "log",
-					Rules: []flags.Rule{
+					Rules: []policy.Rule{
 						{
 							Event:  "security_file_open",
 							Filter: []string{"args.pathname=*integration"},
@@ -449,13 +449,13 @@ func TestEventPolicies(t *testing.T) {
 		},
 		{
 			name: "global scope - single event - comm",
-			policies: []flags.PolicyFile{
+			policies: []policy.PolicyFile{
 				{
 					Name:          "global_scope_single_event_1",
 					Description:   "global scope - single event 1",
 					Scope:         []string{"global"},
 					DefaultAction: "log",
-					Rules: []flags.Rule{
+					Rules: []policy.Rule{
 						{
 							Event:  "sched_process_exit",
 							Filter: []string{"comm=ls"},
@@ -467,7 +467,7 @@ func TestEventPolicies(t *testing.T) {
 					Description:   "global scope - single event 2",
 					Scope:         []string{"global"},
 					DefaultAction: "log",
-					Rules: []flags.Rule{
+					Rules: []policy.Rule{
 						{
 							Event:  "sched_process_exit",
 							Filter: []string{"comm=uname"},
@@ -479,13 +479,13 @@ func TestEventPolicies(t *testing.T) {
 		},
 		{
 			name: "binary scope - single event",
-			policies: []flags.PolicyFile{
+			policies: []policy.PolicyFile{
 				{
 					Name:          "binary_scope_single_event_1",
 					Description:   "binary scope - single event 1",
 					Scope:         []string{"binary=/usr/bin/uname"},
 					DefaultAction: "log",
-					Rules: []flags.Rule{
+					Rules: []policy.Rule{
 						{
 							Event: "sched_process_exit",
 						},
@@ -496,7 +496,7 @@ func TestEventPolicies(t *testing.T) {
 					Description:   "binary scope - single event 2",
 					Scope:         []string{"binary=/usr/bin/who"},
 					DefaultAction: "log",
-					Rules: []flags.Rule{
+					Rules: []policy.Rule{
 						{
 							Event: "sched_process_exit",
 						},
