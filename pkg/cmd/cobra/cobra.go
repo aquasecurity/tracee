@@ -2,13 +2,9 @@ package cobra
 
 import (
 	"errors"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v3"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 
@@ -21,6 +17,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -152,7 +149,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	var filterMap flags.FilterMap
 
 	if len(policyFlags) > 0 {
-		policies, err := getPolicies(policyFlags)
+		policies, err := policy.PoliciesFromPaths(policyFlags)
 		if err != nil {
 			return runner, err
 		}
@@ -256,74 +253,4 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	}
 
 	return runner, nil
-}
-
-func getPolicies(paths []string) ([]flags.PolicyFile, error) {
-	policies := make([]flags.PolicyFile, 0)
-
-	for _, path := range paths {
-		if path == "" {
-			return nil, errfmt.Errorf("policy path cannot be empty")
-		}
-
-		path, err := filepath.Abs(path)
-		if err != nil {
-			return nil, err
-		}
-
-		fileInfo, err := os.Stat(path)
-		if err != nil {
-			return nil, err
-		}
-
-		if !fileInfo.IsDir() {
-			p, err := getPoliciesFromFile(path)
-			if err != nil {
-				return nil, err
-			}
-			policies = append(policies, p)
-
-			continue
-		}
-
-		files, err := os.ReadDir(path)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, file := range files {
-			if file.IsDir() {
-				continue
-			}
-
-			// TODO: support json
-			if strings.HasSuffix(file.Name(), ".yaml") ||
-				strings.HasSuffix(file.Name(), ".yml") {
-				policy, err := getPoliciesFromFile(filepath.Join(path, file.Name()))
-				if err != nil {
-					return nil, err
-				}
-
-				policies = append(policies, policy)
-			}
-		}
-	}
-
-	return policies, nil
-}
-
-func getPoliciesFromFile(filePath string) (flags.PolicyFile, error) {
-	var p flags.PolicyFile
-
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return p, err
-	}
-
-	err = yaml.Unmarshal(data, &p)
-	if err != nil {
-		return p, err
-	}
-
-	return p, nil
 }
