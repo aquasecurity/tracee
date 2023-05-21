@@ -14,7 +14,7 @@ data:
       - mem-cache-size=512
     perf-buffer-size: 1024
     containers: true
-    healthz: false
+    healthz: true
     metrics: true
     pprof: false
     pyroscope: false
@@ -57,6 +57,10 @@ spec:
         env:
           - name: LIBBPFGO_OSRELEASE_FILE
             value: /etc/os-release-host
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 3366
         securityContext:
           privileged: true
         volumeMounts:

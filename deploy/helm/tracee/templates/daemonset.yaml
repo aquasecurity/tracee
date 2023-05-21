@@ -45,6 +45,12 @@ spec:
               value: /etc/os-release-host
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- if .Values.config.healthz }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ trimPrefix ":" .Values.config.listenAddr }}
+          {{- end }}
           volumeMounts:
             - name: tmp-tracee
               mountPath: /tmp/tracee
