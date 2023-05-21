@@ -1,0 +1,54 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tracee-config
+  labels:
+    {{- include "tracee.labels" . | nindent 4 }}
+data:
+  {{- if .Values.traceeConfig }}
+  config.yaml:
+    {{- toYaml .Values.traceeConfig | nindent 4 }}
+  {{- else }}
+  config.yaml: |-
+    {{- if .Values.config.blobPerfBufferSize }}
+    blob-perf-buffer-size: {{ .Values.config.blobPerfBufferSize}}
+    {{- end }}
+    perf-buffer-size: {{ .Values.config.perfBufferSize }}
+    containers: {{ .Values.config.containers }}
+    healthz: {{ .Values.config.healthz }}
+    metrics: {{ .Values.config.metrics }}
+    pprof: {{ .Values.config.pprof }}
+    pyroscope: {{ .Values.config.pyroscope }}
+    listen-addr: {{ .Values.config.listenAddr }}
+    {{- if .Values.config.installPath }}
+    install-path:  {{ .Values.config.installPath }}
+    {{- end }}
+    {{- if .Values.config.signaturesDir }}
+    signatures-dir: {{ .Values.config.signaturesDir }}
+    {{- end }}
+    {{- with .Values.config.capabilities }}
+    capabilities:
+      {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.config.crs }}
+    crs:
+      {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.config.rego }}
+    rego:
+      {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.config.cache }}
+    cache:
+      {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.config.log }}
+    log:
+      {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.config.output }}
+    output:
+      {{- toYaml . | nindent 8 }}
+    {{- end }}
+  {{- end }}
