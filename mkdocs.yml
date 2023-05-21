@@ -22,6 +22,7 @@ nav:
               - NixOS: getting-started/installing/distros/nix-nixos.md
   - Tutorials: 
       - Overview: tutorials/overview.md
+      - Working with Tracee's Policies on Kubernetes: tutorials/k8s-policies.md
       - Deploy Tracee Grafana Dashboard: tutorials/deploy-grafana-dashboard.md
       - Accessing Tracee Logs through Promtail and Loki: tutorials/promtail.md
   - Docs:
