@@ -4376,8 +4376,7 @@ int BPF_KPROBE(trace_file_modified)
      * this is because on older kernels the file_modified() function calls the file_update_time()
      * function. in those cases, we don't need this probe active.
      */
-    struct file *file = (struct file *) PT_REGS_PARM1(ctx);
-    if (bpf_core_field_exists(file->f_iocb_flags)) {
+    if (bpf_core_field_exists(((struct file *) 0)->f_iocb_flags)) {
         /* kernel version >= 6 */
         return common_file_modification_ent(ctx);
     }
@@ -4393,14 +4392,9 @@ int BPF_KPROBE(trace_ret_file_modified)
      * this is because on older kernels the file_modified() function calls the file_update_time()
      * function. in those cases, we don't need this probe active.
      */
-    args_t saved_args;
-    if (load_args(&saved_args, FILE_MODIFICATION) != 0)
-        return 0;
-
-    struct file *file = (struct file *) saved_args.args[0];
-    if (bpf_core_field_exists(file->f_iocb_flags)) {
+    if (bpf_core_field_exists(((struct file *) 0)->f_iocb_flags)) {
         /* kernel version >= 6 */
-        return common_file_modification_ent(ctx);
+        return common_file_modification_ret(ctx);
     }
 
     return 0;
