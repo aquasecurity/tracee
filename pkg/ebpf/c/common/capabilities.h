@@ -6,6 +6,12 @@
 
 #include <common/common.h>
 
+// PROTOTYPES
+
+statfunc u64 credcap_to_slimcap(void *);
+
+// FUNCTIONS
+
 // BEFORE: Currently, (2021), there are ~40 capabilities in the Linux kernel
 // which are stored in an u32 array of length 2. This might change in the (not
 // so near) future as more capabilities will be added. For now, we use u64 to
@@ -16,7 +22,7 @@
 // deal with that.
 //
 
-static __always_inline u64 credcap_to_slimcap(void *from)
+statfunc u64 credcap_to_slimcap(void *from)
 {
     kernel_cap_t___older to = {0};
 

@@ -3,16 +3,22 @@
 
 #include <vmlinux.h>
 
-#include <maps.h>
+#include <common/common.h>
 
-#define get_kconfig(x) get_kconfig_val(x)
+// TYPES
 
 enum kconfig_key_e
 {
     ARCH_HAS_SYSCALL_WRAPPER = 1000U
 };
 
-static __always_inline int get_kconfig_val(u32 key)
+// PROTOTYPES
+
+#define get_kconfig(x) get_kconfig_val(x)
+
+// FUNCTIONS
+
+statfunc int get_kconfig_val(u32 key)
 {
     u32 *config = bpf_map_lookup_elem(&kconfig_map, &key);
 

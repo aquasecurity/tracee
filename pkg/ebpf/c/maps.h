@@ -10,8 +10,6 @@
 #define MAX_STACK_ADDRESSES 1024 // max amount of diff stack trace addrs to buffer
 #define MAX_STACK_DEPTH     20   // max depth of each stack trace to track
 
-// EBPF MAP MACROS ---------------------------------------------------------------------------------
-
 #define BPF_MAP(_name, _type, _key_type, _value_type, _max_entries)                                \
     struct {                                                                                       \
         __uint(type, _type);                                                                       \
@@ -116,6 +114,7 @@ BPF_PERCPU_ARRAY(event_data_map, event_data_t, 1);                 // persist ev
 BPF_HASH(logs_count, bpf_log_t, bpf_log_count_t, 4096);            // logs count
 BPF_PERCPU_ARRAY(scratch_map, scratch_t, 1);                       // scratch space to avoid allocating stuff on the stack
 BPF_LRU_HASH(file_modification_map, file_mod_key_t, int, 10240);   // hold file data to decide if should submit file modification event
+
 // clang-format on
 
 BPF_PERF_OUTPUT(logs, 1024);        // logs submission

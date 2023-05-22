@@ -5,14 +5,23 @@
 
 #include <common/common.h>
 
+// CONSTANTS
+
 #define BPF_PROG_LOAD 5
 
-static __always_inline u32 get_attr_insn_cnt(union bpf_attr *attr)
+// PROTOTYPES
+
+statfunc u32 get_attr_insn_cnt(union bpf_attr *);
+statfunc const struct bpf_insn *get_attr_insns(union bpf_attr *);
+
+// FUNCTIONS
+
+statfunc u32 get_attr_insn_cnt(union bpf_attr *attr)
 {
     return READ_KERN(attr->insn_cnt);
 }
 
-static __always_inline const struct bpf_insn *get_attr_insns(union bpf_attr *attr)
+statfunc const struct bpf_insn *get_attr_insns(union bpf_attr *attr)
 {
     return (const struct bpf_insn *) READ_KERN(attr->insns);
 }
