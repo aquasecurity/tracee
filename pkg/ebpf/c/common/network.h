@@ -206,42 +206,42 @@ statfunc int get_local_net_id_from_network_details_v6(struct sock *, net_id_t *,
 
 statfunc u32 get_inet_rcv_saddr(struct inet_sock *inet)
 {
-    return READ_KERN(inet->inet_rcv_saddr);
+    return BPF_CORE_READ(inet, inet_rcv_saddr);
 }
 
 statfunc u32 get_inet_saddr(struct inet_sock *inet)
 {
-    return READ_KERN(inet->inet_saddr);
+    return BPF_CORE_READ(inet, inet_saddr);
 }
 
 statfunc u32 get_inet_daddr(struct inet_sock *inet)
 {
-    return READ_KERN(inet->inet_daddr);
+    return BPF_CORE_READ(inet, inet_daddr);
 }
 
 statfunc u16 get_inet_sport(struct inet_sock *inet)
 {
-    return READ_KERN(inet->inet_sport);
+    return BPF_CORE_READ(inet, inet_sport);
 }
 
 statfunc u16 get_inet_num(struct inet_sock *inet)
 {
-    return READ_KERN(inet->inet_num);
+    return BPF_CORE_READ(inet, inet_num);
 }
 
 statfunc u16 get_inet_dport(struct inet_sock *inet)
 {
-    return READ_KERN(inet->inet_dport);
+    return BPF_CORE_READ(inet, inet_dport);
 }
 
 statfunc struct sock *get_socket_sock(struct socket *socket)
 {
-    return READ_KERN(socket->sk);
+    return BPF_CORE_READ(socket, sk);
 }
 
 statfunc u16 get_sock_family(struct sock *sock)
 {
-    return READ_KERN(sock->sk_family);
+    return BPF_CORE_READ(sock, sk_family);
 }
 
 statfunc u16 get_sock_protocol(struct sock *sock)
@@ -254,7 +254,7 @@ statfunc u16 get_sock_protocol(struct sock *sock)
         check = (struct sock___old *) sock;
         bpf_core_read(&protocol, 1, (void *) (&check->sk_gso_max_segs) - 3);
     } else {
-        protocol = READ_KERN(sock->sk_protocol);
+        protocol = BPF_CORE_READ(sock, sk_protocol);
     }
 
     return protocol;
@@ -262,22 +262,22 @@ statfunc u16 get_sock_protocol(struct sock *sock)
 
 statfunc u16 get_sockaddr_family(struct sockaddr *address)
 {
-    return READ_KERN(address->sa_family);
+    return BPF_CORE_READ(address, sa_family);
 }
 
 statfunc struct in6_addr get_sock_v6_rcv_saddr(struct sock *sock)
 {
-    return READ_KERN(sock->sk_v6_rcv_saddr);
+    return BPF_CORE_READ(sock, sk_v6_rcv_saddr);
 }
 
 statfunc struct in6_addr get_ipv6_pinfo_saddr(struct ipv6_pinfo *np)
 {
-    return READ_KERN(np->saddr);
+    return BPF_CORE_READ(np, saddr);
 }
 
 statfunc struct in6_addr get_sock_v6_daddr(struct sock *sock)
 {
-    return READ_KERN(sock->sk_v6_daddr);
+    return BPF_CORE_READ(sock, sk_v6_daddr);
 }
 
 statfunc volatile unsigned char get_sock_state(struct sock *sock)
@@ -297,8 +297,8 @@ statfunc struct ipv6_pinfo *get_inet_pinet6(struct inet_sock *inet)
 
 statfunc struct sockaddr_un get_unix_sock_addr(struct unix_sock *sock)
 {
-    struct unix_address *addr = READ_KERN(sock->addr);
-    int len = READ_KERN(addr->len);
+    struct unix_address *addr = BPF_CORE_READ(sock, addr);
+    int len = BPF_CORE_READ(addr, len);
     struct sockaddr_un sockaddr = {};
     if (len <= sizeof(struct sockaddr_un)) {
         bpf_probe_read(&sockaddr, len, addr->name);

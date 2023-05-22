@@ -35,88 +35,78 @@ statfunc unsigned long get_s_magic_from_super_block(struct super_block *);
 
 statfunc u64 get_time_nanosec_timespec(struct timespec64 *ts)
 {
-    time64_t sec = READ_KERN(ts->tv_sec);
+    time64_t sec = BPF_CORE_READ(ts, tv_sec);
     if (sec < 0)
         return 0;
-    long ns = READ_KERN(ts->tv_nsec);
+
+    long ns = BPF_CORE_READ(ts, tv_nsec);
+
     return (sec * 1000000000L) + ns;
 }
 
 statfunc u64 get_ctime_nanosec_from_inode(struct inode *inode)
 {
-    struct timespec64 ts = READ_KERN(inode->i_ctime);
+    struct timespec64 ts = BPF_CORE_READ(inode, i_ctime);
     return get_time_nanosec_timespec(&ts);
 }
 
 statfunc struct dentry *get_mnt_root_ptr_from_vfsmnt(struct vfsmount *vfsmnt)
 {
-    return READ_KERN(vfsmnt->mnt_root);
+    return BPF_CORE_READ(vfsmnt, mnt_root);
 }
 
 statfunc struct dentry *get_d_parent_ptr_from_dentry(struct dentry *dentry)
 {
-    return READ_KERN(dentry->d_parent);
+    return BPF_CORE_READ(dentry, d_parent);
 }
 
 statfunc struct qstr get_d_name_from_dentry(struct dentry *dentry)
 {
-    return READ_KERN(dentry->d_name);
+    return BPF_CORE_READ(dentry, d_name);
 }
 
 statfunc dev_t get_dev_from_file(struct file *file)
 {
-    struct inode *f_inode = READ_KERN(file->f_inode);
-    struct super_block *i_sb = READ_KERN(f_inode->i_sb);
-    return READ_KERN(i_sb->s_dev);
+    return BPF_CORE_READ(file, f_inode, i_sb, s_dev);
 }
 
 statfunc unsigned long get_inode_nr_from_file(struct file *file)
 {
-    struct inode *f_inode = READ_KERN(file->f_inode);
-    return READ_KERN(f_inode->i_ino);
+    return BPF_CORE_READ(file, f_inode, i_ino);
 }
 
 statfunc u64 get_ctime_nanosec_from_file(struct file *file)
 {
-    struct inode *f_inode = READ_KERN(file->f_inode);
+    struct inode *f_inode = BPF_CORE_READ(file, f_inode);
     return get_ctime_nanosec_from_inode(f_inode);
 }
 
 statfunc unsigned short get_inode_mode_from_file(struct file *file)
 {
-    struct inode *f_inode = READ_KERN(file->f_inode);
-    return READ_KERN(f_inode->i_mode);
+    return BPF_CORE_READ(file, f_inode, i_mode);
 }
 
 statfunc struct path get_path_from_file(struct file *file)
 {
-    return READ_KERN(file->f_path);
+    return BPF_CORE_READ(file, f_path);
 }
 
 statfunc struct file *get_struct_file_from_fd(u64 fd_num)
 {
     struct task_struct *task = (struct task_struct *) bpf_get_current_task();
-    if (task == NULL) {
+    if (task == NULL)
         return NULL;
-    }
-    struct files_struct *files = (struct files_struct *) READ_KERN(task->files);
-    if (files == NULL) {
-        return NULL;
-    }
-    struct fdtable *fdt = (struct fdtable *) READ_KERN(files->fdt);
-    if (fdt == NULL) {
-        return NULL;
-    }
-    struct file **fd = (struct file **) READ_KERN(fdt->fd);
-    if (fd == NULL) {
-        return NULL;
-    }
-    struct file *f = (struct file *) READ_KERN(fd[fd_num]);
-    if (f == NULL) {
-        return NULL;
-    }
 
-    return f;
+    struct file **files = BPF_CORE_READ(task, files, fdt, fd);
+    if (files == NULL)
+        return NULL;
+
+    struct file *file;
+    bpf_core_read(&file, sizeof(void *), &files[fd_num]);
+    if (file == NULL)
+        return NULL;
+
+    return file;
 }
 
 statfunc unsigned short get_inode_mode_from_fd(u64 fd)
@@ -126,8 +116,7 @@ statfunc unsigned short get_inode_mode_from_fd(u64 fd)
         return -1;
     }
 
-    struct inode *f_inode = READ_KERN(f->f_inode);
-    return READ_KERN(f_inode->i_mode);
+    return BPF_CORE_READ(f, f_inode, i_mode);
 }
 
 statfunc int check_fd_type(u64 fd, u16 type)
@@ -143,20 +132,17 @@ statfunc int check_fd_type(u64 fd, u16 type)
 
 statfunc unsigned long get_inode_nr_from_dentry(struct dentry *dentry)
 {
-    struct inode *d_inode = READ_KERN(dentry->d_inode);
-    return READ_KERN(d_inode->i_ino);
+    return BPF_CORE_READ(dentry, d_inode, i_ino);
 }
 
 statfunc dev_t get_dev_from_dentry(struct dentry *dentry)
 {
-    struct inode *d_inode = READ_KERN(dentry->d_inode);
-    struct super_block *i_sb = READ_KERN(d_inode->i_sb);
-    return READ_KERN(i_sb->s_dev);
+    return BPF_CORE_READ(dentry, d_inode, i_sb, s_dev);
 }
 
 statfunc u64 get_ctime_nanosec_from_dentry(struct dentry *dentry)
 {
-    struct inode *d_inode = READ_KERN(dentry->d_inode);
+    struct inode *d_inode = BPF_CORE_READ(dentry, d_inode);
     return get_ctime_nanosec_from_inode(d_inode);
 }
 
@@ -317,17 +303,17 @@ statfunc file_info_t get_file_info(struct file *file)
 
 statfunc struct inode *get_inode_from_file(struct file *file)
 {
-    return READ_KERN(file->f_inode);
+    return BPF_CORE_READ(file, f_inode);
 }
 
 statfunc struct super_block *get_super_block_from_inode(struct inode *f_inode)
 {
-    return READ_KERN(f_inode->i_sb);
+    return BPF_CORE_READ(f_inode, i_sb);
 }
 
 statfunc unsigned long get_s_magic_from_super_block(struct super_block *i_sb)
 {
-    return READ_KERN(i_sb->s_magic);
+    return BPF_CORE_READ(i_sb, s_magic);
 }
 
 #endif

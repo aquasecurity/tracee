@@ -11,38 +11,11 @@
 
 #define statfunc static __always_inline
 
-// MACROS
-
-#define READ_KERN(ptr)                                                                             \
-    ({                                                                                             \
-        typeof(ptr) _val;                                                                          \
-        __builtin_memset((void *) &_val, 0, sizeof(_val));                                         \
-        bpf_core_read((void *) &_val, sizeof(_val), &ptr);                                         \
-        _val;                                                                                      \
-    })
-
-#define READ_KERN_STR_INTO(dst, src) bpf_core_read_str((void *) &dst, sizeof(dst), src)
-
-#define READ_USER(ptr)                                                                             \
-    ({                                                                                             \
-        typeof(ptr) _val;                                                                          \
-        __builtin_memset((void *) &_val, 0, sizeof(_val));                                         \
-        bpf_core_read_user((void *) &_val, sizeof(_val), &ptr);                                    \
-        _val;                                                                                      \
-    })
-
-#define BPF_READ(src, a, ...)                                                                      \
-    ({                                                                                             \
-        ___type((src), a, ##__VA_ARGS__) __r;                                                      \
-        BPF_CORE_READ_INTO(&__r, (src), a, ##__VA_ARGS__);                                         \
-        __r;                                                                                       \
-    })
-
-// FUNCTIONS
+// FUNCTIONS & MACROS
 
 statfunc const char *get_device_name(struct device *dev)
 {
-    struct kobject kobj = READ_KERN(dev->kobj);
+    struct kobject kobj = BPF_CORE_READ(dev, kobj);
     return kobj.name;
 }
 
@@ -106,9 +79,9 @@ static __inline int has_prefix(char *prefix, char *str, int n)
 #define list_entry_ebpf(ptr, type, member) container_of(ptr, type, member)
 
 #define list_next_entry_ebpf(pos, member)                                                          \
-    list_entry_ebpf(READ_KERN((pos)->member.next), typeof(*(pos)), member)
+    list_entry_ebpf(BPF_CORE_READ(pos, member.next), typeof(*(pos)), member)
 
 #define list_first_entry_ebpf(ptr, type, member)                                                   \
-    list_entry_ebpf(READ_KERN((ptr)->next), type, member)
+    list_entry_ebpf(BPF_CORE_READ(ptr, next), type, member)
 
 #endif

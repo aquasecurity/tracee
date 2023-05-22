@@ -17,27 +17,27 @@ statfunc int get_envc_from_bprm(struct linux_binprm *);
 
 statfunc const char *get_binprm_filename(struct linux_binprm *bprm)
 {
-    return READ_KERN(bprm->filename);
+    return BPF_CORE_READ(bprm, filename);
 }
 
 statfunc const char *get_binprm_interp(struct linux_binprm *bprm)
 {
-    return READ_KERN(bprm->interp);
+    return BPF_CORE_READ(bprm, interp);
 }
 
 statfunc struct file *get_file_ptr_from_bprm(struct linux_binprm *bprm)
 {
-    return READ_KERN(bprm->file);
+    return BPF_CORE_READ(bprm, file);
 }
 
 statfunc int get_argc_from_bprm(struct linux_binprm *bprm)
 {
-    return READ_KERN(bprm->argc);
+    return BPF_CORE_READ(bprm, argc);
 }
 
 statfunc int get_envc_from_bprm(struct linux_binprm *bprm)
 {
-    return READ_KERN(bprm->envc);
+    return BPF_CORE_READ(bprm, envc);
 }
 
 #endif
