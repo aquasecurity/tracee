@@ -22,7 +22,7 @@ statfunc uint get_syscall_fd_num_from_arg(uint syscall_id, args_t *);
 statfunc bool is_x86_compat(struct task_struct *task)
 {
 #if defined(bpf_target_x86)
-    return READ_KERN(task->thread_info.status) & TS_COMPAT;
+    return BPF_CORE_READ(task, thread_info.status) & TS_COMPAT;
 #else
     return false;
 #endif
@@ -31,7 +31,7 @@ statfunc bool is_x86_compat(struct task_struct *task)
 statfunc bool is_arm64_compat(struct task_struct *task)
 {
 #if defined(bpf_target_arm64)
-    return READ_KERN(task->thread_info.flags) & _TIF_32BIT;
+    return BPF_CORE_READ(task, thread_info.flags) & _TIF_32BIT;
 #else
     return false;
 #endif
@@ -51,9 +51,9 @@ statfunc bool is_compat(struct task_struct *task)
 statfunc int get_syscall_id_from_regs(struct pt_regs *regs)
 {
 #if defined(bpf_target_x86)
-    int id = READ_KERN(regs->orig_ax);
+    int id = BPF_CORE_READ(regs, orig_ax);
 #elif defined(bpf_target_arm64)
-    int id = READ_KERN(regs->syscallno);
+    int id = BPF_CORE_READ(regs, syscallno);
 #endif
     return id;
 }
@@ -62,10 +62,10 @@ statfunc struct pt_regs *get_task_pt_regs(struct task_struct *task)
 {
 // THREAD_SIZE here is statistically defined and assumed to work for 4k page sizes.
 #if defined(bpf_target_x86)
-    void *__ptr = READ_KERN(task->stack) + THREAD_SIZE - TOP_OF_KERNEL_STACK_PADDING;
+    void *__ptr = BPF_CORE_READ(task, stack) + THREAD_SIZE - TOP_OF_KERNEL_STACK_PADDING;
     return ((struct pt_regs *) __ptr) - 1;
 #elif defined(bpf_target_arm64)
-    return ((struct pt_regs *) (THREAD_SIZE + READ_KERN(task->stack)) - 1);
+    return ((struct pt_regs *) (THREAD_SIZE + BPF_CORE_READ(task, stack)) - 1);
 #endif
 }
 

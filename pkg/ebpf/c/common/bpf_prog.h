@@ -18,12 +18,12 @@ statfunc const struct bpf_insn *get_attr_insns(union bpf_attr *);
 
 statfunc u32 get_attr_insn_cnt(union bpf_attr *attr)
 {
-    return READ_KERN(attr->insn_cnt);
+    return BPF_CORE_READ(attr, insn_cnt);
 }
 
 statfunc const struct bpf_insn *get_attr_insns(union bpf_attr *attr)
 {
-    return (const struct bpf_insn *) READ_KERN(attr->insns);
+    return (const struct bpf_insn *) BPF_CORE_READ(attr, insns);
 }
 
 #endif

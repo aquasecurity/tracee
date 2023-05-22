@@ -88,12 +88,12 @@ int sys_enter_init(struct bpf_raw_tracepoint_args *ctx)
 
         if (is_x86_compat(task)) {
 #if defined(bpf_target_x86)
-            sys->args.args[0] = READ_KERN(regs->bx);
-            sys->args.args[1] = READ_KERN(regs->cx);
-            sys->args.args[2] = READ_KERN(regs->dx);
-            sys->args.args[3] = READ_KERN(regs->si);
-            sys->args.args[4] = READ_KERN(regs->di);
-            sys->args.args[5] = READ_KERN(regs->bp);
+            sys->args.args[0] = BPF_CORE_READ(regs, bx);
+            sys->args.args[1] = BPF_CORE_READ(regs, cx);
+            sys->args.args[2] = BPF_CORE_READ(regs, dx);
+            sys->args.args[3] = BPF_CORE_READ(regs, si);
+            sys->args.args[4] = BPF_CORE_READ(regs, di);
+            sys->args.args[5] = BPF_CORE_READ(regs, bp);
 #endif // bpf_target_x86
         } else {
             sys->args.args[0] = PT_REGS_PARM1_CORE_SYSCALL(regs);
@@ -422,7 +422,7 @@ statfunc int send_socket_dup(program_data_t *p, u64 oldfd, u64 newfd)
     save_to_submit_buf(p->event, &newfd, sizeof(u32), 1);
 
     // get the address
-    struct socket *socket_from_file = (struct socket *) READ_KERN(f->private_data);
+    struct socket *socket_from_file = (struct socket *) BPF_CORE_READ(f, private_data);
     if (socket_from_file == NULL) {
         return -1;
     }
@@ -661,8 +661,9 @@ statfunc bool find_modules_from_module_kset_list(program_data_t *p)
 
 #pragma unroll
     for (int i = 0; i < MAX_NUM_MODULES; i++) {
-        if (READ_KERN(n->name) == NULL) { // Without this the list seems infinite. Also, using pos
-                                          // here seems incorrect as it starts from a weird member
+        if (BPF_CORE_READ(n, name) ==
+            NULL) { // Without this the list seems infinite. Also, using pos
+                    // here seems incorrect as it starts from a weird member
             finished_iterating = true;
             break;
         }
@@ -670,7 +671,7 @@ statfunc bool find_modules_from_module_kset_list(program_data_t *p)
         struct module_kobject *mod_kobj =
             (struct module_kobject *) container_of(n, struct module_kobject, kobj);
         if (mod_kobj) {
-            struct module *mod = READ_KERN(mod_kobj->mod);
+            struct module *mod = BPF_CORE_READ(mod_kobj, mod);
             if (mod) {
                 if (is_hidden((u64) mod)) {
                     send_hidden_module((u64) mod, mod->name, p);
@@ -705,7 +706,7 @@ statfunc bool walk_mod_tree(program_data_t *p, struct rb_node *root, int idx)
             rb_node_t rb_nod = {.node = curr};
             bpf_map_push_elem(&walk_mod_tree_queue, &rb_nod, BPF_EXIST);
 
-            curr = READ_KERN(curr->rb_left); // Move left
+            curr = BPF_CORE_READ(curr, rb_left); // Move left
         } else {
             rb_node_t rb_nod;
             if (bpf_map_pop_elem(&walk_mod_tree_queue, &rb_nod) != 0) {
@@ -714,7 +715,7 @@ statfunc bool walk_mod_tree(program_data_t *p, struct rb_node *root, int idx)
             } else {
                 curr = rb_nod.node;
                 ltn = __lt_from_rb(curr, idx);
-                mod = READ_KERN(container_of(ltn, struct mod_tree_node, node)->mod);
+                mod = BPF_CORE_READ(container_of(ltn, struct mod_tree_node, node), mod);
 
                 if (is_hidden((u64) mod)) {
                     send_hidden_module((u64) mod, mod->name, p);
@@ -722,7 +723,7 @@ statfunc bool walk_mod_tree(program_data_t *p, struct rb_node *root, int idx)
 
                 /* We have visited the node and its left subtree.
                 Now, it's right subtree's turn */
-                curr = READ_KERN(curr->rb_right);
+                curr = BPF_CORE_READ(curr, rb_right);
             }
         }
     }
@@ -741,12 +742,12 @@ statfunc bool find_modules_from_mod_tree(program_data_t *p)
     unsigned int seq;
 
     if (bpf_core_field_exists(m_tree->root.seq.sequence)) {
-        seq = READ_KERN(m_tree->root.seq.sequence); // below 5.10
+        seq = BPF_CORE_READ(m_tree, root.seq.sequence); // below 5.10
     } else {
-        seq = READ_KERN(m_tree->root.seq.seqcount.sequence); // version >= v5.10
+        seq = BPF_CORE_READ(m_tree, root.seq.seqcount.sequence); // version >= v5.10
     }
 
-    struct rb_node *node = READ_KERN(m_tree->root.tree[seq & 1].rb_node);
+    struct rb_node *node = BPF_CORE_READ(m_tree, root.tree[seq & 1].rb_node);
 
     return walk_mod_tree(p, node, seq & 1);
 }
@@ -777,7 +778,7 @@ statfunc bool check_is_proc_modules_hooked(program_data_t *p)
             // Check again with the address being the start of the memory area, since
             // there's a chance the module is in /proc/modules but not in /proc/kallsyms (since the
             // file can be hooked).
-            key = (u64) READ_KERN(pos->core_layout.base);
+            key = (u64) BPF_CORE_READ(pos, core_layout.base);
             mod_from_map = bpf_map_lookup_elem(&modules_map, &key);
             // No need to check for seen_proc_modules flag here since if it IS in the map
             // with the address being the start of the memory area, it necessarily got inserted
@@ -1062,8 +1063,8 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 
     bool group_dead = false;
     struct task_struct *task = p.event->task;
-    struct signal_struct *signal = READ_KERN(task->signal);
-    atomic_t live = READ_KERN(signal->live);
+    struct signal_struct *signal = BPF_CORE_READ(task, signal);
+    atomic_t live = BPF_CORE_READ(signal, live);
     // This check could be true for multiple thread exits if the thread count was 0 when the hooks
     // were triggered. This could happen for example if the threads performed exit in different CPUs
     // simultaneously.
@@ -1326,22 +1327,26 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
 
     char syscall_table_sym[15] = "sys_call_table";
     u64 *syscall_table_addr = (u64 *) get_symbol_addr(syscall_table_sym);
+
     if (unlikely(syscall_table_addr == 0))
         return 0;
+
     void *stext_addr = get_stext_addr();
     if (unlikely(stext_addr == NULL))
         return 0;
+
     void *etext_addr = get_etext_addr();
     if (unlikely(etext_addr == NULL))
         return 0;
 
     u64 idx;
-    unsigned long syscall_addr = 0;
+    u32 syscall_addr = 0;
     u64 syscall_address[NUMBER_OF_SYSCALLS_TO_CHECK];
 
 #pragma unroll
     for (int i = 0; i < NUMBER_OF_SYSCALLS_TO_CHECK; i++) {
         idx = i;
+
         // syscalls_to_check_map format: [syscall#][syscall#][syscall#]
         u64 *syscall_num_p = bpf_map_lookup_elem(&syscalls_to_check_map, (void *) &idx);
         if (syscall_num_p == NULL) {
@@ -1349,7 +1354,7 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
             continue;
         }
 
-        syscall_addr = READ_KERN(syscall_table_addr[*syscall_num_p]);
+        bpf_core_read(&syscall_addr, sizeof(u32), &syscall_table_addr[*syscall_num_p]);
         if (syscall_addr == 0) {
             return 0;
         }
@@ -1362,8 +1367,10 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
 
         syscall_address[i] = syscall_addr;
     }
+
     save_u64_arr_to_buf(p.event, (const u64 *) syscall_address, NUMBER_OF_SYSCALLS_TO_CHECK, 0);
     save_to_submit_buf(p.event, (void *) &caller_ctx_id, sizeof(uint64_t), 1);
+
     return events_perf_submit(&p, PRINT_SYSCALL_TABLE, 0);
 }
 
@@ -1431,25 +1438,25 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
         bpf_probe_read(&struct_address, 8, (address_array + i));
         struct seq_operations *seq_ops = (struct seq_operations *) struct_address;
 
-        u64 show_addr = (u64) READ_KERN(seq_ops->show);
+        u64 show_addr = (u64) BPF_CORE_READ(seq_ops, show);
         if (show_addr == 0)
             return 0;
         if (show_addr >= (u64) stext_addr && show_addr < (u64) etext_addr)
             show_addr = 0;
 
-        u64 start_addr = (u64) READ_KERN(seq_ops->start);
+        u64 start_addr = (u64) BPF_CORE_READ(seq_ops, start);
         if (start_addr == 0)
             return 0;
         if (start_addr >= (u64) stext_addr && start_addr < (u64) etext_addr)
             start_addr = 0;
 
-        u64 next_addr = (u64) READ_KERN(seq_ops->next);
+        u64 next_addr = (u64) BPF_CORE_READ(seq_ops, next);
         if (next_addr == 0)
             return 0;
         if (next_addr >= (u64) stext_addr && next_addr < (u64) etext_addr)
             next_addr = 0;
 
-        u64 stop_addr = (u64) READ_KERN(seq_ops->stop);
+        u64 stop_addr = (u64) BPF_CORE_READ(seq_ops, stop);
         if (stop_addr == 0)
             return 0;
         if (stop_addr >= (u64) stext_addr && stop_addr < (u64) etext_addr)
@@ -1539,7 +1546,7 @@ statfunc void *get_trace_probe_from_trace_event_call(struct trace_event_call *ca
         tracep_ptr = container_of(call, struct trace_probe___v53, call);
     } else {
         struct trace_probe_event *tpe = container_of(call, struct trace_probe_event, call);
-        struct list_head probes = READ_KERN(tpe->probes);
+        struct list_head probes = BPF_CORE_READ(tpe, probes);
         tracep_ptr = container_of(probes.next, struct trace_probe, list);
     }
 
@@ -1585,19 +1592,19 @@ send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf
 #define REQUIRED_SYSTEM_LENGTH 9
     // clang-format on
 
-    struct perf_event *event = (struct perf_event *) READ_KERN(perf_event_file->private_data);
-    struct trace_event_call *tp_event = READ_KERN(event->tp_event);
+    struct perf_event *event = (struct perf_event *) BPF_CORE_READ(perf_event_file, private_data);
+    struct trace_event_call *tp_event = BPF_CORE_READ(event, tp_event);
     char event_name[MAX_PERF_EVENT_NAME];
     u64 probe_addr = 0;
     int perf_type;
 
-    int flags = READ_KERN(tp_event->flags);
+    int flags = BPF_CORE_READ(tp_event, flags);
 
     // check if syscall_tracepoint
     bool is_syscall_tracepoint = false;
-    struct trace_event_class *tp_class = READ_KERN(tp_event->class);
+    struct trace_event_class *tp_class = BPF_CORE_READ(tp_event, class);
     char class_system[REQUIRED_SYSTEM_LENGTH];
-    bpf_probe_read_str(&class_system, REQUIRED_SYSTEM_LENGTH, READ_KERN(tp_class->system));
+    bpf_probe_read_str(&class_system, REQUIRED_SYSTEM_LENGTH, BPF_CORE_READ(tp_class, system));
     class_system[REQUIRED_SYSTEM_LENGTH - 1] = '\0';
     if (has_prefix("syscalls", class_system, REQUIRED_SYSTEM_LENGTH)) {
         is_syscall_tracepoint = true;
@@ -1606,13 +1613,13 @@ send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf
     if (flags & TRACE_EVENT_FL_TRACEPOINT) { // event is tracepoint
 
         perf_type = PERF_TRACEPOINT;
-        struct tracepoint *tp = READ_KERN(tp_event->tp);
-        bpf_probe_read_str(&event_name, MAX_KSYM_NAME_SIZE, READ_KERN(tp->name));
+        struct tracepoint *tp = BPF_CORE_READ(tp_event, tp);
+        bpf_probe_read_str(&event_name, MAX_KSYM_NAME_SIZE, BPF_CORE_READ(tp, name));
 
     } else if (is_syscall_tracepoint) { // event is syscall tracepoint
 
         perf_type = PERF_TRACEPOINT;
-        bpf_probe_read_str(&event_name, MAX_KSYM_NAME_SIZE, READ_KERN(tp_event->name));
+        bpf_probe_read_str(&event_name, MAX_KSYM_NAME_SIZE, BPF_CORE_READ(tp_event, name));
 
     } else {
         bool is_ret_probe = false;
@@ -1624,7 +1631,7 @@ send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf
 
             // check if probe is a kretprobe
             struct kretprobe *krp = &tracekp->rp;
-            kretprobe_handler_t handler_f = READ_KERN(krp->handler);
+            kretprobe_handler_t handler_f = BPF_CORE_READ(krp, handler);
             if (handler_f != NULL)
                 is_ret_probe = true;
 
@@ -1634,11 +1641,11 @@ send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf
                 perf_type = PERF_KPROBE;
 
             // get symbol name
-            bpf_probe_read_str(&event_name, MAX_KSYM_NAME_SIZE, READ_KERN(tracekp->symbol));
+            bpf_probe_read_str(&event_name, MAX_KSYM_NAME_SIZE, BPF_CORE_READ(tracekp, symbol));
 
             // get symbol address
             if (!event_name[0])
-                probe_addr = (unsigned long) READ_KERN(krp->kp.addr);
+                probe_addr = (unsigned long) BPF_CORE_READ(krp, kp.addr);
 
         } else if (flags & TRACE_EVENT_FL_UPROBE) { // event is uprobe
 
@@ -1646,7 +1653,7 @@ send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf
 
             // determine if ret probe
             struct uprobe_consumer *upc = &traceup->consumer;
-            void *handler_f = READ_KERN(upc->ret_handler);
+            void *handler_f = BPF_CORE_READ(upc, ret_handler);
             if (handler_f != NULL)
                 is_ret_probe = true;
 
@@ -1656,10 +1663,10 @@ send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf
                 perf_type = PERF_UPROBE;
 
             // get binary path
-            bpf_probe_read_str(&event_name, MAX_PATH_PREF_SIZE, READ_KERN(traceup->filename));
+            bpf_probe_read_str(&event_name, MAX_PATH_PREF_SIZE, BPF_CORE_READ(traceup, filename));
 
             // get symbol offset
-            probe_addr = READ_KERN(traceup->offset);
+            probe_addr = BPF_CORE_READ(traceup, offset);
 
         } else {
             // unsupported perf type
@@ -1669,10 +1676,10 @@ send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf
 
     // get bpf prog details
 
-    struct bpf_prog *prog = (struct bpf_prog *) READ_KERN(bpf_prog_file->private_data);
-    int prog_type = READ_KERN(prog->type);
-    struct bpf_prog_aux *prog_aux = READ_KERN(prog->aux);
-    u32 prog_id = READ_KERN(prog_aux->id);
+    struct bpf_prog *prog = (struct bpf_prog *) BPF_CORE_READ(bpf_prog_file, private_data);
+    int prog_type = BPF_CORE_READ(prog, type);
+    struct bpf_prog_aux *prog_aux = BPF_CORE_READ(prog, aux);
+    u32 prog_id = BPF_CORE_READ(prog_aux, id);
     char prog_name[BPF_OBJ_NAME_LEN];
     bpf_probe_read_str(&prog_name, BPF_OBJ_NAME_LEN, prog_aux->name);
 
@@ -1741,7 +1748,7 @@ int tracepoint__cgroup__cgroup_attach_task(struct bpf_raw_tracepoint_args *ctx)
     struct task_struct *task = (struct task_struct *) ctx->args[2];
 
     int pid = get_task_host_pid(task);
-    char *comm = READ_KERN(task->comm);
+    char *comm = BPF_CORE_READ(task, comm);
 
     save_str_to_buf(p.event, path, 0);
     save_str_to_buf(p.event, comm, 1);
@@ -1968,21 +1975,21 @@ int BPF_KPROBE(trace_commit_creds)
     slim_cred_t old_slim = {0};
     slim_cred_t new_slim = {0};
 
-    struct user_namespace *userns_old = READ_KERN(old_cred->user_ns);
-    struct user_namespace *userns_new = READ_KERN(new_cred->user_ns);
+    struct user_namespace *userns_old = BPF_CORE_READ(old_cred, user_ns);
+    struct user_namespace *userns_new = BPF_CORE_READ(new_cred, user_ns);
 
     // old credentials
 
-    old_slim.uid = READ_KERN(old_cred->uid.val);
-    old_slim.gid = READ_KERN(old_cred->gid.val);
-    old_slim.suid = READ_KERN(old_cred->suid.val);
-    old_slim.sgid = READ_KERN(old_cred->sgid.val);
-    old_slim.euid = READ_KERN(old_cred->euid.val);
-    old_slim.egid = READ_KERN(old_cred->egid.val);
-    old_slim.fsuid = READ_KERN(old_cred->fsuid.val);
-    old_slim.fsgid = READ_KERN(old_cred->fsgid.val);
-    old_slim.user_ns = READ_KERN(userns_old->ns.inum);
-    old_slim.securebits = READ_KERN(old_cred->securebits);
+    old_slim.uid = BPF_CORE_READ(old_cred, uid.val);
+    old_slim.gid = BPF_CORE_READ(old_cred, gid.val);
+    old_slim.suid = BPF_CORE_READ(old_cred, suid.val);
+    old_slim.sgid = BPF_CORE_READ(old_cred, sgid.val);
+    old_slim.euid = BPF_CORE_READ(old_cred, euid.val);
+    old_slim.egid = BPF_CORE_READ(old_cred, egid.val);
+    old_slim.fsuid = BPF_CORE_READ(old_cred, fsuid.val);
+    old_slim.fsgid = BPF_CORE_READ(old_cred, fsgid.val);
+    old_slim.user_ns = BPF_CORE_READ(userns_old, ns.inum);
+    old_slim.securebits = BPF_CORE_READ(old_cred, securebits);
 
     old_slim.cap_inheritable = credcap_to_slimcap(&old_cred->cap_inheritable);
     old_slim.cap_permitted = credcap_to_slimcap(&old_cred->cap_permitted);
@@ -1992,16 +1999,16 @@ int BPF_KPROBE(trace_commit_creds)
 
     // new credentials
 
-    new_slim.uid = READ_KERN(new_cred->uid.val);
-    new_slim.gid = READ_KERN(new_cred->gid.val);
-    new_slim.suid = READ_KERN(new_cred->suid.val);
-    new_slim.sgid = READ_KERN(new_cred->sgid.val);
-    new_slim.euid = READ_KERN(new_cred->euid.val);
-    new_slim.egid = READ_KERN(new_cred->egid.val);
-    new_slim.fsuid = READ_KERN(new_cred->fsuid.val);
-    new_slim.fsgid = READ_KERN(new_cred->fsgid.val);
-    new_slim.user_ns = READ_KERN(userns_new->ns.inum);
-    new_slim.securebits = READ_KERN(new_cred->securebits);
+    new_slim.uid = BPF_CORE_READ(new_cred, uid.val);
+    new_slim.gid = BPF_CORE_READ(new_cred, gid.val);
+    new_slim.suid = BPF_CORE_READ(new_cred, suid.val);
+    new_slim.sgid = BPF_CORE_READ(new_cred, sgid.val);
+    new_slim.euid = BPF_CORE_READ(new_cred, euid.val);
+    new_slim.egid = BPF_CORE_READ(new_cred, egid.val);
+    new_slim.fsuid = BPF_CORE_READ(new_cred, fsuid.val);
+    new_slim.fsgid = BPF_CORE_READ(new_cred, fsgid.val);
+    new_slim.user_ns = BPF_CORE_READ(userns_new, ns.inum);
+    new_slim.securebits = BPF_CORE_READ(new_cred, securebits);
 
     new_slim.cap_inheritable = credcap_to_slimcap(&new_cred->cap_inheritable);
     new_slim.cap_permitted = credcap_to_slimcap(&new_cred->cap_permitted);
@@ -2054,7 +2061,7 @@ int BPF_KPROBE(trace_switch_task_namespaces)
     if (!new)
         return 0;
 
-    pid_t pid = READ_KERN(task->pid);
+    pid_t pid = BPF_CORE_READ(task, pid);
     u32 old_mnt = p.event->context.task.mnt_id;
     u32 new_mnt = get_mnt_ns_id(new);
     u32 old_pid = get_task_pid_ns_for_children_id(task);
@@ -2388,19 +2395,19 @@ int BPF_KPROBE(trace_security_socket_bind)
 
         struct sockaddr_in *addr = (struct sockaddr_in *) address;
 
-        if (protocol == IPPROTO_UDP && READ_KERN(addr->sin_port)) {
-            connect_id.address.s6_addr32[3] = READ_KERN(addr->sin_addr).s_addr;
+        if (protocol == IPPROTO_UDP && BPF_CORE_READ(addr, sin_port)) {
+            connect_id.address.s6_addr32[3] = BPF_CORE_READ(addr, sin_addr).s_addr;
             connect_id.address.s6_addr16[5] = 0xffff;
-            connect_id.port = READ_KERN(addr->sin_port);
+            connect_id.port = BPF_CORE_READ(addr, sin_port);
         }
     } else if (sa_fam == AF_INET6) {
         save_to_submit_buf(p.event, (void *) address, sizeof(struct sockaddr_in6), 1);
 
         struct sockaddr_in6 *addr = (struct sockaddr_in6 *) address;
 
-        if (protocol == IPPROTO_UDP && READ_KERN(addr->sin6_port)) {
-            connect_id.address = READ_KERN(addr->sin6_addr);
-            connect_id.port = READ_KERN(addr->sin6_port);
+        if (protocol == IPPROTO_UDP && BPF_CORE_READ(addr, sin6_port)) {
+            connect_id.address = BPF_CORE_READ(addr, sin6_addr);
+            connect_id.port = BPF_CORE_READ(addr, sin6_port);
         }
     } else if (sa_fam == AF_UNIX) {
 #if defined(__TARGET_ARCH_x86) // TODO: this is broken in arm64 (issue: #1129)
@@ -3082,7 +3089,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
     unsigned long reqprot = PT_REGS_PARM2(ctx);
     unsigned long prev_prot = get_vma_flags(vma);
 
-    struct file *file = (struct file *) READ_KERN(vma->vm_file);
+    struct file *file = (struct file *) BPF_CORE_READ(vma, vm_file);
     file_info_t file_info = get_file_info(file);
 
     if (should_submit_mprotect) {
@@ -3194,8 +3201,8 @@ int syscall__init_module(void *ctx)
 statfunc int do_check_bpf_link(program_data_t *p, union bpf_attr *attr, int cmd)
 {
     if (cmd == BPF_LINK_CREATE) {
-        u32 prog_fd = READ_KERN(attr->link_create.prog_fd);
-        u32 perf_fd = READ_KERN(attr->link_create.target_fd);
+        u32 prog_fd = BPF_CORE_READ(attr, link_create.prog_fd);
+        u32 perf_fd = BPF_CORE_READ(attr, link_create.target_fd);
 
         struct file *bpf_prog_file = get_struct_file_from_fd(prog_fd);
         struct file *perf_event_file = get_struct_file_from_fd(perf_fd);
@@ -3292,9 +3299,9 @@ statfunc int arm_kprobe_handler(struct pt_regs *ctx)
     if (retcode)
         return 0; // register_kprobe() failed
 
-    char *symbol_name = (char *) READ_KERN(kp->symbol_name);
-    u64 pre_handler = (u64) READ_KERN(kp->pre_handler);
-    u64 post_handler = (u64) READ_KERN(kp->post_handler);
+    char *symbol_name = (char *) BPF_CORE_READ(kp, symbol_name);
+    u64 pre_handler = (u64) BPF_CORE_READ(kp, pre_handler);
+    u64 post_handler = (u64) BPF_CORE_READ(kp, post_handler);
 
     save_str_to_buf(p.event, (void *) symbol_name, 0);
     save_to_submit_buf(p.event, (void *) &pre_handler, sizeof(u64), 1);
@@ -3352,8 +3359,8 @@ int BPF_KPROBE(trace_security_bpf_prog)
         return 0;
 
     struct bpf_prog *prog = (struct bpf_prog *) PT_REGS_PARM1(ctx);
-    struct bpf_prog_aux *prog_aux = READ_KERN(prog->aux);
-    u32 prog_id = READ_KERN(prog_aux->id);
+    struct bpf_prog_aux *prog_aux = BPF_CORE_READ(prog, aux);
+    u32 prog_id = BPF_CORE_READ(prog_aux, id);
 
     // In some systems, the 'check_map_func_compatibility' and 'check_helper_call' symbols are not
     // available. For these cases, the temporary map 'bpf_attach_tmp_map' will not hold any
@@ -3388,7 +3395,7 @@ int BPF_KPROBE(trace_security_bpf_prog)
         bpf_map_delete_elem(&bpf_prog_load_map, &p.event->context.task.host_tid);
     }
 
-    int prog_type = READ_KERN(prog->type);
+    int prog_type = BPF_CORE_READ(prog, type);
 
     char prog_name[BPF_OBJ_NAME_LEN];
     bpf_probe_read_str(&prog_name, BPF_OBJ_NAME_LEN, prog_aux->name);
@@ -3421,10 +3428,13 @@ int BPF_KPROBE(trace_bpf_check)
     if (!should_submit(SECURITY_BPF_PROG, p.event))
         return 0;
 
-    struct bpf_prog **prog = (struct bpf_prog **) PT_REGS_PARM1(ctx);
+    struct bpf_prog **prog;
+    struct bpf_prog *prog_ptr;
+    struct bpf_prog_aux *prog_aux;
 
-    struct bpf_prog *prog_ptr = READ_KERN(*prog);
-    struct bpf_prog_aux *prog_aux = READ_KERN(prog_ptr->aux);
+    prog = (struct bpf_prog **) PT_REGS_PARM1(ctx);
+    bpf_core_read(&prog_ptr, sizeof(void *), prog);
+    prog_aux = BPF_CORE_READ(prog_ptr, aux);
 
     bpf_map_update_elem(&bpf_prog_load_map, &p.event->context.task.host_tid, &prog_aux, BPF_ANY);
 
@@ -3511,7 +3521,7 @@ int BPF_KPROBE(trace_check_helper_call)
         func_id = (int) PT_REGS_PARM2(ctx);
     } else {
         struct bpf_insn *insn = (struct bpf_insn *) PT_REGS_PARM2(ctx);
-        func_id = READ_KERN(insn->imm);
+        func_id = BPF_CORE_READ(insn, imm);
     }
 
     return handle_bpf_helper_func_id(p.event->context.task.host_tid, func_id);
@@ -3637,7 +3647,7 @@ int BPF_KPROBE(trace_device_add)
     struct device *dev = (struct device *) PT_REGS_PARM1(ctx);
     const char *name = get_device_name(dev);
 
-    struct device *parent_dev = READ_KERN(dev->parent);
+    struct device *parent_dev = BPF_CORE_READ(dev, parent);
     const char *parent_name = get_device_name(parent_dev);
 
     save_str_to_buf(p.event, (void *) name, 0);
@@ -3691,19 +3701,20 @@ int BPF_KPROBE(trace_ret__register_chrdev)
 statfunc struct pipe_buffer *get_last_write_pipe_buffer(struct pipe_inode_info *pipe)
 {
     // Extract the last page buffer used in the pipe for write
-    struct pipe_buffer *bufs = READ_KERN(pipe->bufs);
+    struct pipe_buffer *bufs = BPF_CORE_READ(pipe, bufs);
     unsigned int curbuf;
 
     struct pipe_inode_info___v54 *legacy_pipe = (struct pipe_inode_info___v54 *) pipe;
     if (bpf_core_field_exists(legacy_pipe->nrbufs)) {
-        unsigned int nrbufs = READ_KERN(legacy_pipe->nrbufs);
+        unsigned int nrbufs = BPF_CORE_READ(legacy_pipe, nrbufs);
         if (nrbufs > 0) {
             nrbufs--;
         }
-        curbuf = (READ_KERN(legacy_pipe->curbuf) + nrbufs) & (READ_KERN(legacy_pipe->buffers) - 1);
+        curbuf = (BPF_CORE_READ(legacy_pipe, curbuf) + nrbufs) &
+                 (BPF_CORE_READ(legacy_pipe, buffers) - 1);
     } else {
-        int head = READ_KERN(pipe->head);
-        int ring_size = READ_KERN(pipe->ring_size);
+        int head = BPF_CORE_READ(pipe, head);
+        int ring_size = BPF_CORE_READ(pipe, ring_size);
         curbuf = (head - 1) & (ring_size - 1);
     }
 
@@ -3766,15 +3777,15 @@ int BPF_KPROBE(trace_ret_do_splice)
     // dirty_pipe_splice is a splice to a pipe which results that the last page copied could be
     // modified (the PIPE_BUF_CAN_MERGE flag is on in the pipe_buffer struct).
     struct pipe_buffer *last_write_page_buffer = get_last_write_pipe_buffer(out_pipe);
-    unsigned int out_pipe_last_buffer_flags = READ_KERN(last_write_page_buffer->flags);
+    unsigned int out_pipe_last_buffer_flags = BPF_CORE_READ(last_write_page_buffer, flags);
     if ((out_pipe_last_buffer_flags & PIPE_BUF_FLAG_CAN_MERGE) == 0) {
         return 0;
     }
 
     struct file *in_file = (struct file *) saved_args.args[0];
-    struct inode *in_inode = READ_KERN(in_file->f_inode);
-    u64 in_inode_number = READ_KERN(in_inode->i_ino);
-    unsigned short in_file_type = READ_KERN(in_inode->i_mode) & S_IFMT;
+    struct inode *in_inode = BPF_CORE_READ(in_file, f_inode);
+    u64 in_inode_number = BPF_CORE_READ(in_inode, i_ino);
+    unsigned short in_file_type = BPF_CORE_READ(in_inode, i_mode) & S_IFMT;
     void *in_file_path = get_path_str(__builtin_preserve_access_index(&in_file->f_path));
     size_t write_len = (size_t) saved_args.args[4];
 
@@ -3792,19 +3803,20 @@ int BPF_KPROBE(trace_ret_do_splice)
     // https://lore.kernel.org/stable/20210821203108.215937-1-rafaeldtinoco@gmail.com/
     //
     struct public_key_signature *check;
-    if (!bpf_core_field_exists(check->data)) { // version < v5.10
-        off_in = READ_USER(*off_in_addr);
-    } else { // version >= v5.10
-        off_in = READ_KERN(*off_in_addr);
-    }
 
-    struct inode *out_inode = READ_KERN(out_file->f_inode);
-    u64 out_inode_number = READ_KERN(out_inode->i_ino);
+    if (!bpf_core_field_exists(check->data)) // version < v5.10
+        bpf_core_read_user(&off_in, sizeof(off_in), off_in_addr);
+
+    else // version >= v5.10
+        bpf_core_read(&off_in, sizeof(off_in), off_in_addr);
+
+    struct inode *out_inode = BPF_CORE_READ(out_file, f_inode);
+    u64 out_inode_number = BPF_CORE_READ(out_inode, i_ino);
 
     // Only last page written to pipe is vulnerable from the end of written data
     loff_t next_exposed_data_offset_in_out_pipe_last_page =
-        READ_KERN(last_write_page_buffer->offset) + READ_KERN(last_write_page_buffer->len);
-    size_t in_file_size = READ_KERN(in_inode->i_size);
+        BPF_CORE_READ(last_write_page_buffer, offset) + BPF_CORE_READ(last_write_page_buffer, len);
+    size_t in_file_size = BPF_CORE_READ(in_inode, i_size);
     size_t exposed_data_len = (PAGE_SIZE - 1) - next_exposed_data_offset_in_out_pipe_last_page;
     loff_t current_file_offset = off_in + write_len;
     if (current_file_offset + exposed_data_len > in_file_size) {
@@ -3836,7 +3848,7 @@ int BPF_KPROBE(trace_do_init_module)
 
     // get pointers before init
     struct module *mod = (struct module *) PT_REGS_PARM1(ctx);
-    struct list_head ls = READ_KERN(mod->list);
+    struct list_head ls = BPF_CORE_READ(mod, list);
     struct list_head *prev = ls.prev;
     struct list_head *next = ls.next;
 
@@ -3844,11 +3856,12 @@ int BPF_KPROBE(trace_do_init_module)
     module_data.next = (u64) next;
 
     // save string values on buffer for kretprobe
-    bpf_probe_read_str(&module_data.name, MODULE_NAME_LEN, (void *) READ_KERN(mod->name));
+    bpf_probe_read_str(&module_data.name, MODULE_NAME_LEN, (void *) BPF_CORE_READ(mod, name));
     bpf_probe_read_str(
-        &module_data.version, MODULE_VERSION_MAX_LENGTH, (void *) READ_KERN(mod->version));
-    bpf_probe_read_str(
-        &module_data.srcversion, MODULE_SRCVERSION_MAX_LENGTH, (void *) READ_KERN(mod->srcversion));
+        &module_data.version, MODULE_VERSION_MAX_LENGTH, (void *) BPF_CORE_READ(mod, version));
+    bpf_probe_read_str(&module_data.srcversion,
+                       MODULE_SRCVERSION_MAX_LENGTH,
+                       (void *) BPF_CORE_READ(mod, srcversion));
 
     // save module_data for kretprobe
     bpf_map_update_elem(&module_init_map, &p.event->context.task.host_tid, &module_data, BPF_ANY);
@@ -3873,10 +3886,10 @@ int BPF_KPROBE(trace_ret_do_init_module)
 
     // get next of original previous
     struct list_head *orig_prev_ptr = (struct list_head *) (orig_module_data->prev);
-    u64 orig_prev_next_addr = (u64) READ_KERN(orig_prev_ptr->next);
+    u64 orig_prev_next_addr = (u64) BPF_CORE_READ(orig_prev_ptr, next);
     // get previous of original next
     struct list_head *orig_next_ptr = (struct list_head *) (orig_module_data->next);
-    u64 orig_next_prev_addr = (u64) READ_KERN(orig_next_ptr->prev);
+    u64 orig_next_prev_addr = (u64) BPF_CORE_READ(orig_next_ptr, prev);
 
     // save strings to buf
     save_str_to_buf(p.event, &orig_module_data->name, 0);
@@ -3962,12 +3975,12 @@ int BPF_KPROBE(trace_security_file_permission)
     if (!should_submit(HOOKED_PROC_FOPS, p.event))
         return 0;
 
-    struct file_operations *fops = (struct file_operations *) READ_KERN(f_inode->i_fop);
+    struct file_operations *fops = (struct file_operations *) BPF_CORE_READ(f_inode, i_fop);
     if (fops == NULL)
         return 0;
 
-    unsigned long iterate_shared_addr = (unsigned long) READ_KERN(fops->iterate_shared);
-    unsigned long iterate_addr = (unsigned long) READ_KERN(fops->iterate);
+    unsigned long iterate_shared_addr = (unsigned long) BPF_CORE_READ(fops, iterate_shared);
+    unsigned long iterate_addr = (unsigned long) BPF_CORE_READ(fops, iterate);
     if (iterate_addr == 0 && iterate_shared_addr == 0)
         return 0;
 
@@ -4103,14 +4116,14 @@ int BPF_KPROBE(trace_do_sigaction)
 
     // Extract old signal handler values
     struct task_struct *task = p.event->task;
-    struct sighand_struct *sighand = READ_KERN(task->sighand);
+    struct sighand_struct *sighand = BPF_CORE_READ(task, sighand);
     struct k_sigaction *sig_actions = &(sighand->action[0]);
     if (sig > 0 && sig < _NSIG) {
         struct k_sigaction *old_act = get_node_addr(sig_actions, sig - 1);
-        old_sa_flags = READ_KERN(old_act->sa.sa_flags);
+        old_sa_flags = BPF_CORE_READ(old_act, sa.sa_flags);
         // In 64-bit system there is only 1 node in the mask array
-        old_sa_mask = READ_KERN(old_act->sa.sa_mask.sig[0]);
-        old_sa_handler = READ_KERN(old_act->sa.sa_handler);
+        old_sa_mask = BPF_CORE_READ(old_act, sa.sa_mask.sig[0]);
+        old_sa_handler = BPF_CORE_READ(old_act, sa.sa_handler);
         if (old_sa_handler >= (void *) SIG_HND)
             old_handle_method = SIG_HND;
         else {
@@ -4128,10 +4141,10 @@ int BPF_KPROBE(trace_do_sigaction)
     bool new_act_initialized = new_act != NULL;
     if (new_act_initialized) {
         struct sigaction *new_sigaction = &new_act->sa;
-        new_sa_flags = READ_KERN(new_sigaction->sa_flags);
+        new_sa_flags = BPF_CORE_READ(new_sigaction, sa_flags);
         // In 64-bit system there is only 1 node in the mask array
-        new_sa_mask = READ_KERN(new_sigaction->sa_mask.sig[0]);
-        new_sa_handler = READ_KERN(new_sigaction->sa_handler);
+        new_sa_mask = BPF_CORE_READ(new_sigaction, sa_mask.sig[0]);
+        new_sa_handler = BPF_CORE_READ(new_sigaction, sa_handler);
         if (new_sa_handler >= (void *) SIG_HND)
             new_handle_method = SIG_HND;
         else {
@@ -4174,7 +4187,7 @@ statfunc int common_utimes(struct pt_regs *ctx)
 
     void *path_str = get_path_str(path);
 
-    struct dentry *dentry = READ_KERN(path->dentry);
+    struct dentry *dentry = BPF_CORE_READ(path, dentry);
     u64 inode_nr = get_inode_nr_from_dentry(dentry);
     dev_t dev = get_dev_from_dentry(dentry);
 
@@ -4413,7 +4426,7 @@ int BPF_KPROBE(trace_ret_inotify_find_inode)
 
     void *path_str = get_path_str(path);
 
-    struct dentry *dentry = READ_KERN(path->dentry);
+    struct dentry *dentry = BPF_CORE_READ(path, dentry);
     u64 inode_nr = get_inode_nr_from_dentry(dentry);
     dev_t dev = get_dev_from_dentry(dentry);
 
@@ -4559,9 +4572,9 @@ int BPF_KPROBE(trace_ret_exec_binprm2)
 
 statfunc bool is_family_supported(struct socket *sock)
 {
-    struct sock *sk = (void *) BPF_READ(sock, sk);
+    struct sock *sk = (void *) BPF_CORE_READ(sock, sk);
     struct sock_common *common = (void *) sk;
-    u8 family = BPF_READ(common, skc_family);
+    u8 family = BPF_CORE_READ(common, skc_family);
 
     switch (family) {
         case PF_INET:
@@ -4587,7 +4600,7 @@ statfunc bool is_family_supported(struct socket *sock)
 
 statfunc bool is_socket_supported(struct socket *sock)
 {
-    struct sock *sk = (void *) BPF_READ(sock, sk);
+    struct sock *sk = (void *) BPF_CORE_READ(sock, sk);
     u16 protocol = get_sock_protocol(sk);
     switch (protocol) {
         // case IPPROTO_IPIP:
@@ -4845,7 +4858,7 @@ int BPF_KRETPROBE(trace_ret_sock_alloc_file)
     if (!sock_file)
         return 0; // socket() failed ?
 
-    u64 inode = BPF_READ(sock_file, f_inode, i_ino);
+    u64 inode = BPF_CORE_READ(sock_file, f_inode, i_ino);
     if (inode == 0)
         return 0;
 
@@ -4894,12 +4907,12 @@ int BPF_KPROBE(trace_security_sk_clone)
     struct sock *osock = (void *) PT_REGS_PARM1(ctx);
     struct sock *nsock = (void *) PT_REGS_PARM2(ctx);
 
-    struct socket *osocket = BPF_READ(osock, sk_socket);
+    struct socket *osocket = BPF_CORE_READ(osock, sk_socket);
     if (!osocket)
         return 0;
 
     // obtain old socket inode
-    u64 inode = BPF_READ(osocket, file, f_inode, i_ino);
+    u64 inode = BPF_CORE_READ(osocket, file, f_inode, i_ino);
     if (inode == 0)
         return 0;
 
@@ -4932,11 +4945,11 @@ statfunc u32 update_net_inodemap(struct socket *sock, event_data_t *event)
     if (!is_socket_supported(sock))
         return 0;
 
-    struct file *sock_file = BPF_READ(sock, file);
+    struct file *sock_file = BPF_CORE_READ(sock, file);
     if (!sock_file)
         return 0;
 
-    u64 inode = BPF_READ(sock_file, f_inode, i_ino);
+    u64 inode = BPF_CORE_READ(sock_file, f_inode, i_ino);
     if (inode == 0)
         return 0;
 
@@ -5009,7 +5022,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     }
 
     struct sock_common *common = (void *) sk;
-    u8 family = BPF_READ(common, skc_family);
+    u8 family = BPF_CORE_READ(common, skc_family);
 
     switch (family) {
         case PF_INET:
@@ -5043,7 +5056,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
 
     // obtain the socket inode using current "sock" structure
 
-    u64 inode = BPF_READ(sk, sk_socket, file, f_inode, i_ino);
+    u64 inode = BPF_CORE_READ(sk, sk_socket, file, f_inode, i_ino);
     if (inode == 0)
         mightbecloned = true; // kernel threads might have zero inode
 
@@ -5136,12 +5149,12 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     // read IP/IPv6 headers
 
     void *data_ptr = NULL;
-    u16 mac_len = BPF_READ(skb, mac_len);
+    u16 mac_len = BPF_CORE_READ(skb, mac_len);
     if (!mac_len) {
-        data_ptr = BPF_READ(skb, data); // no L2 header present in skb
+        data_ptr = BPF_CORE_READ(skb, data); // no L2 header present in skb
     } else {
-        data_ptr = BPF_READ(skb, head);
-        u16 nethead = BPF_READ(skb, network_header);
+        data_ptr = BPF_CORE_READ(skb, head);
+        u16 nethead = BPF_CORE_READ(skb, network_header);
         data_ptr += nethead;
     }
     bpf_core_read(nethdrs, l3_size, data_ptr);
@@ -5151,7 +5164,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     u8 proto = 0;
 
     indexer_t indexer = {0};
-    indexer.ts = BPF_READ(skb, tstamp);
+    indexer.ts = BPF_CORE_READ(skb, tstamp);
 
     switch (family) {
         case PF_INET:
