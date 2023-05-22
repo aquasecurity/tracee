@@ -7,6 +7,12 @@
 
 #include <maps.h>
 
+// PROTOTYPES
+
+#define statfunc static __always_inline
+
+// MACROS
+
 #define READ_KERN(ptr)                                                                             \
     ({                                                                                             \
         typeof(ptr) _val;                                                                          \
@@ -32,15 +38,13 @@
         __r;                                                                                       \
     })
 
-// HELPERS: DEVICES --------------------------------------------------------------------------------
+// FUNCTIONS
 
-static __always_inline const char *get_device_name(struct device *dev)
+statfunc const char *get_device_name(struct device *dev)
 {
     struct kobject kobj = READ_KERN(dev->kobj);
     return kobj.name;
 }
-
-// INTERNAL: STRINGS -------------------------------------------------------------------------------
 
 // Workaround: Newer LLVM versions might fail to optimize has_prefix()
 // loop unrolling with the following error:

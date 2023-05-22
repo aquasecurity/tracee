@@ -6,7 +6,18 @@
 #include <common/task.h>
 #include <common/cgroups.h>
 
-static __always_inline int
+// PROTOTYPES
+
+statfunc int init_context(void *, event_context_t *, struct task_struct *, u32);
+statfunc task_info_t *init_task_info(u32, u32, scratch_t *);
+statfunc bool context_changed(task_context_t *, task_context_t *);
+statfunc int init_program_data(program_data_t *, void *);
+statfunc int init_tailcall_program_data(program_data_t *, void *);
+statfunc void reset_event_args(program_data_t *);
+
+// FUNCTIONS
+
+statfunc int
 init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 options)
 {
     long ret = 0;
@@ -56,7 +67,7 @@ init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 
     return 0;
 }
 
-static __always_inline task_info_t *init_task_info(u32 tid, u32 pid, scratch_t *scratch)
+statfunc task_info_t *init_task_info(u32 tid, u32 pid, scratch_t *scratch)
 {
     int zero = 0;
 
@@ -85,7 +96,7 @@ static __always_inline task_info_t *init_task_info(u32 tid, u32 pid, scratch_t *
     return bpf_map_lookup_elem(&task_info_map, &tid);
 }
 
-static __always_inline bool context_changed(task_context_t *old, task_context_t *new)
+statfunc bool context_changed(task_context_t *old, task_context_t *new)
 {
     return (old->cgroup_id != new->cgroup_id) || old->uid != new->uid ||
            old->mnt_id != new->mnt_id || old->pid_id != new->pid_id ||
@@ -96,7 +107,7 @@ static __always_inline bool context_changed(task_context_t *old, task_context_t 
 }
 
 // clang-format off
-static __always_inline int init_program_data(program_data_t *p, void *ctx)
+statfunc int init_program_data(program_data_t *p, void *ctx)
 {
     long ret = 0;
     int zero = 0;
@@ -179,7 +190,7 @@ out:
 }
 // clang-format on
 
-static __always_inline int init_tailcall_program_data(program_data_t *p, void *ctx)
+statfunc int init_tailcall_program_data(program_data_t *p, void *ctx)
 {
     u32 zero = 0;
 
@@ -202,7 +213,7 @@ static __always_inline int init_tailcall_program_data(program_data_t *p, void *c
 }
 
 // use this function for programs that send more than one event
-static __always_inline void reset_event_args(program_data_t *p)
+statfunc void reset_event_args(program_data_t *p)
 {
     p->event->buf_off = 0;
     p->event->context.argnum = 0;

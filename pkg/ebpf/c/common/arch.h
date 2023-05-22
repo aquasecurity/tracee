@@ -7,7 +7,19 @@
 
 #include <common/common.h>
 
-static __always_inline bool is_x86_compat(struct task_struct *task)
+// PROTOTYPES
+
+statfunc bool is_x86_compat(struct task_struct *);
+statfunc bool is_arm64_compat(struct task_struct *);
+statfunc bool is_compat(struct task_struct *);
+statfunc int get_syscall_id_from_regs(struct pt_regs *);
+statfunc struct pt_regs *get_task_pt_regs(struct task_struct *);
+statfunc bool has_syscall_fd_arg(uint);
+statfunc uint get_syscall_fd_num_from_arg(uint syscall_id, args_t *);
+
+// FUNCTIONS
+
+statfunc bool is_x86_compat(struct task_struct *task)
 {
 #if defined(bpf_target_x86)
     return READ_KERN(task->thread_info.status) & TS_COMPAT;
@@ -16,7 +28,7 @@ static __always_inline bool is_x86_compat(struct task_struct *task)
 #endif
 }
 
-static __always_inline bool is_arm64_compat(struct task_struct *task)
+statfunc bool is_arm64_compat(struct task_struct *task)
 {
 #if defined(bpf_target_arm64)
     return READ_KERN(task->thread_info.flags) & _TIF_32BIT;
@@ -25,7 +37,7 @@ static __always_inline bool is_arm64_compat(struct task_struct *task)
 #endif
 }
 
-static __always_inline bool is_compat(struct task_struct *task)
+statfunc bool is_compat(struct task_struct *task)
 {
 #if defined(bpf_target_x86)
     return is_x86_compat(task);
@@ -36,7 +48,7 @@ static __always_inline bool is_compat(struct task_struct *task)
 #endif
 }
 
-static __always_inline int get_syscall_id_from_regs(struct pt_regs *regs)
+statfunc int get_syscall_id_from_regs(struct pt_regs *regs)
 {
 #if defined(bpf_target_x86)
     int id = READ_KERN(regs->orig_ax);
@@ -46,7 +58,7 @@ static __always_inline int get_syscall_id_from_regs(struct pt_regs *regs)
     return id;
 }
 
-static __always_inline struct pt_regs *get_task_pt_regs(struct task_struct *task)
+statfunc struct pt_regs *get_task_pt_regs(struct task_struct *task)
 {
 // THREAD_SIZE here is statistically defined and assumed to work for 4k page sizes.
 #if defined(bpf_target_x86)
@@ -287,7 +299,7 @@ static __always_inline struct pt_regs *get_task_pt_regs(struct task_struct *task
     #define NUMBER_OF_SYSCALLS_TO_CHECK 0
 #endif
 
-static __always_inline bool has_syscall_fd_arg(uint syscall_id)
+statfunc bool has_syscall_fd_arg(uint syscall_id)
 {
     // Only syscalls with one fd argument so far
     switch (syscall_id) {
@@ -395,7 +407,7 @@ static __always_inline bool has_syscall_fd_arg(uint syscall_id)
     return false;
 }
 
-static __always_inline uint get_syscall_fd_num_from_arg(uint syscall_id, args_t *args)
+statfunc uint get_syscall_fd_num_from_arg(uint syscall_id, args_t *args)
 {
     switch (syscall_id) {
         case SYSCALL_SYMLINKAT:

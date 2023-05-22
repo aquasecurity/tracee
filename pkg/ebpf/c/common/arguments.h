@@ -3,9 +3,17 @@
 
 #include <vmlinux.h>
 
-#include <maps.h>
+#include <common/common.h>
 
-static __always_inline int save_args(args_t *args, u32 event_id)
+// PROTOTYPES
+
+statfunc int save_args(args_t *, u32);
+statfunc int load_args(args_t *, u32);
+statfunc int del_args(u32);
+
+// FUNCTIONS
+
+statfunc int save_args(args_t *args, u32 event_id)
 {
     u64 id = event_id;
     u32 tid = bpf_get_current_pid_tgid();
@@ -15,7 +23,7 @@ static __always_inline int save_args(args_t *args, u32 event_id)
     return 0;
 }
 
-static __always_inline int load_args(args_t *args, u32 event_id)
+statfunc int load_args(args_t *args, u32 event_id)
 {
     args_t *saved_args;
     u32 tid = bpf_get_current_pid_tgid();
@@ -38,7 +46,7 @@ static __always_inline int load_args(args_t *args, u32 event_id)
     return 0;
 }
 
-static __always_inline int del_args(u32 event_id)
+statfunc int del_args(u32 event_id)
 {
     u32 tid = bpf_get_current_pid_tgid();
     u64 id = event_id;

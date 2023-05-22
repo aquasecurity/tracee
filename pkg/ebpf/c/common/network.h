@@ -10,39 +10,14 @@
 
 // clang-format off
 
-//
-// Network packet related events
-//
-
-// Function Prototypes
-
-static __always_inline u32 update_net_inodemap(struct socket *, event_data_t *);
-
-// NOTE: proto header structs need full type in vmlinux.h (for correct skb copy)
-
-// network retval values
-#define family_ipv4     (1 << 0)
-#define family_ipv6     (1 << 1)
-#define proto_http_req  (1 << 2)
-#define proto_http_resp (1 << 3)
-
-// payload size: full packets, only headers
-#define FULL    65536       // 1 << 16
-#define HEADERS 0           // no payload
-
-// when guessing by src/dst ports, declare at network.h
-#define UDP_PORT_DNS 53
-#define TCP_PORT_DNS 53
-
-// layer 7 parsing related constants
-#define http_min_len 7 // longest http command is "DELETE "
-
-// Type definitions and prototypes for protocol parsing
+// TYPES
 
 typedef union iphdrs_t {
     struct iphdr iphdr;
     struct ipv6hdr ipv6hdr;
 } iphdrs;
+
+// NOTE: proto header structs need full type in vmlinux.h (for correct skb copy)
 
 typedef union protohdrs_t {
     struct tcphdr tcphdr;
@@ -174,53 +149,102 @@ struct {
     __type(value, event_data_t);            // ... linked to a scratch area
 } net_heap_event SEC(".maps");
 
+// CONSTANTS
+
+// network retval values
+#define family_ipv4     (1 << 0)
+#define family_ipv6     (1 << 1)
+#define proto_http_req  (1 << 2)
+#define proto_http_resp (1 << 3)
+
+// payload size: full packets, only headers
+#define FULL    65536       // 1 << 16
+#define HEADERS 0           // no payload
+
+// when guessing by src/dst ports, declare at network.h
+#define UDP_PORT_DNS 53
+#define TCP_PORT_DNS 53
+
+// layer 7 parsing related constants
+#define http_min_len 7 // longest http command is "DELETE "
+
+// PROTOTYPES
+
+statfunc u32 get_inet_rcv_saddr(struct inet_sock *);
+statfunc u32 get_inet_saddr(struct inet_sock *);
+statfunc u32 get_inet_daddr(struct inet_sock *);
+statfunc u16 get_inet_sport(struct inet_sock *);
+statfunc u16 get_inet_num(struct inet_sock *);
+statfunc u16 get_inet_dport(struct inet_sock *);
+statfunc struct sock *get_socket_sock(struct socket *);
+statfunc u16 get_sock_family(struct sock *);
+statfunc u16 get_sock_protocol(struct sock *);
+statfunc u16 get_sockaddr_family(struct sockaddr *);
+statfunc struct in6_addr get_sock_v6_rcv_saddr(struct sock *);
+statfunc struct in6_addr get_ipv6_pinfo_saddr(struct ipv6_pinfo *);
+statfunc struct in6_addr get_sock_v6_daddr(struct sock *);
+statfunc volatile unsigned char get_sock_state(struct sock *);
+statfunc struct ipv6_pinfo *get_inet_pinet6(struct inet_sock *);
+statfunc struct sockaddr_un get_unix_sock_addr(struct unix_sock *);
+statfunc int get_network_details_from_sock_v4(struct sock *, net_conn_v4_t *, int);
+statfunc struct ipv6_pinfo *inet6_sk_own_impl(struct sock *, struct inet_sock *);
+statfunc int get_network_details_from_sock_v6(struct sock *, net_conn_v6_t *, int);
+statfunc int get_local_sockaddr_in_from_network_details(struct sockaddr_in *, net_conn_v4_t *, u16);
+statfunc int get_remote_sockaddr_in_from_network_details(struct sockaddr_in *, net_conn_v4_t *, u16);
+statfunc int get_local_sockaddr_in6_from_network_details(struct sockaddr_in6 *, net_conn_v6_t *, u16);
+statfunc int get_remote_sockaddr_in6_from_network_details(struct sockaddr_in6 *, net_conn_v6_t *, u16);
+statfunc int get_local_net_id_from_network_details_v4(struct sock *, net_id_t *, net_conn_v4_t *, u16);
+statfunc int get_local_net_id_from_network_details_v6(struct sock *, net_id_t *, net_conn_v6_t *, u16);
+
 // clang-format on
+
+// FUNCTIONS
 
 //
 // Regular events related to network
 //
 
-static __always_inline u32 get_inet_rcv_saddr(struct inet_sock *inet)
+statfunc u32 get_inet_rcv_saddr(struct inet_sock *inet)
 {
     return READ_KERN(inet->inet_rcv_saddr);
 }
 
-static __always_inline u32 get_inet_saddr(struct inet_sock *inet)
+statfunc u32 get_inet_saddr(struct inet_sock *inet)
 {
     return READ_KERN(inet->inet_saddr);
 }
 
-static __always_inline u32 get_inet_daddr(struct inet_sock *inet)
+statfunc u32 get_inet_daddr(struct inet_sock *inet)
 {
     return READ_KERN(inet->inet_daddr);
 }
 
-static __always_inline u16 get_inet_sport(struct inet_sock *inet)
+statfunc u16 get_inet_sport(struct inet_sock *inet)
 {
     return READ_KERN(inet->inet_sport);
 }
 
-static __always_inline u16 get_inet_num(struct inet_sock *inet)
+statfunc u16 get_inet_num(struct inet_sock *inet)
 {
     return READ_KERN(inet->inet_num);
 }
 
-static __always_inline u16 get_inet_dport(struct inet_sock *inet)
+statfunc u16 get_inet_dport(struct inet_sock *inet)
 {
     return READ_KERN(inet->inet_dport);
 }
 
-static __always_inline struct sock *get_socket_sock(struct socket *socket)
+statfunc struct sock *get_socket_sock(struct socket *socket)
 {
     return READ_KERN(socket->sk);
 }
 
-static __always_inline u16 get_sock_family(struct sock *sock)
+statfunc u16 get_sock_family(struct sock *sock)
 {
     return READ_KERN(sock->sk_family);
 }
 
-static __always_inline u16 get_sock_protocol(struct sock *sock)
+statfunc u16 get_sock_protocol(struct sock *sock)
 {
     u16 protocol = 0;
 
@@ -236,27 +260,27 @@ static __always_inline u16 get_sock_protocol(struct sock *sock)
     return protocol;
 }
 
-static __always_inline u16 get_sockaddr_family(struct sockaddr *address)
+statfunc u16 get_sockaddr_family(struct sockaddr *address)
 {
     return READ_KERN(address->sa_family);
 }
 
-static __always_inline struct in6_addr get_sock_v6_rcv_saddr(struct sock *sock)
+statfunc struct in6_addr get_sock_v6_rcv_saddr(struct sock *sock)
 {
     return READ_KERN(sock->sk_v6_rcv_saddr);
 }
 
-static __always_inline struct in6_addr get_ipv6_pinfo_saddr(struct ipv6_pinfo *np)
+statfunc struct in6_addr get_ipv6_pinfo_saddr(struct ipv6_pinfo *np)
 {
     return READ_KERN(np->saddr);
 }
 
-static __always_inline struct in6_addr get_sock_v6_daddr(struct sock *sock)
+statfunc struct in6_addr get_sock_v6_daddr(struct sock *sock)
 {
     return READ_KERN(sock->sk_v6_daddr);
 }
 
-static __always_inline volatile unsigned char get_sock_state(struct sock *sock)
+statfunc volatile unsigned char get_sock_state(struct sock *sock)
 {
     volatile unsigned char sk_state_own_impl;
     bpf_probe_read(
@@ -264,14 +288,14 @@ static __always_inline volatile unsigned char get_sock_state(struct sock *sock)
     return sk_state_own_impl;
 }
 
-static __always_inline struct ipv6_pinfo *get_inet_pinet6(struct inet_sock *inet)
+statfunc struct ipv6_pinfo *get_inet_pinet6(struct inet_sock *inet)
 {
     struct ipv6_pinfo *pinet6_own_impl;
     bpf_probe_read(&pinet6_own_impl, sizeof(pinet6_own_impl), &inet->pinet6);
     return pinet6_own_impl;
 }
 
-static __always_inline struct sockaddr_un get_unix_sock_addr(struct unix_sock *sock)
+statfunc struct sockaddr_un get_unix_sock_addr(struct unix_sock *sock)
 {
     struct unix_address *addr = READ_KERN(sock->addr);
     int len = READ_KERN(addr->len);
@@ -282,8 +306,7 @@ static __always_inline struct sockaddr_un get_unix_sock_addr(struct unix_sock *s
     return sockaddr;
 }
 
-static __always_inline int
-get_network_details_from_sock_v4(struct sock *sk, net_conn_v4_t *net_details, int peer)
+statfunc int get_network_details_from_sock_v4(struct sock *sk, net_conn_v4_t *net_details, int peer)
 {
     struct inet_sock *inet = inet_sk(sk);
 
@@ -302,8 +325,7 @@ get_network_details_from_sock_v4(struct sock *sk, net_conn_v4_t *net_details, in
     return 0;
 }
 
-static __always_inline struct ipv6_pinfo *inet6_sk_own_impl(struct sock *__sk,
-                                                            struct inet_sock *inet)
+statfunc struct ipv6_pinfo *inet6_sk_own_impl(struct sock *__sk, struct inet_sock *inet)
 {
     volatile unsigned char sk_state_own_impl;
     sk_state_own_impl = get_sock_state(__sk);
@@ -315,8 +337,7 @@ static __always_inline struct ipv6_pinfo *inet6_sk_own_impl(struct sock *__sk,
     return sk_fullsock ? pinet6_own_impl : NULL;
 }
 
-static __always_inline int
-get_network_details_from_sock_v6(struct sock *sk, net_conn_v6_t *net_details, int peer)
+statfunc int get_network_details_from_sock_v6(struct sock *sk, net_conn_v6_t *net_details, int peer)
 {
     // inspired by 'inet6_getname(struct socket *sock, struct sockaddr *uaddr, int peer)'
     // reference: https://elixir.bootlin.com/linux/latest/source/net/ipv6/af_inet6.c#L509
@@ -358,9 +379,9 @@ get_network_details_from_sock_v6(struct sock *sk, net_conn_v6_t *net_details, in
     return 0;
 }
 
-static __always_inline int get_local_sockaddr_in_from_network_details(struct sockaddr_in *addr,
-                                                                      net_conn_v4_t *net_details,
-                                                                      u16 family)
+statfunc int get_local_sockaddr_in_from_network_details(struct sockaddr_in *addr,
+                                                        net_conn_v4_t *net_details,
+                                                        u16 family)
 {
     addr->sin_family = family;
     addr->sin_port = net_details->local_port;
@@ -369,9 +390,9 @@ static __always_inline int get_local_sockaddr_in_from_network_details(struct soc
     return 0;
 }
 
-static __always_inline int get_remote_sockaddr_in_from_network_details(struct sockaddr_in *addr,
-                                                                       net_conn_v4_t *net_details,
-                                                                       u16 family)
+statfunc int get_remote_sockaddr_in_from_network_details(struct sockaddr_in *addr,
+                                                         net_conn_v4_t *net_details,
+                                                         u16 family)
 {
     addr->sin_family = family;
     addr->sin_port = net_details->remote_port;
@@ -380,9 +401,9 @@ static __always_inline int get_remote_sockaddr_in_from_network_details(struct so
     return 0;
 }
 
-static __always_inline int get_local_sockaddr_in6_from_network_details(struct sockaddr_in6 *addr,
-                                                                       net_conn_v6_t *net_details,
-                                                                       u16 family)
+statfunc int get_local_sockaddr_in6_from_network_details(struct sockaddr_in6 *addr,
+                                                         net_conn_v6_t *net_details,
+                                                         u16 family)
 {
     addr->sin6_family = family;
     addr->sin6_port = net_details->local_port;
@@ -393,9 +414,9 @@ static __always_inline int get_local_sockaddr_in6_from_network_details(struct so
     return 0;
 }
 
-static __always_inline int get_remote_sockaddr_in6_from_network_details(struct sockaddr_in6 *addr,
-                                                                        net_conn_v6_t *net_details,
-                                                                        u16 family)
+statfunc int get_remote_sockaddr_in6_from_network_details(struct sockaddr_in6 *addr,
+                                                          net_conn_v6_t *net_details,
+                                                          u16 family)
 {
     addr->sin6_family = family;
     addr->sin6_port = net_details->remote_port;
@@ -406,10 +427,10 @@ static __always_inline int get_remote_sockaddr_in6_from_network_details(struct s
     return 0;
 }
 
-static __always_inline int get_local_net_id_from_network_details_v4(struct sock *sk,
-                                                                    net_id_t *connect_id,
-                                                                    net_conn_v4_t *net_details,
-                                                                    u16 family)
+statfunc int get_local_net_id_from_network_details_v4(struct sock *sk,
+                                                      net_id_t *connect_id,
+                                                      net_conn_v4_t *net_details,
+                                                      u16 family)
 {
     connect_id->address.s6_addr32[3] = net_details->local_address;
     connect_id->address.s6_addr16[5] = 0xffff;
@@ -419,10 +440,10 @@ static __always_inline int get_local_net_id_from_network_details_v4(struct sock 
     return 0;
 }
 
-static __always_inline int get_local_net_id_from_network_details_v6(struct sock *sk,
-                                                                    net_id_t *connect_id,
-                                                                    net_conn_v6_t *net_details,
-                                                                    u16 family)
+statfunc int get_local_net_id_from_network_details_v6(struct sock *sk,
+                                                      net_id_t *connect_id,
+                                                      net_conn_v6_t *net_details,
+                                                      u16 family)
 {
     connect_id->address = net_details->local_address;
     connect_id->port = net_details->local_port;

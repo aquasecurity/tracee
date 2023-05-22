@@ -2,6 +2,7 @@
 #define __COMMON_CONSTS_H__
 
 // clang-format off
+
 #define MAX_PERCPU_BUFSIZE (1 << 15)  // set by the kernel as an upper bound
 #define MAX_STRING_SIZE    4096       // same as PATH_MAX
 #define MAX_BYTES_ARR_SIZE 4096       // max size of bytes array (arbitrarily chosen)
@@ -19,7 +20,6 @@
 
 #define MAX_MEM_DUMP_SIZE   127
 
-// clang-format on
 
 #define MAX_STR_ARR_ELEM      38 // TODO: turn this into global variables set w/ libbpfgo
 #define MAX_ARGS_STR_ARR_ELEM 15
@@ -46,5 +46,7 @@ enum buf_idx_e
     FILE_BUF_IDX,
     MAX_BUFFERS
 };
+
+// clang-format on
 
 #endif

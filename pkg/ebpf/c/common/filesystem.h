@@ -6,7 +6,34 @@
 #include <common/buffer.h>
 #include <common/memory.h>
 
-static __always_inline u64 get_time_nanosec_timespec(struct timespec64 *ts)
+// PROTOTYPES
+
+statfunc u64 get_time_nanosec_timespec(struct timespec64 *);
+statfunc u64 get_ctime_nanosec_from_inode(struct inode *);
+statfunc struct dentry *get_mnt_root_ptr_from_vfsmnt(struct vfsmount *);
+statfunc struct dentry *get_d_parent_ptr_from_dentry(struct dentry *);
+statfunc struct qstr get_d_name_from_dentry(struct dentry *);
+statfunc dev_t get_dev_from_file(struct file *);
+statfunc unsigned long get_inode_nr_from_file(struct file *);
+statfunc u64 get_ctime_nanosec_from_file(struct file *);
+statfunc unsigned short get_inode_mode_from_file(struct file *);
+statfunc struct path get_path_from_file(struct file *);
+statfunc struct file *get_struct_file_from_fd(u64);
+statfunc unsigned short get_inode_mode_from_fd(u64);
+statfunc int check_fd_type(u64, u16);
+statfunc unsigned long get_inode_nr_from_dentry(struct dentry *);
+statfunc dev_t get_dev_from_dentry(struct dentry *);
+statfunc u64 get_ctime_nanosec_from_dentry(struct dentry *);
+statfunc void *get_path_str(struct path *);
+statfunc void *get_dentry_path_str(struct dentry *);
+statfunc file_info_t get_file_info(struct file *);
+statfunc struct inode *get_inode_from_file(struct file *);
+statfunc struct super_block *get_super_block_from_inode(struct inode *);
+statfunc unsigned long get_s_magic_from_super_block(struct super_block *);
+
+// FUNCTIONS
+
+statfunc u64 get_time_nanosec_timespec(struct timespec64 *ts)
 {
     time64_t sec = READ_KERN(ts->tv_sec);
     if (sec < 0)
@@ -15,58 +42,58 @@ static __always_inline u64 get_time_nanosec_timespec(struct timespec64 *ts)
     return (sec * 1000000000L) + ns;
 }
 
-static __always_inline u64 get_ctime_nanosec_from_inode(struct inode *inode)
+statfunc u64 get_ctime_nanosec_from_inode(struct inode *inode)
 {
     struct timespec64 ts = READ_KERN(inode->i_ctime);
     return get_time_nanosec_timespec(&ts);
 }
 
-static __always_inline struct dentry *get_mnt_root_ptr_from_vfsmnt(struct vfsmount *vfsmnt)
+statfunc struct dentry *get_mnt_root_ptr_from_vfsmnt(struct vfsmount *vfsmnt)
 {
     return READ_KERN(vfsmnt->mnt_root);
 }
 
-static __always_inline struct dentry *get_d_parent_ptr_from_dentry(struct dentry *dentry)
+statfunc struct dentry *get_d_parent_ptr_from_dentry(struct dentry *dentry)
 {
     return READ_KERN(dentry->d_parent);
 }
 
-static __always_inline struct qstr get_d_name_from_dentry(struct dentry *dentry)
+statfunc struct qstr get_d_name_from_dentry(struct dentry *dentry)
 {
     return READ_KERN(dentry->d_name);
 }
 
-static __always_inline dev_t get_dev_from_file(struct file *file)
+statfunc dev_t get_dev_from_file(struct file *file)
 {
     struct inode *f_inode = READ_KERN(file->f_inode);
     struct super_block *i_sb = READ_KERN(f_inode->i_sb);
     return READ_KERN(i_sb->s_dev);
 }
 
-static __always_inline unsigned long get_inode_nr_from_file(struct file *file)
+statfunc unsigned long get_inode_nr_from_file(struct file *file)
 {
     struct inode *f_inode = READ_KERN(file->f_inode);
     return READ_KERN(f_inode->i_ino);
 }
 
-static __always_inline u64 get_ctime_nanosec_from_file(struct file *file)
+statfunc u64 get_ctime_nanosec_from_file(struct file *file)
 {
     struct inode *f_inode = READ_KERN(file->f_inode);
     return get_ctime_nanosec_from_inode(f_inode);
 }
 
-static __always_inline unsigned short get_inode_mode_from_file(struct file *file)
+statfunc unsigned short get_inode_mode_from_file(struct file *file)
 {
     struct inode *f_inode = READ_KERN(file->f_inode);
     return READ_KERN(f_inode->i_mode);
 }
 
-static __always_inline struct path get_path_from_file(struct file *file)
+statfunc struct path get_path_from_file(struct file *file)
 {
     return READ_KERN(file->f_path);
 }
 
-static __always_inline struct file *get_struct_file_from_fd(u64 fd_num)
+statfunc struct file *get_struct_file_from_fd(u64 fd_num)
 {
     struct task_struct *task = (struct task_struct *) bpf_get_current_task();
     if (task == NULL) {
@@ -92,7 +119,7 @@ static __always_inline struct file *get_struct_file_from_fd(u64 fd_num)
     return f;
 }
 
-static __always_inline unsigned short get_inode_mode_from_fd(u64 fd)
+statfunc unsigned short get_inode_mode_from_fd(u64 fd)
 {
     struct file *f = get_struct_file_from_fd(fd);
     if (f == NULL) {
@@ -103,7 +130,7 @@ static __always_inline unsigned short get_inode_mode_from_fd(u64 fd)
     return READ_KERN(f_inode->i_mode);
 }
 
-static __always_inline int check_fd_type(u64 fd, u16 type)
+statfunc int check_fd_type(u64 fd, u16 type)
 {
     unsigned short i_mode = get_inode_mode_from_fd(fd);
 
@@ -114,26 +141,26 @@ static __always_inline int check_fd_type(u64 fd, u16 type)
     return 0;
 }
 
-static __always_inline unsigned long get_inode_nr_from_dentry(struct dentry *dentry)
+statfunc unsigned long get_inode_nr_from_dentry(struct dentry *dentry)
 {
     struct inode *d_inode = READ_KERN(dentry->d_inode);
     return READ_KERN(d_inode->i_ino);
 }
 
-static __always_inline dev_t get_dev_from_dentry(struct dentry *dentry)
+statfunc dev_t get_dev_from_dentry(struct dentry *dentry)
 {
     struct inode *d_inode = READ_KERN(dentry->d_inode);
     struct super_block *i_sb = READ_KERN(d_inode->i_sb);
     return READ_KERN(i_sb->s_dev);
 }
 
-static __always_inline u64 get_ctime_nanosec_from_dentry(struct dentry *dentry)
+statfunc u64 get_ctime_nanosec_from_dentry(struct dentry *dentry)
 {
     struct inode *d_inode = READ_KERN(dentry->d_inode);
     return get_ctime_nanosec_from_inode(d_inode);
 }
 
-static __always_inline void *get_path_str(struct path *path)
+statfunc void *get_path_str(struct path *path)
 {
     struct path f_path;
     bpf_probe_read(&f_path, sizeof(struct path), path);
@@ -219,7 +246,7 @@ static __always_inline void *get_path_str(struct path *path)
     return &string_p->buf[buf_off];
 }
 
-static __always_inline void *get_dentry_path_str(struct dentry *dentry)
+statfunc void *get_dentry_path_str(struct dentry *dentry)
 {
     char slash = '/';
     int zero = 0;
@@ -276,7 +303,7 @@ static __always_inline void *get_dentry_path_str(struct dentry *dentry)
     return &string_p->buf[buf_off];
 }
 
-static __always_inline file_info_t get_file_info(struct file *file)
+statfunc file_info_t get_file_info(struct file *file)
 {
     file_info_t file_info = {};
     if (file != NULL) {
@@ -288,17 +315,17 @@ static __always_inline file_info_t get_file_info(struct file *file)
     return file_info;
 }
 
-static __always_inline struct inode *get_inode_from_file(struct file *file)
+statfunc struct inode *get_inode_from_file(struct file *file)
 {
     return READ_KERN(file->f_inode);
 }
 
-static __always_inline struct super_block *get_super_block_from_inode(struct inode *f_inode)
+statfunc struct super_block *get_super_block_from_inode(struct inode *f_inode)
 {
     return READ_KERN(f_inode->i_sb);
 }
 
-static __always_inline unsigned long get_s_magic_from_super_block(struct super_block *i_sb)
+statfunc unsigned long get_s_magic_from_super_block(struct super_block *i_sb)
 {
     return READ_KERN(i_sb->s_magic);
 }

@@ -5,15 +5,31 @@
 
 #include <common/network.h>
 
-static __always_inline buf_t *get_buf(int idx)
+// PROTOTYPES
+
+statfunc buf_t *get_buf(int);
+statfunc int save_to_submit_buf(event_data_t *, void *, u32, u8);
+statfunc int save_bytes_to_buf(event_data_t *, void *, u32, u8);
+statfunc int save_str_to_buf(event_data_t *, void *, u8);
+statfunc int add_u64_elements_to_buf(event_data_t *, const u64 __user *, int, volatile u32);
+statfunc int save_u64_arr_to_buf(event_data_t *, const u64 __user *, int, u8);
+statfunc int save_str_arr_to_buf(event_data_t *, const char __user *const __user *, u8);
+statfunc int save_args_str_arr_to_buf(event_data_t *, const char *, const char *, int, u8);
+statfunc int save_sockaddr_to_buf(event_data_t *, struct socket *, u8);
+statfunc int events_perf_submit(program_data_t *, u32 id, long);
+statfunc int save_args_to_submit_buf(event_data_t *, args_t *);
+
+// FUNCTIONS
+
+statfunc buf_t *get_buf(int idx)
 {
     return bpf_map_lookup_elem(&bufs, &idx);
 }
 
-// The biggest element that can be saved with this function should be defined here
+// biggest elem to be saved with 'save_to_submit_buf' should be defined here:
 #define MAX_ELEMENT_SIZE sizeof(struct sockaddr_un)
 
-static __always_inline int save_to_submit_buf(event_data_t *event, void *ptr, u32 size, u8 index)
+statfunc int save_to_submit_buf(event_data_t *event, void *ptr, u32 size, u8 index)
 {
     // Data saved to submit buf: [index][ ... buffer[size] ... ]
 
@@ -42,7 +58,7 @@ static __always_inline int save_to_submit_buf(event_data_t *event, void *ptr, u3
     return 0;
 }
 
-static __always_inline int save_bytes_to_buf(event_data_t *event, void *ptr, u32 size, u8 index)
+statfunc int save_bytes_to_buf(event_data_t *event, void *ptr, u32 size, u8 index)
 {
     // Data saved to submit buf: [index][size][ ... bytes ... ]
 
@@ -79,7 +95,7 @@ static __always_inline int save_bytes_to_buf(event_data_t *event, void *ptr, u32
     return 0;
 }
 
-static __always_inline int save_str_to_buf(event_data_t *event, void *ptr, u8 index)
+statfunc int save_str_to_buf(event_data_t *event, void *ptr, u8 index)
 {
     // Data saved to submit buf: [index][size][ ... string ... ]
 
@@ -111,7 +127,7 @@ static __always_inline int save_str_to_buf(event_data_t *event, void *ptr, u8 in
     return 0;
 }
 
-static __always_inline int
+statfunc int
 add_u64_elements_to_buf(event_data_t *event, const u64 __user *ptr, int len, volatile u32 count_off)
 {
     // save count_off into a new variable to avoid verifier errors
@@ -139,8 +155,7 @@ out:
     return 1;
 }
 
-static __always_inline int
-save_u64_arr_to_buf(event_data_t *event, const u64 __user *ptr, int len, u8 index)
+statfunc int save_u64_arr_to_buf(event_data_t *event, const u64 __user *ptr, int len, u8 index)
 {
     // Data saved to submit buf: [index][u8 count][u64 1][u64 2][u64 3]...
     if (event->buf_off > ARGS_BUF_SIZE - 1)
@@ -161,7 +176,7 @@ save_u64_arr_to_buf(event_data_t *event, const u64 __user *ptr, int len, u8 inde
     return add_u64_elements_to_buf(event, ptr, len, orig_off);
 }
 
-static __always_inline int
+statfunc int
 save_str_arr_to_buf(event_data_t *event, const char __user *const __user *ptr, u8 index)
 {
     // Data saved to submit buf: [index][string count][str1 size][str1][str2 size][str2]...
@@ -232,7 +247,7 @@ out:
 
 #define MAX_ARR_LEN 8192
 
-static __always_inline int save_args_str_arr_to_buf(
+statfunc int save_args_str_arr_to_buf(
     event_data_t *event, const char *start, const char *end, int elem_num, u8 index)
 {
     // Data saved to submit buf: [index][len][arg_len][arg #][null delimited string array]
@@ -279,7 +294,7 @@ static __always_inline int save_args_str_arr_to_buf(
     return 0;
 }
 
-static __always_inline int save_sockaddr_to_buf(event_data_t *event, struct socket *sock, u8 index)
+statfunc int save_sockaddr_to_buf(event_data_t *event, struct socket *sock, u8 index)
 {
     struct sock *sk = get_socket_sock(sock);
 
@@ -312,7 +327,7 @@ static __always_inline int save_sockaddr_to_buf(event_data_t *event, struct sock
     return 0;
 }
 
-static __always_inline int events_perf_submit(program_data_t *p, u32 id, long ret)
+statfunc int events_perf_submit(program_data_t *p, u32 id, long ret)
 {
     p->event->context.eventid = id;
     p->event->context.retval = ret;
@@ -338,7 +353,7 @@ static __always_inline int events_perf_submit(program_data_t *p, u32 id, long re
 
 #define DEC_ARG(n, enc_arg) ((enc_arg >> (8 * n)) & 0xFF)
 
-static __always_inline int save_args_to_submit_buf(event_data_t *event, args_t *args)
+statfunc int save_args_to_submit_buf(event_data_t *event, args_t *args)
 {
     unsigned int i;
     unsigned int rc = 0;

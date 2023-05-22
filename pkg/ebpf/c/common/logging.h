@@ -5,7 +5,7 @@
 
 #include <common/common.h>
 
-static __always_inline void do_tracee_log(
+statfunc void do_tracee_log(
     void *ctx, enum bpf_log_level level, enum bpf_log_id id, s64 ret, u32 line, void *file)
 {
     if (!ctx || !file)

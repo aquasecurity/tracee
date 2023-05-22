@@ -17,6 +17,7 @@
 
 #include <maps.h>
 #include <types.h>
+#include <tracee.h>
 
 #include <common/arch.h>
 #include <common/arguments.h>
@@ -38,8 +39,6 @@
 #include <common/probes.h>
 
 char LICENSE[] SEC("license") = "GPL";
-
-// SYSCALL HOOKS -----------------------------------------------------------------------------------
 
 // trace/events/syscalls.h: TP_PROTO(struct pt_regs *regs, long id)
 // initial entry for sys_enter syscall logic
@@ -353,8 +352,6 @@ int trace_sys_exit(struct bpf_raw_tracepoint_args *ctx)
     return 0;
 }
 
-// PROBES AND HELPERS ------------------------------------------------------------------------------
-
 SEC("raw_tracepoint/sys_execve")
 int syscall__execve(void *ctx)
 {
@@ -405,7 +402,7 @@ int syscall__execveat(void *ctx)
     return events_perf_submit(&p, SYSCALL_EXECVEAT, 0);
 }
 
-static __always_inline int send_socket_dup(program_data_t *p, u64 oldfd, u64 newfd)
+statfunc int send_socket_dup(program_data_t *p, u64 oldfd, u64 newfd)
 {
     if (!should_submit(SOCKET_DUP, p->event))
         return 0;
@@ -611,7 +608,7 @@ void __always_inline send_hidden_module(u64 mod_addr, char *mod_name, program_da
 // modules list and populate the map. It gets clean in userspace before every run.
 // Since this mechanism is suppose to be triggered every once in a while,
 // this should be ok.
-static __always_inline bool init_shown_modules()
+statfunc bool init_shown_modules()
 {
     char modules_sym[8] = "modules";
     struct list_head *head = (struct list_head *) get_symbol_addr(modules_sym);
@@ -643,7 +640,7 @@ static __always_inline bool init_shown_modules()
     return !iterated_all_modules; // false is valid value
 }
 
-static __always_inline bool is_hidden(u64 mod)
+statfunc bool is_hidden(u64 mod)
 {
     kernel_module_t *mod_from_map = bpf_map_lookup_elem(&modules_map, &mod);
     if (mod_from_map == NULL) {
@@ -653,7 +650,7 @@ static __always_inline bool is_hidden(u64 mod)
     }
 }
 
-static __always_inline bool find_modules_from_module_kset_list(program_data_t *p)
+statfunc bool find_modules_from_module_kset_list(program_data_t *p)
 {
     char module_kset_sym[12] = "module_kset";
     struct kset *mod_kset = (struct kset *) get_symbol_addr(module_kset_sym);
@@ -690,12 +687,12 @@ static __always_inline bool find_modules_from_module_kset_list(program_data_t *p
 
 BPF_QUEUE(walk_mod_tree_queue, rb_node_t, 2048); // used to walk a rb tree
 
-static __always_inline struct latch_tree_node *__lt_from_rb(struct rb_node *node, int idx)
+statfunc struct latch_tree_node *__lt_from_rb(struct rb_node *node, int idx)
 {
     return container_of(node, struct latch_tree_node, node[idx]);
 }
 
-static __always_inline bool walk_mod_tree(program_data_t *p, struct rb_node *root, int idx)
+statfunc bool walk_mod_tree(program_data_t *p, struct rb_node *root, int idx)
 {
     struct latch_tree_node *ltn;
     struct module *mod;
@@ -737,7 +734,7 @@ struct mod_tree_root {
     struct latch_tree_root root;
 };
 
-static __always_inline bool find_modules_from_mod_tree(program_data_t *p)
+statfunc bool find_modules_from_mod_tree(program_data_t *p)
 {
     char mod_tree_sym[9] = "mod_tree";
     struct mod_tree_root *m_tree = (struct mod_tree_root *) get_symbol_addr(mod_tree_sym);
@@ -754,7 +751,7 @@ static __always_inline bool find_modules_from_mod_tree(program_data_t *p)
     return walk_mod_tree(p, node, seq & 1);
 }
 
-static __always_inline bool check_is_proc_modules_hooked(program_data_t *p)
+statfunc bool check_is_proc_modules_hooked(program_data_t *p)
 {
     struct module *pos, *n;
     bool finished_iterating = false;
@@ -800,7 +797,7 @@ static __always_inline bool check_is_proc_modules_hooked(program_data_t *p)
     return !finished_iterating;
 }
 
-static __always_inline bool kern_ver_below_min_lkm(struct pt_regs *ctx)
+statfunc bool kern_ver_below_min_lkm(struct pt_regs *ctx)
 {
     // If we're below kernel version 5.2, propogate error to userspace and return
     if (!bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_sk_storage_get)) {
@@ -1516,7 +1513,7 @@ int uprobe_mem_dump_trigger(struct pt_regs *ctx)
     return events_perf_submit(&p, PRINT_MEM_DUMP, 0);
 }
 
-static __always_inline struct trace_kprobe *get_trace_kprobe_from_trace_probe(void *tracep)
+statfunc struct trace_kprobe *get_trace_kprobe_from_trace_probe(void *tracep)
 {
     struct trace_kprobe *tracekp =
         (struct trace_kprobe *) container_of(tracep, struct trace_kprobe, tp);
@@ -1524,7 +1521,7 @@ static __always_inline struct trace_kprobe *get_trace_kprobe_from_trace_probe(vo
     return tracekp;
 }
 
-static __always_inline struct trace_uprobe *get_trace_uprobe_from_trace_probe(void *tracep)
+statfunc struct trace_uprobe *get_trace_uprobe_from_trace_probe(void *tracep)
 {
     struct trace_uprobe *traceup =
         (struct trace_uprobe *) container_of(tracep, struct trace_uprobe, tp);
@@ -1533,7 +1530,7 @@ static __always_inline struct trace_uprobe *get_trace_uprobe_from_trace_probe(vo
 }
 
 // This function returns a pointer to struct trace_probe from struct trace_event_call.
-static __always_inline void *get_trace_probe_from_trace_event_call(struct trace_event_call *call)
+statfunc void *get_trace_probe_from_trace_event_call(struct trace_event_call *call)
 {
     void *tracep_ptr;
 
@@ -1560,7 +1557,7 @@ enum perf_type_e
 
 // Inspired by bpf_get_perf_event_info() kernel func.
 // https://elixir.bootlin.com/linux/v5.19.2/source/kernel/trace/bpf_trace.c#L2123
-static __always_inline int
+statfunc int
 send_bpf_attach(program_data_t *p, struct file *bpf_prog_file, struct file *perf_event_file)
 {
     if (!should_submit(BPF_ATTACH, p->event)) {
@@ -2460,10 +2457,7 @@ enum bin_type_e
     SEND_KERNEL_MODULE,
 };
 
-static __always_inline u32 tail_call_send_bin(void *ctx,
-                                              program_data_t *p,
-                                              bin_args_t *bin_args,
-                                              int tail_call)
+statfunc u32 tail_call_send_bin(void *ctx, program_data_t *p, bin_args_t *bin_args, int tail_call)
 {
     if (p->event->buf_off < ARGS_BUF_SIZE - sizeof(bin_args_t)) {
         bpf_probe_read(&(p->event->args[p->event->buf_off]), sizeof(bin_args_t), bin_args);
@@ -2476,7 +2470,7 @@ static __always_inline u32 tail_call_send_bin(void *ctx,
     return 0;
 }
 
-static __always_inline u32 send_bin_helper(void *ctx, void *prog_array, int tail_call)
+statfunc u32 send_bin_helper(void *ctx, void *prog_array, int tail_call)
 {
     // Note: sending the data to the userspace have the following constraints:
     //
@@ -2606,7 +2600,7 @@ int send_bin_tp(void *ctx)
     return send_bin_helper(ctx, &prog_array_tp, TAIL_SEND_BIN_TP);
 }
 
-static __always_inline int
+statfunc int
 submit_magic_write(program_data_t *p, file_info_t *file_info, io_data_t io_data, u32 bytes_written)
 {
     u32 header_bytes = FILE_MAGIC_HDR_SIZE;
@@ -2641,7 +2635,7 @@ submit_magic_write(program_data_t *p, file_info_t *file_info, io_data_t io_data,
     return events_perf_submit(p, MAGIC_WRITE, bytes_written);
 }
 
-static __always_inline bool should_submit_io_event(u32 event_id, program_data_t *p)
+statfunc bool should_submit_io_event(u32 event_id, program_data_t *p)
 {
     return ((event_id == VFS_READ || event_id == VFS_READV || event_id == VFS_WRITE ||
              event_id == VFS_WRITEV || event_id == __KERNEL_WRITE) &&
@@ -2656,7 +2650,7 @@ static __always_inline bool should_submit_io_event(u32 event_id, program_data_t 
  * @is_read:        true if the operation is read. False if write.
  * @is_buf:         true if the non-file side of the operation is a buffer. False if io_vector.
  */
-static __always_inline int
+statfunc int
 do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool is_read, bool is_buf)
 {
     args_t saved_args;
@@ -2730,7 +2724,7 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
 // Will only capture if:
 // 1. File write capture was configured
 // 2. File matches the filters given
-static __always_inline int capture_file_write(struct pt_regs *ctx, u32 event_id)
+statfunc int capture_file_write(struct pt_regs *ctx, u32 event_id)
 {
     program_data_t p = {};
     if (!init_program_data(&p, ctx)) {
@@ -3197,7 +3191,7 @@ int syscall__init_module(void *ctx)
     return 0;
 }
 
-static __always_inline int do_check_bpf_link(program_data_t *p, union bpf_attr *attr, int cmd)
+statfunc int do_check_bpf_link(program_data_t *p, union bpf_attr *attr, int cmd)
 {
     if (cmd == BPF_LINK_CREATE) {
         u32 prog_fd = READ_KERN(attr->link_create.prog_fd);
@@ -3212,7 +3206,7 @@ static __always_inline int do_check_bpf_link(program_data_t *p, union bpf_attr *
     return 0;
 }
 
-static __always_inline int check_bpf_link(program_data_t *p, union bpf_attr *attr, int cmd)
+statfunc int check_bpf_link(program_data_t *p, union bpf_attr *attr, int cmd)
 {
     // BPF_LINK_CREATE command was only introduced in kernel 5.7.
     // nothing to check for kernels < 5.7.
@@ -3277,7 +3271,7 @@ int BPF_KPROBE(trace_security_bpf)
 
 // arm_kprobe can't be hooked in arm64 architecture, use enable logic instead
 
-static __always_inline int arm_kprobe_handler(struct pt_regs *ctx)
+statfunc int arm_kprobe_handler(struct pt_regs *ctx)
 {
     args_t saved_args;
     if (load_args(&saved_args, KPROBE_ATTACH) != 0) {
@@ -3445,7 +3439,7 @@ int BPF_KPROBE(trace_bpf_check)
 // Later on, in security_bpf_prog, save this information in the stable map 'bpf_attach_map', which
 // contains the prog_id in its key.
 
-static __always_inline int handle_bpf_helper_func_id(u32 host_tid, int func_id)
+statfunc int handle_bpf_helper_func_id(u32 host_tid, int func_id)
 {
     bpf_used_helpers_t val = {0};
 
@@ -3694,7 +3688,7 @@ int BPF_KPROBE(trace_ret__register_chrdev)
     return events_perf_submit(&p, REGISTER_CHRDEV, 0);
 }
 
-static __always_inline struct pipe_buffer *get_last_write_pipe_buffer(struct pipe_inode_info *pipe)
+statfunc struct pipe_buffer *get_last_write_pipe_buffer(struct pipe_inode_info *pipe)
 {
     // Extract the last page buffer used in the pipe for write
     struct pipe_buffer *bufs = READ_KERN(pipe->bufs);
@@ -4163,7 +4157,7 @@ int BPF_KPROBE(trace_do_sigaction)
     return events_perf_submit(&p, DO_SIGACTION, 0);
 }
 
-static __always_inline int common_utimes(struct pt_regs *ctx)
+statfunc int common_utimes(struct pt_regs *ctx)
 {
     program_data_t p = {};
     if (!init_program_data(&p, ctx))
@@ -4286,7 +4280,7 @@ int BPF_KPROBE(trace_filp_close)
     return 0;
 }
 
-static __always_inline int common_file_modification_ent(struct pt_regs *ctx)
+statfunc int common_file_modification_ent(struct pt_regs *ctx)
 {
     program_data_t p = {};
     if (!init_program_data(&p, ctx))
@@ -4316,7 +4310,7 @@ static __always_inline int common_file_modification_ent(struct pt_regs *ctx)
     return 0;
 }
 
-static __always_inline int common_file_modification_ret(struct pt_regs *ctx)
+statfunc int common_file_modification_ret(struct pt_regs *ctx)
 {
     program_data_t p = {};
     if (!init_program_data(&p, ctx))
@@ -4563,7 +4557,7 @@ int BPF_KPROBE(trace_ret_exec_binprm2)
 // network helper functions
 //
 
-static __always_inline bool is_family_supported(struct socket *sock)
+statfunc bool is_family_supported(struct socket *sock)
 {
     struct sock *sk = (void *) BPF_READ(sock, sk);
     struct sock_common *common = (void *) sk;
@@ -4591,7 +4585,7 @@ static __always_inline bool is_family_supported(struct socket *sock)
     return 1; // supported
 }
 
-static __always_inline bool is_socket_supported(struct socket *sock)
+statfunc bool is_socket_supported(struct socket *sock)
 {
     struct sock *sk = (void *) BPF_READ(sock, sk);
     u16 protocol = get_sock_protocol(sk);
@@ -4618,12 +4612,12 @@ static __always_inline bool is_socket_supported(struct socket *sock)
 // Support functions for network code
 //
 
-static __always_inline u64 sizeof_net_event_context_t(void)
+statfunc u64 sizeof_net_event_context_t(void)
 {
     return sizeof(net_event_context_t) - sizeof(net_event_contextmd_t);
 }
 
-static __always_inline void set_net_task_context(event_data_t *event, net_task_context_t *netctx)
+statfunc void set_net_task_context(event_data_t *event, net_task_context_t *netctx)
 {
     netctx->task = event->task;
     netctx->matched_policies = event->context.matched_policies;
@@ -4632,7 +4626,7 @@ static __always_inline void set_net_task_context(event_data_t *event, net_task_c
     __builtin_memcpy(&netctx->taskctx, &event->context.task, sizeof(task_context_t));
 }
 
-static __always_inline enum event_id_e net_packet_to_net_event(net_packet_t packet_type)
+statfunc enum event_id_e net_packet_to_net_event(net_packet_t packet_type)
 {
     switch (packet_type) {
         case CAP_NET_PACKET:
@@ -4661,7 +4655,7 @@ static __always_inline enum event_id_e net_packet_to_net_event(net_packet_t pack
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Waddress-of-packed-member"
 
-static __always_inline int should_submit_net_event(net_event_context_t *neteventctx,
+statfunc int should_submit_net_event(net_event_context_t *neteventctx,
                                                    net_packet_t packet_type)
 {
     // configure network events that should be sent to userland
@@ -4678,7 +4672,7 @@ static __always_inline int should_submit_net_event(net_event_context_t *netevent
 
 #pragma clang diagnostic pop
 
-static __always_inline int should_capture_net_event(net_event_context_t *neteventctx,
+statfunc int should_capture_net_event(net_event_context_t *neteventctx,
                                                     net_packet_t packet_type)
 {
     if (neteventctx->md.captured) // already captured
@@ -4692,7 +4686,7 @@ static __always_inline int should_capture_net_event(net_event_context_t *neteven
 //
 
 #define CGROUP_SKB_HANDLE_FUNCTION(name)                                       \
-static __always_inline u32 cgroup_skb_handle_##name(                           \
+statfunc u32 cgroup_skb_handle_##name(                           \
     struct __sk_buff *ctx,                                                     \
     net_event_context_t *neteventctx,                                          \
     nethdrs *nethdrs                                                           \
@@ -4716,7 +4710,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6);
 
 // TODO: check if TCP needs a LRU map of sent events by pkt ID (avoid dups)
 
-static __always_inline u32 cgroup_skb_submit(void *map,
+statfunc u32 cgroup_skb_submit(void *map,
                                              struct __sk_buff *ctx,
                                              net_event_context_t *neteventctx,
                                              u32 event_type,
@@ -4755,7 +4749,7 @@ static __always_inline u32 cgroup_skb_submit(void *map,
 
 // TODO: check if TCP needs a LRU map of sent events by pkt ID (avoid dups)
 
-static __always_inline u32 cgroup_skb_capture_event(struct __sk_buff *ctx,
+statfunc u32 cgroup_skb_capture_event(struct __sk_buff *ctx,
                                                     net_event_context_t *neteventctx,
                                                     u32 event_type)
 {
@@ -4930,7 +4924,7 @@ int BPF_KPROBE(trace_security_sk_clone)
     return 0;
 }
 
-static __always_inline u32 update_net_inodemap(struct socket *sock, event_data_t *event)
+statfunc u32 update_net_inodemap(struct socket *sock, event_data_t *event)
 {
     if (!is_family_supported(sock))
         return 0;
@@ -5227,7 +5221,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
 // SKB eBPF programs
 //
 
-static __always_inline u32 cgroup_skb_generic(struct __sk_buff *ctx, void *cgrpctxmap)
+statfunc u32 cgroup_skb_generic(struct __sk_buff *ctx, void *cgrpctxmap)
 {
     // IMPORTANT: runs for EVERY packet of tasks belonging to root cgroup
 
@@ -5501,7 +5495,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
 
 // when guessing through l7 layer, here
 
-static __always_inline int net_l7_is_http(struct __sk_buff *skb, u32 l7_off)
+statfunc int net_l7_is_http(struct __sk_buff *skb, u32 l7_off)
 {
     char http_min_str[http_min_len];
     __builtin_memset((void *) &http_min_str, 0, sizeof(char) * http_min_len);
