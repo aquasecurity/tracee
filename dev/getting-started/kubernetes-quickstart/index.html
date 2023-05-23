@@ -14706,7 +14706,7 @@ kube-system   storage-provisioner                1/1     Running   0          15
 <p>The provided Helm chart will install Tracee as a DaemonSet so that it's tracing all the nodes in the cluster.</p>
 <div class="highlight"><pre><span></span><code><span class="go">helm repo add aqua https://aquasecurity.github.io/helm-charts/</span>
 <span class="go">helm repo update</span>
-<span class="go">helm install tracee aqua/tracee  --namespace tracee-system --create-namespace</span>
+<span class="go">helm install tracee aqua/tracee --namespace tracee-system --create-namespace</span>
 </code></pre></div>
 <details>
   <summary>Verify step</summary>

@@ -14624,15 +14624,11 @@ daemonset/tracee logs with <code>kubectl logs -f daemonset/tracee -n tracee-syst
 <li>
 <p>Install the chart from the Aqua chart repository:</p>
 <div class="highlight"><pre><span></span><code><span class="go">helm install tracee aqua/tracee \</span>
-<span class="go">        --namespace tracee-system --create-namespace \</span>
-<span class="go">        --set hostPID=true</span>
+<span class="go">        --namespace tracee-system --create-namespace</span>
 </code></pre></div>
 <p>or install the Helm chart from a local directory:</p>
-<div class="highlight"><pre><span></span><code><span class="go">helm repo add aqua https://aquasecurity.github.io/helm-charts/</span>
-<span class="go">helm dependency update ./deploy/helm/tracee</span>
-<span class="go">helm install tracee ./deploy/helm/tracee \</span>
-<span class="go">        --namespace tracee-system --create-namespace \</span>
-<span class="go">        --set hostPID=true</span>
+<div class="highlight"><pre><span></span><code><span class="go">helm install tracee ./deploy/helm/tracee \</span>
+<span class="go">        --namespace tracee-system --create-namespace</span>
 </code></pre></div>
 </li>
 </ol>
@@ -14648,7 +14644,6 @@ kubectl create -n tracee-system \
 <div class="highlight"><pre><span></span><code>```console
 helm install tracee aqua/tracee \
         --namespace tracee-system --create-namespace \
-        --set hostPID=true \
         --set webhook=http://postee-svc:8082
 ```
 </code></pre></div>
