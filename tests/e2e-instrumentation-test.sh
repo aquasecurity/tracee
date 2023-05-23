@@ -88,7 +88,7 @@ for TEST in $TESTS; do
         --output option:parse-arguments \
         --log file:$SCRIPT_TMP_DIR/tracee-log-$$ \
         --signatures-dir $SIG_DIR \
-        --filter comm=echo,mv,ls \
+        --filter comm=echo,mv,ls,tracee \
         --filter set=signatures &
 
     # wait tracee-ebpf to be started (30 sec most)
