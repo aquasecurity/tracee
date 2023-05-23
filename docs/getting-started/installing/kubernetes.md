@@ -37,18 +37,14 @@ the detections in your preferred way (e.g. Slack, E-mail, JIRA and more).
 
 		```console
 		helm install tracee aqua/tracee \
-				--namespace tracee-system --create-namespace \
-				--set hostPID=true
+				--namespace tracee-system --create-namespace
 		```
   
 		or install the Helm chart from a local directory:
 
 		```console
-		helm repo add aqua https://aquasecurity.github.io/helm-charts/
-		helm dependency update ./deploy/helm/tracee
 		helm install tracee ./deploy/helm/tracee \
-				--namespace tracee-system --create-namespace \
-				--set hostPID=true
+				--namespace tracee-system --create-namespace
 		```
 
 2. Install **Tracee** **Manually**
@@ -65,7 +61,6 @@ the detections in your preferred way (e.g. Slack, E-mail, JIRA and more).
 		```console
 		helm install tracee aqua/tracee \
 				--namespace tracee-system --create-namespace \
-				--set hostPID=true \
 				--set webhook=http://postee-svc:8082
 		```
   

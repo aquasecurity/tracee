@@ -32,7 +32,7 @@ The provided Helm chart will install Tracee as a DaemonSet so that it's tracing 
 ```console
 helm repo add aqua https://aquasecurity.github.io/helm-charts/
 helm repo update
-helm install tracee aqua/tracee  --namespace tracee-system --create-namespace
+helm install tracee aqua/tracee --namespace tracee-system --create-namespace
 ```
 
 <details>
