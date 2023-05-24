@@ -1,6 +1,8 @@
 package initialize
 
 import (
+	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
@@ -48,6 +50,14 @@ var (
 func SetLibbpfgoCallbacks() {
 	libbpfgo.SetLoggerCbs(libbpfgo.Callbacks{
 		Log: func(libLevel int, msg string) {
+			// Output a formatted eBPF program loading failure only via stderr,
+			// leaving the previous output "BPF program load failed:" to the logger, which is
+			// sufficient for the log consumer to identify the error.
+			if libLevel == libbpfgo.LibbpfWarnLevel && strings.Contains(msg, "-- BEGIN PROG LOAD LOG --") {
+				fmt.Fprintf(os.Stderr, "%s", msg)
+				return
+			}
+
 			lvl := logger.ErrorLevel
 
 			switch libLevel {
