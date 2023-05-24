@@ -1,0 +1,36 @@
+name: Test Helm Charts
+
+on:
+  pull_request:
+    paths:
+      - "deploy/helm/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78 # v3.5
+        with:
+          version: v3.10.3
+
+      - uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b # v4.6.0
+        with:
+          python-version: 3.7
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@e8788873172cb653a90ca2e819d79d65a66d4e76 # v2.4.0
+
+      - name: Run chart-testing (lint)
+        run: ct lint --config deploy/helm/ct.yaml --lint-conf  deploy/helm/lintconf.yaml --chart-yaml-schema deploy/helm/chart_schema.yaml
+
+      - name: Create KIND Cluster
+        uses: helm/kind-action@fa81e57adff234b2908110485695db0f181f3c67 # v1.7.0
+
+      - name: Run chart-testing (install)
+        run: ct install --config deploy/helm/ct.yaml
