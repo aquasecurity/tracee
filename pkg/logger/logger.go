@@ -83,9 +83,10 @@ const (
 // Users importing tracee as a library may choose to construct a tracee flavored logger with
 // NewLogger() or supply their own interface.
 //
-// Tracee offers aggregation support on top of any logger implementation complying to it's interface.
+// Tracee offers aggregation and filtering support on top of any logger implementation complying to it's interface.
 type LoggingConfig struct {
 	Logger        LoggerInterface
+	Filter        LoggerFilter
 	Aggregate     bool
 	FlushInterval time.Duration
 }
@@ -112,6 +113,7 @@ func NewDefaultLoggerConfig() LoggerConfig {
 func NewDefaultLoggingConfig() LoggingConfig {
 	return LoggingConfig{
 		Logger:        NewLogger(NewDefaultLoggerConfig()),
+		Filter:        NewLoggerFilter(),
 		Aggregate:     false,
 		FlushInterval: DefaultFlushInterval,
 	}
@@ -195,6 +197,10 @@ func debugw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	}
 
 	callerInfo := getCallerInfo(skip + 1)
+	if !shouldOutput(msg, DebugLevel, callerInfo) {
+		return
+	}
+
 	origin := strings.Join([]string{callerInfo.pkg, callerInfo.file, strconv.Itoa(callerInfo.line)}, ":")
 	calls := formatCallFlow(callerInfo.functions)
 	keysAndValues = append(keysAndValues, "origin", origin, "calls", calls)
@@ -216,6 +222,11 @@ func infow(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 		return
 	}
 
+	callerInfo := getCallerInfo(skip + 1)
+	if !shouldOutput(msg, InfoLevel, callerInfo) {
+		return
+	}
+
 	l.l.Infow(msg, keysAndValues...)
 }
 
@@ -230,6 +241,11 @@ func (l *Logger) Infow(msg string, keysAndValues ...interface{}) {
 // Warn
 func warnw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	if aggregateLog(skip+1, l, WarnLevel, msg) {
+		return
+	}
+
+	callerInfo := getCallerInfo(skip + 1)
+	if !shouldOutput(msg, WarnLevel, callerInfo) {
 		return
 	}
 
@@ -250,6 +266,11 @@ func errorw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 		return
 	}
 
+	callerInfo := getCallerInfo(skip + 1)
+	if !shouldOutput(msg, ErrorLevel, callerInfo) {
+		return
+	}
+
 	l.l.Errorw(msg, keysAndValues...)
 }
 
@@ -264,6 +285,11 @@ func (l *Logger) Errorw(msg string, keysAndValues ...interface{}) {
 // Fatal
 func fatalw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	if aggregateLog(skip+1, l, FatalLevel, msg) {
+		return
+	}
+
+	callerInfo := getCallerInfo(skip + 1)
+	if !shouldOutput(msg, FatalLevel, callerInfo) {
 		return
 	}
 
