@@ -1,15 +1,7 @@
 # Install **Tracee** on Kubernetes
 
-In the [deploy/kubernetes] directory you will find Yaml files to deploy Tracee
-in a Kubernetes environment. These files will deploy Tracee as a DaemonSet
-alongside a message routing application ([Postee]) that will help you consume
-the detections in your preferred way (e.g. Slack, E-mail, JIRA and more). 
-
-[Postee]: https://github.com/aquasecurity/postee
-
-!!! Note
-    Although not optimal, you may consume **Tracee** detections through
-    daemonset/tracee logs with `kubectl logs -f daemonset/tracee -n tracee-system`.
+In the [deploy/](https://github.com/aquasecurity/tracee/tree/{{ git.tag}}/deploy) directory you will find Yaml files to deploy Tracee
+in a Kubernetes environment either with **Helm** or with a static yaml.
 
 !!! Tip
     The **preferred** way to deploy **Tracee** is through its [Helm] chart!
@@ -49,33 +41,15 @@ the detections in your preferred way (e.g. Slack, E-mail, JIRA and more).
 
 2. Install **Tracee** **Manually**
 
-    To install Tracee with [Postee](https://github.com/aquasecurity/postee),
-    simply run:
+    To install Tracee 
     
-    ````console
+    ```console
     kubectl create namespace tracee-system
     kubectl create -n tracee-system \
-        -f https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml \
+        -f https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee/tracee.yaml
     ```
 
-		```console
-		helm install tracee aqua/tracee \
-				--namespace tracee-system --create-namespace \
-				--set webhook=http://postee-svc:8082
-		```
-  
-
-
-3. After Installation
-
-    In order to choose how to make **Postee** deliver detection events from
-    **Tracee**, you may edit the `postee-config` configMap. Follow
-    [this example](https://github.com/aquasecurity/postee/blob/main/cfg.yaml).
-
-    You can also use the [Postee UI] to configure integrations.
-
 [HERE]: https://github.com/aquasecurity/postee/blob/main/cfg.yaml
-[Postee UI]:https://github.com/aquasecurity/postee#postee-ui
 
 ## Platform Support
 
