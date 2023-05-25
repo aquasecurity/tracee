@@ -14594,15 +14594,8 @@
 
 
 <h1 id="install-tracee-on-kubernetes">Install <strong>Tracee</strong> on Kubernetes<a class="headerlink" href="#install-tracee-on-kubernetes" title="Permanent link">&para;</a></h1>
-<p>In the <a href="https://github.com/aquasecurity/tracee/blob/v0.14.2/deploy/kubernetes">deploy/kubernetes</a> directory you will find Yaml files to deploy Tracee
-in a Kubernetes environment. These files will deploy Tracee as a DaemonSet
-alongside a message routing application (<a href="https://github.com/aquasecurity/postee">Postee</a>) that will help you consume
-the detections in your preferred way (e.g. Slack, E-mail, JIRA and more). </p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Although not optimal, you may consume <strong>Tracee</strong> detections through
-daemonset/tracee logs with <code>kubectl logs -f daemonset/tracee -n tracee-system</code>.</p>
-</div>
+<p>In the <a href="https://github.com/aquasecurity/tracee/tree/v0.14.2-20-gad944490/deploy">deploy/</a> directory you will find Yaml files to deploy Tracee
+in a Kubernetes environment either with <strong>Helm</strong> or with a static yaml.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>The <strong>preferred</strong> way to deploy <strong>Tracee</strong> is through its <a href="https://helm.sh">Helm</a> chart!</p>
@@ -14617,7 +14610,7 @@ daemonset/tracee logs with <code>kubectl logs -f daemonset/tracee -n tracee-syst
 <span class="go">helm repo update</span>
 </code></pre></div>
 <p>or clone the Helm chart:</p>
-<div class="highlight"><pre><span></span><code><span class="go">git clone --depth 1 --branch v0.14.2 https://github.com/aquasecurity/tracee.git</span>
+<div class="highlight"><pre><span></span><code><span class="go">git clone --depth 1 --branch v0.14.2-20-gad944490 https://github.com/aquasecurity/tracee.git</span>
 <span class="go">cd tracee</span>
 </code></pre></div>
 </li>
@@ -14635,25 +14628,11 @@ daemonset/tracee logs with <code>kubectl logs -f daemonset/tracee -n tracee-syst
 </li>
 <li>
 <p>Install <strong>Tracee</strong> <strong>Manually</strong></p>
-<p>To install Tracee with <a href="https://github.com/aquasecurity/postee">Postee</a>,
-simply run:</p>
-<p><code>`console
-kubectl create namespace tracee-system
-kubectl create -n tracee-system \
-    -f https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml \</code></p>
-<div class="highlight"><pre><span></span><code>```console
-helm install tracee aqua/tracee \
-        --namespace tracee-system --create-namespace \
-        --set webhook=http://postee-svc:8082
-```
+<p>To install Tracee </p>
+<div class="highlight"><pre><span></span><code><span class="go">kubectl create namespace tracee-system</span>
+<span class="go">kubectl create -n tracee-system \</span>
+<span class="go">    -f https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee/tracee.yaml</span>
 </code></pre></div>
-</li>
-<li>
-<p>After Installation</p>
-<p>In order to choose how to make <strong>Postee</strong> deliver detection events from
-<strong>Tracee</strong>, you may edit the <code>postee-config</code> configMap. Follow
-<a href="https://github.com/aquasecurity/postee/blob/main/cfg.yaml">this example</a>.</p>
-<p>You can also use the <a href="https://github.com/aquasecurity/postee#postee-ui">Postee UI</a> to configure integrations.</p>
 </li>
 </ol>
 <h2 id="platform-support">Platform Support<a class="headerlink" href="#platform-support" title="Permanent link">&para;</a></h2>
