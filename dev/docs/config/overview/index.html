@@ -14689,7 +14689,7 @@
 <div class="highlight"><pre><span></span><code><span class="go">tracee --config /path/to/tracee-config.yaml</span>
 </code></pre></div>
 <p>You can also override specific configuration options by passing additional flags on the command line. For example, the following command overrides the log level set in the configuration file with info:</p>
-<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --config ./examples/global_config.yaml --log info</span>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --config ./examples/config/global_config.yaml --log info</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -14710,14 +14710,14 @@
 <li><code>--filter</code>: This flag is used to specify an event filter for Tracee via CLI and via policy file loading mechanism (the --policy flag), so it cannot be set through the configuration file.</li>
 </ul>
 <h2 id="example-configuration-files">Example Configuration Files<a class="headerlink" href="#example-configuration-files" title="Permanent link">&para;</a></h2>
-<p>To help you get started with configuring Tracee using the <code>--config</code> flag, we've provided two example configuration files in the examples/ directory of the Tracee repository:</p>
+<p>To help you get started with configuring Tracee using the <code>--config</code> flag, we've provided two example configuration files in the <code>examples/config</code> directory of the Tracee repository:</p>
 <ul>
-<li><code>examples/global_config.json</code>: This file contains an example configuration in JSON format.</li>
-<li><code>examples/global_config.yaml</code>: This file contains the same example configuration as global_config.json, but in YAML format.</li>
+<li><code>examples/config/global_config.json</code>: This file contains an example configuration in JSON format.</li>
+<li><code>examples/config/global_config.yaml</code>: This file contains the same example configuration as global_config.json, but in YAML format.</li>
 </ul>
 <p>These example files demonstrate how you can set various configuration options using the <code>--config</code> flag. You can use these files as a starting point for your own configuration, or as a reference for the available configuration options.</p>
 <p>To use one of the example configuration files with Tracee, simply pass the path to the file as an argument to the -<code>-config</code> flag. For example, to use the YAML configuration file, you could run the following command:</p>
-<div class="highlight"><pre><span></span><code><span class="go">tracee --config examples/global_config.yaml</span>
+<div class="highlight"><pre><span></span><code><span class="go">tracee --config examples/config/global_config.yaml</span>
 </code></pre></div>
 <p>By starting with one of these example files and modifying it to suit your needs, you can quickly get up and running with Tracee's configuration options.</p>
 
