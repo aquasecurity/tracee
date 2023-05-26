@@ -21,7 +21,7 @@ TRACEE_STARTUP_TIMEOUT=30
 SCRIPT_TMP_DIR=/tmp
 TRACEE_TMP_DIR=/tmp/tracee
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-SIG_DIR=$(realpath $SCRIPT_DIR/../dist/e2e-instrumentation-signatures)
+SIG_DIR=$(realpath $SCRIPT_DIR/../dist/e2e-inst-signatures)
 
 info() {
     echo -n "INFO: "
@@ -61,7 +61,7 @@ info
 # make clean # if you want to be extra cautious
 set -e
 make -j$(nproc) all
-make e2e-instrumentation-signatures
+make e2e-inst-signatures
 set +e
 if [[ ! -x ./dist/tracee ]]; then
     error_exit "could not find tracee executable"
@@ -125,7 +125,7 @@ for TEST in $TESTS; do
     sleep 3
 
     # run test scripts
-    timeout --preserve-status 20 ./tests/e2e-instrumentation-signatures/scripts/${TEST,,}.sh
+    timeout --preserve-status 20 ./tests/e2e-inst-signatures/scripts/${TEST,,}.sh
 
     # so event can be processed and detected
     sleep 3

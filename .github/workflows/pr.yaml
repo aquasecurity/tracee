@@ -126,7 +126,7 @@ jobs:
       - name: Build E2E Instrumentation Signatures
         run: |
           make clean
-          make e2e-instrumentation-signatures
+          make e2e-inst-signatures
   #
   # CODE TESTS (github runner)
   #
@@ -211,7 +211,7 @@ jobs:
           ./tests/e2e-net-test.sh
       - name: "Instrumentation"
         run: |
-          ./tests/e2e-instrumentation-test.sh
+          ./tests/e2e-inst-test.sh
   # ARM64
   alma418-arm64-core:
     name: RHEL8 4.18 ARM64
@@ -241,7 +241,7 @@ jobs:
           ./tests/e2e-net-test.sh
       - name: "Instrumentation"
         run: |
-          ./tests/e2e-instrumentation-test.sh
+          ./tests/e2e-inst-test.sh
   #
   # AMZN2 5.10 (jammy userland with AMZN2 kernel)
   #
@@ -273,7 +273,7 @@ jobs:
           ./tests/e2e-net-test.sh
       - name: "Instrumentation"
         run: |
-          ./tests/e2e-instrumentation-test.sh
+          ./tests/e2e-inst-test.sh
   # ARM64
   amzn2510-arm64-core:
     name: AMZN2 5.10 ARM64
@@ -303,7 +303,7 @@ jobs:
           ./tests/e2e-net-test.sh
       - name: "Instrumentation"
         run: |
-          ./tests/e2e-instrumentation-test.sh
+          ./tests/e2e-inst-test.sh
   #
   # GKE 5.4 (jammy userland with GKE kernel)
   #
@@ -335,7 +335,7 @@ jobs:
           ./tests/e2e-net-test.sh
       - name: "Instrumentation"
         run: |
-          ./tests/e2e-instrumentation-test.sh
+          ./tests/e2e-inst-test.sh
   #
   # GKE 5.10 (jammy userland with GKE kernel)
   #
@@ -367,7 +367,7 @@ jobs:
           ./tests/e2e-net-test.sh
       - name: "Instrumentation"
         run: |
-          ./tests/e2e-instrumentation-test.sh
+          ./tests/e2e-inst-test.sh
   #
   # GKE 5.15 (jammy userland with GKE kernel)
   #
@@ -399,7 +399,7 @@ jobs:
           ./tests/e2e-net-test.sh
       - name: "Instrumentation"
         run: |
-          ./tests/e2e-instrumentation-test.sh
+          ./tests/e2e-inst-test.sh
   # ARM64
   gke515-arm64-core:
     name: GKE 5.15 ARM64
@@ -429,7 +429,7 @@ jobs:
           ./tests/e2e-net-test.sh
       - name: "Instrumentation"
         run: |
-          ./tests/e2e-instrumentation-test.sh
+          ./tests/e2e-inst-test.sh
   #
   # FOCAL v5.4
   #
@@ -461,7 +461,7 @@ jobs:
           ./tests/e2e-net-test.sh
       - name: "Instrumentation"
         run: |
-          ./tests/e2e-instrumentation-test.sh
+          ./tests/e2e-inst-test.sh
   # ARM64
   focal54-arm64-core:
     name: Focal 5.4 ARM64
@@ -491,7 +491,7 @@ jobs:
           ./tests/e2e-net-test.sh
       - name: "Instrumentation"
         run: |
-          ./tests/e2e-instrumentation-test.sh
+          ./tests/e2e-inst-test.sh
   #
   # FOCAL v5.13
   #
@@ -523,7 +523,7 @@ jobs:
           ./tests/e2e-net-test.sh
       - name: "Instrumentation"
         run: |
-          ./tests/e2e-instrumentation-test.sh
+          ./tests/e2e-inst-test.sh
   # ARM64
   focal513-arm64-core:
     name: Focal 5.13 ARM64
@@ -553,7 +553,7 @@ jobs:
           ./tests/e2e-net-test.sh
       - name: "Instrumentation"
         run: |
-          ./tests/e2e-instrumentation-test.sh
+          ./tests/e2e-inst-test.sh
   #
   # JAMMY v5.15
   #
@@ -585,7 +585,7 @@ jobs:
           ./tests/e2e-net-test.sh
       - name: "Instrumentation"
         run: |
-          ./tests/e2e-instrumentation-test.sh
+          ./tests/e2e-inst-test.sh
   # ARM64
   jammy515-arm64-core:
     name: Jammy 5.15 ARM64
@@ -615,7 +615,7 @@ jobs:
           ./tests/e2e-net-test.sh
       - name: "Instrumentation"
         run: |
-          ./tests/e2e-instrumentation-test.sh
+          ./tests/e2e-inst-test.sh
   #
   # JAMMY v5.19
   #
@@ -647,7 +647,7 @@ jobs:
           ./tests/e2e-net-test.sh
       - name: "Instrumentation"
         run: |
-          ./tests/e2e-instrumentation-test.sh
+          ./tests/e2e-inst-test.sh
   # ARM64
   jammy519-arm64-core:
     name: Jammy 5.19 ARM64
@@ -677,7 +677,7 @@ jobs:
           ./tests/e2e-net-test.sh
       - name: "Instrumentation"
         run: |
-          ./tests/e2e-instrumentation-test.sh
+          ./tests/e2e-inst-test.sh
   #
   # JAMMY v6.1
   #
@@ -709,7 +709,7 @@ jobs:
           ./tests/e2e-net-test.sh
       - name: "Instrumentation"
         run: |
-          ./tests/e2e-instrumentation-test.sh
+          ./tests/e2e-inst-test.sh
   #
   # JAMMY v6.3
   #
@@ -741,4 +741,4 @@ jobs:
           ./tests/e2e-net-test.sh
       - name: "Instrumentation"
         run: |
-          ./tests/e2e-instrumentation-test.sh
+          ./tests/e2e-inst-test.sh
