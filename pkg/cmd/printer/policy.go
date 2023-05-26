@@ -17,8 +17,9 @@ type PolicyEventPrinter struct {
 	printerConfigs []Config
 	policies       []policy.PolicyFile
 	printers       []EventPrinter
+	numOfPrinters  int
 	printerMap     map[string]chan trace.Event
-	policyMap      map[string]string
+	eventsMap      map[string]chan trace.Event
 	wg             *sync.WaitGroup
 	done           chan struct{}
 	containerMode  ContainerMode
@@ -64,32 +65,13 @@ func (pp *PolicyEventPrinter) Init() error {
 		printerMap[printerName] = eventChan
 	}
 
-	// key -> policy:event, or policy
-	// val -> printerName
-	// eg:
-	// 	"policy1:open" -> "webhook:https://webhook.site/..."
-	// 	"policy1" -> "json:stdout"
-	policyMap := make(map[string]string)
-
-	for _, p := range pp.policies {
-		for _, rule := range p.Rules {
-			if rule.Action == "" {
-				continue
-			}
-
-			// action for this specif event at this policy
-			key := p.Name + ":" + rule.Event
-			policyMap[key] = getAction(rule.Action)
-		}
-
-		// default action for this policy
-		policyMap[p.Name] = getAction(p.DefaultAction)
-	}
+	eventsMap := pp.createEventMap(printerMap)
 
 	pp.printerMap = printerMap
-	pp.policyMap = policyMap
+	pp.eventsMap = eventsMap
 	pp.wg = wg
 	pp.printers = printers
+	pp.numOfPrinters = len(printers)
 	pp.done = done
 
 	return nil
@@ -116,28 +98,31 @@ func (pp *PolicyEventPrinter) Epilogue(stats metrics.Stats) {
 
 // Print prints a single event
 func (pp *PolicyEventPrinter) Print(event trace.Event) {
+	executed := make(map[chan trace.Event]bool, 0)
+
+	var printersExecuted int
 	for _, policyName := range event.MatchedPoliciesNames {
-		// if the event overrides the default action
+		if printersExecuted == pp.numOfPrinters {
+			return
+		}
+
 		key := policyName + ":" + event.EventName
-		if printerName, ok := pp.policyMap[key]; ok {
-			c, ok := pp.printerMap[printerName]
-			if !ok {
-				logger.Fatalw("printer not found", "printerName", printerName)
-			}
-			c <- event
+
+		c, ok := pp.eventsMap[key]
+		if !ok {
+			logger.Debugw("printers not found for event", "event", event)
 			continue
 		}
 
-		// policy default action
-		key = policyName
-		if printerName, ok := pp.policyMap[key]; ok {
-			c, ok := pp.printerMap[printerName]
-			if !ok {
-				logger.Fatalw("printer not found", "printerName", printerName)
-			}
-			c <- event
+		// avoid executing the same printer twice
+		if _, ok := executed[c]; ok {
 			continue
 		}
+
+		c <- event
+
+		printersExecuted++
+		executed[c] = true
 	}
 }
 
@@ -148,8 +133,37 @@ func (pp *PolicyEventPrinter) Close() {
 	}
 }
 
-func getKey(policyName, eventName string) string {
-	return policyName + ":" + eventName
+func (pp *PolicyEventPrinter) createEventMap(printerMap map[string]chan trace.Event) map[string]chan trace.Event {
+	eventsMap := make(map[string]chan trace.Event)
+
+	for _, p := range pp.policies {
+		for _, rule := range p.Rules {
+			key := p.Name + ":" + rule.Event
+
+			action := getAction(p.DefaultAction)
+			c, ok := printerMap[action]
+			if !ok {
+				logger.Fatalw("printer not found", "printerName", action)
+			}
+
+			eventsMap[key] = c
+
+			// if no specific action is defined for this event, move on
+			if rule.Action == "" {
+				continue
+			}
+
+			action = getAction(rule.Action)
+			c, ok = printerMap[action]
+			if !ok {
+				logger.Fatalw("printer not found", "printerName", action)
+			}
+
+			eventsMap[key] = c
+		}
+	}
+
+	return eventsMap
 }
 
 func getAction(action string) string {
