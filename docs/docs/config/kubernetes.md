@@ -2,7 +2,7 @@
 
 ## Configmap
 
-Tracee ConfigMap exposed [tracee configuration](https://github.com/aquasecurity/tracee/blob/main/examples/global_config.yaml) to the deployment.
+Tracee ConfigMap exposed [tracee configuration](https://github.com/aquasecurity/tracee/blob/main/examples/config/global_config.yaml) to the deployment.
 
 ```
 ---
