@@ -14529,6 +14529,25 @@
 <p>Logs can be aggregated for a given interval to delay its output:</p>
 <div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --log debug --log aggregate:5s</span>
 </code></pre></div>
+<p>Filter logs which message contains specified words:</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --log filter:msg=foo,bar</span>
+</code></pre></div>
+<p>Filter logs using regular expressions against messages:</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --log filter:regex=&#39;^foo&#39;</span>
+</code></pre></div>
+<p>Filter logs originating from a specific package:</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --log filter:pkg=core</span>
+</code></pre></div>
+<p>Filter logs originating from a specific file:</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --log filter:file=/pkg/cmd/flags/logger.go</span>
+</code></pre></div>
+<p>Filter logs based on their severity level:</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --log filter:lvl=error</span>
+</code></pre></div>
+<p>Filter logs originating from libbpf:</p>
+<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --log filter:libbpf</span>
+</code></pre></div>
+<p>All <code>--log filter</code> options can also be used with <code>--log filter-out</code> for the opposite behavior. For more information, please refer to the <code>--log</code> help in the CLI.</p>
 
 
 
