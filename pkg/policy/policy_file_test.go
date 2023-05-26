@@ -5,9 +5,16 @@ import (
 	"testing"
 
 	"gotest.tools/assert"
+
+	"github.com/aquasecurity/tracee/pkg/events"
 )
 
 func TestPolicyValidate(t *testing.T) {
+	fakeSignatureEvent := events.NewEventDefinition("fake_signature", []string{"signatures", "default"}, nil)
+
+	err := events.Definitions.Add(9000, fakeSignatureEvent)
+	assert.NilError(t, err)
+
 	tests := []struct {
 		testName            string
 		policy              PolicyFile
@@ -188,8 +195,168 @@ func TestPolicyValidate(t *testing.T) {
 			},
 			expectedError: errors.New("policy.validateAction: policy invalid_policy_action, action audit is not valid"),
 		},
-		// invalid args?
-		// invalid retval?
+		{
+			testName: "invalid retval",
+			policy: PolicyFile{
+				Name:          "invalid_retval",
+				Description:   "invalid retval filter",
+				Scope:         []string{"global"},
+				DefaultAction: "log",
+				Rules: []Rule{
+					{
+						Event: "write",
+						Filter: []string{
+							"retval",
+						},
+					},
+				},
+			},
+			expectedError: errors.New("policy.PolicyFile.validateRules: policy invalid_retval, invalid filter operator: retval"),
+		},
+		{
+			testName: "empty retval",
+			policy: PolicyFile{
+				Name:          "empty_retval",
+				Description:   "empty retval filter",
+				Scope:         []string{"global"},
+				DefaultAction: "log",
+				Rules: []Rule{
+					{
+						Event: "write",
+						Filter: []string{
+							"retval=",
+						},
+					},
+				},
+			},
+			expectedError: errors.New("policy.PolicyFile.validateRules: policy empty_retval, retval cannot be empty"),
+		},
+		{
+			testName: "retval not an integer",
+			policy: PolicyFile{
+				Name:          "retval_not_an_integer",
+				Description:   "retval not an integer",
+				Scope:         []string{"global"},
+				DefaultAction: "log",
+				Rules: []Rule{
+					{
+						Event: "write",
+						Filter: []string{
+							"retval=lala",
+						},
+					},
+				},
+			},
+			expectedError: errors.New("policy.PolicyFile.validateRules: policy retval_not_an_integer, retval must be an integer: lala"),
+		},
+		{
+			testName: "empty arg name 1",
+			policy: PolicyFile{
+				Name:          "empty_filter_arg_1",
+				Description:   "empty filter arg 1",
+				Scope:         []string{"global"},
+				DefaultAction: "log",
+				Rules: []Rule{
+					{
+						Event: "write",
+						Filter: []string{
+							"args",
+						},
+					},
+				},
+			},
+			expectedError: errors.New("policy.PolicyFile.validateRules: policy empty_filter_arg_1, invalid filter operator: args"),
+		},
+		{
+			testName: "empty arg name 3",
+			policy: PolicyFile{
+				Name:          "empty_filter_arg_3",
+				Description:   "empty filter arg 3",
+				Scope:         []string{"global"},
+				DefaultAction: "log",
+				Rules: []Rule{
+					{
+						Event: "write",
+						Filter: []string{
+							"args=",
+						},
+					},
+				},
+			},
+			expectedError: errors.New("policy.PolicyFile.validateRules: policy empty_filter_arg_3, arg name can't be empty"),
+		},
+		{
+			testName: "empty arg name 4",
+			policy: PolicyFile{
+				Name:          "empty_filter_arg_4",
+				Description:   "empty filter arg 4",
+				Scope:         []string{"global"},
+				DefaultAction: "log",
+				Rules: []Rule{
+					{
+						Event: "write",
+						Filter: []string{
+							"args=lala",
+						},
+					},
+				},
+			},
+			expectedError: errors.New("policy.PolicyFile.validateRules: policy empty_filter_arg_4, arg name can't be empty"),
+		},
+		{
+			testName: "invalid arg",
+			policy: PolicyFile{
+				Name:          "invalid_arg",
+				Description:   "invalid arg",
+				Scope:         []string{"global"},
+				DefaultAction: "log",
+				Rules: []Rule{
+					{
+						Event: "openat",
+						Filter: []string{
+							"args.lala=1",
+						},
+					},
+				},
+			},
+			expectedError: errors.New("policy.validateEventArg: policy invalid_arg, event openat does not have argument lala"),
+		},
+		{
+			testName: "empty arg value",
+			policy: PolicyFile{
+				Name:          "empty_arg_value",
+				Description:   "empty arg value",
+				Scope:         []string{"global"},
+				DefaultAction: "log",
+				Rules: []Rule{
+					{
+						Event: "openat",
+						Filter: []string{
+							"args.pathname=",
+						},
+					},
+				},
+			},
+			expectedError: errors.New("policy.validateEventArg: policy empty_arg_value, arg pathname value can't be empty"),
+		},
+		{
+			testName: "signature filter arg",
+			policy: PolicyFile{
+				Name:          "signature_filter_arg",
+				Description:   "signature filter arg",
+				Scope:         []string{"global"},
+				DefaultAction: "log",
+				Rules: []Rule{
+					{
+						Event: "fake_signature",
+						Filter: []string{
+							"args.lala=lala",
+						},
+					},
+				},
+			},
+			expectedError: nil,
+		},
 	}
 
 	for _, test := range tests {
@@ -197,6 +364,8 @@ func TestPolicyValidate(t *testing.T) {
 			err := test.policy.Validate()
 			if test.expectedError != nil {
 				assert.ErrorContains(t, err, test.expectedError.Error())
+			} else {
+				assert.NilError(t, err)
 			}
 		})
 	}

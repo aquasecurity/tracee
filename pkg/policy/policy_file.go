@@ -3,6 +3,7 @@ package policy
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -171,6 +172,41 @@ func (p PolicyFile) validateRules() error {
 
 			filterName := f[:operatorIdx]
 
+			// args
+			if strings.HasPrefix(f, "args") {
+				s := strings.Split(f, ".")
+				if len(s) == 1 {
+					return errfmt.Errorf("policy %s, arg name can't be empty", p.Name)
+				}
+
+				err := validateEventArg(p.Name, r.Event, s[1])
+				if err != nil {
+					return err
+				}
+
+				continue
+			}
+
+			// retval
+			if strings.HasPrefix(f, "retval") {
+				s := strings.Split(f, "=")
+				if len(s) == 1 {
+					return errfmt.Errorf("policy %s, retval must have value: %s", p.Name, f)
+				}
+
+				if s[1] == "" {
+					return errfmt.Errorf("policy %s, retval cannot be empty", p.Name)
+				}
+
+				_, err := strconv.Atoi(s[1])
+				if err != nil {
+					return errfmt.Errorf("policy %s, retval must be an integer: %s", p.Name, s[1])
+				}
+
+				continue
+			}
+
+			// context
 			err = validateContext(p.Name, filterName)
 			if err != nil {
 				return err
@@ -191,6 +227,40 @@ func validateEvent(policyName, eventName string) error {
 		return errfmt.Errorf("policy %s, event %s is not valid", policyName, eventName)
 	}
 	return nil
+}
+
+func validateEventArg(policyName, eventName, argName string) error {
+	s := strings.Split(argName, "=")
+
+	if len(s) == 1 {
+		return errfmt.Errorf("policy %s, arg %s value can't be empty", policyName, s[0])
+	}
+
+	if s[1] == "" {
+		return errfmt.Errorf("policy %s, arg %s value can't be empty", policyName, s[0])
+	}
+
+	argName = s[0]
+
+	eventID, ok := events.Definitions.GetID(eventName)
+	if !ok {
+		return errfmt.Errorf("policy %s, event %s is not valid", policyName, eventName)
+	}
+	event := events.Definitions.Get(eventID)
+	for _, s := range event.Sets {
+		// we don't validate signature events because the arguments are dynamic
+		if s == "signatures" {
+			return nil
+		}
+	}
+
+	for _, p := range event.Params {
+		if p.Name == argName {
+			return nil
+		}
+	}
+
+	return errfmt.Errorf("policy %s, event %s does not have argument %s", policyName, eventName, argName)
 }
 
 func validateContext(policyName, c string) error {
