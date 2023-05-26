@@ -13456,6 +13456,23 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    
+  
+    Actions
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -13471,6 +13488,86 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#defaultaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DefaultAction
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#log-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Log action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#webhook-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Webhook action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fluentd-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fluentd action
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -14513,6 +14610,75 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#defaultaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DefaultAction
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#log-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Log action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#webhook-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Webhook action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fluentd-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fluentd action
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -14528,12 +14694,39 @@
 
 
 <h1 id="actions">Actions<a class="headerlink" href="#actions" title="Permanent link">&para;</a></h1>
-<p>Actions are taken when there is an event match. Currently the only action supported is <code>log</code>. </p>
-<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">overview policy</span>
-<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sample overview policy</span>
+<h2 id="defaultaction">DefaultAction<a class="headerlink" href="#defaultaction" title="Permanent link">&para;</a></h2>
+<p>Every policy must have a <code>defaultAction</code>. Actions are taken when there is match on some rule declared at the policy. 
+The following actions are currently supported:</p>
+<ul>
+<li><code>log</code> - output events in json format. The default path to file is stdout.</li>
+<li><code>forward:http://url/fluent</code> - send events in json format using the Forward protocol to a Fluent receiver</li>
+<li><code>webhook:http://url/webhook</code> - send events in json format to the webhook url</li>
+</ul>
+<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
+<h3 id="log-action">Log action<a class="headerlink" href="#log-action" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log_sample_policy</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log sample policy</span>
 <span class="nt">scope</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
 <span class="nt">defaultAction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log</span>
+<span class="nt">rules</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dropped_executable</span>
+</code></pre></div>
+<h3 id="webhook-action">Webhook action<a class="headerlink" href="#webhook-action" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook_sample_policy</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook_sample_policy</span>
+<span class="nt">scope</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
+<span class="nt">defaultAction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook:http://localhost:8080</span>
+<span class="nt">rules</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dropped_executable</span>
+</code></pre></div>
+<h3 id="fluentd-action">Fluentd action<a class="headerlink" href="#fluentd-action" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook_sample_policy</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook_sample_policy</span>
+<span class="nt">scope</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
+<span class="nt">defaultAction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">forward:tcp://localhost:24224</span>
 <span class="nt">rules</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dropped_executable</span>
 </code></pre></div>
