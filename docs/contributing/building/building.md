@@ -58,15 +58,15 @@
 
     # build
 
-        $ make all                                  # build tracee-ebpf, tracee-rules & signatures
-        $ make bpf                                  # build ./dist/tracee.bpf.o
-        $ make tracee-ebpf                          # build ./dist/tracee-ebpf
-        $ make tracee-rules                         # build ./dist/tracee-rules
-        $ make tracee-bench                         # build ./dist/tracee-bench
-        $ make signatures                           # build ./dist/signatures
-        $ make e2e-net-signatures                   # build ./dist/e2e-net-signatures
-        $ make e2e-instrumentation-signatures       # build ./dist/e2e-instrumentation-signatures
-        $ make tracee                               # build ./dist/tracee
+        $ make all                      # build tracee-ebpf, tracee-rules & signatures
+        $ make bpf                      # build ./dist/tracee.bpf.o
+        $ make tracee-ebpf              # build ./dist/tracee-ebpf
+        $ make tracee-rules             # build ./dist/tracee-rules
+        $ make tracee-bench             # build ./dist/tracee-bench
+        $ make signatures               # build ./dist/signatures
+        $ make e2e-net-signatures       # build ./dist/e2e-net-signatures
+        $ make e2e-inst-signatures      # build ./dist/e2e-inst-signatures
+        $ make tracee                   # build ./dist/tracee
 
     # clean
 
