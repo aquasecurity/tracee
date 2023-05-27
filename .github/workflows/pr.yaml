@@ -204,7 +204,7 @@ jobs:
           submodules: true
       - name: "Kernel"
         run: |
-          ./tests/kerneltest.sh
+          ./tests/e2e-kernel-test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test.sh
@@ -234,7 +234,7 @@ jobs:
           submodules: true
       - name: "Kernel"
         run: |
-          TESTS="${{ env.RHEL_ARM64_TESTS }}" ./tests/kerneltest.sh
+          TESTS="${{ env.RHEL_ARM64_TESTS }}" ./tests/e2e-kernel-test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test.sh
@@ -266,7 +266,7 @@ jobs:
           submodules: true
       - name: "Kernel"
         run: |
-          ./tests/kerneltest.sh
+          ./tests/e2e-kernel-test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test.sh
@@ -296,7 +296,7 @@ jobs:
           submodules: true
       - name: "Kernel"
         run: |
-          TESTS="${{ env.RHEL_ARM64_TESTS }}" ./tests/kerneltest.sh
+          TESTS="${{ env.RHEL_ARM64_TESTS }}" ./tests/e2e-kernel-test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test.sh
@@ -328,7 +328,7 @@ jobs:
           submodules: true
       - name: "Kernel"
         run: |
-          ./tests/kerneltest.sh
+          ./tests/e2e-kernel-test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test.sh
@@ -360,7 +360,7 @@ jobs:
           submodules: true
       - name: "Kernel"
         run: |
-          ./tests/kerneltest.sh
+          ./tests/e2e-kernel-test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test.sh
@@ -392,7 +392,7 @@ jobs:
           submodules: true
       - name: "Kernel"
         run: |
-          ./tests/kerneltest.sh
+          ./tests/e2e-kernel-test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test.sh
@@ -422,7 +422,7 @@ jobs:
           submodules: true
       - name: "Kernel"
         run: |
-          TESTS="${{ env.RHEL_ARM64_TESTS }}" ./tests/kerneltest.sh
+          TESTS="${{ env.RHEL_ARM64_TESTS }}" ./tests/e2e-kernel-test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test.sh
@@ -454,7 +454,7 @@ jobs:
           submodules: true
       - name: "Kernel"
         run: |
-          ./tests/kerneltest.sh
+          ./tests/e2e-kernel-test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test.sh
@@ -484,7 +484,7 @@ jobs:
           submodules: true
       - name: "Kernel"
         run: |
-          TESTS="${{ env.ARM64_TESTS }}" ./tests/kerneltest.sh
+          TESTS="${{ env.ARM64_TESTS }}" ./tests/e2e-kernel-test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test.sh
@@ -516,7 +516,7 @@ jobs:
           submodules: true
       - name: "Kernel"
         run: |
-          ./tests/kerneltest.sh
+          ./tests/e2e-kernel-test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test.sh
@@ -546,7 +546,7 @@ jobs:
           submodules: true
       - name: "Kernel"
         run: |
-          TESTS="${{ env.ARM64_TESTS }}" ./tests/kerneltest.sh
+          TESTS="${{ env.ARM64_TESTS }}" ./tests/e2e-kernel-test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test.sh
@@ -578,7 +578,7 @@ jobs:
           submodules: true
       - name: "Kernel"
         run: |
-          ./tests/kerneltest.sh
+          ./tests/e2e-kernel-test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test.sh
@@ -608,7 +608,7 @@ jobs:
           submodules: true
       - name: "Kernel"
         run: |
-          TESTS="${{ env.ARM64_TESTS }}" ./tests/kerneltest.sh
+          TESTS="${{ env.ARM64_TESTS }}" ./tests/e2e-kernel-test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test.sh
@@ -640,7 +640,7 @@ jobs:
           submodules: true
       - name: "Kernel"
         run: |
-          ./tests/kerneltest.sh
+          ./tests/e2e-kernel-test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test.sh
@@ -670,7 +670,7 @@ jobs:
           submodules: true
       - name: "Kernel"
         run: |
-          TESTS="${{ env.ARM64_TESTS }}" ./tests/kerneltest.sh
+          TESTS="${{ env.ARM64_TESTS }}" ./tests/e2e-kernel-test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test.sh
@@ -702,7 +702,7 @@ jobs:
           submodules: true
       - name: "Kernel"
         run: |
-          ./tests/kerneltest.sh
+          ./tests/e2e-kernel-test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test.sh
@@ -734,7 +734,7 @@ jobs:
           submodules: true
       - name: "Kernel"
         run: |
-          ./tests/kerneltest.sh
+          ./tests/e2e-kernel-test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test.sh
