@@ -4,24 +4,17 @@
 # This test is executed by github workflows inside the action runners
 #
 
+TRACEE_STARTUP_TIMEOUT=60
+TRACEE_SHUTDOWN_TIMEOUT=60
+TRACEE_RUN_TIMEOUT=60
+SCRIPT_TMP_DIR=/tmp
+TRACEE_TMP_DIR=/tmp/tracee
+
 info_exit() {
     echo -n "INFO: "
     echo $@
     exit 0
 }
-
-KERNEL=$(uname -r)
-KERNEL_MAJ=$(echo $KERNEL | cut -d'.' -f1)
-
-if [[ $KERNEL_MAJ -lt 5 && "$KERNEL" != *"el8"* ]]; then
-    info_exit "skip test in kernels < 5.0 (and not RHEL)"
-fi
-
-TRACEE_STARTUP_TIMEOUT=30
-SCRIPT_TMP_DIR=/tmp
-TRACEE_TMP_DIR=/tmp/tracee
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-SIG_DIR=$(realpath $SCRIPT_DIR/../dist/e2e-inst-signatures)
 
 info() {
     echo -n "INFO: "
@@ -41,6 +34,16 @@ fi
 if [[ ! -d ./signatures ]]; then
     error_exit "need to be in tracee root directory"
 fi
+
+KERNEL=$(uname -r)
+KERNEL_MAJ=$(echo $KERNEL | cut -d'.' -f1)
+
+if [[ $KERNEL_MAJ -lt 5 && "$KERNEL" != *"el8"* ]]; then
+    info_exit "skip test in kernels < 5.0 (and not RHEL)"
+fi
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SIG_DIR=$(realpath $SCRIPT_DIR/../dist/e2e-inst-signatures)
 
 # run CO-RE VFS_WRITE test only by default
 TESTS=${INSTTESTS:=VFS_WRITE}
@@ -125,7 +128,8 @@ for TEST in $TESTS; do
     sleep 3
 
     # run test scripts
-    timeout --preserve-status 20 ./tests/e2e-inst-signatures/scripts/${TEST,,}.sh
+    timeout --preserve-status $TRACEE_RUN_TIMEOUT \
+        ./tests/e2e-inst-signatures/scripts/${TEST,,}.sh
 
     # so event can be processed and detected
     sleep 3
@@ -133,7 +137,7 @@ for TEST in $TESTS; do
     ## cleanup at EXIT
 
     found=0
-    cat $SCRIPT_TMP_DIR/build-$$ | jq .eventName | grep $TEST && found=1
+    cat $SCRIPT_TMP_DIR/build-$$ | jq .eventName | grep -q $TEST && found=1
     info
     if [[ $found -eq 1 ]]; then
         info "$TEST: SUCCESS"
@@ -148,14 +152,15 @@ for TEST in $TESTS; do
     rm -f $SCRIPT_TMP_DIR/build-$$
     rm -f $SCRIPT_TMP_DIR/tracee-log-$$
 
-    # make sure we exit both to start them again
+    # make sure we exit to start it again
 
     pid_tracee=$(pidof tracee)
 
     kill -2 $pid_tracee
 
-    sleep 5 # wait for cleanup
+    sleep $TRACEE_SHUTDOWN_TIMEOUT
 
+    # make sure tracee is exited with SIGKILL
     kill -9 $pid_tracee >/dev/null 2>&1
 
     # give a little break for OS noise to reduce

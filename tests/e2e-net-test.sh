@@ -4,22 +4,17 @@
 # This test is executed by github workflows inside the action runners
 #
 
+TRACEE_STARTUP_TIMEOUT=60
+TRACEE_SHUTDOWN_TIMEOUT=60
+TRACEE_RUN_TIMEOUT=60
+SCRIPT_TMP_DIR=/tmp
+TRACEE_TMP_DIR=/tmp/tracee
+
 info_exit() {
     echo -n "INFO: "
     echo $@
     exit 0
 }
-
-KERNEL=$(uname -r)
-KERNEL_MAJ=$(echo $KERNEL | cut -d'.' -f1)
-
-if [[ $KERNEL_MAJ -lt 5 && "$KERNEL" != *"el8"* ]]; then
-    info_exit "skip test in kernels < 5.0 (and not RHEL)"
-fi
-
-TRACEE_STARTUP_TIMEOUT=30
-SCRIPT_TMP_DIR=/tmp
-TRACEE_TMP_DIR=/tmp/tracee
 
 info() {
     echo -n "INFO: "
@@ -38,6 +33,13 @@ fi
 
 if [[ ! -d ./signatures ]]; then
     error_exit "need to be in tracee root directory"
+fi
+
+KERNEL=$(uname -r)
+KERNEL_MAJ=$(echo $KERNEL | cut -d'.' -f1)
+
+if [[ $KERNEL_MAJ -lt 5 && "$KERNEL" != *"el8"* ]]; then
+    info_exit "skip test in kernels < 5.0 (and not RHEL)"
 fi
 
 # run CO-RE IPv4 test only by default
@@ -139,7 +141,8 @@ for TEST in $TESTS; do
     sleep 3
 
     # run test scripts
-    timeout --preserve-status 20 ./tests/e2e-net-signatures/scripts/${TEST,,}.sh
+    timeout --preserve-status $TRACEE_RUN_TIMEOUT \
+        ./tests/e2e-net-signatures/scripts/${TEST,,}.sh
 
     # so event can be processed and detected
     sleep 3
@@ -170,8 +173,9 @@ for TEST in $TESTS; do
     kill -2 $pid_rules
     kill -2 $pid_ebpf
 
-    sleep 5 # wait for cleanup
+    sleep $TRACEE_SHUTDOWN_TIMEOUT
 
+    # make sure tracee is exited with SIGKILL
     kill -9 $pid_rules >/dev/null 2>&1
     kill -9 $pid_ebpf >/dev/null 2>&1
 

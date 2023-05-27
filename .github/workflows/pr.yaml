@@ -27,15 +27,14 @@ concurrency:
   group: ${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 env:
-  # TRC-103 enabled but under analysis
-  # https://github.com/aquasecurity/tracee/issues/2820
+#
+  # kernel version tests (arm64: https://github.com/aquasecurity/tracee/issues/2821)
   TESTS: "TRC-102 TRC-103 TRC-104 TRC-105 TRC-107 TRC-1010 TRC-1014 TRC-1016 TRC-1018 TRC-1022"
-  # ARM64 tests are disabled due to missing arm64 binaries in tracee-tester
-  # https://github.com/aquasecurity/tracee/issues/2821
-  # TRC-1022 disabled in ARM64_TESTS since it doesn't work on Focal 4.19 and 5.4.
   ARM64_TESTS: "TRC-102 TRC-103 TRC-104 TRC-105 TRC-107 TRC-1010 TRC-1014 TRC-1016 TRC-1018"
   RHEL_ARM64_TESTS: "TRC-102 TRC-103 TRC-104 TRC-105 TRC-107 TRC-1010 TRC-1014 TRC-1016 TRC-1018 TRC-1022"
+  # network tests
   NETTESTS: "IPv4 IPv6 TCP UDP ICMP ICMPv6 DNS HTTP"
+  # instrumentation tests
   INSTTESTS: "VFS_WRITE FILE_MODIFICATION SECURITY_INODE_RENAME BPF_ATTACH CONTAINERS_DATA_SOURCE"
 jobs:
   #
