@@ -4,10 +4,17 @@
 # This test is executed by github workflows inside the action runners
 #
 
-TRACEE_STARTUP_TIMEOUT=30
+TRACEE_STARTUP_TIMEOUT=60
+TRACEE_SHUTDOWN_TIMEOUT=60
+#TRACEE_RUN_TIMEOUT=60
 SCRIPT_TMP_DIR=/tmp
 TRACEE_TMP_DIR=/tmp/tracee
-DOCKER_IMAGE=ghcr.io/aquasecurity/tracee-tester:latest
+
+info_exit() {
+    echo -n "INFO: "
+    echo $@
+    exit 0
+}
 
 info() {
     echo -n "INFO: "
@@ -28,8 +35,10 @@ if [[ ! -d ./signatures ]]; then
     error_exit "need to be in tracee root directory"
 fi
 
-# run CO-RE TRC-2 test only by default
-TESTS=${TESTS:=TRC-2}
+DOCKER_IMAGE=ghcr.io/aquasecurity/tracee-tester:latest
+
+# run CO-RE TRC-102 test only by default
+TESTS=${TESTS:=TRC-102}
 
 # startup needs
 rm -rf $TRACEE_TMP_DIR/* || error_exit "could not delete $TRACEE_TMP_DIR"
@@ -161,12 +170,14 @@ for TEST in $TESTS; do
     kill -2 $rules_pid
     kill -2 $tracee_pid
 
-    # give a little break for OS noise to reduce
-    sleep 5
+    sleep $TRACEE_SHUTDOWN_TIMEOUT
 
     # make sure tracee is exited with SIGKILL
     kill -9 $rules_pid >/dev/null 2>&1
     kill -9 $tracee_pid >/dev/null 2>&1
+
+    # give a little break for OS noise to reduce
+    sleep 3
 
     # cleanup leftovers
     rm -rf $TRACEE_TMP_DIR
