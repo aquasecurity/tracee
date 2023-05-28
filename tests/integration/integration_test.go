@@ -186,7 +186,7 @@ func checkNewContainers(t *testing.T, gotOutput *eventOutput) {
 	containerIds := []string{}
 	output := gotOutput.getEventsCopy()
 	for _, evt := range output {
-		containerIds = append(containerIds, evt.Container.ID)
+		containerIds = append(containerIds, evt.Container.ID, evt.ContainerID)
 	}
 	for _, id := range containerIds {
 		assert.Equal(t, containerId, id)

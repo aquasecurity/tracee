@@ -248,6 +248,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				ProcessName:         string(bytes.TrimRight(ctx.Comm[:], "\x00")),
 				HostName:            string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
 				CgroupID:            uint(ctx.CgroupID),
+				ContainerID:         containerData.ID,
 				Container:           containerData,
 				Kubernetes:          kubernetesData,
 				EventID:             int(ctx.EventID),
