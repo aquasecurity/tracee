@@ -69,6 +69,7 @@ enum tail_call_id_e
     TAIL_HIDDEN_KERNEL_MODULE_PROC,
     TAIL_HIDDEN_KERNEL_MODULE_KSET,
     TAIL_HIDDEN_KERNEL_MODULE_MOD_TREE,
+    TAIL_HIDDEN_KERNEL_MODULE_NEW_MOD_ONLY,
     MAX_TAIL_CALL
 };
 
@@ -107,7 +108,6 @@ BPF_PROG_ARRAY(sys_exit_submit_tail, MAX_EVENT_ID);                // store prog
 BPF_PROG_ARRAY(sys_enter_init_tail, MAX_EVENT_ID);                 // store program for performing syscall tracking logic in sys_enter
 BPF_PROG_ARRAY(sys_exit_init_tail, MAX_EVENT_ID);                  // store program for performing syscall tracking logic in sys_exits
 BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);             // store stack traces
-BPF_HASH(module_init_map, u32, kmod_data_t, 256);                  // holds module information between
 BPF_LRU_HASH(fd_arg_path_map, fd_arg_task_t, fd_arg_path_t, 1024); // store fds paths by task
 BPF_LRU_HASH(bpf_attach_map, u32, bpf_used_helpers_t, 1024);       // holds bpf prog info
 BPF_LRU_HASH(bpf_attach_tmp_map, u32, bpf_used_helpers_t, 1024);   // temporarily hold bpf_used_helpers_t
