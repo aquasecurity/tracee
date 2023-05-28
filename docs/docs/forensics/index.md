@@ -18,12 +18,16 @@ sudo ./dist/tracee --capture xxx
 
 Tracee can capture the following types of artifacts:
 
-1. **Written Files**
+1. **I/O Files**
 
-    Anytime a file is being written to, the contents of the file
-    will be captured. Written files can be filtered using an optional path
-    prefix.
+    Anytime a file is being written to and/or read from, the contents of the
+    file will be captured. I/O files can be filtered using optional 3 filters:
+    1. path - prefix of the file written/read. Up to 3 path filters can be
+       provided per capture type.
+    2. type - file's type can be `pipe`, `socket` or `regular`.
+    3. fd - standard FD, one of the following: `stdin`, `stdout` and `stderr`.
 
+    ***write example***
     ```console
     sudo ./dist/tracee \
        --output json \
@@ -33,9 +37,13 @@ Tracee can capture the following types of artifacts:
        --capture dir:/tmp/tracee/ \
        --capture write='/tmp/*'
     ```
+   
+    !!! Note
+        Using file capture without filter name will be path by default. Hence,
+        `--capture write='/tmp/*` is the same as `--capture write:path='/tmp/*`.
 
     ```console
-    echo testing 123 > /tmp/testing.txt
+    echo write testing 123 > /tmp/testing.txt
     ```
 
     ```json
@@ -50,7 +58,39 @@ Tracee can capture the following types of artifacts:
         ```
 
         ```text
-        testing 123
+        write testing 123
+        ```
+    
+    ***read example***
+
+    ```console
+    sudo ./dist/tracee \
+       --output json \
+       --filter comm=bash \
+       --filter follow \
+       --output option:parse-arguments \
+       --capture dir:/tmp/tracee/ \
+       --capture read:type=pipe \
+       --capture read:fd=stdin'
+    ```
+
+    ```console
+    echo read testing 123 | cat
+    ```
+   
+    ```json
+    {"timestamp":1685285181028166900,"threadStartTime":1685285181026565700,"processorId":1,"processId":182934,"cgroupId":1,"threadId":182934,"parentProcessId":147428,"hostProcessId":184128,"hostThreadId":184128,"hostParentProcessId":148293,"userId":0,"mountNamespace":4026532277,"pidNamespace":4026532279,"processName":"cat","hostName":"Alon-Zivony","container":{},"kubernetes":{},"eventId":"720","eventName":"vfs_read","matchedPolicies":[""],"argsNum":5,"returnValue":17,"syscall":"read","stackAddresses":null,"contextFlags":{"containerStarted":false,"isCompat":false},"args":[{"name":"pathname","type":"const char*","value":""},{"name":"dev","type":"dev_t","value":12},{"name":"inode","type":"unsigned long","value":174033},{"name":"count","type":"size_t","value":131072},{"name":"pos","type":"off_t","value":0}]}
+    {"timestamp":1685285181028267200,"threadStartTime":1685285181026565700,"processorId":1,"processId":182934,"cgroupId":1,"threadId":182934,"parentProcessId":147428,"hostProcessId":184128,"hostThreadId":184128,"hostParentProcessId":148293,"userId":0,"mountNamespace":4026532277,"pidNamespace":4026532279,"processName":"cat","hostName":"Alon-Zivony","container":{},"kubernetes":{},"eventId":"720","eventName":"vfs_read","matchedPolicies":[""],"argsNum":5,"returnValue":0,"syscall":"read","stackAddresses":null,"contextFlags":{"containerStarted":false,"isCompat":false},"args":[{"name":"pathname","type":"const char*","value":""},{"name":"dev","type":"dev_t","value":12},{"name":"inode","type":"unsigned long","value":174033},{"name":"count","type":"size_t","value":131072},{"name":"pos","type":"off_t","value":0}]}
+    ```
+
+   !!! Note
+       You can read captured files read at `/tmp/tracee/out`:
+       ```console
+       sudo cat /tmp/tracee/out/host/read.dev-12.inode-176203
+       ```
+
+        ```text
+        read testing 123
         ```
 
 1. **Executed Files**
