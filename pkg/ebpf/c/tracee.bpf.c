@@ -1522,7 +1522,7 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
         return 0;
 
     u64 idx;
-    u32 syscall_addr = 0;
+    u64 syscall_addr = 0;
     u64 syscall_address[NUMBER_OF_SYSCALLS_TO_CHECK];
 
 #pragma unroll
@@ -1536,7 +1536,7 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
             continue;
         }
 
-        bpf_core_read(&syscall_addr, sizeof(u32), &syscall_table_addr[*syscall_num_p]);
+        bpf_core_read(&syscall_addr, sizeof(u64), &syscall_table_addr[*syscall_num_p]);
         if (syscall_addr == 0) {
             return 0;
         }
