@@ -1574,14 +1574,28 @@ func computeFileHash(file *os.File) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
+// setMatchedPolicies sets the matched policies and their names on the event
+// based on the matched policies bitfield
+func (t *Tracee) setMatchedPolicies(event *trace.Event, matchedPolicies uint64) {
+	event.MatchedPolicies = matchedPolicies
+	event.MatchedPoliciesNames = t.config.Policies.MatchedNames(matchedPolicies)
+}
+
 func (t *Tracee) invokeInitEvents() {
-	if t.events[events.InitNamespaces].emit > 0 {
+	var emit uint64
+
+	emit = t.events[events.InitNamespaces].emit
+	if emit > 0 {
 		systemInfoEvent := events.InitNamespacesEvent()
+		t.setMatchedPolicies(&systemInfoEvent, emit)
 		t.config.ChanEvents <- systemInfoEvent
 		_ = t.stats.EventCount.Increment()
 	}
-	if t.events[events.ExistingContainer].emit > 0 {
+
+	emit = t.events[events.ExistingContainer].emit
+	if emit > 0 {
 		for _, e := range events.ExistingContainersEvents(t.containers, t.config.ContainersEnrich) {
+			t.setMatchedPolicies(&e, emit)
 			t.config.ChanEvents <- e
 			_ = t.stats.EventCount.Increment()
 		}

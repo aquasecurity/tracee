@@ -170,6 +170,20 @@ func (ps *Policies) Lookup(id int) (*Policy, error) {
 	return p, nil
 }
 
+// MatchedNames returns a list of matched policies names based on
+// the given matched bitmask.
+func (ps *Policies) MatchedNames(matched uint64) []string {
+	names := []string{}
+
+	for p := range ps.Map() {
+		if utils.HasBit(matched, uint(p.ID)) {
+			names = append(names, p.Name)
+		}
+	}
+
+	return names
+}
+
 func (ps *Policies) Map() map[*Policy]int {
 	return ps.filterEnabledPoliciesMap
 }
