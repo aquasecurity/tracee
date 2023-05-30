@@ -340,6 +340,24 @@ func TestPolicyValidate(t *testing.T) {
 			expectedError: errors.New("policy.validateEventArg: policy empty_arg_value, arg pathname value can't be empty"),
 		},
 		{
+			testName: "empty arg value",
+			policy: PolicyFile{
+				Name:          "empty_arg_value",
+				Description:   "empty arg value",
+				Scope:         []string{"global"},
+				DefaultAction: "log",
+				Rules: []Rule{
+					{
+						Event: "openat",
+						Filter: []string{
+							"args.pathname!=",
+						},
+					},
+				},
+			},
+			expectedError: errors.New("policy.validateEventArg: policy empty_arg_value, arg pathname value can't be empty"),
+		},
+		{
 			testName: "signature filter arg",
 			policy: PolicyFile{
 				Name:          "signature_filter_arg",
@@ -351,6 +369,7 @@ func TestPolicyValidate(t *testing.T) {
 						Event: "fake_signature",
 						Filter: []string{
 							"args.lala=lala",
+							"args.lele!=lele",
 						},
 					},
 				},

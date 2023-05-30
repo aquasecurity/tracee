@@ -232,7 +232,11 @@ func validateEvent(policyName, eventName string) error {
 }
 
 func validateEventArg(policyName, eventName, argName string) error {
-	s := strings.Split(argName, "=")
+	s := strings.Split(argName, "!=")
+
+	if len(s) == 1 {
+		s = strings.Split(argName, "=")
+	}
 
 	if len(s) == 1 {
 		return errfmt.Errorf("policy %s, arg %s value can't be empty", policyName, s[0])
