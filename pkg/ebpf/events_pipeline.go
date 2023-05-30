@@ -292,6 +292,15 @@ func (t *Tracee) computePolicies(event *trace.Event) (uint64, []string) {
 	for p := range t.config.Policies.Map() {
 		bitOffset := uint(p.ID)
 
+		// An event might have matched a policy on kernel, but the event might be a dependency
+		// event which the policy doesn't trace directly.
+		// For example, ptrace might match for policy A, but policy A is tracing anti_debugging.
+		// So if the event is not directly traced by the policy, we should not emit it.
+		_, ok := p.EventsToTrace[eventID]
+		if !ok {
+			continue
+		}
+
 		// Events submitted with matching policies.
 		// The policy must have its bit cleared when it does not match.
 		if !utils.HasBit(matchedPolicies, bitOffset) {
