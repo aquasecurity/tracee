@@ -517,6 +517,8 @@ nav:
           - Container Engines: docs/integrating/container-engines.md
           - Prometheus: docs/integrating/prometheus.md
           - Healthz: docs/integrating/healthz.md
+      - Data Sources:
+          - Overview: docs/data-sources/overview.md
       - Deep Dive:
           - Caching Events: docs/deep-dive/caching-events.md
           - Ordering Events: docs/deep-dive/ordering-events.md
