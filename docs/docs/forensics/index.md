@@ -21,7 +21,7 @@ Tracee can capture the following types of artifacts:
 1. **I/O Files**
 
     Anytime a file is being written to and/or read from, the contents of the
-    file will be captured. I/O files can be filtered using optional 3 filters:
+    file will be captured. I/O files can be filtered using 3 optional filters:
     1. path - prefix of the file written/read. Up to 3 path filters can be
        provided per capture type.
     2. type - file's type can be `pipe`, `socket` or `regular`.
