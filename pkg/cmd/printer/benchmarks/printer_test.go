@@ -48,7 +48,7 @@ var (
 			Rules: []policy.Rule{
 				{
 					Event:  "test",
-					Action: "webhook:http://localhost:8080",
+					Action: []string{"webhook"},
 				},
 			},
 		},
@@ -58,7 +58,7 @@ var (
 			Rules: []policy.Rule{
 				{
 					Event:  "test",
-					Action: "webhook:http://localhost:8080",
+					Action: []string{"webhook"},
 				},
 			},
 		},
