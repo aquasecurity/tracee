@@ -494,6 +494,9 @@ nav:
                 - mem_prot_alert: docs/events/builtin/extra/mem_prot_alert.md
                 - symbols_loaded: docs/events/builtin/extra/symbols_loaded.md
                 - symbols_collision: docs/events/builtin/extra/symbols_collision.md
+                - hidden_kernel_module: docs/events/builtin/extra/hidden_kernel_module.md
+                - process_execute_failed: docs/events/builtin/extra/process_execute_failed.md
+                - security_bpf_prog: docs/events/builtin/extra/security_bpf_prog.md
           - Custom Events:
               - Overview: docs/events/custom/overview.md
               - Go: docs/events/custom/golang.md
