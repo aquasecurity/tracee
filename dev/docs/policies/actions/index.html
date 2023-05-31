@@ -13617,25 +13617,14 @@
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Examples
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Examples">
+    <nav class="md-nav" aria-label="DefaultAction">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#log-action" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Log action
+        Log action:
       
     </span>
   </a>
@@ -13643,10 +13632,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#webhook-action" class="md-nav__link">
+  <a href="#webook-action" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Webhook action
+        Webook action:
       
     </span>
   </a>
@@ -13654,10 +13643,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fluentd-action" class="md-nav__link">
+  <a href="#forward-action" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Fluentd action
+        Forward action:
       
     </span>
   </a>
@@ -13666,6 +13655,28 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multiple-outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multiple outputs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rule-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rule Actions
+      
+    </span>
+  </a>
   
 </li>
       
@@ -14809,25 +14820,14 @@
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Examples
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Examples">
+    <nav class="md-nav" aria-label="DefaultAction">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#log-action" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Log action
+        Log action:
       
     </span>
   </a>
@@ -14835,10 +14835,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#webhook-action" class="md-nav__link">
+  <a href="#webook-action" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Webhook action
+        Webook action:
       
     </span>
   </a>
@@ -14846,10 +14846,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fluentd-action" class="md-nav__link">
+  <a href="#forward-action" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Fluentd action
+        Forward action:
       
     </span>
   </a>
@@ -14858,6 +14858,28 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multiple-outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multiple outputs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rule-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rule Actions
+      
+    </span>
+  </a>
   
 </li>
       
@@ -14879,15 +14901,14 @@
 
 <h1 id="actions">Actions<a class="headerlink" href="#actions" title="Permanent link">&para;</a></h1>
 <h2 id="defaultaction">DefaultAction<a class="headerlink" href="#defaultaction" title="Permanent link">&para;</a></h2>
-<p>Every policy must have a <code>defaultAction</code>. Actions are taken when there is match on some rule declared at the policy. 
-The following actions are currently supported:</p>
+<p>Every policy must have a <code>defaultAction</code>. Actions are taken when there is match on some rule declared at the policy. The following actions are currently supported:</p>
 <ul>
-<li><code>log</code> - output events in json format. The default path to file is stdout.</li>
-<li><code>forward:http://url/fluent</code> - send events in json format using the Forward protocol to a Fluent receiver</li>
-<li><code>webhook:http://url/webhook</code> - send events in json format to the webhook url</li>
+<li><code>log</code> - output events in a specified foramt (table, json etc) - default is table. The path to file is stdout.</li>
+<li><code>forward</code> - send events in json format using the Forward protocol to a Fluent receiver</li>
+<li><code>webhook</code> - send events in json format to the webhook url</li>
 </ul>
-<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
-<h3 id="log-action">Log action<a class="headerlink" href="#log-action" title="Permanent link">&para;</a></h3>
+<h3 id="log-action">Log action:<a class="headerlink" href="#log-action" title="Permanent link">&para;</a></h3>
+<p>By default the log action will output table to stdout, but it can be configured with the <a href="../../outputs/output-formats"><code>--output</code></a> flag. For example we have a policy log <code>dropped_executable</code> events:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log_sample_policy</span>
 <span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log sample policy</span>
 <span class="nt">scope</span><span class="p">:</span>
@@ -14896,23 +14917,69 @@ The following actions are currently supported:</p>
 <span class="nt">rules</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dropped_executable</span>
 </code></pre></div>
-<h3 id="webhook-action">Webhook action<a class="headerlink" href="#webhook-action" title="Permanent link">&para;</a></h3>
+<p>if we start tracee it will log table to stdout:</p>
+<div class="highlight"><pre><span></span><code><span class="go">tracee --policy policy.yaml</span>
+</code></pre></div>
+<p>To customize it, we use the <a href="../../outputs/output-formats"><code>--output</code></a> flag, for example, instead of table we would like to log a json to stdout:</p>
+<div class="highlight"><pre><span></span><code><span class="go">tracee --policy policy.yaml --output json</span>
+</code></pre></div>
+<p>Or to send json logs to a file:</p>
+<div class="highlight"><pre><span></span><code><span class="go">tracee --policy policy.yaml --output json:/path/to/file</span>
+</code></pre></div>
+<p>In order to use the other actions, we are obligated to declare their outputs before:</p>
+<h3 id="webook-action">Webook action:<a class="headerlink" href="#webook-action" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook_sample_policy</span>
 <span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook_sample_policy</span>
 <span class="nt">scope</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
-<span class="nt">defaultAction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook:http://localhost:8080</span>
+<span class="nt">defaultAction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook</span>
 <span class="nt">rules</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dropped_executable</span>
 </code></pre></div>
-<h3 id="fluentd-action">Fluentd action<a class="headerlink" href="#fluentd-action" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook_sample_policy</span>
-<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook_sample_policy</span>
+<div class="highlight"><pre><span></span><code><span class="go">tracee --policy policy.yaml --output webhook:http://localhost:8080</span>
+</code></pre></div>
+<h3 id="forward-action">Forward action:<a class="headerlink" href="#forward-action" title="Permanent link">&para;</a></h3>
+<p>For the forward action:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">forward_sample_policy</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">forward_sample_policy</span>
 <span class="nt">scope</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
-<span class="nt">defaultAction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">forward:tcp://localhost:24224</span>
+<span class="nt">defaultAction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">forward</span>
 <span class="nt">rules</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dropped_executable</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">tracee --policy policy.yaml --output forward:tcp://localhost:24224</span>
+</code></pre></div>
+<h2 id="multiple-outputs">Multiple outputs<a class="headerlink" href="#multiple-outputs" title="Permanent link">&para;</a></h2>
+<p>Tracee supports multiple outputs, and when used with policies, we have a broadcast by type.
+For example, if you declared an output to json stdout and an output table to a file, the log action
+will broadcast the event matched to both outputs.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log_sample_policy</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log sample policy</span>
+<span class="nt">scope</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
+<span class="nt">defaultAction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log</span>
+<span class="nt">rules</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dropped_executable</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="go">tracee --policy policy.yaml --output json:stdout --output table:/path/to/file</span>
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Although we have shown examples of configuring outputs with the flag <a href="../../outputs/output-formats"><code>--output</code></a>, the same can be done with tracee's <a href="../../config/overview">config file</a>.</p>
+</div>
+<h2 id="rule-actions">Rule Actions<a class="headerlink" href="#rule-actions" title="Permanent link">&para;</a></h2>
+<p>A Rule can override default action of a policy. For example, if you create a policy which by default will log, we can change a rule to send a webhook if a match happens.</p>
+<p>eg:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">override_action_sample</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">override action sample</span>
+<span class="nt">scope</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
+<span class="nt">defaultAction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log</span>
+<span class="nt">rules</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dropped_executable</span>
+<span class="w">    </span><span class="nt">action</span><span class="p">:</span>
+<span class="w">     </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook</span>
 </code></pre></div>
 
 
