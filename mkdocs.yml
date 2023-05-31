@@ -495,6 +495,7 @@ nav:
                 - symbols_loaded: docs/events/builtin/extra/symbols_loaded.md
                 - symbols_collision: docs/events/builtin/extra/symbols_collision.md
           - Custom Events:
+              - Overview: docs/events/custom/overview.md
               - Go: docs/events/custom/golang.md
               - Rego: docs/events/custom/rego.md
       - Policies:
