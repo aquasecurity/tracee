@@ -7,6 +7,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/policy"
 )
 
@@ -27,11 +28,10 @@ func getConfigAndPrinterFromPoliciesFlags(cfg tracee.Config, policyFlags, output
 	}
 	cfg.Policies = policies
 
-	// we ignore printers passed in the flags if you using policies,
-	// though we still need the output options
-	// TODO: extract output options from --output flag
-	outputFlags = getOutputOptions(outputFlags)
-	outputFlags = append(outputFlags, getOutputFlagsFromPolicies(policyFiles)...)
+	outputFlags, err = getOutputFlagsFromPolicies(outputFlags, policyFiles)
+	if err != nil {
+		return cfg, nil, err
+	}
 
 	// Output command line flags
 	output, err := flags.PrepareOutput(outputFlags, true)
@@ -79,50 +79,50 @@ func getConfigAndPrinterFromFilterFlags(cfg tracee.Config, filterFlags, outputFl
 	return cfg, p, err
 }
 
-// getOutputOptions returns a slice of output options from the output flags
-func getOutputOptions(outputFlags []string) []string {
-	options := make([]string, 0)
-
-	for _, f := range outputFlags {
-		if strings.HasPrefix(f, "option:") {
-			options = append(options, f)
-		}
-	}
-
-	return options
-}
-
 // getOutputFlagsFromPolicies returns a slice of output flags that are used in the policies' actions
-func getOutputFlagsFromPolicies(policies []policy.PolicyFile) []string {
-	m := make(map[string]bool)
+func getOutputFlagsFromPolicies(outputFlags []string, policies []policy.PolicyFile) ([]string, error) {
+	// a map of the actions used in the policies
+	actionsMap := make(map[string]bool)
+
 	for _, p := range policies {
-		key := strings.TrimSpace(p.DefaultAction)
-
-		// log action translates to json:stdout
-		if key == "log" {
-			key = "json"
-		}
-
-		m[key] = true
+		actionsMap[strings.TrimSpace(p.DefaultAction)] = false
 
 		for _, r := range p.Rules {
-			if r.Action != "" {
-				key = strings.TrimSpace(r.Action)
-
-				// log action translates to json:stdout
-				if key == "log" {
-					key = "json"
+			for _, action := range r.Action {
+				if action != "" {
+					actionsMap[strings.TrimSpace(action)] = false
 				}
-
-				m[key] = true
 			}
 		}
 	}
 
 	outputSlice := make([]string, 0)
-	for k := range m {
-		outputSlice = append(outputSlice, k)
+
+	// parse output flags to check which printers were configured
+	for _, o := range outputFlags {
+		outputParts := strings.SplitN(o, ":", 2)
+
+		switch outputParts[0] {
+		case "forward", "webhook":
+			actionsMap[outputParts[0]] = true
+			outputSlice = append(outputSlice, o)
+		case "table", "table-verbose", "json", "gob":
+			actionsMap["log"] = true
+			outputSlice = append(outputSlice, o)
+		}
 	}
 
-	return outputSlice
+	// if printer was not defined for action log, return default to table:stdout
+	// if printers were not defined for actions webhook and forward, return error.
+	for k, v := range actionsMap {
+		if !v {
+			if k == "log" {
+				outputSlice = append(outputSlice, "table:stdout")
+				continue
+			}
+			return nil, errfmt.Errorf("policy action %q has no printer configured, please configure the printer with --output", k)
+		}
+	}
+
+	return outputSlice, nil
 }

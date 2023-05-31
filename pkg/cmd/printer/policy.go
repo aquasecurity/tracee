@@ -1,8 +1,10 @@
 package printer
 
 import (
+	"fmt"
 	"sync"
 
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/policy"
@@ -18,8 +20,8 @@ type PolicyEventPrinter struct {
 	policies       []policy.PolicyFile
 	printers       []EventPrinter
 	numOfPrinters  int
-	printerMap     map[string]chan trace.Event
-	eventsMap      map[string]chan trace.Event
+	printerMap     map[string][]chan trace.Event
+	eventsMap      map[string]string
 	wg             *sync.WaitGroup
 	done           chan struct{}
 	containerMode  ContainerMode
@@ -37,7 +39,7 @@ func NewPolicyEventPrinter(pConfigs []Config, policies []policy.PolicyFile, cont
 
 // Init serves as the initializer method for every event Printer type
 func (pp *PolicyEventPrinter) Init() error {
-	printerMap := make(map[string]chan trace.Event)
+	printerMap := make(map[string][]chan trace.Event)
 	done := make(chan struct{})
 	wg := &sync.WaitGroup{}
 
@@ -61,14 +63,23 @@ func (pp *PolicyEventPrinter) Init() error {
 		wg.Add(1)
 		go startPrinter(wg, done, eventChan, p)
 
-		printerName := pConfig.Kind + ":" + pConfig.OutPath
-		printerMap[printerName] = eventChan
+		key := getKey(pConfig.Kind)
+
+		_, ok := printerMap[key]
+		if !ok {
+			printerMap[key] = make([]chan trace.Event, 0)
+		}
+
+		printerMap[key] = append(printerMap[key], eventChan)
 	}
 
-	eventsMap := pp.createEventMap(printerMap)
+	eventsMap, err := pp.createEventMap(printerMap)
+	if err != nil {
+		return err
+	}
 
-	pp.printerMap = printerMap
 	pp.eventsMap = eventsMap
+	pp.printerMap = printerMap
 	pp.wg = wg
 	pp.printers = printers
 	pp.numOfPrinters = len(printers)
@@ -98,7 +109,7 @@ func (pp *PolicyEventPrinter) Epilogue(stats metrics.Stats) {
 
 // Print prints a single event
 func (pp *PolicyEventPrinter) Print(event trace.Event) {
-	executed := make(map[chan trace.Event]bool, 0)
+	executed := make(map[string]bool, 0)
 
 	var printersExecuted int
 	for _, policyName := range event.MatchedPoliciesNames {
@@ -108,21 +119,28 @@ func (pp *PolicyEventPrinter) Print(event trace.Event) {
 
 		key := policyName + ":" + event.EventName
 
-		c, ok := pp.eventsMap[key]
+		action, ok := pp.eventsMap[key]
 		if !ok {
 			logger.Debugw("printers not found for event", "event", event)
 			continue
 		}
 
 		// avoid executing the same printer twice
-		if _, ok := executed[c]; ok {
+		if _, ok := executed[action]; ok {
 			continue
 		}
 
-		c <- event
+		eventChans, ok := pp.printerMap[action]
+		if !ok {
+			panic(fmt.Sprintf("printer not found %q", action))
+		}
+
+		for _, c := range eventChans {
+			c <- event
+		}
 
 		printersExecuted++
-		executed[c] = true
+		executed[action] = true
 	}
 }
 
@@ -133,42 +151,43 @@ func (pp *PolicyEventPrinter) Close() {
 	}
 }
 
-func (pp *PolicyEventPrinter) createEventMap(printerMap map[string]chan trace.Event) map[string]chan trace.Event {
-	eventsMap := make(map[string]chan trace.Event)
+func (pp *PolicyEventPrinter) createEventMap(printerMap map[string][]chan trace.Event) (map[string]string, error) {
+	eventsMap := make(map[string]string)
 
 	for _, p := range pp.policies {
 		for _, rule := range p.Rules {
 			key := p.Name + ":" + rule.Event
+			eventsMap[key] = p.DefaultAction
 
-			action := getAction(p.DefaultAction)
-			c, ok := printerMap[action]
-			if !ok {
-				logger.Fatalw("printer not found", "printerName", action)
+			if _, ok := printerMap[p.DefaultAction]; p.DefaultAction != "log" && !ok {
+				return nil, errfmt.Errorf("policy action %q has no printer configured, please configure the printer with --output", p.DefaultAction)
 			}
-
-			eventsMap[key] = c
 
 			// if no specific action is defined for this event, move on
-			if rule.Action == "" {
-				continue
-			}
+			for _, action := range rule.Action {
+				if action == "" {
+					continue
+				}
 
-			action = getAction(rule.Action)
-			c, ok = printerMap[action]
-			if !ok {
-				logger.Fatalw("printer not found", "printerName", action)
-			}
+				eventsMap[key] = action
 
-			eventsMap[key] = c
+				if _, ok := printerMap[action]; action != "log" && !ok {
+					return nil, errfmt.Errorf("policy action %q has no printer configured, please configure the printer with --output", rule.Action)
+				}
+			}
 		}
 	}
 
-	return eventsMap
+	return eventsMap, nil
 }
 
-func getAction(action string) string {
-	if action == "log" {
-		return "json:stdout"
+func getKey(kind string) string {
+	switch kind {
+	case "forward":
+		return "forward"
+	case "webhook":
+		return "webhook"
+	default:
+		return "log"
 	}
-	return action
 }

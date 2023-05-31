@@ -25,7 +25,7 @@ type PolicyFile struct {
 type Rule struct {
 	Event  string   `yaml:"event"`
 	Filter []string `yaml:"filter"`
-	Action string   `yaml:"action"`
+	Action []string `yaml:"action"`
 }
 
 func (p PolicyFile) Validate() error {
@@ -67,12 +67,12 @@ func (p PolicyFile) validateDefaultAction() error {
 func validateAction(policyName, a string) error {
 	actions := []string{
 		"log",
-		"webhook:",
-		"forward:",
+		"webhook",
+		"forward",
 	}
 
 	for _, action := range actions {
-		if strings.HasPrefix(a, action) {
+		if action == a {
 			return nil
 		}
 	}
@@ -158,10 +158,12 @@ func (p PolicyFile) validateRules() error {
 			return err
 		}
 
-		if r.Action != "" {
-			err = validateAction(p.Name, r.Action)
-			if err != nil {
-				return err
+		for _, a := range r.Action {
+			if a != "" {
+				err = validateAction(p.Name, a)
+				if err != nil {
+					return err
+				}
 			}
 		}
 
