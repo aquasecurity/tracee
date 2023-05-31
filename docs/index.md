@@ -13,8 +13,8 @@ by clicking the button at the top of the [GitHub page](https://github.com/aquase
 
 - You are currently in the [Getting Started](./) section where you can find general information and help with first steps.
 - In the [Tutorials](./tutorials/overview) section you can find step-by-step guides that help you accomplish specific tasks.
-- In the [Docs](./docs) section you can find the complete reference documentation for all of the different features and settings that Tracee has to offer.
-- In the [Contributing](./contributing) section you can find technical developer documentation and contribution guidelines.
+- In the [Docs](./docs/overview) section you can find the complete reference documentation for all of the different features and settings that Tracee has to offer.
+- In the [Contributing](./contributing/overview) section you can find technical developer documentation and contribution guidelines.
 
 # Tracee: Runtime Security and Forensics using eBPF
 
