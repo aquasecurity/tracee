@@ -22,8 +22,6 @@ Tracee uses eBPF technology to tap into your system and give you access to hundr
 In addition to basic observability events about system activity, Tracee adds a collection of sophisticated security events that expose more advanced behavioral patterns. You can also easily add your own events using the popular [Rego](https://www.openpolicyagent.org/docs/latest/policy-language/) language.
 Tracee provides a rich filtering mechanism that allows you to eliminate noise and focus on specific workloads that matter most to you.
 
-To learn more about Tracee, check out the [documentation](https://aquasecurity.github.io/tracee/).
-
 ## Quickstart
 
 You can easily start experimenting with Tracee using the Docker image as follows:
