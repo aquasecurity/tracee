@@ -1049,10 +1049,60 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#everything-is-an-event" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Everything is an event
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Everything is an event">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default events
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sets
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#read-in-cli" class="md-nav__link">
     <span class="md-ellipsis">
       
         Read in CLI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#read-in-avd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read in AVD
       
     </span>
   </a>
@@ -13246,6 +13296,84 @@
 
               
             
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../builtin/extra/hidden_kernel_module/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    hidden_kernel_module
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../builtin/extra/process_execute_failed/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    process_execute_failed
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../builtin/extra/security_bpf_prog/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_bpf_prog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -13305,6 +13433,32 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../custom/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -14647,10 +14801,60 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#everything-is-an-event" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Everything is an event
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Everything is an event">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default events
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sets
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#read-in-cli" class="md-nav__link">
     <span class="md-ellipsis">
       
         Read in CLI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#read-in-avd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read in AVD
       
     </span>
   </a>
@@ -14675,11 +14879,331 @@
 
 <h1 id="events">Events<a class="headerlink" href="#events" title="Permanent link">&para;</a></h1>
 <p>This section documents all of the different events that Tracee exposes.</p>
-<p>👈 Please use the side-navigation on the left in order to browse the different topics.</p>
+<h2 id="everything-is-an-event">Everything is an event<a class="headerlink" href="#everything-is-an-event" title="Permanent link">&para;</a></h2>
+<p>Tracee uses eBPF technology to tap into your system and give you access to hundreds of events that help you understand how your system behaves. The events can be specified either through CLI with <a href="../../filters/filtering">filters</a> or with <a href="../../policies">policies</a>.</p>
+<p>eg:</p>
+<p>Tracing <code>execve</code> events with <a href="../../filters/filtering">filters</a>:</p>
+<div class="highlight"><pre><span></span><code>tracee --filter event=execve
+</code></pre></div>
+<p>Tracing <code>execve</code> events with <a href="../../policies">policies</a>:</p>
+<div class="highlight"><pre><span></span><code>cat &lt;&lt;EOF &gt;sample_policy.yaml
+name: sample policy
+description: traces execve events
+scope:
+  - global
+defaultAction: log
+rules:
+  - event: execve
+EOF
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>tracee --policies sample_policy.yaml
+</code></pre></div>
+<p>If no event is passed with <a href="../../filters/filtering">filters</a> or <a href="../../policies">policies</a>, tracee will start with a sane default.
+Below a list of tracee default events.</p>
+<h3 id="default-events">Default events<a class="headerlink" href="#default-events" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Sets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>stdio_over_socket</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>k8s_api_connection</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>aslr_inspection</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>proc_mem_code_injection</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>docker_abuse</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>scheduled_task_mod</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>ld_preload</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>cgroup_notify_on_release</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>default_loader_mod</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>sudoers_modification</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>sched_debug_recon</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>system_request_key_mod</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>cgroup_release_agent</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>rcd_modification</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>core_pattern_modification</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>proc_kcore_read</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>proc_mem_access</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>hidden_file_created</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>anti_debugging</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>ptrace_code_injection</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>process_vm_write_inject</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>disk_mount</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>dynamic_code_loading</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>fileless_execution</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>illegitimate_shell</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>kernel_module_loading</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>k8s_cert_theft</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>proc_fops_hooking</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>syscall_hooking</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>dropped_executable</td>
+<td>[signatures default]</td>
+</tr>
+<tr>
+<td>creat</td>
+<td>[default syscalls fs fs_file_ops]</td>
+</tr>
+<tr>
+<td>chmod</td>
+<td>[default syscalls fs fs_file_attr]</td>
+</tr>
+<tr>
+<td>fchmod</td>
+<td>[default syscalls fs fs_file_attr]</td>
+</tr>
+<tr>
+<td>chown</td>
+<td>[default syscalls fs fs_file_attr]</td>
+</tr>
+<tr>
+<td>fchown</td>
+<td>[default syscalls fs fs_file_attr]</td>
+</tr>
+<tr>
+<td>lchown</td>
+<td>[default syscalls fs fs_file_attr]</td>
+</tr>
+<tr>
+<td>ptrace</td>
+<td>[default syscalls proc]</td>
+</tr>
+<tr>
+<td>setuid</td>
+<td>[default syscalls proc proc_ids]</td>
+</tr>
+<tr>
+<td>setgid</td>
+<td>[default syscalls proc proc_ids]</td>
+</tr>
+<tr>
+<td>setpgid</td>
+<td>[default syscalls proc proc_ids]</td>
+</tr>
+<tr>
+<td>setsid</td>
+<td>[default syscalls proc proc_ids]</td>
+</tr>
+<tr>
+<td>setreuid</td>
+<td>[default syscalls proc proc_ids]</td>
+</tr>
+<tr>
+<td>setregid</td>
+<td>[default syscalls proc proc_ids]</td>
+</tr>
+<tr>
+<td>setresuid</td>
+<td>[default syscalls proc proc_ids]</td>
+</tr>
+<tr>
+<td>setresgid</td>
+<td>[default syscalls proc proc_ids]</td>
+</tr>
+<tr>
+<td>setfsuid</td>
+<td>[default syscalls proc proc_ids]</td>
+</tr>
+<tr>
+<td>setfsgid</td>
+<td>[default syscalls proc proc_ids]</td>
+</tr>
+<tr>
+<td>init_module</td>
+<td>[default syscalls system system_module]</td>
+</tr>
+<tr>
+<td>fchownat</td>
+<td>[default syscalls fs fs_file_attr]</td>
+</tr>
+<tr>
+<td>fchmodat</td>
+<td>[default syscalls fs fs_file_attr]</td>
+</tr>
+<tr>
+<td>setns</td>
+<td>[default syscalls proc]</td>
+</tr>
+<tr>
+<td>process_vm_readv</td>
+<td>[default syscalls proc]</td>
+</tr>
+<tr>
+<td>process_vm_writev</td>
+<td>[default syscalls proc]</td>
+</tr>
+<tr>
+<td>finit_module</td>
+<td>[default syscalls system system_module]</td>
+</tr>
+<tr>
+<td>memfd_create</td>
+<td>[default syscalls fs fs_file_ops]</td>
+</tr>
+<tr>
+<td>move_mount</td>
+<td>[default syscalls fs]</td>
+</tr>
+<tr>
+<td>sched_process_exec</td>
+<td>[default proc]</td>
+</tr>
+<tr>
+<td>security_inode_unlink</td>
+<td>[default lsm_hooks fs fs_file_ops]</td>
+</tr>
+<tr>
+<td>security_socket_connect</td>
+<td>[default lsm_hooks net net_sock]</td>
+</tr>
+<tr>
+<td>security_socket_accept</td>
+<td>[default lsm_hooks net net_sock]</td>
+</tr>
+<tr>
+<td>security_socket_bind</td>
+<td>[default lsm_hooks net net_sock]</td>
+</tr>
+<tr>
+<td>security_sb_mount</td>
+<td>[default lsm_hooks fs]</td>
+</tr>
+<tr>
+<td>container_create</td>
+<td>[default containers]</td>
+</tr>
+<tr>
+<td>container_remove</td>
+<td>[default containers]</td>
+</tr>
+<tr>
+<td>net_packet_icmp</td>
+<td>[default network_events]</td>
+</tr>
+<tr>
+<td>net_packet_icmpv6</td>
+<td>[default network_events]</td>
+</tr>
+<tr>
+<td>net_packet_dns_request</td>
+<td>[default network_events]</td>
+</tr>
+<tr>
+<td>net_packet_dns_response</td>
+<td>[default network_events]</td>
+</tr>
+<tr>
+<td>net_packet_http_request</td>
+<td>[default network_events]</td>
+</tr>
+<tr>
+<td>net_packet_http_response</td>
+<td>[default network_events]</td>
+</tr>
+</tbody>
+</table>
+<h3 id="sets">Sets<a class="headerlink" href="#sets" title="Permanent link">&para;</a></h3>
+<p>Events can be part of a set, for example on the table above we can see a few sets like <code>default</code>, <code>network_events</code>, <code>syscalls</code>. 
+We can ask tracee to trace a full set, or sets, instead of passing event by event, for example:</p>
+<p><div class="highlight"><pre><span></span><code>tracee --filter set=syscalls
+</code></pre></div>
+or </p>
+<div class="highlight"><pre><span></span><code>tracee --filter set=syscalls,network_events
+</code></pre></div>
 <h2 id="read-in-cli">Read in CLI<a class="headerlink" href="#read-in-cli" title="Permanent link">&para;</a></h2>
-<p>You can also view the list of available events and their schema by running <code>tracee list</code> command.</p>
-<h1 id="read-in-avd">Read in AVD<a class="headerlink" href="#read-in-avd" title="Permanent link">&para;</a></h1>
+<p>You can view the list of available events and their schema by running <code>tracee list</code> command.</p>
+<h2 id="read-in-avd">Read in AVD<a class="headerlink" href="#read-in-avd" title="Permanent link">&para;</a></h2>
 <p><a href="https://avd.aquasec.com">Aqua Vulnerability Database (AVD)</a> is a public index of all security information that can be reported across all of Aqua's products and tools. As such, it also contains entries about Tracee security events. The AVD entries on runtime security are generated from the <a href="https://github.com/aquasecurity/tracee/tree/main/signatures">detection signatures</a> and are organized by MITRE ATT&amp;CK categorization. Browse at <a href="https://avd.aquasec.com/tracee/">avd.aquasec.com/tracee</a>.</p>
+<p>👈 Please use the side-navigation on the left in order to browse the different topics.</p>
 
 
 
