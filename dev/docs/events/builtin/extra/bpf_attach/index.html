@@ -13289,15 +13289,15 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#check_helper_call" class="md-nav__link">
+  <a href="#tracepoint_probe_register_prio_may_exist" class="md-nav__link">
     <span class="md-ellipsis">
       
-        check_helper_call
+        tracepoint_probe_register_prio_may_exist
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="check_helper_call">
+    <nav class="md-nav" aria-label="tracepoint_probe_register_prio_may_exist">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -13328,15 +13328,15 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#check_map_func_compatibility" class="md-nav__link">
+  <a href="#check_helper_call" class="md-nav__link">
     <span class="md-ellipsis">
       
-        check_map_func_compatibility
+        check_helper_call
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="check_map_func_compatibility">
+    <nav class="md-nav" aria-label="check_helper_call">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -13352,6 +13352,45 @@
         
           <li class="md-nav__item">
   <a href="#purpose_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check_map_func_compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        check_map_func_compatibility
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="check_map_func_compatibility">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         Purpose
@@ -15080,15 +15119,15 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#check_helper_call" class="md-nav__link">
+  <a href="#tracepoint_probe_register_prio_may_exist" class="md-nav__link">
     <span class="md-ellipsis">
       
-        check_helper_call
+        tracepoint_probe_register_prio_may_exist
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="check_helper_call">
+    <nav class="md-nav" aria-label="tracepoint_probe_register_prio_may_exist">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -15119,15 +15158,15 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#check_map_func_compatibility" class="md-nav__link">
+  <a href="#check_helper_call" class="md-nav__link">
     <span class="md-ellipsis">
       
-        check_map_func_compatibility
+        check_helper_call
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="check_map_func_compatibility">
+    <nav class="md-nav" aria-label="check_helper_call">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -15143,6 +15182,45 @@
         
           <li class="md-nav__item">
   <a href="#purpose_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check_map_func_compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        check_map_func_compatibility
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="check_map_func_compatibility">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_5" class="md-nav__link">
     <span class="md-ellipsis">
       
         Purpose
@@ -15213,10 +15291,11 @@
 
 <h1 id="bpf_attach">bpf_attach<a class="headerlink" href="#bpf_attach" title="Permanent link">&para;</a></h1>
 <h2 id="intro">Intro<a class="headerlink" href="#intro" title="Permanent link">&para;</a></h2>
-<p>bpf_attach - a BPF program is attached to a probe (kprobe/uprobe/tracepoint)</p>
+<p>bpf_attach - a BPF program is attached to a probe (kprobe/uprobe/tracepoint/raw_tracepoint)</p>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
 <p>An event marking that a BPF program was attached to a probe in the system.
-It occurs whenever a BPF program is attached to a perf event of the types: kprobe, uprobe or tracepoint.
+It occurs whenever a BPF program is attached to an instrumentation probe - either a 
+raw_tracepoint or perf event of the types kprobe, uprobe or tracepoint.
 The purpose of the event is to give the user information about the BPF program, 
 as well as information about the probe itself.</p>
 <h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
@@ -15225,9 +15304,9 @@ as well as information about the probe itself.</p>
 <li><code>prog_name</code>:<code>const char*</code>[K] - the BPF program name (first 16 bytes only, as this is how it is saved in the kernel).</li>
 <li><code>prog_id</code>:<code>u32</code>[K] - the BPF program ID as set by the kernel.</li>
 <li><code>prog_helpers</code>:<code>unsigned long[]</code>[K] - list of all BPF helpers being used by the BPF program.</li>
-<li><code>perf_symbol</code>:<code>const char*</code>[K] - name/path of the symbol the BPF program is being attached to.</li>
-<li><code>perf_addr</code>:<code>u64</code>[K] - address/offset of the symbol the BPF program is being attached to.</li>
-<li><code>perf_type</code>:<code>int</code>[K] - the probe's type.</li>
+<li><code>symbol_name</code>:<code>const char*</code>[K] - name/path of the symbol the BPF program is being attached to.</li>
+<li><code>symbol_addr</code>:<code>u64</code>[K] - address/offset of the symbol the BPF program is being attached to.</li>
+<li><code>attach_type</code>:<code>int</code>[K] - the probe's type.</li>
 </ul>
 <h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
 <h3 id="security_file_ioctl">security_file_ioctl<a class="headerlink" href="#security_file_ioctl" title="Permanent link">&para;</a></h3>
@@ -15245,15 +15324,20 @@ as well as information about the probe itself.</p>
 <p>kprobe</p>
 <h4 id="purpose_2">Purpose<a class="headerlink" href="#purpose_2" title="Permanent link">&para;</a></h4>
 <p>save data of the BPF program for when we output the event</p>
-<h3 id="check_helper_call">check_helper_call<a class="headerlink" href="#check_helper_call" title="Permanent link">&para;</a></h3>
+<h3 id="tracepoint_probe_register_prio_may_exist">tracepoint_probe_register_prio_may_exist<a class="headerlink" href="#tracepoint_probe_register_prio_may_exist" title="Permanent link">&para;</a></h3>
 <h4 id="type_3">Type<a class="headerlink" href="#type_3" title="Permanent link">&para;</a></h4>
 <p>kprobe</p>
 <h4 id="purpose_3">Purpose<a class="headerlink" href="#purpose_3" title="Permanent link">&para;</a></h4>
-<p>get information about which helper functions are used by the BPF program</p>
-<h3 id="check_map_func_compatibility">check_map_func_compatibility<a class="headerlink" href="#check_map_func_compatibility" title="Permanent link">&para;</a></h3>
+<p>Catch the attachment of the BPF program to a raw_tracepoint</p>
+<h3 id="check_helper_call">check_helper_call<a class="headerlink" href="#check_helper_call" title="Permanent link">&para;</a></h3>
 <h4 id="type_4">Type<a class="headerlink" href="#type_4" title="Permanent link">&para;</a></h4>
 <p>kprobe</p>
 <h4 id="purpose_4">Purpose<a class="headerlink" href="#purpose_4" title="Permanent link">&para;</a></h4>
+<p>get information about which helper functions are used by the BPF program</p>
+<h3 id="check_map_func_compatibility">check_map_func_compatibility<a class="headerlink" href="#check_map_func_compatibility" title="Permanent link">&para;</a></h3>
+<h4 id="type_5">Type<a class="headerlink" href="#type_5" title="Permanent link">&para;</a></h4>
+<p>kprobe</p>
+<h4 id="purpose_5">Purpose<a class="headerlink" href="#purpose_5" title="Permanent link">&para;</a></h4>
 <p>get information about which helper functions are used by the BPF program</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
 <p>./tracee -f e=bpf_attach</p>
