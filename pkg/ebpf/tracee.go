@@ -240,6 +240,25 @@ func New(cfg Config) (*Tracee, error) {
 		}
 	}
 
+	// Clean up signatures not chosen for tracing
+	// Looping from the back to avoid bounds checking
+	for i := len(t.config.EngineConfig.Signatures) - 1; i > 0; i-- {
+		sig := t.config.EngineConfig.Signatures[i]
+		md, _ := sig.GetMetadata()
+		sigEventName := md.EventName
+		sigEventId, ok := events.Definitions.GetID(sigEventName)
+		if !ok {
+			logger.Debugw("removing signature from events to trace", "signature", sigEventName, "reason", "ID does not exist in definitions")
+			t.config.EngineConfig.Signatures = append(t.config.EngineConfig.Signatures[:i], t.config.EngineConfig.Signatures[i+1:]...)
+			continue
+		}
+		_, ok = t.events[sigEventId]
+		if !ok {
+			logger.Debugw("removing signature from events to trace", "signature", sigEventName, "reason", "was not requested for tracing")
+			t.config.EngineConfig.Signatures = append(t.config.EngineConfig.Signatures[:i], t.config.EngineConfig.Signatures[i+1:]...)
+		}
+	}
+
 	// Handle all essential events dependencies
 
 	for id, evt := range t.events {
