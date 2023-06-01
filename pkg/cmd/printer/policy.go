@@ -112,7 +112,7 @@ func (pp *PolicyEventPrinter) Print(event trace.Event) {
 	executed := make(map[string]bool, 0)
 
 	var printersExecuted int
-	for _, policyName := range event.MatchedPoliciesNames {
+	for _, policyName := range event.MatchedPolicies {
 		if printersExecuted == pp.numOfPrinters {
 			return
 		}

@@ -39,9 +39,10 @@ func TestFindingToEvent(t *testing.T) {
 			PodNamespace: "namespace",
 			PodUID:       "uid",
 		},
-		ReturnValue:     0,
-		MatchedPolicies: 1,
-		ArgsNum:         2,
+		ReturnValue:           0,
+		MatchedPoliciesKernel: 1,
+		MatchedPoliciesUser:   1,
+		ArgsNum:               2,
 		Args: []trace.Argument{
 			{
 				ArgMeta: trace.ArgMeta{
@@ -134,9 +135,10 @@ func createFakeEventAndFinding() detect.Finding {
 					PodNamespace: "namespace",
 					PodUID:       "uid",
 				},
-				ReturnValue:     0,
-				MatchedPolicies: 1,
-				ArgsNum:         0,
+				ReturnValue:           0,
+				MatchedPoliciesKernel: 1,
+				MatchedPoliciesUser:   1,
+				ArgsNum:               0,
 			},
 		},
 	}
