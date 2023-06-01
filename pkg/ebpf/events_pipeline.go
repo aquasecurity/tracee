@@ -233,36 +233,36 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 			}
 
 			evt := trace.Event{
-				Timestamp:           int(ctx.Ts),
-				ThreadStartTime:     int(ctx.StartTime),
-				ProcessorID:         int(ctx.ProcessorId),
-				ProcessID:           int(ctx.Pid),
-				ThreadID:            int(ctx.Tid),
-				ParentProcessID:     int(ctx.Ppid),
-				HostProcessID:       int(ctx.HostPid),
-				HostThreadID:        int(ctx.HostTid),
-				HostParentProcessID: int(ctx.HostPpid),
-				UserID:              int(ctx.Uid),
-				MountNS:             int(ctx.MntID),
-				PIDNS:               int(ctx.PidID),
-				ProcessName:         string(bytes.TrimRight(ctx.Comm[:], "\x00")),
-				HostName:            string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
-				CgroupID:            uint(ctx.CgroupID),
-				ContainerID:         containerData.ID,
-				Container:           containerData,
-				Kubernetes:          kubernetesData,
-				EventID:             int(ctx.EventID),
-				EventName:           eventDefinition.Name,
-				MatchedPolicies:     ctx.MatchedPolicies,
-				ArgsNum:             int(ctx.Argnum),
-				ReturnValue:         int(ctx.Retval),
-				Args:                args,
-				StackAddresses:      stackAddresses,
-				ContextFlags:        flags,
-				Syscall:             syscall,
+				Timestamp:             int(ctx.Ts),
+				ThreadStartTime:       int(ctx.StartTime),
+				ProcessorID:           int(ctx.ProcessorId),
+				ProcessID:             int(ctx.Pid),
+				ThreadID:              int(ctx.Tid),
+				ParentProcessID:       int(ctx.Ppid),
+				HostProcessID:         int(ctx.HostPid),
+				HostThreadID:          int(ctx.HostTid),
+				HostParentProcessID:   int(ctx.HostPpid),
+				UserID:                int(ctx.Uid),
+				MountNS:               int(ctx.MntID),
+				PIDNS:                 int(ctx.PidID),
+				ProcessName:           string(bytes.TrimRight(ctx.Comm[:], "\x00")),
+				HostName:              string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
+				CgroupID:              uint(ctx.CgroupID),
+				ContainerID:           containerData.ID,
+				Container:             containerData,
+				Kubernetes:            kubernetesData,
+				EventID:               int(ctx.EventID),
+				EventName:             eventDefinition.Name,
+				MatchedPoliciesKernel: ctx.MatchedPolicies,
+				ArgsNum:               int(ctx.Argnum),
+				ReturnValue:           int(ctx.Retval),
+				Args:                  args,
+				StackAddresses:        stackAddresses,
+				ContextFlags:          flags,
+				Syscall:               syscall,
 			}
 
-			if !t.shouldProcessEvent(&evt) {
+			if t.matchPolicies(&evt) == 0 {
 				_ = t.stats.EventsFiltered.Increment()
 				// we can stop processing the event if it doesn't have derivatives.
 				// otherwise, since it has MatchedPolicies==0 it won't be emitted later anyway.
@@ -281,35 +281,41 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 	return out, errc
 }
 
-// computePolicies iterates through the policies that do the filtering in user space, checking whether an event should be considered.
-// If it should not, it sets the respective offset to 0.
-// Finally it returns computed policies and the names of the policies that matched.
-func (t *Tracee) computePolicies(event *trace.Event) (uint64, []string) {
+// matchPolicies iterates through the policies that do the filtering in user space.
+// If the filter doesn't match, the policy bit is cleared from the matched policies bitmap.
+// Finally, the filtered bitmap is stored in the event and returned.
+func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 	eventID := events.ID(event.EventID)
-	matchedPolicies := event.MatchedPolicies
-	matchedPoliciesNames := []string{}
+	bitmap := event.MatchedPoliciesKernel
 
 	for p := range t.config.Policies.Map() {
 		bitOffset := uint(p.ID)
 
 		// Events submitted with matching policies.
 		// The policy must have its bit cleared when it does not match.
-		if !utils.HasBit(matchedPolicies, bitOffset) {
+		if !utils.HasBit(bitmap, bitOffset) {
+			continue
+		}
+
+		_, ok := p.EventsToTrace[eventID]
+		if !ok {
+			// Do not clear the bit due to this unmatched event,
+			// as the policy might match other derivatives from this in later stages.
 			continue
 		}
 
 		if !p.ContextFilter.Filter(*event) {
-			utils.ClearBit(&matchedPolicies, bitOffset)
+			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
 
 		if !p.RetFilter.Filter(eventID, int64(event.ReturnValue)) {
-			utils.ClearBit(&matchedPolicies, bitOffset)
+			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
 
 		if !p.ArgFilter.Filter(eventID, event.Args) {
-			utils.ClearBit(&matchedPolicies, bitOffset)
+			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
 
@@ -328,28 +334,20 @@ func (t *Tracee) computePolicies(event *trace.Event) (uint64, []string) {
 
 		if p.UIDFilter.Enabled() &&
 			!p.UIDFilter.InMinMaxRange(uint32(event.UserID)) {
-			utils.ClearBit(&matchedPolicies, bitOffset)
+			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
 
 		if p.PIDFilter.Enabled() &&
 			!p.PIDFilter.InMinMaxRange(uint32(event.HostProcessID)) {
-			utils.ClearBit(&matchedPolicies, bitOffset)
+			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
-
-		// as we reached here, the policy matched
-		matchedPoliciesNames = append(matchedPoliciesNames, p.Name)
 	}
 
-	return matchedPolicies, matchedPoliciesNames
-}
-
-// shouldProcessEvent decides whether or not to drop an event before further processing it
-func (t *Tracee) shouldProcessEvent(event *trace.Event) bool {
-	// As we don't do all the filtering on the ebpf side, we have to update MatchedPolicies
-	event.MatchedPolicies, event.MatchedPoliciesNames = t.computePolicies(event)
-	return event.MatchedPolicies != 0
+	// Store the filtered bitmap to be used in the sink stage.
+	event.MatchedPoliciesUser = bitmap
+	return bitmap
 }
 
 func parseContextFlags(flags uint32) trace.ContextFlags {
@@ -413,8 +411,9 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (<-c
 					logger.Debugw("False container positive", "event.Timestamp", event.Timestamp, "eventId", eventId)
 
 					// filter container policies out
-					utils.ClearBits(&event.MatchedPolicies, policiesWithContainerFilter)
-					if event.MatchedPolicies == 0 {
+					utils.ClearBits(&event.MatchedPoliciesKernel, policiesWithContainerFilter)
+					utils.ClearBits(&event.MatchedPoliciesUser, policiesWithContainerFilter)
+					if event.MatchedPoliciesKernel == 0 {
 						continue
 					}
 				}
@@ -472,7 +471,7 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					case events.PrintMemDump:
 					default:
 						// Derived events might need filtering as well
-						if !t.shouldProcessEvent(&derivative) {
+						if t.matchPolicies(&derivative) == 0 {
 							_ = t.stats.EventsFiltered.Increment()
 							continue
 						}
@@ -500,12 +499,14 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 	go func() {
 		defer close(errc)
 		for event := range in {
-			// Only emit events requested by the user
+			// Only emit events requested by the user and matched by at least one policy
 			id := events.ID(event.EventID)
-			event.MatchedPolicies &= t.events[id].emit
-			if event.MatchedPolicies == 0 {
+			event.MatchedPoliciesUser &= t.events[id].emit
+			if event.MatchedPoliciesUser == 0 {
 				continue
 			}
+			// Populate the event with the names of the matched policies
+			event.MatchedPolicies = t.config.Policies.MatchedNames(event.MatchedPoliciesUser)
 
 			// if the rule engine is not enabled, we parse arguments here before sending
 			// the output to the printers

@@ -366,8 +366,8 @@ func checkPolicySecurityFileOpenLs(t *testing.T, pols *policy.Policies, gotOutpu
 	for _, evt := range output {
 		// ls - policy 1
 		assert.Equal(t, "ls", evt.ProcessName, "ProcessName")
-		assert.Equal(t, uint64(1<<0), evt.MatchedPolicies, "MatchedPolicies")
-		assert.Equal(t, []string{pol1.Name}, evt.MatchedPoliciesNames, "MatchedPoliciesNames")
+		assert.Equal(t, uint64(1<<0), evt.MatchedPoliciesUser, "MatchedPoliciesUser")
+		assert.Equal(t, []string{pol1.Name}, evt.MatchedPolicies, "MatchedPolicies")
 		arg, err := helpers.GetTraceeArgumentByName(evt, "pathname", helpers.GetArgOps{DefaultArgs: false})
 		require.NoError(t, err)
 		assert.Contains(t, arg.Value, "integration")
@@ -398,13 +398,13 @@ func checkExecveOnPolicies1And2(t *testing.T, pols *policy.Policies, gotOutput *
 
 	// ls - policy 1
 	assert.Equal(t, evts[0].ProcessName, "ls")
-	assert.Equal(t, uint64(1<<0), evts[0].MatchedPolicies, "MatchedPolicies")
-	assert.Equal(t, []string{pol1.Name}, evts[0].MatchedPoliciesNames, "MatchedPoliciesNames")
+	assert.Equal(t, uint64(1<<0), evts[0].MatchedPoliciesUser, "MatchedPoliciesUser")
+	assert.Equal(t, []string{pol1.Name}, evts[0].MatchedPolicies, "MatchedPolicies")
 
 	// uname - policy 2
 	assert.Equal(t, evts[1].ProcessName, "uname")
-	assert.Equal(t, uint64(1<<1), evts[1].MatchedPolicies, "MatchedPolicies")
-	assert.Equal(t, []string{pol2.Name}, evts[1].MatchedPoliciesNames, "MatchedPoliciesNames")
+	assert.Equal(t, uint64(1<<1), evts[1].MatchedPoliciesUser, "MatchedPoliciesUser")
+	assert.Equal(t, []string{pol2.Name}, evts[1].MatchedPolicies, "MatchedPolicies")
 }
 
 func checkUnameAndWhoOnPoliciesWithBinaryScope(t *testing.T, pols *policy.Policies, gotOutput *eventOutput) {

@@ -98,6 +98,6 @@ func BenchmarkPolicyPrinter(b *testing.B) {
 	defer p.Close()
 
 	for i := 0; i < b.N; i++ {
-		p.Print(trace.Event{EventName: "test", MatchedPoliciesNames: []string{"test", "test2"}})
+		p.Print(trace.Event{EventName: "test", MatchedPolicies: []string{"test", "test2"}})
 	}
 }
