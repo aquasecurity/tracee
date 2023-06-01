@@ -18,7 +18,7 @@ func Test_getOutputFlagsFromPolicies(t *testing.T) {
 	}{
 		{
 			name:        "no output flags, with action log",
-			outputFlags: []string{""},
+			outputFlags: []string{},
 			policyFiles: []policy.PolicyFile{
 				{
 					Name:          "test",
@@ -29,6 +29,37 @@ func Test_getOutputFlagsFromPolicies(t *testing.T) {
 				},
 			},
 			expectedOutputFlags: []string{"table:stdout"},
+		},
+		{
+			name: "output options",
+			outputFlags: []string{
+				"option:stack-addresses",
+				"option:exec-env",
+				"option:relative-time",
+				"option:exec-hash",
+				"option:parse-arguments",
+				"option:parse-arguments-fds",
+				"option:sort-events",
+			},
+			policyFiles: []policy.PolicyFile{
+				{
+					Name:          "test",
+					DefaultAction: "log",
+					Rules: []policy.Rule{
+						{Event: "test"},
+					},
+				},
+			},
+			expectedOutputFlags: []string{
+				"option:stack-addresses",
+				"option:exec-env",
+				"option:relative-time",
+				"option:exec-hash",
+				"option:parse-arguments",
+				"option:parse-arguments-fds",
+				"option:sort-events",
+				"table:stdout",
+			},
 		},
 		{
 			name:        "no output flags, with action webhook",
