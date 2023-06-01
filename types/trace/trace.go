@@ -14,35 +14,36 @@ import (
 
 // Event is a single result of an ebpf event process. It is used as a payload later delivered to tracee-rules.
 type Event struct {
-	Timestamp            int          `json:"timestamp"`
-	ThreadStartTime      int          `json:"threadStartTime"`
-	ProcessorID          int          `json:"processorId"`
-	ProcessID            int          `json:"processId"`
-	CgroupID             uint         `json:"cgroupId"`
-	ThreadID             int          `json:"threadId"`
-	ParentProcessID      int          `json:"parentProcessId"`
-	HostProcessID        int          `json:"hostProcessId"`
-	HostThreadID         int          `json:"hostThreadId"`
-	HostParentProcessID  int          `json:"hostParentProcessId"`
-	UserID               int          `json:"userId"`
-	MountNS              int          `json:"mountNamespace"`
-	PIDNS                int          `json:"pidNamespace"`
-	ProcessName          string       `json:"processName"`
-	HostName             string       `json:"hostName"`
-	ContainerID          string       `json:"containerId"`
-	Container            Container    `json:"container,omitempty"`
-	Kubernetes           Kubernetes   `json:"kubernetes,omitempty"`
-	EventID              int          `json:"eventId,string"`
-	EventName            string       `json:"eventName"`
-	MatchedPolicies      uint64       `json:"-"` // omit bitmask of matched policies
-	MatchedPoliciesNames []string     `json:"matchedPolicies,omitempty"`
-	ArgsNum              int          `json:"argsNum"`
-	ReturnValue          int          `json:"returnValue"`
-	Syscall              string       `json:"syscall"`
-	StackAddresses       []uint64     `json:"stackAddresses"`
-	ContextFlags         ContextFlags `json:"contextFlags"`
-	Args                 []Argument   `json:"args"` // Arguments are ordered according their appearance in the original event
-	Metadata             *Metadata    `json:"metadata,omitempty"`
+	Timestamp             int          `json:"timestamp"`
+	ThreadStartTime       int          `json:"threadStartTime"`
+	ProcessorID           int          `json:"processorId"`
+	ProcessID             int          `json:"processId"`
+	CgroupID              uint         `json:"cgroupId"`
+	ThreadID              int          `json:"threadId"`
+	ParentProcessID       int          `json:"parentProcessId"`
+	HostProcessID         int          `json:"hostProcessId"`
+	HostThreadID          int          `json:"hostThreadId"`
+	HostParentProcessID   int          `json:"hostParentProcessId"`
+	UserID                int          `json:"userId"`
+	MountNS               int          `json:"mountNamespace"`
+	PIDNS                 int          `json:"pidNamespace"`
+	ProcessName           string       `json:"processName"`
+	HostName              string       `json:"hostName"`
+	ContainerID           string       `json:"containerId"`
+	Container             Container    `json:"container,omitempty"`
+	Kubernetes            Kubernetes   `json:"kubernetes,omitempty"`
+	EventID               int          `json:"eventId,string"`
+	EventName             string       `json:"eventName"`
+	MatchedPoliciesKernel uint64       `json:"-"`
+	MatchedPoliciesUser   uint64       `json:"-"`
+	MatchedPolicies       []string     `json:"matchedPolicies,omitempty"`
+	ArgsNum               int          `json:"argsNum"`
+	ReturnValue           int          `json:"returnValue"`
+	Syscall               string       `json:"syscall"`
+	StackAddresses        []uint64     `json:"stackAddresses"`
+	ContextFlags          ContextFlags `json:"contextFlags"`
+	Args                  []Argument   `json:"args"` // Arguments are ordered according their appearance in the original event
+	Metadata              *Metadata    `json:"metadata,omitempty"`
 }
 
 type Container struct {
