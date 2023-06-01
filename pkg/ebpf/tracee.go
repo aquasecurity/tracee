@@ -1577,8 +1577,8 @@ func computeFileHash(file *os.File) (string, error) {
 // setMatchedPolicies sets the matched policies and their names on the event
 // based on the matched policies bitfield
 func (t *Tracee) setMatchedPolicies(event *trace.Event, matchedPolicies uint64) {
-	event.MatchedPolicies = matchedPolicies
-	event.MatchedPoliciesNames = t.config.Policies.MatchedNames(matchedPolicies)
+	event.MatchedPoliciesKernel = matchedPolicies
+	event.MatchedPolicies = t.config.Policies.MatchedNames(matchedPolicies)
 }
 
 func (t *Tracee) invokeInitEvents() {
