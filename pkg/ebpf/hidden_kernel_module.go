@@ -118,6 +118,8 @@ func (t *Tracee) lkmSeekerRoutine(ctx gocontext.Context) {
 
 			// clear eBPF maps
 			derive.ClearModulesState()
+
+			run = false
 		} else {
 			select {
 			case <-ctx.Done():
