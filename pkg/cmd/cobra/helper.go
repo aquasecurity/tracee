@@ -105,11 +105,11 @@ func getOutputFlagsFromPolicies(outputFlags []string, policies []policy.PolicyFi
 		switch outputParts[0] {
 		case "forward", "webhook":
 			actionsMap[outputParts[0]] = true
-			outputSlice = append(outputSlice, o)
 		case "table", "table-verbose", "json", "gob":
 			actionsMap["log"] = true
-			outputSlice = append(outputSlice, o)
 		}
+
+		outputSlice = append(outputSlice, o)
 	}
 
 	// if printer was not defined for action log, return default to table:stdout
