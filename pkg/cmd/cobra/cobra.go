@@ -138,22 +138,17 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, errors.New("policy and filter flags cannot be used together")
 	}
 
-	outputFlags, err := c.Flags().GetStringArray("output")
-	if err != nil {
-		return runner, err
-	}
-
 	var p printer.EventPrinter
 
 	if len(policyFlags) > 0 {
 		// configure policies, output, and creates printer
-		cfg, p, err = getConfigAndPrinterFromPoliciesFlags(cfg, policyFlags, outputFlags)
+		cfg, p, err = getConfigAndPrinterFromPoliciesFlags(cfg, policyFlags, viper.GetStringSlice("output"))
 		if err != nil {
 			return runner, err
 		}
 	} else {
 		// configure policies, output, and creates printer
-		cfg, p, err = getConfigAndPrinterFromFilterFlags(cfg, filterFlags, outputFlags)
+		cfg, p, err = getConfigAndPrinterFromFilterFlags(cfg, filterFlags, viper.GetStringSlice("output"))
 		if err != nil {
 			return runner, err
 		}
