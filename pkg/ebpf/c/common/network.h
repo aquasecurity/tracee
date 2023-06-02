@@ -51,7 +51,7 @@ typedef enum net_packet {
 } net_packet_t;
 
 typedef struct net_event_contextmd {
-    u8 submit;
+    u8 submit; // keeping this for a TODO (check should_submit_net_event)
     u32 header_size;
     u8 captured;
 } __attribute__((__packed__)) net_event_contextmd_t;
