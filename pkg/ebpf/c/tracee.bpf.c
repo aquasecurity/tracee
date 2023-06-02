@@ -4994,7 +4994,7 @@ statfunc int should_submit_net_event(net_event_context_t *neteventctx,
         return 0;
 
     // Any policy matched is enough to submit the net event
-    return evt_config->submit_for_policies;
+    return evt_config->submit_for_policies & neteventctx->eventctx.matched_policies;
 }
 
 #pragma clang diagnostic pop
