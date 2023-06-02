@@ -6644,7 +6644,7 @@ var Definitions = eventDefinitions{
 			Internal: true,
 			Dependencies: dependencies{
 				Events: []eventDependency{
-					{EventID: NetPacketICMPBase},
+					{EventID: NetPacketBase},
 				},
 			},
 			Sets: []string{"network_events"},
