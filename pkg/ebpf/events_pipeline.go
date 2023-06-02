@@ -285,6 +285,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 // existing policies, that were set by the kernel in the event bitmask. Some of those policies might
 // not match the event after userland filters are applied. In those cases, the policy bit is cleared
 // (so the event is "filtered" for that policy).
+// This may be called in different stages of the pipeline (decode, derive, engine).
 func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 	eventID := events.ID(event.EventID)
 	bitmap := event.MatchedPoliciesKernel
