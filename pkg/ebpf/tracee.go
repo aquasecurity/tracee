@@ -1574,20 +1574,21 @@ func computeFileHash(file *os.File) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-// setMatchedPolicies sets the matched policies and their names on the event
-// based on the matched policies bitfield
-func (t *Tracee) setMatchedPolicies(event *trace.Event, matchedPolicies uint64) {
-	event.MatchedPoliciesKernel = matchedPolicies
-	event.MatchedPolicies = t.config.Policies.MatchedNames(matchedPolicies)
-}
-
+// invokeInitEvents emits Tracee events, called Initialiation Events, that are generated from the
+// userland process itself, and not from the kernel. These events usually serve as informational
+// events for the signatures engine/logic.
 func (t *Tracee) invokeInitEvents() {
 	var emit uint64
+
+	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64) {
+		event.MatchedPoliciesKernel = matchedPolicies
+		event.MatchedPolicies = t.config.Policies.MatchedNames(matchedPolicies)
+	}
 
 	emit = t.events[events.InitNamespaces].emit
 	if emit > 0 {
 		systemInfoEvent := events.InitNamespacesEvent()
-		t.setMatchedPolicies(&systemInfoEvent, emit)
+		setMatchedPolicies(&systemInfoEvent, emit)
 		t.config.ChanEvents <- systemInfoEvent
 		_ = t.stats.EventCount.Increment()
 	}
@@ -1595,7 +1596,7 @@ func (t *Tracee) invokeInitEvents() {
 	emit = t.events[events.ExistingContainer].emit
 	if emit > 0 {
 		for _, e := range events.ExistingContainersEvents(t.containers, t.config.ContainersEnrich) {
-			t.setMatchedPolicies(&e, emit)
+			setMatchedPolicies(&e, emit)
 			t.config.ChanEvents <- e
 			_ = t.stats.EventCount.Increment()
 		}
