@@ -262,10 +262,10 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				Syscall:               syscall,
 			}
 
+			// If there aren't any policies that need filtering in userland, tracee **may** skip the
+			// filtering, as long as there aren't any derivatives that depend on the currentevent.
 			if t.matchPolicies(&evt) == 0 {
 				_ = t.stats.EventsFiltered.Increment()
-				// we can stop processing the event if it doesn't have derivatives.
-				// otherwise, since it has MatchedPolicies==0 it won't be emitted later anyway.
 				if _, ok := t.eventDerivations[eventId]; !ok {
 					continue
 				}
@@ -281,72 +281,96 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 	return out, errc
 }
 
-// matchPolicies iterates through the policies that do the filtering in user space.
-// If the filter doesn't match, the policy bit is cleared from the matched policies bitmap.
-// Finally, the filtered bitmap is stored in the event and returned.
+// matchPolicies does the userland filtering (policy matching) for events. It iterates through all
+// existing policies, that were set in the event bitmask by the kernel, as some of those policies
+// might not match the event when userland filters are applied. In those cases, the policy bit is
+// cleared (so the event is "filtered" for that policy).
 func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 	eventID := events.ID(event.EventID)
 	bitmap := event.MatchedPoliciesKernel
 
-	for p := range t.config.Policies.Map() {
-		bitOffset := uint(p.ID)
+	for p := range t.config.Policies.Map() { // range through each existing policy
 
-		// Events submitted with matching policies.
-		// The policy must have its bit cleared when it does not match.
-		if !utils.HasBit(bitmap, bitOffset) {
+		bitOffset := uint(p.ID) // policy ID is the bit offset in the bitmap
+
+		if !utils.HasBit(bitmap, bitOffset) { // event does not match this policy
 			continue
 		}
+
+		// The event might have this policy bit set, but the policy might not have this event ID.
+		// This happens whenever the event submitted by the kernel is going to derive an event that
+		// this policy is interested in. In this case, don't do anything and let the derivation
+		// stage handle this event.
 
 		_, ok := p.EventsToTrace[eventID]
 		if !ok {
-			// Do not clear the bit due to this unmatched event,
-			// as the policy might match other derivatives from this in later stages.
 			continue
 		}
 
+		//
+		// Do the userland filtering
+		//
+
+		// 1. event context filters
 		if !p.ContextFilter.Filter(*event) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
 
+		// 2. event return value filters
 		if !p.RetFilter.Filter(eventID, int64(event.ReturnValue)) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
 
+		// 3. event arguments filters
 		if !p.ArgFilter.Filter(eventID, event.Args) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
 
-		// An event with a matched policy for global min/max range might not match
-		// all policies with UID and PID filters with different min/max ranges.
 		//
-		// e.g.: -f 59:comm=who -f '59:pid>100' -f '59:pid<1257738' \
-		//       -f 30:comm=who -f '30:pid>502000' -f '30:pid<505000'
+		// Do the userland filtering for filters with global ranges
 		//
-		// For kernel filtering the flags above would compute
-		//
-		// pid_max = 1257738
-		// pid_min = 100
-		//
-		// So a who command with pid 150 is a match only for the policy 59
 
-		if p.UIDFilter.Enabled() &&
-			!p.UIDFilter.InMinMaxRange(uint32(event.UserID)) {
-			utils.ClearBit(&bitmap, bitOffset)
-			continue
+		if p.UIDFilter.Enabled() {
+			//
+			// An event with a matched policy for global min/max range might not match all
+			// policies with UID and PID filters with different min/max ranges.
+			//
+			// e.g.: -f 59:comm=who -f '59:pid>100' -f '59:pid<1257738' \
+			//       -f 30:comm=who -f '30:pid>502000' -f '30:pid<505000'
+			//
+			// For kernel filtering, the flags from the example would compute:
+			//
+			// pid_max = 1257738
+			// pid_min = 100
+			//
+			// Userland filtering needs to refine the bitmap to match the policies: A
+			// "who" command with pid 150 is a match ONLY for the policy 59 in this
+			// example.
+			//
+			// Clear the policy bit if the event UID is not in THIS policy UID min/max range:
+			if !p.UIDFilter.InMinMaxRange(uint32(event.UserID)) {
+				utils.ClearBit(&bitmap, bitOffset)
+				continue
+			}
 		}
 
-		if p.PIDFilter.Enabled() &&
-			!p.PIDFilter.InMinMaxRange(uint32(event.HostProcessID)) {
-			utils.ClearBit(&bitmap, bitOffset)
-			continue
+		if p.PIDFilter.Enabled() {
+			//
+			// The same happens for the global PID min/max range. Clear the policy bit if
+			// the event PID is not in THIS policy PID min/max range.
+			//
+			if !p.PIDFilter.InMinMaxRange(uint32(event.HostProcessID)) {
+				utils.ClearBit(&bitmap, bitOffset)
+				continue
+			}
 		}
 	}
 
-	// Store the filtered bitmap to be used in the sink stage.
-	event.MatchedPoliciesUser = bitmap
+	event.MatchedPoliciesUser = bitmap // store filtered map to be used in sink stage
+
 	return bitmap
 }
 
