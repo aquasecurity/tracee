@@ -59,19 +59,17 @@ func (t *Tracee) handleEvents(ctx context.Context) {
 		errcList = append(errcList, errc)
 	}
 
-	// Derive events stage
-	// In this stage events go through a derivation function
+	// Derive events stage: events go through a derivation function.
 	eventsChan, errc = t.deriveEvents(ctx, eventsChan)
 	errcList = append(errcList, errc)
 
-	// Engine events stage
-	// In this stage events go through a signatures match
+	// Engine events stage: events go through a signatures match.
 	if t.config.EngineConfig.Enabled {
 		eventsChan, errc = t.engineEvents(ctx, eventsChan)
 		errcList = append(errcList, errc)
 	}
 
-	// Sink pipeline stage.
+	// Sink pipeline stage: events go through printers.
 	errc = t.sinkEvents(ctx, eventsChan)
 	errcList = append(errcList, errc)
 
@@ -262,11 +260,18 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				Syscall:               syscall,
 			}
 
-			// If there aren't any policies that need filtering in userland, tracee **may** skip the
-			// filtering, as long as there aren't any derivatives that depend on the currentevent.
+			// If there aren't any policies that need filtering in userland, tracee **may** skip
+			// this event, as long as there aren't any derivatives that depend on it. Some base
+			// events (for derivative ones) might not have set related policy bit, thus the need
+			// to continue with those within the pipeline.
+			//
+			// TODO: should the base event set policy bit for policies that depend on their
+			//       derivative events ? (check matchPolicies)
+			//
+
 			if t.matchPolicies(&evt) == 0 {
-				_ = t.stats.EventsFiltered.Increment()
 				if _, ok := t.eventDerivations[eventId]; !ok {
+					_ = t.stats.EventsFiltered.Increment()
 					continue
 				}
 			}
@@ -282,16 +287,16 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 }
 
 // matchPolicies does the userland filtering (policy matching) for events. It iterates through all
-// existing policies, that were set in the event bitmask by the kernel, as some of those policies
-// might not match the event when userland filters are applied. In those cases, the policy bit is
-// cleared (so the event is "filtered" for that policy).
+// existing policies, that were set by the kernel in the event bitmask. Some of those policies might
+// not match the event after userland filters are applied. In those cases, the policy bit is cleared
+// (so the event is "filtered" for that policy).
 func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 	eventID := events.ID(event.EventID)
 	bitmap := event.MatchedPoliciesKernel
 
 	for p := range t.config.Policies.Map() { // range through each existing policy
-
-		bitOffset := uint(p.ID) // policy ID is the bit offset in the bitmap
+		// Policy ID is the bit offset in the bitmap.
+		bitOffset := uint(p.ID)
 
 		if !utils.HasBit(bitmap, bitOffset) { // event does not match this policy
 			continue
@@ -301,6 +306,9 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		// This happens whenever the event submitted by the kernel is going to derive an event that
 		// this policy is interested in. In this case, don't do anything and let the derivation
 		// stage handle this event.
+		//
+		// TODO: should the base event set policy bit for policies that depend on their derivative
+		//       events? (check decodeEvents)
 
 		_, ok := p.EventsToTrace[eventID]
 		if !ok {
@@ -405,13 +413,22 @@ func parseSyscallID(syscallID int, isCompat bool, compatTranslationMap map[event
 	return "", errfmt.Errorf("no syscall event with compat syscall id %d", syscallID)
 }
 
-func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (<-chan *trace.Event, <-chan error) {
+// processEvents is the event processing pipeline stage. For each received event, it goes through
+// all event processors and check if there is any internal processing needed for that event type.
+// It also clears policy bits for out-of-order container related events (after the processing
+// logic).
+func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
+	<-chan *trace.Event, <-chan error,
+) {
 	out := make(chan *trace.Event, 10000)
 	errc := make(chan error, 1)
+
 	go func() {
 		defer close(out)
 		defer close(errc)
-		for event := range in {
+
+		for event := range in { // For each received event...
+			// Go through event processors if needed
 			errs := t.processEvent(event)
 			if len(errs) > 0 {
 				for _, err := range errs {
@@ -420,29 +437,38 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (<-c
 				continue
 			}
 
-			// store the atomic read
+			// Get a bitmask with all policies containing container filters
 			policiesWithContainerFilter := t.config.Policies.ContainerFilterEnabled()
+
+			// Filter out events that don't have a container ID from all the policies that have
+			// container filters. This will guarantee that any of those policies won't get matched
+			// by this event. This situation might happen if the events from a recently created
+			// container appear BEFORE the initial cgroup_mkdir of that container root directory.
+			// This could be solved by sorting the events by a monotonic timestamp, for example,
+			// but sorting might not always be enabled, so, in those cases, ignore the event IF
+			// the event is not a cgroup_mkdir or cgroup_rmdir.
+
 			if policiesWithContainerFilter > 0 && event.Container.ID == "" {
-				// Don't trace false container positives -
-				// a container filter is set by the user, but this event wasn't originated in a container.
-				// Although kernel filters shouldn't submit such events, we do this check to be on the safe side.
-				// For example, it might be that a new cgroup was created, and not by a container runtime,
-				// while we still didn't processed the cgroup_mkdir event and removed the cgroupid from the bpf container map.
 				eventId := events.ID(event.EventID)
 
-				// don't skip cgroup_mkdir and cgroup_rmdir so we can derive container_create and container_remove events
-				if eventId != events.CgroupMkdir && eventId != events.CgroupRmdir {
-					logger.Debugw("False container positive", "event.Timestamp", event.Timestamp, "eventId", eventId)
+				// never skip cgroup_{mkdir,rmdir}: container_{create,remove} events need it
+				if eventId == events.CgroupMkdir || eventId == events.CgroupRmdir {
+					goto sendEvent
+				}
 
-					// filter container policies out
-					utils.ClearBits(&event.MatchedPoliciesKernel, policiesWithContainerFilter)
-					utils.ClearBits(&event.MatchedPoliciesUser, policiesWithContainerFilter)
-					if event.MatchedPoliciesKernel == 0 {
-						continue
-					}
+				logger.Debugw("False container positive", "event.Timestamp", event.Timestamp,
+					"eventId", eventId)
+
+				// remove event from the policies with container filters
+				utils.ClearBits(&event.MatchedPoliciesKernel, policiesWithContainerFilter)
+				utils.ClearBits(&event.MatchedPoliciesUser, policiesWithContainerFilter)
+
+				if event.MatchedPoliciesKernel == 0 {
+					continue
 				}
 			}
 
+		sendEvent:
 			select {
 			case out <- event:
 			case <-ctx.Done():
@@ -453,7 +479,9 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (<-c
 	return out, errc
 }
 
-// deriveEvents is the derivation pipeline stage
+// deriveEvents is the event derivation pipeline stage. For each received event, it runs the event
+// derivation logic, described in the derivation table, and send the derived events down the
+// pipeline.
 func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 	<-chan *trace.Event, <-chan error,
 ) {
@@ -471,14 +499,14 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					continue // might happen during initialization (ctrl+c seg faults)
 				}
 
-				// Get a copy of our event before sending it down the pipeline.
-				// This is needed because later modification of the event (in
-				// particular of the matched policies) can affect the derivation
-				// and later pipeline logic acting on the derived event.
+				// Get a copy of our event before sending it down the pipeline. This is needed
+				// because later modification of the event (in particular of the matched policies)
+				// can affect the derivation and later pipeline logic acting on the derived event.
+
 				eventCopy := *event
 				out <- event
 
-				// Derive event before parse its arguments
+				// Note: event is being derived before any of its args are parsed.
 				derivatives, errors := t.eventDerivations.DeriveEvent(eventCopy)
 
 				for _, err := range errors {
@@ -486,8 +514,7 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 				}
 
 				for i, derivative := range derivatives {
-					// Skip events that don't work well with filtering due to
-					// missing types being handled and similar reasons.
+					// Skip events that dont work with filtering due to missing types being handled.
 					// https://github.com/aquasecurity/tracee/issues/2486
 					switch events.ID(derivative.EventID) {
 					case events.SymbolsLoaded:
@@ -501,11 +528,9 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 						}
 					}
 
-					// Passing "derivative" variable here will make the ptr
-					// address always be the same as the last item. This makes
-					// the printer to print 2 or 3 times the last event, instead
-					// of printing all derived events (when there are more than
-					// one).
+					// Passing "derivative" variable here will make the ptr address always be the
+					// same as the last item. This makes the printer to print 2 or 3 times the last
+					// event, instead of printing all derived events (when there are more than one).
 					out <- &derivatives[i]
 				}
 			case <-ctx.Done():
@@ -522,18 +547,19 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 
 	go func() {
 		defer close(errc)
+
 		for event := range in {
-			// Only emit events requested by the user and matched by at least one policy
+			// Only emit events requested by the user and matched by at least one policy.
 			id := events.ID(event.EventID)
 			event.MatchedPoliciesUser &= t.events[id].emit
 			if event.MatchedPoliciesUser == 0 {
 				continue
 			}
-			// Populate the event with the names of the matched policies
+
+			// Populate the event with the names of the matched policies.
 			event.MatchedPolicies = t.config.Policies.MatchedNames(event.MatchedPoliciesUser)
 
-			// if the rule engine is not enabled, we parse arguments here before sending
-			// the output to the printers
+			// Parse args here if the rule engine is not enabled (parsed there if it is).
 			if !t.config.EngineConfig.Enabled {
 				err := t.parseArguments(event)
 				if err != nil {
@@ -541,6 +567,7 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 				}
 			}
 
+			// Send the event to the printers.
 			select {
 			case t.config.ChanEvents <- *event:
 				_ = t.stats.EventCount.Increment()
@@ -629,9 +656,10 @@ func (t *Tracee) handleError(err error) {
 	logger.Errorw("Tracee encountered an error", "error", err)
 }
 
-// parseArguments must happen before signatures are evaluated.
-// For the new experience (cmd/tracee), it needs to happen in the the events_engine stage of the pipeline.
-// For the old experience (cmd/tracee-ebpf && cmd/tracee-rules), it happens on the sink stage of the pipeline.
+// parseArguments parses the arguments of the event. It must happen before the signatures are
+// evaluated. For the new experience (cmd/tracee), it needs to happen in the the "events_engine"
+// stage of the pipeline. For the old experience (cmd/tracee-ebpf && cmd/tracee-rules), it happens
+// on the "sink" stage of the pipeline (close to the printers).
 func (t *Tracee) parseArguments(e *trace.Event) error {
 	if t.config.Output.ParseArguments {
 		err := events.ParseArgs(e)
