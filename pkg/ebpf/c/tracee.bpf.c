@@ -4969,25 +4969,32 @@ statfunc enum event_id_e net_packet_to_net_event(net_packet_t packet_type)
     return MAX_EVENT_ID;
 }
 
-// The address of &neteventctx->eventctx will be aligned as eventctx is the
-// first member of that packed struct. This is a false positive as we do need
-// the neteventctx struct to be all packed.
+// The address of &neteventctx->eventctx will be aligned as eventctx is the first member of that
+// packed struct. This is a false positive as we do need the neteventctx struct to be all packed.
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Waddress-of-packed-member"
 
 statfunc int should_submit_net_event(net_event_context_t *neteventctx,
-                                                   net_packet_t packet_type)
+                                     net_packet_t packet_type)
 {
-    // configure network events that should be sent to userland
-    if (neteventctx->md.submit & packet_type)
-        return 1;
+    // TODO after v0.15.0: After some testing, the caching is never used, as the net context is
+    // always a new one (created by the cgroup/skb program caller, AND there is a single map check
+    // for each protocol, each protocol check for submission. Go back to changes made by commit
+    // #4e9bb610049 ("network: ebpf: lazy submit checks for net events"), but still using enum and
+    // better code (will improve the callers syntax as well).
 
-    if (should_submit_by_ctx(net_packet_to_net_event(packet_type), &(neteventctx->eventctx))) {
-        neteventctx->md.submit |= packet_type;
-        // done, result cached for later.
-        return 1;
-    }
-    return 0;
+    enum event_id_e evt_id = net_packet_to_net_event(packet_type);
+
+    // Check if event has to be sumitted: if any of the policies matched, submit. All network events
+    // are base events (to be derived in userland). This means that if any of the policies need a
+    // network event, kernel can submit and let userland deal with it.
+
+    event_config_t *evt_config = bpf_map_lookup_elem(&events_map, &evt_id);
+    if (evt_config == NULL)
+        return 0;
+
+    // Any policy matched is enough to submit the net event
+    return evt_config->submit_for_policies;
 }
 
 #pragma clang diagnostic pop
