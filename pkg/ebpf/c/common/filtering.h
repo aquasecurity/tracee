@@ -16,7 +16,6 @@ statfunc u64 bool_filter_matches(u64, bool val);
 statfunc u64 compute_scopes(program_data_t *);
 statfunc u64 should_trace(program_data_t *);
 statfunc u64 should_submit(u32, event_data_t *);
-statfunc u64 should_submit_by_ctx(u32, event_context_t *);
 
 // CONSTANTS
 
@@ -318,21 +317,6 @@ statfunc u64 should_submit(u32 event_id, event_data_t *event)
     event->param_types = event_config->param_types;
 
     return event->context.matched_policies;
-}
-
-// network events don't use event_data_t type, but only event_context_t so we ignore
-// param types used by the event
-statfunc u64 should_submit_by_ctx(u32 event_id, event_context_t *ctx)
-{
-    event_config_t *event_config = bpf_map_lookup_elem(&events_map, &event_id);
-    // if event config not set, don't submit
-    if (event_config == NULL)
-        return 0;
-
-    // align with previously matched policies
-    ctx->matched_policies &= event_config->submit_for_policies;
-
-    return ctx->matched_policies;
 }
 
 #endif
