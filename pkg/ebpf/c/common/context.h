@@ -55,7 +55,6 @@ init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 
     }
 
     context->ts = bpf_ktime_get_ns();
-    context->argnum = 0;
 
     // Clean Stack Trace ID
     context->stack_id = 0;
@@ -132,7 +131,8 @@ statfunc int init_program_data(program_data_t *p, void *ctx)
     }
 
     p->ctx = ctx;
-    p->event->buf_off = 0;
+    p->event->args_buf.offset = 0;
+    p->event->args_buf.argnum = 0;
 
     bool container_lookup_required = true;
 
@@ -215,8 +215,8 @@ statfunc int init_tailcall_program_data(program_data_t *p, void *ctx)
 // use this function for programs that send more than one event
 statfunc void reset_event_args(program_data_t *p)
 {
-    p->event->buf_off = 0;
-    p->event->context.argnum = 0;
+    p->event->args_buf.offset = 0;
+    p->event->args_buf.argnum = 0;
 }
 
 #endif

@@ -122,5 +122,6 @@ BPF_LRU_HASH(io_file_path_cache_map, file_id_t, path_buf_t, 5);    // store cach
 BPF_PERF_OUTPUT(logs, 1024);        // logs submission
 BPF_PERF_OUTPUT(events, 1024);      // events submission
 BPF_PERF_OUTPUT(file_writes, 1024); // file writes events submission
+BPF_PERF_OUTPUT(signals, 1024);
 
 #endif /* __MAPS_H__ */

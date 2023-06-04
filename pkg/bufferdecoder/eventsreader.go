@@ -269,17 +269,7 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 					char        sun_path[108];  // Pathname
 			};
 		*/
-		var sunPathBuf [108]byte
-		err := ebpfMsgDecoder.DecodeBytes(sunPathBuf[:], 108)
-		if err != nil {
-			return nil, errfmt.Errorf("error parsing sockaddr_un: %v", err)
-		}
-		trimmedPath := bytes.TrimLeft(sunPathBuf[:], "\000")
-		sunPath := ""
-		if len(trimmedPath) != 0 {
-			pathDecoder := New(trimmedPath)
-			sunPath, err = readStringVarFromBuff(pathDecoder, 108)
-		}
+		sunPath, err := readStringVarFromBuff(ebpfMsgDecoder, 108)
 		if err != nil {
 			return nil, errfmt.Errorf("error parsing sockaddr_un: %v", err)
 		}
@@ -389,7 +379,8 @@ func readStringVarFromBuff(decoder *EbpfDecoder, max int) (string, error) {
 	if err != nil {
 		return "", errfmt.Errorf("error reading null terminated string: %v", err)
 	}
-	for count := 1; char != 0 && count < max; count++ {
+	var count int
+	for count = 1; char != 0 && count < max; count++ {
 		res = append(res, byte(char))
 		err = decoder.DecodeInt8(&char)
 		if err != nil {
@@ -397,13 +388,14 @@ func readStringVarFromBuff(decoder *EbpfDecoder, max int) (string, error) {
 		}
 	}
 	res = bytes.TrimLeft(res[:], "\000")
+	decoder.cursor += max - count // move cursor to end of buffer
 	return string(res), nil
 }
 
 func ReadByteSliceFromBuff(ebpfMsgDecoder *EbpfDecoder, len int) ([]byte, error) {
 	var err error
 	res := make([]byte, len)
-	err = ebpfMsgDecoder.DecodeBytes(res[:], uint32(len))
+	err = ebpfMsgDecoder.DecodeBytes(res[:], len)
 	if err != nil {
 		return nil, errfmt.Errorf("error reading byte array: %v", err)
 	}
