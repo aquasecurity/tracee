@@ -33,7 +33,6 @@ typedef struct event_context {
     s64 retval;
     u32 stack_id;
     u16 processor_id; // The ID of the processor which processed the event
-    u8 argnum;
 } event_context_t;
 
 enum event_id_e
@@ -341,10 +340,15 @@ typedef struct netconfig_entry {
     u32 capture_length;  // amount of network packet payload to capture (pcap)
 } netconfig_entry_t;
 
+typedef struct args_buffer {
+    u8 argnum;
+    char args[ARGS_BUF_SIZE];
+    u32 offset;
+} args_buffer_t;
+
 typedef struct event_data {
     event_context_t context;
-    char args[ARGS_BUF_SIZE];
-    u32 buf_off;
+    args_buffer_t args_buf;
     struct task_struct *task;
     u64 param_types;
 } event_data_t;

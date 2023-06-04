@@ -44,12 +44,12 @@ type Context struct {
 	Retval          int64
 	StackID         uint32
 	ProcessorId     uint16
+	_               [2]byte // padding
 	Argnum          uint8
-	_               [1]byte // padding
 }
 
-func (Context) GetSizeBytes() uint32 {
-	return 128
+func (Context) GetSizeBytes() int {
+	return 129
 }
 
 type ChunkMeta struct {
