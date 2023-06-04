@@ -58,6 +58,7 @@ typedef struct net_event_contextmd {
 
 typedef struct net_event_context {
     event_context_t eventctx;
+    u8 argnum;
     struct { // event arguments (needs packing), use anonymous struct to ...
         u8 index0;
         u32 bytes;
