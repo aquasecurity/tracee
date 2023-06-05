@@ -6,7 +6,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
-// enableDisableAutoload enables or disables an eBPF program autoload setting
+// enableDisableAutoload enables or disables an eBPF program automatic attachment to/from its hook.
 func enableDisableAutoload(module *bpf.Module, programName string, autoload bool) error {
 	var err error
 

@@ -8,9 +8,20 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
+// NOTE: thead-safety guaranteed by the ProbeGroup big lock.
+
 //
 // traceProbe
 //
+
+type ProbeType uint8
+
+const (
+	KProbe        = iota // github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-kp
+	KretProbe            // github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-kp
+	Tracepoint           // github.com/iovisor/bcc/blob/master/docs/reference_guide.md#3-tracep
+	RawTracepoint        // github.com/iovisor/bcc/blob/master/docs/reference_guide.md#7-raw-tracep
+)
 
 // When attaching a traceProbe, by handle, to its eBPF program:
 //
@@ -23,15 +34,23 @@ import (
 //
 //     DetachAll()
 
-type traceProbe struct {
-	probeType   probeType
+type TraceProbe struct {
 	eventName   string
 	programName string
+	probeType   ProbeType
 	bpfLink     *bpf.BPFLink
 }
 
-// attach attaches an eBPF program to its probe
-func (p *traceProbe) attach(module *bpf.Module, args ...interface{}) error {
+// NewTraceProbe creates a new tracing probe (kprobe, kretprobe, tracepoint, raw_tracepoint).
+func NewTraceProbe(t ProbeType, evtName string, progName string) *TraceProbe {
+	return &TraceProbe{
+		programName: progName,
+		eventName:   evtName,
+		probeType:   t,
+	}
+}
+
+func (p *TraceProbe) attach(module *bpf.Module, args ...interface{}) error {
 	var link *bpf.BPFLink
 
 	if p.bpfLink != nil {
@@ -48,16 +67,16 @@ func (p *traceProbe) attach(module *bpf.Module, args ...interface{}) error {
 	}
 
 	switch p.probeType {
-	case kprobe:
+	case KProbe:
 		link, err = prog.AttachKprobe(p.eventName)
-	case kretprobe:
+	case KretProbe:
 		link, err = prog.AttachKretprobe(p.eventName)
-	case tracepoint:
+	case Tracepoint:
 		tp := strings.Split(p.eventName, ":")
 		tpClass := tp[0]
 		tpEvent := tp[1]
 		link, err = prog.AttachTracepoint(tpClass, tpEvent)
-	case rawTracepoint:
+	case RawTracepoint:
 		tpEvent := strings.Split(p.eventName, ":")[1]
 		link, err = prog.AttachRawTracepoint(tpEvent)
 	}
@@ -71,8 +90,7 @@ func (p *traceProbe) attach(module *bpf.Module, args ...interface{}) error {
 	return nil
 }
 
-// detach detaches an eBPF program from its probe
-func (p *traceProbe) detach(args ...interface{}) error {
+func (p *TraceProbe) detach(args ...interface{}) error {
 	var err error
 
 	if p.bpfLink == nil {
@@ -89,7 +107,6 @@ func (p *traceProbe) detach(args ...interface{}) error {
 	return nil
 }
 
-// autoload sets an eBPF program to autoload (true|false)
-func (p *traceProbe) autoload(module *bpf.Module, autoload bool) error {
+func (p *TraceProbe) autoload(module *bpf.Module, autoload bool) error {
 	return enableDisableAutoload(module, p.programName, autoload)
 }

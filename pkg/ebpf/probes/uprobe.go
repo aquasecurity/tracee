@@ -7,11 +7,13 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
+// NOTE: thead-safety guaranteed by the ProbeGroup big lock.
+
 //
 // uProbe
 //
 
-type uProbe struct {
+type Uprobe struct {
 	eventName   string
 	programName string // eBPF program to execute when uprobe triggered
 	binaryPath  string // ELF file path to attach uprobe to
@@ -19,8 +21,17 @@ type uProbe struct {
 	bpfLink     *bpf.BPFLink
 }
 
-// attach attaches an eBPF program to its probe
-func (p *uProbe) attach(module *bpf.Module, args ...interface{}) error {
+// NewUprobe creates a new uprobe.
+func NewUprobe(evtName string, progName string, binPath string, symName string) *Uprobe {
+	return &Uprobe{
+		programName: progName,
+		eventName:   evtName,
+		binaryPath:  binPath,
+		symbolName:  symName,
+	}
+}
+
+func (p *Uprobe) attach(module *bpf.Module, args ...interface{}) error {
 	var link *bpf.BPFLink
 
 	if p.bpfLink != nil {
@@ -51,8 +62,7 @@ func (p *uProbe) attach(module *bpf.Module, args ...interface{}) error {
 	return nil
 }
 
-// detach detaches an eBPF program from its probe
-func (p *uProbe) detach(args ...interface{}) error {
+func (p *Uprobe) detach(args ...interface{}) error {
 	var err error
 
 	if p.bpfLink == nil {
@@ -69,7 +79,6 @@ func (p *uProbe) detach(args ...interface{}) error {
 	return nil
 }
 
-// autoload sets an eBPF program to autoload (true|false)
-func (p *uProbe) autoload(module *bpf.Module, autoload bool) error {
+func (p *Uprobe) autoload(module *bpf.Module, autoload bool) error {
 	return enableDisableAutoload(module, p.programName, autoload)
 }
