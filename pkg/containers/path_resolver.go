@@ -2,6 +2,7 @@ package containers
 
 import (
 	"fmt"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"io/fs"
 	"os"
 	"strings"
@@ -40,7 +41,6 @@ func (cPathRes *ContainerPathResolver) GetHostAbsPath(mountNSAbsolutePath string
 
 	// Current process has already died, try to access the root fs from another
 	// process of the same mount namespace.
-
 	pids := cPathRes.mountNSPIDsCache.GetBucket(uint32(mountNS))
 
 	for _, pid := range pids {
@@ -56,7 +56,14 @@ func (cPathRes *ContainerPathResolver) GetHostAbsPath(mountNSAbsolutePath string
 		// fs.FS interface requires relative paths, so the '/' prefix should be trimmed.
 		entries, err := fs.ReadDir(cPathRes.fs, strings.TrimPrefix(procRootPath, "/"))
 		if err != nil {
-			return "", errfmt.WrapError(err)
+			// This process is either not alive or we don't have permissions to access.
+			// Try next pid in mount ns to find accessible path to mount ns files.
+			logger.Debugw(
+				"Finding mount NS path",
+				"Unreachable proc root path", procRootPath,
+				"error", err.Error(),
+			)
+			continue
 		}
 		if len(entries) == 0 {
 			return "", errfmt.Errorf("empty directory")
@@ -66,5 +73,8 @@ func (cPathRes *ContainerPathResolver) GetHostAbsPath(mountNSAbsolutePath string
 		}
 	}
 
-	return "", errfmt.Errorf("has no access to container fs - no living task of mountns %d", mountNS)
+	return "", errfmt.Errorf(
+		"has no access to container fs - no living task of mountns %d",
+		mountNS,
+	)
 }
