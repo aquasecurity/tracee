@@ -8,6 +8,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
+// NOTE: thead-safety guaranteed by the ProbeGroup big lock.
+
 //
 // Cgroup
 //
@@ -23,14 +25,21 @@ import (
 //
 //     DetachAll()
 
-type cgroupProbe struct {
+type CgroupProbe struct {
 	programName string
 	attachType  bpf.BPFAttachType
 	bpfLink     *bpf.BPFLink
 }
 
-// attach attaches an eBPF program to a cgroup
-func (p *cgroupProbe) attach(module *bpf.Module, args ...interface{}) error {
+// NewCgroupProbe creates a new cgroup probe.
+func NewCgroupProbe(a bpf.BPFAttachType, progName string) *CgroupProbe {
+	return &CgroupProbe{
+		programName: progName,
+		attachType:  a,
+	}
+}
+
+func (p *CgroupProbe) attach(module *bpf.Module, args ...interface{}) error {
 	var cgroups *cgroup.Cgroups
 
 	for _, arg := range args {
@@ -78,8 +87,7 @@ func (p *cgroupProbe) attach(module *bpf.Module, args ...interface{}) error {
 	return nil
 }
 
-// detach detaches an eBPF program from a cgroup
-func (p *cgroupProbe) detach(args ...interface{}) error {
+func (p *CgroupProbe) detach(args ...interface{}) error {
 	var err error
 
 	if p.bpfLink == nil {
@@ -104,7 +112,6 @@ func (p *cgroupProbe) detach(args ...interface{}) error {
 	return nil
 }
 
-// autoload sets an eBPF program to autoload (true|false)
-func (p *cgroupProbe) autoload(module *bpf.Module, autoload bool) error {
+func (p *CgroupProbe) autoload(module *bpf.Module, autoload bool) error {
 	return enableDisableAutoload(module, p.programName, autoload)
 }
