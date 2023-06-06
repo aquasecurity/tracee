@@ -119,8 +119,6 @@ enum event_id_e
     SECURITY_BPF_PROG,
     PROCESS_EXECUTION_FAILED,
     HIDDEN_KERNEL_MODULE_SEEKER,
-    MODULE_LOAD,
-    MODULE_FREE,
     MAX_EVENT_ID,
 };
 
@@ -468,20 +466,22 @@ typedef struct kernel_mod {
     bool seen_modules_list;
 } kernel_module_t;
 
-typedef struct kernel_new_mod {
-    u64 insert_time;
-    u64 last_seen_time;
-} kernel_new_mod_t;
-
-typedef struct kernel_deleted_mod {
-    u64 deleted_time;
-} kernel_deleted_mod_t;
-
 typedef struct rb_node_stack {
     struct rb_node *node;
 } rb_node_t;
 
+// version is not size limited - save only first 32 bytes.
+// srcversion is not size limited - modpost calculates srcversion with size: 25.
+#define MODULE_VERSION_MAX_LENGTH    32
 #define MODULE_SRCVERSION_MAX_LENGTH 25
+
+typedef struct kmod_data {
+    char name[MODULE_NAME_LEN];
+    char version[MODULE_VERSION_MAX_LENGTH];
+    char srcversion[MODULE_SRCVERSION_MAX_LENGTH];
+    u64 prev;
+    u64 next;
+} kmod_data_t;
 
 // this struct is used to encode which helpers are used in bpf program.
 // it is an array of 4 u64 values - 256 bits.

@@ -72,7 +72,6 @@ const (
 	tailHiddenKernelModuleProc
 	tailHiddenKernelModuleKset
 	tailHiddenKernelModuleModTree
-	tailHiddenKernelModuleNewModOnly
 	MaxTail
 )
 
@@ -274,8 +273,6 @@ const (
 	SecurityBpfProg
 	ProcessExecuteFailed
 	HiddenKernelModuleSeeker
-	ModuleLoad
-	ModuleFree
 	MaxCommonID
 )
 
@@ -5814,7 +5811,6 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "address"},
 				{Type: "const char*", Name: "name"},
-				{Type: "const char*", Name: "srcversion"},
 			},
 		},
 		HiddenKernelModuleSeeker: {
@@ -5823,12 +5819,6 @@ var Definitions = eventDefinitions{
 			Internal: true,
 			Probes: []probeDependency{
 				{Handle: probes.HiddenKernelModuleSeeker, Required: true},
-				{Handle: probes.HiddenKernelModuleVerifier, Required: true},
-				{Handle: probes.ModuleLoad, Required: true},
-				{Handle: probes.ModuleFree, Required: true},
-				{Handle: probes.DoInitModule, Required: true},
-				{Handle: probes.DoInitModuleRet, Required: true},
-				{Handle: probes.LayoutAndAllocate, Required: true},
 			},
 			Dependencies: dependencies{
 				KSymbols: &[]kSymbolDependency{
@@ -5840,15 +5830,12 @@ var Definitions = eventDefinitions{
 					{MapName: "prog_array", MapIndexes: []uint32{tailHiddenKernelModuleProc}, ProgName: "lkm_seeker_proc_tail"},
 					{MapName: "prog_array", MapIndexes: []uint32{tailHiddenKernelModuleKset}, ProgName: "lkm_seeker_kset_tail"},
 					{MapName: "prog_array", MapIndexes: []uint32{tailHiddenKernelModuleModTree}, ProgName: "lkm_seeker_mod_tree_tail"},
-					{MapName: "prog_array", MapIndexes: []uint32{tailHiddenKernelModuleNewModOnly}, ProgName: "lkm_seeker_new_mod_only_tail"},
 				},
 			},
 			Sets: []string{},
 			Params: []trace.ArgMeta{
 				{Type: "unsigned long", Name: "address"},
 				{Type: "bytes", Name: "name"},
-				{Type: "unsigned int", Name: "flags"},
-				{Type: "bytes", Name: "srcversion"},
 			},
 		},
 		HookedSyscalls: {
@@ -6086,34 +6073,10 @@ var Definitions = eventDefinitions{
 				{Type: "const char*", Name: "name"},
 				{Type: "const char*", Name: "version"},
 				{Type: "const char*", Name: "src_version"},
-			},
-		},
-		ModuleLoad: {
-			ID32Bit: sys32undefined,
-			Name:    "module_load",
-			Probes: []probeDependency{
-				{Handle: probes.ModuleLoad, Required: true},
-			},
-			Dependencies: dependencies{},
-			Sets:         []string{},
-			Params: []trace.ArgMeta{
-				{Type: "const char*", Name: "name"},
-				{Type: "const char*", Name: "version"},
-				{Type: "const char*", Name: "src_version"},
-			},
-		},
-		ModuleFree: {
-			ID32Bit: sys32undefined,
-			Name:    "module_free",
-			Probes: []probeDependency{
-				{Handle: probes.ModuleFree, Required: true},
-			},
-			Dependencies: dependencies{},
-			Sets:         []string{},
-			Params: []trace.ArgMeta{
-				{Type: "const char*", Name: "name"},
-				{Type: "const char*", Name: "version"},
-				{Type: "const char*", Name: "src_version"},
+				{Type: "void*", Name: "prev"},
+				{Type: "void*", Name: "next"},
+				{Type: "void*", Name: "prev_next"},
+				{Type: "void*", Name: "next_prev"},
 			},
 		},
 		SocketAccept: {

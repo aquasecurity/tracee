@@ -93,7 +93,6 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		TaskRename:                 &traceProbe{eventName: "task:task_rename", probeType: rawTracepoint, programName: "tracepoint__task__task_rename"},
 		PrintSyscallTable:          &uProbe{eventName: "print_syscall_table", binaryPath: binaryPath, symbolName: "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerSyscallsIntegrityCheckCall", programName: "uprobe_syscall_trigger"},
 		HiddenKernelModuleSeeker:   &uProbe{eventName: "hidden_kernel_module", binaryPath: binaryPath, symbolName: "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerKernelModuleSeeker", programName: "uprobe_lkm_seeker"},
-		HiddenKernelModuleVerifier: &uProbe{eventName: "hidden_kernel_module", binaryPath: binaryPath, symbolName: "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerKernelModuleSubmitter", programName: "uprobe_lkm_seeker_submitter"},
 		PrintNetSeqOps:             &uProbe{eventName: "print_net_seq_ops", binaryPath: binaryPath, symbolName: "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerSeqOpsIntegrityCheckCall", programName: "uprobe_seq_ops_trigger"},
 		PrintMemDump:               &uProbe{eventName: "print_mem_dump", binaryPath: binaryPath, symbolName: "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerMemDumpCall", programName: "uprobe_mem_dump_trigger"},
 		SecurityInodeRename:        &traceProbe{eventName: "security_inode_rename", probeType: kprobe, programName: "trace_security_inode_rename"},
@@ -133,9 +132,6 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		ExecBinprm:                 &traceProbe{eventName: "exec_binprm", probeType: kprobe, programName: "trace_exec_binprm"},
 		ExecBinprmRet:              &traceProbe{eventName: "exec_binprm", probeType: kretprobe, programName: "trace_ret_exec_binprm"},
 		TpProbeRegPrioMayExist:     &traceProbe{eventName: "tracepoint_probe_register_prio_may_exist", probeType: kprobe, programName: "trace_tracepoint_probe_register_prio_may_exist"},
-		ModuleLoad:                 &traceProbe{eventName: "module:module_load", probeType: rawTracepoint, programName: "tracepoint__module__module_load"},
-		ModuleFree:                 &traceProbe{eventName: "module:module_free", probeType: rawTracepoint, programName: "tracepoint__module__module_free"},
-		LayoutAndAllocate:          &traceProbe{eventName: "layout_and_allocate", probeType: kretprobe, programName: "trace_ret_layout_and_allocate"},
 	}
 
 	if !netEnabled {
@@ -341,8 +337,4 @@ const (
 	ExecBinprmRet
 	HiddenKernelModuleSeeker
 	TpProbeRegPrioMayExist
-	HiddenKernelModuleVerifier
-	ModuleLoad
-	ModuleFree
-	LayoutAndAllocate
 )

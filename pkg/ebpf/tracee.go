@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
@@ -1393,16 +1394,62 @@ func (t *Tracee) initBPF() error {
 	return errfmt.WrapError(err)
 }
 
+func (t *Tracee) lkmSeekerRoutine(ctx gocontext.Context) {
+	logger.Debugw("Starting lkmSeekerRoutine goroutine")
+	defer logger.Debugw("Stopped lkmSeekerRoutine goroutine")
+
+	if t.events[events.HiddenKernelModule].emit == 0 {
+		return
+	}
+
+	err := derive.InitFoundHiddenModulesCache()
+	if err != nil {
+		logger.Errorw("err occurred initializing kernel hidden modules cache: " + err.Error())
+		return
+	}
+
+	modsMap, err := t.bpfModule.GetMap("modules_map")
+	if err != nil {
+		logger.Errorw("err occurred GetMap: " + err.Error())
+		return
+	}
+
+	// randomDuration returns a random duration between min and max, inclusive
+	randomDuration := func(min, max int) time.Duration {
+		randDuration := time.Duration(rand.Intn(max-min+1)+min) * time.Second
+		return randDuration
+	}
+
+	// get a random duration between 10 and 310 seconds
+	waitDuration := randomDuration(10, 310)
+
+	for {
+		derive.ClearModulesState(modsMap)
+		err = derive.FillModulesFromProcFs(t.kernelSymbols, modsMap)
+		if err != nil {
+			logger.Errorw("hidden kernel module seeker stopped!: " + err.Error())
+			return
+		}
+
+		t.triggerKernelModuleSeeker()
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(waitDuration):
+			// continue
+		}
+
+		// renew wait duration
+		waitDuration = randomDuration(10, 310)
+	}
+}
+
 const pollTimeout int = 300
 
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
-	// Some "informational" events are started here (TODO: API server?)
-
 	t.invokeInitEvents()
-
-	// Some events need initialization before the perf buffers are polled
-
 	t.triggerSyscallsIntegrityCheck(trace.Event{})
 	t.triggerSeqOpsIntegrityCheck(trace.Event{})
 	err := t.triggerMemDump(trace.Event{})
@@ -1412,39 +1459,29 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 	go t.lkmSeekerRoutine(ctx)
 
-	// Main event loop (polling events perf buffer)
-
 	t.eventsPerfMap.Poll(pollTimeout)
+	go t.processLostEvents() // its termination is signaled by closing t.done
 
-	go t.processLostEvents() // termination signaled by closing t.done
 	go t.handleEvents(ctx)
-
-	// Parallel perf buffer with file writes events
-
 	if t.config.BlobPerfBufferSize > 0 {
 		t.fileWrPerfMap.Poll(pollTimeout)
 		go t.processFileCaptures(ctx)
 	}
-
-	// Network capture perf buffer (similar to regular pipeline)
-
 	if pcaps.PcapsEnabled(t.config.Capture.Net) {
 		t.netCapPerfMap.Poll(pollTimeout)
 		go t.processNetCaptureEvents(ctx)
 	}
-
-	// Logging perf buffer
-
 	t.bpfLogsPerfMap.Poll(pollTimeout)
 	go t.processBPFLogs(ctx)
 
-	// Management
+	// set running state after writing pid file
+	t.running.Store(true)
 
-	t.running.Store(true) // set running state after writing pid file
-	t.ready(ctx)          // executes ready callback, non blocking
-	<-ctx.Done()          // block until ctx is cancelled elsewhere
+	// executes ready callback, non blocking
+	t.ready(ctx)
 
-	// Stop perf buffers
+	// block until ctx is cancelled elsewhere
+	<-ctx.Done()
 
 	t.eventsPerfMap.Stop()
 	if t.config.BlobPerfBufferSize > 0 {
@@ -1454,8 +1491,6 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 		t.netCapPerfMap.Stop()
 	}
 	t.bpfLogsPerfMap.Stop()
-
-	// TODO: move logic below somewhere else (related to file writes)
 
 	// record index of written files
 	if t.config.Capture.FileWrite.Capture {
@@ -1473,8 +1508,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 		}
 	}
 
-	t.Close() // close Tracee
-
+	t.Close()
 	return nil
 }
 
@@ -1639,6 +1673,10 @@ func (t *Tracee) triggerSyscallsIntegrityCheck(event trace.Event) {
 func (t *Tracee) triggerSyscallsIntegrityCheckCall(
 	magicNumber uint64, // 1st arg: allow handler to detect calling convention
 	eventHandle uint64) {
+}
+
+//go:noinline
+func (t *Tracee) triggerKernelModuleSeeker() {
 }
 
 // triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program
