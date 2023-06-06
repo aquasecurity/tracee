@@ -92,7 +92,7 @@ spec:
     spec:
       containers:
       - name: tracee
-        image: docker.io/aquasec/tracee:0.14.2
+        image: docker.io/aquasec/tracee:0.15.0
         imagePullPolicy: IfNotPresent
         command: 
           - /tracee/tracee
