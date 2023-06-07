@@ -68,9 +68,11 @@ func (ps *Policies) PIDFilterableInUserSpace() bool {
 	return ps.pidFilterableInUserSpace
 }
 
-// ContainerFilterEnabled returns a bitmask of policies that have at least one container filter type
-// enabled. TODO: make sure the stores are also atomic (an atomic load is only protecting the read
-// from context switches, not from CPU cache coherency issues).
+// ContainerFilterEnabled returns a bitmap of policies that have at least
+// one container filter type enabled.
+//
+// TODO: make sure the stores are also atomic (an atomic load is only protecting
+// the read from context switches, not from CPU cache coherency issues).
 func (ps *Policies) ContainerFilterEnabled() uint64 {
 	return atomic.LoadUint64(&ps.containerFiltersEnabled)
 }
@@ -187,7 +189,7 @@ func (ps *Policies) Lookup(id int) (*Policy, error) {
 }
 
 // MatchedNames returns a list of matched policies names based on
-// the given matched bitmask.
+// the given matched bitmap.
 func (ps *Policies) MatchedNames(matched uint64) []string {
 	names := []string{}
 

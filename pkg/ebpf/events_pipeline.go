@@ -282,7 +282,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 }
 
 // matchPolicies does the userland filtering (policy matching) for events. It iterates through all
-// existing policies, that were set by the kernel in the event bitmask. Some of those policies might
+// existing policies, that were set by the kernel in the event bitmap. Some of those policies might
 // not match the event after userland filters are applied. In those cases, the policy bit is cleared
 // (so the event is "filtered" for that policy).
 // This may be called in different stages of the pipeline (decode, derive, engine).
@@ -435,7 +435,7 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 				continue
 			}
 
-			// Get a bitmask with all policies containing container filters
+			// Get a bitmap with all policies containing container filters
 			policiesWithContainerFilter := t.config.Policies.ContainerFilterEnabled()
 
 			// Filter out events that don't have a container ID from all the policies that have

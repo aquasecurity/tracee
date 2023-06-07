@@ -259,7 +259,7 @@ func (filter *BPFStringFilter) UpdateBPF(bpfModule *bpf.Module, policyID uint) e
 			equalitySetInPolicies = binary.LittleEndian.Uint64(curVal[8:16])
 		}
 
-		// filterNotEqual == 0, so clear n bitmask bit
+		// filterNotEqual == 0, so clear n bitmap bit
 		utils.ClearBit(&equalInPolicies, policyID)
 		utils.SetBit(&equalitySetInPolicies, policyID)
 
@@ -282,7 +282,7 @@ func (filter *BPFStringFilter) UpdateBPF(bpfModule *bpf.Module, policyID uint) e
 			equalitySetInPolicies = binary.LittleEndian.Uint64(curVal[8:16])
 		}
 
-		// filterEqual == 1, so set n bitmask bit
+		// filterEqual == 1, so set n bitmap bit
 		utils.SetBit(&equalInPolicies, policyID)
 		utils.SetBit(&equalitySetInPolicies, policyID)
 

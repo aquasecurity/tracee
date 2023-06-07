@@ -746,7 +746,7 @@ func (t *Tracee) computeConfigValues() []byte {
 		byteIndex := p.ID / 8
 		bitOffset := p.ID % 8
 
-		// filter enabled policies bitmask
+		// filter enabled policies bitmap
 		if p.UIDFilter.Enabled() {
 			// uid_filter_enabled_scopes
 			configVal[16+byteIndex] |= 1 << bitOffset
@@ -800,7 +800,7 @@ func (t *Tracee) computeConfigValues() []byte {
 			configVal[112+byteIndex] |= 1 << bitOffset
 		}
 
-		// filter out scopes bitmask
+		// filter out scopes bitmap
 		if p.UIDFilter.FilterOut() {
 			// uid_filter_out_scopes
 			configVal[120+byteIndex] |= 1 << bitOffset
