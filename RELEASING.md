@@ -29,7 +29,7 @@
    [`.github/workflows/release.yaml`] workflow.
 
    ```console
-   git tag -v0.99.0
+   git tag v0.99.0
    git push upstream v0.99.0
    ```
 
