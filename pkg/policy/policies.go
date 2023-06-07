@@ -20,7 +20,8 @@ type Policies struct {
 	uidFilterableInUserSpace bool
 	pidFilterableInUserSpace bool
 
-	containerFiltersEnabled uint64
+	filterableInUserSpace   uint64 // bitmap of policies that must be filtered in user space
+	containerFiltersEnabled uint64 // bitmap of policies that have at least one container filter type enabled
 }
 
 func NewPolicies() *Policies {
@@ -34,6 +35,7 @@ func NewPolicies() *Policies {
 		pidFilterMax:               filters.MaxNotSetUInt,
 		uidFilterableInUserSpace:   false,
 		pidFilterableInUserSpace:   false,
+		filterableInUserSpace:      0,
 		containerFiltersEnabled:    0,
 	}
 }
@@ -73,8 +75,19 @@ func (ps *Policies) ContainerFilterEnabled() uint64 {
 	return atomic.LoadUint64(&ps.containerFiltersEnabled)
 }
 
-// Compute recalculates values, updates flags and fills the reduced user space
-// map. It must be called at initialization and at every runtime policies changes
+// FilterableInUserSpace returns a bitmap of policies that must be filtered in user space
+// (ArgFilter, RetFilter, ContextFilter, UIDFilter and PIDFilter).
+//
+// TODO: make sure the stores are also atomic (an atomic load is only protecting
+// the read from context switches, not from CPU cache coherency issues).
+func (ps *Policies) FilterableInUserSpace() uint64 {
+	return atomic.LoadUint64(&ps.filterableInUserSpace)
+}
+
+// Compute recalculates values, updates flags, fills the reduced user space map,
+// and sets the related bitmap that is used to prevent the iteration of the entire map.
+//
+// It must be called at initialization and at every runtime policies changes.
 func (ps *Policies) Compute() {
 	// update global min and max
 	ps.calculateGlobalMinMax()
@@ -83,14 +96,16 @@ func (ps *Policies) Compute() {
 	ps.updateContainerFilterEnabled()
 
 	userSpaceMap := make(map[*Policy]int)
-
+	ps.filterableInUserSpace = 0
 	for p := range ps.filterEnabledPoliciesMap {
 		if p.ArgFilter.Enabled() ||
 			p.RetFilter.Enabled() ||
 			p.ContextFilter.Enabled() ||
 			(p.UIDFilter.Enabled() && ps.UIDFilterableInUserSpace()) ||
 			(p.PIDFilter.Enabled() && ps.PIDFilterableInUserSpace()) {
+			// add policy and set the related bit
 			userSpaceMap[p] = p.ID
+			utils.SetBit(&ps.filterableInUserSpace, uint(p.ID))
 		}
 	}
 
@@ -185,8 +200,15 @@ func (ps *Policies) MatchedNames(matched uint64) []string {
 	return names
 }
 
+// Map returns map with all policies.
 func (ps *Policies) Map() map[*Policy]int {
 	return ps.filterEnabledPoliciesMap
+}
+
+// FilterableInUserSpaceMap returns a reduced policies map which must be filtered in
+// user space (ArgFilter, RetFilter, ContextFilter, UIDFilter and PIDFilter).
+func (ps *Policies) FilterableInUserSpaceMap() map[*Policy]int {
+	return ps.filterUserSpacePoliciesMap
 }
 
 func (ps *Policies) updateContainerFilterEnabled() {
@@ -197,12 +219,6 @@ func (ps *Policies) updateContainerFilterEnabled() {
 			utils.SetBit(&ps.containerFiltersEnabled, uint(p.ID))
 		}
 	}
-}
-
-// UserSpaceMap returns a reduced policies map which must be filtered in
-// user space (ArgFilter, RetFilter, ContextFilter, UIDFilter and PIDFilter).
-func (ps *Policies) UserSpaceMap() map[*Policy]int {
-	return ps.filterUserSpacePoliciesMap
 }
 
 // calculateGlobalMinMax sets the global min and max, to be checked in kernel
