@@ -50,7 +50,7 @@ func (f *ContainerFilter) UpdateBPF(bpfModule *bpf.Module, cts *containers.Conta
 			equalitySetInPolicies = binary.LittleEndian.Uint64(curVal[8:16])
 		}
 
-		// filterNotEqual == 0, so clear n bitmask bit
+		// filterNotEqual == 0, so clear n bitmap bit
 		utils.ClearBit(&equalInPolicies, policyID)
 		utils.SetBit(&equalitySetInPolicies, policyID)
 
@@ -78,7 +78,7 @@ func (f *ContainerFilter) UpdateBPF(bpfModule *bpf.Module, cts *containers.Conta
 			equalitySetInPolicies = binary.LittleEndian.Uint64(curVal[8:16])
 		}
 
-		// filterEqual == 1, so set n bitmask bit
+		// filterEqual == 1, so set n bitmap bit
 		utils.SetBit(&equalInPolicies, policyID)
 		utils.SetBit(&equalitySetInPolicies, policyID)
 
