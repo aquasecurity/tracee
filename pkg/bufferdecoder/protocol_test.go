@@ -17,7 +17,7 @@ import (
 func TestContextSize(t *testing.T) {
 	var v Context
 	size := int(unsafe.Sizeof(v))
-	assert.Equal(t, size-7, int(v.GetSizeBytes()))
+	assert.Equal(t, size, int(v.GetSizeBytes()))
 }
 func TestChunkMetaSize(t *testing.T) {
 	var v ChunkMeta

@@ -166,7 +166,7 @@ func TestReadArgFromBuff(t *testing.T) {
 
 	for _, tc := range testCases {
 		decoder := New(tc.input)
-		_, actual, err := ReadArgFromBuff(0, decoder, tc.params)
+		_, actual, err := readArgFromBuff(0, decoder, tc.params)
 
 		if tc.expectedError != nil {
 			assert.ErrorContains(t, err, tc.expectedError.Error())
