@@ -45,11 +45,10 @@ type Context struct {
 	StackID         uint32
 	ProcessorId     uint16
 	_               [2]byte // padding
-	Argnum          uint8
 }
 
 func (Context) GetSizeBytes() int {
-	return 129
+	return 128
 }
 
 type ChunkMeta struct {

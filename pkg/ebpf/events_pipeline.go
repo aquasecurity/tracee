@@ -158,34 +158,22 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				t.handleError(err)
 				continue
 			}
+			var argnum uint8
+			if err := ebpfMsgDecoder.DecodeUint8(&argnum); err != nil {
+				t.handleError(err)
+				continue
+			}
 			eventId := events.ID(ctx.EventID)
 			eventDefinition, ok := events.Definitions.GetSafe(eventId)
 			if !ok {
 				t.handleError(errfmt.Errorf("failed to get configuration of event %d", eventId))
 				continue
 			}
-
 			args := make([]trace.Argument, len(eventDefinition.Params))
-			for i := 0; i < int(ctx.Argnum); i++ {
-				idx, arg, err := bufferdecoder.ReadArgFromBuff(
-					eventId,
-					ebpfMsgDecoder,
-					eventDefinition.Params,
-				)
-				if err != nil {
-					t.handleError(errfmt.Errorf("failed to read argument %d of event %s: %v", i, eventDefinition.Name, err))
-					continue
-				}
-				if args[idx].Value != nil {
-					t.handleError(errfmt.Errorf("read more than one instance of argument %s of event %s. Saved value: %v. New value: %v", arg.Name, eventDefinition.Name, args[idx].Value, arg.Value))
-				}
-				args[idx] = arg
-			}
-			// Fill missing arguments metadata
-			for i := 0; i < len(eventDefinition.Params); i++ {
-				if args[i].Value == nil {
-					args[i].ArgMeta = eventDefinition.Params[i]
-				}
+			err := ebpfMsgDecoder.DecodeArguments(args, int(argnum), eventDefinition, eventId)
+			if err != nil {
+				t.handleError(err)
+				continue
 			}
 
 			// Add stack trace if needed
@@ -252,7 +240,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				EventID:               int(ctx.EventID),
 				EventName:             eventDefinition.Name,
 				MatchedPoliciesKernel: ctx.MatchedPolicies,
-				ArgsNum:               int(ctx.Argnum),
+				ArgsNum:               int(argnum),
 				ReturnValue:           int(ctx.Retval),
 				Args:                  args,
 				StackAddresses:        stackAddresses,

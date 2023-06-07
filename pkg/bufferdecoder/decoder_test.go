@@ -30,7 +30,6 @@ func TestDecodeContext(t *testing.T) {
 		EventID:     0,
 		Retval:      0,
 		StackID:     0,
-		Argnum:      0,
 	}
 	err := binary.Write(buf, binary.LittleEndian, ctxExpected)
 	assert.Equal(t, nil, err)

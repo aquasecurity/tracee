@@ -49,9 +49,9 @@ const (
 	boolT
 )
 
-// ReadArgFromBuff read the next argument from the buffer.
+// readArgFromBuff read the next argument from the buffer.
 // Return the index of the argument and the parsed argument.
-func ReadArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta,
+func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta,
 ) (
 	uint, trace.Argument, error,
 ) {

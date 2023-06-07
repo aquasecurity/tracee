@@ -12,6 +12,8 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type EbpfDecoder struct {
@@ -76,10 +78,38 @@ func (decoder *EbpfDecoder) DecodeContext(ctx *Context) error {
 	ctx.StackID = binary.LittleEndian.Uint32(decoder.buffer[offset+120 : offset+124])
 	ctx.ProcessorId = binary.LittleEndian.Uint16(decoder.buffer[offset+124 : offset+126])
 	// 2 byte padding
-	ctx.Argnum = uint8(binary.LittleEndian.Uint16(decoder.buffer[offset+128 : offset+130]))
 	// event_context end
 
 	decoder.cursor += ctx.GetSizeBytes()
+	return nil
+}
+
+// DecodeArguments decodes the remaining buffer's argument values, according to the given event definition.
+// It should be called last, and after decoding the argnum with DecodeUint8.
+//
+// Argument array passed should be initialized with the size of len(eventDefinition.Params).
+func (decoder *EbpfDecoder) DecodeArguments(args []trace.Argument, argnum int, eventDefinition events.Event, eventId events.ID) error {
+	for i := 0; i < argnum; i++ {
+		idx, arg, err := readArgFromBuff(
+			eventId,
+			decoder,
+			eventDefinition.Params,
+		)
+		if err != nil {
+			logger.Errorw("error reading argument from buffer", "error", errfmt.Errorf("failed to read argument %d of event %s: %v", i, eventDefinition.Name, err))
+			continue
+		}
+		if args[idx].Value != nil {
+			logger.Warnw("argument overridden from buffer", "error", errfmt.Errorf("read more than one instance of argument %s of event %s. Saved value: %v. New value: %v", arg.Name, eventDefinition.Name, args[idx].Value, arg.Value))
+		}
+		args[idx] = arg
+	}
+	// Fill missing arguments metadata
+	for i := 0; i < len(eventDefinition.Params); i++ {
+		if args[i].Value == nil {
+			args[i].ArgMeta = eventDefinition.Params[i]
+		}
+	}
 	return nil
 }
 
