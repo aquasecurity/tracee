@@ -16,7 +16,7 @@ jobs:
         "github-self-hosted_ami-0f4881c8d69684001_${{ github.event.number }}-${{ github.run_id }}",
       ]
     permissions:
-      contents: read
+      contents: write
       packages: write
       id-token: write
     steps:
@@ -73,7 +73,7 @@ jobs:
         "github-self-hosted_ami-03217ce7c37572c4d_${{ github.event.number }}-${{ github.run_id }}",
       ]
     permissions:
-      contents: read
+      contents: write
       packages: write
       id-token: write
     steps:
