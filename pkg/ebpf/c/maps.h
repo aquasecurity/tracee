@@ -112,6 +112,7 @@ BPF_LRU_HASH(bpf_attach_map, u32, bpf_used_helpers_t, 1024);       // holds bpf 
 BPF_LRU_HASH(bpf_attach_tmp_map, u32, bpf_used_helpers_t, 1024);   // temporarily hold bpf_used_helpers_t
 BPF_LRU_HASH(bpf_prog_load_map, u32, void *, 1024);                // store bpf prog aux pointer between bpf_check and security_bpf_prog
 BPF_PERCPU_ARRAY(event_data_map, event_data_t, 1);                 // persist event related data
+BPF_PERCPU_ARRAY(signal_data_map, controlplane_signal_t, 1);       // signal scratch map
 BPF_HASH(logs_count, bpf_log_t, bpf_log_count_t, 4096);            // logs count
 BPF_PERCPU_ARRAY(scratch_map, scratch_t, 1);                       // scratch space to avoid allocating stuff on the stack
 BPF_LRU_HASH(file_modification_map, file_mod_key_t, int, 10240);   // hold file data to decide if should submit file modification event
@@ -122,6 +123,6 @@ BPF_LRU_HASH(io_file_path_cache_map, file_id_t, path_buf_t, 5);    // store cach
 BPF_PERF_OUTPUT(logs, 1024);        // logs submission
 BPF_PERF_OUTPUT(events, 1024);      // events submission
 BPF_PERF_OUTPUT(file_writes, 1024); // file writes events submission
-BPF_PERF_OUTPUT(signals, 1024);
+BPF_PERF_OUTPUT(signals, 1024);     // control plane signals submissions
 
 #endif /* __MAPS_H__ */

@@ -98,8 +98,6 @@ func (t *Tracee) registerEventProcessors() {
 	t.RegisterEventProcessor(events.KernelWrite, t.processWriteEvent)
 	t.RegisterEventProcessor(events.SchedProcessExec, t.processSchedProcessExec)
 	t.RegisterEventProcessor(events.SchedProcessFork, t.processSchedProcessFork)
-	t.RegisterEventProcessor(events.CgroupMkdir, t.processCgroupMkdir)
-	t.RegisterEventProcessor(events.CgroupRmdir, t.processCgroupRmdir)
 	t.RegisterEventProcessor(events.DoInitModule, t.processDoInitModule)
 	t.RegisterEventProcessor(events.HookedProcFops, t.processHookedProcFops)
 	t.RegisterEventProcessor(events.PrintNetSeqOps, t.processTriggeredEvent)
