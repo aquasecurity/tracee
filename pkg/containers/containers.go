@@ -205,6 +205,11 @@ func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetada
 		return metadata, errfmt.Errorf("no containerId")
 	}
 
+	if info.Container.Image != "" {
+		// If already enriched (from control plane) - short circuit and return
+		return info.Container, nil
+	}
+
 	// There might be a performance overhead with the cancel
 	// But, I think it will be negligible since this code path shouldn't be reached too frequently
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
