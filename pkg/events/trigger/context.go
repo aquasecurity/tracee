@@ -55,7 +55,7 @@ func (store *context) Get(id uint64) (trace.Event, bool) {
 }
 
 func (store *context) Apply(event trace.Event) (trace.Event, error) {
-	contextID, err := parse.ArgVal[uint64](&event, ContextArgName)
+	contextID, err := parse.ArgVal[uint64](event.Args, ContextArgName)
 	if err != nil {
 		return trace.Event{}, errfmt.Errorf("error parsing caller_context_id arg: %v", err)
 	}

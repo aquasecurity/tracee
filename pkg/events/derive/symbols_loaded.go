@@ -200,19 +200,19 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) getSymbolsFromCache(id shared
 func getSharedObjectInfo(event trace.Event) (sharedobjs.ObjInfo, error) {
 	var objInfo sharedobjs.ObjInfo
 
-	loadedObjectInode, err := parse.ArgVal[uint64](&event, "inode")
+	loadedObjectInode, err := parse.ArgVal[uint64](event.Args, "inode")
 	if err != nil {
 		return objInfo, errfmt.WrapError(err)
 	}
-	loadedObjectDevice, err := parse.ArgVal[uint32](&event, "dev")
+	loadedObjectDevice, err := parse.ArgVal[uint32](event.Args, "dev")
 	if err != nil {
 		return objInfo, errfmt.WrapError(err)
 	}
-	loadedObjectCtime, err := parse.ArgVal[uint64](&event, "ctime")
+	loadedObjectCtime, err := parse.ArgVal[uint64](event.Args, "ctime")
 	if err != nil {
 		return objInfo, errfmt.WrapError(err)
 	}
-	loadedObjectPath, err := parse.ArgVal[string](&event, "pathname")
+	loadedObjectPath, err := parse.ArgVal[string](event.Args, "pathname")
 	if err != nil {
 		return objInfo, errfmt.WrapError(err)
 	}

@@ -54,7 +54,7 @@ func TestArgVal(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				e := trace.Event{Args: []trace.Argument{tt.arg}}
-				val, err := ArgVal[int32](&e, tt.name)
+				val, err := ArgVal[int32](e.Args, tt.name)
 				if tt.errorMessage != "" {
 					assert.Error(t, err)
 					assert.Contains(t, err.Error(), tt.errorMessage)
@@ -111,7 +111,7 @@ func TestArgVal(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				e := trace.Event{Args: []trace.Argument{tt.arg}}
-				val, err := ArgVal[string](&e, tt.name)
+				val, err := ArgVal[string](e.Args, tt.name)
 				if tt.errorMessage != "" {
 					assert.Error(t, err)
 					assert.Contains(t, err.Error(), tt.errorMessage)
@@ -168,7 +168,7 @@ func TestArgVal(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				e := trace.Event{Args: []trace.Argument{tt.arg}}
-				val, err := ArgVal[uint64](&e, tt.name)
+				val, err := ArgVal[uint64](e.Args, tt.name)
 				if tt.errorMessage != "" {
 					assert.Error(t, err)
 					assert.Contains(t, err.Error(), tt.errorMessage)
@@ -225,7 +225,7 @@ func TestArgVal(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				e := trace.Event{Args: []trace.Argument{tt.arg}}
-				val, err := ArgVal[uint32](&e, tt.name)
+				val, err := ArgVal[uint32](e.Args, tt.name)
 				if tt.errorMessage != "" {
 					assert.Error(t, err)
 					assert.Contains(t, err.Error(), tt.errorMessage)
@@ -282,7 +282,7 @@ func TestArgVal(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				e := trace.Event{Args: []trace.Argument{tt.arg}}
-				val, err := ArgVal[[]string](&e, tt.name)
+				val, err := ArgVal[[]string](e.Args, tt.name)
 				if tt.errorMessage != "" {
 					assert.Error(t, err)
 					assert.Contains(t, err.Error(), tt.errorMessage)
@@ -339,7 +339,7 @@ func TestArgVal(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				e := trace.Event{Args: []trace.Argument{tt.arg}}
-				val, err := ArgVal[[]uint64](&e, tt.name)
+				val, err := ArgVal[[]uint64](e.Args, tt.name)
 				if tt.errorMessage != "" {
 					assert.Error(t, err)
 					assert.Contains(t, err.Error(), tt.errorMessage)

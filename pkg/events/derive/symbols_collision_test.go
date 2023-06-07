@@ -504,14 +504,14 @@ func TestSymbolsCollision(t *testing.T) {
 					found := false
 					for _, event := range colEvents {
 						require.Len(t, event.Args, 3)
-						loadingSOPath, err := parse.ArgVal[string](&event, "loaded_path")
+						loadingSOPath, err := parse.ArgVal[string](event.Args, "loaded_path")
 						require.NoError(t, err)
 						assert.Equal(t, testCase.loadingSO.Path, loadingSOPath)
-						collidedSOPath, err := parse.ArgVal[string](&event, "collision_path")
+						collidedSOPath, err := parse.ArgVal[string](event.Args, "collision_path")
 						require.NoError(t, err)
 						require.IsType(t, "", collidedSOPath)
 						if collidedSOPath == lso.so.Path {
-							col, err := parse.ArgVal[[]string](&event, "symbols")
+							col, err := parse.ArgVal[[]string](event.Args, "symbols")
 							require.NoError(t, err)
 							assert.ElementsMatch(t, col, lso.expectedCollisions)
 							found = true

@@ -131,7 +131,7 @@ func (t *Tracee) processWriteEvent(event *trace.Event) error {
 	if !t.config.Capture.FileWrite.Capture {
 		return nil
 	}
-	filePath, err := parse.ArgVal[string](event, "pathname")
+	filePath, err := parse.ArgVal[string](event.Args, "pathname")
 	if err != nil {
 		return errfmt.Errorf("error parsing vfs_write args: %v", err)
 	}
@@ -139,11 +139,11 @@ func (t *Tracee) processWriteEvent(event *trace.Event) error {
 	if filePath == "" || filePath[0] != '/' {
 		return nil
 	}
-	dev, err := parse.ArgVal[uint32](event, "dev")
+	dev, err := parse.ArgVal[uint32](event.Args, "dev")
 	if err != nil {
 		return errfmt.Errorf("error parsing vfs_write args: %v", err)
 	}
-	inode, err := parse.ArgVal[uint64](event, "inode")
+	inode, err := parse.ArgVal[uint64](event.Args, "inode")
 	if err != nil {
 		return errfmt.Errorf("error parsing vfs_write args: %v", err)
 	}
@@ -169,7 +169,7 @@ func (t *Tracee) processReadEvent(event *trace.Event) error {
 	if !t.config.Capture.FileRead.Capture {
 		return nil
 	}
-	filePath, err := parse.ArgVal[string](event, "pathname")
+	filePath, err := parse.ArgVal[string](event.Args, "pathname")
 	if err != nil {
 		return fmt.Errorf("error parsing vfs_read args: %v", err)
 	}
@@ -177,11 +177,11 @@ func (t *Tracee) processReadEvent(event *trace.Event) error {
 	if filePath == "" || filePath[0] != '/' {
 		return nil
 	}
-	dev, err := parse.ArgVal[uint32](event, "dev")
+	dev, err := parse.ArgVal[uint32](event.Args, "dev")
 	if err != nil {
 		return fmt.Errorf("error parsing vfs_write args: %v", err)
 	}
-	inode, err := parse.ArgVal[uint64](event, "inode")
+	inode, err := parse.ArgVal[uint64](event.Args, "inode")
 	if err != nil {
 		return fmt.Errorf("error parsing vfs_write args: %v", err)
 	}
@@ -211,7 +211,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 	}
 	// capture executed files
 	if t.config.Capture.Exec || t.config.Output.ExecHash {
-		filePath, err := parse.ArgVal[string](event, "pathname")
+		filePath, err := parse.ArgVal[string](event.Args, "pathname")
 		if err != nil {
 			return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
 		}
@@ -226,7 +226,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 		for _, pid := range pids { // will break on success
 			err = nil
 			sourceFilePath := fmt.Sprintf("/proc/%s/root%s", strconv.Itoa(int(pid)), filePath)
-			sourceFileCtime, err := parse.ArgVal[uint64](event, "ctime")
+			sourceFileCtime, err := parse.ArgVal[uint64](event.Args, "ctime")
 			if err != nil {
 				return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
 			}
@@ -312,15 +312,15 @@ func (t *Tracee) processSchedProcessFork(event *trace.Event) error {
 }
 
 func (t *Tracee) processCgroupMkdir(event *trace.Event) error {
-	cgroupId, err := parse.ArgVal[uint64](event, "cgroup_id")
+	cgroupId, err := parse.ArgVal[uint64](event.Args, "cgroup_id")
 	if err != nil {
 		return errfmt.Errorf("error parsing cgroup_mkdir args: %v", err)
 	}
-	path, err := parse.ArgVal[string](event, "cgroup_path")
+	path, err := parse.ArgVal[string](event.Args, "cgroup_path")
 	if err != nil {
 		return errfmt.Errorf("error parsing cgroup_mkdir args: %v", err)
 	}
-	hId, err := parse.ArgVal[uint32](event, "hierarchy_id")
+	hId, err := parse.ArgVal[uint32](event.Args, "hierarchy_id")
 	if err != nil {
 		return errfmt.Errorf("error parsing cgroup_mkdir args: %v", err)
 	}
@@ -346,12 +346,12 @@ func (t *Tracee) processCgroupMkdir(event *trace.Event) error {
 }
 
 func (t *Tracee) processCgroupRmdir(event *trace.Event) error {
-	cgroupId, err := parse.ArgVal[uint64](event, "cgroup_id")
+	cgroupId, err := parse.ArgVal[uint64](event.Args, "cgroup_id")
 	if err != nil {
 		return errfmt.Errorf("error parsing cgroup_rmdir args: %v", err)
 	}
 
-	hId, err := parse.ArgVal[uint32](event, "hierarchy_id")
+	hId, err := parse.ArgVal[uint32](event.Args, "hierarchy_id")
 	if err != nil {
 		return errfmt.Errorf("error parsing cgroup_mkdir args: %v", err)
 	}
@@ -401,7 +401,7 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 }
 
 func (t *Tracee) processHookedProcFops(event *trace.Event) error {
-	fopsAddresses, err := parse.ArgVal[[]uint64](event, "hooked_fops_pointers")
+	fopsAddresses, err := parse.ArgVal[[]uint64](event.Args, "hooked_fops_pointers")
 	if err != nil || fopsAddresses == nil {
 		return errfmt.Errorf("error parsing hooked_proc_fops args: %v", err)
 	}
@@ -529,7 +529,7 @@ func processKernelReadFile(event *trace.Event) error {
 }
 
 func (t *Tracee) processPrintMemDump(event *trace.Event) error {
-	address, err := parse.ArgVal[uintptr](event, "address")
+	address, err := parse.ArgVal[uintptr](event.Args, "address")
 	if err != nil || address == 0 {
 		return errfmt.Errorf("error parsing print_mem_dump args: %v", err)
 	}

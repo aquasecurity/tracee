@@ -5,8 +5,8 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-func ArgVal[T any](event *trace.Event, argName string) (T, error) {
-	for _, arg := range event.Args {
+func ArgVal[T any](args []trace.Argument, argName string) (T, error) {
+	for _, arg := range args {
 		if arg.Name == argName {
 			val, ok := arg.Value.(T)
 			if !ok {
