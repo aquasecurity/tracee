@@ -57,6 +57,8 @@ jobs:
           docker image push aquasec/tracee:${ARCH}-${TAG}
       - name: Sign Docker image
         run: |
+          TAG=$(git describe --tags --abbrev=0 | sed -e "s/v//gI")
+          ARCH=$(uname -m)
           cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:latest)
           cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${ARCH})
           cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${TAG})
@@ -110,5 +112,7 @@ jobs:
           docker image push aquasec/tracee:${ARCH}-${TAG}
       - name: Sign Docker image
         run: |
+          TAG=$(git describe --tags --abbrev=0 | sed -e "s/v//gI")
+          ARCH=$(uname -m)
           cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${ARCH})
           cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${ARCH}-${TAG})
