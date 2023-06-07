@@ -819,6 +819,28 @@ check-err: \
 		./...
 
 #
+# check-pr
+#
+
+.PHONY: check-pr
+check-pr: \
+	check-fmt check-lint check-code \
+	| .check_$(CMD_GIT)
+#
+	@echo
+	@echo "*** PR Comment BEGIN"
+	@echo
+
+	@$(CMD_GIT) \
+		log main..HEAD \
+		--pretty=format:'%C(auto,yellow)%h%Creset **%C(auto,red)%s%Creset** _<sub>%C(auto,cyan)(%ad)%Creset %C(auto,green)%an \<%ae\>%Creset</sub>_%n%n```%n%b```%n' \
+		--date=format:"%Y/%b/%d"
+
+	@echo
+	@echo "*** PR Comment END"
+	@echo
+
+#
 # clean
 #
 
