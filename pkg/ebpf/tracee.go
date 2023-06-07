@@ -27,6 +27,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cgroup"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/ebpf/controlplane"
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -111,6 +112,8 @@ type Tracee struct {
 	containers        *containers.Containers
 	contPathResolver  *containers.ContainerPathResolver
 	contSymbolsLoader *sharedobjs.ContainersSymbolsLoader
+	// Control Plane
+	controlPlane *controlplane.Controller
 	// Specific Events Needs
 	triggerContexts trigger.Context
 	readyCallback   func(gocontext.Context)
@@ -127,8 +130,6 @@ func GetEssentialEventsList() map[events.ID]eventConfig {
 		events.SchedProcessExec: {},
 		events.SchedProcessExit: {},
 		events.SchedProcessFork: {},
-		events.CgroupMkdir:      {submit: 0xFFFFFFFFFFFFFFFF},
-		events.CgroupRmdir:      {submit: 0xFFFFFFFFFFFFFFFF},
 	}
 }
 
@@ -1250,6 +1251,12 @@ func (t *Tracee) GetTailCalls() ([]*events.TailCall, error) {
 func (t *Tracee) attachProbes() error {
 	var err error
 
+	// attach control plane probes first
+	err = t.controlPlane.Attach()
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
 	// attach selected tracing events probes
 
 	for tr := range t.events {
@@ -1317,6 +1324,12 @@ func (t *Tracee) initBPF() error {
 	// Populate eBPF maps with initial data
 
 	err = t.populateBPFMaps()
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Initialize control plane
+	t.controlPlane, err = controlplane.NewController(t.bpfModule, t.containers, t.config.ContainersEnrich)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1421,6 +1434,13 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 	go t.lkmSeekerRoutine(ctx)
 
+	// Start control plane
+	err = t.controlPlane.Start()
+	if err != nil {
+		return err
+	}
+	go t.controlPlane.Run(ctx)
+
 	// Main event loop (polling events perf buffer)
 
 	t.eventsPerfMap.Poll(pollTimeout)
@@ -1523,6 +1543,12 @@ func (t *Tracee) Close() {
 		err := t.probes.DetachAll()
 		if err != nil {
 			logger.Errorw("failed to detach probes when closing tracee", "err", err)
+		}
+	}
+	if t.controlPlane != nil {
+		err := t.controlPlane.Stop()
+		if err != nil {
+			logger.Errorw("failed to stop control plane when closing tracee", "err", err)
 		}
 	}
 	if t.bpfModule != nil {

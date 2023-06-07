@@ -38,6 +38,7 @@
 #include <common/memory.h>
 #include <common/network.h>
 #include <common/probes.h>
+#include <common/signal.h>
 
 char LICENSE[] SEC("license") = "GPL";
 
@@ -1870,7 +1871,11 @@ int tracepoint__cgroup__cgroup_mkdir(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx))
         return 0;
 
-    p.event->context.matched_policies = ULLONG_MAX; // see tracee.GetEssentialEvents
+    if (!should_trace(&p))
+        return 0;
+
+    if (!should_submit(CGROUP_MKDIR, p.event))
+        return 0;
 
     struct cgroup *dst_cgrp = (struct cgroup *) ctx->args[0];
     char *path = (char *) ctx->args[1];
@@ -1878,17 +1883,6 @@ int tracepoint__cgroup__cgroup_mkdir(struct bpf_raw_tracepoint_args *ctx)
     u32 hierarchy_id = get_cgroup_hierarchy_id(dst_cgrp);
     u64 cgroup_id = get_cgroup_id(dst_cgrp);
     u32 cgroup_id_lsb = cgroup_id;
-
-    bool should_update = true;
-    if ((p.config->options & OPT_CGROUP_V1) && (p.config->cgroup_v1_hid != hierarchy_id))
-        should_update = false;
-
-    if (should_update) {
-        // Assume this is a new container. If not, userspace code will delete this entry
-        u8 state = CONTAINER_CREATED;
-        bpf_map_update_elem(&containers_map, &cgroup_id_lsb, &state, BPF_ANY);
-        p.task_info->container_state = state;
-    }
 
     save_to_submit_buf(&p.event->args_buf, &cgroup_id, sizeof(u64), 0);
     save_str_to_buf(&p.event->args_buf, path, 1);
@@ -1906,7 +1900,11 @@ int tracepoint__cgroup__cgroup_rmdir(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx))
         return 0;
 
-    p.event->context.matched_policies = ULLONG_MAX; // see tracee.GetEssentialEvents
+    if (!should_trace(&p))
+        return 0;
+
+    if (!should_submit(CGROUP_MKDIR, p.event))
+        return 0;
 
     struct cgroup *dst_cgrp = (struct cgroup *) ctx->args[0];
     char *path = (char *) ctx->args[1];
@@ -1914,13 +1912,6 @@ int tracepoint__cgroup__cgroup_rmdir(struct bpf_raw_tracepoint_args *ctx)
     u32 hierarchy_id = get_cgroup_hierarchy_id(dst_cgrp);
     u64 cgroup_id = get_cgroup_id(dst_cgrp);
     u32 cgroup_id_lsb = cgroup_id;
-
-    bool should_update = true;
-    if ((p.config->options & OPT_CGROUP_V1) && (p.config->cgroup_v1_hid != hierarchy_id))
-        should_update = false;
-
-    if (should_update)
-        bpf_map_delete_elem(&containers_map, &cgroup_id_lsb);
 
     save_to_submit_buf(&p.event->args_buf, &cgroup_id, sizeof(u64), 0);
     save_str_to_buf(&p.event->args_buf, path, 1);
@@ -5937,6 +5928,82 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_http)
     }
 
     return 1; // NOTE: might block HTTP here if needed (return 0)
+}
+
+//
+// Control Plane Programs
+//
+// Control Plane programs are almost duplicate programs of select events which we send as
+// direct signals to tracee in a separate buffer.
+// This is done to mitigate the consenquences of losing these events in the main perf buffer.
+
+SEC("raw_tracepoint/cgroup_mkdir_signal")
+int cgroup_mkdir_signal(struct bpf_raw_tracepoint_args *ctx)
+{
+    u32 zero = 0;
+    config_entry_t *cfg = bpf_map_lookup_elem(&config_map, &zero);
+    if (unlikely(cfg == NULL))
+        return 0;
+    controlplane_signal_t *signal = init_controlplane_signal();
+    if (unlikely(signal == NULL))
+        return 0;
+
+    struct cgroup *dst_cgrp = (struct cgroup *) ctx->args[0];
+    char *path = (char *) ctx->args[1];
+
+    u32 hierarchy_id = get_cgroup_hierarchy_id(dst_cgrp);
+    u64 cgroup_id = get_cgroup_id(dst_cgrp);
+    u32 cgroup_id_lsb = cgroup_id;
+
+    bool should_update = true;
+    if ((cfg->options & OPT_CGROUP_V1) && (cfg->cgroup_v1_hid != hierarchy_id))
+        should_update = false;
+
+    if (should_update) {
+        // Assume this is a new container. If not, userspace code will delete this entry
+        u8 state = CONTAINER_CREATED;
+        bpf_map_update_elem(&containers_map, &cgroup_id_lsb, &state, BPF_ANY);
+    }
+
+    save_to_submit_buf(&signal->args_buf, &cgroup_id, sizeof(u64), 0);
+    save_str_to_buf(&signal->args_buf, path, 1);
+    save_to_submit_buf(&signal->args_buf, &hierarchy_id, sizeof(u32), 2);
+    signal_perf_submit(ctx, signal, CGROUP_MKDIR);
+
+    return 0;
+}
+
+SEC("raw_tracepoint/cgroup_rmdir_signal")
+int cgroup_rmdir_signal(struct bpf_raw_tracepoint_args *ctx)
+{
+    u32 zero = 0;
+    config_entry_t *cfg = bpf_map_lookup_elem(&config_map, &zero);
+    if (unlikely(cfg == NULL))
+        return 0;
+    controlplane_signal_t *signal = init_controlplane_signal();
+    if (unlikely(signal == NULL))
+        return 0;
+
+    struct cgroup *dst_cgrp = (struct cgroup *) ctx->args[0];
+    char *path = (char *) ctx->args[1];
+
+    u32 hierarchy_id = get_cgroup_hierarchy_id(dst_cgrp);
+    u64 cgroup_id = get_cgroup_id(dst_cgrp);
+    u32 cgroup_id_lsb = cgroup_id;
+
+    bool should_update = true;
+    if ((cfg->options & OPT_CGROUP_V1) && (cfg->cgroup_v1_hid != hierarchy_id))
+        should_update = false;
+
+    if (should_update)
+        bpf_map_delete_elem(&containers_map, &cgroup_id_lsb);
+
+    save_to_submit_buf(&signal->args_buf, &cgroup_id, sizeof(u64), 0);
+    save_str_to_buf(&signal->args_buf, path, 1);
+    save_to_submit_buf(&signal->args_buf, &hierarchy_id, sizeof(u32), 2);
+    signal_perf_submit(ctx, signal, CGROUP_RMDIR);
+
+    return 0;
 }
 
 // clang-format on
