@@ -1603,7 +1603,7 @@ func ExpectAllEqualTo(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, 
 					assert.Equal(t, expEvt.EventID, actEvt.EventID, "event id")
 				}
 				if checkPolicy {
-					assert.Equal(t, expEvt.MatchedPolicies, actEvt.MatchedPolicies, "matched policies")
+					assert.Equal(t, expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser, "matched policies")
 				}
 				if checkPolicyName {
 					assertUnorderedStringSlicesEqual(t, expEvt.MatchedPolicies, actEvt.MatchedPolicies)
@@ -1684,7 +1684,7 @@ func ExpectAllInOrder(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, 
 				assert.Equal(t, expEvt.EventID, actEvt.EventID, "event id")
 			}
 			if checkPolicy {
-				assert.Equal(t, expEvt.MatchedPolicies, actEvt.MatchedPolicies, "matched policies")
+				assert.Equal(t, expEvt.MatchedPoliciesUser, actEvt.MatchedPoliciesUser, "matched policies")
 			}
 			if checkPolicyName {
 				assertUnorderedStringSlicesEqual(t, expEvt.MatchedPolicies, actEvt.MatchedPolicies)
