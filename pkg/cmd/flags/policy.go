@@ -8,9 +8,9 @@ import (
 	"github.com/aquasecurity/tracee/pkg/policy"
 )
 
-// PrepareFilterMapForPolicies prepares the FilterMap for the policies
-func PrepareFilterMapFromPolicies(policies []policy.PolicyFile) (FilterMap, error) {
-	filterMap := make(FilterMap)
+// PrepareFilterMapForPolicies prepares the PolicyFilterMap for the policies
+func PrepareFilterMapFromPolicies(policies []policy.PolicyFile) (PolicyFilterMap, error) {
+	filterMap := make(PolicyFilterMap)
 
 	if len(policies) == 0 {
 		return nil, errfmt.Errorf("no policies provided")
@@ -58,8 +58,6 @@ func PrepareFilterMapFromPolicies(policies []policy.PolicyFile) (FilterMap, erro
 				full:              s,
 				filterName:        filterName,
 				operatorAndValues: operatorAndValues,
-				policyIdx:         pIdx,
-				policyName:        p.Name,
 			})
 		}
 
@@ -68,8 +66,6 @@ func PrepareFilterMapFromPolicies(policies []policy.PolicyFile) (FilterMap, erro
 				full:              fmt.Sprintf("event=%s", r.Event),
 				filterName:        "event",
 				operatorAndValues: fmt.Sprintf("=%s", r.Event),
-				policyIdx:         pIdx,
-				policyName:        p.Name,
 			})
 
 			for _, f := range r.Filter {
@@ -88,8 +84,6 @@ func PrepareFilterMapFromPolicies(policies []policy.PolicyFile) (FilterMap, erro
 						full:              fmt.Sprintf("%s.%s", r.Event, f),
 						filterName:        fmt.Sprintf("%s.%s", r.Event, filterName),
 						operatorAndValues: operatorAndValues,
-						policyIdx:         pIdx,
-						policyName:        p.Name,
 					})
 
 					continue
@@ -101,8 +95,6 @@ func PrepareFilterMapFromPolicies(policies []policy.PolicyFile) (FilterMap, erro
 						full:              fmt.Sprintf("%s.%s", r.Event, f),
 						filterName:        fmt.Sprintf("%s.%s", r.Event, filterName),
 						operatorAndValues: operatorAndValues,
-						policyIdx:         pIdx,
-						policyName:        p.Name,
 					})
 					continue
 				}
@@ -112,13 +104,14 @@ func PrepareFilterMapFromPolicies(policies []policy.PolicyFile) (FilterMap, erro
 					full:              fmt.Sprintf("%s.context.%s", r.Event, f),
 					filterName:        fmt.Sprintf("%s.context.%s", r.Event, filterName),
 					operatorAndValues: operatorAndValues,
-					policyIdx:         pIdx,
-					policyName:        p.Name,
 				})
 			}
 		}
 
-		filterMap[pIdx] = filterFlags
+		filterMap[pIdx] = policyFilters{
+			policyName:  p.Name,
+			filterFlags: filterFlags,
+		}
 	}
 
 	return filterMap, nil

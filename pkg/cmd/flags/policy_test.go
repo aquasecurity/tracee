@@ -12,33 +12,19 @@ var writeFlag = &filterFlag{
 	full:              "event=write",
 	filterName:        "event",
 	operatorAndValues: "=write",
-	policyIdx:         0,
 }
 
 var readFlag = &filterFlag{
 	full:              "event=read",
 	filterName:        "event",
 	operatorAndValues: "=read",
-	policyIdx:         0,
-}
-
-// newFilterFlagBasedOn returns a new filterFlag with the same values as the given
-// filterFlag, but with the given policy name.
-func newFilterFlagBasedOn(f *filterFlag, policyName string) *filterFlag {
-	return &filterFlag{
-		full:              f.full,
-		filterName:        f.filterName,
-		operatorAndValues: f.operatorAndValues,
-		policyIdx:         0,
-		policyName:        policyName,
-	}
 }
 
 func TestPolicyScopes(t *testing.T) {
 	tests := []struct {
 		testName           string
 		policy             policy.PolicyFile
-		expected           FilterMap
+		expected           PolicyFilterMap
 		skipPolicyCreation bool
 	}{
 		{
@@ -52,8 +38,11 @@ func TestPolicyScopes(t *testing.T) {
 					{Event: "write"},
 				},
 			},
-			expected: FilterMap{
-				0: {newFilterFlagBasedOn(writeFlag, "global_scope_single_event")},
+			expected: PolicyFilterMap{
+				0: {
+					policyName:  "global_scope_single_event",
+					filterFlags: []*filterFlag{writeFlag},
+				},
 			},
 		},
 		{
@@ -68,10 +57,13 @@ func TestPolicyScopes(t *testing.T) {
 					{Event: "read"},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(writeFlag, "global_scope_multiple_events"),
-					newFilterFlagBasedOn(readFlag, "global_scope_multiple_events"),
+					policyName: "global_scope_multiple_events",
+					filterFlags: []*filterFlag{
+						writeFlag,
+						readFlag,
+					},
 				},
 			},
 		},
@@ -86,16 +78,17 @@ func TestPolicyScopes(t *testing.T) {
 					{Event: "write"},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					{
-						full:              "uid>=1000",
-						filterName:        "uid",
-						operatorAndValues: ">=1000",
-						policyIdx:         0,
-						policyName:        "uid_scope",
+					policyName: "uid_scope",
+					filterFlags: []*filterFlag{
+						{
+							full:              "uid>=1000",
+							filterName:        "uid",
+							operatorAndValues: ">=1000",
+						},
+						writeFlag,
 					},
-					newFilterFlagBasedOn(writeFlag, "uid_scope"),
 				},
 			},
 		},
@@ -110,16 +103,17 @@ func TestPolicyScopes(t *testing.T) {
 					{Event: "write"},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					{
-						full:              "pid<=10",
-						filterName:        "pid",
-						operatorAndValues: "<=10",
-						policyIdx:         0,
-						policyName:        "pid_scope",
+					policyName: "pid_scope",
+					filterFlags: []*filterFlag{
+						{
+							full:              "pid<=10",
+							filterName:        "pid",
+							operatorAndValues: "<=10",
+						},
+						writeFlag,
 					},
-					newFilterFlagBasedOn(writeFlag, "pid_scope"),
 				},
 			},
 		},
@@ -134,16 +128,17 @@ func TestPolicyScopes(t *testing.T) {
 					{Event: "write"},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					{
-						full:              "mntns=4026531840",
-						filterName:        "mntns",
-						operatorAndValues: "=4026531840",
-						policyIdx:         0,
-						policyName:        "mntns",
+					policyName: "mntns",
+					filterFlags: []*filterFlag{
+						{
+							full:              "mntns=4026531840",
+							filterName:        "mntns",
+							operatorAndValues: "=4026531840",
+						},
+						writeFlag,
 					},
-					newFilterFlagBasedOn(writeFlag, "mntns"),
 				},
 			},
 		},
@@ -158,16 +153,17 @@ func TestPolicyScopes(t *testing.T) {
 					{Event: "write"},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					{
-						full:              "pidns!=4026531836",
-						filterName:        "pidns",
-						operatorAndValues: "!=4026531836",
-						policyIdx:         0,
-						policyName:        "pidns_scope",
+					policyName: "pidns_scope",
+					filterFlags: []*filterFlag{
+						{
+							full:              "pidns!=4026531836",
+							filterName:        "pidns",
+							operatorAndValues: "!=4026531836",
+						},
+						writeFlag,
 					},
-					newFilterFlagBasedOn(writeFlag, "pidns_scope"),
 				},
 			},
 		},
@@ -182,16 +178,17 @@ func TestPolicyScopes(t *testing.T) {
 					{Event: "write"},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					{
-						full:              "uts!=ab356bc4dd554",
-						filterName:        "uts",
-						operatorAndValues: "!=ab356bc4dd554",
-						policyIdx:         0,
-						policyName:        "uts_scope",
+					policyName: "uts_scope",
+					filterFlags: []*filterFlag{
+						{
+							full:              "uts!=ab356bc4dd554",
+							filterName:        "uts",
+							operatorAndValues: "!=ab356bc4dd554",
+						},
+						writeFlag,
 					},
-					newFilterFlagBasedOn(writeFlag, "uts_scope"),
 				},
 			},
 		},
@@ -206,16 +203,17 @@ func TestPolicyScopes(t *testing.T) {
 					{Event: "write"},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					{
-						full:              "comm=bash",
-						filterName:        "comm",
-						operatorAndValues: "=bash",
-						policyIdx:         0,
-						policyName:        "comm_scope",
+					policyName: "comm_scope",
+					filterFlags: []*filterFlag{
+						{
+							full:              "comm=bash",
+							filterName:        "comm",
+							operatorAndValues: "=bash",
+						},
+						writeFlag,
 					},
-					newFilterFlagBasedOn(writeFlag, "comm_scope"),
 				},
 			},
 		},
@@ -230,16 +228,17 @@ func TestPolicyScopes(t *testing.T) {
 					{Event: "write"},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					{
-						full:              "container=new",
-						filterName:        "container",
-						operatorAndValues: "=new",
-						policyIdx:         0,
-						policyName:        "container_scope",
+					policyName: "container_scope",
+					filterFlags: []*filterFlag{
+						{
+							full:              "container=new",
+							filterName:        "container",
+							operatorAndValues: "=new",
+						},
+						writeFlag,
 					},
-					newFilterFlagBasedOn(writeFlag, "container_scope"),
 				},
 			},
 		},
@@ -254,16 +253,17 @@ func TestPolicyScopes(t *testing.T) {
 					{Event: "write"},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					{
-						full:              "!container",
-						filterName:        "!container",
-						operatorAndValues: "",
-						policyIdx:         0,
-						policyName:        "!container_scope",
+					policyName: "!container_scope",
+					filterFlags: []*filterFlag{
+						{
+							full:              "!container",
+							filterName:        "!container",
+							operatorAndValues: "",
+						},
+						writeFlag,
 					},
-					newFilterFlagBasedOn(writeFlag, "!container_scope"),
 				},
 			},
 		},
@@ -278,16 +278,17 @@ func TestPolicyScopes(t *testing.T) {
 					{Event: "write"},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					{
-						full:              "container",
-						filterName:        "container",
-						operatorAndValues: "",
-						policyIdx:         0,
-						policyName:        "container_scope",
+					policyName: "container_scope",
+					filterFlags: []*filterFlag{
+						{
+							full:              "container",
+							filterName:        "container",
+							operatorAndValues: "",
+						},
+						writeFlag,
 					},
-					newFilterFlagBasedOn(writeFlag, "container_scope"),
 				},
 			},
 		},
@@ -302,16 +303,17 @@ func TestPolicyScopes(t *testing.T) {
 					{Event: "write"},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					{
-						full:              "tree=3213,5200",
-						filterName:        "tree",
-						operatorAndValues: "=3213,5200",
-						policyIdx:         0,
-						policyName:        "tree_scope",
+					policyName: "tree_scope",
+					filterFlags: []*filterFlag{
+						{
+							full:              "tree=3213,5200",
+							filterName:        "tree",
+							operatorAndValues: "=3213,5200",
+						},
+						writeFlag,
 					},
-					newFilterFlagBasedOn(writeFlag, "tree_scope"),
 				},
 			},
 		},
@@ -326,16 +328,17 @@ func TestPolicyScopes(t *testing.T) {
 					{Event: "write"},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					{
-						full:              "tree=3213",
-						filterName:        "tree",
-						operatorAndValues: "=3213",
-						policyIdx:         0,
-						policyName:        "scope_with_space",
+					policyName: "scope_with_space",
+					filterFlags: []*filterFlag{
+						{
+							full:              "tree=3213",
+							filterName:        "tree",
+							operatorAndValues: "=3213",
+						},
+						writeFlag,
 					},
-					newFilterFlagBasedOn(writeFlag, "scope_with_space"),
 				},
 			},
 		},
@@ -350,16 +353,17 @@ func TestPolicyScopes(t *testing.T) {
 					{Event: "write"},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					{
-						full:              "binary=host:/usr/bin/ls",
-						filterName:        "binary",
-						operatorAndValues: "=host:/usr/bin/ls",
-						policyIdx:         0,
-						policyName:        "binary_scope",
+					policyName: "binary_scope",
+					filterFlags: []*filterFlag{
+						{
+							full:              "binary=host:/usr/bin/ls",
+							filterName:        "binary",
+							operatorAndValues: "=host:/usr/bin/ls",
+						},
+						writeFlag,
 					},
-					newFilterFlagBasedOn(writeFlag, "binary_scope"),
 				},
 			},
 			skipPolicyCreation: true, // needs root privileges
@@ -375,16 +379,17 @@ func TestPolicyScopes(t *testing.T) {
 					{Event: "write"},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					{
-						full:              "bin=4026532448:/usr/bin/ls",
-						filterName:        "bin",
-						operatorAndValues: "=4026532448:/usr/bin/ls",
-						policyIdx:         0,
-						policyName:        "bin_scope",
+					policyName: "bin_scope",
+					filterFlags: []*filterFlag{
+						{
+							full:              "bin=4026532448:/usr/bin/ls",
+							filterName:        "bin",
+							operatorAndValues: "=4026532448:/usr/bin/ls",
+						},
+						writeFlag,
 					},
-					newFilterFlagBasedOn(writeFlag, "bin_scope"),
 				},
 			},
 		},
@@ -399,16 +404,17 @@ func TestPolicyScopes(t *testing.T) {
 					{Event: "write"},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					{
-						full:              "follow",
-						filterName:        "follow",
-						operatorAndValues: "",
-						policyIdx:         0,
-						policyName:        "follow_scope",
+					policyName: "follow_scope",
+					filterFlags: []*filterFlag{
+						{
+							full:              "follow",
+							filterName:        "follow",
+							operatorAndValues: "",
+						},
+						writeFlag,
 					},
-					newFilterFlagBasedOn(writeFlag, "follow_scope"),
 				},
 			},
 		},
@@ -423,37 +429,32 @@ func TestPolicyScopes(t *testing.T) {
 					{Event: "write"},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					{
-						full:              "comm=bash",
-						filterName:        "comm",
-						operatorAndValues: "=bash",
-						policyIdx:         0,
-						policyName:        "multiple_scope",
+					policyName: "multiple_scope",
+					filterFlags: []*filterFlag{
+						{
+							full:              "comm=bash",
+							filterName:        "comm",
+							operatorAndValues: "=bash",
+						},
+						{
+							full:              "follow",
+							filterName:        "follow",
+							operatorAndValues: "",
+						},
+						{
+							full:              "!container",
+							filterName:        "!container",
+							operatorAndValues: "",
+						},
+						{
+							full:              "uid=1000",
+							filterName:        "uid",
+							operatorAndValues: "=1000",
+						},
+						writeFlag,
 					},
-					{
-						full:              "follow",
-						filterName:        "follow",
-						operatorAndValues: "",
-						policyIdx:         0,
-						policyName:        "multiple_scope",
-					},
-					{
-						full:              "!container",
-						filterName:        "!container",
-						operatorAndValues: "",
-						policyIdx:         0,
-						policyName:        "multiple_scope",
-					},
-					{
-						full:              "uid=1000",
-						filterName:        "uid",
-						operatorAndValues: "=1000",
-						policyIdx:         0,
-						policyName:        "multiple_scope",
-					},
-					newFilterFlagBasedOn(writeFlag, "multiple_scope"),
 				},
 			},
 		},
@@ -481,7 +482,7 @@ func TestPolicyEventFilter(t *testing.T) {
 	tests := []struct {
 		testName string
 		policy   policy.PolicyFile
-		expected FilterMap
+		expected PolicyFilterMap
 	}{
 		// args filter
 		{
@@ -498,21 +499,20 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					{
-						full:              "event=security_file_open",
-						filterName:        "event",
-						operatorAndValues: "=security_file_open",
-						policyIdx:         0,
-						policyName:        "args_filter",
-					},
-					{
-						full:              "security_file_open.args.pathname=/etc/passwd",
-						filterName:        "security_file_open.args.pathname",
-						operatorAndValues: "=/etc/passwd",
-						policyIdx:         0,
-						policyName:        "args_filter",
+					policyName: "args_filter",
+					filterFlags: []*filterFlag{
+						{
+							full:              "event=security_file_open",
+							filterName:        "event",
+							operatorAndValues: "=security_file_open",
+						},
+						{
+							full:              "security_file_open.args.pathname=/etc/passwd",
+							filterName:        "security_file_open.args.pathname",
+							operatorAndValues: "=/etc/passwd",
+						},
 					},
 				},
 			},
@@ -532,15 +532,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(writeFlag, "return_filter"),
-					{
-						full:              "write.retval=-1",
-						filterName:        "write.retval",
-						operatorAndValues: "=-1",
-						policyIdx:         0,
-						policyName:        "return_filter",
+					policyName: "return_filter",
+					filterFlags: []*filterFlag{
+						writeFlag,
+						{
+							full:              "write.retval=-1",
+							filterName:        "write.retval",
+							operatorAndValues: "=-1",
+						},
 					},
 				},
 			},
@@ -560,15 +561,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(writeFlag, "timestamp_filter"),
-					{
-						full:              "write.context.timestamp>1234567890",
-						filterName:        "write.context.timestamp",
-						operatorAndValues: ">1234567890",
-						policyIdx:         0,
-						policyName:        "timestamp_filter",
+					policyName: "timestamp_filter",
+					filterFlags: []*filterFlag{
+						writeFlag,
+						{
+							full:              "write.context.timestamp>1234567890",
+							filterName:        "write.context.timestamp",
+							operatorAndValues: ">1234567890",
+						},
 					},
 				},
 			},
@@ -587,15 +589,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(writeFlag, "processorId_filter"),
-					{
-						full:              "write.context.processorId>=1234567890",
-						filterName:        "write.context.processorId",
-						operatorAndValues: ">=1234567890",
-						policyIdx:         0,
-						policyName:        "processorId_filter",
+					policyName: "processorId_filter",
+					filterFlags: []*filterFlag{
+						writeFlag,
+						{
+							full:              "write.context.processorId>=1234567890",
+							filterName:        "write.context.processorId",
+							operatorAndValues: ">=1234567890",
+						},
 					},
 				},
 			},
@@ -614,15 +617,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(writeFlag, "p_filter"),
-					{
-						full:              "write.context.p<=10",
-						filterName:        "write.context.p",
-						operatorAndValues: "<=10",
-						policyIdx:         0,
-						policyName:        "p_filter",
+					policyName: "p_filter",
+					filterFlags: []*filterFlag{
+						writeFlag,
+						{
+							full:              "write.context.p<=10",
+							filterName:        "write.context.p",
+							operatorAndValues: "<=10",
+						},
 					},
 				},
 			},
@@ -641,15 +645,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(writeFlag, "pid_filter"),
-					{
-						full:              "write.context.pid!=1",
-						filterName:        "write.context.pid",
-						operatorAndValues: "!=1",
-						policyIdx:         0,
-						policyName:        "pid_filter",
+					policyName: "pid_filter",
+					filterFlags: []*filterFlag{
+						writeFlag,
+						{
+							full:              "write.context.pid!=1",
+							filterName:        "write.context.pid",
+							operatorAndValues: "!=1",
+						},
 					},
 				},
 			},
@@ -668,15 +673,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(writeFlag, "processId_filter"),
-					{
-						full:              "write.context.processId=1387",
-						filterName:        "write.context.processId",
-						operatorAndValues: "=1387",
-						policyIdx:         0,
-						policyName:        "processId_filter",
+					policyName: "processId_filter",
+					filterFlags: []*filterFlag{
+						writeFlag,
+						{
+							full:              "write.context.processId=1387",
+							filterName:        "write.context.processId",
+							operatorAndValues: "=1387",
+						},
 					},
 				},
 			},
@@ -695,15 +701,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(writeFlag, "tid_filter"),
-					{
-						full:              "write.context.tid=1388",
-						filterName:        "write.context.tid",
-						operatorAndValues: "=1388",
-						policyIdx:         0,
-						policyName:        "tid_filter",
+					policyName: "tid_filter",
+					filterFlags: []*filterFlag{
+						writeFlag,
+						{
+							full:              "write.context.tid=1388",
+							filterName:        "write.context.tid",
+							operatorAndValues: "=1388",
+						},
 					},
 				},
 			},
@@ -722,15 +729,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(writeFlag, "threadId_filter"),
-					{
-						full:              "write.context.threadId!=1388",
-						filterName:        "write.context.threadId",
-						operatorAndValues: "!=1388",
-						policyIdx:         0,
-						policyName:        "threadId_filter",
+					policyName: "threadId_filter",
+					filterFlags: []*filterFlag{
+						writeFlag,
+						{
+							full:              "write.context.threadId!=1388",
+							filterName:        "write.context.threadId",
+							operatorAndValues: "!=1388",
+						},
 					},
 				},
 			},
@@ -749,15 +757,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(writeFlag, "ppid_filter"),
-					{
-						full:              "write.context.ppid=1",
-						filterName:        "write.context.ppid",
-						operatorAndValues: "=1",
-						policyIdx:         0,
-						policyName:        "ppid_filter",
+					policyName: "ppid_filter",
+					filterFlags: []*filterFlag{
+						writeFlag,
+						{
+							full:              "write.context.ppid=1",
+							filterName:        "write.context.ppid",
+							operatorAndValues: "=1",
+						},
 					},
 				},
 			},
@@ -776,15 +785,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(writeFlag, "parentProcessId_filter"),
-					{
-						full:              "write.context.parentProcessId>1455",
-						filterName:        "write.context.parentProcessId",
-						operatorAndValues: ">1455",
-						policyIdx:         0,
-						policyName:        "parentProcessId_filter",
+					policyName: "parentProcessId_filter",
+					filterFlags: []*filterFlag{
+						writeFlag,
+						{
+							full:              "write.context.parentProcessId>1455",
+							filterName:        "write.context.parentProcessId",
+							operatorAndValues: ">1455",
+						},
 					},
 				},
 			},
@@ -803,15 +813,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "hostTid_filter"),
-					{
-						full:              "read.context.hostTid=2455",
-						filterName:        "read.context.hostTid",
-						operatorAndValues: "=2455",
-						policyIdx:         0,
-						policyName:        "hostTid_filter",
+					policyName: "hostTid_filter",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.hostTid=2455",
+							filterName:        "read.context.hostTid",
+							operatorAndValues: "=2455",
+						},
 					},
 				},
 			},
@@ -830,15 +841,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "hostThreadId_filter"),
-					{
-						full:              "read.context.hostThreadId!=2455",
-						filterName:        "read.context.hostThreadId",
-						operatorAndValues: "!=2455",
-						policyIdx:         0,
-						policyName:        "hostThreadId_filter",
+					policyName: "hostThreadId_filter",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.hostThreadId!=2455",
+							filterName:        "read.context.hostThreadId",
+							operatorAndValues: "!=2455",
+						},
 					},
 				},
 			},
@@ -857,15 +869,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "hostPid_filter"),
-					{
-						full:              "read.context.hostPid=333",
-						filterName:        "read.context.hostPid",
-						operatorAndValues: "=333",
-						policyIdx:         0,
-						policyName:        "hostPid_filter",
+					policyName: "hostPid_filter",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.hostPid=333",
+							filterName:        "read.context.hostPid",
+							operatorAndValues: "=333",
+						},
 					},
 				},
 			},
@@ -884,15 +897,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "hostParentProcessId_filter"),
-					{
-						full:              "read.context.hostParentProcessId!=333",
-						filterName:        "read.context.hostParentProcessId",
-						operatorAndValues: "!=333",
-						policyIdx:         0,
-						policyName:        "hostParentProcessId_filter",
+					policyName: "hostParentProcessId_filter",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.hostParentProcessId!=333",
+							filterName:        "read.context.hostParentProcessId",
+							operatorAndValues: "!=333",
+						},
 					},
 				},
 			},
@@ -911,15 +925,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "userId_filter"),
-					{
-						full:              "read.context.userId=1000",
-						filterName:        "read.context.userId",
-						operatorAndValues: "=1000",
-						policyIdx:         0,
-						policyName:        "userId_filter",
+					policyName: "userId_filter",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.userId=1000",
+							filterName:        "read.context.userId",
+							operatorAndValues: "=1000",
+						},
 					},
 				},
 			},
@@ -938,15 +953,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "mntns_filter"),
-					{
-						full:              "read.context.mntns=4026531840",
-						filterName:        "read.context.mntns",
-						operatorAndValues: "=4026531840",
-						policyIdx:         0,
-						policyName:        "mntns_filter",
+					policyName: "mntns_filter",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.mntns=4026531840",
+							filterName:        "read.context.mntns",
+							operatorAndValues: "=4026531840",
+						},
 					},
 				},
 			},
@@ -965,15 +981,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "mountNamespace_filter"),
-					{
-						full:              "read.context.mountNamespace!=4026531840",
-						filterName:        "read.context.mountNamespace",
-						operatorAndValues: "!=4026531840",
-						policyIdx:         0,
-						policyName:        "mountNamespace_filter",
+					policyName: "mountNamespace_filter",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.mountNamespace!=4026531840",
+							filterName:        "read.context.mountNamespace",
+							operatorAndValues: "!=4026531840",
+						},
 					},
 				},
 			},
@@ -992,15 +1009,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "pidns_filter"),
-					{
-						full:              "read.context.pidns=4026531836",
-						filterName:        "read.context.pidns",
-						operatorAndValues: "=4026531836",
-						policyIdx:         0,
-						policyName:        "pidns_filter",
+					policyName: "pidns_filter",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.pidns=4026531836",
+							filterName:        "read.context.pidns",
+							operatorAndValues: "=4026531836",
+						},
 					},
 				},
 			},
@@ -1019,15 +1037,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "pidNamespace_filter"),
-					{
-						full:              "read.context.pidNamespace!=4026531836",
-						filterName:        "read.context.pidNamespace",
-						operatorAndValues: "!=4026531836",
-						policyIdx:         0,
-						policyName:        "pidNamespace_filter",
+					policyName: "pidNamespace_filter",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.pidNamespace!=4026531836",
+							filterName:        "read.context.pidNamespace",
+							operatorAndValues: "!=4026531836",
+						},
 					},
 				},
 			},
@@ -1046,15 +1065,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "processName_filter"),
-					{
-						full:              "read.context.processName=uname",
-						filterName:        "read.context.processName",
-						operatorAndValues: "=uname",
-						policyIdx:         0,
-						policyName:        "processName_filter",
+					policyName: "processName_filter",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.processName=uname",
+							filterName:        "read.context.processName",
+							operatorAndValues: "=uname",
+						},
 					},
 				},
 			},
@@ -1073,15 +1093,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "comm_filter"),
-					{
-						full:              "read.context.comm!=uname",
-						filterName:        "read.context.comm",
-						operatorAndValues: "!=uname",
-						policyIdx:         0,
-						policyName:        "comm_filter",
+					policyName: "comm_filter",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.comm!=uname",
+							filterName:        "read.context.comm",
+							operatorAndValues: "!=uname",
+						},
 					},
 				},
 			},
@@ -1100,15 +1121,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "hostName_filter"),
-					{
-						full:              "read.context.hostName=test",
-						filterName:        "read.context.hostName",
-						operatorAndValues: "=test",
-						policyIdx:         0,
-						policyName:        "hostName_filter",
+					policyName: "hostName_filter",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.hostName=test",
+							filterName:        "read.context.hostName",
+							operatorAndValues: "=test",
+						},
 					},
 				},
 			},
@@ -1127,15 +1149,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "cgroupId"),
-					{
-						full:              "read.context.cgroupId=test",
-						filterName:        "read.context.cgroupId",
-						operatorAndValues: "=test",
-						policyIdx:         0,
-						policyName:        "cgroupId",
+					policyName: "cgroupId",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.cgroupId=test",
+							filterName:        "read.context.cgroupId",
+							operatorAndValues: "=test",
+						},
 					},
 				},
 			},
@@ -1154,15 +1177,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "host"),
-					{
-						full:              "read.context.host=test",
-						filterName:        "read.context.host",
-						operatorAndValues: "=test",
-						policyIdx:         0,
-						policyName:        "host",
+					policyName: "host",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.host=test",
+							filterName:        "read.context.host",
+							operatorAndValues: "=test",
+						},
 					},
 				},
 			},
@@ -1181,15 +1205,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "container_filter"),
-					{
-						full:              "read.context.container=c",
-						filterName:        "read.context.container",
-						operatorAndValues: "=c",
-						policyIdx:         0,
-						policyName:        "container_filter",
+					policyName: "container_filter",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.container=c",
+							filterName:        "read.context.container",
+							operatorAndValues: "=c",
+						},
 					},
 				},
 			},
@@ -1208,15 +1233,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "containerId_filter"),
-					{
-						full:              "read.context.containerId=da91bf3df3dc",
-						filterName:        "read.context.containerId",
-						operatorAndValues: "=da91bf3df3dc",
-						policyIdx:         0,
-						policyName:        "containerId_filter",
+					policyName: "containerId_filter",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.containerId=da91bf3df3dc",
+							filterName:        "read.context.containerId",
+							operatorAndValues: "=da91bf3df3dc",
+						},
 					},
 				},
 			},
@@ -1235,15 +1261,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "containerImage_filter"),
-					{
-						full:              "read.context.containerImage=tracee:latest",
-						filterName:        "read.context.containerImage",
-						operatorAndValues: "=tracee:latest",
-						policyIdx:         0,
-						policyName:        "containerImage_filter",
+					policyName: "containerImage_filter",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.containerImage=tracee:latest",
+							filterName:        "read.context.containerImage",
+							operatorAndValues: "=tracee:latest",
+						},
 					},
 				},
 			},
@@ -1262,15 +1289,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "containerName_filter"),
-					{
-						full:              "read.context.containerName=tracee",
-						filterName:        "read.context.containerName",
-						operatorAndValues: "=tracee",
-						policyIdx:         0,
-						policyName:        "containerName_filter",
+					policyName: "containerName_filter",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.containerName=tracee",
+							filterName:        "read.context.containerName",
+							operatorAndValues: "=tracee",
+						},
 					},
 				},
 			},
@@ -1289,15 +1317,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "podName_filter"),
-					{
-						full:              "read.context.podName=daemonset/tracee",
-						filterName:        "read.context.podName",
-						operatorAndValues: "=daemonset/tracee",
-						policyIdx:         0,
-						policyName:        "podName_filter",
+					policyName: "podName_filter",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.podName=daemonset/tracee",
+							filterName:        "read.context.podName",
+							operatorAndValues: "=daemonset/tracee",
+						},
 					},
 				},
 			},
@@ -1316,15 +1345,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "podNamespace_filter"),
-					{
-						full:              "read.context.podNamespace=production",
-						filterName:        "read.context.podNamespace",
-						operatorAndValues: "=production",
-						policyIdx:         0,
-						policyName:        "podNamespace_filter",
+					policyName: "podNamespace_filter",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.podNamespace=production",
+							filterName:        "read.context.podNamespace",
+							operatorAndValues: "=production",
+						},
 					},
 				},
 			},
@@ -1343,15 +1373,16 @@ func TestPolicyEventFilter(t *testing.T) {
 					},
 				},
 			},
-			expected: FilterMap{
+			expected: PolicyFilterMap{
 				0: {
-					newFilterFlagBasedOn(readFlag, "podUid_filter"),
-					{
-						full:              "read.context.podUid=poduid",
-						filterName:        "read.context.podUid",
-						operatorAndValues: "=poduid",
-						policyIdx:         0,
-						policyName:        "podUid_filter",
+					policyName: "podUid_filter",
+					filterFlags: []*filterFlag{
+						readFlag,
+						{
+							full:              "read.context.podUid=poduid",
+							filterName:        "read.context.podUid",
+							operatorAndValues: "=poduid",
+						},
 					},
 				},
 			},
