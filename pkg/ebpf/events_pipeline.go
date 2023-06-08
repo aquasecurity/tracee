@@ -291,12 +291,12 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 	bitmap := event.MatchedPoliciesKernel
 
 	// Short circuit if there are no policies in userland that need filtering.
-	if bitmap&t.config.Policies.FilterableInUserSpace() == 0 {
+	if bitmap&t.config.Policies.FilterableInUserland() == 0 {
 		event.MatchedPoliciesUser = bitmap // store untoched bitmap to be used in sink stage
 		return bitmap
 	}
 
-	for p := range t.config.Policies.FilterableInUserSpaceMap() { // range through each userland filterable policy
+	for p := range t.config.Policies.FilterableInUserlandMap() { // range through each userland filterable policy
 		// Policy ID is the bit offset in the bitmap.
 		bitOffset := uint(p.ID)
 
