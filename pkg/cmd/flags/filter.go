@@ -92,27 +92,25 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0', '/tmp*'
 `
 }
 
-func PrepareFilterMapFromFlags(filtersArr []string) (FilterMap, error) {
-	// parse and store filters by policy
-	filterMap := make(FilterMap)
+func PrepareFilterMapFromFlags(filtersArr []string) (PolicyFilterMap, error) {
+	// parse and store filters
+	var filterFlags []*filterFlag
 	for _, filter := range filtersArr {
 		parsed, err := parseFilterFlag(filter)
 		if err != nil {
 			return nil, err
 		}
 
-		policyIdx := parsed.policyIdx
-
-		filterMap[policyIdx] = append(
-			filterMap[policyIdx],
-			parsed,
-		)
+		filterFlags = append(filterFlags, parsed)
 	}
+
+	filterMap := make(PolicyFilterMap)
+	filterMap[0] = policyFilters{filterFlags: filterFlags}
 
 	return filterMap, nil
 }
 
-func CreatePolicies(filterMap FilterMap, newBinary bool) (*policy.Policies, error) {
+func CreatePolicies(filterMap PolicyFilterMap, newBinary bool) (*policy.Policies, error) {
 	eventsNameToID := events.Definitions.NamesToIDs()
 	// remove internal events since they shouldn't be accessible by users
 	for event, id := range eventsNameToID {
@@ -122,8 +120,11 @@ func CreatePolicies(filterMap FilterMap, newBinary bool) (*policy.Policies, erro
 	}
 
 	policies := policy.NewPolicies()
-	for _, fsFlags := range filterMap {
+	for policyIdx, policyFilters := range filterMap {
 		p := policy.NewPolicy()
+		p.ID = policyIdx
+		p.Name = policyFilters.policyName
+
 		eventFilter := cliFilter{
 			Equal:    []string{},
 			NotEqual: []string{},
@@ -133,10 +134,7 @@ func CreatePolicies(filterMap FilterMap, newBinary bool) (*policy.Policies, erro
 			NotEqual: []string{},
 		}
 
-		for _, filterFlag := range fsFlags {
-			p.ID = filterFlag.policyIdx
-			p.Name = filterFlag.policyName
-
+		for _, filterFlag := range policyFilters.filterFlags {
 			if strings.Contains(filterFlag.full, ".retval") {
 				err := p.RetFilter.Parse(filterFlag.filterName, filterFlag.operatorAndValues, eventsNameToID)
 				if err != nil {

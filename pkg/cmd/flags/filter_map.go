@@ -6,24 +6,24 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
-// FilterMap holds pre-parsed filter flag fields
-type FilterMap map[int][]*filterFlag
+// PolicyFilterMap maps policy id to its pre-parsed filter flag fields
+type PolicyFilterMap map[int]policyFilters
+
+// policyFilters holds pre-parsed filter flag fields of one policy
+type policyFilters struct {
+	policyName  string
+	filterFlags []*filterFlag
+}
 
 // filterFlag holds pre-parsed filter flag fields
 type filterFlag struct {
 	full              string
 	filterName        string
 	operatorAndValues string
-	// policy
-	policyIdx  int
-	policyName string
 }
 
 // parseFilterFlag parses a filter flag and returns a filterFlag struct with
 // pre-parsed fields, or an error if the flag is invalid.
-// policyIdx and policyName are always set to 0 and "" respectively, since this
-// function is used for parsing cli filter flags only.
-// For policy workloads, see PrepareFilterMapFromPolicies.
 func parseFilterFlag(flag string) (*filterFlag, error) {
 	if len(flag) == 0 {
 		return nil, errfmt.WrapError(InvalidFlagEmpty())
@@ -37,8 +37,6 @@ func parseFilterFlag(flag string) (*filterFlag, error) {
 			full:              flag,
 			filterName:        flag,
 			operatorAndValues: "",
-			policyIdx:         0,
-			policyName:        "",
 		}, nil
 	}
 
@@ -68,7 +66,5 @@ func parseFilterFlag(flag string) (*filterFlag, error) {
 		full:              flag,
 		filterName:        filterName,
 		operatorAndValues: operatorAndValues,
-		policyIdx:         0,
-		policyName:        "",
 	}, nil
 }

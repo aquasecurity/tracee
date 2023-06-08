@@ -99,7 +99,7 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	// Filter command line flags
 
-	var filterMap flags.FilterMap
+	var filterMap flags.PolicyFilterMap
 
 	filterMap, err = flags.PrepareFilterMapFromFlags(c.StringSlice("filter"))
 	if err != nil {
