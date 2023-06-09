@@ -26,28 +26,53 @@ Vagrant.configure("2") do |config|
 
   config.vm.provider "virtualbox" do |vb|
     vb.gui = false
+    vb.cpus = 4
     vb.memory = "2048"
   end
 
-  config.vm.provision "shell", inline: <<-SHELL
+  config.vm.provision "shell", privileged: true, inline: <<-SHELL
     VAGRANT_HOME="/home/vagrant"
     GO_VERSION="1.19.5"
     OPA_VERSION="v0.48.0"
 
+    # silence 'dpkg-preconfigure: unable to re-open stdin: No such file or directory'
+    export DEBIAN_FRONTEND=noninteractive
+
     apt-get update
+
+    #
+    # build environment for tracee
+    #
+
     apt-get install --yes bsdutils
     apt-get install --yes build-essential
     apt-get install --yes pkgconf
+
     apt-get install --yes llvm-12 clang-12
     apt-get install --yes clang-format-12
-    apt-get install --yes zlib1g-dev libelf-dev
-    apt-get install --yes protobuf-compiler
-
     for tool in "clang" "llc" "llvm-strip"
     do
       path=$(which $tool-12)
-      sudo ln -s $path ${path%-*}
+      ln -s "$path" "${path%-*}"
     done
+
+    apt-get install --yes zlib1g-dev libelf-dev
+    apt-get install --yes protobuf-compiler
+    apt-get install --yes linux-tools-"$(uname -r)"
+
+    # golang
+    wget --quiet https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz
+    tar -C /usr/local -xzf go$GO_VERSION.linux-amd64.tar.gz
+    GOBIN_PATH=/usr/local/go/bin
+    echo "export PATH=$PATH:$GOBIN_PATH" >> $VAGRANT_HOME/.profile
+    # integration tests run as root, so go needs to be in root's path as well
+    echo "export PATH=$PATH:$GOBIN_PATH" >> $HOME/.bashrc
+    # sudo needs to be able to find go as well
+    echo "Defaults secure_path=\"$PATH:$GOBIN_PATH\"" >> /etc/sudoers.d/vagrant
+
+    #
+    # microk8s
+    #
 
     snap install microk8s --classic
     microk8s status --wait-ready
@@ -59,24 +84,34 @@ Vagrant.configure("2") do |config|
     chmod 600 $VAGRANT_HOME/.kube/config
     chown vagrant:vagrant $VAGRANT_HOME/.kube/config
 
+    #
+    # kubectl
+    #
+
     apt-get install --yes apt-transport-https ca-certificates curl
-    curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
-    echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
     apt-get update
     apt-get install --yes kubectl
     echo 'source <(kubectl completion bash)' >> $VAGRANT_HOME/.profile
 
+    #
+    # helm
+    #
+
     snap install helm --classic
     echo 'source <(helm completion bash)' >> $VAGRANT_HOME/.profile
 
-    apt-get install --yes linux-tools-$(uname -r)
-
+    #
+    # docker
+    #
+    
     apt-get install --yes docker.io
     usermod -aG docker vagrant
 
-    wget --quiet https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz
-    tar -C /usr/local -xzf go$GO_VERSION.linux-amd64.tar.gz
-    echo 'export PATH=$PATH:/usr/local/go/bin' >> $VAGRANT_HOME/.profile
+    #
+    # opa
+    #
 
     curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/$OPA_VERSION/opa_linux_amd64
     chmod 755 /usr/bin/opa
