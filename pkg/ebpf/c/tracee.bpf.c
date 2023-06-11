@@ -3180,12 +3180,15 @@ int BPF_KPROBE(trace_mmap_alert)
     if ((prot & (VM_WRITE | VM_EXEC)) == (VM_WRITE | VM_EXEC) &&
         should_submit(MEM_PROT_ALERT, p.event)) {
         u32 alert = ALERT_MMAP_W_X;
-        int fd = sys->args.args[5];
+        int fd = sys->args.args[4];
         void *addr = (void *) sys->args.args[0];
         size_t len = sys->args.args[1];
-        struct file *file = get_struct_file_from_fd(fd);
         int prev_prot = 0;
-        file_info_t file_info = get_file_info(file);
+        file_info_t file_info = {.pathname_p = NULL};
+        if (fd >= 0) {
+            struct file *file = get_struct_file_from_fd(fd);
+            file_info = get_file_info(file);
+        }
         submit_mem_prot_alert_event(p.event, alert, addr, len, prot, prev_prot, file_info);
     }
 
