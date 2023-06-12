@@ -33,7 +33,6 @@ docker run \
     --cgroupns=host --privileged \
     -v /tmp/tracee:/tmp/tracee  \
     -v /etc/os-release:/etc/os-release-host:ro \
-    -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
     -it -p 3366:3366 aquasec/tracee:{{ git.tag }}
 ```
 

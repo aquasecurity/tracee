@@ -22,7 +22,6 @@ docker run \
   --pid=host --cgroupns=host --privileged \
   -v /etc/os-release:/etc/os-release-host:ro \
   -v /boot/config-$(uname -r):/boot/config-$(uname -r):ro \
-  -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
   aquasec/tracee:$(uname -m)
 ```
 

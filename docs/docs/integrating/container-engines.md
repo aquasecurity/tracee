@@ -29,7 +29,6 @@ those events by communicating with the relevant container's runtime and SDK.
         --pid=host --cgroupns=host --privileged \
         -v /etc/os-release:/etc/os-release-host:ro \
         -v /var/run/containerd:/var/run/containerd \
-        -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
         -e CONTAINERS_ENRICHMENT=1 \
         aquasec/tracee:{{ git.tag }}
     ```
@@ -69,7 +68,6 @@ As a user, when container enrichment is enabled the event output will include en
         --pid=host --cgroupns=host --privileged \
         -v /etc/os-release:/etc/os-release-host:ro \
         -v /var/run/docker.sock:/var/run/docker.sock \
-        -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
         aquasec/tracee:{{ git.tag }} \
         trace --output json --containers
     ```
@@ -82,7 +80,6 @@ As a user, when container enrichment is enabled the event output will include en
         --pid=host --cgroupns=host --privileged \
         -v /etc/os-release:/etc/os-release-host:ro \
         -v /var/run/containerd:/var/run/containerd \
-        -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
         aquasec/tracee:{{ git.tag }} \
         trace --filter container --containers
     ```
