@@ -1265,7 +1265,7 @@ func (t *Tracee) attachProbes() error {
 		}
 
 		// attach probes for selected events
-		for _, dep := range event.Probes {
+		for _, dep := range event.Dependencies.Probes {
 			err = t.probes.Attach(dep.Handle, t.cgroups)
 			if err != nil && dep.Required {
 				return errfmt.Errorf("failed to attach required probe: %v", err)
