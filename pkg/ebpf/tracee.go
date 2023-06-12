@@ -501,24 +501,24 @@ func (t *Tracee) generateInitValues() (InitValues, error) {
 	return initVals, nil
 }
 
-// Initialize tail calls program array
-func (t *Tracee) initTailCall(mapName string, mapIndexes []uint32, progName string) error {
-	bpfMap, err := t.bpfModule.GetMap(mapName)
+// initTailCall initializes a given tailcall.
+func (t *Tracee) initTailCall(tailCall *events.TailCall) error {
+	bpfMap, err := t.bpfModule.GetMap(tailCall.GetMapName())
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-	bpfProg, err := t.bpfModule.GetProgram(progName)
+	bpfProg, err := t.bpfModule.GetProgram(tailCall.GetProgName())
 	if err != nil {
-		return errfmt.Errorf("could not get BPF program %s: %v", progName, err)
+		return errfmt.Errorf("could not get BPF program %s: %v", tailCall.GetProgName(), err)
 	}
 	fd := bpfProg.FileDescriptor()
 	if fd < 0 {
-		return errfmt.Errorf("could not get BPF program FD for %s: %v", progName, err)
+		return errfmt.Errorf("could not get BPF program FD for %s: %v", tailCall.GetProgName(), err)
 	}
 
-	for _, index := range mapIndexes {
+	// Attach internal syscall probes if needed.
+	for _, index := range tailCall.GetMapIndexes() {
 		def := events.Definitions.Get(events.ID(index))
-		// attach internal syscall probes if needed from tailcalls
 		if def.Syscall {
 			err := t.probes.Attach(probes.SyscallEnter__Internal)
 			if err != nil {
@@ -534,6 +534,7 @@ func (t *Tracee) initTailCall(mapName string, mapIndexes []uint32, progName stri
 			return errfmt.WrapError(err)
 		}
 	}
+
 	return nil
 }
 
@@ -1130,7 +1131,7 @@ func (t *Tracee) populateBPFMaps() error {
 		return errfmt.WrapError(err)
 	}
 	for _, tailCall := range tailCalls {
-		err := t.initTailCall(tailCall.MapName, tailCall.MapIndexes, tailCall.ProgName)
+		err := t.initTailCall(tailCall)
 		if err != nil {
 			return errfmt.Errorf("failed to initialize tail call: %v", err)
 		}
@@ -1139,77 +1140,74 @@ func (t *Tracee) populateBPFMaps() error {
 	return nil
 }
 
-// getTailCalls collects all tailcall dependencies from required events, and
-// generates additional tailcall per syscall traced. For syscall tracing, there
-// are 4 different relevant tail calls:
+// getTailCalls collects all tailcall dependencies for the events picked to be traced, and generates
+// additional tailcall per syscall traced. For syscall tracing, there are 4 different relevant tail
+// calls:
 //
 // 1. sys_enter_init - syscall data saving is done here
 // 2. sys_enter_submit - some syscall submits are done here
 // 3. sys_exit_init - syscall validation on exit is done here
 // 4. sys_exit_submit - most syscalls are submitted at this point
 //
-// This division is done because some events only require the syscall saving
-// logic, and not event submitting. As such, in order to actually track syscalls
-// we need to initialize, these 4 tail calls per syscall event requested for
-// submission. In pkg/events/events.go one can see that some events will
-// require the sys_enter_init tail call, this is because they require syscall
-// data saving in their probe (for example security_file_open needs open, openat
-// and openat2).
-func getTailCalls(eventConfigs map[events.ID]eventConfig) ([]events.TailCall, error) {
-	enterInitTailCall := events.TailCall{
-		MapName:    "sys_enter_init_tail",
-		MapIndexes: []uint32{},
-		ProgName:   "sys_enter_init",
-	}
-	enterSubmitTailCall := events.TailCall{
-		MapName:    "sys_enter_submit_tail",
-		MapIndexes: []uint32{},
-		ProgName:   "sys_enter_submit",
-	}
-	exitInitTailCall := events.TailCall{
-		MapName:    "sys_exit_init_tail",
-		MapIndexes: []uint32{},
-		ProgName:   "sys_exit_init",
-	}
-	exitSubmitTailCall := events.TailCall{
-		MapName:    "sys_exit_submit_tail",
-		MapIndexes: []uint32{},
-		ProgName:   "sys_exit_submit",
-	}
+// This division is done because some events only require the syscall saving logic, and not event
+// submission one. As such, in order to track syscalls, tracee needs to initialize these 4 tail
+// calls per syscall event to be submitted.
+//
+// NOTE: In pkg/events/events.go, one can see that some events will require the sys_enter_init tail
+// call, this is because they require syscall data saving in their probe (for example
+// security_file_open needs open, openat and openat2).
+func getTailCalls(eventConfigs map[events.ID]eventConfig) ([]*events.TailCall, error) {
+	enterInitTailCall := events.NewTailCallFull(
+		"sys_enter_init_tail",
+		[]uint32{},
+		"sys_enter_init",
+	)
+	enterSubmitTailCall := events.NewTailCallFull(
+		"sys_enter_submit_tail",
+		[]uint32{},
+		"sys_enter_submit",
+	)
+	exitInitTailCall := events.NewTailCallFull(
+		"sys_exit_init_tail",
+		[]uint32{},
+		"sys_exit_init",
+	)
+	exitSubmitTailCall := events.NewTailCallFull(
+		"sys_exit_submit_tail",
+		[]uint32{},
+		"sys_exit_submit",
+	)
 
-	// For tracking only unique tail call, we use it's string form as the key in
-	// a "set" map (map[string]bool). We use a string, and not the struct
-	// itself, because it includes an array.
+	// For tracking only unique tail call, we use it's string form as the key in a "set" map
+	// (map[string]bool). We use a string, and not the struct itself, because it includes an array.
 	//
-	// NOTE: In golang, map keys must be a comparable type, which are numerics
-	//       and strings. structs can also be used as keys, but only if they are
-	//       composed solely from comparable types.
+	// NOTE: In golang, map keys must be a comparable type, which are numerics and strings. structs
+	//       can also be used as keys, but only if they are composed solely from comparable types.
 	//
-	//       arrays/slices are not comparable, so we need to use the string form
-	//       of the struct as a key instead.  we then only append the actual
-	//       tail call struct to a list if it's string form is not found in the
-	//       map.
+	//       arrays/slices are not comparable, so we need to use the string form of the struct as a
+	//       key instead.  we then only append the actual tail call struct to a list if it's string
+	//       form is not found in the map.
 
 	tailCallProgs := map[string]bool{}
-	tailCalls := []events.TailCall{}
+	tailCalls := []*events.TailCall{}
 
 	for e, cfg := range eventConfigs {
 		def := events.Definitions.Get(e)
 
 		for _, tailCall := range def.Dependencies.TailCalls {
-			if len(tailCall.MapIndexes) == 0 {
+			if tailCall.GetMapIndexesLen() == 0 {
 				continue // skip if tailcall has no indexes defined
 			}
-			for _, index := range tailCall.MapIndexes {
+			for _, index := range tailCall.GetMapIndexes() {
 				if index >= uint32(events.MaxCommonID) {
 					logger.Debugw(
 						"Removing index from tail call (over max event id)",
-						"tail_call_map", tailCall.MapName,
+						"tail_call_map", tailCall.GetMapName(),
 						"index", index,
 						"max_event_id", events.MaxCommonID,
 						"pkgName", pkgName,
 					)
-					tailCall.RemoveIndex(index) // remove undef syscalls (eg. arm64)
+					tailCall.DelIndex(index) // remove undef syscalls (eg. arm64)
 				}
 			}
 			tailCallStr := fmt.Sprint(tailCall)
@@ -1228,15 +1226,17 @@ func getTailCalls(eventConfigs map[events.ID]eventConfig) ([]events.TailCall, er
 		}
 	}
 
-	tailCalls = append(
-		tailCalls, enterInitTailCall, enterSubmitTailCall,
-		exitInitTailCall, exitSubmitTailCall,
+	tailCalls = append(tailCalls,
+		enterInitTailCall,
+		enterSubmitTailCall,
+		exitInitTailCall,
+		exitSubmitTailCall,
 	)
 
 	return tailCalls, nil
 }
 
-func (t *Tracee) GetTailCalls() ([]events.TailCall, error) {
+func (t *Tracee) GetTailCalls() ([]*events.TailCall, error) {
 	return getTailCalls(t.events)
 }
 
