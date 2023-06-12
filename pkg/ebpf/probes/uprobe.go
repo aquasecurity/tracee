@@ -7,7 +7,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
-// NOTE: thead-safety guaranteed by the ProbeGroup big lock.
+// NOTE: thread-safety guaranteed by the ProbeGroup big lock.
 
 //
 // uProbe

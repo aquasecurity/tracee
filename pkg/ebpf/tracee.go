@@ -1141,7 +1141,9 @@ func (t *Tracee) populateBPFMaps() error {
 }
 
 // getTailCalls collects all tailcall dependencies for the events picked to be traced, and generates
-// additional tailcall per syscall traced. For syscall tracing, there are 4 different relevant tail
+// additional tailcall per syscall traced.
+//
+// For syscall tracing, there are 4 different relevant tail
 // calls:
 //
 // 1. sys_enter_init - syscall data saving is done here
