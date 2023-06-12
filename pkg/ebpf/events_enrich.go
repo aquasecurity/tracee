@@ -76,6 +76,10 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 		for { // enqueue events
 			select {
 			case event := <-in:
+				if event == nil {
+					continue // might happen during initialization (ctrl+c seg faults)
+				}
+
 				eventID := events.ID(event.EventID)
 				// send out irrelevant events (non container or already enriched), don't skip the cgroup lifecycle events
 				if (event.Container.ID == "" || event.Container.Name != "") && eventID != events.CgroupMkdir && eventID != events.CgroupRmdir {
@@ -130,6 +134,11 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 					// de-queue event if queue is enriched
 					if _, ok := queues[cgroupId]; ok {
 						event := <-queues[cgroupId]
+
+						if event == nil {
+							continue // might happen during initialization (ctrl+c seg faults)
+						}
+
 						eventID := events.ID(event.EventID)
 						// check if not enriched, and only enrich regular non cgroup related events
 						if event.Container.Name == "" && eventID != events.CgroupMkdir && eventID != events.CgroupRmdir {

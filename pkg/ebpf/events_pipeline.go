@@ -420,6 +420,10 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 		defer close(errc)
 
 		for event := range in { // For each received event...
+			if event == nil {
+				continue // might happen during initialization (ctrl+c seg faults)
+			}
+
 			// Go through event processors if needed
 			errs := t.processEvent(event)
 			if len(errs) > 0 {
@@ -541,6 +545,10 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 		defer close(errc)
 
 		for event := range in {
+			if event == nil {
+				continue // might happen during initialization (ctrl+c seg faults)
+			}
+
 			// Only emit events requested by the user and matched by at least one policy.
 			id := events.ID(event.EventID)
 			event.MatchedPoliciesUser &= t.events[id].emit
