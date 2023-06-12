@@ -15,24 +15,24 @@ import (
 
 // ProbeGroup is a collection of probes.
 type ProbeGroup struct {
-	probeGroupBigLock *sync.Mutex // disallow concurrent access to the probe group
-	module            *bpf.Module
-	probes            map[Handle]Probe
+	probesLock *sync.Mutex // disallow concurrent access to the probe group
+	module     *bpf.Module
+	probes     map[Handle]Probe
 }
 
 // NewProbeGroup creates a new ProbeGroup.
 func NewProbeGroup(m *bpf.Module, p map[Handle]Probe) *ProbeGroup {
 	return &ProbeGroup{
-		probeGroupBigLock: &sync.Mutex{},
-		probes:            p,
-		module:            m,
+		probesLock: &sync.Mutex{}, // no parallel attaching/detaching of probes
+		probes:     p,
+		module:     m,
 	}
 }
 
 // GetProbe returns a probe type by its handle.
 func (p *ProbeGroup) GetProbeType(handle Handle) string {
-	p.probeGroupBigLock.Lock()
-	defer p.probeGroupBigLock.Unlock()
+	p.probesLock.Lock()
+	defer p.probesLock.Unlock()
 
 	if r, ok := p.probes[handle]; ok {
 		if probe, ok := r.(*TraceProbe); ok {
@@ -54,8 +54,8 @@ func (p *ProbeGroup) GetProbeType(handle Handle) string {
 
 // Attach attaches a probe's program to its hook, by given handle.
 func (p *ProbeGroup) Attach(handle Handle, args ...interface{}) error {
-	p.probeGroupBigLock.Lock()
-	defer p.probeGroupBigLock.Unlock()
+	p.probesLock.Lock()
+	defer p.probesLock.Unlock()
 
 	if _, ok := p.probes[handle]; !ok {
 		return errfmt.Errorf("probe handle (%d) does not exist", handle)
@@ -66,8 +66,8 @@ func (p *ProbeGroup) Attach(handle Handle, args ...interface{}) error {
 
 // Detach detaches a probe's program from its hook, by given handle.
 func (p *ProbeGroup) Detach(handle Handle, args ...interface{}) error {
-	p.probeGroupBigLock.Lock()
-	defer p.probeGroupBigLock.Unlock()
+	p.probesLock.Lock()
+	defer p.probesLock.Unlock()
 
 	if _, ok := p.probes[handle]; !ok {
 		return errfmt.Errorf("probe handle (%d) does not exist", handle)
@@ -78,8 +78,8 @@ func (p *ProbeGroup) Detach(handle Handle, args ...interface{}) error {
 
 // DetachAll detaches all existing probes programs from their hooks.
 func (p *ProbeGroup) DetachAll() error {
-	p.probeGroupBigLock.Lock()
-	defer p.probeGroupBigLock.Unlock()
+	p.probesLock.Lock()
+	defer p.probesLock.Unlock()
 
 	for _, pr := range p.probes {
 		err := pr.detach()
@@ -93,8 +93,8 @@ func (p *ProbeGroup) DetachAll() error {
 
 // Autoload disables autoload feature for a given handle's program.
 func (p *ProbeGroup) Autoload(handle Handle, autoload bool) error {
-	p.probeGroupBigLock.Lock()
-	defer p.probeGroupBigLock.Unlock()
+	p.probesLock.Lock()
+	defer p.probesLock.Unlock()
 	return p.probes[handle].autoload(p.module, autoload)
 }
 
