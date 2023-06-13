@@ -159,6 +159,9 @@ func (c *Containers) populate() error {
 // saving container information in Containers CgroupInfo map.
 // NOTE: ALL given cgroup dir paths are stored in CgroupInfo map.
 func (c *Containers) CgroupUpdate(cgroupId uint64, path string, ctime time.Time) (CgroupInfo, error) {
+	// Cgroup paths should be stored and evaluated relative to the mountpoint,
+	// trim it from the path.
+	path = strings.TrimPrefix(path, c.cgroups.GetDefaultCgroup().GetMountPoint())
 	containerId, containerRuntime, isRoot := getContainerIdFromCgroup(path)
 	container := cruntime.ContainerMetadata{
 		ContainerId: containerId,
