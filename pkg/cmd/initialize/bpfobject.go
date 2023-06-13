@@ -10,7 +10,7 @@ import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 
 	embed "github.com/aquasecurity/tracee"
-	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
@@ -21,7 +21,7 @@ import (
 // installation path and a version string. The function unpacks the CO-RE eBPF
 // object binary, checks if BTF is enabled, unpacks the BTF file from BTF Hub if
 // necessary, and assigns the kernel configuration and BPF object bytes.
-func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, osInfo *helpers.OSInfo, installPath string, version string) error {
+func BpfObject(cfg *config.Config, kConfig *helpers.KernelConfig, osInfo *helpers.OSInfo, installPath string, version string) error {
 	btfFilePath, err := checkEnvPath("TRACEE_BTF_FILE")
 	if btfFilePath == "" && err != nil {
 		return errfmt.WrapError(err)
@@ -29,7 +29,7 @@ func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, osInfo *hel
 
 	if btfFilePath != "" {
 		logger.Debugw("BTF", "BTF environment variable set", "path", btfFilePath)
-		config.BTFObjPath = btfFilePath
+		cfg.BTFObjPath = btfFilePath
 	}
 
 	bpfBytes, err := unpackCOREBinary()
@@ -44,14 +44,14 @@ func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, osInfo *hel
 		err = unpackBTFHub(unpackBTFFile, osInfo)
 		if err == nil {
 			logger.Debugw("BTF: btfhub embedded BTF file", "file", unpackBTFFile)
-			config.BTFObjPath = unpackBTFFile
+			cfg.BTFObjPath = unpackBTFFile
 		} else {
 			logger.Debugw("BTF: error unpacking embedded BTFHUB file", "error", err)
 		}
 	}
 
-	config.KernelConfig = kConfig
-	config.BPFObjBytes = bpfBytes
+	cfg.KernelConfig = kConfig
+	cfg.BPFObjBytes = bpfBytes
 
 	return nil
 }

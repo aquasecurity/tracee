@@ -25,6 +25,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/cgroup"
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
@@ -62,7 +63,7 @@ type eventConfig struct {
 
 // Tracee traces system calls and system events using eBPF
 type Tracee struct {
-	config    Config
+	config    config.Config
 	bootTime  uint64
 	startTime uint64
 	running   atomic.Bool
@@ -132,7 +133,7 @@ func GetEssentialEventsList() map[events.ID]eventConfig {
 }
 
 // GetCaptureEventsList sets events used to capture data
-func GetCaptureEventsList(cfg Config) map[events.ID]eventConfig {
+func GetCaptureEventsList(cfg config.Config) map[events.ID]eventConfig {
 	captureEvents := make(map[events.ID]eventConfig)
 
 	// All capture events should be placed, at least for now, to
@@ -194,7 +195,7 @@ func (t *Tracee) handleEventsDependencies(eventId events.ID, submitMap uint64) {
 // New creates a new Tracee instance based on a given valid Config. It is
 // expected that it won't cause external system side effects (reads, writes,
 // etc.)
-func New(cfg Config) (*Tracee, error) {
+func New(cfg config.Config) (*Tracee, error) {
 	err := cfg.Validate()
 	if err != nil {
 		return nil, errfmt.Errorf("validation error: %v", err)
@@ -322,7 +323,7 @@ func (t *Tracee) Init() error {
 
 	// Init kernel symbols map
 
-	if initReq.kallsyms {
+	if initReq.Kallsyms {
 		err = capabilities.GetInstance().Specific(
 			func() error {
 				return t.NewKernelSymbols()
@@ -340,11 +341,11 @@ func (t *Tracee) Init() error {
 
 	var mntNSProcs map[int]int
 
-	if t.config.maxPidsCache == 0 {
-		t.config.maxPidsCache = 5 // TODO: configure this ? never set, default = 5
+	if t.config.MaxPidsCache == 0 {
+		t.config.MaxPidsCache = 5 // TODO: configure this ? never set, default = 5
 	}
 
-	t.pidsInMntns.Init(t.config.maxPidsCache)
+	t.pidsInMntns.Init(t.config.MaxPidsCache)
 
 	err = capabilities.GetInstance().Specific(
 		func() error {
@@ -486,6 +487,11 @@ func (t *Tracee) Init() error {
 	return nil
 }
 
+// InitValues determines if to initialize values that might be needed by eBPF programs
+type InitValues struct {
+	Kallsyms bool
+}
+
 func (t *Tracee) generateInitValues() (InitValues, error) {
 	initVals := InitValues{}
 	for evt := range t.events {
@@ -494,7 +500,7 @@ func (t *Tracee) generateInitValues() (InitValues, error) {
 			return initVals, errfmt.Errorf("event with id %d doesn't exist", evt)
 		}
 		if def.Dependencies.KSymbols != nil {
-			initVals.kallsyms = true
+			initVals.Kallsyms = true
 		}
 	}
 
@@ -1465,7 +1471,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	return nil
 }
 
-func updateCaptureMapFile(fileDir *os.File, filePath string, capturedFiles map[string]string, config FileCaptureConfig) error {
+func updateCaptureMapFile(fileDir *os.File, filePath string, capturedFiles map[string]string, cfg config.FileCaptureConfig) error {
 	f, err := utils.OpenAt(fileDir, filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return errfmt.Errorf("error logging captured files")
@@ -1478,7 +1484,7 @@ func updateCaptureMapFile(fileDir *os.File, filePath string, capturedFiles map[s
 	for fileName, filePath := range capturedFiles {
 		captureFiltered := false
 		// TODO: We need a method to decide if the capture was filtered by FD or type.
-		for _, filterPrefix := range config.PathFilter {
+		for _, filterPrefix := range cfg.PathFilter {
 			if !strings.HasPrefix(filePath, filterPrefix) {
 				captureFiltered = true
 				break

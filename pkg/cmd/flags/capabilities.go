@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
-	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
@@ -23,8 +23,8 @@ Available capabilities:
 ` + "  " + availCaps + "\n"
 }
 
-func PrepareCapabilities(capsSlice []string) (tracee.CapabilitiesConfig, error) {
-	capsConfig := tracee.CapabilitiesConfig{
+func PrepareCapabilities(capsSlice []string) (config.CapabilitiesConfig, error) {
+	capsConfig := config.CapabilitiesConfig{
 		BypassCaps: false, // do not bypass capabilities by default
 	}
 

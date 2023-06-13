@@ -10,7 +10,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
-	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -20,7 +20,7 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	var runner cmd.Runner
 
 	// Initialize a tracee config structure
-	cfg := tracee.Config{
+	cfg := config.Config{
 		PerfBufferSize:     c.Int("perf-buffer-size"),
 		BlobPerfBufferSize: c.Int("blob-perf-buffer-size"),
 		ContainersEnrich:   c.Bool("containers"),

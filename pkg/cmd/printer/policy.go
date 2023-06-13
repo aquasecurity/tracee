@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
@@ -16,7 +17,7 @@ import (
 // A map is created between policy:event or policy to printerName
 // which is used to send events to the correct printer
 type PolicyEventPrinter struct {
-	printerConfigs []Config
+	printerConfigs []config.PrinterConfig
 	policies       []policy.PolicyFile
 	printers       []EventPrinter
 	numOfPrinters  int
@@ -24,11 +25,11 @@ type PolicyEventPrinter struct {
 	eventsMap      map[string]string
 	wg             *sync.WaitGroup
 	done           chan struct{}
-	containerMode  ContainerMode
+	containerMode  config.ContainerMode
 }
 
 // NewPolicyEventPrinter creates a new PolicyEventPrinter
-func NewPolicyEventPrinter(pConfigs []Config, policies []policy.PolicyFile, containerMode ContainerMode) (*PolicyEventPrinter, error) {
+func NewPolicyEventPrinter(pConfigs []config.PrinterConfig, policies []policy.PolicyFile, containerMode config.ContainerMode) (*PolicyEventPrinter, error) {
 	p := &PolicyEventPrinter{
 		printerConfigs: pConfigs,
 		policies:       policies,

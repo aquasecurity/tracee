@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
@@ -88,8 +88,8 @@ Network notes worth mentioning:
 `
 }
 
-func PrepareCapture(captureSlice []string, newBinary bool) (tracee.CaptureConfig, error) {
-	capture := tracee.CaptureConfig{}
+func PrepareCapture(captureSlice []string, newBinary bool) (config.CaptureConfig, error) {
+	capture := config.CaptureConfig{}
 
 	outDir := "/tmp/tracee"
 	clearDir := false
@@ -105,12 +105,12 @@ func PrepareCapture(captureSlice []string, newBinary bool) (tracee.CaptureConfig
 		if strings.HasPrefix(c, "write") {
 			err := parseFileCaptureOption("write", c, &capture.FileWrite)
 			if err != nil {
-				return tracee.CaptureConfig{}, err
+				return config.CaptureConfig{}, err
 			}
 		} else if strings.HasPrefix(c, "read") {
 			err := parseFileCaptureOption("read", c, &capture.FileRead)
 			if err != nil {
-				return tracee.CaptureConfig{}, err
+				return config.CaptureConfig{}, err
 			}
 		} else if c == "exec" {
 			capture.Exec = true
@@ -172,10 +172,10 @@ func PrepareCapture(captureSlice []string, newBinary bool) (tracee.CaptureConfig
 				context = strings.TrimSuffix(context, "b")
 				amount, err = strconv.ParseUint(context, 10, 64)
 			} else {
-				return tracee.CaptureConfig{}, errfmt.Errorf("could not parse pcap snaplen: missing b or kb ?")
+				return config.CaptureConfig{}, errfmt.Errorf("could not parse pcap snaplen: missing b or kb ?")
 			}
 			if err != nil {
-				return tracee.CaptureConfig{}, errfmt.Errorf("could not parse pcap snaplen: %v", err)
+				return config.CaptureConfig{}, errfmt.Errorf("could not parse pcap snaplen: %v", err)
 			}
 			if amount >= (1 << 16) {
 				amount = (1 << 16) - 1
@@ -186,14 +186,14 @@ func PrepareCapture(captureSlice []string, newBinary bool) (tracee.CaptureConfig
 		} else if strings.HasPrefix(c, "dir:") {
 			outDir = strings.TrimPrefix(c, "dir:")
 			if len(outDir) == 0 {
-				return tracee.CaptureConfig{}, errfmt.Errorf("capture output dir cannot be empty")
+				return config.CaptureConfig{}, errfmt.Errorf("capture output dir cannot be empty")
 			}
 		} else {
 			if newBinary {
-				return tracee.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, use '--help capture' for more info")
+				return config.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, use '--help capture' for more info")
 			}
 
-			return tracee.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, use '--capture help' for more info")
+			return config.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, use '--capture help' for more info")
 		}
 	}
 
@@ -210,7 +210,7 @@ func PrepareCapture(captureSlice []string, newBinary bool) (tracee.CaptureConfig
 }
 
 // parseFileCaptureOption parse file capture cmdline argument option of all supported formats.
-func parseFileCaptureOption(arg string, cap string, captureConfig *tracee.FileCaptureConfig) error {
+func parseFileCaptureOption(arg string, cap string, captureConfig *config.FileCaptureConfig) error {
 	captureConfig.Capture = true
 	if cap == arg {
 		return nil
@@ -228,7 +228,7 @@ func parseFileCaptureOption(arg string, cap string, captureConfig *tracee.FileCa
 
 // parseFileCaptureSubOption parse file capture cmdline sub-option of the format '<sub-opt>=<value>' and update the
 // configuration according to the value.
-func parseFileCaptureSubOption(option string, captureConfig *tracee.FileCaptureConfig) error {
+func parseFileCaptureSubOption(option string, captureConfig *config.FileCaptureConfig) error {
 	optAndValue := strings.SplitN(option, "=", 2)
 	if len(optAndValue) != 2 || len(optAndValue[1]) == 0 {
 		return fmt.Errorf("invalid capture option specified, use '--capture help' for more info")
@@ -266,14 +266,14 @@ func parseFileCaptureSubOption(option string, captureConfig *tracee.FileCaptureC
 	return nil
 }
 
-var captureFileTypeStringToFlag = map[string]tracee.FileCaptureType{
-	"pipe":    tracee.CapturePipeFiles,
-	"socket":  tracee.CaptureSocketFiles,
-	"regular": tracee.CaptureRegularFiles,
+var captureFileTypeStringToFlag = map[string]config.FileCaptureType{
+	"pipe":    config.CapturePipeFiles,
+	"socket":  config.CaptureSocketFiles,
+	"regular": config.CaptureRegularFiles,
 }
 
 // parseFileCaptureType parse file type string to its matching bit-flag value
-func parseFileCaptureType(filter string) (tracee.FileCaptureType, error) {
+func parseFileCaptureType(filter string) (config.FileCaptureType, error) {
 	filterFlag, ok := captureFileTypeStringToFlag[filter]
 	if ok {
 		return filterFlag, nil
@@ -281,14 +281,14 @@ func parseFileCaptureType(filter string) (tracee.FileCaptureType, error) {
 	return 0, fmt.Errorf("unsupported file type filter value for capture - %s", filter)
 }
 
-var captureFDsStringToFlag = map[string]tracee.FileCaptureType{
-	"stdin":  tracee.CaptureStdinFiles,
-	"stdout": tracee.CaptureStdoutFiles,
-	"stderr": tracee.CaptureStderrFiles,
+var captureFDsStringToFlag = map[string]config.FileCaptureType{
+	"stdin":  config.CaptureStdinFiles,
+	"stdout": config.CaptureStdoutFiles,
+	"stderr": config.CaptureStderrFiles,
 }
 
 // parseFileCaptureFDs parse file standard FD string to its matching bit-flag value
-func parseFileCaptureFDs(filter string) (tracee.FileCaptureType, error) {
+func parseFileCaptureFDs(filter string) (config.FileCaptureType, error) {
 	filterFlag, ok := captureFDsStringToFlag[filter]
 	if ok {
 		return filterFlag, nil

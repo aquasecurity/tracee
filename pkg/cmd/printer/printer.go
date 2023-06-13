@@ -15,6 +15,7 @@ import (
 
 	forward "github.com/IBM/fluent-forward-go/fluent/client"
 
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
@@ -34,27 +35,11 @@ type EventPrinter interface {
 	Close()
 }
 
-type ContainerMode int
-
-const (
-	ContainerModeDisabled ContainerMode = iota
-	ContainerModeEnabled
-	ContainerModeEnriched
-)
-
-type Config struct {
-	Kind          string
-	OutPath       string
-	OutFile       io.WriteCloser
-	ContainerMode ContainerMode
-	RelativeTS    bool
-}
-
-func New(config Config) (EventPrinter, error) {
+func New(cfg config.PrinterConfig) (EventPrinter, error) {
 	var res EventPrinter
-	kind := config.Kind
+	kind := cfg.Kind
 
-	if config.OutFile == nil {
+	if cfg.OutFile == nil {
 		return res, errfmt.Errorf("out file is not set")
 	}
 
@@ -63,37 +48,37 @@ func New(config Config) (EventPrinter, error) {
 		res = &ignoreEventPrinter{}
 	case kind == "table":
 		res = &tableEventPrinter{
-			out:           config.OutFile,
+			out:           cfg.OutFile,
 			verbose:       false,
-			containerMode: config.ContainerMode,
-			relativeTS:    config.RelativeTS,
+			containerMode: cfg.ContainerMode,
+			relativeTS:    cfg.RelativeTS,
 		}
 	case kind == "table-verbose":
 		res = &tableEventPrinter{
-			out:           config.OutFile,
+			out:           cfg.OutFile,
 			verbose:       true,
-			containerMode: config.ContainerMode,
-			relativeTS:    config.RelativeTS,
+			containerMode: cfg.ContainerMode,
+			relativeTS:    cfg.RelativeTS,
 		}
 	case kind == "json":
 		res = &jsonEventPrinter{
-			out: config.OutFile,
+			out: cfg.OutFile,
 		}
 	case kind == "gob":
 		res = &gobEventPrinter{
-			out: config.OutFile,
+			out: cfg.OutFile,
 		}
 	case kind == "forward":
 		res = &forwardEventPrinter{
-			outPath: config.OutPath,
+			outPath: cfg.OutPath,
 		}
 	case kind == "webhook":
 		res = &webhookEventPrinter{
-			outPath: config.OutPath,
+			outPath: cfg.OutPath,
 		}
 	case strings.HasPrefix(kind, "gotemplate="):
 		res = &templateEventPrinter{
-			out:          config.OutFile,
+			out:          cfg.OutFile,
 			templatePath: strings.Split(kind, "=")[1],
 		}
 	}
@@ -107,7 +92,7 @@ func New(config Config) (EventPrinter, error) {
 type tableEventPrinter struct {
 	out           io.WriteCloser
 	verbose       bool
-	containerMode ContainerMode
+	containerMode config.ContainerMode
 	relativeTS    bool
 }
 
@@ -116,7 +101,7 @@ func (p tableEventPrinter) Init() error { return nil }
 func (p tableEventPrinter) Preamble() {
 	if p.verbose {
 		switch p.containerMode {
-		case ContainerModeDisabled:
+		case config.ContainerModeDisabled:
 			fmt.Fprintf(p.out,
 				"%-16s %-17s %-13s %-12s %-12s %-6s %-16s %-7s %-7s %-7s %-16s %-25s %s",
 				"TIME",
@@ -133,7 +118,7 @@ func (p tableEventPrinter) Preamble() {
 				"EVENT",
 				"ARGS",
 			)
-		case ContainerModeEnabled:
+		case config.ContainerModeEnabled:
 			fmt.Fprintf(p.out,
 				"%-16s %-17s %-13s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-25s %s",
 				"TIME",
@@ -150,7 +135,7 @@ func (p tableEventPrinter) Preamble() {
 				"EVENT",
 				"ARGS",
 			)
-		case ContainerModeEnriched:
+		case config.ContainerModeEnriched:
 			fmt.Fprintf(p.out,
 				"%-16s %-17s %-13s %-16s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-25s %s",
 				"TIME",
@@ -171,7 +156,7 @@ func (p tableEventPrinter) Preamble() {
 		}
 	} else {
 		switch p.containerMode {
-		case ContainerModeDisabled:
+		case config.ContainerModeDisabled:
 			fmt.Fprintf(p.out,
 				"%-16s %-6s %-16s %-7s %-7s %-16s %-25s %s",
 				"TIME",
@@ -183,7 +168,7 @@ func (p tableEventPrinter) Preamble() {
 				"EVENT",
 				"ARGS",
 			)
-		case ContainerModeEnabled:
+		case config.ContainerModeEnabled:
 			fmt.Fprintf(p.out,
 				"%-16s %-13s %-6s %-16s %-15s %-15s %-16s %-25s %s",
 				"TIME",
@@ -196,7 +181,7 @@ func (p tableEventPrinter) Preamble() {
 				"EVENT",
 				"ARGS",
 			)
-		case ContainerModeEnriched:
+		case config.ContainerModeEnriched:
 			fmt.Fprintf(p.out,
 				"%-16s %-13s %-16s %-6s %-16s %-15s %-15s %-16s %-25s %s",
 				"TIME",
@@ -238,7 +223,7 @@ func (p tableEventPrinter) Print(event trace.Event) {
 
 	if p.verbose {
 		switch p.containerMode {
-		case ContainerModeDisabled:
+		case config.ContainerModeDisabled:
 			fmt.Fprintf(p.out,
 				"%-16s %-17s %-13s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-25s ",
 				timestamp,
@@ -254,7 +239,7 @@ func (p tableEventPrinter) Print(event trace.Event) {
 				event.ReturnValue,
 				event.EventName,
 			)
-		case ContainerModeEnabled:
+		case config.ContainerModeEnabled:
 			fmt.Fprintf(p.out,
 				"%-16s %-17s %-13s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-25s ",
 				timestamp,
@@ -273,7 +258,7 @@ func (p tableEventPrinter) Print(event trace.Event) {
 				event.ReturnValue,
 				event.EventName,
 			)
-		case ContainerModeEnriched:
+		case config.ContainerModeEnriched:
 			fmt.Fprintf(p.out,
 				"%-16s %-17s %-13s %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-25s ",
 				timestamp,
@@ -296,7 +281,7 @@ func (p tableEventPrinter) Print(event trace.Event) {
 		}
 	} else {
 		switch p.containerMode {
-		case ContainerModeDisabled:
+		case config.ContainerModeDisabled:
 			fmt.Fprintf(p.out,
 				"%-16s %-6d %-16s %-7d %-7d %-16d %-25s ",
 				timestamp,
@@ -307,7 +292,7 @@ func (p tableEventPrinter) Print(event trace.Event) {
 				event.ReturnValue,
 				eventName,
 			)
-		case ContainerModeEnabled:
+		case config.ContainerModeEnabled:
 			fmt.Fprintf(p.out,
 				"%-16s %-13s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-25s ",
 				timestamp,
@@ -321,7 +306,7 @@ func (p tableEventPrinter) Print(event trace.Event) {
 				event.ReturnValue,
 				eventName,
 			)
-		case ContainerModeEnriched:
+		case config.ContainerModeEnriched:
 			fmt.Fprintf(p.out,
 				"%-16s %-13s %-16s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-25s ",
 				timestamp,
