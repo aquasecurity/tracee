@@ -81,7 +81,7 @@ type TailCall struct {
 }
 
 // NewTailCall creates a new TailCall with default values.
-func NewTailCall(mapName string, progName string) *TailCall {
+func NewTailCall(mapName, progName string, mapIndexes []uint32) *TailCall {
 	mapNamePtr := &atomic.Pointer[string]{}
 	progNamePtr := &atomic.Pointer[string]{}
 
@@ -91,15 +91,9 @@ func NewTailCall(mapName string, progName string) *TailCall {
 	return &TailCall{
 		mapName:    mapNamePtr,
 		progName:   progNamePtr,
-		mapIndexes: []uint32{},
+		mapIndexes: mapIndexes,
 		mutex:      &sync.RWMutex{},
 	}
-}
-
-func NewTailCallFull(mapName string, mapIndexes []uint32, progName string) *TailCall {
-	newTC := NewTailCall(mapName, progName)
-	newTC.mapIndexes = mapIndexes
-	return newTC
 }
 
 // AddIndex adds an index to the tail call.
@@ -1102,7 +1096,11 @@ var Definitions = eventDefinitions{
 			Syscall: true,
 			Dependencies: dependencies{
 				TailCalls: []*TailCall{
-					NewTailCallFull("sys_enter_tails", []uint32{uint32(Execve)}, "syscall__execve"),
+					NewTailCall(
+						"sys_enter_tails",
+						"syscall__execve",
+						[]uint32{uint32(Execve)},
+					),
 				},
 			},
 			Sets: []string{"syscalls", "proc", "proc_life"},
@@ -3857,7 +3855,11 @@ var Definitions = eventDefinitions{
 			Syscall: true,
 			Dependencies: dependencies{
 				TailCalls: []*TailCall{
-					NewTailCallFull("sys_enter_tails", []uint32{uint32(Execveat)}, "syscall__execveat"),
+					NewTailCall(
+						"sys_enter_tails",
+						"syscall__execveat",
+						[]uint32{uint32(Execveat)},
+					),
 				},
 			},
 			Sets: []string{"syscalls", "proc", "proc_life"},
@@ -5197,10 +5199,10 @@ var Definitions = eventDefinitions{
 					{Handle: probes.LoadElfPhdrs, Required: false},
 				},
 				TailCalls: []*TailCall{
-					NewTailCallFull(
+					NewTailCall(
 						"prog_array_tp",
-						[]uint32{TailSchedProcessExecEventSubmit},
 						"sched_process_exec_event_submit_tail",
+						[]uint32{TailSchedProcessExecEventSubmit},
 					),
 				},
 				Capabilities: capsDependency{
@@ -5336,7 +5338,11 @@ var Definitions = eventDefinitions{
 					{Handle: probes.SyscallEnter__Internal, Required: true},
 				},
 				TailCalls: []*TailCall{
-					NewTailCallFull("sys_enter_init_tail", []uint32{uint32(Mmap), uint32(Mprotect), uint32(PkeyMprotect)}, "sys_enter_init"),
+					NewTailCall(
+						"sys_enter_init_tail",
+						"sys_enter_init",
+						[]uint32{uint32(Mmap), uint32(Mprotect), uint32(PkeyMprotect)},
+					),
 				},
 			},
 			Sets: []string{},
@@ -5476,14 +5482,14 @@ var Definitions = eventDefinitions{
 					{Handle: probes.SyscallEnter__Internal, Required: true},
 				},
 				TailCalls: []*TailCall{
-					NewTailCallFull(
+					NewTailCall(
 						"sys_enter_init_tail",
+						"sys_enter_init",
 						[]uint32{
 							uint32(Open), uint32(Openat), uint32(Openat2),
 							uint32(OpenByHandleAt), uint32(Execve),
 							uint32(Execveat),
 						},
-						"sys_enter_init",
 					),
 				},
 			},
@@ -5538,7 +5544,11 @@ var Definitions = eventDefinitions{
 					{Handle: probes.SyscallEnter__Internal, Required: true},
 				},
 				TailCalls: []*TailCall{
-					NewTailCallFull("sys_enter_init_tail", []uint32{uint32(Listen)}, "sys_enter_init"),
+					NewTailCall(
+						"sys_enter_init_tail",
+						"sys_enter_init",
+						[]uint32{uint32(Listen)},
+					),
 				},
 			},
 			Sets: []string{"lsm_hooks", "net", "net_sock"},
@@ -5557,7 +5567,11 @@ var Definitions = eventDefinitions{
 					{Handle: probes.SyscallEnter__Internal, Required: true},
 				},
 				TailCalls: []*TailCall{
-					NewTailCallFull("sys_enter_init_tail", []uint32{uint32(Connect)}, "sys_enter_init"),
+					NewTailCall(
+						"sys_enter_init_tail",
+						"sys_enter_init",
+						[]uint32{uint32(Connect)},
+					),
 				},
 			},
 			Sets: []string{"default", "lsm_hooks", "net", "net_sock"},
@@ -5575,7 +5589,11 @@ var Definitions = eventDefinitions{
 					{Handle: probes.SyscallEnter__Internal, Required: true},
 				},
 				TailCalls: []*TailCall{
-					NewTailCallFull("sys_enter_init_tail", []uint32{uint32(Accept), uint32(Accept4)}, "sys_enter_init"),
+					NewTailCall(
+						"sys_enter_init_tail",
+						"sys_enter_init",
+						[]uint32{uint32(Accept), uint32(Accept4)},
+					),
 				},
 			},
 			Sets: []string{"default", "lsm_hooks", "net", "net_sock"},
@@ -5593,7 +5611,11 @@ var Definitions = eventDefinitions{
 					{Handle: probes.SyscallEnter__Internal, Required: true},
 				},
 				TailCalls: []*TailCall{
-					NewTailCallFull("sys_enter_init_tail", []uint32{uint32(Bind)}, "sys_enter_init"),
+					NewTailCall(
+						"sys_enter_init_tail",
+						"sys_enter_init",
+						[]uint32{uint32(Bind)},
+					),
 				},
 			},
 			Sets: []string{"default", "lsm_hooks", "net", "net_sock"},
@@ -5612,7 +5634,11 @@ var Definitions = eventDefinitions{
 					{Handle: probes.SyscallEnter__Internal, Required: true},
 				},
 				TailCalls: []*TailCall{
-					NewTailCallFull("sys_enter_init_tail", []uint32{uint32(Setsockopt)}, "sys_enter_init"),
+					NewTailCall(
+						"sys_enter_init_tail",
+						"sys_enter_init",
+						[]uint32{uint32(Setsockopt)},
+					),
 				},
 			},
 			Sets: []string{"lsm_hooks", "net", "net_sock"},
@@ -5779,10 +5805,10 @@ var Definitions = eventDefinitions{
 					{Handle: probes.SyscallEnter__Internal, Required: true},
 				},
 				TailCalls: []*TailCall{
-					NewTailCallFull(
+					NewTailCall(
 						"sys_enter_init_tail",
-						[]uint32{uint32(Mprotect), uint32(PkeyMprotect)},
 						"sys_enter_init",
+						[]uint32{uint32(Mprotect), uint32(PkeyMprotect)},
 					),
 				},
 			},
@@ -5826,20 +5852,20 @@ var Definitions = eventDefinitions{
 			Name:    "socket_dup",
 			Dependencies: dependencies{
 				TailCalls: []*TailCall{
-					NewTailCallFull(
+					NewTailCall(
 						"sys_enter_init_tail",
-						[]uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)},
 						"sys_enter_init",
+						[]uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)},
 					),
-					NewTailCallFull(
+					NewTailCall(
 						"sys_exit_init_tail",
-						[]uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)},
 						"sys_exit_init",
-					),
-					NewTailCallFull(
-						"sys_exit_tails",
 						[]uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)},
+					),
+					NewTailCall(
+						"sys_exit_tails",
 						"sys_dup_exit_tail",
+						[]uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)},
 					),
 				},
 			},
@@ -6068,10 +6094,26 @@ var Definitions = eventDefinitions{
 					{Symbol: "mod_tree", Required: true},
 				},
 				TailCalls: []*TailCall{
-					NewTailCallFull("prog_array", []uint32{TailHiddenKernelModuleProc}, "lkm_seeker_proc_tail"),
-					NewTailCallFull("prog_array", []uint32{TailHiddenKernelModuleKset}, "lkm_seeker_kset_tail"),
-					NewTailCallFull("prog_array", []uint32{TailHiddenKernelModuleModTree}, "lkm_seeker_mod_tree_tail"),
-					NewTailCallFull("prog_array", []uint32{TailHiddenKernelModuleNewModOnly}, "lkm_seeker_new_mod_only_tail"),
+					NewTailCall(
+						"prog_array",
+						"lkm_seeker_proc_tail",
+						[]uint32{TailHiddenKernelModuleProc},
+					),
+					NewTailCall(
+						"prog_array",
+						"lkm_seeker_kset_tail",
+						[]uint32{TailHiddenKernelModuleKset},
+					),
+					NewTailCall(
+						"prog_array",
+						"lkm_seeker_mod_tree_tail",
+						[]uint32{TailHiddenKernelModuleModTree},
+					),
+					NewTailCall(
+						"prog_array",
+						"lkm_seeker_new_mod_only_tail",
+						[]uint32{TailHiddenKernelModuleNewModOnly},
+					),
 				},
 			},
 			Sets: []string{},
@@ -6219,10 +6261,26 @@ var Definitions = eventDefinitions{
 					{Handle: probes.KernelWriteRet, Required: false},
 				},
 				TailCalls: []*TailCall{
-					NewTailCallFull("prog_array", []uint32{TailVfsWrite}, "trace_ret_vfs_write_tail"),
-					NewTailCallFull("prog_array", []uint32{TailVfsWritev}, "trace_ret_vfs_writev_tail"),
-					NewTailCallFull("prog_array", []uint32{TailKernelWrite}, "trace_ret_kernel_write_tail"),
-					NewTailCallFull("prog_array", []uint32{TailSendBin}, "send_bin"),
+					NewTailCall(
+						"prog_array",
+						"trace_ret_vfs_write_tail",
+						[]uint32{TailVfsWrite},
+					),
+					NewTailCall(
+						"prog_array",
+						"trace_ret_vfs_writev_tail",
+						[]uint32{TailVfsWritev},
+					),
+					NewTailCall(
+						"prog_array",
+						"trace_ret_kernel_write_tail",
+						[]uint32{TailKernelWrite},
+					),
+					NewTailCall(
+						"prog_array",
+						"send_bin",
+						[]uint32{TailSendBin},
+					),
 				},
 				KSymbols: &[]kSymbolDependency{
 					{Symbol: "pipefifo_fops", Required: true},
@@ -6241,9 +6299,21 @@ var Definitions = eventDefinitions{
 					{Handle: probes.VfsReadVRet, Required: false},
 				},
 				TailCalls: []*TailCall{
-					NewTailCallFull("prog_array", []uint32{TailVfsRead}, "trace_ret_vfs_read_tail"),
-					NewTailCallFull("prog_array", []uint32{TailVfsReadv}, "trace_ret_vfs_readv_tail"),
-					NewTailCallFull("prog_array", []uint32{TailSendBin}, "send_bin"),
+					NewTailCall(
+						"prog_array",
+						"trace_ret_vfs_read_tail",
+						[]uint32{TailVfsRead},
+					),
+					NewTailCall(
+						"prog_array",
+						"trace_ret_vfs_readv_tail",
+						[]uint32{TailVfsReadv},
+					),
+					NewTailCall(
+						"prog_array",
+						"send_bin",
+						[]uint32{TailSendBin},
+					),
 				},
 				KSymbols: &[]kSymbolDependency{
 					{Symbol: "pipefifo_fops", Required: true},
@@ -6279,9 +6349,21 @@ var Definitions = eventDefinitions{
 				},
 				Events: []eventDependency{{EventID: SchedProcessExec}},
 				TailCalls: []*TailCall{
-					NewTailCallFull("sys_enter_tails", []uint32{uint32(InitModule)}, "syscall__init_module"),
-					NewTailCallFull("prog_array_tp", []uint32{TailSendBinTP}, "send_bin_tp"),
-					NewTailCallFull("prog_array", []uint32{TailSendBin}, "send_bin"),
+					NewTailCall(
+						"sys_enter_tails",
+						"syscall__init_module",
+						[]uint32{uint32(InitModule)},
+					),
+					NewTailCall(
+						"prog_array_tp",
+						"send_bin_tp",
+						[]uint32{TailSendBinTP},
+					),
+					NewTailCall(
+						"prog_array",
+						"send_bin",
+						[]uint32{TailSendBin},
+					),
 				},
 			},
 		},
@@ -6291,7 +6373,11 @@ var Definitions = eventDefinitions{
 			Internal: true,
 			Dependencies: dependencies{
 				TailCalls: []*TailCall{
-					NewTailCallFull("prog_array", []uint32{TailSendBin}, "send_bin"),
+					NewTailCall(
+						"prog_array",
+						"send_bin",
+						[]uint32{TailSendBin},
+					),
 				},
 			},
 		},
@@ -6304,7 +6390,11 @@ var Definitions = eventDefinitions{
 					{Handle: probes.SecurityBPF, Required: true},
 				},
 				TailCalls: []*TailCall{
-					NewTailCallFull("prog_array", []uint32{TailSendBin}, "send_bin"),
+					NewTailCall(
+						"prog_array",
+						"send_bin",
+						[]uint32{TailSendBin},
+					),
 				},
 			},
 		},
@@ -6365,7 +6455,11 @@ var Definitions = eventDefinitions{
 				},
 				Events: []eventDependency{{EventID: SecuritySocketAccept}},
 				TailCalls: []*TailCall{
-					NewTailCallFull("sys_exit_tails", []uint32{uint32(Accept), uint32(Accept4)}, "syscall__accept4"),
+					NewTailCall(
+						"sys_exit_tails",
+						"syscall__accept4",
+						[]uint32{uint32(Accept), uint32(Accept4)},
+					),
 				},
 			},
 			Sets: []string{},
@@ -6720,9 +6814,21 @@ var Definitions = eventDefinitions{
 					{Handle: probes.ExecBinprmRet, Required: true},
 				},
 				TailCalls: []*TailCall{
-					NewTailCallFull("sys_enter_init_tail", []uint32{uint32(Execve), uint32(Execveat)}, "sys_enter_init"),
-					NewTailCallFull("prog_array", []uint32{TailExecBinprm1}, "trace_ret_exec_binprm1"),
-					NewTailCallFull("prog_array", []uint32{TailExecBinprm2}, "trace_ret_exec_binprm2"),
+					NewTailCall(
+						"sys_enter_init_tail",
+						"sys_enter_init",
+						[]uint32{uint32(Execve), uint32(Execveat)},
+					),
+					NewTailCall(
+						"prog_array",
+						"trace_ret_exec_binprm1",
+						[]uint32{TailExecBinprm1},
+					),
+					NewTailCall(
+						"prog_array",
+						"trace_ret_exec_binprm2",
+						[]uint32{TailExecBinprm2},
+					),
 				},
 			},
 			Params: []trace.ArgMeta{
