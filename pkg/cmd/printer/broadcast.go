@@ -3,22 +3,23 @@ package printer
 import (
 	"sync"
 
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // Broadcast is a printer that broadcasts events to multiple printers
 type Broadcast struct {
-	PrinterConfigs []Config
+	PrinterConfigs []config.PrinterConfig
 	printers       []EventPrinter
 	wg             *sync.WaitGroup
 	eventsChan     []chan trace.Event
 	done           chan struct{}
-	containerMode  ContainerMode
+	containerMode  config.ContainerMode
 }
 
 // NewBroadcast creates a new Broadcast printer
-func NewBroadcast(printerConfigs []Config, containerMode ContainerMode) (*Broadcast, error) {
+func NewBroadcast(printerConfigs []config.PrinterConfig, containerMode config.ContainerMode) (*Broadcast, error) {
 	b := &Broadcast{PrinterConfigs: printerConfigs, containerMode: containerMode}
 	return b, b.Init()
 }

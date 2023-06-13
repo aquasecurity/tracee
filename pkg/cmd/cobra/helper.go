@@ -6,12 +6,12 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
-	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/policy"
 )
 
-func getConfigAndPrinterFromPoliciesFlags(cfg tracee.Config, policyFlags, outputFlags []string) (tracee.Config, printer.EventPrinter, error) {
+func getConfigAndPrinterFromPoliciesFlags(cfg config.Config, policyFlags, outputFlags []string) (config.Config, printer.EventPrinter, error) {
 	policyFiles, err := policy.PoliciesFromPaths(policyFlags)
 	if err != nil {
 		return cfg, nil, err
@@ -50,7 +50,7 @@ func getConfigAndPrinterFromPoliciesFlags(cfg tracee.Config, policyFlags, output
 	return cfg, p, err
 }
 
-func getConfigAndPrinterFromFilterFlags(cfg tracee.Config, filterFlags, outputFlags []string) (tracee.Config, printer.EventPrinter, error) {
+func getConfigAndPrinterFromFilterFlags(cfg config.Config, filterFlags, outputFlags []string) (config.Config, printer.EventPrinter, error) {
 	filterMap, err := flags.PrepareFilterMapFromFlags(filterFlags)
 	if err != nil {
 		return cfg, nil, err

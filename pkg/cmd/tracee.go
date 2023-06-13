@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
+	"github.com/aquasecurity/tracee/pkg/config"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -18,7 +19,7 @@ import (
 )
 
 type Runner struct {
-	TraceeConfig tracee.Config
+	TraceeConfig config.Config
 	Printer      printer.EventPrinter
 	Server       *server.Server
 }
@@ -166,16 +167,16 @@ func getPad(padChar string, padLength int) (pad string) {
 	return pad
 }
 
-func GetContainerMode(cfg tracee.Config) printer.ContainerMode {
-	containerMode := printer.ContainerModeDisabled
+func GetContainerMode(cfg config.Config) config.ContainerMode {
+	containerMode := config.ContainerModeDisabled
 
 	for p := range cfg.Policies.Map() {
 		if p.ContainerFilterEnabled() {
 			// enable printer container print mode if container filters are set
-			containerMode = printer.ContainerModeEnabled
+			containerMode = config.ContainerModeEnabled
 			if cfg.ContainersEnrich {
 				// further enable container enrich print mode if container enrichment is enabled
-				containerMode = printer.ContainerModeEnriched
+				containerMode = config.ContainerModeEnriched
 			}
 
 			break

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -19,7 +20,7 @@ func (wc writerCloser) Close() error {
 }
 
 var (
-	printerConfigs = []printer.Config{
+	printerConfigs = []config.PrinterConfig{
 		{
 			Kind:    "json",
 			OutPath: "stdout",
@@ -77,7 +78,7 @@ var (
 func BenchmarkBroadcastPrinter(b *testing.B) {
 	b.ReportAllocs()
 
-	p, err := printer.NewBroadcast(printerConfigs, printer.ContainerModeEnriched)
+	p, err := printer.NewBroadcast(printerConfigs, config.ContainerModeEnriched)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -91,7 +92,7 @@ func BenchmarkBroadcastPrinter(b *testing.B) {
 func BenchmarkPolicyPrinter(b *testing.B) {
 	b.ReportAllocs()
 
-	p, err := printer.NewPolicyEventPrinter(printerConfigs, policies, printer.ContainerModeEnriched)
+	p, err := printer.NewPolicyEventPrinter(printerConfigs, policies, config.ContainerModeEnriched)
 	if err != nil {
 		b.Fatal(err)
 	}

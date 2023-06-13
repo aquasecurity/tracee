@@ -12,6 +12,7 @@ import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
+	"github.com/aquasecurity/tracee/pkg/config"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -39,28 +40,28 @@ func (b *eventBuffer) len() int {
 }
 
 // load tracee into memory with args
-func startTracee(ctx context.Context, t *testing.T, config tracee.Config, output *tracee.OutputConfig, capture *tracee.CaptureConfig) *tracee.Tracee {
+func startTracee(ctx context.Context, t *testing.T, cfg config.Config, output *config.OutputConfig, capture *config.CaptureConfig) *tracee.Tracee {
 	initialize.SetLibbpfgoCallbacks()
 
 	kernelConfig, err := initialize.KernelConfig()
 	require.NoError(t, err)
 
-	config.KernelConfig = kernelConfig
+	cfg.KernelConfig = kernelConfig
 
 	osInfo, err := helpers.GetOSInfo()
 	require.NoError(t, err)
 
-	err = initialize.BpfObject(&config, kernelConfig, osInfo, "/tmp/tracee", "")
+	err = initialize.BpfObject(&cfg, kernelConfig, osInfo, "/tmp/tracee", "")
 	require.NoError(t, err)
 
 	if capture == nil {
 		capture = prepareCapture()
 	}
 
-	config.Capture = capture
+	cfg.Capture = capture
 
-	config.PerfBufferSize = 1024
-	config.BlobPerfBufferSize = 1024
+	cfg.PerfBufferSize = 1024
+	cfg.BlobPerfBufferSize = 1024
 
 	errChan := make(chan error)
 
@@ -79,12 +80,12 @@ func startTracee(ctx context.Context, t *testing.T, config tracee.Config, output
 	}()
 
 	if output == nil {
-		output = &tracee.OutputConfig{}
+		output = &config.OutputConfig{}
 	}
 
-	config.Output = output
+	cfg.Output = output
 
-	trc, err := tracee.New(config)
+	trc, err := tracee.New(cfg)
 	require.NoError(t, err)
 
 	err = trc.Init()
@@ -100,11 +101,11 @@ func startTracee(ctx context.Context, t *testing.T, config tracee.Config, output
 }
 
 // prepareCapture prepares a capture config for tracee
-func prepareCapture() *tracee.CaptureConfig {
+func prepareCapture() *config.CaptureConfig {
 	// taken from tracee-rule github project, might have to adjust...
 	// prepareCapture is called with nil input
-	return &tracee.CaptureConfig{
-		FileWrite: tracee.FileCaptureConfig{
+	return &config.CaptureConfig{
+		FileWrite: config.FileCaptureConfig{
 			PathFilter: []string{},
 		},
 		OutputPath: filepath.Join("/tmp/tracee", "out"),

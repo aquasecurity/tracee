@@ -9,8 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/aquasecurity/tracee/pkg/cmd/printer"
-	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
@@ -530,13 +529,13 @@ func TestPrepareCapture(t *testing.T) {
 		testCases := []struct {
 			testName        string
 			captureSlice    []string
-			expectedCapture tracee.CaptureConfig
+			expectedCapture config.CaptureConfig
 			expectedError   error
 		}{
 			{
 				testName:        "invalid capture option",
 				captureSlice:    []string{"foo"},
-				expectedCapture: tracee.CaptureConfig{},
+				expectedCapture: config.CaptureConfig{},
 				expectedError:   errors.New("invalid capture option specified, use '--capture help' for more info"),
 			},
 			{
@@ -547,37 +546,37 @@ func TestPrepareCapture(t *testing.T) {
 			{
 				testName:        "invalid capture write filter",
 				captureSlice:    []string{"write="},
-				expectedCapture: tracee.CaptureConfig{},
+				expectedCapture: config.CaptureConfig{},
 				expectedError:   errors.New("invalid capture option specified, use '--capture help' for more info"),
 			},
 			{
 				testName:        "invalid capture write filter 2",
 				captureSlice:    []string{"write=/tmp"},
-				expectedCapture: tracee.CaptureConfig{},
+				expectedCapture: config.CaptureConfig{},
 				expectedError:   errors.New("file path filter should end with *"),
 			},
 			{
 				testName:        "empty capture write filter",
 				captureSlice:    []string{"write=*"},
-				expectedCapture: tracee.CaptureConfig{},
+				expectedCapture: config.CaptureConfig{},
 				expectedError:   errors.New("capture path filter cannot be empty"),
 			},
 			{
 				testName:        "non existing capture write type filter",
 				captureSlice:    []string{"write:type=non-existing"},
-				expectedCapture: tracee.CaptureConfig{},
+				expectedCapture: config.CaptureConfig{},
 				expectedError:   errors.New("unsupported file type filter value for capture - non-existing"),
 			},
 			{
 				testName:        "non existing capture write fds filter",
 				captureSlice:    []string{"write:fd=non-existing"},
-				expectedCapture: tracee.CaptureConfig{},
+				expectedCapture: config.CaptureConfig{},
 				expectedError:   errors.New("unsupported file FD filter value for capture - non-existing"),
 			},
 			{
 				testName:     "capture mem",
 				captureSlice: []string{"mem"},
-				expectedCapture: tracee.CaptureConfig{
+				expectedCapture: config.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
 					Mem:        true,
 				},
@@ -585,7 +584,7 @@ func TestPrepareCapture(t *testing.T) {
 			{
 				testName:     "capture exec",
 				captureSlice: []string{"exec"},
-				expectedCapture: tracee.CaptureConfig{
+				expectedCapture: config.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
 					Exec:       true,
 				},
@@ -593,7 +592,7 @@ func TestPrepareCapture(t *testing.T) {
 			{
 				testName:     "capture module",
 				captureSlice: []string{"module"},
-				expectedCapture: tracee.CaptureConfig{
+				expectedCapture: config.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
 					Module:     true,
 				},
@@ -601,9 +600,9 @@ func TestPrepareCapture(t *testing.T) {
 			{
 				testName:     "capture write",
 				captureSlice: []string{"write"},
-				expectedCapture: tracee.CaptureConfig{
+				expectedCapture: config.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileWrite: tracee.FileCaptureConfig{
+					FileWrite: config.FileCaptureConfig{
 						Capture: true,
 					},
 				},
@@ -611,7 +610,7 @@ func TestPrepareCapture(t *testing.T) {
 			{
 				testName:     "capture network with default pcap type",
 				captureSlice: []string{"network"},
-				expectedCapture: tracee.CaptureConfig{
+				expectedCapture: config.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
 					Net: pcaps.Config{
 						CaptureSingle: true,
@@ -622,7 +621,7 @@ func TestPrepareCapture(t *testing.T) {
 			{
 				testName:     "capture network with all pcap types",
 				captureSlice: []string{"network", "pcap:process,command,container"},
-				expectedCapture: tracee.CaptureConfig{
+				expectedCapture: config.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
 					Net: pcaps.Config{
 						CaptureSingle:    false,
@@ -636,7 +635,7 @@ func TestPrepareCapture(t *testing.T) {
 			{
 				testName:     "capture network with multiple pcap types",
 				captureSlice: []string{"network", "pcap:command,container"},
-				expectedCapture: tracee.CaptureConfig{
+				expectedCapture: config.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
 					Net: pcaps.Config{
 						CaptureSingle:    false,
@@ -650,7 +649,7 @@ func TestPrepareCapture(t *testing.T) {
 			{
 				testName:     "capture network with multiple pcap types and snaplen",
 				captureSlice: []string{"network", "pcap:command,container", "pcap-snaplen:120b"},
-				expectedCapture: tracee.CaptureConfig{
+				expectedCapture: config.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
 					Net: pcaps.Config{
 						CaptureSingle:    false,
@@ -664,7 +663,7 @@ func TestPrepareCapture(t *testing.T) {
 			{
 				testName:     "capture bpf",
 				captureSlice: []string{"bpf"},
-				expectedCapture: tracee.CaptureConfig{
+				expectedCapture: config.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
 					Bpf:        true,
 				},
@@ -673,9 +672,9 @@ func TestPrepareCapture(t *testing.T) {
 			{
 				testName:     "capture write filtered",
 				captureSlice: []string{"write=/tmp*"},
-				expectedCapture: tracee.CaptureConfig{
+				expectedCapture: config.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileWrite: tracee.FileCaptureConfig{
+					FileWrite: config.FileCaptureConfig{
 						Capture:    true,
 						PathFilter: []string{"/tmp"},
 					},
@@ -684,9 +683,9 @@ func TestPrepareCapture(t *testing.T) {
 			{
 				testName:     "capture read",
 				captureSlice: []string{"read"},
-				expectedCapture: tracee.CaptureConfig{
+				expectedCapture: config.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileRead: tracee.FileCaptureConfig{
+					FileRead: config.FileCaptureConfig{
 						Capture: true,
 					},
 				},
@@ -694,9 +693,9 @@ func TestPrepareCapture(t *testing.T) {
 			{
 				testName:     "capture read filtered by path",
 				captureSlice: []string{"read:path=/tmp*"},
-				expectedCapture: tracee.CaptureConfig{
+				expectedCapture: config.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileRead: tracee.FileCaptureConfig{
+					FileRead: config.FileCaptureConfig{
 						Capture:    true,
 						PathFilter: []string{"/tmp"},
 					},
@@ -705,31 +704,31 @@ func TestPrepareCapture(t *testing.T) {
 			{
 				testName:     "capture read filtered by type",
 				captureSlice: []string{"read:type=pipe"},
-				expectedCapture: tracee.CaptureConfig{
+				expectedCapture: config.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileRead: tracee.FileCaptureConfig{
+					FileRead: config.FileCaptureConfig{
 						Capture:    true,
-						TypeFilter: tracee.CapturePipeFiles,
+						TypeFilter: config.CapturePipeFiles,
 					},
 				},
 			},
 			{
 				testName:     "capture read filtered by fd",
 				captureSlice: []string{"read:fd=stdin"},
-				expectedCapture: tracee.CaptureConfig{
+				expectedCapture: config.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileRead: tracee.FileCaptureConfig{
+					FileRead: config.FileCaptureConfig{
 						Capture:    true,
-						TypeFilter: tracee.CaptureStdinFiles,
+						TypeFilter: config.CaptureStdinFiles,
 					},
 				},
 			},
 			{
 				testName:     "multiple capture options",
 				captureSlice: []string{"write", "exec", "mem", "module", "bpf"},
-				expectedCapture: tracee.CaptureConfig{
+				expectedCapture: config.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileWrite:  tracee.FileCaptureConfig{Capture: true},
+					FileWrite:  config.FileCaptureConfig{Capture: true},
 					Mem:        true,
 					Exec:       true,
 					Module:     true,
@@ -755,7 +754,7 @@ func TestPrepareCapture(t *testing.T) {
 		d, _ := os.CreateTemp("", "TestPrepareCapture-*")
 		capture, err := PrepareCapture([]string{fmt.Sprintf("dir:%s", d.Name()), "clear-dir"}, false)
 		require.NoError(t, err)
-		assert.Equal(t, tracee.CaptureConfig{OutputPath: fmt.Sprintf("%s/out", d.Name())}, capture)
+		assert.Equal(t, config.CaptureConfig{OutputPath: fmt.Sprintf("%s/out", d.Name())}, capture)
 		require.NoDirExists(t, d.Name()+"out")
 	})
 }
@@ -792,7 +791,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "default format",
 			outputSlice: []string{},
 			expectedOutput: OutputConfig{
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
 				},
 			},
@@ -801,7 +800,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "table format always parse arguments",
 			outputSlice: []string{"table"},
 			expectedOutput: OutputConfig{
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
 				},
 			},
@@ -810,7 +809,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "option stack-addresses",
 			outputSlice: []string{"option:stack-addresses"},
 			expectedOutput: OutputConfig{
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					StackAddresses: true,
 					ParseArguments: true,
 				},
@@ -820,7 +819,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "option exec-env",
 			outputSlice: []string{"option:exec-env"},
 			expectedOutput: OutputConfig{
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					ExecEnv:        true,
 					ParseArguments: true,
 				},
@@ -830,7 +829,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "option relative-time",
 			outputSlice: []string{"json", "option:relative-time"},
 			expectedOutput: OutputConfig{
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					RelativeTime: true,
 				},
 			},
@@ -839,7 +838,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "option exec-hash",
 			outputSlice: []string{"option:exec-hash"},
 			expectedOutput: OutputConfig{
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					ExecHash:       true,
 					ParseArguments: true,
 				},
@@ -849,7 +848,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "option parse-arguments",
 			outputSlice: []string{"json", "option:parse-arguments"},
 			expectedOutput: OutputConfig{
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
 				},
 			},
@@ -858,7 +857,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "option parse-arguments-fds",
 			outputSlice: []string{"json", "option:parse-arguments-fds"},
 			expectedOutput: OutputConfig{
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					ParseArguments:    true,
 					ParseArgumentsFDs: true,
 				},
@@ -868,7 +867,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "option sort-events",
 			outputSlice: []string{"option:sort-events"},
 			expectedOutput: OutputConfig{
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
 					EventsSorting:  true,
 				},
@@ -887,7 +886,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 				"option:sort-events",
 			},
 			expectedOutput: OutputConfig{
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					StackAddresses:    true,
 					ExecEnv:           true,
 					RelativeTime:      true,
@@ -949,10 +948,10 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "default format",
 			outputSlice: []string{},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table", OutPath: "stdout"},
 				},
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
 				},
 			},
@@ -961,10 +960,10 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "table to stdout",
 			outputSlice: []string{"table"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table", OutPath: "stdout"},
 				},
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
 				},
 			},
@@ -973,10 +972,10 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "table to /tmp/table",
 			outputSlice: []string{"table:/tmp/table"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table", OutPath: "/tmp/table"},
 				},
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
 				},
 			},
@@ -985,11 +984,11 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "table to stdout, and to /tmp/table",
 			outputSlice: []string{"table", "table:/tmp/table"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table", OutPath: "stdout"},
 					{Kind: "table", OutPath: "/tmp/table"},
 				},
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
 				},
 			},
@@ -998,83 +997,83 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "json to stdout",
 			outputSlice: []string{"json"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "json", OutPath: "stdout"},
 				},
-				TraceeConfig: &tracee.OutputConfig{},
+				TraceeConfig: &config.OutputConfig{},
 			},
 		},
 		{
 			testName:    "json to /tmp/json, and json to /tmp/json2",
 			outputSlice: []string{"json:/tmp/json", "json:/tmp/json2"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "json", OutPath: "/tmp/json"},
 					{Kind: "json", OutPath: "/tmp/json2"},
 				},
-				TraceeConfig: &tracee.OutputConfig{},
+				TraceeConfig: &config.OutputConfig{},
 			},
 		},
 		{
 			testName:    "gob to stdout",
 			outputSlice: []string{"gob"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "gob", OutPath: "stdout"},
 				},
-				TraceeConfig: &tracee.OutputConfig{},
+				TraceeConfig: &config.OutputConfig{},
 			},
 		},
 		{
 			testName:    "gob to stdout",
 			outputSlice: []string{"gob"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "gob", OutPath: "stdout"},
 				},
-				TraceeConfig: &tracee.OutputConfig{},
+				TraceeConfig: &config.OutputConfig{},
 			},
 		},
 		{
 			testName:    "gob to /tmp/gob1,/tmp/gob2",
 			outputSlice: []string{"gob:/tmp/gob1,/tmp/gob2"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "gob", OutPath: "/tmp/gob1"},
 					{Kind: "gob", OutPath: "/tmp/gob2"},
 				},
-				TraceeConfig: &tracee.OutputConfig{},
+				TraceeConfig: &config.OutputConfig{},
 			},
 		},
 		{
 			testName:    "table-verbose to stdout",
 			outputSlice: []string{"table-verbose"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table-verbose", OutPath: "stdout"},
 				},
-				TraceeConfig: &tracee.OutputConfig{},
+				TraceeConfig: &config.OutputConfig{},
 			},
 		},
 		{
 			testName:    "gotemplate to stdout",
 			outputSlice: []string{"gotemplate=template.tmpl"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "gotemplate=template.tmpl", OutPath: "stdout"},
 				},
-				TraceeConfig: &tracee.OutputConfig{},
+				TraceeConfig: &config.OutputConfig{},
 			},
 		},
 		{
 			testName:    "gotemplate to multiple files",
 			outputSlice: []string{"gotemplate=template.tmpl:/tmp/gotemplate1,/tmp/gotemplate2"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "gotemplate=template.tmpl", OutPath: "/tmp/gotemplate1"},
 					{Kind: "gotemplate=template.tmpl", OutPath: "/tmp/gotemplate2"},
 				},
-				TraceeConfig: &tracee.OutputConfig{},
+				TraceeConfig: &config.OutputConfig{},
 			},
 		},
 		{
@@ -1086,14 +1085,14 @@ func TestPrepareOutput(t *testing.T) {
 				"gotemplate=template.tmpl:/tmp/gotemplate1",
 			},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table", OutPath: "stdout"},
 					{Kind: "json", OutPath: "/tmp/json"},
 					{Kind: "json", OutPath: "/tmp/json2"},
 					{Kind: "gob", OutPath: "/tmp/gob1"},
 					{Kind: "gotemplate=template.tmpl", OutPath: "/tmp/gotemplate1"},
 				},
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
 				},
 			},
@@ -1117,10 +1116,10 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "none",
 			outputSlice: []string{"none"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "ignore", OutPath: "stdout"},
 				},
-				TraceeConfig: &tracee.OutputConfig{},
+				TraceeConfig: &config.OutputConfig{},
 			},
 		},
 		{
@@ -1153,10 +1152,10 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "forward",
 			outputSlice: []string{"forward:tcp://localhost:1234"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "forward", OutPath: "tcp://localhost:1234"},
 				},
-				TraceeConfig: &tracee.OutputConfig{},
+				TraceeConfig: &config.OutputConfig{},
 			},
 		},
 		// webhook
@@ -1179,10 +1178,10 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "webhook",
 			outputSlice: []string{"webhook:http://localhost:8080"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "webhook", OutPath: "http://localhost:8080"},
 				},
-				TraceeConfig: &tracee.OutputConfig{},
+				TraceeConfig: &config.OutputConfig{},
 			},
 		},
 		// options
@@ -1190,10 +1189,10 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option stack-addresses",
 			outputSlice: []string{"option:stack-addresses"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table", OutPath: "stdout"},
 				},
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					StackAddresses: true,
 					ParseArguments: true,
 				},
@@ -1203,10 +1202,10 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option exec-env",
 			outputSlice: []string{"option:exec-env"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table", OutPath: "stdout"},
 				},
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					ExecEnv:        true,
 					ParseArguments: true,
 				},
@@ -1216,10 +1215,10 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option relative-time",
 			outputSlice: []string{"json", "option:relative-time"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "json", OutPath: "stdout", RelativeTS: true},
 				},
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					RelativeTime: true,
 				},
 			},
@@ -1228,10 +1227,10 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option exec-hash",
 			outputSlice: []string{"option:exec-hash"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table", OutPath: "stdout"},
 				},
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					ExecHash:       true,
 					ParseArguments: true,
 				},
@@ -1241,10 +1240,10 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option parse-arguments",
 			outputSlice: []string{"json", "option:parse-arguments"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "json", OutPath: "stdout"},
 				},
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
 				},
 			},
@@ -1253,10 +1252,10 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option parse-arguments-fds",
 			outputSlice: []string{"json", "option:parse-arguments-fds"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "json", OutPath: "stdout"},
 				},
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					ParseArguments:    true,
 					ParseArgumentsFDs: true,
 				},
@@ -1266,10 +1265,10 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option sort-events",
 			outputSlice: []string{"option:sort-events"},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table", OutPath: "stdout"},
 				},
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
 					EventsSorting:  true,
 				},
@@ -1288,10 +1287,10 @@ func TestPrepareOutput(t *testing.T) {
 				"option:sort-events",
 			},
 			expectedOutput: OutputConfig{
-				PrinterConfigs: []printer.Config{
+				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "json", OutPath: "stdout", RelativeTS: true},
 				},
-				TraceeConfig: &tracee.OutputConfig{
+				TraceeConfig: &config.OutputConfig{
 					StackAddresses:    true,
 					ExecEnv:           true,
 					RelativeTime:      true,
@@ -1317,9 +1316,9 @@ func TestPrepareOutput(t *testing.T) {
 	}
 }
 
-func assertPrinterConfigs(t *testing.T, expected []printer.Config, actual []printer.Config) {
+func assertPrinterConfigs(t *testing.T, expected []config.PrinterConfig, actual []config.PrinterConfig) {
 	// use a map to compare because the order of the printers is not guaranteed
-	printersMap := make(map[string]printer.Config)
+	printersMap := make(map[string]config.PrinterConfig)
 
 	for _, p := range expected {
 		printersMap[p.OutPath] = p
