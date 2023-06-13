@@ -88,7 +88,6 @@ func NewEngine(config Config, sources EventSources, output chan detect.Finding) 
 
 // signatureStart is the signature handling business logics.
 func signatureStart(signature detect.Signature, c chan protocol.Event, wg *sync.WaitGroup) {
-	wg.Add(1)
 	for e := range c {
 		if err := signature.OnEvent(e); err != nil {
 			meta, _ := signature.GetMetadata()
@@ -106,6 +105,7 @@ func (engine *Engine) Start(ctx context.Context) {
 	defer engine.unloadAllSignatures()
 	engine.signaturesMutex.RLock()
 	for s, c := range engine.signatures {
+		engine.waitGroup.Add(1)
 		go signatureStart(s, c, &engine.waitGroup)
 	}
 	engine.signaturesMutex.RUnlock()
@@ -242,6 +242,7 @@ func (engine *Engine) dispatchEvent(s detect.Signature, event protocol.Event) {
 	engine.signatures[s] <- event
 }
 
+// TODO: This method seems not to be used, let's confirm inside the team and remove it if not needed
 // LoadSignature will call the internal signature loading logic and activate its handling business logics.
 // It will return the signature ID as well as error.
 func (engine *Engine) LoadSignature(signature detect.Signature) (string, error) {
@@ -250,6 +251,7 @@ func (engine *Engine) LoadSignature(signature detect.Signature) (string, error) 
 		return id, err
 	}
 	engine.signaturesMutex.RLock()
+	engine.waitGroup.Add(1)
 	go signatureStart(signature, engine.signatures[signature], &engine.waitGroup)
 	engine.signaturesMutex.RUnlock()
 
