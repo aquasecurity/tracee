@@ -36,8 +36,8 @@ Use this flag multiple times to choose multiple output options
 `
 }
 
-func TraceeEbpfPrepareOutput(outputSlice []string, newBinary bool) (OutputConfig, error) {
-	outConfig := OutputConfig{}
+func TraceeEbpfPrepareOutput(outputSlice []string, newBinary bool) (PrepareOutputResult, error) {
+	outConfig := PrepareOutputResult{}
 	traceeConfig := &config.OutputConfig{}
 
 	var outPath string
