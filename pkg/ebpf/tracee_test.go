@@ -27,15 +27,86 @@ func Test_getTailCalls(t *testing.T) {
 				events.SocketDup:        {submit: ^uint64(0), emit: ^uint64(0)},
 			},
 			expectedTailCalls: []*events.TailCall{
-				events.NewTailCallFull("sys_exit_tails", []uint32{uint32(events.Dup), uint32(events.Dup2), uint32(events.Dup3)}, "sys_dup_exit_tail"),
-				events.NewTailCallFull("sys_enter_init_tail", []uint32{uint32(events.Dup), uint32(events.Dup2), uint32(events.Dup3)}, "sys_enter_init"),
-				events.NewTailCallFull("sys_exit_init_tail", []uint32{uint32(events.Dup), uint32(events.Dup2), uint32(events.Dup3)}, "sys_exit_init"),
-				events.NewTailCallFull("sys_enter_init_tail", []uint32{uint32(events.Open), uint32(events.Openat), uint32(events.Openat2), uint32(events.OpenByHandleAt), uint32(events.Execve), uint32(events.Execveat)}, "sys_enter_init"),
-				events.NewTailCallFull("sys_enter_init_tail", []uint32{uint32(events.Mmap), uint32(events.Mprotect), uint32(events.PkeyMprotect)}, "sys_enter_init"),
-				events.NewTailCallFull("sys_enter_init_tail", []uint32{uint32(events.Ptrace), uint32(events.ClockSettime)}, "sys_enter_init"),
-				events.NewTailCallFull("sys_enter_submit_tail", []uint32{uint32(events.Ptrace), uint32(events.ClockSettime)}, "sys_enter_submit"),
-				events.NewTailCallFull("sys_exit_init_tail", []uint32{uint32(events.Ptrace), uint32(events.ClockSettime)}, "sys_exit_init"),
-				events.NewTailCallFull("sys_exit_submit_tail", []uint32{uint32(events.Ptrace), uint32(events.ClockSettime)}, "sys_exit_submit"),
+				events.NewTailCall(
+					"sys_exit_tails",
+					"sys_dup_exit_tail",
+					[]uint32{
+						uint32(events.Dup),
+						uint32(events.Dup2),
+						uint32(events.Dup3),
+					},
+				),
+				events.NewTailCall(
+					"sys_enter_init_tail",
+					"sys_enter_init",
+					[]uint32{
+						uint32(events.Dup),
+						uint32(events.Dup2),
+						uint32(events.Dup3),
+					},
+				),
+				events.NewTailCall(
+					"sys_exit_init_tail",
+					"sys_exit_init",
+					[]uint32{
+						uint32(events.Dup),
+						uint32(events.Dup2),
+						uint32(events.Dup3),
+					},
+				),
+				events.NewTailCall(
+					"sys_enter_init_tail",
+					"sys_enter_init",
+					[]uint32{
+						uint32(events.Open),
+						uint32(events.Openat),
+						uint32(events.Openat2),
+						uint32(events.OpenByHandleAt),
+						uint32(events.Execve),
+						uint32(events.Execveat),
+					},
+				),
+				events.NewTailCall(
+					"sys_enter_init_tail",
+					"sys_enter_init",
+					[]uint32{
+						uint32(events.Mmap),
+						uint32(events.Mprotect),
+						uint32(events.PkeyMprotect),
+					},
+				),
+				events.NewTailCall(
+					"sys_enter_init_tail",
+					"sys_enter_init",
+					[]uint32{
+						uint32(events.Ptrace),
+						uint32(events.ClockSettime),
+					},
+				),
+				events.NewTailCall(
+					"sys_enter_submit_tail",
+					"sys_enter_submit",
+					[]uint32{
+						uint32(events.Ptrace),
+						uint32(events.ClockSettime),
+					},
+				),
+				events.NewTailCall(
+					"sys_exit_init_tail",
+					"sys_exit_init",
+					[]uint32{
+						uint32(events.Ptrace),
+						uint32(events.ClockSettime),
+					},
+				),
+				events.NewTailCall(
+					"sys_exit_submit_tail",
+					"sys_exit_submit",
+					[]uint32{
+						uint32(events.Ptrace),
+						uint32(events.ClockSettime),
+					},
+				),
 			},
 		},
 	}

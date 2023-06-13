@@ -1159,25 +1159,25 @@ func (t *Tracee) populateBPFMaps() error {
 // call, this is because they require syscall data saving in their probe (for example
 // security_file_open needs open, openat and openat2).
 func getTailCalls(eventConfigs map[events.ID]eventConfig) ([]*events.TailCall, error) {
-	enterInitTailCall := events.NewTailCallFull(
+	enterInitTailCall := events.NewTailCall(
 		"sys_enter_init_tail",
-		[]uint32{},
 		"sys_enter_init",
+		[]uint32{},
 	)
-	enterSubmitTailCall := events.NewTailCallFull(
+	enterSubmitTailCall := events.NewTailCall(
 		"sys_enter_submit_tail",
-		[]uint32{},
 		"sys_enter_submit",
+		[]uint32{},
 	)
-	exitInitTailCall := events.NewTailCallFull(
+	exitInitTailCall := events.NewTailCall(
 		"sys_exit_init_tail",
-		[]uint32{},
 		"sys_exit_init",
-	)
-	exitSubmitTailCall := events.NewTailCallFull(
-		"sys_exit_submit_tail",
 		[]uint32{},
+	)
+	exitSubmitTailCall := events.NewTailCall(
+		"sys_exit_submit_tail",
 		"sys_exit_submit",
+		[]uint32{},
 	)
 
 	// For tracking only unique tail call, we use it's string form as the key in a "set" map
