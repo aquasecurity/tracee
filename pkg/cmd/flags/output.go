@@ -8,8 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/cmd/printer"
-	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
@@ -58,13 +57,13 @@ Use this flag multiple times to choose multiple output options
 }
 
 type OutputConfig struct {
-	TraceeConfig   *tracee.OutputConfig
-	PrinterConfigs []printer.Config
+	TraceeConfig   *config.OutputConfig
+	PrinterConfigs []config.PrinterConfig
 }
 
 func PrepareOutput(outputSlice []string, newBinary bool) (OutputConfig, error) {
 	outConfig := OutputConfig{}
-	traceeConfig := &tracee.OutputConfig{}
+	traceeConfig := &config.OutputConfig{}
 
 	// outpath:format
 	printerMap := make(map[string]string)
@@ -140,23 +139,23 @@ func PrepareOutput(outputSlice []string, newBinary bool) (OutputConfig, error) {
 }
 
 // setOption sets the given option in the given config
-func setOption(config *tracee.OutputConfig, option string, newBinary bool) error {
+func setOption(cfg *config.OutputConfig, option string, newBinary bool) error {
 	switch option {
 	case "stack-addresses":
-		config.StackAddresses = true
+		cfg.StackAddresses = true
 	case "exec-env":
-		config.ExecEnv = true
+		cfg.ExecEnv = true
 	case "relative-time":
-		config.RelativeTime = true
+		cfg.RelativeTime = true
 	case "exec-hash":
-		config.ExecHash = true
+		cfg.ExecHash = true
 	case "parse-arguments":
-		config.ParseArguments = true
+		cfg.ParseArguments = true
 	case "parse-arguments-fds":
-		config.ParseArgumentsFDs = true
-		config.ParseArguments = true // no point in parsing file descriptor args only
+		cfg.ParseArgumentsFDs = true
+		cfg.ParseArguments = true // no point in parsing file descriptor args only
 	case "sort-events":
-		config.EventsSorting = true
+		cfg.EventsSorting = true
 	default:
 		if newBinary {
 			return errfmt.Errorf("invalid output option: %s, use '--help output' for more info", option)
@@ -169,8 +168,8 @@ func setOption(config *tracee.OutputConfig, option string, newBinary bool) error
 }
 
 // getPrinterConfigs returns a slice of printer.Configs based on the given printerMap
-func getPrinterConfigs(printerMap map[string]string, traceeConfig *tracee.OutputConfig, newBinary bool) ([]printer.Config, error) {
-	printerConfigs := make([]printer.Config, 0, len(printerMap))
+func getPrinterConfigs(printerMap map[string]string, traceeConfig *config.OutputConfig, newBinary bool) ([]config.PrinterConfig, error) {
+	printerConfigs := make([]config.PrinterConfig, 0, len(printerMap))
 
 	for outPath, printerKind := range printerMap {
 		if printerKind == "table" {
@@ -189,7 +188,7 @@ func getPrinterConfigs(printerMap map[string]string, traceeConfig *tracee.Output
 			}
 		}
 
-		printerConfigs = append(printerConfigs, printer.Config{
+		printerConfigs = append(printerConfigs, config.PrinterConfig{
 			Kind:       printerKind,
 			OutPath:    outPath,
 			OutFile:    outFile,
@@ -230,7 +229,7 @@ func parseFormat(outputParts []string, printerMap map[string]string, newBinary b
 }
 
 // parseOption parses the given option and sets it in the given config
-func parseOption(outputParts []string, traceeConfig *tracee.OutputConfig, newBinary bool) error {
+func parseOption(outputParts []string, traceeConfig *config.OutputConfig, newBinary bool) error {
 	if len(outputParts) == 1 || outputParts[1] == "" {
 		if newBinary {
 			return errfmt.Errorf("option flag can't be empty, use '--help output' for more info")

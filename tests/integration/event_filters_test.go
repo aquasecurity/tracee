@@ -13,7 +13,7 @@ import (
 	"go.uber.org/goleak"
 
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
-	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -998,10 +998,10 @@ func Test_EventFilters(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			// prepare tracee config
-			config := tracee.Config{
+			config := config.Config{
 				Policies:   newPolicies(tc.policies...),
 				ChanEvents: make(chan trace.Event, 1000),
-				Capabilities: &tracee.CapabilitiesConfig{
+				Capabilities: &config.CapabilitiesConfig{
 					BypassCaps: true,
 				},
 			}

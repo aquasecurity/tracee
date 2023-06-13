@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
-	"github.com/aquasecurity/tracee/pkg/cmd/printer"
+	"github.com/aquasecurity/tracee/pkg/config"
 )
 
 func TestTraceeEbpfPrepareOutputPrinterConfig(t *testing.T) {
@@ -16,25 +16,25 @@ func TestTraceeEbpfPrepareOutputPrinterConfig(t *testing.T) {
 	testCases := []struct {
 		testName        string
 		outputSlice     []string
-		expectedPrinter printer.Config
+		expectedPrinter config.PrinterConfig
 		expectedError   error
 	}{
 		{
 			testName:        "invalid format",
 			outputSlice:     []string{"notaformat"},
-			expectedPrinter: printer.Config{},
+			expectedPrinter: config.PrinterConfig{},
 			expectedError:   fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info", "notaformat"),
 		},
 		{
 			testName:        "invalid format with format prefix",
 			outputSlice:     []string{"format:notaformat2"},
-			expectedPrinter: printer.Config{},
+			expectedPrinter: config.PrinterConfig{},
 			expectedError:   fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info", "notaformat2"),
 		},
 		{
 			testName:    "default",
 			outputSlice: []string{},
-			expectedPrinter: printer.Config{
+			expectedPrinter: config.PrinterConfig{
 				Kind:    "table",
 				OutFile: os.Stdout,
 			},
@@ -43,7 +43,7 @@ func TestTraceeEbpfPrepareOutputPrinterConfig(t *testing.T) {
 		{
 			testName:    "format: json",
 			outputSlice: []string{"format:json"},
-			expectedPrinter: printer.Config{
+			expectedPrinter: config.PrinterConfig{
 				Kind:    "json",
 				OutFile: os.Stdout,
 			},
@@ -52,7 +52,7 @@ func TestTraceeEbpfPrepareOutputPrinterConfig(t *testing.T) {
 		{
 			testName:    "option relative timestamp",
 			outputSlice: []string{"option:relative-time"},
-			expectedPrinter: printer.Config{
+			expectedPrinter: config.PrinterConfig{
 				Kind:       "table",
 				OutFile:    os.Stdout,
 				RelativeTS: true,
