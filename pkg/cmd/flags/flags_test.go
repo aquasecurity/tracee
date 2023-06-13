@@ -763,7 +763,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 	testCases := []struct {
 		testName       string
 		outputSlice    []string
-		expectedOutput OutputConfig
+		expectedOutput PrepareOutputResult
 		expectedError  error
 	}{
 		{
@@ -790,7 +790,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 		{
 			testName:    "default format",
 			outputSlice: []string{},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
 				},
@@ -799,7 +799,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 		{
 			testName:    "table format always parse arguments",
 			outputSlice: []string{"table"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
 				},
@@ -808,7 +808,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 		{
 			testName:    "option stack-addresses",
 			outputSlice: []string{"option:stack-addresses"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				TraceeConfig: &config.OutputConfig{
 					StackAddresses: true,
 					ParseArguments: true,
@@ -818,7 +818,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 		{
 			testName:    "option exec-env",
 			outputSlice: []string{"option:exec-env"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				TraceeConfig: &config.OutputConfig{
 					ExecEnv:        true,
 					ParseArguments: true,
@@ -828,7 +828,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 		{
 			testName:    "option relative-time",
 			outputSlice: []string{"json", "option:relative-time"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				TraceeConfig: &config.OutputConfig{
 					RelativeTime: true,
 				},
@@ -837,7 +837,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 		{
 			testName:    "option exec-hash",
 			outputSlice: []string{"option:exec-hash"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				TraceeConfig: &config.OutputConfig{
 					ExecHash:       true,
 					ParseArguments: true,
@@ -847,7 +847,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 		{
 			testName:    "option parse-arguments",
 			outputSlice: []string{"json", "option:parse-arguments"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
 				},
@@ -856,7 +856,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 		{
 			testName:    "option parse-arguments-fds",
 			outputSlice: []string{"json", "option:parse-arguments-fds"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				TraceeConfig: &config.OutputConfig{
 					ParseArguments:    true,
 					ParseArgumentsFDs: true,
@@ -866,7 +866,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 		{
 			testName:    "option sort-events",
 			outputSlice: []string{"option:sort-events"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				TraceeConfig: &config.OutputConfig{
 					ParseArguments: true,
 					EventsSorting:  true,
@@ -885,7 +885,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 				"option:parse-arguments-fds",
 				"option:sort-events",
 			},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				TraceeConfig: &config.OutputConfig{
 					StackAddresses:    true,
 					ExecEnv:           true,
@@ -914,7 +914,7 @@ func TestPrepareOutput(t *testing.T) {
 	testCases := []struct {
 		testName       string
 		outputSlice    []string
-		expectedOutput OutputConfig
+		expectedOutput PrepareOutputResult
 		expectedError  error
 	}{
 		// validations
@@ -947,7 +947,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "default format",
 			outputSlice: []string{},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table", OutPath: "stdout"},
 				},
@@ -959,7 +959,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "table to stdout",
 			outputSlice: []string{"table"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table", OutPath: "stdout"},
 				},
@@ -971,7 +971,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "table to /tmp/table",
 			outputSlice: []string{"table:/tmp/table"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table", OutPath: "/tmp/table"},
 				},
@@ -983,7 +983,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "table to stdout, and to /tmp/table",
 			outputSlice: []string{"table", "table:/tmp/table"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table", OutPath: "stdout"},
 					{Kind: "table", OutPath: "/tmp/table"},
@@ -996,7 +996,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "json to stdout",
 			outputSlice: []string{"json"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "json", OutPath: "stdout"},
 				},
@@ -1006,7 +1006,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "json to /tmp/json, and json to /tmp/json2",
 			outputSlice: []string{"json:/tmp/json", "json:/tmp/json2"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "json", OutPath: "/tmp/json"},
 					{Kind: "json", OutPath: "/tmp/json2"},
@@ -1017,7 +1017,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "gob to stdout",
 			outputSlice: []string{"gob"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "gob", OutPath: "stdout"},
 				},
@@ -1027,7 +1027,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "gob to stdout",
 			outputSlice: []string{"gob"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "gob", OutPath: "stdout"},
 				},
@@ -1037,7 +1037,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "gob to /tmp/gob1,/tmp/gob2",
 			outputSlice: []string{"gob:/tmp/gob1,/tmp/gob2"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "gob", OutPath: "/tmp/gob1"},
 					{Kind: "gob", OutPath: "/tmp/gob2"},
@@ -1048,7 +1048,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "table-verbose to stdout",
 			outputSlice: []string{"table-verbose"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table-verbose", OutPath: "stdout"},
 				},
@@ -1058,7 +1058,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "gotemplate to stdout",
 			outputSlice: []string{"gotemplate=template.tmpl"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "gotemplate=template.tmpl", OutPath: "stdout"},
 				},
@@ -1068,7 +1068,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "gotemplate to multiple files",
 			outputSlice: []string{"gotemplate=template.tmpl:/tmp/gotemplate1,/tmp/gotemplate2"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "gotemplate=template.tmpl", OutPath: "/tmp/gotemplate1"},
 					{Kind: "gotemplate=template.tmpl", OutPath: "/tmp/gotemplate2"},
@@ -1084,7 +1084,7 @@ func TestPrepareOutput(t *testing.T) {
 				"gob:/tmp/gob1",
 				"gotemplate=template.tmpl:/tmp/gotemplate1",
 			},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table", OutPath: "stdout"},
 					{Kind: "json", OutPath: "/tmp/json"},
@@ -1115,7 +1115,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "none",
 			outputSlice: []string{"none"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "ignore", OutPath: "stdout"},
 				},
@@ -1151,7 +1151,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "forward",
 			outputSlice: []string{"forward:tcp://localhost:1234"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "forward", OutPath: "tcp://localhost:1234"},
 				},
@@ -1177,7 +1177,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "webhook",
 			outputSlice: []string{"webhook:http://localhost:8080"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "webhook", OutPath: "http://localhost:8080"},
 				},
@@ -1188,7 +1188,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "option stack-addresses",
 			outputSlice: []string{"option:stack-addresses"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table", OutPath: "stdout"},
 				},
@@ -1201,7 +1201,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "option exec-env",
 			outputSlice: []string{"option:exec-env"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table", OutPath: "stdout"},
 				},
@@ -1214,7 +1214,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "option relative-time",
 			outputSlice: []string{"json", "option:relative-time"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "json", OutPath: "stdout", RelativeTS: true},
 				},
@@ -1226,7 +1226,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "option exec-hash",
 			outputSlice: []string{"option:exec-hash"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table", OutPath: "stdout"},
 				},
@@ -1239,7 +1239,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "option parse-arguments",
 			outputSlice: []string{"json", "option:parse-arguments"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "json", OutPath: "stdout"},
 				},
@@ -1251,7 +1251,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "option parse-arguments-fds",
 			outputSlice: []string{"json", "option:parse-arguments-fds"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "json", OutPath: "stdout"},
 				},
@@ -1264,7 +1264,7 @@ func TestPrepareOutput(t *testing.T) {
 		{
 			testName:    "option sort-events",
 			outputSlice: []string{"option:sort-events"},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table", OutPath: "stdout"},
 				},
@@ -1286,7 +1286,7 @@ func TestPrepareOutput(t *testing.T) {
 				"option:parse-arguments-fds",
 				"option:sort-events",
 			},
-			expectedOutput: OutputConfig{
+			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "json", OutPath: "stdout", RelativeTS: true},
 				},

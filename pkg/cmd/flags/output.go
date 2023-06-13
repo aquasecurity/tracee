@@ -56,13 +56,13 @@ Use this flag multiple times to choose multiple output options
 `
 }
 
-type OutputConfig struct {
+type PrepareOutputResult struct {
 	TraceeConfig   *config.OutputConfig
 	PrinterConfigs []config.PrinterConfig
 }
 
-func PrepareOutput(outputSlice []string, newBinary bool) (OutputConfig, error) {
-	outConfig := OutputConfig{}
+func PrepareOutput(outputSlice []string, newBinary bool) (PrepareOutputResult, error) {
+	outConfig := PrepareOutputResult{}
 	traceeConfig := &config.OutputConfig{}
 
 	// outpath:format
