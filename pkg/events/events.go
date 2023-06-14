@@ -26,7 +26,7 @@ import (
 // TODO: Because of dynamically loading/unloading work (and parallelism):
 //
 //       1. Simple types should be atomics (bool, int, uint, pointers, etc.):
-//          - os long as object changes are atomic (no need for multiple field updates)
+//          - as long as object changes are atomic (no need for multiple field updates)
 //          - usually requires object to have an immutable handle (ID)
 //          - protect loads/stores but not objects single view among 2 CPUs
 //       2. Complex types should have mutexes (maps, slices, etc.)
@@ -39,14 +39,14 @@ import (
 //
 // Types (keep in a single file for now):
 //
-// 0. ID					immutable
-// 1. EventGroup			mutable, map protected by a mutex
-// 2. Event					mutable with atomic types (no transactional updates needed)
-// 3. Dependencies			mutable with atomic types (no transactional updates needed)
-// 4. ProbeDependency		mutable (atomic "required" field)
-// 5. KSymbolDependency		mutable (atomic "required" field)
-// 6. CapDependency			mutable, map protected by a mutex
-// 7. TailCall				mutable, slice protected by a mutex, atomic strings
+// 0. ID                  immutable
+// 1. EventGroup          mutable, map protected by a mutex
+// 2. Event               mutable with atomic types (no transactional updates needed)
+// 3. Dependencies        mutable with atomic types (no transactional updates needed)
+// 4. ProbeDependency     mutable (atomic "required" field)
+// 5. KSymbolDependency   mutable (atomic "required" field)
+// 6. CapDependency       mutable, map protected by a mutex
+// 7. TailCall            mutable, slice protected by a mutex, atomic strings
 //
 
 // TODO: turn event definitions into EventDefGroup of EventDefs:

@@ -516,9 +516,9 @@ func (t *Tracee) initTailCall(tailCall *events.TailCall) error {
 		return errfmt.Errorf("could not get BPF program FD for %s: %v", tailCall.GetProgName(), err)
 	}
 
-	// Attach internal syscall probes if needed.
 	for _, index := range tailCall.GetMapIndexes() {
 		def := events.Definitions.Get(events.ID(index))
+		// Attach internal syscall probes if needed.
 		if def.Syscall {
 			err := t.probes.Attach(probes.SyscallEnter__Internal)
 			if err != nil {
