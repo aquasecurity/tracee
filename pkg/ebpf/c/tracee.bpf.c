@@ -1305,6 +1305,7 @@ int syscall__accept4(void *ctx)
 
     struct socket *old_sock = (struct socket *) saved_args.args[0];
     struct socket *new_sock = (struct socket *) saved_args.args[1];
+    u32 sockfd = (u32) saved_args.args[2];
 
     if (new_sock == NULL) {
         return -1;
@@ -1312,6 +1313,8 @@ int syscall__accept4(void *ctx)
     if (old_sock == NULL) {
         return -1;
     }
+
+    save_to_submit_buf(p.event, (void *)&sockfd, sizeof(u32), 0);
 
     struct sock *sk_new = get_socket_sock(new_sock);
     struct sock *sk_old = get_socket_sock(old_sock);
@@ -2546,12 +2549,14 @@ int BPF_KPROBE(trace_security_socket_accept)
 
     struct socket *sock = (struct socket *) PT_REGS_PARM1(ctx);
     struct socket *new_sock = (struct socket *) PT_REGS_PARM2(ctx);
+    syscall_data_t *sys = &p.task_info->syscall_data;
 
     // save sockets for "socket_accept event"
     if (should_submit(SOCKET_ACCEPT, p.event)) {
         args_t args = {};
         args.args[0] = (unsigned long) sock;
         args.args[1] = (unsigned long) new_sock;
+        args.args[2]= sys->args.args[0]; // sockfd
         save_args(&args, SOCKET_ACCEPT);
     }
 
@@ -2559,7 +2564,6 @@ int BPF_KPROBE(trace_security_socket_accept)
         return 0;
 
     // Load the arguments given to the accept syscall (which eventually invokes this function)
-    syscall_data_t *sys = &p.task_info->syscall_data;
     if (!p.task_info->syscall_traced || (sys->id != SYSCALL_ACCEPT && sys->id != SYSCALL_ACCEPT4))
         return 0;
 

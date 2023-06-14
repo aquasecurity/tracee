@@ -6460,6 +6460,11 @@ var Definitions = eventDefinitions{
 						"syscall__accept4",
 						[]uint32{uint32(Accept), uint32(Accept4)},
 					),
+					NewTailCall(
+						"sys_exit_init_tail",
+						"sys_exit_init",
+						[]uint32{uint32(Accept), uint32(Accept4)},
+					),
 				},
 			},
 			Sets: []string{},
