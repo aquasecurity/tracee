@@ -37,31 +37,31 @@ func TestPolicyValidate(t *testing.T) {
 		{
 			testName: "empty scope",
 			policy: PolicyFile{
-				Name:          "empty_scope",
-				Description:   "empty scope",
-				Scope:         []string{},
-				DefaultAction: "log",
+				Name:           "empty_scope",
+				Description:    "empty scope",
+				Scope:          []string{},
+				DefaultActions: []string{"log"},
 			},
 			expectedError: errors.New("policy empty_scope, scope cannot be empty"),
 		},
 		{
 			testName: "empty rules",
 			policy: PolicyFile{
-				Name:          "empty_rules",
-				Description:   "empty rules",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
-				Rules:         []Rule{},
+				Name:           "empty_rules",
+				Description:    "empty rules",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
+				Rules:          []Rule{},
 			},
 			expectedError: errors.New("policy empty_rules, rules cannot be empty"),
 		},
 		{
 			testName: "empty event name",
 			policy: PolicyFile{
-				Name:          "empty_event_name",
-				Description:   "empty event name",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "empty_event_name",
+				Description:    "empty event name",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []Rule{
 					{Event: ""},
 				},
@@ -71,10 +71,10 @@ func TestPolicyValidate(t *testing.T) {
 		{
 			testName: "invalid event name",
 			policy: PolicyFile{
-				Name:          "invalid_event_name",
-				Description:   "invalid event name",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "invalid_event_name",
+				Description:    "invalid event name",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []Rule{
 					{Event: "non_existing_event"},
 				},
@@ -84,10 +84,10 @@ func TestPolicyValidate(t *testing.T) {
 		{
 			testName: "invalid_scope_operator",
 			policy: PolicyFile{
-				Name:          "invalid_scope_operator",
-				Description:   "invalid scope operator",
-				Scope:         []string{"random"},
-				DefaultAction: "log",
+				Name:           "invalid_scope_operator",
+				Description:    "invalid scope operator",
+				Scope:          []string{"random"},
+				DefaultActions: []string{"log"},
 				Rules: []Rule{
 					{Event: "write"},
 				},
@@ -97,10 +97,10 @@ func TestPolicyValidate(t *testing.T) {
 		{
 			testName: "invalid_scope",
 			policy: PolicyFile{
-				Name:          "invalid_scope",
-				Description:   "invalid scope",
-				Scope:         []string{"random!=0"},
-				DefaultAction: "log",
+				Name:           "invalid_scope",
+				Description:    "invalid scope",
+				Scope:          []string{"random!=0"},
+				DefaultActions: []string{"log"},
 				Rules: []Rule{
 					{Event: "write"},
 				},
@@ -110,10 +110,10 @@ func TestPolicyValidate(t *testing.T) {
 		{
 			testName: "global scope must be unique",
 			policy: PolicyFile{
-				Name:          "global_scope_must_be_unique",
-				Description:   "global scope must be unique",
-				Scope:         []string{"global", "uid=1000"},
-				DefaultAction: "log",
+				Name:           "global_scope_must_be_unique",
+				Description:    "global scope must be unique",
+				Scope:          []string{"global", "uid=1000"},
+				DefaultActions: []string{"log"},
 				Rules: []Rule{
 					{Event: "write"},
 				},
@@ -123,10 +123,10 @@ func TestPolicyValidate(t *testing.T) {
 		{
 			testName: "duplicated event",
 			policy: PolicyFile{
-				Name:          "duplicated_event",
-				Description:   "duplicated event",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "duplicated_event",
+				Description:    "duplicated event",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []Rule{
 					{Event: "write"},
 					{Event: "write"},
@@ -137,14 +137,14 @@ func TestPolicyValidate(t *testing.T) {
 		{
 			testName: "invalid filter operator",
 			policy: PolicyFile{
-				Name:          "invalid_filter_operator",
-				Description:   "invalid filter operator",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "invalid_filter_operator",
+				Description:    "invalid filter operator",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []Rule{
 					{
 						Event: "write",
-						Filter: []string{
+						Filters: []string{
 							"random",
 						},
 					},
@@ -155,14 +155,14 @@ func TestPolicyValidate(t *testing.T) {
 		{
 			testName: "invalid filter",
 			policy: PolicyFile{
-				Name:          "invalid_filter",
-				Description:   "invalid filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "invalid_filter",
+				Description:    "invalid filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []Rule{
 					{
 						Event: "write",
-						Filter: []string{
+						Filters: []string{
 							"random!=0",
 						},
 					},
@@ -180,32 +180,32 @@ func TestPolicyValidate(t *testing.T) {
 					{Event: "write"},
 				},
 			},
-			expectedError: errors.New("policy.PolicyFile.Validate: policy empty_policy_action, default action cannot be empty"),
+			expectedError: errors.New("policy.PolicyFile.validateDefaultActions: policy empty_policy_action, default actions cannot be empty"),
 		},
 		{
 			testName: "invalid policy action",
 			policy: PolicyFile{
-				Name:          "invalid_policy_action",
-				Description:   "invalid policy action",
-				Scope:         []string{"global"},
-				DefaultAction: "audit",
+				Name:           "invalid_policy_action",
+				Description:    "invalid policy action",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"audit"},
 				Rules: []Rule{
 					{Event: "write"},
 				},
 			},
-			expectedError: errors.New("policy.validateAction: policy invalid_policy_action, action audit is not valid"),
+			expectedError: errors.New("policy.validateActions: policy invalid_policy_action, action audit is not valid"),
 		},
 		{
 			testName: "invalid retval",
 			policy: PolicyFile{
-				Name:          "invalid_retval",
-				Description:   "invalid retval filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "invalid_retval",
+				Description:    "invalid retval filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []Rule{
 					{
 						Event: "write",
-						Filter: []string{
+						Filters: []string{
 							"retval",
 						},
 					},
@@ -216,14 +216,14 @@ func TestPolicyValidate(t *testing.T) {
 		{
 			testName: "empty retval",
 			policy: PolicyFile{
-				Name:          "empty_retval",
-				Description:   "empty retval filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "empty_retval",
+				Description:    "empty retval filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []Rule{
 					{
 						Event: "write",
-						Filter: []string{
+						Filters: []string{
 							"retval=",
 						},
 					},
@@ -234,14 +234,14 @@ func TestPolicyValidate(t *testing.T) {
 		{
 			testName: "retval not an integer",
 			policy: PolicyFile{
-				Name:          "retval_not_an_integer",
-				Description:   "retval not an integer",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "retval_not_an_integer",
+				Description:    "retval not an integer",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []Rule{
 					{
 						Event: "write",
-						Filter: []string{
+						Filters: []string{
 							"retval=lala",
 						},
 					},
@@ -252,14 +252,14 @@ func TestPolicyValidate(t *testing.T) {
 		{
 			testName: "empty arg name 1",
 			policy: PolicyFile{
-				Name:          "empty_filter_arg_1",
-				Description:   "empty filter arg 1",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "empty_filter_arg_1",
+				Description:    "empty filter arg 1",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []Rule{
 					{
 						Event: "write",
-						Filter: []string{
+						Filters: []string{
 							"args",
 						},
 					},
@@ -270,14 +270,14 @@ func TestPolicyValidate(t *testing.T) {
 		{
 			testName: "empty arg name 3",
 			policy: PolicyFile{
-				Name:          "empty_filter_arg_3",
-				Description:   "empty filter arg 3",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "empty_filter_arg_3",
+				Description:    "empty filter arg 3",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []Rule{
 					{
 						Event: "write",
-						Filter: []string{
+						Filters: []string{
 							"args=",
 						},
 					},
@@ -288,14 +288,14 @@ func TestPolicyValidate(t *testing.T) {
 		{
 			testName: "empty arg name 4",
 			policy: PolicyFile{
-				Name:          "empty_filter_arg_4",
-				Description:   "empty filter arg 4",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "empty_filter_arg_4",
+				Description:    "empty filter arg 4",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []Rule{
 					{
 						Event: "write",
-						Filter: []string{
+						Filters: []string{
 							"args=lala",
 						},
 					},
@@ -306,14 +306,14 @@ func TestPolicyValidate(t *testing.T) {
 		{
 			testName: "invalid arg",
 			policy: PolicyFile{
-				Name:          "invalid_arg",
-				Description:   "invalid arg",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "invalid_arg",
+				Description:    "invalid arg",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []Rule{
 					{
 						Event: "openat",
-						Filter: []string{
+						Filters: []string{
 							"args.lala=1",
 						},
 					},
@@ -324,14 +324,14 @@ func TestPolicyValidate(t *testing.T) {
 		{
 			testName: "empty arg value",
 			policy: PolicyFile{
-				Name:          "empty_arg_value",
-				Description:   "empty arg value",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "empty_arg_value",
+				Description:    "empty arg value",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []Rule{
 					{
 						Event: "openat",
-						Filter: []string{
+						Filters: []string{
 							"args.pathname=",
 						},
 					},
@@ -342,14 +342,14 @@ func TestPolicyValidate(t *testing.T) {
 		{
 			testName: "empty arg value",
 			policy: PolicyFile{
-				Name:          "empty_arg_value",
-				Description:   "empty arg value",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "empty_arg_value",
+				Description:    "empty arg value",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []Rule{
 					{
 						Event: "openat",
-						Filter: []string{
+						Filters: []string{
 							"args.pathname!=",
 						},
 					},
@@ -360,14 +360,14 @@ func TestPolicyValidate(t *testing.T) {
 		{
 			testName: "signature filter arg",
 			policy: PolicyFile{
-				Name:          "signature_filter_arg",
-				Description:   "signature filter arg",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "signature_filter_arg",
+				Description:    "signature filter arg",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []Rule{
 					{
 						Event: "fake_signature",
-						Filter: []string{
+						Filters: []string{
 							"args.lala=lala",
 							"args.lele!=lele",
 						},

@@ -2,9 +2,10 @@ name: context_comm
 description: traces openat done by ls
 scope: 
   - global
-defaultAction: log
+defaultActions: 
+  - log
 rules:
   - event: openat
-    filter:
+    filters:
       - comm=ls
 

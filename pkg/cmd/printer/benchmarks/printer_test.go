@@ -34,8 +34,8 @@ var (
 
 	policies = []policy.PolicyFile{
 		{
-			Name:          "test",
-			DefaultAction: "log",
+			Name:           "test",
+			DefaultActions: []string{"log"},
 			Rules: []policy.Rule{
 				{
 					Event: "test",
@@ -43,28 +43,28 @@ var (
 			},
 		},
 		{
-			Name:          "test2",
-			DefaultAction: "log",
+			Name:           "test2",
+			DefaultActions: []string{"log"},
 			Rules: []policy.Rule{
 				{
-					Event:  "test",
-					Action: []string{"webhook"},
+					Event:   "test",
+					Actions: []string{"webhook"},
 				},
 			},
 		},
 		{
-			Name:          "test3",
-			DefaultAction: "log",
+			Name:           "test3",
+			DefaultActions: []string{"log"},
 			Rules: []policy.Rule{
 				{
-					Event:  "test",
-					Action: []string{"webhook"},
+					Event:   "test",
+					Actions: []string{"webhook"},
 				},
 			},
 		},
 		{
-			Name:          "test4",
-			DefaultAction: "log",
+			Name:           "test4",
+			DefaultActions: []string{"log"},
 			Rules: []policy.Rule{
 				{
 					Event: "test",

@@ -2,7 +2,8 @@ name: comm_strace
 description: traces sched_process_exec and sched_process_exit for the command strace
 scope: 
   - comm=strace
-defaultAction: log
+defaultActions: 
+  - log
 rules:
   - event: sched_process_exec
   - event: sched_process_exit

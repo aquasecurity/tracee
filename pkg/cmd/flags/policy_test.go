@@ -30,10 +30,10 @@ func TestPolicyScopes(t *testing.T) {
 		{
 			testName: "global scope - single event",
 			policy: policy.PolicyFile{
-				Name:          "global_scope_single_event",
-				Description:   "global scope - single event",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "global_scope_single_event",
+				Description:    "global scope - single event",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{Event: "write"},
 				},
@@ -48,10 +48,10 @@ func TestPolicyScopes(t *testing.T) {
 		{
 			testName: "global scope - multiple events",
 			policy: policy.PolicyFile{
-				Name:          "global_scope_multiple_events",
-				Description:   "global scope - multiple events",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "global_scope_multiple_events",
+				Description:    "global scope - multiple events",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{Event: "write"},
 					{Event: "read"},
@@ -70,10 +70,10 @@ func TestPolicyScopes(t *testing.T) {
 		{
 			testName: "uid scope",
 			policy: policy.PolicyFile{
-				Name:          "uid_scope",
-				Description:   "uid scope",
-				Scope:         []string{"uid>=1000"},
-				DefaultAction: "log",
+				Name:           "uid_scope",
+				Description:    "uid scope",
+				Scope:          []string{"uid>=1000"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{Event: "write"},
 				},
@@ -95,10 +95,10 @@ func TestPolicyScopes(t *testing.T) {
 		{
 			testName: "pid scope",
 			policy: policy.PolicyFile{
-				Name:          "pid_scope",
-				Description:   "pid scope",
-				Scope:         []string{"pid<=10"},
-				DefaultAction: "log",
+				Name:           "pid_scope",
+				Description:    "pid scope",
+				Scope:          []string{"pid<=10"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{Event: "write"},
 				},
@@ -120,10 +120,10 @@ func TestPolicyScopes(t *testing.T) {
 		{
 			testName: "mntns scope",
 			policy: policy.PolicyFile{
-				Name:          "mntns",
-				Description:   "mntns scope",
-				Scope:         []string{"mntns=4026531840"},
-				DefaultAction: "log",
+				Name:           "mntns",
+				Description:    "mntns scope",
+				Scope:          []string{"mntns=4026531840"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{Event: "write"},
 				},
@@ -145,10 +145,10 @@ func TestPolicyScopes(t *testing.T) {
 		{
 			testName: "pidns scope",
 			policy: policy.PolicyFile{
-				Name:          "pidns_scope",
-				Description:   "pidns scope",
-				Scope:         []string{"pidns!=4026531836"},
-				DefaultAction: "log",
+				Name:           "pidns_scope",
+				Description:    "pidns scope",
+				Scope:          []string{"pidns!=4026531836"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{Event: "write"},
 				},
@@ -170,10 +170,10 @@ func TestPolicyScopes(t *testing.T) {
 		{
 			testName: "uts scope",
 			policy: policy.PolicyFile{
-				Name:          "uts_scope",
-				Description:   "uts scope",
-				Scope:         []string{"uts!=ab356bc4dd554"},
-				DefaultAction: "log",
+				Name:           "uts_scope",
+				Description:    "uts scope",
+				Scope:          []string{"uts!=ab356bc4dd554"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{Event: "write"},
 				},
@@ -195,10 +195,10 @@ func TestPolicyScopes(t *testing.T) {
 		{
 			testName: "comm=bash",
 			policy: policy.PolicyFile{
-				Name:          "comm_scope",
-				Description:   "comm scope",
-				Scope:         []string{"comm=bash"},
-				DefaultAction: "log",
+				Name:           "comm_scope",
+				Description:    "comm scope",
+				Scope:          []string{"comm=bash"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{Event: "write"},
 				},
@@ -220,10 +220,10 @@ func TestPolicyScopes(t *testing.T) {
 		{
 			testName: "container=new",
 			policy: policy.PolicyFile{
-				Name:          "container_scope",
-				Description:   "container scope",
-				Scope:         []string{"container=new"},
-				DefaultAction: "log",
+				Name:           "container_scope",
+				Description:    "container scope",
+				Scope:          []string{"container=new"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{Event: "write"},
 				},
@@ -245,10 +245,10 @@ func TestPolicyScopes(t *testing.T) {
 		{
 			testName: "!container",
 			policy: policy.PolicyFile{
-				Name:          "!container_scope",
-				Description:   "!container scope",
-				Scope:         []string{"!container"},
-				DefaultAction: "log",
+				Name:           "!container_scope",
+				Description:    "!container scope",
+				Scope:          []string{"!container"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{Event: "write"},
 				},
@@ -270,10 +270,10 @@ func TestPolicyScopes(t *testing.T) {
 		{
 			testName: "container",
 			policy: policy.PolicyFile{
-				Name:          "container_scope",
-				Description:   "container scope",
-				Scope:         []string{"container"},
-				DefaultAction: "log",
+				Name:           "container_scope",
+				Description:    "container scope",
+				Scope:          []string{"container"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{Event: "write"},
 				},
@@ -295,10 +295,10 @@ func TestPolicyScopes(t *testing.T) {
 		{
 			testName: "tree=3213,5200",
 			policy: policy.PolicyFile{
-				Name:          "tree_scope",
-				Description:   "tree scope",
-				Scope:         []string{"tree=3213,5200"},
-				DefaultAction: "log",
+				Name:           "tree_scope",
+				Description:    "tree scope",
+				Scope:          []string{"tree=3213,5200"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{Event: "write"},
 				},
@@ -320,10 +320,10 @@ func TestPolicyScopes(t *testing.T) {
 		{
 			testName: "scope with space",
 			policy: policy.PolicyFile{
-				Name:          "scope_with_space",
-				Description:   "scope with space",
-				Scope:         []string{"tree = 3213"},
-				DefaultAction: "log",
+				Name:           "scope_with_space",
+				Description:    "scope with space",
+				Scope:          []string{"tree = 3213"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{Event: "write"},
 				},
@@ -345,10 +345,10 @@ func TestPolicyScopes(t *testing.T) {
 		{
 			testName: "binary=host:/usr/bin/ls",
 			policy: policy.PolicyFile{
-				Name:          "binary_scope",
-				Description:   "binary scope",
-				Scope:         []string{"binary=host:/usr/bin/ls"},
-				DefaultAction: "log",
+				Name:           "binary_scope",
+				Description:    "binary scope",
+				Scope:          []string{"binary=host:/usr/bin/ls"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{Event: "write"},
 				},
@@ -371,10 +371,10 @@ func TestPolicyScopes(t *testing.T) {
 		{
 			testName: "bin=4026532448:/usr/bin/ls",
 			policy: policy.PolicyFile{
-				Name:          "bin_scope",
-				Description:   "bin scope",
-				Scope:         []string{"bin=4026532448:/usr/bin/ls"},
-				DefaultAction: "log",
+				Name:           "bin_scope",
+				Description:    "bin scope",
+				Scope:          []string{"bin=4026532448:/usr/bin/ls"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{Event: "write"},
 				},
@@ -396,10 +396,10 @@ func TestPolicyScopes(t *testing.T) {
 		{
 			testName: "follow",
 			policy: policy.PolicyFile{
-				Name:          "follow_scope",
-				Description:   "follow scope",
-				Scope:         []string{"follow"},
-				DefaultAction: "log",
+				Name:           "follow_scope",
+				Description:    "follow scope",
+				Scope:          []string{"follow"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{Event: "write"},
 				},
@@ -421,10 +421,10 @@ func TestPolicyScopes(t *testing.T) {
 		{
 			testName: "multiple scopes",
 			policy: policy.PolicyFile{
-				Name:          "multiple_scope",
-				Description:   "multiple scope",
-				Scope:         []string{"comm=bash", "follow", "!container", "uid=1000"},
-				DefaultAction: "log",
+				Name:           "multiple_scope",
+				Description:    "multiple scope",
+				Scope:          []string{"comm=bash", "follow", "!container", "uid=1000"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{Event: "write"},
 				},
@@ -488,14 +488,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "args filter",
 			policy: policy.PolicyFile{
-				Name:          "args_filter",
-				Description:   "args filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "args_filter",
+				Description:    "args filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "security_file_open",
-						Filter: []string{"args.pathname=/etc/passwd"},
+						Event:   "security_file_open",
+						Filters: []string{"args.pathname=/etc/passwd"},
 					},
 				},
 			},
@@ -521,14 +521,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "return filter",
 			policy: policy.PolicyFile{
-				Name:          "return_filter",
-				Description:   "return filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "return_filter",
+				Description:    "return filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "write",
-						Filter: []string{"retval=-1"},
+						Event:   "write",
+						Filters: []string{"retval=-1"},
 					},
 				},
 			},
@@ -550,14 +550,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "timestamp filter",
 			policy: policy.PolicyFile{
-				Name:          "timestamp_filter",
-				Description:   "timestamp filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "timestamp_filter",
+				Description:    "timestamp filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "write",
-						Filter: []string{"timestamp>1234567890"},
+						Event:   "write",
+						Filters: []string{"timestamp>1234567890"},
 					},
 				},
 			},
@@ -578,14 +578,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "processorId filter",
 			policy: policy.PolicyFile{
-				Name:          "processorId_filter",
-				Description:   "processorId filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "processorId_filter",
+				Description:    "processorId filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "write",
-						Filter: []string{"processorId>=1234567890"},
+						Event:   "write",
+						Filters: []string{"processorId>=1234567890"},
 					},
 				},
 			},
@@ -606,14 +606,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "p filter",
 			policy: policy.PolicyFile{
-				Name:          "p_filter",
-				Description:   "p filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "p_filter",
+				Description:    "p filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "write",
-						Filter: []string{"p<=10"},
+						Event:   "write",
+						Filters: []string{"p<=10"},
 					},
 				},
 			},
@@ -634,14 +634,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "pid filter",
 			policy: policy.PolicyFile{
-				Name:          "pid_filter",
-				Description:   "pid filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "pid_filter",
+				Description:    "pid filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "write",
-						Filter: []string{"pid!=1"},
+						Event:   "write",
+						Filters: []string{"pid!=1"},
 					},
 				},
 			},
@@ -662,14 +662,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "processId filter",
 			policy: policy.PolicyFile{
-				Name:          "processId_filter",
-				Description:   "processId filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "processId_filter",
+				Description:    "processId filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "write",
-						Filter: []string{"processId=1387"},
+						Event:   "write",
+						Filters: []string{"processId=1387"},
 					},
 				},
 			},
@@ -690,14 +690,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "tid filter",
 			policy: policy.PolicyFile{
-				Name:          "tid_filter",
-				Description:   "tid filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "tid_filter",
+				Description:    "tid filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "write",
-						Filter: []string{"tid=1388"},
+						Event:   "write",
+						Filters: []string{"tid=1388"},
 					},
 				},
 			},
@@ -718,14 +718,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "threadId filter",
 			policy: policy.PolicyFile{
-				Name:          "threadId_filter",
-				Description:   "threadId filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "threadId_filter",
+				Description:    "threadId filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "write",
-						Filter: []string{"threadId!=1388"},
+						Event:   "write",
+						Filters: []string{"threadId!=1388"},
 					},
 				},
 			},
@@ -746,14 +746,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "ppid filter",
 			policy: policy.PolicyFile{
-				Name:          "ppid_filter",
-				Description:   "ppid filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "ppid_filter",
+				Description:    "ppid filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "write",
-						Filter: []string{"ppid=1"},
+						Event:   "write",
+						Filters: []string{"ppid=1"},
 					},
 				},
 			},
@@ -774,14 +774,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "parentProcessId filter",
 			policy: policy.PolicyFile{
-				Name:          "parentProcessId_filter",
-				Description:   "parentProcessId filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "parentProcessId_filter",
+				Description:    "parentProcessId filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "write",
-						Filter: []string{"parentProcessId>1455"},
+						Event:   "write",
+						Filters: []string{"parentProcessId>1455"},
 					},
 				},
 			},
@@ -802,14 +802,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "hostTid filter",
 			policy: policy.PolicyFile{
-				Name:          "hostTid_filter",
-				Description:   "hostTid filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "hostTid_filter",
+				Description:    "hostTid filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"hostTid=2455"},
+						Event:   "read",
+						Filters: []string{"hostTid=2455"},
 					},
 				},
 			},
@@ -830,14 +830,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "hostThreadId filter",
 			policy: policy.PolicyFile{
-				Name:          "hostThreadId_filter",
-				Description:   "hostThreadId filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "hostThreadId_filter",
+				Description:    "hostThreadId filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"hostThreadId!=2455"},
+						Event:   "read",
+						Filters: []string{"hostThreadId!=2455"},
 					},
 				},
 			},
@@ -858,14 +858,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "hostPid filter",
 			policy: policy.PolicyFile{
-				Name:          "hostPid_filter",
-				Description:   "hostPid filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "hostPid_filter",
+				Description:    "hostPid filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"hostPid=333"},
+						Event:   "read",
+						Filters: []string{"hostPid=333"},
 					},
 				},
 			},
@@ -886,14 +886,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "hostParentProcessID filter",
 			policy: policy.PolicyFile{
-				Name:          "hostParentProcessId_filter",
-				Description:   "hostParentProcessId filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "hostParentProcessId_filter",
+				Description:    "hostParentProcessId filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"hostParentProcessId!=333"},
+						Event:   "read",
+						Filters: []string{"hostParentProcessId!=333"},
 					},
 				},
 			},
@@ -914,14 +914,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "userId filter",
 			policy: policy.PolicyFile{
-				Name:          "userId_filter",
-				Description:   "userId filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "userId_filter",
+				Description:    "userId filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"userId=1000"},
+						Event:   "read",
+						Filters: []string{"userId=1000"},
 					},
 				},
 			},
@@ -942,14 +942,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "mntns filter",
 			policy: policy.PolicyFile{
-				Name:          "mntns_filter",
-				Description:   "mntns filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "mntns_filter",
+				Description:    "mntns filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"mntns=4026531840"},
+						Event:   "read",
+						Filters: []string{"mntns=4026531840"},
 					},
 				},
 			},
@@ -970,14 +970,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "mountNamespace filter",
 			policy: policy.PolicyFile{
-				Name:          "mountNamespace_filter",
-				Description:   "mountNamespace filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "mountNamespace_filter",
+				Description:    "mountNamespace filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"mountNamespace!=4026531840"},
+						Event:   "read",
+						Filters: []string{"mountNamespace!=4026531840"},
 					},
 				},
 			},
@@ -998,14 +998,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "pidns filter",
 			policy: policy.PolicyFile{
-				Name:          "pidns_filter",
-				Description:   "pidns filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "pidns_filter",
+				Description:    "pidns filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"pidns=4026531836"},
+						Event:   "read",
+						Filters: []string{"pidns=4026531836"},
 					},
 				},
 			},
@@ -1026,14 +1026,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "pidNamespace filter",
 			policy: policy.PolicyFile{
-				Name:          "pidNamespace_filter",
-				Description:   "pidNamespace filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "pidNamespace_filter",
+				Description:    "pidNamespace filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"pidNamespace!=4026531836"},
+						Event:   "read",
+						Filters: []string{"pidNamespace!=4026531836"},
 					},
 				},
 			},
@@ -1054,14 +1054,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "processName filter",
 			policy: policy.PolicyFile{
-				Name:          "processName_filter",
-				Description:   "processName filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "processName_filter",
+				Description:    "processName filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"processName=uname"},
+						Event:   "read",
+						Filters: []string{"processName=uname"},
 					},
 				},
 			},
@@ -1082,14 +1082,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "comm filter",
 			policy: policy.PolicyFile{
-				Name:          "comm_filter",
-				Description:   "comm filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "comm_filter",
+				Description:    "comm filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"comm!=uname"},
+						Event:   "read",
+						Filters: []string{"comm!=uname"},
 					},
 				},
 			},
@@ -1110,14 +1110,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "hostName filter",
 			policy: policy.PolicyFile{
-				Name:          "hostName_filter",
-				Description:   "hostName filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "hostName_filter",
+				Description:    "hostName filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"hostName=test"},
+						Event:   "read",
+						Filters: []string{"hostName=test"},
 					},
 				},
 			},
@@ -1138,14 +1138,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "cgroupId filter",
 			policy: policy.PolicyFile{
-				Name:          "cgroupId",
-				Description:   "cgroupId filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "cgroupId",
+				Description:    "cgroupId filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"cgroupId=test"},
+						Event:   "read",
+						Filters: []string{"cgroupId=test"},
 					},
 				},
 			},
@@ -1166,14 +1166,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "host filter",
 			policy: policy.PolicyFile{
-				Name:          "host",
-				Description:   "host filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "host",
+				Description:    "host filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"host=test"},
+						Event:   "read",
+						Filters: []string{"host=test"},
 					},
 				},
 			},
@@ -1194,14 +1194,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "container filter",
 			policy: policy.PolicyFile{
-				Name:          "container_filter",
-				Description:   "container filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "container_filter",
+				Description:    "container filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"container=c"},
+						Event:   "read",
+						Filters: []string{"container=c"},
 					},
 				},
 			},
@@ -1222,14 +1222,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "containerId filter",
 			policy: policy.PolicyFile{
-				Name:          "containerId_filter",
-				Description:   "containerId filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "containerId_filter",
+				Description:    "containerId filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"containerId=da91bf3df3dc"},
+						Event:   "read",
+						Filters: []string{"containerId=da91bf3df3dc"},
 					},
 				},
 			},
@@ -1250,14 +1250,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "containerImage filter",
 			policy: policy.PolicyFile{
-				Name:          "containerImage_filter",
-				Description:   "containerImage filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "containerImage_filter",
+				Description:    "containerImage filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"containerImage=tracee:latest"},
+						Event:   "read",
+						Filters: []string{"containerImage=tracee:latest"},
 					},
 				},
 			},
@@ -1278,14 +1278,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "containerName filter",
 			policy: policy.PolicyFile{
-				Name:          "containerName_filter",
-				Description:   "containerName filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "containerName_filter",
+				Description:    "containerName filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"containerName=tracee"},
+						Event:   "read",
+						Filters: []string{"containerName=tracee"},
 					},
 				},
 			},
@@ -1306,14 +1306,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "podName filter",
 			policy: policy.PolicyFile{
-				Name:          "podName_filter",
-				Description:   "podName filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "podName_filter",
+				Description:    "podName filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"podName=daemonset/tracee"},
+						Event:   "read",
+						Filters: []string{"podName=daemonset/tracee"},
 					},
 				},
 			},
@@ -1334,14 +1334,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "podNamespace filter",
 			policy: policy.PolicyFile{
-				Name:          "podNamespace_filter",
-				Description:   "podNamespace filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "podNamespace_filter",
+				Description:    "podNamespace filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"podNamespace=production"},
+						Event:   "read",
+						Filters: []string{"podNamespace=production"},
 					},
 				},
 			},
@@ -1362,14 +1362,14 @@ func TestPolicyEventFilter(t *testing.T) {
 		{
 			testName: "podUid filter",
 			policy: policy.PolicyFile{
-				Name:          "podUid_filter",
-				Description:   "podUid filter",
-				Scope:         []string{"global"},
-				DefaultAction: "log",
+				Name:           "podUid_filter",
+				Description:    "podUid filter",
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
 				Rules: []policy.Rule{
 					{
-						Event:  "read",
-						Filter: []string{"podUid=poduid"},
+						Event:   "read",
+						Filters: []string{"podUid=poduid"},
 					},
 				},
 			},
