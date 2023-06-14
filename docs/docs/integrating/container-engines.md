@@ -69,7 +69,7 @@ As a user, when container enrichment is enabled the event output will include en
         -v /etc/os-release:/etc/os-release-host:ro \
         -v /var/run/docker.sock:/var/run/docker.sock \
         aquasec/tracee:{{ git.tag }} \
-        trace --output json --containers
+        --output json --containers
     ```
 
 2. Running in container filtering mode and with enrichment enabled will add the image name to the table printer
@@ -81,5 +81,5 @@ As a user, when container enrichment is enabled the event output will include en
         -v /etc/os-release:/etc/os-release-host:ro \
         -v /var/run/containerd:/var/run/containerd \
         aquasec/tracee:{{ git.tag }} \
-        trace --filter container --containers
+        --filter container --containers
     ```
