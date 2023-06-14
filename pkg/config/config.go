@@ -9,7 +9,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
-	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -106,7 +105,7 @@ type CaptureConfig struct {
 	Exec       bool
 	Mem        bool
 	Bpf        bool
-	Net        pcaps.Config
+	Net        PcapsConfig
 }
 
 type FileCaptureConfig struct {
@@ -133,6 +132,15 @@ const (
 	CaptureStdoutFiles
 	CaptureStderrFiles
 )
+
+type PcapsConfig struct {
+	CaptureSingle    bool
+	CaptureProcess   bool
+	CaptureContainer bool
+	CaptureCommand   bool
+	CaptureFiltered  bool
+	CaptureLength    uint32
+}
 
 //
 // Capabilities

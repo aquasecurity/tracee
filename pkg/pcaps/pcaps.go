@@ -3,6 +3,7 @@ package pcaps
 import (
 	"os"
 
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -24,24 +25,15 @@ import (
 // NOTE: Pcaps is not thread safe, should be called from a single routine.
 //
 
-type Config struct {
-	CaptureSingle    bool
-	CaptureProcess   bool
-	CaptureContainer bool
-	CaptureCommand   bool
-	CaptureFiltered  bool
-	CaptureLength    uint32
-}
-
 // Pcaps holds all Pcap for different PcapTypes
 type Pcaps struct {
 	pcapCaches map[PcapType]*PcapCache
 }
 
-func New(simple Config, output *os.File) (*Pcaps, error) {
+func New(simple config.PcapsConfig, output *os.File) (*Pcaps, error) {
 	var err error
 
-	config := configToPcapType(simple)
+	cfg := configToPcapType(simple)
 
 	// initialize all keys first
 	caches := map[PcapType]*PcapCache{
@@ -54,7 +46,7 @@ func New(simple Config, output *os.File) (*Pcaps, error) {
 	initializeGlobalVars(output)
 
 	for t := range caches {
-		if config&t == t { // if type was requested, init its cache
+		if cfg&t == t { // if type was requested, init its cache
 			logger.Debugw("pcap enabled: " + t.String())
 			caches[t], err = newPcapCache(t)
 			if err != nil {
