@@ -55,12 +55,12 @@ func initializeGlobalVars(output *os.File) {
 
 // getItemIndexFromEvent returns correct trace.Event variable according to
 // given PcapType
-func getItemIndexFromEvent(event *trace.Event, itemType PcapType) interface{} {
+func getItemIndexFromEvent(event *trace.Event, itemType PcapType) string {
 	switch itemType {
 	case Single:
 		return itemType.String()
 	case Process:
-		return event.HostThreadID
+		return fmt.Sprint(event.HostThreadID)
 	case Container:
 		return event.Container.ID
 	case Command:
@@ -71,7 +71,7 @@ func getItemIndexFromEvent(event *trace.Event, itemType PcapType) interface{} {
 		return ret
 	}
 
-	return new(interface{})
+	return ""
 }
 
 // getPcapFileName returns a string used to create a pcap file under the

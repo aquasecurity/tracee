@@ -1,7 +1,7 @@
 package pcaps
 
 import (
-	lru "github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru/v2"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -10,22 +10,15 @@ import (
 
 // PcapCache is an intermediate LRU cache in between Pcap and Pcaps
 type PcapCache struct {
-	itemCache *lru.Cache
+	itemCache *lru.Cache[string, *Pcap]
 	itemType  PcapType
 }
 
 func newPcapCache(itemType PcapType) (*PcapCache, error) {
 	cache, err := lru.NewWithEvict(
 		pcapsToCache,
-		func(_ interface{}, value interface{},
+		func(_ string, item *Pcap,
 		) {
-			// sync and close pcap file on evict
-			item, ok := value.(*Pcap)
-			if !ok {
-				logger.Debugw("Could not evict a pcap cache item")
-				return
-			}
-
 			if err := item.pcapWriter.Flush(); err != nil {
 				logger.Errorw("Flushing pcap", "error", err)
 			}
@@ -66,14 +59,10 @@ func (p *PcapCache) get(event *trace.Event) (*Pcap, error) {
 }
 
 func (p *PcapCache) destroy() error {
-	for _, k := range p.itemCache.Keys() {
-		switch key := k.(type) {
-		case *Pcap:
-			if err := key.close(); err != nil {
-				logger.Errorw("Closing file", "error", err)
-			}
-		default:
-			return errfmt.Errorf("wrong key type in pcap cache")
+	for _, key := range p.itemCache.Keys() {
+		item, _ := p.itemCache.Get(key)
+		if err := item.close(); err != nil {
+			logger.Errorw("Closing file", "error", err)
 		}
 	}
 	p.itemCache.Purge()

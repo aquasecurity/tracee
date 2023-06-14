@@ -11,7 +11,7 @@ import (
 	"strings"
 	"unsafe"
 
-	lru "github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru/v2"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	foundHiddenKernModsCache *lru.Cache
+	foundHiddenKernModsCache *lru.Cache[uint64, struct{}]
 	allModsMap               *bpf.BPFMap
 	newModuleOnlyMap         *bpf.BPFMap
 	recentDeletedModulesMap  *bpf.BPFMap
@@ -194,10 +194,7 @@ func InitHiddenKernelModules(
 	recentInsertedModulesMap = insertedModMap
 
 	var err error
-	foundHiddenKernModsCache, err = lru.New(2048)
-	if err != nil {
-		logger.Errorw("Error occurred initializing kernel hidden modules: " + err.Error())
-	}
+	foundHiddenKernModsCache, err = lru.New[uint64, struct{}](2048)
 	return err
 }
 

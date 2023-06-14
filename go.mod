@@ -14,6 +14,7 @@ require (
 	github.com/google/cel-go v0.15.1
 	github.com/google/gopacket v1.1.19
 	github.com/hashicorp/golang-lru v0.5.4
+	github.com/hashicorp/golang-lru/v2 v2.0.2
 	github.com/kubernetes/cri-api v0.27.1
 	github.com/open-policy-agent/opa v0.52.0
 	github.com/prometheus/client_golang v1.15.1
@@ -168,3 +169,5 @@ require (
 )
 
 replace github.com/kubernetes/cri-api => k8s.io/cri-api v0.23.5-rc.0
+
+replace github.com/aquasecurity/tracee/types => ./types
