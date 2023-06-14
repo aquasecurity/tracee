@@ -12,7 +12,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/filters"
-	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/pkg/signatures/rego"
 )
 
@@ -612,7 +611,7 @@ func TestPrepareCapture(t *testing.T) {
 				captureSlice: []string{"network"},
 				expectedCapture: config.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
-					Net: pcaps.Config{
+					Net: config.PcapsConfig{
 						CaptureSingle: true,
 						CaptureLength: 96,
 					},
@@ -623,7 +622,7 @@ func TestPrepareCapture(t *testing.T) {
 				captureSlice: []string{"network", "pcap:process,command,container"},
 				expectedCapture: config.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
-					Net: pcaps.Config{
+					Net: config.PcapsConfig{
 						CaptureSingle:    false,
 						CaptureProcess:   true,
 						CaptureContainer: true,
@@ -637,7 +636,7 @@ func TestPrepareCapture(t *testing.T) {
 				captureSlice: []string{"network", "pcap:command,container"},
 				expectedCapture: config.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
-					Net: pcaps.Config{
+					Net: config.PcapsConfig{
 						CaptureSingle:    false,
 						CaptureProcess:   false,
 						CaptureContainer: true,
@@ -651,7 +650,7 @@ func TestPrepareCapture(t *testing.T) {
 				captureSlice: []string{"network", "pcap:command,container", "pcap-snaplen:120b"},
 				expectedCapture: config.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
-					Net: pcaps.Config{
+					Net: config.PcapsConfig{
 						CaptureSingle:    false,
 						CaptureProcess:   false,
 						CaptureContainer: true,
