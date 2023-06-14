@@ -66,8 +66,7 @@ sudo LIBBPFGO_OSRELEASE_FILE=/etc/os-release.orig ./dist/tracee --filter uid=100
 ```
 
 > If you're running tracee inside a docker container, you can simply bind mount
-> /etc/os-release from the host as /etc/os-release-host into the guest and
-> inform that through the `LIBBPFGO_OSRELEASE_FILE` environment variable.
+> `/etc/os-release` from the host as `/etc/os-release-host` into the guest.
 
 ## KCONFIG
 
