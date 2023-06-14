@@ -16,28 +16,40 @@ import (
 	"github.com/aquasecurity/tracee/types/detect"
 )
 
-func Find(target string, partialEval bool, signaturesDir string, signatures []string, aioEnabled bool) ([]detect.Signature, error) {
-	if signaturesDir == "" {
+func Find(target string, partialEval bool, signaturesDir []string, signatures []string, aioEnabled bool) ([]detect.Signature, error) {
+	if len(signaturesDir) == 0 {
 		exePath, err := os.Executable()
 		if err != nil {
 			logger.Errorw("Getting executable path: " + err.Error())
 		}
-		signaturesDir = filepath.Join(filepath.Dir(exePath), "signatures")
+		signaturesDir = []string{filepath.Join(filepath.Dir(exePath), "signatures")}
 	}
-	gosigs, err := findGoSigs(signaturesDir)
-	if err != nil {
-		return nil, err
+	var sigs []detect.Signature
+
+	for _, dir := range signaturesDir {
+		if strings.TrimSpace(dir) == "" {
+			continue
+		}
+
+		gosigs, err := findGoSigs(dir)
+		if err != nil {
+			return nil, err
+		}
+
+		sigs = append(sigs, gosigs...)
+
+		opasigs, err := findRegoSigs(target, partialEval, dir, aioEnabled)
+		if err != nil {
+			return nil, err
+		}
+		sigs = append(sigs, opasigs...)
+
+		celsigs, err := celsig.NewSignaturesFromDir(dir)
+		if err != nil {
+			return nil, fmt.Errorf("failed loading CEL signatures: %w", err)
+		}
+		sigs = append(sigs, celsigs...)
 	}
-	opasigs, err := findRegoSigs(target, partialEval, signaturesDir, aioEnabled)
-	if err != nil {
-		return nil, err
-	}
-	sigs := append(gosigs, opasigs...)
-	celsigs, err := celsig.NewSignaturesFromDir(signaturesDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed loading CEL signatures: %w", err)
-	}
-	sigs = append(sigs, celsigs...)
 
 	var res []detect.Signature
 	if signatures == nil {

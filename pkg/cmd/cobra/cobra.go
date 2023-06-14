@@ -48,7 +48,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	sigs, err := signature.Find(
 		rego.RuntimeTarget,
 		rego.PartialEval,
-		viper.GetString("signatures-dir"),
+		viper.GetStringSlice("signatures-dir"),
 		nil,
 		rego.AIO,
 	)
