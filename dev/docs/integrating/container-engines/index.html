@@ -14828,7 +14828,7 @@ tracee like:</p>
 <span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
 <span class="go">    -v /var/run/containerd:/var/run/containerd \</span>
 <span class="go">    -e CONTAINERS_ENRICHMENT=1 \</span>
-<span class="go">    aquasec/tracee:v0.15.1-1-g2d124dda</span>
+<span class="go">    aquasec/tracee:v0.15.1-11-g1197fc7b</span>
 </code></pre></div>
 <p>Most container runtimes have their sockets installed by default in
 <code>/var/run</code>. If your system includes multiple container runtimes, tracee can
@@ -14869,8 +14869,8 @@ to enrich all containers correctly.</p>
 <span class="go">    --pid=host --cgroupns=host --privileged \</span>
 <span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
 <span class="go">    -v /var/run/docker.sock:/var/run/docker.sock \</span>
-<span class="go">    aquasec/tracee:v0.15.1-1-g2d124dda \</span>
-<span class="go">    trace --output json --containers</span>
+<span class="go">    aquasec/tracee:v0.15.1-11-g1197fc7b \</span>
+<span class="go">    --output json --containers</span>
 </code></pre></div>
 </li>
 <li>
@@ -14880,8 +14880,8 @@ to enrich all containers correctly.</p>
 <span class="go">    --pid=host --cgroupns=host --privileged \</span>
 <span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
 <span class="go">    -v /var/run/containerd:/var/run/containerd \</span>
-<span class="go">    aquasec/tracee:v0.15.1-1-g2d124dda \</span>
-<span class="go">    trace --filter container --containers</span>
+<span class="go">    aquasec/tracee:v0.15.1-11-g1197fc7b \</span>
+<span class="go">    --filter container --containers</span>
 </code></pre></div>
 </li>
 </ol>
