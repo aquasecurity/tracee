@@ -29,10 +29,12 @@ func SymbolsCollision(soLoader sharedobjs.DynamicSymbolsLoader, policies *policy
 	symbolsCollisionFilters := map[string]filters.Filter{}
 
 	// pick white and black lists from the filters (TODO: change this)
+	policies.ReadLock()
 	for policies := range policies.Map() {
 		f := policies.ArgFilter.GetEventFilters(events.SymbolsCollision)
 		maps.Copy(symbolsCollisionFilters, f)
 	}
+	policies.ReadUnlock()
 
 	symbolsWhitelist := []string{}
 	symbolsBlacklist := []string{}

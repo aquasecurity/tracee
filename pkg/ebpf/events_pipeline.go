@@ -296,6 +296,7 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		return bitmap
 	}
 
+	t.config.Policies.ReadLock()
 	for p := range t.config.Policies.FilterableInUserlandMap() { // range through each userland filterable policy
 		// Policy ID is the bit offset in the bitmap.
 		bitOffset := uint(p.ID)
@@ -374,6 +375,7 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 			}
 		}
 	}
+	t.config.Policies.ReadUnlock()
 
 	event.MatchedPoliciesUser = bitmap // store filtered bitmap to be used in sink stage
 

@@ -94,21 +94,27 @@ const (
 
 // Validate does static validation of the configuration
 func (tc Config) Validate() error {
+	tc.Policies.ReadLock()
 	for p := range tc.Policies.Map() {
 		if p == nil {
+			tc.Policies.ReadUnlock()
 			return errfmt.Errorf("policy is nil")
 		}
 		if p.EventsToTrace == nil {
+			tc.Policies.ReadUnlock()
 			return errfmt.Errorf("policy [%d] has no events to trace", p.ID)
 		}
 
 		for e := range p.EventsToTrace {
 			_, exists := events.Definitions.GetSafe(e)
 			if !exists {
+				tc.Policies.ReadUnlock()
 				return errfmt.Errorf("invalid event [%d] to trace in policy [%d]", e, p.ID)
 			}
 		}
 	}
+	tc.Policies.ReadUnlock()
+
 	if (tc.PerfBufferSize & (tc.PerfBufferSize - 1)) != 0 {
 		return errfmt.Errorf("invalid perf buffer size - must be a power of 2")
 	}

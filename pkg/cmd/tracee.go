@@ -170,16 +170,12 @@ func getPad(padChar string, padLength int) (pad string) {
 func GetContainerMode(cfg tracee.Config) printer.ContainerMode {
 	containerMode := printer.ContainerModeDisabled
 
-	for p := range cfg.Policies.Map() {
-		if p.ContainerFilterEnabled() {
-			// enable printer container print mode if container filters are set
-			containerMode = printer.ContainerModeEnabled
-			if cfg.ContainersEnrich {
-				// further enable container enrich print mode if container enrichment is enabled
-				containerMode = printer.ContainerModeEnriched
-			}
-
-			break
+	if cfg.Policies.ContainerFilterEnabled() > 0 {
+		// enable printer container print mode if container filters are set
+		containerMode = printer.ContainerModeEnabled
+		if cfg.ContainersEnrich {
+			// further enable container enrich print mode if container enrichment is enabled
+			containerMode = printer.ContainerModeEnriched
 		}
 	}
 

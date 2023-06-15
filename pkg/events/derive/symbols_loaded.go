@@ -23,10 +23,12 @@ func SymbolsLoaded(
 ) DeriveFunction {
 	symbolsLoadedFilters := map[string]filters.Filter{}
 
+	policies.ReadLock()
 	for p := range policies.Map() {
 		f := p.ArgFilter.GetEventFilters(events.SymbolsLoaded)
 		maps.Copy(symbolsLoadedFilters, f)
 	}
+	policies.ReadUnlock()
 
 	loadWatchedSymbols := []string{}
 	loadWhitelistedLibs := []string{}

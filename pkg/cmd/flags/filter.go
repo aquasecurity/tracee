@@ -321,7 +321,7 @@ func CreatePolicies(filterMap PolicyFilterMap, newBinary bool) (*policy.Policies
 		}
 	}
 
-	if len(policies.Map()) == 0 {
+	if policies.Count() == 0 {
 		// If nothing was set, let us consider it as a single default policy
 		eventFilter := cliFilter{
 			Equal:    []string{},

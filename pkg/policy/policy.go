@@ -65,8 +65,9 @@ func NewPolicy() *Policy {
 	}
 }
 
-const MaxPolicies = 64
-
-func isIDInRange(id int) bool {
-	return id >= 0 && id < MaxPolicies
+// containerFilterEnabled returns true when the policy has at least one container filter type enabled
+func (p *Policy) containerFilterEnabled() bool {
+	return (p.ContFilter.Enabled() && p.ContFilter.Value()) ||
+		(p.NewContFilter.Enabled() && p.NewContFilter.Value()) ||
+		p.ContIDFilter.Enabled()
 }

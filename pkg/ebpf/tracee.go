@@ -227,6 +227,7 @@ func New(cfg Config) (*Tracee, error) {
 
 	// Events chosen by the user
 
+	t.config.Policies.ReadLock()
 	for p := range t.config.Policies.Map() {
 		for e := range p.EventsToTrace {
 			var submit, emit uint64
@@ -239,6 +240,7 @@ func New(cfg Config) (*Tracee, error) {
 			t.events[e] = eventConfig{submit: submit, emit: emit}
 		}
 	}
+	t.config.Policies.ReadUnlock()
 
 	// Handle all essential events dependencies
 
@@ -743,6 +745,7 @@ func (t *Tracee) computeConfigValues() []byte {
 	// padding
 	binary.LittleEndian.PutUint32(configVal[12:16], 0)
 
+	t.config.Policies.ReadLock()
 	for p := range t.config.Policies.Map() {
 		byteIndex := p.ID / 8
 		bitOffset := p.ID % 8
@@ -854,9 +857,10 @@ func (t *Tracee) computeConfigValues() []byte {
 		// enabled_scopes
 		configVal[216+byteIndex] |= 1 << bitOffset
 	}
+	t.config.Policies.ReadUnlock()
 
 	// compute all policies internals
-	t.config.Policies.Compute()
+	// t.config.Policies.Compute()
 
 	// uid_max
 	binary.LittleEndian.PutUint64(configVal[224:232], t.config.Policies.UIDFilterMax())
@@ -1033,6 +1037,7 @@ func (t *Tracee) populateBPFMaps() error {
 		return errfmt.WrapError(err)
 	}
 
+	t.config.Policies.ReadLock()
 	for p := range t.config.Policies.Map() {
 		policyID := uint(p.ID)
 		errMap := make(map[string]error, 0)
@@ -1048,10 +1053,12 @@ func (t *Tracee) populateBPFMaps() error {
 
 		for k, v := range errMap {
 			if v != nil {
+				t.config.Policies.ReadUnlock()
 				return errfmt.Errorf("error setting %v filter: %v", k, v)
 			}
 		}
 	}
+	t.config.Policies.ReadUnlock()
 
 	// Populate containers map with existing containers
 	err = t.containers.PopulateBpfMap(t.bpfModule)
@@ -1328,12 +1335,15 @@ func (t *Tracee) initBPF() error {
 	// possible race window between the bpf programs updating the maps and
 	// userland reading procfs and also dealing with same maps.
 
+	t.config.Policies.ReadLock()
 	for p := range t.config.Policies.Map() {
 		err = p.ProcessTreeFilter.UpdateBPF(t.bpfModule, uint(p.ID))
 		if err != nil {
+			t.config.Policies.ReadUnlock()
 			return errfmt.Errorf("error building process tree: %v", err)
 		}
 	}
+	t.config.Policies.ReadUnlock()
 
 	// Initialize perf buffers and needed channels
 
@@ -1683,6 +1693,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 
 	errArgFilter := make(map[int]error, 0)
 
+	t.config.Policies.ReadLock()
 	for p := range t.config.Policies.Map() {
 		printMemDumpFilters := p.ArgFilter.GetEventFilters(events.PrintMemDump)
 		if printMemDumpFilters == nil {
@@ -1704,6 +1715,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 			field := lengthFilter.Equal()[0]
 			length, err = strconv.ParseUint(field, 10, 64)
 			if err != nil {
+				t.config.Policies.ReadUnlock()
 				return errfmt.WrapError(err)
 			}
 		}
@@ -1713,6 +1725,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 			for _, field := range addressFilter.Equal() {
 				address, err := strconv.ParseUint(field, 16, 64)
 				if err != nil {
+					t.config.Policies.ReadUnlock()
 					return errfmt.WrapError(err)
 				}
 				eventHandle := t.triggerContexts.Store(event)
@@ -1734,6 +1747,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 					owner = symbolSlice[0]
 					name = symbolSlice[1]
 				} else {
+					t.config.Policies.ReadUnlock()
 					return errfmt.Errorf("invalid symbols provided %s - more than one ':' provided", field)
 				}
 				symbol, err := t.kernelSymbols.GetSymbolByName(owner, name)
@@ -1748,6 +1762,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 						}
 					}
 					if err != nil {
+						t.config.Policies.ReadUnlock()
 						return errfmt.WrapError(err)
 					}
 				}
@@ -1756,6 +1771,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 			}
 		}
 	}
+	t.config.Policies.ReadUnlock()
 
 	for k, v := range errArgFilter {
 		if v != nil {

@@ -1,14 +1,15 @@
 package policy
 
 import (
-	"sync/atomic"
+	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
-// TODO: add locking mechanism as policies will change at runtime
 type Policies struct {
+	rwmu sync.RWMutex
+
 	policiesArray             [MaxPolicies]*Policy // underlying filter policies array
 	filterEnabledPoliciesMap  map[*Policy]int      // stores only enabled policies
 	filterUserlandPoliciesMap map[*Policy]int      // stores a reduced map with only userland filterable policies
@@ -26,6 +27,7 @@ type Policies struct {
 
 func NewPolicies() *Policies {
 	return &Policies{
+		rwmu:                      sync.RWMutex{},
 		policiesArray:             [MaxPolicies]*Policy{},
 		filterEnabledPoliciesMap:  map[*Policy]int{},
 		filterUserlandPoliciesMap: map[*Policy]int{},
@@ -41,78 +43,82 @@ func NewPolicies() *Policies {
 }
 
 func (ps *Policies) Count() int {
+	ps.rwmu.RLock()
+	defer ps.rwmu.RUnlock()
+
 	return len(ps.filterEnabledPoliciesMap)
 }
 
 func (ps *Policies) UIDFilterMin() uint64 {
+	ps.rwmu.RLock()
+	defer ps.rwmu.RUnlock()
+
 	return ps.uidFilterMin
 }
 
 func (ps *Policies) UIDFilterMax() uint64 {
+	ps.rwmu.RLock()
+	defer ps.rwmu.RUnlock()
+
 	return ps.uidFilterMax
 }
 
 func (ps *Policies) PIDFilterMin() uint64 {
+	ps.rwmu.RLock()
+	defer ps.rwmu.RUnlock()
+
 	return ps.pidFilterMin
 }
 
 func (ps *Policies) PIDFilterMax() uint64 {
+	ps.rwmu.RLock()
+	defer ps.rwmu.RUnlock()
+
 	return ps.pidFilterMax
 }
 
 func (ps *Policies) UIDFilterableInUserland() bool {
+	ps.rwmu.RLock()
+	defer ps.rwmu.RUnlock()
+
 	return ps.uidFilterableInUserland
 }
 
 func (ps *Policies) PIDFilterableInUserland() bool {
+	ps.rwmu.RLock()
+	defer ps.rwmu.RUnlock()
+
 	return ps.pidFilterableInUserland
 }
 
 // ContainerFilterEnabled returns a bitmap of policies that have at least
 // one container filter type enabled.
-//
-// TODO: make sure the stores are also atomic (an atomic load is only protecting
-// the read from context switches, not from CPU cache coherency issues).
 func (ps *Policies) ContainerFilterEnabled() uint64 {
-	return atomic.LoadUint64(&ps.containerFiltersEnabled)
+	ps.rwmu.RLock()
+	defer ps.rwmu.RUnlock()
+
+	return ps.containerFiltersEnabled
 }
 
 // FilterableInUserland returns a bitmap of policies that must be filtered in userland
 // (ArgFilter, RetFilter, ContextFilter, UIDFilter and PIDFilter).
-//
-// TODO: make sure the stores are also atomic (an atomic load is only protecting
-// the read from context switches, not from CPU cache coherency issues).
 func (ps *Policies) FilterableInUserland() uint64 {
-	return atomic.LoadUint64(&ps.filterableInUserland)
+	ps.rwmu.RLock()
+	defer ps.rwmu.RUnlock()
+
+	return ps.filterableInUserland
 }
 
 // Compute recalculates values, updates flags, fills the reduced userland map,
 // and sets the related bitmap that is used to prevent the iteration of the entire map.
 //
 // It must be called at initialization and at every runtime policies changes.
-func (ps *Policies) Compute() {
-	// update global min and max
-	ps.calculateGlobalMinMax()
+// func (ps *Policies) Compute() {
+// 	ps.WriteLock()
+// 	defer ps.WriteUnlock()
 
-	// update enabled container filter flag
-	ps.updateContainerFilterEnabled()
-
-	userlandMap := make(map[*Policy]int)
-	ps.filterableInUserland = 0
-	for p := range ps.filterEnabledPoliciesMap {
-		if p.ArgFilter.Enabled() ||
-			p.RetFilter.Enabled() ||
-			p.ContextFilter.Enabled() ||
-			(p.UIDFilter.Enabled() && ps.UIDFilterableInUserland()) ||
-			(p.PIDFilter.Enabled() && ps.PIDFilterableInUserland()) {
-			// add policy and set the related bit
-			userlandMap[p] = p.ID
-			utils.SetBit(&ps.filterableInUserland, uint(p.ID))
-		}
-	}
-
-	ps.filterUserlandPoliciesMap = userlandMap
-}
+// 	compute(ps)
+// }
 
 // set, if not err, always reassign values
 func (ps *Policies) set(id int, p *Policy) error {
@@ -132,15 +138,18 @@ func (ps *Policies) set(id int, p *Policy) error {
 	ps.policiesArray[id] = p
 	ps.filterEnabledPoliciesMap[p] = id
 
-	ps.Compute()
+	ps.compute()
 
 	return nil
 }
 
-// Add adds a policy to Policies.
-// Its ID (index) is set to the first room found.
-// Returns nil if policy is already inserted.
+// Add adds a policy to Policies, setting its ID to the first available slot.
+// Returns error if policy is nil or there are no available slots.
+// Returns nil if already set with the same ID.
 func (ps *Policies) Add(p *Policy) error {
+	ps.WriteLock()
+	defer ps.WriteUnlock()
+
 	if len(ps.filterEnabledPoliciesMap) == MaxPolicies {
 		return PoliciesMaxExceededError()
 	}
@@ -154,12 +163,21 @@ func (ps *Policies) Add(p *Policy) error {
 	return nil
 }
 
+// Set sets a policy to Policies.
+// Returns error if policy is nil or ID is out of range.
+// Returns nil if already set with the same ID.
 func (ps *Policies) Set(p *Policy) error {
+	ps.WriteLock()
+	defer ps.WriteUnlock()
+
 	return ps.set(p.ID, p)
 }
 
 // Delete deletes a policy from Policies.
 func (ps *Policies) Delete(id int) error {
+	ps.WriteLock()
+	defer ps.WriteUnlock()
+
 	if !isIDInRange(id) {
 		return PoliciesOutOfRangeError(id)
 	}
@@ -171,12 +189,19 @@ func (ps *Policies) Delete(id int) error {
 	delete(ps.filterUserlandPoliciesMap, ps.policiesArray[id])
 	ps.policiesArray[id] = nil
 
-	ps.Compute()
+	ps.compute()
 
 	return nil
 }
 
+// Lookup returns a policy by ID.
+//
+// Despite being thread-safe, as it returns a pointer, the policy may be changed
+// by other threads at the time the caller uses it.
 func (ps *Policies) Lookup(id int) (*Policy, error) {
+	ps.rwmu.RLock()
+	defer ps.rwmu.RUnlock()
+
 	if !isIDInRange(id) {
 		return nil, PoliciesOutOfRangeError(id)
 	}
@@ -191,9 +216,12 @@ func (ps *Policies) Lookup(id int) (*Policy, error) {
 // MatchedNames returns a list of matched policies names based on
 // the given matched bitmap.
 func (ps *Policies) MatchedNames(matched uint64) []string {
+	ps.rwmu.RLock()
+	defer ps.rwmu.RUnlock()
+
 	names := []string{}
 
-	for p := range ps.Map() {
+	for p := range ps.filterEnabledPoliciesMap {
 		if utils.HasBit(matched, uint(p.ID)) {
 			names = append(names, p.Name)
 		}
@@ -203,12 +231,18 @@ func (ps *Policies) MatchedNames(matched uint64) []string {
 }
 
 // Map returns map with all policies.
+//
+// This map is not a copy, so it should only be used for read operations and
+// surrounded by a read lock. See Policies.ReadLock() and Policies.ReadUnlock().
 func (ps *Policies) Map() map[*Policy]int {
 	return ps.filterEnabledPoliciesMap
 }
 
 // FilterableInUserlandMap returns a reduced policies map which must be filtered in
 // userland (ArgFilter, RetFilter, ContextFilter, UIDFilter and PIDFilter).
+//
+// This map is not a copy, so it should only be used for read operations and
+// surrounded by a read lock. See Policies.ReadLock() and Policies.ReadUnlock().
 func (ps *Policies) FilterableInUserlandMap() map[*Policy]int {
 	return ps.filterUserlandPoliciesMap
 }
@@ -216,8 +250,8 @@ func (ps *Policies) FilterableInUserlandMap() map[*Policy]int {
 func (ps *Policies) updateContainerFilterEnabled() {
 	ps.containerFiltersEnabled = 0
 
-	for p := range ps.Map() {
-		if p.ContainerFilterEnabled() {
+	for p := range ps.filterEnabledPoliciesMap {
+		if p.containerFilterEnabled() {
 			utils.SetBit(&ps.containerFiltersEnabled, uint(p.ID))
 		}
 	}
@@ -248,7 +282,7 @@ func (ps *Policies) calculateGlobalMinMax() {
 		pidMaxFilterableInUserland bool
 	)
 
-	for p := range ps.Map() {
+	for p := range ps.filterEnabledPoliciesMap {
 		policyCount++
 
 		if p.UIDFilter.Enabled() {
@@ -287,7 +321,7 @@ func (ps *Policies) calculateGlobalMinMax() {
 	ps.uidFilterableInUserland = uidMinFilterableInUserland || uidMaxFilterableInUserland
 	ps.pidFilterableInUserland = pidMinFilterableInUserland || pidMaxFilterableInUserland
 
-	if ps.UIDFilterableInUserland() && ps.PIDFilterableInUserland() {
+	if ps.uidFilterableInUserland && ps.pidFilterableInUserland {
 		// there's no need to iterate filter policies again since
 		// all uint events will be submitted from ebpf with no regards
 
@@ -315,9 +349,50 @@ func (ps *Policies) calculateGlobalMinMax() {
 	}
 }
 
-// ContainerFilterEnabled returns true when the policy has at least one container filter type enabled
-func (ps *Policy) ContainerFilterEnabled() bool {
-	return (ps.ContFilter.Enabled() && ps.ContFilter.Value()) ||
-		(ps.NewContFilter.Enabled() && ps.NewContFilter.Value()) ||
-		ps.ContIDFilter.Enabled()
+func (ps *Policies) WriteLock() {
+	ps.rwmu.Lock()
+}
+
+func (ps *Policies) WriteUnlock() {
+	ps.rwmu.Unlock()
+}
+
+func (ps *Policies) ReadLock() {
+	ps.rwmu.RLock()
+}
+
+func (ps *Policies) ReadUnlock() {
+	ps.rwmu.RUnlock()
+}
+
+const MaxPolicies = 64
+
+func isIDInRange(id int) bool {
+	return id >= 0 && id < MaxPolicies
+}
+
+// compute recalculates values, updates flags, fills the reduced userland map,
+// and sets the related bitmap that is used to prevent the iteration of the entire map.
+//
+// It must be called at every runtime policies changes.
+func (ps *Policies) compute() {
+	ps.calculateGlobalMinMax()
+
+	ps.updateContainerFilterEnabled()
+
+	userlandMap := make(map[*Policy]int)
+	ps.filterableInUserland = 0
+	for p := range ps.filterEnabledPoliciesMap {
+		if p.ArgFilter.Enabled() ||
+			p.RetFilter.Enabled() ||
+			p.ContextFilter.Enabled() ||
+			(p.UIDFilter.Enabled() && ps.UIDFilterableInUserland()) ||
+			(p.PIDFilter.Enabled() && ps.PIDFilterableInUserland()) {
+			// add policy and set the related bit
+			userlandMap[p] = p.ID
+			utils.SetBit(&ps.filterableInUserland, uint(p.ID))
+		}
+	}
+
+	ps.filterUserlandPoliciesMap = userlandMap
 }
