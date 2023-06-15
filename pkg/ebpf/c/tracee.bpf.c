@@ -1305,6 +1305,7 @@ int syscall__accept4(void *ctx)
 
     struct socket *old_sock = (struct socket *) saved_args.args[0];
     struct socket *new_sock = (struct socket *) saved_args.args[1];
+    u32 sockfd = (u32) saved_args.args[2];
 
     if (new_sock == NULL) {
         return -1;
@@ -1313,48 +1314,10 @@ int syscall__accept4(void *ctx)
         return -1;
     }
 
-    struct sock *sk_new = get_socket_sock(new_sock);
-    struct sock *sk_old = get_socket_sock(old_sock);
+    save_to_submit_buf(p.event, (void *) &sockfd, sizeof(u32), 0);
+    save_sockaddr_to_buf(p.event, old_sock, 1);
+    save_sockaddr_to_buf(p.event, new_sock, 2);
 
-    u16 family_old = get_sock_family(sk_old);
-    u16 family_new = get_sock_family(sk_new);
-
-    if (family_old == AF_INET && family_new == AF_INET) {
-        net_conn_v4_t net_details_old = {};
-        struct sockaddr_in local;
-        get_network_details_from_sock_v4(sk_old, &net_details_old, 0);
-        get_local_sockaddr_in_from_network_details(&local, &net_details_old, family_old);
-
-        save_to_submit_buf(p.event, (void *) &local, sizeof(struct sockaddr_in), 1);
-
-        net_conn_v4_t net_details_new = {};
-        struct sockaddr_in remote;
-        get_network_details_from_sock_v4(sk_new, &net_details_new, 0);
-        get_remote_sockaddr_in_from_network_details(&remote, &net_details_new, family_new);
-
-        save_to_submit_buf(p.event, (void *) &remote, sizeof(struct sockaddr_in), 2);
-    } else if (family_old == AF_INET6 && family_new == AF_INET6) {
-        net_conn_v6_t net_details_old = {};
-        struct sockaddr_in6 local;
-        get_network_details_from_sock_v6(sk_old, &net_details_old, 0);
-        get_local_sockaddr_in6_from_network_details(&local, &net_details_old, family_old);
-
-        save_to_submit_buf(p.event, (void *) &local, sizeof(struct sockaddr_in6), 1);
-
-        net_conn_v6_t net_details_new = {};
-
-        struct sockaddr_in6 remote;
-        get_network_details_from_sock_v6(sk_new, &net_details_new, 0);
-        get_remote_sockaddr_in6_from_network_details(&remote, &net_details_new, family_new);
-
-        save_to_submit_buf(p.event, (void *) &remote, sizeof(struct sockaddr_in6), 2);
-    } else if (family_old == AF_UNIX && family_new == AF_UNIX) {
-        struct unix_sock *unix_sk_new = (struct unix_sock *) sk_new;
-        struct sockaddr_un sockaddr_new = get_unix_sock_addr(unix_sk_new);
-        save_to_submit_buf(p.event, (void *) &sockaddr_new, sizeof(struct sockaddr_un), 1);
-    } else {
-        return 0;
-    }
     return events_perf_submit(&p, SOCKET_ACCEPT, 0);
 }
 
@@ -2546,12 +2509,14 @@ int BPF_KPROBE(trace_security_socket_accept)
 
     struct socket *sock = (struct socket *) PT_REGS_PARM1(ctx);
     struct socket *new_sock = (struct socket *) PT_REGS_PARM2(ctx);
+    syscall_data_t *sys = &p.task_info->syscall_data;
 
     // save sockets for "socket_accept event"
     if (should_submit(SOCKET_ACCEPT, p.event)) {
         args_t args = {};
         args.args[0] = (unsigned long) sock;
         args.args[1] = (unsigned long) new_sock;
+        args.args[2] = sys->args.args[0]; // sockfd
         save_args(&args, SOCKET_ACCEPT);
     }
 
@@ -2559,7 +2524,6 @@ int BPF_KPROBE(trace_security_socket_accept)
         return 0;
 
     // Load the arguments given to the accept syscall (which eventually invokes this function)
-    syscall_data_t *sys = &p.task_info->syscall_data;
     if (!p.task_info->syscall_traced || (sys->id != SYSCALL_ACCEPT && sys->id != SYSCALL_ACCEPT4))
         return 0;
 
