@@ -10,6 +10,12 @@ You may use `builder/Makefile.packaging` to generate Ubuntu deb packages. It
 will use docker containers to generate appropriate packages, so you don't need
 to install build dependencies in your OS.
 
+Before running these commands make sure your user is added to the docker group:
+
+```
+sudo usermod -aG docker $USER
+```
+
 !!! Ubuntu Note
 
     !!! Building Tip
@@ -53,6 +59,12 @@ to install build dependencies in your OS.
 You may use `builder/Makefile.packaging` to generate Fedora rpm packages. It
 will use docker containers to generate appropriate packages, so you don't need
 to install build dependencies in your OS.
+
+Before running these commands make sure your user is added to the docker group:
+
+```
+sudo usermod -aG docker $USER
+```
 
 !!! Fedora Note
 
