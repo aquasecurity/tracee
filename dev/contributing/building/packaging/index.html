@@ -14807,6 +14807,9 @@ packages. If you would like to have a local build and execution environment,
 <p>You may use <code>builder/Makefile.packaging</code> to generate Ubuntu deb packages. It
 will use docker containers to generate appropriate packages, so you don't need
 to install build dependencies in your OS.</p>
+<p>Before running these commands make sure your user is added to the docker group:</p>
+<div class="highlight"><pre><span></span><code>sudo usermod -aG docker $USER
+</code></pre></div>
 <div class="admonition ubuntu note">
 <p class="admonition-title">Ubuntu</p>
 <div class="admonition building tip">
@@ -14844,6 +14847,9 @@ you to upgrade to "in between releases" versions if a fix is needed.</p>
 <p>You may use <code>builder/Makefile.packaging</code> to generate Fedora rpm packages. It
 will use docker containers to generate appropriate packages, so you don't need
 to install build dependencies in your OS.</p>
+<p>Before running these commands make sure your user is added to the docker group:</p>
+<div class="highlight"><pre><span></span><code>sudo usermod -aG docker $USER
+</code></pre></div>
 <div class="admonition fedora note">
 <p class="admonition-title">Fedora</p>
 <div class="admonition building tip">
