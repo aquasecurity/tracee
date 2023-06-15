@@ -4,6 +4,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/detect"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
@@ -22,19 +23,35 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 			continue
 		}
 
-		dependencies := make([]events.ID, 0)
+		evtDependency := make([]events.ID, 0)
 
 		for _, s := range selectedEvents {
-			eventID, found := events.Definitions.GetID(s.Name)
+			eventID, found := events.Definitions.GetEventIDByName(s.Name)
 			if !found {
 				logger.Errorw("Failed to load event dependency", "event", s.Name)
 				continue
 			}
 
-			dependencies = append(dependencies, eventID)
+			evtDependency = append(evtDependency, eventID)
 		}
 
-		event := events.NewEventDefinition(m.EventName, []string{"signatures", "default"}, dependencies)
+		event := events.NewEvent(
+			id,                                // id,
+			events.Sys32Undefined,             // id32
+			m.EventName,                       // eventName
+			"",                                // docPath
+			false,                             // internal
+			false,                             // syscall
+			[]string{"signatures", "default"}, // sets
+			events.NewDependencies(
+				evtDependency, // ids
+				nil,           // probes
+				nil,           // ksyms
+				nil,           // tailcalls
+				nil,           // capabilities
+			),
+			[]trace.ArgMeta{},
+		)
 
 		err = events.Definitions.Add(id, event)
 		if err != nil {

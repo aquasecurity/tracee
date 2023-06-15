@@ -48,7 +48,7 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 		return fmt.Errorf("error reading events template: %v", err)
 	}
 
-	evtChannel := make(chan events.Event, 1)
+	evtChannel := make(chan *events.Event, 1)
 	retChannel := make(chan WorkRet, 1)
 	wrkChannel := make(chan string, 1)
 
@@ -65,10 +65,10 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 				case <-ctx.Done():
 					return
 				case evt := <-evtChannel:
-					wrkChannel <- evt.Name
+					wrkChannel <- evt.GetName()
 					ctxTimeout, cancel := context.WithTimeout(ctx, timeoutInSec*time.Second)
 					fileName, err := r.GenerateSyscall(ctxTimeout, template, evt)
-					retChannel <- WorkRet{evt.Name, fileName, err}
+					retChannel <- WorkRet{evt.GetName(), fileName, err}
 					cancel()
 				}
 			}
@@ -106,14 +106,14 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 
 	// Pick all events
 
-	var evt events.Event
+	var evt *events.Event
 
-	allEvents := events.Definitions.Events()
+	allEvents := events.Definitions.GetAllEvents()
 
 	// Check if the given events exist
 
 	for _, given := range r.GivenEvents {
-		_, ok := events.Definitions.GetID(given)
+		_, ok := events.Definitions.GetEventIDByName(given)
 		if !ok {
 			logger.Errorw("Event definition not found", "event", given)
 		}
@@ -122,13 +122,13 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 	// Run all the events map through the GPT3 API
 
 	for _, evt = range allEvents {
-		if !evt.Syscall {
+		if !evt.IsSyscall() {
 			continue
 		}
 
 		// Check if the filename exists already and skip if it does
 
-		fileName := outputDirectory + "/" + evt.Name + ".md"
+		fileName := outputDirectory + "/" + evt.GetName() + ".md"
 		_, err := os.Stat(fileName)
 		if err == nil {
 			select {
@@ -145,17 +145,17 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 		if len(r.GivenEvents) > 0 {
 			found := false
 			for _, given := range r.GivenEvents {
-				if strings.Contains(evt.Name, given) {
+				if strings.Contains(evt.GetName(), given) {
 					found = true
 				}
 			}
 			if !found {
-				logger.Debugw("Event not in given list", "event", evt.Name)
+				logger.Debugw("Event not in given list", "event", evt.GetName())
 				continue
 			}
 		}
 
-		logger.Debugw("Picked event", "event", evt.Name)
+		logger.Debugw("Picked event", "event", evt.GetName())
 
 		// Submit event to be processed
 
@@ -172,7 +172,7 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 }
 
 func (r GPTDocsRunner) GenerateSyscall(
-	ctx context.Context, template []byte, evt events.Event,
+	ctx context.Context, template []byte, evt *events.Event,
 ) (
 	string, error,
 ) {
@@ -182,7 +182,7 @@ func (r GPTDocsRunner) GenerateSyscall(
 		}
 	})
 
-	fileName := outputDirectory + "/" + evt.Name + ".md"
+	fileName := outputDirectory + "/" + evt.GetName() + ".md"
 
 	_, err := os.Stat(fileName)
 	if err == nil {
@@ -193,7 +193,7 @@ func (r GPTDocsRunner) GenerateSyscall(
 
 	var y []byte
 
-	y, err = yaml.Marshal(evt.Params)
+	y, err = yaml.Marshal(evt.GetParams())
 	if err != nil {
 		logger.Errorw("Error marshaling event", "err", err)
 	}
@@ -215,7 +215,7 @@ given syscall. The template for this markdown file is the following:
 		"The event, or syscall, name is \"%s\" "+
 		"and the parameter names and types are:\n"+
 		"\n%s\n",
-		headNote, templateYaml, evt.Name, eventArgsYaml,
+		headNote, templateYaml, evt.GetName(), eventArgsYaml,
 	)
 
 	evtChannel := gogpt.NewClient(r.OpenAIKey)

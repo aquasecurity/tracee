@@ -103,8 +103,8 @@ func (tc Config) Validate() error {
 		}
 
 		for e := range p.EventsToTrace {
-			_, exists := events.Definitions.GetSafe(e)
-			if !exists {
+			evtDef := events.Definitions.GetEventByID(e)
+			if evtDef == nil {
 				return errfmt.Errorf("invalid event [%d] to trace in policy [%d]", e, p.ID)
 			}
 		}

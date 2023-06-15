@@ -13,6 +13,12 @@ import (
 )
 
 func TestFindingToEvent(t *testing.T) {
+	if events.Definitions == nil {
+		events.Definitions = events.NewEventGroup()
+		err := events.Definitions.AddBatch(events.CoreDefinitions)
+		assert.NoError(t, err)
+	}
+
 	expected := &trace.Event{
 		EventID:             int(events.StartSignatureID),
 		EventName:           "fake_signature_event",
@@ -86,7 +92,24 @@ func TestFindingToEvent(t *testing.T) {
 
 func createFakeEventAndFinding() detect.Finding {
 	eventName := "fake_signature_event"
-	event := events.NewEventDefinition(eventName, []string{"signatures"}, []events.ID{events.Ptrace})
+
+	event := events.NewEvent(
+		events.StartSignatureID, // id,
+		events.Sys32Undefined,   // id32
+		eventName,               // eventName
+		"",                      // docPath
+		false,                   // internal
+		false,                   // syscall
+		[]string{"signatures"},  // sets
+		events.NewDependencies(
+			[]events.ID{events.Ptrace}, // ids
+			nil,                        // probes
+			nil,                        // ksyms
+			nil,                        // tailcalls
+			nil,                        // capabilities
+		),
+		[]trace.ArgMeta{},
+	)
 
 	events.Definitions.Add(events.StartSignatureID, event)
 

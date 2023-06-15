@@ -12,12 +12,19 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	var runner cmd.Runner
+
+	events.Definitions = events.NewEventGroup()
+	err := events.Definitions.AddBatch(events.CoreDefinitions)
+	if err != nil {
+		return cmd.Runner{}, err
+	}
 
 	// Initialize a tracee config structure
 	cfg := tracee.Config{
@@ -28,7 +35,6 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	// Output command line flags
 
-	var err error
 	var output flags.OutputConfig
 
 	output, err = flags.TraceeEbpfPrepareOutput(c.StringSlice("output"), false)

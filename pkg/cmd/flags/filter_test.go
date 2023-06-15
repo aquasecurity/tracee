@@ -10,6 +10,12 @@ import (
 )
 
 func TestFilter_prepareEventsToTrace(t *testing.T) {
+	if events.Definitions == nil {
+		events.Definitions = events.NewEventGroup()
+		err := events.Definitions.AddBatch(events.CoreDefinitions)
+		assert.NoError(t, err)
+	}
+
 	testCases := []struct {
 		name        string
 		eventFilter cliFilter
@@ -94,7 +100,7 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 	eventsNameToID := events.Definitions.NamesToIDs()
 	// remove internal events since they shouldn't be accessible by users
 	for event, id := range eventsNameToID {
-		if events.Definitions.Get(id).Internal {
+		if events.Definitions.GetEventByID(id).IsInternal() {
 			delete(eventsNameToID, event)
 		}
 	}

@@ -43,10 +43,10 @@ func analyzeHookedAddresses(addresses []uint64, kernelSymbols helpers.KernelSymb
 		}
 		hookingFunction := utils.ParseSymbol(syscallAddress, kernelSymbols)
 		syscallNumber := syscallsToCheck[idx]
-		event, found := events.Definitions.GetSafe(syscallNumber)
+		event := events.Definitions.GetEventByID(syscallNumber)
 		var hookedSyscallName string
-		if found {
-			hookedSyscallName = event.Name
+		if event != nil {
+			hookedSyscallName = event.GetName()
 		} else {
 			hookedSyscallName = fmt.Sprint(syscallNumber)
 		}

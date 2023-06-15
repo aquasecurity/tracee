@@ -126,29 +126,28 @@ func PrintEventList(printRulesSet bool) {
 
 func printEventGroup(b *strings.Builder, firstEventID, lastEventID events.ID) {
 	for i := firstEventID; i < lastEventID; i++ {
-		event, ok := events.Definitions.GetSafe(i)
-		if !ok || event.Internal {
+		event := events.Definitions.GetEventByID(i)
+		if event == nil || event.IsInternal() {
 			continue
 		}
-		if event.Sets != nil {
-			eventSets := fmt.Sprintf("%-30s %-40s %s\n", event.Name, fmt.Sprintf("%v", event.Sets), getFormattedEventParams(i))
+		if len(event.GetSets()) > 0 {
+			eventSets := fmt.Sprintf("%-30s %-40s %s\n", event.GetName(), fmt.Sprintf("%v", event.GetSets()), getFormattedEventParams(i))
 			b.WriteString(eventSets)
 		} else {
-			b.WriteString(event.Name + "\n")
+			b.WriteString(event.GetName() + "\n")
 		}
 	}
 }
 
 func getFormattedEventParams(eventID events.ID) string {
-	evtDef, exists := events.Definitions.GetSafe(eventID)
-	if !exists {
+	evtDef := events.Definitions.GetEventByID(eventID)
+	if evtDef == nil {
 		return "()"
 	}
-	eventParams := evtDef.Params
 	var verboseEventParams string
 	verboseEventParams += "("
 	prefix := ""
-	for index, arg := range eventParams {
+	for index, arg := range evtDef.GetParams() {
 		if index == 0 {
 			verboseEventParams += arg.Type + " " + arg.Name
 			prefix = ", "

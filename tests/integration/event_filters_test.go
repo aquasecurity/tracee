@@ -25,6 +25,12 @@ import (
 // Test_EventFilters tests a variety of trace event filters
 // with different combinations of policies
 func Test_EventFilters(t *testing.T) {
+	if events.Definitions == nil {
+		events.Definitions = events.NewEventGroup()
+		err := events.Definitions.AddBatch(events.CoreDefinitions)
+		assert.NoError(t, err)
+	}
+
 	// Make sure we don't leak any goroutines since we run Tracee many times in this test.
 	// If a test case fails, ignore the leak since it's probably caused by the aborted test.
 	defer goleak.VerifyNone(t)
@@ -1239,10 +1245,10 @@ func isInSets(syscallName string, sets []string) bool {
 func getAllSyscallsInSet(set string) []string {
 	var syscallsInSet []string
 
-	for _, v := range events.Definitions.Events() {
-		for _, c := range v.Sets {
+	for _, v := range events.Definitions.GetAllEvents() {
+		for _, c := range v.GetSets() {
 			if c == set {
-				syscallsInSet = append(syscallsInSet, v.Name)
+				syscallsInSet = append(syscallsInSet, v.GetName())
 			}
 		}
 	}

@@ -1,6 +1,8 @@
 package derive
 
 import (
+	"fmt"
+
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -145,13 +147,22 @@ func buildDerivedEvent(baseEvent *trace.Event, skeleton deriveBase, argsValues [
 }
 
 // store as static variable for mocking in tests
-var getEventDefinition = events.Definitions.Get
+var getEventDefinition = events.Definitions.GetEventByID
 
 func makeDeriveBase(eventID events.ID) deriveBase {
-	def := getEventDefinition(eventID)
-	return deriveBase{
-		Name:   def.Name,
-		ID:     int(eventID),
-		Params: def.Params,
+	if events.Definitions == nil {
+		fmt.Printf("event definitions not found\n")
 	}
+
+	def := events.Definitions.GetEventByID(eventID)
+	if def == nil {
+		fmt.Printf("event %d not found\n", eventID)
+	}
+
+	return deriveBase{
+		Name:   def.GetName(),
+		ID:     int(eventID),
+		Params: def.GetParams(),
+	}
+	// return deriveBase{}
 }

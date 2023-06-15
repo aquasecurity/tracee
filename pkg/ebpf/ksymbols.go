@@ -83,11 +83,9 @@ func (t *Tracee) UpdateBPFKsymbolsMap() error {
 	var reqKsyms []string
 
 	for id := range t.events {
-		event := events.Definitions.Get(id)
-		if event.Dependencies.KSymbols != nil {
-			for _, symDependency := range *event.Dependencies.KSymbols {
-				reqKsyms = append(reqKsyms, symDependency.Symbol)
-			}
+		event := events.Definitions.GetEventByID(id)
+		for _, symDependency := range event.GetDependencies().GetKSymbols() {
+			reqKsyms = append(reqKsyms, symDependency.GetSymbol())
 		}
 	}
 	kallsymsValues := LoadKallsymsValues(t.kernelSymbols, reqKsyms)

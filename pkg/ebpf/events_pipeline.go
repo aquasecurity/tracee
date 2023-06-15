@@ -159,32 +159,32 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				continue
 			}
 			eventId := events.ID(ctx.EventID)
-			eventDefinition, ok := events.Definitions.GetSafe(eventId)
-			if !ok {
+			evtDef := events.Definitions.GetEventByID(eventId)
+			if evtDef == nil {
 				t.handleError(errfmt.Errorf("failed to get configuration of event %d", eventId))
 				continue
 			}
 
-			args := make([]trace.Argument, len(eventDefinition.Params))
+			args := make([]trace.Argument, len(evtDef.GetParams()))
 			for i := 0; i < int(ctx.Argnum); i++ {
 				idx, arg, err := bufferdecoder.ReadArgFromBuff(
 					eventId,
 					ebpfMsgDecoder,
-					eventDefinition.Params,
+					evtDef.GetParams(),
 				)
 				if err != nil {
-					t.handleError(errfmt.Errorf("failed to read argument %d of event %s: %v", i, eventDefinition.Name, err))
+					t.handleError(errfmt.Errorf("failed to read argument %d of event %s: %v", i, evtDef.GetName(), err))
 					continue
 				}
 				if args[idx].Value != nil {
-					t.handleError(errfmt.Errorf("read more than one instance of argument %s of event %s. Saved value: %v. New value: %v", arg.Name, eventDefinition.Name, args[idx].Value, arg.Value))
+					t.handleError(errfmt.Errorf("read more than one instance of argument %s of event %s. Saved value: %v. New value: %v", arg.Name, evtDef.GetName(), args[idx].Value, arg.Value))
 				}
 				args[idx] = arg
 			}
 			// Fill missing arguments metadata
-			for i := 0; i < len(eventDefinition.Params); i++ {
+			for i := 0; i < len(evtDef.GetParams()); i++ {
 				if args[i].Value == nil {
-					args[i].ArgMeta = eventDefinition.Params[i]
+					args[i].ArgMeta = evtDef.GetParams()[i]
 				}
 			}
 
@@ -250,7 +250,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				Container:             containerData,
 				Kubernetes:            kubernetesData,
 				EventID:               int(ctx.EventID),
-				EventName:             eventDefinition.Name,
+				EventName:             evtDef.GetName(),
 				MatchedPoliciesKernel: ctx.MatchedPolicies,
 				ArgsNum:               int(ctx.Argnum),
 				ReturnValue:           int(ctx.Retval),
@@ -398,19 +398,19 @@ func parseContextFlags(containerId string, flags uint32) trace.ContextFlags {
 // Get the syscall name from its ID, taking into account architecture and 32bit/64bit modes
 func parseSyscallID(syscallID int, isCompat bool, compatTranslationMap map[events.ID]events.ID) (string, error) {
 	if !isCompat {
-		def, ok := events.Definitions.GetSafe(events.ID(syscallID))
-		if ok {
-			return def.Name, nil
+		evtDef := events.Definitions.GetEventByID(events.ID(syscallID))
+		if evtDef != nil {
+			return evtDef.GetName(), nil
 		}
 		return "", errfmt.Errorf("no syscall event with syscall id %d", syscallID)
 	}
 	id, ok := compatTranslationMap[events.ID(syscallID)]
 	if ok {
-		def, ok := events.Definitions.GetSafe(id)
-		if !ok { // Should never happen, as the translation map should be initialized from events.Definition
+		evtDef := events.Definitions.GetEventByID(id)
+		if evtDef == nil { // Should never happen, as the translation map should be initialized from events.Definition
 			return "", errfmt.Errorf("no syscall event with compat syscall id %d, translated to ID %d", syscallID, id)
 		}
-		return def.Name, nil
+		return evtDef.GetName(), nil
 	}
 	return "", errfmt.Errorf("no syscall event with compat syscall id %d", syscallID)
 }

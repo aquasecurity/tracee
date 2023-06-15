@@ -114,7 +114,7 @@ func CreatePolicies(filterMap PolicyFilterMap, newBinary bool) (*policy.Policies
 	eventsNameToID := events.Definitions.NamesToIDs()
 	// remove internal events since they shouldn't be accessible by users
 	for event, id := range eventsNameToID {
-		if events.Definitions.Get(id).Internal {
+		if events.Definitions.GetEventByID(id).IsInternal() {
 			delete(eventsNameToID, event)
 		}
 	}
@@ -362,8 +362,8 @@ func prepareEventsToTrace(
 	isExcluded := make(map[events.ID]bool)
 
 	// build a map: k:set, v:eventID
-	for id, event := range events.Definitions.Events() {
-		for _, set := range event.Sets {
+	for id, event := range events.Definitions.GetAllEvents() {
+		for _, set := range event.GetSets() {
 			setsToEvents[set] = append(setsToEvents[set], id)
 		}
 	}
@@ -453,7 +453,7 @@ func prepareEventsToTrace(
 		}
 		for _, id := range setEvents {
 			if !isExcluded[id] {
-				res[id] = events.Definitions.Get(id).Name
+				res[id] = events.Definitions.GetEventByID(id).GetName()
 			}
 		}
 	}

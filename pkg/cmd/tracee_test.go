@@ -9,6 +9,12 @@ import (
 )
 
 func Test_getFormattedEventParams(t *testing.T) {
+	if events.Definitions == nil {
+		events.Definitions = events.NewEventGroup()
+		err := events.Definitions.AddBatch(events.CoreDefinitions)
+		assert.NoError(t, err)
+	}
+
 	testCases := []struct {
 		input  events.ID
 		output string
