@@ -7,7 +7,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
-// TODO: add locking mechanism as policies will change at runtime
 type Policies struct {
 	policiesArray             [MaxPolicies]*Policy // underlying filter policies array
 	filterEnabledPoliciesMap  map[*Policy]int      // stores only enabled policies
@@ -86,11 +85,11 @@ func (ps *Policies) FilterableInUserland() uint64 {
 	return atomic.LoadUint64(&ps.filterableInUserland)
 }
 
-// Compute recalculates values, updates flags, fills the reduced userland map,
+// compute recalculates values, updates flags, fills the reduced userland map,
 // and sets the related bitmap that is used to prevent the iteration of the entire map.
 //
 // It must be called at initialization and at every runtime policies changes.
-func (ps *Policies) Compute() {
+func (ps *Policies) compute() {
 	// update global min and max
 	ps.calculateGlobalMinMax()
 
@@ -132,9 +131,32 @@ func (ps *Policies) set(id int, p *Policy) error {
 	ps.policiesArray[id] = p
 	ps.filterEnabledPoliciesMap[p] = id
 
-	ps.Compute()
+	ps.compute()
 
 	return nil
+}
+
+// TODO: API to change policies and receive a new Policies snapshot
+
+// TODO: BPF map reset and update with new policies
+
+// Create a new Policies object with the same policies as the current one
+func (ps *Policies) Copy() (*Policies, error) {
+	copy := NewPolicies()
+
+	for id := range ps.policiesArray {
+		if ps.policiesArray[id] != nil {
+			if err := copy.set(id, ps.policiesArray[id]); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	// TODO: Deep copy of all policies
+
+	copy.compute()
+
+	return copy, nil
 }
 
 // Add adds a policy to Policies.
@@ -171,7 +193,7 @@ func (ps *Policies) Delete(id int) error {
 	delete(ps.filterUserlandPoliciesMap, ps.policiesArray[id])
 	ps.policiesArray[id] = nil
 
-	ps.Compute()
+	ps.compute()
 
 	return nil
 }
@@ -287,7 +309,7 @@ func (ps *Policies) calculateGlobalMinMax() {
 	ps.uidFilterableInUserland = uidMinFilterableInUserland || uidMaxFilterableInUserland
 	ps.pidFilterableInUserland = pidMinFilterableInUserland || pidMaxFilterableInUserland
 
-	if ps.UIDFilterableInUserland() && ps.PIDFilterableInUserland() {
+	if ps.uidFilterableInUserland && ps.pidFilterableInUserland {
 		// there's no need to iterate filter policies again since
 		// all uint events will be submitted from ebpf with no regards
 
@@ -315,9 +337,8 @@ func (ps *Policies) calculateGlobalMinMax() {
 	}
 }
 
-// ContainerFilterEnabled returns true when the policy has at least one container filter type enabled
-func (ps *Policy) ContainerFilterEnabled() bool {
-	return (ps.ContFilter.Enabled() && ps.ContFilter.Value()) ||
-		(ps.NewContFilter.Enabled() && ps.NewContFilter.Value()) ||
-		ps.ContIDFilter.Enabled()
+const MaxPolicies = 64
+
+func isIDInRange(id int) bool {
+	return id >= 0 && id < MaxPolicies
 }

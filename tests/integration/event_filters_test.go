@@ -999,12 +999,14 @@ func Test_EventFilters(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// prepare tracee config
 			config := tracee.Config{
-				Policies:   newPolicies(tc.policies...),
 				ChanEvents: make(chan trace.Event, 1000),
 				Capabilities: &tracee.CapabilitiesConfig{
 					BypassCaps: true,
 				},
 			}
+			config.Policies = newPolicies(tc.policies...)
+			_, err := config.Policies.StoreSnapshot()
+			require.NoError(t, err, "failed to store policies snapshot")
 
 			ctx, cancel := context.WithCancel(context.Background())
 

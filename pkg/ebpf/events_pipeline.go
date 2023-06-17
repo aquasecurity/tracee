@@ -12,6 +12,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -194,6 +195,9 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				stackAddresses, _ = t.getStackAddresses(ctx.StackID)
 			}
 
+			// Save the original bpf_ktime_get_ns() timestamp
+			origEventTS := ctx.Ts
+
 			// Currently, the timestamp received from the bpf code is of the monotonic clock.
 			// Todo: The monotonic clock doesn't take into account system sleep time.
 			// Starting from kernel 5.7, we can get the timestamp relative to the system boot time instead which is preferable.
@@ -260,6 +264,17 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				Syscall:               syscall,
 			}
 
+			policies, err := policy.GetSnapshot(int64(origEventTS))
+			if err != nil {
+				t.handleError(err)
+				_ = t.stats.EventsFiltered.Increment()
+				continue
+			}
+			// fmt.Printf("START OF PIPELINE %p\n", policies)
+			// fmt.Printf("event Timestamp: %d\n", origEventTS)
+
+			evt.Policies = unsafe.Pointer(policies)
+
 			// If there aren't any policies that need filtering in userland, tracee **may** skip
 			// this event, as long as there aren't any derivatives that depend on it. Some base
 			// events (for derivative ones) might not have set related policy bit, thus the need
@@ -290,13 +305,18 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 	eventID := events.ID(event.EventID)
 	bitmap := event.MatchedPoliciesKernel
 
+	// fmt.Printf("event: %+v\n", event)
+	// fmt.Printf("event.Policies %x\n", event.Policies)
+	policies := (*policy.Policies)(event.Policies)
+	// fmt.Printf("policies %p\n", policies)
+
 	// Short circuit if there are no policies in userland that need filtering.
-	if bitmap&t.config.Policies.FilterableInUserland() == 0 {
+	if bitmap&policies.FilterableInUserland() == 0 {
 		event.MatchedPoliciesUser = bitmap // store untoched bitmap to be used in sink stage
 		return bitmap
 	}
 
-	for p := range t.config.Policies.FilterableInUserlandMap() { // range through each userland filterable policy
+	for p := range policies.FilterableInUserlandMap() { // range through each userland filterable policy
 		// Policy ID is the bit offset in the bitmap.
 		bitOffset := uint(p.ID)
 
@@ -439,8 +459,20 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 				continue
 			}
 
+			var policies *policy.Policies
+			if event.Policies != nil {
+				policies = (*policy.Policies)(event.Policies)
+			} else {
+				pols, err := policy.GetLastSnapshot()
+				if err != nil {
+					t.handleError(err)
+					continue
+				}
+				policies = pols
+			}
+
 			// Get a bitmap with all policies containing container filters
-			policiesWithContainerFilter := t.config.Policies.ContainerFilterEnabled()
+			policiesWithContainerFilter := policies.ContainerFilterEnabled()
 
 			// Filter out events that don't have a container ID from all the policies that have
 			// container filters. This will guarantee that any of those policies won't get matched
@@ -515,16 +547,25 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					t.handleError(err)
 				}
 
-				for i, derivative := range derivatives {
+				for i := range derivatives {
+					if event.Policies == nil {
+						pols, err := policy.GetLastSnapshot()
+						if err != nil {
+							t.handleError(err)
+							continue
+						}
+						derivatives[i].Policies = unsafe.Pointer(pols)
+					}
+
 					// Skip events that dont work with filtering due to missing types being handled.
 					// https://github.com/aquasecurity/tracee/issues/2486
-					switch events.ID(derivative.EventID) {
+					switch events.ID(derivatives[i].EventID) {
 					case events.SymbolsLoaded:
 					case events.SharedObjectLoaded:
 					case events.PrintMemDump:
 					default:
 						// Derived events might need filtering as well
-						if t.matchPolicies(&derivative) == 0 {
+						if t.matchPolicies(&derivatives[i]) == 0 {
 							_ = t.stats.EventsFiltered.Increment()
 							continue
 						}
@@ -562,8 +603,9 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 				continue
 			}
 
+			policies := (*policy.Policies)(event.Policies)
 			// Populate the event with the names of the matched policies.
-			event.MatchedPolicies = t.config.Policies.MatchedNames(event.MatchedPoliciesUser)
+			event.MatchedPolicies = policies.MatchedNames(event.MatchedPoliciesUser)
 
 			// Parse args here if the rule engine is not enabled (parsed there if it is).
 			if !t.config.EngineConfig.Enabled {

@@ -27,6 +27,9 @@ func getConfigAndPrinterFromPoliciesFlags(cfg tracee.Config, policyFlags, output
 		return cfg, nil, err
 	}
 	cfg.Policies = policies
+	if _, err := cfg.Policies.StoreSnapshot(); err != nil {
+		return cfg, nil, err
+	}
 
 	outputFlags, err = getOutputFlagsFromPolicies(outputFlags, policyFiles)
 	if err != nil {
@@ -60,8 +63,10 @@ func getConfigAndPrinterFromFilterFlags(cfg tracee.Config, filterFlags, outputFl
 	if err != nil {
 		return cfg, nil, err
 	}
-
 	cfg.Policies = policies
+	if _, err := cfg.Policies.StoreSnapshot(); err != nil {
+		return cfg, nil, err
+	}
 
 	// Output command line flags
 	output, err := flags.PrepareOutput(outputFlags, true)

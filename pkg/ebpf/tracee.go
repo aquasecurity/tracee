@@ -856,7 +856,7 @@ func (t *Tracee) computeConfigValues() []byte {
 	}
 
 	// compute all policies internals
-	t.config.Policies.Compute()
+	// t.config.Policies.Compute()
 
 	// uid_max
 	binary.LittleEndian.PutUint64(configVal[224:232], t.config.Policies.UIDFilterMax())
