@@ -159,8 +159,8 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 			assert.Equal(t, expected.GetDocPath(), event.GetDocPath())
 			assert.Equal(t, expected.IsInternal(), event.IsInternal())
 			assert.Equal(t, expected.IsSyscall(), event.IsSyscall())
-			assert.Equal(t, expected.GetSets(), event.GetSets())
-			assert.Equal(t, expected.GetParams(), event.GetParams())
+			assert.ElementsMatch(t, expected.GetSets(), event.GetSets())
+			assert.ElementsMatch(t, expected.GetParams(), event.GetParams())
 			assert.ElementsMatch(t, expected.GetDependencies().GetEvents(), event.GetDependencies().GetEvents())
 		}
 	}

@@ -1,21 +1,24 @@
 package ebpf
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/aquasecurity/tracee/pkg/events"
 )
 
 func Test_getTailCalls(t *testing.T) {
+	if events.Definitions == nil {
+		events.Definitions = events.NewEventGroup()
+		err := events.Definitions.AddBatch(events.CoreDefinitions)
+		assert.NoError(t, err)
+	}
+
 	testCases := []struct {
 		name              string
 		events            map[events.ID]eventConfig
 		expectedTailCalls []*events.TailCall
-		expectedErr       error
 	}{
 		{
 			name: "happy path - some direct syscalls and syscall requiring events",
@@ -114,29 +117,8 @@ func Test_getTailCalls(t *testing.T) {
 		t.Run(tc.name,
 			func(t *testing.T) {
 				tailCalls, err := getTailCalls(tc.events)
-				if tc.expectedErr != nil {
-					assert.ErrorIs(t, err, tc.expectedErr)
-					return
-				}
-				require.NoError(t, err)
-				for i := 0; i < len(tailCalls); i++ {
-					found := false
-					for j := 0; j < len(tc.expectedTailCalls); j++ {
-						if tailCalls[i].GetMapName() != tc.expectedTailCalls[j].GetMapName() {
-							continue
-						}
-						if tailCalls[i].GetProgName() != tc.expectedTailCalls[j].GetProgName() {
-							continue
-						}
-						if !reflect.DeepEqual(tailCalls[i].GetMapIndexes(),
-							tc.expectedTailCalls[j].GetMapIndexes(),
-						) {
-							continue
-						}
-						found = true
-					}
-					assert.True(t, found)
-				}
+				assert.NoError(t, err)
+				assert.ElementsMatch(t, tc.expectedTailCalls, tailCalls)
 			},
 		)
 	}
