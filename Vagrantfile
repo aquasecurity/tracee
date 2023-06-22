@@ -17,7 +17,7 @@ Vagrant.configure("2") do |config|
   # To access the Kubernetes dashboard from the host run the following command:
   #     kubectl port-forward --address 0.0.0.0 -n kube-system service/kubernetes-dashboard 10443:443
   #
-  # To sing in use the token retrieved with
+  # To sign in use the token retrieved with
   #     token=$(microk8s kubectl -n kube-system get secret | grep default-token | cut -d " " -f1)
   #     kubectl -n kube-system describe secret $token
   #
