@@ -2,6 +2,7 @@ package signature
 
 import (
 	"bytes"
+	"debug/elf"
 	"fmt"
 	"io/fs"
 	"os"
@@ -57,6 +58,11 @@ func Find(target string, partialEval bool, signaturesDir string, signatures []st
 
 func findGoSigs(dir string) ([]detect.Signature, error) {
 	var res []detect.Signature
+
+	if isBinaryStatic() {
+		logger.Warnw("The tracee static can't load golang signatures. Skipping ...")
+		return res, nil
+	}
 
 	errWD := filepath.WalkDir(dir,
 		func(path string, d fs.DirEntry, err error) error {
@@ -187,4 +193,28 @@ func isRegoFile(name string) bool {
 
 func isHelper(name string) bool {
 	return strings.HasSuffix(name, "helpers.rego")
+}
+
+func isBinaryStatic() bool {
+	exePath, err := os.Executable()
+	if err != nil {
+		logger.Errorw("Error getting tracee executable path", "error", err)
+		return false
+	}
+
+	loadedObject, err := elf.Open(exePath)
+	if err != nil {
+		logger.Errorw("Error opening tracee executable", "error", err)
+		return false
+	}
+
+	defer func() {
+		if err = loadedObject.Close(); err != nil {
+			logger.Errorw("Error closing file", "error", err)
+		}
+	}()
+
+	_, err = loadedObject.DynamicSymbols()
+
+	return err != nil
 }
