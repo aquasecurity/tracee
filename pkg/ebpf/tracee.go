@@ -1642,12 +1642,12 @@ func (t *Tracee) triggerSyscallsIntegrityCheck(event trace.Event) error {
 
 	for k, v := range errArgFilter {
 		if v != nil {
-			return errfmt.Errorf("error setting %v filter: %v", k, v)
+			return errfmt.Errorf("error invalid policy %v filter: %v", k, v)
 		}
 	}
 
 	eventHandle := t.triggerContexts.Store(event)
-	t.triggerSyscallsIntegrityCheckCall(uint64(eventHandle), uint64(events.MaxSyscallID))
+	t.triggerSyscallsIntegrityCheckCall(uint64(eventHandle), uint64(derive.MaxSupportedSyscallID))
 	return nil
 }
 

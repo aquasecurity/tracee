@@ -5,10 +5,9 @@
 
 #define MAX_PERCPU_BUFSIZE (1 << 15)  // set by the kernel as an upper bound
 #define MAX_STRING_SIZE    4096       // same as PATH_MAX
-#define MAX_BYTES_ARR_SIZE 8192       // max size of bytes array (arbitrarily chosen)
+#define MAX_BYTES_ARR_SIZE 4096       // max size of bytes array (arbitrarily chosen)
 #define MAX_STR_FILTER_SIZE 16        // bounded to size of the compared values (comm)
 #define MAX_BIN_PATH_SIZE   256       // max binary path size
-#define MAX_ARR
 #define FILE_MAGIC_HDR_SIZE 32        // magic_write: bytes to save from a file's header
 #define FILE_MAGIC_MASK     31        // magic_write: mask used for verifier boundaries
 #define NET_SEQ_OPS_SIZE    4         // print_net_seq_ops: struct size - TODO: replace with uprobe argument

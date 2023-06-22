@@ -157,7 +157,7 @@ out:
 
 statfunc int save_u64_arr_to_buf(event_data_t *event, const u64 *ptr, int len, u8 index)
 {
-    u16 zero = 0;
+    // Data saved to submit buf: [index][u16 count][u64 1][u64 2][u64 3]...
     u16 restricted_len = (u16) len;
     u32 total_size = sizeof(u64) * restricted_len;
 

@@ -13,6 +13,7 @@ import (
 )
 
 var SyscallsToCheck = make([]string, 0)
+var MaxSupportedSyscallID = 293 // Based on the __NR_syscalls value for the lowest supported version 4.18
 
 func DetectHookedSyscall(kernelSymbols helpers.KernelSymbolTable) DeriveFunction {
 	return deriveSingleEvent(events.HookedSyscalls, deriveDetectHookedSyscallArgs(kernelSymbols))
@@ -36,8 +37,8 @@ func analyzeHookedAddresses(addresses []uint64, kernelSymbols helpers.KernelSymb
 	hookedSyscalls := make([]trace.HookedSymbolData, 0)
 
 	for _, syscall := range SyscallsToCheck {
-		eventNames := events.Definitions.NamesToIDs()
-		syscallID, ok := eventNames[syscall]
+		eventNamesToIDs := events.Definitions.NamesToIDs()
+		syscallID, ok := eventNamesToIDs[syscall]
 		if !ok {
 			return hookedSyscalls, errfmt.Errorf("%s - no such syscall", syscall)
 		}

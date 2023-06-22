@@ -31,7 +31,7 @@ The default syscalls for amd64 are:
     `bpf`
     `execveat`
 
-    The default syscalls for amd64 are:
+The default syscalls for arm64 are:
     `ioctl`
     `openat`
     `close`
@@ -63,7 +63,7 @@ Example:
 `tracee -f e=hooked_syscalls -f hooked_syscalls.args.check_syscalls=<syscall>,<syscall>,...`
 
 ## Issues
-
+The `check_syscalls` argument is used as a parameter to specify the syscalls to be checked. This will change in the future to be an event parameter.
 
 ## Related Events
 

@@ -1438,7 +1438,7 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
     #else
         return 0;
     #endif
-    // clang-frmat on
+    // clang-format on
 
     program_data_t p = {};
     if (!init_program_data(&p, ctx))
@@ -1486,7 +1486,7 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
     // Golang calling convention per architecture
 
     #if defined(bpf_target_x86)
-        caller_ctx_id = ctx->cx;                // 1st arg
+        caller_ctx_id = ctx->bx;                // 1st arg
         address_array = ((void *) ctx->sp + 8); // 2nd arg
     #elif defined(bpf_target_arm64)
         caller_ctx_id = ctx->user_regs.regs[1]; // 1st arg
