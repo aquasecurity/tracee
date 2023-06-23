@@ -646,9 +646,9 @@ statfunc bool init_shown_modules()
 {
     char modules_sym[8] = "modules";
     struct list_head *head = (struct list_head *) get_symbol_addr(modules_sym);
+    kernel_module_t ker_mod = {};
     bool iterated_all_modules = false;
     struct module *pos, *n;
-    kernel_module_t *mod_from_map;
 
     pos = list_first_entry_ebpf(head, typeof(*pos), list);
     n = pos;
@@ -662,13 +662,8 @@ statfunc bool init_shown_modules()
             iterated_all_modules = true;
             break;
         }
-        mod_from_map = bpf_map_lookup_elem(&modules_map, &pos);
-        if (mod_from_map == NULL) {
-            kernel_module_t m = {.seen_modules_list = true};
-            bpf_map_update_elem(&modules_map, &pos, &m, BPF_ANY);
-        } else {
-            mod_from_map->seen_modules_list = true; // updates the entry in map
-        }
+
+        bpf_map_update_elem(&modules_map, &pos, &ker_mod, BPF_ANY);
     }
 
     return !iterated_all_modules; // False is valid value
@@ -679,8 +674,7 @@ static u64 last_module_insert_time = 0;
 
 statfunc bool is_hidden(u64 mod)
 {
-    kernel_module_t *mod_from_map = bpf_map_lookup_elem(&modules_map, &mod);
-    if (mod_from_map != NULL && mod_from_map->seen_modules_list) {
+    if (bpf_map_lookup_elem(&modules_map, &mod) != NULL) {
         return false;
     }
 
@@ -838,12 +832,12 @@ static __always_inline u64 check_new_mods_only(program_data_t *p)
     return 0;
 }
 
-statfunc bool check_is_proc_modules_hooked(program_data_t *p)
+statfunc int check_is_proc_modules_hooked(program_data_t *p)
 {
     struct module *pos, *n;
-    bool finished_iterating = false;
+    int ret = 2;
+    u64 mod_base_addr;
     char modules_sym[8] = "modules";
-    kernel_module_t *mod_from_map;
     struct list_head *head = (struct list_head *) get_symbol_addr(modules_sym);
     u32 flags = PROC_MODULES | HIDDEN_MODULE;
 
@@ -855,14 +849,17 @@ statfunc bool check_is_proc_modules_hooked(program_data_t *p)
         pos = n;
         n = list_next_entry_ebpf(n, list);
         if (&pos->list == head) {
-            finished_iterating = true;
+            ret = 0;
             break;
         }
 
-        u64 mod = (u64) pos;
-        mod_from_map = bpf_map_lookup_elem(&modules_map, &mod);
-
-        if ((mod_from_map == NULL) || (mod_from_map != NULL && !mod_from_map->seen_proc_modules)) {
+        // Check with the address being the start of the memory area, since
+        // the address from /proc/modules is the base core layout.
+        mod_base_addr = (u64) BPF_CORE_READ(pos, core_layout.base);
+        if (unlikely(mod_base_addr == 0)) { // Module memory was possibly tampered.. submit an error
+            ret = 7;
+            break;
+        } else if (bpf_map_lookup_elem(&modules_map, &mod_base_addr) == NULL) {
             // Was there any recent insertion of a module since we populated
             // modules_list? if so, don't report as there's possible race
             // condition. Note that this granularity (insertion of any module
@@ -874,36 +871,16 @@ statfunc bool check_is_proc_modules_hooked(program_data_t *p)
             // the init_shown_mods time, but the time proc modules map was
             // filled (userspace) - so assume it happened max 2 seconds prior to
             // that.
-
             if (start_scan_time_init_shown_mods - (2 * 1000000000) < last_module_insert_time) {
                 continue;
             }
 
-            // Check again with the address being the start of the memory area, since
-            // there's a chance the module is in /proc/modules but not in /proc/kallsyms (since the
-            // file can be hooked).
-            mod = (u64) BPF_CORE_READ(pos, core_layout.base);
-            mod_from_map = bpf_map_lookup_elem(&modules_map, &mod);
-
-            // No need to check for seen_proc_modules flag here since if it IS
-            // in the map with the address being the start of the memory area,
-            // it necessarily got inserted to the map via the /proc/modules
-            // userspace logic.
-
-            if (mod_from_map == NULL) {
-                // Module was not seen in proc modules, report.
-                lkm_seeker_send_to_userspace(pos, &flags, p);
-            }
-
-            // We couldn't resolve the address from kallsyms but we did see the
-            // module in /proc/modules. This probably means that /proc/kallsyms
-            // is hooked, but we consider this module not hidden, as tools like
-            // lsmod will show it. Thus we gracefully continue and don't report
-            // this.
+            // Module was not seen in proc modules and there was no recent insertion, report.
+            lkm_seeker_send_to_userspace(pos, &flags, p);
         }
     }
 
-    return !finished_iterating;
+    return ret;
 }
 
 statfunc bool kern_ver_below_min_lkm(struct pt_regs *ctx)
@@ -1009,8 +986,9 @@ int lkm_seeker_proc_tail(struct pt_regs *ctx)
     if (!init_tailcall_program_data(&p, ctx))
         return -1;
 
-    if (check_is_proc_modules_hooked(&p) != 0) {
-        tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_UNSPEC, 2);
+    int ret = check_is_proc_modules_hooked(&p);
+    if (ret != 0) {
+        tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_UNSPEC, ret);
         return 1;
     }
 

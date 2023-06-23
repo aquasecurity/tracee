@@ -28,7 +28,7 @@ statfunc int common_utimes(struct pt_regs *);
 statfunc int common_file_modification_ent(struct pt_regs *);
 statfunc int common_file_modification_ret(struct pt_regs *);
 
-// TODO: related do kernel modules
+// TODO: related to kernel modules
 
 statfunc bool init_shown_modules();
 statfunc bool is_hidden(u64);
@@ -36,7 +36,7 @@ statfunc bool find_modules_from_module_kset_list(program_data_t *);
 statfunc struct latch_tree_node *__lt_from_rb(struct rb_node *, int);
 statfunc bool walk_mod_tree(program_data_t *p, struct rb_node *, int);
 statfunc bool find_modules_from_mod_tree(program_data_t *);
-statfunc bool check_is_proc_modules_hooked(program_data_t *);
+statfunc int check_is_proc_modules_hooked(program_data_t *);
 
 // TODO: related to bpf tracing
 
