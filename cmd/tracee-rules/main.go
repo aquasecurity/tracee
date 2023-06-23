@@ -54,10 +54,15 @@ func main() {
 				return fmt.Errorf("invalid target specified: %s", strings.ToLower(c.String("rego-runtime-target")))
 			}
 
+			var rulesDir []string
+			if c.String("rules-dir") != "" {
+				rulesDir = []string{c.String("rules-dir")}
+			}
+
 			sigs, err := signature.Find(
 				target,
 				c.Bool("rego-partial-eval"),
-				c.String("rules-dir"),
+				rulesDir,
 				c.StringSlice("rules"),
 				c.Bool("rego-aio"),
 			)

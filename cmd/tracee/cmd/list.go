@@ -15,10 +15,10 @@ import (
 
 func init() {
 	rootCmd.AddCommand(listCmd)
-	listCmd.Flags().String(
+	listCmd.Flags().StringArray(
 		"signatures-dir",
-		"",
-		"Directory where to search for signatures in CEL (.yaml), OPA (.rego), and Go plugin (.so) formats",
+		[]string{},
+		"Directories where to search for signatures in CEL (.yaml), OPA (.rego), and Go plugin (.so) formats",
 	)
 }
 
@@ -30,7 +30,7 @@ var listCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get signatures to update event list
 
-		sigsDir, err := cmd.Flags().GetString("signatures-dir")
+		sigsDir, err := cmd.Flags().GetStringArray("signatures-dir")
 		if err != nil {
 			logger.Fatalw("Failed to get signatures-dir flag", "err", err)
 			os.Exit(1)
