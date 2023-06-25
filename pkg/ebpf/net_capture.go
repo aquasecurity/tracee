@@ -59,12 +59,12 @@ func (t *Tracee) processNetCapEvents(ctx context.Context, in <-chan *trace.Event
 			select {
 			case event := <-in:
 				t.processNetCapEvent(event)
-				_ = t.stats.NetCapCount.Increment()
+				_ = t.stats.NetCapCount.Increase()
 
 			case lost := <-t.lostNetCapChannel:
 				if lost > 0 {
 					// https://github.com/aquasecurity/libbpfgo/issues/122
-					if err := t.stats.LostNtCapCount.Increment(lost); err != nil {
+					if err := t.stats.LostNtCapCount.Increase(lost); err != nil {
 						logger.Errorw("Incrementing lost network events count", "error", err)
 					}
 					logger.Warnw(fmt.Sprintf("Lost %d network capture events", lost))

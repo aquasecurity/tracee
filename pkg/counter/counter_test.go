@@ -2,176 +2,217 @@ package counter
 
 import (
 	"math"
+	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
-func TestIncrement(t *testing.T) {
-	expected := uint64(1)
-	c := NewCounter(0)
+//
+// Increase
+//
 
-	err := c.Increment()
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	if c.Read() != expected {
-		t.Errorf("Increment was incorrect, got %d, expected %d", c.Read(), expected)
-	}
-}
-
-func TestZeroedIncrement(t *testing.T) {
+// TestZeroedIncrease tests that the counter is not increased when 0 is given.
+func TestZeroedIncrease(t *testing.T) {
 	expected := uint64(1)
 	c := NewCounter(1)
 
-	err := c.Increment(0)
+	err := c.Increase(0)
 
-	if err != nil {
-		t.Error(err)
-	}
-
-	if c.Read() != expected {
-		t.Errorf("Increment was incorrect, got %d, expected %d", c.Read(), expected)
-	}
+	require.NoError(t, err)
+	require.Equal(t, expected, c.Read())
 }
 
-func TestIncrementWrapErr(t *testing.T) {
-	expected := uint64(math.MaxUint64)
-	c := NewCounter(expected)
+// TestIncrease tests that the counter is increased by 1.
+func TestIncrease(t *testing.T) {
+	expected := uint64(1)
+	c := NewCounter(0)
 
-	err := c.Increment()
-	if err == nil {
-		t.Errorf("Increment was incorrect, got no error, expected %v", errorCounterWrapAround())
-	}
+	err := c.Increase()
 
-	if c.Read() != expected {
-		t.Errorf("Increment was incorrect, got %d, expected %d", c.Read(), expected)
-	}
+	require.NoError(t, err)
+	require.Equal(t, expected, c.Read())
 }
 
-func TestIncrementMultiple(t *testing.T) {
+// TestIncrease_MultipleThreads is a stress test to check thread safety for increased.
+func TestIncrease_MultipleThreads(t *testing.T) {
+	expected := uint64(100000)
+	c := NewCounter(0)
+
+	wg := sync.WaitGroup{}
+
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			for j := 0; j < 1000; j++ {
+				err := c.Increase()
+				require.NoError(t, err)
+			}
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+
+	require.Equal(t, expected, c.Read())
+}
+
+// TestIncreaseWrapErr tests that the counter wraps when it reaches the maximum value.
+func TestIncreaseWrapErr(t *testing.T) {
+	expected := uint64(0)
+	c := NewCounter(uint64(math.MaxUint64))
+
+	err := c.Increase()
+
+	require.Error(t, err) // requires wrapped error
+	require.Equal(t, expected, c.Read())
+}
+
+// TestIncreaseMultiple tests that the counter is increased by the given values.
+func TestIncreaseMultiple(t *testing.T) {
 	expected := uint64(1 + 2 + 3)
 	c := NewCounter(0)
 
-	err := c.Increment(1, 2, 3)
-	if err != nil {
-		t.Error(err)
-	}
+	err := c.Increase(1, 2, 3)
 
-	if c.Read() != expected {
-		t.Errorf("Increment was incorrect, got %d, expected %d", c.Read(), expected)
-	}
+	require.NoError(t, err)
+	require.Equal(t, expected, c.Read())
 }
 
-func TestIncrementMultipleSumWrapErr(t *testing.T) {
+// TestIncreaseMultipleSumWrapErr tests that the counter wraps when it reaches the maximum value.
+func TestIncreaseMultipleSumWrapErr(t *testing.T) {
 	expected := uint64(0)
 	c := NewCounter(expected)
 
-	err := c.Increment(1, math.MaxUint64)
-	if err == nil {
-		t.Errorf("Increment was incorrect, got no error, expected %v", errorCounterSumWrapAround())
-	}
+	err := c.Increase(1, math.MaxUint64)
 
-	if c.Read() != expected {
-		t.Errorf("Increment was incorrect, got %d, expected %d", c.Read(), expected)
-	}
+	require.Error(t, err) // requires wrapped error
+	require.Equal(t, expected, c.Read())
 }
 
-func TestIncrementMultipleWrapErr(t *testing.T) {
-	expected := uint64(math.MaxUint64)
-	c := NewCounter(expected)
+//
+// Decrease
+//
 
-	err := c.Increment(1)
-	if err == nil {
-		t.Errorf("Increment was incorrect, got no error, expected %v", errorCounterWrapAround())
-	}
-
-	if c.Read() != expected {
-		t.Errorf("Increment was incorrect, got %d, expected %d", c.Read(), expected)
-	}
-}
-
-func TestDecrement(t *testing.T) {
-	expected := uint64(0)
-	c := NewCounter(1)
-
-	err := c.Decrement()
-	if err != nil {
-		t.Error(err)
-	}
-
-	if c.Read() != expected {
-		t.Errorf("Decrement was incorrect, got %d, expected %d", c.Read(), expected)
-	}
-}
-
-func TestZeroedDecrement(t *testing.T) {
+// TestZeroedDecrease tests that the counter is not decreased when 0 is given.
+func TestZeroedDecrease(t *testing.T) {
 	expected := uint64(1)
 	c := NewCounter(1)
 
-	err := c.Decrement(0)
+	err := c.Decrease(0)
 
-	if err != nil {
-		t.Error(err)
-	}
-
-	if c.Read() != expected {
-		t.Errorf("Decrement was incorrect, got %d, expected %d", c.Read(), expected)
-	}
+	require.NoError(t, err)
+	require.Equal(t, expected, c.Read())
 }
 
-func TestDecrementWrapErr(t *testing.T) {
+// TestDecrease tests that the counter is decreased by 1.
+func TestDecrease(t *testing.T) {
 	expected := uint64(0)
-	c := NewCounter(expected)
+	c := NewCounter(1)
 
-	err := c.Decrement()
-	if err == nil {
-		t.Errorf("Decrement was incorrect, got no error, expected %v", errorCounterWrapAround())
-	}
+	err := c.Decrease()
 
-	if c.Read() != expected {
-		t.Errorf("Decrement was incorrect, got %d, expected %d", c.Read(), expected)
-	}
+	require.NoError(t, err)
+	require.Equal(t, expected, c.Read())
 }
 
-func TestDecrementMultiple(t *testing.T) {
+// TestDecrease_MultipleThreads is a stress test to check thread safety for decreasing.
+func TestDecrease_MultipleThreads(t *testing.T) {
+	expected := uint64(1)
+	c := NewCounter(100001)
+
+	wg := sync.WaitGroup{}
+
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			for j := 0; j < 1000; j++ {
+				err := c.Decrease()
+				if err != nil {
+					wg.Done()
+				}
+				require.NoError(t, err)
+			}
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+
+	require.Equal(t, expected, c.Read())
+}
+
+// TestDecreaseWrapErr tests that the counter wraps when it reaches the minimum value.
+func TestDecreaseWrapErr(t *testing.T) {
+	expected := uint64(math.MaxUint64)
+	c := NewCounter(0)
+
+	err := c.Decrease()
+
+	require.Error(t, err) // requires wrapped error
+	require.Equal(t, expected, c.Read())
+}
+
+// TestDecreaseMultiple tests that the counter is decreased by the given values.
+func TestDecreaseMultiple(t *testing.T) {
 	expected := uint64(0)
 	c := NewCounter(1 + 2 + 3)
 
-	err := c.Decrement(1, 2, 3)
-	if err != nil {
-		t.Error(err)
-	}
+	err := c.Decrease(1, 2, 3)
 
-	if c.Read() != expected {
-		t.Errorf("Decrement was incorrect, got %d, expected %d", c.Read(), expected)
-	}
+	require.NoError(t, err)
+	require.Equal(t, expected, c.Read())
 }
 
-func TestDecrementMultipleSumWrapErr(t *testing.T) {
+// TestDecreaseMultipleSumWrapErr tests that the counter wraps when it reaches the minimum value.
+func TestDecreaseMultipleSumWrapErr(t *testing.T) {
 	expected := uint64(math.MaxUint64)
 	c := NewCounter(math.MaxUint64)
 
-	err := c.Decrement(1, math.MaxUint64)
-	if err == nil {
-		t.Errorf("Decrement was incorrect, got no error, expected %v", errorCounterSumWrapAround())
-	}
+	err := c.Decrease(1, math.MaxUint64)
 
-	if c.Read() != expected {
-		t.Errorf("Decrement was incorrect, got %d, expected %d", c.Read(), expected)
-	}
+	require.Error(t, err) // requires wrapped error
+	require.Equal(t, expected, c.Read())
 }
 
-func TestDecrementMultipleWrapErr(t *testing.T) {
-	expected := uint64(3)
-	c := NewCounter(expected)
+//
+// Increase + Decrease
+//
 
-	err := c.Decrement(1, 2, 1)
-	if err == nil {
-		t.Errorf("Decrement was incorrect, got no error, expected %v", errorCounterWrapAround())
+// TestIncreaseDecrease tests that the counter is increased and decreased by 1.
+func TestIncreaseDecrease(t *testing.T) {
+	expected := uint64(0)
+	c := NewCounter(0)
+
+	err := c.Increase()
+	require.NoError(t, err)
+	err = c.Decrease()
+	require.NoError(t, err)
+
+	require.Equal(t, expected, c.Read())
+}
+
+// TestIncreaseDecrease_MultipleThreads is a stress test to check thread safety.
+func TestIncreaseDecrease_MultipleThreads(t *testing.T) {
+	expected := uint64(0)
+	c := NewCounter(0)
+
+	wg := sync.WaitGroup{}
+
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			for j := 0; j < 1000; j++ {
+				err := c.Increase()
+				require.NoError(t, err)
+				err = c.Decrease()
+				require.NoError(t, err)
+			}
+			wg.Done()
+		}()
 	}
 
-	if c.Read() != expected {
-		t.Errorf("Decrement was incorrect, got %d, expected %d", c.Read(), expected)
-	}
+	wg.Wait()
+
+	require.Equal(t, expected, c.Read())
 }
