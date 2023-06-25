@@ -218,7 +218,7 @@ func (t *Tracee) processFileCaptures(ctx context.Context) {
 			// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:
 			// https://github.com/aquasecurity/libbpfgo/issues/122
 			if lost > 0 {
-				if err := t.stats.LostWrCount.Increment(lost); err != nil {
+				if err := t.stats.LostWrCount.Increase(lost); err != nil {
 					logger.Errorw("Incrementing lost capture count", "error", err)
 				}
 				logger.Warnw(fmt.Sprintf("Lost %d capture events", lost))
