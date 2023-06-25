@@ -23,6 +23,18 @@ func TestZeroedIncrease(t *testing.T) {
 	require.Equal(t, expected, c.Read())
 }
 
+// TestIncreaseAndRead tests that the counter is increased by 1 and returns the new value.
+func TestIncreaseAndRead(t *testing.T) {
+	expected := uint64(1)
+	c := NewCounter(0)
+
+	n, err := c.IncreaseAndRead()
+
+	require.NoError(t, err)
+	require.Equal(t, expected, n)
+	require.Equal(t, expected, c.Read())
+}
+
 // TestIncrease tests that the counter is increased by 1.
 func TestIncrease(t *testing.T) {
 	expected := uint64(1)
@@ -102,6 +114,18 @@ func TestZeroedDecrease(t *testing.T) {
 	err := c.Decrease(0)
 
 	require.NoError(t, err)
+	require.Equal(t, expected, c.Read())
+}
+
+// TestDecreaseAndRead tests that the counter is decreased by 1 and returns the new value.
+func TestDecreaseAndRead(t *testing.T) {
+	expected := uint64(0)
+	c := NewCounter(1)
+
+	n, err := c.DecreaseAndRead()
+
+	require.NoError(t, err)
+	require.Equal(t, expected, n)
 	require.Equal(t, expected, c.Read())
 }
 
