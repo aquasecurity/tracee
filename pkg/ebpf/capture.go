@@ -108,7 +108,6 @@ func (t *Tracee) processFileCaptures(ctx context.Context) {
 					t.handleError(err)
 					continue
 				}
-
 				// note: size of buffer will determine maximum extracted file size! (as writes from kernel are immediate)
 				if t.config.Output.RelativeTime {
 					// To get the monotonic time since tracee was started, we have to subtract the start time from the timestamp.

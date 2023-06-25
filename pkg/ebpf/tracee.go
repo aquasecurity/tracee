@@ -1627,9 +1627,9 @@ func (t *Tracee) triggerSyscallsIntegrityCheck(event trace.Event) error {
 		if len(derive.SyscallsToCheck) == 0 {
 			syscallFilter, ok := hookedSyscallsFilters["check_syscalls"].(*filters.StringFilter)
 			if syscallFilter != nil && ok {
-				eventNames := events.Definitions.NamesToIDs()
+				eventNamesToID := events.Definitions.NamesToIDs()
 				for _, syscall := range syscallFilter.Equal() {
-					_, ok := eventNames[syscall]
+					_, ok := eventNamesToID[syscall]
 					if !ok {
 						errArgFilter[p.ID] = fmt.Errorf("policy %d: %s - no such syscall", p.ID, syscall)
 						break

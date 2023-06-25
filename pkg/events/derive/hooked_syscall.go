@@ -13,7 +13,7 @@ import (
 )
 
 var SyscallsToCheck = make([]string, 0)
-var MaxSupportedSyscallID = 293 // Based on the __NR_syscalls value for the lowest supported version 4.18
+var MaxSupportedSyscallID = events.IoPgetevents // Was the last syscall introduced in the minimum version supported 4.18
 
 func DetectHookedSyscall(kernelSymbols helpers.KernelSymbolTable) DeriveFunction {
 	return deriveSingleEvent(events.HookedSyscalls, deriveDetectHookedSyscallArgs(kernelSymbols))

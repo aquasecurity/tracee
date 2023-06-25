@@ -166,23 +166,24 @@ statfunc int save_u64_arr_to_buf(event_data_t *event, const u64 *ptr, int len, u
 
     // Save argument index
     event->args[event->buf_off] = index;
-    event->buf_off += 1;
 
     // Save number of elements
-    if (event->buf_off > ARGS_BUF_SIZE - sizeof(restricted_len))
+    if (event->buf_off + sizeof(index) > ARGS_BUF_SIZE - sizeof(restricted_len))
         return 0;
-    __builtin_memcpy(&(event->args[event->buf_off]), &restricted_len, sizeof(restricted_len));
-    event->buf_off += sizeof(restricted_len);
-    event->context.argnum++;
+    __builtin_memcpy(
+        &(event->args[event->buf_off + sizeof(index)]), &restricted_len, sizeof(restricted_len));
 
-    if ((event->buf_off > ARGS_BUF_SIZE - MAX_BYTES_ARR_SIZE))
+    if ((event->buf_off + sizeof(index) + sizeof(restricted_len) >
+         ARGS_BUF_SIZE - MAX_BYTES_ARR_SIZE))
         return 0;
 
-    if (bpf_probe_read(&(event->args[event->buf_off]),
+    if (bpf_probe_read(&(event->args[event->buf_off + sizeof(index) + sizeof(restricted_len)]),
                        total_size & (MAX_BYTES_ARR_SIZE - 1),
                        (void *) ptr) != 0)
         return 0;
-    event->buf_off += total_size;
+
+    event->context.argnum++;
+    event->buf_off += sizeof(index) + sizeof(restricted_len) + total_size;
 
     return 1;
 }

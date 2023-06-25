@@ -59,6 +59,7 @@ func ReadArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.A
 	var res interface{}
 	var argIdx uint8
 	var arg trace.Argument
+
 	err = ebpfMsgDecoder.DecodeUint8(&argIdx)
 	if err != nil {
 		return 0, arg, errfmt.Errorf("error reading arg index: %v", err)
