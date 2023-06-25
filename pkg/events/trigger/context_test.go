@@ -1,6 +1,7 @@
 package trigger_test
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -10,6 +11,88 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
+
+func NewFakeTriggerEvent() trace.Event {
+	return trace.Event{
+		Timestamp:           123,
+		ProcessorID:         12,
+		ProcessID:           99,
+		ThreadID:            99,
+		ParentProcessID:     1,
+		HostProcessID:       99,
+		HostThreadID:        99,
+		HostParentProcessID: 1,
+		UserID:              1000,
+		ProcessName:         "cat",
+		HostName:            "tracee",
+		EventID:             2,
+		EventName:           "open",
+		ArgsNum:             3,
+		ReturnValue:         2,
+	}
+}
+
+func EventsMatch(t *testing.T, expected, actual trace.Event) {
+	require.Equal(t, expected.Timestamp, actual.Timestamp)
+	require.Equal(t, expected.ProcessorID, actual.ProcessorID)
+	require.Equal(t, expected.ProcessID, actual.ProcessID)
+	require.Equal(t, expected.ThreadID, actual.ThreadID)
+	require.Equal(t, expected.ParentProcessID, actual.ParentProcessID)
+	require.Equal(t, expected.HostProcessID, actual.HostProcessID)
+	require.Equal(t, expected.HostThreadID, actual.HostThreadID)
+	require.Equal(t, expected.HostParentProcessID, actual.HostParentProcessID)
+	require.Equal(t, expected.UserID, actual.UserID)
+	require.Equal(t, expected.ProcessName, actual.ProcessName)
+	require.Equal(t, expected.HostName, actual.HostName)
+	require.Equal(t, expected.EventID, actual.EventID)
+	require.Equal(t, expected.EventName, actual.EventName)
+	require.Equal(t, expected.ArgsNum, actual.ArgsNum)
+	require.Equal(t, expected.ReturnValue, actual.ReturnValue)
+}
+
+func TestStore(t *testing.T) {
+	e := NewFakeTriggerEvent()
+	c := trigger.NewContext()
+
+	id := c.Store(e)
+
+	require.Equal(t, uint64(1), id)
+}
+
+func TestLoad(t *testing.T) {
+	e := NewFakeTriggerEvent()
+	c := trigger.NewContext()
+
+	id := c.Store(e)
+	out, ok := c.Load(id)
+
+	require.True(t, ok)
+	EventsMatch(t, e, out)
+}
+
+// TestStoreAndLoad_MultipleThreads tests that the context store is thread safe.
+func TestStoreAndLoad_MultipleThreads(t *testing.T) {
+	c := trigger.NewContext()
+
+	wg := sync.WaitGroup{}
+
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			id := c.Store(NewFakeTriggerEvent())
+			c.Load(id) // concurrent load among different threads
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+
+	// check if id is incremented correctly after all threads are done
+	id := c.Store(NewFakeTriggerEvent())
+	require.Equal(t, uint64(101), id)
+	id = c.Store(NewFakeTriggerEvent())
+	require.Equal(t, uint64(102), id)
+}
 
 func TestContext_Apply(t *testing.T) {
 	testCases := []struct {
