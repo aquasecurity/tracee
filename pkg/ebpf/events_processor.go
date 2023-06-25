@@ -43,7 +43,7 @@ func (t *Tracee) processLostEvents() {
 			// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:
 			// https://github.com/aquasecurity/libbpfgo/issues/122
 			if lost > 0 {
-				if err := t.stats.LostEvCount.Increment(lost); err != nil {
+				if err := t.stats.LostEvCount.Increase(lost); err != nil {
 					logger.Errorw("Incrementing lost event count", "error", err)
 				}
 				logger.Warnw(fmt.Sprintf("Lost %d events", lost))

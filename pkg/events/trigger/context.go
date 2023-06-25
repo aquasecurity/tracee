@@ -34,7 +34,7 @@ func NewContext() *context {
 
 func (store *context) Store(event trace.Event) uint64 {
 	id := uint64(store.counter.Read())
-	_ = store.counter.Increment()
+	_ = store.counter.Increase()
 	store.mutex.Lock()
 	store.store[id] = event
 	store.mutex.Unlock()
