@@ -1,11 +1,9 @@
 package ebpf
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/aquasecurity/tracee/pkg/events"
 )
@@ -114,29 +112,8 @@ func Test_getTailCalls(t *testing.T) {
 		t.Run(tc.name,
 			func(t *testing.T) {
 				tailCalls, err := getTailCalls(tc.events)
-				if tc.expectedErr != nil {
-					assert.ErrorIs(t, err, tc.expectedErr)
-					return
-				}
-				require.NoError(t, err)
-				for i := 0; i < len(tailCalls); i++ {
-					found := false
-					for j := 0; j < len(tc.expectedTailCalls); j++ {
-						if tailCalls[i].GetMapName() != tc.expectedTailCalls[j].GetMapName() {
-							continue
-						}
-						if tailCalls[i].GetProgName() != tc.expectedTailCalls[j].GetProgName() {
-							continue
-						}
-						if !reflect.DeepEqual(tailCalls[i].GetMapIndexes(),
-							tc.expectedTailCalls[j].GetMapIndexes(),
-						) {
-							continue
-						}
-						found = true
-					}
-					assert.True(t, found)
-				}
+				assert.NoError(t, err)
+				assert.ElementsMatch(t, tc.expectedTailCalls, tailCalls)
 			},
 		)
 	}
