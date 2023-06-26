@@ -524,7 +524,7 @@ func (t *Tracee) initTailCall(tailCall *events.TailCall) error {
 	}
 
 	// Attach internal syscall probes if needed.
-	for _, index := range tailCall.GetMapIndexes() {
+	for _, index := range tailCall.GetIndexes() {
 		def := events.Definitions.Get(events.ID(index))
 		if def.Syscall {
 			err := t.probes.Attach(probes.SyscallEnter__Internal)
@@ -1186,10 +1186,10 @@ func getTailCalls(eventConfigs map[events.ID]eventConfig) ([]*events.TailCall, e
 		def := events.Definitions.Get(e)
 
 		for _, tailCall := range def.Dependencies.TailCalls {
-			if tailCall.GetMapIndexesLen() == 0 {
+			if tailCall.GetIndexesLen() == 0 {
 				continue // skip if tailcall has no indexes defined
 			}
-			for _, index := range tailCall.GetMapIndexes() {
+			for _, index := range tailCall.GetIndexes() {
 				if index >= uint32(events.MaxCommonID) {
 					logger.Debugw(
 						"Removing index from tail call (over max event id)",

@@ -2,7 +2,6 @@ package events
 
 import (
 	"sync"
-	"sync/atomic"
 
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
@@ -14,42 +13,8 @@ import (
 )
 
 //
-// Extensions WIP:
+// Extensions WIP (PR: #3252 turning events instantiable)
 //
-// NOTE: Historically the events were defined as static data with value receivers, instead of
-//       pointer receivers, and public fields were accessed directly from many places. That happened
-//       because the data never changed and there was no need for concurrency. That is no longer
-//       true, so all the events should now be defined as pointers with private fields and public
-//       getters/setters. This way access to events can be synchronized in the object themselves,
-//       instead of having to do it from the outside (and missing to do so).
-//
-// TODO: Because of dynamically loading/unloading work (and parallelism):
-//
-//       1. Simple types should be atomics (bool, int, uint, pointers, etc.):
-//          - os long as object changes are atomic (no need for multiple field updates)
-//          - usually requires object to have an immutable handle (ID)
-//          - protect loads/stores but not objects single view among 2 CPUs
-//       2. Complex types should have mutexes (maps, slices, etc.)
-//          - updates aren't copy-on-write like atomic types
-//          - complex types are walked through, and not copy-on-write changed
-//       3. All types should be private (no public fields)
-//       4. All types should have getters/setters
-//       5. Return copies of complex types (maps, slices, etc.)
-//
-//
-// Types (keep in a single file for now):
-//
-// 0. ID					immutable
-// 1. EventGroup			mutable, map protected by a mutex
-// 2. Event					mutable with atomic types (no transactional updates needed)
-// 3. Dependencies			mutable with atomic types (no transactional updates needed)
-// 4. ProbeDependency		mutable (atomic "required" field)
-// 5. KSymbolDependency		mutable (atomic "required" field)
-// 6. CapDependency			mutable, map protected by a mutex
-// 7. TailCall				mutable, slice protected by a mutex, atomic strings
-//
-
-// TODO: turn event definitions into EventDefGroup of EventDefs:
 
 //
 // TailCall
@@ -74,113 +39,110 @@ const (
 )
 
 type TailCall struct {
-	mapName    *atomic.Pointer[string] // atomic: atomic pointer load/store (get/set)
-	progName   *atomic.Pointer[string] // atomic: atomic pointer load/store (get/set)
-	mapIndexes []uint32                // load/store for array pointer also protected by mutex
-	mutex      *sync.RWMutex           // mutex: protect the array iterations (transactions)
+	mapName  string
+	progName string
+	indexes  map[uint32]struct{}
+	mutex    *sync.RWMutex
 }
 
 // NewTailCall creates a new TailCall with default values.
 func NewTailCall(mapName, progName string, mapIndexes []uint32) *TailCall {
-	mapNamePtr := &atomic.Pointer[string]{}
-	progNamePtr := &atomic.Pointer[string]{}
+	indexes := make(map[uint32]struct{})
 
-	mapNamePtr.Store(&mapName)
-	progNamePtr.Store(&progName)
+	for _, index := range mapIndexes {
+		indexes[index] = struct{}{}
+	}
 
 	return &TailCall{
-		mapName:    mapNamePtr,
-		progName:   progNamePtr,
-		mapIndexes: mapIndexes,
-		mutex:      &sync.RWMutex{},
+		mapName:  mapName,
+		progName: progName,
+		indexes:  indexes,
+		mutex:    &sync.RWMutex{},
 	}
 }
 
-// AddIndex adds an index to the tail call.
-func (tc *TailCall) AddIndex(givenIndex uint32) {
-	tc.mutex.Lock()
-	defer tc.mutex.Unlock()
-	tc.addIndexes([]uint32{givenIndex})
-}
-
-// AddIndexes adds indexes to the tail call.
-func (tc *TailCall) AddIndexes(givenIndexes []uint32) {
-	tc.mutex.Lock()
-	defer tc.mutex.Unlock()
-	tc.addIndexes(givenIndexes)
-}
-
-// addIndexes adds indexes to the tail call (thread-unsafe).
-func (tc *TailCall) addIndexes(givenIndexes []uint32) {
-	tc.mapIndexes = append(tc.mapIndexes, givenIndexes...)
-}
-
-// DelIndexes removes indexes from the tail call.
-func (tc *TailCall) DelIndexes(givenIndexes []uint32) {
+// SetIndexes sets the indexes of the tailcall (thread-safe).
+func (tc *TailCall) SetIndexes(idxs []uint32) {
 	tc.mutex.Lock()
 	defer tc.mutex.Unlock()
 
-	for _, index := range givenIndexes {
-		tc.delIndex(index)
+	// delete all previous indexes
+	for k := range tc.indexes {
+		delete(tc.indexes, k)
+	}
+
+	tc.addIndexes(idxs)
+}
+
+// GetIndexes returns a slice copy of instanced tailcall indexes (thread-safe).
+func (tc *TailCall) GetIndexes() []uint32 {
+	tc.mutex.RLock()
+	defer tc.mutex.RUnlock()
+
+	indexes := make([]uint32, 0, len(tc.indexes))
+	for k := range tc.indexes {
+		indexes = append(indexes, k)
+	}
+
+	return indexes
+}
+
+// AddIndex adds a tailcall index to the tailcall (thread-safe).
+func (tc *TailCall) AddIndex(idx uint32) {
+	tc.mutex.Lock()
+	defer tc.mutex.Unlock()
+
+	tc.indexes[idx] = struct{}{}
+}
+
+// AddIndexes adds tailcall indexes to the tailcall (thread-safe).
+func (tc *TailCall) AddIndexes(idx []uint32) {
+	tc.mutex.Lock()
+	defer tc.mutex.Unlock()
+
+	tc.addIndexes(idx)
+}
+
+// DelIndex deletes a tailcall index from the tailcall (thread-safe).
+func (tc *TailCall) DelIndex(idx uint32) {
+	tc.mutex.Lock()
+	defer tc.mutex.Unlock()
+
+	delete(tc.indexes, idx)
+}
+
+// DelIndexes deletes tailcall indexes from the tailcall (thread-safe).
+func (tc *TailCall) DelIndexes(idx []uint32) {
+	tc.mutex.Lock()
+	defer tc.mutex.Unlock()
+
+	for _, i := range idx {
+		delete(tc.indexes, i)
 	}
 }
 
-// DelIndex removes an index from the tail call.
-func (tc *TailCall) DelIndex(givenIndex uint32) {
-	tc.mutex.Lock()
-	defer tc.mutex.Unlock()
-	tc.delIndex(givenIndex)
+// GetIndexesLen returns the number of indexes in the tailcall (thread-safe).
+func (tc *TailCall) GetIndexesLen() int {
+	tc.mutex.RLock()
+	defer tc.mutex.RUnlock()
+	return len(tc.indexes)
 }
 
-// delIndex removes an index from the tail call (thread-unsafe).
-func (tc *TailCall) delIndex(givenIndex uint32) {
-	indexOfIndex := -1
-
-	for index, val := range tc.mapIndexes {
-		if givenIndex == val {
-			indexOfIndex = index
-			break
-		}
-	}
-	if indexOfIndex != -1 {
-		tc.mapIndexes = append(
-			tc.mapIndexes[:indexOfIndex],
-			tc.mapIndexes[indexOfIndex+1:]...,
-		)
-	}
-}
-
-// GetMapName returns a copy of the map's name.
+// GetMapName returns the name of the tailcall map (thread-safe).
 func (tc *TailCall) GetMapName() string {
-	return *tc.mapName.Load()
+	return tc.mapName
 }
 
-// SetMapName sets the map's name.
-func (tc *TailCall) SetMapName(mapName string) {
-	tc.mapName.Store(&mapName)
-}
-
-// GetProgName returns a copy of the program's name.
+// GetProgName returns the name of the tailcall program (thread-safe).
 func (tc *TailCall) GetProgName() string {
-	return *tc.progName.Load()
+	return tc.progName
 }
 
-// SetProgName sets the program's name.
-func (tc *TailCall) SetProgName(progName string) {
-	tc.progName.Store(&progName)
-}
-
-// GetMapIndexes returns a copy of the map's indexes at the time of the call.
-func (tc *TailCall) GetMapIndexes() []uint32 {
-	tc.mutex.RLock()
-	defer tc.mutex.RUnlock()
-	return tc.mapIndexes // array copy protected by mutex
-}
-
-func (tc *TailCall) GetMapIndexesLen() int {
-	tc.mutex.RLock()
-	defer tc.mutex.RUnlock()
-	return len(tc.mapIndexes) // array length protected by mutex
+// addIndexes adds tailcall indexes to the tailcall (no locking).
+func (tc *TailCall) addIndexes(idxs []uint32) {
+	for _, i := range idxs {
+		tc.indexes[i] = struct{}{}
+	}
 }
 
 //
