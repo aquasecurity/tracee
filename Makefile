@@ -36,7 +36,6 @@ CMD_STATICCHECK ?= staticcheck
 CMD_STRIP ?= llvm-strip
 CMD_TOUCH ?= touch
 CMD_TR ?= tr
-CMD_SYSCALLER ?= ./tests/integration/syscaller/cmd/syscaller
 
 .check_%:
 #
@@ -732,18 +731,18 @@ test-types: \
 # syscaller (required for integration tests)
 #
 
-.PHONY: $(CMD_SYSCALLER)
-$(CMD_SYSCALLER): \
+.PHONY: $(OUTPUT_DIR)/syscaller
+$(OUTPUT_DIR)/syscaller: \
 	$(OUTPUT_DIR)/libbpf/libbpf.a \
 	| .check_$(CMD_GO)
 #
 	$(GO_ENV_EBPF) \
-	$(CMD_GO) build -o $(CMD_SYSCALLER) $(dir $(CMD_SYSCALLER))
+	$(CMD_GO) build -o $(OUTPUT_DIR)/syscaller ./tests/integration/syscaller/cmd
 
 .PHONY: test-integration
 test-integration: \
 	.checkver_$(CMD_GO) \
-	$(CMD_SYSCALLER) \
+	$(OUTPUT_DIR)/syscaller \
 	tracee-ebpf
 #
 	$(GO_ENV_EBPF) \
@@ -866,4 +865,3 @@ clean:
 	$(CMD_RM) -f .*.md5
 	$(CMD_RM) -f .check*
 	$(CMD_RM) -f .*-pkgs*
-	$(CMD_RM) -f $(CMD_SYSCALLER)
