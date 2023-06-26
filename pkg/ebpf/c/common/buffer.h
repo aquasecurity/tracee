@@ -155,25 +155,37 @@ out:
     return 1;
 }
 
-statfunc int save_u64_arr_to_buf(event_data_t *event, const u64 __user *ptr, int len, u8 index)
+statfunc int save_u64_arr_to_buf(event_data_t *event, const u64 *ptr, int len, u8 index)
 {
-    // Data saved to submit buf: [index][u8 count][u64 1][u64 2][u64 3]...
+    // Data saved to submit buf: [index][u16 count][u64 1][u64 2][u64 3]...
+    u16 restricted_len = (u16) len;
+    u32 total_size = sizeof(u64) * restricted_len;
+
     if (event->buf_off > ARGS_BUF_SIZE - 1)
         return 0;
 
     // Save argument index
     event->args[event->buf_off] = index;
 
-    // Save space for number of elements (1 byte)
-    event->buf_off += 1;
-    volatile u32 orig_off = event->buf_off;
-    if (event->buf_off > ARGS_BUF_SIZE - 1)
+    // Save number of elements
+    if (event->buf_off + sizeof(index) > ARGS_BUF_SIZE - sizeof(restricted_len))
         return 0;
-    event->args[event->buf_off] = 0;
-    event->buf_off += 1;
-    event->context.argnum++;
+    __builtin_memcpy(
+        &(event->args[event->buf_off + sizeof(index)]), &restricted_len, sizeof(restricted_len));
 
-    return add_u64_elements_to_buf(event, ptr, len, orig_off);
+    if ((event->buf_off + sizeof(index) + sizeof(restricted_len) >
+         ARGS_BUF_SIZE - MAX_BYTES_ARR_SIZE))
+        return 0;
+
+    if (bpf_probe_read(&(event->args[event->buf_off + sizeof(index) + sizeof(restricted_len)]),
+                       total_size & (MAX_BYTES_ARR_SIZE - 1),
+                       (void *) ptr) != 0)
+        return 0;
+
+    event->context.argnum++;
+    event->buf_off += sizeof(index) + sizeof(restricted_len) + total_size;
+
+    return 1;
 }
 
 statfunc int

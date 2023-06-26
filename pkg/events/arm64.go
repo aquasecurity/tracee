@@ -964,23 +964,23 @@ const (
 	sys32sync_file_range
 )
 
-func SyscallsToCheck() []ID {
-	return []ID{
-		Ioctl,
-		Openat,
-		Close,
-		Getdents64,
-		Read,
-		Write,
-		Ptrace,
-		Kill,
-		Socket,
-		Execveat,
-		Sendto,
-		Recvfrom,
-		Sendmsg,
-		Recvmsg,
-		Execve,
-		Bpf,
+func DefaultSyscallsToCheck() []string {
+	return []string{
+		"ioctl",
+		"openat",
+		"close",
+		"getdents64",
+		"read",
+		"write",
+		"ptrace",
+		"kill",
+		"socket",
+		"execveat",
+		"sendto",
+		"recvfrom",
+		"sendmsg",
+		"recvmsg",
+		"execve",
+		"bpf",
 	}
 }

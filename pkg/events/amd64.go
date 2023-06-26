@@ -903,25 +903,25 @@ const (
 	sys32undefined                    ID = 10000
 )
 
-func SyscallsToCheck() []ID {
-	return []ID{
-		Read,
-		Write,
-		Open,
-		Close,
-		Ioctl,
-		Socket,
-		Sendto,
-		Recvfrom,
-		Sendmsg,
-		Recvmsg,
-		Execve,
-		Kill,
-		Getdents,
-		Ptrace,
-		Getdents64,
-		Openat,
-		Bpf,
-		Execveat,
+func DefaultSyscallsToCheck() []string {
+	return []string{
+		"read",
+		"write",
+		"open",
+		"close",
+		"ioctl",
+		"socket",
+		"sendto",
+		"recvfrom",
+		"sendmsg",
+		"recvmsg",
+		"execve",
+		"kill",
+		"getdents",
+		"ptrace",
+		"getdents64",
+		"openat",
+		"bpf",
+		"execveat",
 	}
 }

@@ -1417,36 +1417,24 @@ int BPF_KPROBE(trace_do_exit)
 }
 
 // uprobe_syscall_trigger submit to the buff the syscalls function handlers
-// address from the syscall table. the syscalls are stored in map which is
-// syscalls_to_check_map and the syscall-table address is stored in the
-// kernel_symbols map.
+// address from the syscall table. the syscalls are checked in user mode for hooks.
 
 SEC("uprobe/trigger_syscall_event")
 int uprobe_syscall_trigger(struct pt_regs *ctx)
 {
+    u64 table_count = 0;
     u64 caller_ctx_id = 0;
 
     // clang-format off
     //
-    // Golang calling convention is being changed from a stack based argument
-    // passing (plan9 like) to register based argument passing whenever
-    // possible. In arm64, this change happened from go1.17 to go1.18. Use a
-    // magic number argument to allow uprobe handler to recognize the calling
-    // convention in a simple way.
+    // Golang calling convention per architecture
 
     #if defined(bpf_target_x86)
-        // go1.17, go1.18, go 1.19
-        caller_ctx_id = ctx->cx;                                      // 2nd arg
+        caller_ctx_id = ctx->bx;                // 1st arg
+        table_count = ctx->cx;                  // 2nd arg
     #elif defined(bpf_target_arm64)
-        // go1.17
-        u64 magic_num = 0;
-        bpf_probe_read(&magic_num, 8, ((void *) ctx->sp) + 16);       // 1st arg
-        bpf_probe_read(&caller_ctx_id, 8, ((void *) ctx->sp) + 24);   // 2nd arg
-        if (magic_num != UPROBE_MAGIC_NUMBER) {
-            // go1.18, go 1.19
-            magic_num = ctx->user_regs.regs[1];                       // 1st arg
-            caller_ctx_id = ctx->user_regs.regs[2];                   // 2nd arg
-        }
+        caller_ctx_id = ctx->user_regs.regs[1]; // 1st arg
+        table_count = ctx->user_regs.regs[2];   // 2nd arg
     #else
         return 0;
     #endif
@@ -1456,19 +1444,14 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
     if (!init_program_data(&p, ctx))
         return 0;
 
-    // Uprobes are not triggered by syscalls, so we need to override the false value.
-    p.event->context.syscall = NO_SYSCALL;
-    p.event->context.matched_policies = ULLONG_MAX;
-
     // uprobe was triggered from other tracee instance
     if (p.config->tracee_pid != p.task_info->context.pid &&
         p.config->tracee_pid != p.task_info->context.host_pid)
         return 0;
 
-    int key = 0;
-    // TODO: https://github.com/aquasecurity/tracee/issues/2055
-    if (bpf_map_lookup_elem(&syscalls_to_check_map, (void *) &key) == NULL)
-        return 0;
+    // Uprobes are not triggered by syscalls, so we need to override the false value.
+    p.event->context.syscall = NO_SYSCALL;
+    p.event->context.matched_policies = ULLONG_MAX;
 
     char syscall_table_sym[15] = "sys_call_table";
     u64 *syscall_table_addr = (u64 *) get_symbol_addr(syscall_table_sym);
@@ -1476,44 +1459,16 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
     if (unlikely(syscall_table_addr == 0))
         return 0;
 
-    void *stext_addr = get_stext_addr();
-    if (unlikely(stext_addr == NULL))
+    // Get per-cpu string buffer
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
+    if (string_p == NULL)
         return 0;
 
-    void *etext_addr = get_etext_addr();
-    if (unlikely(etext_addr == NULL))
+    u64 table_size = table_count * sizeof(u64);
+    if ((table_size > MAX_PERCPU_BUFSIZE) || (table_size <= 0)) // verify no wrap occurred
         return 0;
 
-    u64 idx;
-    u64 syscall_addr = 0;
-    u64 syscall_address[NUMBER_OF_SYSCALLS_TO_CHECK];
-
-#pragma unroll
-    for (int i = 0; i < NUMBER_OF_SYSCALLS_TO_CHECK; i++) {
-        idx = i;
-
-        // syscalls_to_check_map format: [syscall#][syscall#][syscall#]
-        u64 *syscall_num_p = bpf_map_lookup_elem(&syscalls_to_check_map, (void *) &idx);
-        if (syscall_num_p == NULL) {
-            syscall_address[i] = 0;
-            continue;
-        }
-
-        bpf_core_read(&syscall_addr, sizeof(u64), &syscall_table_addr[*syscall_num_p]);
-        if (syscall_addr == 0) {
-            return 0;
-        }
-
-        // skip if in text segment range
-        if (syscall_addr >= (u64) stext_addr && syscall_addr < (u64) etext_addr) {
-            syscall_address[i] = 0;
-            continue;
-        }
-
-        syscall_address[i] = syscall_addr;
-    }
-
-    save_u64_arr_to_buf(p.event, (const u64 *) syscall_address, NUMBER_OF_SYSCALLS_TO_CHECK, 0);
+    save_u64_arr_to_buf(p.event, (const u64 *) syscall_table_addr, table_count, 0);
     save_to_submit_buf(p.event, (void *) &caller_ctx_id, sizeof(uint64_t), 1);
 
     return events_perf_submit(&p, PRINT_SYSCALL_TABLE, 0);
@@ -1524,32 +1479,19 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
 {
     u64 caller_ctx_id = 0;
     u64 *address_array = NULL;
-    u64 struct_address;
+    u64 struct_address = 0;
 
     // clang-format off
     //
-    // Golang calling convention is being changed from a stack based argument
-    // passing (plan9 like) to register based argument passing whenever
-    // possible. In arm64, this change happened from go1.17 to go1.18. Use a
-    // magic number argument to allow uprobe handler to recognize the calling
-    // convention in a simple way.
+    // Golang calling convention per architecture
 
     #if defined(bpf_target_x86)
-        // go1.17, go1.18, go 1.19
-        caller_ctx_id = ctx->cx;                                      // 2nd arg
-        address_array = ((void *) ctx->sp + 8);                       // 3rd arg
+        caller_ctx_id = ctx->bx;                // 1st arg
+        address_array = ((void *) ctx->sp + 8); // 2nd arg
     #elif defined(bpf_target_arm64)
-        // go1.17
-        u64 magic_num = 0;
-        bpf_probe_read(&magic_num, 8, ((void *) ctx->sp) + 16);       // 1st arg
-        bpf_probe_read(&caller_ctx_id, 8, ((void *) ctx->sp) + 24);   // 2nd arg
-        address_array = ((void *) ctx->sp + 32);                      // 3rd arg
-        if (magic_num != UPROBE_MAGIC_NUMBER) {
-            // go1.18 and go1.19
-            magic_num = ctx->user_regs.regs[1];                       // 1st arg
-            caller_ctx_id = ctx->user_regs.regs[2];                   // 2nd arg
-            address_array = ((void *) ctx->sp + 8);                   // 3rd arg
-        }
+        caller_ctx_id = ctx->user_regs.regs[1]; // 1st arg
+        address_array = ((void *) ctx->sp + 8); // 2nd arg
+
     #else
         return 0;
     #endif
