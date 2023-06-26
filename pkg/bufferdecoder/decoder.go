@@ -237,8 +237,8 @@ func (decoder *EbpfDecoder) DecodeIntArray(msg []int32, size uint32) error {
 
 // DecodeUint64Array translate from the decoder buffer, starting from the decoder cursor, to msg, size * 8 bytes (in order to get int64).
 func (decoder *EbpfDecoder) DecodeUint64Array(msg *[]uint64) error {
-	var arrLen uint8
-	err := decoder.DecodeUint8(&arrLen)
+	var arrLen uint16
+	err := decoder.DecodeUint16(&arrLen)
 	if err != nil {
 		return errfmt.Errorf("error reading ulong array number of elements: %v", err)
 	}

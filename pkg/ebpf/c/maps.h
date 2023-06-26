@@ -92,7 +92,6 @@ BPF_HASH(process_tree_map, u32, eq_t, 10240);                      // filter eve
 BPF_LRU_HASH(proc_info_map, u32, proc_info_t, 10240);              // holds data for every process
 BPF_LRU_HASH(task_info_map, u32, task_info_t, 10240);              // holds data for every task
 BPF_HASH(ksymbols_map, ksym_name_t, u64, 1024);                    // holds the addresses of some kernel symbols
-BPF_HASH(syscalls_to_check_map, int, u64, 256);                    // syscalls to discover
 BPF_ARRAY(config_map, config_entry_t, 1);                          // various configurations
 BPF_ARRAY(file_write_path_filter, path_filter_t, 3);               // filter file write captures
 BPF_ARRAY(file_read_path_filter, path_filter_t, 3);                // filter file read captures

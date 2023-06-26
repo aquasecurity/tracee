@@ -1123,24 +1123,6 @@ func (t *Tracee) populateBPFMaps() error {
 		return errfmt.WrapError(err)
 	}
 
-	_, ok := t.events[events.HookedSyscalls]
-	if ok {
-		syscallsToCheckMap, err := t.bpfModule.GetMap("syscalls_to_check_map")
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-		// the syscallsToCheckMap store the syscall numbers that we are fetching from the syscall table, like that:
-		// [syscall num #1][syscall num #2][syscall num #3]...
-		// with that, we can fetch the syscall address by accessing the syscall table in the syscall number index
-
-		for idx, val := range events.SyscallsToCheck() {
-			err = syscallsToCheckMap.Update(unsafe.Pointer(&(idx)), unsafe.Pointer(&val))
-			if err != nil {
-				return errfmt.WrapError(err)
-			}
-		}
-	}
-
 	// Initialize tail call dependencies
 	tailCalls, err := t.GetTailCalls()
 	if err != nil {
@@ -1421,11 +1403,14 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 	// Some events need initialization before the perf buffers are polled
 
-	t.triggerSyscallsIntegrityCheck(trace.Event{})
-	t.triggerSeqOpsIntegrityCheck(trace.Event{})
-	err := t.triggerMemDump(trace.Event{})
+	err := t.triggerSyscallsIntegrityCheck(trace.Event{})
 	if err != nil {
-		logger.Warnw("Memory dump", "error", err)
+		logger.Warnw("hooked_syscalls returned an error", "error", err)
+	}
+	t.triggerSeqOpsIntegrityCheck(trace.Event{})
+	err = t.triggerMemDump(trace.Event{})
+	if err != nil {
+		logger.Warnw("print_mem_dump returned an error", "error", err)
 	}
 
 	go t.lkmSeekerRoutine(ctx)
@@ -1637,26 +1622,53 @@ func (t *Tracee) netEnabled() bool {
 // TODO: move to triggerEvents package
 //
 
-const uProbeMagicNumber uint64 = 20220829
-
 // triggerSyscallsIntegrityCheck is used by a Uprobe to trigger an eBPF program
 // that prints the syscall table
-func (t *Tracee) triggerSyscallsIntegrityCheck(event trace.Event) {
+func (t *Tracee) triggerSyscallsIntegrityCheck(event trace.Event) error {
 	_, ok := t.events[events.HookedSyscalls]
 	if !ok {
-		return
+		return nil
 	}
+
+	errArgFilter := make(map[int]error, 0)
+
+	for p := range t.config.Policies.Map() {
+		hookedSyscallsFilters := p.ArgFilter.GetEventFilters(events.HookedSyscalls)
+		if len(hookedSyscallsFilters) == 0 {
+			logger.Debugw("policy %d: no syscalls were provided to hooked_syscall event. "+
+				"using default configuration. please provide it via -f hooked_syscalls.args.check_syscalls=<syscall>,<syscall>", p.ID)
+			derive.SyscallsToCheck = events.DefaultSyscallsToCheck()
+		}
+
+		if len(derive.SyscallsToCheck) == 0 {
+			syscallFilter, ok := hookedSyscallsFilters["check_syscalls"].(*filters.StringFilter)
+			if syscallFilter != nil && ok {
+				eventNamesToID := events.Definitions.NamesToIDs()
+				for _, syscall := range syscallFilter.Equal() {
+					_, ok := eventNamesToID[syscall]
+					if !ok {
+						errArgFilter[p.ID] = fmt.Errorf("policy %d: %s - no such syscall", p.ID, syscall)
+						break
+					}
+					derive.SyscallsToCheck = append(derive.SyscallsToCheck, syscall)
+				}
+			}
+		}
+	}
+
+	for k, v := range errArgFilter {
+		if v != nil {
+			return errfmt.Errorf("error invalid policy %v filter: %v", k, v)
+		}
+	}
+
 	eventHandle := t.triggerContexts.Store(event)
-	t.triggerSyscallsIntegrityCheckCall(
-		uProbeMagicNumber,
-		uint64(eventHandle),
-	)
+	t.triggerSyscallsIntegrityCheckCall(uint64(eventHandle), uint64(derive.MaxSupportedSyscallID))
+	return nil
 }
 
 //go:noinline
-func (t *Tracee) triggerSyscallsIntegrityCheckCall(
-	magicNumber uint64, // 1st arg: allow handler to detect calling convention
-	eventHandle uint64) {
+func (t *Tracee) triggerSyscallsIntegrityCheckCall(eventHandle uint64, table_size uint64) {
 }
 
 // triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program
@@ -1676,7 +1688,6 @@ func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
 	}
 	eventHandle := t.triggerContexts.Store(event)
 	_ = t.triggerSeqOpsIntegrityCheckCall(
-		uProbeMagicNumber,
 		uint64(eventHandle),
 		seqOpsPointers,
 	)
@@ -1684,7 +1695,6 @@ func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
 
 //go:noinline
 func (t *Tracee) triggerSeqOpsIntegrityCheckCall(
-	magicNumber uint64, // 1st arg: allow handler to detect calling convention
 	eventHandle uint64,
 	seqOpsStruct [len(derive.NetSeqOps)]uint64) error {
 	return nil
@@ -1701,7 +1711,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 
 	for p := range t.config.Policies.Map() {
 		printMemDumpFilters := p.ArgFilter.GetEventFilters(events.PrintMemDump)
-		if printMemDumpFilters == nil {
+		if len(printMemDumpFilters) == 0 {
 			errArgFilter[p.ID] = fmt.Errorf("policy %d: no address or symbols were provided to print_mem_dump event. "+
 				"please provide it via -f print_mem_dump.args.address=<hex address>"+
 				", -f print_mem_dump.args.symbol_name=<owner>:<symbol> or "+

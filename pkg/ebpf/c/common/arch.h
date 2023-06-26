@@ -291,14 +291,6 @@ statfunc struct pt_regs *get_task_pt_regs(struct task_struct *task)
     #define SYSCALL_PROCESS_MRELEASE       448
 #endif
 
-#if defined(bpf_target_x86)
-    #define NUMBER_OF_SYSCALLS_TO_CHECK 18
-#elif defined(bpf_target_arm64)
-    #define NUMBER_OF_SYSCALLS_TO_CHECK 14
-#else
-    #define NUMBER_OF_SYSCALLS_TO_CHECK 0
-#endif
-
 statfunc bool has_syscall_fd_arg(uint syscall_id)
 {
     // Only syscalls with one fd argument so far

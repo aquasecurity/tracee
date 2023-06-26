@@ -381,7 +381,10 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 			return errfmt.WrapError(err)
 		}
 		if okSyscalls {
-			t.triggerSyscallsIntegrityCheck(*event)
+			err = t.triggerSyscallsIntegrityCheck(*event)
+			if err != nil {
+				logger.Warnw("hooked_syscalls returned an error", "error", err)
+			}
 		}
 		if okSeqOps {
 			t.triggerSeqOpsIntegrityCheck(*event)

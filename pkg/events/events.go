@@ -12455,6 +12455,7 @@ var CoreDefinitions = map[ID]*Event{
 			),
 		),
 		[]trace.ArgMeta{
+			{Type: "[]char*", Name: "check_syscalls"},
 			{Type: "[]trace.HookedSymbolData", Name: "hooked_syscalls"},
 		},
 	),

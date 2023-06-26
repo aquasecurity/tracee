@@ -12,6 +12,9 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
+var SyscallsToCheck = make([]string, 0)
+var MaxSupportedSyscallID = events.IoPgetevents // Was the last syscall introduced in the minimum version supported 4.18
+
 func DetectHookedSyscall(kernelSymbols helpers.KernelSymbolTable) DeriveFunction {
 	return deriveSingleEvent(events.HookedSyscalls, deriveDetectHookedSyscallArgs(kernelSymbols))
 }
@@ -26,29 +29,35 @@ func deriveDetectHookedSyscallArgs(kernelSymbols helpers.KernelSymbolTable) deri
 		if err != nil {
 			return nil, errfmt.Errorf("error parsing analyzing hooked syscalls addresses arg: %v", err)
 		}
-		return []interface{}{hookedSyscall}, nil
+		return []interface{}{SyscallsToCheck, hookedSyscall}, nil
 	}
 }
 
 func analyzeHookedAddresses(addresses []uint64, kernelSymbols helpers.KernelSymbolTable) ([]trace.HookedSymbolData, error) {
 	hookedSyscalls := make([]trace.HookedSymbolData, 0)
-	for idx, syscallAddress := range addresses {
-		// text segment check is done in kernel, marked as 0
+
+	for _, syscall := range SyscallsToCheck {
+		eventNamesToIDs := events.Definitions.NamesToIDs()
+		syscallID, ok := eventNamesToIDs[syscall]
+		if !ok {
+			return hookedSyscalls, errfmt.Errorf("%s - no such syscall", syscall)
+		}
+		syscallAddress := addresses[syscallID]
+		// syscall pointer is null or in kernel bounds
 		if syscallAddress == 0 {
 			continue
 		}
-		syscallsToCheck := events.SyscallsToCheck()
-		if idx > len(syscallsToCheck) {
-			return nil, errfmt.Errorf("syscall index out of the syscalls to check list")
+		if inText, err := kernelSymbols.TextSegmentContains(syscallAddress); err != nil || inText {
+			continue
 		}
+
 		hookingFunction := utils.ParseSymbol(syscallAddress, kernelSymbols)
-		syscallNumber := syscallsToCheck[idx]
-		event := events.Definitions.GetEventByID(syscallNumber)
+		event := events.Definitions.GetEventByID(syscallID)
 		var hookedSyscallName string
 		if event != nil {
 			hookedSyscallName = event.GetName()
 		} else {
-			hookedSyscallName = fmt.Sprint(syscallNumber)
+			hookedSyscallName = fmt.Sprint(syscallID)
 		}
 		hookedSyscalls = append(hookedSyscalls, trace.HookedSymbolData{SymbolName: hookedSyscallName, ModuleOwner: hookingFunction.Owner})
 	}
