@@ -10,28 +10,24 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/getting-started/installing/kubernetes/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/events/builtin/extra/hooked_syscalls/">
       
       
-        <link rel="prev" href="../docker/">
-      
-      
-        <link rel="next" href="../override-os-files/">
       
       
         
       
       
-      <link rel="icon" href="../../../assets/images/favicon.png">
+      <link rel="icon" href="../../../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.17+insiders-4.36.1">
     
     
       
-        <title>Kubernetes - Tracee</title>
+        <title>hooked_syscalls - Tracee</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.cac7c1ad.min.css">
+      <link rel="stylesheet" href="../../../../../assets/stylesheets/main.cac7c1ad.min.css">
       
       
 
@@ -47,7 +43,7 @@
       
     
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -65,7 +61,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#install-tracee-on-kubernetes" class="md-skip">
+        <a href="#hooked_syscalls" class="md-skip">
           Skip to content
         </a>
       
@@ -85,9 +81,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href="../../../../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="../../../images/tracee_logo_only.png" alt="logo">
+  <img src="../../../../../images/tracee_logo_only.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -103,7 +99,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Kubernetes
+              hooked_syscalls
             
           </span>
         </div>
@@ -172,13 +168,11 @@
         
   
   
-    
-  
   
     
     
       <li class="md-tabs__item">
-        <a href="../../.." class="md-tabs__link md-tabs__link--active">
+        <a href="../../../../.." class="md-tabs__link">
           
   
   Getting Started
@@ -196,7 +190,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../tutorials/overview/" class="md-tabs__link">
+        <a href="../../../../../tutorials/overview/" class="md-tabs__link">
           
   
   Tutorials
@@ -214,7 +208,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../docs/overview/" class="md-tabs__link">
+        <a href="../../../../overview/" class="md-tabs__link">
           
   
   Docs
@@ -232,7 +226,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../contributing/overview/" class="md-tabs__link">
+        <a href="../../../../../contributing/overview/" class="md-tabs__link">
           
   
   Contributing
@@ -271,9 +265,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href="../../../../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="../../../images/tracee_logo_only.png" alt="logo">
+  <img src="../../../../../images/tracee_logo_only.png" alt="logo">
 
     </a>
     Tracee
@@ -297,19 +291,17 @@
       
   
   
-    
-  
   
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
         
           <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
             
@@ -328,7 +320,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_1">
             <span class="md-nav__icon md-icon"></span>
             
@@ -345,7 +337,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href="../../../../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -371,7 +363,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../kubernetes-quickstart/" class="md-nav__link">
+      <a href="../../../../../getting-started/kubernetes-quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -395,21 +387,19 @@
                 
   
   
-    
-  
   
     
     
     
       
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_3" >
         
           <label class="md-nav__link" for="__nav_1_3" id="__nav_1_3_label" tabindex="0">
             
@@ -428,7 +418,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_1_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -445,7 +435,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting/" class="md-nav__link">
+      <a href="../../../../../getting-started/installing/getting/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -471,7 +461,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../prerequisites/" class="md-nav__link">
+      <a href="../../../../../getting-started/installing/prerequisites/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -497,7 +487,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../docker/" class="md-nav__link">
+      <a href="../../../../../getting-started/installing/docker/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -521,35 +511,9 @@
                 
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    
-  
-    Kubernetes
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../../../getting-started/installing/kubernetes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -564,37 +528,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#platform-support" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Platform Support
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -606,7 +539,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../override-os-files/" class="md-nav__link">
+      <a href="../../../../../getting-started/installing/override-os-files/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -676,7 +609,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../distros/ubuntu/" class="md-nav__link">
+      <a href="../../../../../getting-started/installing/distros/ubuntu/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -702,7 +635,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../distros/fedora/" class="md-nav__link">
+      <a href="../../../../../getting-started/installing/distros/fedora/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -728,7 +661,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../distros/nix-nixos/" class="md-nav__link">
+      <a href="../../../../../getting-started/installing/distros/nix-nixos/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -821,7 +754,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/overview/" class="md-nav__link">
+      <a href="../../../../../tutorials/overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -847,7 +780,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/k8s-policies/" class="md-nav__link">
+      <a href="../../../../../tutorials/k8s-policies/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -873,7 +806,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/deploy-grafana-dashboard/" class="md-nav__link">
+      <a href="../../../../../tutorials/deploy-grafana-dashboard/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -899,7 +832,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../tutorials/promtail/" class="md-nav__link">
+      <a href="../../../../../tutorials/promtail/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -976,7 +909,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/overview/" class="md-nav__link">
+      <a href="../../../../overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1048,7 +981,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/overview/" class="md-nav__link">
+      <a href="../../../overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1162,7 +1095,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/" class="md-nav__link">
+      <a href="../../syscalls/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1232,7 +1165,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/accept/" class="md-nav__link">
+      <a href="../../syscalls/accept/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1258,7 +1191,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/accept4/" class="md-nav__link">
+      <a href="../../syscalls/accept4/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1284,7 +1217,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/access/" class="md-nav__link">
+      <a href="../../syscalls/access/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1310,7 +1243,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/acct/" class="md-nav__link">
+      <a href="../../syscalls/acct/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1336,7 +1269,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/add_key/" class="md-nav__link">
+      <a href="../../syscalls/add_key/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1362,7 +1295,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/adjtimex/" class="md-nav__link">
+      <a href="../../syscalls/adjtimex/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1388,7 +1321,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/afs/" class="md-nav__link">
+      <a href="../../syscalls/afs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1414,7 +1347,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/afs_syscall/" class="md-nav__link">
+      <a href="../../syscalls/afs_syscall/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1440,7 +1373,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/alarm/" class="md-nav__link">
+      <a href="../../syscalls/alarm/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1466,7 +1399,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/arch_prctl/" class="md-nav__link">
+      <a href="../../syscalls/arch_prctl/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1492,7 +1425,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/bdflush/" class="md-nav__link">
+      <a href="../../syscalls/bdflush/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1518,7 +1451,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/bind/" class="md-nav__link">
+      <a href="../../syscalls/bind/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1544,7 +1477,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/bpf/" class="md-nav__link">
+      <a href="../../syscalls/bpf/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1570,7 +1503,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/break/" class="md-nav__link">
+      <a href="../../syscalls/break/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1596,7 +1529,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/brk/" class="md-nav__link">
+      <a href="../../syscalls/brk/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1622,7 +1555,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/capget/" class="md-nav__link">
+      <a href="../../syscalls/capget/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1648,7 +1581,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/capset/" class="md-nav__link">
+      <a href="../../syscalls/capset/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1674,7 +1607,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/chdir/" class="md-nav__link">
+      <a href="../../syscalls/chdir/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1700,7 +1633,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/chmod/" class="md-nav__link">
+      <a href="../../syscalls/chmod/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1726,7 +1659,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/chown/" class="md-nav__link">
+      <a href="../../syscalls/chown/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1752,7 +1685,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/chown16/" class="md-nav__link">
+      <a href="../../syscalls/chown16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1778,7 +1711,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/chroot/" class="md-nav__link">
+      <a href="../../syscalls/chroot/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1804,7 +1737,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/clock_adjtime/" class="md-nav__link">
+      <a href="../../syscalls/clock_adjtime/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1830,7 +1763,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/clock_adjtime64/" class="md-nav__link">
+      <a href="../../syscalls/clock_adjtime64/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1856,7 +1789,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/clock_getres/" class="md-nav__link">
+      <a href="../../syscalls/clock_getres/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1882,7 +1815,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/clock_getres_time32/" class="md-nav__link">
+      <a href="../../syscalls/clock_getres_time32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1908,7 +1841,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/clock_gettime/" class="md-nav__link">
+      <a href="../../syscalls/clock_gettime/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1934,7 +1867,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/clock_gettime32/" class="md-nav__link">
+      <a href="../../syscalls/clock_gettime32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1960,7 +1893,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/clock_nanosleep/" class="md-nav__link">
+      <a href="../../syscalls/clock_nanosleep/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1986,7 +1919,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/clock_nanosleep_time32/" class="md-nav__link">
+      <a href="../../syscalls/clock_nanosleep_time32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2012,7 +1945,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/clock_settime/" class="md-nav__link">
+      <a href="../../syscalls/clock_settime/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2038,7 +1971,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/clock_settime32/" class="md-nav__link">
+      <a href="../../syscalls/clock_settime32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2064,7 +1997,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/clone/" class="md-nav__link">
+      <a href="../../syscalls/clone/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2090,7 +2023,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/clone3/" class="md-nav__link">
+      <a href="../../syscalls/clone3/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2116,7 +2049,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/close/" class="md-nav__link">
+      <a href="../../syscalls/close/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2142,7 +2075,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/close_range/" class="md-nav__link">
+      <a href="../../syscalls/close_range/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2168,7 +2101,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/connect/" class="md-nav__link">
+      <a href="../../syscalls/connect/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2194,7 +2127,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/copy_file_range/" class="md-nav__link">
+      <a href="../../syscalls/copy_file_range/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2220,7 +2153,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/creat/" class="md-nav__link">
+      <a href="../../syscalls/creat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2246,7 +2179,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/create_module/" class="md-nav__link">
+      <a href="../../syscalls/create_module/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2272,7 +2205,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/delete_module/" class="md-nav__link">
+      <a href="../../syscalls/delete_module/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2298,7 +2231,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/dup/" class="md-nav__link">
+      <a href="../../syscalls/dup/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2324,7 +2257,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/dup2/" class="md-nav__link">
+      <a href="../../syscalls/dup2/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2350,7 +2283,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/dup3/" class="md-nav__link">
+      <a href="../../syscalls/dup3/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2376,7 +2309,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/epoll_create/" class="md-nav__link">
+      <a href="../../syscalls/epoll_create/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2402,7 +2335,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/epoll_create1/" class="md-nav__link">
+      <a href="../../syscalls/epoll_create1/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2428,7 +2361,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/epoll_ctl/" class="md-nav__link">
+      <a href="../../syscalls/epoll_ctl/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2454,7 +2387,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/epoll_ctl_old/" class="md-nav__link">
+      <a href="../../syscalls/epoll_ctl_old/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2480,7 +2413,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/epoll_pwait/" class="md-nav__link">
+      <a href="../../syscalls/epoll_pwait/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2506,7 +2439,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/epoll_pwait2/" class="md-nav__link">
+      <a href="../../syscalls/epoll_pwait2/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2532,7 +2465,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/epoll_wait/" class="md-nav__link">
+      <a href="../../syscalls/epoll_wait/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2558,7 +2491,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/epoll_wait_old/" class="md-nav__link">
+      <a href="../../syscalls/epoll_wait_old/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2584,7 +2517,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/eventfd/" class="md-nav__link">
+      <a href="../../syscalls/eventfd/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2610,7 +2543,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/eventfd2/" class="md-nav__link">
+      <a href="../../syscalls/eventfd2/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2636,7 +2569,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/execve/" class="md-nav__link">
+      <a href="../../syscalls/execve/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2662,7 +2595,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/execveat/" class="md-nav__link">
+      <a href="../../syscalls/execveat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2688,7 +2621,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/exit/" class="md-nav__link">
+      <a href="../../syscalls/exit/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2714,7 +2647,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/exit_group/" class="md-nav__link">
+      <a href="../../syscalls/exit_group/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2740,7 +2673,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/faccessat/" class="md-nav__link">
+      <a href="../../syscalls/faccessat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2766,7 +2699,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/faccessat2/" class="md-nav__link">
+      <a href="../../syscalls/faccessat2/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2792,7 +2725,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fadvise64/" class="md-nav__link">
+      <a href="../../syscalls/fadvise64/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2818,7 +2751,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fadvise64_64/" class="md-nav__link">
+      <a href="../../syscalls/fadvise64_64/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2844,7 +2777,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fallocate/" class="md-nav__link">
+      <a href="../../syscalls/fallocate/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2870,7 +2803,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fanotify_init/" class="md-nav__link">
+      <a href="../../syscalls/fanotify_init/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2896,7 +2829,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fanotify_mark/" class="md-nav__link">
+      <a href="../../syscalls/fanotify_mark/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2922,7 +2855,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fchdir/" class="md-nav__link">
+      <a href="../../syscalls/fchdir/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2948,7 +2881,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fchmod/" class="md-nav__link">
+      <a href="../../syscalls/fchmod/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2974,7 +2907,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fchmodat/" class="md-nav__link">
+      <a href="../../syscalls/fchmodat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3000,7 +2933,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fchown/" class="md-nav__link">
+      <a href="../../syscalls/fchown/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3026,7 +2959,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fchown16/" class="md-nav__link">
+      <a href="../../syscalls/fchown16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3052,7 +2985,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fchownat/" class="md-nav__link">
+      <a href="../../syscalls/fchownat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3078,7 +3011,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fcntl/" class="md-nav__link">
+      <a href="../../syscalls/fcntl/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3104,7 +3037,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fcntl64/" class="md-nav__link">
+      <a href="../../syscalls/fcntl64/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3130,7 +3063,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fdatasync/" class="md-nav__link">
+      <a href="../../syscalls/fdatasync/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3156,7 +3089,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fgetxattr/" class="md-nav__link">
+      <a href="../../syscalls/fgetxattr/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3182,7 +3115,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/finit_module/" class="md-nav__link">
+      <a href="../../syscalls/finit_module/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3208,7 +3141,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/flistxattr/" class="md-nav__link">
+      <a href="../../syscalls/flistxattr/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3234,7 +3167,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/flock/" class="md-nav__link">
+      <a href="../../syscalls/flock/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3260,7 +3193,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fork/" class="md-nav__link">
+      <a href="../../syscalls/fork/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3286,7 +3219,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fremovexattr/" class="md-nav__link">
+      <a href="../../syscalls/fremovexattr/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3312,7 +3245,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fsconfig/" class="md-nav__link">
+      <a href="../../syscalls/fsconfig/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3338,7 +3271,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fsetxattr/" class="md-nav__link">
+      <a href="../../syscalls/fsetxattr/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3364,7 +3297,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fsmount/" class="md-nav__link">
+      <a href="../../syscalls/fsmount/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3390,7 +3323,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fsopen/" class="md-nav__link">
+      <a href="../../syscalls/fsopen/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3416,7 +3349,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fspick/" class="md-nav__link">
+      <a href="../../syscalls/fspick/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3442,7 +3375,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fstat/" class="md-nav__link">
+      <a href="../../syscalls/fstat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3468,7 +3401,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fstat64/" class="md-nav__link">
+      <a href="../../syscalls/fstat64/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3494,7 +3427,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fstatfs/" class="md-nav__link">
+      <a href="../../syscalls/fstatfs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3520,7 +3453,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fstatfs64/" class="md-nav__link">
+      <a href="../../syscalls/fstatfs64/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3546,7 +3479,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/fsync/" class="md-nav__link">
+      <a href="../../syscalls/fsync/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3572,7 +3505,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/ftime/" class="md-nav__link">
+      <a href="../../syscalls/ftime/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3598,7 +3531,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/ftruncate/" class="md-nav__link">
+      <a href="../../syscalls/ftruncate/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3624,7 +3557,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/ftruncate64/" class="md-nav__link">
+      <a href="../../syscalls/ftruncate64/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3650,7 +3583,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/futex/" class="md-nav__link">
+      <a href="../../syscalls/futex/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3676,7 +3609,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/futex_time32/" class="md-nav__link">
+      <a href="../../syscalls/futex_time32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3702,7 +3635,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/futimesat/" class="md-nav__link">
+      <a href="../../syscalls/futimesat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3728,7 +3661,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/get_kernel_syms/" class="md-nav__link">
+      <a href="../../syscalls/get_kernel_syms/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3754,7 +3687,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/get_mempolicy/" class="md-nav__link">
+      <a href="../../syscalls/get_mempolicy/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3780,7 +3713,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/get_robust_list/" class="md-nav__link">
+      <a href="../../syscalls/get_robust_list/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3806,7 +3739,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/get_thread_area/" class="md-nav__link">
+      <a href="../../syscalls/get_thread_area/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3832,7 +3765,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getcpu/" class="md-nav__link">
+      <a href="../../syscalls/getcpu/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3858,7 +3791,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getcwd/" class="md-nav__link">
+      <a href="../../syscalls/getcwd/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3884,7 +3817,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getdents/" class="md-nav__link">
+      <a href="../../syscalls/getdents/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3910,7 +3843,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getdents64/" class="md-nav__link">
+      <a href="../../syscalls/getdents64/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3936,7 +3869,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getegid/" class="md-nav__link">
+      <a href="../../syscalls/getegid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3962,7 +3895,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getegid16/" class="md-nav__link">
+      <a href="../../syscalls/getegid16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -3988,7 +3921,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/geteuid/" class="md-nav__link">
+      <a href="../../syscalls/geteuid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4014,7 +3947,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/geteuid16/" class="md-nav__link">
+      <a href="../../syscalls/geteuid16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4040,7 +3973,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getgid/" class="md-nav__link">
+      <a href="../../syscalls/getgid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4066,7 +3999,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getgid16/" class="md-nav__link">
+      <a href="../../syscalls/getgid16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4092,7 +4025,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getgroups/" class="md-nav__link">
+      <a href="../../syscalls/getgroups/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4118,7 +4051,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getgroups16/" class="md-nav__link">
+      <a href="../../syscalls/getgroups16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4144,7 +4077,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getitimer/" class="md-nav__link">
+      <a href="../../syscalls/getitimer/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4170,7 +4103,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getpeername/" class="md-nav__link">
+      <a href="../../syscalls/getpeername/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4196,7 +4129,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getpgid/" class="md-nav__link">
+      <a href="../../syscalls/getpgid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4222,7 +4155,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getpgrp/" class="md-nav__link">
+      <a href="../../syscalls/getpgrp/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4248,7 +4181,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getpid/" class="md-nav__link">
+      <a href="../../syscalls/getpid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4274,7 +4207,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getpmsg/" class="md-nav__link">
+      <a href="../../syscalls/getpmsg/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4300,7 +4233,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getppid/" class="md-nav__link">
+      <a href="../../syscalls/getppid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4326,7 +4259,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getpriority/" class="md-nav__link">
+      <a href="../../syscalls/getpriority/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4352,7 +4285,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getrandom/" class="md-nav__link">
+      <a href="../../syscalls/getrandom/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4378,7 +4311,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getresgid/" class="md-nav__link">
+      <a href="../../syscalls/getresgid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4404,7 +4337,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getresgid16/" class="md-nav__link">
+      <a href="../../syscalls/getresgid16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4430,7 +4363,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getresuid/" class="md-nav__link">
+      <a href="../../syscalls/getresuid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4456,7 +4389,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getresuid16/" class="md-nav__link">
+      <a href="../../syscalls/getresuid16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4482,7 +4415,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getrlimit/" class="md-nav__link">
+      <a href="../../syscalls/getrlimit/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4508,7 +4441,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getrusage/" class="md-nav__link">
+      <a href="../../syscalls/getrusage/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4534,7 +4467,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getsid/" class="md-nav__link">
+      <a href="../../syscalls/getsid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4560,7 +4493,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getsockname/" class="md-nav__link">
+      <a href="../../syscalls/getsockname/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4586,7 +4519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getsockopt/" class="md-nav__link">
+      <a href="../../syscalls/getsockopt/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4612,7 +4545,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/gettid/" class="md-nav__link">
+      <a href="../../syscalls/gettid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4638,7 +4571,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/gettimeofday/" class="md-nav__link">
+      <a href="../../syscalls/gettimeofday/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4664,7 +4597,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getuid/" class="md-nav__link">
+      <a href="../../syscalls/getuid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4690,7 +4623,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getuid16/" class="md-nav__link">
+      <a href="../../syscalls/getuid16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4716,7 +4649,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/getxattr/" class="md-nav__link">
+      <a href="../../syscalls/getxattr/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4742,7 +4675,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/gtty/" class="md-nav__link">
+      <a href="../../syscalls/gtty/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4768,7 +4701,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/idle/" class="md-nav__link">
+      <a href="../../syscalls/idle/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4794,7 +4727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/init_module/" class="md-nav__link">
+      <a href="../../syscalls/init_module/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4820,7 +4753,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/inotify_add_watch/" class="md-nav__link">
+      <a href="../../syscalls/inotify_add_watch/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4846,7 +4779,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/inotify_init/" class="md-nav__link">
+      <a href="../../syscalls/inotify_init/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4872,7 +4805,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/inotify_init1/" class="md-nav__link">
+      <a href="../../syscalls/inotify_init1/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4898,7 +4831,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/inotify_rm_watch/" class="md-nav__link">
+      <a href="../../syscalls/inotify_rm_watch/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4924,7 +4857,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/io_cancel/" class="md-nav__link">
+      <a href="../../syscalls/io_cancel/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4950,7 +4883,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/io_destroy/" class="md-nav__link">
+      <a href="../../syscalls/io_destroy/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -4976,7 +4909,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/io_getevents/" class="md-nav__link">
+      <a href="../../syscalls/io_getevents/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5002,7 +4935,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/io_pgetevents/" class="md-nav__link">
+      <a href="../../syscalls/io_pgetevents/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5028,7 +4961,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/io_pgetevents_time32/" class="md-nav__link">
+      <a href="../../syscalls/io_pgetevents_time32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5054,7 +4987,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/io_setup/" class="md-nav__link">
+      <a href="../../syscalls/io_setup/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5080,7 +5013,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/io_submit/" class="md-nav__link">
+      <a href="../../syscalls/io_submit/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5106,7 +5039,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/io_uring_enter/" class="md-nav__link">
+      <a href="../../syscalls/io_uring_enter/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5132,7 +5065,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/io_uring_register/" class="md-nav__link">
+      <a href="../../syscalls/io_uring_register/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5158,7 +5091,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/io_uring_setup/" class="md-nav__link">
+      <a href="../../syscalls/io_uring_setup/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5184,7 +5117,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/ioctl/" class="md-nav__link">
+      <a href="../../syscalls/ioctl/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5210,7 +5143,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/ioperm/" class="md-nav__link">
+      <a href="../../syscalls/ioperm/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5236,7 +5169,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/iopl/" class="md-nav__link">
+      <a href="../../syscalls/iopl/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5262,7 +5195,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/ioprio_get/" class="md-nav__link">
+      <a href="../../syscalls/ioprio_get/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5288,7 +5221,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/ioprio_set/" class="md-nav__link">
+      <a href="../../syscalls/ioprio_set/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5314,7 +5247,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/ipc/" class="md-nav__link">
+      <a href="../../syscalls/ipc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5340,7 +5273,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/kcmp/" class="md-nav__link">
+      <a href="../../syscalls/kcmp/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5366,7 +5299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/kexec_file_load/" class="md-nav__link">
+      <a href="../../syscalls/kexec_file_load/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5392,7 +5325,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/kexec_load/" class="md-nav__link">
+      <a href="../../syscalls/kexec_load/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5418,7 +5351,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/keyctl/" class="md-nav__link">
+      <a href="../../syscalls/keyctl/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5444,7 +5377,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/kill/" class="md-nav__link">
+      <a href="../../syscalls/kill/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5470,7 +5403,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/landlock_add_rule/" class="md-nav__link">
+      <a href="../../syscalls/landlock_add_rule/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5496,7 +5429,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/landlock_create_ruleset/" class="md-nav__link">
+      <a href="../../syscalls/landlock_create_ruleset/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5522,7 +5455,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/landlock_restrict_self/" class="md-nav__link">
+      <a href="../../syscalls/landlock_restrict_self/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5548,7 +5481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/lchown/" class="md-nav__link">
+      <a href="../../syscalls/lchown/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5574,7 +5507,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/lchown16/" class="md-nav__link">
+      <a href="../../syscalls/lchown16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5600,7 +5533,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/lgetxattr/" class="md-nav__link">
+      <a href="../../syscalls/lgetxattr/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5626,7 +5559,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/link/" class="md-nav__link">
+      <a href="../../syscalls/link/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5652,7 +5585,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/linkat/" class="md-nav__link">
+      <a href="../../syscalls/linkat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5678,7 +5611,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/listen/" class="md-nav__link">
+      <a href="../../syscalls/listen/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5704,7 +5637,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/listxattr/" class="md-nav__link">
+      <a href="../../syscalls/listxattr/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5730,7 +5663,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/llistxattr/" class="md-nav__link">
+      <a href="../../syscalls/llistxattr/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5756,7 +5689,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/llseek/" class="md-nav__link">
+      <a href="../../syscalls/llseek/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5782,7 +5715,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/lock/" class="md-nav__link">
+      <a href="../../syscalls/lock/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5808,7 +5741,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/lookup_dcookie/" class="md-nav__link">
+      <a href="../../syscalls/lookup_dcookie/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5834,7 +5767,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/lremovexattr/" class="md-nav__link">
+      <a href="../../syscalls/lremovexattr/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5860,7 +5793,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/lseek/" class="md-nav__link">
+      <a href="../../syscalls/lseek/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5886,7 +5819,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/lsetxattr/" class="md-nav__link">
+      <a href="../../syscalls/lsetxattr/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5912,7 +5845,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/lstat/" class="md-nav__link">
+      <a href="../../syscalls/lstat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5938,7 +5871,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/lstat64/" class="md-nav__link">
+      <a href="../../syscalls/lstat64/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5964,7 +5897,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/madvise/" class="md-nav__link">
+      <a href="../../syscalls/madvise/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -5990,7 +5923,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mbind/" class="md-nav__link">
+      <a href="../../syscalls/mbind/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6016,7 +5949,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/membarrier/" class="md-nav__link">
+      <a href="../../syscalls/membarrier/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6042,7 +5975,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/memfd_create/" class="md-nav__link">
+      <a href="../../syscalls/memfd_create/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6068,7 +6001,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/memfd_secret/" class="md-nav__link">
+      <a href="../../syscalls/memfd_secret/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6094,7 +6027,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/migrate_pages/" class="md-nav__link">
+      <a href="../../syscalls/migrate_pages/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6120,7 +6053,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mincore/" class="md-nav__link">
+      <a href="../../syscalls/mincore/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6146,7 +6079,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mkdir/" class="md-nav__link">
+      <a href="../../syscalls/mkdir/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6172,7 +6105,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mkdirat/" class="md-nav__link">
+      <a href="../../syscalls/mkdirat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6198,7 +6131,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mknod/" class="md-nav__link">
+      <a href="../../syscalls/mknod/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6224,7 +6157,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mknodat/" class="md-nav__link">
+      <a href="../../syscalls/mknodat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6250,7 +6183,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mlock/" class="md-nav__link">
+      <a href="../../syscalls/mlock/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6276,7 +6209,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mlock2/" class="md-nav__link">
+      <a href="../../syscalls/mlock2/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6302,7 +6235,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mlockall/" class="md-nav__link">
+      <a href="../../syscalls/mlockall/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6328,7 +6261,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mmap/" class="md-nav__link">
+      <a href="../../syscalls/mmap/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6354,7 +6287,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mmap2/" class="md-nav__link">
+      <a href="../../syscalls/mmap2/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6380,7 +6313,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/modify_ldt/" class="md-nav__link">
+      <a href="../../syscalls/modify_ldt/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6406,7 +6339,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mount/" class="md-nav__link">
+      <a href="../../syscalls/mount/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6432,7 +6365,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mount_setattr/" class="md-nav__link">
+      <a href="../../syscalls/mount_setattr/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6458,7 +6391,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/move_mount/" class="md-nav__link">
+      <a href="../../syscalls/move_mount/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6484,7 +6417,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/move_pages/" class="md-nav__link">
+      <a href="../../syscalls/move_pages/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6510,7 +6443,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mprotect/" class="md-nav__link">
+      <a href="../../syscalls/mprotect/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6536,7 +6469,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mpx/" class="md-nav__link">
+      <a href="../../syscalls/mpx/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6562,7 +6495,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mq_getsetattr/" class="md-nav__link">
+      <a href="../../syscalls/mq_getsetattr/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6588,7 +6521,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mq_notify/" class="md-nav__link">
+      <a href="../../syscalls/mq_notify/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6614,7 +6547,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mq_open/" class="md-nav__link">
+      <a href="../../syscalls/mq_open/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6640,7 +6573,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mq_timedreceive/" class="md-nav__link">
+      <a href="../../syscalls/mq_timedreceive/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6666,7 +6599,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mq_timedreceive_time32/" class="md-nav__link">
+      <a href="../../syscalls/mq_timedreceive_time32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6692,7 +6625,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mq_timedsend/" class="md-nav__link">
+      <a href="../../syscalls/mq_timedsend/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6718,7 +6651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mq_timedsend_time32/" class="md-nav__link">
+      <a href="../../syscalls/mq_timedsend_time32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6744,7 +6677,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mq_unlink/" class="md-nav__link">
+      <a href="../../syscalls/mq_unlink/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6770,7 +6703,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/mremap/" class="md-nav__link">
+      <a href="../../syscalls/mremap/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6796,7 +6729,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/msgctl/" class="md-nav__link">
+      <a href="../../syscalls/msgctl/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6822,7 +6755,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/msgget/" class="md-nav__link">
+      <a href="../../syscalls/msgget/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6848,7 +6781,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/msgrcv/" class="md-nav__link">
+      <a href="../../syscalls/msgrcv/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6874,7 +6807,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/msgsnd/" class="md-nav__link">
+      <a href="../../syscalls/msgsnd/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6900,7 +6833,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/msync/" class="md-nav__link">
+      <a href="../../syscalls/msync/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6926,7 +6859,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/munlock/" class="md-nav__link">
+      <a href="../../syscalls/munlock/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6952,7 +6885,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/munlockall/" class="md-nav__link">
+      <a href="../../syscalls/munlockall/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -6978,7 +6911,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/munmap/" class="md-nav__link">
+      <a href="../../syscalls/munmap/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7004,7 +6937,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/name_to_handle_at/" class="md-nav__link">
+      <a href="../../syscalls/name_to_handle_at/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7030,7 +6963,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/nanosleep/" class="md-nav__link">
+      <a href="../../syscalls/nanosleep/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7056,7 +6989,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/newfstatat/" class="md-nav__link">
+      <a href="../../syscalls/newfstatat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7082,7 +7015,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/nfsservctl/" class="md-nav__link">
+      <a href="../../syscalls/nfsservctl/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7108,7 +7041,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/nice/" class="md-nav__link">
+      <a href="../../syscalls/nice/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7134,7 +7067,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/old_getrlimit/" class="md-nav__link">
+      <a href="../../syscalls/old_getrlimit/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7160,7 +7093,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/old_select/" class="md-nav__link">
+      <a href="../../syscalls/old_select/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7186,7 +7119,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/oldfstat/" class="md-nav__link">
+      <a href="../../syscalls/oldfstat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7212,7 +7145,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/oldlstat/" class="md-nav__link">
+      <a href="../../syscalls/oldlstat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7238,7 +7171,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/oldolduname/" class="md-nav__link">
+      <a href="../../syscalls/oldolduname/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7264,7 +7197,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/oldstat/" class="md-nav__link">
+      <a href="../../syscalls/oldstat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7290,7 +7223,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/olduname/" class="md-nav__link">
+      <a href="../../syscalls/olduname/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7316,7 +7249,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/open/" class="md-nav__link">
+      <a href="../../syscalls/open/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7342,7 +7275,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/open_by_handle_at/" class="md-nav__link">
+      <a href="../../syscalls/open_by_handle_at/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7368,7 +7301,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/open_tree/" class="md-nav__link">
+      <a href="../../syscalls/open_tree/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7394,7 +7327,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/openat/" class="md-nav__link">
+      <a href="../../syscalls/openat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7420,7 +7353,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/openat2/" class="md-nav__link">
+      <a href="../../syscalls/openat2/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7446,7 +7379,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/pause/" class="md-nav__link">
+      <a href="../../syscalls/pause/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7472,7 +7405,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/perf_event_open/" class="md-nav__link">
+      <a href="../../syscalls/perf_event_open/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7498,7 +7431,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/personality/" class="md-nav__link">
+      <a href="../../syscalls/personality/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7524,7 +7457,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/pidfd_getfd/" class="md-nav__link">
+      <a href="../../syscalls/pidfd_getfd/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7550,7 +7483,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/pidfd_open/" class="md-nav__link">
+      <a href="../../syscalls/pidfd_open/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7576,7 +7509,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/pidfd_send_signal/" class="md-nav__link">
+      <a href="../../syscalls/pidfd_send_signal/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7602,7 +7535,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/pipe/" class="md-nav__link">
+      <a href="../../syscalls/pipe/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7628,7 +7561,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/pipe2/" class="md-nav__link">
+      <a href="../../syscalls/pipe2/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7654,7 +7587,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/pivot_root/" class="md-nav__link">
+      <a href="../../syscalls/pivot_root/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7680,7 +7613,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/pkey_alloc/" class="md-nav__link">
+      <a href="../../syscalls/pkey_alloc/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7706,7 +7639,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/pkey_free/" class="md-nav__link">
+      <a href="../../syscalls/pkey_free/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7732,7 +7665,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/pkey_mprotect/" class="md-nav__link">
+      <a href="../../syscalls/pkey_mprotect/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7758,7 +7691,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/poll/" class="md-nav__link">
+      <a href="../../syscalls/poll/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7784,7 +7717,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/ppoll/" class="md-nav__link">
+      <a href="../../syscalls/ppoll/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7810,7 +7743,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/ppoll_time32/" class="md-nav__link">
+      <a href="../../syscalls/ppoll_time32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7836,7 +7769,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/prctl/" class="md-nav__link">
+      <a href="../../syscalls/prctl/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7862,7 +7795,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/pread64/" class="md-nav__link">
+      <a href="../../syscalls/pread64/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7888,7 +7821,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/preadv/" class="md-nav__link">
+      <a href="../../syscalls/preadv/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7914,7 +7847,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/preadv2/" class="md-nav__link">
+      <a href="../../syscalls/preadv2/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7940,7 +7873,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/prlimit64/" class="md-nav__link">
+      <a href="../../syscalls/prlimit64/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7966,7 +7899,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/process_madvise/" class="md-nav__link">
+      <a href="../../syscalls/process_madvise/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -7992,7 +7925,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/process_mrelease/" class="md-nav__link">
+      <a href="../../syscalls/process_mrelease/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8018,7 +7951,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/process_vm_readv/" class="md-nav__link">
+      <a href="../../syscalls/process_vm_readv/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8044,7 +7977,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/process_vm_writev/" class="md-nav__link">
+      <a href="../../syscalls/process_vm_writev/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8070,7 +8003,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/prof/" class="md-nav__link">
+      <a href="../../syscalls/prof/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8096,7 +8029,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/profil/" class="md-nav__link">
+      <a href="../../syscalls/profil/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8122,7 +8055,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/pselect6/" class="md-nav__link">
+      <a href="../../syscalls/pselect6/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8148,7 +8081,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/pselect6_time32/" class="md-nav__link">
+      <a href="../../syscalls/pselect6_time32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8174,7 +8107,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/ptrace/" class="md-nav__link">
+      <a href="../../syscalls/ptrace/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8200,7 +8133,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/putpmsg/" class="md-nav__link">
+      <a href="../../syscalls/putpmsg/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8226,7 +8159,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/pwrite64/" class="md-nav__link">
+      <a href="../../syscalls/pwrite64/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8252,7 +8185,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/pwritev/" class="md-nav__link">
+      <a href="../../syscalls/pwritev/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8278,7 +8211,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/pwritev2/" class="md-nav__link">
+      <a href="../../syscalls/pwritev2/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8304,7 +8237,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/query_module/" class="md-nav__link">
+      <a href="../../syscalls/query_module/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8330,7 +8263,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/quotactl/" class="md-nav__link">
+      <a href="../../syscalls/quotactl/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8356,7 +8289,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/quotactl_fd/" class="md-nav__link">
+      <a href="../../syscalls/quotactl_fd/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8382,7 +8315,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/read/" class="md-nav__link">
+      <a href="../../syscalls/read/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8408,7 +8341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/readahead/" class="md-nav__link">
+      <a href="../../syscalls/readahead/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8434,7 +8367,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/readdir/" class="md-nav__link">
+      <a href="../../syscalls/readdir/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8460,7 +8393,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/readlink/" class="md-nav__link">
+      <a href="../../syscalls/readlink/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8486,7 +8419,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/readlinkat/" class="md-nav__link">
+      <a href="../../syscalls/readlinkat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8512,7 +8445,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/readv/" class="md-nav__link">
+      <a href="../../syscalls/readv/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8538,7 +8471,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/reboot/" class="md-nav__link">
+      <a href="../../syscalls/reboot/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8564,7 +8497,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/recvfrom/" class="md-nav__link">
+      <a href="../../syscalls/recvfrom/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8590,7 +8523,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/recvmmsg/" class="md-nav__link">
+      <a href="../../syscalls/recvmmsg/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8616,7 +8549,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/recvmmsg_time32/" class="md-nav__link">
+      <a href="../../syscalls/recvmmsg_time32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8642,7 +8575,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/recvmsg/" class="md-nav__link">
+      <a href="../../syscalls/recvmsg/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8668,7 +8601,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/remap_file_pages/" class="md-nav__link">
+      <a href="../../syscalls/remap_file_pages/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8694,7 +8627,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/removexattr/" class="md-nav__link">
+      <a href="../../syscalls/removexattr/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8720,7 +8653,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/rename/" class="md-nav__link">
+      <a href="../../syscalls/rename/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8746,7 +8679,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/renameat/" class="md-nav__link">
+      <a href="../../syscalls/renameat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8772,7 +8705,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/renameat2/" class="md-nav__link">
+      <a href="../../syscalls/renameat2/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8798,7 +8731,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/request_key/" class="md-nav__link">
+      <a href="../../syscalls/request_key/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8824,7 +8757,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/restart_syscall/" class="md-nav__link">
+      <a href="../../syscalls/restart_syscall/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8850,7 +8783,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/rmdir/" class="md-nav__link">
+      <a href="../../syscalls/rmdir/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8876,7 +8809,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/rseq/" class="md-nav__link">
+      <a href="../../syscalls/rseq/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8902,7 +8835,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/rt_sigaction/" class="md-nav__link">
+      <a href="../../syscalls/rt_sigaction/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8928,7 +8861,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/rt_sigpending/" class="md-nav__link">
+      <a href="../../syscalls/rt_sigpending/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8954,7 +8887,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/rt_sigprocmask/" class="md-nav__link">
+      <a href="../../syscalls/rt_sigprocmask/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -8980,7 +8913,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/rt_sigqueueinfo/" class="md-nav__link">
+      <a href="../../syscalls/rt_sigqueueinfo/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9006,7 +8939,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/rt_sigreturn/" class="md-nav__link">
+      <a href="../../syscalls/rt_sigreturn/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9032,7 +8965,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/rt_sigsuspend/" class="md-nav__link">
+      <a href="../../syscalls/rt_sigsuspend/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9058,7 +8991,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/rt_sigtimedwait/" class="md-nav__link">
+      <a href="../../syscalls/rt_sigtimedwait/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9084,7 +9017,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/rt_sigtimedwait_time32/" class="md-nav__link">
+      <a href="../../syscalls/rt_sigtimedwait_time32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9110,7 +9043,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/rt_tgsigqueueinfo/" class="md-nav__link">
+      <a href="../../syscalls/rt_tgsigqueueinfo/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9136,7 +9069,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sched_get_priority_max/" class="md-nav__link">
+      <a href="../../syscalls/sched_get_priority_max/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9162,7 +9095,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sched_get_priority_min/" class="md-nav__link">
+      <a href="../../syscalls/sched_get_priority_min/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9188,7 +9121,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sched_getaffinity/" class="md-nav__link">
+      <a href="../../syscalls/sched_getaffinity/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9214,7 +9147,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sched_getattr/" class="md-nav__link">
+      <a href="../../syscalls/sched_getattr/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9240,7 +9173,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sched_getparam/" class="md-nav__link">
+      <a href="../../syscalls/sched_getparam/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9266,7 +9199,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sched_getscheduler/" class="md-nav__link">
+      <a href="../../syscalls/sched_getscheduler/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9292,7 +9225,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sched_rr_get_interval/" class="md-nav__link">
+      <a href="../../syscalls/sched_rr_get_interval/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9318,7 +9251,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sched_rr_get_interval_time32/" class="md-nav__link">
+      <a href="../../syscalls/sched_rr_get_interval_time32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9344,7 +9277,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sched_setaffinity/" class="md-nav__link">
+      <a href="../../syscalls/sched_setaffinity/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9370,7 +9303,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sched_setattr/" class="md-nav__link">
+      <a href="../../syscalls/sched_setattr/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9396,7 +9329,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sched_setparam/" class="md-nav__link">
+      <a href="../../syscalls/sched_setparam/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9422,7 +9355,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sched_setscheduler/" class="md-nav__link">
+      <a href="../../syscalls/sched_setscheduler/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9448,7 +9381,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sched_yield/" class="md-nav__link">
+      <a href="../../syscalls/sched_yield/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9474,7 +9407,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/seccomp/" class="md-nav__link">
+      <a href="../../syscalls/seccomp/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9500,7 +9433,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/security/" class="md-nav__link">
+      <a href="../../syscalls/security/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9526,7 +9459,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/select/" class="md-nav__link">
+      <a href="../../syscalls/select/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9552,7 +9485,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/semctl/" class="md-nav__link">
+      <a href="../../syscalls/semctl/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9578,7 +9511,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/semget/" class="md-nav__link">
+      <a href="../../syscalls/semget/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9604,7 +9537,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/semop/" class="md-nav__link">
+      <a href="../../syscalls/semop/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9630,7 +9563,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/semtimedop/" class="md-nav__link">
+      <a href="../../syscalls/semtimedop/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9656,7 +9589,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sendfile/" class="md-nav__link">
+      <a href="../../syscalls/sendfile/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9682,7 +9615,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sendfile32/" class="md-nav__link">
+      <a href="../../syscalls/sendfile32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9708,7 +9641,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sendmmsg/" class="md-nav__link">
+      <a href="../../syscalls/sendmmsg/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9734,7 +9667,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sendmsg/" class="md-nav__link">
+      <a href="../../syscalls/sendmsg/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9760,7 +9693,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sendto/" class="md-nav__link">
+      <a href="../../syscalls/sendto/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9786,7 +9719,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/set_mempolicy/" class="md-nav__link">
+      <a href="../../syscalls/set_mempolicy/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9812,7 +9745,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/set_robust_list/" class="md-nav__link">
+      <a href="../../syscalls/set_robust_list/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9838,7 +9771,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/set_thread_area/" class="md-nav__link">
+      <a href="../../syscalls/set_thread_area/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9864,7 +9797,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/set_tid_address/" class="md-nav__link">
+      <a href="../../syscalls/set_tid_address/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9890,7 +9823,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setdomainname/" class="md-nav__link">
+      <a href="../../syscalls/setdomainname/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9916,7 +9849,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setfsgid/" class="md-nav__link">
+      <a href="../../syscalls/setfsgid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9942,7 +9875,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setfsgid16/" class="md-nav__link">
+      <a href="../../syscalls/setfsgid16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9968,7 +9901,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setfsuid/" class="md-nav__link">
+      <a href="../../syscalls/setfsuid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -9994,7 +9927,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setfsuid16/" class="md-nav__link">
+      <a href="../../syscalls/setfsuid16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10020,7 +9953,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setgid/" class="md-nav__link">
+      <a href="../../syscalls/setgid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10046,7 +9979,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setgid16/" class="md-nav__link">
+      <a href="../../syscalls/setgid16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10072,7 +10005,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setgroups/" class="md-nav__link">
+      <a href="../../syscalls/setgroups/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10098,7 +10031,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setgroups16/" class="md-nav__link">
+      <a href="../../syscalls/setgroups16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10124,7 +10057,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sethostname/" class="md-nav__link">
+      <a href="../../syscalls/sethostname/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10150,7 +10083,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setitimer/" class="md-nav__link">
+      <a href="../../syscalls/setitimer/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10176,7 +10109,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setns/" class="md-nav__link">
+      <a href="../../syscalls/setns/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10202,7 +10135,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setpgid/" class="md-nav__link">
+      <a href="../../syscalls/setpgid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10228,7 +10161,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setpriority/" class="md-nav__link">
+      <a href="../../syscalls/setpriority/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10254,7 +10187,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setregid/" class="md-nav__link">
+      <a href="../../syscalls/setregid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10280,7 +10213,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setregid16/" class="md-nav__link">
+      <a href="../../syscalls/setregid16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10306,7 +10239,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setresgid/" class="md-nav__link">
+      <a href="../../syscalls/setresgid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10332,7 +10265,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setresgid16/" class="md-nav__link">
+      <a href="../../syscalls/setresgid16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10358,7 +10291,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setresuid/" class="md-nav__link">
+      <a href="../../syscalls/setresuid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10384,7 +10317,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setresuid16/" class="md-nav__link">
+      <a href="../../syscalls/setresuid16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10410,7 +10343,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setreuid/" class="md-nav__link">
+      <a href="../../syscalls/setreuid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10436,7 +10369,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setreuid16/" class="md-nav__link">
+      <a href="../../syscalls/setreuid16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10462,7 +10395,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setrlimit/" class="md-nav__link">
+      <a href="../../syscalls/setrlimit/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10488,7 +10421,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setsid/" class="md-nav__link">
+      <a href="../../syscalls/setsid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10514,7 +10447,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setsockopt/" class="md-nav__link">
+      <a href="../../syscalls/setsockopt/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10540,7 +10473,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/settimeofday/" class="md-nav__link">
+      <a href="../../syscalls/settimeofday/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10566,7 +10499,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setuid/" class="md-nav__link">
+      <a href="../../syscalls/setuid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10592,7 +10525,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setuid16/" class="md-nav__link">
+      <a href="../../syscalls/setuid16/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10618,7 +10551,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/setxattr/" class="md-nav__link">
+      <a href="../../syscalls/setxattr/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10644,7 +10577,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sgetmask/" class="md-nav__link">
+      <a href="../../syscalls/sgetmask/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10670,7 +10603,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/shmat/" class="md-nav__link">
+      <a href="../../syscalls/shmat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10696,7 +10629,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/shmctl/" class="md-nav__link">
+      <a href="../../syscalls/shmctl/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10722,7 +10655,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/shmdt/" class="md-nav__link">
+      <a href="../../syscalls/shmdt/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10748,7 +10681,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/shmget/" class="md-nav__link">
+      <a href="../../syscalls/shmget/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10774,7 +10707,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/shutdown/" class="md-nav__link">
+      <a href="../../syscalls/shutdown/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10800,7 +10733,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sigaction/" class="md-nav__link">
+      <a href="../../syscalls/sigaction/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10826,7 +10759,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sigaltstack/" class="md-nav__link">
+      <a href="../../syscalls/sigaltstack/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10852,7 +10785,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/signal/" class="md-nav__link">
+      <a href="../../syscalls/signal/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10878,7 +10811,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/signalfd/" class="md-nav__link">
+      <a href="../../syscalls/signalfd/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10904,7 +10837,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/signalfd4/" class="md-nav__link">
+      <a href="../../syscalls/signalfd4/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10930,7 +10863,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sigpending/" class="md-nav__link">
+      <a href="../../syscalls/sigpending/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10956,7 +10889,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sigprocmask/" class="md-nav__link">
+      <a href="../../syscalls/sigprocmask/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -10982,7 +10915,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sigreturn/" class="md-nav__link">
+      <a href="../../syscalls/sigreturn/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11008,7 +10941,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sigsuspend/" class="md-nav__link">
+      <a href="../../syscalls/sigsuspend/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11034,7 +10967,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/socket/" class="md-nav__link">
+      <a href="../../syscalls/socket/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11060,7 +10993,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/socketcall/" class="md-nav__link">
+      <a href="../../syscalls/socketcall/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11086,7 +11019,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/socketpair/" class="md-nav__link">
+      <a href="../../syscalls/socketpair/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11112,7 +11045,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/splice/" class="md-nav__link">
+      <a href="../../syscalls/splice/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11138,7 +11071,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/ssetmask/" class="md-nav__link">
+      <a href="../../syscalls/ssetmask/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11164,7 +11097,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/stat/" class="md-nav__link">
+      <a href="../../syscalls/stat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11190,7 +11123,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/stat64/" class="md-nav__link">
+      <a href="../../syscalls/stat64/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11216,7 +11149,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/statfs/" class="md-nav__link">
+      <a href="../../syscalls/statfs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11242,7 +11175,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/statfs64/" class="md-nav__link">
+      <a href="../../syscalls/statfs64/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11268,7 +11201,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/statx/" class="md-nav__link">
+      <a href="../../syscalls/statx/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11294,7 +11227,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/stime/" class="md-nav__link">
+      <a href="../../syscalls/stime/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11320,7 +11253,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/stty/" class="md-nav__link">
+      <a href="../../syscalls/stty/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11346,7 +11279,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/swapoff/" class="md-nav__link">
+      <a href="../../syscalls/swapoff/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11372,7 +11305,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/swapon/" class="md-nav__link">
+      <a href="../../syscalls/swapon/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11398,7 +11331,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/symlink/" class="md-nav__link">
+      <a href="../../syscalls/symlink/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11424,7 +11357,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/symlinkat/" class="md-nav__link">
+      <a href="../../syscalls/symlinkat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11450,7 +11383,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sync/" class="md-nav__link">
+      <a href="../../syscalls/sync/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11476,7 +11409,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sync_file_range/" class="md-nav__link">
+      <a href="../../syscalls/sync_file_range/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11502,7 +11435,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/syncfs/" class="md-nav__link">
+      <a href="../../syscalls/syncfs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11528,7 +11461,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sysctl/" class="md-nav__link">
+      <a href="../../syscalls/sysctl/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11554,7 +11487,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sysfs/" class="md-nav__link">
+      <a href="../../syscalls/sysfs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11580,7 +11513,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/sysinfo/" class="md-nav__link">
+      <a href="../../syscalls/sysinfo/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11606,7 +11539,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/syslog/" class="md-nav__link">
+      <a href="../../syscalls/syslog/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11632,7 +11565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/tee/" class="md-nav__link">
+      <a href="../../syscalls/tee/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11658,7 +11591,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/tgkill/" class="md-nav__link">
+      <a href="../../syscalls/tgkill/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11684,7 +11617,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/time/" class="md-nav__link">
+      <a href="../../syscalls/time/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11710,7 +11643,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/timer_create/" class="md-nav__link">
+      <a href="../../syscalls/timer_create/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11736,7 +11669,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/timer_delete/" class="md-nav__link">
+      <a href="../../syscalls/timer_delete/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11762,7 +11695,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/timer_getoverrun/" class="md-nav__link">
+      <a href="../../syscalls/timer_getoverrun/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11788,7 +11721,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/timer_gettime/" class="md-nav__link">
+      <a href="../../syscalls/timer_gettime/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11814,7 +11747,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/timer_gettime32/" class="md-nav__link">
+      <a href="../../syscalls/timer_gettime32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11840,7 +11773,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/timer_settime/" class="md-nav__link">
+      <a href="../../syscalls/timer_settime/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11866,7 +11799,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/timer_settime32/" class="md-nav__link">
+      <a href="../../syscalls/timer_settime32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11892,7 +11825,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/timerfd_create/" class="md-nav__link">
+      <a href="../../syscalls/timerfd_create/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11918,7 +11851,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/timerfd_gettime/" class="md-nav__link">
+      <a href="../../syscalls/timerfd_gettime/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11944,7 +11877,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/timerfd_gettime32/" class="md-nav__link">
+      <a href="../../syscalls/timerfd_gettime32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11970,7 +11903,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/timerfd_settime/" class="md-nav__link">
+      <a href="../../syscalls/timerfd_settime/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -11996,7 +11929,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/timerfd_settime32/" class="md-nav__link">
+      <a href="../../syscalls/timerfd_settime32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12022,7 +11955,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/times/" class="md-nav__link">
+      <a href="../../syscalls/times/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12048,7 +11981,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/tkill/" class="md-nav__link">
+      <a href="../../syscalls/tkill/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12074,7 +12007,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/truncate/" class="md-nav__link">
+      <a href="../../syscalls/truncate/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12100,7 +12033,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/truncate64/" class="md-nav__link">
+      <a href="../../syscalls/truncate64/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12126,7 +12059,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/tuxcall/" class="md-nav__link">
+      <a href="../../syscalls/tuxcall/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12152,7 +12085,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/ulimit/" class="md-nav__link">
+      <a href="../../syscalls/ulimit/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12178,7 +12111,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/umask/" class="md-nav__link">
+      <a href="../../syscalls/umask/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12204,7 +12137,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/umount/" class="md-nav__link">
+      <a href="../../syscalls/umount/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12230,7 +12163,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/umount2/" class="md-nav__link">
+      <a href="../../syscalls/umount2/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12256,7 +12189,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/uname/" class="md-nav__link">
+      <a href="../../syscalls/uname/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12282,7 +12215,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/unlink/" class="md-nav__link">
+      <a href="../../syscalls/unlink/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12308,7 +12241,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/unlinkat/" class="md-nav__link">
+      <a href="../../syscalls/unlinkat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12334,7 +12267,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/unshare/" class="md-nav__link">
+      <a href="../../syscalls/unshare/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12360,7 +12293,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/uselib/" class="md-nav__link">
+      <a href="../../syscalls/uselib/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12386,7 +12319,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/userfaultfd/" class="md-nav__link">
+      <a href="../../syscalls/userfaultfd/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12412,7 +12345,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/ustat/" class="md-nav__link">
+      <a href="../../syscalls/ustat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12438,7 +12371,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/utime/" class="md-nav__link">
+      <a href="../../syscalls/utime/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12464,7 +12397,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/utimensat/" class="md-nav__link">
+      <a href="../../syscalls/utimensat/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12490,7 +12423,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/utimensat_time32/" class="md-nav__link">
+      <a href="../../syscalls/utimensat_time32/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12516,7 +12449,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/utimes/" class="md-nav__link">
+      <a href="../../syscalls/utimes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12542,7 +12475,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/vfork/" class="md-nav__link">
+      <a href="../../syscalls/vfork/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12568,7 +12501,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/vhangup/" class="md-nav__link">
+      <a href="../../syscalls/vhangup/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12594,7 +12527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/vm86/" class="md-nav__link">
+      <a href="../../syscalls/vm86/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12620,7 +12553,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/vm86old/" class="md-nav__link">
+      <a href="../../syscalls/vm86old/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12646,7 +12579,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/vmsplice/" class="md-nav__link">
+      <a href="../../syscalls/vmsplice/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12672,7 +12605,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/vserver/" class="md-nav__link">
+      <a href="../../syscalls/vserver/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12698,7 +12631,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/wait4/" class="md-nav__link">
+      <a href="../../syscalls/wait4/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12724,7 +12657,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/waitid/" class="md-nav__link">
+      <a href="../../syscalls/waitid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12750,7 +12683,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/waitpid/" class="md-nav__link">
+      <a href="../../syscalls/waitpid/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12776,7 +12709,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/write/" class="md-nav__link">
+      <a href="../../syscalls/write/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12802,7 +12735,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/syscalls/writev/" class="md-nav__link">
+      <a href="../../syscalls/writev/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12844,7 +12777,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/network/" class="md-nav__link">
+      <a href="../../network/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12870,7 +12803,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/signatures/" class="md-nav__link">
+      <a href="../../signatures/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12940,7 +12873,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/extra/do_sigaction/" class="md-nav__link">
+      <a href="../do_sigaction/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12966,7 +12899,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/extra/kallsyms_lookup_name/" class="md-nav__link">
+      <a href="../kallsyms_lookup_name/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -12992,7 +12925,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/extra/vfs_read/" class="md-nav__link">
+      <a href="../vfs_read/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13018,7 +12951,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/extra/vfs_readv/" class="md-nav__link">
+      <a href="../vfs_readv/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13044,7 +12977,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/extra/file_modification/" class="md-nav__link">
+      <a href="../file_modification/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13070,7 +13003,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/extra/security_file_mprotect/" class="md-nav__link">
+      <a href="../security_file_mprotect/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13096,7 +13029,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/extra/security_socket_setsockopt/" class="md-nav__link">
+      <a href="../security_socket_setsockopt/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13122,7 +13055,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/extra/bpf_attach/" class="md-nav__link">
+      <a href="../bpf_attach/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13148,7 +13081,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/extra/magic_write/" class="md-nav__link">
+      <a href="../magic_write/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13174,7 +13107,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/extra/mem_prot_alert/" class="md-nav__link">
+      <a href="../mem_prot_alert/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13200,7 +13133,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/extra/symbols_loaded/" class="md-nav__link">
+      <a href="../symbols_loaded/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13226,7 +13159,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/extra/symbols_collision/" class="md-nav__link">
+      <a href="../symbols_collision/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13252,7 +13185,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/extra/hidden_kernel_module/" class="md-nav__link">
+      <a href="../hidden_kernel_module/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13278,7 +13211,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/extra/process_execute_failed/" class="md-nav__link">
+      <a href="../process_execute_failed/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13304,7 +13237,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/builtin/extra/security_bpf_prog/" class="md-nav__link">
+      <a href="../security_bpf_prog/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13390,7 +13323,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/custom/overview/" class="md-nav__link">
+      <a href="../../../custom/overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13416,7 +13349,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/custom/golang/" class="md-nav__link">
+      <a href="../../../custom/golang/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13442,7 +13375,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/events/custom/rego/" class="md-nav__link">
+      <a href="../../../custom/rego/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13530,7 +13463,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/policies/" class="md-nav__link">
+      <a href="../../../../policies/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13556,7 +13489,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/policies/scopes/" class="md-nav__link">
+      <a href="../../../../policies/scopes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13582,7 +13515,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/policies/rules/" class="md-nav__link">
+      <a href="../../../../policies/rules/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13608,7 +13541,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/policies/actions/" class="md-nav__link">
+      <a href="../../../../policies/actions/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13688,7 +13621,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/filters/filtering/" class="md-nav__link">
+      <a href="../../../../filters/filtering/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13768,7 +13701,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/outputs/output-formats/" class="md-nav__link">
+      <a href="../../../../outputs/output-formats/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13794,7 +13727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/outputs/output-options/" class="md-nav__link">
+      <a href="../../../../outputs/output-options/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13820,7 +13753,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/outputs/logging/" class="md-nav__link">
+      <a href="../../../../outputs/logging/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13900,7 +13833,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/config/overview/" class="md-nav__link">
+      <a href="../../../../config/overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -13926,7 +13859,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/config/kubernetes/" class="md-nav__link">
+      <a href="../../../../config/kubernetes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14006,7 +13939,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/forensics/" class="md-nav__link">
+      <a href="../../../../forensics/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14086,7 +14019,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/integrating/container-engines/" class="md-nav__link">
+      <a href="../../../../integrating/container-engines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14112,7 +14045,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/integrating/prometheus/" class="md-nav__link">
+      <a href="../../../../integrating/prometheus/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14138,7 +14071,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/integrating/healthz/" class="md-nav__link">
+      <a href="../../../../integrating/healthz/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14218,7 +14151,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/data-sources/overview/" class="md-nav__link">
+      <a href="../../../../data-sources/overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14298,7 +14231,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/deep-dive/caching-events/" class="md-nav__link">
+      <a href="../../../../deep-dive/caching-events/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14324,7 +14257,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/deep-dive/ordering-events/" class="md-nav__link">
+      <a href="../../../../deep-dive/ordering-events/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14350,7 +14283,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/deep-dive/dropping-capabilities/" class="md-nav__link">
+      <a href="../../../../deep-dive/dropping-capabilities/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14376,7 +14309,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../docs/deep-dive/secure-tracing/" class="md-nav__link">
+      <a href="../../../../deep-dive/secure-tracing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14461,7 +14394,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/overview/" class="md-nav__link">
+      <a href="../../../../../contributing/overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14487,7 +14420,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/guidelines/" class="md-nav__link">
+      <a href="../../../../../contributing/guidelines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14513,7 +14446,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/architecture/" class="md-nav__link">
+      <a href="../../../../../contributing/architecture/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14539,7 +14472,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/setup-development-machine-with-vagrant/" class="md-nav__link">
+      <a href="../../../../../contributing/setup-development-machine-with-vagrant/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14611,7 +14544,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/building/building/" class="md-nav__link">
+      <a href="../../../../../contributing/building/building/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14637,7 +14570,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/building/environment/" class="md-nav__link">
+      <a href="../../../../../contributing/building/environment/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14663,7 +14596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/building/containers/" class="md-nav__link">
+      <a href="../../../../../contributing/building/containers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14689,7 +14622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/building/packaging/" class="md-nav__link">
+      <a href="../../../../../contributing/building/packaging/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14751,10 +14684,121 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#platform-support" class="md-nav__link">
+  <a href="#intro" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Platform Support
+        Intro
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#description" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Description
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Arguments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hooks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hooks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#various-system-calls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Various system calls
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Various system calls">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-use-case" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Use Case
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issues
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Events
       
     </span>
   </a>
@@ -14777,54 +14821,68 @@
                   
 
 
-<h1 id="install-tracee-on-kubernetes">Install <strong>Tracee</strong> on Kubernetes<a class="headerlink" href="#install-tracee-on-kubernetes" title="Permanent link">&para;</a></h1>
-<p>In the <a href="https://github.com/aquasecurity/tracee/tree/v0.15.1-22-g637b65a3/deploy">deploy/</a> directory you will find Yaml files to deploy Tracee
-in a Kubernetes environment either with <strong>Helm</strong> or with a static yaml.</p>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>The <strong>preferred</strong> way to deploy <strong>Tracee</strong> is through its <a href="https://helm.sh">Helm</a> chart!</p>
-</div>
-<ol>
+<h1 id="hooked_syscalls">hooked_syscalls<a class="headerlink" href="#hooked_syscalls" title="Permanent link">&para;</a></h1>
+<h2 id="intro">Intro<a class="headerlink" href="#intro" title="Permanent link">&para;</a></h2>
+<p><code>hooked_syscalls</code> is an event that checks the selected syscalls for any syscall hooking.</p>
+<h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
+<p>The purpose of the <code>hooked_syscalls</code> event is to monitor for system call hooking in the Linux kernel. It verifies the function pointer of the system call to ensure it lies between the etext and stext addresses. This helps identify instances of kernel code modifications, often used for malicious activities such as hiding processes, files, or network connections.</p>
+<p>The <code>hooked_syscalls</code> event checks either user-specified syscalls or a default list of syscalls depending on the architecture of the system, with a different list for amd64 and arm64 respectively.</p>
+<h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
+<ul>
 <li>
-<p>Install <strong>Tracee</strong> using <strong>Helm</strong></p>
-<ol>
-<li>
-<p>Add Aqua chart repository:</p>
-<div class="highlight"><pre><span></span><code><span class="go">helm repo add aqua https://aquasecurity.github.io/helm-charts/</span>
-<span class="go">helm repo update</span>
-</code></pre></div>
-<p>or clone the Helm chart:</p>
-<div class="highlight"><pre><span></span><code><span class="go">git clone --depth 1 --branch v0.15.1-22-g637b65a3 https://github.com/aquasecurity/tracee.git</span>
-<span class="go">cd tracee</span>
-</code></pre></div>
+<p><code>check_syscalls</code>:<code>[]string</code>[U] - the syscall checked for syscall hooking. Can be used to specify selected syscalls or use the default ones. 
+The default syscalls for amd64 are:</p>
+<p><code>read</code>
+<code>write</code>
+<code>open</code>
+<code>close</code>
+<code>ioctl</code>
+<code>socket</code>
+<code>sendto</code>
+<code>recvfrom</code>
+<code>sendmsg</code>
+<code>recvmsg</code>
+<code>execve</code>
+<code>kill</code>
+<code>getdents</code>
+<code>ptrace</code>
+<code>getdents64</code>
+<code>openat</code>
+<code>bpf</code>
+<code>execveat</code></p>
 </li>
-<li>
-<p>Install the chart from the Aqua chart repository:</p>
-<div class="highlight"><pre><span></span><code><span class="go">helm install tracee aqua/tracee \</span>
-<span class="go">        --namespace tracee-system --create-namespace</span>
-</code></pre></div>
-<p>or install the Helm chart from a local directory:</p>
-<div class="highlight"><pre><span></span><code><span class="go">helm install tracee ./deploy/helm/tracee \</span>
-<span class="go">        --namespace tracee-system --create-namespace</span>
-</code></pre></div>
-</li>
-</ol>
-</li>
-<li>
-<p>Install <strong>Tracee</strong> <strong>Manually</strong></p>
-<p>To install Tracee </p>
-<div class="highlight"><pre><span></span><code><span class="go">kubectl create namespace tracee-system</span>
-<span class="go">kubectl create -n tracee-system \</span>
-<span class="go">    -f https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee/tracee.yaml</span>
-</code></pre></div>
-</li>
-</ol>
-<h2 id="platform-support">Platform Support<a class="headerlink" href="#platform-support" title="Permanent link">&para;</a></h2>
-<p>This approach assumes that host nodes have either BTF available or kernel
-headers available under conventional location. See Tracee's
-<a href="../prerequisites/">prerequisites</a> for more info. For the major
-Kubernetes platforms this should work out-of-the-box, including GKE, EKS, AKS,
-minikube.</p>
+</ul>
+<p>The default syscalls for arm64 are:
+    <code>ioctl</code>
+    <code>openat</code>
+    <code>close</code>
+    <code>getdents64</code>
+    <code>read</code>
+    <code>write</code>
+    <code>ptrace</code>
+    <code>kill</code>
+    <code>socket</code>
+    <code>execveat</code>
+    <code>sendto</code>
+    <code>recvfrom</code>
+    <code>sendmsg</code>
+    <code>recvmsg</code>
+    <code>execve</code>
+    <code>bpf</code>
+* <code>hooked_syscalls</code>:<code>[]trace.HookedSymbolData</code> [K] - The hooked syscalls that were found along with their owners. <code>Hidden</code> owner means that the pointed function owner is not a part of the kernel modules list.</p>
+<h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
+<h3 id="various-system-calls">Various system calls<a class="headerlink" href="#various-system-calls" title="Permanent link">&para;</a></h3>
+<h4 id="type">Type<a class="headerlink" href="#type" title="Permanent link">&para;</a></h4>
+<p>Uprobe</p>
+<h4 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h4>
+<p>Detection of syscall hooking.</p>
+<h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
+<p>The <code>hooked_syscalls</code> event could be used as part of a broader system integrity monitoring solution. For example, a security engineer could use it to raise alerts or run further investigations if unexpected syscall hooking activities are detected. This could aid in the early detection and mitigation of malware or rootkit infections.
+Example:</p>
+<p><code>tracee -f e=hooked_syscalls -f hooked_syscalls.args.check_syscalls=&lt;syscall&gt;,&lt;syscall&gt;,...</code></p>
+<h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
+<p>The <code>check_syscalls</code> argument is used as a parameter to specify the syscalls to be checked. This will change in the future to be an event parameter.</p>
+<h2 id="related-events">Related Events<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
 
 
 
@@ -14861,10 +14919,10 @@ minikube.</p>
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../assets/javascripts/workers/search.6c7302c4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../../../assets/javascripts/workers/search.6c7302c4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.7001d404.min.js"></script>
+      <script src="../../../../../assets/javascripts/bundle.7001d404.min.js"></script>
       
     
   </body>
