@@ -3,10 +3,11 @@
 #
 name: Deploy the latest documentation
 on:
-  push:
-    tags:
-      - "v*"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: The tag to be released, e.g. v0.0.1
+        required: true
 jobs:
   deploy:
     name: Deploy the latest documentation
@@ -15,6 +16,7 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@v3
         with:
+          ref: ${{ github.event.inputs.ref }}
           fetch-depth: 0
           persist-credentials: true
       - name: Login to docker.io registry
@@ -38,8 +40,5 @@ jobs:
           git config user.email "github-actions@github.com"
       - name: Deploy the latest documents
         run: |
-          VERSION="${{ github.event.inputs.tag }}"
-          if [ -z $VERSION ]; then
-            VERSION=$(echo ${{ github.ref }} | sed -e "s#refs/tags/##g")
-          fi
+          VERSION="${{ github.event.inputs.ref }}"
           mike deploy --push --update-aliases ${VERSION%.*} latest
