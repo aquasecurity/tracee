@@ -56,10 +56,6 @@ jobs:
           docker image tag tracee:latest aquasec/tracee:x86_64-dev
           docker image push aquasec/tracee:dev
           docker image push aquasec/tracee:x86_64-dev
-      - name: Sign Docker image
-        run: |
-          cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:dev)
-          cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:x86_64-dev)
   release-snapshot-arm64:
     name: Release Snapshot ARM64
     runs-on:
@@ -101,6 +97,3 @@ jobs:
         run: |
           docker image tag tracee:latest aquasec/tracee:aarch64-dev
           docker image push aquasec/tracee:aarch64-dev
-      - name: Sign Docker image
-        run: |
-          cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:aarch64-dev)
