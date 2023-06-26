@@ -75,13 +75,12 @@ func (t *Tracee) lkmSeekerRoutine(ctx gocontext.Context) {
 	}
 
 	// Since on each module load the scan is triggered, the following variables
-	// are used to enforce that we scan at most once in minSleepBetweenRuns
-	// seconds, to avoid exhausting the system
-
+	// are used to enforce that we scan at most once in throttleSecs
+	// to avoid exhausting the system
 	lastTriggerTime := time.Now()
 	var throttleTimer <-chan time.Time
 
-	run := true // marks when the lkm hiding whole seeking logic should run.
+	run := true // Marks when the lkm hiding whole seeking logic should run.
 
 	for {
 		if run {
@@ -90,7 +89,7 @@ func (t *Tracee) lkmSeekerRoutine(ctx gocontext.Context) {
 				continue // A run is scheduled in the future, so don't run yet
 			}
 
-			// Throttling Timer: Do not execute before minSleepBetweenRuns!
+			// Throttling Timer: Do not execute before throttleSecs!
 			// (safe-guard against exhausting the system)
 
 			if lastTriggerTime.Add(throttleSecs * time.Second).After(time.Now()) {
@@ -103,21 +102,25 @@ func (t *Tracee) lkmSeekerRoutine(ctx gocontext.Context) {
 				continue
 			}
 
-			// update eBPF maps for kernel logic
-			err = derive.FillModulesFromProcFs(t.kernelSymbols)
+			// Update eBPF maps for kernel logic
+			err = derive.FillModulesFromProcFs()
 			if err != nil {
 				logger.Errorw("Hidden kernel module seeker stopped!: " + err.Error())
 				return
 			}
 
-			// prepare throttle timer
+			// Prepare throttle timer
 			lastTriggerTime = time.Now()
 
-			// run kernel logic
+			// Run kernel logic
 			t.triggerKernelModuleSeeker()
 
-			// clear eBPF maps
-			derive.ClearModulesState()
+			// Clear eBPF maps
+			err := derive.ClearModulesState()
+			if err != nil {
+				logger.Errorw("Hidden kernel module seeker stopped!: failed clearing maps. " + err.Error())
+				return
+			}
 
 			run = false
 		} else {
@@ -126,10 +129,10 @@ func (t *Tracee) lkmSeekerRoutine(ctx gocontext.Context) {
 				return
 
 			case <-time.After(generateRandomDuration(10, 300)):
-				run = true // run from time to time.
+				run = true // Run from time to time.
 
 			case <-throttleTimer:
-				throttleTimer = nil // cool-down period ended...
+				throttleTimer = nil // Cool-down period ended...
 				run = true          // ...run now!
 
 			case scanReq := <-wakeupChan:
