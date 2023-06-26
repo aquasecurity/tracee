@@ -3,9 +3,11 @@
 #
 name: Release
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: The tag to be released, e.g. v0.0.1
+        required: true
 jobs:
   release:
     name: Release X64 (Default)
@@ -23,6 +25,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
+          ref: ${{ github.event.inputs.ref }}
           submodules: true
           fetch-depth: 0
       - name: Install Cosign
@@ -45,7 +48,7 @@ jobs:
         # use :x86_64-v0.xx.0 for versioned image
       - name: Publish to docker.io registry
         run: |
-          TAG=$(git describe --tags --abbrev=0 | sed -e "s/v//gI")
+          TAG=$(echo ${{ github.event.inputs.ref }} | sed -e "s/v//gI")
           ARCH=$(uname -m)
           docker image tag tracee:latest aquasec/tracee:latest
           docker image tag tracee:latest aquasec/tracee:${ARCH}
@@ -57,7 +60,7 @@ jobs:
           docker image push aquasec/tracee:${ARCH}-${TAG}
       - name: Sign Docker image
         run: |
-          TAG=$(git describe --tags --abbrev=0 | sed -e "s/v//gI")
+          TAG=$(echo ${{ github.event.inputs.ref }} | sed -e "s/v//gI")
           ARCH=$(uname -m)
           cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:latest)
           cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${ARCH})
@@ -82,6 +85,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
+          ref: ${{ github.event.inputs.ref }}
           submodules: true
           fetch-depth: 0
       - name: Install Cosign
@@ -104,7 +108,7 @@ jobs:
         # use :aarch64-v0.xx.0 for versioned image
       - name: Publish to docker.io registry
         run: |
-          TAG=$(git describe --tags --abbrev=0 | sed -e "s/v//gI")
+          TAG=$(echo ${{ github.event.inputs.ref }} | sed -e "s/v//gI")
           ARCH=$(uname -m)
           docker image tag tracee:latest aquasec/tracee:${ARCH}
           docker image tag tracee:latest aquasec/tracee:${ARCH}-${TAG}
@@ -112,7 +116,7 @@ jobs:
           docker image push aquasec/tracee:${ARCH}-${TAG}
       - name: Sign Docker image
         run: |
-          TAG=$(git describe --tags --abbrev=0 | sed -e "s/v//gI")
+          TAG=$(echo ${{ github.event.inputs.ref }} | sed -e "s/v//gI")
           ARCH=$(uname -m)
           cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${ARCH})
           cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${ARCH}-${TAG})
