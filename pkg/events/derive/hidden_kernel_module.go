@@ -1,7 +1,6 @@
 package derive
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/binary"
 	"errors"
@@ -12,9 +11,9 @@ import (
 	"unsafe"
 
 	lru "github.com/hashicorp/golang-lru/v2"
+	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	bpf "github.com/aquasecurity/libbpfgo"
-	"github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -86,7 +85,7 @@ func deriveHiddenKernelModulesArgs() deriveArgsFunction {
 
 		// revive:enable
 
-		// Fix module name if needed
+		// Parse module name if possible
 
 		var name string
 		nameBytes, err := parse.ArgVal[[]byte](&event, "name")
@@ -99,7 +98,7 @@ func deriveHiddenKernelModulesArgs() deriveArgsFunction {
 			name = string(nameBytes[:bytes.IndexByte(nameBytes[:], 0)])
 		}
 
-		// Fix module srcversion if needed
+		// Parse module srcversion if possible
 
 		var srcversion string
 		srcversionBytes, err := parse.ArgVal[[]byte](&event, "srcversion")
@@ -128,7 +127,6 @@ func deriveHiddenKernelModulesArgs() deriveArgsFunction {
 // newModsCheckForHidden monitors only new added modules (added while tracee is
 // running), and reports if they are hidden
 func newModsCheckForHidden(startScanTime uint64, flags uint32) error {
-	//
 	// Since in old kernels it is not possible to iterate on a hashmap, the job
 	// is done here (userspace):
 	//
@@ -173,7 +171,7 @@ func newModsCheckForHidden(startScanTime uint64, flags uint32) error {
 			err := iter.Err()
 			if err != nil {
 				logger.Errorw("clearMap iterator received an error", "error", err.Error())
-				return iter.Err()
+				return err
 			}
 
 			return nil
@@ -198,28 +196,26 @@ func InitHiddenKernelModules(
 	return err
 }
 
-// clearMap a utility to clear a map
+// clearMap a utility to clear a map.
+// The caller of this function must provide the necessary capabilities!
 func clearMap(bpfMap *bpf.BPFMap) error {
-	return capabilities.GetInstance().EBPF(
-		func() error {
-			var err error
-			var iter = bpfMap.Iterator()
-			for iter.Next() {
-				addr := binary.LittleEndian.Uint64(iter.Key())
-				err = bpfMap.DeleteKey(unsafe.Pointer(&addr))
-				if err != nil {
-					logger.Errorw("Err occurred DeleteKey: " + err.Error())
-					return err
-				}
-			}
-			err = iter.Err()
-			if err != nil {
-				logger.Errorw("ClearMap iterator received an error", "error", err.Error())
-				return iter.Err()
-			}
-			return nil
-		},
-	)
+	var err error
+	var iter = bpfMap.Iterator()
+	for iter.Next() {
+		addr := binary.LittleEndian.Uint64(iter.Key())
+		err = bpfMap.DeleteKey(unsafe.Pointer(&addr))
+		if err != nil {
+			logger.Errorw("Err occurred DeleteKey: " + err.Error())
+			return err
+		}
+	}
+	err = iter.Err()
+	if err != nil {
+		logger.Errorw("ClearMap iterator received an error", "error", err.Error())
+		return err
+	}
+
+	return nil
 }
 
 // GetWakeupChannelRead returns the reading-end of the channel
@@ -228,31 +224,42 @@ func GetWakeupChannelRead() <-chan ScanRequest {
 }
 
 // ClearModulesState clears the map (while not scanning)
-func ClearModulesState() {
-	_ = clearMap(allModsMap)
-	_ = clearMap(recentDeletedModulesMap)  // only care for modules deleted in the midst of a scan.
-	_ = clearMap(recentInsertedModulesMap) // only care for modules inserted in the midst of a scan.
+func ClearModulesState() error {
+	return capabilities.GetInstance().EBPF(
+		func() error {
+			_ = clearMap(allModsMap)
+			_ = clearMap(recentDeletedModulesMap)  // only care for modules deleted in the midst of a scan.
+			_ = clearMap(recentInsertedModulesMap) // only care for modules inserted in the midst of a scan.
+			return nil
+		},
+	)
 }
 
 // FillModulesFromProcFs fills a map with modules from /proc/modules, to be
 // checked in kernel-space for inconsistencies.
-func FillModulesFromProcFs(kernelSymbols helpers.KernelSymbolTable) error {
+func FillModulesFromProcFs() error {
+	var procModulesBytes []byte
+	err := capabilities.GetInstance().Specific(
+		func() error {
+			var err error
+			procModulesBytes, err = os.ReadFile("/proc/modules")
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+		cap.SYSLOG) // Required to get the base addresses of the modules (core_layout.base)
+	if err != nil {
+		return err
+	}
+
 	return capabilities.GetInstance().EBPF(
 		func() error {
-			file, err := os.Open("/proc/modules")
-			if err != nil {
-				logger.Errorw("Error opening /proc/modules", err)
-				return errors.New("error opening /proc/modules")
-			}
-			defer func() {
-				if err := file.Close(); err != nil {
-					logger.Errorw("Error closing /proc/modules", err)
+			for _, line := range strings.Split(string(procModulesBytes), "\n") {
+				if len(line) == 0 {
+					continue
 				}
-			}()
-
-			scanner := bufio.NewScanner(file)
-			for scanner.Scan() {
-				line := scanner.Text()
 				lineSplit := strings.Split(line, " ")
 				lineLen := len(lineSplit)
 				if lineLen < 3 {
@@ -260,44 +267,29 @@ func FillModulesFromProcFs(kernelSymbols helpers.KernelSymbolTable) error {
 					return errors.New("unexpected format in /proc/modules")
 				}
 
-				moduleName := lineSplit[0]
 				var addr uint64
-
-				// get module address from kallsyms since /proc/modules doesn't
-				// return the address to __this_module
-				ks, err := kernelSymbols.GetSymbolByName(moduleName, "__this_module")
-				if err != nil {
-					// this most likely means /proc/kallsyms is hooked while
-					// /proc/modules isn't: fallback to use the address in
-					// /proc/modules
-					candOne := lineSplit[len(lineSplit)-1]
-					candTwo := lineSplit[len(lineSplit)-2]
-					var finalCand string
-					if strings.HasPrefix(candOne, "0x") {
-						finalCand = candOne[2:]
-					} else {
-						finalCand = candTwo[2:]
-					}
-
-					result, parseErr := strconv.ParseUint(finalCand, 16, 64)
-					if parseErr == nil {
-						addr = result
-					}
+				candOne := lineSplit[len(lineSplit)-1]
+				var finalCand string
+				if strings.HasPrefix(candOne, "0x") {
+					finalCand = candOne[2:]
 				} else {
-					addr = ks.Address
+					candTwo := lineSplit[len(lineSplit)-2]
+					finalCand = candTwo[2:]
 				}
-				seenInProcModules := true
-				err = allModsMap.Update(unsafe.Pointer(&addr), unsafe.Pointer(&seenInProcModules))
+
+				addr, parseErr := strconv.ParseUint(finalCand, 16, 64)
+				if parseErr != nil {
+					logger.Warnw("Unable to parse address from /proc/modules", parseErr)
+					return errors.New("unable to parse address from /proc/modules")
+				}
+
+				unused := false
+				err = allModsMap.Update(unsafe.Pointer(&addr), unsafe.Pointer(&unused))
 				if err != nil {
 					logger.Errorw("Failed updating allModsMap", err)
 					return errors.New("failed updating allModsMap")
 				}
 			}
-
-			if err := scanner.Err(); err != nil {
-				logger.Errorw("scanner reported error: ", err)
-			}
-
 			return nil
 		},
 	)

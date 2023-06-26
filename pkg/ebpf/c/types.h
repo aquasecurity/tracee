@@ -464,8 +464,7 @@ typedef struct net_ctx_ext {
 } net_ctx_ext_t;
 
 typedef struct kernel_mod {
-    bool seen_proc_modules;
-    bool seen_modules_list;
+    bool unused; // Empty struct yields an error from the verifier: "Invalid argument(-22)""
 } kernel_module_t;
 
 typedef struct kernel_new_mod {
