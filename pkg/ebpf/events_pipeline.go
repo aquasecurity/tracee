@@ -413,6 +413,9 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 	out := make(chan *trace.Event, 10000)
 	errc := make(chan error, 1)
 
+	// Some "informational" events are started here (TODO: API server?)
+	t.invokeInitEvents(out)
+
 	go func() {
 		defer close(out)
 		defer close(errc)
