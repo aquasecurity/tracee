@@ -192,6 +192,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 
 func enrichEvent(evt *trace.Event, enrichData runtime.ContainerMetadata) {
 	evt.Container = trace.Container{
+		ID:          enrichData.ContainerId,
 		ImageName:   enrichData.Image,
 		ImageDigest: enrichData.ImageDigest,
 		Name:        enrichData.Name,
