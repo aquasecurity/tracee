@@ -1399,10 +1399,6 @@ const pollTimeout int = 300
 
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
-	// Some "informational" events are started here (TODO: API server?)
-
-	t.invokeInitEvents()
-
 	// Some events need initialization before the perf buffers are polled
 
 	t.triggerSyscallsIntegrityCheck(trace.Event{})
@@ -1576,14 +1572,15 @@ func computeFileHash(file *os.File) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-// invokeInitEvents emits Tracee events, called Initialiation Events, that are generated from the
+// invokeInitEvents emits Tracee events, called Initialization Events, that are generated from the
 // userland process itself, and not from the kernel. These events usually serve as informational
 // events for the signatures engine/logic.
-func (t *Tracee) invokeInitEvents() {
+func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	var emit uint64
 
 	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64) {
 		event.MatchedPoliciesKernel = matchedPolicies
+		event.MatchedPoliciesUser = matchedPolicies
 		event.MatchedPolicies = t.config.Policies.MatchedNames(matchedPolicies)
 	}
 
@@ -1591,7 +1588,7 @@ func (t *Tracee) invokeInitEvents() {
 	if emit > 0 {
 		systemInfoEvent := events.InitNamespacesEvent()
 		setMatchedPolicies(&systemInfoEvent, emit)
-		t.config.ChanEvents <- systemInfoEvent
+		out <- &systemInfoEvent
 		_ = t.stats.EventCount.Increment()
 	}
 
@@ -1599,7 +1596,7 @@ func (t *Tracee) invokeInitEvents() {
 	if emit > 0 {
 		for _, e := range events.ExistingContainersEvents(t.containers, t.config.ContainersEnrich) {
 			setMatchedPolicies(&e, emit)
-			t.config.ChanEvents <- e
+			out <- &e
 			_ = t.stats.EventCount.Increment()
 		}
 	}
