@@ -21,7 +21,7 @@ func Test_ParseCmd(t *testing.T) {
 			expectedErrMsg: "no command specified",
 		},
 		{
-			input:          "echo hello",
+			input:          "/usr/bin/echo hello",
 			expectedCmd:    "/usr/bin/echo",
 			expectedArgs:   []string{"hello"},
 			expectedErrMsg: "",
@@ -33,13 +33,13 @@ func Test_ParseCmd(t *testing.T) {
 			expectedErrMsg: "",
 		},
 		{
-			input:          "echo 'hello world'",
+			input:          "/usr/bin/echo 'hello world'",
 			expectedCmd:    "/usr/bin/echo",
 			expectedArgs:   []string{"hello world"},
 			expectedErrMsg: "",
 		},
 		{
-			input:          "bash -c 'echo hello world'",
+			input:          "/usr/bin/bash -c 'echo hello world'",
 			expectedCmd:    "/usr/bin/bash",
 			expectedArgs:   []string{"-c", "echo hello world"},
 			expectedErrMsg: "",
