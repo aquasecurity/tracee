@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -220,5 +221,12 @@ func waitForTraceeOutputEvents(t *testing.T, actual *eventBuffer, now time.Time,
 			}
 			return
 		}
+	}
+}
+
+// assureIsRoot skips the test if it is not run as root
+func assureIsRoot(t *testing.T) {
+	if syscall.Geteuid() != 0 {
+		t.Skipf("***** %s must be run as ROOT *****", t.Name())
 	}
 }
