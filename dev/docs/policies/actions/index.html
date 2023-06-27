@@ -13609,15 +13609,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#defaultaction" class="md-nav__link">
+  <a href="#defaultactions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        DefaultAction
+        DefaultActions
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="DefaultAction">
+    <nav class="md-nav" aria-label="DefaultActions">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -14812,15 +14812,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#defaultaction" class="md-nav__link">
+  <a href="#defaultactions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        DefaultAction
+        DefaultActions
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="DefaultAction">
+    <nav class="md-nav" aria-label="DefaultActions">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -14900,8 +14900,8 @@
 
 
 <h1 id="actions">Actions<a class="headerlink" href="#actions" title="Permanent link">&para;</a></h1>
-<h2 id="defaultaction">DefaultAction<a class="headerlink" href="#defaultaction" title="Permanent link">&para;</a></h2>
-<p>Every policy must have a <code>defaultAction</code>. Actions are taken when there is match on some rule declared at the policy. The following actions are currently supported:</p>
+<h2 id="defaultactions">DefaultActions<a class="headerlink" href="#defaultactions" title="Permanent link">&para;</a></h2>
+<p>Every policy must have at least one action in <code>defaultActions</code>. Actions are taken when there is match on some rule declared at the policy. The following actions are currently supported:</p>
 <ul>
 <li><code>log</code> - output events in a specified foramt (table, json etc) - default is table. The path to file is stdout.</li>
 <li><code>forward</code> - send events in json format using the Forward protocol to a Fluent receiver</li>
@@ -14913,7 +14913,8 @@
 <span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log sample policy</span>
 <span class="nt">scope</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
-<span class="nt">defaultAction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log</span>
+<span class="nt">defaultActions</span><span class="p">:</span><span class="w"> </span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log</span>
 <span class="nt">rules</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dropped_executable</span>
 </code></pre></div>
@@ -14932,7 +14933,8 @@
 <span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook_sample_policy</span>
 <span class="nt">scope</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
-<span class="nt">defaultAction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook</span>
+<span class="nt">defaultActions</span><span class="p">:</span><span class="w"> </span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook</span>
 <span class="nt">rules</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dropped_executable</span>
 </code></pre></div>
@@ -14944,7 +14946,8 @@
 <span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">forward_sample_policy</span>
 <span class="nt">scope</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
-<span class="nt">defaultAction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">forward</span>
+<span class="nt">defaultActions</span><span class="p">:</span><span class="w"> </span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">forward</span>
 <span class="nt">rules</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dropped_executable</span>
 </code></pre></div>
@@ -14958,7 +14961,8 @@ will broadcast the event matched to both outputs.</p>
 <span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log sample policy</span>
 <span class="nt">scope</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
-<span class="nt">defaultAction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log</span>
+<span class="nt">defaultActions</span><span class="p">:</span><span class="w"> </span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log</span>
 <span class="nt">rules</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dropped_executable</span>
 </code></pre></div>
@@ -14975,7 +14979,8 @@ will broadcast the event matched to both outputs.</p>
 <span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">override action sample</span>
 <span class="nt">scope</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
-<span class="nt">defaultAction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log</span>
+<span class="nt">defaultActions</span><span class="p">:</span><span class="w"> </span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log</span>
 <span class="nt">rules</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dropped_executable</span>
 <span class="w">    </span><span class="nt">action</span><span class="p">:</span>

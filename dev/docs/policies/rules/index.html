@@ -13594,15 +13594,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#context-filter" class="md-nav__link">
+  <a href="#context-filters" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Context filter
+        Context filters
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Context filter">
+    <nav class="md-nav" aria-label="Context filters">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -15010,15 +15010,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#context-filter" class="md-nav__link">
+  <a href="#context-filters" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Context filter
+        Context filters
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Context filter">
+    <nav class="md-nav" aria-label="Context filters">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -15278,124 +15278,126 @@
 <h2 id="events">Events<a class="headerlink" href="#events" title="Permanent link">&para;</a></h2>
 <p>An event can match all occurrences of events for a specific scope, or specific events depending on its filters.
 Events support three types of filters: <code>context</code>, <code>arguments</code> and <code>return value</code>. </p>
-<h2 id="context-filter">Context filter<a class="headerlink" href="#context-filter" title="Permanent link">&para;</a></h2>
+<h2 id="context-filters">Context filters<a class="headerlink" href="#context-filters" title="Permanent link">&para;</a></h2>
 <p>Context is data which is collected along the event. They can be filtered like:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sample_context_filter</span>
 <span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sample context filter</span>
-<span class="nt">defaultAction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log</span>
+<span class="nt">defaultActions</span><span class="p">:</span><span class="w"> </span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log</span>
 <span class="nt">scope</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
 <span class="nt">rules</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="w">    </span><span class="nt">filter</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">filters</span><span class="p">:</span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pid=1000</span>
 </code></pre></div>
 <p>The context filters supported are:</p>
 <h4 id="p-pid-processid">p, pid, processId<a class="headerlink" href="#p-pid-processid" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="nt">filter</span><span class="p">:</span>
+<span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pid=1000</span>
 </code></pre></div>
 <h4 id="tid-threadid">tid, threadId<a class="headerlink" href="#tid-threadid" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="nt">filter</span><span class="p">:</span>
+<span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tid=13819</span>
 </code></pre></div>
 <h4 id="ppid-parentprocessid">ppid, parentProcessId<a class="headerlink" href="#ppid-parentprocessid" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="nt">filter</span><span class="p">:</span>
+<span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ppid=1000</span>
 </code></pre></div>
 <h4 id="hosttid-hostthreadid">hostTid, hostThreadId<a class="headerlink" href="#hosttid-hostthreadid" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="nt">filter</span><span class="p">:</span>
+<span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hostTid=1000</span>
 </code></pre></div>
 <h4 id="hostpid">hostPid<a class="headerlink" href="#hostpid" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="nt">filter</span><span class="p">:</span>
+<span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hostPid=1000</span>
 </code></pre></div>
 <h4 id="hostparentprocessid">hostParentProcessId<a class="headerlink" href="#hostparentprocessid" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="nt">filter</span><span class="p">:</span>
+<span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hostParentProcessId=1</span>
 </code></pre></div>
 <h4 id="uid-userid">uid, userId<a class="headerlink" href="#uid-userid" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="nt">filter</span><span class="p">:</span>
+<span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">uid=0</span>
 </code></pre></div>
 <h4 id="mntns-mountnamespace">mntns, mountNamespace<a class="headerlink" href="#mntns-mountnamespace" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="nt">filter</span><span class="p">:</span>
+<span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mntns=4026531840</span>
 </code></pre></div>
 <h4 id="pidns-pidnamespace">pidns, pidNamespace<a class="headerlink" href="#pidns-pidnamespace" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="nt">filter</span><span class="p">:</span>
+<span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pidns=4026531836</span>
 </code></pre></div>
 <h4 id="comm-processname">comm, processName<a class="headerlink" href="#comm-processname" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="nt">filter</span><span class="p">:</span>
+<span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">comm=uname</span>
 </code></pre></div>
 <h4 id="hostname">hostName<a class="headerlink" href="#hostname" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="nt">filter</span><span class="p">:</span>
+<span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hostName=hostname</span>
 </code></pre></div>
 <h4 id="cgroupid">cgroupId<a class="headerlink" href="#cgroupid" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="nt">filter</span><span class="p">:</span>
+<span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cgroupId=5247</span>
 </code></pre></div>
 <h4 id="container">container<a class="headerlink" href="#container" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="nt">filter</span><span class="p">:</span>
+<span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">container=66c2778945e29dfd36532d63c38c2ce4ed1</span>
 </code></pre></div>
 <h4 id="containerid">containerId<a class="headerlink" href="#containerid" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="nt">filter</span><span class="p">:</span>
+<span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">containerId=66c2778945e29dfd36532d63c38c2ce4ed1</span>
 </code></pre></div>
 <h4 id="containerimage">containerImage<a class="headerlink" href="#containerimage" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="nt">filter</span><span class="p">:</span>
+<span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">containerImage=ubuntu:latest</span>
 </code></pre></div>
 <h4 id="containername">containerName<a class="headerlink" href="#containername" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="nt">filter</span><span class="p">:</span>
+<span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">containerName=test</span>
 </code></pre></div>
 <h4 id="podname">podName<a class="headerlink" href="#podname" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="nt">filter</span><span class="p">:</span>
+<span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">podName=daemonset/test</span>
 </code></pre></div>
 <h4 id="podnamespace">podNamespace<a class="headerlink" href="#podnamespace" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="nt">filter</span><span class="p">:</span>
+<span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">podNamespace=production</span>
 </code></pre></div>
 <h4 id="poduid">podUid<a class="headerlink" href="#poduid" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sched_process_exec</span>
-<span class="nt">filter</span><span class="p">:</span>
+<span class="nt">filters</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">podUid=66c2778945e29dfd36532d63c38c2ce4ed16a002c44cb254b8e</span>
 </code></pre></div>
 <h2 id="argument-filter">Argument filter<a class="headerlink" href="#argument-filter" title="Permanent link">&para;</a></h2>
 <p>Events have arguments, which can be filtered. </p>
 <div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sample_argument_filter</span>
 <span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sample argument filter</span>
-<span class="nt">defaultAction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log</span>
+<span class="nt">defaultActions</span><span class="p">:</span><span class="w"> </span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log</span>
 <span class="nt">scope</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
 <span class="nt">rules</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">security_file_open</span>
-<span class="w">    </span><span class="nt">filter</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">filters</span><span class="p">:</span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">args.pathname=/tmp*</span>
 </code></pre></div>
 <p>Arguments can be found on the respective event definition, in this case <a href="https://github.com/aquasecurity/tracee/blob/main/pkg/events/events.goL5293-L529">security_file_open</a>, or the user can test the event output in CLI before defining a policy, e.g:</p>
@@ -15407,12 +15409,13 @@ Events support three types of filters: <code>context</code>, <code>arguments</co
 <p>Return values can also be filtered.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sample_return_value</span>
 <span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sample return filter</span>
-<span class="nt">defaultAction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log</span>
+<span class="nt">defaultActions</span><span class="p">:</span><span class="w"> </span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log</span>
 <span class="nt">scope</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
 <span class="nt">rules</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">close</span>
-<span class="w">    </span><span class="nt">filter</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">filters</span><span class="p">:</span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">retval!=0</span>
 </code></pre></div>
 

@@ -14858,7 +14858,8 @@
 <span class="l l-Scalar l-Scalar-Plain">----</span>
 <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">signature_events</span>
 <span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">traces all signature events</span>
-<span class="nt">defaultAction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log</span>
+<span class="nt">defaultActions</span><span class="p">:</span><span class="w"> </span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log</span>
 <span class="nt">scope</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
 <span class="nt">rules</span><span class="p">:</span>
@@ -14900,13 +14901,14 @@
 <p>The ConfigMap will open in your default text editor. Locate the signatures.yaml section.</p>
 <p>To add a new policy for tracking execve events, append the following YAML block under the signatures.yaml section, maintaining proper indentation:</p>
 <p><div class="highlight"><pre><span></span><code><span class="nt">events.yaml</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
-<span class="w">    </span><span class="no">name: execve_event</span>
-<span class="w">    </span><span class="no">description: traces all execve events</span>
-<span class="w">    </span><span class="no">defaultAction: log</span>
-<span class="w">    </span><span class="no">scope:</span>
-<span class="w">        </span><span class="no">- global</span>
-<span class="w">    </span><span class="no">rules:</span>
-<span class="w">        </span><span class="no">- event: execve</span>
+<span class="w">  </span><span class="no">name: execve_event</span>
+<span class="w">  </span><span class="no">description: traces all execve events</span>
+<span class="w">  </span><span class="no">defaultActions:</span>
+<span class="w">    </span><span class="no">- log</span>
+<span class="w">  </span><span class="no">scope:</span>
+<span class="w">    </span><span class="no">- global</span>
+<span class="w">  </span><span class="no">rules:</span>
+<span class="w">    </span><span class="no">- event: execve</span>
 </code></pre></div>
 Save and close the file. The changes will be applied automatically.</p>
 <div class="admonition note">
