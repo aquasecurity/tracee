@@ -2,6 +2,7 @@ name: not_containers
 description: traces anti_debugging in the host
 scope: 
   - "!container"
-defaultAction: log
+defaultActions: 
+  - log
 rules:
   - event: anti_debugging

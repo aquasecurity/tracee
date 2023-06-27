@@ -2,7 +2,8 @@ name: dig
 description: traces dns events from the dig binary
 scope: 
   - binary=/usr/bin/dig
-defaultAction: log
+defaultActions: 
+  - log
 rules:
   - event: net_packet_dns_request        
   - event: net_packet_dns_response

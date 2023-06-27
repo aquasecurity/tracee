@@ -11,17 +11,18 @@ name: overview policy
 description: sample overview policy
 scope:
   - global
-defaultAction: log
+defaultActions: 
+  - log
 rules:
   - event: dropped_executable
   - event: security_file_open
-    filter:
+    filters:
         - args.pathname=/tmp/*
   - event: sched_process_exec
-    filter: 
+    filters: 
         - uid=0
   - event: close
-    filter:
+    filters:
         - retval!=0
 ```
 

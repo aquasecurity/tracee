@@ -1,8 +1,8 @@
 # Actions
 
-## DefaultAction
+## DefaultActions
 
-Every policy must have a `defaultAction`. Actions are taken when there is match on some rule declared at the policy. The following actions are currently supported:
+Every policy must have at least one action in `defaultActions`. Actions are taken when there is match on some rule declared at the policy. The following actions are currently supported:
 
 - `log` - output events in a specified foramt (table, json etc) - default is table. The path to file is stdout.
 - `forward` - send events in json format using the Forward protocol to a Fluent receiver
@@ -17,7 +17,8 @@ name: log_sample_policy
 description: log sample policy
 scope:
   - global
-defaultAction: log
+defaultActions: 
+  - log
 rules:
   - event: dropped_executable
 ```
@@ -49,7 +50,8 @@ name: webhook_sample_policy
 description: webhook_sample_policy
 scope:
   - global
-defaultAction: webhook
+defaultActions: 
+  - webhook
 rules:
   - event: dropped_executable
 ```
@@ -67,7 +69,8 @@ name: forward_sample_policy
 description: forward_sample_policy
 scope:
   - global
-defaultAction: forward
+defaultActions: 
+  - forward
 rules:
   - event: dropped_executable
 ```
@@ -87,7 +90,8 @@ name: log_sample_policy
 description: log sample policy
 scope:
   - global
-defaultAction: log
+defaultActions: 
+  - log
 rules:
   - event: dropped_executable
 ```
@@ -110,7 +114,8 @@ name: override_action_sample
 description: override action sample
 scope:
   - global
-defaultAction: log
+defaultActions: 
+  - log
 rules:
   - event: dropped_executable
     action:

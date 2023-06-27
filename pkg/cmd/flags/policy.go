@@ -68,7 +68,7 @@ func PrepareFilterMapFromPolicies(policies []policy.PolicyFile) (PolicyFilterMap
 				operatorAndValues: fmt.Sprintf("=%s", r.Event),
 			})
 
-			for _, f := range r.Filter {
+			for _, f := range r.Filters {
 				operatorIdx := strings.IndexAny(f, "=!<>")
 
 				if operatorIdx == -1 {

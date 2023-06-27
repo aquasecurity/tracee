@@ -22,7 +22,8 @@ name: sample policy
 description: traces execve events
 scope:
   - global
-defaultAction: log
+defaultActions: 
+  - log
 rules:
   - event: execve
 EOF

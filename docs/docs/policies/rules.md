@@ -7,19 +7,20 @@ Rules determine which events a policy should trace.
 An event can match all occurrences of events for a specific scope, or specific events depending on its filters.
 Events support three types of filters: `context`, `arguments` and `return value`. 
 
-## Context filter
+## Context filters
 
 Context is data which is collected along the event. They can be filtered like:
 
 ```yaml
 name: sample_context_filter
 description: sample context filter
-defaultAction: log
+defaultActions: 
+    - log
 scope:
     - global
 rules:
     event: sched_process_exec
-    filter:
+    filters:
         - pid=1000
 ```
 
@@ -29,7 +30,7 @@ The context filters supported are:
 
 ```yaml
 event: sched_process_exec
-filter:
+filters:
     - pid=1000
 ```
 
@@ -37,7 +38,7 @@ filter:
 
 ```yaml
 event: sched_process_exec
-filter:
+filters:
     - tid=13819
 ```
 
@@ -45,7 +46,7 @@ filter:
 
 ```yaml
 event: sched_process_exec
-filter:
+filters:
     - ppid=1000
 ```
 
@@ -53,7 +54,7 @@ filter:
 
 ```yaml
 event: sched_process_exec
-filter:
+filters:
     - hostTid=1000
 ```
 
@@ -61,7 +62,7 @@ filter:
 
 ```yaml
 event: sched_process_exec
-filter:
+filters:
     - hostPid=1000
 ```
 
@@ -69,7 +70,7 @@ filter:
 
 ```yaml
 event: sched_process_exec
-filter:
+filters:
     - hostParentProcessId=1
 ```
 
@@ -77,7 +78,7 @@ filter:
 
 ```yaml
 event: sched_process_exec
-filter:
+filters:
     - uid=0
 ```
 
@@ -85,7 +86,7 @@ filter:
 
 ```yaml
 event: sched_process_exec
-filter:
+filters:
     - mntns=4026531840
 ```
 
@@ -93,7 +94,7 @@ filter:
 
 ```yaml
 event: sched_process_exec
-filter:
+filters:
     - pidns=4026531836
 ```
 
@@ -101,7 +102,7 @@ filter:
 
 ```yaml
 event: sched_process_exec
-filter:
+filters:
     - comm=uname
 ```
 
@@ -109,7 +110,7 @@ filter:
 
 ```yaml
 event: sched_process_exec
-filter:
+filters:
     - hostName=hostname
 ```
 
@@ -117,7 +118,7 @@ filter:
 
 ```yaml
 event: sched_process_exec
-filter:
+filters:
     - cgroupId=5247
 ```
 
@@ -125,7 +126,7 @@ filter:
 
 ```yaml
 event: sched_process_exec
-filter:
+filters:
     - container=66c2778945e29dfd36532d63c38c2ce4ed1
 ```
 
@@ -133,7 +134,7 @@ filter:
 
 ```yaml
 event: sched_process_exec
-filter:
+filters:
     - containerId=66c2778945e29dfd36532d63c38c2ce4ed1
 ```
 
@@ -141,7 +142,7 @@ filter:
 
 ```yaml
 event: sched_process_exec
-filter:
+filters:
     - containerImage=ubuntu:latest
 ```
 
@@ -149,7 +150,7 @@ filter:
 
 ```yaml
 event: sched_process_exec
-filter:
+filters:
     - containerName=test
 ```
 
@@ -157,7 +158,7 @@ filter:
 
 ```yaml
 event: sched_process_exec
-filter:
+filters:
     - podName=daemonset/test
 ```
 
@@ -165,7 +166,7 @@ filter:
 
 ```yaml
 event: sched_process_exec
-filter:
+filters:
     - podNamespace=production
 ```
 
@@ -173,7 +174,7 @@ filter:
 
 ```yaml
 event: sched_process_exec
-filter:
+filters:
     - podUid=66c2778945e29dfd36532d63c38c2ce4ed16a002c44cb254b8e
 ```
 
@@ -185,12 +186,13 @@ Events have arguments, which can be filtered.
 ```yaml
 name: sample_argument_filter
 description: sample argument filter
-defaultAction: log
+defaultActions: 
+    - log
 scope:
     - global
 rules:
     event: security_file_open
-    filter:
+    filters:
         - args.pathname=/tmp*
 ```
 
@@ -211,11 +213,12 @@ Return values can also be filtered.
 ```yaml
 name: sample_return_value
 description: sample return filter
-defaultAction: log
+defaultActions: 
+    - log
 scope:
     - global
 rules:
     event: close
-    filter:
+    filters:
         - retval!=0
 ```
