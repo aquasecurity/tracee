@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
@@ -30,6 +31,7 @@ func Test_EventFilters(t *testing.T) {
 		err := events.Definitions.AddBatch(events.CoreDefinitions)
 		assert.NoError(t, err)
 	}
+	assureIsRoot(t)
 
 	// Make sure we don't leak any goroutines since we run Tracee many times in this test.
 	// If a test case fails, ignore the leak since it's probably caused by the aborted test.
@@ -1224,7 +1226,9 @@ func runCmds(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscal
 
 // formatCmdEvents formats given commands to be executed by syscaller helper tool
 func formatCmdEvents(cmd *cmdEvents) {
-	cmd.runCmd = fmt.Sprintf("./syscaller/cmd/syscaller %s", cmd.runCmd)
+	syscallerAbsPath := filepath.Join("..", "..", "dist", "syscaller")
+	cmd.runCmd = fmt.Sprintf("%s %s", syscallerAbsPath, cmd.runCmd)
+
 	for _, evt := range cmd.evts {
 		cmd.runCmd = fmt.Sprintf("%s %d", cmd.runCmd, evt.EventID)
 	}
