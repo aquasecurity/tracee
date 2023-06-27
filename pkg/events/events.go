@@ -185,11 +185,9 @@ type Event struct {
 	Params       []trace.ArgMeta
 }
 
-func (e *Event) IsASignatureEvent() bool {
-	for _, s := range e.Sets {
-		if s == "signatures" {
-			return true
-		}
+func IsASignatureEvent(id ID) bool {
+	if id >= StartSignatureID && id <= MaxSignatureID {
+		return true
 	}
 
 	return false

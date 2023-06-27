@@ -249,11 +249,14 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 			}
 
 			// If there aren't any policies that need filtering in userland, tracee **may** skip
-			// this event, as long as there aren't any derivatives that depend on it. Some base
-			// events (for derivative ones) might not have set related policy bit, thus the need
-			// to continue with those within the pipeline.
+			// this event, as long as there aren't any derivatives or signatures that depend on it.
+			// Some base events (derivative and signatures) might not have set related policy bit,
+			// thus the need to continue with those within the pipeline.
 			if t.matchPolicies(&evt) == 0 {
-				if _, ok := t.eventDerivations[eventId]; !ok {
+				_, hasDerivation := t.eventDerivations[eventId]
+				_, hasSignature := t.eventSignatures[eventId]
+
+				if !hasDerivation && !hasSignature {
 					_ = t.stats.EventsFiltered.Increment()
 					continue
 				}

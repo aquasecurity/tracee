@@ -77,6 +77,7 @@ type Tracee struct {
 	eventsSorter     *sorting.EventsChronologicalSorter
 	eventProcessor   map[events.ID][]func(evt *trace.Event) error
 	eventDerivations derive.Table
+	eventSignatures  map[events.ID]bool
 	// Artifacts
 	fileHashes     *lru.Cache[string, fileExecInfo]
 	capturedFiles  map[string]int64
@@ -181,6 +182,7 @@ func GetCaptureEventsList(cfg config.Config) map[events.ID]eventConfig {
 
 func (t *Tracee) handleEventsDependencies(eventId events.ID, submitMap uint64) {
 	definition := events.Definitions.Get(eventId)
+
 	eDependencies := definition.Dependencies
 	for _, dependentEvent := range eDependencies.Events {
 		ec, ok := t.events[dependentEvent.EventID]
@@ -190,6 +192,10 @@ func (t *Tracee) handleEventsDependencies(eventId events.ID, submitMap uint64) {
 		}
 		ec.submit |= submitMap
 		t.events[dependentEvent.EventID] = ec
+
+		if events.IsASignatureEvent(eventId) {
+			t.eventSignatures[dependentEvent.EventID] = true
+		}
 	}
 }
 
@@ -205,12 +211,13 @@ func New(cfg config.Config) (*Tracee, error) {
 	// Create Tracee
 
 	t := &Tracee{
-		config:        cfg,
-		done:          make(chan struct{}),
-		writtenFiles:  make(map[string]string),
-		readFiles:     make(map[string]string),
-		capturedFiles: make(map[string]int64),
-		events:        GetEssentialEventsList(),
+		config:          cfg,
+		done:            make(chan struct{}),
+		writtenFiles:    make(map[string]string),
+		readFiles:       make(map[string]string),
+		capturedFiles:   make(map[string]int64),
+		events:          GetEssentialEventsList(),
+		eventSignatures: make(map[events.ID]bool),
 	}
 
 	// Initialize capabilities rings soon
