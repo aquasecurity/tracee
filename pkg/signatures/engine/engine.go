@@ -125,7 +125,7 @@ func (engine *Engine) unloadAllSignatures() {
 
 // matchHandler is a function that runs when a signature is matched
 func (engine *Engine) matchHandler(res detect.Finding) {
-	_ = engine.stats.Detections.Increase()
+	_ = engine.stats.Detections.Increment()
 	engine.output <- res
 }
 
@@ -149,7 +149,7 @@ func (engine *Engine) processEvent(event protocol.Event) {
 		Name:   event.Headers.Selector.Name,
 		Origin: event.Headers.Selector.Origin,
 	}
-	_ = engine.stats.Events.Increase()
+	_ = engine.stats.Events.Increment()
 
 	// Check the selector for every case and partial case
 
@@ -310,7 +310,7 @@ func (engine *Engine) loadSignature(signature detect.Signature) (string, error) 
 		}
 	}
 
-	_ = engine.stats.Signatures.Increase()
+	_ = engine.stats.Signatures.Increment()
 	return metadata.ID, nil
 }
 
@@ -340,7 +340,7 @@ func (engine *Engine) UnloadSignature(signatureId string) error {
 	if ok {
 		delete(engine.signatures, signature)
 		defer func() {
-			_ = engine.stats.Signatures.Decrease()
+			_ = engine.stats.Signatures.Decrement()
 		}()
 		defer signature.Close()
 		defer close(c)
