@@ -14,18 +14,18 @@ import (
 
 // PolicyFile is the structure of the policy file
 type PolicyFile struct {
-	Name          string   `yaml:"name"`
-	Description   string   `yaml:"description"`
-	Scope         []string `yaml:"scope"`
-	DefaultAction string   `yaml:"defaultAction"`
-	Rules         []Rule   `yaml:"rules"`
+	Name           string   `yaml:"name"`
+	Description    string   `yaml:"description"`
+	Scope          []string `yaml:"scope"`
+	DefaultActions []string `yaml:"defaultActions"`
+	Rules          []Rule   `yaml:"rules"`
 }
 
 // Rule is the structure of the rule in the policy file
 type Rule struct {
-	Event  string   `yaml:"event"`
-	Filter []string `yaml:"filter"`
-	Action []string `yaml:"action"`
+	Event   string   `yaml:"event"`
+	Filters []string `yaml:"filters"`
+	Actions []string `yaml:"actions"`
 }
 
 func (p PolicyFile) Validate() error {
@@ -45,11 +45,7 @@ func (p PolicyFile) Validate() error {
 		return errfmt.Errorf("policy %s, rules cannot be empty", p.Name)
 	}
 
-	if p.DefaultAction == "" {
-		return errfmt.Errorf("policy %s, default action cannot be empty", p.Name)
-	}
-
-	if err := p.validateDefaultAction(); err != nil {
+	if err := p.validateDefaultActions(); err != nil {
 		return err
 	}
 
@@ -60,24 +56,25 @@ func (p PolicyFile) Validate() error {
 	return p.validateRules()
 }
 
-func (p PolicyFile) validateDefaultAction() error {
-	return validateAction(p.Name, p.DefaultAction)
-}
-
-func validateAction(policyName, a string) error {
-	actions := []string{
-		"log",
-		"webhook",
-		"forward",
+func (p PolicyFile) validateDefaultActions() error {
+	if p.DefaultActions == nil || len(p.DefaultActions) == 0 {
+		return errfmt.Errorf("policy %s, default actions cannot be empty", p.Name)
 	}
 
+	return validateActions(p.Name, p.DefaultActions)
+}
+
+func validateActions(policyName string, actions []string) error {
 	for _, action := range actions {
-		if action == a {
-			return nil
+		switch action {
+		case "log", "webhook", "forward": // supported actions
+			continue
+		default:
+			return errfmt.Errorf("policy %s, action %s is not valid", policyName, action)
 		}
 	}
 
-	return errfmt.Errorf("policy %s, action %s is not valid", policyName, a)
+	return nil
 }
 
 func (p PolicyFile) validateScope() error {
@@ -158,16 +155,12 @@ func (p PolicyFile) validateRules() error {
 			return err
 		}
 
-		for _, a := range r.Action {
-			if a != "" {
-				err = validateAction(p.Name, a)
-				if err != nil {
-					return err
-				}
-			}
+		err = validateActions(p.Name, r.Actions)
+		if err != nil {
+			return err
 		}
 
-		for _, f := range r.Filter {
+		for _, f := range r.Filters {
 			operatorIdx := strings.IndexAny(f, "=!<>")
 
 			if operatorIdx == -1 {

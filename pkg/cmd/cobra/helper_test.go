@@ -21,8 +21,8 @@ func Test_getOutputFlagsFromPolicies(t *testing.T) {
 			outputFlags: []string{},
 			policyFiles: []policy.PolicyFile{
 				{
-					Name:          "test",
-					DefaultAction: "log",
+					Name:           "test",
+					DefaultActions: []string{"log"},
 					Rules: []policy.Rule{
 						{Event: "test"},
 					},
@@ -43,8 +43,8 @@ func Test_getOutputFlagsFromPolicies(t *testing.T) {
 			},
 			policyFiles: []policy.PolicyFile{
 				{
-					Name:          "test",
-					DefaultAction: "log",
+					Name:           "test",
+					DefaultActions: []string{"log"},
 					Rules: []policy.Rule{
 						{Event: "test"},
 					},
@@ -66,8 +66,8 @@ func Test_getOutputFlagsFromPolicies(t *testing.T) {
 			outputFlags: []string{""},
 			policyFiles: []policy.PolicyFile{
 				{
-					Name:          "test",
-					DefaultAction: "webhook",
+					Name:           "test",
+					DefaultActions: []string{"webhook"},
 					Rules: []policy.Rule{
 						{Event: "test"},
 					},
@@ -80,8 +80,8 @@ func Test_getOutputFlagsFromPolicies(t *testing.T) {
 			outputFlags: []string{""},
 			policyFiles: []policy.PolicyFile{
 				{
-					Name:          "test",
-					DefaultAction: "forward",
+					Name:           "test",
+					DefaultActions: []string{"forward"},
 					Rules: []policy.Rule{
 						{Event: "test"},
 					},
@@ -94,12 +94,12 @@ func Test_getOutputFlagsFromPolicies(t *testing.T) {
 			outputFlags: []string{"webhook:http://localhost:8080"},
 			policyFiles: []policy.PolicyFile{
 				{
-					Name:          "test",
-					DefaultAction: "log",
+					Name:           "test",
+					DefaultActions: []string{"log"},
 					Rules: []policy.Rule{
 						{
-							Event:  "test",
-							Action: []string{"webhook"},
+							Event:   "test",
+							Actions: []string{"webhook"},
 						},
 					},
 				},
@@ -111,12 +111,12 @@ func Test_getOutputFlagsFromPolicies(t *testing.T) {
 			outputFlags: []string{"forward:http://localhost:8080"},
 			policyFiles: []policy.PolicyFile{
 				{
-					Name:          "test",
-					DefaultAction: "log",
+					Name:           "test",
+					DefaultActions: []string{"log"},
 					Rules: []policy.Rule{
 						{
-							Event:  "test",
-							Action: []string{"forward"},
+							Event:   "test",
+							Actions: []string{"forward"},
 						},
 					},
 				},
@@ -128,8 +128,8 @@ func Test_getOutputFlagsFromPolicies(t *testing.T) {
 			outputFlags: []string{"table"},
 			policyFiles: []policy.PolicyFile{
 				{
-					Name:          "test",
-					DefaultAction: "log",
+					Name:           "test",
+					DefaultActions: []string{"log"},
 					Rules: []policy.Rule{
 						{
 							Event: "test",
@@ -144,8 +144,8 @@ func Test_getOutputFlagsFromPolicies(t *testing.T) {
 			outputFlags: []string{"table:/log.txt"},
 			policyFiles: []policy.PolicyFile{
 				{
-					Name:          "test",
-					DefaultAction: "log",
+					Name:           "test",
+					DefaultActions: []string{"log"},
 					Rules: []policy.Rule{
 						{
 							Event: "test",
@@ -160,8 +160,8 @@ func Test_getOutputFlagsFromPolicies(t *testing.T) {
 			outputFlags: []string{"json", "table:/log.txt"},
 			policyFiles: []policy.PolicyFile{
 				{
-					Name:          "test",
-					DefaultAction: "log",
+					Name:           "test",
+					DefaultActions: []string{"log"},
 					Rules: []policy.Rule{
 						{
 							Event: "test",
@@ -176,53 +176,53 @@ func Test_getOutputFlagsFromPolicies(t *testing.T) {
 			outputFlags: []string{"forward:tcp://localhost:24224", "webhook:http://localhost:8080"},
 			policyFiles: []policy.PolicyFile{
 				{
-					Name:          "test",
-					DefaultAction: "log",
+					Name:           "test",
+					DefaultActions: []string{"log"},
 					Rules: []policy.Rule{
 						{
 							Event: "event1",
 						},
 						{
-							Event:  "event2",
-							Action: []string{"webhook"},
+							Event:   "event2",
+							Actions: []string{"webhook"},
 						},
 						{
-							Event:  "event3",
-							Action: []string{"forward"},
+							Event:   "event3",
+							Actions: []string{"forward"},
 						},
 					},
 				},
 				{
-					Name:          "test2",
-					DefaultAction: "webhook",
+					Name:           "test2",
+					DefaultActions: []string{"webhook"},
 					Rules: []policy.Rule{
 						{
 							Event: "event1",
 						},
 						{
-							Event:  "event2",
-							Action: []string{"log"},
+							Event:   "event2",
+							Actions: []string{"log"},
 						},
 						{
-							Event:  "event3",
-							Action: []string{"forward"},
+							Event:   "event3",
+							Actions: []string{"forward"},
 						},
 					},
 				},
 				{
-					Name:          "test3",
-					DefaultAction: "forward",
+					Name:           "test3",
+					DefaultActions: []string{"forward"},
 					Rules: []policy.Rule{
 						{
 							Event: "event1",
 						},
 						{
-							Event:  "event2",
-							Action: []string{"log"},
+							Event:   "event2",
+							Actions: []string{"log"},
 						},
 						{
-							Event:  "event3",
-							Action: []string{"webhook"},
+							Event:   "event3",
+							Actions: []string{"webhook"},
 						},
 					},
 				},

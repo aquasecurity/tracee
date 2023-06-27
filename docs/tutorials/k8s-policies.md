@@ -58,7 +58,8 @@ signatures.yaml:
 ----
 name: signature_events
 description: traces all signature events
-defaultAction: log
+defaultActions: 
+  - log
 scope:
   - global
 rules:
@@ -108,13 +109,14 @@ To add a new policy for tracking execve events, append the following YAML block 
 
 ```yaml
 events.yaml: |-
-	name: execve_event
-	description: traces all execve events
-	defaultAction: log
-	scope:
-		- global
-	rules:
-		- event: execve
+  name: execve_event
+  description: traces all execve events
+  defaultActions:
+    - log
+  scope:
+    - global
+  rules:
+    - event: execve
 ```
 Save and close the file. The changes will be applied automatically.
 

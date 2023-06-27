@@ -85,10 +85,14 @@ func getOutputFlagsFromPolicies(outputFlags []string, policies []policy.PolicyFi
 	actionsMap := make(map[string]bool)
 
 	for _, p := range policies {
-		actionsMap[strings.TrimSpace(p.DefaultAction)] = false
+		for _, action := range p.DefaultActions {
+			if action != "" {
+				actionsMap[strings.TrimSpace(action)] = false
+			}
+		}
 
 		for _, r := range p.Rules {
-			for _, action := range r.Action {
+			for _, action := range r.Actions {
 				if action != "" {
 					actionsMap[strings.TrimSpace(action)] = false
 				}

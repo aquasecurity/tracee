@@ -1,6 +1,7 @@
 name: signature_events
 description: traces all signature events
-defaultAction: log
+defaultActions: 
+  - log
 scope:
   - global
 rules:

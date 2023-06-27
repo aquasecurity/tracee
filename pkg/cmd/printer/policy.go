@@ -22,7 +22,7 @@ type PolicyEventPrinter struct {
 	printers       []EventPrinter
 	numOfPrinters  int
 	printerMap     map[string][]chan trace.Event
-	eventsMap      map[string]string
+	eventsMap      map[string][]string
 	wg             *sync.WaitGroup
 	done           chan struct{}
 	containerMode  config.ContainerMode
@@ -120,28 +120,30 @@ func (pp *PolicyEventPrinter) Print(event trace.Event) {
 
 		key := policyName + ":" + event.EventName
 
-		action, ok := pp.eventsMap[key]
+		actions, ok := pp.eventsMap[key]
 		if !ok {
 			logger.Debugw("printers not found for event", "event", event)
 			continue
 		}
 
-		// avoid executing the same printer twice
-		if _, ok := executed[action]; ok {
-			continue
-		}
+		for _, action := range actions {
+			// avoid executing the same printer twice
+			if _, ok := executed[action]; ok {
+				continue
+			}
 
-		eventChans, ok := pp.printerMap[action]
-		if !ok {
-			panic(fmt.Sprintf("printer not found %q", action))
-		}
+			eventChans, ok := pp.printerMap[action]
+			if !ok {
+				panic(fmt.Sprintf("printer not found %q", action))
+			}
 
-		for _, c := range eventChans {
-			c <- event
-		}
+			for _, c := range eventChans {
+				c <- event
+			}
 
-		printersExecuted++
-		executed[action] = true
+			printersExecuted++
+			executed[action] = true
+		}
 	}
 }
 
@@ -152,29 +154,30 @@ func (pp *PolicyEventPrinter) Close() {
 	}
 }
 
-func (pp *PolicyEventPrinter) createEventMap(printerMap map[string][]chan trace.Event) (map[string]string, error) {
-	eventsMap := make(map[string]string)
+func (pp *PolicyEventPrinter) createEventMap(printerMap map[string][]chan trace.Event) (map[string][]string, error) {
+	eventsMap := make(map[string][]string)
 
 	for _, p := range pp.policies {
 		for _, rule := range p.Rules {
 			key := p.Name + ":" + rule.Event
-			eventsMap[key] = p.DefaultAction
 
-			if _, ok := printerMap[p.DefaultAction]; p.DefaultAction != "log" && !ok {
-				return nil, errfmt.Errorf("policy action %q has no printer configured, please configure the printer with --output", p.DefaultAction)
+			// use rule actions if defined
+			if len(rule.Actions) > 0 {
+				eventsMap[key] = rule.Actions
+
+				continue
 			}
 
-			// if no specific action is defined for this event, move on
-			for _, action := range rule.Action {
-				if action == "" {
-					continue
-				}
+			// if no rule actions defined, use policy default actions
+			eventsMap[key] = p.DefaultActions
+		}
+	}
 
-				eventsMap[key] = action
-
-				if _, ok := printerMap[action]; action != "log" && !ok {
-					return nil, errfmt.Errorf("policy action %q has no printer configured, please configure the printer with --output", rule.Action)
-				}
+	// validate that all actions have a printer
+	for _, actions := range eventsMap {
+		for _, action := range actions {
+			if _, ok := printerMap[action]; action != "log" && !ok {
+				return nil, errfmt.Errorf("policy action %q has no printer configured, please configure the printer with --output", action)
 			}
 		}
 	}
