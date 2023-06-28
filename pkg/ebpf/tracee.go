@@ -1622,7 +1622,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		systemInfoEvent := events.InitNamespacesEvent()
 		setMatchedPolicies(&systemInfoEvent, emit)
 		out <- &systemInfoEvent
-		_ = t.stats.EventCount.Increase()
+		_ = t.stats.EventCount.Increment()
 	}
 
 	emit = t.events[events.ExistingContainer].emit
@@ -1630,7 +1630,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		for _, e := range events.ExistingContainersEvents(t.containers, t.config.ContainersEnrich) {
 			setMatchedPolicies(&e, emit)
 			out <- &e
-			_ = t.stats.EventCount.Increase()
+			_ = t.stats.EventCount.Increment()
 		}
 	}
 }

@@ -26,7 +26,7 @@ func (stats *Stats) RegisterPrometheus() error {
 		Namespace: "tracee_ebpf",
 		Name:      "events_total",
 		Help:      "events collected by tracee-ebpf",
-	}, func() float64 { return float64(stats.EventCount.Read()) }))
+	}, func() float64 { return float64(stats.EventCount.Get()) }))
 
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -36,7 +36,7 @@ func (stats *Stats) RegisterPrometheus() error {
 		Namespace: "tracee_ebpf",
 		Name:      "events_filtered",
 		Help:      "events filtered by tracee-ebpf in userspace",
-	}, func() float64 { return float64(stats.EventsFiltered.Read()) }))
+	}, func() float64 { return float64(stats.EventsFiltered.Get()) }))
 
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -46,7 +46,7 @@ func (stats *Stats) RegisterPrometheus() error {
 		Namespace: "tracee_ebpf",
 		Name:      "network_capture_events_total",
 		Help:      "network capture events collected by tracee-ebpf",
-	}, func() float64 { return float64(stats.NetCapCount.Read()) }))
+	}, func() float64 { return float64(stats.NetCapCount.Get()) }))
 
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -56,7 +56,7 @@ func (stats *Stats) RegisterPrometheus() error {
 		Namespace: "tracee_ebpf",
 		Name:      "lostevents_total",
 		Help:      "events lost in the submission buffer",
-	}, func() float64 { return float64(stats.LostEvCount.Read()) }))
+	}, func() float64 { return float64(stats.LostEvCount.Get()) }))
 
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -66,7 +66,7 @@ func (stats *Stats) RegisterPrometheus() error {
 		Namespace: "tracee_ebpf",
 		Name:      "write_lostevents_total",
 		Help:      "events lost in the write buffer",
-	}, func() float64 { return float64(stats.LostWrCount.Read()) }))
+	}, func() float64 { return float64(stats.LostWrCount.Get()) }))
 
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -76,7 +76,7 @@ func (stats *Stats) RegisterPrometheus() error {
 		Namespace: "tracee_ebpf",
 		Name:      "network_capture_lostevents_total",
 		Help:      "network capture lost events in network capture buffer",
-	}, func() float64 { return float64(stats.LostNtCapCount.Read()) }))
+	}, func() float64 { return float64(stats.LostNtCapCount.Get()) }))
 
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -86,7 +86,7 @@ func (stats *Stats) RegisterPrometheus() error {
 		Namespace: "tracee_ebpf",
 		Name:      "bpf_logs_total",
 		Help:      "logs collected by tracee-ebpf during ebpf execution",
-	}, func() float64 { return float64(stats.BPFLogsCount.Read()) }))
+	}, func() float64 { return float64(stats.BPFLogsCount.Get()) }))
 
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -96,7 +96,7 @@ func (stats *Stats) RegisterPrometheus() error {
 		Namespace: "tracee_ebpf",
 		Name:      "errors_total",
 		Help:      "errors accumulated by tracee-ebpf",
-	}, func() float64 { return float64(stats.ErrorCount.Read()) }))
+	}, func() float64 { return float64(stats.ErrorCount.Get()) }))
 
 	return errfmt.WrapError(err)
 }

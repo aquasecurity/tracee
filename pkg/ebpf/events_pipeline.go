@@ -254,7 +254,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 			// to continue with those within the pipeline.
 			if t.matchPolicies(&evt) == 0 {
 				if _, ok := t.eventDerivations[eventId]; !ok {
-					_ = t.stats.EventsFiltered.Increase()
+					_ = t.stats.EventsFiltered.Increment()
 					continue
 				}
 			}
@@ -520,7 +520,7 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					default:
 						// Derived events might need filtering as well
 						if t.matchPolicies(&derivative) == 0 {
-							_ = t.stats.EventsFiltered.Increase()
+							_ = t.stats.EventsFiltered.Increment()
 							continue
 						}
 					}
@@ -571,7 +571,7 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 			// Send the event to the printers.
 			select {
 			case t.config.ChanEvents <- *event:
-				_ = t.stats.EventCount.Increase()
+				_ = t.stats.EventCount.Increment()
 				event = nil
 			case <-ctx.Done():
 				return
@@ -653,7 +653,7 @@ func MergeErrors(cs ...<-chan error) <-chan error {
 }
 
 func (t *Tracee) handleError(err error) {
-	_ = t.stats.ErrorCount.Increase()
+	_ = t.stats.ErrorCount.Increment()
 	logger.Errorw("Tracee encountered an error", "error", err)
 }
 
