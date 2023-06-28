@@ -19,7 +19,7 @@ func (stats *Stats) RegisterPrometheus() error {
 		Namespace: "tracee_rules",
 		Name:      "events_total",
 		Help:      "events ingested by tracee-rules",
-	}, func() float64 { return float64(stats.Events.Read()) }))
+	}, func() float64 { return float64(stats.Events.Get()) }))
 
 	if err != nil {
 		return err
@@ -29,7 +29,7 @@ func (stats *Stats) RegisterPrometheus() error {
 		Namespace: "tracee_rules",
 		Name:      "detections_total",
 		Help:      "detections made by tracee-rules",
-	}, func() float64 { return float64(stats.Detections.Read()) }))
+	}, func() float64 { return float64(stats.Detections.Get()) }))
 
 	if err != nil {
 		return err
@@ -39,7 +39,7 @@ func (stats *Stats) RegisterPrometheus() error {
 		Namespace: "tracee_rules",
 		Name:      "signatures_total",
 		Help:      "signatures loaded",
-	}, func() float64 { return float64(stats.Signatures.Read()) }))
+	}, func() float64 { return float64(stats.Signatures.Get()) }))
 
 	if err != nil {
 		return err
