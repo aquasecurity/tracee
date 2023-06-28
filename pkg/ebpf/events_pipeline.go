@@ -510,16 +510,16 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					t.handleError(err)
 				}
 
-				for i, derivative := range derivatives {
+				for i := range derivatives {
 					// Skip events that dont work with filtering due to missing types being handled.
 					// https://github.com/aquasecurity/tracee/issues/2486
-					switch events.ID(derivative.EventID) {
+					switch events.ID(derivatives[i].EventID) {
 					case events.SymbolsLoaded:
 					case events.SharedObjectLoaded:
 					case events.PrintMemDump:
 					default:
 						// Derived events might need filtering as well
-						if t.matchPolicies(&derivative) == 0 {
+						if t.matchPolicies(&derivatives[i]) == 0 {
 							_ = t.stats.EventsFiltered.Increment()
 							continue
 						}
