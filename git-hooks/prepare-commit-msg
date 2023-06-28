@@ -1,0 +1,13 @@
+#!/bin/sh
+
+COMMIT_MSG_FILE=$1
+COMMIT_SOURCE=$2
+
+# Define the template
+TEMPLATE=".gitmessage"
+
+# Check if the commit message is already populated (e.g. by 'git commit -m "message"')
+if [ -z "$COMMIT_SOURCE" ]; then
+    # If not, append the template
+    cat "$TEMPLATE" >> "$COMMIT_MSG_FILE"
+fi

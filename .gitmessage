@@ -1,0 +1,48 @@
+
+# Use the following conventions <https://www.conventionalcommits.org/en/v1.0.0>
+#
+# <type>(scope): <description>
+#
+# (optional body)
+#
+# (optional footer(s))
+#
+# Type can be:
+#	feat:     A new feature
+#	fix:      A bug fix
+#	docs:     Documentation changes
+#	style:    Code style changes (formatting, indentation, etc.)
+#	refactor: Code restructuring that neither fixes a bug nor adds a feature
+#	perf:     Performance improvements
+#	test:     Adding or modifying tests
+#	build:    Changes to the build system or dependencies
+#	chore:    Other changes that don't modify src or test files
+#	revert:   Reverts a previous commit
+#
+# Scope can be anything specifying place of the commit change.
+#
+# Add "!" immediately after the type and scope, and before the colon, 
+# to draw attention to a breaking change.
+#
+# Description should be a concise explanation of the changes.
+#
+# The body should be a more detailed explanation of the changes.
+#
+# The footer should contain any additional information such as:
+# - "BREAKING CHANGE" to signal a breaking change.
+# - "Closes #123" to reference an issue.
+# - If to be pushed to a release branch:
+#   * "commit: 0b97409 (main), cherry-pick" to reference a commit cherry-picked
+#     from main branch.
+#   * "commit: 00f71ab (main), back-port" to reference a commit back-ported from
+#     main branch.
+#
+# Example:
+# chore(cmd/flags)!: change flags name
+#
+# Standardize naming.
+#
+# BREAKING CHANGE: change --flags to --flag.
+# Closes #123
+# commit: caf3b4b (main), cherry-pick
+#
