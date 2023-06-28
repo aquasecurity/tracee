@@ -40,7 +40,7 @@ func (store *context) Store(event trace.Event) uint64 {
 	store.mutex.Lock()
 	defer store.mutex.Unlock()
 
-	id, err := store.counter.IncreaseAndRead()
+	id, err := store.counter.IncrementValueAndRead(1)
 	if err != nil {
 		logger.Debugw("failed to increase context counter", "error", err)
 	}
