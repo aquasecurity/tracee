@@ -309,54 +309,6 @@ func (t *Tracee) processSchedProcessFork(event *trace.Event) error {
 	return t.convertArgMonotonicToEpochTime(event, "start_time")
 }
 
-func (t *Tracee) processCgroupMkdir(event *trace.Event) error {
-	cgroupId, err := parse.ArgVal[uint64](event.Args, "cgroup_id")
-	if err != nil {
-		return errfmt.Errorf("error parsing cgroup_mkdir args: %v", err)
-	}
-	path, err := parse.ArgVal[string](event.Args, "cgroup_path")
-	if err != nil {
-		return errfmt.Errorf("error parsing cgroup_mkdir args: %v", err)
-	}
-	hId, err := parse.ArgVal[uint32](event.Args, "hierarchy_id")
-	if err != nil {
-		return errfmt.Errorf("error parsing cgroup_mkdir args: %v", err)
-	}
-	info, err := t.containers.CgroupMkdir(cgroupId, path, hId)
-	if err == nil && info.Container.ContainerId == "" {
-		// If cgroupId is from a regular cgroup directory, and not the
-		// container base directory (from known runtimes), it should be
-		// removed from the containers bpf map.
-		err := capabilities.GetInstance().EBPF(
-			func() error {
-				return t.containers.RemoveFromBpfMap(t.bpfModule, cgroupId, hId)
-			},
-		)
-		if err != nil {
-			// If the cgroupId was not found in bpf map, this could mean that
-			// it is not a container cgroup and, as a systemd cgroup, could have been
-			// created and removed very quickly.
-			// In this case, we don't want to return an error.
-			logger.Debugw("Failed to remove entry from containers bpf map", "error", err)
-		}
-	}
-	return errfmt.WrapError(err)
-}
-
-func (t *Tracee) processCgroupRmdir(event *trace.Event) error {
-	cgroupId, err := parse.ArgVal[uint64](event.Args, "cgroup_id")
-	if err != nil {
-		return errfmt.Errorf("error parsing cgroup_rmdir args: %v", err)
-	}
-
-	hId, err := parse.ArgVal[uint32](event.Args, "hierarchy_id")
-	if err != nil {
-		return errfmt.Errorf("error parsing cgroup_mkdir args: %v", err)
-	}
-	t.containers.CgroupRemove(cgroupId, hId)
-	return nil
-}
-
 // In case FinitModule and InitModule occurs, it means that a kernel module
 // was loaded and tracee needs to check if it hooked the syscall table and
 // seq_ops

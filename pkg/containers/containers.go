@@ -24,12 +24,12 @@ import (
 
 // Containers contains information about running containers in the host.
 type Containers struct {
-	cgroups    *cgroup.Cgroups
-	cgroupsMap map[uint32]CgroupInfo
-	deleted    []uint64
-	mtx        sync.RWMutex // protecting both cgroups and deleted fields
-	enricher   runtimeInfoService
-	bpfMapName string
+	cgroups      *cgroup.Cgroups
+	cgroupsMap   map[uint32]CgroupInfo
+	deleted      []uint64
+	cgroupsMutex sync.RWMutex // protecting both cgroups and deleted fields
+	enricher     runtimeInfoService
+	bpfMapName   string
 }
 
 // CgroupInfo represents a cgroup dir (might describe a container cgroup dir).
@@ -53,10 +53,10 @@ func New(
 	error,
 ) {
 	containers := &Containers{
-		cgroups:    cgroups,
-		cgroupsMap: make(map[uint32]CgroupInfo),
-		mtx:        sync.RWMutex{},
-		bpfMapName: mapName,
+		cgroups:      cgroups,
+		cgroupsMap:   make(map[uint32]CgroupInfo),
+		cgroupsMutex: sync.RWMutex{},
+		bpfMapName:   mapName,
 	}
 
 	runtimeService := RuntimeInfoService(sockets)
@@ -101,8 +101,8 @@ func (c *Containers) GetCgroupVersion() cgroup.CgroupVersion {
 
 // Populate populates Containers struct by reading mounted proc and cgroups fs.
 func (c *Containers) Populate() error {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
+	c.cgroupsMutex.Lock()
+	defer c.cgroupsMutex.Unlock()
 	return c.populate()
 }
 
@@ -189,8 +189,8 @@ func (c *Containers) cgroupUpdate(cgroupId uint64, path string, ctime time.Time)
 // it returns the retrieved metadata and a relevant error
 // this function shouldn't be called twice for the same cgroupId unless attempting a retry
 func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetadata, error) {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
+	c.cgroupsMutex.Lock()
+	defer c.cgroupsMutex.Unlock()
 
 	var metadata cruntime.ContainerMetadata
 	info, ok := c.cgroupsMap[uint32(cgroupId)]
@@ -306,8 +306,8 @@ func (c *Containers) CgroupRemove(cgroupId uint64, hierarchyID uint32) {
 
 	now := time.Now()
 	var deleted []uint64
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
+	c.cgroupsMutex.Lock()
+	defer c.cgroupsMutex.Unlock()
 
 	// process previously deleted cgroupInfo data (deleted cgroup dirs)
 	for _, id := range c.deleted {
@@ -338,8 +338,8 @@ func (c *Containers) CgroupMkdir(cgroupId uint64, subPath string, hierarchyID ui
 	}
 
 	// Find container cgroup dir path to get directory stats
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
+	c.cgroupsMutex.Lock()
+	defer c.cgroupsMutex.Unlock()
 	curTime := time.Now()
 	path, err := cgroup.GetCgroupPath(c.cgroups.GetDefaultCgroup().GetMountPoint(), cgroupId, subPath)
 	if err == nil {
@@ -359,8 +359,8 @@ func (c *Containers) CgroupMkdir(cgroupId uint64, subPath string, hierarchyID ui
 // FindContainerCgroupID32LSB returns the 32 LSB of the Cgroup ID for a given container ID
 func (c *Containers) FindContainerCgroupID32LSB(containerID string) []uint32 {
 	var cgroupIDs []uint32
-	c.mtx.RLock()
-	defer c.mtx.RUnlock()
+	c.cgroupsMutex.RLock()
+	defer c.cgroupsMutex.RUnlock()
 	for k, v := range c.cgroupsMap {
 		if strings.HasPrefix(v.Container.ContainerId, containerID) {
 			cgroupIDs = append(cgroupIDs, k)
@@ -380,8 +380,8 @@ func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
 		// cgroupInfo in the Containers struct. An empty subPath will make
 		// getCgroupPath() to walk all cgroupfs directories until it finds the
 		// directory of given cgroupId.
-		c.mtx.Lock()
-		defer c.mtx.Unlock()
+		c.cgroupsMutex.Lock()
+		defer c.cgroupsMutex.Unlock()
 
 		path, err := cgroup.GetCgroupPath(c.cgroups.GetDefaultCgroup().GetMountPoint(), cgroupId, "")
 		if err == nil {
@@ -395,8 +395,8 @@ func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
 		}
 	}
 
-	c.mtx.RLock()
-	defer c.mtx.RUnlock()
+	c.cgroupsMutex.RLock()
+	defer c.cgroupsMutex.RUnlock()
 	cgroupInfo := c.cgroupsMap[uint32(cgroupId)]
 
 	return cgroupInfo
@@ -405,8 +405,8 @@ func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
 // GetContainers provides a list of all existing containers.
 func (c *Containers) GetContainers() map[uint32]CgroupInfo {
 	conts := map[uint32]CgroupInfo{}
-	c.mtx.RLock()
-	defer c.mtx.RUnlock()
+	c.cgroupsMutex.RLock()
+	defer c.cgroupsMutex.RUnlock()
 	for id, v := range c.cgroupsMap {
 		if v.ContainerRoot && v.expiresAt.IsZero() {
 			conts[id] = v
@@ -417,9 +417,9 @@ func (c *Containers) GetContainers() map[uint32]CgroupInfo {
 
 // CgroupExists checks if there is a cgroupInfo data of a given cgroupId.
 func (c *Containers) CgroupExists(cgroupId uint64) bool {
-	c.mtx.RLock()
+	c.cgroupsMutex.RLock()
 	_, ok := c.cgroupsMap[uint32(cgroupId)]
-	c.mtx.RUnlock()
+	c.cgroupsMutex.RUnlock()
 	return ok
 }
 
@@ -435,19 +435,19 @@ func (c *Containers) PopulateBpfMap(bpfModule *libbpfgo.Module) error {
 		return errfmt.WrapError(err)
 	}
 
-	c.mtx.RLock()
+	c.cgroupsMutex.RLock()
 	for cgroupIdLsb, info := range c.cgroupsMap {
 		if info.ContainerRoot {
 			state := containerExisted
 			err = containersMap.Update(unsafe.Pointer(&cgroupIdLsb), unsafe.Pointer(&state))
 		}
 	}
-	c.mtx.RUnlock()
+	c.cgroupsMutex.RUnlock()
 
 	return errfmt.WrapError(err)
 }
 
-func (c *Containers) RemoveFromBpfMap(bpfModule *libbpfgo.Module, cgroupId uint64, hierarchyID uint32) error {
+func (c *Containers) RemoveFromBPFMap(bpfModule *libbpfgo.Module, cgroupId uint64, hierarchyID uint32) error {
 	// cgroupv1: no need to check other controllers than the default
 	switch c.cgroups.GetDefaultCgroup().(type) {
 	case *cgroup.CgroupV1:

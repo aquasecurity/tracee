@@ -21,8 +21,8 @@ func (ctx SignaturesDataSource) Get(key interface{}) (map[string]interface{}, er
 	if !ok {
 		return nil, detect.ErrKeyNotSupported
 	}
-	ctx.containers.mtx.RLock()
-	defer ctx.containers.mtx.RUnlock()
+	ctx.containers.cgroupsMutex.RLock()
+	defer ctx.containers.cgroupsMutex.RUnlock()
 	for _, cgroup := range ctx.containers.cgroupsMap {
 		if cgroup.Container.ContainerId == containerId {
 			containerData := cgroup.Container

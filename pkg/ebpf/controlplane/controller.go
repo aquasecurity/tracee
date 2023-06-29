@@ -143,7 +143,7 @@ func (p *Controller) processCgroupMkdir(args []trace.Argument) error {
 		// removed from the containers bpf map.
 		err := capabilities.GetInstance().EBPF(
 			func() error {
-				return p.cgroupManager.RemoveFromBpfMap(p.bpfModule, cgroupId, hId)
+				return p.cgroupManager.RemoveFromBPFMap(p.bpfModule, cgroupId, hId)
 			},
 		)
 		if err != nil {
