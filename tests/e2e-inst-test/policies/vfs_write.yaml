@@ -1,0 +1,8 @@
+name: vfs_write_test
+description: test VFS Write event
+scope: 
+  - comm=echo
+defaultActions: 
+  - log
+rules:
+  - event: VFS_WRITE

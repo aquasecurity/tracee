@@ -9,39 +9,40 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-type e2eUDP struct {
+type e2eTCP struct {
 	cb detect.SignatureHandler
 }
 
-func (sig *e2eUDP) Init(ctx detect.SignatureContext) error {
+func (sig *e2eTCP) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	return nil
 }
 
-func (sig *e2eUDP) GetMetadata() (detect.SignatureMetadata, error) {
+func (sig *e2eTCP) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "UDP",
+		ID:          "TCP",
+		EventName:   "TCP",
 		Version:     "0.1.0",
-		Name:        "Network UDP Test",
-		Description: "Network E2E Tests: UDP",
+		Name:        "Network TCP Test",
+		Description: "Network E2E Tests: TCP",
 		Tags:        []string{"e2e", "network"},
 	}, nil
 }
 
-func (sig *e2eUDP) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
+func (sig *e2eTCP) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
 	return []detect.SignatureEventSelector{
-		{Source: "tracee", Name: "net_packet_udp"},
+		{Source: "tracee", Name: "net_packet_tcp"},
 	}, nil
 }
 
-func (sig *e2eUDP) OnEvent(event protocol.Event) error {
+func (sig *e2eTCP) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("failed to cast event's payload")
 	}
 
 	switch eventObj.EventName {
-	case "net_packet_udp":
+	case "net_packet_tcp":
 		src, err := helpers.GetTraceeStringArgumentByName(eventObj, "src")
 		if err != nil {
 			return err
@@ -52,18 +53,23 @@ func (sig *e2eUDP) OnEvent(event protocol.Event) error {
 			return err
 		}
 
-		udp, err := helpers.GetProtoUDPByName(eventObj, "proto_udp")
+		tcp, err := helpers.GetProtoTCPByName(eventObj, "proto_tcp")
 		if err != nil {
 			return err
 		}
 
 		// check values for detection
 
-		if src != "172.16.17.2" || dst != "172.16.17.1" {
+		if src != "172.16.17.1" || dst != "172.16.17.2" {
 			return nil
 		}
 
-		if udp.DstPort != 8090 {
+		if tcp.SrcPort != 8090 ||
+			tcp.ACK != 1 ||
+			tcp.RST != 0 ||
+			tcp.URG != 0 ||
+			tcp.SYN != 0 ||
+			tcp.FIN != 0 {
 			return nil
 		}
 
@@ -79,8 +85,8 @@ func (sig *e2eUDP) OnEvent(event protocol.Event) error {
 	return nil
 }
 
-func (sig *e2eUDP) OnSignal(s detect.Signal) error {
+func (sig *e2eTCP) OnSignal(s detect.Signal) error {
 	return nil
 }
 
-func (sig *e2eUDP) Close() {}
+func (sig *e2eTCP) Close() {}

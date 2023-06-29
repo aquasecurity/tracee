@@ -1,0 +1,8 @@
+name: http_test
+description: test tracee's http events
+scope: 
+  - comm=curl
+defaultActions: 
+  - log
+rules:
+  - event: HTTP

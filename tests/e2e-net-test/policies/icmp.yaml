@@ -1,0 +1,8 @@
+name: icmp_test
+description: test tracee's icmp events
+scope: 
+  - comm=ping
+defaultActions: 
+  - log
+rules:
+  - event: ICMP

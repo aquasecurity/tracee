@@ -1,0 +1,8 @@
+name: bpf_attach_test
+description: traces bpf_attach event from tracee attaching itself
+scope: 
+  - comm=tracee
+defaultActions: 
+  - log
+rules:
+  - event: BPF_ATTACH

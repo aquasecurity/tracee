@@ -1,0 +1,8 @@
+name: dns_test
+description: test tracee's dns events
+scope: 
+  - comm=isc-net-0000,isc-net-0000 # nslookup uses these commands internally
+defaultActions: 
+  - log
+rules:
+  - event: DNS

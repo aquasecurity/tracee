@@ -1,0 +1,8 @@
+name: file_movement_test
+description: test file movement event
+scope: 
+  - comm=mv
+defaultActions: 
+  - log
+rules:
+  - event: SECURITY_INODE_RENAME

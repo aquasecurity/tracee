@@ -1,0 +1,8 @@
+name: tcp_test
+description: test tracee's tcp events
+scope: 
+  - comm=ping,nc
+defaultActions: 
+  - log
+rules:
+  - event: TCP

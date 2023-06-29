@@ -1,0 +1,8 @@
+name: ipv6_test
+description: test tracee's ipv6 events
+scope: 
+  - comm=ping
+defaultActions: 
+  - log
+rules:
+  - event: IPv6

@@ -9,39 +9,40 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-type e2eICMP struct {
+type e2eUDP struct {
 	cb detect.SignatureHandler
 }
 
-func (sig *e2eICMP) Init(ctx detect.SignatureContext) error {
+func (sig *e2eUDP) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	return nil
 }
 
-func (sig *e2eICMP) GetMetadata() (detect.SignatureMetadata, error) {
+func (sig *e2eUDP) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "ICMP",
+		ID:          "UDP",
+		EventName:   "UDP",
 		Version:     "0.1.0",
-		Name:        "Network ICMP Test",
-		Description: "Network E2E Tests: ICMP",
+		Name:        "Network UDP Test",
+		Description: "Network E2E Tests: UDP",
 		Tags:        []string{"e2e", "network"},
 	}, nil
 }
 
-func (sig *e2eICMP) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
+func (sig *e2eUDP) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
 	return []detect.SignatureEventSelector{
-		{Source: "tracee", Name: "net_packet_icmp"},
+		{Source: "tracee", Name: "net_packet_udp"},
 	}, nil
 }
 
-func (sig *e2eICMP) OnEvent(event protocol.Event) error {
+func (sig *e2eUDP) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("failed to cast event's payload")
 	}
 
 	switch eventObj.EventName {
-	case "net_packet_icmp":
+	case "net_packet_udp":
 		src, err := helpers.GetTraceeStringArgumentByName(eventObj, "src")
 		if err != nil {
 			return err
@@ -52,18 +53,18 @@ func (sig *e2eICMP) OnEvent(event protocol.Event) error {
 			return err
 		}
 
-		icmp, err := helpers.GetProtoICMPByName(eventObj, "proto_icmp")
+		udp, err := helpers.GetProtoUDPByName(eventObj, "proto_udp")
 		if err != nil {
 			return err
 		}
 
 		// check values for detection
 
-		if src != "172.16.17.1" || dst != "172.16.17.2" {
+		if src != "172.16.17.2" || dst != "172.16.17.1" {
 			return nil
 		}
 
-		if icmp.TypeCode != "EchoReply" {
+		if udp.DstPort != 8090 {
 			return nil
 		}
 
@@ -79,8 +80,8 @@ func (sig *e2eICMP) OnEvent(event protocol.Event) error {
 	return nil
 }
 
-func (sig *e2eICMP) OnSignal(s detect.Signal) error {
+func (sig *e2eUDP) OnSignal(s detect.Signal) error {
 	return nil
 }
 
-func (sig *e2eICMP) Close() {}
+func (sig *e2eUDP) Close() {}

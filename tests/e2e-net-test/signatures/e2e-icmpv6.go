@@ -21,6 +21,7 @@ func (sig *e2eICMPv6) Init(ctx detect.SignatureContext) error {
 func (sig *e2eICMPv6) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
 		ID:          "ICMPv6",
+		EventName:   "ICMPv6",
 		Version:     "0.1.0",
 		Name:        "Network ICMPv6 Test",
 		Description: "Network E2E Tests: ICMPv6",

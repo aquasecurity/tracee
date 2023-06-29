@@ -1,0 +1,8 @@
+name: icmpv6_test
+description: test tracee's icmpv6 events
+scope: 
+  - comm=ping
+defaultActions: 
+  - log
+rules:
+  - event: ICMPv6

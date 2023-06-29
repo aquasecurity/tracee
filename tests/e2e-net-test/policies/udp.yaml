@@ -1,0 +1,8 @@
+name: udp_test
+description: test tracee's udp events
+scope: 
+  - comm=ping,nc
+defaultActions: 
+  - log
+rules:
+  - event: UDP

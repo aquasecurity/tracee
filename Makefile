@@ -638,7 +638,7 @@ clean-tracee-gptdocs:
 
 # e2e network signatures
 
-E2E_NET_DIR ?= tests/e2e-net-signatures
+E2E_NET_DIR ?= tests/e2e-net-test/signatures
 E2E_NET_SRC := $(shell find $(E2E_NET_DIR) \
 		-type f \
 		-name '*.go' \
@@ -667,7 +667,7 @@ clean-e2e-net-signatures:
 
 # e2e instrumentation signatures
 
-E2E_INST_DIR ?= tests/e2e-inst-signatures
+E2E_INST_DIR ?= tests/e2e-inst-test/signatures
 E2E_INST_SRC := $(shell find $(E2E_INST_DIR) \
 		-type f \
 		-name '*.go' \

@@ -1,0 +1,8 @@
+name: ipv4_test
+description: test tracee's ipv4 events
+scope: 
+  - comm=ping
+defaultActions: 
+  - log
+rules:
+  - event: IPv4

@@ -1,0 +1,8 @@
+name: file_modify_test
+description: test file modification event
+scope: 
+  - comm=touch,echo
+defaultActions: 
+  - log
+rules:
+  - event: FILE_MODIFICATION

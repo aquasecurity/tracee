@@ -9,39 +9,40 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-type e2eTCP struct {
+type e2eIPv6 struct {
 	cb detect.SignatureHandler
 }
 
-func (sig *e2eTCP) Init(ctx detect.SignatureContext) error {
+func (sig *e2eIPv6) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	return nil
 }
 
-func (sig *e2eTCP) GetMetadata() (detect.SignatureMetadata, error) {
+func (sig *e2eIPv6) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TCP",
+		ID:          "IPv6",
+		EventName:   "IPv6",
 		Version:     "0.1.0",
-		Name:        "Network TCP Test",
-		Description: "Network E2E Tests: TCP",
+		Name:        "Network IPv6 Test",
+		Description: "Network E2E Tests: IPv6",
 		Tags:        []string{"e2e", "network"},
 	}, nil
 }
 
-func (sig *e2eTCP) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
+func (sig *e2eIPv6) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
 	return []detect.SignatureEventSelector{
-		{Source: "tracee", Name: "net_packet_tcp"},
+		{Source: "tracee", Name: "net_packet_ipv6"},
 	}, nil
 }
 
-func (sig *e2eTCP) OnEvent(event protocol.Event) error {
+func (sig *e2eIPv6) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("failed to cast event's payload")
 	}
 
 	switch eventObj.EventName {
-	case "net_packet_tcp":
+	case "net_packet_ipv6":
 		src, err := helpers.GetTraceeStringArgumentByName(eventObj, "src")
 		if err != nil {
 			return err
@@ -52,23 +53,20 @@ func (sig *e2eTCP) OnEvent(event protocol.Event) error {
 			return err
 		}
 
-		tcp, err := helpers.GetProtoTCPByName(eventObj, "proto_tcp")
+		ipv6, err := helpers.GetProtoIPv6ByName(eventObj, "proto_ipv6")
 		if err != nil {
 			return err
 		}
 
 		// check values for detection
 
-		if src != "172.16.17.1" || dst != "172.16.17.2" {
+		if src != "fd6e:a63d:71f:2f4::2" || dst != "fd6e:a63d:71f:2f4::1" {
 			return nil
 		}
 
-		if tcp.SrcPort != 8090 ||
-			tcp.ACK != 1 ||
-			tcp.RST != 0 ||
-			tcp.URG != 0 ||
-			tcp.SYN != 0 ||
-			tcp.FIN != 0 {
+		if ipv6.Version != 6 || ipv6.HopLimit != 64 ||
+			ipv6.SrcIP != "fd6e:a63d:71f:2f4::2" ||
+			ipv6.DstIP != "fd6e:a63d:71f:2f4::1" {
 			return nil
 		}
 
@@ -84,8 +82,8 @@ func (sig *e2eTCP) OnEvent(event protocol.Event) error {
 	return nil
 }
 
-func (sig *e2eTCP) OnSignal(s detect.Signal) error {
+func (sig *e2eIPv6) OnSignal(s detect.Signal) error {
 	return nil
 }
 
-func (sig *e2eTCP) Close() {}
+func (sig *e2eIPv6) Close() {}

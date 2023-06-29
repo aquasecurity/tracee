@@ -42,9 +42,6 @@ if [[ $KERNEL_MAJ -lt 5 && "$KERNEL" != *"el8"* ]]; then
     info_exit "skip test in kernels < 5.0 (and not RHEL)"
 fi
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-SIG_DIR=$(realpath $SCRIPT_DIR/../dist/e2e-inst-signatures)
-
 # run CO-RE VFS_WRITE test only by default
 TESTS=${INSTTESTS:=VFS_WRITE}
 
@@ -70,74 +67,77 @@ if [[ ! -x ./dist/tracee ]]; then
     error_exit "could not find tracee executable"
 fi
 
+# setup script variables
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SIG_DIR=$(realpath $SCRIPT_DIR/../../dist/e2e-inst-signatures)
+POLICY_DIR=$(realpath $SCRIPT_DIR/policies)
+
 # if any test has failed
 anyerror=""
 
-# run tests
-for TEST in $TESTS; do
+rm -f $SCRIPT_TMP_DIR/build-$$
+rm -f $SCRIPT_TMP_DIR/tracee-log-$$
 
-    info
-    info "= TEST: $TEST =============================================="
-    info
+./dist/tracee \
+    --install-path $TRACEE_TMP_DIR \
+    --cache cache-type=mem \
+    --cache mem-cache-size=512 \
+    --output json:$SCRIPT_TMP_DIR/build-$$ \
+    --output option:parse-arguments \
+    --log file:$SCRIPT_TMP_DIR/tracee-log-$$ \
+    --signatures-dir $SIG_DIR \
+    --policy $POLICY_DIR &
 
-    rm -f $SCRIPT_TMP_DIR/build-$$
-    rm -f $SCRIPT_TMP_DIR/tracee-log-$$
-
-    ./dist/tracee \
-        --install-path $TRACEE_TMP_DIR \
-        --cache cache-type=mem \
-        --cache mem-cache-size=512 \
-        --output json:$SCRIPT_TMP_DIR/build-$$ \
-        --output option:parse-arguments \
-        --log file:$SCRIPT_TMP_DIR/tracee-log-$$ \
-        --signatures-dir $SIG_DIR \
-        --filter comm=echo,mv,ls,tracee \
-        --filter set=signatures &
-
-    # wait tracee-ebpf to be started (30 sec most)
-    times=0
-    timedout=0
-    while true; do
-        times=$(($times + 1))
-        sleep 1
-        if [[ -f $TRACEE_TMP_DIR/out/tracee.pid ]]; then
-            info
-            info "UP AND RUNNING"
-            info
-            break
-        fi
-
-        if [[ $times -gt $TRACEE_STARTUP_TIMEOUT ]]; then
-            timedout=1
-            break
-        fi
-    done
-
-    # tracee-ebpf could not start for some reason, check stderr
-    if [[ $timedout -eq 1 ]]; then
+# wait tracee-ebpf to be started (30 sec most)
+times=0
+timedout=0
+while true; do
+    times=$(($times + 1))
+    sleep 1
+    info "TESTING IF TRACEE IS UP"
+    if [[ -f $TRACEE_TMP_DIR/out/tracee.pid ]]; then
         info
-        info "$TEST: FAILED. ERRORS:"
+        info "UP AND RUNNING"
         info
-        cat $SCRIPT_TMP_DIR/tracee-log-$$
-
-        anyerror="${anyerror}$TEST,"
-        continue
+        break
     fi
 
-    # give some time for tracee to settle
-    sleep 3
+    if [[ $times -gt $TRACEE_STARTUP_TIMEOUT ]]; then
+        timedout=1
+        break
+    fi
+done
 
+# tracee could not start for some reason, check stderr
+if [[ $timedout -eq 1 ]]; then
+    info
+    info "FAILED TO START TRACEE. ERRORS:"
+    info
+    cat $SCRIPT_TMP_DIR/tracee-log-$$
+
+    error_exit "CLOSING TEST"
+fi
+
+# give some time for tracee to settle
+sleep 3
+
+# run tests
+for TEST in $TESTS; do
     # run test scripts
     timeout --preserve-status $TRACEE_RUN_TIMEOUT \
-        ./tests/e2e-inst-signatures/scripts/${TEST,,}.sh
+        ./tests/e2e-inst-test/scripts/${TEST,,}.sh &
+    info "RUNNING TEST $TEST"
+done
 
-    # so event can be processed and detected
-    sleep 3
+# so event can be processed and detected
+sleep 5
 
-    ## cleanup at EXIT
-
+# check test results
+for TEST in $TESTS; do
     found=0
     cat $SCRIPT_TMP_DIR/build-$$ | jq .eventName | grep -q $TEST && found=1
+    info
+    info "= TEST: $TEST =============================================="
     info
     if [[ $found -eq 1 ]]; then
         info "$TEST: SUCCESS"
@@ -148,27 +148,30 @@ for TEST in $TESTS; do
         info
     fi
     info
-
-    rm -f $SCRIPT_TMP_DIR/build-$$
-    rm -f $SCRIPT_TMP_DIR/tracee-log-$$
-
-    # make sure we exit to start it again
-
-    pid_tracee=$(pidof tracee)
-
-    kill -2 $pid_tracee
-
-    sleep $TRACEE_SHUTDOWN_TIMEOUT
-
-    # make sure tracee is exited with SIGKILL
-    kill -9 $pid_tracee >/dev/null 2>&1
-
-    # give a little break for OS noise to reduce
-    sleep 3
-
-    # cleanup leftovers
-    rm -rf $TRACEE_TMP_DIR
 done
+
+
+## cleanup at EXIT
+
+rm -f $SCRIPT_TMP_DIR/build-$$
+rm -f $SCRIPT_TMP_DIR/tracee-log-$$
+
+# make sure we exit to start it again
+
+pid_tracee=$(pidof tracee)
+
+kill -2 $pid_tracee
+
+sleep $TRACEE_SHUTDOWN_TIMEOUT
+
+# make sure tracee is exited with SIGKILL
+kill -9 $pid_tracee >/dev/null 2>&1
+
+# give a little break for OS noise to reduce
+sleep 3
+
+# cleanup leftovers
+rm -rf $TRACEE_TMP_DIR
 
 info
 if [[ $anyerror != "" ]]; then

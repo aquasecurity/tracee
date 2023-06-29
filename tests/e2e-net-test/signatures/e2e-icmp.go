@@ -9,39 +9,40 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-type e2eIPv6 struct {
+type e2eICMP struct {
 	cb detect.SignatureHandler
 }
 
-func (sig *e2eIPv6) Init(ctx detect.SignatureContext) error {
+func (sig *e2eICMP) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	return nil
 }
 
-func (sig *e2eIPv6) GetMetadata() (detect.SignatureMetadata, error) {
+func (sig *e2eICMP) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "IPv6",
+		ID:          "ICMP",
+		EventName:   "ICMP",
 		Version:     "0.1.0",
-		Name:        "Network IPv6 Test",
-		Description: "Network E2E Tests: IPv6",
+		Name:        "Network ICMP Test",
+		Description: "Network E2E Tests: ICMP",
 		Tags:        []string{"e2e", "network"},
 	}, nil
 }
 
-func (sig *e2eIPv6) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
+func (sig *e2eICMP) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
 	return []detect.SignatureEventSelector{
-		{Source: "tracee", Name: "net_packet_ipv6"},
+		{Source: "tracee", Name: "net_packet_icmp"},
 	}, nil
 }
 
-func (sig *e2eIPv6) OnEvent(event protocol.Event) error {
+func (sig *e2eICMP) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("failed to cast event's payload")
 	}
 
 	switch eventObj.EventName {
-	case "net_packet_ipv6":
+	case "net_packet_icmp":
 		src, err := helpers.GetTraceeStringArgumentByName(eventObj, "src")
 		if err != nil {
 			return err
@@ -52,20 +53,18 @@ func (sig *e2eIPv6) OnEvent(event protocol.Event) error {
 			return err
 		}
 
-		ipv6, err := helpers.GetProtoIPv6ByName(eventObj, "proto_ipv6")
+		icmp, err := helpers.GetProtoICMPByName(eventObj, "proto_icmp")
 		if err != nil {
 			return err
 		}
 
 		// check values for detection
 
-		if src != "fd6e:a63d:71f:2f4::2" || dst != "fd6e:a63d:71f:2f4::1" {
+		if src != "172.16.17.1" || dst != "172.16.17.2" {
 			return nil
 		}
 
-		if ipv6.Version != 6 || ipv6.HopLimit != 64 ||
-			ipv6.SrcIP != "fd6e:a63d:71f:2f4::2" ||
-			ipv6.DstIP != "fd6e:a63d:71f:2f4::1" {
+		if icmp.TypeCode != "EchoReply" {
 			return nil
 		}
 
@@ -81,8 +80,8 @@ func (sig *e2eIPv6) OnEvent(event protocol.Event) error {
 	return nil
 }
 
-func (sig *e2eIPv6) OnSignal(s detect.Signal) error {
+func (sig *e2eICMP) OnSignal(s detect.Signal) error {
 	return nil
 }
 
-func (sig *e2eIPv6) Close() {}
+func (sig *e2eICMP) Close() {}
