@@ -501,6 +501,7 @@ nav:
               - Overview: docs/events/custom/overview.md
               - Go: docs/events/custom/golang.md
               - Rego: docs/events/custom/rego.md
+              - Analyze: docs/events/custom/analyze.md
       - Policies:
           - Overview: docs/policies/index.md
           - Scopes: docs/policies/scopes.md
