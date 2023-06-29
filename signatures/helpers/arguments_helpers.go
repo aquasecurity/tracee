@@ -36,7 +36,7 @@ func GetTraceeStringArgumentByName(event trace.Event, argName string) (string, e
 		return argStr, nil
 	}
 
-	return "", fmt.Errorf("can't convert argument %v to string", argName)
+	return "", fmt.Errorf("can't convert argument %v to string (is of type %T)", argName, arg.Value)
 }
 
 // GetTraceeIntArgumentByName gets the argument matching the "argName" given from the event "argv" field, casted as int.
@@ -50,7 +50,7 @@ func GetTraceeIntArgumentByName(event trace.Event, argName string) (int, error) 
 		return int(argInt), nil
 	}
 
-	return 0, fmt.Errorf("can't convert argument %v to int", argName)
+	return 0, fmt.Errorf("can't convert argument %v to int (is of type %T)", argName, arg.Value)
 }
 
 // GetTraceeSliceStringArgumentByName gets the argument matching the "argName" given from the event "argv" field, casted as []string.
@@ -64,7 +64,7 @@ func GetTraceeSliceStringArgumentByName(event trace.Event, argName string) ([]st
 		return argStr, nil
 	}
 
-	return nil, fmt.Errorf("can't convert argument %v to slice of strings", argName)
+	return nil, fmt.Errorf("can't convert argument %v to slice of strings (is of type %T)", argName, arg.Value)
 }
 
 // GetTraceeBytesSliceArgumentByName gets the argument matching the "argName" given from the event "argv" field, casted as []byte.
@@ -82,12 +82,12 @@ func GetTraceeBytesSliceArgumentByName(event trace.Event, argName string) ([]byt
 	if ok {
 		decodedBytes, err := b64.StdEncoding.DecodeString(argBytesString)
 		if err != nil {
-			return nil, fmt.Errorf("can't convert argument %v to []bytes", argName)
+			return nil, fmt.Errorf("couldn't decode bytes in argument %s (string was value \"%s\")", argName, argBytesString)
 		}
 		return decodedBytes, nil
 	}
 
-	return nil, fmt.Errorf("can't convert argument %v to []bytes", argName)
+	return nil, fmt.Errorf("can't convert argument %v to []bytes (is of type %T)", argName, arg.Value)
 }
 
 // GetRawAddrArgumentByName returns map[string]string of addr argument
@@ -101,12 +101,12 @@ func GetRawAddrArgumentByName(event trace.Event, argName string) (map[string]str
 		addr = make(map[string]string)
 		stringInterMap, isStringInterMap := arg.Value.(map[string]interface{})
 		if !isStringInterMap {
-			return addr, fmt.Errorf("couldn't convert arg to addr")
+			return addr, fmt.Errorf("couldn't convert arg to addr (is of type %T)", arg.Value)
 		}
 		for k, v := range stringInterMap {
 			s, isString := v.(string)
 			if !isString {
-				return addr, fmt.Errorf("couldn't convert arg to addr")
+				return addr, fmt.Errorf("couldn't convert arg to addr (is of type %T)", arg.Value)
 			}
 			addr[k] = s
 		}
@@ -141,7 +141,7 @@ func GetTraceeHookedSymbolDataArgumentByName(event trace.Event, argName string) 
 		return hookedSymbols, nil
 	}
 
-	return hookedSymbols, fmt.Errorf("can't convert argument %v to []trace.HookedSymbolData", argName)
+	return hookedSymbols, fmt.Errorf("can't convert argument %v to []trace.HookedSymbolData (is of type %T)", argName, hookedSymbolsPtr.Value)
 }
 
 // getHookedSymbolData generates a trace.HookedSymbolData from interface{} got from event arg
@@ -150,7 +150,7 @@ func getHookedSymbolData(v interface{}) (trace.HookedSymbolData, error) {
 
 	hookedSymbolMap, ok := v.(map[string]interface{})
 	if !ok {
-		return symbol, fmt.Errorf("can't convert hooked symbol to map[string]interface{}")
+		return symbol, fmt.Errorf("can't convert hooked symbol to map[string]interface{} (is of type %T)", v)
 	}
 
 	for key, value := range hookedSymbolMap {
