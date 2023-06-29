@@ -13,7 +13,6 @@ func Test_getTailCalls(t *testing.T) {
 		name              string
 		events            map[events.ID]eventConfig
 		expectedTailCalls []*events.TailCall
-		expectedErr       error
 	}{
 		{
 			name: "happy path - some direct syscalls and syscall requiring events",

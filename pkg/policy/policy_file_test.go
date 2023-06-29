@@ -7,12 +7,29 @@ import (
 	"gotest.tools/assert"
 
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func TestPolicyValidate(t *testing.T) {
-	fakeSignatureEvent := events.NewEventDefinition("fake_signature", []string{"signatures", "default"}, nil)
+	fakeSignatureEvent := events.NewEvent(
+		events.ID(0),                      // id
+		events.Sys32Undefined,             // id32
+		"fake_signature",                  // eventName
+		"",                                // docPath
+		false,                             // internal
+		false,                             // syscall
+		[]string{"signatures", "default"}, // sets
+		events.NewDependencies(
+			[]events.ID{}, // ids
+			nil,           // probes
+			nil,           // ksyms
+			nil,           // tailcalls
+			nil,           // capabilities
+		),
+		[]trace.ArgMeta{},
+	)
 
-	err := events.Definitions.Add(9000, fakeSignatureEvent)
+	err := events.Core.Add(9000, fakeSignatureEvent)
 	assert.NilError(t, err)
 
 	tests := []struct {

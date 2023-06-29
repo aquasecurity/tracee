@@ -3,7 +3,6 @@ package events
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
@@ -106,7 +105,7 @@ func TestParseArgs(t *testing.T) {
 			require.NoError(t, err)
 			for _, expArg := range testCase.expectedArgs {
 				arg := GetArg(&event, expArg.Name)
-				assert.Equal(t, expArg, *arg)
+				require.Equal(t, expArg, *arg)
 			}
 		}
 	})
@@ -184,7 +183,7 @@ func TestParseArgs(t *testing.T) {
 			require.NoError(t, err)
 			for _, expArg := range testCase.expectedArgs {
 				arg := GetArg(event, expArg.Name)
-				assert.Equal(t, expArg, *arg)
+				require.Equal(t, expArg, *arg)
 			}
 		}
 	})

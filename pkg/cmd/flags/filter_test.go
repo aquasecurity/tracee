@@ -91,10 +91,10 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 			expectedErr: InvalidSetError("blah"),
 		},
 	}
-	eventsNameToID := events.Definitions.NamesToIDs()
+	eventsNameToID := events.Core.NamesToIDs()
 	// remove internal events since they shouldn't be accessible by users
 	for event, id := range eventsNameToID {
-		if events.Definitions.Get(id).Internal {
+		if events.Core.GetEventByID(id).IsInternal() {
 			delete(eventsNameToID, event)
 		}
 	}
