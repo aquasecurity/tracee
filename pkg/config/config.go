@@ -47,8 +47,8 @@ func (c Config) Validate() error {
 		}
 
 		for e := range p.EventsToTrace {
-			_, exists := events.Definitions.GetSafe(e)
-			if !exists {
+			evtDef := events.Core.GetEventByID(e)
+			if evtDef == nil {
 				return errfmt.Errorf("invalid event [%d] to trace in policy [%d]", e, p.ID)
 			}
 		}

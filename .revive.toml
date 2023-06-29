@@ -9,8 +9,7 @@ enableAllRules = true
 [rule.add-constant]
     Disabled = true
 [rule.argument-limit]
-    Disabled = false
-    Arguments = [5]
+    Disabled = true
 [rule.atomic]
     Disabled = false
 [rule.bare-return]

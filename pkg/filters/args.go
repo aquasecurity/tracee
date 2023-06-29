@@ -90,11 +90,11 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 		return InvalidEventName(eventName)
 	}
 
-	eventDefinition, ok := events.Definitions.GetSafe(id)
-	if !ok {
+	eventDefinition := events.Core.GetEventByID(id)
+	if eventDefinition == nil {
 		return InvalidEventName(eventName)
 	}
-	eventParams := eventDefinition.Params
+	eventParams := eventDefinition.GetParams()
 
 	// check if argument name exists for this event
 	argFound := false
@@ -106,7 +106,7 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 	}
 
 	// if the event is a signature event, we allow filtering on dynamic argument
-	if !argFound && !events.IsASignatureEvent(id) {
+	if !argFound && !events.Core.GetEventByID(id).IsASignatureEvent() {
 		return InvalidEventArgument(argName)
 	}
 

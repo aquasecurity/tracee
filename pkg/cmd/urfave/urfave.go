@@ -28,10 +28,9 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	// Output command line flags
 
-	var err error
 	var output flags.PrepareOutputResult
 
-	output, err = flags.TraceeEbpfPrepareOutput(c.StringSlice("output"), false)
+	output, err := flags.TraceeEbpfPrepareOutput(c.StringSlice("output"), false)
 
 	if err != nil {
 		return runner, err

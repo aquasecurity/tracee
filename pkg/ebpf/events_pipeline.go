@@ -147,7 +147,7 @@ func (t *Tracee) queueEvents(ctx context.Context, in <-chan *trace.Event) (chan 
 func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) (<-chan *trace.Event, <-chan error) {
 	out := make(chan *trace.Event, 10000)
 	errc := make(chan error, 1)
-	sysCompatTranslation := events.Definitions.IDs32ToIDs()
+	sysCompatTranslation := events.Core.IDs32ToIDs()
 	go func() {
 		defer close(out)
 		defer close(errc)
@@ -164,13 +164,13 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				continue
 			}
 			eventId := events.ID(ctx.EventID)
-			eventDefinition, ok := events.Definitions.GetSafe(eventId)
-			if !ok {
+			evtDef := events.Core.GetEventByID(eventId)
+			if evtDef == nil {
 				t.handleError(errfmt.Errorf("failed to get configuration of event %d", eventId))
 				continue
 			}
-			args := make([]trace.Argument, len(eventDefinition.Params))
-			err := ebpfMsgDecoder.DecodeArguments(args, int(argnum), eventDefinition, eventId)
+			args := make([]trace.Argument, evtDef.GetParamsLength())
+			err := ebpfMsgDecoder.DecodeArguments(args, int(argnum), evtDef, eventId)
 			if err != nil {
 				t.handleError(err)
 				continue
@@ -238,7 +238,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				Container:             containerData,
 				Kubernetes:            kubernetesData,
 				EventID:               int(ctx.EventID),
-				EventName:             eventDefinition.Name,
+				EventName:             evtDef.GetName(),
 				MatchedPoliciesKernel: ctx.MatchedPolicies,
 				ArgsNum:               int(argnum),
 				ReturnValue:           int(ctx.Retval),
@@ -389,19 +389,19 @@ func parseContextFlags(containerId string, flags uint32) trace.ContextFlags {
 // Get the syscall name from its ID, taking into account architecture and 32bit/64bit modes
 func parseSyscallID(syscallID int, isCompat bool, compatTranslationMap map[events.ID]events.ID) (string, error) {
 	if !isCompat {
-		def, ok := events.Definitions.GetSafe(events.ID(syscallID))
-		if ok {
-			return def.Name, nil
+		evtDef := events.Core.GetEventByID(events.ID(syscallID))
+		if evtDef != nil {
+			return evtDef.GetName(), nil
 		}
 		return "", errfmt.Errorf("no syscall event with syscall id %d", syscallID)
 	}
 	id, ok := compatTranslationMap[events.ID(syscallID)]
 	if ok {
-		def, ok := events.Definitions.GetSafe(id)
-		if !ok { // Should never happen, as the translation map should be initialized from events.Definition
+		evtDef := events.Core.GetEventByID(id)
+		if evtDef == nil { // Should never happen, as the translation map should be initialized from events.Definition
 			return "", errfmt.Errorf("no syscall event with compat syscall id %d, translated to ID %d", syscallID, id)
 		}
-		return def.Name, nil
+		return evtDef.GetName(), nil
 	}
 	return "", errfmt.Errorf("no syscall event with compat syscall id %d", syscallID)
 }

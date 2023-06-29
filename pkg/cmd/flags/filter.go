@@ -111,10 +111,10 @@ func PrepareFilterMapFromFlags(filtersArr []string) (PolicyFilterMap, error) {
 }
 
 func CreatePolicies(filterMap PolicyFilterMap, newBinary bool) (*policy.Policies, error) {
-	eventsNameToID := events.Definitions.NamesToIDs()
+	eventsNameToID := events.Core.NamesToIDs()
 	// remove internal events since they shouldn't be accessible by users
 	for event, id := range eventsNameToID {
-		if events.Definitions.Get(id).Internal {
+		if events.Core.GetEventByID(id).IsInternal() {
 			delete(eventsNameToID, event)
 		}
 	}
@@ -362,8 +362,8 @@ func prepareEventsToTrace(
 	isExcluded := make(map[events.ID]bool)
 
 	// build a map: k:set, v:eventID
-	for id, event := range events.Definitions.Events() {
-		for _, set := range event.Sets {
+	for id, event := range events.Core.GetAllEvents() {
+		for _, set := range event.GetSets() {
 			setsToEvents[set] = append(setsToEvents[set], id)
 		}
 	}
@@ -422,7 +422,7 @@ func prepareEventsToTrace(
 	}
 
 	// build a map: k:eventID, v:eventName with all events to trace
-	res = make(map[events.ID]string, events.Definitions.Length())
+	res = make(map[events.ID]string, events.Core.Length())
 	for _, name := range eventsToTrace {
 		if strings.HasSuffix(name, "*") { // handle event prefixes with wildcards
 			found := false
@@ -453,7 +453,7 @@ func prepareEventsToTrace(
 		}
 		for _, id := range setEvents {
 			if !isExcluded[id] {
-				res[id] = events.Definitions.Get(id).Name
+				res[id] = events.Core.GetEventByID(id).GetName()
 			}
 		}
 	}

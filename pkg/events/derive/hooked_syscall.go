@@ -37,7 +37,7 @@ func analyzeHookedAddresses(addresses []uint64, kernelSymbols helpers.KernelSymb
 	hookedSyscalls := make([]trace.HookedSymbolData, 0)
 
 	for _, syscall := range SyscallsToCheck {
-		eventNamesToIDs := events.Definitions.NamesToIDs()
+		eventNamesToIDs := events.Core.NamesToIDs()
 		syscallID, ok := eventNamesToIDs[syscall]
 		if !ok {
 			return hookedSyscalls, errfmt.Errorf("%s - no such syscall", syscall)
@@ -52,10 +52,10 @@ func analyzeHookedAddresses(addresses []uint64, kernelSymbols helpers.KernelSymb
 		}
 
 		hookingFunction := utils.ParseSymbol(syscallAddress, kernelSymbols)
-		event, found := events.Definitions.GetSafe(syscallID)
+		event := events.Core.GetEventByID(syscallID)
 		var hookedSyscallName string
-		if found {
-			hookedSyscallName = event.Name
+		if event != nil {
+			hookedSyscallName = event.GetName()
 		} else {
 			hookedSyscallName = fmt.Sprint(syscallID)
 		}

@@ -24,6 +24,14 @@ import (
 )
 
 func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
+	// Initialize event definitions
+
+	// events.Definitions = events.NewEventGroup()
+	// err := events.Definitions.AddBatch(events.CoreDefinitions)
+	// if err != nil {
+	// 	return cmd.Runner{}, err
+	// }
+
 	var runner cmd.Runner
 
 	// Log command line flags

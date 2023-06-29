@@ -91,7 +91,7 @@ func (p *ProbeGroup) DetachAll() error {
 	return nil
 }
 
-// Autoload disables autoload feature for a given handle's program.
+// Autoload enables/disables autoload feature for a given handle's program.
 func (p *ProbeGroup) Autoload(handle Handle, autoload bool) error {
 	p.probesLock.Lock()
 	defer p.probesLock.Unlock()

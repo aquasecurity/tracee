@@ -88,26 +88,26 @@ func (decoder *EbpfDecoder) DecodeContext(ctx *Context) error {
 // It should be called last, and after decoding the argnum with DecodeUint8.
 //
 // Argument array passed should be initialized with the size of len(eventDefinition.Params).
-func (decoder *EbpfDecoder) DecodeArguments(args []trace.Argument, argnum int, eventDefinition events.Event, eventId events.ID) error {
+func (decoder *EbpfDecoder) DecodeArguments(args []trace.Argument, argnum int, eventDefinition *events.Event, eventId events.ID) error {
 	for i := 0; i < argnum; i++ {
 		idx, arg, err := readArgFromBuff(
 			eventId,
 			decoder,
-			eventDefinition.Params,
+			eventDefinition.GetParams(),
 		)
 		if err != nil {
-			logger.Errorw("error reading argument from buffer", "error", errfmt.Errorf("failed to read argument %d of event %s: %v", i, eventDefinition.Name, err))
+			logger.Errorw("error reading argument from buffer", "error", errfmt.Errorf("failed to read argument %d of event %s: %v", i, eventDefinition.GetName(), err))
 			continue
 		}
 		if args[idx].Value != nil {
-			logger.Warnw("argument overridden from buffer", "error", errfmt.Errorf("read more than one instance of argument %s of event %s. Saved value: %v. New value: %v", arg.Name, eventDefinition.Name, args[idx].Value, arg.Value))
+			logger.Warnw("argument overridden from buffer", "error", errfmt.Errorf("read more than one instance of argument %s of event %s. Saved value: %v. New value: %v", arg.Name, eventDefinition.GetName(), args[idx].Value, arg.Value))
 		}
 		args[idx] = arg
 	}
 	// Fill missing arguments metadata
-	for i := 0; i < len(eventDefinition.Params); i++ {
+	for i := 0; i < eventDefinition.GetParamsLength(); i++ {
 		if args[i].Value == nil {
-			args[i].ArgMeta = eventDefinition.Params[i]
+			args[i].ArgMeta = eventDefinition.GetParams()[i]
 		}
 	}
 	return nil
