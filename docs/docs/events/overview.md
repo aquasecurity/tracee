@@ -10,8 +10,8 @@ eg:
 
 Tracing `execve` events with [filters]:
 
-```
-tracee --filter event=execve
+```console
+tracee --events execve
 ```
 
 Tracing `execve` events with [policies]:
@@ -116,13 +116,13 @@ net_packet_http_response | [default network_events] |
 Events can be part of a set, for example on the table above we can see a few sets like `default`, `network_events`, `syscalls`. 
 We can ask tracee to trace a full set, or sets, instead of passing event by event, for example:
 
-```
-tracee --filter set=syscalls
+```console
+tracee --events syscalls
 ```
 or 
 
-```
-tracee --filter set=syscalls,network_events
+```console
+tracee --events syscalls,network_events
 ```
 
 

@@ -199,7 +199,7 @@ rules:
 Arguments can be found on the respective event definition, in this case [security_file_open](https://github.com/aquasecurity/tracee/blob/main/pkg/events/events.goL5293-L529), or the user can test the event output in CLI before defining a policy, e.g:
 
 ```console
-tracee -f e=security_file_open --output json
+tracee -e security_file_open --output json
 ```
 
 ```json

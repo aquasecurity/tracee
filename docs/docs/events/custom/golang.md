@@ -117,7 +117,7 @@ There are 2 ways you can get your own golang signatures working with tracee.
     ```console
     sudo ./dist/tracee \
         --output json \
-        --filter event=mine
+        --events mine
     ```
 
     ```json

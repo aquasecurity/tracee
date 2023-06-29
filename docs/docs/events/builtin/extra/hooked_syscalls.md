@@ -60,7 +60,9 @@ Detection of syscall hooking.
 The `hooked_syscalls` event could be used as part of a broader system integrity monitoring solution. For example, a security engineer could use it to raise alerts or run further investigations if unexpected syscall hooking activities are detected. This could aid in the early detection and mitigation of malware or rootkit infections.
 Example:
 
-`tracee -f e=hooked_syscalls -f hooked_syscalls.args.check_syscalls=<syscall>,<syscall>,...`
+```console
+tracee -e hooked_syscalls.args.check_syscalls=<syscall>,<syscall>,...`
+```
 
 ## Issues
 The `check_syscalls` argument is used as a parameter to specify the syscalls to be checked. This will change in the future to be an event parameter.

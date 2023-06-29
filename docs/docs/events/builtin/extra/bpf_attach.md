@@ -58,7 +58,10 @@ kprobe
 get information about which helper functions are used by the BPF program
 
 ## Example Use Case
-./tracee -f e=bpf_attach
+
+```console
+./tracee -e bpf_attach
+```
 
 ## Issues
 

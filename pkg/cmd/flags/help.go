@@ -12,7 +12,8 @@ func PrintAndExitIfHelp(ctx *cli.Context, newBinary bool) {
 		"crs",
 		"cache",
 		"capture",
-		"filter",
+		"scope",
+		"events",
 		"output",
 		"capabilities",
 		"rego",
@@ -50,7 +51,7 @@ func GetHelpString(key string, newBinary bool) string {
 		return cacheHelp()
 	case "capture":
 		return captureHelp()
-	case "filter":
+	case "scope", "events":
 		return filterHelp()
 	case "output":
 		if newBinary {

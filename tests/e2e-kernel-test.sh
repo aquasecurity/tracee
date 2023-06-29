@@ -86,8 +86,8 @@ for TEST in $TESTS; do
         --cache mem-cache-size=512 \
         --output format:gob \
         --output option:parse-arguments \
-        --filter container=new \
-        --filter event=$events \
+        --scope container=new \
+        --events $events \
         2>$SCRIPT_TMP_DIR/ebpf-$$ |
         ./dist/tracee-rules \
             --input-tracee=file:stdin \

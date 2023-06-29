@@ -95,7 +95,9 @@ statfunc u64 equality_filter_matches(u64 filter_out_scopes, void *filter_map, vo
 {
     // check compute_scopes() for initial info
     //
-    // e.g.: cmdline: -f 2:comm=who -f 3:comm=ping -f 4:comm!=who
+    //   policy 2: comm=who
+    //   policy 3: comm=ping
+    //   policy 4: comm!=who
     //
     // filter_out_scopes = 0000 1000, since scope 4 has "not equal" for comm filter
     // filter_map        = comm_filter
@@ -146,7 +148,7 @@ statfunc u64 bool_filter_matches(u64 filter_out_scopes, bool val)
 {
     // check compute_scopes() for initial info
     //
-    // e.g.: cmdline: -f 5:container
+    //   policy 5: container=true
     //
     // considering an event from a container
     //

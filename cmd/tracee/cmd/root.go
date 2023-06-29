@@ -75,14 +75,22 @@ func initCmd() error {
 		hfFallback(cmd, args)
 	})
 
-	// Filter/Policy flags
+	// Scope/Event/Policy flags
 
-	// filter is not bound to viper
+	// scope is not bound to viper
 	rootCmd.Flags().StringArrayP(
-		"filter",
-		"f",
+		"scope",
+		"s",
 		[]string{},
-		"Select events to trace by defining filter expressions",
+		"Select workloads to trace by defining filter expressions",
+	)
+
+	// events is not bound to viper
+	rootCmd.Flags().StringArrayP(
+		"events",
+		"e",
+		[]string{},
+		"Select events to trace and event filters",
 	)
 
 	// policy is not bound to viper

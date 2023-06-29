@@ -333,10 +333,10 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		if p.UIDFilter.Enabled() {
 			//
 			// An event with a matched policy for global min/max range might not match all
-			// policies with UID and PID filters with different min/max ranges.
+			// policies with UID and PID filters with different min/max ranges, e.g.:
 			//
-			// e.g.: -f 59:comm=who -f '59:pid>100' -f '59:pid<1257738' \
-			//       -f 30:comm=who -f '30:pid>502000' -f '30:pid<505000'
+			//   policy 59: comm=who, pid>100 and pid<1257738
+			//   policy 30: comm=who, pid>502000 and pid<505000
 			//
 			// For kernel filtering, the flags from the example would compute:
 			//

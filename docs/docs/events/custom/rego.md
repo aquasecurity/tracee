@@ -74,7 +74,7 @@ what you want:
 sudo ./dist/tracee \
     --output json
     --signatures-dir signatures/rego \
-    --filter event=mine
+    --events mine
 ```
 
 ```json

@@ -50,16 +50,21 @@ func init() {
 
 	// events
 	analyze.Flags().StringArrayP(
-		"event",
+		"events",
 		"e",
 		[]string{},
 		"Define which signature events to load",
 	)
-	err := viper.BindPFlag("event", analyze.Flags().Lookup("event"))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-		os.Exit(1)
-	}
+
+	// TODO: decide if we want to bind this flag to viper, since we already have a similar
+	// flag in rootCmd, conflicting with each other.
+	// The same goes for the other flags (signatures-dir, rego), also in rootCmd.
+	//
+	// err := viper.BindPFlag("events", analyze.Flags().Lookup("events"))
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+	// 	os.Exit(1)
+	// }
 
 	// signatures-dir
 	analyze.Flags().StringArray(
@@ -67,11 +72,11 @@ func init() {
 		[]string{},
 		"Directory where to search for signatures in CEL (.yaml), OPA (.rego), and Go plugin (.so) formats",
 	)
-	err = viper.BindPFlag("signatures-dir", analyze.Flags().Lookup("signatures-dir"))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-		os.Exit(1)
-	}
+	// err = viper.BindPFlag("signatures-dir", analyze.Flags().Lookup("signatures-dir"))
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+	// 	os.Exit(1)
+	// }
 
 	// rego
 	analyze.Flags().StringArray(
@@ -79,11 +84,11 @@ func init() {
 		[]string{},
 		"Control event rego settings",
 	)
-	err = viper.BindPFlag("rego", analyze.Flags().Lookup("rego"))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-		os.Exit(1)
-	}
+	// err = viper.BindPFlag("rego", analyze.Flags().Lookup("rego"))
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+	// 	os.Exit(1)
+	// }
 }
 
 var analyze = &cobra.Command{
@@ -96,8 +101,8 @@ var analyze = &cobra.Command{
 Tracee can be used to collect events and store it in a file. This file can be used as input to analyze.
 
 eg:
-tracee --filter event=ptrace --output=json:events.json
-tracee analyze --event=anti_debugging events.json`,
+tracee --events ptrace --output=json:events.json
+tracee analyze --events anti_debugging events.json`,
 	Run: func(cmd *cobra.Command, args []string) {
 		inputFile, err := os.Open(args[0])
 		if err != nil {
@@ -113,7 +118,7 @@ tracee analyze --event=anti_debugging events.json`,
 
 		// Signature directory command line flags
 
-		signatureEvents := viper.GetStringSlice("event")
+		signatureEvents := viper.GetStringSlice("events")
 		// if no event was passed, load all events
 		if len(signatureEvents) == 0 {
 			signatureEvents = nil

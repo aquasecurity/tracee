@@ -42,7 +42,10 @@ kprobe
 get information about which helper functions are used by the BPF program
 
 ## Example Use Case
-./tracee -f e=security_bpf_prog
+
+```console
+./tracee -e security_bpf_prog
+```
 
 ## Issues
 
