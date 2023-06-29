@@ -42,6 +42,7 @@ func NewController(bpfModule *libbpfgo.Module, cgroupManager *containers.Contain
 		lostSignalChan: make(chan uint64),
 		bpfModule:      bpfModule,
 		cgroupManager:  cgroupManager,
+		enrichEnabled:  enrichEnabled,
 	}
 	p.signalBuffer, err = bpfModule.InitPerfBuf("signals", p.signalChan, p.lostSignalChan, 1024)
 	if err != nil {
@@ -83,27 +84,25 @@ func (p *Controller) Start() error {
 
 func (p *Controller) Run(ctx context.Context) {
 	p.ctx = ctx
-	go func() {
-		for {
-			select {
-			case signalData := <-p.signalChan:
-				signal := signal{}
-				err := signal.Unmarshal(signalData)
-				if err != nil {
-					logger.Errorw("error unmarshaling signal ebpf buffer", "error", err)
-					continue
-				}
-				err = p.processSignal(signal)
-				if err != nil {
-					logger.Errorw("error processing control plane signal", "error", err)
-				}
-			case lost := <-p.lostSignalChan:
-				logger.Warnw(fmt.Sprintf("Lost %d control plane signals", lost))
-			case <-p.ctx.Done():
-				return
+	for {
+		select {
+		case signalData := <-p.signalChan:
+			signal := signal{}
+			err := signal.Unmarshal(signalData)
+			if err != nil {
+				logger.Errorw("error unmarshaling signal ebpf buffer", "error", err)
+				continue
 			}
+			err = p.processSignal(signal)
+			if err != nil {
+				logger.Errorw("error processing control plane signal", "error", err)
+			}
+		case lost := <-p.lostSignalChan:
+			logger.Warnw(fmt.Sprintf("Lost %d control plane signals", lost))
+		case <-p.ctx.Done():
+			return
 		}
-	}()
+	}
 }
 
 func (p *Controller) Stop() error {
@@ -144,7 +143,7 @@ func (p *Controller) processCgroupMkdir(args []trace.Argument) error {
 		// removed from the containers bpf map.
 		err := capabilities.GetInstance().EBPF(
 			func() error {
-				return p.cgroupManager.RemoveFromBpfMap(p.bpfModule, cgroupId, hId)
+				return p.cgroupManager.RemoveFromBPFMap(p.bpfModule, cgroupId, hId)
 			},
 		)
 		if err != nil {
@@ -160,7 +159,7 @@ func (p *Controller) processCgroupMkdir(args []trace.Argument) error {
 	if p.enrichEnabled {
 		// If cgroupId belongs to a container, enrich now (in a goroutine)
 		go func() {
-			_, err = p.cgroupManager.EnrichCgroupInfo(cgroupId)
+			_, err := p.cgroupManager.EnrichCgroupInfo(cgroupId)
 			if err != nil {
 				logger.Errorw("error triggering container enrich in control plane", "error", err)
 			}
