@@ -78,8 +78,8 @@ func deriveNetPacketTCPArgs() deriveArgsFunction {
 			copyTCPToProtoTCP(l4, &tcp)
 
 			return []interface{}{
-				srcIP,
-				dstIP,
+				srcIP.String(),
+				dstIP.String(),
 				tcp.SrcPort,
 				tcp.DstPort,
 				tcp,

@@ -78,8 +78,8 @@ func deriveNetPacketUDPArgs() deriveArgsFunction {
 			copyUDPToProtoUDP(l4, &udp)
 
 			return []interface{}{
-				srcIP,
-				dstIP,
+				srcIP.String(),
+				dstIP.String(),
 				udp.SrcPort,
 				udp.DstPort,
 				udp,

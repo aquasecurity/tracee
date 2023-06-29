@@ -75,8 +75,8 @@ func deriveNetPacketICMPv6Args() deriveArgsFunction {
 			// TODO: parse subsequent ICMPv6 type layers
 
 			return []interface{}{
-				srcIP,
-				dstIP,
+				srcIP.String(),
+				dstIP.String(),
 				icmpv6,
 			}, nil
 		}

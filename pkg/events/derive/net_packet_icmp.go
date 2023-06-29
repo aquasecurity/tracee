@@ -75,8 +75,8 @@ func deriveNetPacketICMPArgs() deriveArgsFunction {
 			// TODO: parse subsequent ICMP type layers
 
 			return []interface{}{
-				srcIP,
-				dstIP,
+				srcIP.String(),
+				dstIP.String(),
 				icmp,
 			}, nil
 		}

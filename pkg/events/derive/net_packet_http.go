@@ -37,11 +37,11 @@ func deriveHTTPEvents(event trace.Event) ([]interface{}, error) {
 	}
 
 	return []interface{}{
-		net.srcIP,
-		net.dstIP,
+		net.srcIP.String(),
+		net.dstIP.String(),
 		net.srcPort,
 		net.dstPort,
-		h,
+		*h,
 	}, nil
 }
 
