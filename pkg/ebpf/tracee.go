@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 	"unsafe"
@@ -75,6 +76,7 @@ type Tracee struct {
 	// Events
 	events           map[events.ID]eventConfig
 	eventsSorter     *sorting.EventsChronologicalSorter
+	eventsPool       *sync.Pool
 	eventProcessor   map[events.ID][]func(evt *trace.Event) error
 	eventDerivations derive.Table
 	eventSignatures  map[events.ID]bool
@@ -469,6 +471,14 @@ func (t *Tracee) Init() error {
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
+	}
+
+	// Initialize events pool
+
+	t.eventsPool = &sync.Pool{
+		New: func() interface{} {
+			return &trace.Event{}
+		},
 	}
 
 	// Tracee bpf code uses monotonic clock as event timestamp. Get current
