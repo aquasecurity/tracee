@@ -23,6 +23,7 @@ type e2eDNS struct {
 	foundNS  bool
 	foundSOA bool
 	cb       detect.SignatureHandler
+	logger   detect.Logger
 }
 
 func (sig *e2eDNS) Init(ctx detect.SignatureContext) error {
@@ -30,6 +31,7 @@ func (sig *e2eDNS) Init(ctx detect.SignatureContext) error {
 	sig.foundMX = false  // proforma
 	sig.foundNS = false  // proforma
 	sig.foundSOA = false // proforma
+	sig.logger = ctx.Logger
 	return nil
 }
 
@@ -55,6 +57,7 @@ func (sig *e2eDNS) OnEvent(event protocol.Event) error {
 	if !ok {
 		return fmt.Errorf("failed to cast event's payload")
 	}
+	sig.logger.Infow("[DNS e2e] on event")
 
 	if eventObj.EventName == "net_packet_dns" {
 		dns, err := helpers.GetProtoDNSByName(eventObj, "proto_dns")
@@ -81,6 +84,7 @@ func (sig *e2eDNS) OnEvent(event protocol.Event) error {
 		}
 
 		if !sig.foundMX || !sig.foundNS || !sig.foundSOA {
+			sig.logger.Infow("[DNS e2e] !sig.foundMX || !sig.foundNS || !sig.foundSOA == true")
 			return nil
 		}
 

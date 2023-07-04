@@ -1,8 +1,7 @@
 name: data_source_test
 description: test the containers data source in tracee single binary experience
 scope: 
-  - container=new
-  - comm=ls
+  - container
 defaultActions: 
   - log
 rules:

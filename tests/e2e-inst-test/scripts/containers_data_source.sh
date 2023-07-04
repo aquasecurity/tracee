@@ -7,4 +7,6 @@ exit_err() {
 }
 
 docker pull ubuntu > /dev/null
-docker run --rm ubuntu /usr/bin/ls > /dev/null
+docker run --rm ubuntu /usr/bin/sleep 2 > /dev/null &
+docker run --rm ubuntu /usr/bin/sleep 2 > /dev/null &
+docker run --rm ubuntu /usr/bin/sleep 2 > /dev/null &

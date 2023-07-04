@@ -11,6 +11,7 @@ import (
 
 type e2eContainersDataSource struct {
 	cb             detect.SignatureHandler
+	logger         detect.Logger
 	containersData detect.DataSource
 }
 
@@ -24,6 +25,7 @@ func (sig *e2eContainersDataSource) Init(ctx detect.SignatureContext) error {
 		return fmt.Errorf("containers data source version not supported, please update this signature")
 	}
 	sig.containersData = containersData
+	sig.logger = ctx.Logger
 	return nil
 }
 
@@ -49,6 +51,7 @@ func (sig *e2eContainersDataSource) OnEvent(event protocol.Event) error {
 	if !ok {
 		return fmt.Errorf("failed to cast event's payload")
 	}
+	sig.logger.Infow("[e2e-containers_data_source] on event")
 
 	switch eventObj.EventName {
 	case "sched_process_exec":
@@ -57,7 +60,8 @@ func (sig *e2eContainersDataSource) OnEvent(event protocol.Event) error {
 			return err
 		}
 
-		if pathname != "/usr/bin/ls" {
+		if pathname != "/usr/bin/sleep" {
+			sig.logger.Infow("[e2e-containers_data_source] received irrelevant pathname", "pathname", pathname, "expected", "/usr/bin/sleep")
 			return nil
 		}
 

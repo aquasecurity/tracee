@@ -43,7 +43,7 @@ if [[ $KERNEL_MAJ -lt 5 && "$KERNEL" != *"el8"* ]]; then
 fi
 
 # run CO-RE VFS_WRITE test only by default
-TESTS=${INSTTESTS:=VFS_WRITE}
+TESTS=${INSTTESTS:=VFS_WRITE BPF_ATTACH FILE_MODIFICATION SECURITY_INODE_RENAME CONTAINERS_DATA_SOURCE}
 
 # startup needs
 rm -rf $TRACEE_TMP_DIR/* || error_exit "could not delete $TRACEE_TMP_DIR"
@@ -143,9 +143,11 @@ for TEST in $TESTS; do
         info "$TEST: SUCCESS"
     else
         anyerror="${anyerror}$TEST,"
-        info "$TEST: FAILED, stderr from tracee:"
+        info "$TEST: FAILED"
+        info "TRACEE LOG:"
         cat $SCRIPT_TMP_DIR/tracee-log-$$
-        info
+        info "TRACEE EVENT OUTPUT:"
+        cat $SCRIPT_TMP_DIR/build-$$
     fi
     info
 done

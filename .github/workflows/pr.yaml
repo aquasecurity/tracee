@@ -185,7 +185,6 @@ jobs:
   alma418-core:
     name: RHEL8 4.18 X64
     needs:
-      - unit-tests
       - verify-signatures
       - verify-tools
     env:
@@ -202,20 +201,19 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-inst-test/test.sh
       - name: "Kernel"
         run: |
           ./tests/e2e-kernel-test/test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test/test.sh
-      - name: "Instrumentation"
-        run: |
-          ./tests/e2e-inst-test/test.sh
   # ARM64
   alma418-arm64-core:
     name: RHEL8 4.18 ARM64
     needs:
-      - unit-tests
       - verify-signatures
       - verify-tools
     env:
@@ -232,22 +230,21 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-inst-test/test.sh
       - name: "Kernel"
         run: |
           TESTS="${{ env.RHEL_ARM64_TESTS }}" ./tests/e2e-kernel-test/test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test/test.sh
-      - name: "Instrumentation"
-        run: |
-          ./tests/e2e-inst-test/test.sh
   #
   # AMZN2 5.10 (jammy userland with AMZN2 kernel)
   #
   amzn2510-core:
     name: AMZN2 5.10 X64
     needs:
-      - unit-tests
       - verify-signatures
       - verify-tools
     env:
@@ -264,20 +261,19 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-inst-test/test.sh
       - name: "Kernel"
         run: |
           ./tests/e2e-kernel-test/test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test/test.sh
-      - name: "Instrumentation"
-        run: |
-          ./tests/e2e-inst-test/test.sh
   # ARM64
   amzn2510-arm64-core:
     name: AMZN2 5.10 ARM64
     needs:
-      - unit-tests
       - verify-signatures
       - verify-tools
     env:
@@ -294,22 +290,21 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-inst-test/test.sh
       - name: "Kernel"
         run: |
           TESTS="${{ env.RHEL_ARM64_TESTS }}" ./tests/e2e-kernel-test/test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test/test.sh
-      - name: "Instrumentation"
-        run: |
-          ./tests/e2e-inst-test/test.sh
   #
   # GKE 5.4 (jammy userland with GKE kernel)
   #
   gke54-core:
     name: GKE 5.4 X64
     needs:
-      - unit-tests
       - verify-signatures
       - verify-tools
     env:
@@ -326,22 +321,21 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-inst-test/test.sh
       - name: "Kernel"
         run: |
           ./tests/e2e-kernel-test/test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test/test.sh
-      - name: "Instrumentation"
-        run: |
-          ./tests/e2e-inst-test/test.sh
   #
   # GKE 5.10 (jammy userland with GKE kernel)
   #
   gke510-core:
     name: GKE 5.10 X64
     needs:
-      - unit-tests
       - verify-signatures
       - verify-tools
     env:
@@ -358,22 +352,21 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-inst-test/test.sh
       - name: "Kernel"
         run: |
           ./tests/e2e-kernel-test/test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test/test.sh
-      - name: "Instrumentation"
-        run: |
-          ./tests/e2e-inst-test/test.sh
   #
   # GKE 5.15 (jammy userland with GKE kernel)
   #
   gke515-core:
     name: GKE 5.15 X64
     needs:
-      - unit-tests
       - verify-signatures
       - verify-tools
     env:
@@ -390,20 +383,19 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-inst-test/test.sh
       - name: "Kernel"
         run: |
           ./tests/e2e-kernel-test/test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test/test.sh
-      - name: "Instrumentation"
-        run: |
-          ./tests/e2e-inst-test/test.sh
   # ARM64
   gke515-arm64-core:
     name: GKE 5.15 ARM64
     needs:
-      - unit-tests
       - verify-signatures
       - verify-tools
     env:
@@ -420,22 +412,21 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-inst-test/test.sh
       - name: "Kernel"
         run: |
           TESTS="${{ env.RHEL_ARM64_TESTS }}" ./tests/e2e-kernel-test/test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test/test.sh
-      - name: "Instrumentation"
-        run: |
-          ./tests/e2e-inst-test/test.sh
   #
   # FOCAL v5.4
   #
   focal54-core:
     name: Focal 5.4 X64
     needs:
-      - unit-tests
       - verify-signatures
       - verify-tools
     env:
@@ -452,20 +443,19 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-inst-test/test.sh
       - name: "Kernel"
         run: |
           ./tests/e2e-kernel-test/test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test/test.sh
-      - name: "Instrumentation"
-        run: |
-          ./tests/e2e-inst-test/test.sh
   # ARM64
   focal54-arm64-core:
     name: Focal 5.4 ARM64
     needs:
-      - unit-tests
       - verify-signatures
       - verify-tools
     env:
@@ -482,22 +472,21 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-inst-test/test.sh
       - name: "Kernel"
         run: |
           TESTS="${{ env.ARM64_TESTS }}" ./tests/e2e-kernel-test/test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test/test.sh
-      - name: "Instrumentation"
-        run: |
-          ./tests/e2e-inst-test/test.sh
   #
   # FOCAL v5.13
   #
   focal513-core:
     name: Focal 5.13 X64
     needs:
-      - unit-tests
       - verify-signatures
       - verify-tools
     env:
@@ -514,20 +503,19 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-inst-test/test.sh
       - name: "Kernel"
         run: |
           ./tests/e2e-kernel-test/test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test/test.sh
-      - name: "Instrumentation"
-        run: |
-          ./tests/e2e-inst-test/test.sh
   # ARM64
   focal513-arm64-core:
     name: Focal 5.13 ARM64
     needs:
-      - unit-tests
       - verify-signatures
       - verify-tools
     env:
@@ -544,22 +532,21 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-inst-test/test.sh
       - name: "Kernel"
         run: |
           TESTS="${{ env.ARM64_TESTS }}" ./tests/e2e-kernel-test/test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test/test.sh
-      - name: "Instrumentation"
-        run: |
-          ./tests/e2e-inst-test/test.sh
   #
   # JAMMY v5.15
   #
   jammy515-core:
     name: Jammy 5.15 X64
     needs:
-      - unit-tests
       - verify-signatures
       - verify-tools
     env:
@@ -576,20 +563,19 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-inst-test/test.sh
       - name: "Kernel"
         run: |
           ./tests/e2e-kernel-test/test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test/test.sh
-      - name: "Instrumentation"
-        run: |
-          ./tests/e2e-inst-test/test.sh
   # ARM64
   jammy515-arm64-core:
     name: Jammy 5.15 ARM64
     needs:
-      - unit-tests
       - verify-signatures
       - verify-tools
     env:
@@ -606,22 +592,21 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-inst-test/test.sh
       - name: "Kernel"
         run: |
           TESTS="${{ env.ARM64_TESTS }}" ./tests/e2e-kernel-test/test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test/test.sh
-      - name: "Instrumentation"
-        run: |
-          ./tests/e2e-inst-test/test.sh
   #
   # JAMMY v5.19
   #
   jammy519-core:
     name: Jammy 5.19 X64
     needs:
-      - unit-tests
       - verify-signatures
       - verify-tools
     env:
@@ -638,20 +623,19 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-inst-test/test.sh
       - name: "Kernel"
         run: |
           ./tests/e2e-kernel-test/test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test/test.sh
-      - name: "Instrumentation"
-        run: |
-          ./tests/e2e-inst-test/test.sh
   # ARM64
   jammy519-arm64-core:
     name: Jammy 5.19 ARM64
     needs:
-      - unit-tests
       - verify-signatures
       - verify-tools
     env:
@@ -668,22 +652,21 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-inst-test/test.sh
       - name: "Kernel"
         run: |
           TESTS="${{ env.ARM64_TESTS }}" ./tests/e2e-kernel-test/test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test/test.sh
-      - name: "Instrumentation"
-        run: |
-          ./tests/e2e-inst-test/test.sh
   #
   # JAMMY v6.1
   #
   jammy6127-core:
     name: Jammy 6.1.27 X64
     needs:
-      - unit-tests
       - verify-signatures
       - verify-tools
     env:
@@ -700,22 +683,21 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-inst-test/test.sh
       - name: "Kernel"
         run: |
           ./tests/e2e-kernel-test/test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test/test.sh
-      - name: "Instrumentation"
-        run: |
-          ./tests/e2e-inst-test/test.sh
   #
   # JAMMY v6.3
   #
   jammy6301-core:
     name: Jammy 6.3.1 X64
     needs:
-      - unit-tests
       - verify-signatures
       - verify-tools
     env:
@@ -732,12 +714,12 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: "Instrumentation"
+        run: |
+          ./tests/e2e-inst-test/test.sh
       - name: "Kernel"
         run: |
           ./tests/e2e-kernel-test/test.sh
       - name: "Network"
         run: |
           ./tests/e2e-net-test/test.sh
-      - name: "Instrumentation"
-        run: |
-          ./tests/e2e-inst-test/test.sh
