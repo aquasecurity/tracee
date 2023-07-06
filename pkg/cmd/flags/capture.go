@@ -190,7 +190,7 @@ func PrepareCapture(captureSlice []string, newBinary bool) (config.CaptureConfig
 			}
 		} else {
 			if newBinary {
-				return config.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, use '--help capture' for more info")
+				return config.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, use 'help capture' for more info")
 			}
 
 			return config.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, use '--capture help' for more info")

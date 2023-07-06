@@ -75,7 +75,7 @@ help:
 	@echo ""
 	@echo "    $$ make -f builder/Makefile.tracee-container build-tracee"
 	@echo ""
-	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee ARG=\"--help\""
+	@echo "    $$ make -f builder/Makefile.tracee-container run-tracee ARG=\"help\""
 	@echo ""
 	@echo "    > This will run tracee using provided arguments."
 	@echo ""

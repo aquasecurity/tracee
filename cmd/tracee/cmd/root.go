@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/viper"
 
 	cmdcobra "github.com/aquasecurity/tracee/pkg/cmd/cobra"
-	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -55,25 +54,6 @@ func initCmd() error {
 	rootCmd.SetErr(os.Stderr)
 
 	cobra.OnInitialize(initConfig)
-
-	hfFallback := rootCmd.HelpFunc()
-	// Override default help function to support help for flags.
-	// Since for commands the usage is tracee help <command>, for flags
-	// the usage is tracee --help <flag>.
-	// e.g. tracee --help filter
-	//      tracee -h filter
-	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		if len(args) > 1 && (args[0] == "--help" || args[0] == "-h") {
-			flagHelp := flags.GetHelpString(args[1], true)
-			if flagHelp != "" {
-				fmt.Fprintf(os.Stdout, "%s\n", flagHelp)
-				os.Exit(0)
-			}
-		}
-
-		// If flag help was not found, fallback to default help function
-		hfFallback(cmd, args)
-	})
 
 	// Filter/Policy flags
 

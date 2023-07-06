@@ -50,7 +50,7 @@ does is through different "execution protection rings":
 You may see all available capabilities in the running environment by running:
 
 ```console
---help capabilities
+help capabilities
 ```
 
 command line flag.

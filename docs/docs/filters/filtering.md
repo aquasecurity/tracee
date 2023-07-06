@@ -1,7 +1,7 @@
 # Tracing Event Filtering
 
 ```console
-sudo ./dist/tracee --help filter
+sudo ./dist/tracee help filter
 sudo ./dist/tracee --filter xxx
 ```
 

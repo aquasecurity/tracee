@@ -76,5 +76,5 @@ the "run" targets:
     !!! note
         Tracee arguments are passed through the `ARG` variable:
         ```console
-        make -f builder/Makefile.tracee-container run-tracee ARG="--help"
+        make -f builder/Makefile.tracee-container run-tracee ARG="help"
         ```

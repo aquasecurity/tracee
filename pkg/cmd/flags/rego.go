@@ -40,7 +40,7 @@ func PrepareRego(regoSlice []string) (rego.Config, error) {
 		case "aio":
 			c.AIO = true
 		default:
-			return rego.Config{}, errfmt.Errorf("invalid rego option specified, use '--help rego' for more info")
+			return rego.Config{}, errfmt.Errorf("invalid rego option specified, use 'help rego' for more info")
 		}
 	}
 

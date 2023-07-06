@@ -11,7 +11,7 @@ through the following URLs:
 **tracee** can be scraped through `:3366/metrics`
 
 > Metrics addresses can be changed through **tracee** command line
-> arguments `metrics` and `listen-addr`, check `--help` for more information.
+> arguments `metrics` and `listen-addr`, check `help` for more information.
 
 !!! Tip
     Check [this tutorial] for more information as well.
