@@ -32,16 +32,23 @@ func (r Runner) Run(ctx context.Context) error {
 		return errfmt.Errorf("error creating Tracee: %v", err)
 	}
 
-	// start the server and write pid file only after tracee is ready
-	t.AddReadyCallback(func(ctx context.Context) {
-		logger.Debugw("Tracee is ready callback")
+	// Readiness Callback: Tracee is ready to receive events
 
-		// start server if one is configured
-		if r.Server != nil {
-			r.TraceeConfig.MetricsEnabled = r.Server.MetricsEndpointEnabled()
+	t.AddReadyCallback(
+		func(ctx context.Context) {
+			logger.Debugw("Tracee is ready callback")
+			if r.Server == nil {
+				return
+			}
+			if r.Server.MetricsEndpointEnabled() {
+				r.TraceeConfig.MetricsEnabled = true // TODO: is this needed ?
+				if err := t.Stats().RegisterPrometheus(); err != nil {
+					logger.Errorw("Registering prometheus metrics", "error", err)
+				}
+			}
 			go r.Server.Start(ctx)
-		}
-	})
+		},
+	)
 
 	// Initialize tracee
 
@@ -51,7 +58,7 @@ func (r Runner) Run(ctx context.Context) error {
 	}
 
 	// Manage PID file
-	// write pid file
+
 	if err := writePidFile(t.OutDir); err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -61,11 +68,12 @@ func (r Runner) Run(ctx context.Context) error {
 		}
 	}()
 
-	// preeamble
+	// Preeamble
 
 	r.Printer.Preamble()
 
 	// Start event channel reception
+
 	go func() {
 		for {
 			select {
@@ -77,16 +85,17 @@ func (r Runner) Run(ctx context.Context) error {
 		}
 	}()
 
-	// This will block until the context is done
+	// Blocks (until ctx is Done)
+
 	err = t.Run(ctx)
 
-	// Drain and print the remaining channel events that were sent before full termination
+	// Drain remaininig channel events (sent during shutdown)
+
 	for {
 		select {
 		case event := <-r.TraceeConfig.ChanEvents:
 			r.Printer.Print(event)
 		default:
-			// Print statistics at the end
 			stats := t.Stats()
 			r.Printer.Epilogue(*stats)
 			r.Printer.Close()
