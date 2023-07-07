@@ -307,15 +307,6 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	t.triggerContexts = trigger.NewContext()
 
-	// Export metrics to prometheus if enabled
-
-	if t.config.MetricsEnabled {
-		err := t.Stats().RegisterPrometheus()
-		if err != nil {
-			logger.Errorw("Registering prometheus metrics", "error", err)
-		}
-	}
-
 	return t, nil
 }
 

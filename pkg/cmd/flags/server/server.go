@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/server"
 )
 
@@ -28,17 +29,21 @@ func PrepareServer(listenAddr string, metrics, healthz, pprof, pyro bool) (*serv
 		httpServer := server.New(listenAddr)
 
 		if metrics {
+			logger.Debugw("Enabling metrics endpoint")
 			httpServer.EnableMetricsEndpoint()
 		}
 
 		if healthz {
+			logger.Debugw("Enabling healthz endpoint")
 			httpServer.EnableHealthzEndpoint()
 		}
 
 		if pprof {
+			logger.Debugw("Enabling pprof endpoint")
 			httpServer.EnablePProfEndpoint()
 		}
 		if pyro {
+			logger.Debugw("Enabling pyroscope agent")
 			err := httpServer.EnablePyroAgent()
 			if err != nil {
 				return httpServer, err
