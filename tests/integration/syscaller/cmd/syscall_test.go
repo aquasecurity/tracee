@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/tests/integration/cpu"
+	"github.com/aquasecurity/tracee/tests/testutils"
 )
 
 // Test_callsys tests the callsys function
@@ -32,7 +32,7 @@ func Test_callsys(t *testing.T) {
 
 // Test_changeOwnComm tests the changeOwnComm function
 func Test_changeOwnComm(t *testing.T) {
-	cpu.SetCPUs()
+	testutils.SetCPUs()
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 

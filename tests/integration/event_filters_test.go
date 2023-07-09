@@ -19,7 +19,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/signatures/helpers"
-	"github.com/aquasecurity/tracee/tests/integration/cpu"
+	"github.com/aquasecurity/tracee/tests/testutils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -103,8 +103,8 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ping", cpu.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("comm_event"), orPolIDs(1)),
-						expectEvent(anyHost, "ping", cpu.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm_event"), orPolIDs(1)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("comm_event"), orPolIDs(1)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm_event"), orPolIDs(1)),
 					},
 					[]string{},
 				),
@@ -138,8 +138,8 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ping", cpu.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event"), orPolIDs(5)),
-						expectEvent(anyHost, "ping", cpu.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event"), orPolIDs(5)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event"), orPolIDs(5)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event"), orPolIDs(5)),
 					},
 					[]string{},
 				),
@@ -176,7 +176,7 @@ func Test_EventFilters(t *testing.T) {
 					1*time.Second,
 					[]trace.Event{
 						expectEvent(anyHost, "integration.tes", // note that comm name is from the go test binary that runs the command
-							cpu.CPUForTests, anyPID, 0, events.Execve, orPolNames("event_args"), orPolIDs(42), expectArg("pathname", "*ls")),
+							testutils.CPUForTests, anyPID, 0, events.Execve, orPolNames("event_args"), orPolIDs(42), expectArg("pathname", "*ls")),
 					},
 					[]string{},
 				),
@@ -244,7 +244,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", cpu.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("comm_event_args"), orPolIDs(42), expectArg("pathname", "*integration")),
+						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("comm_event_args"), orPolIDs(42), expectArg("pathname", "*integration")),
 					},
 					[]string{},
 				),
@@ -294,14 +294,14 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents("ls",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", cpu.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm_event_4"), orPolIDs(4)),
+						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm_event_4"), orPolIDs(4)),
 					},
 					[]string{},
 				),
 				newCmdEvents("uname",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "uname", cpu.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm_event_2"), orPolIDs(2)),
+						expectEvent(anyHost, "uname", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm_event_2"), orPolIDs(2)),
 					},
 					[]string{},
 				),
@@ -351,14 +351,14 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents("who",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "who", cpu.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("bin_event_1"), orPolIDs(1)),
+						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("bin_event_1"), orPolIDs(1)),
 					},
 					[]string{},
 				),
 				newCmdEvents("uname",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "uname", cpu.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("bin_event_2"), orPolIDs(2)),
+						expectEvent(anyHost, "uname", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("bin_event_2"), orPolIDs(2)),
 					},
 					[]string{},
 				),
@@ -457,7 +457,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", cpu.CPUForTests, anyPID, 0, anyEventID, orPolNames("uid_0_comm"), orPolIDs(1)),
+						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("uid_0_comm"), orPolIDs(1)),
 					},
 					[]string{},
 				),
@@ -519,7 +519,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", cpu.CPUForTests, anyPID, 0, anyEventID, orPolNames("event_fs"), orPolIDs(1)),
+						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("event_fs"), orPolIDs(1)),
 					},
 					[]string{"fs"},
 				),
@@ -611,7 +611,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", cpu.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_64"), orPolIDs(64)),
+						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_64"), orPolIDs(64)),
 					},
 					[]string{},
 				),
@@ -653,7 +653,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", cpu.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_64"), orPolIDs(64)),
+						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_64"), orPolIDs(64)),
 					},
 					[]string{},
 				),
@@ -694,7 +694,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", cpu.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_64"), orPolIDs(64)),
+						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_64"), orPolIDs(64)),
 					},
 					[]string{},
 				),
@@ -702,7 +702,7 @@ func Test_EventFilters(t *testing.T) {
 					"who",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "who", cpu.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_42"), orPolIDs(42)),
+						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_42"), orPolIDs(42)),
 					},
 					[]string{},
 				),
@@ -740,7 +740,7 @@ func Test_EventFilters(t *testing.T) {
 					1*time.Second,
 					[]trace.Event{
 						expectEvent(anyHost, "bash", // note that comm name is from the runner
-							cpu.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("event_args_context"), orPolIDs(42), expectArg("pathname", "*ls")),
+							testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("event_args_context"), orPolIDs(42), expectArg("pathname", "*ls")),
 					},
 					[]string{},
 				),
@@ -774,7 +774,7 @@ func Test_EventFilters(t *testing.T) {
 					"bash -c '/usr/bin/tee /tmp/magic_write_test < <(echo 42)'",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "tee", cpu.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("comm_event"), orPolIDs(42)),
+						expectEvent(anyHost, "tee", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("comm_event"), orPolIDs(42)),
 					},
 					[]string{},
 				),
@@ -840,7 +840,7 @@ func Test_EventFilters(t *testing.T) {
 		// 			"ping -c1 0.0.0.0",
 		// 			1*time.Second,
 		// 			[]trace.Event{
-		// 				expectEvent(anyHost, "ping", cpu.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event"), orPolIDs(3)),
+		// 				expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event"), orPolIDs(3)),
 		// 			},
 		// 			[]string{},
 		// 		),
@@ -848,8 +848,8 @@ func Test_EventFilters(t *testing.T) {
 		// 			"strace ls",
 		// 			1*time.Second,
 		// 			[]trace.Event{
-		// 				expectEvent(anyHost, "strace", cpu.CPUForTests, anyPID, 0, events.Ptrace, orPolNames("event_args"), orPolIDs(5)),
-		// 				expectEvent(anyHost, "strace", cpu.CPUForTests, anyPID, 0, events.anti_debugging, orPolNames("sign"), orPolIDs(9)),
+		// 				expectEvent(anyHost, "strace", testutils.CPUForTests, anyPID, 0, events.Ptrace, orPolNames("event_args"), orPolIDs(5)),
+		// 				expectEvent(anyHost, "strace", testutils.CPUForTests, anyPID, 0, events.anti_debugging, orPolNames("sign"), orPolIDs(9)),
 		// 			},
 		// 			[]string{},
 		// 		),
@@ -902,8 +902,8 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ping", cpu.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event_3", "comm_event_5"), orPolIDs(3, 5)),
-						expectEvent(anyHost, "ping", cpu.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event_3", "comm_event_5"), orPolIDs(3, 5)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event_3", "comm_event_5"), orPolIDs(3, 5)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event_3", "comm_event_5"), orPolIDs(3, 5)),
 					},
 					[]string{},
 				),
@@ -958,10 +958,10 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ping", cpu.CPUForTests, anyPID, 0, events.Setuid, orPolNames("comm_event_5"), orPolIDs(5)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.Setuid, orPolNames("comm_event_5"), orPolIDs(5)),
 
-						expectEvent(anyHost, "ping", cpu.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event_3", "comm_event_5"), orPolIDs(3, 5)),
-						expectEvent(anyHost, "ping", cpu.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event_3", "comm_event_5"), orPolIDs(3, 5)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event_3", "comm_event_5"), orPolIDs(3, 5)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event_3", "comm_event_5"), orPolIDs(3, 5)),
 					},
 					[]string{},
 				),
@@ -1050,12 +1050,12 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ping", cpu.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("comm_event_7", "comm_event_9"), orPolIDs(7, 9)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("comm_event_7", "comm_event_9"), orPolIDs(7, 9)),
 
-						expectEvent(anyHost, "ping", cpu.CPUForTests, anyPID, 0, events.SecuritySocketConnect, orPolNames("comm_event_9"), orPolIDs(9)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SecuritySocketConnect, orPolNames("comm_event_9"), orPolIDs(9)),
 
-						expectEvent(anyHost, "ping", cpu.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event_3", "comm_event_5"), orPolIDs(3, 5)),
-						expectEvent(anyHost, "ping", cpu.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event_3", "comm_event_5"), orPolIDs(3, 5)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event_3", "comm_event_5"), orPolIDs(3, 5)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event_3", "comm_event_5"), orPolIDs(3, 5)),
 					},
 					[]string{},
 				),
@@ -1097,7 +1097,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", cpu.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_64", "comm_42"), orPolIDs(64, 42)),
+						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_64", "comm_42"), orPolIDs(64, 42)),
 					},
 					[]string{},
 				),
@@ -1105,7 +1105,7 @@ func Test_EventFilters(t *testing.T) {
 					"who",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "who", cpu.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_42"), orPolIDs(42)),
+						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_42"), orPolIDs(42)),
 					},
 					[]string{},
 				),
@@ -1146,7 +1146,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", cpu.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_64", "comm_42"), orPolIDs(64, 42)),
+						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_64", "comm_42"), orPolIDs(64, 42)),
 					},
 					[]string{},
 				),
@@ -1154,7 +1154,7 @@ func Test_EventFilters(t *testing.T) {
 					"who",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "who", cpu.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_42"), orPolIDs(42)),
+						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_42"), orPolIDs(42)),
 					},
 					[]string{},
 				),
@@ -1198,8 +1198,8 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog1",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "fakeprog1", cpu.CPUForTests, anyPID, 0, events.Read, orPolNames("comm_event"), orPolIDs(1)),
-						expectEvent(anyHost, "fakeprog1", cpu.CPUForTests, anyPID, 0, events.Write, orPolNames("comm_event"), orPolIDs(1)),
+						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Read, orPolNames("comm_event"), orPolIDs(1)),
+						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Write, orPolNames("comm_event"), orPolIDs(1)),
 					},
 					[]string{},
 				),
@@ -1231,7 +1231,7 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog1",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "fakeprog1", cpu.CPUForTests, anyPID, 0, events.Execve, orPolNames("event_pol_42"), orPolIDs(42)),
+						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Execve, orPolNames("event_pol_42"), orPolIDs(42)),
 					},
 					[]string{},
 				),
@@ -1289,7 +1289,7 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog1",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "fakeprog1", cpu.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm_event_args_64"), orPolIDs(64),
+						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm_event_args_64"), orPolIDs(64),
 							expectArg("dirfd", int32(0)),
 							expectArg("flags", int32(0)),
 							expectArg("mode", uint32(0)),
@@ -1301,7 +1301,7 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog2",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "fakeprog2", cpu.CPUForTests, anyPID, 0, events.Open, orPolNames("comm_event_args_42"), orPolIDs(42),
+						expectEvent(anyHost, "fakeprog2", testutils.CPUForTests, anyPID, 0, events.Open, orPolNames("comm_event_args_42"), orPolIDs(42),
 							expectArg("flags", int32(0)),
 							expectArg("mode", uint32(0)),
 						),
@@ -1360,7 +1360,7 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog1",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "fakeprog1", cpu.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm_event_retval_64"), orPolIDs(64),
+						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm_event_retval_64"), orPolIDs(64),
 							expectArg("dirfd", int32(0)),
 							expectArg("flags", int32(0)),
 							expectArg("mode", uint32(0)),
@@ -1557,7 +1557,7 @@ func runCmd(t *testing.T, cmd cmdEvents, actual *eventBuffer, useSyscaller, fail
 	if useSyscaller {
 		formatCmdEvents(&cmd)
 	}
-	pid, err = execCmd(cmd.runCmd, cmd.timeout)
+	pid, err = testutils.ExecCmd(cmd.runCmd, cmd.timeout)
 	require.NoError(t, err)
 
 	waitForTraceeOutputEvents(t, actual, time.Now(), len(cmd.evts), failOnTimeout)
@@ -1585,7 +1585,7 @@ func runCmds(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscal
 		if useSyscaller {
 			formatCmdEvents(&cmd)
 		}
-		pid, err = execCmd(cmd.runCmd, cmd.timeout)
+		pid, err = testutils.ExecCmd(cmd.runCmd, cmd.timeout)
 		require.NoError(t, err)
 
 		procs = append(procs, proc{pid, len(cmd.evts)})

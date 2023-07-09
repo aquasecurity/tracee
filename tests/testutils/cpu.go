@@ -1,4 +1,4 @@
-package cpu
+package testutils
 
 import "golang.org/x/sys/unix"
 

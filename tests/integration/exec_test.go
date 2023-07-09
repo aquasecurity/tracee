@@ -3,6 +3,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/aquasecurity/tracee/tests/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,7 +54,7 @@ func Test_ParseCmd(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		cmd, args, err := parseCmd(tc.input)
+		cmd, args, err := testutils.ParseCmd(tc.input)
 
 		if err == nil {
 			assert.Equal(t, tc.expectedCmd, cmd)
