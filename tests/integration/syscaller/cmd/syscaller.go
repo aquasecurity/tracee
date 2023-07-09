@@ -7,11 +7,11 @@ import (
 	"strconv"
 
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/tests/integration/cpu"
+	"github.com/aquasecurity/tracee/tests/testutils"
 )
 
 func main() {
-	cpu.SetCPUs()
+	testutils.SetCPUs()
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 

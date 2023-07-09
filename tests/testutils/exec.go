@@ -1,4 +1,4 @@
-package integration
+package testutils
 
 import (
 	"fmt"
@@ -9,16 +9,14 @@ import (
 	"runtime"
 	"strings"
 	"time"
-
-	"github.com/aquasecurity/tracee/tests/integration/cpu"
 )
 
 const pattern = `'[^']*'|\S+` // split on spaces, but not spaces inside single quotes
 
 var re = regexp.MustCompile(pattern)
 
-// parseCmd parses a command string into a command and arguments
-func parseCmd(fullCmd string) (string, []string, error) {
+// ParseCmd parses a command string into a command and arguments
+func ParseCmd(fullCmd string) (string, []string, error) {
 	vals := re.FindAllString(fullCmd, -1)
 
 	if len(vals) == 0 {
@@ -45,12 +43,12 @@ func parseCmd(fullCmd string) (string, []string, error) {
 	return cmd, args, nil
 }
 
-func execCmd(command string, timeout time.Duration) (int, error) {
-	cpu.SetCPUs()
+func ExecCmd(command string, timeout time.Duration) (int, error) {
+	SetCPUs()
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	command, args, err := parseCmd(command)
+	command, args, err := ParseCmd(command)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "parseCmd: %s", err)
 		return 0, err
