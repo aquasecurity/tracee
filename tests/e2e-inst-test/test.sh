@@ -86,7 +86,7 @@ rm -f $SCRIPT_TMP_DIR/tracee-log-$$
     --output option:parse-arguments \
     --log file:$SCRIPT_TMP_DIR/tracee-log-$$ \
     --signatures-dir $SIG_DIR \
-    --policy $POLICY_DIR &
+    --policy $POLICY_DIR/combined.yaml &
 
 # wait tracee-ebpf to be started (30 sec most)
 times=0
@@ -119,7 +119,7 @@ if [[ $timedout -eq 1 ]]; then
 fi
 
 # give some time for tracee to settle
-sleep 3
+sleep 10
 
 # run tests
 for TEST in $TESTS; do

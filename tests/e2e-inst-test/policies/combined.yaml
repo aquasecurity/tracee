@@ -1,0 +1,13 @@
+name: e2e_inst_test
+description: combined policy for instrumentation e2e test
+scope: 
+  - comm=tracee,touch,echo,mv,sleep
+defaultActions: 
+  - log
+rules:
+  - event: CONTAINERS_DATA_SOURCE
+  - event: BPF_ATTACH
+  - event: FILE_MODIFICATION
+  - event: SECURITY_INODE_RENAME
+  - event: VFS_WRITE
+
