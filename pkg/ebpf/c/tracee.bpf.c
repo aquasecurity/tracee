@@ -1974,9 +1974,12 @@ int BPF_KPROBE(trace_security_file_open)
     if (syscall_traced) {
         sys = &p.task_info->syscall_data;
         switch (sys->id) {
+            case SYSCALL_EXECVE:
             case SYSCALL_OPEN:
                 syscall_pathname = (void *) sys->args.args[0];
                 break;
+
+            case SYSCALL_EXECVEAT:
             case SYSCALL_OPENAT:
             case SYSCALL_OPENAT2:
                 syscall_pathname = (void *) sys->args.args[1];
