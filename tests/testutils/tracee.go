@@ -1,0 +1,161 @@
+package testutils
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"os/exec"
+	"strings"
+	"time"
+)
+
+//
+// RunningTrace
+//
+
+const (
+	readinessPollTime    = 200 * time.Millisecond
+	httpRequestTimeout   = 1 * time.Second
+	traceeStartupTimeout = 5 * time.Second
+)
+
+var (
+	TraceeBinary   string = "../../dist/tracee"
+	TraceeHostname string = "localhost"
+	TraceePort     int    = 3366
+)
+
+type TraceeStatus int
+
+const (
+	TraceeStarted TraceeStatus = iota
+	TraceeFailed
+	TraceeTimedout
+	TraceeAlreadyRunning
+)
+
+// RunningTracee is a wrapper for a running tracee process as a regular process.
+type RunningTracee struct {
+	ctx       context.Context
+	cancel    context.CancelFunc
+	cmdStatus chan error
+	cmdLine   string
+	pid       int
+	isReady   chan TraceeStatus
+}
+
+// NewRunningTracee creates a new RunningTracee instance.
+func NewRunningTracee(givenCtx context.Context, cmdLine string) *RunningTracee {
+	ctx, cancel := context.WithCancel(givenCtx)
+
+	// Add healthz flag if not present (required for readiness check)
+	if !strings.Contains(cmdLine, "--healthz") {
+		cmdLine = fmt.Sprintf("--healthz %s", cmdLine)
+	}
+
+	cmdLine = fmt.Sprintf("%s %s", TraceeBinary, cmdLine)
+
+	return &RunningTracee{
+		ctx:     ctx,
+		cancel:  cancel,
+		cmdLine: cmdLine,
+	}
+}
+
+// Start starts the tracee process.
+func (r *RunningTracee) Start() (error, <-chan TraceeStatus) {
+	var err error
+
+	imReady := func(s TraceeStatus) {
+		go func(s TraceeStatus) {
+			r.isReady <- s // blocks until someone reads
+		}(s)
+	}
+
+	r.isReady = make(chan TraceeStatus, 0)
+	now := time.Now()
+
+	if isTraceeAlreadyRunning() { // check if tracee is already running
+		imReady(TraceeAlreadyRunning) // ready: already running
+		goto exit
+	}
+
+	r.pid, r.cmdStatus = ExecCmdBgWithSudoAndCtx(r.ctx, r.cmdLine)
+	if r.pid < 0 {
+		err = <-r.cmdStatus   // receive error from the command
+		imReady(TraceeFailed) // ready: failed
+		goto exit
+	}
+
+	for {
+		time.Sleep(readinessPollTime)
+		if r.IsReady() {
+			imReady(TraceeStarted) // ready: running
+			break
+		}
+		if time.Since(now) > traceeStartupTimeout {
+			imReady(TraceeTimedout) // ready: timedout
+			break
+		}
+	}
+
+exit:
+	return err, r.isReady
+}
+
+// Stop stops the tracee process.
+func (r *RunningTracee) Stop() error {
+	if r.pid == 0 {
+		return nil // cmd was never started
+	}
+
+	r.cancel()
+	return <-r.cmdStatus // will receive nil if the process exited successfully
+}
+
+// IsReady checks if the tracee process is ready.
+func (r *RunningTracee) IsReady() bool {
+	ctx, cancel := context.WithTimeout(context.Background(), httpRequestTimeout)
+	defer cancel()
+
+	client := http.Client{
+		Timeout: httpRequestTimeout,
+	}
+
+	// Create the request
+	req, err := http.NewRequestWithContext(ctx, "GET",
+		fmt.Sprintf("http://%s:%d/healthz", TraceeHostname, TraceePort),
+		nil,
+	)
+	if err != nil {
+		return false
+	}
+
+	// Do the request
+	resp, err := client.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+
+	// Only 200 is considered ready
+	if resp.StatusCode != 200 {
+		return false
+	}
+
+	return true
+}
+
+// isTraceeAlreadyRunning checks if tracee is already running.
+func isTraceeAlreadyRunning() bool {
+	cmd := exec.Command("pgrep", "tracee")
+	cmd.Stderr = nil
+	cmd.Stdout = nil
+
+	err := cmd.Run()
+	if err != nil {
+		return false
+	}
+
+	return true
+}

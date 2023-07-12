@@ -695,7 +695,7 @@ clean-e2e-inst-signatures:
 	$(CMD_RM) -rf $(OUTPUT_DIR)/e2e-inst-signatures
 
 #
-# tests
+# unit tests
 #
 
 .PHONY: test-unit
@@ -704,7 +704,7 @@ test-unit: \
 	tracee-ebpf \
 	test-types
 #
-	$(GO_ENV_EBPF) \
+	@$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
 		-tags ebpf \
 		-short \
@@ -720,7 +720,7 @@ test-types: \
 	.checkver_$(CMD_GO)
 #
 	# Note that we must changed the directory here because types is a standalone Go module.
-	cd ./types && $(CMD_GO) test \
+	@cd ./types && $(CMD_GO) test \
 		-short \
 		-race \
 		-v \
@@ -728,7 +728,7 @@ test-types: \
 		./...
 
 #
-# syscaller (required for integration tests)
+# integration tests
 #
 
 .PHONY: $(OUTPUT_DIR)/syscaller
@@ -745,7 +745,7 @@ test-integration: \
 	$(OUTPUT_DIR)/syscaller \
 	tracee-ebpf
 #
-	$(GO_ENV_EBPF) \
+	@$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
 		-tags $(GO_TAGS_EBPF) \
 		-ldflags="$(GO_DEBUG_FLAG) \
@@ -770,6 +770,28 @@ test-upstream-libbpfgo: \
 	$(OUTPUT_DIR)/libbpf/libbpf.a
 #
 	./tests/libbpfgo.sh $(GO_ENV_EBPF)
+
+#
+# performance tests
+#
+
+.PHONY: test-performance
+test-performance: \
+	.checkver_$(CMD_GO) \
+	tracee
+#
+	@$(GO_ENV_EBPF) \
+	$(CMD_GO) test \
+		-tags $(GO_TAGS_EBPF) \
+		-ldflags="$(GO_DEBUG_FLAG) \
+			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
+			-X main.version=\"$(VERSION)\" \
+			" \
+		-race \
+		-v \
+		-p 1 \
+		-count=1 \
+		./tests/perftests/... \
 
 #
 # code checkers (hidden from help on purpose)
@@ -833,7 +855,7 @@ check-err: \
 		./...
 
 #
-# check-pr
+# pull request verifier
 #
 
 .PHONY: check-pr
