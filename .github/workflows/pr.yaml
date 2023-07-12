@@ -38,7 +38,7 @@ env:
   INSTTESTS: "VFS_WRITE FILE_MODIFICATION SECURITY_INODE_RENAME BPF_ATTACH CONTAINERS_DATA_SOURCE"
 jobs:
   #
-  # CODE VERIFICATION (github runner)
+  # CODE VERIFICATION
   #
   verify-analyze-code:
     name: Verify and Analyze Code
@@ -75,7 +75,7 @@ jobs:
         run: |
           make check-err
   #
-  # SIGNATURES CODE VERIFICATION (github runner)
+  # SIGNATURES CODE VERIFICATION
   #
   verify-signatures:
     name: Verify Signatures
@@ -96,7 +96,7 @@ jobs:
         run: |
           make test-signatures
   #
-  # TOOLS BUILD VERIFICATION (github runner)
+  # TOOLS BUILD VERIFICATION
   #
   verify-tools:
     name: Verify Other Tools
@@ -127,7 +127,7 @@ jobs:
           make clean
           make e2e-inst-signatures
   #
-  # CODE TESTS (github runner)
+  # CODE TESTS
   #
   unit-tests:
     name: Unit Tests
@@ -162,6 +162,24 @@ jobs:
       - name: Run Integration Tests
         run: |
           sudo env "PATH=$PATH" make test-integration
+  #
+  # PERFORMANCE TESTS
+  #
+  performance-tests:
+    name: Performance Tests
+    needs:
+      - verify-analyze-code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install Dependencies
+        uses: ./.github/actions/build-dependencies
+      - name: Run Performance Tests
+        run: |
+          sudo env "PATH=$PATH" make test-performance
   #
   #----
   # JENKINS RUNNERS
