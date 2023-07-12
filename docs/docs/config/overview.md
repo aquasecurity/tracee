@@ -34,7 +34,7 @@ log:
 ## Reserved Flags
 
 There are a few flags that are reserved for the CLI and cannot be set through the configuration file. These include:
-`--config`, `--capture`, `--policy`, `--scope`, and `--event`.
+`--config`, `--capture`, `--policy`, `--scope`, and `--events`.
 
 ## Example Configuration Files
 
