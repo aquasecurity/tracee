@@ -17,6 +17,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 	"github.com/aquasecurity/tracee/types/detect"
@@ -146,20 +147,33 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, errors.New("policy and event flags cannot be used together")
 	}
 
-	var p printer.EventPrinter
+	var policies *policy.Policies
 
 	if len(policyFlags) > 0 {
-		// configure policies, output, and creates printer
-		cfg, p, err = getConfigAndPrinterFromPoliciesFlags(cfg, policyFlags, viper.GetStringSlice("output"))
+		policies, err = createPoliciesFromPolicyFiles(policyFlags)
 		if err != nil {
 			return runner, err
 		}
 	} else {
-		// configure policies, output, and creates printer
-		cfg, p, err = getConfigAndPrinterFromFilterFlags(cfg, scopeFlags, eventFlags, viper.GetStringSlice("output"))
+		policies, err = createPoliciesFromCLIFlags(scopeFlags, eventFlags)
 		if err != nil {
 			return runner, err
 		}
+	}
+
+	cfg.Policies = policies
+
+	// Output command line flags
+	output, err := flags.PrepareOutput(viper.GetStringSlice("output"), true)
+	if err != nil {
+		return runner, err
+	}
+	cfg.Output = output.TraceeConfig
+
+	// Create printer
+	p, err := printer.NewBroadcast(output.PrinterConfigs, cmd.GetContainerMode(cfg))
+	if err != nil {
+		return runner, err
 	}
 
 	// Check kernel lockdown

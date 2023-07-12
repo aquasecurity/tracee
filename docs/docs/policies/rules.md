@@ -14,8 +14,6 @@ Context is data which is collected along the event. They can be filtered like:
 ```yaml
 name: sample_context_filter
 description: sample context filter
-defaultActions: 
-    - log
 scope:
     - global
 rules:
@@ -186,8 +184,6 @@ Events have arguments, which can be filtered.
 ```yaml
 name: sample_argument_filter
 description: sample argument filter
-defaultActions: 
-    - log
 scope:
     - global
 rules:
@@ -213,8 +209,6 @@ Return values can also be filtered.
 ```yaml
 name: sample_return_value
 description: sample return filter
-defaultActions: 
-    - log
 scope:
     - global
 rules:

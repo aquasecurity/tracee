@@ -9,8 +9,6 @@ data:
   signatures.yaml: |-
     name: signature_events
     description: traces all signature events
-    defaultActions:
-      - log
     scope:
       - global
     rules:
