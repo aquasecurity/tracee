@@ -10,7 +10,7 @@ import (
 )
 
 func filterHelp() string {
-	return `Select which events to trace by defining filter expressions that operate on scopes (workloads), events or process metadata.
+	return `Select which events to trace by defining filter expressions that operate on some scope (workload), events or process metadata.
 Only events that match all filter expressions will be traced (flags are ANDed).
 The following types of expressions are supported:
 
