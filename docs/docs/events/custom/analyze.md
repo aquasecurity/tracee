@@ -4,7 +4,7 @@ The tracee subcommand `analyze` allows you to execute behavior signatures on pas
 For example, you can collect the ptrace event into one node using the following command:
 
 ```
-tracee events=ptrace --output=json:events.json
+tracee --events=ptrace --output=json:events.json
 ```
 
 Then, on another node, you can check if the behavior signature for anti-debugging was triggered using the following command:
