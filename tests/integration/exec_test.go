@@ -3,8 +3,9 @@ package integration
 import (
 	"testing"
 
-	"github.com/aquasecurity/tracee/tests/testutils"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/aquasecurity/tracee/tests/testutils"
 )
 
 // Test_ParseCmd tests the parseCmd function

@@ -91,7 +91,7 @@ func ExecPinnedCmdWithTimeout(command string, timeout time.Duration) (int, error
 // the process and a channel to wait for the command to exit (Check RunningTracee object about how
 // to use this).
 func ExecCmdBgWithSudoAndCtx(ctx context.Context, command string) (int, chan error) {
-	cmdStatus := make(chan error, 0)
+	cmdStatus := make(chan error)
 
 	// Use sudo to raise privileges (sysattrs require capabilities).
 	if !strings.HasPrefix(command, "sudo") {
@@ -145,25 +145,23 @@ func ExecCmdBgWithSudoAndCtx(ctx context.Context, command string) (int, chan err
 	// Kill the command if the context is canceled (and signal that it was killed).
 
 	go func(pid *atomic.Int64) {
-		select {
-		case <-ctx.Done():
-			p := pid.Load()
-			if p > 0 {
-				// discover all child processes
-				childPIDs, err := DiscoverChildProcesses(int(p))
+		<-ctx.Done()
+		p := pid.Load()
+		if p > 0 {
+			// discover all child processes
+			childPIDs, err := DiscoverChildProcesses(int(p))
+			if err != nil {
+				cmdStatus <- &failedToKillProcess{command: command, err: err}
+			}
+			// kill all child processes (sudo creates childs in new process group)
+			for _, childPID := range childPIDs {
+				err := SudoKillProcess(childPID, false)
 				if err != nil {
 					cmdStatus <- &failedToKillProcess{command: command, err: err}
 				}
-				// kill all child processes (sudo creates childs in new process group)
-				for _, childPID := range childPIDs {
-					err := SudoKillProcess(childPID, false)
-					if err != nil {
-						cmdStatus <- &failedToKillProcess{command: command, err: err}
-					}
-				}
 			}
-			cmdStatus <- nil // signal command exited
 		}
+		cmdStatus <- nil // signal command exited
 	}(&pid)
 
 	// Return the PID (or -1) and the channel to wait for the command to exit.
@@ -223,9 +221,6 @@ func IsSudoCmdAvailableForThisUser() bool {
 	cmd.Stdout = nil
 
 	err := cmd.Run()
-	if err != nil {
-		return false
-	}
 
-	return true
+	return err == nil
 }
