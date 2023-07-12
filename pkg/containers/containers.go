@@ -380,6 +380,8 @@ func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
 		// cgroupInfo in the Containers struct. An empty subPath will make
 		// getCgroupPath() to walk all cgroupfs directories until it finds the
 		// directory of given cgroupId.
+		var cgroupInfo CgroupInfo
+
 		c.cgroupsMutex.Lock()
 		defer c.cgroupsMutex.Unlock()
 
@@ -387,12 +389,14 @@ func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
 		if err == nil {
 			var stat syscall.Stat_t
 			if err = syscall.Stat(path, &stat); err == nil {
-				info, err := c.cgroupUpdate(cgroupId, path, time.Unix(stat.Ctim.Sec, stat.Ctim.Nsec))
-				if err == nil {
-					return info
+				cgroupInfo, err = c.cgroupUpdate(cgroupId, path, time.Unix(stat.Ctim.Sec, stat.Ctim.Nsec))
+				if err != nil {
+					logger.Errorw("cgroupUpdate", "error", err)
 				}
 			}
 		}
+
+		return cgroupInfo
 	}
 
 	c.cgroupsMutex.RLock()
