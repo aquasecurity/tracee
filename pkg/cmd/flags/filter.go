@@ -79,7 +79,7 @@ Event examples:
   --events 'open*'                                              | only trace events prefixed by "open"
   --events '-open*,-dup*'                                       | don't trace events prefixed by "open" or "dup"
   --events fs                                                   | trace all file-system related events
-  --events fs --events -open,-openat                             | trace all file-system related events, but not open(at)
+  --events fs --events -open,-openat                            | trace all file-system related events, but not open(at)
   --events close.args.fd=5                                      | only trace 'close' events that have 'fd' equals 5
   --events openat.args.pathname='/tmp*'                         | only trace 'openat' events that have 'pathname' prefixed by /tmp
   --events openat.args.pathname='*shadow'                       | only trace 'openat' events that have 'pathname' suffixed by shadow
