@@ -9,8 +9,7 @@ for the CLI:
   --config (this flag)
   --capture
   --policy
-
-The --filter flag also cannot be set in the config file since it's reserved for the CLI
-and the policy file loading mechanism (via the --policy flag).
+  --scope
+  --event
 `
 }

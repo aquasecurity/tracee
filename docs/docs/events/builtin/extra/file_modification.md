@@ -39,7 +39,10 @@ kprobe + kretprobe
 Catch the file ctime change and submit the event if marked to be submitted
 
 ## Example Use Case
-./tracee -f e=file_modification
+
+```console
+./tracee -e file_modification
+```
 
 ## Note
 Only the first event of file modification is submitted between the open and the close of a file by a process. 

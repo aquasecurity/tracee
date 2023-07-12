@@ -153,24 +153,6 @@ func TestPolicyValidate(t *testing.T) {
 			expectedError: errors.New("policy.PolicyFile.validateRules: policy invalid_filter_operator, invalid filter operator: random"),
 		},
 		{
-			testName: "invalid filter",
-			policy: PolicyFile{
-				Name:           "invalid_filter",
-				Description:    "invalid filter",
-				Scope:          []string{"global"},
-				DefaultActions: []string{"log"},
-				Rules: []Rule{
-					{
-						Event: "write",
-						Filters: []string{
-							"random!=0",
-						},
-					},
-				},
-			},
-			expectedError: errors.New("policy.validateContext: policy invalid_filter, filter random is not valid"),
-		},
-		{
 			testName: "empty policy action",
 			policy: PolicyFile{
 				Name:        "empty_policy_action",

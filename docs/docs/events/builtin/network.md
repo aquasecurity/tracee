@@ -175,7 +175,7 @@ Tracee offers a set of network events that makes it easy to trace network activi
 Trace all TCP packets sent to port 80 anywhere, from any process:
 
 ```console
-tracee --output json --filter event=net_packet_tcp --filter net_packet_tcp.args.dst_port=80
+tracee --output json --events net_packet_tcp.args.dst_port=80
 ```
 
 ```json
@@ -187,7 +187,7 @@ tracee --output json --filter event=net_packet_tcp --filter net_packet_tcp.args.
 Trace all DNS packets received ONLY from Google DNS server '8.8.8.8':
 
 ```console
-tracee --output json --filter event=net_packet_dns --filter net_packet_dns.args.src=8.8.8.8
+tracee --output json --events net_packet_dns.args.src=8.8.8.8
 ```
 
 (only **systemd-resolved**, since all the other processes are resolving using local systemd-resolved server `127.0.1.1:53`):

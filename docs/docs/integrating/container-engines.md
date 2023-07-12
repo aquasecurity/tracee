@@ -81,5 +81,5 @@ As a user, when container enrichment is enabled the event output will include en
         -v /etc/os-release:/etc/os-release-host:ro \
         -v /var/run/containerd:/var/run/containerd \
         aquasec/tracee:{{ git.tag }} \
-        --filter container --containers
+        --scope container --containers
     ```

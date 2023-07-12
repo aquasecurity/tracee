@@ -167,8 +167,6 @@ func (p PolicyFile) validateRules() error {
 				return errfmt.Errorf("policy %s, invalid filter operator: %s", p.Name, f)
 			}
 
-			filterName := f[:operatorIdx]
-
 			// args
 			if strings.HasPrefix(f, "args") {
 				s := strings.Split(f, ".")
@@ -201,12 +199,6 @@ func (p PolicyFile) validateRules() error {
 				}
 
 				continue
-			}
-
-			// context
-			err = validateContext(p.Name, filterName)
-			if err != nil {
-				return err
 			}
 		}
 	}
@@ -262,51 +254,6 @@ func validateEventArg(policyName, eventName, argName string) error {
 	}
 
 	return errfmt.Errorf("policy %s, event %s does not have argument %s", policyName, eventName, argName)
-}
-
-func validateContext(policyName, c string) error {
-	contexts := []string{
-		"timestamp",
-		"processorId",
-		"p",
-		"pid",
-		"processId",
-		"tid",
-		"threadId",
-		"ppid",
-		"parentProcessId",
-		"hostTid",
-		"hostThreadId",
-		"hostPid",
-		"hostParentProcessId",
-		"uid",
-		"userId",
-		"mntns",
-		"mountNamespace",
-		"pidns",
-		"pidNamespace",
-		"processName",
-		"comm",
-		"hostName",
-		"cgroupId",
-		"host",
-		"container",
-		"containerId",
-		"containerImage",
-		"containerName",
-		"podName",
-		"podNamespace",
-		"podUid",
-		"syscall",
-	}
-
-	for _, context := range contexts {
-		if c == context {
-			return nil
-		}
-	}
-
-	return errfmt.Errorf("policy %s, filter %s is not valid", policyName, c)
 }
 
 // PoliciesFromPaths returns a slice of policies from the given paths

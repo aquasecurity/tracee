@@ -16,7 +16,10 @@ It periodically checks for a hidden module.
 Self-triggered hook by uprobing itself.
 
 ## Example Use Case
-./tracee -f e=hidden_kernel_module
+
+```console
+./tracee -e hidden_kernel_module
+```
 
 ## Issues
 

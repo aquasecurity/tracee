@@ -37,15 +37,28 @@ func Test_EventFilters(t *testing.T) {
 		// events matched in single policies - detached workloads
 		{
 			name: "container: event: trace only events from new containers",
-			policies: []*policy.Policy{
-				newPolicy(
-					"container_event",
-					1,
-					[]string{
-						"container=new",
-						"event!=container_create,container_remove",
+			policyFiles: []policyFileWithID{
+				{
+					id: 1,
+					policyFile: policy.PolicyFile{
+						Name:        "container_event",
+						Description: "policy for new containers",
+						Scope: []string{
+							"container=new",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "-container_create",
+								Filters: []string{},
+							},
+							{
+								Event:   "-container_remove",
+								Filters: []string{},
+							},
+						},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -62,15 +75,28 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: trace events set in a single policy from ping command",
-			policies: []*policy.Policy{
-				newPolicy(
-					"comm_event",
-					1,
-					[]string{
-						"comm=ping",
-						"event=sched_process_exec,sched_process_exit",
+			policyFiles: []policyFileWithID{
+				{
+					id: 1,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_event",
+						Description: "policy for ping command",
+						Scope: []string{
+							"comm=ping",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "sched_process_exec",
+								Filters: []string{},
+							},
+							{
+								Event:   "sched_process_exit",
+								Filters: []string{},
+							},
+						},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -88,15 +114,24 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: trace events set in a single policy from ping command",
-			policies: []*policy.Policy{
-				newPolicy(
-					"comm_event",
-					5,
-					[]string{
-						"comm=ping",
-						"event=net_packet_icmp",
+			policyFiles: []policyFileWithID{
+				{
+					id: 5,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_event",
+						Description: "policy for ping command",
+						Scope: []string{
+							"comm=ping",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "net_packet_icmp",
+								Filters: []string{},
+							},
+						},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -113,16 +148,27 @@ func Test_EventFilters(t *testing.T) {
 			test:         ExpectAllInOrder,
 		},
 		{
-			name: "event: args: trace event set in a specific policy with args finishing with 'ls'",
-			policies: []*policy.Policy{
-				newPolicy(
-					"event_args",
-					42,
-					[]string{
-						"event=execve",
-						"execve.args.pathname=*ls",
+			name: "event: args: trace event set in a specific policy with args pathname finishing with 'ls'",
+			policyFiles: []policyFileWithID{
+				{
+					id: 42,
+					policyFile: policy.PolicyFile{
+						Name:        "event_args",
+						Description: "policy with args pathname finishing with 'ls'",
+						Scope: []string{
+							"global",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event: "execve",
+								Filters: []string{
+									"args.pathname=*ls",
+								},
+							},
+						},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -139,16 +185,27 @@ func Test_EventFilters(t *testing.T) {
 			test:         ExpectAllInOrder,
 		},
 		{
-			name: "event: args: trace event set in a specific policy with args starting with * wildcard",
-			policies: []*policy.Policy{
-				newPolicy(
-					"comm_event_args",
-					42,
-					[]string{
-						"event=execve",
-						"execve.args.pathname=*/almost/improbable/path", // no event expected
+			name: "event: args: trace event set in a specific policy with args pathname starting with * wildcard",
+			policyFiles: []policyFileWithID{
+				{
+					id: 42,
+					policyFile: policy.PolicyFile{
+						Name:        "event_args",
+						Description: "policy with args pathname starting with * wildcard",
+						Scope: []string{
+							"global",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event: "execve",
+								Filters: []string{
+									"args.pathname=*/almost/improbable/path", // no event expected
+								},
+							},
+						},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				// no event expected
@@ -161,16 +218,26 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: args: trace event set in a specific policy with args from ls command",
-			policies: []*policy.Policy{
-				newPolicy(
-					"comm_event_args",
-					42,
-					[]string{
-						"comm=ls",
-						"event=security_file_open",
-						"security_file_open.args.pathname=*integration",
+			policyFiles: []policyFileWithID{
+				{
+					id: 42,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_event_args",
+						Description: "policy with args pathname for ls command",
+						Scope: []string{
+							"comm=ls",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event: "security_file_open",
+								Filters: []string{
+									"args.pathname=*integration",
+								},
+							},
+						},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -187,23 +254,41 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: trace events set in two specific policies from ls and uname commands",
-			policies: []*policy.Policy{
-				newPolicy(
-					"comm_event_4",
-					4,
-					[]string{
-						"comm=ls",
-						"event=sched_process_exit",
+			policyFiles: []policyFileWithID{
+				{
+					id: 4,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_event_4",
+						Description: "ls policy",
+						Scope: []string{
+							"comm=ls",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "sched_process_exit",
+								Filters: []string{},
+							},
+						},
 					},
-				),
-				newPolicy(
-					"comm_event_2",
-					2,
-					[]string{
-						"comm=uname",
-						"event=sched_process_exit",
+				},
+				{
+					id: 2,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_event_2",
+						Description: "uname policy",
+						Scope: []string{
+							"comm=uname",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "sched_process_exit",
+								Filters: []string{},
+							},
+						},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents("ls",
@@ -226,22 +311,41 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "bin: event: trace events in separate policies from who and uname binary",
-			policies: []*policy.Policy{
-				newPolicy(
-					"bin_event_1",
-					1,
-					[]string{
-						"bin=/usr/bin/who",
-						"event=sched_process_exec",
+			policyFiles: []policyFileWithID{
+				{
+					id: 1,
+					policyFile: policy.PolicyFile{
+						Name:        "bin_event_1",
+						Description: "who policy",
+						Scope: []string{
+							"bin=/usr/bin/who",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "sched_process_exec",
+								Filters: []string{},
+							},
+						},
 					},
-				),
-				newPolicy(
-					"bin_event_2",
-					2,
-					[]string{
-						"bin=/usr/bin/uname",
-						"event=sched_process_exec",
-					}),
+				},
+				{
+					id: 2,
+					policyFile: policy.PolicyFile{
+						Name:        "bin_event_2",
+						Description: "uname policy",
+						Scope: []string{
+							"bin=/usr/bin/uname",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "sched_process_exec",
+								Filters: []string{},
+							},
+						},
+					},
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents("who",
@@ -266,16 +370,26 @@ func Test_EventFilters(t *testing.T) {
 		// TODO: Add u>0 u!=1000
 		{
 			name: "pid: event: args: trace event sched_switch with args from pid 0",
-			policies: []*policy.Policy{
-				newPolicy(
-					"pid_0_event_args",
-					1,
-					[]string{
-						"pid=0",
-						"event=sched_switch",
-						"sched_switch.args.next_comm=systemd,init",
+			policyFiles: []policyFileWithID{
+				{
+					id: 1,
+					policyFile: policy.PolicyFile{
+						Name:        "pid_0_event_args",
+						Description: "trace event sched_switch with args from pid 0",
+						Scope: []string{
+							"pid=0",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event: "sched_switch",
+								Filters: []string{
+									"args.next_comm=systemd,init",
+								},
+							},
+						},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -293,14 +407,19 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "pid: trace events from pid 1",
-			policies: []*policy.Policy{
-				newPolicy(
-					"pid_1",
-					1,
-					[]string{
-						"pid=1",
+			policyFiles: []policyFileWithID{
+				{
+					id: 1,
+					policyFile: policy.PolicyFile{
+						Name:        "pid_1",
+						Description: "trace events from pid 1",
+						Scope: []string{
+							"pid=1",
+						},
+						DefaultActions: []string{"log"},
+						Rules:          []policy.Rule{},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -318,15 +437,20 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "uid: comm: trace uid 0 from ls command",
-			policies: []*policy.Policy{
-				newPolicy(
-					"uid_0_comm",
-					1,
-					[]string{
-						"uid=0",
-						"comm=ls",
+			policyFiles: []policyFileWithID{
+				{
+					id: 1,
+					policyFile: policy.PolicyFile{
+						Name:        "uid_0_comm",
+						Description: "trace uid 0 from ls command",
+						Scope: []string{
+							"uid=0",
+							"comm=ls",
+						},
+						DefaultActions: []string{"log"},
+						Rules:          []policy.Rule{},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -343,15 +467,20 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "uid: comm: trace only uid>0 from ls command (should be empty)",
-			policies: []*policy.Policy{
-				newPolicy( // no events expected
-					"uid_0_comm",
-					1,
-					[]string{
-						"uid>0",
-						"comm=ls",
+			policyFiles: []policyFileWithID{
+				{
+					id: 1,
+					policyFile: policy.PolicyFile{
+						Name:        "uid_0_comm",
+						Description: "trace only uid>0 from ls command (should be empty)",
+						Scope: []string{
+							"uid>0",
+							"comm=ls",
+						},
+						DefaultActions: []string{"log"},
+						Rules:          []policy.Rule{},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -365,23 +494,32 @@ func Test_EventFilters(t *testing.T) {
 			test:         ExpectAllInOrder,
 		},
 		{
-			name: "set: comm: trace filesystem events from ls command",
-			policies: []*policy.Policy{
-				newPolicy(
-					"set_comm",
-					1,
-					[]string{
-						"set=fs",
-						"comm=ls",
+			name: "comm: trace filesystem events from ls command",
+			policyFiles: []policyFileWithID{
+				{
+					id: 1,
+					policyFile: policy.PolicyFile{
+						Name:        "event_fs",
+						Description: "trace filesystem events from ls command",
+						Scope: []string{
+							"comm=ls",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "fs", // fs set
+								Filters: []string{},
+							},
+						},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
 					"ls",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", cpu.CPUForTests, anyPID, 0, anyEventID, orPolNames("set_comm"), orPolIDs(1)),
+						expectEvent(anyHost, "ls", cpu.CPUForTests, anyPID, 0, anyEventID, orPolNames("event_fs"), orPolIDs(1)),
 					},
 					[]string{"fs"},
 				),
@@ -391,15 +529,24 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "bin: event: trace only setns events from \"/usr/bin/dockerd\" binary",
-			policies: []*policy.Policy{
-				newPolicy(
-					"bin_event",
-					1,
-					[]string{
-						"bin=/usr/bin/dockerd",
-						"event=setns",
+			policyFiles: []policyFileWithID{
+				{
+					id: 1,
+					policyFile: policy.PolicyFile{
+						Name:        "bin_event",
+						Description: "trace only setns events from \"/usr/bin/dockerd\" binary",
+						Scope: []string{
+							"bin=/usr/bin/dockerd",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "setns",
+								Filters: []string{},
+							},
+						},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -417,15 +564,20 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "trace new pids (should be empty)",
-			policies: []*policy.Policy{
-				newPolicy( // no events expected
-					"pid_new",
-					1,
-					[]string{
-						"pid=new",
-						"pid=1",
+			policyFiles: []policyFileWithID{
+				{
+					id: 1,
+					policyFile: policy.PolicyFile{
+						Name:        "pid_new",
+						Description: "trace new pids (should be empty)",
+						Scope: []string{
+							"pid=new",
+							"pid=1",
+						},
+						DefaultActions: []string{"log"},
+						Rules:          []policy.Rule{},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -440,14 +592,19 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: trace events set in a specific policy from ls command",
-			policies: []*policy.Policy{
-				newPolicy(
-					"comm_64",
-					64,
-					[]string{
-						"comm=ls",
+			policyFiles: []policyFileWithID{
+				{
+					id: 64,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_64",
+						Description: "policy for ls command",
+						Scope: []string{
+							"comm=ls",
+						},
+						DefaultActions: []string{"log"},
+						Rules:          []policy.Rule{},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -464,21 +621,32 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: trace events set in a specific policy from ls command",
-			policies: []*policy.Policy{
-				newPolicy(
-					"comm_64",
-					64,
-					[]string{
-						"comm=ls",
+			policyFiles: []policyFileWithID{
+				{
+					id: 64,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_64",
+						Description: "policy for ls command",
+						Scope: []string{
+							"comm=ls",
+						},
+						DefaultActions: []string{"log"},
+						Rules:          []policy.Rule{},
 					},
-				),
-				newPolicy( // no events expected
-					"comm_42",
-					42,
-					[]string{
-						"comm=who",
+				},
+				{
+					// no events expected
+					id: 42,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_42",
+						Description: "policy from who command",
+						Scope: []string{
+							"comm=who",
+						},
+						DefaultActions: []string{"log"},
+						Rules:          []policy.Rule{},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -495,21 +663,31 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: trace events set in a specific policy from ls and who commands",
-			policies: []*policy.Policy{
-				newPolicy(
-					"comm_64",
-					64,
-					[]string{
-						"comm=ls",
+			policyFiles: []policyFileWithID{
+				{
+					id: 64,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_64",
+						Description: "policy for ls command",
+						Scope: []string{
+							"comm=ls",
+						},
+						DefaultActions: []string{"log"},
+						Rules:          []policy.Rule{},
 					},
-				),
-				newPolicy(
-					"comm_42",
-					42,
-					[]string{
-						"comm=who",
+				},
+				{
+					id: 42,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_42",
+						Description: "policy for who command",
+						Scope: []string{
+							"comm=who",
+						},
+						DefaultActions: []string{"log"},
+						Rules:          []policy.Rule{},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -534,16 +712,27 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "event: args: context: only security_file_open from \"execve\" syscall",
-			policies: []*policy.Policy{
-				newPolicy(
-					"event_args_context",
-					42,
-					[]string{
-						"event=security_file_open",
-						"security_file_open.context.syscall=execve",
-						"security_file_open.args.pathname=*ls",
+			policyFiles: []policyFileWithID{
+				{
+					id: 42,
+					policyFile: policy.PolicyFile{
+						Name:        "event_args_context",
+						Description: "policy for only security_file_open from \"execve\" syscall",
+						Scope: []string{
+							"global",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event: "security_file_open",
+								Filters: []string{
+									"syscall=execve", // context
+									"args.pathname=*ls",
+								},
+							},
+						},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -561,15 +750,24 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: do a file write",
-			policies: []*policy.Policy{
-				newPolicy(
-					"comm_event",
-					42,
-					[]string{
-						"comm=tee",
-						"event=magic_write",
+			policyFiles: []policyFileWithID{
+				{
+					id: 42,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_event",
+						Description: "policy for magic write",
+						Scope: []string{
+							"comm=tee",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "magic_write",
+								Filters: []string{},
+							},
+						},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -585,42 +783,64 @@ func Test_EventFilters(t *testing.T) {
 			test:         ExpectAllInOrder,
 		},
 
-		// TODO: add tests using signature events
-		// This is currently not possible since signature events are dynamically
-		// created and an event like anti_debugging is not known in advance.
+		// // TODO: add tests using signature events
+		// // This is currently not possible since signature events are dynamically
+		// // created and an event like anti_debugging is not known in advance.
 		// {
-		// 	name: "comm: event: args: sign: trace sys events + signature events in separte policies",
-		// 	policies: []*policy.Policy{
-		// 		newPolicy(
-		// 			"comm_event",
-		// 			3,
-		// 			[]string{
-		// 				"comm=ping",
-		// 				"event=net_packet_icmp",
+		// 	name: "comm: event: args: sign: trace sys events + signature events in separate policies",
+		// 	policyFiles: []policyFileWithID{
+		// 		{
+		// 			id: 3,
+		// 			policyFile: policy.PolicyFile{
+		// 				Name:          "comm_event",
+		// 				Description:   "policy for net_packet_icmp event",
+		// 				Scope:         []string{"comm=ping"},
+		// 				DefaultActions: []string{"log"},
+		// 				Rules: []policy.Rule{
+		// 					{
+		// 						Event:  "net_packet_icmp",
+		// 						Filters: []string{},
+		// 					},
+		// 				},
 		// 			},
-		// 		),
-		// 		newPolicy(
-		// 			"event_args",
-		// 			5,
-		// 			[]string{
-		// 				"event=ptrace",
-		// 				"ptrace.args.pid=0",
+		// 		},
+		// 		{
+		// 			id: 5,
+		// 			policyFile: policy.PolicyFile{
+		// 				Name:          "event_args",
+		// 				Description:   "policy for ptrace event",
+		// 				Scope:         []string{},
+		// 				DefaultActions: []string{"log"},
+		// 				Rules: []policy.Rule{
+		// 					{
+		// 						Event:  "ptrace",
+		// 						Filters: []string{"args.pid=0"},
+		// 					},
+		// 				},
 		// 			},
-		// 		),
-		// 		newPolicy(
-		// 			"sign",
-		// 			9,
-		// 			[]string{
-		// 				"event=anti_debugging",
+		// 		},
+		// 		{
+		// 			id: 9,
+		// 			policyFile: policy.PolicyFile{
+		// 				Name:          "signature",
+		// 				Description:   "policy for anti_debugging event",
+		// 				Scope:         []string{},
+		// 				DefaultActions: []string{"log"},
+		// 				Rules: []policy.Rule{
+		// 					{
+		// 						Event:  "anti_debugging",
+		// 						Filters: []string{},
+		// 					},
+		// 				},
 		// 			},
-		// 		),
+		// 		},
 		// 	},
 		// 	cmdEvents: []cmdEvents{
 		// 		newCmdEvents(
 		// 			"ping -c1 0.0.0.0",
 		// 			1*time.Second,
 		// 			[]trace.Event{
-		// 				expectEvent(anyHost, "ping", cpu.CPUForTests, anyPID, 0, events.NetPacketICMP, "comm_event", orPolicies(3)),
+		// 				expectEvent(anyHost, "ping", cpu.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event"), orPolIDs(3)),
 		// 			},
 		// 			[]string{},
 		// 		),
@@ -628,8 +848,8 @@ func Test_EventFilters(t *testing.T) {
 		// 			"strace ls",
 		// 			1*time.Second,
 		// 			[]trace.Event{
-		// 				expectEvent(anyHost, "strace", cpu.CPUForTests, anyPID, 0, events.Ptrace, "event_args", orPolicies(5)),
-		// 				expectEvent(anyHost, "strace", cpu.CPUForTests, anyPID, 0, events.anti_debugging, "sign", orPolicies(9)),
+		// 				expectEvent(anyHost, "strace", cpu.CPUForTests, anyPID, 0, events.Ptrace, orPolNames("event_args"), orPolIDs(5)),
+		// 				expectEvent(anyHost, "strace", cpu.CPUForTests, anyPID, 0, events.anti_debugging, orPolNames("sign"), orPolIDs(9)),
 		// 			},
 		// 			[]string{},
 		// 		),
@@ -641,23 +861,41 @@ func Test_EventFilters(t *testing.T) {
 		// events matched in multiple policies - intertwined workloads
 		{
 			name: "comm: event: trace events from ping command in multiple policies",
-			policies: []*policy.Policy{
-				newPolicy(
-					"comm_event_3",
-					3,
-					[]string{
-						"comm=ping",
-						"event=net_packet_icmp",
+			policyFiles: []policyFileWithID{
+				{
+					id: 3,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_event_3",
+						Description: "policy for ping command",
+						Scope: []string{
+							"comm=ping",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "net_packet_icmp",
+								Filters: []string{},
+							},
+						},
 					},
-				),
-				newPolicy(
-					"comm_event_5",
-					5,
-					[]string{
-						"comm=ping",
-						"event=net_packet_icmp",
+				},
+				{
+					id: 5,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_event_5",
+						Description: "policy for ping command",
+						Scope: []string{
+							"comm=ping",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "net_packet_icmp",
+								Filters: []string{},
+							},
+						},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -675,23 +913,45 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: trace events from ping command in multiple policies",
-			policies: []*policy.Policy{
-				newPolicy(
-					"comm_event_3",
-					3,
-					[]string{
-						"comm=ping",
-						"event=net_packet_icmp",
+			policyFiles: []policyFileWithID{
+				{
+					id: 3,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_event_3",
+						Description: "policy for ping command",
+						Scope: []string{
+							"comm=ping",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "net_packet_icmp",
+								Filters: []string{},
+							},
+						},
 					},
-				),
-				newPolicy(
-					"comm_event_5",
-					5,
-					[]string{
-						"comm=ping",
-						"event=net_packet_icmp,setuid",
+				},
+				{
+					id: 5,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_event_5",
+						Description: "policy for ping commands",
+						Scope: []string{
+							"comm=ping",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "net_packet_icmp",
+								Filters: []string{},
+							},
+							{
+								Event:   "setuid",
+								Filters: []string{},
+							},
+						},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -711,39 +971,79 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: trace events from ping command in multiple policies",
-			policies: []*policy.Policy{
-				newPolicy(
-					"comm_event_3",
-					3,
-					[]string{
-						"comm=ping",
-						"event=net_packet_icmp",
+			policyFiles: []policyFileWithID{
+				{
+					id: 3,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_event_3",
+						Description: "policy for ping command",
+						Scope: []string{
+							"comm=ping",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "net_packet_icmp",
+								Filters: []string{},
+							},
+						},
 					},
-				),
-				newPolicy(
-					"comm_event_5",
-					5,
-					[]string{
-						"comm=ping",
-						"event=net_packet_icmp",
+				},
+				{
+					id: 5,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_event_5",
+						Description: "policy for ping command",
+						Scope: []string{
+							"comm=ping",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "net_packet_icmp",
+								Filters: []string{},
+							},
+						},
 					},
-				),
-				newPolicy(
-					"comm_event_7",
-					7,
-					[]string{
-						"comm=ping",
-						"event=sched_process_exec",
+				},
+				{
+					id: 7,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_event_7",
+						Description: "policy for ping command",
+						Scope: []string{
+							"comm=ping",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "sched_process_exec",
+								Filters: []string{},
+							},
+						},
 					},
-				),
-				newPolicy(
-					"comm_event_9",
-					9,
-					[]string{
-						"comm=ping",
-						"event=sched_process_exec,security_socket_connect",
+				},
+				{
+					id: 9,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_event_9",
+						Description: "policy for ping command",
+						Scope: []string{
+							"comm=ping",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "sched_process_exec",
+								Filters: []string{},
+							},
+							{
+								Event:   "security_socket_connect",
+								Filters: []string{},
+							},
+						},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -765,21 +1065,32 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: trace only events from from ls and who commands in multiple policies",
-			policies: []*policy.Policy{
-				newPolicy(
-					"comm_64",
-					64,
-					[]string{
-						"comm=ls",
+			policyFiles: []policyFileWithID{
+				{
+					id: 64,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_64",
+						Description: "policy for ls command",
+						Scope: []string{
+							"comm=ls",
+						},
+						DefaultActions: []string{"log"},
+						Rules:          []policy.Rule{},
 					},
-				),
-				newPolicy(
-					"comm_42",
-					42,
-					[]string{
-						"comm=who,ls",
+				},
+				{
+					id: 42,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_42",
+						Description: "policy for ls and who commands",
+						Scope: []string{
+							"comm=who",
+							"comm=ls",
+						},
+						DefaultActions: []string{"log"},
+						Rules:          []policy.Rule{},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -804,21 +1115,31 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: trace at least one event in multiple policies from ls and who commands",
-			policies: []*policy.Policy{
-				newPolicy(
-					"comm_64",
-					64,
-					[]string{
-						"comm=ls",
+			policyFiles: []policyFileWithID{
+				{
+					id: 64,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_64",
+						Description: "policy for ls command",
+						Scope: []string{
+							"comm=ls",
+						},
+						DefaultActions: []string{"log"},
+						Rules:          []policy.Rule{},
 					},
-				),
-				newPolicy(
-					"comm_42",
-					42,
-					[]string{
-						"comm=who,ls",
+				},
+				{
+					id: 42,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_42",
+						Description: "policy for ls and who commands",
+						Scope: []string{
+							"comm=who,ls",
+						},
+						DefaultActions: []string{"log"},
+						Rules:          []policy.Rule{},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -849,15 +1170,28 @@ func Test_EventFilters(t *testing.T) {
 		// - emit read and write events, as defined in expected events
 		{
 			name: "comm: event: trace events read and write set in a single policy from fakeprog1 command",
-			policies: []*policy.Policy{
-				newPolicy(
-					"comm_event",
-					1,
-					[]string{
-						"comm=fakeprog1",
-						"event=read,write",
+			policyFiles: []policyFileWithID{
+				{
+					id: 1,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_event",
+						Description: "policy for fakeprog1 command",
+						Scope: []string{
+							"comm=fakeprog1",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "read",
+								Filters: []string{},
+							},
+							{
+								Event:   "write",
+								Filters: []string{},
+							},
+						},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -875,14 +1209,22 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "event: trace execve event set in a specific policy from fakeprog1 command",
-			policies: []*policy.Policy{
-				newPolicy(
-					"event_pol_42",
-					42,
-					[]string{
-						"event=execve",
+			policyFiles: []policyFileWithID{
+				{
+					id: 42,
+					policyFile: policy.PolicyFile{
+						Name:           "event_pol_42",
+						Description:    "policy for fakeprog1 command",
+						Scope:          []string{"global"},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event:   "execve",
+								Filters: []string{},
+							},
+						},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -899,28 +1241,48 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: args: trace event set in a specific policy with args from fakeprog1 and fakeprog2 commands",
-			policies: []*policy.Policy{
-				newPolicy(
-					"comm_event_args_64",
-					64,
-					[]string{
-						"comm=fakeprog1",
-						"event=openat",
-						"openat.args.dirfd=0",
-						"openat.args.flags=0",
-						"openat.args.mode=0",
+			policyFiles: []policyFileWithID{
+				{
+					id: 64,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_event_args_64",
+						Description: "policy with args for fakeprog1 command",
+						Scope: []string{
+							"comm=fakeprog1",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event: "openat",
+								Filters: []string{
+									"args.dirfd=0",
+									"args.flags=0",
+									"args.mode=0",
+								},
+							},
+						},
 					},
-				),
-				newPolicy(
-					"comm_event_args_42",
-					42,
-					[]string{
-						"comm=fakeprog2",
-						"event=open",
-						"open.args.flags=0",
-						"open.args.mode=0",
+				},
+				{
+					id: 42,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_event_args_42",
+						Description: "policy with args for fakeprog2 command",
+						Scope: []string{
+							"comm=fakeprog2",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event: "open",
+								Filters: []string{
+									"args.flags=0",
+									"args.mode=0",
+								},
+							},
+						},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -952,25 +1314,46 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name: "comm: event: retval: trace event set in a specific policy with retval from fakeprog1 and fakeprog2 commands",
-			policies: []*policy.Policy{
-				newPolicy(
-					"comm_event_retval_64",
-					64,
-					[]string{
-						"comm=fakeprog1",
-						"event=openat",
-						"openat.retval<0",
+			policyFiles: []policyFileWithID{
+				{
+					id: 64,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_event_retval_64",
+						Description: "policy with retval for fakeprog1 command",
+						Scope: []string{
+							"comm=fakeprog1",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event: "openat",
+								Filters: []string{
+									"retval<0",
+								},
+							},
+						},
 					},
-				),
-				newPolicy( // no events expected
-					"comm_event_retval_42",
-					42,
-					[]string{
-						"comm=fakeprog2",
-						"event=open",
-						"open.retval>=0",
+				},
+				{
+					// no events expected
+					id: 42,
+					policyFile: policy.PolicyFile{
+						Name:        "comm_event_retval_42",
+						Description: "policy with retval for fakeprog2 command",
+						Scope: []string{
+							"comm=fakeprog2",
+						},
+						DefaultActions: []string{"log"},
+						Rules: []policy.Rule{
+							{
+								Event: "open",
+								Filters: []string{
+									"retval>=0",
+								},
+							},
+						},
 					},
-				),
+				},
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
@@ -1002,7 +1385,7 @@ func Test_EventFilters(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// prepare tracee config
 			config := config.Config{
-				Policies:   newPolicies(tc.policies...),
+				Policies:   newPolicies(tc.policyFiles),
 				ChanEvents: make(chan trace.Event, 1000),
 				Capabilities: &config.CapabilitiesConfig{
 					BypassCaps: true,
@@ -1051,9 +1434,14 @@ const (
 	anyPolicyName  = ""
 )
 
+type policyFileWithID struct {
+	policyFile policy.PolicyFile
+	id         int
+}
+
 type testCase struct {
 	name         string
-	policies     []*policy.Policy
+	policyFiles  []policyFileWithID
 	cmdEvents    []cmdEvents
 	useSyscaller bool
 	test         func(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscaller bool)
@@ -1076,41 +1464,31 @@ func newCmdEvents(runCmd string, timeout time.Duration, evts []trace.Event, sets
 	}
 }
 
-// newPolicy creates a new policy with the given name, ID and filter flags
-func newPolicy(name string, id int, filterFlags []string) *policy.Policy {
-	filterMap, err := flags.PrepareFilterMapFromFlags(filterFlags)
+// newPolicies creates a new policies object with the given policies files with IDs.
+func newPolicies(polsFilesID []policyFileWithID) *policy.Policies {
+	var polsFiles []policy.PolicyFile
+
+	for _, polFile := range polsFilesID {
+		polsFiles = append(polsFiles, polFile.policyFile)
+	}
+
+	policyScopeMap, policyEventMap, err := flags.PrepareFilterMapsFromPolicies(polsFiles)
 	if err != nil {
 		panic(err)
 	}
 
-	pols, err := flags.CreatePolicies(filterMap, true)
+	policies, err := flags.CreatePolicies(policyScopeMap, policyEventMap, true)
 	if err != nil {
 		panic(err)
 	}
 
-	// we need to set the pol name and ID manually because we are not using the pol engine
-	// and we don't want to duplicate the logic of the pol engine here
-	pol, err := pols.Lookup(0)
-	if err != nil {
-		panic(err)
+	policiesWithIDSet := policy.NewPolicies()
+	for pol := range policies.Map() {
+		pol.ID = polsFilesID[pol.ID].id - 1
+		policiesWithIDSet.Set(pol)
 	}
 
-	pol.Name = name
-	pol.ID = id - 1
-	pols.Set(pol) // set policy ID using Set() method which checks ID range
-
-	return pol
-}
-
-// newPolicies creates a new policies object with the given policies
-func newPolicies(pols ...*policy.Policy) *policy.Policies {
-	policies := policy.NewPolicies()
-
-	for _, pol := range pols {
-		policies.Set(pol)
-	}
-
-	return policies
+	return policiesWithIDSet
 }
 
 // orPolIDs is a helper function to create a bit mask of the given policies IDs

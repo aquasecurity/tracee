@@ -39,7 +39,9 @@ Used by tracee to maintain mount NS cache, used in this event to get to processe
 To catch SO which tries to override the `fopen` function of `libc`, we can use the event in
 the following way:
 
-`./dist/tracee -f e=symbols_loaded -f symbols_loaded.args.symbols=fopen symbols_loaded.args.library_path!=libc`
+```console
+./dist/tracee -e symbols_loaded.args.symbols=fopen -e symbols_loaded.args.library_path!=libc
+```
 
 ## Issues
 Because the event is implemented in user-mode, it needs to open and read files.

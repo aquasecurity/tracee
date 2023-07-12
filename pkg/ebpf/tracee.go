@@ -1666,7 +1666,7 @@ func (t *Tracee) triggerSyscallsIntegrityCheck(event trace.Event) error {
 		hookedSyscallsFilters := p.ArgFilter.GetEventFilters(events.HookedSyscalls)
 		if len(hookedSyscallsFilters) == 0 {
 			logger.Debugw("policy %d: no syscalls were provided to hooked_syscall event. "+
-				"using default configuration. please provide it via -f hooked_syscalls.args.check_syscalls=<syscall>,<syscall>", p.ID)
+				"using default configuration. please provide it via -e hooked_syscalls.args.check_syscalls=<syscall>,<syscall>", p.ID)
 			derive.SyscallsToCheck = events.DefaultSyscallsToCheck()
 		}
 
@@ -1743,9 +1743,9 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 		printMemDumpFilters := p.ArgFilter.GetEventFilters(events.PrintMemDump)
 		if len(printMemDumpFilters) == 0 {
 			errArgFilter[p.ID] = fmt.Errorf("policy %d: no address or symbols were provided to print_mem_dump event. "+
-				"please provide it via -f print_mem_dump.args.address=<hex address>"+
-				", -f print_mem_dump.args.symbol_name=<owner>:<symbol> or "+
-				"-f print_mem_dump.args.symbol_name=<symbol> if specifying a system owned symbol", p.ID)
+				"please provide it via -e print_mem_dump.args.address=<hex address>"+
+				", -e print_mem_dump.args.symbol_name=<owner>:<symbol> or "+
+				"-e print_mem_dump.args.symbol_name=<symbol> if specifying a system owned symbol", p.ID)
 
 			continue
 		}

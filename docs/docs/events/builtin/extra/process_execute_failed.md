@@ -37,7 +37,10 @@ kretprobe
 Fetch the return value of exec_binprm
 
 ## Example Use Case
-./tracee -f e=process_execution_failed
+
+```console
+./tracee -e process_execution_failed
+```
 
 ## Issues
 Currently, only covers failed executions that are happening within exec_binprm. Other failures may occur at an earlier stage.

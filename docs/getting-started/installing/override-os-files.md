@@ -15,7 +15,7 @@ Tracee will show you collected information about the running Linux OS with the
 `--log debug` argument:
 
 ```console
-sudo ./dist/tracee --log debug --filter uid=1000 --filter pid=new --filter event=execve
+sudo ./dist/tracee --log debug --scope uid=1000 --scope pid=new --events execve
 ```
 
 ```text
@@ -39,7 +39,7 @@ because you're running inside a container that does not support it, you may
 face the following error:
 
 ```console
-sudo ./dist/tracee --log debug --filter uid=1000 --filter pid=new --filter event=execve
+sudo ./dist/tracee --log debug --scope uid=1000 --scope pid=new --events execve
 ```
 
 ```text
@@ -62,7 +62,7 @@ you may create another os-release file and inform tracee by using
 LIBBPFGO's environment variable `LIBBPFGO_OSRELEASE_FILE`:
 
 ```console
-sudo LIBBPFGO_OSRELEASE_FILE=/etc/os-release.orig ./dist/tracee --filter uid=1000 --filter pid=new --filter event=execve
+sudo LIBBPFGO_OSRELEASE_FILE=/etc/os-release.orig ./dist/tracee --scope uid=1000 --scope pid=new --events execve
 ```
 
 > If you're running tracee inside a docker container, you can simply bind mount
@@ -79,7 +79,7 @@ Tracee needs access to kconfig file (/proc/config.gz OR /boot/config-$(uname -r)
     Tracee **should NOT fail** when it cannot find a kconfig file:
     
     ```console
-    sudo ./dist/tracee --log debug --filter uid=1000 --filter pid=new --filter event=execve
+    sudo ./dist/tracee --log debug --scope uid=1000 --scope pid=new --events execve
     ```
 
     ```text
@@ -102,7 +102,7 @@ Tracee needs access to kconfig file (/proc/config.gz OR /boot/config-$(uname -r)
     variable:
 
 ```console
-sudo LIBBPFGO_KCONFIG_FILE=/boot/config-other -E ./dist/tracee --log debug --filter uid=1000 --filter pid=new --filter event=execve
+sudo LIBBPFGO_KCONFIG_FILE=/boot/config-other -E ./dist/tracee --log debug --scope uid=1000 --scope pid=new --events execve
 ```
 
 ```text

@@ -34,11 +34,7 @@ log:
 ## Reserved Flags
 
 There are a few flags that are reserved for the CLI and cannot be set through the configuration file. These include:
-
-- `--config`: This flag is used to specify the configuration file, so it cannot be set through the configuration file itself.
-- `--capture`: This flag is used to specify which events should be captured by Tracee, so it cannot be set through the configuration file.
-- `--policy`: This flag is used to specify a policy file for Tracee, so it cannot be set through the configuration file.
-- `--filter `: This flag is used to specify an event filter for Tracee via CLI and via policy file loading mechanism (the --policy flag), so it cannot be set through the configuration file.
+`--config`, `--capture`, `--policy`, `--scope`, and `--events`.
 
 ## Example Configuration Files
 

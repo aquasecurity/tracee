@@ -27,7 +27,7 @@ error_exit() {
 
 coproc ./dist/tracee \
     --install-path $TRACEE_TMP_DIR \
-    --filter event=security_file_open &
+    --events security_file_open &
 
 pid=$COPROC_PID
 

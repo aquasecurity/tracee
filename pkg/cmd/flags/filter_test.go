@@ -12,14 +12,13 @@ import (
 func TestFilter_prepareEventsToTrace(t *testing.T) {
 	testCases := []struct {
 		name        string
-		eventFilter cliFilter
-		setFilter   cliFilter
+		eventFilter eventFilter
 		expected    map[events.ID]string
 		expectedErr error
 	}{
 		{
 			name: "happy path - random events",
-			eventFilter: cliFilter{
+			eventFilter: eventFilter{
 				Equal: []string{"ptrace", "openat"},
 			},
 			expected: map[events.ID]string{
@@ -29,7 +28,7 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 		},
 		{
 			name: "happy path - sched_proc*",
-			eventFilter: cliFilter{
+			eventFilter: eventFilter{
 				Equal: []string{"sched_proc*", "openat"},
 			},
 			expected: map[events.ID]string{
@@ -41,7 +40,7 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 		},
 		{
 			name: "happy path - sched_proc* with exclude",
-			eventFilter: cliFilter{
+			eventFilter: eventFilter{
 				Equal:    []string{"sched_proc*", "openat"},
 				NotEqual: []string{"sched_process_exec"},
 			},
@@ -52,43 +51,25 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 			},
 		},
 		{
-			name: "happy path - containers set",
-			setFilter: cliFilter{
-				Equal: []string{"containers"},
-			},
-			expected: map[events.ID]string{
-				events.ContainerCreate:   "container_create",
-				events.ContainerRemove:   "container_remove",
-				events.ExistingContainer: "existing_container",
-			},
-		},
-		{
 			name: "sad path - event doesn't exist",
-			eventFilter: cliFilter{
+			eventFilter: eventFilter{
 				Equal: []string{"blah"},
 			},
 			expectedErr: InvalidEventError("blah"),
 		},
 		{
 			name: "sad path - no event with prefix",
-			eventFilter: cliFilter{
+			eventFilter: eventFilter{
 				Equal: []string{"blah*"},
 			},
 			expectedErr: InvalidEventError("blah*"),
 		},
 		{
 			name: "sad path - no event with suffix",
-			eventFilter: cliFilter{
+			eventFilter: eventFilter{
 				Equal: []string{"*blah"},
 			},
 			expectedErr: InvalidEventError("*blah"),
-		},
-		{
-			name: "sad path - set doesn't exist",
-			setFilter: cliFilter{
-				Equal: []string{"blah"},
-			},
-			expectedErr: InvalidSetError("blah"),
 		},
 	}
 	eventsNameToID := events.Definitions.NamesToIDs()
@@ -100,7 +81,7 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			res, err := prepareEventsToTrace(tc.eventFilter, tc.setFilter, eventsNameToID)
+			res, err := prepareEventsToTrace(tc.eventFilter, eventsNameToID)
 			if tc.expectedErr != nil {
 				assert.Equal(t, err.Error(), tc.expectedErr.Error())
 			} else {

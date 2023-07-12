@@ -33,8 +33,8 @@
         make tracee
         sudo ./dist/tracee \
             -o option:parse-arguments \
-            --filter comm=bash \
-            --filter follow
+            --scope comm=bash \
+            --scope follow
         ```
     
     Now, in your host's bash shell, execute a command. You will see all events
@@ -55,8 +55,8 @@
         sudo ./dist/tracee \
             -o format:json \
             -o option:parse-arguments \
-            --filter comm=bash \
-            --filter follow 
+            --scope comm=bash \
+            --scope follow 
         ```
     
     Now, in your host's bash shell, execute: `sudo strace /bin/ls` and observe
@@ -134,8 +134,8 @@ And, after the compilation, run the commands directly in your host:
 ```console
 sudo ./dist/tracee \
     -o option:parse-arguments \
-    --filter comm=bash \
-    --filter follow
+    --scope comm=bash \
+    --scope follow
 ```
 
 > **Note**: the generated binary must be compatible to your host (depending on
