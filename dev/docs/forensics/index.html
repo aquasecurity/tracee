@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.17+insiders-4.36.1">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18+insiders-4.37.0">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.cac7c1ad.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.2f34a6de.min.css">
       
       
 
@@ -14830,8 +14830,8 @@ file will be captured. I/O files can be filtered using 3 optional filters:
 <p><strong><em>write example</em></strong>
 <div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
 <span class="go">   --output json \</span>
-<span class="go">   --filter comm=bash \</span>
-<span class="go">   --filter follow \</span>
+<span class="go">   --scope comm=bash \</span>
+<span class="go">   --scope follow \</span>
 <span class="go">   --output option:parse-arguments \</span>
 <span class="go">   --capture dir:/tmp/tracee/ \</span>
 <span class="go">   --capture write=&#39;/tmp/*&#39;</span>
@@ -14857,8 +14857,8 @@ file will be captured. I/O files can be filtered using 3 optional filters:
 <p><strong><em>read example</em></strong></p>
 <div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
 <span class="go">   --output json \</span>
-<span class="go">   --filter comm=bash \</span>
-<span class="go">   --filter follow \</span>
+<span class="go">   --scope comm=bash \</span>
+<span class="go">   --scope follow \</span>
 <span class="go">   --output option:parse-arguments \</span>
 <span class="go">   --capture dir:/tmp/tracee/ \</span>
 <span class="go">   --capture read:type=pipe \</span>
@@ -14886,8 +14886,8 @@ file will be captured. I/O files can be filtered using 3 optional filters:
 same binary is executed multiple times, it will be captured just once.</p>
 <div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
 <span class="go">   --output json \</span>
-<span class="go">   --filter comm=bash \</span>
-<span class="go">   --filter follow \</span>
+<span class="go">   --scope comm=bash \</span>
+<span class="go">   --scope follow \</span>
 <span class="go">   --output option:parse-arguments \</span>
 <span class="go">   --capture dir:/tmp/tracee/ \</span>
 <span class="go">   --capture exec</span>
@@ -14929,8 +14929,8 @@ will be captured. This is triggered when memory protection changes from
 <strong>Write+Execute</strong> to <strong>Write</strong>.</p>
 <div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
 <span class="go">   --output none \</span>
-<span class="go">   --filter comm=bash \</span>
-<span class="go">   --filter follow \</span>
+<span class="go">   --scope comm=bash \</span>
+<span class="go">   --scope follow \</span>
 <span class="go">   --capture dir:/tmp/tracee/ \</span>
 <span class="go">   --capture mem</span>
 </code></pre></div>
@@ -14956,7 +14956,7 @@ ICMP, ICMPv6, DNS, HTTP, etc).</p>
 </div>
 <p>A good way to test this behavior is to execute:</p>
 <div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
-<span class="go">    --filter event=net_packet_ipv4 \</span>
+<span class="go">    --events net_packet_ipv4 \</span>
 <span class="go">    --capture network \</span>
 <span class="go">    --capture pcap-options:filtered</span>
 </code></pre></div>
@@ -14968,7 +14968,7 @@ ICMP, ICMPv6, DNS, HTTP, etc).</p>
 </code></pre></div>
 <p>You can select only dns packets, for example:</p>
 <div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
-<span class="go">    --filter event=net_packet_dns \</span>
+<span class="go">    --events net_packet_dns \</span>
 <span class="go">    --capture network \</span>
 <span class="go">    --capture pcap-options:filtered</span>
 </code></pre></div>
@@ -14998,7 +14998,7 @@ traffic per container and per command. You will find the same captured
 data for that ping command inside <code>commands/container_id/ping.pcap</code> and
 inside <code>containers/container_id.pcap</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
-<span class="go">    --filter event=net_packet_icmp \</span>
+<span class="go">    --events net_packet_icmp \</span>
 <span class="go">    --capture network \</span>
 <span class="go">    --capture pcap-options:filtered \</span>
 <span class="go">    --capture pcap:process,container,command</span>
@@ -15083,7 +15083,7 @@ item shows how to capture a specific packet payload size.</p>
 </div>
 <p>In order to capture a specific payload size you may specify:</p>
 <div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
-<span class="go">    --filter event=net_packet_tcp \</span>
+<span class="go">    --events net_packet_tcp \</span>
 <span class="go">    --capture network \</span>
 <span class="go">    --capture pcap-options:filtered \</span>
 <span class="go">    --capture pcap:single,command \</span>
@@ -15107,8 +15107,8 @@ headers (and not the entire packet length).</p>
 If the same binary is loaded multiple times, it will be captured just once.</p>
 <div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
 <span class="go">    --output none \</span>
-<span class="go">    --filter comm=bash \</span>
-<span class="go">    --filter follow \</span>
+<span class="go">    --scope comm=bash \</span>
+<span class="go">    --scope follow \</span>
 <span class="go">    --capture clear-dir \</span>
 <span class="go">    --capture module</span>
 </code></pre></div>
@@ -15144,8 +15144,8 @@ You can disassemble the bytecode with the help of <code>binutils-bpf</code> pack
 <code>objdump -D -b binary -m bpf &lt;path&gt;</code></p>
 <div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
    --output none \
-   --filter comm=bash \
-   --filter follow \
+   --scope comm=bash \
+   --scope follow \
    --capture clear-dir \
    --capture bpf
 </code></pre></div>
@@ -15196,7 +15196,7 @@ any other captured file would be:</p>
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.6c7302c4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.daf26eb8.min.js"></script>
+      <script src="../../assets/javascripts/bundle.7c5c0157.min.js"></script>
       
     
   </body>

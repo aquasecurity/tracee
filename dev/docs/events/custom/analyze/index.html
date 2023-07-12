@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.17+insiders-4.36.1">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18+insiders-4.37.0">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.cac7c1ad.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.2f34a6de.min.css">
       
       
 
@@ -14742,10 +14742,10 @@
 <h1 id="analyze">Analyze<a class="headerlink" href="#analyze" title="Permanent link">&para;</a></h1>
 <p>The tracee subcommand <code>analyze</code> allows you to execute behavior signatures on past data. 
 For example, you can collect the ptrace event into one node using the following command:</p>
-<div class="highlight"><pre><span></span><code>tracee --filter event=ptrace --output=json:events.json
+<div class="highlight"><pre><span></span><code>tracee --events=ptrace --output=json:events.json
 </code></pre></div>
 <p>Then, on another node, you can check if the behavior signature for anti-debugging was triggered using the following command:</p>
-<div class="highlight"><pre><span></span><code>tracee analyze --event=anti_debugging events.json
+<div class="highlight"><pre><span></span><code>tracee analyze --events=anti_debugging events.json
 </code></pre></div>
 <p>The <code>analyze</code> command can also be used to test new signatures from the collected past data. You can run tracee on a node, collect several events, and based on the collected events, create your behavior signature. Afterward, you can test if the signature would be triggered using the <code>analyze</code> command.</p>
 
@@ -14787,7 +14787,7 @@ For example, you can collect the ptrace event into one node using the following 
     <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../../assets/javascripts/workers/search.6c7302c4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.daf26eb8.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.7c5c0157.min.js"></script>
       
     
   </body>

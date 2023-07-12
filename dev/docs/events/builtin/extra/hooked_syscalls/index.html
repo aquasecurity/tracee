@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.17+insiders-4.36.1">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18+insiders-4.37.0">
     
     
       
@@ -27,7 +27,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../../assets/stylesheets/main.cac7c1ad.min.css">
+      <link rel="stylesheet" href="../../../../../assets/stylesheets/main.2f34a6de.min.css">
       
       
 
@@ -14905,7 +14905,8 @@ The default syscalls for amd64 are:</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
 <p>The <code>hooked_syscalls</code> event could be used as part of a broader system integrity monitoring solution. For example, a security engineer could use it to raise alerts or run further investigations if unexpected syscall hooking activities are detected. This could aid in the early detection and mitigation of malware or rootkit infections.
 Example:</p>
-<p><code>tracee -f e=hooked_syscalls -f hooked_syscalls.args.check_syscalls=&lt;syscall&gt;,&lt;syscall&gt;,...</code></p>
+<div class="highlight"><pre><span></span><code><span class="go">tracee -e hooked_syscalls.args.check_syscalls=&lt;syscall&gt;,&lt;syscall&gt;,...`</span>
+</code></pre></div>
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
 <p>The <code>check_syscalls</code> argument is used as a parameter to specify the syscalls to be checked. This will change in the future to be an event parameter.</p>
 <h2 id="related-events">Related Events<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
@@ -14948,7 +14949,7 @@ Example:</p>
     <script id="__config" type="application/json">{"base": "../../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../../../assets/javascripts/workers/search.6c7302c4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../../../assets/javascripts/bundle.daf26eb8.min.js"></script>
+      <script src="../../../../../assets/javascripts/bundle.7c5c0157.min.js"></script>
       
     
   </body>
