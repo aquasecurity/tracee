@@ -39,6 +39,20 @@ func GetTraceeStringArgumentByName(event trace.Event, argName string) (string, e
 	return "", fmt.Errorf("can't convert argument %v to string", argName)
 }
 
+// GetTraceeBoolArgumentByName gets the argument matching the "argName" given from the event "argv" field, casted as bool.
+func GetTraceeBoolArgumentByName(event trace.Event, argName string) (bool, error) {
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return false, err
+	}
+	argBool, ok := arg.Value.(bool)
+	if ok {
+		return argBool, nil
+	}
+
+	return false, fmt.Errorf("can't convert argument %v to string", argName)
+}
+
 // GetTraceeIntArgumentByName gets the argument matching the "argName" given from the event "argv" field, casted as int.
 func GetTraceeIntArgumentByName(event trace.Event, argName string) (int, error) {
 	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
@@ -49,8 +63,30 @@ func GetTraceeIntArgumentByName(event trace.Event, argName string) (int, error) 
 	if ok {
 		return int(argInt), nil
 	}
+	argInt64, ok := arg.Value.(int64)
+	if ok {
+		return int(argInt64), nil
+	}
 
 	return 0, fmt.Errorf("can't convert argument %v to int", argName)
+}
+
+// GetTraceeUIntArgumentByName gets the argument matching the "argName" given from the event "argv" field, casted as uint.
+func GetTraceeUIntArgumentByName(event trace.Event, argName string) (uint, error) {
+	arg, err := GetTraceeArgumentByName(event, argName, GetArgOps{DefaultArgs: false})
+	if err != nil {
+		return 0, err
+	}
+	argUInt, ok := arg.Value.(uint32)
+	if ok {
+		return uint(argUInt), nil
+	}
+	argUInt64, ok := arg.Value.(uint64)
+	if ok {
+		return uint(argUInt64), nil
+	}
+
+	return 0, fmt.Errorf("can't convert argument %v to uint", argName)
 }
 
 // GetTraceeSliceStringArgumentByName gets the argument matching the "argName" given from the event "argv" field, casted as []string.
