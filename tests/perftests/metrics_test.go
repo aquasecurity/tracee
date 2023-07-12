@@ -3,13 +3,14 @@ package perftests
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
 
-	"github.com/aquasecurity/tracee/tests/testutils"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/tests/testutils"
 )
 
 var metrics = []string{
@@ -36,7 +37,7 @@ func checkIfMetricsExist(metrics []string) error {
 	defer resp.Body.Close()
 
 	// read response body
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("error reading response body:", err)
 		return err
@@ -68,7 +69,7 @@ func checkIfPprofExist() error {
 	defer resp.Body.Close()
 
 	// read response body
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("error reading response body:", err)
 		return err
@@ -104,7 +105,7 @@ func TestMetricsandPprofExist(t *testing.T) {
 	running := testutils.NewRunningTracee(context.Background(), cmd)
 
 	// start tracee
-	runErr, ready := running.Start()
+	ready, runErr := running.Start()
 	require.NoError(t, runErr)
 
 	t.Cleanup(func() {

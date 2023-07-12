@@ -20,9 +20,9 @@ const (
 )
 
 var (
-	TraceeBinary   string = "../../dist/tracee"
-	TraceeHostname string = "localhost"
-	TraceePort     int    = 3366
+	TraceeBinary   = "../../dist/tracee"
+	TraceeHostname = "localhost"
+	TraceePort     = 3366
 )
 
 type TraceeStatus int
@@ -63,7 +63,7 @@ func NewRunningTracee(givenCtx context.Context, cmdLine string) *RunningTracee {
 }
 
 // Start starts the tracee process.
-func (r *RunningTracee) Start() (error, <-chan TraceeStatus) {
+func (r *RunningTracee) Start() (<-chan TraceeStatus, error) {
 	var err error
 
 	imReady := func(s TraceeStatus) {
@@ -72,7 +72,7 @@ func (r *RunningTracee) Start() (error, <-chan TraceeStatus) {
 		}(s)
 	}
 
-	r.isReady = make(chan TraceeStatus, 0)
+	r.isReady = make(chan TraceeStatus)
 	now := time.Now()
 
 	if isTraceeAlreadyRunning() { // check if tracee is already running
@@ -100,7 +100,7 @@ func (r *RunningTracee) Start() (error, <-chan TraceeStatus) {
 	}
 
 exit:
-	return err, r.isReady
+	return r.isReady, err
 }
 
 // Stop stops the tracee process.
@@ -136,14 +136,10 @@ func (r *RunningTracee) IsReady() bool {
 	if err != nil {
 		return false
 	}
-	defer resp.Body.Close()
+	_ = resp.Body.Close()
 
 	// Only 200 is considered ready
-	if resp.StatusCode != 200 {
-		return false
-	}
-
-	return true
+	return resp.StatusCode == 200
 }
 
 // isTraceeAlreadyRunning checks if tracee is already running.
@@ -153,9 +149,6 @@ func isTraceeAlreadyRunning() bool {
 	cmd.Stdout = nil
 
 	err := cmd.Run()
-	if err != nil {
-		return false
-	}
 
-	return true
+	return err == nil
 }
