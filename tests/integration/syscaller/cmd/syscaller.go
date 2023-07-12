@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	testutils.SetCPUs()
+	testutils.PinProccessToCPU()
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
