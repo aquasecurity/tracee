@@ -58,7 +58,7 @@ func (p PolicyFile) Validate() error {
 
 func (p PolicyFile) validateDefaultActions() error {
 	if p.DefaultActions == nil || len(p.DefaultActions) == 0 {
-		return errfmt.Errorf("policy %s, default actions cannot be empty", p.Name)
+		return nil
 	}
 
 	return validateActions(p.Name, p.DefaultActions)
@@ -67,7 +67,7 @@ func (p PolicyFile) validateDefaultActions() error {
 func validateActions(policyName string, actions []string) error {
 	for _, action := range actions {
 		switch action {
-		case "log", "webhook", "forward": // supported actions
+		case "log", "print": // supported actions
 			continue
 		default:
 			return errfmt.Errorf("policy %s, action %s is not valid", policyName, action)

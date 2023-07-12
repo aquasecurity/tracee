@@ -153,18 +153,6 @@ func TestPolicyValidate(t *testing.T) {
 			expectedError: errors.New("policy.PolicyFile.validateRules: policy invalid_filter_operator, invalid filter operator: random"),
 		},
 		{
-			testName: "empty policy action",
-			policy: PolicyFile{
-				Name:        "empty_policy_action",
-				Description: "empty policy action",
-				Scope:       []string{"global"},
-				Rules: []Rule{
-					{Event: "write"},
-				},
-			},
-			expectedError: errors.New("policy.PolicyFile.validateDefaultActions: policy empty_policy_action, default actions cannot be empty"),
-		},
-		{
 			testName: "invalid policy action",
 			policy: PolicyFile{
 				Name:           "invalid_policy_action",

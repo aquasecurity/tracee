@@ -2,8 +2,6 @@ name: pid_equal
 description: traces read and write syscalls for pids 1000, and 2000
 scope: 
   - global
-defaultActions: 
-  - log
 rules:
   - event: read
     filters: 

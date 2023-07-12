@@ -11,8 +11,6 @@ name: overview policy
 description: sample overview policy
 scope:
   - global
-defaultActions: 
-  - log
 rules:
   - event: dropped_executable
   - event: security_file_open
@@ -34,7 +32,7 @@ This policy applies to any workload (global) and will log the dropped_executable
 
 3. A return value filter (retval) is set on the close event to log only failed close syscalls
 
-While specifying event filters is optional, policies must have the `name`, `description`, `scope`, `defaultAction`, and `rules` fields.
+While specifying event filters is optional, policies must have the `name`, `description`, `scope` and `rules` fields.
 
 !!! Note
     A current limitation is that only one rule can be defined per any event type in a policy

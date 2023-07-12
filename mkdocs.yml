@@ -506,7 +506,6 @@ nav:
           - Overview: docs/policies/index.md
           - Scopes: docs/policies/scopes.md
           - Rules: docs/policies/rules.md
-          - Actions: docs/policies/actions.md
       - Filters:
           - Filtering: docs/filters/filtering.md
       - Outputs:

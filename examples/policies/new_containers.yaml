@@ -2,8 +2,6 @@ name: new_containers
 description: traces events container_created and security_file_open only for new container
 scope: 
   - container=new
-defaultActions: 
-  - log
 rules:
   - event: container_create
   - event: security_file_open
