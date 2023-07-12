@@ -1557,7 +1557,7 @@ func runCmd(t *testing.T, cmd cmdEvents, actual *eventBuffer, useSyscaller, fail
 	if useSyscaller {
 		formatCmdEvents(&cmd)
 	}
-	pid, err = testutils.ExecCmd(cmd.runCmd, cmd.timeout)
+	pid, err = testutils.ExecPinnedCmdWithTimeout(cmd.runCmd, cmd.timeout)
 	require.NoError(t, err)
 
 	waitForTraceeOutputEvents(t, actual, time.Now(), len(cmd.evts), failOnTimeout)
@@ -1585,7 +1585,7 @@ func runCmds(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscal
 		if useSyscaller {
 			formatCmdEvents(&cmd)
 		}
-		pid, err = testutils.ExecCmd(cmd.runCmd, cmd.timeout)
+		pid, err = testutils.ExecPinnedCmdWithTimeout(cmd.runCmd, cmd.timeout)
 		require.NoError(t, err)
 
 		procs = append(procs, proc{pid, len(cmd.evts)})

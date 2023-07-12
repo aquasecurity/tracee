@@ -4,8 +4,8 @@ import "golang.org/x/sys/unix"
 
 const CPUForTests = 0 // CPU to pin test processes to
 
-// SetCPUs pins the current process to a specific CPU
-func SetCPUs(id ...int) {
+// PinProccessToCPU pins the current process to a specific CPU
+func PinProccessToCPU(id ...int) {
 	if len(id) == 0 {
 		id = append(id, CPUForTests)
 	}

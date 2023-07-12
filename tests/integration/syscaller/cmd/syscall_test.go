@@ -32,7 +32,7 @@ func Test_callsys(t *testing.T) {
 
 // Test_changeOwnComm tests the changeOwnComm function
 func Test_changeOwnComm(t *testing.T) {
-	testutils.SetCPUs()
+	testutils.PinProccessToCPU()
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
