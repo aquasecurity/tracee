@@ -325,14 +325,10 @@ func initConfig() {
 	}
 }
 
-func Execute() {
+func Execute() error {
 	if err := initCmd(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-		return
+		return err
 	}
 
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-		return
-	}
+	return rootCmd.Execute()
 }
