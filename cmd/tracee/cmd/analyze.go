@@ -27,25 +27,6 @@ import (
 func init() {
 	rootCmd.AddCommand(analyze)
 
-	hfFallback := rootCmd.HelpFunc()
-	// Override default help function to support help for flags.
-	// Since for commands the usage is tracee help <command>, for flags
-	// the usage is tracee --help <flag>.
-	// e.g. tracee analyze --help rego
-	//      tracee analyze -h rego
-	analyze.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		if len(args) > 2 && (args[1] == "--help" || args[1] == "-h") {
-			flagHelp := flags.GetHelpString(args[2], true)
-			if flagHelp != "" {
-				fmt.Fprintf(os.Stdout, "%s\n", flagHelp)
-				os.Exit(0)
-			}
-		}
-
-		// If flag help was not found, fallback to default help function
-		hfFallback(cmd, args)
-	})
-
 	// flags
 
 	// events
