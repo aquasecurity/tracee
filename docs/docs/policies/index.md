@@ -1,6 +1,9 @@
 In this section you can find the reference documentation for Tracee's policies.
 
-A policy is a yaml document where you can specify a scope and associate it with a set of rules. A scope defines the workloads to which the policy applies. A rule defines events to be matched and actions to take on them.
+Policies are YAML manifests that allow you to define how Tracee should respond to different events. This is done through rules in the policy. A rule takes in one or several events. Additionally, events can be filtered to specific resources. If Tracee detects the event, it will respond with an action. 
+The default action for Tracee is to log the detected events.
+
+Lastly, policies require a scope. The scope details which resources the policy applies to. 
 
 You can load multiple (up to 64) policies into Tracee using the --policy flag providing a path to the policy file.
 
