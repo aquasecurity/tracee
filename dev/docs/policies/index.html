@@ -13574,32 +13574,6 @@
 
               
             
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="actions/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    Actions
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -14738,8 +14712,6 @@
 <span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sample overview policy</span>
 <span class="nt">scope</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
-<span class="nt">defaultActions</span><span class="p">:</span><span class="w"> </span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log</span>
 <span class="nt">rules</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dropped_executable</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">security_file_open</span>
@@ -14764,7 +14736,7 @@
 <p>A return value filter (retval) is set on the close event to log only failed close syscalls</p>
 </li>
 </ol>
-<p>While specifying event filters is optional, policies must have the <code>name</code>, <code>description</code>, <code>scope</code>, <code>defaultAction</code>, and <code>rules</code> fields.</p>
+<p>While specifying event filters is optional, policies must have the <code>name</code>, <code>description</code>, <code>scope</code> and <code>rules</code> fields.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>A current limitation is that only one rule can be defined per any event type in a policy</p>
