@@ -1,6 +1,5 @@
 # Documentation
 
-The full documentation of Tracee-Rules is available at
-[https://aquasecurity.github.io/tracee/dev/docs/detecting/](https://aquasecurity.github.io/tracee/dev/docs/detecting/).
-You can use the version selector on top to view documentation for a specific
-version of Tracee.
+**Important**
+Tracee has no a new design.
+For more details, please take a look at the up-to-date [documentation.](https://aquasecurity.github.io/tracee/latest)
