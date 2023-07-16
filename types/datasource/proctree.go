@@ -1,4 +1,4 @@
-package proctree
+package datasource
 
 import "time"
 
@@ -11,7 +11,7 @@ type ProcessInfo struct {
 	ContainerId       string
 	Cmd               []string
 	ExecutionBinary   FileInfo
-	StartTime         time.Time // First thread fork time. TODO: Can we use the mian thread start time instead?
+	StartTime         time.Time // First thread fork time. TODO: Can we use the main thread start time instead?
 	ExecTime          time.Time // Last execve call time
 	ExitTime          time.Time
 	ThreadsIds        []int
@@ -47,5 +47,27 @@ type NamespacesIds struct {
 
 // ProcessLineage is a representation of a process and its ancestors until the oldest ancestor
 // known in the tree.
-// The lineage is only relevant for the container the process reside in.
+// The lineage is only relevant for the container the process resides in.
 type ProcessLineage []ProcessInfo
+
+// ProcKey is a key to the process tree data source, which will result receiving ProcessInfo in the
+// response for the matching process in the given time.
+type ProcKey struct {
+	Pid  int
+	Time time.Time
+}
+
+// ThreadKey is a key to the process tree data source, which will result receiving ThreadInfo in the
+// response for the matching thread in the given time.
+type ThreadKey struct {
+	Tid  int
+	Time time.Time
+}
+
+// LineageKey is a key to the process tree data source, which will result receiving ProcessLineage in the
+// response for the matching process in the given time, up to the max depth given of ancestors.
+type LineageKey struct {
+	Pid      int
+	Time     time.Time
+	MaxDepth int
+}

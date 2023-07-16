@@ -48,6 +48,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils/types"
+	"github.com/aquasecurity/tracee/types/datasource"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -155,19 +156,19 @@ func NewProcessTree(config ProcessTreeConfig) (*ProcessTree, error) {
 }
 
 // GetProcessInfo return the process information from the process tree relevant to the given time
-func (tree *ProcessTree) GetProcessInfo(hostProcessID int, queryTime time.Time) (ProcessInfo, error) {
+func (tree *ProcessTree) GetProcessInfo(hostProcessID int, queryTime time.Time) (datasource.ProcessInfo, error) {
 	pn, err := tree.getProcess(hostProcessID)
 	if err != nil {
-		return ProcessInfo{}, err
+		return datasource.ProcessInfo{}, err
 	}
 	return pn.export(queryTime), nil
 }
 
 // GetThreadInfo return the thread information from the process tree relevant to the given time
-func (tree *ProcessTree) GetThreadInfo(hostThreadId int, queryTime time.Time) (ThreadInfo, error) {
+func (tree *ProcessTree) GetThreadInfo(hostThreadId int, queryTime time.Time) (datasource.ThreadInfo, error) {
 	tn, err := tree.getThread(hostThreadId)
 	if err != nil {
-		return ThreadInfo{}, err
+		return datasource.ThreadInfo{}, err
 	}
 	return tn.export(queryTime), nil
 }
@@ -178,12 +179,12 @@ func (tree *ProcessTree) GetThreadInfo(hostThreadId int, queryTime time.Time) (T
 // The information of the process with given PID is relevant to the given time, and the ancestors
 // information are each relevant to their lineage child fork time. This should help to provide
 // information regarding the lineage which is relevant to given process.
-func (tree *ProcessTree) GetProcessLineage(hostProcessID int, queryTime time.Time, maxDepth int) (ProcessLineage, error) {
+func (tree *ProcessTree) GetProcessLineage(hostProcessID int, queryTime time.Time, maxDepth int) (datasource.ProcessLineage, error) {
 	pList, err := tree.getProcessLineage(hostProcessID, maxDepth)
 	if err != nil {
 		return nil, err
 	}
-	lineage := make(ProcessLineage, len(pList))
+	lineage := make(datasource.ProcessLineage, len(pList))
 	relevantTime := queryTime
 	for i, p := range pList {
 		lineage[i] = p.export(relevantTime)

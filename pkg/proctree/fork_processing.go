@@ -93,9 +93,9 @@ func (tree *ProcessTree) addForkThread(event *trace.Event, newInHostIds taskIds,
 	newThread.setGeneralInfoOnceUnprotected(
 		newInNsIds.Tid,
 		event.ProcessName,
-		NamespacesIds{
-			Pid:   event.PIDNS,
-			Mount: event.MountNS,
+		namespacesIds{
+			pid:   event.PIDNS,
+			mount: event.MountNS,
 		},
 		processExitTime,
 	)

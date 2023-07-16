@@ -6,6 +6,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -22,6 +23,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 	source := engine.EventSources{Tracee: engineInput}
 
 	t.config.EngineConfig.DataSources = append(t.config.EngineConfig.DataSources, containers.NewDataSource(t.containers))
+	t.config.EngineConfig.DataSources = append(t.config.EngineConfig.DataSources, proctree.NewDataSource(t.processTree))
 
 	sigEngine, err := engine.NewEngine(t.config.EngineConfig, source, engineOutput)
 	if err != nil {

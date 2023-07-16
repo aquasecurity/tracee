@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/utils/types"
+	"github.com/aquasecurity/tracee/types/datasource"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -21,10 +22,16 @@ type threadNode struct {
 	name         *types.TimeSeries[string]
 	forkTime     time.Time
 	exitTime     time.Time
-	namespaces   NamespacesIds
+	namespaces   namespacesIds
 	process      *processNode
 	mutex        sync.RWMutex // Protection on all accesses to the thread, except for TID reading
 	genInfoLock  sync.Once
+}
+
+type namespacesIds struct {
+	// TODO: Support all namespaces
+	pid   int
+	mount int
 }
 
 // newThreadNode creates a new threadNode instance, with initialized values where needed.
@@ -39,19 +46,25 @@ func newThreadNode(tid int) (*threadNode, error) {
 }
 
 // export create a shallow copy of the node's info which is relevant to the given time
-func (t *threadNode) export(queryTime time.Time) ThreadInfo {
+func (t *threadNode) export(queryTime time.Time) datasource.ThreadInfo {
 	t.mutex.RLock()
 	defer t.mutex.RUnlock()
 
 	process := t.getProcess()
 
-	return ThreadInfo{
+	namespaces := t.getNamespaces()
+	exportNamespaces := datasource.NamespacesIds{
+		Pid:   namespaces.pid,
+		Mount: namespaces.mount,
+	}
+
+	return datasource.ThreadInfo{
 		Tid:        t.getTid(),
 		NsTid:      t.getNsTid(),
 		Pid:        process.getPid(),
 		ForkTime:   t.getForkTime(),
 		ExitTime:   t.getExitTime(),
-		Namespaces: t.getNamespaces(),
+		Namespaces: exportNamespaces,
 		Name:       t.getName(queryTime),
 		IsAlive:    t.isAlive(queryTime),
 	}
@@ -101,9 +114,9 @@ func (t *threadNode) setGeneralInfoFromEventOnce(
 			t.fillGeneralInfo(
 				event.ThreadID,
 				event.ProcessName,
-				NamespacesIds{
-					Pid:   event.PIDNS,
-					Mount: event.MountNS,
+				namespacesIds{
+					pid:   event.PIDNS,
+					mount: event.MountNS,
 				},
 				defaultExitTime,
 			)
@@ -119,7 +132,7 @@ func (t *threadNode) setGeneralInfoFromEventOnce(
 func (t *threadNode) setGeneralInfoOnceUnprotected(
 	nsTid int,
 	name string,
-	namespaces NamespacesIds,
+	namespaces namespacesIds,
 	defaultExitTime time.Time,
 ) {
 	t.genInfoLock.Do(
@@ -140,7 +153,7 @@ func (t *threadNode) setGeneralInfoOnceUnprotected(
 func (t *threadNode) fillGeneralInfo(
 	nsTid int,
 	name string,
-	namespaces NamespacesIds,
+	namespaces namespacesIds,
 	defaultExitTime time.Time,
 ) {
 	t.setNsTid(nsTid)
@@ -224,12 +237,12 @@ func (t *threadNode) setDefaultName(name string) {
 }
 
 // getNamespaces return all the namespaces of the threads.
-func (t *threadNode) getNamespaces() NamespacesIds {
+func (t *threadNode) getNamespaces() namespacesIds {
 	return t.namespaces
 }
 
 // setNamespaces set the thread's namespaces
-func (t *threadNode) setNamespaces(namespaces NamespacesIds) {
+func (t *threadNode) setNamespaces(namespaces namespacesIds) {
 	t.namespaces = namespaces
 }
 

@@ -7,6 +7,7 @@ import (
 	"golang.org/x/exp/maps"
 
 	"github.com/aquasecurity/tracee/pkg/utils/types"
+	"github.com/aquasecurity/tracee/types/datasource"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -66,7 +67,7 @@ func newProcessNode(pid int) (*processNode, error) {
 }
 
 // export create a shallow copy of the node's info which is relevant to the given time
-func (p *processNode) export(quertTime time.Time) ProcessInfo {
+func (p *processNode) export(quertTime time.Time) datasource.ProcessInfo {
 	var childrenIds []int
 	var threadIds []int
 	p.mutex.RLock()
@@ -94,7 +95,7 @@ func (p *processNode) export(quertTime time.Time) ProcessInfo {
 	}
 
 	execInfo := p.getExecInfo(quertTime)
-	execBinary := FileInfo{
+	execBinary := datasource.FileInfo{
 		Path:   execInfo.ExecutionBinary.path,
 		Hash:   execInfo.ExecutionBinary.hash,
 		Inode:  execInfo.ExecutionBinary.inode,
@@ -102,7 +103,7 @@ func (p *processNode) export(quertTime time.Time) ProcessInfo {
 		Ctime:  execInfo.ExecutionBinary.ctime,
 	}
 
-	return ProcessInfo{
+	return datasource.ProcessInfo{
 		Pid:               p.getPid(),
 		NsPid:             p.getNsPid(),
 		Ppid:              parentId,
