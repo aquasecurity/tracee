@@ -33,6 +33,7 @@ type Config struct {
 	ContainersEnrich   bool
 	EngineConfig       engine.Config
 	MetricsEnabled     bool
+	ProcessTree        bool
 }
 
 // Validate does static validation of the configuration

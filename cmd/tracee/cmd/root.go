@@ -144,6 +144,16 @@ func initCmd() error {
 		return errfmt.WrapError(err)
 	}
 
+	rootCmd.Flags().Bool(
+		"process-tree",
+		false,
+		"Enable process tree building as part of the pipeline. This feature is experimental and may cause unexpected behavior in the pipeline",
+	)
+	err = viper.BindPFlag("process-tree", rootCmd.Flags().Lookup("process-tree"))
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
 	rootCmd.Flags().StringArray(
 		"crs",
 		[]string{},

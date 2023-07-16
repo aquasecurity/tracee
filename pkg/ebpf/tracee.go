@@ -41,6 +41,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/pkg/policy"
+	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
@@ -120,6 +121,7 @@ type Tracee struct {
 	// Specific Events Needs
 	triggerContexts trigger.Context
 	readyCallback   func(gocontext.Context)
+	processTree     *proctree.ProcessTree
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -222,6 +224,14 @@ func New(cfg config.Config) (*Tracee, error) {
 		eventSignatures: make(map[events.ID]bool),
 	}
 
+	// Events required by configuration
+
+	if t.config.ProcessTree {
+		t.events[events.SchedProcessExec] = eventConfig{submit: 0xFFFFFFFFFFFFFFFF}
+		t.events[events.SchedProcessExit] = eventConfig{submit: 0xFFFFFFFFFFFFFFFF}
+		t.events[events.SchedProcessFork] = eventConfig{submit: 0xFFFFFFFFFFFFFFFF}
+	}
+
 	// Initialize capabilities rings soon
 
 	err = capabilities.Initialize(t.config.Capabilities.BypassCaps)
@@ -276,6 +286,21 @@ func New(cfg config.Config) (*Tracee, error) {
 			if err != nil {
 				return t, errfmt.WrapError(err)
 			}
+		}
+	}
+
+	// Configure a new process tree to track processes and threads in the system using pipeline
+	// events if using process tree was configured by the user
+	if t.config.ProcessTree {
+		t.processTree, err = proctree.NewProcessTree(
+			proctree.ProcessTreeConfig{
+				MaxProcesses:   32768,
+				MaxThreads:     32768,
+				MaxCacheDelete: 100,
+			},
+		)
+		if err != nil {
+			return t, errfmt.WrapError(err)
 		}
 	}
 

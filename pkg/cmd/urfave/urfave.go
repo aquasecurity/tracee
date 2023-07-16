@@ -24,6 +24,7 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 		PerfBufferSize:     c.Int("perf-buffer-size"),
 		BlobPerfBufferSize: c.Int("blob-perf-buffer-size"),
 		ContainersEnrich:   c.Bool("containers"),
+		ProcessTree:        c.Bool("proces-tree"),
 	}
 
 	// Output command line flags

@@ -141,6 +141,10 @@ func main() {
 				Name:  "containers",
 				Usage: "enable container info enrichment to events. this feature is experimental and may cause unexpected behavior in the pipeline",
 			},
+			&cli.BoolFlag{
+				Name:  "process-tree",
+				Usage: "enable process tree building as part of the pipeline. This feature is experimental and may cause unexpected behavior in the pipeline",
+			},
 			&cli.StringSliceFlag{
 				Name:  "log",
 				Usage: "logger option. run '--log help' for more info.",

@@ -106,6 +106,11 @@ func (t *Tracee) registerEventProcessors() {
 	t.RegisterEventProcessor(events.SecurityPostReadFile, processKernelReadFile)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processPrintMemDump)
+	if t.config.ProcessTree {
+		t.RegisterEventProcessor(events.SchedProcessExec, t.processTree.ProcessExecEvent)
+		t.RegisterEventProcessor(events.SchedProcessFork, t.processTree.ProcessForkEvent)
+		t.RegisterEventProcessor(events.SchedProcessExit, t.processTree.ProcessExitEvent)
+	}
 }
 
 // convertArgMonotonicToEpochTime change time from monotonic relative time to time since epoch.

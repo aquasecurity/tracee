@@ -65,6 +65,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		PerfBufferSize:     viper.GetInt("perf-buffer-size"),
 		BlobPerfBufferSize: viper.GetInt("blob-perf-buffer-size"),
 		ContainersEnrich:   viper.GetBool("containers"),
+		ProcessTree:        viper.GetBool("process-tree"),
 	}
 
 	// OS release information
