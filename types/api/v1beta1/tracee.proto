@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+option go_package = "github.co/aquasecurity/tracee/api/v1beta1";
+
+package tracee.v1beta1;
+
+message EventDefinition {
+    string name = 1;
+    repeated string sets = 2;
+    repeated string arguments = 3;
+    // TODO: perhaps metadata should be part of the definition
+}
+
+message ListEventDefinitionRequest {
+    // TODO: Allow filtering
+}
+
+message ListEventDefinitionResponse {
+    repeated EventDefinition events = 1;
+}
+
+service Tracee {
+    rpc ListEventDefinitions(ListEventDefinitionRequest) returns (ListEventDefinitionResponse) {}
+}

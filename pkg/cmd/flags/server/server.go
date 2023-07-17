@@ -3,15 +3,16 @@ package server
 import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/server"
+	"github.com/aquasecurity/tracee/pkg/server/http"
 )
 
 const (
-	MetricsEndpointFlag = "metrics"
-	HealthzEndpointFlag = "healthz"
-	PProfEndpointFlag   = "pprof"
-	ListenEndpointFlag  = "listen-addr"
-	PyroscopeAgentFlag  = "pyroscope"
+	MetricsEndpointFlag    = "metrics"
+	HealthzEndpointFlag    = "healthz"
+	PProfEndpointFlag      = "pprof"
+	HTTPListenEndpointFlag = "http-listen-addr"
+	GRPCListenEndpointFlag = "grpc-listen-addr"
+	PyroscopeAgentFlag     = "pyroscope"
 )
 
 // TODO: this should be extract to be under 'pkg/cmd/flags' once we remove the binary tracee-rules.
@@ -20,13 +21,13 @@ const (
 // 'pkf/cmd/flags' directly libbpfgo becomes a dependency and we need to compile it with
 // tracee-rules.
 
-func PrepareServer(listenAddr string, metrics, healthz, pprof, pyro bool) (*server.Server, error) {
+func PrepareHTTPServer(listenAddr string, metrics, healthz, pprof, pyro bool) (*http.Server, error) {
 	if len(listenAddr) == 0 {
-		return nil, errfmt.Errorf("listen address cannot be empty")
+		return nil, errfmt.Errorf("http listen address cannot be empty")
 	}
 
 	if metrics || healthz || pprof {
-		httpServer := server.New(listenAddr)
+		httpServer := http.New(listenAddr)
 
 		if metrics {
 			logger.Debugw("Enabling metrics endpoint")

@@ -36,6 +36,7 @@ CMD_STATICCHECK ?= staticcheck
 CMD_STRIP ?= llvm-strip
 CMD_TOUCH ?= touch
 CMD_TR ?= tr
+CMD_PROTOC ?= protoc
 
 .check_%:
 #
@@ -165,6 +166,7 @@ env:
 	@echo "CMD_STRIP                $(CMD_STRIP)"
 	@echo "CMD_TOUCH                $(CMD_TOUCH)"
 	@echo "CMD_TR                   $(CMD_TR)"
+	@echo "CMD_PROTOC               $(CMD_PROTOC)"
 	@echo ---------------------------------------
 	@echo "LIB_ELF                  $(LIB_ELF)"
 	@echo "LIB_ZLIB                 $(LIB_ZLIB)"
@@ -226,6 +228,8 @@ env:
 	@echo "E2E_NET_SRC              $(E2E_NET_SRC)"
 	@echo "E2E_INST_DIR             $(E2E_INST_DIR)"
 	@echo "E2E_INST_SRC             $(E2E_INST_SRC)"
+	@echo ---------------------------------------
+	@echo "TRACE_PROTO              $(TRACEE_PROTO)"
 	@echo ---------------------------------------
 
 #
@@ -392,6 +396,8 @@ GO_ENV_EBPF += CC=$(CMD_CLANG)
 GO_ENV_EBPF += GOARCH=$(GO_ARCH)
 GO_ENV_EBPF += CGO_CFLAGS=$(CUSTOM_CGO_CFLAGS)
 GO_ENV_EBPF += CGO_LDFLAGS=$(CUSTOM_CGO_LDFLAGS)
+
+TRACEE_PROTO = ./types/api/v1beta1/tracee.proto
 
 #
 # btfhub (expensive: only run if ebpf obj changed)
@@ -902,3 +908,16 @@ clean:
 	$(CMD_RM) -f .*.md5
 	$(CMD_RM) -f .check*
 	$(CMD_RM) -f .*-pkgs*
+
+#
+# tracee.proto
+#
+
+.PHONY: protoc
+protoc:
+#
+	$(CMD_PROTOC) \
+		--go_out=. \
+		--go_opt=paths=source_relative \
+		--go-grpc_out=. \
+		--go-grpc_opt=paths=source_relative $(TRACEE_PROTO)

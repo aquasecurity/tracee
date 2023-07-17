@@ -163,8 +163,8 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	cfg.ChanEvents = make(chan trace.Event, 1000)
 
-	httpServer, err := server.PrepareServer(
-		c.String(server.ListenEndpointFlag),
+	httpServer, err := server.PrepareHTTPServer(
+		c.String(server.HTTPListenEndpointFlag),
 		c.Bool(server.MetricsEndpointFlag),
 		c.Bool(server.HealthzEndpointFlag),
 		c.Bool(server.PProfEndpointFlag),
@@ -175,7 +175,7 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
-	runner.Server = httpServer
+	runner.HTTPServer = httpServer
 	runner.TraceeConfig = cfg
 	runner.Printer = broadcast
 
