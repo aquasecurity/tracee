@@ -216,19 +216,24 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Prepare the server
 
-	httpServer, err := server.PrepareServer(
-		viper.GetString(server.ListenEndpointFlag),
+	httpServer, err := server.PrepareHTTPServer(
+		viper.GetString(server.HTTPListenEndpointFlag),
 		viper.GetBool(server.MetricsEndpointFlag),
 		viper.GetBool(server.HealthzEndpointFlag),
 		viper.GetBool(server.PProfEndpointFlag),
 		viper.GetBool(server.PyroscopeAgentFlag),
 	)
-
 	if err != nil {
 		return runner, err
 	}
 
-	runner.Server = httpServer
+	grpcServer, err := flags.PrepareGRPCServer(viper.GetString(server.GRPCListenEndpointFlag))
+	if err != nil {
+		return runner, err
+	}
+
+	runner.HTTPServer = httpServer
+	runner.GRPCServer = grpcServer
 	runner.TraceeConfig = cfg
 	runner.Printer = p
 

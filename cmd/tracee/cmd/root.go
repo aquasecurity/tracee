@@ -16,6 +16,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/version"
 )
 
 var (
@@ -50,7 +51,7 @@ access to hundreds of events that help you understand how your system behaves.`,
 			logger.Init(logger.NewDefaultLoggingConfig())
 			initialize.SetLibbpfgoCallbacks()
 
-			runner, err := cmdcobra.GetTraceeRunner(cmd, version)
+			runner, err := cmdcobra.GetTraceeRunner(cmd, version.GetVersion())
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 				os.Exit(1)
@@ -255,11 +256,21 @@ func initCmd() error {
 	}
 
 	rootCmd.Flags().String(
-		server.ListenEndpointFlag,
+		server.HTTPListenEndpointFlag,
 		":3366",
 		"<url:port>\t\t\t\tListening address of the metrics endpoint server",
 	)
-	err = viper.BindPFlag(server.ListenEndpointFlag, rootCmd.Flags().Lookup(server.ListenEndpointFlag))
+	err = viper.BindPFlag(server.HTTPListenEndpointFlag, rootCmd.Flags().Lookup(server.HTTPListenEndpointFlag))
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	rootCmd.Flags().String(
+		server.GRPCListenEndpointFlag,
+		"", // disabled by default
+		"<protocol:addr>\t\t\tListening address of the grpc server eg: tcp:4466, unix:/tmp/tracee.sock (default: disabled)",
+	)
+	err = viper.BindPFlag(server.GRPCListenEndpointFlag, rootCmd.Flags().Lookup(server.GRPCListenEndpointFlag))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
