@@ -11,14 +11,16 @@ import (
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/server"
+	"github.com/aquasecurity/tracee/pkg/server/grpc"
+	"github.com/aquasecurity/tracee/pkg/server/http"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 type Runner struct {
 	TraceeConfig config.Config
 	Printer      printer.EventPrinter
-	Server       *server.Server
+	HTTPServer   *http.Server
+	GRPCServer   *grpc.Server
 }
 
 func (r Runner) Run(ctx context.Context) error {
@@ -30,20 +32,23 @@ func (r Runner) Run(ctx context.Context) error {
 	}
 
 	// Readiness Callback: Tracee is ready to receive events
-
 	t.AddReadyCallback(
 		func(ctx context.Context) {
 			logger.Debugw("Tracee is ready callback")
-			if r.Server == nil {
-				return
-			}
-			if r.Server.MetricsEndpointEnabled() {
-				r.TraceeConfig.MetricsEnabled = true // TODO: is this needed ?
-				if err := t.Stats().RegisterPrometheus(); err != nil {
-					logger.Errorw("Registering prometheus metrics", "error", err)
+			if r.HTTPServer != nil {
+				if r.HTTPServer.MetricsEndpointEnabled() {
+					r.TraceeConfig.MetricsEnabled = true // TODO: is this needed ?
+					if err := t.Stats().RegisterPrometheus(); err != nil {
+						logger.Errorw("Registering prometheus metrics", "error", err)
+					}
 				}
+				go r.HTTPServer.Start(ctx)
 			}
-			go r.Server.Start(ctx)
+
+			// start server if one is configured
+			if r.GRPCServer != nil {
+				go r.GRPCServer.Start(ctx)
+			}
 		},
 	)
 

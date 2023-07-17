@@ -133,7 +133,7 @@ func main() {
 				Value: false,
 			},
 			&cli.StringFlag{
-				Name:  server.ListenEndpointFlag,
+				Name:  server.HTTPListenEndpointFlag,
 				Usage: "listening address of the metrics endpoint server",
 				Value: ":3366",
 			},
