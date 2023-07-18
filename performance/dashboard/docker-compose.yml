@@ -59,8 +59,6 @@ services:
     volumes:
       - ./provisioning:/etc/grafana/provisioning
     environment:
-      - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=pyroscope
-      - GF_INSTALL_PLUGINS=https://github.com/pyroscope-io/grafana-panel-plugin/releases/download/v1.1.0/pyroscope-panel-1.1.0.zip;pyroscope-panel,https://github.com/pyroscope-io/grafana-datasource-plugin/releases/download/v1.1.0/pyroscope-datasource-1.1.0.zip;pyroscope-datasource
       - GF_SECURITY_ALLOW_EMBEDDING=true
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_NAME=Main Org.
