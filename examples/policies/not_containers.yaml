@@ -1,6 +1,11 @@
-name: not_containers
-description: traces anti_debugging in the host
-scope: 
-  - "!container"
-rules:
-  - event: anti_debugging
+apiVersion: aquasecurity.github.io/v1beta1
+kind: TraceePolicy
+metadata:
+  name: not_containers
+  annotations:
+    description: traces anti_debugging in the host
+spec:
+  scope: 
+    - "!container"
+  rules:
+    - event: anti_debugging

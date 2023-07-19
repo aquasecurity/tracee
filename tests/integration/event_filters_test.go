@@ -17,6 +17,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/policy"
+	"github.com/aquasecurity/tracee/pkg/policy/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/tests/testutils"
@@ -40,21 +41,24 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 1,
-					policyFile: policy.PolicyFile{
-						Name:        "container_event",
-						Description: "policy for new containers",
-						Scope: []string{
-							"container=new",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "container_event",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "-container_create",
-								Filters: []string{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"container=new",
 							},
-							{
-								Event:   "-container_remove",
-								Filters: []string{},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "-container_create",
+									Filters: []string{},
+								},
+								{
+									Event:   "-container_remove",
+									Filters: []string{},
+								},
 							},
 						},
 					},
@@ -78,21 +82,24 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 1,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_event",
-						Description: "policy for ping command",
-						Scope: []string{
-							"comm=ping",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_event",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "sched_process_exec",
-								Filters: []string{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=ping",
 							},
-							{
-								Event:   "sched_process_exit",
-								Filters: []string{},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "sched_process_exec",
+									Filters: []string{},
+								},
+								{
+									Event:   "sched_process_exit",
+									Filters: []string{},
+								},
 							},
 						},
 					},
@@ -117,17 +124,20 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 5,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_event",
-						Description: "policy for ping command",
-						Scope: []string{
-							"comm=ping",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_event",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "net_packet_icmp",
-								Filters: []string{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=ping",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "net_packet_icmp",
+									Filters: []string{},
+								},
 							},
 						},
 					},
@@ -152,18 +162,21 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 42,
-					policyFile: policy.PolicyFile{
-						Name:        "event_args",
-						Description: "policy with args pathname finishing with 'ls'",
-						Scope: []string{
-							"global",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "event_args",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event: "execve",
-								Filters: []string{
-									"args.pathname=*ls",
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"global",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event: "execve",
+									Filters: []string{
+										"args.pathname=*ls",
+									},
 								},
 							},
 						},
@@ -189,18 +202,21 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 42,
-					policyFile: policy.PolicyFile{
-						Name:        "event_args",
-						Description: "policy with args pathname starting with * wildcard",
-						Scope: []string{
-							"global",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "event_args",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event: "execve",
-								Filters: []string{
-									"args.pathname=*/almost/improbable/path", // no event expected
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"global",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event: "execve",
+									Filters: []string{
+										"args.pathname=*/almost/improbable/path", // no event expected
+									},
 								},
 							},
 						},
@@ -221,18 +237,21 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 42,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_event_args",
-						Description: "policy with args pathname for ls command",
-						Scope: []string{
-							"comm=ls",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_event_args",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event: "security_file_open",
-								Filters: []string{
-									"args.pathname=*integration",
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=ls",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event: "security_file_open",
+									Filters: []string{
+										"args.pathname=*integration",
+									},
 								},
 							},
 						},
@@ -257,34 +276,40 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 4,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_event_4",
-						Description: "ls policy",
-						Scope: []string{
-							"comm=ls",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_event_4",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "sched_process_exit",
-								Filters: []string{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=ls",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "sched_process_exit",
+									Filters: []string{},
+								},
 							},
 						},
 					},
 				},
 				{
 					id: 2,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_event_2",
-						Description: "uname policy",
-						Scope: []string{
-							"comm=uname",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_event_2",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "sched_process_exit",
-								Filters: []string{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=uname",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "sched_process_exit",
+									Filters: []string{},
+								},
 							},
 						},
 					},
@@ -314,34 +339,40 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 1,
-					policyFile: policy.PolicyFile{
-						Name:        "bin_event_1",
-						Description: "who policy",
-						Scope: []string{
-							"bin=/usr/bin/who",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "bin_event_1",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "sched_process_exec",
-								Filters: []string{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"bin=/usr/bin/who",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "sched_process_exec",
+									Filters: []string{},
+								},
 							},
 						},
 					},
 				},
 				{
 					id: 2,
-					policyFile: policy.PolicyFile{
-						Name:        "bin_event_2",
-						Description: "uname policy",
-						Scope: []string{
-							"bin=/usr/bin/uname",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "bin_event_2",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "sched_process_exec",
-								Filters: []string{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"bin=/usr/bin/uname",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "sched_process_exec",
+									Filters: []string{},
+								},
 							},
 						},
 					},
@@ -373,18 +404,21 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 1,
-					policyFile: policy.PolicyFile{
-						Name:        "pid_0_event_args",
-						Description: "trace event sched_switch with args from pid 0",
-						Scope: []string{
-							"pid=0",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "pid_0_event_args",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event: "sched_switch",
-								Filters: []string{
-									"args.next_comm=systemd,init",
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"pid=0",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event: "sched_switch",
+									Filters: []string{
+										"args.next_comm=systemd,init",
+									},
 								},
 							},
 						},
@@ -410,14 +444,17 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 1,
-					policyFile: policy.PolicyFile{
-						Name:        "pid_1",
-						Description: "trace events from pid 1",
-						Scope: []string{
-							"pid=1",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "pid_1",
 						},
-						DefaultActions: []string{"log"},
-						Rules:          []policy.Rule{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"pid=1",
+							},
+							DefaultActions: []string{"log"},
+							Rules:          []v1beta1.Rule{},
+						},
 					},
 				},
 			},
@@ -440,15 +477,18 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 1,
-					policyFile: policy.PolicyFile{
-						Name:        "uid_0_comm",
-						Description: "trace uid 0 from ls command",
-						Scope: []string{
-							"uid=0",
-							"comm=ls",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "uid_0_comm",
 						},
-						DefaultActions: []string{"log"},
-						Rules:          []policy.Rule{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"uid=0",
+								"comm=ls",
+							},
+							DefaultActions: []string{"log"},
+							Rules:          []v1beta1.Rule{},
+						},
 					},
 				},
 			},
@@ -470,15 +510,18 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 1,
-					policyFile: policy.PolicyFile{
-						Name:        "uid_0_comm",
-						Description: "trace only uid>0 from ls command (should be empty)",
-						Scope: []string{
-							"uid>0",
-							"comm=ls",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "uid_0_comm",
 						},
-						DefaultActions: []string{"log"},
-						Rules:          []policy.Rule{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"uid>0",
+								"comm=ls",
+							},
+							DefaultActions: []string{"log"},
+							Rules:          []v1beta1.Rule{},
+						},
 					},
 				},
 			},
@@ -498,17 +541,20 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 1,
-					policyFile: policy.PolicyFile{
-						Name:        "event_fs",
-						Description: "trace filesystem events from ls command",
-						Scope: []string{
-							"comm=ls",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "event_fs",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "fs", // fs set
-								Filters: []string{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=ls",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "fs", // fs set
+									Filters: []string{},
+								},
 							},
 						},
 					},
@@ -532,17 +578,20 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 1,
-					policyFile: policy.PolicyFile{
-						Name:        "bin_event",
-						Description: "trace only setns events from \"/usr/bin/dockerd\" binary",
-						Scope: []string{
-							"bin=/usr/bin/dockerd",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "bin_event",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "setns",
-								Filters: []string{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"bin=/usr/bin/dockerd",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "setns",
+									Filters: []string{},
+								},
 							},
 						},
 					},
@@ -567,15 +616,18 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 1,
-					policyFile: policy.PolicyFile{
-						Name:        "pid_new",
-						Description: "trace new pids (should be empty)",
-						Scope: []string{
-							"pid=new",
-							"pid=1",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "pid_new",
 						},
-						DefaultActions: []string{"log"},
-						Rules:          []policy.Rule{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"pid=new",
+								"pid=1",
+							},
+							DefaultActions: []string{"log"},
+							Rules:          []v1beta1.Rule{},
+						},
 					},
 				},
 			},
@@ -595,14 +647,17 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 64,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_64",
-						Description: "policy for ls command",
-						Scope: []string{
-							"comm=ls",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_64",
 						},
-						DefaultActions: []string{"log"},
-						Rules:          []policy.Rule{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=ls",
+							},
+							DefaultActions: []string{"log"},
+							Rules:          []v1beta1.Rule{},
+						},
 					},
 				},
 			},
@@ -624,27 +679,33 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 64,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_64",
-						Description: "policy for ls command",
-						Scope: []string{
-							"comm=ls",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_64",
 						},
-						DefaultActions: []string{"log"},
-						Rules:          []policy.Rule{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=ls",
+							},
+							DefaultActions: []string{"log"},
+							Rules:          []v1beta1.Rule{},
+						},
 					},
 				},
 				{
 					// no events expected
 					id: 42,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_42",
-						Description: "policy from who command",
-						Scope: []string{
-							"comm=who",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_42",
 						},
-						DefaultActions: []string{"log"},
-						Rules:          []policy.Rule{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=who",
+							},
+							DefaultActions: []string{"log"},
+							Rules:          []v1beta1.Rule{},
+						},
 					},
 				},
 			},
@@ -666,26 +727,32 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 64,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_64",
-						Description: "policy for ls command",
-						Scope: []string{
-							"comm=ls",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_64",
 						},
-						DefaultActions: []string{"log"},
-						Rules:          []policy.Rule{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=ls",
+							},
+							DefaultActions: []string{"log"},
+							Rules:          []v1beta1.Rule{},
+						},
 					},
 				},
 				{
 					id: 42,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_42",
-						Description: "policy for who command",
-						Scope: []string{
-							"comm=who",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_42",
 						},
-						DefaultActions: []string{"log"},
-						Rules:          []policy.Rule{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=who",
+							},
+							DefaultActions: []string{"log"},
+							Rules:          []v1beta1.Rule{},
+						},
 					},
 				},
 			},
@@ -715,19 +782,22 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 42,
-					policyFile: policy.PolicyFile{
-						Name:        "event_args_context",
-						Description: "policy for only security_file_open from \"execve\" syscall",
-						Scope: []string{
-							"global",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "event_args_context",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event: "security_file_open",
-								Filters: []string{
-									"syscall=execve", // context
-									"args.pathname=*ls",
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"global",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event: "security_file_open",
+									Filters: []string{
+										"syscall=execve", // context
+										"args.pathname=*ls",
+									},
 								},
 							},
 						},
@@ -753,17 +823,20 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 42,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_event",
-						Description: "policy for magic write",
-						Scope: []string{
-							"comm=tee",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_event",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "magic_write",
-								Filters: []string{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=tee",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "magic_write",
+									Filters: []string{},
+								},
 							},
 						},
 					},
@@ -791,12 +864,11 @@ func Test_EventFilters(t *testing.T) {
 		// 	policyFiles: []policyFileWithID{
 		// 		{
 		// 			id: 3,
-		// 			policyFile: policy.PolicyFile{
+		// 			policyFile: v1beta1.PolicyFile{
 		// 				Name:          "comm_event",
-		// 				Description:   "policy for net_packet_icmp event",
 		// 				Scope:         []string{"comm=ping"},
 		// 				DefaultActions: []string{"log"},
-		// 				Rules: []policy.Rule{
+		// 				Rules: []v1beta1.Rule{
 		// 					{
 		// 						Event:  "net_packet_icmp",
 		// 						Filters: []string{},
@@ -806,12 +878,11 @@ func Test_EventFilters(t *testing.T) {
 		// 		},
 		// 		{
 		// 			id: 5,
-		// 			policyFile: policy.PolicyFile{
+		// 			policyFile: v1beta1.PolicyFile{
 		// 				Name:          "event_args",
-		// 				Description:   "policy for ptrace event",
 		// 				Scope:         []string{},
 		// 				DefaultActions: []string{"log"},
-		// 				Rules: []policy.Rule{
+		// 				Rules: []v1beta1.Rule{
 		// 					{
 		// 						Event:  "ptrace",
 		// 						Filters: []string{"args.pid=0"},
@@ -821,12 +892,11 @@ func Test_EventFilters(t *testing.T) {
 		// 		},
 		// 		{
 		// 			id: 9,
-		// 			policyFile: policy.PolicyFile{
+		// 			policyFile: v1beta1.PolicyFile{
 		// 				Name:          "signature",
-		// 				Description:   "policy for anti_debugging event",
 		// 				Scope:         []string{},
 		// 				DefaultActions: []string{"log"},
-		// 				Rules: []policy.Rule{
+		// 				Rules: []v1beta1.Rule{
 		// 					{
 		// 						Event:  "anti_debugging",
 		// 						Filters: []string{},
@@ -864,34 +934,40 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 3,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_event_3",
-						Description: "policy for ping command",
-						Scope: []string{
-							"comm=ping",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_event_3",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "net_packet_icmp",
-								Filters: []string{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=ping",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "net_packet_icmp",
+									Filters: []string{},
+								},
 							},
 						},
 					},
 				},
 				{
 					id: 5,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_event_5",
-						Description: "policy for ping command",
-						Scope: []string{
-							"comm=ping",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_event_5",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "net_packet_icmp",
-								Filters: []string{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=ping",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "net_packet_icmp",
+									Filters: []string{},
+								},
 							},
 						},
 					},
@@ -916,38 +992,44 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 3,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_event_3",
-						Description: "policy for ping command",
-						Scope: []string{
-							"comm=ping",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_event_3",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "net_packet_icmp",
-								Filters: []string{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=ping",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "net_packet_icmp",
+									Filters: []string{},
+								},
 							},
 						},
 					},
 				},
 				{
 					id: 5,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_event_5",
-						Description: "policy for ping commands",
-						Scope: []string{
-							"comm=ping",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_event_5",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "net_packet_icmp",
-								Filters: []string{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=ping",
 							},
-							{
-								Event:   "setuid",
-								Filters: []string{},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "net_packet_icmp",
+									Filters: []string{},
+								},
+								{
+									Event:   "setuid",
+									Filters: []string{},
+								},
 							},
 						},
 					},
@@ -974,72 +1056,84 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 3,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_event_3",
-						Description: "policy for ping command",
-						Scope: []string{
-							"comm=ping",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_event_3",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "net_packet_icmp",
-								Filters: []string{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=ping",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "net_packet_icmp",
+									Filters: []string{},
+								},
 							},
 						},
 					},
 				},
 				{
 					id: 5,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_event_5",
-						Description: "policy for ping command",
-						Scope: []string{
-							"comm=ping",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_event_5",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "net_packet_icmp",
-								Filters: []string{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=ping",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "net_packet_icmp",
+									Filters: []string{},
+								},
 							},
 						},
 					},
 				},
 				{
 					id: 7,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_event_7",
-						Description: "policy for ping command",
-						Scope: []string{
-							"comm=ping",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_event_7",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "sched_process_exec",
-								Filters: []string{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=ping",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "sched_process_exec",
+									Filters: []string{},
+								},
 							},
 						},
 					},
 				},
 				{
 					id: 9,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_event_9",
-						Description: "policy for ping command",
-						Scope: []string{
-							"comm=ping",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_event_9",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "sched_process_exec",
-								Filters: []string{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=ping",
 							},
-							{
-								Event:   "security_socket_connect",
-								Filters: []string{},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "sched_process_exec",
+									Filters: []string{},
+								},
+								{
+									Event:   "security_socket_connect",
+									Filters: []string{},
+								},
 							},
 						},
 					},
@@ -1068,27 +1162,33 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 64,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_64",
-						Description: "policy for ls command",
-						Scope: []string{
-							"comm=ls",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_64",
 						},
-						DefaultActions: []string{"log"},
-						Rules:          []policy.Rule{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=ls",
+							},
+							DefaultActions: []string{"log"},
+							Rules:          []v1beta1.Rule{},
+						},
 					},
 				},
 				{
 					id: 42,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_42",
-						Description: "policy for ls and who commands",
-						Scope: []string{
-							"comm=who",
-							"comm=ls",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_42",
 						},
-						DefaultActions: []string{"log"},
-						Rules:          []policy.Rule{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=who",
+								"comm=ls",
+							},
+							DefaultActions: []string{"log"},
+							Rules:          []v1beta1.Rule{},
+						},
 					},
 				},
 			},
@@ -1118,26 +1218,32 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 64,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_64",
-						Description: "policy for ls command",
-						Scope: []string{
-							"comm=ls",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_64",
 						},
-						DefaultActions: []string{"log"},
-						Rules:          []policy.Rule{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=ls",
+							},
+							DefaultActions: []string{"log"},
+							Rules:          []v1beta1.Rule{},
+						},
 					},
 				},
 				{
 					id: 42,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_42",
-						Description: "policy for ls and who commands",
-						Scope: []string{
-							"comm=who,ls",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_42",
 						},
-						DefaultActions: []string{"log"},
-						Rules:          []policy.Rule{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=who,ls",
+							},
+							DefaultActions: []string{"log"},
+							Rules:          []v1beta1.Rule{},
+						},
 					},
 				},
 			},
@@ -1173,21 +1279,24 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 1,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_event",
-						Description: "policy for fakeprog1 command",
-						Scope: []string{
-							"comm=fakeprog1",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_event",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "read",
-								Filters: []string{},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=fakeprog1",
 							},
-							{
-								Event:   "write",
-								Filters: []string{},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "read",
+									Filters: []string{},
+								},
+								{
+									Event:   "write",
+									Filters: []string{},
+								},
 							},
 						},
 					},
@@ -1212,15 +1321,18 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 42,
-					policyFile: policy.PolicyFile{
-						Name:           "event_pol_42",
-						Description:    "policy for fakeprog1 command",
-						Scope:          []string{"global"},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event:   "execve",
-								Filters: []string{},
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "event_pol_42",
+						},
+						Spec: v1beta1.PolicySpec{
+							Scope:          []string{"global"},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "execve",
+									Filters: []string{},
+								},
 							},
 						},
 					},
@@ -1244,20 +1356,23 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 64,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_event_args_64",
-						Description: "policy with args for fakeprog1 command",
-						Scope: []string{
-							"comm=fakeprog1",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_event_args_64",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event: "openat",
-								Filters: []string{
-									"args.dirfd=0",
-									"args.flags=0",
-									"args.mode=0",
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=fakeprog1",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event: "openat",
+									Filters: []string{
+										"args.dirfd=0",
+										"args.flags=0",
+										"args.mode=0",
+									},
 								},
 							},
 						},
@@ -1265,19 +1380,22 @@ func Test_EventFilters(t *testing.T) {
 				},
 				{
 					id: 42,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_event_args_42",
-						Description: "policy with args for fakeprog2 command",
-						Scope: []string{
-							"comm=fakeprog2",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_event_args_42",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event: "open",
-								Filters: []string{
-									"args.flags=0",
-									"args.mode=0",
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=fakeprog2",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event: "open",
+									Filters: []string{
+										"args.flags=0",
+										"args.mode=0",
+									},
 								},
 							},
 						},
@@ -1317,18 +1435,21 @@ func Test_EventFilters(t *testing.T) {
 			policyFiles: []policyFileWithID{
 				{
 					id: 64,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_event_retval_64",
-						Description: "policy with retval for fakeprog1 command",
-						Scope: []string{
-							"comm=fakeprog1",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_event_retval_64",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event: "openat",
-								Filters: []string{
-									"retval<0",
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=fakeprog1",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event: "openat",
+									Filters: []string{
+										"retval<0",
+									},
 								},
 							},
 						},
@@ -1337,18 +1458,21 @@ func Test_EventFilters(t *testing.T) {
 				{
 					// no events expected
 					id: 42,
-					policyFile: policy.PolicyFile{
-						Name:        "comm_event_retval_42",
-						Description: "policy with retval for fakeprog2 command",
-						Scope: []string{
-							"comm=fakeprog2",
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_event_retval_42",
 						},
-						DefaultActions: []string{"log"},
-						Rules: []policy.Rule{
-							{
-								Event: "open",
-								Filters: []string{
-									"retval>=0",
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=fakeprog2",
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event: "open",
+									Filters: []string{
+										"retval>=0",
+									},
 								},
 							},
 						},
@@ -1435,7 +1559,7 @@ const (
 )
 
 type policyFileWithID struct {
-	policyFile policy.PolicyFile
+	policyFile v1beta1.PolicyFile
 	id         int
 }
 
@@ -1466,7 +1590,7 @@ func newCmdEvents(runCmd string, timeout time.Duration, evts []trace.Event, sets
 
 // newPolicies creates a new policies object with the given policies files with IDs.
 func newPolicies(polsFilesID []policyFileWithID) *policy.Policies {
-	var polsFiles []policy.PolicyFile
+	var polsFiles []v1beta1.PolicyFile
 
 	for _, polFile := range polsFilesID {
 		polsFiles = append(polsFiles, polFile.policyFile)

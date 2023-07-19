@@ -1,8 +1,12 @@
-name: new_pids
-description: traces openat and security_file_open for new pids
-scope: 
-  - pid=new
-rules:
-  - event: openat
-  - event: security_file_open
-
+apiVersion: aquasecurity.github.io/v1beta1
+kind: TraceePolicy
+metadata:
+  name: new_pids
+  annotations:
+    description: traces openat and security_file_open for new pids
+spec:
+  scope: 
+    - pid=new
+  rules:
+    - event: openat
+    - event: security_file_open
