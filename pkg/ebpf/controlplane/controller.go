@@ -137,7 +137,7 @@ func (p *Controller) processCgroupMkdir(args []trace.Argument) error {
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-	if info.Container.ContainerId == "" {
+	if info.Container.ContainerId == "" && !info.Dead {
 		// If cgroupId is from a regular cgroup directory, and not the
 		// container base directory (from known runtimes), it should be
 		// removed from the containers bpf map.
