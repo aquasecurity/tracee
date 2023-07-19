@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.2f34a6de.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.3a36e643.min.css">
       
       
 
@@ -14705,7 +14705,9 @@
   <h1>Overview</h1>
 
 <p>In this section you can find the reference documentation for Tracee's policies.</p>
-<p>A policy is a yaml document where you can specify a scope and associate it with a set of rules. A scope defines the workloads to which the policy applies. A rule defines events to be matched and actions to take on them.</p>
+<p>Policies are YAML manifests that allow you to define how Tracee should respond to different events. This is done through rules in the policy. A rule takes in one or several events. Additionally, events can be filtered to specific resources. If Tracee detects the event, it will respond with an action. 
+The default action for Tracee is to log the detected events.</p>
+<p>Lastly, policies require a scope. The scope details which resources the policy applies to. </p>
 <p>You can load multiple (up to 64) policies into Tracee using the --policy flag providing a path to the policy file.</p>
 <p>Following is a sample policy:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">overview policy</span>
