@@ -3,10 +3,11 @@ package cobra
 import (
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/policy"
+	"github.com/aquasecurity/tracee/pkg/policy/v1beta1"
 )
 
 func createPoliciesFromPolicyFiles(policyFlags []string) (*policy.Policies, error) {
-	policyFiles, err := policy.PoliciesFromPaths(policyFlags)
+	policyFiles, err := v1beta1.PoliciesFromPaths(policyFlags)
 	if err != nil {
 		return nil, err
 	}

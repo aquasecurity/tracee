@@ -1,7 +1,13 @@
-name: comm_strace
-description: traces sched_process_exec and sched_process_exit for the command strace
-scope: 
-  - comm=strace
-rules:
-  - event: sched_process_exec
-  - event: sched_process_exit
+apiVersion: aquasecurity.github.io/v1beta1
+kind: TraceePolicy
+metadata:
+  name: comm_strace
+  annotations:
+    description: traces sched_process_exec and sched_process_exit for the command strace
+spec:
+  scope: 
+    - comm=strace
+  rules:
+    - event: sched_process_exec
+    - event: sched_process_exit
+

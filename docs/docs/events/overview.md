@@ -18,12 +18,17 @@ Tracing `execve` events with [policies]:
 
 ```
 cat <<EOF >sample_policy.yaml
-name: sample policy
-description: traces execve events
-scope:
-  - global
-rules:
-  - event: execve
+apiVersion: aquasecurity.github.io/v1beta1
+kind: TraceePolicy
+metadata:
+	name: sample policy
+	annotations:
+		description: traces execve events
+spec:
+	scope:
+	  - global
+	rules:
+	  - event: execve
 EOF
 ```
 

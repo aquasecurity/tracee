@@ -1,4 +1,4 @@
-package policy
+package v1beta1
 
 import (
 	"os"
@@ -14,8 +14,13 @@ import (
 
 // PolicyFile is the structure of the policy file
 type PolicyFile struct {
-	Name           string   `yaml:"name"`
-	Description    string   `yaml:"description"`
+	APIVersion string     `yaml:"apiVersion"`
+	Kind       string     `yaml:"kind"`
+	Metadata   Metadata   `yaml:"metadata"`
+	Spec       PolicySpec `yaml:"spec"`
+}
+
+type PolicySpec struct {
 	Scope          []string `yaml:"scope"`
 	DefaultActions []string `yaml:"defaultActions"`
 	Rules          []Rule   `yaml:"rules"`
@@ -28,21 +33,58 @@ type Rule struct {
 	Actions []string `yaml:"actions"`
 }
 
+type Metadata struct {
+	Name        string            `yaml:"name"`
+	Annotations map[string]string `yaml:"annotations"`
+}
+
+func (p PolicyFile) Name() string {
+	return p.Metadata.Name
+}
+
+func (p PolicyFile) Description() string {
+	if p.Metadata.Annotations == nil {
+		return ""
+	}
+
+	d, ok := p.Metadata.Annotations["description"]
+	if !ok {
+		return ""
+	}
+	return d
+}
+
+func (p PolicyFile) Scope() []string {
+	return p.Spec.Scope
+}
+
+func (p PolicyFile) DefaultActions() []string {
+	return p.Spec.DefaultActions
+}
+
+func (p PolicyFile) Rules() []Rule {
+	return p.Spec.Rules
+}
+
 func (p PolicyFile) Validate() error {
-	if p.Name == "" {
+	if p.Name() == "" {
 		return errfmt.Errorf("policy name cannot be empty")
 	}
 
-	if p.Description == "" {
-		return errfmt.Errorf("policy %s, description cannot be empty", p.Name)
+	if p.APIVersion != "aquasecurity.github.io/v1beta1" {
+		return errfmt.Errorf("policy %s, apiVersion not supported", p.Name())
 	}
 
-	if p.Scope == nil || len(p.Scope) == 0 {
-		return errfmt.Errorf("policy %s, scope cannot be empty", p.Name)
+	if p.Kind != "TraceePolicy" {
+		return errfmt.Errorf("policy %s, kind not supported", p.Name())
 	}
 
-	if p.Rules == nil || len(p.Rules) == 0 {
-		return errfmt.Errorf("policy %s, rules cannot be empty", p.Name)
+	if p.Scope() == nil || len(p.Scope()) == 0 {
+		return errfmt.Errorf("policy %s, scope cannot be empty", p.Name())
+	}
+
+	if p.Rules() == nil || len(p.Rules()) == 0 {
+		return errfmt.Errorf("policy %s, rules cannot be empty", p.Name())
 	}
 
 	if err := p.validateDefaultActions(); err != nil {
@@ -57,11 +99,11 @@ func (p PolicyFile) Validate() error {
 }
 
 func (p PolicyFile) validateDefaultActions() error {
-	if p.DefaultActions == nil || len(p.DefaultActions) == 0 {
+	if p.DefaultActions() == nil || len(p.DefaultActions()) == 0 {
 		return nil
 	}
 
-	return validateActions(p.Name, p.DefaultActions)
+	return validateActions(p.Name(), p.DefaultActions())
 }
 
 func validateActions(policyName string, actions []string) error {
@@ -93,18 +135,18 @@ func (p PolicyFile) validateScope() error {
 		"follow",
 	}
 
-	for _, scope := range p.Scope {
+	for _, scope := range p.Scope() {
 		scope = strings.ReplaceAll(scope, " ", "")
 
-		if scope == "global" && len(p.Scope) > 1 {
-			return errfmt.Errorf("policy %s, global scope must be unique", p.Name)
+		if scope == "global" && len(p.Scope()) > 1 {
+			return errfmt.Errorf("policy %s, global scope must be unique", p.Name())
 		}
 
 		if scope == "global" {
 			return nil
 		}
 
-		scope, err := parseScope(p.Name, scope)
+		scope, err := parseScope(p.Name(), scope)
 		if err != nil {
 			return err
 		}
@@ -117,7 +159,7 @@ func (p PolicyFile) validateScope() error {
 		}
 
 		if !found {
-			return errfmt.Errorf("policy %s, scope %s is not valid", p.Name, scope)
+			return errfmt.Errorf("policy %s, scope %s is not valid", p.Name(), scope)
 		}
 	}
 	return nil
@@ -141,21 +183,21 @@ func parseScope(policyName, scope string) (string, error) {
 func (p PolicyFile) validateRules() error {
 	evts := make(map[string]bool)
 
-	for _, r := range p.Rules {
+	for _, r := range p.Rules() {
 		// Currently, an event can only be used once in the policy. Support for using the same
 		// event, multiple times, with different filters, shall be implemented in the future.
 		if _, ok := evts[r.Event]; ok {
-			return errfmt.Errorf("policy %s, event %s is duplicated", p.Name, r.Event)
+			return errfmt.Errorf("policy %s, event %s is duplicated", p.Name(), r.Event)
 		}
 
 		evts[r.Event] = true
 
-		err := validateEvent(p.Name, r.Event)
+		err := validateEvent(p.Name(), r.Event)
 		if err != nil {
 			return err
 		}
 
-		err = validateActions(p.Name, r.Actions)
+		err = validateActions(p.Name(), r.Actions)
 		if err != nil {
 			return err
 		}
@@ -164,17 +206,17 @@ func (p PolicyFile) validateRules() error {
 			operatorIdx := strings.IndexAny(f, "=!<>")
 
 			if operatorIdx == -1 {
-				return errfmt.Errorf("policy %s, invalid filter operator: %s", p.Name, f)
+				return errfmt.Errorf("policy %s, invalid filter operator: %s", p.Name(), f)
 			}
 
 			// args
 			if strings.HasPrefix(f, "args") {
 				s := strings.Split(f, ".")
 				if len(s) == 1 {
-					return errfmt.Errorf("policy %s, arg name can't be empty", p.Name)
+					return errfmt.Errorf("policy %s, arg name can't be empty", p.Name())
 				}
 
-				err := validateEventArg(p.Name, r.Event, s[1])
+				err := validateEventArg(p.Name(), r.Event, s[1])
 				if err != nil {
 					return err
 				}
@@ -186,16 +228,16 @@ func (p PolicyFile) validateRules() error {
 			if strings.HasPrefix(f, "retval") {
 				s := strings.Split(f, "=")
 				if len(s) == 1 {
-					return errfmt.Errorf("policy %s, retval must have value: %s", p.Name, f)
+					return errfmt.Errorf("policy %s, retval must have value: %s", p.Name(), f)
 				}
 
 				if s[1] == "" {
-					return errfmt.Errorf("policy %s, retval cannot be empty", p.Name)
+					return errfmt.Errorf("policy %s, retval cannot be empty", p.Name())
 				}
 
 				_, err := strconv.Atoi(s[1])
 				if err != nil {
-					return errfmt.Errorf("policy %s, retval must be an integer: %s", p.Name, s[1])
+					return errfmt.Errorf("policy %s, retval must be an integer: %s", p.Name(), s[1])
 				}
 
 				continue
@@ -306,11 +348,11 @@ func PoliciesFromPaths(paths []string) ([]PolicyFile, error) {
 				}
 
 				// validate policy name is unique
-				if _, ok := policyNames[policy.Name]; ok {
-					return nil, errfmt.Errorf("policy %s already exist", policy.Name)
+				if _, ok := policyNames[policy.Name()]; ok {
+					return nil, errfmt.Errorf("policy %s already exist", policy.Name())
 				}
 
-				policyNames[policy.Name] = true
+				policyNames[policy.Name()] = true
 
 				policies = append(policies, policy)
 			}

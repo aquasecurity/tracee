@@ -1,9 +1,13 @@
-name: context_comm
-description: traces openat done by ls
-scope: 
-  - global
-rules:
-  - event: openat
-    filters:
-      - comm=ls
-
+apiVersion: aquasecurity.github.io/v1beta1
+kind: TraceePolicy
+metadata:
+  name: context_comm
+  annotations:
+    description: traces openat done by ls
+spec:
+  scope: 
+    - global
+  rules:
+    - event: openat
+      filters:
+        - comm=ls

@@ -1,9 +1,13 @@
-name: openat_args_pathname
-description: traces openat under /tmp/*
-scope: 
-  - global
-rules:
-  - event: openat
-    filters:
-      - args.pathname=/tmp*
-
+apiVersion: aquasecurity.github.io/v1beta1
+kind: TraceePolicy
+metadata:
+  name: openat_args_pathname
+  annotations:
+    description: traces openat under /tmp/*
+spec:
+  scope: 
+    - global
+  rules:
+    - event: openat
+      filters:
+        - args.pathname=/tmp*

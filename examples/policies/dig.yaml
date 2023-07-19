@@ -1,8 +1,12 @@
-name: dig
-description: traces dns events from the dig binary
-scope: 
-  - binary=/usr/bin/dig
-rules:
-  - event: net_packet_dns_request        
-  - event: net_packet_dns_response
-
+apiVersion: aquasecurity.github.io/v1beta1
+kind: TraceePolicy
+metadata:
+  name: dig
+  annotations:
+    description: traces dns events from the dig binary
+spec:
+  scope: 
+    - binary=/usr/bin/dig
+  rules:
+    - event: net_packet_dns_request        
+    - event: net_packet_dns_response

@@ -9,10 +9,11 @@ import (
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/policy"
+	"github.com/aquasecurity/tracee/pkg/policy/v1beta1"
 )
 
 // PrepareFilterMapsForPolicies prepares the scope and events PolicyFilterMap for the policies
-func PrepareFilterMapsFromPolicies(policies []policy.PolicyFile) (PolicyScopeMap, PolicyEventMap, error) {
+func PrepareFilterMapsFromPolicies(policies []v1beta1.PolicyFile) (PolicyScopeMap, PolicyEventMap, error) {
 	policyScopeMap := make(PolicyScopeMap)
 	policyEventsMap := make(PolicyEventMap)
 
@@ -27,19 +28,19 @@ func PrepareFilterMapsFromPolicies(policies []policy.PolicyFile) (PolicyScopeMap
 	policyNames := make(map[string]bool)
 
 	for pIdx, p := range policies {
-		if _, ok := policyNames[p.Name]; ok {
-			return nil, nil, errfmt.Errorf("policy %s already exist", p.Name)
+		if _, ok := policyNames[p.Name()]; ok {
+			return nil, nil, errfmt.Errorf("policy %s already exist", p.Name())
 		}
-		policyNames[p.Name] = true
+		policyNames[p.Name()] = true
 
 		scopeFlags := make([]scopeFlag, 0)
 
 		// scope
-		for _, s := range p.Scope {
+		for _, s := range p.Scope() {
 			s = strings.ReplaceAll(s, " ", "")
 
-			if s == "global" && len(p.Scope) > 1 {
-				return nil, nil, errfmt.Errorf("policy %s, global scope must be unique", p.Name)
+			if s == "global" && len(p.Scope()) > 1 {
+				return nil, nil, errfmt.Errorf("policy %s, global scope must be unique", p.Name())
 			}
 
 			if s == "global" {
@@ -66,13 +67,13 @@ func PrepareFilterMapsFromPolicies(policies []policy.PolicyFile) (PolicyScopeMap
 		}
 
 		policyScopeMap[pIdx] = policyScopes{
-			policyName: p.Name,
+			policyName: p.Name(),
 			scopeFlags: scopeFlags,
 		}
 
 		eventFlags := make([]eventFlag, 0)
 
-		for _, r := range p.Rules {
+		for _, r := range p.Rules() {
 			evtFlag, err := parseEventFlag(r.Event)
 			if err != nil {
 				return nil, nil, errfmt.WrapError(err)
@@ -102,7 +103,7 @@ func PrepareFilterMapsFromPolicies(policies []policy.PolicyFile) (PolicyScopeMap
 		}
 
 		policyEventsMap[pIdx] = policyEvents{
-			policyName: p.Name,
+			policyName: p.Name(),
 			eventFlags: eventFlags,
 		}
 	}

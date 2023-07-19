@@ -1,7 +1,13 @@
-name: container_dns_events
-description: traces dns events from containers
-scope:
-  - container
-rules:
-  - event: net_packet_dns_request
-  - event: net_packet_dns_response
+apiVersion: aquasecurity.github.io/v1beta1
+kind: TraceePolicy
+metadata:
+  name: container_dns_events
+  annotations:
+    description: traces dns events from containers
+spec:
+  scope:
+    - container
+  rules:
+    - event: net_packet_dns_request
+    - event: net_packet_dns_response
+

@@ -12,14 +12,19 @@ Events support three types of filters: `context`, `arguments` and `return value`
 Context is data which is collected along the event. They can be filtered like:
 
 ```yaml
-name: sample_context_filter
-description: sample context filter
-scope:
-    - global
-rules:
-    event: sched_process_exec
-    filters:
-        - pid=1000
+apiVersion: aquasecurity.github.io/v1beta1
+kind: TraceePolicy
+metadata:
+	name: sample_context_filter
+	annotations:
+		description: sample context filter
+spec:
+	scope:
+	    - global
+	rules:
+	    event: sched_process_exec
+	    filters:
+		- pid=1000
 ```
 
 The context filters supported are:
@@ -182,14 +187,19 @@ filters:
 Events have arguments, which can be filtered. 
 
 ```yaml
-name: sample_argument_filter
-description: sample argument filter
-scope:
-    - global
-rules:
-    event: security_file_open
-    filters:
-        - args.pathname=/tmp*
+apiVersion: aquasecurity.github.io/v1beta1
+kind: TraceePolicy
+metadata:
+	name: sample_argument_filter
+	annotations:
+		description: sample argument filter
+spec:
+	scope:
+	    - global
+	rules:
+	    event: security_file_open
+	    filters:
+		- args.pathname=/tmp*
 ```
 
 Arguments can be found on the respective event definition, in this case [security_file_open](https://github.com/aquasecurity/tracee/blob/main/pkg/events/events.goL5293-L529), or the user can test the event output in CLI before defining a policy, e.g:
@@ -207,12 +217,17 @@ tracee -e security_file_open --output json
 Return values can also be filtered.
 
 ```yaml
-name: sample_return_value
-description: sample return filter
-scope:
-    - global
-rules:
-    event: close
-    filters:
-        - retval!=0
+apiVersion: aquasecurity.github.io/v1beta1
+kind: TraceePolicy
+metadata:
+	name: sample_return_value
+	annotations:
+		description: sample return value
+spec:
+	scope:
+	    - global
+	rules:
+	    event: close
+	    filters:
+		- retval!=0
 ```

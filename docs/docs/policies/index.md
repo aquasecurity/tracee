@@ -10,21 +10,26 @@ You can load multiple (up to 64) policies into Tracee using the --policy flag pr
 Following is a sample policy:
 
 ```yaml
-name: overview policy
-description: sample overview policy
-scope:
-  - global
-rules:
-  - event: dropped_executable
-  - event: security_file_open
-    filters:
-        - args.pathname=/tmp/*
-  - event: sched_process_exec
-    filters: 
-        - uid=0
-  - event: close
-    filters:
-        - retval!=0
+apiVersion: aquasecurity.github.io/v1beta1
+kind: TraceePolicy
+metadata:
+	name: overview policy
+	annotations:
+		description: sample overview policy
+spec:
+	scope:
+	  - global
+	rules:
+	  - event: dropped_executable
+	  - event: security_file_open
+	    filters:
+		- args.pathname=/tmp/*
+	  - event: sched_process_exec
+	    filters: 
+		- uid=0
+	  - event: close
+	    filters:
+		- retval!=0
 ```
 
 This policy applies to any workload (global) and will log the dropped_executable, security_file_open, sched_process_exec and close events. Several filters are set to log only specific events:

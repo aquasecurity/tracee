@@ -56,41 +56,46 @@ Data
 ====
 signatures.yaml:
 ----
-name: signature_events
-description: traces all signature events
-scope:
-  - global
-rules:
-  - event: stdio_over_socket
-  - event: k8s_api_connection
-  - event: aslr_inspection
-  - event: proc_mem_code_injection
-  - event: docker_abuse
-  - event: scheduled_task_mod
-  - event: ld_preload
-  - event: cgroup_notify_on_release
-  - event: default_loader_mod
-  - event: sudoers_modification
-  - event: sched_debug_recon
-  - event: system_request_key_mod
-  - event: cgroup_release_agent
-  - event: rcd_modification
-  - event: core_pattern_modification
-  - event: proc_kcore_read
-  - event: proc_mem_access
-  - event: hidden_file_created
-  - event: anti_debugging
-  - event: ptrace_code_injection
-  - event: process_vm_write_inject
-  - event: disk_mount
-  - event: dynamic_code_loading
-  - event: fileless_execution
-  - event: illegitimate_shell
-  - event: kernel_module_loading
-  - event: k8s_cert_theft
-  - event: proc_fops_hooking
-  - event: syscall_hooking
-  - event: dropped_executable
+apiVersion: aquasecurity.github.io/v1beta1
+kind: TraceePolicy
+metadata:
+	name: signature_events
+	annotations:
+		description: traces all signature events
+spec:
+	scope:
+	  - global
+	rules:
+	  - event: stdio_over_socket
+	  - event: k8s_api_connection
+	  - event: aslr_inspection
+	  - event: proc_mem_code_injection
+	  - event: docker_abuse
+	  - event: scheduled_task_mod
+	  - event: ld_preload
+	  - event: cgroup_notify_on_release
+	  - event: default_loader_mod
+	  - event: sudoers_modification
+	  - event: sched_debug_recon
+	  - event: system_request_key_mod
+	  - event: cgroup_release_agent
+	  - event: rcd_modification
+	  - event: core_pattern_modification
+	  - event: proc_kcore_read
+	  - event: proc_mem_access
+	  - event: hidden_file_created
+	  - event: anti_debugging
+	  - event: ptrace_code_injection
+	  - event: process_vm_write_inject
+	  - event: disk_mount
+	  - event: dynamic_code_loading
+	  - event: fileless_execution
+	  - event: illegitimate_shell
+	  - event: kernel_module_loading
+	  - event: k8s_cert_theft
+	  - event: proc_fops_hooking
+	  - event: syscall_hooking
+	  - event: dropped_executable
 ```
 
 But let's supposed we also need tracee to trace all `execve` events, for it we need to change the configmap `tracee-policies` adding a new policy.
@@ -107,12 +112,17 @@ To add a new policy for tracking execve events, append the following YAML block 
 
 ```yaml
 events.yaml: |-
-  name: execve_event
-  description: traces all execve events
-  scope:
-    - global
-  rules:
-    - event: execve
+  apiVersion: aquasecurity.github.io/v1beta1
+  kind: TraceePolicy
+  metadata:
+	  name: execve_event
+	  annotations:
+	  	description: traces all signature events
+  spec:
+	  scope:
+	    - global
+	  rules:
+	    - event: execve
 ```
 Save and close the file. The changes will be applied automatically.
 

@@ -1,7 +1,12 @@
-name: new_containers
-description: traces events container_created and security_file_open only for new container
-scope: 
-  - container=new
-rules:
-  - event: container_create
-  - event: security_file_open
+apiVersion: aquasecurity.github.io/v1beta1
+kind: TraceePolicy
+metadata:
+  name: new_containers
+  annotations:
+    description: traces events container_created and security_file_open only for new container
+spec:
+  scope: 
+    - container=new
+  rules:
+    - event: container_create
+    - event: security_file_open
