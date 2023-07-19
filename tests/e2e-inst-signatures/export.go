@@ -9,4 +9,5 @@ var ExportedSignatures = []detect.Signature{
 	&e2eSecurityInodeRename{},
 	&e2eContainersDataSource{},
 	&e2eBpfAttach{},
+	&e2eProcessTreeDataSource{},
 }
