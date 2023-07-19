@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -389,10 +390,12 @@ func GetCgroupControllerHierarchy(subsys string) (int, error) {
 // given cgroupId and subPath (related to cgroup fs root dir). If subPath is
 // empty, then all directories from cgroup fs will be searched for the given
 // cgroupId.
-func GetCgroupPath(rootDir string, cgroupId uint64, subPath string) (string, error) {
+//
+// Returns found cgroup path, its ctime, and an error if relevant
+func GetCgroupPath(rootDir string, cgroupId uint64, subPath string) (string, time.Time, error) {
 	entries, err := os.ReadDir(rootDir)
 	if err != nil {
-		return "", errfmt.WrapError(err)
+		return "", time.Time{}, errfmt.WrapError(err)
 	}
 
 	for _, entry := range entries {
@@ -407,17 +410,18 @@ func GetCgroupPath(rootDir string, cgroupId uint64, subPath string) (string, err
 			if err := syscall.Stat(entryPath, &stat); err == nil {
 				// Check if this cgroup path belongs to cgroupId
 				if (stat.Ino & 0xFFFFFFFF) == (cgroupId & 0xFFFFFFFF) {
-					return entryPath, nil
+					ctime := time.Unix(stat.Ctim.Sec, stat.Ctim.Nsec)
+					return entryPath, ctime, nil
 				}
 			}
 		}
 
 		// No match at this dir level: continue recursively
-		path, err := GetCgroupPath(entryPath, cgroupId, subPath)
+		path, ctime, err := GetCgroupPath(entryPath, cgroupId, subPath)
 		if err == nil {
-			return path, nil
+			return path, ctime, nil
 		}
 	}
 
-	return "", fs.ErrNotExist
+	return "", time.Time{}, fs.ErrNotExist
 }
