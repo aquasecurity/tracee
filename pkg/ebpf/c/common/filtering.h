@@ -239,14 +239,14 @@ statfunc u64 compute_scopes(program_data_t *p)
     if (p->config->mnt_ns_filter_enabled_scopes) {
         u64 filter_out_scopes = p->config->mnt_ns_filter_out_scopes;
         u64 mask = ~p->config->mnt_ns_filter_enabled_scopes;
-        u32 mnt_id = context->mnt_id;
+        u64 mnt_id = context->mnt_id;
         res &= equality_filter_matches(filter_out_scopes, &mnt_ns_filter, &mnt_id) | mask;
     }
 
     if (p->config->pid_ns_filter_enabled_scopes) {
         u64 filter_out_scopes = p->config->pid_ns_filter_out_scopes;
         u64 mask = ~p->config->pid_ns_filter_enabled_scopes;
-        u32 pid_id = context->pid_id;
+        u64 pid_id = context->pid_id;
         res &= equality_filter_matches(filter_out_scopes, &pid_ns_filter, &pid_id) | mask;
     }
 
