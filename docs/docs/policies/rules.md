@@ -15,7 +15,7 @@ Context is data which is collected along the event. They can be filtered like:
 apiVersion: aquasecurity.github.io/v1beta1
 kind: TraceePolicy
 metadata:
-	name: sample_context_filter
+	name: sample-context-filter
 	annotations:
 		description: sample context filter
 spec:
@@ -190,7 +190,7 @@ Events have arguments, which can be filtered.
 apiVersion: aquasecurity.github.io/v1beta1
 kind: TraceePolicy
 metadata:
-	name: sample_argument_filter
+	name: sample-argument-filter
 	annotations:
 		description: sample argument filter
 spec:
@@ -220,7 +220,7 @@ Return values can also be filtered.
 apiVersion: aquasecurity.github.io/v1beta1
 kind: TraceePolicy
 metadata:
-	name: sample_return_value
+	name: sample-return-value
 	annotations:
 		description: sample return value
 spec:

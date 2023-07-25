@@ -21,7 +21,7 @@ cat <<EOF >sample_policy.yaml
 apiVersion: aquasecurity.github.io/v1beta1
 kind: TraceePolicy
 metadata:
-	name: sample policy
+	name: sample-policy
 	annotations:
 		description: traces execve events
 spec:

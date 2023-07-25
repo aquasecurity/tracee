@@ -1,7 +1,7 @@
 apiVersion: aquasecurity.github.io/v1beta1
 kind: TraceePolicy
 metadata:
-  name: comm_strace
+  name: comm-strace
   annotations:
     description: traces sched_process_exec and sched_process_exit for the command strace
 spec:

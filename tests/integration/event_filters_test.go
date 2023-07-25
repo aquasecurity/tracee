@@ -43,7 +43,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 1,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "container_event",
+							Name: "container-event",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -69,7 +69,7 @@ func Test_EventFilters(t *testing.T) {
 					"docker run -d --rm hello-world",
 					10*time.Second, // give some time for the container to start (possibly downloading the image)
 					[]trace.Event{
-						expectEvent(anyHost, "hello", anyProcessorID, 1, 0, events.SchedProcessExec, orPolNames("container_event"), orPolIDs(1)),
+						expectEvent(anyHost, "hello", anyProcessorID, 1, 0, events.SchedProcessExec, orPolNames("container-event"), orPolIDs(1)),
 					},
 					[]string{}, // no sets
 				),
@@ -84,7 +84,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 1,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_event",
+							Name: "comm-event",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -110,8 +110,8 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("comm_event"), orPolIDs(1)),
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm_event"), orPolIDs(1)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("comm-event"), orPolIDs(1)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm-event"), orPolIDs(1)),
 					},
 					[]string{},
 				),
@@ -126,7 +126,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 5,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_event",
+							Name: "comm-event",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -148,8 +148,8 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event"), orPolIDs(5)),
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event"), orPolIDs(5)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event"), orPolIDs(5)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event"), orPolIDs(5)),
 					},
 					[]string{},
 				),
@@ -164,7 +164,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 42,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "event_args",
+							Name: "event-args",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -189,7 +189,7 @@ func Test_EventFilters(t *testing.T) {
 					1*time.Second,
 					[]trace.Event{
 						expectEvent(anyHost, "integration.tes", // note that comm name is from the go test binary that runs the command
-							testutils.CPUForTests, anyPID, 0, events.Execve, orPolNames("event_args"), orPolIDs(42), expectArg("pathname", "*ls")),
+							testutils.CPUForTests, anyPID, 0, events.Execve, orPolNames("event-args"), orPolIDs(42), expectArg("pathname", "*ls")),
 					},
 					[]string{},
 				),
@@ -204,7 +204,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 42,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "event_args",
+							Name: "event-args",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -239,7 +239,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 42,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_event_args",
+							Name: "comm-event-args",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -263,7 +263,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("comm_event_args"), orPolIDs(42), expectArg("pathname", "*integration")),
+						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("comm-event-args"), orPolIDs(42), expectArg("pathname", "*integration")),
 					},
 					[]string{},
 				),
@@ -278,7 +278,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 4,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_event_4",
+							Name: "comm-event-4",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -298,7 +298,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 2,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_event_2",
+							Name: "comm-event-2",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -319,14 +319,14 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents("ls",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm_event_4"), orPolIDs(4)),
+						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm-event-4"), orPolIDs(4)),
 					},
 					[]string{},
 				),
 				newCmdEvents("uname",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "uname", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm_event_2"), orPolIDs(2)),
+						expectEvent(anyHost, "uname", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm-event-2"), orPolIDs(2)),
 					},
 					[]string{},
 				),
@@ -341,7 +341,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 1,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "bin_event_1",
+							Name: "bin-event-1",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -361,7 +361,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 2,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "bin_event_2",
+							Name: "bin-event-2",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -382,14 +382,14 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents("who",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("bin_event_1"), orPolIDs(1)),
+						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("bin-event-1"), orPolIDs(1)),
 					},
 					[]string{},
 				),
 				newCmdEvents("uname",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "uname", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("bin_event_2"), orPolIDs(2)),
+						expectEvent(anyHost, "uname", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("bin-event-2"), orPolIDs(2)),
 					},
 					[]string{},
 				),
@@ -406,7 +406,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 1,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "pid_0_event_args",
+							Name: "pid-0-event-args",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -430,8 +430,8 @@ func Test_EventFilters(t *testing.T) {
 					"kill -SIGHUP 1", // reloads the complete daemon configuration
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, anyComm, anyProcessorID, 0, 0, events.SchedSwitch, orPolNames("pid_0_event_args"), orPolIDs(1), expectArg("next_comm", "systemd")),
-						expectEvent(anyHost, anyComm, anyProcessorID, 0, 0, events.SchedSwitch, orPolNames("pid_0_event_args"), orPolIDs(1), expectArg("next_comm", "init")),
+						expectEvent(anyHost, anyComm, anyProcessorID, 0, 0, events.SchedSwitch, orPolNames("pid-0-event-args"), orPolIDs(1), expectArg("next_comm", "systemd")),
+						expectEvent(anyHost, anyComm, anyProcessorID, 0, 0, events.SchedSwitch, orPolNames("pid-0-event-args"), orPolIDs(1), expectArg("next_comm", "init")),
 					},
 					[]string{},
 				),
@@ -446,7 +446,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 1,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "pid_1",
+							Name: "pid-1",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -463,8 +463,8 @@ func Test_EventFilters(t *testing.T) {
 					"kill -SIGHUP 1", // reloads the complete daemon configuration
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "init", anyProcessorID, 1, 0, anyEventID, orPolNames("pid_1"), orPolIDs(1)),
-						expectEvent(anyHost, "systemd", anyProcessorID, 1, 0, anyEventID, orPolNames("pid_1"), orPolIDs(1)),
+						expectEvent(anyHost, "init", anyProcessorID, 1, 0, anyEventID, orPolNames("pid-1"), orPolIDs(1)),
+						expectEvent(anyHost, "systemd", anyProcessorID, 1, 0, anyEventID, orPolNames("pid-1"), orPolIDs(1)),
 					},
 					[]string{},
 				),
@@ -479,7 +479,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 1,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "uid_0_comm",
+							Name: "uid-0-comm",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -497,7 +497,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("uid_0_comm"), orPolIDs(1)),
+						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("uid-0-comm"), orPolIDs(1)),
 					},
 					[]string{},
 				),
@@ -512,7 +512,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 1,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "uid_0_comm",
+							Name: "uid-0-comm",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -543,7 +543,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 1,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "event_fs",
+							Name: "event-fs",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -565,7 +565,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("event_fs"), orPolIDs(1)),
+						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("event-fs"), orPolIDs(1)),
 					},
 					[]string{"fs"},
 				),
@@ -580,7 +580,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 1,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "bin_event",
+							Name: "bin-event",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -603,7 +603,7 @@ func Test_EventFilters(t *testing.T) {
 					10*time.Second, // give some time for the container to start (possibly downloading the image)
 					[]trace.Event{
 						// using anyComm as some versions of dockerd may result in e.g. "dockerd" or "exe"
-						expectEvent(anyHost, anyComm, anyProcessorID, anyPID, 0, events.Setns, orPolNames("bin_event"), orPolIDs(1)),
+						expectEvent(anyHost, anyComm, anyProcessorID, anyPID, 0, events.Setns, orPolNames("bin-event"), orPolIDs(1)),
 					},
 					[]string{},
 				),
@@ -618,7 +618,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 1,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "pid_new",
+							Name: "pid-new",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -649,7 +649,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 64,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_64",
+							Name: "comm-64",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -666,7 +666,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_64"), orPolIDs(64)),
+						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64"), orPolIDs(64)),
 					},
 					[]string{},
 				),
@@ -681,7 +681,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 64,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_64",
+							Name: "comm-64",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -697,7 +697,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 42,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_42",
+							Name: "comm-42",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -714,7 +714,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_64"), orPolIDs(64)),
+						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64"), orPolIDs(64)),
 					},
 					[]string{},
 				),
@@ -729,7 +729,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 64,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_64",
+							Name: "comm-64",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -744,7 +744,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 42,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_42",
+							Name: "comm-42",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -761,7 +761,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_64"), orPolIDs(64)),
+						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64"), orPolIDs(64)),
 					},
 					[]string{},
 				),
@@ -769,7 +769,7 @@ func Test_EventFilters(t *testing.T) {
 					"who",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_42"), orPolIDs(42)),
+						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-42"), orPolIDs(42)),
 					},
 					[]string{},
 				),
@@ -784,7 +784,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 42,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "event_args_context",
+							Name: "event-args-context",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -810,7 +810,7 @@ func Test_EventFilters(t *testing.T) {
 					1*time.Second,
 					[]trace.Event{
 						expectEvent(anyHost, "bash", // note that comm name is from the runner
-							testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("event_args_context"), orPolIDs(42), expectArg("pathname", "*ls")),
+							testutils.CPUForTests, anyPID, 0, events.SecurityFileOpen, orPolNames("event-args-context"), orPolIDs(42), expectArg("pathname", "*ls")),
 					},
 					[]string{},
 				),
@@ -825,7 +825,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 42,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_event",
+							Name: "comm-event",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -847,7 +847,7 @@ func Test_EventFilters(t *testing.T) {
 					"bash -c '/usr/bin/tee /tmp/magic_write_test < <(echo 42)'",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "tee", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("comm_event"), orPolIDs(42)),
+						expectEvent(anyHost, "tee", testutils.CPUForTests, anyPID, 0, events.MagicWrite, orPolNames("comm-event"), orPolIDs(42)),
 					},
 					[]string{},
 				),
@@ -865,7 +865,7 @@ func Test_EventFilters(t *testing.T) {
 		// 		{
 		// 			id: 3,
 		// 			policyFile: v1beta1.PolicyFile{
-		// 				Name:          "comm_event",
+		// 				Name:          "comm-event",
 		// 				Scope:         []string{"comm=ping"},
 		// 				DefaultActions: []string{"log"},
 		// 				Rules: []v1beta1.Rule{
@@ -879,7 +879,7 @@ func Test_EventFilters(t *testing.T) {
 		// 		{
 		// 			id: 5,
 		// 			policyFile: v1beta1.PolicyFile{
-		// 				Name:          "event_args",
+		// 				Name:          "event-args",
 		// 				Scope:         []string{},
 		// 				DefaultActions: []string{"log"},
 		// 				Rules: []v1beta1.Rule{
@@ -910,7 +910,7 @@ func Test_EventFilters(t *testing.T) {
 		// 			"ping -c1 0.0.0.0",
 		// 			1*time.Second,
 		// 			[]trace.Event{
-		// 				expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event"), orPolIDs(3)),
+		// 				expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event"), orPolIDs(3)),
 		// 			},
 		// 			[]string{},
 		// 		),
@@ -918,7 +918,7 @@ func Test_EventFilters(t *testing.T) {
 		// 			"strace ls",
 		// 			1*time.Second,
 		// 			[]trace.Event{
-		// 				expectEvent(anyHost, "strace", testutils.CPUForTests, anyPID, 0, events.Ptrace, orPolNames("event_args"), orPolIDs(5)),
+		// 				expectEvent(anyHost, "strace", testutils.CPUForTests, anyPID, 0, events.Ptrace, orPolNames("event-args"), orPolIDs(5)),
 		// 				expectEvent(anyHost, "strace", testutils.CPUForTests, anyPID, 0, events.anti_debugging, orPolNames("sign"), orPolIDs(9)),
 		// 			},
 		// 			[]string{},
@@ -936,7 +936,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 3,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_event_3",
+							Name: "comm-event-3",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -956,7 +956,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 5,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_event_5",
+							Name: "comm-event-5",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -978,8 +978,8 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event_3", "comm_event_5"), orPolIDs(3, 5)),
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event_3", "comm_event_5"), orPolIDs(3, 5)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5"), orPolIDs(3, 5)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5"), orPolIDs(3, 5)),
 					},
 					[]string{},
 				),
@@ -994,7 +994,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 3,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_event_3",
+							Name: "comm-event-3",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -1014,7 +1014,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 5,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_event_5",
+							Name: "comm-event-5",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -1040,10 +1040,10 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.Setuid, orPolNames("comm_event_5"), orPolIDs(5)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.Setuid, orPolNames("comm-event-5"), orPolIDs(5)),
 
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event_3", "comm_event_5"), orPolIDs(3, 5)),
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event_3", "comm_event_5"), orPolIDs(3, 5)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5"), orPolIDs(3, 5)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5"), orPolIDs(3, 5)),
 					},
 					[]string{},
 				),
@@ -1058,7 +1058,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 3,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_event_3",
+							Name: "comm-event-3",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -1078,7 +1078,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 5,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_event_5",
+							Name: "comm-event-5",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -1098,7 +1098,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 7,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_event_7",
+							Name: "comm-event-7",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -1118,7 +1118,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 9,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_event_9",
+							Name: "comm-event-9",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -1144,12 +1144,12 @@ func Test_EventFilters(t *testing.T) {
 					"ping -c1 0.0.0.0",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("comm_event_7", "comm_event_9"), orPolIDs(7, 9)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("comm-event-7", "comm-event-9"), orPolIDs(7, 9)),
 
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SecuritySocketConnect, orPolNames("comm_event_9"), orPolIDs(9)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SecuritySocketConnect, orPolNames("comm-event-9"), orPolIDs(9)),
 
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event_3", "comm_event_5"), orPolIDs(3, 5)),
-						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm_event_3", "comm_event_5"), orPolIDs(3, 5)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5"), orPolIDs(3, 5)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.NetPacketICMP, orPolNames("comm-event-3", "comm-event-5"), orPolIDs(3, 5)),
 					},
 					[]string{},
 				),
@@ -1164,7 +1164,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 64,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_64",
+							Name: "comm-64",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -1179,7 +1179,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 42,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_42",
+							Name: "comm-42",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -1197,7 +1197,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_64", "comm_42"), orPolIDs(64, 42)),
+						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64", "comm-42"), orPolIDs(64, 42)),
 					},
 					[]string{},
 				),
@@ -1205,7 +1205,7 @@ func Test_EventFilters(t *testing.T) {
 					"who",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_42"), orPolIDs(42)),
+						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-42"), orPolIDs(42)),
 					},
 					[]string{},
 				),
@@ -1220,7 +1220,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 64,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_64",
+							Name: "comm-64",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -1235,7 +1235,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 42,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_42",
+							Name: "comm-42",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -1252,7 +1252,7 @@ func Test_EventFilters(t *testing.T) {
 					"ls",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_64", "comm_42"), orPolIDs(64, 42)),
+						expectEvent(anyHost, "ls", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-64", "comm-42"), orPolIDs(64, 42)),
 					},
 					[]string{},
 				),
@@ -1260,7 +1260,7 @@ func Test_EventFilters(t *testing.T) {
 					"who",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm_42"), orPolIDs(42)),
+						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, anyEventID, orPolNames("comm-42"), orPolIDs(42)),
 					},
 					[]string{},
 				),
@@ -1281,7 +1281,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 1,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_event",
+							Name: "comm-event",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -1307,8 +1307,8 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog1",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Read, orPolNames("comm_event"), orPolIDs(1)),
-						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Write, orPolNames("comm_event"), orPolIDs(1)),
+						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Read, orPolNames("comm-event"), orPolIDs(1)),
+						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Write, orPolNames("comm-event"), orPolIDs(1)),
 					},
 					[]string{},
 				),
@@ -1323,7 +1323,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 42,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "event_pol_42",
+							Name: "event-pol-42",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope:          []string{"global"},
@@ -1343,7 +1343,7 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog1",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Execve, orPolNames("event_pol_42"), orPolIDs(42)),
+						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Execve, orPolNames("event-pol-42"), orPolIDs(42)),
 					},
 					[]string{},
 				),
@@ -1358,7 +1358,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 64,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_event_args_64",
+							Name: "comm-event-args-64",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -1382,7 +1382,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 42,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_event_args_42",
+							Name: "comm-event-args-42",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -1407,7 +1407,7 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog1",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm_event_args_64"), orPolIDs(64),
+						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm-event-args-64"), orPolIDs(64),
 							expectArg("dirfd", int32(0)),
 							expectArg("flags", int32(0)),
 							expectArg("mode", uint32(0)),
@@ -1419,7 +1419,7 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog2",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "fakeprog2", testutils.CPUForTests, anyPID, 0, events.Open, orPolNames("comm_event_args_42"), orPolIDs(42),
+						expectEvent(anyHost, "fakeprog2", testutils.CPUForTests, anyPID, 0, events.Open, orPolNames("comm-event-args-42"), orPolIDs(42),
 							expectArg("flags", int32(0)),
 							expectArg("mode", uint32(0)),
 						),
@@ -1437,7 +1437,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 64,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_event_retval_64",
+							Name: "comm-event-retval-64",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -1460,7 +1460,7 @@ func Test_EventFilters(t *testing.T) {
 					id: 42,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "comm_event_retval_42",
+							Name: "comm-event-retval-42",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
@@ -1484,7 +1484,7 @@ func Test_EventFilters(t *testing.T) {
 					"fakeprog1",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm_event_retval_64"), orPolIDs(64),
+						expectEvent(anyHost, "fakeprog1", testutils.CPUForTests, anyPID, 0, events.Openat, orPolNames("comm-event-retval-64"), orPolIDs(64),
 							expectArg("dirfd", int32(0)),
 							expectArg("flags", int32(0)),
 							expectArg("mode", uint32(0)),
