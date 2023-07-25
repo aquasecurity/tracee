@@ -78,6 +78,133 @@ func Test_EventFilters(t *testing.T) {
 			test:         ExpectAllInOrder,
 		},
 		{
+			name: "mntns/pidns: trace events only from mount/pid namespace 0",
+			policyFiles: []policyFileWithID{
+				{
+					id: 42,
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "mntns/pidns",
+						},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"mntns=0", // no events expected
+								"pidns=0", // no events expected
+							},
+							DefaultActions: []string{"log"},
+							Rules:          []v1beta1.Rule{},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				// no event expected
+				newCmdEvents("ls", 1*time.Second, []trace.Event{}, []string{}),
+				newCmdEvents("uname", 1*time.Second, []trace.Event{}, []string{}),
+				newCmdEvents("who", 1*time.Second, []trace.Event{}, []string{}),
+			},
+			useSyscaller: false,
+			test:         ExpectAllInOrder,
+		},
+		{
+			name: "mntns: trace events from all mount namespaces but current",
+			policyFiles: []policyFileWithID{
+				{
+					id: 42,
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "mntns",
+						},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"mntns!=" + getProcNS("mnt"), // no events expected
+							},
+							DefaultActions: []string{"log"},
+							Rules:          []v1beta1.Rule{},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				// no event expected
+				newCmdEvents("uname", 1*time.Second, []trace.Event{}, []string{}),
+				newCmdEvents("who", 1*time.Second, []trace.Event{}, []string{}),
+			},
+			useSyscaller: false,
+			test:         ExpectAllInOrder,
+		},
+		{
+			name: "pidns: trace events from all pid namespaces but current",
+			policyFiles: []policyFileWithID{
+				{
+					id: 42,
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "pidns",
+						},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"pidns!=" + getProcNS("pid"), // no events expected
+							},
+							DefaultActions: []string{"log"},
+							Rules:          []v1beta1.Rule{},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				// no event expected
+				newCmdEvents("uname", 1*time.Second, []trace.Event{}, []string{}),
+				newCmdEvents("who", 1*time.Second, []trace.Event{}, []string{}),
+			},
+			useSyscaller: false,
+			test:         ExpectAllInOrder,
+		},
+		{
+			name: "comm: mntns: pidns: event: trace events set in a single policy from current pid/mount namespaces",
+			policyFiles: []policyFileWithID{
+				{
+					id: 1,
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "comm_mntns_pidns_event",
+						},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"comm=ping",
+								"mntns=" + getProcNS("mnt"),
+								"pidns=" + getProcNS("pid"),
+							},
+							DefaultActions: []string{"log"},
+							Rules: []v1beta1.Rule{
+								{
+									Event:   "sched_process_exec",
+									Filters: []string{},
+								},
+								{
+									Event:   "sched_process_exit",
+									Filters: []string{},
+								},
+							},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				newCmdEvents(
+					"ping -c1 0.0.0.0",
+					1*time.Second,
+					[]trace.Event{
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("comm_mntns_pidns_event"), orPolIDs(1)),
+						expectEvent(anyHost, "ping", testutils.CPUForTests, anyPID, 0, events.SchedProcessExit, orPolNames("comm_mntns_pidns_event"), orPolIDs(1)),
+					},
+					[]string{},
+				),
+			},
+			useSyscaller: false,
+			test:         ExpectAllInOrder,
+		},
+		{
 			name: "comm: event: trace events set in a single policy from ping command",
 			policyFiles: []policyFileWithID{
 				{

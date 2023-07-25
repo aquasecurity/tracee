@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"syscall"
 	"testing"
@@ -15,6 +16,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/config"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	uproc "github.com/aquasecurity/tracee/pkg/utils/proc"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -229,4 +231,14 @@ func assureIsRoot(t *testing.T) {
 	if syscall.Geteuid() != 0 {
 		t.Skipf("***** %s must be run as ROOT *****", t.Name())
 	}
+}
+
+func getProcNS(nsName string) string {
+	pid := syscall.Getpid()
+	nsID, err := uproc.GetProcNS(uint(pid), nsName)
+	if err != nil {
+		panic(err)
+	}
+
+	return strconv.Itoa(nsID)
 }
