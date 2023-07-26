@@ -9,11 +9,12 @@ import (
 )
 
 type Dependencies struct {
-	Events       []ID         // events required by this event
-	KSymbols     *[]KSymbol   // nil == no symbols needed, empty == unknown (yet)
-	TailCalls    []*TailCall  // tailcalls required for this event (or proccessing logic)
-	Capabilities Capabilities // Capabilities needed in events processor or derivation phases
-	Probes       []Probe
+	Events   []ID
+	KSymbols []KSymbol
+	Probes   []Probe
+	// mutable
+	Capabilities Capabilities
+	TailCalls    []*TailCall
 }
 
 type Probe struct {
@@ -23,7 +24,7 @@ type Probe struct {
 
 type KSymbol struct {
 	Symbol   string
-	Required bool // tracee fails if symbol is not found
+	Required bool // immutable
 }
 
 type Capabilities map[capabilities.RingType][]cap.Value // array of needed capabilities per ring type

@@ -5466,7 +5466,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 					{Handle: probes.DoSplice, Required: true},
 					{Handle: probes.DoSpliceRet, Required: true},
 				},
-				KSymbols: &[]KSymbol{
+				KSymbols: []KSymbol{
 					{Symbol: "pipefifo_fops", Required: true},
 				},
 			},
@@ -5599,7 +5599,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				Probes: []Probe{
 					{Handle: probes.PrintSyscallTable, Required: true},
 				},
-				KSymbols: &[]KSymbol{
+				KSymbols: []KSymbol{
 					{Symbol: "sys_call_table", Required: true},
 				},
 			},
@@ -5638,7 +5638,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 					{Handle: probes.DoInitModuleRet, Required: true},
 					{Handle: probes.LayoutAndAllocate, Required: true},
 				},
-				KSymbols: &[]KSymbol{
+				KSymbols: []KSymbol{
 					{Symbol: "modules", Required: true},
 					{Symbol: "module_kset", Required: true},
 					{Symbol: "mod_tree", Required: true},
@@ -5678,7 +5678,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			id32Bit: sys32undefined,
 			name:    "hooked_syscalls",
 			dependencies: Dependencies{
-				KSymbols: &[]KSymbol{
+				KSymbols: []KSymbol{
 					{Symbol: "_stext", Required: true},
 					{Symbol: "_etext", Required: true},
 				},
@@ -5833,7 +5833,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 						[]uint32{TailSendBin},
 					),
 				},
-				KSymbols: &[]KSymbol{
+				KSymbols: []KSymbol{
 					{Symbol: "pipefifo_fops", Required: true},
 				},
 			},
@@ -5866,7 +5866,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 						[]uint32{TailSendBin},
 					),
 				},
-				KSymbols: &[]KSymbol{
+				KSymbols: []KSymbol{
 					{Symbol: "pipefifo_fops", Required: true},
 				},
 			},
@@ -6048,7 +6048,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				Probes: []Probe{
 					{Handle: probes.SecurityFilePermission, Required: true},
 				},
-				KSymbols: &[]KSymbol{
+				KSymbols: []KSymbol{
 					{Symbol: "_stext", Required: true},
 					{Symbol: "_etext", Required: true},
 				},
@@ -6073,7 +6073,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				Probes: []Probe{
 					{Handle: probes.PrintNetSeqOps, Required: true},
 				},
-				KSymbols: &[]KSymbol{
+				KSymbols: []KSymbol{
 					{Symbol: "tcp4_seq_ops", Required: true},
 					{Symbol: "tcp6_seq_ops", Required: true},
 					{Symbol: "udp_seq_ops", Required: true},
@@ -6093,7 +6093,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			id32Bit: sys32undefined,
 			name:    "hooked_seq_ops",
 			dependencies: Dependencies{
-				KSymbols: &[]KSymbol{
+				KSymbols: []KSymbol{
 					{Symbol: "_stext", Required: true},
 					{Symbol: "_etext", Required: true},
 				},
@@ -6215,7 +6215,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				Events: []ID{
 					DoInitModule,
 				},
-				KSymbols: &[]KSymbol{},
+				KSymbols: []KSymbol{},
 				Capabilities: Capabilities{
 					capabilities.Base: []cap.Value{
 						cap.SYSLOG, // read /proc/kallsyms
