@@ -25,9 +25,7 @@ func NewEventDefinition(name string, sets []string, depsID []ID) EventDefinition
 		Events: make([]ID, 0, len(depsID)),
 	}
 
-	for _, id := range depsID {
-		d.Events = append(d.Events, id)
-	}
+	d.Events = append(d.Events, depsID...)
 
 	evt.dependencies = d
 

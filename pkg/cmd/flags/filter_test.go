@@ -75,7 +75,8 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 	eventsNameToID := events.CoreEventDefinitionGroup.NamesToIDs()
 	// remove internal events since they shouldn't be accessible by users
 	for event, id := range eventsNameToID {
-		if events.CoreEventDefinitionGroup.Get(id).IsInternal() {
+		evtDef := events.CoreEventDefinitionGroup.Get(id)
+		if evtDef.IsInternal() {
 			delete(eventsNameToID, event)
 		}
 	}

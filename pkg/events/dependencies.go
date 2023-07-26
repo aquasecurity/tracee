@@ -1,9 +1,10 @@
 package events
 
 import (
+	"kernel.org/pub/linux/libs/security/libcap/cap"
+
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 type Dependencies struct {
