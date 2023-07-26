@@ -200,7 +200,8 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]eve
 		setEvents := setsToEvents[set]
 		for _, id := range setEvents {
 			if !isExcluded[id] {
-				res[id] = events.CoreEventDefinitionGroup.Get(id).GetName()
+				evtDef := events.CoreEventDefinitionGroup.Get(id)
+				res[id] = evtDef.GetName()
 			}
 		}
 	}

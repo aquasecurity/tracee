@@ -256,7 +256,7 @@ func New(cfg config.Config) (*Tracee, error) {
 	// Update capabilities rings with all events dependencies
 
 	for id := range t.events {
-		evt, ok := events.CoreEventDefinitionGroup.GetSafe(id)
+		evt, ok := events.CoreEventDefinitionGroup.GetOk(id)
 		if !ok {
 			return t, errfmt.Errorf("could not get event %d", id)
 		}
@@ -500,7 +500,7 @@ type InitValues struct {
 func (t *Tracee) generateInitValues() (InitValues, error) {
 	initVals := InitValues{}
 	for evt := range t.events {
-		def, exists := events.CoreEventDefinitionGroup.GetSafe(evt)
+		def, exists := events.CoreEventDefinitionGroup.GetOk(evt)
 		if !exists {
 			return initVals, errfmt.Errorf("event with id %d doesn't exist", evt)
 		}
@@ -927,7 +927,12 @@ func (t *Tracee) validateKallsymsDependencies() {
 
 	// Cancel events with missing symbols dependencies
 	for eventToCancel, missingDepSyms := range missingSymsPerEvent {
-		logger.Errorw("Event canceled because of missing kernel symbol dependency", "missing symbols", missingDepSyms, "event", events.CoreEventDefinitionGroup.Get(eventToCancel).GetName())
+		can := events.CoreEventDefinitionGroup.Get(eventToCancel)
+		name := can.GetName()
+		logger.Errorw(
+			"Event canceled because of missing kernel symbol dependency",
+			"missing symbols", missingDepSyms, "event", name,
+		)
 		delete(t.events, eventToCancel)
 	}
 }
@@ -1143,7 +1148,7 @@ func (t *Tracee) attachProbes() error {
 	// attach selected tracing events probes
 
 	for tr := range t.events {
-		event, ok := events.CoreEventDefinitionGroup.GetSafe(tr)
+		event, ok := events.CoreEventDefinitionGroup.GetOk(tr)
 		if !ok {
 			continue
 		}

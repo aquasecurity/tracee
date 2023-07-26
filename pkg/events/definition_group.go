@@ -10,13 +10,10 @@ type EventState struct {
 }
 
 type EventDefinitionGroup struct {
-	// ksymbols and tailcalls are instantiable.
-	// TODO: remove instance once event states is finished
-	events map[ID]*EventDefinition
+	events map[ID]EventDefinition
 }
 
-// Add adds an event to definitions
-func (e *EventDefinitionGroup) Add(eventId ID, evt *EventDefinition) error {
+func (e *EventDefinitionGroup) Add(eventId ID, evt EventDefinition) error {
 	if _, ok := e.events[eventId]; ok {
 		return errfmt.Errorf("error event id already exist: %v", eventId)
 	}
@@ -30,21 +27,16 @@ func (e *EventDefinitionGroup) Add(eventId ID, evt *EventDefinition) error {
 	return nil
 }
 
-// Get gets the event without checking for Event existence
-func (e *EventDefinitionGroup) Get(eventId ID) *EventDefinition {
-	evt := e.events[eventId]
-	return evt
+func (e *EventDefinitionGroup) Get(eventId ID) EventDefinition {
+	return e.events[eventId]
 }
 
-// GetSafe gets the Event and also returns bool to check for existence
-func (e *EventDefinitionGroup) GetSafe(eventId ID) (*EventDefinition, bool) {
+func (e *EventDefinitionGroup) GetOk(eventId ID) (EventDefinition, bool) {
 	evt, ok := e.events[eventId]
 	return evt, ok
 }
 
-// Events returns the underlying Event definitions map
-// Use at own risk and do not modify the map
-func (e *EventDefinitionGroup) Events() map[ID]*EventDefinition {
+func (e *EventDefinitionGroup) Events() map[ID]EventDefinition {
 	return e.events
 }
 

@@ -9,7 +9,7 @@ import (
 )
 
 var CoreEventDefinitionGroup = EventDefinitionGroup{
-	events: map[ID]*EventDefinition{
+	events: map[ID]EventDefinition{
 		//
 		// Begin of Syscalls
 		//

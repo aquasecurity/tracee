@@ -27,12 +27,12 @@ func TestNewEventDefinition(t *testing.T) {
 func TestAdd(t *testing.T) {
 	tests := []struct {
 		name string
-		evt  *EventDefinition
+		evt  EventDefinition
 		err  string
 	}{
 		{
 			name: "new event",
-			evt: &EventDefinition{
+			evt: EventDefinition{
 				id32Bit: ID(6000),
 				name:    "new_event",
 				dependencies: Dependencies{
@@ -46,7 +46,7 @@ func TestAdd(t *testing.T) {
 		},
 		{
 			name: "event id already exist",
-			evt: &EventDefinition{
+			evt: EventDefinition{
 				id32Bit: ID(700),
 				name:    "new_event",
 				dependencies: Dependencies{
@@ -61,7 +61,7 @@ func TestAdd(t *testing.T) {
 		},
 		{
 			name: "event name already exist",
-			evt: &EventDefinition{
+			evt: EventDefinition{
 				id32Bit: ID(6001),
 				name:    "net_packet",
 				dependencies: Dependencies{
