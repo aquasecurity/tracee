@@ -9,10 +9,10 @@ import (
 func TestNewEventDefinition(t *testing.T) {
 	expected := Event{
 		Name: "hooked_seq_ops2",
-		Dependencies: dependencies{
-			Events: []eventDependency{
-				{EventID: PrintNetSeqOps},
-				{EventID: DoInitModule},
+		Dependencies: Dependencies{
+			Events: []ID{
+				PrintNetSeqOps,
+				DoInitModule,
 			},
 		},
 		Sets: []string{"signatures"},
@@ -35,10 +35,10 @@ func TestAdd(t *testing.T) {
 			evt: Event{
 				ID32Bit: ID(6000),
 				Name:    "new_event",
-				Dependencies: dependencies{
-					Events: []eventDependency{
-						{EventID: PrintNetSeqOps},
-						{EventID: DoInitModule},
+				Dependencies: Dependencies{
+					Events: []ID{
+						PrintNetSeqOps,
+						DoInitModule,
 					},
 				},
 				Sets: []string{"signatures"},
@@ -49,10 +49,10 @@ func TestAdd(t *testing.T) {
 			evt: Event{
 				ID32Bit: ID(700),
 				Name:    "new_event",
-				Dependencies: dependencies{
-					Events: []eventDependency{
-						{EventID: PrintNetSeqOps},
-						{EventID: DoInitModule},
+				Dependencies: Dependencies{
+					Events: []ID{
+						PrintNetSeqOps,
+						DoInitModule,
 					},
 				},
 				Sets: []string{"signatures"},
@@ -64,10 +64,10 @@ func TestAdd(t *testing.T) {
 			evt: Event{
 				ID32Bit: ID(6001),
 				Name:    "net_packet",
-				Dependencies: dependencies{
-					Events: []eventDependency{
-						{EventID: PrintNetSeqOps},
-						{EventID: DoInitModule},
+				Dependencies: Dependencies{
+					Events: []ID{
+						PrintNetSeqOps,
+						DoInitModule,
 					},
 				},
 				Sets: []string{"signatures"},

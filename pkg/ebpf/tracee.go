@@ -186,17 +186,17 @@ func (t *Tracee) handleEventsDependencies(eventId events.ID, submitMap uint64) {
 	definition := events.Definitions.Get(eventId)
 
 	eDependencies := definition.Dependencies
-	for _, dependentEvent := range eDependencies.Events {
-		ec, ok := t.events[dependentEvent.EventID]
+	for _, id := range eDependencies.Events {
+		ec, ok := t.events[id]
 		if !ok {
 			ec = eventConfig{}
-			t.handleEventsDependencies(dependentEvent.EventID, submitMap)
+			t.handleEventsDependencies(id, submitMap)
 		}
 		ec.submit |= submitMap
-		t.events[dependentEvent.EventID] = ec
+		t.events[id] = ec
 
 		if events.IsASignatureEvent(eventId) {
-			t.eventSignatures[dependentEvent.EventID] = true
+			t.eventSignatures[id] = true
 		}
 	}
 }
