@@ -10,6 +10,9 @@ import (
 
 var CoreEventDefinitionGroup = EventDefinitionGroup{
 	events: map[ID]*EventDefinition{
+		//
+		// Begin of Syscalls
+		//
 		Read: {
 			id32Bit: sys32read,
 			name:    "read",
@@ -19,6 +22,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "fd"},
 				{Type: "void*", Name: "buf"},
 				{Type: "size_t", Name: "count"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Read)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Read)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Read)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Read)}},
+				},
 			},
 		},
 		Write: {
@@ -31,6 +42,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "void*", Name: "buf"},
 				{Type: "size_t", Name: "count"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Write)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Write)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Write)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Write)}},
+				},
+			},
 		},
 		Open: {
 			id32Bit: sys32open,
@@ -42,6 +61,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "flags"},
 				{Type: "mode_t", Name: "mode"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Open)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Open)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Open)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Open)}},
+				},
+			},
 		},
 		Close: {
 			id32Bit: sys32close,
@@ -50,6 +77,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "fs", "fs_file_ops"},
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "fd"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Close)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Close)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Close)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Close)}},
+				},
 			},
 		},
 		Stat: {
@@ -61,6 +96,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "struct stat*", Name: "statbuf"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Stat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Stat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Stat)}},
+				},
+			},
 		},
 		Fstat: {
 			id32Bit: sys32fstat,
@@ -71,6 +114,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "fd"},
 				{Type: "struct stat*", Name: "statbuf"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fstat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fstat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fstat)}},
+				},
+			},
 		},
 		Lstat: {
 			id32Bit: sys32lstat,
@@ -80,6 +131,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "struct stat*", Name: "statbuf"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lstat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lstat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lstat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lstat)}},
+				},
 			},
 		},
 		Poll: {
@@ -92,6 +151,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned int", Name: "nfds"},
 				{Type: "int", Name: "timeout"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Poll)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Poll)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Poll)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Poll)}},
+				},
+			},
 		},
 		Lseek: {
 			id32Bit: sys32lseek,
@@ -102,6 +169,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "fd"},
 				{Type: "off_t", Name: "offset"},
 				{Type: "unsigned int", Name: "whence"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lseek)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lseek)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lseek)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lseek)}},
+				},
 			},
 		},
 		Mmap: {
@@ -117,6 +192,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "fd"},
 				{Type: "off_t", Name: "off"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mmap)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mmap)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mmap)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mmap)}},
+				},
+			},
 		},
 		Mprotect: {
 			id32Bit: sys32mprotect,
@@ -128,6 +211,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "size_t", Name: "len"},
 				{Type: "int", Name: "prot"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mprotect)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mprotect)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mprotect)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mprotect)}},
+				},
+			},
 		},
 		Munmap: {
 			id32Bit: sys32munmap,
@@ -138,6 +229,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "void*", Name: "addr"},
 				{Type: "size_t", Name: "length"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Munmap)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Munmap)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Munmap)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Munmap)}},
+				},
+			},
 		},
 		Brk: {
 			id32Bit: sys32brk,
@@ -146,6 +245,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "proc", "proc_mem"},
 			params: []trace.ArgMeta{
 				{Type: "void*", Name: "addr"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Brk)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Brk)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Brk)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Brk)}},
+				},
 			},
 		},
 		RtSigaction: {
@@ -159,6 +266,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct sigaction*", Name: "oldact"},
 				{Type: "size_t", Name: "sigsetsize"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigaction)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigaction)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigaction)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigaction)}},
+				},
+			},
 		},
 		RtSigprocmask: {
 			id32Bit: sys32rt_sigprocmask,
@@ -171,6 +286,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "sigset_t*", Name: "oldset"},
 				{Type: "size_t", Name: "sigsetsize"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigprocmask)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigprocmask)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigprocmask)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigprocmask)}},
+				},
+			},
 		},
 		RtSigreturn: {
 			id32Bit: sys32rt_sigreturn,
@@ -178,6 +301,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigreturn)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigreturn)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigreturn)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigreturn)}},
+				},
+			},
 		},
 		Ioctl: {
 			id32Bit: sys32ioctl,
@@ -188,6 +319,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "fd"},
 				{Type: "unsigned long", Name: "request"},
 				{Type: "unsigned long", Name: "arg"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ioctl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ioctl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ioctl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ioctl)}},
+				},
 			},
 		},
 		Pread64: {
@@ -201,6 +340,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "size_t", Name: "count"},
 				{Type: "off_t", Name: "offset"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pread64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pread64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pread64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pread64)}},
+				},
+			},
 		},
 		Pwrite64: {
 			id32Bit: sys32pwrite64,
@@ -213,6 +360,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "size_t", Name: "count"},
 				{Type: "off_t", Name: "offset"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pwrite64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pwrite64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pwrite64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pwrite64)}},
+				},
+			},
 		},
 		Readv: {
 			id32Bit: sys32readv,
@@ -223,6 +378,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "fd"},
 				{Type: "const struct iovec*", Name: "iov"},
 				{Type: "int", Name: "iovcnt"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readv)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readv)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readv)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Readv)}},
+				},
 			},
 		},
 		Writev: {
@@ -235,6 +398,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const struct iovec*", Name: "iov"},
 				{Type: "int", Name: "iovcnt"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Writev)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Writev)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Writev)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Writev)}},
+				},
+			},
 		},
 		Access: {
 			id32Bit: sys32access,
@@ -245,6 +416,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "int", Name: "mode"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Access)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Access)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Access)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Access)}},
+				},
+			},
 		},
 		Pipe: {
 			id32Bit: sys32pipe,
@@ -253,6 +432,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "ipc", "ipc_pipe"},
 			params: []trace.ArgMeta{
 				{Type: "int[2]", Name: "pipefd"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pipe)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pipe)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pipe)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pipe)}},
+				},
 			},
 		},
 		Select: {
@@ -267,6 +454,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "fd_set*", Name: "exceptfds"},
 				{Type: "struct timeval*", Name: "timeout"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Select)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Select)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Select)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Select)}},
+				},
+			},
 		},
 		SchedYield: {
 			id32Bit: sys32sched_yield,
@@ -274,6 +469,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_sched"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedYield)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedYield)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedYield)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedYield)}},
+				},
+			},
 		},
 		Mremap: {
 			id32Bit: sys32mremap,
@@ -287,6 +490,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "flags"},
 				{Type: "void*", Name: "new_address"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mremap)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mremap)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mremap)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mremap)}},
+				},
+			},
 		},
 		Msync: {
 			id32Bit: sys32msync,
@@ -297,6 +508,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "void*", Name: "addr"},
 				{Type: "size_t", Name: "length"},
 				{Type: "int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msync)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msync)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msync)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Msync)}},
+				},
 			},
 		},
 		Mincore: {
@@ -309,6 +528,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "size_t", Name: "length"},
 				{Type: "unsigned char*", Name: "vec"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mincore)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mincore)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mincore)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mincore)}},
+				},
+			},
 		},
 		Madvise: {
 			id32Bit: sys32madvise,
@@ -319,6 +546,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "void*", Name: "addr"},
 				{Type: "size_t", Name: "length"},
 				{Type: "int", Name: "advice"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Madvise)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Madvise)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Madvise)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Madvise)}},
+				},
 			},
 		},
 		Shmget: {
@@ -331,6 +566,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "size_t", Name: "size"},
 				{Type: "int", Name: "shmflg"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmget)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shmget)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shmget)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Shmget)}},
+				},
+			},
 		},
 		Shmat: {
 			id32Bit: sys32shmat,
@@ -341,6 +584,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "shmid"},
 				{Type: "const void*", Name: "shmaddr"},
 				{Type: "int", Name: "shmflg"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shmat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shmat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Shmat)}},
+				},
 			},
 		},
 		Shmctl: {
@@ -353,6 +604,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "cmd"},
 				{Type: "struct shmid_ds*", Name: "buf"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmctl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shmctl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shmctl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Shmctl)}},
+				},
+			},
 		},
 		Dup: {
 			id32Bit: sys32dup,
@@ -361,6 +620,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "fs", "fs_fd_ops"},
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "oldfd"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Dup)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Dup)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Dup)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Dup)}},
+				},
 			},
 		},
 		Dup2: {
@@ -372,6 +639,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "oldfd"},
 				{Type: "int", Name: "newfd"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Dup2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Dup2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Dup2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Dup2)}},
+				},
+			},
 		},
 		Pause: {
 			id32Bit: sys32pause,
@@ -379,6 +654,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pause)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pause)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pause)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pause)}},
+				},
+			},
 		},
 		Nanosleep: {
 			id32Bit: sys32nanosleep,
@@ -388,6 +671,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const struct timespec*", Name: "req"},
 				{Type: "struct timespec*", Name: "rem"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Nanosleep)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Nanosleep)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Nanosleep)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Nanosleep)}},
+				},
 			},
 		},
 		Getitimer: {
@@ -399,6 +690,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "which"},
 				{Type: "struct itimerval*", Name: "curr_value"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getitimer)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getitimer)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getitimer)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getitimer)}},
+				},
+			},
 		},
 		Alarm: {
 			id32Bit: sys32alarm,
@@ -407,6 +706,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "time", "time_timer"},
 			params: []trace.ArgMeta{
 				{Type: "unsigned int", Name: "seconds"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Alarm)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Alarm)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Alarm)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Alarm)}},
+				},
 			},
 		},
 		Setitimer: {
@@ -419,6 +726,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct itimerval*", Name: "new_value"},
 				{Type: "struct itimerval*", Name: "old_value"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setitimer)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setitimer)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setitimer)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setitimer)}},
+				},
+			},
 		},
 		Getpid: {
 			id32Bit: sys32getpid,
@@ -426,6 +741,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getpid)}},
+				},
+			},
 		},
 		Sendfile: {
 			id32Bit: sys32sendfile64,
@@ -438,6 +761,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "off_t*", Name: "offset"},
 				{Type: "size_t", Name: "count"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendfile)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendfile)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendfile)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sendfile)}},
+				},
+			},
 		},
 		Socket: {
 			id32Bit: sys32socket,
@@ -448,6 +779,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "domain"},
 				{Type: "int", Name: "type"},
 				{Type: "int", Name: "protocol"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Socket)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Socket)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Socket)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Socket)}},
+				},
 			},
 		},
 		Connect: {
@@ -460,6 +799,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct sockaddr*", Name: "addr"},
 				{Type: "int", Name: "addrlen"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Connect)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Connect)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Connect)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Connect)}},
+				},
+			},
 		},
 		Accept: {
 			id32Bit: sys32undefined,
@@ -470,6 +817,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "sockfd"},
 				{Type: "struct sockaddr*", Name: "addr"},
 				{Type: "int*", Name: "addrlen"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Accept)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Accept)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Accept)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Accept)}},
+				},
 			},
 		},
 		Sendto: {
@@ -485,6 +840,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct sockaddr*", Name: "dest_addr"},
 				{Type: "int", Name: "addrlen"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendto)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendto)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendto)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sendto)}},
+				},
+			},
 		},
 		Recvfrom: {
 			id32Bit: sys32recvfrom,
@@ -499,6 +862,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct sockaddr*", Name: "src_addr"},
 				{Type: "int*", Name: "addrlen"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Recvfrom)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Recvfrom)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Recvfrom)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Recvfrom)}},
+				},
+			},
 		},
 		Sendmsg: {
 			id32Bit: sys32sendmsg,
@@ -509,6 +880,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "sockfd"},
 				{Type: "struct msghdr*", Name: "msg"},
 				{Type: "int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendmsg)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendmsg)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendmsg)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sendmsg)}},
+				},
 			},
 		},
 		Recvmsg: {
@@ -521,6 +900,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct msghdr*", Name: "msg"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Recvmsg)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Recvmsg)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Recvmsg)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Recvmsg)}},
+				},
+			},
 		},
 		Shutdown: {
 			id32Bit: sys32shutdown,
@@ -530,6 +917,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "sockfd"},
 				{Type: "int", Name: "how"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shutdown)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shutdown)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shutdown)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Shutdown)}},
+				},
 			},
 		},
 		Bind: {
@@ -542,6 +937,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct sockaddr*", Name: "addr"},
 				{Type: "int", Name: "addrlen"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Bind)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Bind)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Bind)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Bind)}},
+				},
+			},
 		},
 		Listen: {
 			id32Bit: sys32listen,
@@ -551,6 +954,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "sockfd"},
 				{Type: "int", Name: "backlog"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Listen)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Listen)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Listen)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Listen)}},
+				},
 			},
 		},
 		Getsockname: {
@@ -563,6 +974,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct sockaddr*", Name: "addr"},
 				{Type: "int*", Name: "addrlen"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getsockname)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getsockname)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getsockname)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getsockname)}},
+				},
+			},
 		},
 		Getpeername: {
 			id32Bit: sys32getpeername,
@@ -573,6 +992,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "sockfd"},
 				{Type: "struct sockaddr*", Name: "addr"},
 				{Type: "int*", Name: "addrlen"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpeername)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpeername)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpeername)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getpeername)}},
+				},
 			},
 		},
 		Socketpair: {
@@ -585,6 +1012,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "type"},
 				{Type: "int", Name: "protocol"},
 				{Type: "int[2]", Name: "sv"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Socketpair)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Socketpair)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Socketpair)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Socketpair)}},
+				},
 			},
 		},
 		Setsockopt: {
@@ -599,6 +1034,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const void*", Name: "optval"},
 				{Type: "int", Name: "optlen"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setsockopt)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setsockopt)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setsockopt)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setsockopt)}},
+				},
+			},
 		},
 		Getsockopt: {
 			id32Bit: sys32getsockopt,
@@ -611,6 +1054,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "optname"},
 				{Type: "void*", Name: "optval"},
 				{Type: "int*", Name: "optlen"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getsockopt)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getsockopt)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getsockopt)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getsockopt)}},
+				},
 			},
 		},
 		Clone: {
@@ -625,6 +1076,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int*", Name: "child_tid"},
 				{Type: "unsigned long", Name: "tls"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Clone)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Clone)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Clone)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Clone)}},
+				},
+			},
 		},
 		Fork: {
 			id32Bit: sys32fork,
@@ -632,6 +1091,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_life"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fork)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fork)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fork)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fork)}},
+				},
+			},
 		},
 		Vfork: {
 			id32Bit: sys32vfork,
@@ -639,25 +1106,33 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_life"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vfork)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vfork)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vfork)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Vfork)}},
+				},
+			},
 		},
 		Execve: {
 			id32Bit: sys32execve,
 			name:    "execve",
 			syscall: true,
-			dependencies: Dependencies{
-				TailCalls: []*TailCall{
-					NewTailCall(
-						"sys_enter_tails",
-						"syscall__execve",
-						[]uint32{uint32(Execve)},
-					),
-				},
-			},
-			sets: []string{"syscalls", "proc", "proc_life"},
+			sets:    []string{"syscalls", "proc", "proc_life"},
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "const char*const*", Name: "argv"},
 				{Type: "const char*const*", Name: "envp"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_tails", "syscall__execve", []uint32{uint32(Execve)}},
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Execve)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Execve)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Execve)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Execve)}},
+				},
 			},
 		},
 		Exit: {
@@ -667,6 +1142,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "proc", "proc_life"},
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "status"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Exit)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Exit)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Exit)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Exit)}},
+				},
 			},
 		},
 		Wait4: {
@@ -680,6 +1163,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "options"},
 				{Type: "struct rusage*", Name: "rusage"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Wait4)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Wait4)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Wait4)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Wait4)}},
+				},
+			},
 		},
 		Kill: {
 			id32Bit: sys32kill,
@@ -690,6 +1181,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "pid_t", Name: "pid"},
 				{Type: "int", Name: "sig"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Kill)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Kill)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Kill)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Kill)}},
+				},
+			},
 		},
 		Uname: {
 			id32Bit: sys32uname,
@@ -698,6 +1197,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "system"},
 			params: []trace.ArgMeta{
 				{Type: "struct utsname*", Name: "buf"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Uname)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Uname)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Uname)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Uname)}},
+				},
 			},
 		},
 		Semget: {
@@ -710,6 +1217,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "nsems"},
 				{Type: "int", Name: "semflg"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semget)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Semget)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Semget)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Semget)}},
+				},
+			},
 		},
 		Semop: {
 			id32Bit: sys32undefined,
@@ -720,6 +1235,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "semid"},
 				{Type: "struct sembuf*", Name: "sops"},
 				{Type: "size_t", Name: "nsops"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semop)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Semop)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Semop)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Semop)}},
+				},
 			},
 		},
 		Semctl: {
@@ -733,6 +1256,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "cmd"},
 				{Type: "unsigned long", Name: "arg"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semctl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Semctl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Semctl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Semctl)}},
+				},
+			},
 		},
 		Shmdt: {
 			id32Bit: sys32shmdt,
@@ -741,6 +1272,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "ipc", "ipc_shm"},
 			params: []trace.ArgMeta{
 				{Type: "const void*", Name: "shmaddr"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmdt)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shmdt)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shmdt)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Shmdt)}},
+				},
 			},
 		},
 		Msgget: {
@@ -751,6 +1290,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "key_t", Name: "key"},
 				{Type: "int", Name: "msgflg"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgget)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msgget)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msgget)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Msgget)}},
+				},
 			},
 		},
 		Msgsnd: {
@@ -763,6 +1310,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct msgbuf*", Name: "msgp"},
 				{Type: "size_t", Name: "msgsz"},
 				{Type: "int", Name: "msgflg"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgsnd)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msgsnd)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msgsnd)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Msgsnd)}},
+				},
 			},
 		},
 		Msgrcv: {
@@ -777,6 +1332,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "long", Name: "msgtyp"},
 				{Type: "int", Name: "msgflg"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgrcv)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msgrcv)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msgrcv)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Msgrcv)}},
+				},
+			},
 		},
 		Msgctl: {
 			id32Bit: sys32msgctl,
@@ -787,6 +1350,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "msqid"},
 				{Type: "int", Name: "cmd"},
 				{Type: "struct msqid_ds*", Name: "buf"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgctl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msgctl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msgctl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Msgctl)}},
+				},
 			},
 		},
 		Fcntl: {
@@ -799,6 +1370,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "cmd"},
 				{Type: "unsigned long", Name: "arg"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fcntl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fcntl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fcntl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fcntl)}},
+				},
+			},
 		},
 		Flock: {
 			id32Bit: sys32flock,
@@ -809,6 +1388,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "fd"},
 				{Type: "int", Name: "operation"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Flock)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Flock)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Flock)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Flock)}},
+				},
+			},
 		},
 		Fsync: {
 			id32Bit: sys32fsync,
@@ -818,6 +1405,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "fd"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsync)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsync)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsync)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fsync)}},
+				},
+			},
 		},
 		Fdatasync: {
 			id32Bit: sys32fdatasync,
@@ -826,6 +1421,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "fs", "fs_sync"},
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "fd"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fdatasync)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fdatasync)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fdatasync)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fdatasync)}},
+				},
 			},
 		},
 		Truncate: {
@@ -837,6 +1440,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "path"},
 				{Type: "off_t", Name: "length"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Truncate)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Truncate)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Truncate)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Truncate)}},
+				},
+			},
 		},
 		Ftruncate: {
 			id32Bit: sys32ftruncate,
@@ -846,6 +1457,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "fd"},
 				{Type: "off_t", Name: "length"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ftruncate)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ftruncate)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ftruncate)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ftruncate)}},
+				},
 			},
 		},
 		Getdents: {
@@ -858,6 +1477,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct linux_dirent*", Name: "dirp"},
 				{Type: "unsigned int", Name: "count"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getdents)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getdents)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getdents)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getdents)}},
+				},
+			},
 		},
 		Getcwd: {
 			id32Bit: sys32getcwd,
@@ -868,6 +1495,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "char*", Name: "buf"},
 				{Type: "size_t", Name: "size"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getcwd)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getcwd)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getcwd)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getcwd)}},
+				},
+			},
 		},
 		Chdir: {
 			id32Bit: sys32chdir,
@@ -877,6 +1512,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "path"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chdir)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chdir)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chdir)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Chdir)}},
+				},
+			},
 		},
 		Fchdir: {
 			id32Bit: sys32fchdir,
@@ -885,6 +1528,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "fs", "fs_dir_ops"},
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "fd"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchdir)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchdir)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchdir)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fchdir)}},
+				},
 			},
 		},
 		Rename: {
@@ -896,6 +1547,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "oldpath"},
 				{Type: "const char*", Name: "newpath"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Rename)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Rename)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Rename)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Rename)}},
+				},
+			},
 		},
 		Mkdir: {
 			id32Bit: sys32mkdir,
@@ -906,6 +1565,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "mode_t", Name: "mode"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mkdir)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mkdir)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mkdir)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mkdir)}},
+				},
+			},
 		},
 		Rmdir: {
 			id32Bit: sys32rmdir,
@@ -914,6 +1581,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "fs", "fs_dir_ops"},
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "pathname"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Rmdir)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Rmdir)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Rmdir)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Rmdir)}},
+				},
 			},
 		},
 		Creat: {
@@ -925,6 +1600,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "mode_t", Name: "mode"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Creat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Creat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Creat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Creat)}},
+				},
+			},
 		},
 		Link: {
 			id32Bit: sys32link,
@@ -935,6 +1618,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "oldpath"},
 				{Type: "const char*", Name: "newpath"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Link)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Link)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Link)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Link)}},
+				},
+			},
 		},
 		Unlink: {
 			id32Bit: sys32unlink,
@@ -943,6 +1634,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "fs", "fs_link_ops"},
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "pathname"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Unlink)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Unlink)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Unlink)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Unlink)}},
+				},
 			},
 		},
 		Symlink: {
@@ -953,6 +1652,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "target"},
 				{Type: "const char*", Name: "linkpath"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Symlink)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Symlink)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Symlink)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Symlink)}},
+				},
 			},
 		},
 		Readlink: {
@@ -965,6 +1672,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "char*", Name: "buf"},
 				{Type: "size_t", Name: "bufsiz"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readlink)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readlink)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readlink)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Readlink)}},
+				},
+			},
 		},
 		Chmod: {
 			id32Bit: sys32chmod,
@@ -975,6 +1690,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "mode_t", Name: "mode"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chmod)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chmod)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chmod)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Chmod)}},
+				},
+			},
 		},
 		Fchmod: {
 			id32Bit: sys32fchmod,
@@ -984,6 +1707,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "fd"},
 				{Type: "mode_t", Name: "mode"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchmod)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchmod)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchmod)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fchmod)}},
+				},
 			},
 		},
 		Chown: {
@@ -996,6 +1727,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "uid_t", Name: "owner"},
 				{Type: "gid_t", Name: "group"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chown)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chown)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chown)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Chown)}},
+				},
+			},
 		},
 		Fchown: {
 			id32Bit: sys32fchown32,
@@ -1006,6 +1745,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "fd"},
 				{Type: "uid_t", Name: "owner"},
 				{Type: "gid_t", Name: "group"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchown)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchown)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchown)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fchown)}},
+				},
 			},
 		},
 		Lchown: {
@@ -1018,6 +1765,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "uid_t", Name: "owner"},
 				{Type: "gid_t", Name: "group"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lchown)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lchown)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lchown)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lchown)}},
+				},
+			},
 		},
 		Umask: {
 			id32Bit: sys32umask,
@@ -1026,6 +1781,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
 			params: []trace.ArgMeta{
 				{Type: "mode_t", Name: "mask"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Umask)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Umask)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Umask)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Umask)}},
+				},
 			},
 		},
 		Gettimeofday: {
@@ -1037,6 +1800,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct timeval*", Name: "tv"},
 				{Type: "struct timezone*", Name: "tz"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Gettimeofday)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Gettimeofday)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Gettimeofday)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Gettimeofday)}},
+				},
+			},
 		},
 		Getrlimit: {
 			id32Bit: sys32ugetrlimit,
@@ -1046,6 +1817,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "resource"},
 				{Type: "struct rlimit*", Name: "rlim"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getrlimit)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getrlimit)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getrlimit)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getrlimit)}},
+				},
 			},
 		},
 		Getrusage: {
@@ -1057,6 +1836,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "who"},
 				{Type: "struct rusage*", Name: "usage"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getrusage)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getrusage)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getrusage)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getrusage)}},
+				},
+			},
 		},
 		Sysinfo: {
 			id32Bit: sys32sysinfo,
@@ -1066,6 +1853,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "struct sysinfo*", Name: "info"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sysinfo)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sysinfo)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sysinfo)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sysinfo)}},
+				},
+			},
 		},
 		Times: {
 			id32Bit: sys32times,
@@ -1074,6 +1869,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "proc"},
 			params: []trace.ArgMeta{
 				{Type: "struct tms*", Name: "buf"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Times)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Times)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Times)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Times)}},
+				},
 			},
 		},
 		Ptrace: {
@@ -1087,6 +1890,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "void*", Name: "addr"},
 				{Type: "void*", Name: "data"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ptrace)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ptrace)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ptrace)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ptrace)}},
+				},
+			},
 		},
 		Getuid: {
 			id32Bit: sys32getuid32,
@@ -1094,6 +1905,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getuid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getuid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getuid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getuid)}},
+				},
+			},
 		},
 		Syslog: {
 			id32Bit: sys32syslog,
@@ -1105,6 +1924,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "char*", Name: "bufp"},
 				{Type: "int", Name: "len"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Syslog)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Syslog)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Syslog)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Syslog)}},
+				},
+			},
 		},
 		Getgid: {
 			id32Bit: sys32getgid32,
@@ -1112,6 +1939,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getgid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getgid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getgid)}},
+				},
+			},
 		},
 		Setuid: {
 			id32Bit: sys32setuid32,
@@ -1120,6 +1955,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"default", "syscalls", "proc", "proc_ids"},
 			params: []trace.ArgMeta{
 				{Type: "uid_t", Name: "uid"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setuid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setuid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setuid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setuid)}},
+				},
 			},
 		},
 		Setgid: {
@@ -1130,6 +1973,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "gid_t", Name: "gid"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setgid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setgid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setgid)}},
+				},
+			},
 		},
 		Geteuid: {
 			id32Bit: sys32geteuid32,
@@ -1137,6 +1988,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Geteuid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Geteuid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Geteuid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Geteuid)}},
+				},
+			},
 		},
 		Getegid: {
 			id32Bit: sys32getegid32,
@@ -1144,6 +2003,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getegid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getegid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getegid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getegid)}},
+				},
+			},
 		},
 		Setpgid: {
 			id32Bit: sys32setpgid,
@@ -1154,6 +2021,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "pid_t", Name: "pid"},
 				{Type: "pid_t", Name: "pgid"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setpgid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setpgid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setpgid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setpgid)}},
+				},
+			},
 		},
 		Getppid: {
 			id32Bit: sys32getppid,
@@ -1161,6 +2036,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getppid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getppid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getppid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getppid)}},
+				},
+			},
 		},
 		Getpgrp: {
 			id32Bit: sys32getpgrp,
@@ -1168,6 +2051,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpgrp)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpgrp)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpgrp)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getpgrp)}},
+				},
+			},
 		},
 		Setsid: {
 			id32Bit: sys32setsid,
@@ -1175,6 +2066,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"default", "syscalls", "proc", "proc_ids"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setsid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setsid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setsid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setsid)}},
+				},
+			},
 		},
 		Setreuid: {
 			id32Bit: sys32setreuid32,
@@ -1184,6 +2083,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "uid_t", Name: "ruid"},
 				{Type: "uid_t", Name: "euid"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setreuid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setreuid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setreuid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setreuid)}},
+				},
 			},
 		},
 		Setregid: {
@@ -1195,6 +2102,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "gid_t", Name: "rgid"},
 				{Type: "gid_t", Name: "egid"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setregid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setregid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setregid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setregid)}},
+				},
+			},
 		},
 		Getgroups: {
 			id32Bit: sys32getgroups32,
@@ -1205,6 +2120,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "size"},
 				{Type: "gid_t*", Name: "list"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgroups)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getgroups)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getgroups)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getgroups)}},
+				},
+			},
 		},
 		Setgroups: {
 			id32Bit: sys32setgroups32,
@@ -1214,6 +2137,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "size"},
 				{Type: "gid_t*", Name: "list"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgroups)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setgroups)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setgroups)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setgroups)}},
+				},
 			},
 		},
 		Setresuid: {
@@ -1226,6 +2157,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "uid_t", Name: "euid"},
 				{Type: "uid_t", Name: "suid"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresuid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setresuid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setresuid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setresuid)}},
+				},
+			},
 		},
 		Getresuid: {
 			id32Bit: sys32getresuid32,
@@ -1236,6 +2175,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "uid_t*", Name: "ruid"},
 				{Type: "uid_t*", Name: "euid"},
 				{Type: "uid_t*", Name: "suid"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresuid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getresuid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getresuid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getresuid)}},
+				},
 			},
 		},
 		Setresgid: {
@@ -1248,6 +2195,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "gid_t", Name: "egid"},
 				{Type: "gid_t", Name: "sgid"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresgid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setresgid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setresgid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setresgid)}},
+				},
+			},
 		},
 		Getresgid: {
 			id32Bit: sys32getresgid32,
@@ -1259,6 +2214,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "gid_t*", Name: "egid"},
 				{Type: "gid_t*", Name: "sgid"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresgid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getresgid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getresgid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getresgid)}},
+				},
+			},
 		},
 		Getpgid: {
 			id32Bit: sys32getpgid,
@@ -1267,6 +2230,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "proc", "proc_ids"},
 			params: []trace.ArgMeta{
 				{Type: "pid_t", Name: "pid"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpgid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpgid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpgid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getpgid)}},
+				},
 			},
 		},
 		Setfsuid: {
@@ -1277,6 +2248,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "uid_t", Name: "fsuid"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsuid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setfsuid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setfsuid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setfsuid)}},
+				},
+			},
 		},
 		Setfsgid: {
 			id32Bit: sys32setfsgid32,
@@ -1286,6 +2265,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "gid_t", Name: "fsgid"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsgid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setfsgid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setfsgid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setfsgid)}},
+				},
+			},
 		},
 		Getsid: {
 			id32Bit: sys32getsid,
@@ -1294,6 +2281,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "proc", "proc_ids"},
 			params: []trace.ArgMeta{
 				{Type: "pid_t", Name: "pid"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getsid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getsid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getsid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getsid)}},
+				},
 			},
 		},
 		Capget: {
@@ -1305,6 +2300,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "cap_user_header_t", Name: "hdrp"},
 				{Type: "cap_user_data_t", Name: "datap"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Capget)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Capget)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Capget)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Capget)}},
+				},
+			},
 		},
 		Capset: {
 			id32Bit: sys32capset,
@@ -1315,6 +2318,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "cap_user_header_t", Name: "hdrp"},
 				{Type: "const cap_user_data_t", Name: "datap"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Capset)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Capset)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Capset)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Capset)}},
+				},
+			},
 		},
 		RtSigpending: {
 			id32Bit: sys32rt_sigpending,
@@ -1324,6 +2335,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "sigset_t*", Name: "set"},
 				{Type: "size_t", Name: "sigsetsize"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigpending)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigpending)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigpending)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigpending)}},
+				},
 			},
 		},
 		RtSigtimedwait: {
@@ -1337,6 +2356,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const struct timespec*", Name: "timeout"},
 				{Type: "size_t", Name: "sigsetsize"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigtimedwait)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigtimedwait)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigtimedwait)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigtimedwait)}},
+				},
+			},
 		},
 		RtSigqueueinfo: {
 			id32Bit: sys32rt_sigqueueinfo,
@@ -1348,6 +2375,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "sig"},
 				{Type: "siginfo_t*", Name: "info"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigqueueinfo)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigqueueinfo)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigqueueinfo)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigqueueinfo)}},
+				},
+			},
 		},
 		RtSigsuspend: {
 			id32Bit: sys32rt_sigsuspend,
@@ -1357,6 +2392,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "sigset_t*", Name: "mask"},
 				{Type: "size_t", Name: "sigsetsize"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigsuspend)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigsuspend)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigsuspend)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigsuspend)}},
+				},
 			},
 		},
 		Sigaltstack: {
@@ -1368,6 +2411,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const stack_t*", Name: "ss"},
 				{Type: "stack_t*", Name: "old_ss"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigaltstack)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigaltstack)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigaltstack)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sigaltstack)}},
+				},
+			},
 		},
 		Utime: {
 			id32Bit: sys32utime,
@@ -1377,6 +2428,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "filename"},
 				{Type: "const struct utimbuf*", Name: "times"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Utime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Utime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Utime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Utime)}},
+				},
 			},
 		},
 		Mknod: {
@@ -1389,6 +2448,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "mode_t", Name: "mode"},
 				{Type: "dev_t", Name: "dev"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mknod)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mknod)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mknod)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mknod)}},
+				},
+			},
 		},
 		Uselib: {
 			id32Bit: sys32uselib,
@@ -1398,6 +2465,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "library"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Uselib)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Uselib)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Uselib)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Uselib)}},
+				},
+			},
 		},
 		Personality: {
 			id32Bit: sys32personality,
@@ -1406,6 +2481,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "system"},
 			params: []trace.ArgMeta{
 				{Type: "unsigned long", Name: "persona"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Personality)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Personality)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Personality)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Personality)}},
+				},
 			},
 		},
 		Ustat: {
@@ -1417,6 +2500,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "dev_t", Name: "dev"},
 				{Type: "struct ustat*", Name: "ubuf"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ustat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ustat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ustat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ustat)}},
+				},
+			},
 		},
 		Statfs: {
 			id32Bit: sys32statfs,
@@ -1426,6 +2517,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "path"},
 				{Type: "struct statfs*", Name: "buf"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Statfs)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Statfs)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Statfs)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Statfs)}},
+				},
 			},
 		},
 		Fstatfs: {
@@ -1437,6 +2536,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "fd"},
 				{Type: "struct statfs*", Name: "buf"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstatfs)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fstatfs)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fstatfs)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fstatfs)}},
+				},
+			},
 		},
 		Sysfs: {
 			id32Bit: sys32sysfs,
@@ -1445,6 +2552,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "fs", "fs_info"},
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "option"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sysfs)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sysfs)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sysfs)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sysfs)}},
+				},
 			},
 		},
 		Getpriority: {
@@ -1455,6 +2570,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "which"},
 				{Type: "int", Name: "who"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpriority)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpriority)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpriority)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getpriority)}},
+				},
 			},
 		},
 		Setpriority: {
@@ -1467,6 +2590,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "who"},
 				{Type: "int", Name: "prio"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setpriority)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setpriority)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setpriority)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setpriority)}},
+				},
+			},
 		},
 		SchedSetparam: {
 			id32Bit: sys32sched_setparam,
@@ -1477,6 +2608,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "pid_t", Name: "pid"},
 				{Type: "struct sched_param*", Name: "param"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetparam)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedSetparam)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedSetparam)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedSetparam)}},
+				},
+			},
 		},
 		SchedGetparam: {
 			id32Bit: sys32sched_getparam,
@@ -1486,6 +2625,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "pid_t", Name: "pid"},
 				{Type: "struct sched_param*", Name: "param"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetparam)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetparam)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetparam)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedGetparam)}},
+				},
 			},
 		},
 		SchedSetscheduler: {
@@ -1498,6 +2645,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "policy"},
 				{Type: "struct sched_param*", Name: "param"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetscheduler)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedSetscheduler)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedSetscheduler)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedSetscheduler)}},
+				},
+			},
 		},
 		SchedGetscheduler: {
 			id32Bit: sys32sched_getscheduler,
@@ -1506,6 +2661,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "proc", "proc_sched"},
 			params: []trace.ArgMeta{
 				{Type: "pid_t", Name: "pid"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetscheduler)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetscheduler)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetscheduler)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedGetscheduler)}},
+				},
 			},
 		},
 		SchedGetPriorityMax: {
@@ -1516,6 +2679,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "policy"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetPriorityMax)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetPriorityMax)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetPriorityMax)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedGetPriorityMax)}},
+				},
+			},
 		},
 		SchedGetPriorityMin: {
 			id32Bit: sys32sched_get_priority_min,
@@ -1524,6 +2695,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "proc", "proc_sched"},
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "policy"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetPriorityMin)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetPriorityMin)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetPriorityMin)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedGetPriorityMin)}},
+				},
 			},
 		},
 		SchedRrGetInterval: {
@@ -1535,6 +2714,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "pid_t", Name: "pid"},
 				{Type: "struct timespec*", Name: "tp"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedRrGetInterval)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedRrGetInterval)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedRrGetInterval)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedRrGetInterval)}},
+				},
+			},
 		},
 		Mlock: {
 			id32Bit: sys32mlock,
@@ -1544,6 +2731,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const void*", Name: "addr"},
 				{Type: "size_t", Name: "len"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mlock)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mlock)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mlock)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mlock)}},
+				},
 			},
 		},
 		Munlock: {
@@ -1555,6 +2750,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const void*", Name: "addr"},
 				{Type: "size_t", Name: "len"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Munlock)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Munlock)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Munlock)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Munlock)}},
+				},
+			},
 		},
 		Mlockall: {
 			id32Bit: sys32mlockall,
@@ -1564,6 +2767,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mlockall)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mlockall)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mlockall)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mlockall)}},
+				},
+			},
 		},
 		Munlockall: {
 			id32Bit: sys32munlockall,
@@ -1571,6 +2782,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_mem"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Munlockall)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Munlockall)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Munlockall)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Munlockall)}},
+				},
+			},
 		},
 		Vhangup: {
 			id32Bit: sys32vhangup,
@@ -1578,6 +2797,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "system"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vhangup)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vhangup)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vhangup)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Vhangup)}},
+				},
+			},
 		},
 		ModifyLdt: {
 			id32Bit: sys32modify_ldt,
@@ -1589,6 +2816,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "void*", Name: "ptr"},
 				{Type: "unsigned long", Name: "bytecount"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ModifyLdt)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ModifyLdt)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ModifyLdt)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ModifyLdt)}},
+				},
+			},
 		},
 		PivotRoot: {
 			id32Bit: sys32pivot_root,
@@ -1599,6 +2834,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "new_root"},
 				{Type: "const char*", Name: "put_old"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PivotRoot)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PivotRoot)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PivotRoot)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PivotRoot)}},
+				},
+			},
 		},
 		Sysctl: {
 			id32Bit: sys32_sysctl,
@@ -1607,6 +2850,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "system"},
 			params: []trace.ArgMeta{
 				{Type: "struct __sysctl_args*", Name: "args"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sysctl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sysctl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sysctl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sysctl)}},
+				},
 			},
 		},
 		Prctl: {
@@ -1621,6 +2872,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned long", Name: "arg4"},
 				{Type: "unsigned long", Name: "arg5"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Prctl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Prctl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Prctl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Prctl)}},
+				},
+			},
 		},
 		ArchPrctl: {
 			id32Bit: sys32arch_prctl,
@@ -1631,6 +2890,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "option"},
 				{Type: "unsigned long", Name: "addr"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ArchPrctl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ArchPrctl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ArchPrctl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ArchPrctl)}},
+				},
+			},
 		},
 		Adjtimex: {
 			id32Bit: sys32adjtimex,
@@ -1639,6 +2906,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "time", "time_clock"},
 			params: []trace.ArgMeta{
 				{Type: "struct timex*", Name: "buf"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Adjtimex)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Adjtimex)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Adjtimex)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Adjtimex)}},
+				},
 			},
 		},
 		Setrlimit: {
@@ -1650,6 +2925,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "resource"},
 				{Type: "const struct rlimit*", Name: "rlim"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setrlimit)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setrlimit)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setrlimit)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setrlimit)}},
+				},
+			},
 		},
 		Chroot: {
 			id32Bit: sys32chroot,
@@ -1659,6 +2942,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "path"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chroot)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chroot)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chroot)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Chroot)}},
+				},
+			},
 		},
 		Sync: {
 			id32Bit: sys32sync,
@@ -1666,6 +2957,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_sync"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sync)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sync)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sync)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sync)}},
+				},
+			},
 		},
 		Acct: {
 			id32Bit: sys32acct,
@@ -1674,6 +2973,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "system"},
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "filename"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Acct)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Acct)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Acct)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Acct)}},
+				},
 			},
 		},
 		Settimeofday: {
@@ -1684,6 +2991,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const struct timeval*", Name: "tv"},
 				{Type: "const struct timezone*", Name: "tz"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Settimeofday)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Settimeofday)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Settimeofday)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Settimeofday)}},
+				},
 			},
 		},
 		Mount: {
@@ -1698,6 +3013,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned long", Name: "mountflags"},
 				{Type: "const void*", Name: "data"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mount)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mount)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mount)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mount)}},
+				},
+			},
 		},
 		Umount2: {
 			id32Bit: sys32umount2,
@@ -1707,6 +3030,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "target"},
 				{Type: "int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Umount2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Umount2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Umount2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Umount2)}},
+				},
 			},
 		},
 		Swapon: {
@@ -1718,6 +3049,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "path"},
 				{Type: "int", Name: "swapflags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Swapon)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Swapon)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Swapon)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Swapon)}},
+				},
+			},
 		},
 		Swapoff: {
 			id32Bit: sys32swapoff,
@@ -1726,6 +3065,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "fs"},
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "path"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Swapoff)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Swapoff)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Swapoff)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Swapoff)}},
+				},
 			},
 		},
 		Reboot: {
@@ -1739,6 +3086,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "cmd"},
 				{Type: "void*", Name: "arg"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Reboot)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Reboot)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Reboot)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Reboot)}},
+				},
+			},
 		},
 		Sethostname: {
 			id32Bit: sys32sethostname,
@@ -1748,6 +3103,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "name"},
 				{Type: "size_t", Name: "len"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sethostname)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sethostname)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sethostname)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sethostname)}},
+				},
 			},
 		},
 		Setdomainname: {
@@ -1759,6 +3122,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "name"},
 				{Type: "size_t", Name: "len"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setdomainname)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setdomainname)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setdomainname)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setdomainname)}},
+				},
+			},
 		},
 		Iopl: {
 			id32Bit: sys32iopl,
@@ -1767,6 +3138,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "system"},
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "level"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Iopl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Iopl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Iopl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Iopl)}},
+				},
 			},
 		},
 		Ioperm: {
@@ -1779,6 +3158,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned long", Name: "num"},
 				{Type: "int", Name: "turn_on"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ioperm)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ioperm)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ioperm)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ioperm)}},
+				},
+			},
 		},
 		CreateModule: {
 			id32Bit: sys32create_module,
@@ -1786,6 +3173,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "system", "system_module"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(CreateModule)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(CreateModule)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(CreateModule)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(CreateModule)}},
+				},
+			},
 		},
 		InitModule: {
 			id32Bit: sys32init_module,
@@ -1797,6 +3192,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned long", Name: "len"},
 				{Type: "const char*", Name: "param_values"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InitModule)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InitModule)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InitModule)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(InitModule)}},
+				},
+			},
 		},
 		DeleteModule: {
 			id32Bit: sys32delete_module,
@@ -1807,6 +3210,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "name"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(DeleteModule)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(DeleteModule)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(DeleteModule)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(DeleteModule)}},
+				},
+			},
 		},
 		GetKernelSyms: {
 			id32Bit: sys32get_kernel_syms,
@@ -1814,6 +3225,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "system", "system_module"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetKernelSyms)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(GetKernelSyms)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(GetKernelSyms)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(GetKernelSyms)}},
+				},
+			},
 		},
 		QueryModule: {
 			id32Bit: sys32query_module,
@@ -1821,6 +3240,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "system", "system_module"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(QueryModule)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(QueryModule)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(QueryModule)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(QueryModule)}},
+				},
+			},
 		},
 		Quotactl: {
 			id32Bit: sys32quotactl,
@@ -1833,6 +3260,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "id"},
 				{Type: "void*", Name: "addr"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Quotactl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Quotactl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Quotactl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Quotactl)}},
+				},
+			},
 		},
 		Nfsservctl: {
 			id32Bit: sys32nfsservctl,
@@ -1840,6 +3275,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "fs"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Nfsservctl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Nfsservctl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Nfsservctl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Nfsservctl)}},
+				},
+			},
 		},
 		Getpmsg: {
 			id32Bit: sys32getpmsg,
@@ -1847,6 +3290,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpmsg)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpmsg)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpmsg)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getpmsg)}},
+				},
+			},
 		},
 		Putpmsg: {
 			id32Bit: sys32putpmsg,
@@ -1854,6 +3305,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Putpmsg)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Putpmsg)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Putpmsg)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Putpmsg)}},
+				},
+			},
 		},
 		Afs: {
 			id32Bit: sys32undefined,
@@ -1861,6 +3320,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Afs)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Afs)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Afs)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Afs)}},
+				},
+			},
 		},
 		Tuxcall: {
 			id32Bit: sys32undefined,
@@ -1868,6 +3335,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tuxcall)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Tuxcall)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Tuxcall)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Tuxcall)}},
+				},
+			},
 		},
 		Security: {
 			id32Bit: sys32undefined,
@@ -1875,6 +3350,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Security)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Security)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Security)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Security)}},
+				},
+			},
 		},
 		Gettid: {
 			id32Bit: sys32gettid,
@@ -1882,6 +3365,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Gettid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Gettid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Gettid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Gettid)}},
+				},
+			},
 		},
 		Readahead: {
 			id32Bit: sys32readahead,
@@ -1892,6 +3383,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "fd"},
 				{Type: "off_t", Name: "offset"},
 				{Type: "size_t", Name: "count"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readahead)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readahead)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readahead)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Readahead)}},
+				},
 			},
 		},
 		Setxattr: {
@@ -1906,6 +3405,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "size_t", Name: "size"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setxattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setxattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setxattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setxattr)}},
+				},
+			},
 		},
 		Lsetxattr: {
 			id32Bit: sys32lsetxattr,
@@ -1918,6 +3425,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const void*", Name: "value"},
 				{Type: "size_t", Name: "size"},
 				{Type: "int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lsetxattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lsetxattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lsetxattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lsetxattr)}},
+				},
 			},
 		},
 		Fsetxattr: {
@@ -1932,6 +3447,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "size_t", Name: "size"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsetxattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsetxattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsetxattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fsetxattr)}},
+				},
+			},
 		},
 		Getxattr: {
 			id32Bit: sys32getxattr,
@@ -1943,6 +3466,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "name"},
 				{Type: "void*", Name: "value"},
 				{Type: "size_t", Name: "size"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getxattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getxattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getxattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getxattr)}},
+				},
 			},
 		},
 		Lgetxattr: {
@@ -1956,6 +3487,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "void*", Name: "value"},
 				{Type: "size_t", Name: "size"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lgetxattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lgetxattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lgetxattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lgetxattr)}},
+				},
+			},
 		},
 		Fgetxattr: {
 			id32Bit: sys32fgetxattr,
@@ -1968,6 +3507,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "void*", Name: "value"},
 				{Type: "size_t", Name: "size"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fgetxattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fgetxattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fgetxattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fgetxattr)}},
+				},
+			},
 		},
 		Listxattr: {
 			id32Bit: sys32listxattr,
@@ -1978,6 +3525,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "path"},
 				{Type: "char*", Name: "list"},
 				{Type: "size_t", Name: "size"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Listxattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Listxattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Listxattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Listxattr)}},
+				},
 			},
 		},
 		Llistxattr: {
@@ -1990,6 +3545,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "char*", Name: "list"},
 				{Type: "size_t", Name: "size"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Llistxattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Llistxattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Llistxattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Llistxattr)}},
+				},
+			},
 		},
 		Flistxattr: {
 			id32Bit: sys32flistxattr,
@@ -2001,6 +3564,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "char*", Name: "list"},
 				{Type: "size_t", Name: "size"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Flistxattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Flistxattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Flistxattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Flistxattr)}},
+				},
+			},
 		},
 		Removexattr: {
 			id32Bit: sys32removexattr,
@@ -2010,6 +3581,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "path"},
 				{Type: "const char*", Name: "name"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Removexattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Removexattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Removexattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Removexattr)}},
+				},
 			},
 		},
 		Lremovexattr: {
@@ -2021,6 +3600,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "path"},
 				{Type: "const char*", Name: "name"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lremovexattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lremovexattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lremovexattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lremovexattr)}},
+				},
+			},
 		},
 		Fremovexattr: {
 			id32Bit: sys32fremovexattr,
@@ -2030,6 +3617,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "fd"},
 				{Type: "const char*", Name: "name"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fremovexattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fremovexattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fremovexattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fremovexattr)}},
+				},
 			},
 		},
 		Tkill: {
@@ -2041,6 +3636,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "tid"},
 				{Type: "int", Name: "sig"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tkill)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Tkill)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Tkill)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Tkill)}},
+				},
+			},
 		},
 		Time: {
 			id32Bit: sys32time,
@@ -2049,6 +3652,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "time", "time_tod"},
 			params: []trace.ArgMeta{
 				{Type: "time_t*", Name: "tloc"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Time)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Time)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Time)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Time)}},
+				},
 			},
 		},
 		Futex: {
@@ -2064,6 +3675,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int*", Name: "uaddr2"},
 				{Type: "int", Name: "val3"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Futex)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Futex)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Futex)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Futex)}},
+				},
+			},
 		},
 		SchedSetaffinity: {
 			id32Bit: sys32sched_setaffinity,
@@ -2074,6 +3693,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "pid_t", Name: "pid"},
 				{Type: "size_t", Name: "cpusetsize"},
 				{Type: "unsigned long*", Name: "mask"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetaffinity)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedSetaffinity)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedSetaffinity)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedSetaffinity)}},
+				},
 			},
 		},
 		SchedGetaffinity: {
@@ -2086,6 +3713,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "size_t", Name: "cpusetsize"},
 				{Type: "unsigned long*", Name: "mask"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetaffinity)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetaffinity)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetaffinity)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedGetaffinity)}},
+				},
+			},
 		},
 		SetThreadArea: {
 			id32Bit: sys32set_thread_area,
@@ -2094,6 +3729,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "proc"},
 			params: []trace.ArgMeta{
 				{Type: "struct user_desc*", Name: "u_info"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetThreadArea)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SetThreadArea)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SetThreadArea)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SetThreadArea)}},
+				},
 			},
 		},
 		IoSetup: {
@@ -2105,6 +3748,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned int", Name: "nr_events"},
 				{Type: "io_context_t*", Name: "ctx_idp"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoSetup)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoSetup)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoSetup)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoSetup)}},
+				},
+			},
 		},
 		IoDestroy: {
 			id32Bit: sys32io_destroy,
@@ -2113,6 +3764,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "fs", "fs_async_io"},
 			params: []trace.ArgMeta{
 				{Type: "io_context_t", Name: "ctx_id"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoDestroy)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoDestroy)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoDestroy)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoDestroy)}},
+				},
 			},
 		},
 		IoGetevents: {
@@ -2127,6 +3786,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct io_event*", Name: "events"},
 				{Type: "struct timespec*", Name: "timeout"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoGetevents)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoGetevents)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoGetevents)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoGetevents)}},
+				},
+			},
 		},
 		IoSubmit: {
 			id32Bit: sys32io_submit,
@@ -2137,6 +3804,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "io_context_t", Name: "ctx_id"},
 				{Type: "long", Name: "nr"},
 				{Type: "struct iocb**", Name: "iocbpp"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoSubmit)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoSubmit)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoSubmit)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoSubmit)}},
+				},
 			},
 		},
 		IoCancel: {
@@ -2149,6 +3824,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct iocb*", Name: "iocb"},
 				{Type: "struct io_event*", Name: "result"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoCancel)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoCancel)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoCancel)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoCancel)}},
+				},
+			},
 		},
 		GetThreadArea: {
 			id32Bit: sys32get_thread_area,
@@ -2157,6 +3840,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "proc"},
 			params: []trace.ArgMeta{
 				{Type: "struct user_desc*", Name: "u_info"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetThreadArea)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(GetThreadArea)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(GetThreadArea)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(GetThreadArea)}},
+				},
 			},
 		},
 		LookupDcookie: {
@@ -2169,6 +3860,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "char*", Name: "buffer"},
 				{Type: "size_t", Name: "len"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LookupDcookie)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LookupDcookie)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LookupDcookie)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(LookupDcookie)}},
+				},
+			},
 		},
 		EpollCreate: {
 			id32Bit: sys32epoll_create,
@@ -2178,6 +3877,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "size"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCreate)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollCreate)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollCreate)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollCreate)}},
+				},
+			},
 		},
 		EpollCtlOld: {
 			id32Bit: sys32undefined,
@@ -2185,6 +3892,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_mux_io"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCtlOld)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollCtlOld)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollCtlOld)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollCtlOld)}},
+				},
+			},
 		},
 		EpollWaitOld: {
 			id32Bit: sys32undefined,
@@ -2192,6 +3907,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_mux_io"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollWaitOld)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollWaitOld)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollWaitOld)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollWaitOld)}},
+				},
+			},
 		},
 		RemapFilePages: {
 			id32Bit: sys32remap_file_pages,
@@ -2205,6 +3928,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "size_t", Name: "pgoff"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RemapFilePages)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RemapFilePages)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RemapFilePages)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RemapFilePages)}},
+				},
+			},
 		},
 		Getdents64: {
 			id32Bit: sys32getdents64,
@@ -2216,6 +3947,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct linux_dirent64*", Name: "dirp"},
 				{Type: "unsigned int", Name: "count"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getdents64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getdents64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getdents64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getdents64)}},
+				},
+			},
 		},
 		SetTidAddress: {
 			id32Bit: sys32set_tid_address,
@@ -2225,6 +3964,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int*", Name: "tidptr"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetTidAddress)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SetTidAddress)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SetTidAddress)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SetTidAddress)}},
+				},
+			},
 		},
 		RestartSyscall: {
 			id32Bit: sys32restart_syscall,
@@ -2232,6 +3979,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RestartSyscall)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RestartSyscall)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RestartSyscall)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RestartSyscall)}},
+				},
+			},
 		},
 		Semtimedop: {
 			id32Bit: sys32semtimedop_time64,
@@ -2243,6 +3998,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct sembuf*", Name: "sops"},
 				{Type: "size_t", Name: "nsops"},
 				{Type: "const struct timespec*", Name: "timeout"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semtimedop)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Semtimedop)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Semtimedop)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Semtimedop)}},
+				},
 			},
 		},
 		Fadvise64: {
@@ -2256,6 +4019,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "size_t", Name: "len"},
 				{Type: "int", Name: "advice"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fadvise64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fadvise64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fadvise64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fadvise64)}},
+				},
+			},
 		},
 		TimerCreate: {
 			id32Bit: sys32timer_create,
@@ -2266,6 +4037,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const clockid_t", Name: "clockid"},
 				{Type: "struct sigevent*", Name: "sevp"},
 				{Type: "timer_t*", Name: "timer_id"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerCreate)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerCreate)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerCreate)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerCreate)}},
+				},
 			},
 		},
 		TimerSettime: {
@@ -2279,6 +4058,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const struct itimerspec*", Name: "new_value"},
 				{Type: "struct itimerspec*", Name: "old_value"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerSettime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerSettime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerSettime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerSettime)}},
+				},
+			},
 		},
 		TimerGettime: {
 			id32Bit: sys32timer_gettime64,
@@ -2289,6 +4076,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "timer_t", Name: "timer_id"},
 				{Type: "struct itimerspec*", Name: "curr_value"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerGettime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerGettime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerGettime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerGettime)}},
+				},
+			},
 		},
 		TimerGetoverrun: {
 			id32Bit: sys32timer_getoverrun,
@@ -2298,6 +4093,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "timer_t", Name: "timer_id"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerGetoverrun)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerGetoverrun)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerGetoverrun)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerGetoverrun)}},
+				},
+			},
 		},
 		TimerDelete: {
 			id32Bit: sys32timer_delete,
@@ -2306,6 +4109,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "time", "time_timer"},
 			params: []trace.ArgMeta{
 				{Type: "timer_t", Name: "timer_id"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerDelete)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerDelete)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerDelete)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerDelete)}},
+				},
 			},
 		},
 		ClockSettime: {
@@ -2317,6 +4128,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const clockid_t", Name: "clockid"},
 				{Type: "const struct timespec*", Name: "tp"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockSettime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockSettime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockSettime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockSettime)}},
+				},
+			},
 		},
 		ClockGettime: {
 			id32Bit: sys32clock_gettime64,
@@ -2327,6 +4146,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const clockid_t", Name: "clockid"},
 				{Type: "struct timespec*", Name: "tp"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGettime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockGettime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockGettime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockGettime)}},
+				},
+			},
 		},
 		ClockGetres: {
 			id32Bit: sys32clock_getres_time64,
@@ -2336,6 +4163,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const clockid_t", Name: "clockid"},
 				{Type: "struct timespec*", Name: "res"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGetres)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockGetres)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockGetres)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockGetres)}},
+				},
 			},
 		},
 		ClockNanosleep: {
@@ -2349,6 +4184,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const struct timespec*", Name: "request"},
 				{Type: "struct timespec*", Name: "remain"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockNanosleep)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockNanosleep)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockNanosleep)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockNanosleep)}},
+				},
+			},
 		},
 		ExitGroup: {
 			id32Bit: sys32exit_group,
@@ -2357,6 +4200,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "proc", "proc_life"},
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "status"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ExitGroup)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ExitGroup)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ExitGroup)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ExitGroup)}},
+				},
 			},
 		},
 		EpollWait: {
@@ -2370,6 +4221,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "maxevents"},
 				{Type: "int", Name: "timeout"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollWait)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollWait)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollWait)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollWait)}},
+				},
+			},
 		},
 		EpollCtl: {
 			id32Bit: sys32epoll_ctl,
@@ -2382,6 +4241,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "fd"},
 				{Type: "struct epoll_event*", Name: "event"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCtl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollCtl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollCtl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollCtl)}},
+				},
+			},
 		},
 		Tgkill: {
 			id32Bit: sys32tgkill,
@@ -2393,6 +4260,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "tid"},
 				{Type: "int", Name: "sig"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tgkill)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Tgkill)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Tgkill)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Tgkill)}},
+				},
+			},
 		},
 		Utimes: {
 			id32Bit: sys32utimes,
@@ -2403,6 +4278,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "char*", Name: "filename"},
 				{Type: "struct timeval*", Name: "times"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Utimes)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Utimes)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Utimes)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Utimes)}},
+				},
+			},
 		},
 		Vserver: {
 			id32Bit: sys32vserver,
@@ -2410,6 +4293,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vserver)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vserver)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vserver)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Vserver)}},
+				},
+			},
 		},
 		Mbind: {
 			id32Bit: sys32mbind,
@@ -2424,6 +4315,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned long", Name: "maxnode"},
 				{Type: "unsigned int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mbind)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mbind)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mbind)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mbind)}},
+				},
+			},
 		},
 		SetMempolicy: {
 			id32Bit: sys32set_mempolicy,
@@ -2434,6 +4333,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "mode"},
 				{Type: "const unsigned long*", Name: "nodemask"},
 				{Type: "unsigned long", Name: "maxnode"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetMempolicy)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SetMempolicy)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SetMempolicy)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SetMempolicy)}},
+				},
 			},
 		},
 		GetMempolicy: {
@@ -2448,6 +4355,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "void*", Name: "addr"},
 				{Type: "unsigned long", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetMempolicy)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(GetMempolicy)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(GetMempolicy)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(GetMempolicy)}},
+				},
+			},
 		},
 		MqOpen: {
 			id32Bit: sys32mq_open,
@@ -2460,6 +4375,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "mode_t", Name: "mode"},
 				{Type: "struct mq_attr*", Name: "attr"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqOpen)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqOpen)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqOpen)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqOpen)}},
+				},
+			},
 		},
 		MqUnlink: {
 			id32Bit: sys32mq_unlink,
@@ -2468,6 +4391,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "ipc", "ipc_msgq"},
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "name"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqUnlink)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqUnlink)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqUnlink)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqUnlink)}},
+				},
 			},
 		},
 		MqTimedsend: {
@@ -2482,6 +4413,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned int", Name: "msg_prio"},
 				{Type: "const struct timespec*", Name: "abs_timeout"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedsend)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqTimedsend)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqTimedsend)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqTimedsend)}},
+				},
+			},
 		},
 		MqTimedreceive: {
 			id32Bit: sys32mq_timedreceive_time64,
@@ -2495,6 +4434,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned int*", Name: "msg_prio"},
 				{Type: "const struct timespec*", Name: "abs_timeout"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedreceive)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqTimedreceive)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqTimedreceive)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqTimedreceive)}},
+				},
+			},
 		},
 		MqNotify: {
 			id32Bit: sys32mq_notify,
@@ -2504,6 +4451,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "mqd_t", Name: "mqdes"},
 				{Type: "const struct sigevent*", Name: "sevp"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqNotify)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqNotify)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqNotify)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqNotify)}},
+				},
 			},
 		},
 		MqGetsetattr: {
@@ -2516,6 +4471,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const struct mq_attr*", Name: "newattr"},
 				{Type: "struct mq_attr*", Name: "oldattr"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqGetsetattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqGetsetattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqGetsetattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqGetsetattr)}},
+				},
+			},
 		},
 		KexecLoad: {
 			id32Bit: sys32kexec_load,
@@ -2527,6 +4490,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned long", Name: "nr_segments"},
 				{Type: "struct kexec_segment*", Name: "segments"},
 				{Type: "unsigned long", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(KexecLoad)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(KexecLoad)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(KexecLoad)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(KexecLoad)}},
+				},
 			},
 		},
 		Waitid: {
@@ -2541,6 +4512,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "options"},
 				{Type: "struct rusage*", Name: "rusage"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Waitid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Waitid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Waitid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Waitid)}},
+				},
+			},
 		},
 		AddKey: {
 			id32Bit: sys32add_key,
@@ -2554,6 +4533,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "size_t", Name: "plen"},
 				{Type: "key_serial_t", Name: "keyring"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(AddKey)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(AddKey)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(AddKey)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(AddKey)}},
+				},
+			},
 		},
 		RequestKey: {
 			id32Bit: sys32request_key,
@@ -2565,6 +4552,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "description"},
 				{Type: "const char*", Name: "callout_info"},
 				{Type: "key_serial_t", Name: "dest_keyring"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RequestKey)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RequestKey)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RequestKey)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RequestKey)}},
+				},
 			},
 		},
 		Keyctl: {
@@ -2579,6 +4574,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned long", Name: "arg4"},
 				{Type: "unsigned long", Name: "arg5"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Keyctl)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Keyctl)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Keyctl)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Keyctl)}},
+				},
+			},
 		},
 		IoprioSet: {
 			id32Bit: sys32ioprio_set,
@@ -2590,6 +4593,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "who"},
 				{Type: "int", Name: "ioprio"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoprioSet)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoprioSet)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoprioSet)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoprioSet)}},
+				},
+			},
 		},
 		IoprioGet: {
 			id32Bit: sys32ioprio_get,
@@ -2600,6 +4611,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "which"},
 				{Type: "int", Name: "who"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoprioGet)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoprioGet)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoprioGet)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoprioGet)}},
+				},
+			},
 		},
 		InotifyInit: {
 			id32Bit: sys32inotify_init,
@@ -2607,6 +4626,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_monitor"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyInit)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InotifyInit)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InotifyInit)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(InotifyInit)}},
+				},
+			},
 		},
 		InotifyAddWatch: {
 			id32Bit: sys32inotify_add_watch,
@@ -2618,6 +4645,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "u32", Name: "mask"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyAddWatch)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InotifyAddWatch)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InotifyAddWatch)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(InotifyAddWatch)}},
+				},
+			},
 		},
 		InotifyRmWatch: {
 			id32Bit: sys32inotify_rm_watch,
@@ -2627,6 +4662,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "fd"},
 				{Type: "int", Name: "wd"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyRmWatch)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InotifyRmWatch)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InotifyRmWatch)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(InotifyRmWatch)}},
+				},
 			},
 		},
 		MigratePages: {
@@ -2640,6 +4683,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const unsigned long*", Name: "old_nodes"},
 				{Type: "const unsigned long*", Name: "new_nodes"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MigratePages)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MigratePages)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MigratePages)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MigratePages)}},
+				},
+			},
 		},
 		Openat: {
 			id32Bit: sys32openat,
@@ -2652,6 +4703,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "flags"},
 				{Type: "mode_t", Name: "mode"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Openat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Openat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Openat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Openat)}},
+				},
+			},
 		},
 		Mkdirat: {
 			id32Bit: sys32mkdirat,
@@ -2662,6 +4721,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "dirfd"},
 				{Type: "const char*", Name: "pathname"},
 				{Type: "mode_t", Name: "mode"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mkdirat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mkdirat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mkdirat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mkdirat)}},
+				},
 			},
 		},
 		Mknodat: {
@@ -2674,6 +4741,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "mode_t", Name: "mode"},
 				{Type: "dev_t", Name: "dev"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mknodat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mknodat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mknodat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mknodat)}},
+				},
 			},
 		},
 		Fchownat: {
@@ -2688,6 +4763,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "gid_t", Name: "group"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchownat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchownat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchownat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fchownat)}},
+				},
+			},
 		},
 		Futimesat: {
 			id32Bit: sys32futimesat,
@@ -2698,6 +4781,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "dirfd"},
 				{Type: "const char*", Name: "pathname"},
 				{Type: "struct timeval*", Name: "times"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Futimesat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Futimesat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Futimesat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Futimesat)}},
+				},
 			},
 		},
 		Newfstatat: {
@@ -2711,6 +4802,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct stat*", Name: "statbuf"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Newfstatat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Newfstatat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Newfstatat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Newfstatat)}},
+				},
+			},
 		},
 		Unlinkat: {
 			id32Bit: sys32unlinkat,
@@ -2721,6 +4820,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "dirfd"},
 				{Type: "const char*", Name: "pathname"},
 				{Type: "int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Unlinkat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Unlinkat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Unlinkat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Unlinkat)}},
+				},
 			},
 		},
 		Renameat: {
@@ -2733,6 +4840,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "oldpath"},
 				{Type: "int", Name: "newdirfd"},
 				{Type: "const char*", Name: "newpath"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Renameat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Renameat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Renameat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Renameat)}},
+				},
 			},
 		},
 		Linkat: {
@@ -2747,6 +4862,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "newpath"},
 				{Type: "unsigned int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Linkat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Linkat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Linkat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Linkat)}},
+				},
+			},
 		},
 		Symlinkat: {
 			id32Bit: sys32symlinkat,
@@ -2757,6 +4880,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "target"},
 				{Type: "int", Name: "newdirfd"},
 				{Type: "const char*", Name: "linkpath"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Symlinkat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Symlinkat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Symlinkat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Symlinkat)}},
+				},
 			},
 		},
 		Readlinkat: {
@@ -2770,6 +4901,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "char*", Name: "buf"},
 				{Type: "int", Name: "bufsiz"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readlinkat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readlinkat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readlinkat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Readlinkat)}},
+				},
+			},
 		},
 		Fchmodat: {
 			id32Bit: sys32fchmodat,
@@ -2782,6 +4921,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "mode_t", Name: "mode"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchmodat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchmodat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchmodat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fchmodat)}},
+				},
+			},
 		},
 		Faccessat: {
 			id32Bit: sys32faccessat,
@@ -2793,6 +4940,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "int", Name: "mode"},
 				{Type: "int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Faccessat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Faccessat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Faccessat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Faccessat)}},
+				},
 			},
 		},
 		Pselect6: {
@@ -2808,6 +4963,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct timespec*", Name: "timeout"},
 				{Type: "void*", Name: "sigmask"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pselect6)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pselect6)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pselect6)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pselect6)}},
+				},
+			},
 		},
 		Ppoll: {
 			id32Bit: sys32ppoll_time64,
@@ -2821,6 +4984,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const sigset_t*", Name: "sigmask"},
 				{Type: "size_t", Name: "sigsetsize"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ppoll)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ppoll)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ppoll)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ppoll)}},
+				},
+			},
 		},
 		Unshare: {
 			id32Bit: sys32unshare,
@@ -2829,6 +5000,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "proc"},
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Unshare)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Unshare)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Unshare)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Unshare)}},
+				},
 			},
 		},
 		SetRobustList: {
@@ -2840,6 +5019,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct robust_list_head*", Name: "head"},
 				{Type: "size_t", Name: "len"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetRobustList)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SetRobustList)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SetRobustList)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SetRobustList)}},
+				},
+			},
 		},
 		GetRobustList: {
 			id32Bit: sys32get_robust_list,
@@ -2850,6 +5037,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "pid"},
 				{Type: "struct robust_list_head**", Name: "head_ptr"},
 				{Type: "size_t*", Name: "len_ptr"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetRobustList)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(GetRobustList)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(GetRobustList)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(GetRobustList)}},
+				},
 			},
 		},
 		Splice: {
@@ -2865,6 +5060,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "size_t", Name: "len"},
 				{Type: "unsigned int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Splice)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Splice)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Splice)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Splice)}},
+				},
+			},
 		},
 		Tee: {
 			id32Bit: sys32tee,
@@ -2876,6 +5079,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "fd_out"},
 				{Type: "size_t", Name: "len"},
 				{Type: "unsigned int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tee)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Tee)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Tee)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Tee)}},
+				},
 			},
 		},
 		SyncFileRange: {
@@ -2889,6 +5100,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "off_t", Name: "nbytes"},
 				{Type: "unsigned int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SyncFileRange)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SyncFileRange)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SyncFileRange)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SyncFileRange)}},
+				},
+			},
 		},
 		Vmsplice: {
 			id32Bit: sys32vmsplice,
@@ -2900,6 +5119,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const struct iovec*", Name: "iov"},
 				{Type: "unsigned long", Name: "nr_segs"},
 				{Type: "unsigned int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vmsplice)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vmsplice)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vmsplice)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Vmsplice)}},
+				},
 			},
 		},
 		MovePages: {
@@ -2915,6 +5142,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int*", Name: "status"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MovePages)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MovePages)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MovePages)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MovePages)}},
+				},
+			},
 		},
 		Utimensat: {
 			id32Bit: sys32utimensat_time64,
@@ -2926,6 +5161,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "struct timespec*", Name: "times"},
 				{Type: "int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Utimensat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Utimensat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Utimensat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Utimensat)}},
+				},
 			},
 		},
 		EpollPwait: {
@@ -2941,6 +5184,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const sigset_t*", Name: "sigmask"},
 				{Type: "size_t", Name: "sigsetsize"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollPwait)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollPwait)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollPwait)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollPwait)}},
+				},
+			},
 		},
 		Signalfd: {
 			id32Bit: sys32signalfd,
@@ -2952,6 +5203,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "sigset_t*", Name: "mask"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Signalfd)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Signalfd)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Signalfd)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Signalfd)}},
+				},
+			},
 		},
 		TimerfdCreate: {
 			id32Bit: sys32timerfd_create,
@@ -2962,6 +5221,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "clockid"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdCreate)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdCreate)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdCreate)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerfdCreate)}},
+				},
+			},
 		},
 		Eventfd: {
 			id32Bit: sys32eventfd,
@@ -2971,6 +5238,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "unsigned int", Name: "initval"},
 				{Type: "int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Eventfd)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Eventfd)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Eventfd)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Eventfd)}},
+				},
 			},
 		},
 		Fallocate: {
@@ -2984,6 +5259,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "off_t", Name: "offset"},
 				{Type: "off_t", Name: "len"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fallocate)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fallocate)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fallocate)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fallocate)}},
+				},
+			},
 		},
 		TimerfdSettime: {
 			id32Bit: sys32timerfd_settime64,
@@ -2996,6 +5279,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const struct itimerspec*", Name: "new_value"},
 				{Type: "struct itimerspec*", Name: "old_value"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdSettime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdSettime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdSettime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerfdSettime)}},
+				},
+			},
 		},
 		TimerfdGettime: {
 			id32Bit: sys32timerfd_gettime64,
@@ -3005,6 +5296,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "fd"},
 				{Type: "struct itimerspec*", Name: "curr_value"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdGettime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdGettime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdGettime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerfdGettime)}},
+				},
 			},
 		},
 		Accept4: {
@@ -3018,6 +5317,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int*", Name: "addrlen"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Accept4)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Accept4)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Accept4)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Accept4)}},
+				},
+			},
 		},
 		Signalfd4: {
 			id32Bit: sys32signalfd4,
@@ -3030,6 +5337,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "size_t", Name: "sizemask"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Signalfd4)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Signalfd4)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Signalfd4)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Signalfd4)}},
+				},
+			},
 		},
 		Eventfd2: {
 			id32Bit: sys32eventfd2,
@@ -3040,6 +5355,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned int", Name: "initval"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Eventfd2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Eventfd2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Eventfd2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Eventfd2)}},
+				},
+			},
 		},
 		EpollCreate1: {
 			id32Bit: sys32epoll_create1,
@@ -3048,6 +5371,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "fs", "fs_mux_io"},
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCreate1)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollCreate1)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollCreate1)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollCreate1)}},
+				},
 			},
 		},
 		Dup3: {
@@ -3060,6 +5391,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "newfd"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Dup3)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Dup3)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Dup3)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Dup3)}},
+				},
+			},
 		},
 		Pipe2: {
 			id32Bit: sys32pipe2,
@@ -3070,6 +5409,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int[2]", Name: "pipefd"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pipe2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pipe2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pipe2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pipe2)}},
+				},
+			},
 		},
 		InotifyInit1: {
 			id32Bit: sys32inotify_init1,
@@ -3078,6 +5425,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "fs", "fs_monitor"},
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyInit1)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InotifyInit1)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InotifyInit1)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(InotifyInit1)}},
+				},
 			},
 		},
 		Preadv: {
@@ -3092,6 +5447,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned long", Name: "pos_l"},
 				{Type: "unsigned long", Name: "pos_h"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Preadv)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Preadv)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Preadv)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Preadv)}},
+				},
+			},
 		},
 		Pwritev: {
 			id32Bit: sys32pwritev,
@@ -3105,6 +5468,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned long", Name: "pos_l"},
 				{Type: "unsigned long", Name: "pos_h"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pwritev)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pwritev)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pwritev)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pwritev)}},
+				},
+			},
 		},
 		RtTgsigqueueinfo: {
 			id32Bit: sys32rt_tgsigqueueinfo,
@@ -3116,6 +5487,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "pid_t", Name: "tid"},
 				{Type: "int", Name: "sig"},
 				{Type: "siginfo_t*", Name: "info"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtTgsigqueueinfo)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtTgsigqueueinfo)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtTgsigqueueinfo)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtTgsigqueueinfo)}},
+				},
 			},
 		},
 		PerfEventOpen: {
@@ -3130,6 +5509,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "group_fd"},
 				{Type: "unsigned long", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PerfEventOpen)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PerfEventOpen)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PerfEventOpen)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PerfEventOpen)}},
+				},
+			},
 		},
 		Recvmmsg: {
 			id32Bit: sys32recvmmsg_time64,
@@ -3143,6 +5530,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "flags"},
 				{Type: "struct timespec*", Name: "timeout"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Recvmmsg)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Recvmmsg)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Recvmmsg)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Recvmmsg)}},
+				},
+			},
 		},
 		FanotifyInit: {
 			id32Bit: sys32fanotify_init,
@@ -3152,6 +5547,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "unsigned int", Name: "flags"},
 				{Type: "unsigned int", Name: "event_f_flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FanotifyInit)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FanotifyInit)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FanotifyInit)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(FanotifyInit)}},
+				},
 			},
 		},
 		FanotifyMark: {
@@ -3166,6 +5569,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "dirfd"},
 				{Type: "const char*", Name: "pathname"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FanotifyMark)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FanotifyMark)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FanotifyMark)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(FanotifyMark)}},
+				},
+			},
 		},
 		Prlimit64: {
 			id32Bit: sys32prlimit64,
@@ -3177,6 +5588,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "resource"},
 				{Type: "const struct rlimit64*", Name: "new_limit"},
 				{Type: "struct rlimit64*", Name: "old_limit"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Prlimit64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Prlimit64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Prlimit64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Prlimit64)}},
+				},
 			},
 		},
 		NameToHandleAt: {
@@ -3191,6 +5610,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int*", Name: "mount_id"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(NameToHandleAt)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(NameToHandleAt)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(NameToHandleAt)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(NameToHandleAt)}},
+				},
+			},
 		},
 		OpenByHandleAt: {
 			id32Bit: sys32open_by_handle_at,
@@ -3202,6 +5629,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct file_handle*", Name: "handle"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OpenByHandleAt)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(OpenByHandleAt)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(OpenByHandleAt)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(OpenByHandleAt)}},
+				},
+			},
 		},
 		ClockAdjtime: {
 			id32Bit: sys32clock_adjtime,
@@ -3212,6 +5647,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const clockid_t", Name: "clk_id"},
 				{Type: "struct timex*", Name: "buf"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockAdjtime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockAdjtime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockAdjtime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockAdjtime)}},
+				},
+			},
 		},
 		Syncfs: {
 			id32Bit: sys32syncfs,
@@ -3220,6 +5663,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "fs", "fs_sync"},
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "fd"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Syncfs)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Syncfs)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Syncfs)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Syncfs)}},
+				},
 			},
 		},
 		Sendmmsg: {
@@ -3233,6 +5684,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned int", Name: "vlen"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendmmsg)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendmmsg)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendmmsg)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sendmmsg)}},
+				},
+			},
 		},
 		Setns: {
 			id32Bit: sys32setns,
@@ -3242,6 +5701,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "fd"},
 				{Type: "int", Name: "nstype"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setns)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setns)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setns)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setns)}},
+				},
 			},
 		},
 		Getcpu: {
@@ -3253,6 +5720,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned int*", Name: "cpu"},
 				{Type: "unsigned int*", Name: "node"},
 				{Type: "struct getcpu_cache*", Name: "tcache"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getcpu)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getcpu)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getcpu)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getcpu)}},
+				},
 			},
 		},
 		ProcessVmReadv: {
@@ -3268,6 +5743,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned long", Name: "riovcnt"},
 				{Type: "unsigned long", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ProcessVmReadv)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ProcessVmReadv)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ProcessVmReadv)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ProcessVmReadv)}},
+				},
+			},
 		},
 		ProcessVmWritev: {
 			id32Bit: sys32process_vm_writev,
@@ -3282,6 +5765,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned long", Name: "riovcnt"},
 				{Type: "unsigned long", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ProcessVmWritev)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ProcessVmWritev)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ProcessVmWritev)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ProcessVmWritev)}},
+				},
+			},
 		},
 		Kcmp: {
 			id32Bit: sys32kcmp,
@@ -3295,6 +5786,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned long", Name: "idx1"},
 				{Type: "unsigned long", Name: "idx2"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Kcmp)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Kcmp)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Kcmp)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Kcmp)}},
+				},
+			},
 		},
 		FinitModule: {
 			id32Bit: sys32finit_module,
@@ -3305,6 +5804,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "fd"},
 				{Type: "const char*", Name: "param_values"},
 				{Type: "int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FinitModule)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FinitModule)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FinitModule)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(FinitModule)}},
+				},
 			},
 		},
 		SchedSetattr: {
@@ -3317,6 +5824,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct sched_attr*", Name: "attr"},
 				{Type: "unsigned int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedSetattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedSetattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedSetattr)}},
+				},
+			},
 		},
 		SchedGetattr: {
 			id32Bit: sys32sched_getattr,
@@ -3328,6 +5843,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct sched_attr*", Name: "attr"},
 				{Type: "unsigned int", Name: "size"},
 				{Type: "unsigned int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedGetattr)}},
+				},
 			},
 		},
 		Renameat2: {
@@ -3342,6 +5865,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "newpath"},
 				{Type: "unsigned int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Renameat2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Renameat2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Renameat2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Renameat2)}},
+				},
+			},
 		},
 		Seccomp: {
 			id32Bit: sys32seccomp,
@@ -3352,6 +5883,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned int", Name: "operation"},
 				{Type: "unsigned int", Name: "flags"},
 				{Type: "const void*", Name: "args"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Seccomp)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Seccomp)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Seccomp)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Seccomp)}},
+				},
 			},
 		},
 		Getrandom: {
@@ -3364,6 +5903,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "size_t", Name: "buflen"},
 				{Type: "unsigned int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getrandom)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getrandom)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getrandom)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getrandom)}},
+				},
+			},
 		},
 		MemfdCreate: {
 			id32Bit: sys32memfd_create,
@@ -3373,6 +5920,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "name"},
 				{Type: "unsigned int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MemfdCreate)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MemfdCreate)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MemfdCreate)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MemfdCreate)}},
+				},
 			},
 		},
 		KexecFileLoad: {
@@ -3387,6 +5942,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "cmdline"},
 				{Type: "unsigned long", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(KexecFileLoad)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(KexecFileLoad)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(KexecFileLoad)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(KexecFileLoad)}},
+				},
+			},
 		},
 		Bpf: {
 			id32Bit: sys32bpf,
@@ -3398,27 +5961,35 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "union bpf_attr*", Name: "attr"},
 				{Type: "unsigned int", Name: "size"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Bpf)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Bpf)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Bpf)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Bpf)}},
+				},
+			},
 		},
 		Execveat: {
 			id32Bit: sys32execveat,
 			name:    "execveat",
 			syscall: true,
-			dependencies: Dependencies{
-				TailCalls: []*TailCall{
-					NewTailCall(
-						"sys_enter_tails",
-						"syscall__execveat",
-						[]uint32{uint32(Execveat)},
-					),
-				},
-			},
-			sets: []string{"syscalls", "proc", "proc_life"},
+			sets:    []string{"syscalls", "proc", "proc_life"},
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "dirfd"},
 				{Type: "const char*", Name: "pathname"},
 				{Type: "const char*const*", Name: "argv"},
 				{Type: "const char*const*", Name: "envp"},
 				{Type: "int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Execveat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Execveat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Execveat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Execveat)}},
+					{"sys_enter_tails", "syscall__execveat", []uint32{uint32(Execveat)}},
+				},
 			},
 		},
 		Userfaultfd: {
@@ -3428,6 +5999,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "system"},
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Userfaultfd)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Userfaultfd)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Userfaultfd)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Userfaultfd)}},
+				},
 			},
 		},
 		Membarrier: {
@@ -3439,6 +6018,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "cmd"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Membarrier)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Membarrier)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Membarrier)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Membarrier)}},
+				},
+			},
 		},
 		Mlock2: {
 			id32Bit: sys32mlock2,
@@ -3449,6 +6036,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const void*", Name: "addr"},
 				{Type: "size_t", Name: "len"},
 				{Type: "int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mlock2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mlock2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mlock2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mlock2)}},
+				},
 			},
 		},
 		CopyFileRange: {
@@ -3464,6 +6059,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "size_t", Name: "len"},
 				{Type: "unsigned int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(CopyFileRange)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(CopyFileRange)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(CopyFileRange)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(CopyFileRange)}},
+				},
+			},
 		},
 		Preadv2: {
 			id32Bit: sys32preadv2,
@@ -3477,6 +6080,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned long", Name: "pos_l"},
 				{Type: "unsigned long", Name: "pos_h"},
 				{Type: "int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Preadv2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Preadv2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Preadv2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Preadv2)}},
+				},
 			},
 		},
 		Pwritev2: {
@@ -3492,6 +6103,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned long", Name: "pos_h"},
 				{Type: "int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pwritev2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pwritev2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pwritev2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pwritev2)}},
+				},
+			},
 		},
 		PkeyMprotect: {
 			id32Bit: sys32pkey_mprotect,
@@ -3504,6 +6123,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "prot"},
 				{Type: "int", Name: "pkey"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PkeyMprotect)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PkeyMprotect)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PkeyMprotect)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PkeyMprotect)}},
+				},
+			},
 		},
 		PkeyAlloc: {
 			id32Bit: sys32pkey_alloc,
@@ -3514,6 +6141,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned int", Name: "flags"},
 				{Type: "unsigned long", Name: "access_rights"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PkeyAlloc)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PkeyAlloc)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PkeyAlloc)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PkeyAlloc)}},
+				},
+			},
 		},
 		PkeyFree: {
 			id32Bit: sys32pkey_free,
@@ -3522,6 +6157,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "proc", "proc_mem"},
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "pkey"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PkeyFree)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PkeyFree)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PkeyFree)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PkeyFree)}},
+				},
 			},
 		},
 		Statx: {
@@ -3535,6 +6178,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "flags"},
 				{Type: "unsigned int", Name: "mask"},
 				{Type: "struct statx*", Name: "statxbuf"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Statx)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Statx)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Statx)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Statx)}},
+				},
 			},
 		},
 		IoPgetevents: {
@@ -3550,6 +6201,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct timespec*", Name: "timeout"},
 				{Type: "const struct __aio_sigset*", Name: "usig"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoPgetevents)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoPgetevents)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoPgetevents)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoPgetevents)}},
+				},
+			},
 		},
 		Rseq: {
 			id32Bit: sys32rseq,
@@ -3561,6 +6220,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "u32", Name: "rseq_len"},
 				{Type: "int", Name: "flags"},
 				{Type: "u32", Name: "sig"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Rseq)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Rseq)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Rseq)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Rseq)}},
+				},
 			},
 		},
 		PidfdSendSignal: {
@@ -3574,6 +6241,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "siginfo_t*", Name: "info"},
 				{Type: "unsigned int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PidfdSendSignal)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PidfdSendSignal)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PidfdSendSignal)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PidfdSendSignal)}},
+				},
+			},
 		},
 		IoUringSetup: {
 			id32Bit: sys32io_uring_setup,
@@ -3583,6 +6258,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "unsigned int", Name: "entries"},
 				{Type: "struct io_uring_params*", Name: "p"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoUringSetup)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoUringSetup)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoUringSetup)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoUringSetup)}},
+				},
 			},
 		},
 		IoUringEnter: {
@@ -3597,6 +6280,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned int", Name: "flags"},
 				{Type: "sigset_t*", Name: "sig"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoUringEnter)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoUringEnter)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoUringEnter)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoUringEnter)}},
+				},
+			},
 		},
 		IoUringRegister: {
 			id32Bit: sys32io_uring_register,
@@ -3609,6 +6300,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "void*", Name: "arg"},
 				{Type: "unsigned int", Name: "nr_args"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoUringRegister)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoUringRegister)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoUringRegister)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoUringRegister)}},
+				},
+			},
 		},
 		OpenTree: {
 			id32Bit: sys32open_tree,
@@ -3619,6 +6318,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "dfd"},
 				{Type: "const char*", Name: "filename"},
 				{Type: "unsigned int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OpenTree)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(OpenTree)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(OpenTree)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(OpenTree)}},
+				},
 			},
 		},
 		MoveMount: {
@@ -3633,6 +6340,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "to_path"},
 				{Type: "unsigned int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MoveMount)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MoveMount)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MoveMount)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MoveMount)}},
+				},
+			},
 		},
 		Fsopen: {
 			id32Bit: sys32fsopen,
@@ -3642,6 +6357,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "fsname"},
 				{Type: "unsigned int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsopen)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsopen)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsopen)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fsopen)}},
+				},
 			},
 		},
 		Fsconfig: {
@@ -3656,6 +6379,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const void*", Name: "value"},
 				{Type: "int", Name: "aux"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsconfig)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsconfig)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsconfig)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fsconfig)}},
+				},
+			},
 		},
 		Fsmount: {
 			id32Bit: sys32fsmount,
@@ -3666,6 +6397,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "fsfd"},
 				{Type: "unsigned int", Name: "flags"},
 				{Type: "unsigned int", Name: "ms_flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsmount)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsmount)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsmount)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fsmount)}},
+				},
 			},
 		},
 		Fspick: {
@@ -3678,6 +6417,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "unsigned int", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fspick)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fspick)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fspick)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fspick)}},
+				},
+			},
 		},
 		PidfdOpen: {
 			id32Bit: sys32pidfd_open,
@@ -3687,6 +6434,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "pid_t", Name: "pid"},
 				{Type: "unsigned int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PidfdOpen)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PidfdOpen)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PidfdOpen)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PidfdOpen)}},
+				},
 			},
 		},
 		Clone3: {
@@ -3698,6 +6453,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct clone_args*", Name: "cl_args"},
 				{Type: "size_t", Name: "size"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Clone3)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Clone3)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Clone3)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Clone3)}},
+				},
+			},
 		},
 		CloseRange: {
 			id32Bit: sys32close_range,
@@ -3707,6 +6470,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "unsigned int", Name: "first"},
 				{Type: "unsigned int", Name: "last"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(CloseRange)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(CloseRange)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(CloseRange)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(CloseRange)}},
+				},
 			},
 		},
 		Openat2: {
@@ -3720,6 +6491,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct open_how*", Name: "how"},
 				{Type: "size_t", Name: "size"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Openat2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Openat2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Openat2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Openat2)}},
+				},
+			},
 		},
 		PidfdGetfd: {
 			id32Bit: sys32pidfd_getfd,
@@ -3730,6 +6509,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "pidfd"},
 				{Type: "int", Name: "targetfd"},
 				{Type: "unsigned int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PidfdGetfd)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PidfdGetfd)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PidfdGetfd)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PidfdGetfd)}},
+				},
 			},
 		},
 		Faccessat2: {
@@ -3742,6 +6529,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "path"},
 				{Type: "int", Name: "mode"},
 				{Type: "int", Name: "flag"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Faccessat2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Faccessat2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Faccessat2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Faccessat2)}},
+				},
 			},
 		},
 		ProcessMadvise: {
@@ -3756,6 +6551,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "advice"},
 				{Type: "unsigned long", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ProcessMadvise)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ProcessMadvise)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ProcessMadvise)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ProcessMadvise)}},
+				},
+			},
 		},
 		EpollPwait2: {
 			id32Bit: sys32epoll_pwait2,
@@ -3768,6 +6571,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "maxevents"},
 				{Type: "const struct timespec*", Name: "timeout"},
 				{Type: "const sigset_t*", Name: "sigset"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollPwait2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollPwait2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollPwait2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(EpollPwait2)}},
+				},
 			},
 		},
 		MountSetatt: {
@@ -3782,6 +6593,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct mount_attr*", Name: "uattr"},
 				{Type: "size_t", Name: "usize"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MountSetatt)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MountSetatt)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MountSetatt)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MountSetatt)}},
+				},
+			},
 		},
 		QuotactlFd: {
 			id32Bit: sys32quotactl_fd,
@@ -3794,6 +6613,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "qid_t", Name: "id"},
 				{Type: "void *", Name: "addr"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(QuotactlFd)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(QuotactlFd)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(QuotactlFd)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(QuotactlFd)}},
+				},
+			},
 		},
 		LandlockCreateRuleset: {
 			id32Bit: sys32landlock_create_ruleset,
@@ -3804,6 +6631,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct landlock_ruleset_attr*", Name: "attr"},
 				{Type: "size_t", Name: "size"},
 				{Type: "u32", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LandlockCreateRuleset)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LandlockCreateRuleset)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LandlockCreateRuleset)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(LandlockCreateRuleset)}},
+				},
 			},
 		},
 		LandlockAddRule: {
@@ -3817,6 +6652,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "void*", Name: "rule_attr"},
 				{Type: "u32", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LandlockAddRule)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LandlockAddRule)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LandlockAddRule)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(LandlockAddRule)}},
+				},
+			},
 		},
 		LandloclRestrictSet: {
 			id32Bit: sys32landlock_restrict_self,
@@ -3827,6 +6670,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "ruleset_fd"},
 				{Type: "u32", Name: "flags"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LandloclRestrictSet)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LandloclRestrictSet)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LandloclRestrictSet)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(LandloclRestrictSet)}},
+				},
+			},
 		},
 		MemfdSecret: {
 			id32Bit: sys32memfd_secret,
@@ -3835,6 +6686,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls"},
 			params: []trace.ArgMeta{
 				{Type: "unsigned int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MemfdSecret)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MemfdSecret)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MemfdSecret)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MemfdSecret)}},
+				},
 			},
 		},
 		ProcessMrelease: {
@@ -3845,6 +6704,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "pidfd"},
 				{Type: "unsigned int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ProcessMrelease)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ProcessMrelease)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ProcessMrelease)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ProcessMrelease)}},
+				},
 			},
 		},
 		Waitpid: {
@@ -3857,6 +6724,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int*", Name: "status"},
 				{Type: "int", Name: "options"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Waitpid)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Waitpid)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Waitpid)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Waitpid)}},
+				},
+			},
 		},
 		Oldfstat: {
 			id32Bit: sys32oldfstat,
@@ -3864,6 +6739,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldfstat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Oldfstat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Oldfstat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Oldfstat)}},
+				},
+			},
 		},
 		Break: {
 			id32Bit: sys32break,
@@ -3871,6 +6754,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Break)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Break)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Break)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Break)}},
+				},
+			},
 		},
 		Oldstat: {
 			id32Bit: sys32oldstat,
@@ -3881,6 +6772,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "char*", Name: "filename"},
 				{Type: "struct __old_kernel_stat*", Name: "statbuf"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldstat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Oldstat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Oldstat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Oldstat)}},
+				},
+			},
 		},
 		Umount: {
 			id32Bit: sys32umount,
@@ -3889,6 +6788,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "32bit_unique"},
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "target"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Umount)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Umount)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Umount)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Umount)}},
+				},
 			},
 		},
 		Stime: {
@@ -3899,6 +6806,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const time_t*", Name: "t"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Stime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Stime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Stime)}},
+				},
+			},
 		},
 		Stty: {
 			id32Bit: sys32stty,
@@ -3906,6 +6821,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stty)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Stty)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Stty)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Stty)}},
+				},
+			},
 		},
 		Gtty: {
 			id32Bit: sys32gtty,
@@ -3913,6 +6836,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Gtty)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Gtty)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Gtty)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Gtty)}},
+				},
+			},
 		},
 		Nice: {
 			id32Bit: sys32nice,
@@ -3922,6 +6853,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "inc"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Nice)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Nice)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Nice)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Nice)}},
+				},
+			},
 		},
 		Ftime: {
 			id32Bit: sys32ftime,
@@ -3929,6 +6868,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ftime)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ftime)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ftime)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ftime)}},
+				},
+			},
 		},
 		Prof: {
 			id32Bit: sys32prof,
@@ -3936,6 +6883,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Prof)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Prof)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Prof)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Prof)}},
+				},
+			},
 		},
 		Signal: {
 			id32Bit: sys32signal,
@@ -3946,6 +6901,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "signum"},
 				{Type: "sighandler_t", Name: "handler"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Signal)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Signal)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Signal)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Signal)}},
+				},
+			},
 		},
 		Lock: {
 			id32Bit: sys32lock,
@@ -3953,6 +6916,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lock)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lock)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lock)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lock)}},
+				},
+			},
 		},
 		Mpx: {
 			id32Bit: sys32mpx,
@@ -3960,6 +6931,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mpx)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mpx)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mpx)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mpx)}},
+				},
+			},
 		},
 		Ulimit: {
 			id32Bit: sys32ulimit,
@@ -3967,6 +6946,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ulimit)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ulimit)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ulimit)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ulimit)}},
+				},
+			},
 		},
 		Oldolduname: {
 			id32Bit: sys32oldolduname,
@@ -3975,6 +6962,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "32bit_unique"},
 			params: []trace.ArgMeta{
 				{Type: "struct oldold_utsname*", Name: "name"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldolduname)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Oldolduname)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Oldolduname)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Oldolduname)}},
+				},
 			},
 		},
 		Sigaction: {
@@ -3987,6 +6982,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const struct sigaction*", Name: "act"},
 				{Type: "struct sigaction*", Name: "oact"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigaction)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigaction)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigaction)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sigaction)}},
+				},
+			},
 		},
 		Sgetmask: {
 			id32Bit: sys32sgetmask,
@@ -3994,6 +6997,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sgetmask)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sgetmask)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sgetmask)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sgetmask)}},
+				},
+			},
 		},
 		Ssetmask: {
 			id32Bit: sys32ssetmask,
@@ -4002,6 +7013,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "32bit_unique"},
 			params: []trace.ArgMeta{
 				{Type: "long", Name: "newmask"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ssetmask)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ssetmask)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ssetmask)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ssetmask)}},
+				},
 			},
 		},
 		Sigsuspend: {
@@ -4012,6 +7031,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const sigset_t*", Name: "mask"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigsuspend)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigsuspend)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigsuspend)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sigsuspend)}},
+				},
+			},
 		},
 		Sigpending: {
 			id32Bit: sys32sigpending,
@@ -4020,6 +7047,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "32bit_unique"},
 			params: []trace.ArgMeta{
 				{Type: "sigset_t*", Name: "set"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigpending)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigpending)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigpending)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sigpending)}},
+				},
 			},
 		},
 		Oldlstat: {
@@ -4030,6 +7065,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "struct stat*", Name: "statbuf"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldlstat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Oldlstat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Oldlstat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Oldlstat)}},
+				},
 			},
 		},
 		Readdir: {
@@ -4042,6 +7085,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct old_linux_dirent*", Name: "dirp"},
 				{Type: "unsigned int", Name: "count"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readdir)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readdir)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readdir)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Readdir)}},
+				},
+			},
 		},
 		Profil: {
 			id32Bit: sys32profil,
@@ -4049,6 +7100,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Profil)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Profil)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Profil)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Profil)}},
+				},
+			},
 		},
 		Socketcall: {
 			id32Bit: sys32socketcall,
@@ -4059,6 +7118,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "call"},
 				{Type: "unsigned long*", Name: "args"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Socketcall)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Socketcall)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Socketcall)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Socketcall)}},
+				},
+			},
 		},
 		Olduname: {
 			id32Bit: sys32olduname,
@@ -4068,6 +7135,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "struct utsname*", Name: "buf"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Olduname)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Olduname)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Olduname)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Olduname)}},
+				},
+			},
 		},
 		Idle: {
 			id32Bit: sys32idle,
@@ -4075,6 +7150,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Idle)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Idle)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Idle)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Idle)}},
+				},
+			},
 		},
 		Vm86old: {
 			id32Bit: sys32vm86old,
@@ -4083,6 +7166,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "32bit_unique"},
 			params: []trace.ArgMeta{
 				{Type: "struct vm86_struct*", Name: "info"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vm86old)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vm86old)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vm86old)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Vm86old)}},
+				},
 			},
 		},
 		Ipc: {
@@ -4098,6 +7189,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "void*", Name: "ptr"},
 				{Type: "long", Name: "fifth"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ipc)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ipc)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ipc)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ipc)}},
+				},
+			},
 		},
 		Sigreturn: {
 			id32Bit: sys32sigreturn,
@@ -4105,6 +7204,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigreturn)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigreturn)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigreturn)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sigreturn)}},
+				},
+			},
 		},
 		Sigprocmask: {
 			id32Bit: sys32sigprocmask,
@@ -4116,6 +7223,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const sigset_t *restrict", Name: "set"},
 				{Type: "sigset_t *restrict", Name: "oldset"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigprocmask)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigprocmask)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigprocmask)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sigprocmask)}},
+				},
+			},
 		},
 		Bdflush: {
 			id32Bit: sys32bdflush,
@@ -4123,6 +7238,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Bdflush)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Bdflush)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Bdflush)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Bdflush)}},
+				},
+			},
 		},
 		Afs_syscall: {
 			id32Bit: sys32afs_syscall,
@@ -4130,6 +7253,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Afs_syscall)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Afs_syscall)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Afs_syscall)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Afs_syscall)}},
+				},
+			},
 		},
 		Llseek: {
 			id32Bit: sys32_llseek,
@@ -4142,6 +7273,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned long", Name: "offset_low"},
 				{Type: "loff_t*", Name: "result"},
 				{Type: "unsigned int", Name: "whence"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Llseek)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Llseek)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Llseek)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Llseek)}},
+				},
 			},
 		},
 		OldSelect: {
@@ -4156,6 +7295,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "fd_set*", Name: "exceptfds"},
 				{Type: "struct timeval*", Name: "timeout"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OldSelect)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(OldSelect)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(OldSelect)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(OldSelect)}},
+				},
+			},
 		},
 		Vm86: {
 			id32Bit: sys32vm86,
@@ -4166,6 +7313,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned long", Name: "fn"},
 				{Type: "struct vm86plus_struct*", Name: "v86"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vm86)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vm86)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vm86)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Vm86)}},
+				},
+			},
 		},
 		OldGetrlimit: {
 			id32Bit: sys32getrlimit,
@@ -4175,6 +7330,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "resource"},
 				{Type: "struct rlimit*", Name: "rlim"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OldGetrlimit)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(OldGetrlimit)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(OldGetrlimit)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(OldGetrlimit)}},
+				},
 			},
 		},
 		Mmap2: {
@@ -4190,6 +7353,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned long", Name: "fd"},
 				{Type: "unsigned long", Name: "pgoffset"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mmap2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mmap2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mmap2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mmap2)}},
+				},
+			},
 		},
 		Truncate64: {
 			id32Bit: sys32truncate64,
@@ -4199,6 +7370,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "path"},
 				{Type: "off_t", Name: "length"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Truncate64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Truncate64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Truncate64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Truncate64)}},
+				},
 			},
 		},
 		Ftruncate64: {
@@ -4210,6 +7389,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "fd"},
 				{Type: "off_t", Name: "length"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ftruncate64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ftruncate64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ftruncate64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Ftruncate64)}},
+				},
+			},
 		},
 		Stat64: {
 			id32Bit: sys32stat64,
@@ -4219,6 +7406,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "struct stat64*", Name: "statbuf"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stat64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Stat64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Stat64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Stat64)}},
+				},
 			},
 		},
 		Lstat64: {
@@ -4230,6 +7425,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "struct stat64*", Name: "statbuf"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lstat64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lstat64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lstat64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lstat64)}},
+				},
+			},
 		},
 		Fstat64: {
 			id32Bit: sys32fstat64,
@@ -4239,6 +7442,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "fd"},
 				{Type: "struct stat64*", Name: "statbuf"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstat64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fstat64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fstat64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fstat64)}},
+				},
 			},
 		},
 		Lchown16: {
@@ -4251,6 +7462,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "old_uid_t", Name: "owner"},
 				{Type: "old_gid_t", Name: "group"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lchown16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lchown16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lchown16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Lchown16)}},
+				},
+			},
 		},
 		Getuid16: {
 			id32Bit: sys32getuid,
@@ -4258,6 +7477,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getuid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getuid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getuid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getuid16)}},
+				},
+			},
 		},
 		Getgid16: {
 			id32Bit: sys32getgid,
@@ -4265,6 +7492,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getgid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getgid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getgid16)}},
+				},
+			},
 		},
 		Geteuid16: {
 			id32Bit: sys32geteuid,
@@ -4272,6 +7507,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Geteuid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Geteuid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Geteuid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Geteuid16)}},
+				},
+			},
 		},
 		Getegid16: {
 			id32Bit: sys32getegid,
@@ -4279,6 +7522,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getegid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getegid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getegid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getegid16)}},
+				},
+			},
 		},
 		Setreuid16: {
 			id32Bit: sys32setreuid,
@@ -4288,6 +7539,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "old_uid_t", Name: "ruid"},
 				{Type: "old_uid_t", Name: "euid"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setreuid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setreuid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setreuid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setreuid16)}},
+				},
 			},
 		},
 		Setregid16: {
@@ -4299,6 +7558,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "old_gid_t", Name: "rgid"},
 				{Type: "old_gid_t", Name: "egid"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setregid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setregid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setregid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setregid16)}},
+				},
+			},
 		},
 		Getgroups16: {
 			id32Bit: sys32getgroups,
@@ -4309,6 +7576,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "size"},
 				{Type: "old_gid_t*", Name: "list"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgroups16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getgroups16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getgroups16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getgroups16)}},
+				},
+			},
 		},
 		Setgroups16: {
 			id32Bit: sys32setgroups,
@@ -4318,6 +7593,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "size_t", Name: "size"},
 				{Type: "const gid_t*", Name: "list"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgroups16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setgroups16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setgroups16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setgroups16)}},
+				},
 			},
 		},
 		Fchown16: {
@@ -4330,6 +7613,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "old_uid_t", Name: "user"},
 				{Type: "old_gid_t", Name: "group"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchown16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchown16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchown16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fchown16)}},
+				},
+			},
 		},
 		Setresuid16: {
 			id32Bit: sys32setresuid,
@@ -4340,6 +7631,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "old_uid_t", Name: "ruid"},
 				{Type: "old_uid_t", Name: "euid"},
 				{Type: "old_uid_t", Name: "suid"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresuid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setresuid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setresuid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setresuid16)}},
+				},
 			},
 		},
 		Getresuid16: {
@@ -4352,6 +7651,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "old_uid_t*", Name: "euid"},
 				{Type: "old_uid_t*", Name: "suid"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresuid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getresuid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getresuid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getresuid16)}},
+				},
+			},
 		},
 		Setresgid16: {
 			id32Bit: sys32setresgid,
@@ -4362,6 +7669,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "old_uid_t", Name: "rgid"},
 				{Type: "old_uid_t", Name: "euid"},
 				{Type: "old_uid_t", Name: "suid"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresgid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setresgid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setresgid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setresgid16)}},
+				},
 			},
 		},
 		Getresgid16: {
@@ -4374,6 +7689,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "old_gid_t*", Name: "egid"},
 				{Type: "old_gid_t*", Name: "sgid"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresgid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getresgid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getresgid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getresgid16)}},
+				},
+			},
 		},
 		Chown16: {
 			id32Bit: sys32chown,
@@ -4385,6 +7708,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "old_uid_t", Name: "owner"},
 				{Type: "old_gid_t", Name: "group"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chown16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chown16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chown16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Chown16)}},
+				},
+			},
 		},
 		Setuid16: {
 			id32Bit: sys32setuid,
@@ -4393,6 +7724,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "32bit_unique"},
 			params: []trace.ArgMeta{
 				{Type: "old_old_uid_t", Name: "uid"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setuid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setuid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setuid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setuid16)}},
+				},
 			},
 		},
 		Setgid16: {
@@ -4403,6 +7742,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "old_gid_t", Name: "gid"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setgid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setgid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setgid16)}},
+				},
+			},
 		},
 		Setfsuid16: {
 			id32Bit: sys32setfsuid,
@@ -4412,6 +7759,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "old_uid_t", Name: "fsuid"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsuid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setfsuid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setfsuid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setfsuid16)}},
+				},
+			},
 		},
 		Setfsgid16: {
 			id32Bit: sys32setfsgid,
@@ -4420,6 +7775,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			sets:    []string{"syscalls", "32bit_unique"},
 			params: []trace.ArgMeta{
 				{Type: "old_gid_t", Name: "fsgid"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsgid16)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setfsgid16)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setfsgid16)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setfsgid16)}},
+				},
 			},
 		},
 		Fcntl64: {
@@ -4431,6 +7794,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "fd"},
 				{Type: "int", Name: "cmd"},
 				{Type: "unsigned long", Name: "arg"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fcntl64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fcntl64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fcntl64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fcntl64)}},
+				},
 			},
 		},
 		Sendfile32: {
@@ -4444,6 +7815,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "off_t*", Name: "offset"},
 				{Type: "size_t", Name: "count"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendfile32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendfile32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendfile32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Sendfile32)}},
+				},
+			},
 		},
 		Statfs64: {
 			id32Bit: sys32statfs64,
@@ -4455,6 +7834,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "size_t", Name: "sz"},
 				{Type: "struct statfs64*", Name: "buf"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Statfs64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Statfs64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Statfs64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Statfs64)}},
+				},
+			},
 		},
 		Fstatfs64: {
 			id32Bit: sys32fstatfs64,
@@ -4465,6 +7852,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "int", Name: "fd"},
 				{Type: "size_t", Name: "sz"},
 				{Type: "struct statfs64*", Name: "buf"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstatfs64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fstatfs64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fstatfs64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fstatfs64)}},
+				},
 			},
 		},
 		Fadvise64_64: {
@@ -4478,6 +7873,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "loff_t", Name: "len"},
 				{Type: "int", Name: "advice"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fadvise64_64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fadvise64_64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fadvise64_64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fadvise64_64)}},
+				},
+			},
 		},
 		ClockGettime32: {
 			id32Bit: sys32clock_gettime,
@@ -4487,6 +7890,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "clockid_t", Name: "which_clock"},
 				{Type: "struct old_timespec32*", Name: "tp"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGettime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockGettime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockGettime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockGettime32)}},
+				},
 			},
 		},
 		ClockSettime32: {
@@ -4498,6 +7909,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "clockid_t", Name: "which_clock"},
 				{Type: "struct old_timespec32*", Name: "tp"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockSettime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockSettime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockSettime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockSettime32)}},
+				},
+			},
 		},
 		ClockAdjtime64: {
 			id32Bit: sys32clock_adjtime64,
@@ -4505,6 +7924,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockAdjtime64)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockAdjtime64)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockAdjtime64)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockAdjtime64)}},
+				},
+			},
 		},
 		ClockGetresTime32: {
 			id32Bit: sys32clock_getres,
@@ -4514,6 +7941,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "clockid_t", Name: "which_clock"},
 				{Type: "struct old_timespec32*", Name: "tp"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGetresTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockGetresTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockGetresTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockGetresTime32)}},
+				},
 			},
 		},
 		ClockNanosleepTime32: {
@@ -4527,6 +7962,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct old_timespec32*", Name: "rqtp"},
 				{Type: "struct old_timespec32*", Name: "rmtp"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockNanosleepTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockNanosleepTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockNanosleepTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(ClockNanosleepTime32)}},
+				},
+			},
 		},
 		TimerGettime32: {
 			id32Bit: sys32timer_gettime,
@@ -4536,6 +7979,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "timer_t", Name: "timer_id"},
 				{Type: "struct old_itimerspec32*", Name: "setting"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerGettime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerGettime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerGettime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerGettime32)}},
+				},
 			},
 		},
 		TimerSettime32: {
@@ -4549,6 +8000,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct old_itimerspec32*", Name: "new"},
 				{Type: "struct old_itimerspec32*", Name: "old"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerSettime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerSettime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerSettime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerSettime32)}},
+				},
+			},
 		},
 		TimerfdGettime32: {
 			id32Bit: sys32timerfd_gettime,
@@ -4558,6 +8017,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{
 				{Type: "int", Name: "ufd"},
 				{Type: "struct old_itimerspec32*", Name: "otmr"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdGettime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdGettime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdGettime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerfdGettime32)}},
+				},
 			},
 		},
 		TimerfdSettime32: {
@@ -4571,6 +8038,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct old_itimerspec32*", Name: "utmr"},
 				{Type: "struct old_itimerspec32*", Name: "otmr"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdSettime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdSettime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdSettime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(TimerfdSettime32)}},
+				},
+			},
 		},
 		UtimensatTime32: {
 			id32Bit: sys32utimensat,
@@ -4582,6 +8057,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "char*", Name: "filename"},
 				{Type: "struct old_timespec32*", Name: "t"},
 				{Type: "int", Name: "flags"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(UtimensatTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(UtimensatTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(UtimensatTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(UtimensatTime32)}},
+				},
 			},
 		},
 		Pselect6Time32: {
@@ -4597,6 +8080,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct old_timespec32*", Name: "tsp"},
 				{Type: "void*", Name: "sig"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pselect6Time32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pselect6Time32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pselect6Time32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Pselect6Time32)}},
+				},
+			},
 		},
 		PpollTime32: {
 			id32Bit: sys32ppoll,
@@ -4610,6 +8101,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "sigset_t*", Name: "sigmask"},
 				{Type: "size_t", Name: "sigsetsize"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PpollTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PpollTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PpollTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(PpollTime32)}},
+				},
+			},
 		},
 		IoPgeteventsTime32: {
 			id32Bit: sys32io_pgetevents,
@@ -4617,6 +8116,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
 			params:  []trace.ArgMeta{},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoPgeteventsTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoPgeteventsTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoPgeteventsTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(IoPgeteventsTime32)}},
+				},
+			},
 		},
 		RecvmmsgTime32: {
 			id32Bit: sys32recvmmsg,
@@ -4629,6 +8136,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned int", Name: "vlen"},
 				{Type: "unsigned int", Name: "flags"},
 				{Type: "struct old_timespec32*", Name: "timeout"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RecvmmsgTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RecvmmsgTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RecvmmsgTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RecvmmsgTime32)}},
+				},
 			},
 		},
 		MqTimedsendTime32: {
@@ -4643,6 +8158,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned int", Name: "msg_prio"},
 				{Type: "struct old_timespec32*", Name: "u_abs_timeout"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedsendTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqTimedsendTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqTimedsendTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqTimedsendTime32)}},
+				},
+			},
 		},
 		MqTimedreceiveTime32: {
 			id32Bit: sys32mq_timedreceive,
@@ -4656,6 +8179,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "unsigned int*", Name: "u_msg_prio"},
 				{Type: "struct old_timespec32*", Name: "u_abs_timeout"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedreceiveTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqTimedreceiveTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqTimedreceiveTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MqTimedreceiveTime32)}},
+				},
+			},
 		},
 		RtSigtimedwaitTime32: {
 			id32Bit: sys32rt_sigtimedwait,
@@ -4667,6 +8198,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "siginfo_t*", Name: "uinfo"},
 				{Type: "struct old_timespec32*", Name: "uts"},
 				{Type: "size_t", Name: "sigsetsize"},
+			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigtimedwaitTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigtimedwaitTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigtimedwaitTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RtSigtimedwaitTime32)}},
+				},
 			},
 		},
 		FutexTime32: {
@@ -4682,6 +8221,14 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "u32*", Name: "uaddr2"},
 				{Type: "u32", Name: "val3"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FutexTime32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FutexTime32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FutexTime32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(FutexTime32)}},
+				},
+			},
 		},
 		SchedRrGetInterval32: {
 			id32Bit: sys32sched_rr_get_interval,
@@ -4692,7 +8239,18 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "pid_t", Name: "pid"},
 				{Type: "struct old_timespec32*", Name: "interval"},
 			},
+			dependencies: Dependencies{
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedRrGetInterval32)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedRrGetInterval32)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedRrGetInterval32)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SchedRrGetInterval32)}},
+				},
+			},
 		},
+		//
+		// End of Syscalls
+		//
 		SysEnter: {
 			id32Bit: sys32undefined,
 			name:    "sys_enter",
@@ -4748,12 +8306,12 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 					{Handle: probes.SchedProcessExec, Required: true},
 					{Handle: probes.LoadElfPhdrs, Required: false},
 				},
-				TailCalls: []*TailCall{
-					NewTailCall(
+				TailCalls: []TailCall{
+					{
 						"prog_array_tp",
 						"sched_process_exec_event_submit_tail",
 						[]uint32{TailSchedProcessExecEventSubmit},
-					),
+					},
 				},
 				Capabilities: Capabilities{
 					capabilities.Base: []cap.Value{
@@ -4822,9 +8380,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			id32Bit: sys32undefined,
 			name:    "do_exit",
 			dependencies: Dependencies{
-				Probes: []Probe{
-					{Handle: probes.DoExit, Required: true},
-				},
+				Probes: []Probe{{Handle: probes.DoExit, Required: true}},
 			},
 			sets:   []string{"proc", "proc_life"},
 			params: []trace.ArgMeta{},
@@ -4887,12 +8443,12 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 					{Handle: probes.SecurityFileMProtect, Required: true},
 					{Handle: probes.SyscallEnter__Internal, Required: true},
 				},
-				TailCalls: []*TailCall{
-					NewTailCall(
+				TailCalls: []TailCall{
+					{
 						"sys_enter_init_tail",
 						"sys_enter_init",
 						[]uint32{uint32(Mmap), uint32(Mprotect), uint32(PkeyMprotect)},
-					),
+					},
 				},
 			},
 			sets: []string{},
@@ -5031,8 +8587,8 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 					{Handle: probes.SecurityFileOpen, Required: true},
 					{Handle: probes.SyscallEnter__Internal, Required: true},
 				},
-				TailCalls: []*TailCall{
-					NewTailCall(
+				TailCalls: []TailCall{
+					{
 						"sys_enter_init_tail",
 						"sys_enter_init",
 						[]uint32{
@@ -5040,7 +8596,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 							uint32(OpenByHandleAt), uint32(Execve),
 							uint32(Execveat),
 						},
-					),
+					},
 				},
 			},
 			sets: []string{"lsm_hooks", "fs", "fs_file_ops"},
@@ -5093,12 +8649,8 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 					{Handle: probes.SecuritySocketListen, Required: true},
 					{Handle: probes.SyscallEnter__Internal, Required: true},
 				},
-				TailCalls: []*TailCall{
-					NewTailCall(
-						"sys_enter_init_tail",
-						"sys_enter_init",
-						[]uint32{uint32(Listen)},
-					),
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Listen)}},
 				},
 			},
 			sets: []string{"lsm_hooks", "net", "net_sock"},
@@ -5116,12 +8668,8 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 					{Handle: probes.SecuritySocketConnect, Required: true},
 					{Handle: probes.SyscallEnter__Internal, Required: true},
 				},
-				TailCalls: []*TailCall{
-					NewTailCall(
-						"sys_enter_init_tail",
-						"sys_enter_init",
-						[]uint32{uint32(Connect)},
-					),
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Connect)}},
 				},
 			},
 			sets: []string{"default", "lsm_hooks", "net", "net_sock"},
@@ -5138,12 +8686,8 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 					{Handle: probes.SecuritySocketAccept, Required: true},
 					{Handle: probes.SyscallEnter__Internal, Required: true},
 				},
-				TailCalls: []*TailCall{
-					NewTailCall(
-						"sys_enter_init_tail",
-						"sys_enter_init",
-						[]uint32{uint32(Accept), uint32(Accept4)},
-					),
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Accept), uint32(Accept4)}},
 				},
 			},
 			sets: []string{"default", "lsm_hooks", "net", "net_sock"},
@@ -5160,12 +8704,8 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 					{Handle: probes.SecuritySocketBind, Required: true},
 					{Handle: probes.SyscallEnter__Internal, Required: true},
 				},
-				TailCalls: []*TailCall{
-					NewTailCall(
-						"sys_enter_init_tail",
-						"sys_enter_init",
-						[]uint32{uint32(Bind)},
-					),
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Bind)}},
 				},
 			},
 			sets: []string{"default", "lsm_hooks", "net", "net_sock"},
@@ -5183,12 +8723,8 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 					{Handle: probes.SecuritySocketSetsockopt, Required: true},
 					{Handle: probes.SyscallEnter__Internal, Required: true},
 				},
-				TailCalls: []*TailCall{
-					NewTailCall(
-						"sys_enter_init_tail",
-						"sys_enter_init",
-						[]uint32{uint32(Setsockopt)},
-					),
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setsockopt)}},
 				},
 			},
 			sets: []string{"lsm_hooks", "net", "net_sock"},
@@ -5354,12 +8890,8 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 					{Handle: probes.SecurityFileMProtect, Required: true},
 					{Handle: probes.SyscallEnter__Internal, Required: true},
 				},
-				TailCalls: []*TailCall{
-					NewTailCall(
-						"sys_enter_init_tail",
-						"sys_enter_init",
-						[]uint32{uint32(Mprotect), uint32(PkeyMprotect)},
-					),
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mprotect), uint32(PkeyMprotect)}},
 				},
 			},
 			sets: []string{"lsm_hooks", "proc", "proc_mem", "fs", "fs_file_ops"},
@@ -5401,22 +8933,10 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			id32Bit: sys32undefined,
 			name:    "socket_dup",
 			dependencies: Dependencies{
-				TailCalls: []*TailCall{
-					NewTailCall(
-						"sys_enter_init_tail",
-						"sys_enter_init",
-						[]uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)},
-					),
-					NewTailCall(
-						"sys_exit_init_tail",
-						"sys_exit_init",
-						[]uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)},
-					),
-					NewTailCall(
-						"sys_exit_tails",
-						"sys_dup_exit_tail",
-						[]uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)},
-					),
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)}},
+					{"sys_exit_tails", "sys_dup_exit_tail", []uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)}},
 				},
 			},
 			sets: []string{},
@@ -5643,27 +9163,11 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 					{Symbol: "module_kset", Required: true},
 					{Symbol: "mod_tree", Required: true},
 				},
-				TailCalls: []*TailCall{
-					NewTailCall(
-						"prog_array",
-						"lkm_seeker_proc_tail",
-						[]uint32{TailHiddenKernelModuleProc},
-					),
-					NewTailCall(
-						"prog_array",
-						"lkm_seeker_kset_tail",
-						[]uint32{TailHiddenKernelModuleKset},
-					),
-					NewTailCall(
-						"prog_array",
-						"lkm_seeker_mod_tree_tail",
-						[]uint32{TailHiddenKernelModuleModTree},
-					),
-					NewTailCall(
-						"prog_array",
-						"lkm_seeker_new_mod_only_tail",
-						[]uint32{TailHiddenKernelModuleNewModOnly},
-					),
+				TailCalls: []TailCall{
+					{"prog_array", "lkm_seeker_proc_tail", []uint32{TailHiddenKernelModuleProc}},
+					{"prog_array", "lkm_seeker_kset_tail", []uint32{TailHiddenKernelModuleKset}},
+					{"prog_array", "lkm_seeker_mod_tree_tail", []uint32{TailHiddenKernelModuleModTree}},
+					{"prog_array", "lkm_seeker_new_mod_only_tail", []uint32{TailHiddenKernelModuleNewModOnly}},
 				},
 			},
 			sets: []string{},
@@ -5811,27 +9315,11 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 					{Handle: probes.KernelWrite, Required: false},
 					{Handle: probes.KernelWriteRet, Required: false},
 				},
-				TailCalls: []*TailCall{
-					NewTailCall(
-						"prog_array",
-						"trace_ret_vfs_write_tail",
-						[]uint32{TailVfsWrite},
-					),
-					NewTailCall(
-						"prog_array",
-						"trace_ret_vfs_writev_tail",
-						[]uint32{TailVfsWritev},
-					),
-					NewTailCall(
-						"prog_array",
-						"trace_ret_kernel_write_tail",
-						[]uint32{TailKernelWrite},
-					),
-					NewTailCall(
-						"prog_array",
-						"send_bin",
-						[]uint32{TailSendBin},
-					),
+				TailCalls: []TailCall{
+					{"prog_array", "trace_ret_vfs_write_tail", []uint32{TailVfsWrite}},
+					{"prog_array", "trace_ret_vfs_writev_tail", []uint32{TailVfsWritev}},
+					{"prog_array", "trace_ret_kernel_write_tail", []uint32{TailKernelWrite}},
+					{"prog_array", "send_bin", []uint32{TailSendBin}},
 				},
 				KSymbols: []KSymbol{
 					{Symbol: "pipefifo_fops", Required: true},
@@ -5849,22 +9337,10 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 					{Handle: probes.VfsReadV, Required: false},
 					{Handle: probes.VfsReadVRet, Required: false},
 				},
-				TailCalls: []*TailCall{
-					NewTailCall(
-						"prog_array",
-						"trace_ret_vfs_read_tail",
-						[]uint32{TailVfsRead},
-					),
-					NewTailCall(
-						"prog_array",
-						"trace_ret_vfs_readv_tail",
-						[]uint32{TailVfsReadv},
-					),
-					NewTailCall(
-						"prog_array",
-						"send_bin",
-						[]uint32{TailSendBin},
-					),
+				TailCalls: []TailCall{
+					{"prog_array", "trace_ret_vfs_read_tail", []uint32{TailVfsRead}},
+					{"prog_array", "trace_ret_vfs_readv_tail", []uint32{TailVfsReadv}},
+					{"prog_array", "send_bin", []uint32{TailSendBin}},
 				},
 				KSymbols: []KSymbol{
 					{Symbol: "pipefifo_fops", Required: true},
@@ -5899,22 +9375,10 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				Events: []ID{
 					SchedProcessExec,
 				},
-				TailCalls: []*TailCall{
-					NewTailCall(
-						"sys_enter_tails",
-						"syscall__init_module",
-						[]uint32{uint32(InitModule)},
-					),
-					NewTailCall(
-						"prog_array_tp",
-						"send_bin_tp",
-						[]uint32{TailSendBinTP},
-					),
-					NewTailCall(
-						"prog_array",
-						"send_bin",
-						[]uint32{TailSendBin},
-					),
+				TailCalls: []TailCall{
+					{"sys_enter_tails", "syscall__init_module", []uint32{uint32(InitModule)}},
+					{"prog_array_tp", "send_bin_tp", []uint32{TailSendBinTP}},
+					{"prog_array", "send_bin", []uint32{TailSendBin}},
 				},
 			},
 		},
@@ -5923,12 +9387,8 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			name:     "capture_mem",
 			internal: true,
 			dependencies: Dependencies{
-				TailCalls: []*TailCall{
-					NewTailCall(
-						"prog_array",
-						"send_bin",
-						[]uint32{TailSendBin},
-					),
+				TailCalls: []TailCall{
+					{"prog_array", "send_bin", []uint32{TailSendBin}},
 				},
 			},
 		},
@@ -5940,12 +9400,8 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				Probes: []Probe{
 					{Handle: probes.SecurityBPF, Required: true},
 				},
-				TailCalls: []*TailCall{
-					NewTailCall(
-						"prog_array",
-						"send_bin",
-						[]uint32{TailSendBin},
-					),
+				TailCalls: []TailCall{
+					{"prog_array", "send_bin", []uint32{TailSendBin}},
 				},
 			},
 		},
@@ -6007,17 +9463,9 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				Events: []ID{
 					SecuritySocketAccept,
 				},
-				TailCalls: []*TailCall{
-					NewTailCall(
-						"sys_exit_tails",
-						"syscall__accept4",
-						[]uint32{uint32(Accept), uint32(Accept4)},
-					),
-					NewTailCall(
-						"sys_exit_init_tail",
-						"sys_exit_init",
-						[]uint32{uint32(Accept), uint32(Accept4)},
-					),
+				TailCalls: []TailCall{
+					{"sys_exit_tails", "syscall__accept4", []uint32{uint32(Accept), uint32(Accept4)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Accept), uint32(Accept4)}},
 				},
 			},
 			sets: []string{},
@@ -6371,22 +9819,10 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 					{Handle: probes.ExecBinprm, Required: true},
 					{Handle: probes.ExecBinprmRet, Required: true},
 				},
-				TailCalls: []*TailCall{
-					NewTailCall(
-						"sys_enter_init_tail",
-						"sys_enter_init",
-						[]uint32{uint32(Execve), uint32(Execveat)},
-					),
-					NewTailCall(
-						"prog_array",
-						"trace_ret_exec_binprm1",
-						[]uint32{TailExecBinprm1},
-					),
-					NewTailCall(
-						"prog_array",
-						"trace_ret_exec_binprm2",
-						[]uint32{TailExecBinprm2},
-					),
+				TailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Execve), uint32(Execveat)}},
+					{"prog_array", "trace_ret_exec_binprm1", []uint32{TailExecBinprm1}},
+					{"prog_array", "trace_ret_exec_binprm2", []uint32{TailExecBinprm2}},
 				},
 			},
 			params: []trace.ArgMeta{
@@ -6405,7 +9841,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		//
-		// Network Protocol Event Types (add new events above here)
+		// Begin of Network Protocol Event Types
 		//
 		NetPacketBase: {
 			id32Bit:  sys32undefined,
@@ -6736,6 +10172,8 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				},
 			},
 		},
-		// NOTE: add new events before the network events (keep them at the end)
+		//
+		// End of Network Protocol Event Types (keep them at the end)
+		//
 	},
 }

@@ -562,7 +562,7 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 
 			// Only emit events requested by the user and matched by at least one policy.
 			id := events.ID(event.EventID)
-			event.MatchedPoliciesUser &= t.events[id].emit
+			event.MatchedPoliciesUser &= t.events[id].Emit
 			if event.MatchedPoliciesUser == 0 {
 				t.eventsPool.Put(event)
 				continue

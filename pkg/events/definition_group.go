@@ -1,6 +1,13 @@
 package events
 
-import "github.com/aquasecurity/tracee/pkg/errfmt"
+import (
+	"github.com/aquasecurity/tracee/pkg/errfmt"
+)
+
+type EventState struct {
+	Submit uint64 // event that should be submitted to userspace (by policies bitmap)
+	Emit   uint64 // event that should be emitted to the user (by policies bitmap)
+}
 
 type EventDefinitionGroup struct {
 	// ksymbols and tailcalls are instantiable.
@@ -72,4 +79,16 @@ func (e *EventDefinitionGroup) GetID(eventName string) (ID, bool) {
 		}
 	}
 	return -1, false
+}
+
+func (e *EventDefinitionGroup) GetTailCalls(evtConfig map[ID]EventState) []TailCall {
+	var tailCalls []TailCall
+
+	for id, evt := range e.events {
+		if evtConfig[id].Submit > 0 {
+			tailCalls = append(tailCalls, evt.GetDependencies().TailCalls...)
+		}
+	}
+
+	return tailCalls
 }

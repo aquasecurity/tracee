@@ -33,7 +33,7 @@ func (t *Tracee) lkmSeekerRoutine(ctx gocontext.Context) {
 	logger.Debugw("Starting lkmSeekerRoutine goroutine")
 	defer logger.Debugw("Stopped lkmSeekerRoutine goroutine")
 
-	if t.events[events.HiddenKernelModule].emit == 0 {
+	if t.events[events.HiddenKernelModule].Emit == 0 {
 		return
 	}
 
