@@ -18,7 +18,6 @@ type policyScopes struct {
 // scopeFlag holds pre-parsed scope flag fields
 type scopeFlag struct {
 	full              string
-	scopeFilter       string
 	scopeName         string
 	operator          string
 	values            string
@@ -50,19 +49,43 @@ func parseScopeFlag(flag string) (scopeFlag, error) {
 		return scopeFlag{}, errfmt.WrapError(InvalidFlagEmpty())
 	}
 
-	// get first idx of any operator
+	// get first idx of any expression operator (=, !=, <, >, <=, >=)
 	operatorIdx := strings.IndexAny(flag, "=!<>")
+
+	//
+	// without expression operator
+	//
+
 	if operatorIdx == -1 || // no operator, as a set flag
 		(operatorIdx == 0 && flag[0] == '!') { // negation, as an unset flag
 		if hasLeadingOrTrailingWhitespace(flag) {
 			return scopeFlag{}, errfmt.WrapError(InvalidFilterFlagFormat(flag))
 		}
 
+		// unset flag
+		if operatorIdx == 0 {
+			name := flag[1:]
+			if hasLeadingOrTrailingWhitespace(name) {
+				return scopeFlag{}, errfmt.WrapError(InvalidFilterFlagFormat(flag))
+			}
+
+			return scopeFlag{
+				full:      flag,
+				scopeName: name,
+				operator:  flag[:1],
+			}, nil
+		}
+
+		// set flag
 		return scopeFlag{
 			full:      flag,
 			scopeName: flag,
 		}, nil
 	}
+
+	//
+	// with expression operator
+	//
 
 	// validate scope name
 	scopeName := flag[:operatorIdx]
