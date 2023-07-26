@@ -894,7 +894,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 	for id := range t.events {
 		event := events.CoreEventDefinitionGroup.Get(id)
 		if event.GetDependencies().KSymbols != nil {
-			for _, symDep := range *event.GetDependencies().KSymbols {
+			for _, symDep := range event.GetDependencies().KSymbols {
 				reqKsyms = append(reqKsyms, symDep.Symbol)
 				if symDep.Required {
 					symEvents, ok := symsToDependentEvents[symDep.Symbol]
