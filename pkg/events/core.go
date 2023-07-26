@@ -1,11 +1,12 @@
 package events
 
 import (
+	"kernel.org/pub/linux/libs/security/libcap/cap"
+
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
 	"github.com/aquasecurity/tracee/types/trace"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 var CoreEventDefinitionGroup = EventDefinitionGroup{
