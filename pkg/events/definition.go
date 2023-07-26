@@ -14,7 +14,7 @@ type EventDefinition struct {
 	params       []trace.ArgMeta
 }
 
-func NewEventDefinition(name string, sets []string, depsID []ID) *EventDefinition {
+func NewEventDefinition(name string, sets []string, depsID []ID) EventDefinition {
 	evt := EventDefinition{
 		id32Bit: sys32undefined,
 		name:    name,
@@ -31,7 +31,7 @@ func NewEventDefinition(name string, sets []string, depsID []ID) *EventDefinitio
 
 	evt.dependencies = d
 
-	return &evt
+	return evt
 }
 
 // NewEventDefinitionFull creates a new EventDefinition with all fields set.

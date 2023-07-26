@@ -26,7 +26,7 @@ func (sig *signal) Unmarshal(buffer []byte) error {
 		return errfmt.Errorf("failed to decode signal argnum: %v", err)
 	}
 
-	eventDefinition, ok := events.CoreEventDefinitionGroup.GetSafe(sig.eventID)
+	eventDefinition, ok := events.CoreEventDefinitionGroup.GetOk(sig.eventID)
 	if !ok {
 		return errfmt.Errorf("failed to get configuration of event %d", sig.eventID)
 	}

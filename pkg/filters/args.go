@@ -90,7 +90,7 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 		return InvalidEventName(eventName)
 	}
 
-	eventDefinition, ok := events.CoreEventDefinitionGroup.GetSafe(id)
+	eventDefinition, ok := events.CoreEventDefinitionGroup.GetOk(id)
 	if !ok {
 		return InvalidEventName(eventName)
 	}
