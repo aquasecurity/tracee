@@ -35,7 +35,7 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 	ctx := bufferdecoder.Context{}
 	containerData := trace.Container{}
 	kubernetesData := trace.Kubernetes{}
-	eventDefinition := events.Event{}
+	eventDefinition := events.EventDefinition{}
 	args := []trace.Argument{}
 	stackAddresses := []uint64{}
 	flags := trace.ContextFlags{}
@@ -91,7 +91,7 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 				evt.Container = containerData
 				evt.Kubernetes = kubernetesData
 				evt.EventID = int(ctx.EventID)
-				evt.EventName = eventDefinition.Name
+				evt.EventName = eventDefinition.GetName()
 				evt.MatchedPoliciesKernel = ctx.MatchedPolicies
 				evt.MatchedPoliciesUser = 0
 				evt.MatchedPolicies = []string{}
@@ -188,7 +188,7 @@ func BenchmarkNewEventObject(b *testing.B) {
 	ctx := bufferdecoder.Context{}
 	containerData := trace.Container{}
 	kubernetesData := trace.Kubernetes{}
-	eventDefinition := events.Event{}
+	eventDefinition := events.EventDefinition{}
 	args := []trace.Argument{}
 	stackAddresses := []uint64{}
 	flags := trace.ContextFlags{}
@@ -244,7 +244,7 @@ func BenchmarkNewEventObject(b *testing.B) {
 					Container:             containerData,
 					Kubernetes:            kubernetesData,
 					EventID:               int(ctx.EventID),
-					EventName:             eventDefinition.Name,
+					EventName:             eventDefinition.GetName(),
 					MatchedPoliciesKernel: ctx.MatchedPolicies,
 					ArgsNum:               int(argnum),
 					ReturnValue:           int(ctx.Retval),

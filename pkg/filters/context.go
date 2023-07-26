@@ -63,7 +63,7 @@ func (filter *ContextFilter) Parse(filterName string, operatorAndValues string) 
 	eventName := parts[0]
 	eventField := parts[2]
 
-	id, ok := events.Definitions.GetID(eventName)
+	id, ok := events.CoreEventDefinitionGroup.GetID(eventName)
 	if !ok {
 		return InvalidEventName(eventName)
 	}

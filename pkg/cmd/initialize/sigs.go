@@ -25,7 +25,7 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 		dependencies := make([]events.ID, 0)
 
 		for _, s := range selectedEvents {
-			eventID, found := events.Definitions.GetID(s.Name)
+			eventID, found := events.CoreEventDefinitionGroup.GetID(s.Name)
 			if !found {
 				logger.Errorw("Failed to load event dependency", "event", s.Name)
 				continue
@@ -36,7 +36,7 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 
 		event := events.NewEventDefinition(m.EventName, []string{"signatures", "default"}, dependencies)
 
-		err = events.Definitions.Add(id, event)
+		err = events.CoreEventDefinitionGroup.Add(id, event)
 		if err != nil {
 			logger.Errorw("Failed to add event definition", "error", err)
 			continue

@@ -145,13 +145,13 @@ func buildDerivedEvent(baseEvent *trace.Event, skeleton deriveBase, argsValues [
 }
 
 // store as static variable for mocking in tests
-var getEventDefinition = events.Definitions.Get
+var getEventDefinition = events.CoreEventDefinitionGroup.Get
 
 func makeDeriveBase(eventID events.ID) deriveBase {
 	def := getEventDefinition(eventID)
 	return deriveBase{
-		Name:   def.Name,
+		Name:   def.GetName(),
 		ID:     int(eventID),
-		Params: def.Params,
+		Params: def.GetParams(),
 	}
 }

@@ -14,14 +14,14 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 	tests := []struct {
 		startId        events.ID
 		signatures     []detect.Signature
-		expectedEvents []events.Event
+		expectedEvents []*events.EventDefinition
 	}{
 		{
 			startId: events.ID(6001),
 			signatures: []detect.Signature{
 				newFakeSignature("fake_event_0", []string{"hooked_syscalls"}),
 			},
-			expectedEvents: []events.Event{
+			expectedEvents: []*events.EventDefinition{
 				events.NewEventDefinition("fake_event_0", []string{"signatures", "default"}, []events.ID{events.HookedSyscalls}),
 			},
 		},
@@ -31,7 +31,7 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 				newFakeSignature("fake_event_1", []string{"ptrace"}),
 				newFakeSignature("fake_event_2", []string{"security_file_open", "security_inode_rename"}),
 			},
-			expectedEvents: []events.Event{
+			expectedEvents: []*events.EventDefinition{
 				events.NewEventDefinition("fake_event_1", []string{"signatures", "default"}, []events.ID{events.Ptrace}),
 				events.NewEventDefinition("fake_event_2", []string{"signatures", "default"}, []events.ID{events.SecurityFileOpen, events.SecurityInodeRename}),
 			},
@@ -41,7 +41,7 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 			signatures: []detect.Signature{
 				newFakeSignature("fake_event_3", []string{"sched_process_exec", "security_socket_connect"}),
 			},
-			expectedEvents: []events.Event{
+			expectedEvents: []*events.EventDefinition{
 				events.NewEventDefinition("fake_event_3", []string{"signatures", "default"}, []events.ID{events.SchedProcessExec, events.SecuritySocketConnect}),
 			},
 		},
@@ -51,9 +51,9 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 		CreateEventsFromSignatures(test.startId, test.signatures)
 
 		for _, expected := range test.expectedEvents {
-			eventID, ok := events.Definitions.GetID(expected.Name)
+			eventID, ok := events.CoreEventDefinitionGroup.GetID(expected.GetName())
 			assert.True(t, ok)
-			event := events.Definitions.Get(eventID)
+			event := events.CoreEventDefinitionGroup.Get(eventID)
 			assert.Equal(t, expected, event)
 		}
 	}

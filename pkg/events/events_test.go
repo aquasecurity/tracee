@@ -7,70 +7,70 @@ import (
 )
 
 func TestNewEventDefinition(t *testing.T) {
-	expected := Event{
-		Name: "hooked_seq_ops2",
-		Dependencies: Dependencies{
+	expected := EventDefinition{
+		name: "hooked_seq_ops2",
+		dependencies: Dependencies{
 			Events: []ID{
 				PrintNetSeqOps,
 				DoInitModule,
 			},
 		},
-		Sets: []string{"signatures"},
+		sets: []string{"signatures"},
 	}
 
 	e := NewEventDefinition("hooked_seq_ops2", []string{"signatures"}, []ID{PrintNetSeqOps, DoInitModule})
 
-	assert.Equal(t, expected.Name, e.Name)
-	assert.Equal(t, expected.Dependencies, e.Dependencies)
+	assert.Equal(t, expected.GetName(), e.GetName())
+	assert.Equal(t, expected.GetDependencies(), e.GetDependencies())
 }
 
 func TestAdd(t *testing.T) {
 	tests := []struct {
 		name string
-		evt  Event
+		evt  *EventDefinition
 		err  string
 	}{
 		{
 			name: "new event",
-			evt: Event{
-				ID32Bit: ID(6000),
-				Name:    "new_event",
-				Dependencies: Dependencies{
+			evt: &EventDefinition{
+				id32Bit: ID(6000),
+				name:    "new_event",
+				dependencies: Dependencies{
 					Events: []ID{
 						PrintNetSeqOps,
 						DoInitModule,
 					},
 				},
-				Sets: []string{"signatures"},
+				sets: []string{"signatures"},
 			},
 		},
 		{
 			name: "event id already exist",
-			evt: Event{
-				ID32Bit: ID(700),
-				Name:    "new_event",
-				Dependencies: Dependencies{
+			evt: &EventDefinition{
+				id32Bit: ID(700),
+				name:    "new_event",
+				dependencies: Dependencies{
 					Events: []ID{
 						PrintNetSeqOps,
 						DoInitModule,
 					},
 				},
-				Sets: []string{"signatures"},
+				sets: []string{"signatures"},
 			},
 			err: "error event id already exist: 700",
 		},
 		{
 			name: "event name already exist",
-			evt: Event{
-				ID32Bit: ID(6001),
-				Name:    "net_packet",
-				Dependencies: Dependencies{
+			evt: &EventDefinition{
+				id32Bit: ID(6001),
+				name:    "net_packet",
+				dependencies: Dependencies{
 					Events: []ID{
 						PrintNetSeqOps,
 						DoInitModule,
 					},
 				},
-				Sets: []string{"signatures"},
+				sets: []string{"signatures"},
 			},
 			err: "error event name already exist: net_packet",
 		},
@@ -78,16 +78,16 @@ func TestAdd(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := Definitions.Add(test.evt.ID32Bit, test.evt)
+			err := CoreEventDefinitionGroup.Add(test.evt.GetID32Bit(), test.evt)
 			if err != nil {
 				assert.ErrorContains(t, err, test.err)
 				return
 			}
 
-			id, ok := Definitions.GetID(test.evt.Name)
+			id, ok := CoreEventDefinitionGroup.GetID(test.evt.GetName())
 			assert.True(t, ok)
 
-			event := Definitions.Get(id)
+			event := CoreEventDefinitionGroup.Get(id)
 			assert.Equal(t, test.evt, event)
 		})
 	}
