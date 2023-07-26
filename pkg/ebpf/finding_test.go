@@ -88,7 +88,7 @@ func createFakeEventAndFinding() detect.Finding {
 	eventName := "fake_signature_event"
 	event := events.NewEventDefinition(eventName, []string{"signatures"}, []events.ID{events.Ptrace})
 
-	events.Definitions.Add(events.StartSignatureID, event)
+	events.CoreEventDefinitionGroup.Add(events.StartSignatureID, event)
 
 	return detect.Finding{
 		SigMetadata: detect.SignatureMetadata{

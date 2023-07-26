@@ -1873,10 +1873,10 @@ func isInSets(syscallName string, sets []string) bool {
 func getAllSyscallsInSet(set string) []string {
 	var syscallsInSet []string
 
-	for _, v := range events.Definitions.Events() {
-		for _, c := range v.Sets {
+	for _, v := range events.CoreEventDefinitionGroup.Events() {
+		for _, c := range v.GetSets() {
 			if c == set {
-				syscallsInSet = append(syscallsInSet, v.Name)
+				syscallsInSet = append(syscallsInSet, v.GetName())
 			}
 		}
 	}

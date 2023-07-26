@@ -34,14 +34,14 @@ const InitProcNsDir = "/proc/1/ns"
 // InitNamespacesEvent collect the init process namespaces and create event from
 // them.
 func InitNamespacesEvent() trace.Event {
-	initNamespacesDef := Definitions.Get(InitNamespaces)
+	initNamespacesDef := CoreEventDefinitionGroup.Get(InitNamespaces)
 	initNamespacesArgs := getInitNamespaceArguments()
 
 	initNamespacesEvent := trace.Event{
 		Timestamp:   int(time.Now().UnixNano()),
 		ProcessName: "tracee-ebpf",
 		EventID:     int(InitNamespaces),
-		EventName:   initNamespacesDef.Name,
+		EventName:   initNamespacesDef.GetName(),
 		ArgsNum:     len(initNamespacesArgs),
 		Args:        initNamespacesArgs,
 	}
@@ -53,11 +53,13 @@ func InitNamespacesEvent() trace.Event {
 // parse them into event arguments.
 func getInitNamespaceArguments() []trace.Argument {
 	initNamespaces := fetchInitNamespaces()
-	eventDefinition := Definitions.Get(InitNamespaces)
-	initNamespacesArgs := make([]trace.Argument, len(eventDefinition.Params))
+	eventDefinition := CoreEventDefinitionGroup.Get(InitNamespaces)
+	initNamespacesArgs := make([]trace.Argument, len(eventDefinition.GetParams()))
+
+	params := eventDefinition.GetParams()
 
 	for i, arg := range initNamespacesArgs {
-		arg.ArgMeta = eventDefinition.Params[i]
+		arg.ArgMeta = params[i]
 		arg.Value = initNamespaces[arg.Name]
 		initNamespacesArgs[i] = arg
 	}
@@ -92,30 +94,31 @@ func fetchInitNamespaces() map[string]uint32 {
 func ExistingContainersEvents(cts *containers.Containers, enrich bool) []trace.Event {
 	var events []trace.Event
 
-	def := Definitions.Get(ExistingContainer)
+	def := CoreEventDefinitionGroup.Get(ExistingContainer)
 
 	for id, info := range cts.GetContainers() {
 		container := runtime.ContainerMetadata{}
 		if enrich {
 			container, _ = cts.EnrichCgroupInfo(uint64(id))
 		}
+		params := def.GetParams()
 		args := []trace.Argument{
-			{ArgMeta: def.Params[0], Value: info.Runtime.String()},
-			{ArgMeta: def.Params[1], Value: info.Container.ContainerId},
-			{ArgMeta: def.Params[2], Value: info.Ctime.UnixNano()},
-			{ArgMeta: def.Params[3], Value: container.Image},
-			{ArgMeta: def.Params[3], Value: container.ImageDigest},
-			{ArgMeta: def.Params[4], Value: container.Name},
-			{ArgMeta: def.Params[5], Value: container.Pod.Name},
-			{ArgMeta: def.Params[6], Value: container.Pod.Namespace},
-			{ArgMeta: def.Params[7], Value: container.Pod.UID},
-			{ArgMeta: def.Params[8], Value: container.Pod.Sandbox},
+			{ArgMeta: params[0], Value: info.Runtime.String()},
+			{ArgMeta: params[1], Value: info.Container.ContainerId},
+			{ArgMeta: params[2], Value: info.Ctime.UnixNano()},
+			{ArgMeta: params[3], Value: container.Image},
+			{ArgMeta: params[3], Value: container.ImageDigest},
+			{ArgMeta: params[4], Value: container.Name},
+			{ArgMeta: params[5], Value: container.Pod.Name},
+			{ArgMeta: params[6], Value: container.Pod.Namespace},
+			{ArgMeta: params[7], Value: container.Pod.UID},
+			{ArgMeta: params[8], Value: container.Pod.Sandbox},
 		}
 		existingContainerEvent := trace.Event{
 			Timestamp:   int(time.Now().UnixNano()),
 			ProcessName: "tracee-ebpf",
 			EventID:     int(ExistingContainer),
-			EventName:   def.Name,
+			EventName:   def.GetName(),
 			ArgsNum:     len(args),
 			Args:        args,
 		}

@@ -5,7 +5,6 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
-	"github.com/aquasecurity/tracee/types/trace"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
@@ -28,18 +27,6 @@ type KSymbol struct {
 }
 
 type Capabilities map[capabilities.RingType][]cap.Value // array of needed capabilities per ring type
-
-// Event is a struct describing an event configuration
-type Event struct {
-	ID32Bit      ID
-	Name         string
-	DocPath      string // Relative to the 'doc/events' directory
-	Internal     bool
-	Syscall      bool
-	Dependencies Dependencies
-	Sets         []string
-	Params       []trace.ArgMeta
-}
 
 //
 // TailCall

@@ -183,9 +183,9 @@ func GetCaptureEventsList(cfg config.Config) map[events.ID]eventConfig {
 }
 
 func (t *Tracee) handleEventsDependencies(eventId events.ID, submitMap uint64) {
-	definition := events.Definitions.Get(eventId)
+	definition := events.CoreEventDefinitionGroup.Get(eventId)
 
-	eDependencies := definition.Dependencies
+	eDependencies := definition.GetDependencies()
 	for _, id := range eDependencies.Events {
 		ec, ok := t.events[id]
 		if !ok {
@@ -260,11 +260,11 @@ func New(cfg config.Config) (*Tracee, error) {
 	// Update capabilities rings with all events dependencies
 
 	for id := range t.events {
-		evt, ok := events.Definitions.GetSafe(id)
+		evt, ok := events.CoreEventDefinitionGroup.GetSafe(id)
 		if !ok {
 			return t, errfmt.Errorf("could not get event %d", id)
 		}
-		for ringType, capArray := range evt.Dependencies.Capabilities {
+		for ringType, capArray := range evt.GetDependencies().Capabilities {
 			var f func(values ...cap.Value) error
 			switch ringType {
 			case capabilities.Base:
@@ -504,11 +504,11 @@ type InitValues struct {
 func (t *Tracee) generateInitValues() (InitValues, error) {
 	initVals := InitValues{}
 	for evt := range t.events {
-		def, exists := events.Definitions.GetSafe(evt)
+		def, exists := events.CoreEventDefinitionGroup.GetSafe(evt)
 		if !exists {
 			return initVals, errfmt.Errorf("event with id %d doesn't exist", evt)
 		}
-		if def.Dependencies.KSymbols != nil {
+		if def.GetDependencies().KSymbols != nil {
 			initVals.Kallsyms = true
 		}
 	}
@@ -533,8 +533,8 @@ func (t *Tracee) initTailCall(tailCall *events.TailCall) error {
 
 	// Attach internal syscall probes if needed.
 	for _, index := range tailCall.GetIndexes() {
-		def := events.Definitions.Get(events.ID(index))
-		if def.Syscall {
+		evtDef := events.CoreEventDefinitionGroup.Get(events.ID(index))
+		if evtDef.IsSyscall() {
 			err := t.probes.Attach(probes.SyscallEnter__Internal)
 			if err != nil {
 				return errfmt.WrapError(err)
@@ -892,9 +892,9 @@ func (t *Tracee) validateKallsymsDependencies() {
 	var reqKsyms []string
 	symsToDependentEvents := make(map[string][]events.ID)
 	for id := range t.events {
-		event := events.Definitions.Get(id)
-		if event.Dependencies.KSymbols != nil {
-			for _, symDep := range *event.Dependencies.KSymbols {
+		event := events.CoreEventDefinitionGroup.Get(id)
+		if event.GetDependencies().KSymbols != nil {
+			for _, symDep := range *event.GetDependencies().KSymbols {
 				reqKsyms = append(reqKsyms, symDep.Symbol)
 				if symDep.Required {
 					symEvents, ok := symsToDependentEvents[symDep.Symbol]
@@ -931,7 +931,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 
 	// Cancel events with missing symbols dependencies
 	for eventToCancel, missingDepSyms := range missingSymsPerEvent {
-		logger.Errorw("Event canceled because of missing kernel symbol dependency", "missing symbols", missingDepSyms, "event", events.Definitions.Get(eventToCancel).Name)
+		logger.Errorw("Event canceled because of missing kernel symbol dependency", "missing symbols", missingDepSyms, "event", events.CoreEventDefinitionGroup.Get(eventToCancel).GetName())
 		delete(t.events, eventToCancel)
 	}
 }
@@ -939,8 +939,8 @@ func (t *Tracee) validateKallsymsDependencies() {
 func (t *Tracee) populateBPFMaps() error {
 	// Initialize events parameter types map
 	eventsParams := make(map[events.ID][]bufferdecoder.ArgType)
-	for id, eventDefinition := range events.Definitions.Events() {
-		params := eventDefinition.Params
+	for id, eventDefinition := range events.CoreEventDefinitionGroup.Events() {
+		params := eventDefinition.GetParams()
 		for _, param := range params {
 			eventsParams[id] = append(eventsParams[id], bufferdecoder.GetParamType(param.Type))
 		}
@@ -976,9 +976,9 @@ func (t *Tracee) populateBPFMaps() error {
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-	for id, event := range events.Definitions.Events() {
-		id32BitU32 := uint32(event.ID32Bit) // ID32Bit is int32
-		idU32 := uint32(id)                 // ID is int32
+	for id, event := range events.CoreEventDefinitionGroup.Events() {
+		id32BitU32 := uint32(event.GetID32Bit()) // ID32Bit is int32
+		idU32 := uint32(id)                      // ID is int32
 		if err := sys32to64BPFMap.Update(unsafe.Pointer(&id32BitU32), unsafe.Pointer(&idU32)); err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -1191,9 +1191,9 @@ func getTailCalls(eventConfigs map[events.ID]eventConfig) ([]*events.TailCall, e
 	tailCalls := []*events.TailCall{}
 
 	for e, cfg := range eventConfigs {
-		def := events.Definitions.Get(e)
+		def := events.CoreEventDefinitionGroup.Get(e)
 
-		for _, tailCall := range def.Dependencies.TailCalls {
+		for _, tailCall := range def.GetDependencies().TailCalls {
 			if tailCall.GetIndexesLen() == 0 {
 				continue // skip if tailcall has no indexes defined
 			}
@@ -1217,7 +1217,7 @@ func getTailCalls(eventConfigs map[events.ID]eventConfig) ([]*events.TailCall, e
 		}
 
 		// validate the event and add to the syscall tail calls
-		if def.Syscall && cfg.submit > 0 && e < events.MaxSyscallID {
+		if def.IsSyscall() && cfg.submit > 0 && e < events.MaxSyscallID {
 			enterInitTailCall.AddIndex(uint32(e))
 			enterSubmitTailCall.AddIndex(uint32(e))
 			exitInitTailCall.AddIndex(uint32(e))
@@ -1252,13 +1252,13 @@ func (t *Tracee) attachProbes() error {
 	// attach selected tracing events probes
 
 	for tr := range t.events {
-		event, ok := events.Definitions.GetSafe(tr)
+		event, ok := events.CoreEventDefinitionGroup.GetSafe(tr)
 		if !ok {
 			continue
 		}
 
 		// attach internal syscall probes for selected syscall events, if any
-		if event.Syscall {
+		if event.IsSyscall() {
 			err := t.probes.Attach(probes.SyscallEnter__Internal)
 			if err != nil {
 				return errfmt.WrapError(err)
@@ -1270,7 +1270,7 @@ func (t *Tracee) attachProbes() error {
 		}
 
 		// attach probes for selected events
-		for _, dep := range event.Dependencies.Probes {
+		for _, dep := range event.GetDependencies().Probes {
 			err = t.probes.Attach(dep.Handle, t.cgroups)
 			if err != nil && dep.Required {
 				return errfmt.Errorf("failed to attach required probe: %v", err)
@@ -1664,7 +1664,7 @@ func (t *Tracee) triggerSyscallsIntegrityCheck(event trace.Event) error {
 		if len(derive.SyscallsToCheck) == 0 {
 			syscallFilter, ok := hookedSyscallsFilters["check_syscalls"].(*filters.StringFilter)
 			if syscallFilter != nil && ok {
-				eventNamesToID := events.Definitions.NamesToIDs()
+				eventNamesToID := events.CoreEventDefinitionGroup.NamesToIDs()
 				for _, syscall := range syscallFilter.Equal() {
 					_, ok := eventNamesToID[syscall]
 					if !ok {
