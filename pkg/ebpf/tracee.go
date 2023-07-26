@@ -58,11 +58,6 @@ type fileExecInfo struct {
 	Hash      string
 }
 
-type eventConfig struct {
-	submit uint64 // event that should be submitted to userspace (by policies bitmap)
-	emit   uint64 // event that should be emitted to the user (by policies bitmap)
-}
-
 // Tracee traces system calls and system events using eBPF
 type Tracee struct {
 	config    config.Config
@@ -73,8 +68,9 @@ type Tracee struct {
 	OutDir    *os.File      // use utils.XXX functions to create or write to this file
 	stats     metrics.Stats
 	sigEngine *engine.Engine
+	// Events States
+	events map[events.ID]events.EventState
 	// Events
-	events           map[events.ID]eventConfig
 	eventsSorter     *sorting.EventsChronologicalSorter
 	eventsPool       *sync.Pool
 	eventProcessor   map[events.ID][]func(evt *trace.Event) error
@@ -127,9 +123,9 @@ func (t *Tracee) Stats() *metrics.Stats {
 }
 
 // GetEssentialEventsList sets the default events used by tracee
-func GetEssentialEventsList() map[events.ID]eventConfig {
+func GetEssentialEventsList() map[events.ID]events.EventState {
 	// Set essential events
-	return map[events.ID]eventConfig{
+	return map[events.ID]events.EventState{
 		events.SchedProcessExec: {},
 		events.SchedProcessExit: {},
 		events.SchedProcessFork: {},
@@ -137,8 +133,8 @@ func GetEssentialEventsList() map[events.ID]eventConfig {
 }
 
 // GetCaptureEventsList sets events used to capture data
-func GetCaptureEventsList(cfg config.Config) map[events.ID]eventConfig {
-	captureEvents := make(map[events.ID]eventConfig)
+func GetCaptureEventsList(cfg config.Config) map[events.ID]events.EventState {
+	captureEvents := make(map[events.ID]events.EventState)
 
 	// All capture events should be placed, at least for now, to
 	// all matched policies, or else the event won't be set to
@@ -146,36 +142,36 @@ func GetCaptureEventsList(cfg config.Config) map[events.ID]eventConfig {
 	// the capture event to userland.
 
 	if cfg.Capture.Exec {
-		captureEvents[events.CaptureExec] = eventConfig{
-			submit: 0xFFFFFFFFFFFFFFFF,
+		captureEvents[events.CaptureExec] = events.EventState{
+			Submit: 0xFFFFFFFFFFFFFFFF,
 		}
 	}
 	if cfg.Capture.FileWrite.Capture {
-		captureEvents[events.CaptureFileWrite] = eventConfig{
-			submit: 0xFFFFFFFFFFFFFFFF,
+		captureEvents[events.CaptureFileWrite] = events.EventState{
+			Submit: 0xFFFFFFFFFFFFFFFF,
 		}
 	}
 	if cfg.Capture.FileRead.Capture {
-		captureEvents[events.CaptureFileRead] = eventConfig{}
+		captureEvents[events.CaptureFileRead] = events.EventState{}
 	}
 	if cfg.Capture.Module {
-		captureEvents[events.CaptureModule] = eventConfig{
-			submit: 0xFFFFFFFFFFFFFFFF,
+		captureEvents[events.CaptureModule] = events.EventState{
+			Submit: 0xFFFFFFFFFFFFFFFF,
 		}
 	}
 	if cfg.Capture.Mem {
-		captureEvents[events.CaptureMem] = eventConfig{
-			submit: 0xFFFFFFFFFFFFFFFF,
+		captureEvents[events.CaptureMem] = events.EventState{
+			Submit: 0xFFFFFFFFFFFFFFFF,
 		}
 	}
 	if cfg.Capture.Bpf {
-		captureEvents[events.CaptureBpf] = eventConfig{
-			submit: 0xFFFFFFFFFFFFFFFF,
+		captureEvents[events.CaptureBpf] = events.EventState{
+			Submit: 0xFFFFFFFFFFFFFFFF,
 		}
 	}
 	if pcaps.PcapsEnabled(cfg.Capture.Net) {
-		captureEvents[events.CaptureNetPacket] = eventConfig{
-			submit: 0xFFFFFFFFFFFFFFFF,
+		captureEvents[events.CaptureNetPacket] = events.EventState{
+			Submit: 0xFFFFFFFFFFFFFFFF,
 		}
 	}
 
@@ -189,10 +185,10 @@ func (t *Tracee) handleEventsDependencies(eventId events.ID, submitMap uint64) {
 	for _, id := range eDependencies.Events {
 		ec, ok := t.events[id]
 		if !ok {
-			ec = eventConfig{}
+			ec = events.EventState{}
 			t.handleEventsDependencies(id, submitMap)
 		}
-		ec.submit |= submitMap
+		ec.Submit |= submitMap
 		t.events[id] = ec
 
 		if events.IsASignatureEvent(eventId) {
@@ -242,19 +238,19 @@ func New(cfg config.Config) (*Tracee, error) {
 		for e := range p.EventsToTrace {
 			var submit, emit uint64
 			if _, ok := t.events[e]; ok {
-				submit = t.events[e].submit
-				emit = t.events[e].emit
+				submit = t.events[e].Submit
+				emit = t.events[e].Emit
 			}
 			utils.SetBit(&submit, uint(p.ID))
 			utils.SetBit(&emit, uint(p.ID))
-			t.events[e] = eventConfig{submit: submit, emit: emit}
+			t.events[e] = events.EventState{Submit: submit, Emit: emit}
 		}
 	}
 
 	// Handle all essential events dependencies
 
 	for id, evt := range t.events {
-		t.handleEventsDependencies(id, evt.submit)
+		t.handleEventsDependencies(id, evt.Submit)
 	}
 
 	// Update capabilities rings with all events dependencies
@@ -517,7 +513,7 @@ func (t *Tracee) generateInitValues() (InitValues, error) {
 }
 
 // initTailCall initializes a given tailcall.
-func (t *Tracee) initTailCall(tailCall *events.TailCall) error {
+func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 	bpfMap, err := t.bpfModule.GetMap(tailCall.GetMapName())
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -558,7 +554,7 @@ func (t *Tracee) initTailCall(tailCall *events.TailCall) error {
 // derived and the corresponding function to derive into that Event.
 func (t *Tracee) initDerivationTable() error {
 	shouldSubmit := func(id events.ID) func() bool {
-		return func() bool { return t.events[id].submit > 0 }
+		return func() bool { return t.events[id].Submit > 0 }
 	}
 
 	t.eventDerivations = derive.Table{
@@ -955,7 +951,7 @@ func (t *Tracee) populateBPFMaps() error {
 		eventConfigVal := make([]byte, 16)
 
 		// bitmap of policies that require this event to be submitted
-		binary.LittleEndian.PutUint64(eventConfigVal[0:8], ecfg.submit)
+		binary.LittleEndian.PutUint64(eventConfigVal[0:8], ecfg.Submit)
 
 		// encoded event's parameter types
 		var paramTypes uint64
@@ -1123,10 +1119,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Initialize tail call dependencies
-	tailCalls, err := t.GetTailCalls()
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
+	tailCalls := events.CoreEventDefinitionGroup.GetTailCalls(t.events)
 	for _, tailCall := range tailCalls {
 		err := t.initTailCall(tailCall)
 		if err != nil {
@@ -1135,108 +1128,6 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	return nil
-}
-
-// getTailCalls collects all tailcall dependencies for the events picked to be traced, and generates
-// additional tailcall per syscall traced.
-//
-// For syscall tracing, there are 4 different relevant tail
-// calls:
-//
-// 1. sys_enter_init - syscall data saving is done here
-// 2. sys_enter_submit - some syscall submits are done here
-// 3. sys_exit_init - syscall validation on exit is done here
-// 4. sys_exit_submit - most syscalls are submitted at this point
-//
-// This division is done because some events only require the syscall saving logic, and not event
-// submission one. As such, in order to track syscalls, tracee needs to initialize these 4 tail
-// calls per syscall event to be submitted.
-//
-// NOTE: In pkg/events/events.go, one can see that some events will require the sys_enter_init tail
-// call, this is because they require syscall data saving in their probe (for example
-// security_file_open needs open, openat and openat2).
-func getTailCalls(eventConfigs map[events.ID]eventConfig) ([]*events.TailCall, error) {
-	enterInitTailCall := events.NewTailCall(
-		"sys_enter_init_tail",
-		"sys_enter_init",
-		[]uint32{},
-	)
-	enterSubmitTailCall := events.NewTailCall(
-		"sys_enter_submit_tail",
-		"sys_enter_submit",
-		[]uint32{},
-	)
-	exitInitTailCall := events.NewTailCall(
-		"sys_exit_init_tail",
-		"sys_exit_init",
-		[]uint32{},
-	)
-	exitSubmitTailCall := events.NewTailCall(
-		"sys_exit_submit_tail",
-		"sys_exit_submit",
-		[]uint32{},
-	)
-
-	// For tracking only unique tail call, we use it's string form as the key in a "set" map
-	// (map[string]bool). We use a string, and not the struct itself, because it includes an array.
-	//
-	// NOTE: In golang, map keys must be a comparable type, which are numerics and strings. structs
-	//       can also be used as keys, but only if they are composed solely from comparable types.
-	//
-	//       arrays/slices are not comparable, so we need to use the string form of the struct as a
-	//       key instead.  we then only append the actual tail call struct to a list if it's string
-	//       form is not found in the map.
-
-	tailCallProgs := map[string]bool{}
-	tailCalls := []*events.TailCall{}
-
-	for e, cfg := range eventConfigs {
-		def := events.CoreEventDefinitionGroup.Get(e)
-
-		for _, tailCall := range def.GetDependencies().TailCalls {
-			if tailCall.GetIndexesLen() == 0 {
-				continue // skip if tailcall has no indexes defined
-			}
-			for _, index := range tailCall.GetIndexes() {
-				if index >= uint32(events.MaxCommonID) {
-					logger.Debugw(
-						"Removing index from tail call (over max event id)",
-						"tail_call_map", tailCall.GetMapName(),
-						"index", index,
-						"max_event_id", events.MaxCommonID,
-						"pkgName", pkgName,
-					)
-					tailCall.DelIndex(index) // remove undef syscalls (eg. arm64)
-				}
-			}
-			tailCallStr := fmt.Sprint(tailCall)
-			if !tailCallProgs[tailCallStr] {
-				tailCalls = append(tailCalls, tailCall)
-			}
-			tailCallProgs[tailCallStr] = true
-		}
-
-		// validate the event and add to the syscall tail calls
-		if def.IsSyscall() && cfg.submit > 0 && e < events.MaxSyscallID {
-			enterInitTailCall.AddIndex(uint32(e))
-			enterSubmitTailCall.AddIndex(uint32(e))
-			exitInitTailCall.AddIndex(uint32(e))
-			exitSubmitTailCall.AddIndex(uint32(e))
-		}
-	}
-
-	tailCalls = append(tailCalls,
-		enterInitTailCall,
-		enterSubmitTailCall,
-		exitInitTailCall,
-		exitSubmitTailCall,
-	)
-
-	return tailCalls, nil
-}
-
-func (t *Tracee) GetTailCalls() ([]*events.TailCall, error) {
-	return getTailCalls(t.events)
 }
 
 // attachProbes attaches selected events probes to their respective eBPF progs
@@ -1609,7 +1500,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		event.MatchedPolicies = t.config.Policies.MatchedNames(matchedPolicies)
 	}
 
-	emit = t.events[events.InitNamespaces].emit
+	emit = t.events[events.InitNamespaces].Emit
 	if emit > 0 {
 		systemInfoEvent := events.InitNamespacesEvent()
 		setMatchedPolicies(&systemInfoEvent, emit)
@@ -1617,7 +1508,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		_ = t.stats.EventCount.Increment()
 	}
 
-	emit = t.events[events.ExistingContainer].emit
+	emit = t.events[events.ExistingContainer].Emit
 	if emit > 0 {
 		for _, e := range events.ExistingContainersEvents(t.containers, t.config.ContainersEnrich) {
 			setMatchedPolicies(&e, emit)
