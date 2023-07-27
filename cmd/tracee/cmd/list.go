@@ -29,7 +29,6 @@ var listCmd = &cobra.Command{
 	Long:    ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get signatures to update event list
-
 		sigsDir, err := cmd.Flags().GetStringArray("signatures-dir")
 		if err != nil {
 			logger.Fatalw("Failed to get signatures-dir flag", "err", err)

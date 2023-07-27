@@ -7,7 +7,9 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func PrintAndExitIfHelp(ctx *cli.Context, newBinary bool) {
+// PrintAndExitIfHelp checks if any of the help flags are set and prints the relevant help message.
+// It is used only by the old binary (tracee-ebpf).
+func PrintAndExitIfHelp(ctx *cli.Context) {
 	keys := []string{
 		"crs",
 		"cache",
@@ -22,7 +24,7 @@ func PrintAndExitIfHelp(ctx *cli.Context, newBinary bool) {
 
 	for _, k := range keys {
 		if checkIsHelp(ctx, k) {
-			fmt.Print(GetHelpString(k, newBinary))
+			fmt.Print(GetHelpString(k))
 			os.Exit(0)
 		}
 	}
@@ -41,7 +43,7 @@ func checkIsHelp(ctx *cli.Context, k string) bool {
 	return v == "help"
 }
 
-func GetHelpString(key string, newBinary bool) string {
+func GetHelpString(key string) string {
 	switch key {
 	case "config":
 		return configHelp()
@@ -54,10 +56,7 @@ func GetHelpString(key string, newBinary bool) string {
 	case "scope", "events":
 		return filterHelp()
 	case "output":
-		if newBinary {
-			return outputHelp()
-		}
-		return traceeEbpfOutputHelp()
+		return outputHelp()
 	case "capabilities":
 		return capabilitiesHelp()
 	case "rego":

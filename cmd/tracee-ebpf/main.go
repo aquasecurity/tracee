@@ -31,7 +31,7 @@ func main() {
 			// Logger Setup
 			logger.Init(logger.NewDefaultLoggingConfig())
 
-			flags.PrintAndExitIfHelp(c, false)
+			flags.PrintAndExitIfHelp(c)
 
 			if c.Bool("list") {
 				cmd.PrintEventList(false) // list events
