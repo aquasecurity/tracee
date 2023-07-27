@@ -866,7 +866,7 @@ check-pr: \
 	| .check_$(CMD_GIT)
 #
 	@echo
-	@echo "*** PR Comment BEGIN"
+	@echo "👇 PR Comment BEGIN"
 	@echo
 
 	@$(CMD_GIT) \
@@ -874,13 +874,21 @@ check-pr: \
 		--pretty=format:'%C(auto,yellow)%h%Creset **%C(auto,red)%s%Creset**'
 
 	@echo
+	@echo
 
-	@$(CMD_GIT) \
-		log $(LOGFROM)..HEAD \
-		--pretty=format:'commit %C(auto,yellow)%h%Creset%n%n```%n%b```%n'
+	@output=$$(git rev-list $(LOGFROM)..HEAD | while read commit; do \
+		if [[ "$$(git show --no-patch --format=%b $$commit)" ]]; then \
+			$(CMD_GIT) \
+				show -s $$commit \
+				--color=always \
+				--format='%C(auto,yellow)%h%Creset **%C(auto,red)%s%Creset**%n%n```%n%b%n```%n'; \
+			echo; \
+		fi; \
+	done); \
+	echo "$$output"
 
 	@echo
-	@echo "*** PR Comment END"
+	@echo "👆 PR Comment END"
 	@echo
 
 #
