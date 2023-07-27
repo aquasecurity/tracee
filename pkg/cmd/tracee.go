@@ -136,7 +136,7 @@ func PrintEventList(printRulesSet bool) {
 
 func printEventGroup(b *strings.Builder, firstEventID, lastEventID events.ID) {
 	for i := firstEventID; i < lastEventID; i++ {
-		event, ok := events.CoreEventDefinitionGroup.GetOk(i)
+		event, ok := events.Core.GetEventByIDWithOk(i)
 		if !ok || event.IsInternal() {
 			continue
 		}
@@ -150,7 +150,7 @@ func printEventGroup(b *strings.Builder, firstEventID, lastEventID events.ID) {
 }
 
 func getFormattedEventParams(eventID events.ID) string {
-	evtDef, exists := events.CoreEventDefinitionGroup.GetOk(eventID)
+	evtDef, exists := events.Core.GetEventByIDWithOk(eventID)
 	if !exists {
 		return "()"
 	}

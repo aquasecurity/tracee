@@ -147,7 +147,7 @@ func (t *Tracee) queueEvents(ctx context.Context, in <-chan *trace.Event) (chan 
 func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) (<-chan *trace.Event, <-chan error) {
 	out := make(chan *trace.Event, 10000)
 	errc := make(chan error, 1)
-	sysCompatTranslation := events.CoreEventDefinitionGroup.IDs32ToIDs()
+	sysCompatTranslation := events.Core.IDs32ToIDs()
 	go func() {
 		defer close(out)
 		defer close(errc)
@@ -164,7 +164,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				continue
 			}
 			eventId := events.ID(ctx.EventID)
-			eventDefinition, ok := events.CoreEventDefinitionGroup.GetOk(eventId)
+			eventDefinition, ok := events.Core.GetEventByIDWithOk(eventId)
 			if !ok {
 				t.handleError(errfmt.Errorf("failed to get configuration of event %d", eventId))
 				continue
@@ -394,7 +394,7 @@ func parseContextFlags(containerId string, flags uint32) trace.ContextFlags {
 // Get the syscall name from its ID, taking into account architecture and 32bit/64bit modes
 func parseSyscallID(syscallID int, isCompat bool, compatTranslationMap map[events.ID]events.ID) (string, error) {
 	if !isCompat {
-		def, ok := events.CoreEventDefinitionGroup.GetOk(events.ID(syscallID))
+		def, ok := events.Core.GetEventByIDWithOk(events.ID(syscallID))
 		if ok {
 			return def.GetName(), nil
 		}
@@ -402,7 +402,7 @@ func parseSyscallID(syscallID int, isCompat bool, compatTranslationMap map[event
 	}
 	id, ok := compatTranslationMap[events.ID(syscallID)]
 	if ok {
-		def, ok := events.CoreEventDefinitionGroup.GetOk(id)
+		def, ok := events.Core.GetEventByIDWithOk(id)
 		if !ok { // Should never happen, as the translation map should be initialized from events.Definition
 			return "", errfmt.Errorf("no syscall event with compat syscall id %d, translated to ID %d", syscallID, id)
 		}

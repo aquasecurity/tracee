@@ -1,9 +1,11 @@
 package events
 
-import "github.com/aquasecurity/tracee/types/trace"
+import (
+	"github.com/aquasecurity/tracee/types/trace"
+)
 
 type Event struct {
-	id           ID
+	id           ID // TODO: use id ?
 	id32Bit      ID
 	name         string
 	docPath      string // Relative to the 'doc/events' directory
@@ -32,7 +34,37 @@ func NewEvent(name string, sets []string, depsID []ID) Event {
 	return evt
 }
 
+// NewEvent creates a new Event with all its fields set.
+func NewEventFull(
+	id ID,
+	id32Bit ID,
+	name string,
+	docPath string,
+	internal bool,
+	syscall bool,
+	sets []string,
+	deps Dependencies,
+	params []trace.ArgMeta,
+) Event {
+	// TODO: use id ?
+	return Event{
+		id:           id,
+		id32Bit:      id32Bit,
+		name:         name,
+		docPath:      docPath,
+		internal:     internal,
+		syscall:      syscall,
+		dependencies: deps,
+		sets:         sets,
+		params:       params,
+	}
+}
+
 // Getters (immutable data)
+
+func (e *Event) GetID() ID {
+	return e.id
+}
 
 func (e *Event) GetID32Bit() ID {
 	return e.id32Bit

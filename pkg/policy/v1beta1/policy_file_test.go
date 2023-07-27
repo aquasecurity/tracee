@@ -12,7 +12,7 @@ import (
 func TestPolicyValidate(t *testing.T) {
 	fakeSignatureEvent := events.NewEvent("fake_signature", []string{"signatures", "default"}, nil)
 
-	err := events.CoreEventDefinitionGroup.Add(9000, fakeSignatureEvent)
+	err := events.Core.Add(9000, fakeSignatureEvent)
 	assert.NilError(t, err)
 
 	tests := []struct {

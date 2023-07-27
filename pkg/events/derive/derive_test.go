@@ -79,7 +79,7 @@ func Test_DeriveSingleEvent(t *testing.T) {
 	testEventID := events.ID(0)
 
 	// Change getter of the events.Event to give the test definition
-	evtDef := events.CoreEventDefinitionGroup.Get(testEventID)
+	evtDef := events.Core.GetEventByID(testEventID)
 	evtDef.SetParams(
 		[]trace.ArgMeta{
 			{
@@ -168,7 +168,7 @@ func TestDeriveMultipleEvents(t *testing.T) {
 	testEventID := events.ID(0)
 
 	// Change getter of the events.Event to give the test definition
-	evtDef := events.CoreEventDefinitionGroup.Get(testEventID)
+	evtDef := events.Core.GetEventByID(testEventID)
 	evtDef.SetParams([]trace.ArgMeta{
 		{
 			Name: "arg1",

@@ -107,7 +107,7 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]eve
 	isExcluded := make(map[events.ID]bool)
 
 	// build a map: k:set, v:eventID
-	for id, event := range events.CoreEventDefinitionGroup.Events() {
+	for id, event := range events.Core.GetAllEvents() {
 		for _, set := range event.GetSets() {
 			setsToEvents[set] = append(setsToEvents[set], id)
 		}
@@ -167,7 +167,7 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]eve
 	}
 
 	// build a map: k:eventID, v:eventName with all events to trace
-	res = make(map[events.ID]string, events.CoreEventDefinitionGroup.Length())
+	res = make(map[events.ID]string, events.Core.Length())
 	for _, name := range eventsToTrace {
 		if strings.HasSuffix(name, "*") { // handle event prefixes with wildcards
 			found := false
@@ -200,7 +200,7 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]eve
 		setEvents := setsToEvents[set]
 		for _, id := range setEvents {
 			if !isExcluded[id] {
-				evtDef := events.CoreEventDefinitionGroup.Get(id)
+				evtDef := events.Core.GetEventByID(id)
 				res[id] = evtDef.GetName()
 			}
 		}

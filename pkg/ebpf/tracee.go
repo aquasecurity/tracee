@@ -179,7 +179,7 @@ func GetCaptureEventsList(cfg config.Config) map[events.ID]events.EventState {
 }
 
 func (t *Tracee) handleEventsDependencies(eventId events.ID, submitMap uint64) {
-	definition := events.CoreEventDefinitionGroup.Get(eventId)
+	definition := events.Core.GetEventByID(eventId)
 
 	eDependencies := definition.GetDependencies()
 	for _, id := range eDependencies.Events {
@@ -256,7 +256,7 @@ func New(cfg config.Config) (*Tracee, error) {
 	// Update capabilities rings with all events dependencies
 
 	for id := range t.events {
-		evt, ok := events.CoreEventDefinitionGroup.GetOk(id)
+		evt, ok := events.Core.GetEventByIDWithOk(id)
 		if !ok {
 			return t, errfmt.Errorf("could not get event %d", id)
 		}
@@ -500,7 +500,7 @@ type InitValues struct {
 func (t *Tracee) generateInitValues() (InitValues, error) {
 	initVals := InitValues{}
 	for evt := range t.events {
-		def, exists := events.CoreEventDefinitionGroup.GetOk(evt)
+		def, exists := events.Core.GetEventByIDWithOk(evt)
 		if !exists {
 			return initVals, errfmt.Errorf("event with id %d doesn't exist", evt)
 		}
@@ -529,7 +529,7 @@ func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 
 	// Attach internal syscall probes if needed.
 	for _, index := range tailCall.GetIndexes() {
-		evtDef := events.CoreEventDefinitionGroup.Get(events.ID(index))
+		evtDef := events.Core.GetEventByID(events.ID(index))
 		if evtDef.IsSyscall() {
 			err := t.probes.Attach(probes.SyscallEnter__Internal)
 			if err != nil {
@@ -888,7 +888,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 	var reqKsyms []string
 	symsToDependentEvents := make(map[string][]events.ID)
 	for id := range t.events {
-		event := events.CoreEventDefinitionGroup.Get(id)
+		event := events.Core.GetEventByID(id)
 		if event.GetDependencies().KSymbols != nil {
 			for _, symDep := range event.GetDependencies().KSymbols {
 				reqKsyms = append(reqKsyms, symDep.Symbol)
@@ -927,7 +927,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 
 	// Cancel events with missing symbols dependencies
 	for eventToCancel, missingDepSyms := range missingSymsPerEvent {
-		can := events.CoreEventDefinitionGroup.Get(eventToCancel)
+		can := events.Core.GetEventByID(eventToCancel)
 		name := can.GetName()
 		logger.Errorw(
 			"Event canceled because of missing kernel symbol dependency",
@@ -940,7 +940,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 func (t *Tracee) populateBPFMaps() error {
 	// Initialize events parameter types map
 	eventsParams := make(map[events.ID][]bufferdecoder.ArgType)
-	for id, eventDefinition := range events.CoreEventDefinitionGroup.Events() {
+	for id, eventDefinition := range events.Core.GetAllEvents() {
 		params := eventDefinition.GetParams()
 		for _, param := range params {
 			eventsParams[id] = append(eventsParams[id], bufferdecoder.GetParamType(param.Type))
@@ -977,7 +977,7 @@ func (t *Tracee) populateBPFMaps() error {
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-	for id, event := range events.CoreEventDefinitionGroup.Events() {
+	for id, event := range events.Core.GetAllEvents() {
 		id32BitU32 := uint32(event.GetID32Bit()) // ID32Bit is int32
 		idU32 := uint32(id)                      // ID is int32
 		if err := sys32to64BPFMap.Update(unsafe.Pointer(&id32BitU32), unsafe.Pointer(&idU32)); err != nil {
@@ -1124,7 +1124,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Initialize tail call dependencies
-	tailCalls := events.CoreEventDefinitionGroup.GetTailCalls(t.events)
+	tailCalls := events.Core.GetTailCalls(t.events)
 	for _, tailCall := range tailCalls {
 		err := t.initTailCall(tailCall)
 		if err != nil {
@@ -1148,7 +1148,7 @@ func (t *Tracee) attachProbes() error {
 	// attach selected tracing events probes
 
 	for tr := range t.events {
-		event, ok := events.CoreEventDefinitionGroup.GetOk(tr)
+		event, ok := events.Core.GetEventByIDWithOk(tr)
 		if !ok {
 			continue
 		}
@@ -1560,7 +1560,7 @@ func (t *Tracee) triggerSyscallsIntegrityCheck(event trace.Event) error {
 		if len(derive.SyscallsToCheck) == 0 {
 			syscallFilter, ok := hookedSyscallsFilters["check_syscalls"].(*filters.StringFilter)
 			if syscallFilter != nil && ok {
-				eventNamesToID := events.CoreEventDefinitionGroup.NamesToIDs()
+				eventNamesToID := events.Core.NamesToIDs()
 				for _, syscall := range syscallFilter.Equal() {
 					_, ok := eventNamesToID[syscall]
 					if !ok {

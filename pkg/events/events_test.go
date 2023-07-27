@@ -78,16 +78,16 @@ func TestAdd(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := CoreEventDefinitionGroup.Add(test.evt.GetID32Bit(), test.evt)
+			err := Core.Add(test.evt.GetID32Bit(), test.evt)
 			if err != nil {
 				assert.ErrorContains(t, err, test.err)
 				return
 			}
 
-			id, ok := CoreEventDefinitionGroup.GetID(test.evt.GetName())
+			id, ok := Core.GetEventIDByName(test.evt.GetName())
 			assert.True(t, ok)
 
-			event := CoreEventDefinitionGroup.Get(id)
+			event := Core.GetEventByID(id)
 			assert.Equal(t, test.evt, event)
 		})
 	}
