@@ -35,7 +35,7 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 	ctx := bufferdecoder.Context{}
 	containerData := trace.Container{}
 	kubernetesData := trace.Kubernetes{}
-	eventDefinition := events.EventDefinition{}
+	eventDefinition := events.Event{}
 	args := []trace.Argument{}
 	stackAddresses := []uint64{}
 	flags := trace.ContextFlags{}
@@ -188,7 +188,7 @@ func BenchmarkNewEventObject(b *testing.B) {
 	ctx := bufferdecoder.Context{}
 	containerData := trace.Container{}
 	kubernetesData := trace.Kubernetes{}
-	eventDefinition := events.EventDefinition{}
+	eventDefinition := events.Event{}
 	args := []trace.Argument{}
 	stackAddresses := []uint64{}
 	flags := trace.ContextFlags{}

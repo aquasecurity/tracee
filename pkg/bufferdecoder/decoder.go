@@ -88,7 +88,7 @@ func (decoder *EbpfDecoder) DecodeContext(ctx *Context) error {
 // It should be called last, and after decoding the argnum with DecodeUint8.
 //
 // Argument array passed should be initialized with the size of len(eventDefinition.Params).
-func (decoder *EbpfDecoder) DecodeArguments(args []trace.Argument, argnum int, evtDef events.EventDefinition, eventId events.ID) error {
+func (decoder *EbpfDecoder) DecodeArguments(args []trace.Argument, argnum int, evtDef events.Event, eventId events.ID) error {
 	for i := 0; i < argnum; i++ {
 		idx, arg, err := readArgFromBuff(
 			eventId,

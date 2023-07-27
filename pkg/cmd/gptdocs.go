@@ -48,7 +48,7 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 		return fmt.Errorf("error reading events template: %v", err)
 	}
 
-	evtChannel := make(chan events.EventDefinition, 1)
+	evtChannel := make(chan events.Event, 1)
 	retChannel := make(chan WorkRet, 1)
 	wrkChannel := make(chan string, 1)
 
@@ -106,7 +106,7 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 
 	// Pick all events
 
-	var evt events.EventDefinition
+	var evt events.Event
 
 	allEvents := events.CoreEventDefinitionGroup.Events()
 
@@ -172,7 +172,7 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 }
 
 func (r GPTDocsRunner) GenerateSyscall(
-	ctx context.Context, template []byte, evt events.EventDefinition,
+	ctx context.Context, template []byte, evt events.Event,
 ) (
 	string, error,
 ) {

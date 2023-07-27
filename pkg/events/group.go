@@ -9,11 +9,13 @@ type EventState struct {
 	Emit   uint64 // event that should be emitted to the user (by policies bitmap)
 }
 
-type EventDefinitionGroup struct {
-	events map[ID]EventDefinition
+// ATTENTION: the event group is instantiable (all the rest is immutable)
+
+type EventGroup struct {
+	events map[ID]Event
 }
 
-func (e *EventDefinitionGroup) Add(eventId ID, evt EventDefinition) error {
+func (e *EventGroup) Add(eventId ID, evt Event) error {
 	if _, ok := e.events[eventId]; ok {
 		return errfmt.Errorf("error event id already exist: %v", eventId)
 	}
@@ -27,24 +29,24 @@ func (e *EventDefinitionGroup) Add(eventId ID, evt EventDefinition) error {
 	return nil
 }
 
-func (e *EventDefinitionGroup) Get(eventId ID) EventDefinition {
+func (e *EventGroup) Get(eventId ID) Event {
 	return e.events[eventId]
 }
 
-func (e *EventDefinitionGroup) GetOk(eventId ID) (EventDefinition, bool) {
+func (e *EventGroup) GetOk(eventId ID) (Event, bool) {
 	evt, ok := e.events[eventId]
 	return evt, ok
 }
 
-func (e *EventDefinitionGroup) Events() map[ID]EventDefinition {
+func (e *EventGroup) Events() map[ID]Event {
 	return e.events
 }
 
-func (e *EventDefinitionGroup) Length() int {
+func (e *EventGroup) Length() int {
 	return len(e.events)
 }
 
-func (e *EventDefinitionGroup) NamesToIDs() map[string]ID {
+func (e *EventGroup) NamesToIDs() map[string]ID {
 	namesToIds := make(map[string]ID, len(e.events))
 
 	for id, evt := range e.events {
@@ -53,18 +55,18 @@ func (e *EventDefinitionGroup) NamesToIDs() map[string]ID {
 	return namesToIds
 }
 
-func (e *EventDefinitionGroup) IDs32ToIDs() map[ID]ID {
+func (e *EventGroup) IDs32ToIDs() map[ID]ID {
 	idS32ToIDs := make(map[ID]ID, len(e.events))
 
 	for id, evt := range e.events {
-		if evt.GetID32Bit() != sys32undefined {
+		if evt.GetID32Bit() != Sys32Undefined {
 			idS32ToIDs[evt.GetID32Bit()] = id
 		}
 	}
 	return idS32ToIDs
 }
 
-func (e *EventDefinitionGroup) GetID(eventName string) (ID, bool) {
+func (e *EventGroup) GetID(eventName string) (ID, bool) {
 	for id, evt := range e.events {
 		if evt.GetName() == eventName {
 			return id, true
@@ -73,7 +75,7 @@ func (e *EventDefinitionGroup) GetID(eventName string) (ID, bool) {
 	return -1, false
 }
 
-func (e *EventDefinitionGroup) GetTailCalls(evtConfig map[ID]EventState) []TailCall {
+func (e *EventGroup) GetTailCalls(evtConfig map[ID]EventState) []TailCall {
 	var tailCalls []TailCall
 
 	for id, evt := range e.events {

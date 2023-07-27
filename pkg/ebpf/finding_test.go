@@ -86,7 +86,7 @@ func TestFindingToEvent(t *testing.T) {
 
 func createFakeEventAndFinding() detect.Finding {
 	eventName := "fake_signature_event"
-	event := events.NewEventDefinition(eventName, []string{"signatures"}, []events.ID{events.Ptrace})
+	event := events.NewEvent(eventName, []string{"signatures"}, []events.ID{events.Ptrace})
 
 	events.CoreEventDefinitionGroup.Add(events.StartSignatureID, event)
 
