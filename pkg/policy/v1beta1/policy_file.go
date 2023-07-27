@@ -254,7 +254,7 @@ func validateEvent(policyName, eventName string) error {
 		return errfmt.Errorf("policy %s, event cannot be empty", policyName)
 	}
 
-	_, ok := events.CoreEventDefinitionGroup.GetID(eventName)
+	_, ok := events.Core.GetEventIDByName(eventName)
 	if !ok {
 		return errfmt.Errorf("policy %s, event %s is not valid", policyName, eventName)
 	}
@@ -278,11 +278,11 @@ func validateEventArg(policyName, eventName, argName string) error {
 
 	argName = s[0]
 
-	eventID, ok := events.CoreEventDefinitionGroup.GetID(eventName)
+	eventID, ok := events.Core.GetEventIDByName(eventName)
 	if !ok {
 		return errfmt.Errorf("policy %s, event %s is not valid", policyName, eventName)
 	}
-	event := events.CoreEventDefinitionGroup.Get(eventID)
+	event := events.Core.GetEventByID(eventID)
 	for _, s := range event.GetSets() {
 		// we don't validate signature events because the arguments are dynamic
 		if s == "signatures" {

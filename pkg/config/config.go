@@ -47,7 +47,7 @@ func (c Config) Validate() error {
 		}
 
 		for e := range p.EventsToTrace {
-			_, exists := events.CoreEventDefinitionGroup.GetOk(e)
+			_, exists := events.Core.GetEventByIDWithOk(e)
 			if !exists {
 				return errfmt.Errorf("invalid event [%d] to trace in policy [%d]", e, p.ID)
 			}
