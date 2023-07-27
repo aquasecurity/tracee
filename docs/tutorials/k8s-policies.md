@@ -59,7 +59,7 @@ signatures.yaml:
 apiVersion: aquasecurity.github.io/v1beta1
 kind: TraceePolicy
 metadata:
-	name: signature_events
+	name: signature-events
 	annotations:
 		description: traces all signature events
 spec:
@@ -115,7 +115,7 @@ events.yaml: |-
   apiVersion: aquasecurity.github.io/v1beta1
   kind: TraceePolicy
   metadata:
-	  name: execve_event
+	  name: execve-event
 	  annotations:
 	  	description: traces all signature events
   spec:
