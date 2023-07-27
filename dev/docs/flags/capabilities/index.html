@@ -10,13 +10,9 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/integrating/container-engines/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/flags/capabilities/">
       
       
-        <link rel="prev" href="../../forensics/">
-      
-      
-        <link rel="next" href="../prometheus/">
       
       
         
@@ -27,7 +23,7 @@
     
     
       
-        <title>Container Engines - Tracee</title>
+        <title>Capabilities - Tracee</title>
       
     
     
@@ -65,7 +61,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#tracee-events-container-enrichment" class="md-skip">
+        <a href="#name" class="md-skip">
           Skip to content
         </a>
       
@@ -103,7 +99,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Container Engines
+              Capabilities
             
           </span>
         </div>
@@ -208,13 +204,11 @@
         
   
   
-    
-  
   
     
     
       <li class="md-tabs__item">
-        <a href="../../overview/" class="md-tabs__link md-tabs__link--active">
+        <a href="../../overview/" class="md-tabs__link">
           
   
   Docs
@@ -869,19 +863,17 @@
       
   
   
-    
-  
   
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
@@ -900,7 +892,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -13979,21 +13971,19 @@
                 
   
   
-    
-  
   
     
     
     
       
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_8" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_8" >
         
           <label class="md-nav__link" for="__nav_3_8" id="__nav_3_8_label" tabindex="0">
             
@@ -14012,7 +14002,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_8_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_8_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_8">
             <span class="md-nav__icon md-icon"></span>
             
@@ -14027,35 +14017,9 @@
                 
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    
-  
-    Container Engines
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../integrating/container-engines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14070,48 +14034,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#supported-container-runtime-engines" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Supported Container Runtime Engines
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#viewing-enrichment-output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Viewing enrichment output
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -14123,7 +14045,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../prometheus/" class="md-nav__link">
+      <a href="../../integrating/prometheus/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14149,7 +14071,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../healthz/" class="md-nav__link">
+      <a href="../../integrating/healthz/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14752,8 +14674,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -14762,10 +14682,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#supported-container-runtime-engines" class="md-nav__link">
+  <a href="#name" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Supported Container Runtime Engines
+        NAME
       
     </span>
   </a>
@@ -14773,10 +14693,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#viewing-enrichment-output" class="md-nav__link">
+  <a href="#synopsis" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Viewing enrichment output
+        SYNOPSIS
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#description" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DESCRIPTION
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EXAMPLES
       
     </span>
   </a>
@@ -14799,92 +14741,38 @@
                   
 
 
-<h1 id="tracee-events-container-enrichment">Tracee Events Container Enrichment<a class="headerlink" href="#tracee-events-container-enrichment" title="Permanent link">&para;</a></h1>
-<p>Tracee is capable of <strong>extracting information about running containers</strong>. It
-does that by tracking container namespaces creation kernel events and enriching
-those events by communicating with the relevant container's runtime and SDK.</p>
-<div class="admonition experimental warning">
-<p class="admonition-title">Experimental</p>
-<p>This feature is experimental and should be explicitly enabled in
-<strong>tracee</strong>, by using the <code>--container</code> flag OR, if running tracee
-container image, setting the <code>CONTAINERS_ENRICHMENT</code> environment flag (see
-example bellow).</p>
-</div>
-<ol>
-<li>
-<p>Running <strong>tracee</strong> manually</p>
-<p>If running tracee directly (not in a container), it will automatically
-search for known supported runtimes in their socket's default locations.</p>
-</li>
-<li>
-<p>Running <strong>tracee</strong> using a docker container</p>
-<p>When running tracee from a container, the runtime sockets must be manually
-mounted in order for the enrichment features to work.</p>
-<p>Using containerd as our runtime for example, this can be done by running
-tracee like:</p>
-<div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
-<span class="go">    --name tracee --rm -it \</span>
-<span class="go">    --pid=host --cgroupns=host --privileged \</span>
-<span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
-<span class="go">    -v /var/run/containerd:/var/run/containerd \</span>
-<span class="go">    -e CONTAINERS_ENRICHMENT=1 \</span>
-<span class="go">    aquasec/tracee:v0.17.0-rc-3-gd882cbf14</span>
+  <h1>Capabilities</h1>
+
+<h2 id="name">NAME<a class="headerlink" href="#name" title="Permanent link">&para;</a></h2>
+<p>tracee <strong>--capabilities</strong> - Opt out from dropping capabilities by default or set specific ones</p>
+<h2 id="synopsis">SYNOPSIS<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
+<p>tracee <strong>--capabilities</strong> [\&lt;bypass=[true|false]&gt; | \&lt;add=cap1(,cap2...)&gt; | \&lt;drop=cap1(,cap2...)&gt;] ... [<strong>--capabilities</strong> [&lt;add=cap1(,cap2...)&gt; | \&lt;drop=cap1(,cap2...)&gt;] ...]</p>
+<h2 id="description">DESCRIPTION<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
+<p>The <strong>--capabilities</strong> flag allows you to control the dropping of capabilities during execution time or set specific capabilities.</p>
+<p>Possible options:</p>
+<ul>
+<li><strong>bypass=[true|false]</strong>: Keep all capabilities during execution time. Setting <strong>bypass=true</strong> will opt out from dropping any capabilities.</li>
+<li><strong>add=cap1(,cap2...)</strong>: Add specific capabilities to the "required" capabilities ring. You can provide multiple capability names separated by commas.</li>
+<li><strong>drop=cap1(,cap2...)</strong>: Drop specific capabilities from the "required" capabilities ring. You can specify multiple capability names separated by commas.</li>
+</ul>
+<p>Please note that the available capabilities will depend on the running system. For the list of capabilities available on your system, see the <strong>list-caps</strong> command.</p>
+<h2 id="examples">EXAMPLES<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
+<ul>
+<li>To keep all capabilities during execution time, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--capabilities bypass=true</span>
 </code></pre></div>
-<p>Most container runtimes have their sockets installed by default in
-<code>/var/run</code>. If your system includes multiple container runtimes, tracee can
-track them all, however one should mount either all their runtime sockets
-or <code>/var/run</code> in it's entirety to do so.</p>
-</li>
-</ol>
-<h2 id="supported-container-runtime-engines">Supported Container Runtime Engines<a class="headerlink" href="#supported-container-runtime-engines" title="Permanent link">&para;</a></h2>
-<p>Currently, tracee will look in the following paths for auto-discovering the listed runtimes:</p>
-<ol>
-<li>
-<p>Docker:     <code>/var/run/docker.sock</code></p>
-</li>
-<li>
-<p>Containerd: <code>/var/run/containerd/containerd.sock</code></p>
-</li>
-<li>
-<p>CRI-O:      <code>/var/run/crio/crio.sock</code></p>
-</li>
-<li>
-<p>Podman:     <code>/var/run/podman/podman.sock</code></p>
-</li>
-</ol>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p><strong>Nested environments</strong> are somewhat tricky with this feature as evidenced
-by the docker mounting instructions. Tracee does not auto-discover this
-nesting and so sockets must be appropriately mounted and set up for tracee
-to enrich all containers correctly.</p>
-</div>
-<h2 id="viewing-enrichment-output">Viewing enrichment output<a class="headerlink" href="#viewing-enrichment-output" title="Permanent link">&para;</a></h2>
-<p>As a user, when container enrichment is enabled the event output will include enriched fields in these cases:</p>
-<ol>
-<li>
-<p>Running <strong>tracee</strong> with a json format will include all container enriched fields</p>
-<div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
-<span class="go">    --name tracee --rm -it \</span>
-<span class="go">    --pid=host --cgroupns=host --privileged \</span>
-<span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
-<span class="go">    -v /var/run/docker.sock:/var/run/docker.sock \</span>
-<span class="go">    aquasec/tracee:v0.17.0-rc-3-gd882cbf14 \</span>
-<span class="go">    --output json --containers</span>
+<ul>
+<li>To add specific capabilities (e.g., cap_kill and cap_syslog) to the "required" capabilities ring, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--capabilities add=cap_kill,cap_syslog</span>
 </code></pre></div>
-</li>
-<li>
-<p>Running in container filtering mode and with enrichment enabled will add the image name to the table printer</p>
-<div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
-<span class="go">    --name tracee --rm -it \</span>
-<span class="go">    --pid=host --cgroupns=host --privileged \</span>
-<span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
-<span class="go">    -v /var/run/containerd:/var/run/containerd \</span>
-<span class="go">    aquasec/tracee:v0.17.0-rc-3-gd882cbf14 \</span>
-<span class="go">    --scope container --containers</span>
+<ul>
+<li>To drop a specific capability (e.g., cap_chown) from the "required" capabilities ring, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--capabilities drop=cap_chown</span>
 </code></pre></div>
-</li>
-</ol>
+<p>Please refer to the <a href="../../deep-dive/dropping-capabilities/">documentation</a> for more information on environment capabilities.</p>
 
 
 

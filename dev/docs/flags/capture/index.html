@@ -10,13 +10,9 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/integrating/container-engines/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/flags/capture/">
       
       
-        <link rel="prev" href="../../forensics/">
-      
-      
-        <link rel="next" href="../prometheus/">
       
       
         
@@ -27,7 +23,7 @@
     
     
       
-        <title>Container Engines - Tracee</title>
+        <title>Capture - Tracee</title>
       
     
     
@@ -65,7 +61,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#tracee-events-container-enrichment" class="md-skip">
+        <a href="#name" class="md-skip">
           Skip to content
         </a>
       
@@ -103,7 +99,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Container Engines
+              Capture
             
           </span>
         </div>
@@ -208,13 +204,11 @@
         
   
   
-    
-  
   
     
     
       <li class="md-tabs__item">
-        <a href="../../overview/" class="md-tabs__link md-tabs__link--active">
+        <a href="../../overview/" class="md-tabs__link">
           
   
   Docs
@@ -869,19 +863,17 @@
       
   
   
-    
-  
   
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
@@ -900,7 +892,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -13979,21 +13971,19 @@
                 
   
   
-    
-  
   
     
     
     
       
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_8" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_8" >
         
           <label class="md-nav__link" for="__nav_3_8" id="__nav_3_8_label" tabindex="0">
             
@@ -14012,7 +14002,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_8_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_8_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_8">
             <span class="md-nav__icon md-icon"></span>
             
@@ -14027,35 +14017,9 @@
                 
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    
-  
-    Container Engines
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../integrating/container-engines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14070,48 +14034,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#supported-container-runtime-engines" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Supported Container Runtime Engines
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#viewing-enrichment-output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Viewing enrichment output
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -14123,7 +14045,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../prometheus/" class="md-nav__link">
+      <a href="../../integrating/prometheus/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14149,7 +14071,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../healthz/" class="md-nav__link">
+      <a href="../../integrating/healthz/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14752,8 +14674,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -14762,10 +14682,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#supported-container-runtime-engines" class="md-nav__link">
+  <a href="#name" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Supported Container Runtime Engines
+        NAME
       
     </span>
   </a>
@@ -14773,13 +14693,91 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#viewing-enrichment-output" class="md-nav__link">
+  <a href="#synopsis" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Viewing enrichment output
+        SYNOPSIS
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#description" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DESCRIPTION
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="DESCRIPTION">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#file-capture-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File Capture Filters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#network-capture-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network Capture Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EXAMPLES
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="EXAMPLES">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#file-capture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        File capture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#network-capture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network Capture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -14799,92 +14797,104 @@
                   
 
 
-<h1 id="tracee-events-container-enrichment">Tracee Events Container Enrichment<a class="headerlink" href="#tracee-events-container-enrichment" title="Permanent link">&para;</a></h1>
-<p>Tracee is capable of <strong>extracting information about running containers</strong>. It
-does that by tracking container namespaces creation kernel events and enriching
-those events by communicating with the relevant container's runtime and SDK.</p>
-<div class="admonition experimental warning">
-<p class="admonition-title">Experimental</p>
-<p>This feature is experimental and should be explicitly enabled in
-<strong>tracee</strong>, by using the <code>--container</code> flag OR, if running tracee
-container image, setting the <code>CONTAINERS_ENRICHMENT</code> environment flag (see
-example bellow).</p>
-</div>
-<ol>
+  <h1>Capture</h1>
+
+<h2 id="name">NAME<a class="headerlink" href="#name" title="Permanent link">&para;</a></h2>
+<p>tracee <strong>--capture</strong> - Capture artifacts that were written, executed, or found to be suspicious</p>
+<h2 id="synopsis">SYNOPSIS<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
+<p>tracee <strong>--capture</strong> \&lt;[artifact:]capture-option[=value]&gt; ...</p>
+<p>tracee <strong>--capture</strong> \&lt;network&gt; [<strong>--capture</strong> [pcap:option1(,option2...)|pcap-options:option|pcap-snaplen:size]] ...</p>
+<h2 id="description">DESCRIPTION<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
+<p>The <strong>--capture</strong> flag allows you to capture artifacts that were written, executed, or found to be suspicious during the execution of Tracee. The captured artifacts will appear in the 'output-path' directory.</p>
+<p>Possible capture options:</p>
+<ul>
+<li><strong>[artifact:]write[=/path/prefix*]</strong>: Capture written files. You can provide a filter to only capture file writes whose path starts with a certain prefix (up to 50 characters). Up to 3 filters can be given.</li>
+<li><strong>[artifact:]read[=/path/prefix*]</strong>: Capture read files. You can provide a filter to only capture file reads whose path starts with a certain prefix (up to 50 characters). Up to 3 filters can be given.</li>
+<li><strong>[artifact:]exec</strong>: Capture executed files.</li>
+<li><strong>[artifact:]module</strong>: Capture loaded kernel modules.</li>
+<li><strong>[artifact:]bpf</strong>: Capture loaded BPF programs bytecode.</li>
+<li><strong>[artifact:]mem</strong>: Capture memory regions that had write+execute (w+x) protection and then changed to execute (x) only.</li>
+<li><strong>[artifact:]network</strong>: Capture network traffic. Only TCP/UDP/ICMP protocols are currently supported.</li>
+</ul>
+<h3 id="file-capture-filters">File Capture Filters<a class="headerlink" href="#file-capture-filters" title="Permanent link">&para;</a></h3>
+<p>Files captured upon read/write can be filtered to catch only specific IO operations. The different filter types have a logical 'AND' between them but a logical 'OR' between filters of the same type. The filter format is as follows: \&lt;read/write&gt;:\&lt;filter-type&gt;=\&lt;filter-value&gt;</p>
+<p>Filter types:</p>
+<ul>
+<li><strong>path</strong>: A filter for the file path prefix (up to 50 characters). Up to 3 filters can be given. Identical to using '\&lt;read/write&gt;=/path/prefix*'.</li>
+<li><strong>type</strong>: A file type from the following options: 'regular', 'pipe', and 'socket'.</li>
+<li><strong>fd</strong>: The file descriptor of the file. Can be one of the three standards: 'stdin', 'stdout', and 'stderr'.</li>
+</ul>
+<h3 id="network-capture-notes">Network Capture Notes<a class="headerlink" href="#network-capture-notes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Pcap Files:</li>
+<li>If you only specify <strong>--capture network</strong>, you will have a single file with all network traffic.</li>
 <li>
-<p>Running <strong>tracee</strong> manually</p>
-<p>If running tracee directly (not in a container), it will automatically
-search for known supported runtimes in their socket's default locations.</p>
+<p>You can use <strong>pcap:xxx,yyy</strong> to have more than one pcap file, split by different means.</p>
 </li>
 <li>
-<p>Running <strong>tracee</strong> using a docker container</p>
-<p>When running tracee from a container, the runtime sockets must be manually
-mounted in order for the enrichment features to work.</p>
-<p>Using containerd as our runtime for example, this can be done by running
-tracee like:</p>
-<div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
-<span class="go">    --name tracee --rm -it \</span>
-<span class="go">    --pid=host --cgroupns=host --privileged \</span>
-<span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
-<span class="go">    -v /var/run/containerd:/var/run/containerd \</span>
-<span class="go">    -e CONTAINERS_ENRICHMENT=1 \</span>
-<span class="go">    aquasec/tracee:v0.17.0-rc-3-gd882cbf14</span>
+<p>Pcap Options:</p>
+</li>
+<li>If you do not specify <strong>pcap-options</strong> (or set to none), you will capture ALL network traffic into your pcap files.</li>
+<li>
+<p>If you specify <strong>pcap-options:filtered</strong>, events being traced will define what network traffic will be captured.</p>
+</li>
+<li>
+<p>Snap Length:</p>
+</li>
+<li>If you do not specify a snaplen, the default is headers only (incomplete packets in tcpdump).</li>
+<li>If you specify <strong>max</strong> as snaplen, you will get the full contents of each packet (pcap files will be large).</li>
+<li>If you specify <strong>headers</strong> as snaplen, you will only get L2/L3 headers in captured packets.</li>
+<li>If you specify <strong>headers</strong> but trace for <strong>net_packet_dns</strong> events, the L4 DNS header will be captured.</li>
+<li>If you specify <strong>headers</strong> but trace for <strong>net_packet_http</strong> events, only L2/L3 headers will be captured.</li>
+</ul>
+<h2 id="examples">EXAMPLES<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
+<h3 id="file-capture">File capture<a class="headerlink" href="#file-capture" title="Permanent link">&para;</a></h3>
+<ul>
+<li>To capture executed files into the default output directory, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--capture exec</span>
 </code></pre></div>
-<p>Most container runtimes have their sockets installed by default in
-<code>/var/run</code>. If your system includes multiple container runtimes, tracee can
-track them all, however one should mount either all their runtime sockets
-or <code>/var/run</code> in it's entirety to do so.</p>
-</li>
-</ol>
-<h2 id="supported-container-runtime-engines">Supported Container Runtime Engines<a class="headerlink" href="#supported-container-runtime-engines" title="Permanent link">&para;</a></h2>
-<p>Currently, tracee will look in the following paths for auto-discovering the listed runtimes:</p>
-<ol>
-<li>
-<p>Docker:     <code>/var/run/docker.sock</code></p>
-</li>
-<li>
-<p>Containerd: <code>/var/run/containerd/containerd.sock</code></p>
-</li>
-<li>
-<p>CRI-O:      <code>/var/run/crio/crio.sock</code></p>
-</li>
-<li>
-<p>Podman:     <code>/var/run/podman/podman.sock</code></p>
-</li>
-</ol>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p><strong>Nested environments</strong> are somewhat tricky with this feature as evidenced
-by the docker mounting instructions. Tracee does not auto-discover this
-nesting and so sockets must be appropriately mounted and set up for tracee
-to enrich all containers correctly.</p>
-</div>
-<h2 id="viewing-enrichment-output">Viewing enrichment output<a class="headerlink" href="#viewing-enrichment-output" title="Permanent link">&para;</a></h2>
-<p>As a user, when container enrichment is enabled the event output will include enriched fields in these cases:</p>
-<ol>
-<li>
-<p>Running <strong>tracee</strong> with a json format will include all container enriched fields</p>
-<div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
-<span class="go">    --name tracee --rm -it \</span>
-<span class="go">    --pid=host --cgroupns=host --privileged \</span>
-<span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
-<span class="go">    -v /var/run/docker.sock:/var/run/docker.sock \</span>
-<span class="go">    aquasec/tracee:v0.17.0-rc-3-gd882cbf14 \</span>
-<span class="go">    --output json --containers</span>
+<ul>
+<li>To capture executed files into a specific directory, clear the directory before starting, use the following flags:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--capture exec --capture dir:/my/dir --capture clear-dir</span>
 </code></pre></div>
-</li>
-<li>
-<p>Running in container filtering mode and with enrichment enabled will add the image name to the table printer</p>
-<div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
-<span class="go">    --name tracee --rm -it \</span>
-<span class="go">    --pid=host --cgroupns=host --privileged \</span>
-<span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
-<span class="go">    -v /var/run/containerd:/var/run/containerd \</span>
-<span class="go">    aquasec/tracee:v0.17.0-rc-3-gd882cbf14 \</span>
-<span class="go">    --scope container --containers</span>
+<ul>
+<li>To capture files that were written into anywhere under /usr/bin/ or /etc/, use the following flags:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--capture write=/usr/bin/* --capture write=/etc/*</span>
 </code></pre></div>
-</li>
-</ol>
+<ul>
+<li>To capture file writes to socket files that are the 'stdout' of the writing process, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--capture write:type=socket --capture write:fd=stdout</span>
+</code></pre></div>
+<h3 id="network-capture">Network Capture<a class="headerlink" href="#network-capture" title="Permanent link">&para;</a></h3>
+<ul>
+<li>To capture network traffic, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--capture network</span>
+</code></pre></div>
+<ul>
+<li>To capture network traffic and save separate pcap files for processes and commands, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--capture network --capture pcap:process,command</span>
+</code></pre></div>
+<ul>
+<li>To capture network traffic and save pcap files containing only traced/filtered packets, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--capture network --capture pcap-options:filtered</span>
+</code></pre></div>
+<ul>
+<li>To capture network traffic and set the captured payload from each packet to 1KB, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--capture network --capture pcap-snaplen:1kb</span>
+</code></pre></div>
+<ul>
+<li>To capture network traffic and save pcap files for containers and commands, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--capture network --capture pcap:container,command</span>
+</code></pre></div>
 
 
 

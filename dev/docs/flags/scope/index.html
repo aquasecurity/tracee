@@ -10,13 +10,9 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/integrating/container-engines/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/flags/scope/">
       
       
-        <link rel="prev" href="../../forensics/">
-      
-      
-        <link rel="next" href="../prometheus/">
       
       
         
@@ -27,7 +23,7 @@
     
     
       
-        <title>Container Engines - Tracee</title>
+        <title>Scope - Tracee</title>
       
     
     
@@ -65,7 +61,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#tracee-events-container-enrichment" class="md-skip">
+        <a href="#name" class="md-skip">
           Skip to content
         </a>
       
@@ -103,7 +99,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Container Engines
+              Scope
             
           </span>
         </div>
@@ -208,13 +204,11 @@
         
   
   
-    
-  
   
     
     
       <li class="md-tabs__item">
-        <a href="../../overview/" class="md-tabs__link md-tabs__link--active">
+        <a href="../../overview/" class="md-tabs__link">
           
   
   Docs
@@ -869,19 +863,17 @@
       
   
   
-    
-  
   
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
@@ -900,7 +892,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -13979,21 +13971,19 @@
                 
   
   
-    
-  
   
     
     
     
       
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_8" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_8" >
         
           <label class="md-nav__link" for="__nav_3_8" id="__nav_3_8_label" tabindex="0">
             
@@ -14012,7 +14002,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_8_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_8_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_8">
             <span class="md-nav__icon md-icon"></span>
             
@@ -14027,35 +14017,9 @@
                 
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    
-  
-    Container Engines
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../integrating/container-engines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14070,48 +14034,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#supported-container-runtime-engines" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Supported Container Runtime Engines
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#viewing-enrichment-output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Viewing enrichment output
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -14123,7 +14045,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../prometheus/" class="md-nav__link">
+      <a href="../../integrating/prometheus/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14149,7 +14071,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../healthz/" class="md-nav__link">
+      <a href="../../integrating/healthz/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -14752,8 +14674,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -14762,10 +14682,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#supported-container-runtime-engines" class="md-nav__link">
+  <a href="#name" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Supported Container Runtime Engines
+        NAME
       
     </span>
   </a>
@@ -14773,10 +14693,93 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#viewing-enrichment-output" class="md-nav__link">
+  <a href="#synopsis" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Viewing enrichment output
+        SYNOPSIS
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#description" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DESCRIPTION
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#filter-expression" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        FILTER EXPRESSION
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="FILTER EXPRESSION">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#numerical-expression-operators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NUMERICAL EXPRESSION OPERATORS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#string-expression-operators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        STRING EXPRESSION OPERATORS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#boolean-operator-prepended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BOOLEAN OPERATOR (PREPENDED)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#special-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SPECIAL FILTERS
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EXAMPLES
       
     </span>
   </a>
@@ -14799,92 +14802,169 @@
                   
 
 
-<h1 id="tracee-events-container-enrichment">Tracee Events Container Enrichment<a class="headerlink" href="#tracee-events-container-enrichment" title="Permanent link">&para;</a></h1>
-<p>Tracee is capable of <strong>extracting information about running containers</strong>. It
-does that by tracking container namespaces creation kernel events and enriching
-those events by communicating with the relevant container's runtime and SDK.</p>
-<div class="admonition experimental warning">
-<p class="admonition-title">Experimental</p>
-<p>This feature is experimental and should be explicitly enabled in
-<strong>tracee</strong>, by using the <code>--container</code> flag OR, if running tracee
-container image, setting the <code>CONTAINERS_ENRICHMENT</code> environment flag (see
-example bellow).</p>
-</div>
-<ol>
-<li>
-<p>Running <strong>tracee</strong> manually</p>
-<p>If running tracee directly (not in a container), it will automatically
-search for known supported runtimes in their socket's default locations.</p>
-</li>
-<li>
-<p>Running <strong>tracee</strong> using a docker container</p>
-<p>When running tracee from a container, the runtime sockets must be manually
-mounted in order for the enrichment features to work.</p>
-<p>Using containerd as our runtime for example, this can be done by running
-tracee like:</p>
-<div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
-<span class="go">    --name tracee --rm -it \</span>
-<span class="go">    --pid=host --cgroupns=host --privileged \</span>
-<span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
-<span class="go">    -v /var/run/containerd:/var/run/containerd \</span>
-<span class="go">    -e CONTAINERS_ENRICHMENT=1 \</span>
-<span class="go">    aquasec/tracee:v0.17.0-rc-3-gd882cbf14</span>
+  <h1>Scope</h1>
+
+<h2 id="name">NAME<a class="headerlink" href="#name" title="Permanent link">&para;</a></h2>
+<p>tracee <strong>--scope</strong> - Select the scope for tracing events</p>
+<h2 id="synopsis">SYNOPSIS<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
+<p>tracee <strong>--scope</strong> [\&lt;[uid|pid][=|!=|\&lt;|&gt;|\&lt;=|&gt;=]value1(,value2...)&gt; | \&lt;[mntns|pidns|tree][=|!=]value1(,value2...)&gt; | \&lt;[uts|comm|container|binary][=|!=]value1(,value2...)&gt;] | \&lt;[!]container&gt; | \&lt;container[=|!=]value&gt; | \&lt;[container|pid]=new&gt; | \&lt;follow&gt;]  ...</p>
+<h2 id="description">DESCRIPTION<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
+<p>The <strong>--scope</strong> flag allows you to select the scope for tracing events by defining filters.</p>
+<h2 id="filter-expression">FILTER EXPRESSION<a class="headerlink" href="#filter-expression" title="Permanent link">&para;</a></h2>
+<p>Filter expressions can be defined to operate on scope options or process metadata. Only events that match all filter expressions will be traced.</p>
+<p>Multiple flags are combined with AND logic, while multiple values within a single flag are combined with OR logic when using the equals operator '='. Multiple values can be specified using ','.</p>
+<h3 id="numerical-expression-operators">NUMERICAL EXPRESSION OPERATORS<a class="headerlink" href="#numerical-expression-operators" title="Permanent link">&para;</a></h3>
+<p>The following numerical fields support the operators '=', '!=', '&lt;', '&gt;', '&lt;=', '&gt;=':</p>
+<ul>
+<li>uid: Select events from specific user IDs.</li>
+<li>pid: Select events from specific process IDs.</li>
+</ul>
+<p>The following numerical fields only support the operators '=' and '!=':</p>
+<ul>
+<li>mntns: Select events from specific mount namespace IDs.</li>
+<li>pidns: Select events from specific process namespace IDs.</li>
+<li>tree: Select events that descend from specific process IDs.</li>
+</ul>
+<p>NOTE: Expressions containing '\&lt;' or '&gt;' tokens must be escaped!</p>
+<h3 id="string-expression-operators">STRING EXPRESSION OPERATORS<a class="headerlink" href="#string-expression-operators" title="Permanent link">&para;</a></h3>
+<p>'=', '!='</p>
+<p>Available for the following string fields:</p>
+<ul>
+<li>uts: Select events based on UTS (Unix Timesharing System) names.</li>
+<li>comm: Select events based on process command names.</li>
+<li>container: Select events from specific container IDs.</li>
+<li>binary: Select events based on the binary path.</li>
+</ul>
+<p>Strings can be compared as a prefix if ending with '*', or as a suffix if starting with '*'.</p>
+<p>NOTE: Expressions containing '*' token must be escaped!</p>
+<h3 id="boolean-operator-prepended">BOOLEAN OPERATOR (PREPENDED)<a class="headerlink" href="#boolean-operator-prepended" title="Permanent link">&para;</a></h3>
+<p>'!'</p>
+<p>Available for the following boolean field:</p>
+<ul>
+<li>container: Select events based on whether they originate from a container or not.</li>
+</ul>
+<h2 id="special-filters">SPECIAL FILTERS<a class="headerlink" href="#special-filters" title="Permanent link">&para;</a></h2>
+<p>The following special filters can be used within the scope filter expressions:</p>
+<ul>
+<li>new: Select newly created containers or process IDs.</li>
+<li>follow: Select events from the processes that match the criteria and their descendants.</li>
+</ul>
+<h2 id="examples">EXAMPLES<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
+<ul>
+<li>To trace only events from new processes, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope pid=new</span>
 </code></pre></div>
-<p>Most container runtimes have their sockets installed by default in
-<code>/var/run</code>. If your system includes multiple container runtimes, tracee can
-track them all, however one should mount either all their runtime sockets
-or <code>/var/run</code> in it's entirety to do so.</p>
-</li>
-</ol>
-<h2 id="supported-container-runtime-engines">Supported Container Runtime Engines<a class="headerlink" href="#supported-container-runtime-engines" title="Permanent link">&para;</a></h2>
-<p>Currently, tracee will look in the following paths for auto-discovering the listed runtimes:</p>
-<ol>
-<li>
-<p>Docker:     <code>/var/run/docker.sock</code></p>
-</li>
-<li>
-<p>Containerd: <code>/var/run/containerd/containerd.sock</code></p>
-</li>
-<li>
-<p>CRI-O:      <code>/var/run/crio/crio.sock</code></p>
-</li>
-<li>
-<p>Podman:     <code>/var/run/podman/podman.sock</code></p>
-</li>
-</ol>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p><strong>Nested environments</strong> are somewhat tricky with this feature as evidenced
-by the docker mounting instructions. Tracee does not auto-discover this
-nesting and so sockets must be appropriately mounted and set up for tracee
-to enrich all containers correctly.</p>
-</div>
-<h2 id="viewing-enrichment-output">Viewing enrichment output<a class="headerlink" href="#viewing-enrichment-output" title="Permanent link">&para;</a></h2>
-<p>As a user, when container enrichment is enabled the event output will include enriched fields in these cases:</p>
-<ol>
-<li>
-<p>Running <strong>tracee</strong> with a json format will include all container enriched fields</p>
-<div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
-<span class="go">    --name tracee --rm -it \</span>
-<span class="go">    --pid=host --cgroupns=host --privileged \</span>
-<span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
-<span class="go">    -v /var/run/docker.sock:/var/run/docker.sock \</span>
-<span class="go">    aquasec/tracee:v0.17.0-rc-3-gd882cbf14 \</span>
-<span class="go">    --output json --containers</span>
+<ul>
+<li>To trace only events from pid 510 or pid 1709, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope pid=510,1709</span>
 </code></pre></div>
-</li>
-<li>
-<p>Running in container filtering mode and with enrichment enabled will add the image name to the table printer</p>
-<div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
-<span class="go">    --name tracee --rm -it \</span>
-<span class="go">    --pid=host --cgroupns=host --privileged \</span>
-<span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
-<span class="go">    -v /var/run/containerd:/var/run/containerd \</span>
-<span class="go">    aquasec/tracee:v0.17.0-rc-3-gd882cbf14 \</span>
-<span class="go">    --scope container --containers</span>
+<ul>
+<li>To trace only events from pid 510 or pid 1709 (same as above), use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope p=510 --scope p=1709</span>
 </code></pre></div>
-</li>
-</ol>
+<ul>
+<li>To trace only events from newly created containers, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope container=new</span>
+</code></pre></div>
+<ul>
+<li>To trace only events from the container with ID 'ab356bc4dd554', use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope container=ab356bc4dd554</span>
+</code></pre></div>
+<ul>
+<li>To trace only events from containers, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope container</span>
+</code></pre></div>
+<ul>
+<li>To only trace events from containers (same as above), use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope c</span>
+</code></pre></div>
+<ul>
+<li>To trace only events from the host, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope &#39;!container&#39;</span>
+</code></pre></div>
+<ul>
+<li>To trace only events from uid 0, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope uid=0</span>
+</code></pre></div>
+<ul>
+<li>To trace only events from mntns id 4026531840, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope mntns=4026531840</span>
+</code></pre></div>
+<ul>
+<li>To trace only events from pidns id not equal to 4026531836, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope pidns!=4026531836</span>
+</code></pre></div>
+<ul>
+<li>To trace only events that descend from the process with pid 476165, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope tree=476165</span>
+</code></pre></div>
+<ul>
+<li>To trace only events if they do not descend from the process with pid 5023, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope tree!=5023</span>
+</code></pre></div>
+<ul>
+<li>To trace only events if they descend from 3213 or 5200, but not 3215, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope tree=3213,5200 --scope tree!=3215</span>
+</code></pre></div>
+<ul>
+<li>To trace only events from uids greater than 0, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope &#39;uid&gt;0&#39;</span>
+</code></pre></div>
+<ul>
+<li>To trace only events from pids between 0 and 1000, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope &#39;pid&gt;0&#39; --scope &#39;pid&lt;1000&#39;</span>
+</code></pre></div>
+<ul>
+<li>To trace only events from uids greater than 0 but not 1000, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope &#39;u&gt;0&#39; --scope u!=1000</span>
+</code></pre></div>
+<ul>
+<li>To exclude events from uts name 'ab356bc4dd554', use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope uts!=ab356bc4dd554</span>
+</code></pre></div>
+<ul>
+<li>To trace only events from the 'ls' command, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope comm=ls</span>
+</code></pre></div>
+<ul>
+<li>To trace only events from the '/usr/bin/ls' binary, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope binary=/usr/bin/ls</span>
+</code></pre></div>
+<ul>
+<li>To trace only events from the '/usr/bin/ls' binary in the host mount namespace, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope binary=host:/usr/bin/ls</span>
+</code></pre></div>
+<ul>
+<li>To trace only events from the '/usr/bin/ls' binary in the 4026532448 mount namespace, use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope binary=4026532448:/usr/bin/ls</span>
+</code></pre></div>
+<ul>
+<li>To trace all events that originated from 'bash' or from one of the processes spawned by 'bash', use the following flag:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="go">--scope comm=bash --scope follow</span>
+</code></pre></div>
 
 
 
