@@ -1,7 +1,7 @@
 apiVersion: aquasecurity.github.io/v1beta1
 kind: TraceePolicy
 metadata:
-  name: new_containers
+  name: new-containers
   annotations:
     description: traces events container_created and security_file_open only for new container
 spec:

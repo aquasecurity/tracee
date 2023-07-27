@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v2"
+	"k8s.io/apimachinery/pkg/util/validation"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -67,8 +68,8 @@ func (p PolicyFile) Rules() []Rule {
 }
 
 func (p PolicyFile) Validate() error {
-	if p.Name() == "" {
-		return errfmt.Errorf("policy name cannot be empty")
+	if err := validation.IsDNS1123Subdomain(p.Name()); err != nil {
+		return errfmt.Errorf("policy name %s is invalid: %s", p.Name(), err)
 	}
 
 	if p.APIVersion != "aquasecurity.github.io/v1beta1" {

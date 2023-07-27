@@ -1,7 +1,7 @@
 apiVersion: aquasecurity.github.io/v1beta1
 kind: TraceePolicy
 metadata:
-  name: not_containers
+  name: not-containers
   annotations:
     description: traces anti_debugging in the host
 spec:

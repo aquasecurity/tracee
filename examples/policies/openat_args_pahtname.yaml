@@ -1,7 +1,7 @@
 apiVersion: aquasecurity.github.io/v1beta1
 kind: TraceePolicy
 metadata:
-  name: openat_args_pathname
+  name: openat-args-pathname
   annotations:
     description: traces openat under /tmp/*
 spec:

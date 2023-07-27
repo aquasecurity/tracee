@@ -1,7 +1,7 @@
 apiVersion: aquasecurity.github.io/v1beta1
 kind: TraceePolicy
 metadata:
-  name: signature_events
+  name: signature-events
   annotations:
     description: traces all signature events
 spec:

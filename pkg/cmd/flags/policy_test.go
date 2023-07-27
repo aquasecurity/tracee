@@ -40,7 +40,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "global scope - single event",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name:        "global_scope_single_event",
+					Name:        "global-scope-single-event",
 					Annotations: description,
 				},
 				Spec: v1beta1.PolicySpec{
@@ -53,13 +53,13 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyScopeMap: PolicyScopeMap{
 				0: {
-					policyName: "global_scope_single_event",
+					policyName: "global-scope-single-event",
 					scopeFlags: []scopeFlag{},
 				},
 			},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "global_scope_single_event",
+					policyName: "global-scope-single-event",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 					},
@@ -70,7 +70,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "global scope - multiple events",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "global_scope_multiple_events",
+					Name: "global-scope-multiple-events",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -83,13 +83,13 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyScopeMap: PolicyScopeMap{
 				0: {
-					policyName: "global_scope_multiple_events",
+					policyName: "global-scope-multiple-events",
 					scopeFlags: []scopeFlag{},
 				},
 			},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "global_scope_multiple_events",
+					policyName: "global-scope-multiple-events",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 						readEvtFlag,
@@ -101,7 +101,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "uid scope",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "uid_scope",
+					Name: "uid-scope",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"uid>=1000"},
@@ -113,7 +113,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyScopeMap: PolicyScopeMap{
 				0: {
-					policyName: "uid_scope",
+					policyName: "uid-scope",
 					scopeFlags: []scopeFlag{
 						{
 							full:              "uid>=1000",
@@ -125,7 +125,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "uid_scope",
+					policyName: "uid-scope",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 					},
@@ -136,7 +136,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "pid scope",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "pid_scope",
+					Name: "pid-scope",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"pid<=10"},
@@ -148,7 +148,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyScopeMap: PolicyScopeMap{
 				0: {
-					policyName: "pid_scope",
+					policyName: "pid-scope",
 					scopeFlags: []scopeFlag{
 						{
 							full:              "pid<=10",
@@ -160,7 +160,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "pid_scope",
+					policyName: "pid-scope",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 					},
@@ -206,7 +206,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "pidns scope",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "pidns_scope",
+					Name: "pidns-scope",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"pidns!=4026531836"},
@@ -218,7 +218,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyScopeMap: PolicyScopeMap{
 				0: {
-					policyName: "pidns_scope",
+					policyName: "pidns-scope",
 					scopeFlags: []scopeFlag{
 						{
 							full:              "pidns!=4026531836",
@@ -230,7 +230,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "pidns_scope",
+					policyName: "pidns-scope",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 					},
@@ -241,7 +241,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "uts scope",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "uts_scope",
+					Name: "uts-scope",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"uts!=ab356bc4dd554"},
@@ -253,7 +253,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyScopeMap: PolicyScopeMap{
 				0: {
-					policyName: "uts_scope",
+					policyName: "uts-scope",
 					scopeFlags: []scopeFlag{
 						{
 							full:              "uts!=ab356bc4dd554",
@@ -265,7 +265,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "uts_scope",
+					policyName: "uts-scope",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 					},
@@ -276,7 +276,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "comm=bash",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "comm_scope",
+					Name: "comm-scope",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"comm=bash"},
@@ -288,7 +288,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyScopeMap: PolicyScopeMap{
 				0: {
-					policyName: "comm_scope",
+					policyName: "comm-scope",
 					scopeFlags: []scopeFlag{
 						{
 							full:              "comm=bash",
@@ -300,7 +300,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "comm_scope",
+					policyName: "comm-scope",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 					},
@@ -311,7 +311,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "container=new",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "container_scope",
+					Name: "container-scope",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"container=new"},
@@ -323,7 +323,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyScopeMap: PolicyScopeMap{
 				0: {
-					policyName: "container_scope",
+					policyName: "container-scope",
 					scopeFlags: []scopeFlag{
 						{
 							full:              "container=new",
@@ -335,7 +335,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "container_scope",
+					policyName: "container-scope",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 					},
@@ -346,7 +346,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "!container",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "!container_scope",
+					Name: "!container-scope",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"!container"},
@@ -358,7 +358,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyScopeMap: PolicyScopeMap{
 				0: {
-					policyName: "!container_scope",
+					policyName: "!container-scope",
 					scopeFlags: []scopeFlag{
 						{
 							full:              "!container",
@@ -370,7 +370,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "!container_scope",
+					policyName: "!container-scope",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 					},
@@ -381,7 +381,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "container",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "container_scope",
+					Name: "container-scope",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"container"},
@@ -393,7 +393,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyScopeMap: PolicyScopeMap{
 				0: {
-					policyName: "container_scope",
+					policyName: "container-scope",
 					scopeFlags: []scopeFlag{
 						{
 							full:              "container",
@@ -405,7 +405,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "container_scope",
+					policyName: "container-scope",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 					},
@@ -416,7 +416,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "tree=3213,5200",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "tree_scope",
+					Name: "tree-scope",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"tree=3213,5200"},
@@ -428,7 +428,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyScopeMap: PolicyScopeMap{
 				0: {
-					policyName: "tree_scope",
+					policyName: "tree-scope",
 					scopeFlags: []scopeFlag{
 						{
 							full:              "tree=3213,5200",
@@ -440,7 +440,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "tree_scope",
+					policyName: "tree-scope",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 					},
@@ -451,7 +451,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "scope with space",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "scope_with_space",
+					Name: "scope-with-space",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"tree = 3213"},
@@ -463,7 +463,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyScopeMap: PolicyScopeMap{
 				0: {
-					policyName: "scope_with_space",
+					policyName: "scope-with-space",
 					scopeFlags: []scopeFlag{
 						{
 							full:              "tree=3213",
@@ -475,7 +475,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "scope_with_space",
+					policyName: "scope-with-space",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 					},
@@ -486,7 +486,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "binary=host:/usr/bin/ls",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "binary_scope",
+					Name: "binary-scope",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"binary=host:/usr/bin/ls"},
@@ -498,7 +498,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyScopeMap: PolicyScopeMap{
 				0: {
-					policyName: "binary_scope",
+					policyName: "binary-scope",
 					scopeFlags: []scopeFlag{
 						{
 							full:              "binary=host:/usr/bin/ls",
@@ -510,7 +510,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "binary_scope",
+					policyName: "binary-scope",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 					},
@@ -522,7 +522,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "bin=4026532448:/usr/bin/ls",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "bin_scope",
+					Name: "bin-scope",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"bin=4026532448:/usr/bin/ls"},
@@ -534,7 +534,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyScopeMap: PolicyScopeMap{
 				0: {
-					policyName: "bin_scope",
+					policyName: "bin-scope",
 					scopeFlags: []scopeFlag{
 						{
 							full:              "bin=4026532448:/usr/bin/ls",
@@ -546,7 +546,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "bin_scope",
+					policyName: "bin-scope",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 					},
@@ -557,7 +557,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "follow",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "follow_scope",
+					Name: "follow-scope",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"follow"},
@@ -569,7 +569,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyScopeMap: PolicyScopeMap{
 				0: {
-					policyName: "follow_scope",
+					policyName: "follow-scope",
 					scopeFlags: []scopeFlag{
 						{
 							full:              "follow",
@@ -581,7 +581,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "follow_scope",
+					policyName: "follow-scope",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 					},
@@ -592,7 +592,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "multiple scopes",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "multiple_scope",
+					Name: "multiple-scope",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"comm=bash", "follow", "!container", "uid=1000"},
@@ -604,7 +604,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyScopeMap: PolicyScopeMap{
 				0: {
-					policyName: "multiple_scope",
+					policyName: "multiple-scope",
 					scopeFlags: []scopeFlag{
 						{
 							full:              "comm=bash",
@@ -631,7 +631,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "multiple_scope",
+					policyName: "multiple-scope",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 					},
@@ -648,7 +648,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "args filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "args_filter",
+					Name: "args-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -664,7 +664,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "args_filter",
+					policyName: "args-filter",
 					eventFlags: []eventFlag{
 						{
 							full:              "security_file_open",
@@ -686,7 +686,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "return filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "return_filter",
+					Name: "return-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -702,7 +702,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "return_filter",
+					policyName: "return-filter",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 						{
@@ -720,7 +720,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "timestamp filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "timestamp_filter",
+					Name: "timestamp-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -736,7 +736,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "timestamp_filter",
+					policyName: "timestamp-filter",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 						{
@@ -753,7 +753,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "processorId filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "processorId_filter",
+					Name: "processorId-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -769,7 +769,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "processorId_filter",
+					policyName: "processorId-filter",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 						{
@@ -786,7 +786,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "p filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "p_filter",
+					Name: "p-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -802,7 +802,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "p_filter",
+					policyName: "p-filter",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 						{
@@ -819,7 +819,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "pid filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "pid_filter",
+					Name: "pid-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -835,7 +835,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "pid_filter",
+					policyName: "pid-filter",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 						{
@@ -852,7 +852,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "processId filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "processId_filter",
+					Name: "processId-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -868,7 +868,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "processId_filter",
+					policyName: "processId-filter",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 						{
@@ -885,7 +885,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "tid filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "tid_filter",
+					Name: "tid-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -901,7 +901,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "tid_filter",
+					policyName: "tid-filter",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 						{
@@ -918,7 +918,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "threadId filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "threadId_filter",
+					Name: "threadId-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -934,7 +934,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "threadId_filter",
+					policyName: "threadId-filter",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 						{
@@ -984,7 +984,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "parentProcessId filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "parentProcessId_filter",
+					Name: "parentProcessId-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1000,7 +1000,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "parentProcessId_filter",
+					policyName: "parentProcessId-filter",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 						{
@@ -1017,7 +1017,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "hostTid filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "hostTid_filter",
+					Name: "hostTid-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1033,7 +1033,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "hostTid_filter",
+					policyName: "hostTid-filter",
 					eventFlags: []eventFlag{
 						readEvtFlag,
 						{
@@ -1050,7 +1050,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "hostThreadId filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "hostThreadId_filter",
+					Name: "hostThreadId-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1066,7 +1066,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "hostThreadId_filter",
+					policyName: "hostThreadId-filter",
 					eventFlags: []eventFlag{
 						readEvtFlag,
 						{
@@ -1083,7 +1083,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "hostPid filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "hostPid_filter",
+					Name: "hostPid-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1099,7 +1099,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "hostPid_filter",
+					policyName: "hostPid-filter",
 					eventFlags: []eventFlag{
 						readEvtFlag,
 						{
@@ -1116,7 +1116,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "hostParentProcessID filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "hostParentProcessId_filter",
+					Name: "hostParentProcessId-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1132,7 +1132,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "hostParentProcessId_filter",
+					policyName: "hostParentProcessId-filter",
 					eventFlags: []eventFlag{
 						readEvtFlag,
 						{
@@ -1149,7 +1149,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "userId filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "userId_filter",
+					Name: "userId-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1165,7 +1165,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "userId_filter",
+					policyName: "userId-filter",
 					eventFlags: []eventFlag{
 						readEvtFlag,
 						{
@@ -1182,7 +1182,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "mntns filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "mntns_filter",
+					Name: "mntns-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1198,7 +1198,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "mntns_filter",
+					policyName: "mntns-filter",
 					eventFlags: []eventFlag{
 						readEvtFlag,
 						{
@@ -1215,7 +1215,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "mountNamespace filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "mountNamespace_filter",
+					Name: "mountNamespace-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1231,7 +1231,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "mountNamespace_filter",
+					policyName: "mountNamespace-filter",
 					eventFlags: []eventFlag{
 						readEvtFlag,
 						{
@@ -1248,7 +1248,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "pidns filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "pidns_filter",
+					Name: "pidns-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1264,7 +1264,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "pidns_filter",
+					policyName: "pidns-filter",
 					eventFlags: []eventFlag{
 						readEvtFlag,
 						{
@@ -1281,7 +1281,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "pidNamespace filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "pidNamespace_filter",
+					Name: "pidNamespace-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1297,7 +1297,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "pidNamespace_filter",
+					policyName: "pidNamespace-filter",
 					eventFlags: []eventFlag{
 						readEvtFlag,
 						{
@@ -1314,7 +1314,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "processName filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "processName_filter",
+					Name: "processName-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1330,7 +1330,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "processName_filter",
+					policyName: "processName-filter",
 					eventFlags: []eventFlag{
 						readEvtFlag,
 						{
@@ -1347,7 +1347,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "comm filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "comm_filter",
+					Name: "comm-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1363,7 +1363,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "comm_filter",
+					policyName: "comm-filter",
 					eventFlags: []eventFlag{
 						readEvtFlag,
 						{
@@ -1380,7 +1380,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "hostName filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "hostName_filter",
+					Name: "hostName-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1396,7 +1396,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "hostName_filter",
+					policyName: "hostName-filter",
 					eventFlags: []eventFlag{
 						readEvtFlag,
 						{
@@ -1479,7 +1479,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "container filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "container_filter",
+					Name: "container-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1495,7 +1495,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "container_filter",
+					policyName: "container-filter",
 					eventFlags: []eventFlag{
 						readEvtFlag,
 						{
@@ -1512,7 +1512,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "containerId filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "containerId_filter",
+					Name: "containerId-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1528,7 +1528,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "containerId_filter",
+					policyName: "containerId-filter",
 					eventFlags: []eventFlag{
 						readEvtFlag,
 						{
@@ -1545,7 +1545,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "containerImage filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "containerImage_filter",
+					Name: "containerImage-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1561,7 +1561,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "containerImage_filter",
+					policyName: "containerImage-filter",
 					eventFlags: []eventFlag{
 						readEvtFlag,
 						{
@@ -1578,7 +1578,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "containerName filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "containerName_filter",
+					Name: "containerName-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1594,7 +1594,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "containerName_filter",
+					policyName: "containerName-filter",
 					eventFlags: []eventFlag{
 						readEvtFlag,
 						{
@@ -1611,7 +1611,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "podName filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "podName_filter",
+					Name: "podName-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1627,7 +1627,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "podName_filter",
+					policyName: "podName-filter",
 					eventFlags: []eventFlag{
 						readEvtFlag,
 						{
@@ -1644,7 +1644,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "podNamespace filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "podNamespace_filter",
+					Name: "podNamespace-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1660,7 +1660,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "podNamespace_filter",
+					policyName: "podNamespace-filter",
 					eventFlags: []eventFlag{
 						readEvtFlag,
 						{
@@ -1677,7 +1677,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			testName: "podUid filter",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "podUid_filter",
+					Name: "podUid-filter",
 				},
 				Spec: v1beta1.PolicySpec{
 					Scope:          []string{"global"},
@@ -1693,7 +1693,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			expPolicyScopeMap: PolicyScopeMap{},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "podUid_filter",
+					policyName: "podUid-filter",
 					eventFlags: []eventFlag{
 						readEvtFlag,
 						{
