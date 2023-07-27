@@ -7,7 +7,7 @@ import (
 )
 
 func TestNewEventDefinition(t *testing.T) {
-	expected := EventDefinition{
+	expected := Event{
 		name: "hooked_seq_ops2",
 		dependencies: Dependencies{
 			Events: []ID{
@@ -18,7 +18,7 @@ func TestNewEventDefinition(t *testing.T) {
 		sets: []string{"signatures"},
 	}
 
-	e := NewEventDefinition("hooked_seq_ops2", []string{"signatures"}, []ID{PrintNetSeqOps, DoInitModule})
+	e := NewEvent("hooked_seq_ops2", []string{"signatures"}, []ID{PrintNetSeqOps, DoInitModule})
 
 	assert.Equal(t, expected.GetName(), e.GetName())
 	assert.Equal(t, expected.GetDependencies(), e.GetDependencies())
@@ -27,12 +27,12 @@ func TestNewEventDefinition(t *testing.T) {
 func TestAdd(t *testing.T) {
 	tests := []struct {
 		name string
-		evt  EventDefinition
+		evt  Event
 		err  string
 	}{
 		{
 			name: "new event",
-			evt: EventDefinition{
+			evt: Event{
 				id32Bit: ID(6000),
 				name:    "new_event",
 				dependencies: Dependencies{
@@ -46,7 +46,7 @@ func TestAdd(t *testing.T) {
 		},
 		{
 			name: "event id already exist",
-			evt: EventDefinition{
+			evt: Event{
 				id32Bit: ID(700),
 				name:    "new_event",
 				dependencies: Dependencies{
@@ -61,7 +61,7 @@ func TestAdd(t *testing.T) {
 		},
 		{
 			name: "event name already exist",
-			evt: EventDefinition{
+			evt: Event{
 				id32Bit: ID(6001),
 				name:    "net_packet",
 				dependencies: Dependencies{

@@ -9,13 +9,157 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-var CoreEventDefinitionGroup = EventDefinitionGroup{
-	events: map[ID]EventDefinition{
+const (
+	Sys32Undefined ID = 0xfffffff - 1 // u32 overflows are compiler implementation dependent.
+	Undefined      ID = 0xfffffff
+)
+
+type ID int32
+
+// NOTE: Events should match defined values in ebpf code.
+
+// Common events (used by all architectures).
+const (
+	NetPacketBase ID = iota + 700
+	NetPacketIPBase
+	NetPacketTCPBase
+	NetPacketUDPBase
+	NetPacketICMPBase
+	NetPacketICMPv6Base
+	NetPacketDNSBase
+	NetPacketHTTPBase
+	NetPacketCapture
+	MaxNetID // network base events go ABOVE this item
+	SysEnter
+	SysExit
+	SchedProcessFork
+	SchedProcessExec
+	SchedProcessExit
+	SchedSwitch
+	DoExit
+	CapCapable
+	VfsWrite
+	VfsWritev
+	VfsRead
+	VfsReadv
+	MemProtAlert
+	CommitCreds
+	SwitchTaskNS
+	MagicWrite
+	CgroupAttachTask
+	CgroupMkdir
+	CgroupRmdir
+	SecurityBprmCheck
+	SecurityFileOpen
+	SecurityInodeUnlink
+	SecuritySocketCreate
+	SecuritySocketListen
+	SecuritySocketConnect
+	SecuritySocketAccept
+	SecuritySocketBind
+	SecuritySocketSetsockopt
+	SecuritySbMount
+	SecurityBPF
+	SecurityBPFMap
+	SecurityKernelReadFile
+	SecurityInodeMknod
+	SecurityPostReadFile
+	SecurityInodeSymlinkEventId
+	SecurityMmapFile
+	SecurityFileMprotect
+	SocketDup
+	HiddenInodes
+	KernelWrite
+	ProcCreate
+	KprobeAttach
+	CallUsermodeHelper
+	DirtyPipeSplice
+	DebugfsCreateFile
+	PrintSyscallTable
+	DebugfsCreateDir
+	DeviceAdd
+	RegisterChrdev
+	SharedObjectLoaded
+	DoInitModule
+	SocketAccept
+	LoadElfPhdrs
+	HookedProcFops
+	PrintNetSeqOps
+	TaskRename
+	SecurityInodeRename
+	DoSigaction
+	BpfAttach
+	KallsymsLookupName
+	DoMmap
+	PrintMemDump
+	VfsUtimes
+	DoTruncate
+	FileModification
+	InotifyWatch
+	SecurityBpfProg
+	ProcessExecuteFailed
+	HiddenKernelModuleSeeker
+	ModuleLoad
+	ModuleFree
+	MaxCommonID
+)
+
+// Events originated from user-space
+const (
+	NetPacketIPv4 ID = iota + 2000
+	NetPacketIPv6
+	NetPacketTCP
+	NetPacketUDP
+	NetPacketICMP
+	NetPacketICMPv6
+	NetPacketDNS
+	NetPacketDNSRequest
+	NetPacketDNSResponse
+	NetPacketHTTP
+	NetPacketHTTPRequest
+	NetPacketHTTPResponse
+	MaxUserNetID
+	InitNamespaces
+	ContainerCreate
+	ContainerRemove
+	ExistingContainer
+	HookedSyscalls
+	HookedSeqOps
+	SymbolsLoaded
+	SymbolsCollision
+	HiddenKernelModule
+	MaxUserSpace
+)
+
+// Capture meta-events
+const (
+	CaptureFileWrite ID = iota + 4000
+	CaptureExec
+	CaptureModule
+	CaptureMem
+	CapturePcap
+	CaptureNetPacket
+	CaptureBpf
+	CaptureFileRead
+)
+
+// Signature events
+const (
+	StartSignatureID ID = 6000
+	MaxSignatureID   ID = 6999
+)
+
+//
+// All Events
+//
+
+var CoreEventDefinitionGroup = EventGroup{
+	events: map[ID]Event{
 		//
 		// Begin of Syscalls
 		//
 		Read: {
-			id32Bit: sys32read,
+			id32Bit: Sys32read,
 			name:    "read",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_read_write"},
@@ -34,7 +178,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Write: {
-			id32Bit: sys32write,
+			id32Bit: Sys32write,
 			name:    "write",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_read_write"},
@@ -53,7 +197,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Open: {
-			id32Bit: sys32open,
+			id32Bit: Sys32open,
 			name:    "open",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_ops"},
@@ -72,7 +216,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Close: {
-			id32Bit: sys32close,
+			id32Bit: Sys32close,
 			name:    "close",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_ops"},
@@ -89,7 +233,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Stat: {
-			id32Bit: sys32stat,
+			id32Bit: Sys32stat,
 			name:    "stat",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -107,7 +251,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fstat: {
-			id32Bit: sys32fstat,
+			id32Bit: Sys32fstat,
 			name:    "fstat",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -125,7 +269,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Lstat: {
-			id32Bit: sys32lstat,
+			id32Bit: Sys32lstat,
 			name:    "lstat",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -143,7 +287,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Poll: {
-			id32Bit: sys32poll,
+			id32Bit: Sys32poll,
 			name:    "poll",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_mux_io"},
@@ -162,7 +306,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Lseek: {
-			id32Bit: sys32lseek,
+			id32Bit: Sys32lseek,
 			name:    "lseek",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_read_write"},
@@ -181,7 +325,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Mmap: {
-			id32Bit: sys32mmap,
+			id32Bit: Sys32mmap,
 			name:    "mmap",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_mem"},
@@ -203,7 +347,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Mprotect: {
-			id32Bit: sys32mprotect,
+			id32Bit: Sys32mprotect,
 			name:    "mprotect",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_mem"},
@@ -222,7 +366,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Munmap: {
-			id32Bit: sys32munmap,
+			id32Bit: Sys32munmap,
 			name:    "munmap",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_mem"},
@@ -240,7 +384,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Brk: {
-			id32Bit: sys32brk,
+			id32Bit: Sys32brk,
 			name:    "brk",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_mem"},
@@ -257,7 +401,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		RtSigaction: {
-			id32Bit: sys32rt_sigaction,
+			id32Bit: Sys32rt_sigaction,
 			name:    "rt_sigaction",
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
@@ -277,7 +421,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		RtSigprocmask: {
-			id32Bit: sys32rt_sigprocmask,
+			id32Bit: Sys32rt_sigprocmask,
 			name:    "rt_sigprocmask",
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
@@ -297,7 +441,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		RtSigreturn: {
-			id32Bit: sys32rt_sigreturn,
+			id32Bit: Sys32rt_sigreturn,
 			name:    "rt_sigreturn",
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
@@ -312,7 +456,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Ioctl: {
-			id32Bit: sys32ioctl,
+			id32Bit: Sys32ioctl,
 			name:    "ioctl",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_fd_ops"},
@@ -331,7 +475,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Pread64: {
-			id32Bit: sys32pread64,
+			id32Bit: Sys32pread64,
 			name:    "pread64",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_read_write"},
@@ -351,7 +495,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Pwrite64: {
-			id32Bit: sys32pwrite64,
+			id32Bit: Sys32pwrite64,
 			name:    "pwrite64",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_read_write"},
@@ -371,7 +515,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Readv: {
-			id32Bit: sys32readv,
+			id32Bit: Sys32readv,
 			name:    "readv",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_read_write"},
@@ -390,7 +534,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Writev: {
-			id32Bit: sys32writev,
+			id32Bit: Sys32writev,
 			name:    "writev",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_read_write"},
@@ -409,7 +553,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Access: {
-			id32Bit: sys32access,
+			id32Bit: Sys32access,
 			name:    "access",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -427,7 +571,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Pipe: {
-			id32Bit: sys32pipe,
+			id32Bit: Sys32pipe,
 			name:    "pipe",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_pipe"},
@@ -444,7 +588,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Select: {
-			id32Bit: sys32_newselect,
+			id32Bit: Sys32_newselect,
 			name:    "select",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_mux_io"},
@@ -465,7 +609,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SchedYield: {
-			id32Bit: sys32sched_yield,
+			id32Bit: Sys32sched_yield,
 			name:    "sched_yield",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_sched"},
@@ -480,7 +624,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Mremap: {
-			id32Bit: sys32mremap,
+			id32Bit: Sys32mremap,
 			name:    "mremap",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_mem"},
@@ -501,7 +645,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Msync: {
-			id32Bit: sys32msync,
+			id32Bit: Sys32msync,
 			name:    "msync",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_sync"},
@@ -520,7 +664,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Mincore: {
-			id32Bit: sys32mincore,
+			id32Bit: Sys32mincore,
 			name:    "mincore",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_mem"},
@@ -539,7 +683,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Madvise: {
-			id32Bit: sys32madvise,
+			id32Bit: Sys32madvise,
 			name:    "madvise",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_mem"},
@@ -558,7 +702,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Shmget: {
-			id32Bit: sys32shmget,
+			id32Bit: Sys32shmget,
 			name:    "shmget",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_shm"},
@@ -577,7 +721,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Shmat: {
-			id32Bit: sys32shmat,
+			id32Bit: Sys32shmat,
 			name:    "shmat",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_shm"},
@@ -596,7 +740,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Shmctl: {
-			id32Bit: sys32shmctl,
+			id32Bit: Sys32shmctl,
 			name:    "shmctl",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_shm"},
@@ -615,7 +759,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Dup: {
-			id32Bit: sys32dup,
+			id32Bit: Sys32dup,
 			name:    "dup",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_fd_ops"},
@@ -632,7 +776,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Dup2: {
-			id32Bit: sys32dup2,
+			id32Bit: Sys32dup2,
 			name:    "dup2",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_fd_ops"},
@@ -650,7 +794,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Pause: {
-			id32Bit: sys32pause,
+			id32Bit: Sys32pause,
 			name:    "pause",
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
@@ -665,7 +809,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Nanosleep: {
-			id32Bit: sys32nanosleep,
+			id32Bit: Sys32nanosleep,
 			name:    "nanosleep",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_timer"},
@@ -683,7 +827,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getitimer: {
-			id32Bit: sys32getitimer,
+			id32Bit: Sys32getitimer,
 			name:    "getitimer",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_timer"},
@@ -701,7 +845,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Alarm: {
-			id32Bit: sys32alarm,
+			id32Bit: Sys32alarm,
 			name:    "alarm",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_timer"},
@@ -718,7 +862,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setitimer: {
-			id32Bit: sys32setitimer,
+			id32Bit: Sys32setitimer,
 			name:    "setitimer",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_timer"},
@@ -737,7 +881,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getpid: {
-			id32Bit: sys32getpid,
+			id32Bit: Sys32getpid,
 			name:    "getpid",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
@@ -752,7 +896,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Sendfile: {
-			id32Bit: sys32sendfile64,
+			id32Bit: Sys32sendfile64,
 			name:    "sendfile",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_read_write"},
@@ -772,7 +916,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Socket: {
-			id32Bit: sys32socket,
+			id32Bit: Sys32socket,
 			name:    "socket",
 			syscall: true,
 			sets:    []string{"syscalls", "net", "net_sock"},
@@ -791,7 +935,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Connect: {
-			id32Bit: sys32connect,
+			id32Bit: Sys32connect,
 			name:    "connect",
 			syscall: true,
 			sets:    []string{"syscalls", "net", "net_sock"},
@@ -810,7 +954,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Accept: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "accept",
 			syscall: true,
 			sets:    []string{"syscalls", "net", "net_sock"},
@@ -829,7 +973,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Sendto: {
-			id32Bit: sys32sendto,
+			id32Bit: Sys32sendto,
 			name:    "sendto",
 			syscall: true,
 			sets:    []string{"syscalls", "net", "net_snd_rcv"},
@@ -851,7 +995,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Recvfrom: {
-			id32Bit: sys32recvfrom,
+			id32Bit: Sys32recvfrom,
 			name:    "recvfrom",
 			syscall: true,
 			sets:    []string{"syscalls", "net", "net_snd_rcv"},
@@ -873,7 +1017,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Sendmsg: {
-			id32Bit: sys32sendmsg,
+			id32Bit: Sys32sendmsg,
 			name:    "sendmsg",
 			syscall: true,
 			sets:    []string{"syscalls", "net", "net_snd_rcv"},
@@ -892,7 +1036,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Recvmsg: {
-			id32Bit: sys32recvmsg,
+			id32Bit: Sys32recvmsg,
 			name:    "recvmsg",
 			syscall: true,
 			sets:    []string{"syscalls", "net", "net_snd_rcv"},
@@ -911,7 +1055,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Shutdown: {
-			id32Bit: sys32shutdown,
+			id32Bit: Sys32shutdown,
 			name:    "shutdown",
 			syscall: true,
 			sets:    []string{"syscalls", "net", "net_sock"},
@@ -929,7 +1073,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Bind: {
-			id32Bit: sys32bind,
+			id32Bit: Sys32bind,
 			name:    "bind",
 			syscall: true,
 			sets:    []string{"syscalls", "net", "net_sock"},
@@ -948,7 +1092,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Listen: {
-			id32Bit: sys32listen,
+			id32Bit: Sys32listen,
 			name:    "listen",
 			syscall: true,
 			sets:    []string{"syscalls", "net", "net_sock"},
@@ -966,7 +1110,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getsockname: {
-			id32Bit: sys32getsockname,
+			id32Bit: Sys32getsockname,
 			name:    "getsockname",
 			syscall: true,
 			sets:    []string{"syscalls", "net", "net_sock"},
@@ -985,7 +1129,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getpeername: {
-			id32Bit: sys32getpeername,
+			id32Bit: Sys32getpeername,
 			name:    "getpeername",
 			syscall: true,
 			sets:    []string{"syscalls", "net", "net_sock"},
@@ -1004,7 +1148,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Socketpair: {
-			id32Bit: sys32socketpair,
+			id32Bit: Sys32socketpair,
 			name:    "socketpair",
 			syscall: true,
 			sets:    []string{"syscalls", "net", "net_sock"},
@@ -1024,7 +1168,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setsockopt: {
-			id32Bit: sys32setsockopt,
+			id32Bit: Sys32setsockopt,
 			name:    "setsockopt",
 			syscall: true,
 			sets:    []string{"syscalls", "net", "net_sock"},
@@ -1045,7 +1189,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getsockopt: {
-			id32Bit: sys32getsockopt,
+			id32Bit: Sys32getsockopt,
 			name:    "getsockopt",
 			syscall: true,
 			sets:    []string{"syscalls", "net", "net_sock"},
@@ -1066,7 +1210,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Clone: {
-			id32Bit: sys32clone,
+			id32Bit: Sys32clone,
 			name:    "clone",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_life"},
@@ -1087,7 +1231,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fork: {
-			id32Bit: sys32fork,
+			id32Bit: Sys32fork,
 			name:    "fork",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_life"},
@@ -1102,7 +1246,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Vfork: {
-			id32Bit: sys32vfork,
+			id32Bit: Sys32vfork,
 			name:    "vfork",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_life"},
@@ -1117,7 +1261,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Execve: {
-			id32Bit: sys32execve,
+			id32Bit: Sys32execve,
 			name:    "execve",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_life"},
@@ -1137,7 +1281,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Exit: {
-			id32Bit: sys32exit,
+			id32Bit: Sys32exit,
 			name:    "exit",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_life"},
@@ -1154,7 +1298,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Wait4: {
-			id32Bit: sys32wait4,
+			id32Bit: Sys32wait4,
 			name:    "wait4",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_life"},
@@ -1174,7 +1318,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Kill: {
-			id32Bit: sys32kill,
+			id32Bit: Sys32kill,
 			name:    "kill",
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
@@ -1192,7 +1336,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Uname: {
-			id32Bit: sys32uname,
+			id32Bit: Sys32uname,
 			name:    "uname",
 			syscall: true,
 			sets:    []string{"syscalls", "system"},
@@ -1209,7 +1353,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Semget: {
-			id32Bit: sys32semget,
+			id32Bit: Sys32semget,
 			name:    "semget",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_sem"},
@@ -1228,7 +1372,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Semop: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "semop",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_sem"},
@@ -1247,7 +1391,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Semctl: {
-			id32Bit: sys32semctl,
+			id32Bit: Sys32semctl,
 			name:    "semctl",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_sem"},
@@ -1267,7 +1411,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Shmdt: {
-			id32Bit: sys32shmdt,
+			id32Bit: Sys32shmdt,
 			name:    "shmdt",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_shm"},
@@ -1284,7 +1428,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Msgget: {
-			id32Bit: sys32msgget,
+			id32Bit: Sys32msgget,
 			name:    "msgget",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_msgq"},
@@ -1302,7 +1446,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Msgsnd: {
-			id32Bit: sys32msgsnd,
+			id32Bit: Sys32msgsnd,
 			name:    "msgsnd",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_msgq"},
@@ -1322,7 +1466,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Msgrcv: {
-			id32Bit: sys32msgrcv,
+			id32Bit: Sys32msgrcv,
 			name:    "msgrcv",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_msgq"},
@@ -1343,7 +1487,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Msgctl: {
-			id32Bit: sys32msgctl,
+			id32Bit: Sys32msgctl,
 			name:    "msgctl",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_msgq"},
@@ -1362,7 +1506,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fcntl: {
-			id32Bit: sys32fcntl,
+			id32Bit: Sys32fcntl,
 			name:    "fcntl",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_fd_ops"},
@@ -1381,7 +1525,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Flock: {
-			id32Bit: sys32flock,
+			id32Bit: Sys32flock,
 			name:    "flock",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_fd_ops"},
@@ -1399,7 +1543,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fsync: {
-			id32Bit: sys32fsync,
+			id32Bit: Sys32fsync,
 			name:    "fsync",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_sync"},
@@ -1416,7 +1560,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fdatasync: {
-			id32Bit: sys32fdatasync,
+			id32Bit: Sys32fdatasync,
 			name:    "fdatasync",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_sync"},
@@ -1433,7 +1577,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Truncate: {
-			id32Bit: sys32truncate,
+			id32Bit: Sys32truncate,
 			name:    "truncate",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_ops"},
@@ -1451,7 +1595,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Ftruncate: {
-			id32Bit: sys32ftruncate,
+			id32Bit: Sys32ftruncate,
 			name:    "ftruncate",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_ops"},
@@ -1469,7 +1613,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getdents: {
-			id32Bit: sys32getdents,
+			id32Bit: Sys32getdents,
 			name:    "getdents",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_dir_ops"},
@@ -1488,7 +1632,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getcwd: {
-			id32Bit: sys32getcwd,
+			id32Bit: Sys32getcwd,
 			name:    "getcwd",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_dir_ops"},
@@ -1506,7 +1650,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Chdir: {
-			id32Bit: sys32chdir,
+			id32Bit: Sys32chdir,
 			name:    "chdir",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_dir_ops"},
@@ -1523,7 +1667,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fchdir: {
-			id32Bit: sys32fchdir,
+			id32Bit: Sys32fchdir,
 			name:    "fchdir",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_dir_ops"},
@@ -1540,7 +1684,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Rename: {
-			id32Bit: sys32rename,
+			id32Bit: Sys32rename,
 			name:    "rename",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_ops"},
@@ -1558,7 +1702,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Mkdir: {
-			id32Bit: sys32mkdir,
+			id32Bit: Sys32mkdir,
 			name:    "mkdir",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_dir_ops"},
@@ -1576,7 +1720,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Rmdir: {
-			id32Bit: sys32rmdir,
+			id32Bit: Sys32rmdir,
 			name:    "rmdir",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_dir_ops"},
@@ -1593,7 +1737,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Creat: {
-			id32Bit: sys32creat,
+			id32Bit: Sys32creat,
 			name:    "creat",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "fs", "fs_file_ops"},
@@ -1611,7 +1755,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Link: {
-			id32Bit: sys32link,
+			id32Bit: Sys32link,
 			name:    "link",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_link_ops"},
@@ -1629,7 +1773,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Unlink: {
-			id32Bit: sys32unlink,
+			id32Bit: Sys32unlink,
 			name:    "unlink",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_link_ops"},
@@ -1646,7 +1790,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Symlink: {
-			id32Bit: sys32symlink,
+			id32Bit: Sys32symlink,
 			name:    "symlink",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_link_ops"},
@@ -1664,7 +1808,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Readlink: {
-			id32Bit: sys32readlink,
+			id32Bit: Sys32readlink,
 			name:    "readlink",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_link_ops"},
@@ -1683,7 +1827,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Chmod: {
-			id32Bit: sys32chmod,
+			id32Bit: Sys32chmod,
 			name:    "chmod",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
@@ -1701,7 +1845,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fchmod: {
-			id32Bit: sys32fchmod,
+			id32Bit: Sys32fchmod,
 			name:    "fchmod",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
@@ -1719,7 +1863,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Chown: {
-			id32Bit: sys32chown32,
+			id32Bit: Sys32chown32,
 			name:    "chown",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
@@ -1738,7 +1882,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fchown: {
-			id32Bit: sys32fchown32,
+			id32Bit: Sys32fchown32,
 			name:    "fchown",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
@@ -1757,7 +1901,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Lchown: {
-			id32Bit: sys32lchown32,
+			id32Bit: Sys32lchown32,
 			name:    "lchown",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
@@ -1776,7 +1920,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Umask: {
-			id32Bit: sys32umask,
+			id32Bit: Sys32umask,
 			name:    "umask",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -1793,7 +1937,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Gettimeofday: {
-			id32Bit: sys32gettimeofday,
+			id32Bit: Sys32gettimeofday,
 			name:    "gettimeofday",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_tod"},
@@ -1811,7 +1955,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getrlimit: {
-			id32Bit: sys32ugetrlimit,
+			id32Bit: Sys32ugetrlimit,
 			name:    "getrlimit",
 			syscall: true,
 			sets:    []string{"syscalls", "proc"},
@@ -1829,7 +1973,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getrusage: {
-			id32Bit: sys32getrusage,
+			id32Bit: Sys32getrusage,
 			name:    "getrusage",
 			syscall: true,
 			sets:    []string{"syscalls", "proc"},
@@ -1847,7 +1991,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Sysinfo: {
-			id32Bit: sys32sysinfo,
+			id32Bit: Sys32sysinfo,
 			name:    "sysinfo",
 			syscall: true,
 			sets:    []string{"syscalls", "system"},
@@ -1864,7 +2008,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Times: {
-			id32Bit: sys32times,
+			id32Bit: Sys32times,
 			name:    "times",
 			syscall: true,
 			sets:    []string{"syscalls", "proc"},
@@ -1881,7 +2025,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Ptrace: {
-			id32Bit: sys32ptrace,
+			id32Bit: Sys32ptrace,
 			name:    "ptrace",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "proc"},
@@ -1901,7 +2045,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getuid: {
-			id32Bit: sys32getuid32,
+			id32Bit: Sys32getuid32,
 			name:    "getuid",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
@@ -1916,7 +2060,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Syslog: {
-			id32Bit: sys32syslog,
+			id32Bit: Sys32syslog,
 			name:    "syslog",
 			syscall: true,
 			sets:    []string{"syscalls", "system"},
@@ -1935,7 +2079,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getgid: {
-			id32Bit: sys32getgid32,
+			id32Bit: Sys32getgid32,
 			name:    "getgid",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
@@ -1950,7 +2094,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setuid: {
-			id32Bit: sys32setuid32,
+			id32Bit: Sys32setuid32,
 			name:    "setuid",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "proc", "proc_ids"},
@@ -1967,7 +2111,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setgid: {
-			id32Bit: sys32setgid32,
+			id32Bit: Sys32setgid32,
 			name:    "setgid",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "proc", "proc_ids"},
@@ -1984,7 +2128,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Geteuid: {
-			id32Bit: sys32geteuid32,
+			id32Bit: Sys32geteuid32,
 			name:    "geteuid",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
@@ -1999,7 +2143,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getegid: {
-			id32Bit: sys32getegid32,
+			id32Bit: Sys32getegid32,
 			name:    "getegid",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
@@ -2014,7 +2158,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setpgid: {
-			id32Bit: sys32setpgid,
+			id32Bit: Sys32setpgid,
 			name:    "setpgid",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "proc", "proc_ids"},
@@ -2032,7 +2176,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getppid: {
-			id32Bit: sys32getppid,
+			id32Bit: Sys32getppid,
 			name:    "getppid",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
@@ -2047,7 +2191,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getpgrp: {
-			id32Bit: sys32getpgrp,
+			id32Bit: Sys32getpgrp,
 			name:    "getpgrp",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
@@ -2062,7 +2206,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setsid: {
-			id32Bit: sys32setsid,
+			id32Bit: Sys32setsid,
 			name:    "setsid",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "proc", "proc_ids"},
@@ -2077,7 +2221,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setreuid: {
-			id32Bit: sys32setreuid32,
+			id32Bit: Sys32setreuid32,
 			name:    "setreuid",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "proc", "proc_ids"},
@@ -2095,7 +2239,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setregid: {
-			id32Bit: sys32setregid32,
+			id32Bit: Sys32setregid32,
 			name:    "setregid",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "proc", "proc_ids"},
@@ -2113,7 +2257,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getgroups: {
-			id32Bit: sys32getgroups32,
+			id32Bit: Sys32getgroups32,
 			name:    "getgroups",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
@@ -2131,7 +2275,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setgroups: {
-			id32Bit: sys32setgroups32,
+			id32Bit: Sys32setgroups32,
 			name:    "setgroups",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
@@ -2149,7 +2293,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setresuid: {
-			id32Bit: sys32setresuid32,
+			id32Bit: Sys32setresuid32,
 			name:    "setresuid",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "proc", "proc_ids"},
@@ -2168,7 +2312,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getresuid: {
-			id32Bit: sys32getresuid32,
+			id32Bit: Sys32getresuid32,
 			name:    "getresuid",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
@@ -2187,7 +2331,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setresgid: {
-			id32Bit: sys32setresgid32,
+			id32Bit: Sys32setresgid32,
 			name:    "setresgid",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "proc", "proc_ids"},
@@ -2206,7 +2350,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getresgid: {
-			id32Bit: sys32getresgid32,
+			id32Bit: Sys32getresgid32,
 			name:    "getresgid",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
@@ -2225,7 +2369,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getpgid: {
-			id32Bit: sys32getpgid,
+			id32Bit: Sys32getpgid,
 			name:    "getpgid",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
@@ -2242,7 +2386,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setfsuid: {
-			id32Bit: sys32setfsuid32,
+			id32Bit: Sys32setfsuid32,
 			name:    "setfsuid",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "proc", "proc_ids"},
@@ -2259,7 +2403,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setfsgid: {
-			id32Bit: sys32setfsgid32,
+			id32Bit: Sys32setfsgid32,
 			name:    "setfsgid",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "proc", "proc_ids"},
@@ -2276,7 +2420,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getsid: {
-			id32Bit: sys32getsid,
+			id32Bit: Sys32getsid,
 			name:    "getsid",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
@@ -2293,7 +2437,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Capget: {
-			id32Bit: sys32capget,
+			id32Bit: Sys32capget,
 			name:    "capget",
 			syscall: true,
 			sets:    []string{"syscalls", "proc"},
@@ -2311,7 +2455,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Capset: {
-			id32Bit: sys32capset,
+			id32Bit: Sys32capset,
 			name:    "capset",
 			syscall: true,
 			sets:    []string{"syscalls", "proc"},
@@ -2329,7 +2473,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		RtSigpending: {
-			id32Bit: sys32rt_sigpending,
+			id32Bit: Sys32rt_sigpending,
 			name:    "rt_sigpending",
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
@@ -2347,7 +2491,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		RtSigtimedwait: {
-			id32Bit: sys32rt_sigtimedwait_time64,
+			id32Bit: Sys32rt_sigtimedwait_time64,
 			name:    "rt_sigtimedwait",
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
@@ -2367,7 +2511,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		RtSigqueueinfo: {
-			id32Bit: sys32rt_sigqueueinfo,
+			id32Bit: Sys32rt_sigqueueinfo,
 			name:    "rt_sigqueueinfo",
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
@@ -2386,7 +2530,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		RtSigsuspend: {
-			id32Bit: sys32rt_sigsuspend,
+			id32Bit: Sys32rt_sigsuspend,
 			name:    "rt_sigsuspend",
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
@@ -2404,7 +2548,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Sigaltstack: {
-			id32Bit: sys32sigaltstack,
+			id32Bit: Sys32sigaltstack,
 			name:    "sigaltstack",
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
@@ -2422,7 +2566,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Utime: {
-			id32Bit: sys32utime,
+			id32Bit: Sys32utime,
 			name:    "utime",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -2440,7 +2584,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Mknod: {
-			id32Bit: sys32mknod,
+			id32Bit: Sys32mknod,
 			name:    "mknod",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_ops"},
@@ -2459,7 +2603,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Uselib: {
-			id32Bit: sys32uselib,
+			id32Bit: Sys32uselib,
 			name:    "uselib",
 			syscall: true,
 			sets:    []string{"syscalls", "proc"},
@@ -2476,7 +2620,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Personality: {
-			id32Bit: sys32personality,
+			id32Bit: Sys32personality,
 			name:    "personality",
 			syscall: true,
 			sets:    []string{"syscalls", "system"},
@@ -2493,7 +2637,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Ustat: {
-			id32Bit: sys32ustat,
+			id32Bit: Sys32ustat,
 			name:    "ustat",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_info"},
@@ -2511,7 +2655,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Statfs: {
-			id32Bit: sys32statfs,
+			id32Bit: Sys32statfs,
 			name:    "statfs",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_info"},
@@ -2529,7 +2673,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fstatfs: {
-			id32Bit: sys32fstatfs,
+			id32Bit: Sys32fstatfs,
 			name:    "fstatfs",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_info"},
@@ -2547,7 +2691,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Sysfs: {
-			id32Bit: sys32sysfs,
+			id32Bit: Sys32sysfs,
 			name:    "sysfs",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_info"},
@@ -2564,7 +2708,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getpriority: {
-			id32Bit: sys32getpriority,
+			id32Bit: Sys32getpriority,
 			name:    "getpriority",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_sched"},
@@ -2582,7 +2726,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setpriority: {
-			id32Bit: sys32setpriority,
+			id32Bit: Sys32setpriority,
 			name:    "setpriority",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_sched"},
@@ -2601,7 +2745,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SchedSetparam: {
-			id32Bit: sys32sched_setparam,
+			id32Bit: Sys32sched_setparam,
 			name:    "sched_setparam",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_sched"},
@@ -2619,7 +2763,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SchedGetparam: {
-			id32Bit: sys32sched_getparam,
+			id32Bit: Sys32sched_getparam,
 			name:    "sched_getparam",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_sched"},
@@ -2637,7 +2781,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SchedSetscheduler: {
-			id32Bit: sys32sched_setscheduler,
+			id32Bit: Sys32sched_setscheduler,
 			name:    "sched_setscheduler",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_sched"},
@@ -2656,7 +2800,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SchedGetscheduler: {
-			id32Bit: sys32sched_getscheduler,
+			id32Bit: Sys32sched_getscheduler,
 			name:    "sched_getscheduler",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_sched"},
@@ -2673,7 +2817,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SchedGetPriorityMax: {
-			id32Bit: sys32sched_get_priority_max,
+			id32Bit: Sys32sched_get_priority_max,
 			name:    "sched_get_priority_max",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_sched"},
@@ -2690,7 +2834,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SchedGetPriorityMin: {
-			id32Bit: sys32sched_get_priority_min,
+			id32Bit: Sys32sched_get_priority_min,
 			name:    "sched_get_priority_min",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_sched"},
@@ -2707,7 +2851,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SchedRrGetInterval: {
-			id32Bit: sys32sched_rr_get_interval_time64,
+			id32Bit: Sys32sched_rr_get_interval_time64,
 			name:    "sched_rr_get_interval",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_sched"},
@@ -2725,7 +2869,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Mlock: {
-			id32Bit: sys32mlock,
+			id32Bit: Sys32mlock,
 			name:    "mlock",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_mem"},
@@ -2743,7 +2887,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Munlock: {
-			id32Bit: sys32munlock,
+			id32Bit: Sys32munlock,
 			name:    "munlock",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_mem"},
@@ -2761,7 +2905,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Mlockall: {
-			id32Bit: sys32mlockall,
+			id32Bit: Sys32mlockall,
 			name:    "mlockall",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_mem"},
@@ -2778,7 +2922,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Munlockall: {
-			id32Bit: sys32munlockall,
+			id32Bit: Sys32munlockall,
 			name:    "munlockall",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_mem"},
@@ -2793,7 +2937,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Vhangup: {
-			id32Bit: sys32vhangup,
+			id32Bit: Sys32vhangup,
 			name:    "vhangup",
 			syscall: true,
 			sets:    []string{"syscalls", "system"},
@@ -2808,7 +2952,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ModifyLdt: {
-			id32Bit: sys32modify_ldt,
+			id32Bit: Sys32modify_ldt,
 			name:    "modify_ldt",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_mem"},
@@ -2827,7 +2971,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		PivotRoot: {
-			id32Bit: sys32pivot_root,
+			id32Bit: Sys32pivot_root,
 			name:    "pivot_root",
 			syscall: true,
 			sets:    []string{"syscalls", "fs"},
@@ -2845,7 +2989,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Sysctl: {
-			id32Bit: sys32_sysctl,
+			id32Bit: Sys32_sysctl,
 			name:    "sysctl",
 			syscall: true,
 			sets:    []string{"syscalls", "system"},
@@ -2862,7 +3006,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Prctl: {
-			id32Bit: sys32prctl,
+			id32Bit: Sys32prctl,
 			name:    "prctl",
 			syscall: true,
 			sets:    []string{"syscalls", "proc"},
@@ -2883,7 +3027,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ArchPrctl: {
-			id32Bit: sys32arch_prctl,
+			id32Bit: Sys32arch_prctl,
 			name:    "arch_prctl",
 			syscall: true,
 			sets:    []string{"syscalls", "proc"},
@@ -2901,7 +3045,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Adjtimex: {
-			id32Bit: sys32adjtimex,
+			id32Bit: Sys32adjtimex,
 			name:    "adjtimex",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_clock"},
@@ -2918,7 +3062,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setrlimit: {
-			id32Bit: sys32setrlimit,
+			id32Bit: Sys32setrlimit,
 			name:    "setrlimit",
 			syscall: true,
 			sets:    []string{"syscalls", "proc"},
@@ -2936,7 +3080,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Chroot: {
-			id32Bit: sys32chroot,
+			id32Bit: Sys32chroot,
 			name:    "chroot",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_dir_ops"},
@@ -2953,7 +3097,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Sync: {
-			id32Bit: sys32sync,
+			id32Bit: Sys32sync,
 			name:    "sync",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_sync"},
@@ -2968,7 +3112,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Acct: {
-			id32Bit: sys32acct,
+			id32Bit: Sys32acct,
 			name:    "acct",
 			syscall: true,
 			sets:    []string{"syscalls", "system"},
@@ -2985,7 +3129,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Settimeofday: {
-			id32Bit: sys32settimeofday,
+			id32Bit: Sys32settimeofday,
 			name:    "settimeofday",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_tod"},
@@ -3003,7 +3147,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Mount: {
-			id32Bit: sys32mount,
+			id32Bit: Sys32mount,
 			name:    "mount",
 			syscall: true,
 			sets:    []string{"syscalls", "fs"},
@@ -3024,7 +3168,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Umount2: {
-			id32Bit: sys32umount2,
+			id32Bit: Sys32umount2,
 			name:    "umount2",
 			syscall: true,
 			sets:    []string{"syscalls", "fs"},
@@ -3042,7 +3186,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Swapon: {
-			id32Bit: sys32swapon,
+			id32Bit: Sys32swapon,
 			name:    "swapon",
 			syscall: true,
 			sets:    []string{"syscalls", "fs"},
@@ -3060,7 +3204,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Swapoff: {
-			id32Bit: sys32swapoff,
+			id32Bit: Sys32swapoff,
 			name:    "swapoff",
 			syscall: true,
 			sets:    []string{"syscalls", "fs"},
@@ -3077,7 +3221,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Reboot: {
-			id32Bit: sys32reboot,
+			id32Bit: Sys32reboot,
 			name:    "reboot",
 			syscall: true,
 			sets:    []string{"syscalls", "system"},
@@ -3097,7 +3241,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Sethostname: {
-			id32Bit: sys32sethostname,
+			id32Bit: Sys32sethostname,
 			name:    "sethostname",
 			syscall: true,
 			sets:    []string{"syscalls", "net"},
@@ -3115,7 +3259,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setdomainname: {
-			id32Bit: sys32setdomainname,
+			id32Bit: Sys32setdomainname,
 			name:    "setdomainname",
 			syscall: true,
 			sets:    []string{"syscalls", "net"},
@@ -3133,7 +3277,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Iopl: {
-			id32Bit: sys32iopl,
+			id32Bit: Sys32iopl,
 			name:    "iopl",
 			syscall: true,
 			sets:    []string{"syscalls", "system"},
@@ -3150,7 +3294,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Ioperm: {
-			id32Bit: sys32ioperm,
+			id32Bit: Sys32ioperm,
 			name:    "ioperm",
 			syscall: true,
 			sets:    []string{"syscalls", "system"},
@@ -3169,7 +3313,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		CreateModule: {
-			id32Bit: sys32create_module,
+			id32Bit: Sys32create_module,
 			name:    "create_module",
 			syscall: true,
 			sets:    []string{"syscalls", "system", "system_module"},
@@ -3184,7 +3328,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		InitModule: {
-			id32Bit: sys32init_module,
+			id32Bit: Sys32init_module,
 			name:    "init_module",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "system", "system_module"},
@@ -3203,7 +3347,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		DeleteModule: {
-			id32Bit: sys32delete_module,
+			id32Bit: Sys32delete_module,
 			name:    "delete_module",
 			syscall: true,
 			sets:    []string{"syscalls", "system", "system_module"},
@@ -3221,7 +3365,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		GetKernelSyms: {
-			id32Bit: sys32get_kernel_syms,
+			id32Bit: Sys32get_kernel_syms,
 			name:    "get_kernel_syms",
 			syscall: true,
 			sets:    []string{"syscalls", "system", "system_module"},
@@ -3236,7 +3380,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		QueryModule: {
-			id32Bit: sys32query_module,
+			id32Bit: Sys32query_module,
 			name:    "query_module",
 			syscall: true,
 			sets:    []string{"syscalls", "system", "system_module"},
@@ -3251,7 +3395,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Quotactl: {
-			id32Bit: sys32quotactl,
+			id32Bit: Sys32quotactl,
 			name:    "quotactl",
 			syscall: true,
 			sets:    []string{"syscalls", "system"},
@@ -3271,7 +3415,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Nfsservctl: {
-			id32Bit: sys32nfsservctl,
+			id32Bit: Sys32nfsservctl,
 			name:    "nfsservctl",
 			syscall: true,
 			sets:    []string{"syscalls", "fs"},
@@ -3286,7 +3430,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getpmsg: {
-			id32Bit: sys32getpmsg,
+			id32Bit: Sys32getpmsg,
 			name:    "getpmsg",
 			syscall: true,
 			sets:    []string{"syscalls"},
@@ -3301,7 +3445,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Putpmsg: {
-			id32Bit: sys32putpmsg,
+			id32Bit: Sys32putpmsg,
 			name:    "putpmsg",
 			syscall: true,
 			sets:    []string{"syscalls"},
@@ -3316,7 +3460,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Afs: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "afs",
 			syscall: true,
 			sets:    []string{"syscalls"},
@@ -3331,7 +3475,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Tuxcall: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "tuxcall",
 			syscall: true,
 			sets:    []string{"syscalls"},
@@ -3346,7 +3490,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Security: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security",
 			syscall: true,
 			sets:    []string{"syscalls"},
@@ -3361,7 +3505,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Gettid: {
-			id32Bit: sys32gettid,
+			id32Bit: Sys32gettid,
 			name:    "gettid",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_ids"},
@@ -3376,7 +3520,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Readahead: {
-			id32Bit: sys32readahead,
+			id32Bit: Sys32readahead,
 			name:    "readahead",
 			syscall: true,
 			sets:    []string{"syscalls", "fs"},
@@ -3395,7 +3539,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setxattr: {
-			id32Bit: sys32setxattr,
+			id32Bit: Sys32setxattr,
 			name:    "setxattr",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -3416,7 +3560,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Lsetxattr: {
-			id32Bit: sys32lsetxattr,
+			id32Bit: Sys32lsetxattr,
 			name:    "lsetxattr",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -3437,7 +3581,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fsetxattr: {
-			id32Bit: sys32fsetxattr,
+			id32Bit: Sys32fsetxattr,
 			name:    "fsetxattr",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -3458,7 +3602,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getxattr: {
-			id32Bit: sys32getxattr,
+			id32Bit: Sys32getxattr,
 			name:    "getxattr",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -3478,7 +3622,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Lgetxattr: {
-			id32Bit: sys32lgetxattr,
+			id32Bit: Sys32lgetxattr,
 			name:    "lgetxattr",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -3498,7 +3642,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fgetxattr: {
-			id32Bit: sys32fgetxattr,
+			id32Bit: Sys32fgetxattr,
 			name:    "fgetxattr",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -3518,7 +3662,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Listxattr: {
-			id32Bit: sys32listxattr,
+			id32Bit: Sys32listxattr,
 			name:    "listxattr",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -3537,7 +3681,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Llistxattr: {
-			id32Bit: sys32llistxattr,
+			id32Bit: Sys32llistxattr,
 			name:    "llistxattr",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -3556,7 +3700,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Flistxattr: {
-			id32Bit: sys32flistxattr,
+			id32Bit: Sys32flistxattr,
 			name:    "flistxattr",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -3575,7 +3719,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Removexattr: {
-			id32Bit: sys32removexattr,
+			id32Bit: Sys32removexattr,
 			name:    "removexattr",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -3593,7 +3737,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Lremovexattr: {
-			id32Bit: sys32lremovexattr,
+			id32Bit: Sys32lremovexattr,
 			name:    "lremovexattr",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -3611,7 +3755,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fremovexattr: {
-			id32Bit: sys32fremovexattr,
+			id32Bit: Sys32fremovexattr,
 			name:    "fremovexattr",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -3629,7 +3773,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Tkill: {
-			id32Bit: sys32tkill,
+			id32Bit: Sys32tkill,
 			name:    "tkill",
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
@@ -3647,7 +3791,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Time: {
-			id32Bit: sys32time,
+			id32Bit: Sys32time,
 			name:    "time",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_tod"},
@@ -3664,7 +3808,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Futex: {
-			id32Bit: sys32futex_time64,
+			id32Bit: Sys32futex_time64,
 			name:    "futex",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_futex"},
@@ -3686,7 +3830,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SchedSetaffinity: {
-			id32Bit: sys32sched_setaffinity,
+			id32Bit: Sys32sched_setaffinity,
 			name:    "sched_setaffinity",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_sched"},
@@ -3705,7 +3849,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SchedGetaffinity: {
-			id32Bit: sys32sched_getaffinity,
+			id32Bit: Sys32sched_getaffinity,
 			name:    "sched_getaffinity",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_sched"},
@@ -3724,7 +3868,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SetThreadArea: {
-			id32Bit: sys32set_thread_area,
+			id32Bit: Sys32set_thread_area,
 			name:    "set_thread_area",
 			syscall: true,
 			sets:    []string{"syscalls", "proc"},
@@ -3741,7 +3885,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		IoSetup: {
-			id32Bit: sys32io_setup,
+			id32Bit: Sys32io_setup,
 			name:    "io_setup",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_async_io"},
@@ -3759,7 +3903,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		IoDestroy: {
-			id32Bit: sys32io_destroy,
+			id32Bit: Sys32io_destroy,
 			name:    "io_destroy",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_async_io"},
@@ -3776,7 +3920,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		IoGetevents: {
-			id32Bit: sys32io_getevents,
+			id32Bit: Sys32io_getevents,
 			name:    "io_getevents",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_async_io"},
@@ -3797,7 +3941,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		IoSubmit: {
-			id32Bit: sys32io_submit,
+			id32Bit: Sys32io_submit,
 			name:    "io_submit",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_async_io"},
@@ -3816,7 +3960,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		IoCancel: {
-			id32Bit: sys32io_cancel,
+			id32Bit: Sys32io_cancel,
 			name:    "io_cancel",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_async_io"},
@@ -3835,7 +3979,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		GetThreadArea: {
-			id32Bit: sys32get_thread_area,
+			id32Bit: Sys32get_thread_area,
 			name:    "get_thread_area",
 			syscall: true,
 			sets:    []string{"syscalls", "proc"},
@@ -3852,7 +3996,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		LookupDcookie: {
-			id32Bit: sys32lookup_dcookie,
+			id32Bit: Sys32lookup_dcookie,
 			name:    "lookup_dcookie",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_dir_ops"},
@@ -3871,7 +4015,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		EpollCreate: {
-			id32Bit: sys32epoll_create,
+			id32Bit: Sys32epoll_create,
 			name:    "epoll_create",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_mux_io"},
@@ -3888,7 +4032,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		EpollCtlOld: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "epoll_ctl_old",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_mux_io"},
@@ -3903,7 +4047,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		EpollWaitOld: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "epoll_wait_old",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_mux_io"},
@@ -3918,7 +4062,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		RemapFilePages: {
-			id32Bit: sys32remap_file_pages,
+			id32Bit: Sys32remap_file_pages,
 			name:    "remap_file_pages",
 			syscall: true,
 			sets:    []string{"syscalls"},
@@ -3939,7 +4083,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getdents64: {
-			id32Bit: sys32getdents64,
+			id32Bit: Sys32getdents64,
 			name:    "getdents64",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_dir_ops"},
@@ -3958,7 +4102,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SetTidAddress: {
-			id32Bit: sys32set_tid_address,
+			id32Bit: Sys32set_tid_address,
 			name:    "set_tid_address",
 			syscall: true,
 			sets:    []string{"syscalls", "proc"},
@@ -3975,7 +4119,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		RestartSyscall: {
-			id32Bit: sys32restart_syscall,
+			id32Bit: Sys32restart_syscall,
 			name:    "restart_syscall",
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
@@ -3990,7 +4134,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Semtimedop: {
-			id32Bit: sys32semtimedop_time64,
+			id32Bit: Sys32semtimedop_time64,
 			name:    "semtimedop",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_sem"},
@@ -4010,7 +4154,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fadvise64: {
-			id32Bit: sys32fadvise64,
+			id32Bit: Sys32fadvise64,
 			name:    "fadvise64",
 			syscall: true,
 			sets:    []string{"syscalls", "fs"},
@@ -4030,7 +4174,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		TimerCreate: {
-			id32Bit: sys32timer_create,
+			id32Bit: Sys32timer_create,
 			name:    "timer_create",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_timer"},
@@ -4049,7 +4193,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		TimerSettime: {
-			id32Bit: sys32timer_settime64,
+			id32Bit: Sys32timer_settime64,
 			name:    "timer_settime",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_timer"},
@@ -4069,7 +4213,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		TimerGettime: {
-			id32Bit: sys32timer_gettime64,
+			id32Bit: Sys32timer_gettime64,
 			name:    "timer_gettime",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_timer"},
@@ -4087,7 +4231,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		TimerGetoverrun: {
-			id32Bit: sys32timer_getoverrun,
+			id32Bit: Sys32timer_getoverrun,
 			name:    "timer_getoverrun",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_timer"},
@@ -4104,7 +4248,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		TimerDelete: {
-			id32Bit: sys32timer_delete,
+			id32Bit: Sys32timer_delete,
 			name:    "timer_delete",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_timer"},
@@ -4121,7 +4265,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ClockSettime: {
-			id32Bit: sys32clock_settime64,
+			id32Bit: Sys32clock_settime64,
 			name:    "clock_settime",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_clock"},
@@ -4139,7 +4283,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ClockGettime: {
-			id32Bit: sys32clock_gettime64,
+			id32Bit: Sys32clock_gettime64,
 			name:    "clock_gettime",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_clock"},
@@ -4157,7 +4301,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ClockGetres: {
-			id32Bit: sys32clock_getres_time64,
+			id32Bit: Sys32clock_getres_time64,
 			name:    "clock_getres",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_clock"},
@@ -4175,7 +4319,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ClockNanosleep: {
-			id32Bit: sys32clock_nanosleep_time64,
+			id32Bit: Sys32clock_nanosleep_time64,
 			name:    "clock_nanosleep",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_clock"},
@@ -4195,7 +4339,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ExitGroup: {
-			id32Bit: sys32exit_group,
+			id32Bit: Sys32exit_group,
 			name:    "exit_group",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_life"},
@@ -4212,7 +4356,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		EpollWait: {
-			id32Bit: sys32epoll_wait,
+			id32Bit: Sys32epoll_wait,
 			name:    "epoll_wait",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_mux_io"},
@@ -4232,7 +4376,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		EpollCtl: {
-			id32Bit: sys32epoll_ctl,
+			id32Bit: Sys32epoll_ctl,
 			name:    "epoll_ctl",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_mux_io"},
@@ -4252,7 +4396,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Tgkill: {
-			id32Bit: sys32tgkill,
+			id32Bit: Sys32tgkill,
 			name:    "tgkill",
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
@@ -4271,7 +4415,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Utimes: {
-			id32Bit: sys32utimes,
+			id32Bit: Sys32utimes,
 			name:    "utimes",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -4289,7 +4433,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Vserver: {
-			id32Bit: sys32vserver,
+			id32Bit: Sys32vserver,
 			name:    "vserver",
 			syscall: true,
 			sets:    []string{"syscalls"},
@@ -4304,7 +4448,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Mbind: {
-			id32Bit: sys32mbind,
+			id32Bit: Sys32mbind,
 			name:    "mbind",
 			syscall: true,
 			sets:    []string{"syscalls", "system", "system_numa"},
@@ -4326,7 +4470,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SetMempolicy: {
-			id32Bit: sys32set_mempolicy,
+			id32Bit: Sys32set_mempolicy,
 			name:    "set_mempolicy",
 			syscall: true,
 			sets:    []string{"syscalls", "system", "system_numa"},
@@ -4345,7 +4489,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		GetMempolicy: {
-			id32Bit: sys32get_mempolicy,
+			id32Bit: Sys32get_mempolicy,
 			name:    "get_mempolicy",
 			syscall: true,
 			sets:    []string{"syscalls", "system", "system_numa"},
@@ -4366,7 +4510,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		MqOpen: {
-			id32Bit: sys32mq_open,
+			id32Bit: Sys32mq_open,
 			name:    "mq_open",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_msgq"},
@@ -4386,7 +4530,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		MqUnlink: {
-			id32Bit: sys32mq_unlink,
+			id32Bit: Sys32mq_unlink,
 			name:    "mq_unlink",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_msgq"},
@@ -4403,7 +4547,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		MqTimedsend: {
-			id32Bit: sys32mq_timedsend_time64,
+			id32Bit: Sys32mq_timedsend_time64,
 			name:    "mq_timedsend",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_msgq"},
@@ -4424,7 +4568,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		MqTimedreceive: {
-			id32Bit: sys32mq_timedreceive_time64,
+			id32Bit: Sys32mq_timedreceive_time64,
 			name:    "mq_timedreceive",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_msgq"},
@@ -4445,7 +4589,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		MqNotify: {
-			id32Bit: sys32mq_notify,
+			id32Bit: Sys32mq_notify,
 			name:    "mq_notify",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_msgq"},
@@ -4463,7 +4607,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		MqGetsetattr: {
-			id32Bit: sys32mq_getsetattr,
+			id32Bit: Sys32mq_getsetattr,
 			name:    "mq_getsetattr",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_msgq"},
@@ -4482,7 +4626,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		KexecLoad: {
-			id32Bit: sys32kexec_load,
+			id32Bit: Sys32kexec_load,
 			name:    "kexec_load",
 			syscall: true,
 			sets:    []string{"syscalls", "system"},
@@ -4502,7 +4646,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Waitid: {
-			id32Bit: sys32waitid,
+			id32Bit: Sys32waitid,
 			name:    "waitid",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_life"},
@@ -4523,7 +4667,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		AddKey: {
-			id32Bit: sys32add_key,
+			id32Bit: Sys32add_key,
 			name:    "add_key",
 			syscall: true,
 			sets:    []string{"syscalls", "system", "system_keys"},
@@ -4544,7 +4688,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		RequestKey: {
-			id32Bit: sys32request_key,
+			id32Bit: Sys32request_key,
 			name:    "request_key",
 			syscall: true,
 			sets:    []string{"syscalls", "system", "system_keys"},
@@ -4564,7 +4708,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Keyctl: {
-			id32Bit: sys32keyctl,
+			id32Bit: Sys32keyctl,
 			name:    "keyctl",
 			syscall: true,
 			sets:    []string{"syscalls", "system", "system_keys"},
@@ -4585,7 +4729,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		IoprioSet: {
-			id32Bit: sys32ioprio_set,
+			id32Bit: Sys32ioprio_set,
 			name:    "ioprio_set",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_sched"},
@@ -4604,7 +4748,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		IoprioGet: {
-			id32Bit: sys32ioprio_get,
+			id32Bit: Sys32ioprio_get,
 			name:    "ioprio_get",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_sched"},
@@ -4622,7 +4766,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		InotifyInit: {
-			id32Bit: sys32inotify_init,
+			id32Bit: Sys32inotify_init,
 			name:    "inotify_init",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_monitor"},
@@ -4637,7 +4781,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		InotifyAddWatch: {
-			id32Bit: sys32inotify_add_watch,
+			id32Bit: Sys32inotify_add_watch,
 			name:    "inotify_add_watch",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_monitor"},
@@ -4656,7 +4800,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		InotifyRmWatch: {
-			id32Bit: sys32inotify_rm_watch,
+			id32Bit: Sys32inotify_rm_watch,
 			name:    "inotify_rm_watch",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_monitor"},
@@ -4674,7 +4818,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		MigratePages: {
-			id32Bit: sys32migrate_pages,
+			id32Bit: Sys32migrate_pages,
 			name:    "migrate_pages",
 			syscall: true,
 			sets:    []string{"syscalls", "system", "system_numa"},
@@ -4694,7 +4838,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Openat: {
-			id32Bit: sys32openat,
+			id32Bit: Sys32openat,
 			name:    "openat",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_ops"},
@@ -4714,7 +4858,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Mkdirat: {
-			id32Bit: sys32mkdirat,
+			id32Bit: Sys32mkdirat,
 			name:    "mkdirat",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_dir_ops"},
@@ -4733,7 +4877,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Mknodat: {
-			id32Bit: sys32mknodat,
+			id32Bit: Sys32mknodat,
 			name:    "mknodat",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_ops"},
@@ -4753,7 +4897,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fchownat: {
-			id32Bit: sys32fchownat,
+			id32Bit: Sys32fchownat,
 			name:    "fchownat",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
@@ -4774,7 +4918,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Futimesat: {
-			id32Bit: sys32futimesat,
+			id32Bit: Sys32futimesat,
 			name:    "futimesat",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -4793,7 +4937,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Newfstatat: {
-			id32Bit: sys32fstatat64,
+			id32Bit: Sys32fstatat64,
 			name:    "newfstatat",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -4813,7 +4957,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Unlinkat: {
-			id32Bit: sys32unlinkat,
+			id32Bit: Sys32unlinkat,
 			name:    "unlinkat",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_link_ops"},
@@ -4832,7 +4976,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Renameat: {
-			id32Bit: sys32renameat,
+			id32Bit: Sys32renameat,
 			name:    "renameat",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_ops"},
@@ -4852,7 +4996,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Linkat: {
-			id32Bit: sys32linkat,
+			id32Bit: Sys32linkat,
 			name:    "linkat",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_link_ops"},
@@ -4873,7 +5017,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Symlinkat: {
-			id32Bit: sys32symlinkat,
+			id32Bit: Sys32symlinkat,
 			name:    "symlinkat",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_link_ops"},
@@ -4892,7 +5036,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Readlinkat: {
-			id32Bit: sys32readlinkat,
+			id32Bit: Sys32readlinkat,
 			name:    "readlinkat",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_link_ops"},
@@ -4912,7 +5056,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fchmodat: {
-			id32Bit: sys32fchmodat,
+			id32Bit: Sys32fchmodat,
 			name:    "fchmodat",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
@@ -4932,7 +5076,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Faccessat: {
-			id32Bit: sys32faccessat,
+			id32Bit: Sys32faccessat,
 			name:    "faccessat",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -4952,7 +5096,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Pselect6: {
-			id32Bit: sys32pselect6_time64,
+			id32Bit: Sys32pselect6_time64,
 			name:    "pselect6",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_mux_io"},
@@ -4974,7 +5118,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Ppoll: {
-			id32Bit: sys32ppoll_time64,
+			id32Bit: Sys32ppoll_time64,
 			name:    "ppoll",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_mux_io"},
@@ -4995,7 +5139,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Unshare: {
-			id32Bit: sys32unshare,
+			id32Bit: Sys32unshare,
 			name:    "unshare",
 			syscall: true,
 			sets:    []string{"syscalls", "proc"},
@@ -5012,7 +5156,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SetRobustList: {
-			id32Bit: sys32set_robust_list,
+			id32Bit: Sys32set_robust_list,
 			name:    "set_robust_list",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_futex"},
@@ -5030,7 +5174,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		GetRobustList: {
-			id32Bit: sys32get_robust_list,
+			id32Bit: Sys32get_robust_list,
 			name:    "get_robust_list",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_futex"},
@@ -5049,7 +5193,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Splice: {
-			id32Bit: sys32splice,
+			id32Bit: Sys32splice,
 			name:    "splice",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_pipe"},
@@ -5071,7 +5215,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Tee: {
-			id32Bit: sys32tee,
+			id32Bit: Sys32tee,
 			name:    "tee",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_pipe"},
@@ -5091,7 +5235,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SyncFileRange: {
-			id32Bit: sys32sync_file_range,
+			id32Bit: Sys32sync_file_range,
 			name:    "sync_file_range",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_sync"},
@@ -5111,7 +5255,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Vmsplice: {
-			id32Bit: sys32vmsplice,
+			id32Bit: Sys32vmsplice,
 			name:    "vmsplice",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_pipe"},
@@ -5131,7 +5275,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		MovePages: {
-			id32Bit: sys32move_pages,
+			id32Bit: Sys32move_pages,
 			name:    "move_pages",
 			syscall: true,
 			sets:    []string{"syscalls", "system", "system_numa"},
@@ -5153,7 +5297,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Utimensat: {
-			id32Bit: sys32utimensat_time64,
+			id32Bit: Sys32utimensat_time64,
 			name:    "utimensat",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -5173,7 +5317,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		EpollPwait: {
-			id32Bit: sys32epoll_pwait,
+			id32Bit: Sys32epoll_pwait,
 			name:    "epoll_pwait",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_mux_io"},
@@ -5195,7 +5339,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Signalfd: {
-			id32Bit: sys32signalfd,
+			id32Bit: Sys32signalfd,
 			name:    "signalfd",
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
@@ -5214,7 +5358,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		TimerfdCreate: {
-			id32Bit: sys32timerfd_create,
+			id32Bit: Sys32timerfd_create,
 			name:    "timerfd_create",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_timer"},
@@ -5232,7 +5376,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Eventfd: {
-			id32Bit: sys32eventfd,
+			id32Bit: Sys32eventfd,
 			name:    "eventfd",
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
@@ -5250,7 +5394,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fallocate: {
-			id32Bit: sys32fallocate,
+			id32Bit: Sys32fallocate,
 			name:    "fallocate",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_ops"},
@@ -5270,7 +5414,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		TimerfdSettime: {
-			id32Bit: sys32timerfd_settime64,
+			id32Bit: Sys32timerfd_settime64,
 			name:    "timerfd_settime",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_timer"},
@@ -5290,7 +5434,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		TimerfdGettime: {
-			id32Bit: sys32timerfd_gettime64,
+			id32Bit: Sys32timerfd_gettime64,
 			name:    "timerfd_gettime",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_timer"},
@@ -5308,7 +5452,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Accept4: {
-			id32Bit: sys32accept4,
+			id32Bit: Sys32accept4,
 			name:    "accept4",
 			syscall: true,
 			sets:    []string{"syscalls", "net", "net_sock"},
@@ -5328,7 +5472,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Signalfd4: {
-			id32Bit: sys32signalfd4,
+			id32Bit: Sys32signalfd4,
 			name:    "signalfd4",
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
@@ -5348,7 +5492,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Eventfd2: {
-			id32Bit: sys32eventfd2,
+			id32Bit: Sys32eventfd2,
 			name:    "eventfd2",
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
@@ -5366,7 +5510,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		EpollCreate1: {
-			id32Bit: sys32epoll_create1,
+			id32Bit: Sys32epoll_create1,
 			name:    "epoll_create1",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_mux_io"},
@@ -5383,7 +5527,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Dup3: {
-			id32Bit: sys32dup3,
+			id32Bit: Sys32dup3,
 			name:    "dup3",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_fd_ops"},
@@ -5402,7 +5546,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Pipe2: {
-			id32Bit: sys32pipe2,
+			id32Bit: Sys32pipe2,
 			name:    "pipe2",
 			syscall: true,
 			sets:    []string{"syscalls", "ipc", "ipc_pipe"},
@@ -5420,7 +5564,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		InotifyInit1: {
-			id32Bit: sys32inotify_init1,
+			id32Bit: Sys32inotify_init1,
 			name:    "inotify_init1",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_monitor"},
@@ -5437,7 +5581,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Preadv: {
-			id32Bit: sys32preadv,
+			id32Bit: Sys32preadv,
 			name:    "preadv",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_read_write"},
@@ -5458,7 +5602,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Pwritev: {
-			id32Bit: sys32pwritev,
+			id32Bit: Sys32pwritev,
 			name:    "pwritev",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_read_write"},
@@ -5479,7 +5623,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		RtTgsigqueueinfo: {
-			id32Bit: sys32rt_tgsigqueueinfo,
+			id32Bit: Sys32rt_tgsigqueueinfo,
 			name:    "rt_tgsigqueueinfo",
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
@@ -5499,7 +5643,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		PerfEventOpen: {
-			id32Bit: sys32perf_event_open,
+			id32Bit: Sys32perf_event_open,
 			name:    "perf_event_open",
 			syscall: true,
 			sets:    []string{"syscalls", "system"},
@@ -5520,7 +5664,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Recvmmsg: {
-			id32Bit: sys32recvmmsg_time64,
+			id32Bit: Sys32recvmmsg_time64,
 			name:    "recvmmsg",
 			syscall: true,
 			sets:    []string{"syscalls", "net", "net_snd_rcv"},
@@ -5541,7 +5685,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		FanotifyInit: {
-			id32Bit: sys32fanotify_init,
+			id32Bit: Sys32fanotify_init,
 			name:    "fanotify_init",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_monitor"},
@@ -5559,7 +5703,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		FanotifyMark: {
-			id32Bit: sys32fanotify_mark,
+			id32Bit: Sys32fanotify_mark,
 			name:    "fanotify_mark",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_monitor"},
@@ -5580,7 +5724,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Prlimit64: {
-			id32Bit: sys32prlimit64,
+			id32Bit: Sys32prlimit64,
 			name:    "prlimit64",
 			syscall: true,
 			sets:    []string{"syscalls", "proc"},
@@ -5600,7 +5744,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NameToHandleAt: {
-			id32Bit: sys32name_to_handle_at,
+			id32Bit: Sys32name_to_handle_at,
 			name:    "name_to_handle_at",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_ops"},
@@ -5621,7 +5765,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		OpenByHandleAt: {
-			id32Bit: sys32open_by_handle_at,
+			id32Bit: Sys32open_by_handle_at,
 			name:    "open_by_handle_at",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_ops"},
@@ -5640,7 +5784,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ClockAdjtime: {
-			id32Bit: sys32clock_adjtime,
+			id32Bit: Sys32clock_adjtime,
 			name:    "clock_adjtime",
 			syscall: true,
 			sets:    []string{"syscalls", "time", "time_clock"},
@@ -5658,7 +5802,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Syncfs: {
-			id32Bit: sys32syncfs,
+			id32Bit: Sys32syncfs,
 			name:    "syncfs",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_sync"},
@@ -5675,7 +5819,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Sendmmsg: {
-			id32Bit: sys32sendmmsg,
+			id32Bit: Sys32sendmmsg,
 			name:    "sendmmsg",
 			syscall: true,
 			sets:    []string{"syscalls", "net", "net_snd_rcv"},
@@ -5695,7 +5839,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setns: {
-			id32Bit: sys32setns,
+			id32Bit: Sys32setns,
 			name:    "setns",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "proc"},
@@ -5713,7 +5857,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getcpu: {
-			id32Bit: sys32getcpu,
+			id32Bit: Sys32getcpu,
 			name:    "getcpu",
 			syscall: true,
 			sets:    []string{"syscalls", "system", "system_numa"},
@@ -5732,7 +5876,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ProcessVmReadv: {
-			id32Bit: sys32process_vm_readv,
+			id32Bit: Sys32process_vm_readv,
 			name:    "process_vm_readv",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "proc"},
@@ -5754,7 +5898,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ProcessVmWritev: {
-			id32Bit: sys32process_vm_writev,
+			id32Bit: Sys32process_vm_writev,
 			name:    "process_vm_writev",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "proc"},
@@ -5776,7 +5920,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Kcmp: {
-			id32Bit: sys32kcmp,
+			id32Bit: Sys32kcmp,
 			name:    "kcmp",
 			syscall: true,
 			sets:    []string{"syscalls", "proc"},
@@ -5797,7 +5941,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		FinitModule: {
-			id32Bit: sys32finit_module,
+			id32Bit: Sys32finit_module,
 			name:    "finit_module",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "system", "system_module"},
@@ -5816,7 +5960,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SchedSetattr: {
-			id32Bit: sys32sched_setattr,
+			id32Bit: Sys32sched_setattr,
 			name:    "sched_setattr",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_sched"},
@@ -5835,7 +5979,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SchedGetattr: {
-			id32Bit: sys32sched_getattr,
+			id32Bit: Sys32sched_getattr,
 			name:    "sched_getattr",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_sched"},
@@ -5855,7 +5999,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Renameat2: {
-			id32Bit: sys32renameat2,
+			id32Bit: Sys32renameat2,
 			name:    "renameat2",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_ops"},
@@ -5876,7 +6020,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Seccomp: {
-			id32Bit: sys32seccomp,
+			id32Bit: Sys32seccomp,
 			name:    "seccomp",
 			syscall: true,
 			sets:    []string{"syscalls", "proc"},
@@ -5895,7 +6039,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getrandom: {
-			id32Bit: sys32getrandom,
+			id32Bit: Sys32getrandom,
 			name:    "getrandom",
 			syscall: true,
 			sets:    []string{"syscalls", "fs"},
@@ -5914,7 +6058,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		MemfdCreate: {
-			id32Bit: sys32memfd_create,
+			id32Bit: Sys32memfd_create,
 			name:    "memfd_create",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "fs", "fs_file_ops"},
@@ -5932,7 +6076,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		KexecFileLoad: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "kexec_file_load",
 			syscall: true,
 			sets:    []string{"syscalls", "system"},
@@ -5953,7 +6097,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Bpf: {
-			id32Bit: sys32bpf,
+			id32Bit: Sys32bpf,
 			name:    "bpf",
 			syscall: true,
 			sets:    []string{"syscalls", "system"},
@@ -5972,7 +6116,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Execveat: {
-			id32Bit: sys32execveat,
+			id32Bit: Sys32execveat,
 			name:    "execveat",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_life"},
@@ -5994,7 +6138,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Userfaultfd: {
-			id32Bit: sys32userfaultfd,
+			id32Bit: Sys32userfaultfd,
 			name:    "userfaultfd",
 			syscall: true,
 			sets:    []string{"syscalls", "system"},
@@ -6011,7 +6155,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Membarrier: {
-			id32Bit: sys32membarrier,
+			id32Bit: Sys32membarrier,
 			name:    "membarrier",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_mem"},
@@ -6029,7 +6173,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Mlock2: {
-			id32Bit: sys32mlock2,
+			id32Bit: Sys32mlock2,
 			name:    "mlock2",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_mem"},
@@ -6048,7 +6192,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		CopyFileRange: {
-			id32Bit: sys32copy_file_range,
+			id32Bit: Sys32copy_file_range,
 			name:    "copy_file_range",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_read_write"},
@@ -6070,7 +6214,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Preadv2: {
-			id32Bit: sys32preadv2,
+			id32Bit: Sys32preadv2,
 			name:    "preadv2",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_read_write"},
@@ -6092,7 +6236,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Pwritev2: {
-			id32Bit: sys32pwritev2,
+			id32Bit: Sys32pwritev2,
 			name:    "pwritev2",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_read_write"},
@@ -6114,7 +6258,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		PkeyMprotect: {
-			id32Bit: sys32pkey_mprotect,
+			id32Bit: Sys32pkey_mprotect,
 			name:    "pkey_mprotect",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_mem"},
@@ -6134,7 +6278,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		PkeyAlloc: {
-			id32Bit: sys32pkey_alloc,
+			id32Bit: Sys32pkey_alloc,
 			name:    "pkey_alloc",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_mem"},
@@ -6152,7 +6296,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		PkeyFree: {
-			id32Bit: sys32pkey_free,
+			id32Bit: Sys32pkey_free,
 			name:    "pkey_free",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_mem"},
@@ -6169,7 +6313,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Statx: {
-			id32Bit: sys32statx,
+			id32Bit: Sys32statx,
 			name:    "statx",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -6190,7 +6334,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		IoPgetevents: {
-			id32Bit: sys32io_pgetevents_time64,
+			id32Bit: Sys32io_pgetevents_time64,
 			name:    "io_pgetevents",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_async_io"},
@@ -6212,7 +6356,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Rseq: {
-			id32Bit: sys32rseq,
+			id32Bit: Sys32rseq,
 			name:    "rseq",
 			syscall: true,
 			sets:    []string{"syscalls"},
@@ -6232,7 +6376,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		PidfdSendSignal: {
-			id32Bit: sys32pidfd_send_signal,
+			id32Bit: Sys32pidfd_send_signal,
 			name:    "pidfd_send_signal",
 			syscall: true,
 			sets:    []string{"syscalls", "signals"},
@@ -6252,7 +6396,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		IoUringSetup: {
-			id32Bit: sys32io_uring_setup,
+			id32Bit: Sys32io_uring_setup,
 			name:    "io_uring_setup",
 			syscall: true,
 			sets:    []string{"syscalls"},
@@ -6270,7 +6414,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		IoUringEnter: {
-			id32Bit: sys32io_uring_enter,
+			id32Bit: Sys32io_uring_enter,
 			name:    "io_uring_enter",
 			syscall: true,
 			sets:    []string{"syscalls"},
@@ -6291,7 +6435,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		IoUringRegister: {
-			id32Bit: sys32io_uring_register,
+			id32Bit: Sys32io_uring_register,
 			name:    "io_uring_register",
 			syscall: true,
 			sets:    []string{"syscalls"},
@@ -6311,7 +6455,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		OpenTree: {
-			id32Bit: sys32open_tree,
+			id32Bit: Sys32open_tree,
 			name:    "open_tree",
 			syscall: true,
 			sets:    []string{"syscalls"},
@@ -6330,7 +6474,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		MoveMount: {
-			id32Bit: sys32move_mount,
+			id32Bit: Sys32move_mount,
 			name:    "move_mount",
 			syscall: true,
 			sets:    []string{"default", "syscalls", "fs"},
@@ -6351,7 +6495,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fsopen: {
-			id32Bit: sys32fsopen,
+			id32Bit: Sys32fsopen,
 			name:    "fsopen",
 			syscall: true,
 			sets:    []string{"syscalls", "fs"},
@@ -6369,7 +6513,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fsconfig: {
-			id32Bit: sys32fsconfig,
+			id32Bit: Sys32fsconfig,
 			name:    "fsconfig",
 			syscall: true,
 			sets:    []string{"syscalls", "fs"},
@@ -6390,7 +6534,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fsmount: {
-			id32Bit: sys32fsmount,
+			id32Bit: Sys32fsmount,
 			name:    "fsmount",
 			syscall: true,
 			sets:    []string{"syscalls", "fs"},
@@ -6409,7 +6553,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fspick: {
-			id32Bit: sys32fspick,
+			id32Bit: Sys32fspick,
 			name:    "fspick",
 			syscall: true,
 			sets:    []string{"syscalls", "fs"},
@@ -6428,7 +6572,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		PidfdOpen: {
-			id32Bit: sys32pidfd_open,
+			id32Bit: Sys32pidfd_open,
 			name:    "pidfd_open",
 			syscall: true,
 			sets:    []string{"syscalls"},
@@ -6446,7 +6590,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Clone3: {
-			id32Bit: sys32clone3,
+			id32Bit: Sys32clone3,
 			name:    "clone3",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "proc_life"},
@@ -6464,7 +6608,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		CloseRange: {
-			id32Bit: sys32close_range,
+			id32Bit: Sys32close_range,
 			name:    "close_range",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_ops"},
@@ -6482,7 +6626,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Openat2: {
-			id32Bit: sys32openat2,
+			id32Bit: Sys32openat2,
 			name:    "openat2",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_ops"},
@@ -6502,7 +6646,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		PidfdGetfd: {
-			id32Bit: sys32pidfd_getfd,
+			id32Bit: Sys32pidfd_getfd,
 			name:    "pidfd_getfd",
 			syscall: true,
 			sets:    []string{"syscalls"},
@@ -6521,7 +6665,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Faccessat2: {
-			id32Bit: sys32faccessat2,
+			id32Bit: Sys32faccessat2,
 			name:    "faccessat2",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_file_attr"},
@@ -6541,7 +6685,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ProcessMadvise: {
-			id32Bit: sys32process_madvise,
+			id32Bit: Sys32process_madvise,
 			name:    "process_madvise",
 			syscall: true,
 			sets:    []string{"syscalls"},
@@ -6562,7 +6706,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		EpollPwait2: {
-			id32Bit: sys32epoll_pwait2,
+			id32Bit: Sys32epoll_pwait2,
 			name:    "epoll_pwait2",
 			syscall: true,
 			sets:    []string{"syscalls", "fs", "fs_mux_io"},
@@ -6583,7 +6727,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		MountSetatt: {
-			id32Bit: sys32mount_setattr,
+			id32Bit: Sys32mount_setattr,
 			name:    "mount_setattr",
 			syscall: true,
 			sets:    []string{"syscalls", "fs"},
@@ -6604,7 +6748,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		QuotactlFd: {
-			id32Bit: sys32quotactl_fd,
+			id32Bit: Sys32quotactl_fd,
 			name:    "quotactl_fd",
 			syscall: true,
 			sets:    []string{"syscalls", "fs"},
@@ -6624,7 +6768,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		LandlockCreateRuleset: {
-			id32Bit: sys32landlock_create_ruleset,
+			id32Bit: Sys32landlock_create_ruleset,
 			name:    "landlock_create_ruleset",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "fs"},
@@ -6643,7 +6787,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		LandlockAddRule: {
-			id32Bit: sys32landlock_add_rule,
+			id32Bit: Sys32landlock_add_rule,
 			name:    "landlock_add_rule",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "fs"},
@@ -6663,7 +6807,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		LandloclRestrictSet: {
-			id32Bit: sys32landlock_restrict_self,
+			id32Bit: Sys32landlock_restrict_self,
 			name:    "landlock_restrict_self",
 			syscall: true,
 			sets:    []string{"syscalls", "proc", "fs"},
@@ -6681,7 +6825,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		MemfdSecret: {
-			id32Bit: sys32memfd_secret,
+			id32Bit: Sys32memfd_secret,
 			name:    "memfd_secret",
 			syscall: true,
 			sets:    []string{"syscalls"},
@@ -6698,7 +6842,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ProcessMrelease: {
-			id32Bit: sys32process_mrelease,
+			id32Bit: Sys32process_mrelease,
 			name:    "process_mrelease",
 			syscall: true,
 			sets:    []string{"syscalls"},
@@ -6716,7 +6860,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Waitpid: {
-			id32Bit: sys32waitpid,
+			id32Bit: Sys32waitpid,
 			name:    "waitpid",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -6735,7 +6879,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Oldfstat: {
-			id32Bit: sys32oldfstat,
+			id32Bit: Sys32oldfstat,
 			name:    "oldfstat",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -6750,7 +6894,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Break: {
-			id32Bit: sys32break,
+			id32Bit: Sys32break,
 			name:    "break",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -6765,7 +6909,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Oldstat: {
-			id32Bit: sys32oldstat,
+			id32Bit: Sys32oldstat,
 			name:    "oldstat",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -6783,7 +6927,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Umount: {
-			id32Bit: sys32umount,
+			id32Bit: Sys32umount,
 			name:    "umount",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -6800,7 +6944,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Stime: {
-			id32Bit: sys32stime,
+			id32Bit: Sys32stime,
 			name:    "stime",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -6817,7 +6961,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Stty: {
-			id32Bit: sys32stty,
+			id32Bit: Sys32stty,
 			name:    "stty",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -6832,7 +6976,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Gtty: {
-			id32Bit: sys32gtty,
+			id32Bit: Sys32gtty,
 			name:    "gtty",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -6847,7 +6991,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Nice: {
-			id32Bit: sys32nice,
+			id32Bit: Sys32nice,
 			name:    "nice",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -6864,7 +7008,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Ftime: {
-			id32Bit: sys32ftime,
+			id32Bit: Sys32ftime,
 			name:    "ftime",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -6879,7 +7023,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Prof: {
-			id32Bit: sys32prof,
+			id32Bit: Sys32prof,
 			name:    "prof",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -6894,7 +7038,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Signal: {
-			id32Bit: sys32signal,
+			id32Bit: Sys32signal,
 			name:    "signal",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -6912,7 +7056,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Lock: {
-			id32Bit: sys32lock,
+			id32Bit: Sys32lock,
 			name:    "lock",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -6927,7 +7071,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Mpx: {
-			id32Bit: sys32mpx,
+			id32Bit: Sys32mpx,
 			name:    "mpx",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -6942,7 +7086,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Ulimit: {
-			id32Bit: sys32ulimit,
+			id32Bit: Sys32ulimit,
 			name:    "ulimit",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -6957,7 +7101,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Oldolduname: {
-			id32Bit: sys32oldolduname,
+			id32Bit: Sys32oldolduname,
 			name:    "oldolduname",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -6974,7 +7118,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Sigaction: {
-			id32Bit: sys32sigaction,
+			id32Bit: Sys32sigaction,
 			name:    "sigaction",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -6993,7 +7137,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Sgetmask: {
-			id32Bit: sys32sgetmask,
+			id32Bit: Sys32sgetmask,
 			name:    "sgetmask",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7008,7 +7152,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Ssetmask: {
-			id32Bit: sys32ssetmask,
+			id32Bit: Sys32ssetmask,
 			name:    "ssetmask",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7025,7 +7169,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Sigsuspend: {
-			id32Bit: sys32sigsuspend,
+			id32Bit: Sys32sigsuspend,
 			name:    "sigsuspend",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7042,7 +7186,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Sigpending: {
-			id32Bit: sys32sigpending,
+			id32Bit: Sys32sigpending,
 			name:    "sigpending",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7059,7 +7203,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Oldlstat: {
-			id32Bit: sys32oldlstat,
+			id32Bit: Sys32oldlstat,
 			name:    "oldlstat",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7077,7 +7221,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Readdir: {
-			id32Bit: sys32readdir,
+			id32Bit: Sys32readdir,
 			name:    "readdir",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7096,7 +7240,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Profil: {
-			id32Bit: sys32profil,
+			id32Bit: Sys32profil,
 			name:    "profil",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7111,7 +7255,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Socketcall: {
-			id32Bit: sys32socketcall,
+			id32Bit: Sys32socketcall,
 			name:    "socketcall",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7129,7 +7273,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Olduname: {
-			id32Bit: sys32olduname,
+			id32Bit: Sys32olduname,
 			name:    "olduname",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7146,7 +7290,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Idle: {
-			id32Bit: sys32idle,
+			id32Bit: Sys32idle,
 			name:    "idle",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7161,7 +7305,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Vm86old: {
-			id32Bit: sys32vm86old,
+			id32Bit: Sys32vm86old,
 			name:    "vm86old",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7178,7 +7322,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Ipc: {
-			id32Bit: sys32ipc,
+			id32Bit: Sys32ipc,
 			name:    "ipc",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7200,7 +7344,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Sigreturn: {
-			id32Bit: sys32sigreturn,
+			id32Bit: Sys32sigreturn,
 			name:    "sigreturn",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7215,7 +7359,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Sigprocmask: {
-			id32Bit: sys32sigprocmask,
+			id32Bit: Sys32sigprocmask,
 			name:    "sigprocmask",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7234,7 +7378,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Bdflush: {
-			id32Bit: sys32bdflush,
+			id32Bit: Sys32bdflush,
 			name:    "bdflush",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7249,7 +7393,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Afs_syscall: {
-			id32Bit: sys32afs_syscall,
+			id32Bit: Sys32afs_syscall,
 			name:    "afs_syscall",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7264,7 +7408,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Llseek: {
-			id32Bit: sys32_llseek,
+			id32Bit: Sys32_llseek,
 			name:    "llseek",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7285,7 +7429,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		OldSelect: {
-			id32Bit: sys32select,
+			id32Bit: Sys32select,
 			name:    "old_select",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7306,7 +7450,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Vm86: {
-			id32Bit: sys32vm86,
+			id32Bit: Sys32vm86,
 			name:    "vm86",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7324,7 +7468,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		OldGetrlimit: {
-			id32Bit: sys32getrlimit,
+			id32Bit: Sys32getrlimit,
 			name:    "old_getrlimit",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7342,7 +7486,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Mmap2: {
-			id32Bit: sys32mmap2,
+			id32Bit: Sys32mmap2,
 			name:    "mmap2",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7364,7 +7508,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Truncate64: {
-			id32Bit: sys32truncate64,
+			id32Bit: Sys32truncate64,
 			name:    "truncate64",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7382,7 +7526,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Ftruncate64: {
-			id32Bit: sys32ftruncate64,
+			id32Bit: Sys32ftruncate64,
 			name:    "ftruncate64",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7400,7 +7544,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Stat64: {
-			id32Bit: sys32stat64,
+			id32Bit: Sys32stat64,
 			name:    "stat64",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7418,7 +7562,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Lstat64: {
-			id32Bit: sys32lstat64,
+			id32Bit: Sys32lstat64,
 			name:    "lstat64",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7436,7 +7580,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fstat64: {
-			id32Bit: sys32fstat64,
+			id32Bit: Sys32fstat64,
 			name:    "fstat64",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7454,7 +7598,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Lchown16: {
-			id32Bit: sys32lchown,
+			id32Bit: Sys32lchown,
 			name:    "lchown16",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7473,7 +7617,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getuid16: {
-			id32Bit: sys32getuid,
+			id32Bit: Sys32getuid,
 			name:    "getuid16",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7488,7 +7632,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getgid16: {
-			id32Bit: sys32getgid,
+			id32Bit: Sys32getgid,
 			name:    "getgid16",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7503,7 +7647,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Geteuid16: {
-			id32Bit: sys32geteuid,
+			id32Bit: Sys32geteuid,
 			name:    "geteuid16",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7518,7 +7662,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getegid16: {
-			id32Bit: sys32getegid,
+			id32Bit: Sys32getegid,
 			name:    "getegid16",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7533,7 +7677,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setreuid16: {
-			id32Bit: sys32setreuid,
+			id32Bit: Sys32setreuid,
 			name:    "setreuid16",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7551,7 +7695,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setregid16: {
-			id32Bit: sys32setregid,
+			id32Bit: Sys32setregid,
 			name:    "setregid16",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7569,7 +7713,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getgroups16: {
-			id32Bit: sys32getgroups,
+			id32Bit: Sys32getgroups,
 			name:    "getgroups16",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7587,7 +7731,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setgroups16: {
-			id32Bit: sys32setgroups,
+			id32Bit: Sys32setgroups,
 			name:    "setgroups16",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7605,7 +7749,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fchown16: {
-			id32Bit: sys32fchown,
+			id32Bit: Sys32fchown,
 			name:    "fchown16",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7624,7 +7768,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setresuid16: {
-			id32Bit: sys32setresuid,
+			id32Bit: Sys32setresuid,
 			name:    "setresuid16",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7643,7 +7787,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getresuid16: {
-			id32Bit: sys32getresuid,
+			id32Bit: Sys32getresuid,
 			name:    "getresuid16",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7662,7 +7806,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setresgid16: {
-			id32Bit: sys32setresgid,
+			id32Bit: Sys32setresgid,
 			name:    "setresgid16",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7681,7 +7825,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Getresgid16: {
-			id32Bit: sys32getresgid,
+			id32Bit: Sys32getresgid,
 			name:    "getresgid16",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7700,7 +7844,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Chown16: {
-			id32Bit: sys32chown,
+			id32Bit: Sys32chown,
 			name:    "chown16",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7719,7 +7863,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setuid16: {
-			id32Bit: sys32setuid,
+			id32Bit: Sys32setuid,
 			name:    "setuid16",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7736,7 +7880,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setgid16: {
-			id32Bit: sys32setgid,
+			id32Bit: Sys32setgid,
 			name:    "setgid16",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7753,7 +7897,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setfsuid16: {
-			id32Bit: sys32setfsuid,
+			id32Bit: Sys32setfsuid,
 			name:    "setfsuid16",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7770,7 +7914,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Setfsgid16: {
-			id32Bit: sys32setfsgid,
+			id32Bit: Sys32setfsgid,
 			name:    "setfsgid16",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7787,7 +7931,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fcntl64: {
-			id32Bit: sys32fcntl64,
+			id32Bit: Sys32fcntl64,
 			name:    "fcntl64",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7806,7 +7950,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Sendfile32: {
-			id32Bit: sys32sendfile,
+			id32Bit: Sys32sendfile,
 			name:    "sendfile32",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7826,7 +7970,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Statfs64: {
-			id32Bit: sys32statfs64,
+			id32Bit: Sys32statfs64,
 			name:    "statfs64",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7845,7 +7989,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fstatfs64: {
-			id32Bit: sys32fstatfs64,
+			id32Bit: Sys32fstatfs64,
 			name:    "fstatfs64",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7864,7 +8008,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Fadvise64_64: {
-			id32Bit: sys32fadvise64_64,
+			id32Bit: Sys32fadvise64_64,
 			name:    "fadvise64_64",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7884,7 +8028,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ClockGettime32: {
-			id32Bit: sys32clock_gettime,
+			id32Bit: Sys32clock_gettime,
 			name:    "clock_gettime32",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7902,7 +8046,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ClockSettime32: {
-			id32Bit: sys32clock_settime,
+			id32Bit: Sys32clock_settime,
 			name:    "clock_settime32",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7920,7 +8064,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ClockAdjtime64: {
-			id32Bit: sys32clock_adjtime64,
+			id32Bit: Sys32clock_adjtime64,
 			name:    "clock_adjtime64",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7935,7 +8079,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ClockGetresTime32: {
-			id32Bit: sys32clock_getres,
+			id32Bit: Sys32clock_getres,
 			name:    "clock_getres_time32",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7953,7 +8097,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ClockNanosleepTime32: {
-			id32Bit: sys32clock_nanosleep,
+			id32Bit: Sys32clock_nanosleep,
 			name:    "clock_nanosleep_time32",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7973,7 +8117,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		TimerGettime32: {
-			id32Bit: sys32timer_gettime,
+			id32Bit: Sys32timer_gettime,
 			name:    "timer_gettime32",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -7991,7 +8135,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		TimerSettime32: {
-			id32Bit: sys32timer_settime,
+			id32Bit: Sys32timer_settime,
 			name:    "timer_settime32",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -8011,7 +8155,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		TimerfdGettime32: {
-			id32Bit: sys32timerfd_gettime,
+			id32Bit: Sys32timerfd_gettime,
 			name:    "timerfd_gettime32",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -8029,7 +8173,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		TimerfdSettime32: {
-			id32Bit: sys32timerfd_settime,
+			id32Bit: Sys32timerfd_settime,
 			name:    "timerfd_settime32",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -8049,7 +8193,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		UtimensatTime32: {
-			id32Bit: sys32utimensat,
+			id32Bit: Sys32utimensat,
 			name:    "utimensat_time32",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -8069,7 +8213,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		Pselect6Time32: {
-			id32Bit: sys32pselect6,
+			id32Bit: Sys32pselect6,
 			name:    "pselect6_time32",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -8091,7 +8235,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		PpollTime32: {
-			id32Bit: sys32ppoll,
+			id32Bit: Sys32ppoll,
 			name:    "ppoll_time32",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -8112,7 +8256,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		IoPgeteventsTime32: {
-			id32Bit: sys32io_pgetevents,
+			id32Bit: Sys32io_pgetevents,
 			name:    "io_pgetevents_time32",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -8127,7 +8271,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		RecvmmsgTime32: {
-			id32Bit: sys32recvmmsg,
+			id32Bit: Sys32recvmmsg,
 			name:    "recvmmsg_time32",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -8148,7 +8292,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		MqTimedsendTime32: {
-			id32Bit: sys32mq_timedsend,
+			id32Bit: Sys32mq_timedsend,
 			name:    "mq_timedsend_time32",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -8169,7 +8313,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		MqTimedreceiveTime32: {
-			id32Bit: sys32mq_timedreceive,
+			id32Bit: Sys32mq_timedreceive,
 			name:    "mq_timedreceive_time32",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -8190,7 +8334,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		RtSigtimedwaitTime32: {
-			id32Bit: sys32rt_sigtimedwait,
+			id32Bit: Sys32rt_sigtimedwait,
 			name:    "rt_sigtimedwait_time32",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -8210,7 +8354,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		FutexTime32: {
-			id32Bit: sys32futex,
+			id32Bit: Sys32futex,
 			name:    "futex_time32",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -8232,7 +8376,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SchedRrGetInterval32: {
-			id32Bit: sys32sched_rr_get_interval,
+			id32Bit: Sys32sched_rr_get_interval,
 			name:    "sched_rr_get_interval_time32",
 			syscall: true,
 			sets:    []string{"syscalls", "32bit_unique"},
@@ -8253,7 +8397,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 		// End of Syscalls
 		//
 		SysEnter: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "sys_enter",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8266,7 +8410,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SysExit: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "sys_exit",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8279,7 +8423,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SchedProcessFork: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "sched_process_fork",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8300,7 +8444,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SchedProcessExec: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "sched_process_exec",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8343,7 +8487,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SchedProcessExit: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "sched_process_exit",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8361,7 +8505,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SchedSwitch: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "sched_switch",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8378,7 +8522,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		DoExit: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "do_exit",
 			dependencies: Dependencies{
 				Probes: []Probe{{Handle: probes.DoExit, Required: true}},
@@ -8387,7 +8531,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{},
 		},
 		CapCapable: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "cap_capable",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8400,7 +8544,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		VfsWrite: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "vfs_write",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8418,7 +8562,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		VfsWritev: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "vfs_writev",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8436,7 +8580,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		MemProtAlert: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "mem_prot_alert",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8466,7 +8610,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		CommitCreds: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "commit_creds",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8480,7 +8624,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SwitchTaskNS: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "switch_task_ns",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8499,7 +8643,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		MagicWrite: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "magic_write",
 			docPath: "security_alerts/magic_write.md",
 			dependencies: Dependencies{
@@ -8521,7 +8665,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		CgroupAttachTask: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "cgroup_attach_task",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8536,7 +8680,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		CgroupMkdir: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "cgroup_mkdir",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8551,7 +8695,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		CgroupRmdir: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "cgroup_rmdir",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8566,7 +8710,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecurityBprmCheck: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_bprm_check",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8581,7 +8725,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecurityFileOpen: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_file_open",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8611,7 +8755,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecurityInodeUnlink: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_inode_unlink",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8627,7 +8771,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecuritySocketCreate: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_socket_create",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8643,7 +8787,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecuritySocketListen: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_socket_listen",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8662,7 +8806,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecuritySocketConnect: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_socket_connect",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8680,7 +8824,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecuritySocketAccept: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_socket_accept",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8698,7 +8842,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecuritySocketBind: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_socket_bind",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8716,7 +8860,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecuritySocketSetsockopt: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_socket_setsockopt",
 			docPath: "lsm_hooks/security_socket_setsockopt.md",
 			dependencies: Dependencies{
@@ -8737,7 +8881,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecuritySbMount: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_sb_mount",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8753,7 +8897,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecurityBPF: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_bpf",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8766,7 +8910,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecurityBPFMap: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_bpf_map",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8780,7 +8924,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecurityKernelReadFile: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_kernel_read_file",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8797,7 +8941,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecurityPostReadFile: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_kernel_post_read_file",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8812,7 +8956,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecurityInodeMknod: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_inode_mknod",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8827,7 +8971,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecurityInodeSymlinkEventId: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_inode_symlink",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8841,7 +8985,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecurityMmapFile: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_mmap_file",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8860,7 +9004,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		DoMmap: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "do_mmap",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8883,7 +9027,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecurityFileMprotect: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_file_mprotect",
 			docPath: "lsm_hooks/security_file_mprotect.md",
 			dependencies: Dependencies{
@@ -8907,7 +9051,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		InitNamespaces: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "init_namespaces",
 			sets:    []string{},
 			dependencies: Dependencies{
@@ -8931,7 +9075,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SocketDup: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "socket_dup",
 			dependencies: Dependencies{
 				TailCalls: []TailCall{
@@ -8948,7 +9092,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		HiddenInodes: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "hidden_inodes",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8961,7 +9105,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		KernelWrite: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "__kernel_write",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -8979,7 +9123,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		DirtyPipeSplice: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "dirty_pipe_splice",
 			sets:    []string{},
 			dependencies: Dependencies{
@@ -9002,7 +9146,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ContainerCreate: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "container_create",
 			dependencies: Dependencies{
 				Events: []ID{CgroupMkdir},
@@ -9022,7 +9166,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ContainerRemove: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "container_remove",
 			dependencies: Dependencies{
 				Events: []ID{CgroupRmdir},
@@ -9034,7 +9178,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ExistingContainer: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "existing_container",
 			sets:    []string{"containers"},
 			params: []trace.ArgMeta{
@@ -9051,7 +9195,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ProcCreate: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "proc_create",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9065,7 +9209,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		KprobeAttach: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "kprobe_attach",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9081,7 +9225,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		CallUsermodeHelper: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "call_usermodehelper",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9097,7 +9241,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		DebugfsCreateFile: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "debugfs_create_file",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9113,7 +9257,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		PrintSyscallTable: {
-			id32Bit:  sys32undefined,
+			id32Bit:  Sys32Undefined,
 			name:     "print_syscall_table",
 			internal: true,
 			dependencies: Dependencies{
@@ -9131,7 +9275,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		HiddenKernelModule: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "hidden_kernel_module",
 			dependencies: Dependencies{
 				Events: []ID{
@@ -9146,7 +9290,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		HiddenKernelModuleSeeker: {
-			id32Bit:  sys32undefined,
+			id32Bit:  Sys32Undefined,
 			name:     "hidden_kernel_module_seeker",
 			internal: true,
 			dependencies: Dependencies{
@@ -9180,7 +9324,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		HookedSyscalls: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "hooked_syscalls",
 			dependencies: Dependencies{
 				KSymbols: []KSymbol{
@@ -9204,7 +9348,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		DebugfsCreateDir: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "debugfs_create_dir",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9218,7 +9362,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		DeviceAdd: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "device_add",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9232,7 +9376,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		RegisterChrdev: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "register_chrdev",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9249,7 +9393,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SharedObjectLoaded: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "shared_object_loaded",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9271,7 +9415,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SymbolsLoaded: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "symbols_loaded",
 			docPath: "security_alerts/symbols_load.md",
 			dependencies: Dependencies{
@@ -9287,7 +9431,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SymbolsCollision: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "symbols_collision",
 			docPath: "security_alerts/symbols_collision.md",
 			dependencies: Dependencies{
@@ -9304,7 +9448,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		CaptureFileWrite: {
-			id32Bit:  sys32undefined,
+			id32Bit:  Sys32Undefined,
 			name:     "capture_file_write",
 			internal: true,
 			dependencies: Dependencies{
@@ -9328,7 +9472,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		CaptureFileRead: {
-			id32Bit:  sys32undefined,
+			id32Bit:  Sys32Undefined,
 			name:     "capture_file_read",
 			internal: true,
 			dependencies: Dependencies{
@@ -9349,7 +9493,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		CaptureExec: {
-			id32Bit:  sys32undefined,
+			id32Bit:  Sys32Undefined,
 			name:     "capture_exec",
 			internal: true,
 			dependencies: Dependencies{
@@ -9364,7 +9508,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		CaptureModule: {
-			id32Bit:  sys32undefined,
+			id32Bit:  Sys32Undefined,
 			name:     "capture_module",
 			internal: true,
 			dependencies: Dependencies{
@@ -9384,7 +9528,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		CaptureMem: {
-			id32Bit:  sys32undefined,
+			id32Bit:  Sys32Undefined,
 			name:     "capture_mem",
 			internal: true,
 			dependencies: Dependencies{
@@ -9394,7 +9538,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		CaptureBpf: {
-			id32Bit:  sys32undefined,
+			id32Bit:  Sys32Undefined,
 			name:     "capture_bpf",
 			internal: true,
 			dependencies: Dependencies{
@@ -9407,7 +9551,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		DoInitModule: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "do_init_module",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9423,7 +9567,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ModuleLoad: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "module_load",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9438,7 +9582,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ModuleFree: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "module_free",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9453,7 +9597,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SocketAccept: {
-			id32Bit:  sys32undefined,
+			id32Bit:  Sys32Undefined,
 			name:     "socket_accept",
 			internal: false,
 			dependencies: Dependencies{
@@ -9476,7 +9620,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 				{Type: "struct sockaddr*", Name: "remote_addr"}},
 		},
 		LoadElfPhdrs: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "load_elf_phdrs",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9491,7 +9635,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		HookedProcFops: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "hooked_proc_fops",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9516,7 +9660,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		PrintNetSeqOps: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "print_net_seq_ops",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9539,7 +9683,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		HookedSeqOps: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "hooked_seq_ops",
 			dependencies: Dependencies{
 				KSymbols: []KSymbol{
@@ -9562,7 +9706,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		TaskRename: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "task_rename",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9576,7 +9720,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecurityInodeRename: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_inode_rename",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9590,7 +9734,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		DoSigaction: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "do_sigaction",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9613,7 +9757,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		BpfAttach: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "bpf_attach",
 			docPath: "docs/events/builtin/extra/bpf_attach.md",
 			dependencies: Dependencies{
@@ -9638,7 +9782,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		KallsymsLookupName: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "kallsyms_lookup_name",
 			docPath: "kprobes/kallsyms_lookup_name.md",
 			dependencies: Dependencies{
@@ -9654,7 +9798,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		PrintMemDump: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "print_mem_dump",
 			sets:    []string{},
 			dependencies: Dependencies{
@@ -9682,7 +9826,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		VfsRead: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "vfs_read",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9700,7 +9844,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		VfsReadv: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "vfs_readv",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9718,7 +9862,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		VfsUtimes: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "vfs_utimes",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9736,7 +9880,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		DoTruncate: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "do_truncate",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9752,7 +9896,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		FileModification: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "file_modification",
 			docPath: "kprobes/file_modification.md",
 			sets:    []string{},
@@ -9775,7 +9919,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		InotifyWatch: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "inotify_watch",
 			dependencies: Dependencies{
 				Probes: []Probe{
@@ -9791,7 +9935,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		SecurityBpfProg: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "security_bpf_prog",
 			docPath: "docs/events/builtin/extra/security_bpf_prog.md",
 			dependencies: Dependencies{
@@ -9812,7 +9956,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		ProcessExecuteFailed: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "process_execute_failed",
 			sets:    []string{"proc"},
 			dependencies: Dependencies{
@@ -9845,7 +9989,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 		// Begin of Network Protocol Event Types
 		//
 		NetPacketBase: {
-			id32Bit:  sys32undefined,
+			id32Bit:  Sys32Undefined,
 			name:     "net_packet_base",
 			internal: true,
 			dependencies: Dependencies{
@@ -9869,7 +10013,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			params: []trace.ArgMeta{},
 		},
 		NetPacketIPBase: {
-			id32Bit:  sys32undefined,
+			id32Bit:  Sys32Undefined,
 			name:     "net_packet_ip_base",
 			internal: true,
 			dependencies: Dependencies{
@@ -9883,7 +10027,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NetPacketIPv4: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "net_packet_ipv4",
 			dependencies: Dependencies{
 				Events: []ID{
@@ -9898,7 +10042,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NetPacketIPv6: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "net_packet_ipv6",
 			dependencies: Dependencies{
 				Events: []ID{
@@ -9913,7 +10057,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NetPacketTCPBase: {
-			id32Bit:  sys32undefined,
+			id32Bit:  Sys32Undefined,
 			name:     "net_packet_tcp_base",
 			internal: true,
 			dependencies: Dependencies{
@@ -9927,7 +10071,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NetPacketTCP: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "net_packet_tcp",
 			dependencies: Dependencies{
 				Events: []ID{
@@ -9944,7 +10088,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NetPacketUDPBase: {
-			id32Bit:  sys32undefined,
+			id32Bit:  Sys32Undefined,
 			name:     "net_packet_udp_base",
 			internal: true,
 			dependencies: Dependencies{
@@ -9958,7 +10102,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NetPacketUDP: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "net_packet_udp",
 			dependencies: Dependencies{
 				Events: []ID{
@@ -9975,7 +10119,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NetPacketICMPBase: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "net_packet_icmp_base",
 			dependencies: Dependencies{
 				Events: []ID{
@@ -9989,7 +10133,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NetPacketICMP: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "net_packet_icmp",
 			dependencies: Dependencies{
 				Events: []ID{
@@ -10004,7 +10148,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NetPacketICMPv6Base: {
-			id32Bit:  sys32undefined,
+			id32Bit:  Sys32Undefined,
 			name:     "net_packet_icmpv6_base",
 			internal: true,
 			dependencies: Dependencies{
@@ -10018,7 +10162,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NetPacketICMPv6: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "net_packet_icmpv6",
 			dependencies: Dependencies{
 				Events: []ID{
@@ -10033,7 +10177,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NetPacketDNSBase: {
-			id32Bit:  sys32undefined,
+			id32Bit:  Sys32Undefined,
 			name:     "net_packet_dns_base",
 			internal: true,
 			dependencies: Dependencies{
@@ -10047,7 +10191,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NetPacketDNS: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "net_packet_dns", // preferred event to write signatures
 			dependencies: Dependencies{
 				Events: []ID{
@@ -10064,7 +10208,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NetPacketDNSRequest: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "net_packet_dns_request", // simple dns event compatible dns_request (deprecated)
 			dependencies: Dependencies{
 				Events: []ID{
@@ -10078,7 +10222,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NetPacketDNSResponse: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "net_packet_dns_response", // simple dns event compatible dns_response (deprecated)
 			dependencies: Dependencies{
 				Events: []ID{
@@ -10092,7 +10236,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NetPacketHTTPBase: {
-			id32Bit:  sys32undefined,
+			id32Bit:  Sys32Undefined,
 			name:     "net_packet_http_base",
 			internal: true,
 			dependencies: Dependencies{
@@ -10106,7 +10250,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NetPacketHTTP: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "net_packet_http", // preferred event to write signatures
 			dependencies: Dependencies{
 				Events: []ID{
@@ -10123,7 +10267,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NetPacketHTTPRequest: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "net_packet_http_request",
 			dependencies: Dependencies{
 				Events: []ID{
@@ -10137,7 +10281,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NetPacketHTTPResponse: {
-			id32Bit: sys32undefined,
+			id32Bit: Sys32Undefined,
 			name:    "net_packet_http_response",
 			dependencies: Dependencies{
 				Events: []ID{
@@ -10151,7 +10295,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		NetPacketCapture: { // all packets have full payload (sent in a dedicated perfbuffer)
-			id32Bit:  sys32undefined,
+			id32Bit:  Sys32Undefined,
 			name:     "net_packet_capture",
 			internal: true,
 			dependencies: Dependencies{
@@ -10164,7 +10308,7 @@ var CoreEventDefinitionGroup = EventDefinitionGroup{
 			},
 		},
 		CaptureNetPacket: { // network packet capture pseudo event
-			id32Bit:  sys32undefined,
+			id32Bit:  Sys32Undefined,
 			name:     "capture_net_packet",
 			internal: true,
 			dependencies: Dependencies{

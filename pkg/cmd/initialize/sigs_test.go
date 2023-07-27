@@ -14,15 +14,15 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 	tests := []struct {
 		startId        events.ID
 		signatures     []detect.Signature
-		expectedEvents []events.EventDefinition
+		expectedEvents []events.Event
 	}{
 		{
 			startId: events.ID(6001),
 			signatures: []detect.Signature{
 				newFakeSignature("fake_event_0", []string{"hooked_syscalls"}),
 			},
-			expectedEvents: []events.EventDefinition{
-				events.NewEventDefinition("fake_event_0", []string{"signatures", "default"}, []events.ID{events.HookedSyscalls}),
+			expectedEvents: []events.Event{
+				events.NewEvent("fake_event_0", []string{"signatures", "default"}, []events.ID{events.HookedSyscalls}),
 			},
 		},
 		{
@@ -31,9 +31,9 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 				newFakeSignature("fake_event_1", []string{"ptrace"}),
 				newFakeSignature("fake_event_2", []string{"security_file_open", "security_inode_rename"}),
 			},
-			expectedEvents: []events.EventDefinition{
-				events.NewEventDefinition("fake_event_1", []string{"signatures", "default"}, []events.ID{events.Ptrace}),
-				events.NewEventDefinition("fake_event_2", []string{"signatures", "default"}, []events.ID{events.SecurityFileOpen, events.SecurityInodeRename}),
+			expectedEvents: []events.Event{
+				events.NewEvent("fake_event_1", []string{"signatures", "default"}, []events.ID{events.Ptrace}),
+				events.NewEvent("fake_event_2", []string{"signatures", "default"}, []events.ID{events.SecurityFileOpen, events.SecurityInodeRename}),
 			},
 		},
 		{
@@ -41,8 +41,8 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 			signatures: []detect.Signature{
 				newFakeSignature("fake_event_3", []string{"sched_process_exec", "security_socket_connect"}),
 			},
-			expectedEvents: []events.EventDefinition{
-				events.NewEventDefinition("fake_event_3", []string{"signatures", "default"}, []events.ID{events.SchedProcessExec, events.SecuritySocketConnect}),
+			expectedEvents: []events.Event{
+				events.NewEvent("fake_event_3", []string{"signatures", "default"}, []events.ID{events.SchedProcessExec, events.SecuritySocketConnect}),
 			},
 		},
 	}
