@@ -156,7 +156,11 @@ func main() {
 				c.Bool(server.PProfEndpointFlag),
 				c.Bool(server.PyroscopeAgentFlag),
 			)
+			if err != nil {
+				return err
+			}
 
+			err = e.Init()
 			if err != nil {
 				return err
 			}

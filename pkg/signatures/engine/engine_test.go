@@ -357,9 +357,11 @@ func TestEngine_ConsumeSources(t *testing.T) {
 
 			e, err := NewEngine(tc.config, inputs, outputChan)
 			require.NoError(t, err, "constructing engine")
-			go func() {
-				e.Start(ctx)
-			}()
+
+			err = e.Init()
+			require.NoError(t, err, "initializing engine")
+
+			go e.Start(ctx)
 
 			// send a test event
 			e.inputs.Tracee <- tc.inputEvent
@@ -419,6 +421,10 @@ func TestEngine_GetSelectedEvents(t *testing.T) {
 	config := Config{Signatures: sigs}
 	e, err := NewEngine(config, EventSources{Tracee: make(chan protocol.Event)}, make(chan detect.Finding))
 	require.NoError(t, err, "constructing engine")
+
+	err = e.Init()
+	require.NoError(t, err, "initializing engine")
+
 	se := e.GetSelectedEvents()
 	expected := []detect.SignatureEventSelector{
 		{
