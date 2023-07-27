@@ -1,7 +1,7 @@
 apiVersion: aquasecurity.github.io/v1beta1
 kind: TraceePolicy
 metadata:
-  name: new_pids
+  name: new-pids
   annotations:
     description: traces openat and security_file_open for new pids
 spec:

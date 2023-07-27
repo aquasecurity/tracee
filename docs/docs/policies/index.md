@@ -13,7 +13,7 @@ Following is a sample policy:
 apiVersion: aquasecurity.github.io/v1beta1
 kind: TraceePolicy
 metadata:
-	name: overview policy
+	name: overview-policy
 	annotations:
 		description: sample overview policy
 spec:

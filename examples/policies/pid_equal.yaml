@@ -1,7 +1,7 @@
 apiVersion: aquasecurity.github.io/v1beta1
 kind: TraceePolicy
 metadata:
-  name: pid_equal
+  name: pid-equal
   annotations:
     description: traces read and write syscalls for pids 1000, and 2000
 spec:

@@ -22,44 +22,37 @@ func TestPolicyValidate(t *testing.T) {
 		expectedPolicyError bool
 	}{
 		{
-			testName: "empty name",
-			policy: PolicyFile{
-				Metadata: Metadata{Name: ""},
-			},
-			expectedError: errors.New("policy name cannot be empty"),
-		},
-		{
 			testName: "empty API",
 			policy: PolicyFile{
 				APIVersion: "",
-				Metadata:   Metadata{Name: "emptyAPI"},
+				Metadata:   Metadata{Name: "empty-api"},
 			},
-			expectedError: errors.New("policy emptyAPI, apiVersion not supported"),
+			expectedError: errors.New("policy empty-api, apiVersion not supported"),
 		},
 		{
 			testName: "invalid API",
 			policy: PolicyFile{
 				APIVersion: "aquasecurity.github.io/test",
-				Metadata:   Metadata{Name: "invalidAPI"},
+				Metadata:   Metadata{Name: "invalid-api"},
 			},
-			expectedError: errors.New("policy invalidAPI, apiVersion not supported"),
+			expectedError: errors.New("policy invalid-api, apiVersion not supported"),
 		},
 		{
 			testName: "empty Kind",
 			policy: PolicyFile{
 				APIVersion: "aquasecurity.github.io/v1beta1",
-				Metadata:   Metadata{Name: "emptyKind"},
+				Metadata:   Metadata{Name: "empty-kind"},
 			},
-			expectedError: errors.New("policy emptyKind, kind not supported"),
+			expectedError: errors.New("policy empty-kind, kind not supported"),
 		},
 		{
 			testName: "invalid Kind",
 			policy: PolicyFile{
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "Policy",
-				Metadata:   Metadata{Name: "invalidKind"},
+				Metadata:   Metadata{Name: "invalid-kind"},
 			},
-			expectedError: errors.New("policy invalidKind, kind not supported"),
+			expectedError: errors.New("policy invalid-kind, kind not supported"),
 		},
 		{
 			testName: "empty scope",
@@ -67,14 +60,14 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "empty_scope",
+					Name: "empty-scope",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{},
 					DefaultActions: []string{"log"},
 				},
 			},
-			expectedError: errors.New("policy empty_scope, scope cannot be empty"),
+			expectedError: errors.New("policy empty-scope, scope cannot be empty"),
 		},
 		{
 			testName: "empty rules",
@@ -82,7 +75,7 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "empty_rules",
+					Name: "empty-rules",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{"global"},
@@ -90,7 +83,7 @@ func TestPolicyValidate(t *testing.T) {
 					Rules:          []Rule{},
 				},
 			},
-			expectedError: errors.New("policy empty_rules, rules cannot be empty"),
+			expectedError: errors.New("policy empty-rules, rules cannot be empty"),
 		},
 		{
 			testName: "empty event name",
@@ -98,7 +91,7 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "empty_event_name",
+					Name: "empty-event-name",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{"global"},
@@ -108,7 +101,7 @@ func TestPolicyValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.validateEvent: policy empty_event_name, event cannot be empty"),
+			expectedError: errors.New("v1beta1.validateEvent: policy empty-event-name, event cannot be empty"),
 		},
 		{
 			testName: "invalid event name",
@@ -116,7 +109,7 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "invalid_event_name",
+					Name: "invalid-event-name",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{"global"},
@@ -126,7 +119,7 @@ func TestPolicyValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.validateEvent: policy invalid_event_name, event non_existing_event is not valid"),
+			expectedError: errors.New("v1beta1.validateEvent: policy invalid-event-name, event non_existing_event is not valid"),
 		},
 		{
 			testName: "invalid_scope_operator",
@@ -134,7 +127,7 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "invalid_scope_operator",
+					Name: "invalid-scope-operator",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{"random"},
@@ -144,7 +137,7 @@ func TestPolicyValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.parseScope: policy invalid_scope_operator, scope random is not valid"),
+			expectedError: errors.New("v1beta1.parseScope: policy invalid-scope-operator, scope random is not valid"),
 		},
 		{
 			testName: "invalid_scope",
@@ -152,7 +145,7 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "invalid_scope",
+					Name: "invalid-scope",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{"random!=0"},
@@ -162,7 +155,7 @@ func TestPolicyValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.PolicyFile.validateScope: policy invalid_scope, scope random is not valid"),
+			expectedError: errors.New("v1beta1.PolicyFile.validateScope: policy invalid-scope, scope random is not valid"),
 		},
 		{
 			testName: "global scope must be unique",
@@ -170,7 +163,7 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "global_scope_must_be_unique",
+					Name: "global-scope-must-be-unique",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{"global", "uid=1000"},
@@ -180,7 +173,7 @@ func TestPolicyValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("policy global_scope_must_be_unique, global scope must be unique"),
+			expectedError: errors.New("policy global-scope-must-be-unique, global scope must be unique"),
 		},
 		{
 			testName: "duplicated event",
@@ -188,7 +181,7 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "duplicated_event",
+					Name: "duplicated-event",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{"global"},
@@ -199,7 +192,7 @@ func TestPolicyValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("policy duplicated_event, event write is duplicated"),
+			expectedError: errors.New("policy duplicated-event, event write is duplicated"),
 		},
 		{
 			testName: "invalid filter operator",
@@ -207,7 +200,7 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "invalid_filter_operator",
+					Name: "invalid-filter-operator",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{"global"},
@@ -222,7 +215,7 @@ func TestPolicyValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy invalid_filter_operator, invalid filter operator: random"),
+			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy invalid-filter-operator, invalid filter operator: random"),
 		},
 		{
 			testName: "invalid policy action",
@@ -230,7 +223,7 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "invalid_policy_action",
+					Name: "invalid-policy-action",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{"global"},
@@ -240,7 +233,7 @@ func TestPolicyValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.validateActions: policy invalid_policy_action, action audit is not valid"),
+			expectedError: errors.New("v1beta1.validateActions: policy invalid-policy-action, action audit is not valid"),
 		},
 		{
 			testName: "invalid retval",
@@ -248,7 +241,7 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "invalid_retval",
+					Name: "invalid-retval",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{"global"},
@@ -263,7 +256,7 @@ func TestPolicyValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy invalid_retval, invalid filter operator: retval"),
+			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy invalid-retval, invalid filter operator: retval"),
 		},
 		{
 			testName: "empty retval",
@@ -271,7 +264,7 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "empty_retval",
+					Name: "empty-retval",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{"global"},
@@ -286,7 +279,7 @@ func TestPolicyValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy empty_retval, retval cannot be empty"),
+			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy empty-retval, retval cannot be empty"),
 		},
 		{
 			testName: "retval not an integer",
@@ -294,7 +287,7 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "retval_not_an_integer",
+					Name: "retval-not-an-integer",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{"global"},
@@ -309,7 +302,7 @@ func TestPolicyValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy retval_not_an_integer, retval must be an integer: lala"),
+			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy retval-not-an-integer, retval must be an integer: lala"),
 		},
 		{
 			testName: "empty arg name 1",
@@ -317,7 +310,7 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "empty_filter_arg_1",
+					Name: "empty-filter-arg-1",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{"global"},
@@ -332,7 +325,7 @@ func TestPolicyValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy empty_filter_arg_1, invalid filter operator: args"),
+			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy empty-filter-arg-1, invalid filter operator: args"),
 		},
 		{
 			testName: "empty arg name 3",
@@ -340,7 +333,7 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "empty_filter_arg_3",
+					Name: "empty-filter-arg-3",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{"global"},
@@ -355,7 +348,7 @@ func TestPolicyValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy empty_filter_arg_3, arg name can't be empty"),
+			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy empty-filter-arg-3, arg name can't be empty"),
 		},
 		{
 			testName: "empty arg name 4",
@@ -363,7 +356,7 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "empty_filter_arg_4",
+					Name: "empty-filter-arg-4",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{"global"},
@@ -378,7 +371,7 @@ func TestPolicyValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy empty_filter_arg_4, arg name can't be empty"),
+			expectedError: errors.New("v1beta1.PolicyFile.validateRules: policy empty-filter-arg-4, arg name can't be empty"),
 		},
 		{
 			testName: "invalid arg",
@@ -386,7 +379,7 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "invalid_arg",
+					Name: "invalid-arg",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{"global"},
@@ -401,7 +394,7 @@ func TestPolicyValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.validateEventArg: policy invalid_arg, event openat does not have argument lala"),
+			expectedError: errors.New("v1beta1.validateEventArg: policy invalid-arg, event openat does not have argument lala"),
 		},
 		{
 			testName: "empty arg value",
@@ -409,7 +402,7 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "empty_arg_value",
+					Name: "empty-arg-value",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{"global"},
@@ -424,7 +417,7 @@ func TestPolicyValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.validateEventArg: policy empty_arg_value, arg pathname value can't be empty"),
+			expectedError: errors.New("v1beta1.validateEventArg: policy empty-arg-value, arg pathname value can't be empty"),
 		},
 		{
 			testName: "empty arg value",
@@ -432,7 +425,7 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "empty_arg_value",
+					Name: "empty-arg-value",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{"global"},
@@ -447,7 +440,7 @@ func TestPolicyValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedError: errors.New("v1beta1.validateEventArg: policy empty_arg_value, arg pathname value can't be empty"),
+			expectedError: errors.New("v1beta1.validateEventArg: policy empty-arg-value, arg pathname value can't be empty"),
 		},
 		{
 			testName: "signature filter arg",
@@ -455,7 +448,7 @@ func TestPolicyValidate(t *testing.T) {
 				APIVersion: "aquasecurity.github.io/v1beta1",
 				Kind:       "TraceePolicy",
 				Metadata: Metadata{
-					Name: "signature_filter_arg",
+					Name: "signature-filter-arg",
 				},
 				Spec: PolicySpec{
 					Scope:          []string{"global"},
