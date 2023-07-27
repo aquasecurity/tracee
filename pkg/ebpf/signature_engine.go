@@ -21,7 +21,8 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 	engineInput := make(chan protocol.Event)
 	source := engine.EventSources{Tracee: engineInput}
 
-	t.config.EngineConfig.DataSources = append(t.config.EngineConfig.DataSources, containers.NewDataSource(t.containers))
+	// Prepare built in data sources
+	t.config.EngineConfig.DataSources = t.PrepareBuiltinDataSources()
 
 	sigEngine, err := engine.NewEngine(t.config.EngineConfig, source, engineOutput)
 	if err != nil {
@@ -34,6 +35,11 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 		if err != nil {
 			logger.Errorw("Registering signature engine prometheus metrics", "error", err)
 		}
+	}
+
+	err = t.sigEngine.Init()
+	if err != nil {
+		logger.Fatalw("failed to initialize signature engine in \"everything is an event\" mode", "error", err)
 	}
 
 	go t.sigEngine.Start(ctx)
@@ -109,4 +115,11 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 	}()
 
 	return out, errc
+}
+
+// PrepareBuiltinDataSources returns a list of all data sources tracee makes available built-in
+func (t *Tracee) PrepareBuiltinDataSources() []detect.DataSource {
+	return []detect.DataSource{
+		containers.NewDataSource(t.containers),
+	}
 }

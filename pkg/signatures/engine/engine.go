@@ -50,6 +50,7 @@ func (engine *Engine) Stats() *metrics.Stats {
 
 // NewEngine creates a new signatures-engine with the given arguments
 // inputs and outputs are given as channels created by the consumer
+// Signatures are not loaded at this point, Init must be called to perform config side effects.
 func NewEngine(config Config, sources EventSources, output chan detect.Finding) (*Engine, error) {
 	if sources.Tracee == nil || output == nil {
 		return nil, fmt.Errorf("nil input received")
@@ -70,19 +71,6 @@ func NewEngine(config Config, sources EventSources, output chan detect.Finding) 
 	engine.dataSources = map[string]map[string]detect.DataSource{}
 	engine.dataSourcesMutex.Unlock()
 
-	for _, datasource := range config.DataSources {
-		err := engine.RegisterDataSource(datasource)
-		if err != nil {
-			logger.Errorw("Loading signatures data source: " + err.Error())
-		}
-	}
-
-	for _, sig := range config.Signatures {
-		_, err := engine.loadSignature(sig)
-		if err != nil {
-			logger.Errorw("Loading signature: " + err.Error())
-		}
-	}
 	return &engine, nil
 }
 
@@ -95,6 +83,27 @@ func signatureStart(signature detect.Signature, c chan protocol.Event, wg *sync.
 		}
 	}
 	wg.Done()
+}
+
+// Init loads and initializes signatures and data sources passed in NewEngine.
+// The split allows the loading of additional signatures and data sources between
+// NewEngine and Start if needed.
+func (engine *Engine) Init() error {
+	for _, dataSource := range engine.config.DataSources {
+		err := engine.RegisterDataSource(dataSource)
+		if err != nil {
+			logger.Errorw("Loading signatures data source: " + err.Error())
+		}
+	}
+
+	for _, sig := range engine.config.Signatures {
+		_, err := engine.loadSignature(sig)
+		if err != nil {
+			logger.Errorw("Loading signature: " + err.Error())
+		}
+	}
+
+	return nil
 }
 
 // Start starts processing events and detecting signatures
