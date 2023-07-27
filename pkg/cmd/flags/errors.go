@@ -14,7 +14,9 @@ func InvalidEventExcludeError(event string) error {
 
 func InvalidScopeOptionError(expr string, newBinary bool) error {
 	if newBinary {
-		return fmt.Errorf("invalid scope option specified (%s), use '--help scope' for more info", expr)
+		// TODO: build man page
+		// return fmt.Errorf("invalid scope option specified (%s), see 'tracee-scope' man page for more info", expr)
+		return fmt.Errorf("invalid scope option specified (%s), use '--help' for more info", expr)
 	}
 
 	return fmt.Errorf("invalid scope option specified (%s), use '--scope help' for more info", expr)

@@ -8,7 +8,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
-func traceeEbpfOutputHelp() string {
+func outputHelp() string {
 	return `Control how and where output is printed.
 Possible options:
 [format:]table                                     output events in table format (default)

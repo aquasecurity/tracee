@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/viper"
 
 	cmdcobra "github.com/aquasecurity/tracee/pkg/cmd/cobra"
-	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -26,6 +25,26 @@ var (
 		Short: "Trace OS events and syscalls using eBPF",
 		Long: `Tracee uses eBPF technology to tap into your system and give you
 access to hundreds of events that help you understand how your system behaves.`,
+		DisableFlagParsing: true, // in order to have fine grained control over flags parsing
+		PreRun: func(cmd *cobra.Command, args []string) {
+			if len(args) > 0 {
+				// parse --help, -h flags as the first argument
+				if len(args) == 1 && (args[0] == "--help" || args[0] == "-h") {
+					if err := cmd.Help(); err != nil {
+						fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+						os.Exit(1)
+					}
+					os.Exit(0)
+				}
+
+				// parse all other flags
+				if err := cmd.Flags().Parse(args); err != nil {
+					fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+					fmt.Fprintf(os.Stderr, "Run 'tracee --help' for usage.\n")
+					os.Exit(1)
+				}
+			}
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			logger.Init(logger.NewDefaultLoggingConfig())
 			initialize.SetLibbpfgoCallbacks()
@@ -56,24 +75,8 @@ func initCmd() error {
 
 	cobra.OnInitialize(initConfig)
 
-	hfFallback := rootCmd.HelpFunc()
-	// Override default help function to support help for flags.
-	// Since for commands the usage is tracee help <command>, for flags
-	// the usage is tracee --help <flag>.
-	// e.g. tracee --help filter
-	//      tracee -h filter
-	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		if len(args) > 1 && (args[0] == "--help" || args[0] == "-h") {
-			flagHelp := flags.GetHelpString(args[1], true)
-			if flagHelp != "" {
-				fmt.Fprintf(os.Stdout, "%s\n", flagHelp)
-				os.Exit(0)
-			}
-		}
-
-		// If flag help was not found, fallback to default help function
-		hfFallback(cmd, args)
-	})
+	// disable default help command (./tracee help) overriding it with an empty command
+	rootCmd.SetHelpCommand(&cobra.Command{})
 
 	// Scope/Event/Policy flags
 
@@ -82,7 +85,7 @@ func initCmd() error {
 		"scope",
 		"s",
 		[]string{},
-		"Select workloads to trace by defining filter expressions",
+		"[uid|comm|container...]\t\tSelect workloads to trace by defining filter expressions",
 	)
 
 	// events is not bound to viper
@@ -90,7 +93,7 @@ func initCmd() error {
 		"events",
 		"e",
 		[]string{},
-		"Select events to trace and event filters",
+		"[name|name.args.pathname...]\tSelect events to trace and event filters",
 	)
 
 	// policy is not bound to viper
@@ -98,7 +101,7 @@ func initCmd() error {
 		"policy",
 		"p",
 		[]string{},
-		"Path to a policy or directory with policies",
+		"[file|dir]\t\t\t\tPath to a policy or directory with policies",
 	)
 
 	// Output flags
@@ -107,7 +110,7 @@ func initCmd() error {
 		"output",
 		"o",
 		[]string{"table"},
-		"Control how and where output is printed",
+		"[json|none|webhook...]\t\tControl how and where output is printed",
 	)
 	err := viper.BindPFlag("output", rootCmd.Flags().Lookup("output"))
 	if err != nil {
@@ -119,7 +122,7 @@ func initCmd() error {
 		"capture",
 		"c",
 		[]string{},
-		"Capture artifacts that were written, executed or found to be suspicious",
+		"[write|exec|network...]\t\tCapture artifacts that were written, executed or found to be suspicious",
 	)
 
 	// Config flag
@@ -129,7 +132,7 @@ func initCmd() error {
 		&cfgFile,
 		"config",
 		"",
-		"Global config file (yaml, json between others - see documentation)",
+		"<file>\t\t\t\tGlobal config file (yaml, json between others - see documentation)",
 	)
 
 	// Container flags
@@ -137,7 +140,7 @@ func initCmd() error {
 	rootCmd.Flags().Bool(
 		"containers",
 		false,
-		"Enable container info enrichment to events. This feature is experimental and may cause unexpected behavior in the pipeline",
+		"\t\t\t\t\tEnable container info enrichment to events. This feature is experimental and may cause unexpected behavior in the pipeline",
 	)
 	err = viper.BindPFlag("containers", rootCmd.Flags().Lookup("containers"))
 	if err != nil {
@@ -147,7 +150,7 @@ func initCmd() error {
 	rootCmd.Flags().StringArray(
 		"crs",
 		[]string{},
-		"Define connected container runtimes",
+		"<runtime:socket>\t\t\tDefine connected container runtimes",
 	)
 	err = viper.BindPFlag("crs", rootCmd.Flags().Lookup("crs"))
 	if err != nil {
@@ -159,7 +162,7 @@ func initCmd() error {
 	rootCmd.Flags().StringArray(
 		"signatures-dir",
 		[]string{},
-		"Directories where to search for signatures in CEL (.yaml), OPA (.rego), and Go plugin (.so) formats",
+		"<dir>\t\t\t\tDirectories where to search for signatures in CEL (.yaml), OPA (.rego), and Go plugin (.so) formats",
 	)
 	err = viper.BindPFlag("signatures-dir", rootCmd.Flags().Lookup("signatures-dir"))
 	if err != nil {
@@ -169,7 +172,7 @@ func initCmd() error {
 	rootCmd.Flags().StringArray(
 		"rego",
 		[]string{},
-		"Control event rego settings",
+		"[partial-eval|aio]\t\t\tControl event rego settings",
 	)
 	err = viper.BindPFlag("rego", rootCmd.Flags().Lookup("rego"))
 	if err != nil {
@@ -182,7 +185,7 @@ func initCmd() error {
 		"perf-buffer-size",
 		"b",
 		1024, // 4 MB of contiguous pages
-		"Size, in pages, of the internal perf ring buffer used to submit events from the kernel",
+		"<size>\t\t\t\tSize, in pages, of the internal perf ring buffer used to submit events from the kernel",
 	)
 	err = viper.BindPFlag("perf-buffer-size", rootCmd.Flags().Lookup("perf-buffer-size"))
 	if err != nil {
@@ -192,7 +195,7 @@ func initCmd() error {
 	rootCmd.Flags().Int(
 		"blob-perf-buffer-size",
 		1024, // 4 MB of contiguous pages
-		"Size, in pages, of the internal perf ring buffer used to send blobs from the kernel",
+		"<size>\t\t\t\tSize, in pages, of the internal perf ring buffer used to send blobs from the kernel",
 	)
 	err = viper.BindPFlag("blob-perf-buffer-size", rootCmd.Flags().Lookup("blob-perf-buffer-size"))
 	if err != nil {
@@ -203,7 +206,7 @@ func initCmd() error {
 		"cache",
 		"a",
 		[]string{"none"},
-		"Control event caching queues",
+		"[type|mem-cache-size]\t\tControl event caching queues",
 	)
 	err = viper.BindPFlag("cache", rootCmd.Flags().Lookup("cache"))
 	if err != nil {
@@ -215,7 +218,7 @@ func initCmd() error {
 	rootCmd.Flags().Bool(
 		server.MetricsEndpointFlag,
 		false,
-		"Enable metrics endpoint",
+		"\t\t\t\t\tEnable metrics endpoint",
 	)
 	err = viper.BindPFlag(server.MetricsEndpointFlag, rootCmd.Flags().Lookup(server.MetricsEndpointFlag))
 	if err != nil {
@@ -225,7 +228,7 @@ func initCmd() error {
 	rootCmd.Flags().Bool(
 		server.HealthzEndpointFlag,
 		false,
-		"Enable healthz endpoint",
+		"\t\t\t\t\tEnable healthz endpoint",
 	)
 	err = viper.BindPFlag(server.HealthzEndpointFlag, rootCmd.Flags().Lookup(server.HealthzEndpointFlag))
 	if err != nil {
@@ -235,7 +238,7 @@ func initCmd() error {
 	rootCmd.Flags().Bool(
 		server.PProfEndpointFlag,
 		false,
-		"Enable pprof endpoints",
+		"\t\t\t\t\tEnable pprof endpoints",
 	)
 	err = viper.BindPFlag(server.PProfEndpointFlag, rootCmd.Flags().Lookup(server.PProfEndpointFlag))
 	if err != nil {
@@ -245,7 +248,7 @@ func initCmd() error {
 	rootCmd.Flags().Bool(
 		server.PyroscopeAgentFlag,
 		false,
-		"Enable pyroscope agent",
+		"\t\t\t\t\tEnable pyroscope agent",
 	)
 	err = viper.BindPFlag(server.PyroscopeAgentFlag, rootCmd.Flags().Lookup(server.PyroscopeAgentFlag))
 	if err != nil {
@@ -255,7 +258,7 @@ func initCmd() error {
 	rootCmd.Flags().String(
 		server.ListenEndpointFlag,
 		":3366",
-		"Listening address of the metrics endpoint server",
+		"<url:port>\t\t\t\tListening address of the metrics endpoint server",
 	)
 	err = viper.BindPFlag(server.ListenEndpointFlag, rootCmd.Flags().Lookup(server.ListenEndpointFlag))
 	if err != nil {
@@ -268,7 +271,7 @@ func initCmd() error {
 		"capabilities",
 		"C",
 		[]string{},
-		"Define capabilities for tracee to run with",
+		"[bypass|add|drop]\t\t\tDefine capabilities for tracee to run with",
 	)
 	err = viper.BindPFlag("capabilities", rootCmd.Flags().Lookup("capabilities"))
 	if err != nil {
@@ -278,7 +281,7 @@ func initCmd() error {
 	rootCmd.Flags().String(
 		"install-path",
 		"/tmp/tracee",
-		"Path where tracee will install or lookup it's resources",
+		"<dir>\t\t\t\tPath where tracee will install or lookup it's resources",
 	)
 	err = viper.BindPFlag("install-path", rootCmd.Flags().Lookup("install-path"))
 	if err != nil {
@@ -289,7 +292,7 @@ func initCmd() error {
 		"log",
 		"l",
 		[]string{"info"},
-		"Logger options",
+		"[debug|info|warn...]\t\tLogger options",
 	)
 	err = viper.BindPFlag("log", rootCmd.Flags().Lookup("log"))
 	if err != nil {
