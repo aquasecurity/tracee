@@ -858,6 +858,8 @@ check-err: \
 # pull request verifier
 #
 
+LOGFROM ?= main
+
 .PHONY: check-pr
 check-pr: \
 	check-fmt check-lint check-code \
@@ -868,9 +870,14 @@ check-pr: \
 	@echo
 
 	@$(CMD_GIT) \
-		log main..HEAD \
-		--pretty=format:'%C(auto,yellow)%h%Creset **%C(auto,red)%s%Creset** _<sub>%C(auto,cyan)(%ad)%Creset %C(auto,green)%an \<%ae\>%Creset</sub>_%n%n```%n%b```%n' \
-		--date=format:"%Y/%b/%d"
+		log $(LOGFROM)..HEAD \
+		--pretty=format:'%C(auto,yellow)%h%Creset **%C(auto,red)%s%Creset**'
+
+	@echo
+
+	@$(CMD_GIT) \
+		log $(LOGFROM)..HEAD \
+		--pretty=format:'commit %C(auto,yellow)%h%Creset%n%n```%n%b```%n'
 
 	@echo
 	@echo "*** PR Comment END"

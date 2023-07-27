@@ -15,7 +15,9 @@ PS: DO NOT JUMP THE CHECKLIST. GO BACK AND READ, ALWAYS!
 
 ### 1. Explain what the PR does
 
-<!-- Best advice is to put copy & paste your very well written git logs -->
+<!-- Best advice is to put copy & paste "make check-pr" PR Comment output -->
+
+"Replace me with `make check-pr` output"
 
 ### 2. Explain how to test it
 
