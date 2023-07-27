@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18+insiders-4.37.0">
+      <meta name="generator" content="mkdocs-1.5.0, mkdocs-material-9.1.20+insiders-4.37.0">
     
     
       
@@ -14828,7 +14828,7 @@ tracee like:</p>
 <span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
 <span class="go">    -v /var/run/containerd:/var/run/containerd \</span>
 <span class="go">    -e CONTAINERS_ENRICHMENT=1 \</span>
-<span class="go">    aquasec/tracee:v0.16.0-rc-27-g7372ab214</span>
+<span class="go">    aquasec/tracee:v0.17.0-rc-2-g933301c89</span>
 </code></pre></div>
 <p>Most container runtimes have their sockets installed by default in
 <code>/var/run</code>. If your system includes multiple container runtimes, tracee can
@@ -14869,7 +14869,7 @@ to enrich all containers correctly.</p>
 <span class="go">    --pid=host --cgroupns=host --privileged \</span>
 <span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
 <span class="go">    -v /var/run/docker.sock:/var/run/docker.sock \</span>
-<span class="go">    aquasec/tracee:v0.16.0-rc-27-g7372ab214 \</span>
+<span class="go">    aquasec/tracee:v0.17.0-rc-2-g933301c89 \</span>
 <span class="go">    --output json --containers</span>
 </code></pre></div>
 </li>
@@ -14880,7 +14880,7 @@ to enrich all containers correctly.</p>
 <span class="go">    --pid=host --cgroupns=host --privileged \</span>
 <span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
 <span class="go">    -v /var/run/containerd:/var/run/containerd \</span>
-<span class="go">    aquasec/tracee:v0.16.0-rc-27-g7372ab214 \</span>
+<span class="go">    aquasec/tracee:v0.17.0-rc-2-g933301c89 \</span>
 <span class="go">    --scope container --containers</span>
 </code></pre></div>
 </li>
