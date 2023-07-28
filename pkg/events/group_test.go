@@ -89,20 +89,15 @@ func TestEventGroup_GetEventByID(t *testing.T) {
 
 	// found event
 
-	// TODO: check if should use only GetEventByIDWithOk
-	// evt := eg.GetEventByID(id1)
-	// require.NotNil(t, evt)                  // event has to be found
-	evt, ok := eg.GetEventByIDWithOk(id1)
-	require.True(t, ok, true)
-	require.Equal(t, evt.GetName(), "evt1") // name has to be correct
+	require.True(t, eg.IsEventDefined(id1))
+	evt := eg.GetEventByID(id1)
+	require.Equal(t, evt.GetName(), "evt1")
 
-	// event not found
+	// event not found (undefined)
 
-	// TODO: check if should use only GetEventByIDWithOk
-	// evt = eg.GetEventByID(ID(3))
-	// require.Nil(t, evt) // event should not be found
-	_, ok = eg.GetEventByIDWithOk(ID(3))
-	require.False(t, ok, false)
+	require.False(t, eg.IsEventDefined(ID(3)))
+	evt = eg.GetEventByID(ID(3))
+	require.Contains(t, evt.GetID(), Undefined)
 }
 
 // TestEventGroup_Length tests that Length returns the number of events in the event group.

@@ -164,11 +164,11 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				continue
 			}
 			eventId := events.ID(ctx.EventID)
-			eventDefinition, ok := events.Core.GetEventByIDWithOk(eventId)
-			if !ok {
+			if !events.Core.IsEventDefined(eventId) {
 				t.handleError(errfmt.Errorf("failed to get configuration of event %d", eventId))
 				continue
 			}
+			eventDefinition := events.Core.GetEventByID(eventId)
 			args := make([]trace.Argument, len(eventDefinition.GetParams()))
 			err := ebpfMsgDecoder.DecodeArguments(args, int(argnum), eventDefinition, eventId)
 			if err != nil {
@@ -394,19 +394,18 @@ func parseContextFlags(containerId string, flags uint32) trace.ContextFlags {
 // Get the syscall name from its ID, taking into account architecture and 32bit/64bit modes
 func parseSyscallID(syscallID int, isCompat bool, compatTranslationMap map[events.ID]events.ID) (string, error) {
 	if !isCompat {
-		def, ok := events.Core.GetEventByIDWithOk(events.ID(syscallID))
-		if ok {
-			return def.GetName(), nil
+		if !events.Core.IsEventDefined(events.ID(syscallID)) {
+			return "", errfmt.Errorf("no syscall event with syscall id %d", syscallID)
 		}
-		return "", errfmt.Errorf("no syscall event with syscall id %d", syscallID)
+		def := events.Core.GetEventByID(events.ID(syscallID))
+		return def.GetName(), nil
 	}
 	id, ok := compatTranslationMap[events.ID(syscallID)]
 	if ok {
-		def, ok := events.Core.GetEventByIDWithOk(id)
-		if !ok { // Should never happen, as the translation map should be initialized from events.Definition
+		if !events.Core.IsEventDefined(id) { // should never happe, the map should be initialized from events definition
 			return "", errfmt.Errorf("no syscall event with compat syscall id %d, translated to ID %d", syscallID, id)
 		}
-		return def.GetName(), nil
+		return events.Core.GetEventByID(id).GetName(), nil
 	}
 	return "", errfmt.Errorf("no syscall event with compat syscall id %d", syscallID)
 }
