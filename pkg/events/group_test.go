@@ -25,7 +25,7 @@ func TestEventGroup_Add(t *testing.T) {
 	eg := NewEventGroup()
 
 	id := ID(1)
-	evt := NewEventFull(id, id+1000, "evt", "", false, false, []string{}, Dependencies{}, nil)
+	evt := NewEvent(id, id+1000, "evt", "", false, false, []string{}, Dependencies{}, nil)
 
 	err := eg.Add(id, evt)
 	require.NoError(t, err)
@@ -41,8 +41,8 @@ func TestEventGroup_AddBatch(t *testing.T) {
 	id1 := ID(1)
 	id2 := ID(2)
 
-	evt1 := NewEventFull(id1, id1+1000, "evt1", "", false, false, []string{}, Dependencies{}, nil)
-	evt2 := NewEventFull(id2, id2+1000, "evt2", "", false, false, []string{}, Dependencies{}, nil)
+	evt1 := NewEvent(id1, id1+1000, "evt1", "", false, false, []string{}, Dependencies{}, nil)
+	evt2 := NewEvent(id2, id2+1000, "evt2", "", false, false, []string{}, Dependencies{}, nil)
 
 	err := eg.AddBatch(map[ID]Event{id1: evt1, id2: evt2})
 	require.NoError(t, err)
@@ -61,8 +61,8 @@ func TestEventGroup_GetEventIDByName(t *testing.T) {
 	id1 := ID(1)
 	id2 := ID(2)
 
-	evt1 := NewEventFull(id1, id1+1000, "evt1", "", false, false, []string{}, Dependencies{}, nil)
-	evt2 := NewEventFull(id2, id2+1000, "evt2", "", false, false, []string{}, Dependencies{}, nil)
+	evt1 := NewEvent(id1, id1+1000, "evt1", "", false, false, []string{}, Dependencies{}, nil)
+	evt2 := NewEvent(id2, id2+1000, "evt2", "", false, false, []string{}, Dependencies{}, nil)
 
 	eg.AddBatch(map[ID]Event{id1: evt1, id2: evt2})
 
@@ -82,8 +82,8 @@ func TestEventGroup_GetEventByID(t *testing.T) {
 	id1 := ID(1)
 	id2 := ID(2)
 
-	evt1 := NewEventFull(id1, id1+1000, "evt1", "", false, false, []string{}, Dependencies{}, nil)
-	evt2 := NewEventFull(id2, id2+1000, "evt2", "", false, false, []string{}, Dependencies{}, nil)
+	evt1 := NewEvent(id1, id1+1000, "evt1", "", false, false, []string{}, Dependencies{}, nil)
+	evt2 := NewEvent(id2, id2+1000, "evt2", "", false, false, []string{}, Dependencies{}, nil)
 
 	eg.AddBatch(map[ID]Event{id1: evt1, id2: evt2})
 
@@ -101,7 +101,7 @@ func TestEventGroup_GetEventByID(t *testing.T) {
 	// TODO: check if should use only GetEventByIDWithOk
 	// evt = eg.GetEventByID(ID(3))
 	// require.Nil(t, evt) // event should not be found
-	evt, ok = eg.GetEventByIDWithOk(ID(3))
+	_, ok = eg.GetEventByIDWithOk(ID(3))
 	require.False(t, ok, false)
 }
 
@@ -112,13 +112,13 @@ func TestEventGroup_Length(t *testing.T) {
 	require.Equal(t, eg.Length(), 0) // empty event group
 
 	id := ID(1)
-	evt := NewEventFull(id, id+1000, "evt", "", false, false, []string{}, Dependencies{}, nil)
+	evt := NewEvent(id, id+1000, "evt", "", false, false, []string{}, Dependencies{}, nil)
 	eg.Add(id, evt)
 
 	require.Equal(t, eg.Length(), 1) // event group with one event
 
 	id2 := ID(2)
-	evt2 := NewEventFull(id2, id2+1000, "evt2", "", false, false, []string{}, Dependencies{}, nil)
+	evt2 := NewEvent(id2, id2+1000, "evt2", "", false, false, []string{}, Dependencies{}, nil)
 	eg.Add(id2, evt2)
 
 	require.Equal(t, eg.Length(), 2) // event group with two events
@@ -133,8 +133,8 @@ func TestEventGroup_NamesToIDs(t *testing.T) {
 	id1 := ID(1)
 	id2 := ID(2)
 
-	evt1 := NewEventFull(id1, id1+1000, "evt1", "", false, false, []string{}, Dependencies{}, nil)
-	evt2 := NewEventFull(id2, id2+1000, "evt2", "", false, false, []string{}, Dependencies{}, nil)
+	evt1 := NewEvent(id1, id1+1000, "evt1", "", false, false, []string{}, Dependencies{}, nil)
+	evt2 := NewEvent(id2, id2+1000, "evt2", "", false, false, []string{}, Dependencies{}, nil)
 
 	eg.AddBatch(map[ID]Event{id1: evt1, id2: evt2})
 
@@ -152,8 +152,8 @@ func TestEventGroup_IDs32ToIDs(t *testing.T) {
 	id1 := ID(1)
 	id2 := ID(2)
 
-	evt1 := NewEventFull(id1, id1+1000, "evt1", "", false, false, []string{}, Dependencies{}, nil)
-	evt2 := NewEventFull(id2, id2+1000, "evt2", "", false, false, []string{}, Dependencies{}, nil)
+	evt1 := NewEvent(id1, id1+1000, "evt1", "", false, false, []string{}, Dependencies{}, nil)
+	evt2 := NewEvent(id2, id2+1000, "evt2", "", false, false, []string{}, Dependencies{}, nil)
 
 	eg.AddBatch(map[ID]Event{id1: evt1, id2: evt2})
 
@@ -179,7 +179,7 @@ func TestEventGroup_AddBatch_MultipleThreads(t *testing.T) {
 	for name, id := range names {
 		wg.Add(1)
 		go func(name string, id ID) {
-			evt := NewEventFull(id, id+1000, name, "", false, false, []string{}, Dependencies{}, nil)
+			evt := NewEvent(id, id+1000, name, "", false, false, []string{}, Dependencies{}, nil)
 
 			err := eg.AddBatch(map[ID]Event{id: evt})
 			require.NoError(t, err)
@@ -209,7 +209,7 @@ func TestEventGroup_Length_MultipleThreads(t *testing.T) {
 	for name, id := range names {
 		wg.Add(1)
 		go func(name string, id ID) {
-			evt := NewEventFull(id, id+1000, name, "", false, false, []string{}, Dependencies{}, nil)
+			evt := NewEvent(id, id+1000, name, "", false, false, []string{}, Dependencies{}, nil)
 			err := eg.AddBatch(map[ID]Event{id: evt})
 			require.NoError(t, err)
 			eg.Length() // concurrent calls
@@ -235,7 +235,7 @@ func TestEventGroup_NamesToIDs_MultipleThreads(t *testing.T) {
 	for name, id := range names {
 		wg.Add(1)
 		go func(name string, id ID) {
-			evt := NewEventFull(id, id+1000, name, "", false, false, []string{}, Dependencies{}, nil)
+			evt := NewEvent(id, id+1000, name, "", false, false, []string{}, Dependencies{}, nil)
 
 			err := eg.Add(id, evt)
 			require.NoError(t, err)
@@ -262,7 +262,7 @@ func TestEventGroup_IDs32ToIDs_MultipleThreads(t *testing.T) {
 	for name, id := range names {
 		wg.Add(1)
 		go func(name string, id ID) {
-			evt := NewEventFull(id, id+1000, name, "", false, false, []string{}, Dependencies{}, nil)
+			evt := NewEvent(id, id+1000, name, "", false, false, []string{}, Dependencies{}, nil)
 
 			err := eg.Add(id, evt)
 			require.NoError(t, err)

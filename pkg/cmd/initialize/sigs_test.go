@@ -28,7 +28,7 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 				),
 			},
 			expectedEvents: []events.Event{
-				events.NewEventFull(
+				events.NewEvent(
 					events.ID(6001),                   // id,
 					events.Sys32Undefined,             // id32
 					"fake_event_0",                    // eventName
@@ -36,9 +36,13 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					false,                             // internal
 					false,                             // syscall
 					[]string{"signatures", "default"}, // sets
-					events.Dependencies{
-						Events: []events.ID{events.HookedSyscalls},
-					},
+					events.NewDependencies(
+						[]events.ID{events.HookedSyscalls},
+						[]events.KSymbol{},
+						[]events.Probe{},
+						[]events.TailCall{},
+						events.Capabilities{},
+					),
 					[]trace.ArgMeta{},
 				),
 			},
@@ -56,7 +60,7 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 				),
 			},
 			expectedEvents: []events.Event{
-				events.NewEventFull(
+				events.NewEvent(
 					events.ID(6010),                   // id,
 					events.Sys32Undefined,             // id32
 					"fake_event_1",                    // eventName
@@ -64,12 +68,16 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					false,                             // internal
 					false,                             // syscall
 					[]string{"signatures", "default"}, // sets
-					events.Dependencies{
-						Events: []events.ID{events.Ptrace},
-					},
+					events.NewDependencies(
+						[]events.ID{events.Ptrace},
+						[]events.KSymbol{},
+						[]events.Probe{},
+						[]events.TailCall{},
+						events.Capabilities{},
+					),
 					[]trace.ArgMeta{},
 				),
-				events.NewEventFull(
+				events.NewEvent(
 					events.ID(6011),                   // id,
 					events.Sys32Undefined,             // id32
 					"fake_event_2",                    // eventName
@@ -77,12 +85,16 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					false,                             // internal
 					false,                             // syscall
 					[]string{"signatures", "default"}, // sets
-					events.Dependencies{
-						Events: []events.ID{
+					events.NewDependencies(
+						[]events.ID{
 							events.SecurityFileOpen,
 							events.SecurityInodeRename,
 						},
-					},
+						[]events.KSymbol{},
+						[]events.Probe{},
+						[]events.TailCall{},
+						events.Capabilities{},
+					),
 					[]trace.ArgMeta{},
 				),
 			},
@@ -99,7 +111,7 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 				),
 			},
 			expectedEvents: []events.Event{
-				events.NewEventFull(
+				events.NewEvent(
 					events.ID(6100),                   // id,
 					events.Sys32Undefined,             // id32
 					"fake_event_3",                    // eventName
@@ -107,12 +119,16 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					false,                             // internal
 					false,                             // syscall
 					[]string{"signatures", "default"}, // sets
-					events.Dependencies{
-						Events: []events.ID{
+					events.NewDependencies(
+						[]events.ID{
 							events.SchedProcessExec,
 							events.SecuritySocketConnect,
 						},
-					},
+						[]events.KSymbol{},
+						[]events.Probe{},
+						[]events.TailCall{},
+						events.Capabilities{},
+					),
 					[]trace.ArgMeta{},
 				),
 			},
@@ -135,7 +151,10 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 			assert.Equal(t, expected.IsSyscall(), event.IsSyscall())
 			assert.ElementsMatch(t, expected.GetSets(), event.GetSets())
 			assert.ElementsMatch(t, expected.GetParams(), event.GetParams())
-			assert.ElementsMatch(t, expected.GetDependencies().Events, event.GetDependencies().Events)
+
+			dependencies := event.GetDependencies()
+			expDependencies := expected.GetDependencies()
+			assert.ElementsMatch(t, expDependencies.GetEvents(), dependencies.GetEvents())
 		}
 	}
 }

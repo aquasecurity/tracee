@@ -107,7 +107,7 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]eve
 	isExcluded := make(map[events.ID]bool)
 
 	// build a map: k:set, v:eventID
-	for id, event := range events.Core.GetAllEvents() {
+	for id, event := range events.Core.GetEvents() {
 		for _, set := range event.GetSets() {
 			setsToEvents[set] = append(setsToEvents[set], id)
 		}

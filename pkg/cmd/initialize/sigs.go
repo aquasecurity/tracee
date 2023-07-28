@@ -35,7 +35,7 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 			evtDependency = append(evtDependency, eventID)
 		}
 
-		event := events.NewEventFull(
+		event := events.NewEvent(
 			id,                                // id,
 			events.Sys32Undefined,             // id32
 			m.EventName,                       // eventName
@@ -43,13 +43,13 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 			false,                             // internal
 			false,                             // syscall
 			[]string{"signatures", "default"}, // sets
-			events.Dependencies{
-				Events:       evtDependency,
-				KSymbols:     nil,
-				Probes:       nil,
-				TailCalls:    nil,
-				Capabilities: nil,
-			},
+			events.NewDependencies(
+				evtDependency,
+				[]events.KSymbol{},
+				[]events.Probe{},
+				[]events.TailCall{},
+				events.Capabilities{},
+			),
 			[]trace.ArgMeta{},
 		)
 

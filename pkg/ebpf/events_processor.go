@@ -313,10 +313,10 @@ func (t *Tracee) processSchedProcessFork(event *trace.Event) error {
 // was loaded and tracee needs to check if it hooked the syscall table and
 // seq_ops
 func (t *Tracee) processDoInitModule(event *trace.Event) error {
-	_, okSyscalls := t.events[events.HookedSyscalls]
-	_, okSeqOps := t.events[events.HookedSeqOps]
-	_, okProcFops := t.events[events.HookedProcFops]
-	_, okMemDump := t.events[events.PrintMemDump]
+	_, okSyscalls := t.eventsState[events.HookedSyscalls]
+	_, okSeqOps := t.eventsState[events.HookedSeqOps]
+	_, okProcFops := t.eventsState[events.HookedProcFops]
+	_, okMemDump := t.eventsState[events.PrintMemDump]
 
 	if okSyscalls || okSeqOps || okProcFops || okMemDump {
 		err := capabilities.GetInstance().EBPF(

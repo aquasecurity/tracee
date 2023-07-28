@@ -86,7 +86,24 @@ func TestFindingToEvent(t *testing.T) {
 
 func createFakeEventAndFinding() detect.Finding {
 	eventName := "fake_signature_event"
-	event := events.NewEvent(eventName, []string{"signatures"}, []events.ID{events.Ptrace})
+
+	event := events.NewEvent(
+		0,                      // id
+		events.Sys32Undefined,  // id32
+		eventName,              // eventName
+		"",                     // docPath
+		false,                  // internal
+		false,                  // syscall
+		[]string{"signatures"}, // sets
+		events.NewDependencies(
+			[]events.ID{events.Ptrace},
+			[]events.KSymbol{},
+			[]events.Probe{},
+			[]events.TailCall{},
+			events.Capabilities{},
+		),
+		[]trace.ArgMeta{},
+	)
 
 	events.Core.Add(events.StartSignatureID, event)
 
