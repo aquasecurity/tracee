@@ -25,10 +25,12 @@ func deriveDetectHookedSyscallArgs(kernelSymbols helpers.KernelSymbolTable) deri
 		if err != nil {
 			return nil, errfmt.Errorf("error parsing syscalls_numbers arg: %v", err)
 		}
+
 		hookedSyscall, err := analyzeHookedAddresses(syscallAddresses, kernelSymbols)
 		if err != nil {
 			return nil, errfmt.Errorf("error parsing analyzing hooked syscalls addresses arg: %v", err)
 		}
+
 		return []interface{}{SyscallsToCheck, hookedSyscall}, nil
 	}
 }
@@ -42,9 +44,9 @@ func analyzeHookedAddresses(addresses []uint64, kernelSymbols helpers.KernelSymb
 		if !ok {
 			return hookedSyscalls, errfmt.Errorf("%s - no such syscall", syscall)
 		}
+
 		syscallAddress := addresses[syscallID]
-		// syscall pointer is null or in kernel bounds
-		if syscallAddress == 0 {
+		if syscallAddress == 0 { // syscall pointer is null or in kernel bounds
 			continue
 		}
 		if inText, err := kernelSymbols.TextSegmentContains(syscallAddress); err != nil || inText {
@@ -52,14 +54,17 @@ func analyzeHookedAddresses(addresses []uint64, kernelSymbols helpers.KernelSymb
 		}
 
 		hookingFunction := utils.ParseSymbol(syscallAddress, kernelSymbols)
-		event, found := events.Core.GetEventByIDWithOk(syscallID)
+
 		var hookedSyscallName string
-		if found {
-			hookedSyscallName = event.GetName()
+
+		if events.Core.IsEventDefined(syscallID) {
+			hookedSyscallName = events.Core.GetEventByID(syscallID).GetName()
 		} else {
 			hookedSyscallName = fmt.Sprint(syscallID)
 		}
+
 		hookedSyscalls = append(hookedSyscalls, trace.HookedSymbolData{SymbolName: hookedSyscallName, ModuleOwner: hookingFunction.Owner})
 	}
+
 	return hookedSyscalls, nil
 }

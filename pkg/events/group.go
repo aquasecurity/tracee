@@ -91,7 +91,8 @@ func (e *EventGroup) getEventIDByName(givenName string) (ID, bool) {
 	return Undefined, false
 }
 
-// GetEventByID returns a pointer to an event by its ID (or nil if not found)
+// GetEventByID returns an event by its ID.
+// NOTE: should be used together with IsEventDefined when event might not exist.
 func (e *EventGroup) GetEventByID(givenEvt ID) Event {
 	e.mutex.RLock()
 	defer e.mutex.RUnlock()
@@ -99,24 +100,20 @@ func (e *EventGroup) GetEventByID(givenEvt ID) Event {
 	evt, ok := e.events[givenEvt]
 	if !ok {
 		logger.Debugw("event context: event id not found", "id", givenEvt)
-		return Event{} // TODO: add an return error (or use only GetOk)
+		return Event{id: Undefined}
 	}
 
 	return evt
 }
 
-// TODO: remove this function ?
-func (e *EventGroup) GetEventByIDWithOk(eventId ID) (Event, bool) {
+// IsEventDefined returns true if the event is defined in the event group.
+// NOTE: needed as GetEventByID() is used as GetEventByID().Method() multiple times.
+func (e *EventGroup) IsEventDefined(givenEvt ID) bool {
 	e.mutex.RLock()
 	defer e.mutex.RUnlock()
 
-	evt, ok := e.events[eventId]
-	if !ok {
-		logger.Debugw("event context: event id not found", "id", eventId)
-		return Event{}, false
-	}
-
-	return evt, true
+	_, ok := e.events[givenEvt]
+	return ok
 }
 
 // Length returns the number of events in the event group.
@@ -127,7 +124,7 @@ func (e *EventGroup) Length() int {
 }
 
 // GetEvents returns a new map of existing event instances (at the time of the call).
-// TODO: iterate internally after refactor is done ?
+// TODO: iterate internally after event definition refactor is finished ?
 func (e *EventGroup) GetEvents() map[ID]Event {
 	e.mutex.RLock()
 	defer e.mutex.RUnlock()

@@ -255,15 +255,15 @@ func New(cfg config.Config) (*Tracee, error) {
 	// Update capabilities rings with all events dependencies
 
 	for id := range t.eventsState {
-		evt, ok := events.Core.GetEventByIDWithOk(id)
-		if !ok {
-			return t, errfmt.Errorf("could not get event %d", id)
+		if !events.Core.IsEventDefined(id) {
+			return t, errfmt.Errorf("event %d is not defined", id)
 		}
-		err = caps.BaseRingAdd(evt.GetDependencies().GetCapabilities().GetBase()...)
+		evtCaps := events.Core.GetEventByID(id).GetDependencies().GetCapabilities()
+		err = caps.BaseRingAdd(evtCaps.GetBase()...)
 		if err != nil {
 			return t, errfmt.WrapError(err)
 		}
-		err = caps.BaseRingAdd(evt.GetDependencies().GetCapabilities().GetEBPF()...)
+		err = caps.BaseRingAdd(evtCaps.GetEBPF()...)
 		if err != nil {
 			return t, errfmt.WrapError(err)
 		}
@@ -494,11 +494,10 @@ type InitValues struct {
 func (t *Tracee) generateInitValues() (InitValues, error) {
 	initVals := InitValues{}
 	for evt := range t.eventsState {
-		def, exists := events.Core.GetEventByIDWithOk(evt)
-		if !exists {
-			return initVals, errfmt.Errorf("event with id %d doesn't exist", evt)
+		if !events.Core.IsEventDefined(evt) {
+			return initVals, errfmt.Errorf("event %d is undefined", evt)
 		}
-		for range def.GetDependencies().GetKSymbols() {
+		for range events.Core.GetEventByID(evt).GetDependencies().GetKSymbols() {
 			initVals.Kallsyms = true // only if length > 0
 		}
 	}
@@ -1141,10 +1140,11 @@ func (t *Tracee) attachProbes() error {
 	// attach selected tracing events probes
 
 	for tr := range t.eventsState {
-		event, ok := events.Core.GetEventByIDWithOk(tr)
-		if !ok {
+		if !events.Core.IsEventDefined(tr) {
 			continue
 		}
+
+		event := events.Core.GetEventByID(tr)
 
 		// attach internal syscall probes for selected syscall events, if any
 		if event.IsSyscall() {

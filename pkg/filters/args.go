@@ -90,10 +90,10 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 		return InvalidEventName(eventName)
 	}
 
-	eventDefinition, ok := events.Core.GetEventByIDWithOk(id)
-	if !ok {
+	if !events.Core.IsEventDefined(id) {
 		return InvalidEventName(eventName)
 	}
+	eventDefinition := events.Core.GetEventByID(id)
 	eventParams := eventDefinition.GetParams()
 
 	// check if argument name exists for this event
