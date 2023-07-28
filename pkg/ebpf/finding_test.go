@@ -87,7 +87,7 @@ func TestFindingToEvent(t *testing.T) {
 func createFakeEventAndFinding() detect.Finding {
 	eventName := "fake_signature_event"
 
-	event := events.NewEvent(
+	eventDefinition := events.NewDefinition(
 		0,                      // id
 		events.Sys32Undefined,  // id32
 		eventName,              // eventName
@@ -105,7 +105,7 @@ func createFakeEventAndFinding() detect.Finding {
 		[]trace.ArgMeta{},
 	)
 
-	events.Core.Add(events.StartSignatureID, event)
+	events.Core.Add(events.StartSignatureID, eventDefinition)
 
 	return detect.Finding{
 		SigMetadata: detect.SignatureMetadata{

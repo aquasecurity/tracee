@@ -153,17 +153,17 @@ const (
 // All Events
 //
 
-var Core *EventGroup
+var Core *DefinitionGroup
 
 func init() {
-	Core = NewEventGroup()
+	Core = NewDefinitionGroup()
 	err := Core.AddBatch(CoreEvents)
 	if err != nil {
 		logger.Errorw("failed to initialize event definitions", "err", err)
 	}
 }
 
-var CoreEvents = map[ID]Event{
+var CoreEvents = map[ID]Definition{
 	//
 	// Begin of Syscalls
 	//
@@ -9646,7 +9646,7 @@ var CoreEvents = map[ID]Event{
 		id32Bit: Sys32Undefined,
 		name:    "container_create",
 		dependencies: Dependencies{
-			events: []ID{CgroupMkdir},
+			ids: []ID{CgroupMkdir},
 		},
 		sets: []string{"default", "containers"},
 		params: []trace.ArgMeta{
@@ -9667,7 +9667,7 @@ var CoreEvents = map[ID]Event{
 		id32Bit: Sys32Undefined,
 		name:    "container_remove",
 		dependencies: Dependencies{
-			events: []ID{CgroupRmdir},
+			ids: []ID{CgroupRmdir},
 		},
 		sets: []string{"default", "containers"},
 		params: []trace.ArgMeta{
@@ -9783,7 +9783,7 @@ var CoreEvents = map[ID]Event{
 		id32Bit: Sys32Undefined,
 		name:    "hidden_kernel_module",
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				HiddenKernelModuleSeeker,
 			},
 		},
@@ -9838,7 +9838,7 @@ var CoreEvents = map[ID]Event{
 				{symbol: "_stext", required: true},
 				{symbol: "_etext", required: true},
 			},
-			events: []ID{
+			ids: []ID{
 				DoInitModule,
 				PrintSyscallTable,
 			},
@@ -9931,7 +9931,7 @@ var CoreEvents = map[ID]Event{
 		name:    "symbols_loaded",
 		docPath: "security_alerts/symbols_load.md",
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				SharedObjectLoaded,
 				SchedProcessExec, // Used to get mount namespace cache
 			},
@@ -9948,7 +9948,7 @@ var CoreEvents = map[ID]Event{
 		name:    "symbols_collision",
 		docPath: "security_alerts/symbols_collision.md",
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				SharedObjectLoaded,
 				SchedProcessExec, // Used to get mount namespace cache
 			},
@@ -10013,7 +10013,7 @@ var CoreEvents = map[ID]Event{
 		name:     "capture_exec",
 		internal: true,
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				SchedProcessExec,
 			},
 			capabilities: Capabilities{
@@ -10034,7 +10034,7 @@ var CoreEvents = map[ID]Event{
 				{handle: probes.SyscallExit__Internal, required: true},
 				{handle: probes.SecurityKernelPostReadFile, required: true},
 			},
-			events: []ID{
+			ids: []ID{
 				SchedProcessExec,
 			},
 			tailCalls: []TailCall{
@@ -10128,7 +10128,7 @@ var CoreEvents = map[ID]Event{
 				{handle: probes.SyscallEnter__Internal, required: true},
 				{handle: probes.SyscallExit__Internal, required: true},
 			},
-			events: []ID{
+			ids: []ID{
 				SecuritySocketAccept,
 			},
 			tailCalls: []TailCall{
@@ -10170,7 +10170,7 @@ var CoreEvents = map[ID]Event{
 				{symbol: "_stext", required: true},
 				{symbol: "_etext", required: true},
 			},
-			events: []ID{
+			ids: []ID{
 				DoInitModule,
 			},
 			capabilities: Capabilities{
@@ -10217,7 +10217,7 @@ var CoreEvents = map[ID]Event{
 				{symbol: "_stext", required: true},
 				{symbol: "_etext", required: true},
 			},
-			events: []ID{
+			ids: []ID{
 				PrintNetSeqOps,
 				DoInitModule,
 			},
@@ -10338,7 +10338,7 @@ var CoreEvents = map[ID]Event{
 			probes: []Probe{
 				{handle: probes.PrintMemDump, required: true},
 			},
-			events: []ID{
+			ids: []ID{
 				DoInitModule,
 			},
 			kSymbols: []KSymbol{},
@@ -10560,7 +10560,7 @@ var CoreEvents = map[ID]Event{
 		name:     "net_packet_ip_base",
 		internal: true,
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketBase,
 			},
 		},
@@ -10574,7 +10574,7 @@ var CoreEvents = map[ID]Event{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_ipv4",
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketIPBase,
 			},
 		},
@@ -10590,7 +10590,7 @@ var CoreEvents = map[ID]Event{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_ipv6",
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketIPBase,
 			},
 		},
@@ -10607,7 +10607,7 @@ var CoreEvents = map[ID]Event{
 		name:     "net_packet_tcp_base",
 		internal: true,
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketBase,
 			},
 		},
@@ -10621,7 +10621,7 @@ var CoreEvents = map[ID]Event{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_tcp",
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketTCPBase,
 			},
 		},
@@ -10640,7 +10640,7 @@ var CoreEvents = map[ID]Event{
 		name:     "net_packet_udp_base",
 		internal: true,
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketBase,
 			},
 		},
@@ -10654,7 +10654,7 @@ var CoreEvents = map[ID]Event{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_udp",
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketUDPBase,
 			},
 		},
@@ -10672,7 +10672,7 @@ var CoreEvents = map[ID]Event{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_icmp_base",
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketBase,
 			},
 		},
@@ -10687,7 +10687,7 @@ var CoreEvents = map[ID]Event{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_icmp",
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketICMPBase,
 			},
 		},
@@ -10704,7 +10704,7 @@ var CoreEvents = map[ID]Event{
 		name:     "net_packet_icmpv6_base",
 		internal: true,
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketBase,
 			},
 		},
@@ -10718,7 +10718,7 @@ var CoreEvents = map[ID]Event{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_icmpv6",
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketICMPv6Base,
 			},
 		},
@@ -10735,7 +10735,7 @@ var CoreEvents = map[ID]Event{
 		name:     "net_packet_dns_base",
 		internal: true,
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketBase,
 			},
 		},
@@ -10749,7 +10749,7 @@ var CoreEvents = map[ID]Event{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_dns", // preferred event to write signatures
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketDNSBase,
 			},
 		},
@@ -10767,7 +10767,7 @@ var CoreEvents = map[ID]Event{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_dns_request", // simple dns event compatible dns_request (deprecated)
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketDNSBase,
 			},
 		},
@@ -10782,7 +10782,7 @@ var CoreEvents = map[ID]Event{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_dns_response", // simple dns event compatible dns_response (deprecated)
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketDNSBase,
 			},
 		},
@@ -10798,7 +10798,7 @@ var CoreEvents = map[ID]Event{
 		name:     "net_packet_http_base",
 		internal: true,
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketBase,
 			},
 		},
@@ -10812,7 +10812,7 @@ var CoreEvents = map[ID]Event{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_http", // preferred event to write signatures
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketHTTPBase,
 			},
 		},
@@ -10830,7 +10830,7 @@ var CoreEvents = map[ID]Event{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_http_request",
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketHTTPBase,
 			},
 		},
@@ -10845,7 +10845,7 @@ var CoreEvents = map[ID]Event{
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_http_response",
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketHTTPBase,
 			},
 		},
@@ -10861,7 +10861,7 @@ var CoreEvents = map[ID]Event{
 		name:     "net_packet_capture",
 		internal: true,
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketBase,
 			},
 		},
@@ -10875,7 +10875,7 @@ var CoreEvents = map[ID]Event{
 		name:     "capture_net_packet",
 		internal: true,
 		dependencies: Dependencies{
-			events: []ID{
+			ids: []ID{
 				NetPacketCapture,
 			},
 		},

@@ -61,10 +61,10 @@ func ParseArgs(event *trace.Event) error {
 	case SysEnter, SysExit:
 		if syscallArg := GetArg(event, "syscall"); syscallArg != nil {
 			if id, isInt32 := syscallArg.Value.(int32); isInt32 {
-				if Core.IsEventDefined(ID(id)) {
-					event := Core.GetEventByID(ID(id))
-					if event.IsSyscall() {
-						syscallArg.Value = event.GetName()
+				if Core.IsDefined(ID(id)) {
+					eventDefinition := Core.GetDefinitionByID(ID(id))
+					if eventDefinition.IsSyscall() {
+						syscallArg.Value = eventDefinition.GetName()
 						syscallArg.Type = "string"
 					}
 				}

@@ -13,9 +13,9 @@ import (
 
 func Test_CreateEventsFromSigs(t *testing.T) {
 	tests := []struct {
-		startId        events.ID
-		signatures     []detect.Signature
-		expectedEvents []events.Event
+		startId    events.ID
+		signatures []detect.Signature
+		expected   []events.Definition
 	}{
 		{
 			startId: events.ID(6001),
@@ -27,8 +27,8 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					},
 				),
 			},
-			expectedEvents: []events.Event{
-				events.NewEvent(
+			expected: []events.Definition{
+				events.NewDefinition(
 					events.ID(6001),                   // id,
 					events.Sys32Undefined,             // id32
 					"fake_event_0",                    // eventName
@@ -59,8 +59,8 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					[]string{"security_file_open", "security_inode_rename"},
 				),
 			},
-			expectedEvents: []events.Event{
-				events.NewEvent(
+			expected: []events.Definition{
+				events.NewDefinition(
 					events.ID(6010),                   // id,
 					events.Sys32Undefined,             // id32
 					"fake_event_1",                    // eventName
@@ -77,7 +77,7 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					),
 					[]trace.ArgMeta{},
 				),
-				events.NewEvent(
+				events.NewDefinition(
 					events.ID(6011),                   // id,
 					events.Sys32Undefined,             // id32
 					"fake_event_2",                    // eventName
@@ -110,8 +110,8 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					},
 				),
 			},
-			expectedEvents: []events.Event{
-				events.NewEvent(
+			expected: []events.Definition{
+				events.NewDefinition(
 					events.ID(6100),                   // id,
 					events.Sys32Undefined,             // id32
 					"fake_event_3",                    // eventName
@@ -138,23 +138,23 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 	for _, test := range tests {
 		CreateEventsFromSignatures(test.startId, test.signatures)
 
-		for _, expected := range test.expectedEvents {
-			eventID, ok := events.Core.GetEventIDByName(expected.GetName())
+		for _, expected := range test.expected {
+			eventDefID, ok := events.Core.GetDefinitionIDByName(expected.GetName())
 			assert.True(t, ok)
-			event := events.Core.GetEventByID(eventID)
+			eventDefinition := events.Core.GetDefinitionByID(eventDefID)
 
-			assert.Equal(t, expected.GetID(), event.GetID())
-			assert.Equal(t, expected.GetID32Bit(), event.GetID32Bit())
-			assert.Equal(t, expected.GetName(), event.GetName())
-			assert.Equal(t, expected.GetDocPath(), event.GetDocPath())
-			assert.Equal(t, expected.IsInternal(), event.IsInternal())
-			assert.Equal(t, expected.IsSyscall(), event.IsSyscall())
-			assert.ElementsMatch(t, expected.GetSets(), event.GetSets())
-			assert.ElementsMatch(t, expected.GetParams(), event.GetParams())
+			assert.Equal(t, expected.GetID(), eventDefinition.GetID())
+			assert.Equal(t, expected.GetID32Bit(), eventDefinition.GetID32Bit())
+			assert.Equal(t, expected.GetName(), eventDefinition.GetName())
+			assert.Equal(t, expected.GetDocPath(), eventDefinition.GetDocPath())
+			assert.Equal(t, expected.IsInternal(), eventDefinition.IsInternal())
+			assert.Equal(t, expected.IsSyscall(), eventDefinition.IsSyscall())
+			assert.ElementsMatch(t, expected.GetSets(), eventDefinition.GetSets())
+			assert.ElementsMatch(t, expected.GetParams(), eventDefinition.GetParams())
 
-			dependencies := event.GetDependencies()
+			dependencies := eventDefinition.GetDependencies()
 			expDependencies := expected.GetDependencies()
-			assert.ElementsMatch(t, expDependencies.GetEvents(), dependencies.GetEvents())
+			assert.ElementsMatch(t, expDependencies.GetIDs(), dependencies.GetIDs())
 		}
 	}
 }

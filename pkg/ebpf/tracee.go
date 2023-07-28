@@ -179,8 +179,8 @@ func GetCaptureEventsList(cfg config.Config) map[events.ID]events.EventState {
 }
 
 func (t *Tracee) handleEventsDependencies(givenEventId events.ID, submitMap uint64) {
-	givenEvent := events.Core.GetEventByID(givenEventId)
-	for _, depEventId := range givenEvent.GetDependencies().GetEvents() {
+	givenEventDefinition := events.Core.GetDefinitionByID(givenEventId)
+	for _, depEventId := range givenEventDefinition.GetDependencies().GetIDs() {
 		depEventState, ok := t.eventsState[depEventId]
 		if !ok {
 			depEventState = events.EventState{}
@@ -190,7 +190,7 @@ func (t *Tracee) handleEventsDependencies(givenEventId events.ID, submitMap uint
 		depEventState.Submit |= submitMap
 		t.eventsState[depEventId] = depEventState
 
-		if events.Core.GetEventByID(givenEventId).IsSignature() {
+		if events.Core.GetDefinitionByID(givenEventId).IsSignature() {
 			t.eventSignatures[depEventId] = true
 		}
 	}
@@ -255,10 +255,10 @@ func New(cfg config.Config) (*Tracee, error) {
 	// Update capabilities rings with all events dependencies
 
 	for id := range t.eventsState {
-		if !events.Core.IsEventDefined(id) {
+		if !events.Core.IsDefined(id) {
 			return t, errfmt.Errorf("event %d is not defined", id)
 		}
-		evtCaps := events.Core.GetEventByID(id).GetDependencies().GetCapabilities()
+		evtCaps := events.Core.GetDefinitionByID(id).GetDependencies().GetCapabilities()
 		err = caps.BaseRingAdd(evtCaps.GetBase()...)
 		if err != nil {
 			return t, errfmt.WrapError(err)
@@ -494,10 +494,10 @@ type InitValues struct {
 func (t *Tracee) generateInitValues() (InitValues, error) {
 	initVals := InitValues{}
 	for evt := range t.eventsState {
-		if !events.Core.IsEventDefined(evt) {
+		if !events.Core.IsDefined(evt) {
 			return initVals, errfmt.Errorf("event %d is undefined", evt)
 		}
-		for range events.Core.GetEventByID(evt).GetDependencies().GetKSymbols() {
+		for range events.Core.GetDefinitionByID(evt).GetDependencies().GetKSymbols() {
 			initVals.Kallsyms = true // only if length > 0
 		}
 	}
@@ -523,8 +523,7 @@ func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 
 	// Attach internal syscall probes if needed.
 	for _, index := range tailCall.GetIndexes() {
-		evtDef := events.Core.GetEventByID(events.ID(index))
-		if evtDef.IsSyscall() {
+		if events.Core.GetDefinitionByID(events.ID(index)).IsSyscall() {
 			err := t.probes.Attach(probes.SyscallEnter__Internal)
 			if err != nil {
 				return errfmt.WrapError(err)
@@ -882,8 +881,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 	var reqKsyms []string
 	symsToDependentEvents := make(map[string][]events.ID)
 	for id := range t.eventsState {
-		event := events.Core.GetEventByID(id)
-		for _, symDep := range event.GetDependencies().GetKSymbols() {
+		for _, symDep := range events.Core.GetDefinitionByID(id).GetDependencies().GetKSymbols() {
 			reqKsyms = append(reqKsyms, symDep.GetSymbol())
 			if symDep.IsRequired() {
 				symEvents, ok := symsToDependentEvents[symDep.GetSymbol()]
@@ -919,11 +917,10 @@ func (t *Tracee) validateKallsymsDependencies() {
 
 	// Cancel events with missing symbols dependencies
 	for eventToCancel, missingDepSyms := range missingSymsPerEvent {
-		can := events.Core.GetEventByID(eventToCancel)
-		name := can.GetName()
+		eventNameToCancel := events.Core.GetDefinitionByID(eventToCancel).GetName()
 		logger.Errorw(
 			"Event canceled because of missing kernel symbol dependency",
-			"missing symbols", missingDepSyms, "event", name,
+			"missing symbols", missingDepSyms, "event", eventNameToCancel,
 		)
 		delete(t.eventsState, eventToCancel)
 	}
@@ -932,7 +929,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 func (t *Tracee) populateBPFMaps() error {
 	// Initialize events parameter types map
 	eventsParams := make(map[events.ID][]bufferdecoder.ArgType)
-	for id, eventDefinition := range events.Core.GetEvents() {
+	for id, eventDefinition := range events.Core.GetDefinitions() {
 		params := eventDefinition.GetParams()
 		for _, param := range params {
 			eventsParams[id] = append(eventsParams[id], bufferdecoder.GetParamType(param.Type))
@@ -969,10 +966,11 @@ func (t *Tracee) populateBPFMaps() error {
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-	for id, event := range events.Core.GetEvents() {
-		id32BitU32 := uint32(event.GetID32Bit()) // ID32Bit is int32
-		idU32 := uint32(id)                      // ID is int32
-		if err := sys32to64BPFMap.Update(unsafe.Pointer(&id32BitU32), unsafe.Pointer(&idU32)); err != nil {
+	for eventDefID, eventDefinition := range events.Core.GetDefinitions() {
+		id32BitU32 := uint32(eventDefinition.GetID32Bit()) // ID32Bit is int32
+		idU32 := uint32(eventDefID)                        // ID is int32
+		err := sys32to64BPFMap.Update(unsafe.Pointer(&id32BitU32), unsafe.Pointer(&idU32))
+		if err != nil {
 			return errfmt.WrapError(err)
 		}
 	}
@@ -1140,14 +1138,14 @@ func (t *Tracee) attachProbes() error {
 	// attach selected tracing events probes
 
 	for tr := range t.eventsState {
-		if !events.Core.IsEventDefined(tr) {
+		if !events.Core.IsDefined(tr) {
 			continue
 		}
 
-		event := events.Core.GetEventByID(tr)
+		eventDefinition := events.Core.GetDefinitionByID(tr)
 
 		// attach internal syscall probes for selected syscall events, if any
-		if event.IsSyscall() {
+		if eventDefinition.IsSyscall() {
 			err := t.probes.Attach(probes.SyscallEnter__Internal)
 			if err != nil {
 				return errfmt.WrapError(err)
@@ -1159,7 +1157,7 @@ func (t *Tracee) attachProbes() error {
 		}
 
 		// attach probes for selected events
-		for _, dep := range event.GetDependencies().GetProbes() {
+		for _, dep := range eventDefinition.GetDependencies().GetProbes() {
 			err = t.probes.Attach(dep.GetHandle(), t.cgroups)
 			if err != nil && dep.IsRequired() {
 				return errfmt.Errorf("failed to attach required probe: %v", err)

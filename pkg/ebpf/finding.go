@@ -16,12 +16,12 @@ func FindingToEvent(f detect.Finding) (*trace.Event, error) {
 		return nil, errfmt.Errorf("error converting finding to event: %s", f.SigMetadata.ID)
 	}
 
-	eventID, found := events.Core.GetEventIDByName(f.SigMetadata.EventName)
+	eventDefID, found := events.Core.GetDefinitionIDByName(f.SigMetadata.EventName)
 	if !found {
 		return nil, errfmt.Errorf("error finding event not found: %s", f.SigMetadata.EventName)
 	}
 
-	return newEvent(int(eventID), f, s), nil
+	return newEvent(int(eventDefID), f, s), nil
 }
 
 func newEvent(id int, f detect.Finding, s trace.Event) *trace.Event {
