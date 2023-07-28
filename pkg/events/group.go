@@ -8,6 +8,7 @@ import (
 )
 
 // TODO: add states to the EventGroup struct (to keep states of events from that group)
+
 type EventState struct {
 	Submit uint64 // event that should be submitted to userspace (by policies bitmap)
 	Emit   uint64 // event that should be emitted to the user (by policies bitmap)
@@ -125,9 +126,9 @@ func (e *EventGroup) Length() int {
 	return len(e.events)
 }
 
-// GetAllEvents returns a new map of existing event instances (at the time of the call).
+// GetEvents returns a new map of existing event instances (at the time of the call).
 // TODO: iterate internally after refactor is done ?
-func (e *EventGroup) GetAllEvents() map[ID]Event {
+func (e *EventGroup) GetEvents() map[ID]Event {
 	e.mutex.RLock()
 	defer e.mutex.RUnlock()
 
@@ -182,7 +183,7 @@ func (e *EventGroup) GetTailCalls(evtConfig map[ID]EventState) []TailCall {
 	for id, evt := range e.events {
 		// Only events being traced should provide their tailcalls.
 		if evtConfig[id].Submit > 0 {
-			tailCalls = append(tailCalls, evt.GetDependencies().TailCalls...)
+			tailCalls = append(tailCalls, evt.GetDependencies().GetTailCalls()...)
 		}
 	}
 

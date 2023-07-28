@@ -108,7 +108,7 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 
 	var evt events.Event
 
-	allEvents := events.Core.GetAllEvents()
+	allEvents := events.Core.GetEvents()
 
 	// Check if the given events exist
 

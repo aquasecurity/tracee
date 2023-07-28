@@ -69,7 +69,7 @@ type Tracee struct {
 	stats     metrics.Stats
 	sigEngine *engine.Engine
 	// Events States
-	events map[events.ID]events.EventState
+	eventsState map[events.ID]events.EventState
 	// Events
 	eventsSorter     *sorting.EventsChronologicalSorter
 	eventsPool       *sync.Pool
@@ -178,21 +178,20 @@ func GetCaptureEventsList(cfg config.Config) map[events.ID]events.EventState {
 	return captureEvents
 }
 
-func (t *Tracee) handleEventsDependencies(eventId events.ID, submitMap uint64) {
-	definition := events.Core.GetEventByID(eventId)
-
-	eDependencies := definition.GetDependencies()
-	for _, id := range eDependencies.Events {
-		ec, ok := t.events[id]
+func (t *Tracee) handleEventsDependencies(givenEventId events.ID, submitMap uint64) {
+	givenEvent := events.Core.GetEventByID(givenEventId)
+	for _, depEventId := range givenEvent.GetDependencies().GetEvents() {
+		depEventState, ok := t.eventsState[depEventId]
 		if !ok {
-			ec = events.EventState{}
-			t.handleEventsDependencies(id, submitMap)
+			depEventState = events.EventState{}
+			t.handleEventsDependencies(depEventId, submitMap)
 		}
-		ec.Submit |= submitMap
-		t.events[id] = ec
 
-		if events.IsASignatureEvent(eventId) {
-			t.eventSignatures[id] = true
+		depEventState.Submit |= submitMap
+		t.eventsState[depEventId] = depEventState
+
+		if events.Core.GetEventByID(givenEventId).IsSignature() {
+			t.eventSignatures[depEventId] = true
 		}
 	}
 }
@@ -214,7 +213,7 @@ func New(cfg config.Config) (*Tracee, error) {
 		writtenFiles:    make(map[string]string),
 		readFiles:       make(map[string]string),
 		capturedFiles:   make(map[string]int64),
-		events:          GetEssentialEventsList(),
+		eventsState:     GetEssentialEventsList(),
 		eventSignatures: make(map[events.ID]bool),
 	}
 
@@ -229,7 +228,7 @@ func New(cfg config.Config) (*Tracee, error) {
 	// Pseudo events added by capture
 
 	for eventID, eCfg := range GetCaptureEventsList(cfg) {
-		t.events[eventID] = eCfg
+		t.eventsState[eventID] = eCfg
 	}
 
 	// Events chosen by the user
@@ -237,41 +236,36 @@ func New(cfg config.Config) (*Tracee, error) {
 	for p := range t.config.Policies.Map() {
 		for e := range p.EventsToTrace {
 			var submit, emit uint64
-			if _, ok := t.events[e]; ok {
-				submit = t.events[e].Submit
-				emit = t.events[e].Emit
+			if _, ok := t.eventsState[e]; ok {
+				submit = t.eventsState[e].Submit
+				emit = t.eventsState[e].Emit
 			}
 			utils.SetBit(&submit, uint(p.ID))
 			utils.SetBit(&emit, uint(p.ID))
-			t.events[e] = events.EventState{Submit: submit, Emit: emit}
+			t.eventsState[e] = events.EventState{Submit: submit, Emit: emit}
 		}
 	}
 
 	// Handle all essential events dependencies
 
-	for id, evt := range t.events {
+	for id, evt := range t.eventsState {
 		t.handleEventsDependencies(id, evt.Submit)
 	}
 
 	// Update capabilities rings with all events dependencies
 
-	for id := range t.events {
+	for id := range t.eventsState {
 		evt, ok := events.Core.GetEventByIDWithOk(id)
 		if !ok {
 			return t, errfmt.Errorf("could not get event %d", id)
 		}
-		for ringType, capArray := range evt.GetDependencies().Capabilities {
-			var f func(values ...cap.Value) error
-			switch ringType {
-			case capabilities.Base:
-				f = caps.BaseRingAdd
-			case capabilities.EBPF:
-				f = caps.EBPFRingAdd
-			}
-			err = f(capArray[:]...)
-			if err != nil {
-				return t, errfmt.WrapError(err)
-			}
+		err = caps.BaseRingAdd(evt.GetDependencies().GetCapabilities().GetBase()...)
+		if err != nil {
+			return t, errfmt.WrapError(err)
+		}
+		err = caps.BaseRingAdd(evt.GetDependencies().GetCapabilities().GetEBPF()...)
+		if err != nil {
+			return t, errfmt.WrapError(err)
 		}
 	}
 
@@ -499,13 +493,13 @@ type InitValues struct {
 
 func (t *Tracee) generateInitValues() (InitValues, error) {
 	initVals := InitValues{}
-	for evt := range t.events {
+	for evt := range t.eventsState {
 		def, exists := events.Core.GetEventByIDWithOk(evt)
 		if !exists {
 			return initVals, errfmt.Errorf("event with id %d doesn't exist", evt)
 		}
-		if def.GetDependencies().KSymbols != nil {
-			initVals.Kallsyms = true
+		for range def.GetDependencies().GetKSymbols() {
+			initVals.Kallsyms = true // only if length > 0
 		}
 	}
 
@@ -518,13 +512,14 @@ func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-	bpfProg, err := t.bpfModule.GetProgram(tailCall.GetProgName())
+	progName := tailCall.GetProgName()
+	bpfProg, err := t.bpfModule.GetProgram(progName)
 	if err != nil {
-		return errfmt.Errorf("could not get BPF program %s: %v", tailCall.GetProgName(), err)
+		return errfmt.Errorf("could not get BPF program %s: %v", progName, err)
 	}
 	fd := bpfProg.FileDescriptor()
 	if fd < 0 {
-		return errfmt.Errorf("could not get BPF program FD for %s: %v", tailCall.GetProgName(), err)
+		return errfmt.Errorf("could not get BPF program FD for %s: %v", progName, err)
 	}
 
 	// Attach internal syscall probes if needed.
@@ -554,7 +549,7 @@ func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 // derived and the corresponding function to derive into that Event.
 func (t *Tracee) initDerivationTable() error {
 	shouldSubmit := func(id events.ID) func() bool {
-		return func() bool { return t.events[id].Submit > 0 }
+		return func() bool { return t.eventsState[id].Submit > 0 }
 	}
 
 	t.eventDerivations = derive.Table{
@@ -887,20 +882,18 @@ func (t *Tracee) computeConfigValues() []byte {
 func (t *Tracee) validateKallsymsDependencies() {
 	var reqKsyms []string
 	symsToDependentEvents := make(map[string][]events.ID)
-	for id := range t.events {
+	for id := range t.eventsState {
 		event := events.Core.GetEventByID(id)
-		if event.GetDependencies().KSymbols != nil {
-			for _, symDep := range event.GetDependencies().KSymbols {
-				reqKsyms = append(reqKsyms, symDep.Symbol)
-				if symDep.Required {
-					symEvents, ok := symsToDependentEvents[symDep.Symbol]
-					if ok {
-						symEvents = append(symEvents, id)
-					} else {
-						symEvents = []events.ID{id}
-					}
-					symsToDependentEvents[symDep.Symbol] = symEvents
+		for _, symDep := range event.GetDependencies().GetKSymbols() {
+			reqKsyms = append(reqKsyms, symDep.GetSymbol())
+			if symDep.IsRequired() {
+				symEvents, ok := symsToDependentEvents[symDep.GetSymbol()]
+				if ok {
+					symEvents = append(symEvents, id)
+				} else {
+					symEvents = []events.ID{id}
 				}
+				symsToDependentEvents[symDep.GetSymbol()] = symEvents
 			}
 		}
 	}
@@ -933,14 +926,14 @@ func (t *Tracee) validateKallsymsDependencies() {
 			"Event canceled because of missing kernel symbol dependency",
 			"missing symbols", missingDepSyms, "event", name,
 		)
-		delete(t.events, eventToCancel)
+		delete(t.eventsState, eventToCancel)
 	}
 }
 
 func (t *Tracee) populateBPFMaps() error {
 	// Initialize events parameter types map
 	eventsParams := make(map[events.ID][]bufferdecoder.ArgType)
-	for id, eventDefinition := range events.Core.GetAllEvents() {
+	for id, eventDefinition := range events.Core.GetEvents() {
 		params := eventDefinition.GetParams()
 		for _, param := range params {
 			eventsParams[id] = append(eventsParams[id], bufferdecoder.GetParamType(param.Type))
@@ -952,7 +945,7 @@ func (t *Tracee) populateBPFMaps() error {
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-	for id, ecfg := range t.events {
+	for id, ecfg := range t.eventsState {
 		eventConfigVal := make([]byte, 16)
 
 		// bitmap of policies that require this event to be submitted
@@ -977,7 +970,7 @@ func (t *Tracee) populateBPFMaps() error {
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-	for id, event := range events.Core.GetAllEvents() {
+	for id, event := range events.Core.GetEvents() {
 		id32BitU32 := uint32(event.GetID32Bit()) // ID32Bit is int32
 		idU32 := uint32(id)                      // ID is int32
 		if err := sys32to64BPFMap.Update(unsafe.Pointer(&id32BitU32), unsafe.Pointer(&idU32)); err != nil {
@@ -1124,7 +1117,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Initialize tail call dependencies
-	tailCalls := events.Core.GetTailCalls(t.events)
+	tailCalls := events.Core.GetTailCalls(t.eventsState)
 	for _, tailCall := range tailCalls {
 		err := t.initTailCall(tailCall)
 		if err != nil {
@@ -1147,7 +1140,7 @@ func (t *Tracee) attachProbes() error {
 
 	// attach selected tracing events probes
 
-	for tr := range t.events {
+	for tr := range t.eventsState {
 		event, ok := events.Core.GetEventByIDWithOk(tr)
 		if !ok {
 			continue
@@ -1166,9 +1159,9 @@ func (t *Tracee) attachProbes() error {
 		}
 
 		// attach probes for selected events
-		for _, dep := range event.GetDependencies().Probes {
-			err = t.probes.Attach(dep.Handle, t.cgroups)
-			if err != nil && dep.Required {
+		for _, dep := range event.GetDependencies().GetProbes() {
+			err = t.probes.Attach(dep.GetHandle(), t.cgroups)
+			if err != nil && dep.IsRequired() {
 				return errfmt.Errorf("failed to attach required probe: %v", err)
 			}
 		}
@@ -1505,7 +1498,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		event.MatchedPolicies = t.config.Policies.MatchedNames(matchedPolicies)
 	}
 
-	emit = t.events[events.InitNamespaces].Emit
+	emit = t.eventsState[events.InitNamespaces].Emit
 	if emit > 0 {
 		systemInfoEvent := events.InitNamespacesEvent()
 		setMatchedPolicies(&systemInfoEvent, emit)
@@ -1513,7 +1506,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		_ = t.stats.EventCount.Increment()
 	}
 
-	emit = t.events[events.ExistingContainer].Emit
+	emit = t.eventsState[events.ExistingContainer].Emit
 	if emit > 0 {
 		for _, e := range events.ExistingContainersEvents(t.containers, t.config.ContainersEnrich) {
 			setMatchedPolicies(&e, emit)
@@ -1525,7 +1518,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 
 // netEnabled returns true if any base network event is to be traced
 func (t *Tracee) netEnabled() bool {
-	for k := range t.events {
+	for k := range t.eventsState {
 		if k >= events.NetPacketBase && k <= events.MaxNetID {
 			return true
 		}
@@ -1542,7 +1535,7 @@ func (t *Tracee) netEnabled() bool {
 // triggerSyscallsIntegrityCheck is used by a Uprobe to trigger an eBPF program
 // that prints the syscall table
 func (t *Tracee) triggerSyscallsIntegrityCheck(event trace.Event) error {
-	_, ok := t.events[events.HookedSyscalls]
+	_, ok := t.eventsState[events.HookedSyscalls]
 	if !ok {
 		return nil
 	}
@@ -1591,7 +1584,7 @@ func (t *Tracee) triggerSyscallsIntegrityCheckCall(eventHandle uint64, table_siz
 // triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program
 // that prints the seq ops pointers
 func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
-	_, ok := t.events[events.HookedSeqOps]
+	_, ok := t.eventsState[events.HookedSeqOps]
 	if !ok {
 		return
 	}
@@ -1620,7 +1613,7 @@ func (t *Tracee) triggerSeqOpsIntegrityCheckCall(
 // triggerMemDump is used by a Uprobe to trigger an eBPF program
 // that prints the first bytes of requested symbols or addresses
 func (t *Tracee) triggerMemDump(event trace.Event) error {
-	if _, ok := t.events[events.PrintMemDump]; !ok {
+	if _, ok := t.eventsState[events.PrintMemDump]; !ok {
 		return nil
 	}
 

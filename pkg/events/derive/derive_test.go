@@ -78,9 +78,15 @@ func Test_DeriveEvent(t *testing.T) {
 func Test_DeriveSingleEvent(t *testing.T) {
 	testEventID := events.ID(0)
 
-	// Change getter of the events.Event to give the test definition
-	evtDef := events.Core.GetEventByID(testEventID)
-	evtDef.SetParams(
+	evtDef := events.NewEvent(
+		testEventID,           // ID
+		events.Sys32Undefined, // ID32Bit
+		"test_event",          // Name
+		"test_event",          // DocPath
+		false,                 // Internal
+		false,                 // Syscall
+		[]string{},            // Sets
+		events.Dependencies{}, // Dependencies
 		[]trace.ArgMeta{
 			{
 				Name: "arg1",
@@ -90,7 +96,8 @@ func Test_DeriveSingleEvent(t *testing.T) {
 				Name: "arg2",
 				Type: "int",
 			},
-		})
+		},
+	)
 
 	// store the original getEventDefinition function
 	savedEventDefFunc := getEventDefinition
@@ -167,18 +174,27 @@ func Test_DeriveSingleEvent(t *testing.T) {
 func TestDeriveMultipleEvents(t *testing.T) {
 	testEventID := events.ID(0)
 
-	// Change getter of the events.Event to give the test definition
-	evtDef := events.Core.GetEventByID(testEventID)
-	evtDef.SetParams([]trace.ArgMeta{
-		{
-			Name: "arg1",
-			Type: "int",
+	evtDef := events.NewEvent(
+		testEventID,           // ID
+		events.Sys32Undefined, // ID32Bit
+		"test_event",          // Name
+		"test_event",          // DocPath
+		false,                 // Internal
+		false,                 // Syscall
+		[]string{},            // Sets
+		events.Dependencies{}, // Dependencies
+		[]trace.ArgMeta{
+			{
+				Name: "arg1",
+				Type: "int",
+			},
+			{
+				Name: "arg2",
+				Type: "int",
+			},
 		},
-		{
-			Name: "arg2",
-			Type: "int",
-		},
-	})
+	)
+
 	savedEventDefFunc := getEventDefinition
 	defer func() {
 		getEventDefinition = savedEventDefFunc

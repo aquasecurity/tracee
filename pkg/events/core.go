@@ -3,7 +3,6 @@ package events
 import (
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
-	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -169,6 +168,7 @@ var CoreEvents = map[ID]Event{
 	// Begin of Syscalls
 	//
 	Read: {
+		id:      Read,
 		id32Bit: Sys32read,
 		name:    "read",
 		syscall: true,
@@ -179,7 +179,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "count"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Read)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Read)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Read)}},
@@ -188,6 +188,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Write: {
+		id:      Write,
 		id32Bit: Sys32write,
 		name:    "write",
 		syscall: true,
@@ -198,7 +199,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "count"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Write)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Write)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Write)}},
@@ -207,6 +208,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Open: {
+		id:      Open,
 		id32Bit: Sys32open,
 		name:    "open",
 		syscall: true,
@@ -217,7 +219,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "mode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Open)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Open)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Open)}},
@@ -226,6 +228,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Close: {
+		id:      Close,
 		id32Bit: Sys32close,
 		name:    "close",
 		syscall: true,
@@ -234,7 +237,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "fd"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Close)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Close)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Close)}},
@@ -243,6 +246,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Stat: {
+		id:      Stat,
 		id32Bit: Sys32stat,
 		name:    "stat",
 		syscall: true,
@@ -252,7 +256,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct stat*", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Stat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Stat)}},
@@ -261,6 +265,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fstat: {
+		id:      Fstat,
 		id32Bit: Sys32fstat,
 		name:    "fstat",
 		syscall: true,
@@ -270,7 +275,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct stat*", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fstat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fstat)}},
@@ -279,6 +284,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Lstat: {
+		id:      Lstat,
 		id32Bit: Sys32lstat,
 		name:    "lstat",
 		syscall: true,
@@ -288,7 +294,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct stat*", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lstat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lstat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lstat)}},
@@ -297,6 +303,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Poll: {
+		id:      Poll,
 		id32Bit: Sys32poll,
 		name:    "poll",
 		syscall: true,
@@ -307,7 +314,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "timeout"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Poll)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Poll)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Poll)}},
@@ -316,6 +323,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Lseek: {
+		id:      Lseek,
 		id32Bit: Sys32lseek,
 		name:    "lseek",
 		syscall: true,
@@ -326,7 +334,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "whence"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lseek)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lseek)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lseek)}},
@@ -335,6 +343,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Mmap: {
+		id:      Mmap,
 		id32Bit: Sys32mmap,
 		name:    "mmap",
 		syscall: true,
@@ -348,7 +357,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "off_t", Name: "off"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mmap)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mmap)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mmap)}},
@@ -357,6 +366,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Mprotect: {
+		id:      Mprotect,
 		id32Bit: Sys32mprotect,
 		name:    "mprotect",
 		syscall: true,
@@ -367,7 +377,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "prot"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mprotect)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mprotect)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mprotect)}},
@@ -376,6 +386,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Munmap: {
+		id:      Munmap,
 		id32Bit: Sys32munmap,
 		name:    "munmap",
 		syscall: true,
@@ -385,7 +396,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "length"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Munmap)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Munmap)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Munmap)}},
@@ -394,6 +405,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Brk: {
+		id:      Brk,
 		id32Bit: Sys32brk,
 		name:    "brk",
 		syscall: true,
@@ -402,7 +414,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "void*", Name: "addr"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Brk)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Brk)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Brk)}},
@@ -411,6 +423,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	RtSigaction: {
+		id:      RtSigaction,
 		id32Bit: Sys32rt_sigaction,
 		name:    "rt_sigaction",
 		syscall: true,
@@ -422,7 +435,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigaction)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigaction)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigaction)}},
@@ -431,6 +444,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	RtSigprocmask: {
+		id:      RtSigprocmask,
 		id32Bit: Sys32rt_sigprocmask,
 		name:    "rt_sigprocmask",
 		syscall: true,
@@ -442,7 +456,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigprocmask)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigprocmask)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigprocmask)}},
@@ -451,13 +465,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	RtSigreturn: {
+		id:      RtSigreturn,
 		id32Bit: Sys32rt_sigreturn,
 		name:    "rt_sigreturn",
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigreturn)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigreturn)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigreturn)}},
@@ -466,6 +481,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Ioctl: {
+		id:      Ioctl,
 		id32Bit: Sys32ioctl,
 		name:    "ioctl",
 		syscall: true,
@@ -476,7 +492,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "arg"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ioctl)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ioctl)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ioctl)}},
@@ -485,6 +501,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Pread64: {
+		id:      Pread64,
 		id32Bit: Sys32pread64,
 		name:    "pread64",
 		syscall: true,
@@ -496,7 +513,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "off_t", Name: "offset"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pread64)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pread64)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pread64)}},
@@ -505,6 +522,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Pwrite64: {
+		id:      Pwrite64,
 		id32Bit: Sys32pwrite64,
 		name:    "pwrite64",
 		syscall: true,
@@ -516,7 +534,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "off_t", Name: "offset"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pwrite64)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pwrite64)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pwrite64)}},
@@ -525,6 +543,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Readv: {
+		id:      Readv,
 		id32Bit: Sys32readv,
 		name:    "readv",
 		syscall: true,
@@ -535,7 +554,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "iovcnt"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readv)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readv)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readv)}},
@@ -544,6 +563,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Writev: {
+		id:      Writev,
 		id32Bit: Sys32writev,
 		name:    "writev",
 		syscall: true,
@@ -554,7 +574,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "iovcnt"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Writev)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Writev)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Writev)}},
@@ -563,6 +583,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Access: {
+		id:      Access,
 		id32Bit: Sys32access,
 		name:    "access",
 		syscall: true,
@@ -572,7 +593,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "mode"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Access)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Access)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Access)}},
@@ -581,6 +602,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Pipe: {
+		id:      Pipe,
 		id32Bit: Sys32pipe,
 		name:    "pipe",
 		syscall: true,
@@ -589,7 +611,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int[2]", Name: "pipefd"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pipe)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pipe)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pipe)}},
@@ -598,6 +620,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Select: {
+		id:      Select,
 		id32Bit: Sys32_newselect,
 		name:    "select",
 		syscall: true,
@@ -610,7 +633,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct timeval*", Name: "timeout"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Select)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Select)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Select)}},
@@ -619,13 +642,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SchedYield: {
+		id:      SchedYield,
 		id32Bit: Sys32sched_yield,
 		name:    "sched_yield",
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_sched"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedYield)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedYield)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedYield)}},
@@ -634,6 +658,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Mremap: {
+		id:      Mremap,
 		id32Bit: Sys32mremap,
 		name:    "mremap",
 		syscall: true,
@@ -646,7 +671,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "void*", Name: "new_address"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mremap)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mremap)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mremap)}},
@@ -655,6 +680,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Msync: {
+		id:      Msync,
 		id32Bit: Sys32msync,
 		name:    "msync",
 		syscall: true,
@@ -665,7 +691,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msync)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msync)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msync)}},
@@ -674,6 +700,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Mincore: {
+		id:      Mincore,
 		id32Bit: Sys32mincore,
 		name:    "mincore",
 		syscall: true,
@@ -684,7 +711,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned char*", Name: "vec"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mincore)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mincore)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mincore)}},
@@ -693,6 +720,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Madvise: {
+		id:      Madvise,
 		id32Bit: Sys32madvise,
 		name:    "madvise",
 		syscall: true,
@@ -703,7 +731,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "advice"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Madvise)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Madvise)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Madvise)}},
@@ -712,6 +740,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Shmget: {
+		id:      Shmget,
 		id32Bit: Sys32shmget,
 		name:    "shmget",
 		syscall: true,
@@ -722,7 +751,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "shmflg"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmget)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shmget)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shmget)}},
@@ -731,6 +760,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Shmat: {
+		id:      Shmat,
 		id32Bit: Sys32shmat,
 		name:    "shmat",
 		syscall: true,
@@ -741,7 +771,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "shmflg"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shmat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shmat)}},
@@ -750,6 +780,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Shmctl: {
+		id:      Shmctl,
 		id32Bit: Sys32shmctl,
 		name:    "shmctl",
 		syscall: true,
@@ -760,7 +791,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct shmid_ds*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmctl)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shmctl)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shmctl)}},
@@ -769,6 +800,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Dup: {
+		id:      Dup,
 		id32Bit: Sys32dup,
 		name:    "dup",
 		syscall: true,
@@ -777,7 +809,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "oldfd"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Dup)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Dup)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Dup)}},
@@ -786,6 +818,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Dup2: {
+		id:      Dup2,
 		id32Bit: Sys32dup2,
 		name:    "dup2",
 		syscall: true,
@@ -795,7 +828,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "newfd"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Dup2)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Dup2)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Dup2)}},
@@ -804,13 +837,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Pause: {
+		id:      Pause,
 		id32Bit: Sys32pause,
 		name:    "pause",
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pause)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pause)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pause)}},
@@ -819,6 +853,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Nanosleep: {
+		id:      Nanosleep,
 		id32Bit: Sys32nanosleep,
 		name:    "nanosleep",
 		syscall: true,
@@ -828,7 +863,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct timespec*", Name: "rem"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Nanosleep)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Nanosleep)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Nanosleep)}},
@@ -837,6 +872,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getitimer: {
+		id:      Getitimer,
 		id32Bit: Sys32getitimer,
 		name:    "getitimer",
 		syscall: true,
@@ -846,7 +882,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct itimerval*", Name: "curr_value"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getitimer)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getitimer)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getitimer)}},
@@ -855,6 +891,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Alarm: {
+		id:      Alarm,
 		id32Bit: Sys32alarm,
 		name:    "alarm",
 		syscall: true,
@@ -863,7 +900,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "seconds"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Alarm)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Alarm)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Alarm)}},
@@ -872,6 +909,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setitimer: {
+		id:      Setitimer,
 		id32Bit: Sys32setitimer,
 		name:    "setitimer",
 		syscall: true,
@@ -882,7 +920,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct itimerval*", Name: "old_value"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setitimer)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setitimer)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setitimer)}},
@@ -891,13 +929,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getpid: {
+		id:      Getpid,
 		id32Bit: Sys32getpid,
 		name:    "getpid",
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpid)}},
@@ -906,6 +945,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Sendfile: {
+		id:      Sendfile,
 		id32Bit: Sys32sendfile64,
 		name:    "sendfile",
 		syscall: true,
@@ -917,7 +957,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "count"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendfile)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendfile)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendfile)}},
@@ -926,6 +966,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Socket: {
+		id:      Socket,
 		id32Bit: Sys32socket,
 		name:    "socket",
 		syscall: true,
@@ -936,7 +977,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "protocol"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Socket)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Socket)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Socket)}},
@@ -945,6 +986,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Connect: {
+		id:      Connect,
 		id32Bit: Sys32connect,
 		name:    "connect",
 		syscall: true,
@@ -955,7 +997,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "addrlen"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Connect)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Connect)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Connect)}},
@@ -964,6 +1006,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Accept: {
+		id:      Accept,
 		id32Bit: Sys32Undefined,
 		name:    "accept",
 		syscall: true,
@@ -974,7 +1017,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int*", Name: "addrlen"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Accept)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Accept)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Accept)}},
@@ -983,6 +1026,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Sendto: {
+		id:      Sendto,
 		id32Bit: Sys32sendto,
 		name:    "sendto",
 		syscall: true,
@@ -996,7 +1040,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "addrlen"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendto)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendto)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendto)}},
@@ -1005,6 +1049,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Recvfrom: {
+		id:      Recvfrom,
 		id32Bit: Sys32recvfrom,
 		name:    "recvfrom",
 		syscall: true,
@@ -1018,7 +1063,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int*", Name: "addrlen"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Recvfrom)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Recvfrom)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Recvfrom)}},
@@ -1027,6 +1072,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Sendmsg: {
+		id:      Sendmsg,
 		id32Bit: Sys32sendmsg,
 		name:    "sendmsg",
 		syscall: true,
@@ -1037,7 +1083,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendmsg)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendmsg)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendmsg)}},
@@ -1046,6 +1092,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Recvmsg: {
+		id:      Recvmsg,
 		id32Bit: Sys32recvmsg,
 		name:    "recvmsg",
 		syscall: true,
@@ -1056,7 +1103,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Recvmsg)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Recvmsg)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Recvmsg)}},
@@ -1065,6 +1112,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Shutdown: {
+		id:      Shutdown,
 		id32Bit: Sys32shutdown,
 		name:    "shutdown",
 		syscall: true,
@@ -1074,7 +1122,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "how"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shutdown)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shutdown)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shutdown)}},
@@ -1083,6 +1131,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Bind: {
+		id:      Bind,
 		id32Bit: Sys32bind,
 		name:    "bind",
 		syscall: true,
@@ -1093,7 +1142,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "addrlen"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Bind)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Bind)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Bind)}},
@@ -1102,6 +1151,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Listen: {
+		id:      Listen,
 		id32Bit: Sys32listen,
 		name:    "listen",
 		syscall: true,
@@ -1111,7 +1161,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "backlog"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Listen)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Listen)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Listen)}},
@@ -1120,6 +1170,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getsockname: {
+		id:      Getsockname,
 		id32Bit: Sys32getsockname,
 		name:    "getsockname",
 		syscall: true,
@@ -1130,7 +1181,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int*", Name: "addrlen"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getsockname)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getsockname)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getsockname)}},
@@ -1139,6 +1190,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getpeername: {
+		id:      Getpeername,
 		id32Bit: Sys32getpeername,
 		name:    "getpeername",
 		syscall: true,
@@ -1149,7 +1201,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int*", Name: "addrlen"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpeername)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpeername)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpeername)}},
@@ -1158,6 +1210,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Socketpair: {
+		id:      Socketpair,
 		id32Bit: Sys32socketpair,
 		name:    "socketpair",
 		syscall: true,
@@ -1169,7 +1222,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int[2]", Name: "sv"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Socketpair)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Socketpair)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Socketpair)}},
@@ -1178,6 +1231,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setsockopt: {
+		id:      Setsockopt,
 		id32Bit: Sys32setsockopt,
 		name:    "setsockopt",
 		syscall: true,
@@ -1190,7 +1244,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "optlen"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setsockopt)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setsockopt)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setsockopt)}},
@@ -1199,6 +1253,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getsockopt: {
+		id:      Getsockopt,
 		id32Bit: Sys32getsockopt,
 		name:    "getsockopt",
 		syscall: true,
@@ -1211,7 +1266,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int*", Name: "optlen"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getsockopt)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getsockopt)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getsockopt)}},
@@ -1220,6 +1275,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Clone: {
+		id:      Clone,
 		id32Bit: Sys32clone,
 		name:    "clone",
 		syscall: true,
@@ -1232,7 +1288,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "tls"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Clone)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Clone)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Clone)}},
@@ -1241,13 +1297,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fork: {
+		id:      Fork,
 		id32Bit: Sys32fork,
 		name:    "fork",
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_life"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fork)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fork)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fork)}},
@@ -1256,13 +1313,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Vfork: {
+		id:      Vfork,
 		id32Bit: Sys32vfork,
 		name:    "vfork",
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_life"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vfork)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vfork)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vfork)}},
@@ -1271,6 +1329,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Execve: {
+		id:      Execve,
 		id32Bit: Sys32execve,
 		name:    "execve",
 		syscall: true,
@@ -1281,7 +1340,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*const*", Name: "envp"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_tails", "syscall__execve", []uint32{uint32(Execve)}},
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Execve)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Execve)}},
@@ -1291,6 +1350,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Exit: {
+		id:      Exit,
 		id32Bit: Sys32exit,
 		name:    "exit",
 		syscall: true,
@@ -1299,7 +1359,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "status"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Exit)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Exit)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Exit)}},
@@ -1308,6 +1368,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Wait4: {
+		id:      Wait4,
 		id32Bit: Sys32wait4,
 		name:    "wait4",
 		syscall: true,
@@ -1319,7 +1380,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct rusage*", Name: "rusage"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Wait4)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Wait4)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Wait4)}},
@@ -1328,6 +1389,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Kill: {
+		id:      Kill,
 		id32Bit: Sys32kill,
 		name:    "kill",
 		syscall: true,
@@ -1337,7 +1399,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "sig"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Kill)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Kill)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Kill)}},
@@ -1346,6 +1408,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Uname: {
+		id:      Uname,
 		id32Bit: Sys32uname,
 		name:    "uname",
 		syscall: true,
@@ -1354,7 +1417,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct utsname*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Uname)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Uname)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Uname)}},
@@ -1363,6 +1426,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Semget: {
+		id:      Semget,
 		id32Bit: Sys32semget,
 		name:    "semget",
 		syscall: true,
@@ -1373,7 +1437,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "semflg"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semget)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Semget)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Semget)}},
@@ -1382,6 +1446,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Semop: {
+		id:      Semop,
 		id32Bit: Sys32Undefined,
 		name:    "semop",
 		syscall: true,
@@ -1392,7 +1457,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "nsops"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semop)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Semop)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Semop)}},
@@ -1401,6 +1466,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Semctl: {
+		id:      Semctl,
 		id32Bit: Sys32semctl,
 		name:    "semctl",
 		syscall: true,
@@ -1412,7 +1478,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "arg"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semctl)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Semctl)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Semctl)}},
@@ -1421,6 +1487,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Shmdt: {
+		id:      Shmdt,
 		id32Bit: Sys32shmdt,
 		name:    "shmdt",
 		syscall: true,
@@ -1429,7 +1496,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const void*", Name: "shmaddr"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmdt)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Shmdt)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Shmdt)}},
@@ -1438,6 +1505,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Msgget: {
+		id:      Msgget,
 		id32Bit: Sys32msgget,
 		name:    "msgget",
 		syscall: true,
@@ -1447,7 +1515,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "msgflg"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgget)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msgget)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msgget)}},
@@ -1456,6 +1524,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Msgsnd: {
+		id:      Msgsnd,
 		id32Bit: Sys32msgsnd,
 		name:    "msgsnd",
 		syscall: true,
@@ -1467,7 +1536,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "msgflg"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgsnd)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msgsnd)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msgsnd)}},
@@ -1476,6 +1545,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Msgrcv: {
+		id:      Msgrcv,
 		id32Bit: Sys32msgrcv,
 		name:    "msgrcv",
 		syscall: true,
@@ -1488,7 +1558,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "msgflg"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgrcv)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msgrcv)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msgrcv)}},
@@ -1497,6 +1567,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Msgctl: {
+		id:      Msgctl,
 		id32Bit: Sys32msgctl,
 		name:    "msgctl",
 		syscall: true,
@@ -1507,7 +1578,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct msqid_ds*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgctl)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Msgctl)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Msgctl)}},
@@ -1516,6 +1587,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fcntl: {
+		id:      Fcntl,
 		id32Bit: Sys32fcntl,
 		name:    "fcntl",
 		syscall: true,
@@ -1526,7 +1598,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "arg"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fcntl)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fcntl)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fcntl)}},
@@ -1535,6 +1607,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Flock: {
+		id:      Flock,
 		id32Bit: Sys32flock,
 		name:    "flock",
 		syscall: true,
@@ -1544,7 +1617,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "operation"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Flock)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Flock)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Flock)}},
@@ -1553,6 +1626,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fsync: {
+		id:      Fsync,
 		id32Bit: Sys32fsync,
 		name:    "fsync",
 		syscall: true,
@@ -1561,7 +1635,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "fd"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsync)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsync)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsync)}},
@@ -1570,6 +1644,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fdatasync: {
+		id:      Fdatasync,
 		id32Bit: Sys32fdatasync,
 		name:    "fdatasync",
 		syscall: true,
@@ -1578,7 +1653,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "fd"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fdatasync)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fdatasync)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fdatasync)}},
@@ -1587,6 +1662,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Truncate: {
+		id:      Truncate,
 		id32Bit: Sys32truncate,
 		name:    "truncate",
 		syscall: true,
@@ -1596,7 +1672,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "off_t", Name: "length"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Truncate)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Truncate)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Truncate)}},
@@ -1605,6 +1681,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Ftruncate: {
+		id:      Ftruncate,
 		id32Bit: Sys32ftruncate,
 		name:    "ftruncate",
 		syscall: true,
@@ -1614,7 +1691,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "off_t", Name: "length"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ftruncate)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ftruncate)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ftruncate)}},
@@ -1623,6 +1700,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getdents: {
+		id:      Getdents,
 		id32Bit: Sys32getdents,
 		name:    "getdents",
 		syscall: true,
@@ -1633,7 +1711,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "count"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getdents)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getdents)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getdents)}},
@@ -1642,6 +1720,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getcwd: {
+		id:      Getcwd,
 		id32Bit: Sys32getcwd,
 		name:    "getcwd",
 		syscall: true,
@@ -1651,7 +1730,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "size"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getcwd)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getcwd)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getcwd)}},
@@ -1660,6 +1739,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Chdir: {
+		id:      Chdir,
 		id32Bit: Sys32chdir,
 		name:    "chdir",
 		syscall: true,
@@ -1668,7 +1748,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "path"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chdir)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chdir)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chdir)}},
@@ -1677,6 +1757,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fchdir: {
+		id:      Fchdir,
 		id32Bit: Sys32fchdir,
 		name:    "fchdir",
 		syscall: true,
@@ -1685,7 +1766,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "fd"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchdir)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchdir)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchdir)}},
@@ -1694,6 +1775,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Rename: {
+		id:      Rename,
 		id32Bit: Sys32rename,
 		name:    "rename",
 		syscall: true,
@@ -1703,7 +1785,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "newpath"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Rename)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Rename)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Rename)}},
@@ -1712,6 +1794,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Mkdir: {
+		id:      Mkdir,
 		id32Bit: Sys32mkdir,
 		name:    "mkdir",
 		syscall: true,
@@ -1721,7 +1804,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "mode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mkdir)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mkdir)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mkdir)}},
@@ -1730,6 +1813,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Rmdir: {
+		id:      Rmdir,
 		id32Bit: Sys32rmdir,
 		name:    "rmdir",
 		syscall: true,
@@ -1738,7 +1822,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "pathname"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Rmdir)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Rmdir)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Rmdir)}},
@@ -1747,6 +1831,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Creat: {
+		id:      Creat,
 		id32Bit: Sys32creat,
 		name:    "creat",
 		syscall: true,
@@ -1756,7 +1841,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "mode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Creat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Creat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Creat)}},
@@ -1765,6 +1850,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Link: {
+		id:      Link,
 		id32Bit: Sys32link,
 		name:    "link",
 		syscall: true,
@@ -1774,7 +1860,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "newpath"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Link)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Link)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Link)}},
@@ -1783,6 +1869,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Unlink: {
+		id:      Unlink,
 		id32Bit: Sys32unlink,
 		name:    "unlink",
 		syscall: true,
@@ -1791,7 +1878,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "pathname"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Unlink)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Unlink)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Unlink)}},
@@ -1800,6 +1887,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Symlink: {
+		id:      Symlink,
 		id32Bit: Sys32symlink,
 		name:    "symlink",
 		syscall: true,
@@ -1809,7 +1897,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "linkpath"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Symlink)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Symlink)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Symlink)}},
@@ -1818,6 +1906,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Readlink: {
+		id:      Readlink,
 		id32Bit: Sys32readlink,
 		name:    "readlink",
 		syscall: true,
@@ -1828,7 +1917,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "bufsiz"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readlink)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readlink)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readlink)}},
@@ -1837,6 +1926,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Chmod: {
+		id:      Chmod,
 		id32Bit: Sys32chmod,
 		name:    "chmod",
 		syscall: true,
@@ -1846,7 +1936,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "mode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chmod)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chmod)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chmod)}},
@@ -1855,6 +1945,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fchmod: {
+		id:      Fchmod,
 		id32Bit: Sys32fchmod,
 		name:    "fchmod",
 		syscall: true,
@@ -1864,7 +1955,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "mode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchmod)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchmod)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchmod)}},
@@ -1873,6 +1964,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Chown: {
+		id:      Chown,
 		id32Bit: Sys32chown32,
 		name:    "chown",
 		syscall: true,
@@ -1883,7 +1975,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "gid_t", Name: "group"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chown)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chown)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chown)}},
@@ -1892,6 +1984,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fchown: {
+		id:      Fchown,
 		id32Bit: Sys32fchown32,
 		name:    "fchown",
 		syscall: true,
@@ -1902,7 +1995,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "gid_t", Name: "group"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchown)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchown)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchown)}},
@@ -1911,6 +2004,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Lchown: {
+		id:      Lchown,
 		id32Bit: Sys32lchown32,
 		name:    "lchown",
 		syscall: true,
@@ -1921,7 +2015,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "gid_t", Name: "group"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lchown)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lchown)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lchown)}},
@@ -1930,6 +2024,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Umask: {
+		id:      Umask,
 		id32Bit: Sys32umask,
 		name:    "umask",
 		syscall: true,
@@ -1938,7 +2033,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "mode_t", Name: "mask"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Umask)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Umask)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Umask)}},
@@ -1947,6 +2042,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Gettimeofday: {
+		id:      Gettimeofday,
 		id32Bit: Sys32gettimeofday,
 		name:    "gettimeofday",
 		syscall: true,
@@ -1956,7 +2052,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct timezone*", Name: "tz"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Gettimeofday)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Gettimeofday)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Gettimeofday)}},
@@ -1965,6 +2061,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getrlimit: {
+		id:      Getrlimit,
 		id32Bit: Sys32ugetrlimit,
 		name:    "getrlimit",
 		syscall: true,
@@ -1974,7 +2071,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct rlimit*", Name: "rlim"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getrlimit)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getrlimit)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getrlimit)}},
@@ -1983,6 +2080,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getrusage: {
+		id:      Getrusage,
 		id32Bit: Sys32getrusage,
 		name:    "getrusage",
 		syscall: true,
@@ -1992,7 +2090,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct rusage*", Name: "usage"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getrusage)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getrusage)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getrusage)}},
@@ -2001,6 +2099,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Sysinfo: {
+		id:      Sysinfo,
 		id32Bit: Sys32sysinfo,
 		name:    "sysinfo",
 		syscall: true,
@@ -2009,7 +2108,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct sysinfo*", Name: "info"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sysinfo)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sysinfo)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sysinfo)}},
@@ -2018,6 +2117,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Times: {
+		id:      Times,
 		id32Bit: Sys32times,
 		name:    "times",
 		syscall: true,
@@ -2026,7 +2126,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct tms*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Times)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Times)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Times)}},
@@ -2035,6 +2135,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Ptrace: {
+		id:      Ptrace,
 		id32Bit: Sys32ptrace,
 		name:    "ptrace",
 		syscall: true,
@@ -2046,7 +2147,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "void*", Name: "data"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ptrace)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ptrace)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ptrace)}},
@@ -2055,13 +2156,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getuid: {
+		id:      Getuid,
 		id32Bit: Sys32getuid32,
 		name:    "getuid",
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getuid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getuid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getuid)}},
@@ -2070,6 +2172,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Syslog: {
+		id:      Syslog,
 		id32Bit: Sys32syslog,
 		name:    "syslog",
 		syscall: true,
@@ -2080,7 +2183,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "len"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Syslog)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Syslog)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Syslog)}},
@@ -2089,13 +2192,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getgid: {
+		id:      Getgid,
 		id32Bit: Sys32getgid32,
 		name:    "getgid",
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getgid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getgid)}},
@@ -2104,6 +2208,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setuid: {
+		id:      Setuid,
 		id32Bit: Sys32setuid32,
 		name:    "setuid",
 		syscall: true,
@@ -2112,7 +2217,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "uid_t", Name: "uid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setuid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setuid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setuid)}},
@@ -2121,6 +2226,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setgid: {
+		id:      Setgid,
 		id32Bit: Sys32setgid32,
 		name:    "setgid",
 		syscall: true,
@@ -2129,7 +2235,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "gid_t", Name: "gid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setgid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setgid)}},
@@ -2138,13 +2244,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Geteuid: {
+		id:      Geteuid,
 		id32Bit: Sys32geteuid32,
 		name:    "geteuid",
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Geteuid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Geteuid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Geteuid)}},
@@ -2153,13 +2260,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getegid: {
+		id:      Getegid,
 		id32Bit: Sys32getegid32,
 		name:    "getegid",
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getegid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getegid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getegid)}},
@@ -2168,6 +2276,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setpgid: {
+		id:      Setpgid,
 		id32Bit: Sys32setpgid,
 		name:    "setpgid",
 		syscall: true,
@@ -2177,7 +2286,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "pid_t", Name: "pgid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setpgid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setpgid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setpgid)}},
@@ -2186,13 +2295,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getppid: {
+		id:      Getppid,
 		id32Bit: Sys32getppid,
 		name:    "getppid",
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getppid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getppid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getppid)}},
@@ -2201,13 +2311,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getpgrp: {
+		id:      Getpgrp,
 		id32Bit: Sys32getpgrp,
 		name:    "getpgrp",
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpgrp)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpgrp)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpgrp)}},
@@ -2216,13 +2327,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setsid: {
+		id:      Setsid,
 		id32Bit: Sys32setsid,
 		name:    "setsid",
 		syscall: true,
 		sets:    []string{"default", "syscalls", "proc", "proc_ids"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setsid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setsid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setsid)}},
@@ -2231,6 +2343,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setreuid: {
+		id:      Setreuid,
 		id32Bit: Sys32setreuid32,
 		name:    "setreuid",
 		syscall: true,
@@ -2240,7 +2353,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "uid_t", Name: "euid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setreuid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setreuid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setreuid)}},
@@ -2249,6 +2362,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setregid: {
+		id:      Setregid,
 		id32Bit: Sys32setregid32,
 		name:    "setregid",
 		syscall: true,
@@ -2258,7 +2372,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "gid_t", Name: "egid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setregid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setregid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setregid)}},
@@ -2267,6 +2381,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getgroups: {
+		id:      Getgroups,
 		id32Bit: Sys32getgroups32,
 		name:    "getgroups",
 		syscall: true,
@@ -2276,7 +2391,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "gid_t*", Name: "list"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgroups)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getgroups)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getgroups)}},
@@ -2285,6 +2400,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setgroups: {
+		id:      Setgroups,
 		id32Bit: Sys32setgroups32,
 		name:    "setgroups",
 		syscall: true,
@@ -2294,7 +2410,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "gid_t*", Name: "list"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgroups)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setgroups)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setgroups)}},
@@ -2303,6 +2419,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setresuid: {
+		id:      Setresuid,
 		id32Bit: Sys32setresuid32,
 		name:    "setresuid",
 		syscall: true,
@@ -2313,7 +2430,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "uid_t", Name: "suid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresuid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setresuid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setresuid)}},
@@ -2322,6 +2439,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getresuid: {
+		id:      Getresuid,
 		id32Bit: Sys32getresuid32,
 		name:    "getresuid",
 		syscall: true,
@@ -2332,7 +2450,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "uid_t*", Name: "suid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresuid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getresuid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getresuid)}},
@@ -2341,6 +2459,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setresgid: {
+		id:      Setresgid,
 		id32Bit: Sys32setresgid32,
 		name:    "setresgid",
 		syscall: true,
@@ -2351,7 +2470,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "gid_t", Name: "sgid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresgid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setresgid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setresgid)}},
@@ -2360,6 +2479,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getresgid: {
+		id:      Getresgid,
 		id32Bit: Sys32getresgid32,
 		name:    "getresgid",
 		syscall: true,
@@ -2370,7 +2490,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "gid_t*", Name: "sgid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresgid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getresgid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getresgid)}},
@@ -2379,6 +2499,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getpgid: {
+		id:      Getpgid,
 		id32Bit: Sys32getpgid,
 		name:    "getpgid",
 		syscall: true,
@@ -2387,7 +2508,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "pid_t", Name: "pid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpgid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpgid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpgid)}},
@@ -2396,6 +2517,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setfsuid: {
+		id:      Setfsuid,
 		id32Bit: Sys32setfsuid32,
 		name:    "setfsuid",
 		syscall: true,
@@ -2404,7 +2526,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "uid_t", Name: "fsuid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsuid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setfsuid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setfsuid)}},
@@ -2413,6 +2535,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setfsgid: {
+		id:      Setfsgid,
 		id32Bit: Sys32setfsgid32,
 		name:    "setfsgid",
 		syscall: true,
@@ -2421,7 +2544,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "gid_t", Name: "fsgid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsgid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setfsgid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setfsgid)}},
@@ -2430,6 +2553,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getsid: {
+		id:      Getsid,
 		id32Bit: Sys32getsid,
 		name:    "getsid",
 		syscall: true,
@@ -2438,7 +2562,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "pid_t", Name: "pid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getsid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getsid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getsid)}},
@@ -2447,6 +2571,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Capget: {
+		id:      Capget,
 		id32Bit: Sys32capget,
 		name:    "capget",
 		syscall: true,
@@ -2456,7 +2581,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "cap_user_data_t", Name: "datap"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Capget)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Capget)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Capget)}},
@@ -2465,6 +2590,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Capset: {
+		id:      Capset,
 		id32Bit: Sys32capset,
 		name:    "capset",
 		syscall: true,
@@ -2474,7 +2600,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const cap_user_data_t", Name: "datap"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Capset)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Capset)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Capset)}},
@@ -2483,6 +2609,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	RtSigpending: {
+		id:      RtSigpending,
 		id32Bit: Sys32rt_sigpending,
 		name:    "rt_sigpending",
 		syscall: true,
@@ -2492,7 +2619,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigpending)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigpending)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigpending)}},
@@ -2501,6 +2628,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	RtSigtimedwait: {
+		id:      RtSigtimedwait,
 		id32Bit: Sys32rt_sigtimedwait_time64,
 		name:    "rt_sigtimedwait",
 		syscall: true,
@@ -2512,7 +2640,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigtimedwait)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigtimedwait)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigtimedwait)}},
@@ -2521,6 +2649,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	RtSigqueueinfo: {
+		id:      RtSigqueueinfo,
 		id32Bit: Sys32rt_sigqueueinfo,
 		name:    "rt_sigqueueinfo",
 		syscall: true,
@@ -2531,7 +2660,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "siginfo_t*", Name: "info"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigqueueinfo)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigqueueinfo)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigqueueinfo)}},
@@ -2540,6 +2669,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	RtSigsuspend: {
+		id:      RtSigsuspend,
 		id32Bit: Sys32rt_sigsuspend,
 		name:    "rt_sigsuspend",
 		syscall: true,
@@ -2549,7 +2679,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigsuspend)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigsuspend)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigsuspend)}},
@@ -2558,6 +2688,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Sigaltstack: {
+		id:      Sigaltstack,
 		id32Bit: Sys32sigaltstack,
 		name:    "sigaltstack",
 		syscall: true,
@@ -2567,7 +2698,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "stack_t*", Name: "old_ss"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigaltstack)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigaltstack)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigaltstack)}},
@@ -2576,6 +2707,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Utime: {
+		id:      Utime,
 		id32Bit: Sys32utime,
 		name:    "utime",
 		syscall: true,
@@ -2585,7 +2717,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const struct utimbuf*", Name: "times"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Utime)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Utime)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Utime)}},
@@ -2594,6 +2726,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Mknod: {
+		id:      Mknod,
 		id32Bit: Sys32mknod,
 		name:    "mknod",
 		syscall: true,
@@ -2604,7 +2737,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "dev_t", Name: "dev"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mknod)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mknod)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mknod)}},
@@ -2613,6 +2746,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Uselib: {
+		id:      Uselib,
 		id32Bit: Sys32uselib,
 		name:    "uselib",
 		syscall: true,
@@ -2621,7 +2755,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "library"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Uselib)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Uselib)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Uselib)}},
@@ -2630,6 +2764,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Personality: {
+		id:      Personality,
 		id32Bit: Sys32personality,
 		name:    "personality",
 		syscall: true,
@@ -2638,7 +2773,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "persona"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Personality)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Personality)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Personality)}},
@@ -2647,6 +2782,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Ustat: {
+		id:      Ustat,
 		id32Bit: Sys32ustat,
 		name:    "ustat",
 		syscall: true,
@@ -2656,7 +2792,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct ustat*", Name: "ubuf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ustat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ustat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ustat)}},
@@ -2665,6 +2801,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Statfs: {
+		id:      Statfs,
 		id32Bit: Sys32statfs,
 		name:    "statfs",
 		syscall: true,
@@ -2674,7 +2811,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct statfs*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Statfs)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Statfs)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Statfs)}},
@@ -2683,6 +2820,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fstatfs: {
+		id:      Fstatfs,
 		id32Bit: Sys32fstatfs,
 		name:    "fstatfs",
 		syscall: true,
@@ -2692,7 +2830,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct statfs*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstatfs)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fstatfs)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fstatfs)}},
@@ -2701,6 +2839,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Sysfs: {
+		id:      Sysfs,
 		id32Bit: Sys32sysfs,
 		name:    "sysfs",
 		syscall: true,
@@ -2709,7 +2848,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "option"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sysfs)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sysfs)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sysfs)}},
@@ -2718,6 +2857,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getpriority: {
+		id:      Getpriority,
 		id32Bit: Sys32getpriority,
 		name:    "getpriority",
 		syscall: true,
@@ -2727,7 +2867,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "who"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpriority)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpriority)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpriority)}},
@@ -2736,6 +2876,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setpriority: {
+		id:      Setpriority,
 		id32Bit: Sys32setpriority,
 		name:    "setpriority",
 		syscall: true,
@@ -2746,7 +2887,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "prio"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setpriority)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setpriority)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setpriority)}},
@@ -2755,6 +2896,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SchedSetparam: {
+		id:      SchedSetparam,
 		id32Bit: Sys32sched_setparam,
 		name:    "sched_setparam",
 		syscall: true,
@@ -2764,7 +2906,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct sched_param*", Name: "param"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetparam)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedSetparam)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedSetparam)}},
@@ -2773,6 +2915,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SchedGetparam: {
+		id:      SchedGetparam,
 		id32Bit: Sys32sched_getparam,
 		name:    "sched_getparam",
 		syscall: true,
@@ -2782,7 +2925,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct sched_param*", Name: "param"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetparam)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetparam)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetparam)}},
@@ -2791,6 +2934,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SchedSetscheduler: {
+		id:      SchedSetscheduler,
 		id32Bit: Sys32sched_setscheduler,
 		name:    "sched_setscheduler",
 		syscall: true,
@@ -2801,7 +2945,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct sched_param*", Name: "param"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetscheduler)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedSetscheduler)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedSetscheduler)}},
@@ -2810,6 +2954,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SchedGetscheduler: {
+		id:      SchedGetscheduler,
 		id32Bit: Sys32sched_getscheduler,
 		name:    "sched_getscheduler",
 		syscall: true,
@@ -2818,7 +2963,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "pid_t", Name: "pid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetscheduler)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetscheduler)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetscheduler)}},
@@ -2827,6 +2972,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SchedGetPriorityMax: {
+		id:      SchedGetPriorityMax,
 		id32Bit: Sys32sched_get_priority_max,
 		name:    "sched_get_priority_max",
 		syscall: true,
@@ -2835,7 +2981,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "policy"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetPriorityMax)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetPriorityMax)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetPriorityMax)}},
@@ -2844,6 +2990,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SchedGetPriorityMin: {
+		id:      SchedGetPriorityMin,
 		id32Bit: Sys32sched_get_priority_min,
 		name:    "sched_get_priority_min",
 		syscall: true,
@@ -2852,7 +2999,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "policy"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetPriorityMin)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetPriorityMin)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetPriorityMin)}},
@@ -2861,6 +3008,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SchedRrGetInterval: {
+		id:      SchedRrGetInterval,
 		id32Bit: Sys32sched_rr_get_interval_time64,
 		name:    "sched_rr_get_interval",
 		syscall: true,
@@ -2870,7 +3018,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct timespec*", Name: "tp"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedRrGetInterval)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedRrGetInterval)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedRrGetInterval)}},
@@ -2879,6 +3027,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Mlock: {
+		id:      Mlock,
 		id32Bit: Sys32mlock,
 		name:    "mlock",
 		syscall: true,
@@ -2888,7 +3037,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "len"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mlock)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mlock)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mlock)}},
@@ -2897,6 +3046,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Munlock: {
+		id:      Munlock,
 		id32Bit: Sys32munlock,
 		name:    "munlock",
 		syscall: true,
@@ -2906,7 +3056,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "len"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Munlock)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Munlock)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Munlock)}},
@@ -2915,6 +3065,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Mlockall: {
+		id:      Mlockall,
 		id32Bit: Sys32mlockall,
 		name:    "mlockall",
 		syscall: true,
@@ -2923,7 +3074,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mlockall)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mlockall)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mlockall)}},
@@ -2932,13 +3083,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Munlockall: {
+		id:      Munlockall,
 		id32Bit: Sys32munlockall,
 		name:    "munlockall",
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_mem"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Munlockall)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Munlockall)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Munlockall)}},
@@ -2947,13 +3099,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Vhangup: {
+		id:      Vhangup,
 		id32Bit: Sys32vhangup,
 		name:    "vhangup",
 		syscall: true,
 		sets:    []string{"syscalls", "system"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vhangup)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vhangup)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vhangup)}},
@@ -2962,6 +3115,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ModifyLdt: {
+		id:      ModifyLdt,
 		id32Bit: Sys32modify_ldt,
 		name:    "modify_ldt",
 		syscall: true,
@@ -2972,7 +3126,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "bytecount"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ModifyLdt)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ModifyLdt)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ModifyLdt)}},
@@ -2981,6 +3135,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	PivotRoot: {
+		id:      PivotRoot,
 		id32Bit: Sys32pivot_root,
 		name:    "pivot_root",
 		syscall: true,
@@ -2990,7 +3145,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "put_old"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PivotRoot)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PivotRoot)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PivotRoot)}},
@@ -2999,6 +3154,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Sysctl: {
+		id:      Sysctl,
 		id32Bit: Sys32_sysctl,
 		name:    "sysctl",
 		syscall: true,
@@ -3007,7 +3163,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct __sysctl_args*", Name: "args"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sysctl)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sysctl)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sysctl)}},
@@ -3016,6 +3172,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Prctl: {
+		id:      Prctl,
 		id32Bit: Sys32prctl,
 		name:    "prctl",
 		syscall: true,
@@ -3028,7 +3185,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "arg5"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Prctl)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Prctl)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Prctl)}},
@@ -3037,6 +3194,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ArchPrctl: {
+		id:      ArchPrctl,
 		id32Bit: Sys32arch_prctl,
 		name:    "arch_prctl",
 		syscall: true,
@@ -3046,7 +3204,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "addr"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ArchPrctl)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ArchPrctl)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ArchPrctl)}},
@@ -3055,6 +3213,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Adjtimex: {
+		id:      Adjtimex,
 		id32Bit: Sys32adjtimex,
 		name:    "adjtimex",
 		syscall: true,
@@ -3063,7 +3222,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct timex*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Adjtimex)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Adjtimex)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Adjtimex)}},
@@ -3072,6 +3231,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setrlimit: {
+		id:      Setrlimit,
 		id32Bit: Sys32setrlimit,
 		name:    "setrlimit",
 		syscall: true,
@@ -3081,7 +3241,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const struct rlimit*", Name: "rlim"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setrlimit)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setrlimit)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setrlimit)}},
@@ -3090,6 +3250,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Chroot: {
+		id:      Chroot,
 		id32Bit: Sys32chroot,
 		name:    "chroot",
 		syscall: true,
@@ -3098,7 +3259,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "path"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chroot)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chroot)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chroot)}},
@@ -3107,13 +3268,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Sync: {
+		id:      Sync,
 		id32Bit: Sys32sync,
 		name:    "sync",
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_sync"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sync)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sync)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sync)}},
@@ -3122,6 +3284,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Acct: {
+		id:      Acct,
 		id32Bit: Sys32acct,
 		name:    "acct",
 		syscall: true,
@@ -3130,7 +3293,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "filename"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Acct)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Acct)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Acct)}},
@@ -3139,6 +3302,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Settimeofday: {
+		id:      Settimeofday,
 		id32Bit: Sys32settimeofday,
 		name:    "settimeofday",
 		syscall: true,
@@ -3148,7 +3312,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const struct timezone*", Name: "tz"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Settimeofday)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Settimeofday)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Settimeofday)}},
@@ -3157,6 +3321,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Mount: {
+		id:      Mount,
 		id32Bit: Sys32mount,
 		name:    "mount",
 		syscall: true,
@@ -3169,7 +3334,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const void*", Name: "data"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mount)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mount)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mount)}},
@@ -3178,6 +3343,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Umount2: {
+		id:      Umount2,
 		id32Bit: Sys32umount2,
 		name:    "umount2",
 		syscall: true,
@@ -3187,7 +3353,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Umount2)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Umount2)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Umount2)}},
@@ -3196,6 +3362,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Swapon: {
+		id:      Swapon,
 		id32Bit: Sys32swapon,
 		name:    "swapon",
 		syscall: true,
@@ -3205,7 +3372,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "swapflags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Swapon)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Swapon)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Swapon)}},
@@ -3214,6 +3381,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Swapoff: {
+		id:      Swapoff,
 		id32Bit: Sys32swapoff,
 		name:    "swapoff",
 		syscall: true,
@@ -3222,7 +3390,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "path"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Swapoff)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Swapoff)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Swapoff)}},
@@ -3231,6 +3399,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Reboot: {
+		id:      Reboot,
 		id32Bit: Sys32reboot,
 		name:    "reboot",
 		syscall: true,
@@ -3242,7 +3411,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "void*", Name: "arg"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Reboot)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Reboot)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Reboot)}},
@@ -3251,6 +3420,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Sethostname: {
+		id:      Sethostname,
 		id32Bit: Sys32sethostname,
 		name:    "sethostname",
 		syscall: true,
@@ -3260,7 +3430,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "len"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sethostname)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sethostname)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sethostname)}},
@@ -3269,6 +3439,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setdomainname: {
+		id:      Setdomainname,
 		id32Bit: Sys32setdomainname,
 		name:    "setdomainname",
 		syscall: true,
@@ -3278,7 +3449,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "len"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setdomainname)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setdomainname)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setdomainname)}},
@@ -3287,6 +3458,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Iopl: {
+		id:      Iopl,
 		id32Bit: Sys32iopl,
 		name:    "iopl",
 		syscall: true,
@@ -3295,7 +3467,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "level"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Iopl)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Iopl)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Iopl)}},
@@ -3304,6 +3476,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Ioperm: {
+		id:      Ioperm,
 		id32Bit: Sys32ioperm,
 		name:    "ioperm",
 		syscall: true,
@@ -3314,7 +3487,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "turn_on"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ioperm)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ioperm)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ioperm)}},
@@ -3323,13 +3496,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	CreateModule: {
+		id:      CreateModule,
 		id32Bit: Sys32create_module,
 		name:    "create_module",
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_module"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(CreateModule)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(CreateModule)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(CreateModule)}},
@@ -3338,6 +3512,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	InitModule: {
+		id:      InitModule,
 		id32Bit: Sys32init_module,
 		name:    "init_module",
 		syscall: true,
@@ -3348,7 +3523,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "param_values"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InitModule)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InitModule)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InitModule)}},
@@ -3357,6 +3532,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	DeleteModule: {
+		id:      DeleteModule,
 		id32Bit: Sys32delete_module,
 		name:    "delete_module",
 		syscall: true,
@@ -3366,7 +3542,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(DeleteModule)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(DeleteModule)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(DeleteModule)}},
@@ -3375,13 +3551,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	GetKernelSyms: {
+		id:      GetKernelSyms,
 		id32Bit: Sys32get_kernel_syms,
 		name:    "get_kernel_syms",
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_module"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetKernelSyms)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(GetKernelSyms)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(GetKernelSyms)}},
@@ -3390,13 +3567,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	QueryModule: {
+		id:      QueryModule,
 		id32Bit: Sys32query_module,
 		name:    "query_module",
 		syscall: true,
 		sets:    []string{"syscalls", "system", "system_module"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(QueryModule)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(QueryModule)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(QueryModule)}},
@@ -3405,6 +3583,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Quotactl: {
+		id:      Quotactl,
 		id32Bit: Sys32quotactl,
 		name:    "quotactl",
 		syscall: true,
@@ -3416,7 +3595,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "void*", Name: "addr"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Quotactl)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Quotactl)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Quotactl)}},
@@ -3425,13 +3604,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Nfsservctl: {
+		id:      Nfsservctl,
 		id32Bit: Sys32nfsservctl,
 		name:    "nfsservctl",
 		syscall: true,
 		sets:    []string{"syscalls", "fs"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Nfsservctl)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Nfsservctl)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Nfsservctl)}},
@@ -3440,13 +3620,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getpmsg: {
+		id:      Getpmsg,
 		id32Bit: Sys32getpmsg,
 		name:    "getpmsg",
 		syscall: true,
 		sets:    []string{"syscalls"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpmsg)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getpmsg)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getpmsg)}},
@@ -3455,13 +3636,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Putpmsg: {
+		id:      Putpmsg,
 		id32Bit: Sys32putpmsg,
 		name:    "putpmsg",
 		syscall: true,
 		sets:    []string{"syscalls"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Putpmsg)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Putpmsg)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Putpmsg)}},
@@ -3470,13 +3652,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Afs: {
+		id:      Afs,
 		id32Bit: Sys32Undefined,
 		name:    "afs",
 		syscall: true,
 		sets:    []string{"syscalls"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Afs)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Afs)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Afs)}},
@@ -3485,13 +3668,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Tuxcall: {
+		id:      Tuxcall,
 		id32Bit: Sys32Undefined,
 		name:    "tuxcall",
 		syscall: true,
 		sets:    []string{"syscalls"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tuxcall)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Tuxcall)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Tuxcall)}},
@@ -3500,13 +3684,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Security: {
+		id:      Security,
 		id32Bit: Sys32Undefined,
 		name:    "security",
 		syscall: true,
 		sets:    []string{"syscalls"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Security)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Security)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Security)}},
@@ -3515,13 +3700,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Gettid: {
+		id:      Gettid,
 		id32Bit: Sys32gettid,
 		name:    "gettid",
 		syscall: true,
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Gettid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Gettid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Gettid)}},
@@ -3530,6 +3716,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Readahead: {
+		id:      Readahead,
 		id32Bit: Sys32readahead,
 		name:    "readahead",
 		syscall: true,
@@ -3540,7 +3727,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "count"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readahead)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readahead)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readahead)}},
@@ -3549,6 +3736,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setxattr: {
+		id:      Setxattr,
 		id32Bit: Sys32setxattr,
 		name:    "setxattr",
 		syscall: true,
@@ -3561,7 +3749,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setxattr)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setxattr)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setxattr)}},
@@ -3570,6 +3758,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Lsetxattr: {
+		id:      Lsetxattr,
 		id32Bit: Sys32lsetxattr,
 		name:    "lsetxattr",
 		syscall: true,
@@ -3582,7 +3771,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lsetxattr)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lsetxattr)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lsetxattr)}},
@@ -3591,6 +3780,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fsetxattr: {
+		id:      Fsetxattr,
 		id32Bit: Sys32fsetxattr,
 		name:    "fsetxattr",
 		syscall: true,
@@ -3603,7 +3793,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsetxattr)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsetxattr)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsetxattr)}},
@@ -3612,6 +3802,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getxattr: {
+		id:      Getxattr,
 		id32Bit: Sys32getxattr,
 		name:    "getxattr",
 		syscall: true,
@@ -3623,7 +3814,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "size"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getxattr)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getxattr)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getxattr)}},
@@ -3632,6 +3823,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Lgetxattr: {
+		id:      Lgetxattr,
 		id32Bit: Sys32lgetxattr,
 		name:    "lgetxattr",
 		syscall: true,
@@ -3643,7 +3835,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "size"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lgetxattr)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lgetxattr)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lgetxattr)}},
@@ -3652,6 +3844,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fgetxattr: {
+		id:      Fgetxattr,
 		id32Bit: Sys32fgetxattr,
 		name:    "fgetxattr",
 		syscall: true,
@@ -3663,7 +3856,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "size"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fgetxattr)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fgetxattr)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fgetxattr)}},
@@ -3672,6 +3865,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Listxattr: {
+		id:      Listxattr,
 		id32Bit: Sys32listxattr,
 		name:    "listxattr",
 		syscall: true,
@@ -3682,7 +3876,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "size"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Listxattr)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Listxattr)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Listxattr)}},
@@ -3691,6 +3885,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Llistxattr: {
+		id:      Llistxattr,
 		id32Bit: Sys32llistxattr,
 		name:    "llistxattr",
 		syscall: true,
@@ -3701,7 +3896,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "size"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Llistxattr)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Llistxattr)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Llistxattr)}},
@@ -3710,6 +3905,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Flistxattr: {
+		id:      Flistxattr,
 		id32Bit: Sys32flistxattr,
 		name:    "flistxattr",
 		syscall: true,
@@ -3720,7 +3916,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "size"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Flistxattr)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Flistxattr)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Flistxattr)}},
@@ -3729,6 +3925,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Removexattr: {
+		id:      Removexattr,
 		id32Bit: Sys32removexattr,
 		name:    "removexattr",
 		syscall: true,
@@ -3738,7 +3935,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "name"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Removexattr)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Removexattr)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Removexattr)}},
@@ -3747,6 +3944,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Lremovexattr: {
+		id:      Lremovexattr,
 		id32Bit: Sys32lremovexattr,
 		name:    "lremovexattr",
 		syscall: true,
@@ -3756,7 +3954,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "name"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lremovexattr)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lremovexattr)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lremovexattr)}},
@@ -3765,6 +3963,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fremovexattr: {
+		id:      Fremovexattr,
 		id32Bit: Sys32fremovexattr,
 		name:    "fremovexattr",
 		syscall: true,
@@ -3774,7 +3973,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "name"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fremovexattr)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fremovexattr)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fremovexattr)}},
@@ -3783,6 +3982,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Tkill: {
+		id:      Tkill,
 		id32Bit: Sys32tkill,
 		name:    "tkill",
 		syscall: true,
@@ -3792,7 +3992,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "sig"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tkill)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Tkill)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Tkill)}},
@@ -3801,6 +4001,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Time: {
+		id:      Time,
 		id32Bit: Sys32time,
 		name:    "time",
 		syscall: true,
@@ -3809,7 +4010,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "time_t*", Name: "tloc"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Time)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Time)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Time)}},
@@ -3818,6 +4019,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Futex: {
+		id:      Futex,
 		id32Bit: Sys32futex_time64,
 		name:    "futex",
 		syscall: true,
@@ -3831,7 +4033,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "val3"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Futex)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Futex)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Futex)}},
@@ -3840,6 +4042,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SchedSetaffinity: {
+		id:      SchedSetaffinity,
 		id32Bit: Sys32sched_setaffinity,
 		name:    "sched_setaffinity",
 		syscall: true,
@@ -3850,7 +4053,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long*", Name: "mask"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetaffinity)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedSetaffinity)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedSetaffinity)}},
@@ -3859,6 +4062,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SchedGetaffinity: {
+		id:      SchedGetaffinity,
 		id32Bit: Sys32sched_getaffinity,
 		name:    "sched_getaffinity",
 		syscall: true,
@@ -3869,7 +4073,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long*", Name: "mask"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetaffinity)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetaffinity)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetaffinity)}},
@@ -3878,6 +4082,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SetThreadArea: {
+		id:      SetThreadArea,
 		id32Bit: Sys32set_thread_area,
 		name:    "set_thread_area",
 		syscall: true,
@@ -3886,7 +4091,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct user_desc*", Name: "u_info"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetThreadArea)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SetThreadArea)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SetThreadArea)}},
@@ -3895,6 +4100,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	IoSetup: {
+		id:      IoSetup,
 		id32Bit: Sys32io_setup,
 		name:    "io_setup",
 		syscall: true,
@@ -3904,7 +4110,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "io_context_t*", Name: "ctx_idp"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoSetup)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoSetup)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoSetup)}},
@@ -3913,6 +4119,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	IoDestroy: {
+		id:      IoDestroy,
 		id32Bit: Sys32io_destroy,
 		name:    "io_destroy",
 		syscall: true,
@@ -3921,7 +4128,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "io_context_t", Name: "ctx_id"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoDestroy)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoDestroy)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoDestroy)}},
@@ -3930,6 +4137,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	IoGetevents: {
+		id:      IoGetevents,
 		id32Bit: Sys32io_getevents,
 		name:    "io_getevents",
 		syscall: true,
@@ -3942,7 +4150,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct timespec*", Name: "timeout"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoGetevents)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoGetevents)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoGetevents)}},
@@ -3951,6 +4159,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	IoSubmit: {
+		id:      IoSubmit,
 		id32Bit: Sys32io_submit,
 		name:    "io_submit",
 		syscall: true,
@@ -3961,7 +4170,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct iocb**", Name: "iocbpp"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoSubmit)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoSubmit)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoSubmit)}},
@@ -3970,6 +4179,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	IoCancel: {
+		id:      IoCancel,
 		id32Bit: Sys32io_cancel,
 		name:    "io_cancel",
 		syscall: true,
@@ -3980,7 +4190,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct io_event*", Name: "result"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoCancel)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoCancel)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoCancel)}},
@@ -3989,6 +4199,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	GetThreadArea: {
+		id:      GetThreadArea,
 		id32Bit: Sys32get_thread_area,
 		name:    "get_thread_area",
 		syscall: true,
@@ -3997,7 +4208,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct user_desc*", Name: "u_info"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetThreadArea)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(GetThreadArea)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(GetThreadArea)}},
@@ -4006,6 +4217,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	LookupDcookie: {
+		id:      LookupDcookie,
 		id32Bit: Sys32lookup_dcookie,
 		name:    "lookup_dcookie",
 		syscall: true,
@@ -4016,7 +4228,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "len"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LookupDcookie)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LookupDcookie)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LookupDcookie)}},
@@ -4025,6 +4237,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	EpollCreate: {
+		id:      EpollCreate,
 		id32Bit: Sys32epoll_create,
 		name:    "epoll_create",
 		syscall: true,
@@ -4033,7 +4246,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "size"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCreate)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollCreate)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollCreate)}},
@@ -4042,13 +4255,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	EpollCtlOld: {
+		id:      EpollCtlOld,
 		id32Bit: Sys32Undefined,
 		name:    "epoll_ctl_old",
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCtlOld)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollCtlOld)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollCtlOld)}},
@@ -4057,13 +4271,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	EpollWaitOld: {
+		id:      EpollWaitOld,
 		id32Bit: Sys32Undefined,
 		name:    "epoll_wait_old",
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollWaitOld)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollWaitOld)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollWaitOld)}},
@@ -4072,6 +4287,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	RemapFilePages: {
+		id:      RemapFilePages,
 		id32Bit: Sys32remap_file_pages,
 		name:    "remap_file_pages",
 		syscall: true,
@@ -4084,7 +4300,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RemapFilePages)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RemapFilePages)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RemapFilePages)}},
@@ -4093,6 +4309,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getdents64: {
+		id:      Getdents64,
 		id32Bit: Sys32getdents64,
 		name:    "getdents64",
 		syscall: true,
@@ -4103,7 +4320,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "count"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getdents64)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getdents64)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getdents64)}},
@@ -4112,6 +4329,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SetTidAddress: {
+		id:      SetTidAddress,
 		id32Bit: Sys32set_tid_address,
 		name:    "set_tid_address",
 		syscall: true,
@@ -4120,7 +4338,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int*", Name: "tidptr"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetTidAddress)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SetTidAddress)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SetTidAddress)}},
@@ -4129,13 +4347,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	RestartSyscall: {
+		id:      RestartSyscall,
 		id32Bit: Sys32restart_syscall,
 		name:    "restart_syscall",
 		syscall: true,
 		sets:    []string{"syscalls", "signals"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RestartSyscall)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RestartSyscall)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RestartSyscall)}},
@@ -4144,6 +4363,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Semtimedop: {
+		id:      Semtimedop,
 		id32Bit: Sys32semtimedop_time64,
 		name:    "semtimedop",
 		syscall: true,
@@ -4155,7 +4375,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const struct timespec*", Name: "timeout"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semtimedop)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Semtimedop)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Semtimedop)}},
@@ -4164,6 +4384,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fadvise64: {
+		id:      Fadvise64,
 		id32Bit: Sys32fadvise64,
 		name:    "fadvise64",
 		syscall: true,
@@ -4175,7 +4396,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "advice"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fadvise64)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fadvise64)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fadvise64)}},
@@ -4184,6 +4405,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	TimerCreate: {
+		id:      TimerCreate,
 		id32Bit: Sys32timer_create,
 		name:    "timer_create",
 		syscall: true,
@@ -4194,7 +4416,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "timer_t*", Name: "timer_id"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerCreate)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerCreate)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerCreate)}},
@@ -4203,6 +4425,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	TimerSettime: {
+		id:      TimerSettime,
 		id32Bit: Sys32timer_settime64,
 		name:    "timer_settime",
 		syscall: true,
@@ -4214,7 +4437,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct itimerspec*", Name: "old_value"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerSettime)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerSettime)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerSettime)}},
@@ -4223,6 +4446,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	TimerGettime: {
+		id:      TimerGettime,
 		id32Bit: Sys32timer_gettime64,
 		name:    "timer_gettime",
 		syscall: true,
@@ -4232,7 +4456,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct itimerspec*", Name: "curr_value"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerGettime)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerGettime)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerGettime)}},
@@ -4241,6 +4465,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	TimerGetoverrun: {
+		id:      TimerGetoverrun,
 		id32Bit: Sys32timer_getoverrun,
 		name:    "timer_getoverrun",
 		syscall: true,
@@ -4249,7 +4474,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "timer_t", Name: "timer_id"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerGetoverrun)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerGetoverrun)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerGetoverrun)}},
@@ -4258,6 +4483,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	TimerDelete: {
+		id:      TimerDelete,
 		id32Bit: Sys32timer_delete,
 		name:    "timer_delete",
 		syscall: true,
@@ -4266,7 +4492,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "timer_t", Name: "timer_id"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerDelete)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerDelete)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerDelete)}},
@@ -4275,6 +4501,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ClockSettime: {
+		id:      ClockSettime,
 		id32Bit: Sys32clock_settime64,
 		name:    "clock_settime",
 		syscall: true,
@@ -4284,7 +4511,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const struct timespec*", Name: "tp"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockSettime)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockSettime)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockSettime)}},
@@ -4293,6 +4520,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ClockGettime: {
+		id:      ClockGettime,
 		id32Bit: Sys32clock_gettime64,
 		name:    "clock_gettime",
 		syscall: true,
@@ -4302,7 +4530,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct timespec*", Name: "tp"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGettime)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockGettime)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockGettime)}},
@@ -4311,6 +4539,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ClockGetres: {
+		id:      ClockGetres,
 		id32Bit: Sys32clock_getres_time64,
 		name:    "clock_getres",
 		syscall: true,
@@ -4320,7 +4549,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct timespec*", Name: "res"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGetres)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockGetres)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockGetres)}},
@@ -4329,6 +4558,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ClockNanosleep: {
+		id:      ClockNanosleep,
 		id32Bit: Sys32clock_nanosleep_time64,
 		name:    "clock_nanosleep",
 		syscall: true,
@@ -4340,7 +4570,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct timespec*", Name: "remain"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockNanosleep)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockNanosleep)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockNanosleep)}},
@@ -4349,6 +4579,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ExitGroup: {
+		id:      ExitGroup,
 		id32Bit: Sys32exit_group,
 		name:    "exit_group",
 		syscall: true,
@@ -4357,7 +4588,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "status"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ExitGroup)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ExitGroup)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ExitGroup)}},
@@ -4366,6 +4597,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	EpollWait: {
+		id:      EpollWait,
 		id32Bit: Sys32epoll_wait,
 		name:    "epoll_wait",
 		syscall: true,
@@ -4377,7 +4609,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "timeout"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollWait)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollWait)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollWait)}},
@@ -4386,6 +4618,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	EpollCtl: {
+		id:      EpollCtl,
 		id32Bit: Sys32epoll_ctl,
 		name:    "epoll_ctl",
 		syscall: true,
@@ -4397,7 +4630,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct epoll_event*", Name: "event"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCtl)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollCtl)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollCtl)}},
@@ -4406,6 +4639,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Tgkill: {
+		id:      Tgkill,
 		id32Bit: Sys32tgkill,
 		name:    "tgkill",
 		syscall: true,
@@ -4416,7 +4650,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "sig"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tgkill)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Tgkill)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Tgkill)}},
@@ -4425,6 +4659,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Utimes: {
+		id:      Utimes,
 		id32Bit: Sys32utimes,
 		name:    "utimes",
 		syscall: true,
@@ -4434,7 +4669,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct timeval*", Name: "times"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Utimes)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Utimes)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Utimes)}},
@@ -4443,13 +4678,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Vserver: {
+		id:      Vserver,
 		id32Bit: Sys32vserver,
 		name:    "vserver",
 		syscall: true,
 		sets:    []string{"syscalls"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vserver)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vserver)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vserver)}},
@@ -4458,6 +4694,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Mbind: {
+		id:      Mbind,
 		id32Bit: Sys32mbind,
 		name:    "mbind",
 		syscall: true,
@@ -4471,7 +4708,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mbind)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mbind)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mbind)}},
@@ -4480,6 +4717,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SetMempolicy: {
+		id:      SetMempolicy,
 		id32Bit: Sys32set_mempolicy,
 		name:    "set_mempolicy",
 		syscall: true,
@@ -4490,7 +4728,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "maxnode"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetMempolicy)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SetMempolicy)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SetMempolicy)}},
@@ -4499,6 +4737,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	GetMempolicy: {
+		id:      GetMempolicy,
 		id32Bit: Sys32get_mempolicy,
 		name:    "get_mempolicy",
 		syscall: true,
@@ -4511,7 +4750,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetMempolicy)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(GetMempolicy)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(GetMempolicy)}},
@@ -4520,6 +4759,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	MqOpen: {
+		id:      MqOpen,
 		id32Bit: Sys32mq_open,
 		name:    "mq_open",
 		syscall: true,
@@ -4531,7 +4771,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct mq_attr*", Name: "attr"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqOpen)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqOpen)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqOpen)}},
@@ -4540,6 +4780,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	MqUnlink: {
+		id:      MqUnlink,
 		id32Bit: Sys32mq_unlink,
 		name:    "mq_unlink",
 		syscall: true,
@@ -4548,7 +4789,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "name"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqUnlink)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqUnlink)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqUnlink)}},
@@ -4557,6 +4798,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	MqTimedsend: {
+		id:      MqTimedsend,
 		id32Bit: Sys32mq_timedsend_time64,
 		name:    "mq_timedsend",
 		syscall: true,
@@ -4569,7 +4811,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const struct timespec*", Name: "abs_timeout"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedsend)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqTimedsend)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqTimedsend)}},
@@ -4578,6 +4820,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	MqTimedreceive: {
+		id:      MqTimedreceive,
 		id32Bit: Sys32mq_timedreceive_time64,
 		name:    "mq_timedreceive",
 		syscall: true,
@@ -4590,7 +4833,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const struct timespec*", Name: "abs_timeout"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedreceive)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqTimedreceive)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqTimedreceive)}},
@@ -4599,6 +4842,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	MqNotify: {
+		id:      MqNotify,
 		id32Bit: Sys32mq_notify,
 		name:    "mq_notify",
 		syscall: true,
@@ -4608,7 +4852,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const struct sigevent*", Name: "sevp"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqNotify)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqNotify)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqNotify)}},
@@ -4617,6 +4861,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	MqGetsetattr: {
+		id:      MqGetsetattr,
 		id32Bit: Sys32mq_getsetattr,
 		name:    "mq_getsetattr",
 		syscall: true,
@@ -4627,7 +4872,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct mq_attr*", Name: "oldattr"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqGetsetattr)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqGetsetattr)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqGetsetattr)}},
@@ -4636,6 +4881,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	KexecLoad: {
+		id:      KexecLoad,
 		id32Bit: Sys32kexec_load,
 		name:    "kexec_load",
 		syscall: true,
@@ -4647,7 +4893,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(KexecLoad)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(KexecLoad)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(KexecLoad)}},
@@ -4656,6 +4902,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Waitid: {
+		id:      Waitid,
 		id32Bit: Sys32waitid,
 		name:    "waitid",
 		syscall: true,
@@ -4668,7 +4915,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct rusage*", Name: "rusage"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Waitid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Waitid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Waitid)}},
@@ -4677,6 +4924,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	AddKey: {
+		id:      AddKey,
 		id32Bit: Sys32add_key,
 		name:    "add_key",
 		syscall: true,
@@ -4689,7 +4937,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "key_serial_t", Name: "keyring"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(AddKey)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(AddKey)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(AddKey)}},
@@ -4698,6 +4946,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	RequestKey: {
+		id:      RequestKey,
 		id32Bit: Sys32request_key,
 		name:    "request_key",
 		syscall: true,
@@ -4709,7 +4958,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "key_serial_t", Name: "dest_keyring"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RequestKey)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RequestKey)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RequestKey)}},
@@ -4718,6 +4967,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Keyctl: {
+		id:      Keyctl,
 		id32Bit: Sys32keyctl,
 		name:    "keyctl",
 		syscall: true,
@@ -4730,7 +4980,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "arg5"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Keyctl)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Keyctl)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Keyctl)}},
@@ -4739,6 +4989,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	IoprioSet: {
+		id:      IoprioSet,
 		id32Bit: Sys32ioprio_set,
 		name:    "ioprio_set",
 		syscall: true,
@@ -4749,7 +5000,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "ioprio"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoprioSet)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoprioSet)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoprioSet)}},
@@ -4758,6 +5009,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	IoprioGet: {
+		id:      IoprioGet,
 		id32Bit: Sys32ioprio_get,
 		name:    "ioprio_get",
 		syscall: true,
@@ -4767,7 +5019,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "who"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoprioGet)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoprioGet)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoprioGet)}},
@@ -4776,13 +5028,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	InotifyInit: {
+		id:      InotifyInit,
 		id32Bit: Sys32inotify_init,
 		name:    "inotify_init",
 		syscall: true,
 		sets:    []string{"syscalls", "fs", "fs_monitor"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyInit)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InotifyInit)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InotifyInit)}},
@@ -4791,6 +5044,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	InotifyAddWatch: {
+		id:      InotifyAddWatch,
 		id32Bit: Sys32inotify_add_watch,
 		name:    "inotify_add_watch",
 		syscall: true,
@@ -4801,7 +5055,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "u32", Name: "mask"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyAddWatch)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InotifyAddWatch)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InotifyAddWatch)}},
@@ -4810,6 +5064,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	InotifyRmWatch: {
+		id:      InotifyRmWatch,
 		id32Bit: Sys32inotify_rm_watch,
 		name:    "inotify_rm_watch",
 		syscall: true,
@@ -4819,7 +5074,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "wd"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyRmWatch)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InotifyRmWatch)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InotifyRmWatch)}},
@@ -4828,6 +5083,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	MigratePages: {
+		id:      MigratePages,
 		id32Bit: Sys32migrate_pages,
 		name:    "migrate_pages",
 		syscall: true,
@@ -4839,7 +5095,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const unsigned long*", Name: "new_nodes"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MigratePages)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MigratePages)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MigratePages)}},
@@ -4848,6 +5104,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Openat: {
+		id:      Openat,
 		id32Bit: Sys32openat,
 		name:    "openat",
 		syscall: true,
@@ -4859,7 +5116,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "mode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Openat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Openat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Openat)}},
@@ -4868,6 +5125,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Mkdirat: {
+		id:      Mkdirat,
 		id32Bit: Sys32mkdirat,
 		name:    "mkdirat",
 		syscall: true,
@@ -4878,7 +5136,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "mode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mkdirat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mkdirat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mkdirat)}},
@@ -4887,6 +5145,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Mknodat: {
+		id:      Mknodat,
 		id32Bit: Sys32mknodat,
 		name:    "mknodat",
 		syscall: true,
@@ -4898,7 +5157,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "dev_t", Name: "dev"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mknodat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mknodat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mknodat)}},
@@ -4907,6 +5166,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fchownat: {
+		id:      Fchownat,
 		id32Bit: Sys32fchownat,
 		name:    "fchownat",
 		syscall: true,
@@ -4919,7 +5179,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchownat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchownat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchownat)}},
@@ -4928,6 +5188,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Futimesat: {
+		id:      Futimesat,
 		id32Bit: Sys32futimesat,
 		name:    "futimesat",
 		syscall: true,
@@ -4938,7 +5199,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct timeval*", Name: "times"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Futimesat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Futimesat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Futimesat)}},
@@ -4947,6 +5208,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Newfstatat: {
+		id:      Newfstatat,
 		id32Bit: Sys32fstatat64,
 		name:    "newfstatat",
 		syscall: true,
@@ -4958,7 +5220,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Newfstatat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Newfstatat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Newfstatat)}},
@@ -4967,6 +5229,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Unlinkat: {
+		id:      Unlinkat,
 		id32Bit: Sys32unlinkat,
 		name:    "unlinkat",
 		syscall: true,
@@ -4977,7 +5240,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Unlinkat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Unlinkat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Unlinkat)}},
@@ -4986,6 +5249,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Renameat: {
+		id:      Renameat,
 		id32Bit: Sys32renameat,
 		name:    "renameat",
 		syscall: true,
@@ -4997,7 +5261,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "newpath"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Renameat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Renameat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Renameat)}},
@@ -5006,6 +5270,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Linkat: {
+		id:      Linkat,
 		id32Bit: Sys32linkat,
 		name:    "linkat",
 		syscall: true,
@@ -5018,7 +5283,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Linkat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Linkat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Linkat)}},
@@ -5027,6 +5292,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Symlinkat: {
+		id:      Symlinkat,
 		id32Bit: Sys32symlinkat,
 		name:    "symlinkat",
 		syscall: true,
@@ -5037,7 +5303,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "linkpath"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Symlinkat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Symlinkat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Symlinkat)}},
@@ -5046,6 +5312,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Readlinkat: {
+		id:      Readlinkat,
 		id32Bit: Sys32readlinkat,
 		name:    "readlinkat",
 		syscall: true,
@@ -5057,7 +5324,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "bufsiz"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readlinkat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readlinkat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readlinkat)}},
@@ -5066,6 +5333,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fchmodat: {
+		id:      Fchmodat,
 		id32Bit: Sys32fchmodat,
 		name:    "fchmodat",
 		syscall: true,
@@ -5077,7 +5345,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchmodat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchmodat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchmodat)}},
@@ -5086,6 +5354,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Faccessat: {
+		id:      Faccessat,
 		id32Bit: Sys32faccessat,
 		name:    "faccessat",
 		syscall: true,
@@ -5097,7 +5366,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Faccessat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Faccessat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Faccessat)}},
@@ -5106,6 +5375,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Pselect6: {
+		id:      Pselect6,
 		id32Bit: Sys32pselect6_time64,
 		name:    "pselect6",
 		syscall: true,
@@ -5119,7 +5389,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "void*", Name: "sigmask"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pselect6)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pselect6)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pselect6)}},
@@ -5128,6 +5398,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Ppoll: {
+		id:      Ppoll,
 		id32Bit: Sys32ppoll_time64,
 		name:    "ppoll",
 		syscall: true,
@@ -5140,7 +5411,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ppoll)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ppoll)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ppoll)}},
@@ -5149,6 +5420,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Unshare: {
+		id:      Unshare,
 		id32Bit: Sys32unshare,
 		name:    "unshare",
 		syscall: true,
@@ -5157,7 +5429,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Unshare)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Unshare)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Unshare)}},
@@ -5166,6 +5438,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SetRobustList: {
+		id:      SetRobustList,
 		id32Bit: Sys32set_robust_list,
 		name:    "set_robust_list",
 		syscall: true,
@@ -5175,7 +5448,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "len"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetRobustList)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SetRobustList)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SetRobustList)}},
@@ -5184,6 +5457,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	GetRobustList: {
+		id:      GetRobustList,
 		id32Bit: Sys32get_robust_list,
 		name:    "get_robust_list",
 		syscall: true,
@@ -5194,7 +5468,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t*", Name: "len_ptr"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetRobustList)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(GetRobustList)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(GetRobustList)}},
@@ -5203,6 +5477,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Splice: {
+		id:      Splice,
 		id32Bit: Sys32splice,
 		name:    "splice",
 		syscall: true,
@@ -5216,7 +5491,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Splice)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Splice)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Splice)}},
@@ -5225,6 +5500,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Tee: {
+		id:      Tee,
 		id32Bit: Sys32tee,
 		name:    "tee",
 		syscall: true,
@@ -5236,7 +5512,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tee)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Tee)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Tee)}},
@@ -5245,6 +5521,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SyncFileRange: {
+		id:      SyncFileRange,
 		id32Bit: Sys32sync_file_range,
 		name:    "sync_file_range",
 		syscall: true,
@@ -5256,7 +5533,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SyncFileRange)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SyncFileRange)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SyncFileRange)}},
@@ -5265,6 +5542,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Vmsplice: {
+		id:      Vmsplice,
 		id32Bit: Sys32vmsplice,
 		name:    "vmsplice",
 		syscall: true,
@@ -5276,7 +5554,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vmsplice)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vmsplice)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vmsplice)}},
@@ -5285,6 +5563,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	MovePages: {
+		id:      MovePages,
 		id32Bit: Sys32move_pages,
 		name:    "move_pages",
 		syscall: true,
@@ -5298,7 +5577,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MovePages)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MovePages)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MovePages)}},
@@ -5307,6 +5586,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Utimensat: {
+		id:      Utimensat,
 		id32Bit: Sys32utimensat_time64,
 		name:    "utimensat",
 		syscall: true,
@@ -5318,7 +5598,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Utimensat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Utimensat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Utimensat)}},
@@ -5327,6 +5607,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	EpollPwait: {
+		id:      EpollPwait,
 		id32Bit: Sys32epoll_pwait,
 		name:    "epoll_pwait",
 		syscall: true,
@@ -5340,7 +5621,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollPwait)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollPwait)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollPwait)}},
@@ -5349,6 +5630,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Signalfd: {
+		id:      Signalfd,
 		id32Bit: Sys32signalfd,
 		name:    "signalfd",
 		syscall: true,
@@ -5359,7 +5641,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Signalfd)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Signalfd)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Signalfd)}},
@@ -5368,6 +5650,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	TimerfdCreate: {
+		id:      TimerfdCreate,
 		id32Bit: Sys32timerfd_create,
 		name:    "timerfd_create",
 		syscall: true,
@@ -5377,7 +5660,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdCreate)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdCreate)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdCreate)}},
@@ -5386,6 +5669,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Eventfd: {
+		id:      Eventfd,
 		id32Bit: Sys32eventfd,
 		name:    "eventfd",
 		syscall: true,
@@ -5395,7 +5679,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Eventfd)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Eventfd)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Eventfd)}},
@@ -5404,6 +5688,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fallocate: {
+		id:      Fallocate,
 		id32Bit: Sys32fallocate,
 		name:    "fallocate",
 		syscall: true,
@@ -5415,7 +5700,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "off_t", Name: "len"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fallocate)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fallocate)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fallocate)}},
@@ -5424,6 +5709,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	TimerfdSettime: {
+		id:      TimerfdSettime,
 		id32Bit: Sys32timerfd_settime64,
 		name:    "timerfd_settime",
 		syscall: true,
@@ -5435,7 +5721,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct itimerspec*", Name: "old_value"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdSettime)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdSettime)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdSettime)}},
@@ -5444,6 +5730,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	TimerfdGettime: {
+		id:      TimerfdGettime,
 		id32Bit: Sys32timerfd_gettime64,
 		name:    "timerfd_gettime",
 		syscall: true,
@@ -5453,7 +5740,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct itimerspec*", Name: "curr_value"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdGettime)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdGettime)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdGettime)}},
@@ -5462,6 +5749,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Accept4: {
+		id:      Accept4,
 		id32Bit: Sys32accept4,
 		name:    "accept4",
 		syscall: true,
@@ -5473,7 +5761,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Accept4)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Accept4)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Accept4)}},
@@ -5482,6 +5770,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Signalfd4: {
+		id:      Signalfd4,
 		id32Bit: Sys32signalfd4,
 		name:    "signalfd4",
 		syscall: true,
@@ -5493,7 +5782,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Signalfd4)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Signalfd4)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Signalfd4)}},
@@ -5502,6 +5791,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Eventfd2: {
+		id:      Eventfd2,
 		id32Bit: Sys32eventfd2,
 		name:    "eventfd2",
 		syscall: true,
@@ -5511,7 +5801,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Eventfd2)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Eventfd2)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Eventfd2)}},
@@ -5520,6 +5810,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	EpollCreate1: {
+		id:      EpollCreate1,
 		id32Bit: Sys32epoll_create1,
 		name:    "epoll_create1",
 		syscall: true,
@@ -5528,7 +5819,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCreate1)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollCreate1)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollCreate1)}},
@@ -5537,6 +5828,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Dup3: {
+		id:      Dup3,
 		id32Bit: Sys32dup3,
 		name:    "dup3",
 		syscall: true,
@@ -5547,7 +5839,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Dup3)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Dup3)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Dup3)}},
@@ -5556,6 +5848,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Pipe2: {
+		id:      Pipe2,
 		id32Bit: Sys32pipe2,
 		name:    "pipe2",
 		syscall: true,
@@ -5565,7 +5858,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pipe2)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pipe2)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pipe2)}},
@@ -5574,6 +5867,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	InotifyInit1: {
+		id:      InotifyInit1,
 		id32Bit: Sys32inotify_init1,
 		name:    "inotify_init1",
 		syscall: true,
@@ -5582,7 +5876,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyInit1)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(InotifyInit1)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(InotifyInit1)}},
@@ -5591,6 +5885,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Preadv: {
+		id:      Preadv,
 		id32Bit: Sys32preadv,
 		name:    "preadv",
 		syscall: true,
@@ -5603,7 +5898,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "pos_h"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Preadv)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Preadv)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Preadv)}},
@@ -5612,6 +5907,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Pwritev: {
+		id:      Pwritev,
 		id32Bit: Sys32pwritev,
 		name:    "pwritev",
 		syscall: true,
@@ -5624,7 +5920,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "pos_h"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pwritev)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pwritev)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pwritev)}},
@@ -5633,6 +5929,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	RtTgsigqueueinfo: {
+		id:      RtTgsigqueueinfo,
 		id32Bit: Sys32rt_tgsigqueueinfo,
 		name:    "rt_tgsigqueueinfo",
 		syscall: true,
@@ -5644,7 +5941,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "siginfo_t*", Name: "info"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtTgsigqueueinfo)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtTgsigqueueinfo)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtTgsigqueueinfo)}},
@@ -5653,6 +5950,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	PerfEventOpen: {
+		id:      PerfEventOpen,
 		id32Bit: Sys32perf_event_open,
 		name:    "perf_event_open",
 		syscall: true,
@@ -5665,7 +5963,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PerfEventOpen)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PerfEventOpen)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PerfEventOpen)}},
@@ -5674,6 +5972,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Recvmmsg: {
+		id:      Recvmmsg,
 		id32Bit: Sys32recvmmsg_time64,
 		name:    "recvmmsg",
 		syscall: true,
@@ -5686,7 +5985,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct timespec*", Name: "timeout"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Recvmmsg)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Recvmmsg)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Recvmmsg)}},
@@ -5695,6 +5994,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	FanotifyInit: {
+		id:      FanotifyInit,
 		id32Bit: Sys32fanotify_init,
 		name:    "fanotify_init",
 		syscall: true,
@@ -5704,7 +6004,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "event_f_flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FanotifyInit)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FanotifyInit)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FanotifyInit)}},
@@ -5713,6 +6013,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	FanotifyMark: {
+		id:      FanotifyMark,
 		id32Bit: Sys32fanotify_mark,
 		name:    "fanotify_mark",
 		syscall: true,
@@ -5725,7 +6026,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "pathname"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FanotifyMark)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FanotifyMark)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FanotifyMark)}},
@@ -5734,6 +6035,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Prlimit64: {
+		id:      Prlimit64,
 		id32Bit: Sys32prlimit64,
 		name:    "prlimit64",
 		syscall: true,
@@ -5745,7 +6047,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct rlimit64*", Name: "old_limit"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Prlimit64)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Prlimit64)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Prlimit64)}},
@@ -5754,6 +6056,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	NameToHandleAt: {
+		id:      NameToHandleAt,
 		id32Bit: Sys32name_to_handle_at,
 		name:    "name_to_handle_at",
 		syscall: true,
@@ -5766,7 +6069,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(NameToHandleAt)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(NameToHandleAt)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(NameToHandleAt)}},
@@ -5775,6 +6078,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	OpenByHandleAt: {
+		id:      OpenByHandleAt,
 		id32Bit: Sys32open_by_handle_at,
 		name:    "open_by_handle_at",
 		syscall: true,
@@ -5785,7 +6089,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OpenByHandleAt)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(OpenByHandleAt)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(OpenByHandleAt)}},
@@ -5794,6 +6098,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ClockAdjtime: {
+		id:      ClockAdjtime,
 		id32Bit: Sys32clock_adjtime,
 		name:    "clock_adjtime",
 		syscall: true,
@@ -5803,7 +6108,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct timex*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockAdjtime)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockAdjtime)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockAdjtime)}},
@@ -5812,6 +6117,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Syncfs: {
+		id:      Syncfs,
 		id32Bit: Sys32syncfs,
 		name:    "syncfs",
 		syscall: true,
@@ -5820,7 +6126,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "fd"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Syncfs)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Syncfs)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Syncfs)}},
@@ -5829,6 +6135,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Sendmmsg: {
+		id:      Sendmmsg,
 		id32Bit: Sys32sendmmsg,
 		name:    "sendmmsg",
 		syscall: true,
@@ -5840,7 +6147,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendmmsg)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendmmsg)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendmmsg)}},
@@ -5849,6 +6156,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setns: {
+		id:      Setns,
 		id32Bit: Sys32setns,
 		name:    "setns",
 		syscall: true,
@@ -5858,7 +6166,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "nstype"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setns)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setns)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setns)}},
@@ -5867,6 +6175,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getcpu: {
+		id:      Getcpu,
 		id32Bit: Sys32getcpu,
 		name:    "getcpu",
 		syscall: true,
@@ -5877,7 +6186,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct getcpu_cache*", Name: "tcache"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getcpu)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getcpu)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getcpu)}},
@@ -5886,6 +6195,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ProcessVmReadv: {
+		id:      ProcessVmReadv,
 		id32Bit: Sys32process_vm_readv,
 		name:    "process_vm_readv",
 		syscall: true,
@@ -5899,7 +6209,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ProcessVmReadv)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ProcessVmReadv)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ProcessVmReadv)}},
@@ -5908,6 +6218,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ProcessVmWritev: {
+		id:      ProcessVmWritev,
 		id32Bit: Sys32process_vm_writev,
 		name:    "process_vm_writev",
 		syscall: true,
@@ -5921,7 +6232,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ProcessVmWritev)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ProcessVmWritev)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ProcessVmWritev)}},
@@ -5930,6 +6241,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Kcmp: {
+		id:      Kcmp,
 		id32Bit: Sys32kcmp,
 		name:    "kcmp",
 		syscall: true,
@@ -5942,7 +6254,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "idx2"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Kcmp)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Kcmp)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Kcmp)}},
@@ -5951,6 +6263,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	FinitModule: {
+		id:      FinitModule,
 		id32Bit: Sys32finit_module,
 		name:    "finit_module",
 		syscall: true,
@@ -5961,7 +6274,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FinitModule)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FinitModule)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FinitModule)}},
@@ -5970,6 +6283,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SchedSetattr: {
+		id:      SchedSetattr,
 		id32Bit: Sys32sched_setattr,
 		name:    "sched_setattr",
 		syscall: true,
@@ -5980,7 +6294,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetattr)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedSetattr)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedSetattr)}},
@@ -5989,6 +6303,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SchedGetattr: {
+		id:      SchedGetattr,
 		id32Bit: Sys32sched_getattr,
 		name:    "sched_getattr",
 		syscall: true,
@@ -6000,7 +6315,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetattr)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedGetattr)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedGetattr)}},
@@ -6009,6 +6324,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Renameat2: {
+		id:      Renameat2,
 		id32Bit: Sys32renameat2,
 		name:    "renameat2",
 		syscall: true,
@@ -6021,7 +6337,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Renameat2)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Renameat2)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Renameat2)}},
@@ -6030,6 +6346,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Seccomp: {
+		id:      Seccomp,
 		id32Bit: Sys32seccomp,
 		name:    "seccomp",
 		syscall: true,
@@ -6040,7 +6357,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const void*", Name: "args"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Seccomp)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Seccomp)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Seccomp)}},
@@ -6049,6 +6366,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getrandom: {
+		id:      Getrandom,
 		id32Bit: Sys32getrandom,
 		name:    "getrandom",
 		syscall: true,
@@ -6059,7 +6377,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getrandom)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getrandom)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getrandom)}},
@@ -6068,6 +6386,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	MemfdCreate: {
+		id:      MemfdCreate,
 		id32Bit: Sys32memfd_create,
 		name:    "memfd_create",
 		syscall: true,
@@ -6077,7 +6396,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MemfdCreate)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MemfdCreate)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MemfdCreate)}},
@@ -6086,6 +6405,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	KexecFileLoad: {
+		id:      KexecFileLoad,
 		id32Bit: Sys32Undefined,
 		name:    "kexec_file_load",
 		syscall: true,
@@ -6098,7 +6418,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(KexecFileLoad)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(KexecFileLoad)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(KexecFileLoad)}},
@@ -6107,6 +6427,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Bpf: {
+		id:      Bpf,
 		id32Bit: Sys32bpf,
 		name:    "bpf",
 		syscall: true,
@@ -6117,7 +6438,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "size"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Bpf)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Bpf)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Bpf)}},
@@ -6126,6 +6447,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Execveat: {
+		id:      Execveat,
 		id32Bit: Sys32execveat,
 		name:    "execveat",
 		syscall: true,
@@ -6138,7 +6460,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Execveat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Execveat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Execveat)}},
@@ -6148,6 +6470,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Userfaultfd: {
+		id:      Userfaultfd,
 		id32Bit: Sys32userfaultfd,
 		name:    "userfaultfd",
 		syscall: true,
@@ -6156,7 +6479,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Userfaultfd)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Userfaultfd)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Userfaultfd)}},
@@ -6165,6 +6488,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Membarrier: {
+		id:      Membarrier,
 		id32Bit: Sys32membarrier,
 		name:    "membarrier",
 		syscall: true,
@@ -6174,7 +6498,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Membarrier)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Membarrier)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Membarrier)}},
@@ -6183,6 +6507,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Mlock2: {
+		id:      Mlock2,
 		id32Bit: Sys32mlock2,
 		name:    "mlock2",
 		syscall: true,
@@ -6193,7 +6518,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mlock2)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mlock2)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mlock2)}},
@@ -6202,6 +6527,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	CopyFileRange: {
+		id:      CopyFileRange,
 		id32Bit: Sys32copy_file_range,
 		name:    "copy_file_range",
 		syscall: true,
@@ -6215,7 +6541,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(CopyFileRange)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(CopyFileRange)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(CopyFileRange)}},
@@ -6224,6 +6550,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Preadv2: {
+		id:      Preadv2,
 		id32Bit: Sys32preadv2,
 		name:    "preadv2",
 		syscall: true,
@@ -6237,7 +6564,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Preadv2)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Preadv2)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Preadv2)}},
@@ -6246,6 +6573,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Pwritev2: {
+		id:      Pwritev2,
 		id32Bit: Sys32pwritev2,
 		name:    "pwritev2",
 		syscall: true,
@@ -6259,7 +6587,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pwritev2)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pwritev2)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pwritev2)}},
@@ -6268,6 +6596,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	PkeyMprotect: {
+		id:      PkeyMprotect,
 		id32Bit: Sys32pkey_mprotect,
 		name:    "pkey_mprotect",
 		syscall: true,
@@ -6279,7 +6608,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "pkey"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PkeyMprotect)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PkeyMprotect)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PkeyMprotect)}},
@@ -6288,6 +6617,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	PkeyAlloc: {
+		id:      PkeyAlloc,
 		id32Bit: Sys32pkey_alloc,
 		name:    "pkey_alloc",
 		syscall: true,
@@ -6297,7 +6627,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "access_rights"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PkeyAlloc)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PkeyAlloc)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PkeyAlloc)}},
@@ -6306,6 +6636,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	PkeyFree: {
+		id:      PkeyFree,
 		id32Bit: Sys32pkey_free,
 		name:    "pkey_free",
 		syscall: true,
@@ -6314,7 +6645,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "pkey"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PkeyFree)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PkeyFree)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PkeyFree)}},
@@ -6323,6 +6654,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Statx: {
+		id:      Statx,
 		id32Bit: Sys32statx,
 		name:    "statx",
 		syscall: true,
@@ -6335,7 +6667,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct statx*", Name: "statxbuf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Statx)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Statx)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Statx)}},
@@ -6344,6 +6676,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	IoPgetevents: {
+		id:      IoPgetevents,
 		id32Bit: Sys32io_pgetevents_time64,
 		name:    "io_pgetevents",
 		syscall: true,
@@ -6357,7 +6690,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const struct __aio_sigset*", Name: "usig"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoPgetevents)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoPgetevents)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoPgetevents)}},
@@ -6366,6 +6699,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Rseq: {
+		id:      Rseq,
 		id32Bit: Sys32rseq,
 		name:    "rseq",
 		syscall: true,
@@ -6377,7 +6711,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "u32", Name: "sig"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Rseq)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Rseq)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Rseq)}},
@@ -6386,6 +6720,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	PidfdSendSignal: {
+		id:      PidfdSendSignal,
 		id32Bit: Sys32pidfd_send_signal,
 		name:    "pidfd_send_signal",
 		syscall: true,
@@ -6397,7 +6732,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PidfdSendSignal)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PidfdSendSignal)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PidfdSendSignal)}},
@@ -6406,6 +6741,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	IoUringSetup: {
+		id:      IoUringSetup,
 		id32Bit: Sys32io_uring_setup,
 		name:    "io_uring_setup",
 		syscall: true,
@@ -6415,7 +6751,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct io_uring_params*", Name: "p"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoUringSetup)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoUringSetup)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoUringSetup)}},
@@ -6424,6 +6760,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	IoUringEnter: {
+		id:      IoUringEnter,
 		id32Bit: Sys32io_uring_enter,
 		name:    "io_uring_enter",
 		syscall: true,
@@ -6436,7 +6773,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "sigset_t*", Name: "sig"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoUringEnter)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoUringEnter)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoUringEnter)}},
@@ -6445,6 +6782,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	IoUringRegister: {
+		id:      IoUringRegister,
 		id32Bit: Sys32io_uring_register,
 		name:    "io_uring_register",
 		syscall: true,
@@ -6456,7 +6794,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "nr_args"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoUringRegister)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoUringRegister)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoUringRegister)}},
@@ -6465,6 +6803,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	OpenTree: {
+		id:      OpenTree,
 		id32Bit: Sys32open_tree,
 		name:    "open_tree",
 		syscall: true,
@@ -6475,7 +6814,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OpenTree)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(OpenTree)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(OpenTree)}},
@@ -6484,6 +6823,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	MoveMount: {
+		id:      MoveMount,
 		id32Bit: Sys32move_mount,
 		name:    "move_mount",
 		syscall: true,
@@ -6496,7 +6836,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MoveMount)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MoveMount)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MoveMount)}},
@@ -6505,6 +6845,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fsopen: {
+		id:      Fsopen,
 		id32Bit: Sys32fsopen,
 		name:    "fsopen",
 		syscall: true,
@@ -6514,7 +6855,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsopen)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsopen)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsopen)}},
@@ -6523,6 +6864,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fsconfig: {
+		id:      Fsconfig,
 		id32Bit: Sys32fsconfig,
 		name:    "fsconfig",
 		syscall: true,
@@ -6535,7 +6877,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "aux"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsconfig)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsconfig)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsconfig)}},
@@ -6544,6 +6886,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fsmount: {
+		id:      Fsmount,
 		id32Bit: Sys32fsmount,
 		name:    "fsmount",
 		syscall: true,
@@ -6554,7 +6897,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "ms_flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsmount)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fsmount)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fsmount)}},
@@ -6563,6 +6906,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fspick: {
+		id:      Fspick,
 		id32Bit: Sys32fspick,
 		name:    "fspick",
 		syscall: true,
@@ -6573,7 +6917,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fspick)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fspick)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fspick)}},
@@ -6582,6 +6926,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	PidfdOpen: {
+		id:      PidfdOpen,
 		id32Bit: Sys32pidfd_open,
 		name:    "pidfd_open",
 		syscall: true,
@@ -6591,7 +6936,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PidfdOpen)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PidfdOpen)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PidfdOpen)}},
@@ -6600,6 +6945,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Clone3: {
+		id:      Clone3,
 		id32Bit: Sys32clone3,
 		name:    "clone3",
 		syscall: true,
@@ -6609,7 +6955,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "size"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Clone3)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Clone3)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Clone3)}},
@@ -6618,6 +6964,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	CloseRange: {
+		id:      CloseRange,
 		id32Bit: Sys32close_range,
 		name:    "close_range",
 		syscall: true,
@@ -6627,7 +6974,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "last"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(CloseRange)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(CloseRange)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(CloseRange)}},
@@ -6636,6 +6983,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Openat2: {
+		id:      Openat2,
 		id32Bit: Sys32openat2,
 		name:    "openat2",
 		syscall: true,
@@ -6647,7 +6995,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "size"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Openat2)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Openat2)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Openat2)}},
@@ -6656,6 +7004,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	PidfdGetfd: {
+		id:      PidfdGetfd,
 		id32Bit: Sys32pidfd_getfd,
 		name:    "pidfd_getfd",
 		syscall: true,
@@ -6666,7 +7015,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PidfdGetfd)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PidfdGetfd)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PidfdGetfd)}},
@@ -6675,6 +7024,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Faccessat2: {
+		id:      Faccessat2,
 		id32Bit: Sys32faccessat2,
 		name:    "faccessat2",
 		syscall: true,
@@ -6686,7 +7036,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flag"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Faccessat2)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Faccessat2)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Faccessat2)}},
@@ -6695,6 +7045,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ProcessMadvise: {
+		id:      ProcessMadvise,
 		id32Bit: Sys32process_madvise,
 		name:    "process_madvise",
 		syscall: true,
@@ -6707,7 +7058,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ProcessMadvise)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ProcessMadvise)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ProcessMadvise)}},
@@ -6716,6 +7067,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	EpollPwait2: {
+		id:      EpollPwait2,
 		id32Bit: Sys32epoll_pwait2,
 		name:    "epoll_pwait2",
 		syscall: true,
@@ -6728,7 +7080,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const sigset_t*", Name: "sigset"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollPwait2)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(EpollPwait2)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(EpollPwait2)}},
@@ -6737,6 +7089,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	MountSetatt: {
+		id:      MountSetatt,
 		id32Bit: Sys32mount_setattr,
 		name:    "mount_setattr",
 		syscall: true,
@@ -6749,7 +7102,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "usize"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MountSetatt)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MountSetatt)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MountSetatt)}},
@@ -6758,6 +7111,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	QuotactlFd: {
+		id:      QuotactlFd,
 		id32Bit: Sys32quotactl_fd,
 		name:    "quotactl_fd",
 		syscall: true,
@@ -6769,7 +7123,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "void *", Name: "addr"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(QuotactlFd)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(QuotactlFd)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(QuotactlFd)}},
@@ -6778,6 +7132,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	LandlockCreateRuleset: {
+		id:      LandlockCreateRuleset,
 		id32Bit: Sys32landlock_create_ruleset,
 		name:    "landlock_create_ruleset",
 		syscall: true,
@@ -6788,7 +7143,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "u32", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LandlockCreateRuleset)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LandlockCreateRuleset)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LandlockCreateRuleset)}},
@@ -6797,6 +7152,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	LandlockAddRule: {
+		id:      LandlockAddRule,
 		id32Bit: Sys32landlock_add_rule,
 		name:    "landlock_add_rule",
 		syscall: true,
@@ -6808,7 +7164,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "u32", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LandlockAddRule)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LandlockAddRule)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LandlockAddRule)}},
@@ -6817,6 +7173,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	LandloclRestrictSet: {
+		id:      LandloclRestrictSet,
 		id32Bit: Sys32landlock_restrict_self,
 		name:    "landlock_restrict_self",
 		syscall: true,
@@ -6826,7 +7183,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "u32", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LandloclRestrictSet)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LandloclRestrictSet)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LandloclRestrictSet)}},
@@ -6835,6 +7192,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	MemfdSecret: {
+		id:      MemfdSecret,
 		id32Bit: Sys32memfd_secret,
 		name:    "memfd_secret",
 		syscall: true,
@@ -6843,7 +7201,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MemfdSecret)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MemfdSecret)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MemfdSecret)}},
@@ -6852,6 +7210,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ProcessMrelease: {
+		id:      ProcessMrelease,
 		id32Bit: Sys32process_mrelease,
 		name:    "process_mrelease",
 		syscall: true,
@@ -6861,7 +7220,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ProcessMrelease)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ProcessMrelease)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ProcessMrelease)}},
@@ -6870,6 +7229,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Waitpid: {
+		id:      Waitpid,
 		id32Bit: Sys32waitpid,
 		name:    "waitpid",
 		syscall: true,
@@ -6880,7 +7240,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "options"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Waitpid)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Waitpid)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Waitpid)}},
@@ -6889,13 +7249,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Oldfstat: {
+		id:      Oldfstat,
 		id32Bit: Sys32oldfstat,
 		name:    "oldfstat",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldfstat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Oldfstat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Oldfstat)}},
@@ -6904,13 +7265,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Break: {
+		id:      Break,
 		id32Bit: Sys32break,
 		name:    "break",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Break)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Break)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Break)}},
@@ -6919,6 +7281,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Oldstat: {
+		id:      Oldstat,
 		id32Bit: Sys32oldstat,
 		name:    "oldstat",
 		syscall: true,
@@ -6928,7 +7291,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct __old_kernel_stat*", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldstat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Oldstat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Oldstat)}},
@@ -6937,6 +7300,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Umount: {
+		id:      Umount,
 		id32Bit: Sys32umount,
 		name:    "umount",
 		syscall: true,
@@ -6945,7 +7309,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const char*", Name: "target"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Umount)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Umount)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Umount)}},
@@ -6954,6 +7318,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Stime: {
+		id:      Stime,
 		id32Bit: Sys32stime,
 		name:    "stime",
 		syscall: true,
@@ -6962,7 +7327,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const time_t*", Name: "t"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stime)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Stime)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Stime)}},
@@ -6971,13 +7336,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Stty: {
+		id:      Stty,
 		id32Bit: Sys32stty,
 		name:    "stty",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stty)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Stty)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Stty)}},
@@ -6986,13 +7352,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Gtty: {
+		id:      Gtty,
 		id32Bit: Sys32gtty,
 		name:    "gtty",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Gtty)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Gtty)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Gtty)}},
@@ -7001,6 +7368,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Nice: {
+		id:      Nice,
 		id32Bit: Sys32nice,
 		name:    "nice",
 		syscall: true,
@@ -7009,7 +7377,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "inc"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Nice)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Nice)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Nice)}},
@@ -7018,13 +7386,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Ftime: {
+		id:      Ftime,
 		id32Bit: Sys32ftime,
 		name:    "ftime",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ftime)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ftime)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ftime)}},
@@ -7033,13 +7402,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Prof: {
+		id:      Prof,
 		id32Bit: Sys32prof,
 		name:    "prof",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Prof)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Prof)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Prof)}},
@@ -7048,6 +7418,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Signal: {
+		id:      Signal,
 		id32Bit: Sys32signal,
 		name:    "signal",
 		syscall: true,
@@ -7057,7 +7428,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "sighandler_t", Name: "handler"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Signal)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Signal)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Signal)}},
@@ -7066,13 +7437,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Lock: {
+		id:      Lock,
 		id32Bit: Sys32lock,
 		name:    "lock",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lock)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lock)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lock)}},
@@ -7081,13 +7453,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Mpx: {
+		id:      Mpx,
 		id32Bit: Sys32mpx,
 		name:    "mpx",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mpx)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mpx)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mpx)}},
@@ -7096,13 +7469,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Ulimit: {
+		id:      Ulimit,
 		id32Bit: Sys32ulimit,
 		name:    "ulimit",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ulimit)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ulimit)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ulimit)}},
@@ -7111,6 +7485,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Oldolduname: {
+		id:      Oldolduname,
 		id32Bit: Sys32oldolduname,
 		name:    "oldolduname",
 		syscall: true,
@@ -7119,7 +7494,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct oldold_utsname*", Name: "name"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldolduname)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Oldolduname)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Oldolduname)}},
@@ -7128,6 +7503,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Sigaction: {
+		id:      Sigaction,
 		id32Bit: Sys32sigaction,
 		name:    "sigaction",
 		syscall: true,
@@ -7138,7 +7514,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct sigaction*", Name: "oact"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigaction)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigaction)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigaction)}},
@@ -7147,13 +7523,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Sgetmask: {
+		id:      Sgetmask,
 		id32Bit: Sys32sgetmask,
 		name:    "sgetmask",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sgetmask)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sgetmask)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sgetmask)}},
@@ -7162,6 +7539,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Ssetmask: {
+		id:      Ssetmask,
 		id32Bit: Sys32ssetmask,
 		name:    "ssetmask",
 		syscall: true,
@@ -7170,7 +7548,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "long", Name: "newmask"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ssetmask)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ssetmask)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ssetmask)}},
@@ -7179,6 +7557,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Sigsuspend: {
+		id:      Sigsuspend,
 		id32Bit: Sys32sigsuspend,
 		name:    "sigsuspend",
 		syscall: true,
@@ -7187,7 +7566,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const sigset_t*", Name: "mask"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigsuspend)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigsuspend)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigsuspend)}},
@@ -7196,6 +7575,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Sigpending: {
+		id:      Sigpending,
 		id32Bit: Sys32sigpending,
 		name:    "sigpending",
 		syscall: true,
@@ -7204,7 +7584,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "sigset_t*", Name: "set"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigpending)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigpending)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigpending)}},
@@ -7213,6 +7593,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Oldlstat: {
+		id:      Oldlstat,
 		id32Bit: Sys32oldlstat,
 		name:    "oldlstat",
 		syscall: true,
@@ -7222,7 +7603,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct stat*", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldlstat)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Oldlstat)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Oldlstat)}},
@@ -7231,6 +7612,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Readdir: {
+		id:      Readdir,
 		id32Bit: Sys32readdir,
 		name:    "readdir",
 		syscall: true,
@@ -7241,7 +7623,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "count"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readdir)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Readdir)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Readdir)}},
@@ -7250,13 +7632,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Profil: {
+		id:      Profil,
 		id32Bit: Sys32profil,
 		name:    "profil",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Profil)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Profil)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Profil)}},
@@ -7265,6 +7648,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Socketcall: {
+		id:      Socketcall,
 		id32Bit: Sys32socketcall,
 		name:    "socketcall",
 		syscall: true,
@@ -7274,7 +7658,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long*", Name: "args"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Socketcall)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Socketcall)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Socketcall)}},
@@ -7283,6 +7667,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Olduname: {
+		id:      Olduname,
 		id32Bit: Sys32olduname,
 		name:    "olduname",
 		syscall: true,
@@ -7291,7 +7676,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct utsname*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Olduname)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Olduname)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Olduname)}},
@@ -7300,13 +7685,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Idle: {
+		id:      Idle,
 		id32Bit: Sys32idle,
 		name:    "idle",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Idle)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Idle)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Idle)}},
@@ -7315,6 +7701,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Vm86old: {
+		id:      Vm86old,
 		id32Bit: Sys32vm86old,
 		name:    "vm86old",
 		syscall: true,
@@ -7323,7 +7710,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct vm86_struct*", Name: "info"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vm86old)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vm86old)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vm86old)}},
@@ -7332,6 +7719,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Ipc: {
+		id:      Ipc,
 		id32Bit: Sys32ipc,
 		name:    "ipc",
 		syscall: true,
@@ -7345,7 +7733,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "long", Name: "fifth"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ipc)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ipc)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ipc)}},
@@ -7354,13 +7742,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Sigreturn: {
+		id:      Sigreturn,
 		id32Bit: Sys32sigreturn,
 		name:    "sigreturn",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigreturn)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigreturn)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigreturn)}},
@@ -7369,6 +7758,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Sigprocmask: {
+		id:      Sigprocmask,
 		id32Bit: Sys32sigprocmask,
 		name:    "sigprocmask",
 		syscall: true,
@@ -7379,7 +7769,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "sigset_t *restrict", Name: "oldset"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigprocmask)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sigprocmask)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sigprocmask)}},
@@ -7388,13 +7778,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Bdflush: {
+		id:      Bdflush,
 		id32Bit: Sys32bdflush,
 		name:    "bdflush",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Bdflush)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Bdflush)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Bdflush)}},
@@ -7403,13 +7794,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Afs_syscall: {
+		id:      Afs_syscall,
 		id32Bit: Sys32afs_syscall,
 		name:    "afs_syscall",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Afs_syscall)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Afs_syscall)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Afs_syscall)}},
@@ -7418,6 +7810,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Llseek: {
+		id:      Llseek,
 		id32Bit: Sys32_llseek,
 		name:    "llseek",
 		syscall: true,
@@ -7430,7 +7823,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned int", Name: "whence"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Llseek)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Llseek)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Llseek)}},
@@ -7439,6 +7832,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	OldSelect: {
+		id:      OldSelect,
 		id32Bit: Sys32select,
 		name:    "old_select",
 		syscall: true,
@@ -7451,7 +7845,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct timeval*", Name: "timeout"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OldSelect)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(OldSelect)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(OldSelect)}},
@@ -7460,6 +7854,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Vm86: {
+		id:      Vm86,
 		id32Bit: Sys32vm86,
 		name:    "vm86",
 		syscall: true,
@@ -7469,7 +7864,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct vm86plus_struct*", Name: "v86"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vm86)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Vm86)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Vm86)}},
@@ -7478,6 +7873,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	OldGetrlimit: {
+		id:      OldGetrlimit,
 		id32Bit: Sys32getrlimit,
 		name:    "old_getrlimit",
 		syscall: true,
@@ -7487,7 +7883,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct rlimit*", Name: "rlim"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OldGetrlimit)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(OldGetrlimit)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(OldGetrlimit)}},
@@ -7496,6 +7892,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Mmap2: {
+		id:      Mmap2,
 		id32Bit: Sys32mmap2,
 		name:    "mmap2",
 		syscall: true,
@@ -7509,7 +7906,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "pgoffset"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mmap2)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mmap2)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mmap2)}},
@@ -7518,6 +7915,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Truncate64: {
+		id:      Truncate64,
 		id32Bit: Sys32truncate64,
 		name:    "truncate64",
 		syscall: true,
@@ -7527,7 +7925,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "off_t", Name: "length"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Truncate64)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Truncate64)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Truncate64)}},
@@ -7536,6 +7934,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Ftruncate64: {
+		id:      Ftruncate64,
 		id32Bit: Sys32ftruncate64,
 		name:    "ftruncate64",
 		syscall: true,
@@ -7545,7 +7944,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "off_t", Name: "length"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ftruncate64)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Ftruncate64)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Ftruncate64)}},
@@ -7554,6 +7953,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Stat64: {
+		id:      Stat64,
 		id32Bit: Sys32stat64,
 		name:    "stat64",
 		syscall: true,
@@ -7563,7 +7963,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct stat64*", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stat64)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Stat64)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Stat64)}},
@@ -7572,6 +7972,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Lstat64: {
+		id:      Lstat64,
 		id32Bit: Sys32lstat64,
 		name:    "lstat64",
 		syscall: true,
@@ -7581,7 +7982,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct stat64*", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lstat64)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lstat64)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lstat64)}},
@@ -7590,6 +7991,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fstat64: {
+		id:      Fstat64,
 		id32Bit: Sys32fstat64,
 		name:    "fstat64",
 		syscall: true,
@@ -7599,7 +8001,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct stat64*", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstat64)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fstat64)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fstat64)}},
@@ -7608,6 +8010,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Lchown16: {
+		id:      Lchown16,
 		id32Bit: Sys32lchown,
 		name:    "lchown16",
 		syscall: true,
@@ -7618,7 +8021,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "old_gid_t", Name: "group"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lchown16)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Lchown16)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Lchown16)}},
@@ -7627,13 +8030,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getuid16: {
+		id:      Getuid16,
 		id32Bit: Sys32getuid,
 		name:    "getuid16",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getuid16)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getuid16)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getuid16)}},
@@ -7642,13 +8046,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getgid16: {
+		id:      Getgid16,
 		id32Bit: Sys32getgid,
 		name:    "getgid16",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgid16)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getgid16)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getgid16)}},
@@ -7657,13 +8062,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Geteuid16: {
+		id:      Geteuid16,
 		id32Bit: Sys32geteuid,
 		name:    "geteuid16",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Geteuid16)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Geteuid16)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Geteuid16)}},
@@ -7672,13 +8078,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getegid16: {
+		id:      Getegid16,
 		id32Bit: Sys32getegid,
 		name:    "getegid16",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getegid16)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getegid16)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getegid16)}},
@@ -7687,6 +8094,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setreuid16: {
+		id:      Setreuid16,
 		id32Bit: Sys32setreuid,
 		name:    "setreuid16",
 		syscall: true,
@@ -7696,7 +8104,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "old_uid_t", Name: "euid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setreuid16)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setreuid16)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setreuid16)}},
@@ -7705,6 +8113,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setregid16: {
+		id:      Setregid16,
 		id32Bit: Sys32setregid,
 		name:    "setregid16",
 		syscall: true,
@@ -7714,7 +8123,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "old_gid_t", Name: "egid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setregid16)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setregid16)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setregid16)}},
@@ -7723,6 +8132,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getgroups16: {
+		id:      Getgroups16,
 		id32Bit: Sys32getgroups,
 		name:    "getgroups16",
 		syscall: true,
@@ -7732,7 +8142,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "old_gid_t*", Name: "list"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgroups16)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getgroups16)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getgroups16)}},
@@ -7741,6 +8151,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setgroups16: {
+		id:      Setgroups16,
 		id32Bit: Sys32setgroups,
 		name:    "setgroups16",
 		syscall: true,
@@ -7750,7 +8161,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "const gid_t*", Name: "list"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgroups16)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setgroups16)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setgroups16)}},
@@ -7759,6 +8170,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fchown16: {
+		id:      Fchown16,
 		id32Bit: Sys32fchown,
 		name:    "fchown16",
 		syscall: true,
@@ -7769,7 +8181,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "old_gid_t", Name: "group"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchown16)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchown16)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchown16)}},
@@ -7778,6 +8190,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setresuid16: {
+		id:      Setresuid16,
 		id32Bit: Sys32setresuid,
 		name:    "setresuid16",
 		syscall: true,
@@ -7788,7 +8201,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "old_uid_t", Name: "suid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresuid16)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setresuid16)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setresuid16)}},
@@ -7797,6 +8210,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getresuid16: {
+		id:      Getresuid16,
 		id32Bit: Sys32getresuid,
 		name:    "getresuid16",
 		syscall: true,
@@ -7807,7 +8221,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "old_uid_t*", Name: "suid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresuid16)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getresuid16)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getresuid16)}},
@@ -7816,6 +8230,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setresgid16: {
+		id:      Setresgid16,
 		id32Bit: Sys32setresgid,
 		name:    "setresgid16",
 		syscall: true,
@@ -7826,7 +8241,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "old_uid_t", Name: "suid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresgid16)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setresgid16)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setresgid16)}},
@@ -7835,6 +8250,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Getresgid16: {
+		id:      Getresgid16,
 		id32Bit: Sys32getresgid,
 		name:    "getresgid16",
 		syscall: true,
@@ -7845,7 +8261,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "old_gid_t*", Name: "sgid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresgid16)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getresgid16)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getresgid16)}},
@@ -7854,6 +8270,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Chown16: {
+		id:      Chown16,
 		id32Bit: Sys32chown,
 		name:    "chown16",
 		syscall: true,
@@ -7864,7 +8281,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "old_gid_t", Name: "group"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chown16)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Chown16)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Chown16)}},
@@ -7873,6 +8290,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setuid16: {
+		id:      Setuid16,
 		id32Bit: Sys32setuid,
 		name:    "setuid16",
 		syscall: true,
@@ -7881,7 +8299,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "old_old_uid_t", Name: "uid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setuid16)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setuid16)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setuid16)}},
@@ -7890,6 +8308,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setgid16: {
+		id:      Setgid16,
 		id32Bit: Sys32setgid,
 		name:    "setgid16",
 		syscall: true,
@@ -7898,7 +8317,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "old_gid_t", Name: "gid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgid16)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setgid16)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setgid16)}},
@@ -7907,6 +8326,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setfsuid16: {
+		id:      Setfsuid16,
 		id32Bit: Sys32setfsuid,
 		name:    "setfsuid16",
 		syscall: true,
@@ -7915,7 +8335,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "old_uid_t", Name: "fsuid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsuid16)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setfsuid16)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setfsuid16)}},
@@ -7924,6 +8344,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Setfsgid16: {
+		id:      Setfsgid16,
 		id32Bit: Sys32setfsgid,
 		name:    "setfsgid16",
 		syscall: true,
@@ -7932,7 +8353,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "old_gid_t", Name: "fsgid"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsgid16)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setfsgid16)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setfsgid16)}},
@@ -7941,6 +8362,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fcntl64: {
+		id:      Fcntl64,
 		id32Bit: Sys32fcntl64,
 		name:    "fcntl64",
 		syscall: true,
@@ -7951,7 +8373,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "arg"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fcntl64)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fcntl64)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fcntl64)}},
@@ -7960,6 +8382,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Sendfile32: {
+		id:      Sendfile32,
 		id32Bit: Sys32sendfile,
 		name:    "sendfile32",
 		syscall: true,
@@ -7971,7 +8394,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "count"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendfile32)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Sendfile32)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Sendfile32)}},
@@ -7980,6 +8403,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Statfs64: {
+		id:      Statfs64,
 		id32Bit: Sys32statfs64,
 		name:    "statfs64",
 		syscall: true,
@@ -7990,7 +8414,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct statfs64*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Statfs64)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Statfs64)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Statfs64)}},
@@ -7999,6 +8423,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fstatfs64: {
+		id:      Fstatfs64,
 		id32Bit: Sys32fstatfs64,
 		name:    "fstatfs64",
 		syscall: true,
@@ -8009,7 +8434,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct statfs64*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstatfs64)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fstatfs64)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fstatfs64)}},
@@ -8018,6 +8443,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Fadvise64_64: {
+		id:      Fadvise64_64,
 		id32Bit: Sys32fadvise64_64,
 		name:    "fadvise64_64",
 		syscall: true,
@@ -8029,7 +8455,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "advice"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fadvise64_64)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fadvise64_64)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fadvise64_64)}},
@@ -8038,6 +8464,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ClockGettime32: {
+		id:      ClockGettime32,
 		id32Bit: Sys32clock_gettime,
 		name:    "clock_gettime32",
 		syscall: true,
@@ -8047,7 +8474,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct old_timespec32*", Name: "tp"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGettime32)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockGettime32)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockGettime32)}},
@@ -8056,6 +8483,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ClockSettime32: {
+		id:      ClockSettime32,
 		id32Bit: Sys32clock_settime,
 		name:    "clock_settime32",
 		syscall: true,
@@ -8065,7 +8493,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct old_timespec32*", Name: "tp"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockSettime32)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockSettime32)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockSettime32)}},
@@ -8074,13 +8502,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ClockAdjtime64: {
+		id:      ClockAdjtime64,
 		id32Bit: Sys32clock_adjtime64,
 		name:    "clock_adjtime64",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockAdjtime64)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockAdjtime64)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockAdjtime64)}},
@@ -8089,6 +8518,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ClockGetresTime32: {
+		id:      ClockGetresTime32,
 		id32Bit: Sys32clock_getres,
 		name:    "clock_getres_time32",
 		syscall: true,
@@ -8098,7 +8528,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct old_timespec32*", Name: "tp"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGetresTime32)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockGetresTime32)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockGetresTime32)}},
@@ -8107,6 +8537,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ClockNanosleepTime32: {
+		id:      ClockNanosleepTime32,
 		id32Bit: Sys32clock_nanosleep,
 		name:    "clock_nanosleep_time32",
 		syscall: true,
@@ -8118,7 +8549,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct old_timespec32*", Name: "rmtp"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockNanosleepTime32)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(ClockNanosleepTime32)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(ClockNanosleepTime32)}},
@@ -8127,6 +8558,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	TimerGettime32: {
+		id:      TimerGettime32,
 		id32Bit: Sys32timer_gettime,
 		name:    "timer_gettime32",
 		syscall: true,
@@ -8136,7 +8568,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct old_itimerspec32*", Name: "setting"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerGettime32)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerGettime32)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerGettime32)}},
@@ -8145,6 +8577,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	TimerSettime32: {
+		id:      TimerSettime32,
 		id32Bit: Sys32timer_settime,
 		name:    "timer_settime32",
 		syscall: true,
@@ -8156,7 +8589,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct old_itimerspec32*", Name: "old"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerSettime32)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerSettime32)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerSettime32)}},
@@ -8165,6 +8598,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	TimerfdGettime32: {
+		id:      TimerfdGettime32,
 		id32Bit: Sys32timerfd_gettime,
 		name:    "timerfd_gettime32",
 		syscall: true,
@@ -8174,7 +8608,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct old_itimerspec32*", Name: "otmr"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdGettime32)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdGettime32)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdGettime32)}},
@@ -8183,6 +8617,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	TimerfdSettime32: {
+		id:      TimerfdSettime32,
 		id32Bit: Sys32timerfd_settime,
 		name:    "timerfd_settime32",
 		syscall: true,
@@ -8194,7 +8629,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct old_itimerspec32*", Name: "otmr"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdSettime32)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(TimerfdSettime32)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(TimerfdSettime32)}},
@@ -8203,6 +8638,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	UtimensatTime32: {
+		id:      UtimensatTime32,
 		id32Bit: Sys32utimensat,
 		name:    "utimensat_time32",
 		syscall: true,
@@ -8214,7 +8650,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(UtimensatTime32)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(UtimensatTime32)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(UtimensatTime32)}},
@@ -8223,6 +8659,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	Pselect6Time32: {
+		id:      Pselect6Time32,
 		id32Bit: Sys32pselect6,
 		name:    "pselect6_time32",
 		syscall: true,
@@ -8236,7 +8673,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "void*", Name: "sig"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pselect6Time32)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Pselect6Time32)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Pselect6Time32)}},
@@ -8245,6 +8682,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	PpollTime32: {
+		id:      PpollTime32,
 		id32Bit: Sys32ppoll,
 		name:    "ppoll_time32",
 		syscall: true,
@@ -8257,7 +8695,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PpollTime32)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(PpollTime32)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(PpollTime32)}},
@@ -8266,13 +8704,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	IoPgeteventsTime32: {
+		id:      IoPgeteventsTime32,
 		id32Bit: Sys32io_pgetevents,
 		name:    "io_pgetevents_time32",
 		syscall: true,
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoPgeteventsTime32)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(IoPgeteventsTime32)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(IoPgeteventsTime32)}},
@@ -8281,6 +8720,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	RecvmmsgTime32: {
+		id:      RecvmmsgTime32,
 		id32Bit: Sys32recvmmsg,
 		name:    "recvmmsg_time32",
 		syscall: true,
@@ -8293,7 +8733,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct old_timespec32*", Name: "timeout"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RecvmmsgTime32)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RecvmmsgTime32)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RecvmmsgTime32)}},
@@ -8302,6 +8742,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	MqTimedsendTime32: {
+		id:      MqTimedsendTime32,
 		id32Bit: Sys32mq_timedsend,
 		name:    "mq_timedsend_time32",
 		syscall: true,
@@ -8314,7 +8755,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct old_timespec32*", Name: "u_abs_timeout"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedsendTime32)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqTimedsendTime32)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqTimedsendTime32)}},
@@ -8323,6 +8764,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	MqTimedreceiveTime32: {
+		id:      MqTimedreceiveTime32,
 		id32Bit: Sys32mq_timedreceive,
 		name:    "mq_timedreceive_time32",
 		syscall: true,
@@ -8335,7 +8777,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct old_timespec32*", Name: "u_abs_timeout"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedreceiveTime32)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MqTimedreceiveTime32)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MqTimedreceiveTime32)}},
@@ -8344,6 +8786,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	RtSigtimedwaitTime32: {
+		id:      RtSigtimedwaitTime32,
 		id32Bit: Sys32rt_sigtimedwait,
 		name:    "rt_sigtimedwait_time32",
 		syscall: true,
@@ -8355,7 +8798,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "size_t", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigtimedwaitTime32)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RtSigtimedwaitTime32)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RtSigtimedwaitTime32)}},
@@ -8364,6 +8807,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	FutexTime32: {
+		id:      FutexTime32,
 		id32Bit: Sys32futex,
 		name:    "futex_time32",
 		syscall: true,
@@ -8377,7 +8821,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "u32", Name: "val3"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FutexTime32)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FutexTime32)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FutexTime32)}},
@@ -8386,6 +8830,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SchedRrGetInterval32: {
+		id:      SchedRrGetInterval32,
 		id32Bit: Sys32sched_rr_get_interval,
 		name:    "sched_rr_get_interval_time32",
 		syscall: true,
@@ -8395,7 +8840,7 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct old_timespec32*", Name: "interval"},
 		},
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedRrGetInterval32)}},
 				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SchedRrGetInterval32)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SchedRrGetInterval32)}},
@@ -8407,11 +8852,12 @@ var CoreEvents = map[ID]Event{
 	// End of Syscalls
 	//
 	SysEnter: {
+		id:      SysEnter,
 		id32Bit: Sys32Undefined,
 		name:    "sys_enter",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SysEnter, Required: true},
+			probes: []Probe{
+				{handle: probes.SysEnter, required: true},
 			},
 		},
 		sets: []string{},
@@ -8420,11 +8866,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SysExit: {
+		id:      SysExit,
 		id32Bit: Sys32Undefined,
 		name:    "sys_exit",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SysExit, Required: true},
+			probes: []Probe{
+				{handle: probes.SysExit, required: true},
 			},
 		},
 		sets: []string{},
@@ -8433,11 +8880,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SchedProcessFork: {
+		id:      SchedProcessFork,
 		id32Bit: Sys32Undefined,
 		name:    "sched_process_fork",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SchedProcessFork, Required: true},
+			probes: []Probe{
+				{handle: probes.SchedProcessFork, required: true},
 			},
 		},
 		sets: []string{},
@@ -8454,22 +8902,23 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SchedProcessExec: {
+		id:      SchedProcessExec,
 		id32Bit: Sys32Undefined,
 		name:    "sched_process_exec",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SchedProcessExec, Required: true},
-				{Handle: probes.LoadElfPhdrs, Required: false},
+			probes: []Probe{
+				{handle: probes.SchedProcessExec, required: true},
+				{handle: probes.LoadElfPhdrs, required: false},
 			},
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{
 					"prog_array_tp",
 					"sched_process_exec_event_submit_tail",
 					[]uint32{TailSchedProcessExecEventSubmit},
 				},
 			},
-			Capabilities: Capabilities{
-				capabilities.Base: []cap.Value{
+			capabilities: Capabilities{
+				base: []cap.Value{
 					// 1. set by processSchedProcessFork IF ExecHash enabled
 					// 2. set by processSchedProcessExec by CaptureExec if needed
 					// cap.SYS_PTRACE,
@@ -8497,12 +8946,13 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SchedProcessExit: {
+		id:      SchedProcessExit,
 		id32Bit: Sys32Undefined,
 		name:    "sched_process_exit",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SchedProcessExit, Required: true},
-				{Handle: probes.SchedProcessFree, Required: true},
+			probes: []Probe{
+				{handle: probes.SchedProcessExit, required: true},
+				{handle: probes.SchedProcessFree, required: true},
 			},
 		},
 		sets: []string{"proc", "proc_life"},
@@ -8515,11 +8965,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SchedSwitch: {
+		id:      SchedSwitch,
 		id32Bit: Sys32Undefined,
 		name:    "sched_switch",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SchedSwitch, Required: true},
+			probes: []Probe{
+				{handle: probes.SchedSwitch, required: true},
 			},
 		},
 		sets: []string{},
@@ -8532,20 +8983,22 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	DoExit: {
+		id:      DoExit,
 		id32Bit: Sys32Undefined,
 		name:    "do_exit",
 		dependencies: Dependencies{
-			Probes: []Probe{{Handle: probes.DoExit, Required: true}},
+			probes: []Probe{{handle: probes.DoExit, required: true}},
 		},
 		sets:   []string{"proc", "proc_life"},
 		params: []trace.ArgMeta{},
 	},
 	CapCapable: {
+		id:      CapCapable,
 		id32Bit: Sys32Undefined,
 		name:    "cap_capable",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.CapCapable, Required: true},
+			probes: []Probe{
+				{handle: probes.CapCapable, required: true},
 			},
 		},
 		sets: []string{},
@@ -8554,12 +9007,13 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	VfsWrite: {
+		id:      VfsWrite,
 		id32Bit: Sys32Undefined,
 		name:    "vfs_write",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.VfsWrite, Required: true},
-				{Handle: probes.VfsWriteRet, Required: true},
+			probes: []Probe{
+				{handle: probes.VfsWrite, required: true},
+				{handle: probes.VfsWriteRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -8572,12 +9026,13 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	VfsWritev: {
+		id:      VfsWritev,
 		id32Bit: Sys32Undefined,
 		name:    "vfs_writev",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.VfsWriteV, Required: true},
-				{Handle: probes.VfsWriteVRet, Required: true},
+			probes: []Probe{
+				{handle: probes.VfsWriteV, required: true},
+				{handle: probes.VfsWriteVRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -8590,15 +9045,16 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	MemProtAlert: {
+		id:      MemProtAlert,
 		id32Bit: Sys32Undefined,
 		name:    "mem_prot_alert",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecurityMmapAddr, Required: true},
-				{Handle: probes.SecurityFileMProtect, Required: true},
-				{Handle: probes.SyscallEnter__Internal, Required: true},
+			probes: []Probe{
+				{handle: probes.SecurityMmapAddr, required: true},
+				{handle: probes.SecurityFileMProtect, required: true},
+				{handle: probes.SyscallEnter__Internal, required: true},
 			},
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{
 					"sys_enter_init_tail",
 					"sys_enter_init",
@@ -8620,11 +9076,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	CommitCreds: {
+		id:      CommitCreds,
 		id32Bit: Sys32Undefined,
 		name:    "commit_creds",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.CommitCreds, Required: true},
+			probes: []Probe{
+				{handle: probes.CommitCreds, required: true},
 			},
 		},
 		sets: []string{},
@@ -8634,11 +9091,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SwitchTaskNS: {
+		id:      SwitchTaskNS,
 		id32Bit: Sys32Undefined,
 		name:    "switch_task_ns",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SwitchTaskNS, Required: true},
+			probes: []Probe{
+				{handle: probes.SwitchTaskNS, required: true},
 			},
 		},
 		sets: []string{},
@@ -8653,17 +9111,18 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	MagicWrite: {
+		id:      MagicWrite,
 		id32Bit: Sys32Undefined,
 		name:    "magic_write",
 		docPath: "security_alerts/magic_write.md",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.VfsWrite, Required: true},
-				{Handle: probes.VfsWriteRet, Required: true},
-				{Handle: probes.VfsWriteV, Required: false},
-				{Handle: probes.VfsWriteVRet, Required: false},
-				{Handle: probes.KernelWrite, Required: false},
-				{Handle: probes.KernelWriteRet, Required: false},
+			probes: []Probe{
+				{handle: probes.VfsWrite, required: true},
+				{handle: probes.VfsWriteRet, required: true},
+				{handle: probes.VfsWriteV, required: false},
+				{handle: probes.VfsWriteVRet, required: false},
+				{handle: probes.KernelWrite, required: false},
+				{handle: probes.KernelWriteRet, required: false},
 			},
 		},
 		sets: []string{},
@@ -8675,11 +9134,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	CgroupAttachTask: {
+		id:      CgroupAttachTask,
 		id32Bit: Sys32Undefined,
 		name:    "cgroup_attach_task",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.CgroupAttachTask, Required: true},
+			probes: []Probe{
+				{handle: probes.CgroupAttachTask, required: true},
 			},
 		},
 		sets: []string{},
@@ -8690,11 +9150,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	CgroupMkdir: {
+		id:      CgroupMkdir,
 		id32Bit: Sys32Undefined,
 		name:    "cgroup_mkdir",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.CgroupMkdir, Required: true},
+			probes: []Probe{
+				{handle: probes.CgroupMkdir, required: true},
 			},
 		},
 		sets: []string{},
@@ -8705,11 +9166,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	CgroupRmdir: {
+		id:      CgroupRmdir,
 		id32Bit: Sys32Undefined,
 		name:    "cgroup_rmdir",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.CgroupRmdir, Required: true},
+			probes: []Probe{
+				{handle: probes.CgroupRmdir, required: true},
 			},
 		},
 		sets: []string{},
@@ -8720,11 +9182,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecurityBprmCheck: {
+		id:      SecurityBprmCheck,
 		id32Bit: Sys32Undefined,
 		name:    "security_bprm_check",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecurityBPRMCheck, Required: true},
+			probes: []Probe{
+				{handle: probes.SecurityBPRMCheck, required: true},
 			},
 		},
 		sets: []string{"lsm_hooks", "proc", "proc_life"},
@@ -8735,14 +9198,15 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecurityFileOpen: {
+		id:      SecurityFileOpen,
 		id32Bit: Sys32Undefined,
 		name:    "security_file_open",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecurityFileOpen, Required: true},
-				{Handle: probes.SyscallEnter__Internal, Required: true},
+			probes: []Probe{
+				{handle: probes.SecurityFileOpen, required: true},
+				{handle: probes.SyscallEnter__Internal, required: true},
 			},
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{
 					"sys_enter_init_tail",
 					"sys_enter_init",
@@ -8765,11 +9229,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecurityInodeUnlink: {
+		id:      SecurityInodeUnlink,
 		id32Bit: Sys32Undefined,
 		name:    "security_inode_unlink",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecurityInodeUnlink, Required: true},
+			probes: []Probe{
+				{handle: probes.SecurityInodeUnlink, required: true},
 			},
 		},
 		sets: []string{"default", "lsm_hooks", "fs", "fs_file_ops"},
@@ -8781,11 +9246,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecuritySocketCreate: {
+		id:      SecuritySocketCreate,
 		id32Bit: Sys32Undefined,
 		name:    "security_socket_create",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecuritySocketCreate, Required: true},
+			probes: []Probe{
+				{handle: probes.SecuritySocketCreate, required: true},
 			},
 		},
 		sets: []string{"lsm_hooks", "net", "net_sock"},
@@ -8797,14 +9263,15 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecuritySocketListen: {
+		id:      SecuritySocketListen,
 		id32Bit: Sys32Undefined,
 		name:    "security_socket_listen",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecuritySocketListen, Required: true},
-				{Handle: probes.SyscallEnter__Internal, Required: true},
+			probes: []Probe{
+				{handle: probes.SecuritySocketListen, required: true},
+				{handle: probes.SyscallEnter__Internal, required: true},
 			},
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Listen)}},
 			},
 		},
@@ -8816,14 +9283,15 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecuritySocketConnect: {
+		id:      SecuritySocketConnect,
 		id32Bit: Sys32Undefined,
 		name:    "security_socket_connect",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecuritySocketConnect, Required: true},
-				{Handle: probes.SyscallEnter__Internal, Required: true},
+			probes: []Probe{
+				{handle: probes.SecuritySocketConnect, required: true},
+				{handle: probes.SyscallEnter__Internal, required: true},
 			},
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Connect)}},
 			},
 		},
@@ -8834,14 +9302,15 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecuritySocketAccept: {
+		id:      SecuritySocketAccept,
 		id32Bit: Sys32Undefined,
 		name:    "security_socket_accept",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecuritySocketAccept, Required: true},
-				{Handle: probes.SyscallEnter__Internal, Required: true},
+			probes: []Probe{
+				{handle: probes.SecuritySocketAccept, required: true},
+				{handle: probes.SyscallEnter__Internal, required: true},
 			},
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Accept), uint32(Accept4)}},
 			},
 		},
@@ -8852,14 +9321,15 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecuritySocketBind: {
+		id:      SecuritySocketBind,
 		id32Bit: Sys32Undefined,
 		name:    "security_socket_bind",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecuritySocketBind, Required: true},
-				{Handle: probes.SyscallEnter__Internal, Required: true},
+			probes: []Probe{
+				{handle: probes.SecuritySocketBind, required: true},
+				{handle: probes.SyscallEnter__Internal, required: true},
 			},
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Bind)}},
 			},
 		},
@@ -8870,15 +9340,16 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecuritySocketSetsockopt: {
+		id:      SecuritySocketSetsockopt,
 		id32Bit: Sys32Undefined,
 		name:    "security_socket_setsockopt",
 		docPath: "lsm_hooks/security_socket_setsockopt.md",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecuritySocketSetsockopt, Required: true},
-				{Handle: probes.SyscallEnter__Internal, Required: true},
+			probes: []Probe{
+				{handle: probes.SecuritySocketSetsockopt, required: true},
+				{handle: probes.SyscallEnter__Internal, required: true},
 			},
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setsockopt)}},
 			},
 		},
@@ -8891,11 +9362,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecuritySbMount: {
+		id:      SecuritySbMount,
 		id32Bit: Sys32Undefined,
 		name:    "security_sb_mount",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecuritySbMount, Required: true},
+			probes: []Probe{
+				{handle: probes.SecuritySbMount, required: true},
 			},
 		},
 		sets: []string{"default", "lsm_hooks", "fs"},
@@ -8907,11 +9379,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecurityBPF: {
+		id:      SecurityBPF,
 		id32Bit: Sys32Undefined,
 		name:    "security_bpf",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecurityBPF, Required: true},
+			probes: []Probe{
+				{handle: probes.SecurityBPF, required: true},
 			},
 		},
 		sets: []string{"lsm_hooks"},
@@ -8920,11 +9393,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecurityBPFMap: {
+		id:      SecurityBPFMap,
 		id32Bit: Sys32Undefined,
 		name:    "security_bpf_map",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecurityBPFMap, Required: true},
+			probes: []Probe{
+				{handle: probes.SecurityBPFMap, required: true},
 			},
 		},
 		sets: []string{"lsm_hooks"},
@@ -8934,11 +9408,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecurityKernelReadFile: {
+		id:      SecurityKernelReadFile,
 		id32Bit: Sys32Undefined,
 		name:    "security_kernel_read_file",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecurityKernelReadFile, Required: true},
+			probes: []Probe{
+				{handle: probes.SecurityKernelReadFile, required: true},
 			},
 		},
 		sets: []string{"lsm_hooks"},
@@ -8951,11 +9426,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecurityPostReadFile: {
+		id:      SecurityPostReadFile,
 		id32Bit: Sys32Undefined,
 		name:    "security_kernel_post_read_file",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecurityKernelPostReadFile, Required: true},
+			probes: []Probe{
+				{handle: probes.SecurityKernelPostReadFile, required: true},
 			},
 		},
 		sets: []string{"lsm_hooks"},
@@ -8966,11 +9442,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecurityInodeMknod: {
+		id:      SecurityInodeMknod,
 		id32Bit: Sys32Undefined,
 		name:    "security_inode_mknod",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecurityInodeMknod, Required: true},
+			probes: []Probe{
+				{handle: probes.SecurityInodeMknod, required: true},
 			},
 		},
 		sets: []string{"lsm_hooks"},
@@ -8981,11 +9458,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecurityInodeSymlinkEventId: {
+		id:      SecurityInodeSymlinkEventId,
 		id32Bit: Sys32Undefined,
 		name:    "security_inode_symlink",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecurityInodeSymlink, Required: true},
+			probes: []Probe{
+				{handle: probes.SecurityInodeSymlink, required: true},
 			},
 		},
 		sets: []string{"lsm_hooks", "fs", "fs_file_ops"},
@@ -8995,11 +9473,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecurityMmapFile: {
+		id:      SecurityMmapFile,
 		id32Bit: Sys32Undefined,
 		name:    "security_mmap_file",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecurityMmapFile, Required: true},
+			probes: []Probe{
+				{handle: probes.SecurityMmapFile, required: true},
 			},
 		},
 		sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
@@ -9014,12 +9493,13 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	DoMmap: {
+		id:      DoMmap,
 		id32Bit: Sys32Undefined,
 		name:    "do_mmap",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.DoMmap, Required: true},
-				{Handle: probes.DoMmapRet, Required: true},
+			probes: []Probe{
+				{handle: probes.DoMmap, required: true},
+				{handle: probes.DoMmapRet, required: true},
 			},
 		},
 		sets: []string{"fs", "fs_file_ops", "proc", "proc_mem"},
@@ -9037,15 +9517,16 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecurityFileMprotect: {
+		id:      SecurityFileMprotect,
 		id32Bit: Sys32Undefined,
 		name:    "security_file_mprotect",
 		docPath: "lsm_hooks/security_file_mprotect.md",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecurityFileMProtect, Required: true},
-				{Handle: probes.SyscallEnter__Internal, Required: true},
+			probes: []Probe{
+				{handle: probes.SecurityFileMProtect, required: true},
+				{handle: probes.SyscallEnter__Internal, required: true},
 			},
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mprotect), uint32(PkeyMprotect)}},
 			},
 		},
@@ -9061,12 +9542,13 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	InitNamespaces: {
+		id:      InitNamespaces,
 		id32Bit: Sys32Undefined,
 		name:    "init_namespaces",
 		sets:    []string{},
 		dependencies: Dependencies{
-			Capabilities: Capabilities{
-				capabilities.Base: []cap.Value{
+			capabilities: Capabilities{
+				base: []cap.Value{
 					cap.SYS_PTRACE,
 				},
 			},
@@ -9085,10 +9567,11 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SocketDup: {
+		id:      SocketDup,
 		id32Bit: Sys32Undefined,
 		name:    "socket_dup",
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)}},
 				{"sys_exit_tails", "sys_dup_exit_tail", []uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)}},
@@ -9102,11 +9585,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	HiddenInodes: {
+		id:      HiddenInodes,
 		id32Bit: Sys32Undefined,
 		name:    "hidden_inodes",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.Filldir64, Required: true},
+			probes: []Probe{
+				{handle: probes.Filldir64, required: true},
 			},
 		},
 		sets: []string{},
@@ -9115,12 +9599,13 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	KernelWrite: {
+		id:      KernelWrite,
 		id32Bit: Sys32Undefined,
 		name:    "__kernel_write",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.KernelWrite, Required: true},
-				{Handle: probes.KernelWriteRet, Required: true},
+			probes: []Probe{
+				{handle: probes.KernelWrite, required: true},
+				{handle: probes.KernelWriteRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -9133,16 +9618,17 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	DirtyPipeSplice: {
+		id:      DirtyPipeSplice,
 		id32Bit: Sys32Undefined,
 		name:    "dirty_pipe_splice",
 		sets:    []string{},
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.DoSplice, Required: true},
-				{Handle: probes.DoSpliceRet, Required: true},
+			probes: []Probe{
+				{handle: probes.DoSplice, required: true},
+				{handle: probes.DoSpliceRet, required: true},
 			},
-			KSymbols: []KSymbol{
-				{Symbol: "pipefifo_fops", Required: true},
+			kSymbols: []KSymbol{
+				{symbol: "pipefifo_fops", required: true},
 			},
 		},
 		params: []trace.ArgMeta{
@@ -9156,10 +9642,11 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ContainerCreate: {
+		id:      ContainerCreate,
 		id32Bit: Sys32Undefined,
 		name:    "container_create",
 		dependencies: Dependencies{
-			Events: []ID{CgroupMkdir},
+			events: []ID{CgroupMkdir},
 		},
 		sets: []string{"default", "containers"},
 		params: []trace.ArgMeta{
@@ -9176,10 +9663,11 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ContainerRemove: {
+		id:      ContainerRemove,
 		id32Bit: Sys32Undefined,
 		name:    "container_remove",
 		dependencies: Dependencies{
-			Events: []ID{CgroupRmdir},
+			events: []ID{CgroupRmdir},
 		},
 		sets: []string{"default", "containers"},
 		params: []trace.ArgMeta{
@@ -9188,6 +9676,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ExistingContainer: {
+		id:      ExistingContainer,
 		id32Bit: Sys32Undefined,
 		name:    "existing_container",
 		sets:    []string{"containers"},
@@ -9205,11 +9694,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ProcCreate: {
+		id:      ProcCreate,
 		id32Bit: Sys32Undefined,
 		name:    "proc_create",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.ProcCreate, Required: true},
+			probes: []Probe{
+				{handle: probes.ProcCreate, required: true},
 			},
 		},
 		sets: []string{},
@@ -9219,12 +9709,13 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	KprobeAttach: {
+		id:      KprobeAttach,
 		id32Bit: Sys32Undefined,
 		name:    "kprobe_attach",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.RegisterKprobe, Required: true},
-				{Handle: probes.RegisterKprobeRet, Required: true},
+			probes: []Probe{
+				{handle: probes.RegisterKprobe, required: true},
+				{handle: probes.RegisterKprobeRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -9235,11 +9726,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	CallUsermodeHelper: {
+		id:      CallUsermodeHelper,
 		id32Bit: Sys32Undefined,
 		name:    "call_usermodehelper",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.CallUsermodeHelper, Required: true},
+			probes: []Probe{
+				{handle: probes.CallUsermodeHelper, required: true},
 			},
 		},
 		sets: []string{},
@@ -9251,11 +9743,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	DebugfsCreateFile: {
+		id:      DebugfsCreateFile,
 		id32Bit: Sys32Undefined,
 		name:    "debugfs_create_file",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.DebugfsCreateFile, Required: true},
+			probes: []Probe{
+				{handle: probes.DebugfsCreateFile, required: true},
 			},
 		},
 		sets: []string{},
@@ -9267,15 +9760,16 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	PrintSyscallTable: {
+		id:       PrintSyscallTable,
 		id32Bit:  Sys32Undefined,
 		name:     "print_syscall_table",
 		internal: true,
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.PrintSyscallTable, Required: true},
+			probes: []Probe{
+				{handle: probes.PrintSyscallTable, required: true},
 			},
-			KSymbols: []KSymbol{
-				{Symbol: "sys_call_table", Required: true},
+			kSymbols: []KSymbol{
+				{symbol: "sys_call_table", required: true},
 			},
 		},
 		sets: []string{},
@@ -9285,10 +9779,11 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	HiddenKernelModule: {
+		id:      HiddenKernelModule,
 		id32Bit: Sys32Undefined,
 		name:    "hidden_kernel_module",
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				HiddenKernelModuleSeeker,
 			},
 		},
@@ -9300,25 +9795,26 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	HiddenKernelModuleSeeker: {
+		id:       HiddenKernelModuleSeeker,
 		id32Bit:  Sys32Undefined,
 		name:     "hidden_kernel_module_seeker",
 		internal: true,
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.HiddenKernelModuleSeeker, Required: true},
-				{Handle: probes.HiddenKernelModuleVerifier, Required: true},
-				{Handle: probes.ModuleLoad, Required: true},
-				{Handle: probes.ModuleFree, Required: true},
-				{Handle: probes.DoInitModule, Required: true},
-				{Handle: probes.DoInitModuleRet, Required: true},
-				{Handle: probes.LayoutAndAllocate, Required: true},
+			probes: []Probe{
+				{handle: probes.HiddenKernelModuleSeeker, required: true},
+				{handle: probes.HiddenKernelModuleVerifier, required: true},
+				{handle: probes.ModuleLoad, required: true},
+				{handle: probes.ModuleFree, required: true},
+				{handle: probes.DoInitModule, required: true},
+				{handle: probes.DoInitModuleRet, required: true},
+				{handle: probes.LayoutAndAllocate, required: true},
 			},
-			KSymbols: []KSymbol{
-				{Symbol: "modules", Required: true},
-				{Symbol: "module_kset", Required: true},
-				{Symbol: "mod_tree", Required: true},
+			kSymbols: []KSymbol{
+				{symbol: "modules", required: true},
+				{symbol: "module_kset", required: true},
+				{symbol: "mod_tree", required: true},
 			},
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"prog_array", "lkm_seeker_proc_tail", []uint32{TailHiddenKernelModuleProc}},
 				{"prog_array", "lkm_seeker_kset_tail", []uint32{TailHiddenKernelModuleKset}},
 				{"prog_array", "lkm_seeker_mod_tree_tail", []uint32{TailHiddenKernelModuleModTree}},
@@ -9334,19 +9830,20 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	HookedSyscalls: {
+		id:      HookedSyscalls,
 		id32Bit: Sys32Undefined,
 		name:    "hooked_syscalls",
 		dependencies: Dependencies{
-			KSymbols: []KSymbol{
-				{Symbol: "_stext", Required: true},
-				{Symbol: "_etext", Required: true},
+			kSymbols: []KSymbol{
+				{symbol: "_stext", required: true},
+				{symbol: "_etext", required: true},
 			},
-			Events: []ID{
+			events: []ID{
 				DoInitModule,
 				PrintSyscallTable,
 			},
-			Capabilities: Capabilities{
-				capabilities.Base: []cap.Value{
+			capabilities: Capabilities{
+				base: []cap.Value{
 					cap.SYSLOG, // read /proc/kallsyms
 				},
 			},
@@ -9358,11 +9855,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	DebugfsCreateDir: {
+		id:      DebugfsCreateDir,
 		id32Bit: Sys32Undefined,
 		name:    "debugfs_create_dir",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.DebugfsCreateDir, Required: true},
+			probes: []Probe{
+				{handle: probes.DebugfsCreateDir, required: true},
 			},
 		},
 		sets: []string{},
@@ -9372,11 +9870,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	DeviceAdd: {
+		id:      DeviceAdd,
 		id32Bit: Sys32Undefined,
 		name:    "device_add",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.DeviceAdd, Required: true},
+			probes: []Probe{
+				{handle: probes.DeviceAdd, required: true},
 			},
 		},
 		sets: []string{},
@@ -9386,12 +9885,13 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	RegisterChrdev: {
+		id:      RegisterChrdev,
 		id32Bit: Sys32Undefined,
 		name:    "register_chrdev",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.RegisterChrdev, Required: true},
-				{Handle: probes.RegisterChrdevRet, Required: true},
+			probes: []Probe{
+				{handle: probes.RegisterChrdev, required: true},
+				{handle: probes.RegisterChrdevRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -9403,14 +9903,15 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SharedObjectLoaded: {
+		id:      SharedObjectLoaded,
 		id32Bit: Sys32Undefined,
 		name:    "shared_object_loaded",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecurityMmapFile, Required: true},
+			probes: []Probe{
+				{handle: probes.SecurityMmapFile, required: true},
 			},
-			Capabilities: Capabilities{
-				capabilities.Base: []cap.Value{
+			capabilities: Capabilities{
+				base: []cap.Value{
 					cap.SYS_PTRACE, // loadSharedObjectDynamicSymbols()
 				},
 			},
@@ -9425,11 +9926,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SymbolsLoaded: {
+		id:      SymbolsLoaded,
 		id32Bit: Sys32Undefined,
 		name:    "symbols_loaded",
 		docPath: "security_alerts/symbols_load.md",
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				SharedObjectLoaded,
 				SchedProcessExec, // Used to get mount namespace cache
 			},
@@ -9441,11 +9943,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SymbolsCollision: {
+		id:      SymbolsCollision,
 		id32Bit: Sys32Undefined,
 		name:    "symbols_collision",
 		docPath: "security_alerts/symbols_collision.md",
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				SharedObjectLoaded,
 				SchedProcessExec, // Used to get mount namespace cache
 			},
@@ -9458,79 +9961,83 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	CaptureFileWrite: {
+		id:       CaptureFileWrite,
 		id32Bit:  Sys32Undefined,
 		name:     "capture_file_write",
 		internal: true,
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.VfsWrite, Required: true},
-				{Handle: probes.VfsWriteRet, Required: true},
-				{Handle: probes.VfsWriteV, Required: false},
-				{Handle: probes.VfsWriteVRet, Required: false},
-				{Handle: probes.KernelWrite, Required: false},
-				{Handle: probes.KernelWriteRet, Required: false},
+			probes: []Probe{
+				{handle: probes.VfsWrite, required: true},
+				{handle: probes.VfsWriteRet, required: true},
+				{handle: probes.VfsWriteV, required: false},
+				{handle: probes.VfsWriteVRet, required: false},
+				{handle: probes.KernelWrite, required: false},
+				{handle: probes.KernelWriteRet, required: false},
 			},
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"prog_array", "trace_ret_vfs_write_tail", []uint32{TailVfsWrite}},
 				{"prog_array", "trace_ret_vfs_writev_tail", []uint32{TailVfsWritev}},
 				{"prog_array", "trace_ret_kernel_write_tail", []uint32{TailKernelWrite}},
 				{"prog_array", "send_bin", []uint32{TailSendBin}},
 			},
-			KSymbols: []KSymbol{
-				{Symbol: "pipefifo_fops", Required: true},
+			kSymbols: []KSymbol{
+				{symbol: "pipefifo_fops", required: true},
 			},
 		},
 	},
 	CaptureFileRead: {
+		id:       CaptureFileRead,
 		id32Bit:  Sys32Undefined,
 		name:     "capture_file_read",
 		internal: true,
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.VfsRead, Required: true},
-				{Handle: probes.VfsReadRet, Required: true},
-				{Handle: probes.VfsReadV, Required: false},
-				{Handle: probes.VfsReadVRet, Required: false},
+			probes: []Probe{
+				{handle: probes.VfsRead, required: true},
+				{handle: probes.VfsReadRet, required: true},
+				{handle: probes.VfsReadV, required: false},
+				{handle: probes.VfsReadVRet, required: false},
 			},
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"prog_array", "trace_ret_vfs_read_tail", []uint32{TailVfsRead}},
 				{"prog_array", "trace_ret_vfs_readv_tail", []uint32{TailVfsReadv}},
 				{"prog_array", "send_bin", []uint32{TailSendBin}},
 			},
-			KSymbols: []KSymbol{
-				{Symbol: "pipefifo_fops", Required: true},
+			kSymbols: []KSymbol{
+				{symbol: "pipefifo_fops", required: true},
 			},
 		},
 	},
 	CaptureExec: {
+		id:       CaptureExec,
 		id32Bit:  Sys32Undefined,
 		name:     "capture_exec",
 		internal: true,
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				SchedProcessExec,
 			},
-			Capabilities: Capabilities{
-				capabilities.Base: []cap.Value{
+			capabilities: Capabilities{
+				base: []cap.Value{
 					cap.SYS_PTRACE, // processSchedProcessExec() performance
 				},
 			},
 		},
 	},
 	CaptureModule: {
+		id:       CaptureModule,
 		id32Bit:  Sys32Undefined,
 		name:     "capture_module",
 		internal: true,
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SyscallEnter__Internal, Required: true},
-				{Handle: probes.SyscallExit__Internal, Required: true},
-				{Handle: probes.SecurityKernelPostReadFile, Required: true},
+			probes: []Probe{
+				{handle: probes.SyscallEnter__Internal, required: true},
+				{handle: probes.SyscallExit__Internal, required: true},
+				{handle: probes.SecurityKernelPostReadFile, required: true},
 			},
-			Events: []ID{
+			events: []ID{
 				SchedProcessExec,
 			},
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_tails", "syscall__init_module", []uint32{uint32(InitModule)}},
 				{"prog_array_tp", "send_bin_tp", []uint32{TailSendBinTP}},
 				{"prog_array", "send_bin", []uint32{TailSendBin}},
@@ -9538,35 +10045,38 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	CaptureMem: {
+		id:       CaptureMem,
 		id32Bit:  Sys32Undefined,
 		name:     "capture_mem",
 		internal: true,
 		dependencies: Dependencies{
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"prog_array", "send_bin", []uint32{TailSendBin}},
 			},
 		},
 	},
 	CaptureBpf: {
+		id:       CaptureBpf,
 		id32Bit:  Sys32Undefined,
 		name:     "capture_bpf",
 		internal: true,
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecurityBPF, Required: true},
+			probes: []Probe{
+				{handle: probes.SecurityBPF, required: true},
 			},
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"prog_array", "send_bin", []uint32{TailSendBin}},
 			},
 		},
 	},
 	DoInitModule: {
+		id:      DoInitModule,
 		id32Bit: Sys32Undefined,
 		name:    "do_init_module",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.DoInitModule, Required: true},
-				{Handle: probes.DoInitModuleRet, Required: true},
+			probes: []Probe{
+				{handle: probes.DoInitModule, required: true},
+				{handle: probes.DoInitModuleRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -9577,11 +10087,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ModuleLoad: {
+		id:      ModuleLoad,
 		id32Bit: Sys32Undefined,
 		name:    "module_load",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.ModuleLoad, Required: true},
+			probes: []Probe{
+				{handle: probes.ModuleLoad, required: true},
 			},
 		},
 		sets: []string{},
@@ -9592,11 +10103,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ModuleFree: {
+		id:      ModuleFree,
 		id32Bit: Sys32Undefined,
 		name:    "module_free",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.ModuleFree, Required: true},
+			probes: []Probe{
+				{handle: probes.ModuleFree, required: true},
 			},
 		},
 		sets: []string{},
@@ -9607,18 +10119,19 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SocketAccept: {
+		id:       SocketAccept,
 		id32Bit:  Sys32Undefined,
 		name:     "socket_accept",
 		internal: false,
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SyscallEnter__Internal, Required: true},
-				{Handle: probes.SyscallExit__Internal, Required: true},
+			probes: []Probe{
+				{handle: probes.SyscallEnter__Internal, required: true},
+				{handle: probes.SyscallExit__Internal, required: true},
 			},
-			Events: []ID{
+			events: []ID{
 				SecuritySocketAccept,
 			},
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_exit_tails", "syscall__accept4", []uint32{uint32(Accept), uint32(Accept4)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Accept), uint32(Accept4)}},
 			},
@@ -9630,11 +10143,12 @@ var CoreEvents = map[ID]Event{
 			{Type: "struct sockaddr*", Name: "remote_addr"}},
 	},
 	LoadElfPhdrs: {
+		id:      LoadElfPhdrs,
 		id32Bit: Sys32Undefined,
 		name:    "load_elf_phdrs",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.LoadElfPhdrs, Required: true},
+			probes: []Probe{
+				{handle: probes.LoadElfPhdrs, required: true},
 			},
 		},
 		sets: []string{"proc"},
@@ -9645,21 +10159,22 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	HookedProcFops: {
+		id:      HookedProcFops,
 		id32Bit: Sys32Undefined,
 		name:    "hooked_proc_fops",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecurityFilePermission, Required: true},
+			probes: []Probe{
+				{handle: probes.SecurityFilePermission, required: true},
 			},
-			KSymbols: []KSymbol{
-				{Symbol: "_stext", Required: true},
-				{Symbol: "_etext", Required: true},
+			kSymbols: []KSymbol{
+				{symbol: "_stext", required: true},
+				{symbol: "_etext", required: true},
 			},
-			Events: []ID{
+			events: []ID{
 				DoInitModule,
 			},
-			Capabilities: Capabilities{
-				capabilities.Base: []cap.Value{
+			capabilities: Capabilities{
+				base: []cap.Value{
 					cap.SYSLOG, // read /proc/kallsyms
 				},
 			},
@@ -9670,19 +10185,20 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	PrintNetSeqOps: {
+		id:      PrintNetSeqOps,
 		id32Bit: Sys32Undefined,
 		name:    "print_net_seq_ops",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.PrintNetSeqOps, Required: true},
+			probes: []Probe{
+				{handle: probes.PrintNetSeqOps, required: true},
 			},
-			KSymbols: []KSymbol{
-				{Symbol: "tcp4_seq_ops", Required: true},
-				{Symbol: "tcp6_seq_ops", Required: true},
-				{Symbol: "udp_seq_ops", Required: true},
-				{Symbol: "udp6_seq_ops", Required: true},
-				{Symbol: "raw_seq_ops", Required: true},
-				{Symbol: "raw6_seq_ops", Required: true},
+			kSymbols: []KSymbol{
+				{symbol: "tcp4_seq_ops", required: true},
+				{symbol: "tcp6_seq_ops", required: true},
+				{symbol: "udp_seq_ops", required: true},
+				{symbol: "udp6_seq_ops", required: true},
+				{symbol: "raw_seq_ops", required: true},
+				{symbol: "raw6_seq_ops", required: true},
 			},
 		},
 		internal: true,
@@ -9693,19 +10209,20 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	HookedSeqOps: {
+		id:      HookedSeqOps,
 		id32Bit: Sys32Undefined,
 		name:    "hooked_seq_ops",
 		dependencies: Dependencies{
-			KSymbols: []KSymbol{
-				{Symbol: "_stext", Required: true},
-				{Symbol: "_etext", Required: true},
+			kSymbols: []KSymbol{
+				{symbol: "_stext", required: true},
+				{symbol: "_etext", required: true},
 			},
-			Events: []ID{
+			events: []ID{
 				PrintNetSeqOps,
 				DoInitModule,
 			},
-			Capabilities: Capabilities{
-				capabilities.Base: []cap.Value{
+			capabilities: Capabilities{
+				base: []cap.Value{
 					cap.SYSLOG, // read /proc/kallsyms
 				},
 			},
@@ -9716,11 +10233,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	TaskRename: {
+		id:      TaskRename,
 		id32Bit: Sys32Undefined,
 		name:    "task_rename",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.TaskRename, Required: true},
+			probes: []Probe{
+				{handle: probes.TaskRename, required: true},
 			},
 		},
 		sets: []string{"proc"},
@@ -9730,11 +10248,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecurityInodeRename: {
+		id:      SecurityInodeRename,
 		id32Bit: Sys32Undefined,
 		name:    "security_inode_rename",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecurityInodeRename, Required: true},
+			probes: []Probe{
+				{handle: probes.SecurityInodeRename, required: true},
 			},
 		},
 		sets: []string{},
@@ -9744,11 +10263,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	DoSigaction: {
+		id:      DoSigaction,
 		id32Bit: Sys32Undefined,
 		name:    "do_sigaction",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.DoSigaction, Required: true},
+			probes: []Probe{
+				{handle: probes.DoSigaction, required: true},
 			},
 		},
 		sets: []string{"proc"},
@@ -9767,17 +10287,18 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	BpfAttach: {
+		id:      BpfAttach,
 		id32Bit: Sys32Undefined,
 		name:    "bpf_attach",
 		docPath: "docs/events/builtin/extra/bpf_attach.md",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecurityFileIoctl, Required: true},
-				{Handle: probes.SecurityBpfProg, Required: true},
-				{Handle: probes.SecurityBPF, Required: true},
-				{Handle: probes.TpProbeRegPrioMayExist, Required: true},
-				{Handle: probes.CheckHelperCall, Required: false},
-				{Handle: probes.CheckMapFuncCompatibility, Required: false},
+			probes: []Probe{
+				{handle: probes.SecurityFileIoctl, required: true},
+				{handle: probes.SecurityBpfProg, required: true},
+				{handle: probes.SecurityBPF, required: true},
+				{handle: probes.TpProbeRegPrioMayExist, required: true},
+				{handle: probes.CheckHelperCall, required: false},
+				{handle: probes.CheckMapFuncCompatibility, required: false},
 			},
 		},
 		sets: []string{},
@@ -9792,13 +10313,14 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	KallsymsLookupName: {
+		id:      KallsymsLookupName,
 		id32Bit: Sys32Undefined,
 		name:    "kallsyms_lookup_name",
 		docPath: "kprobes/kallsyms_lookup_name.md",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.KallsymsLookupName, Required: true},
-				{Handle: probes.KallsymsLookupNameRet, Required: true},
+			probes: []Probe{
+				{handle: probes.KallsymsLookupName, required: true},
+				{handle: probes.KallsymsLookupNameRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -9808,19 +10330,20 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	PrintMemDump: {
+		id:      PrintMemDump,
 		id32Bit: Sys32Undefined,
 		name:    "print_mem_dump",
 		sets:    []string{},
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.PrintMemDump, Required: true},
+			probes: []Probe{
+				{handle: probes.PrintMemDump, required: true},
 			},
-			Events: []ID{
+			events: []ID{
 				DoInitModule,
 			},
-			KSymbols: []KSymbol{},
-			Capabilities: Capabilities{
-				capabilities.Base: []cap.Value{
+			kSymbols: []KSymbol{},
+			capabilities: Capabilities{
+				base: []cap.Value{
 					cap.SYSLOG, // read /proc/kallsyms
 				},
 			},
@@ -9836,12 +10359,13 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	VfsRead: {
+		id:      VfsRead,
 		id32Bit: Sys32Undefined,
 		name:    "vfs_read",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.VfsRead, Required: true},
-				{Handle: probes.VfsReadRet, Required: true},
+			probes: []Probe{
+				{handle: probes.VfsRead, required: true},
+				{handle: probes.VfsReadRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -9854,12 +10378,13 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	VfsReadv: {
+		id:      VfsReadv,
 		id32Bit: Sys32Undefined,
 		name:    "vfs_readv",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.VfsReadV, Required: true},
-				{Handle: probes.VfsReadVRet, Required: true},
+			probes: []Probe{
+				{handle: probes.VfsReadV, required: true},
+				{handle: probes.VfsReadVRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -9872,12 +10397,13 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	VfsUtimes: {
+		id:      VfsUtimes,
 		id32Bit: Sys32Undefined,
 		name:    "vfs_utimes",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.VfsUtimes, Required: false},    // this probe exits in kernels >= 5.9
-				{Handle: probes.UtimesCommon, Required: false}, // this probe exits in kernels < 5.9
+			probes: []Probe{
+				{handle: probes.VfsUtimes, required: false},    // this probe exits in kernels >= 5.9
+				{handle: probes.UtimesCommon, required: false}, // this probe exits in kernels < 5.9
 			},
 		},
 		sets: []string{},
@@ -9890,11 +10416,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	DoTruncate: {
+		id:      DoTruncate,
 		id32Bit: Sys32Undefined,
 		name:    "do_truncate",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.DoTruncate, Required: true},
+			probes: []Probe{
+				{handle: probes.DoTruncate, required: true},
 			},
 		},
 		sets: []string{},
@@ -9906,6 +10433,7 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	FileModification: {
+		id:      FileModification,
 		id32Bit: Sys32Undefined,
 		name:    "file_modification",
 		docPath: "kprobes/file_modification.md",
@@ -9918,23 +10446,24 @@ var CoreEvents = map[ID]Event{
 			{Type: "unsigned long", Name: "new_ctime"},
 		},
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.FdInstall, Required: true},
-				{Handle: probes.FilpClose, Required: true},
-				{Handle: probes.FileUpdateTime, Required: true},
-				{Handle: probes.FileUpdateTimeRet, Required: true},
-				{Handle: probes.FileModified, Required: false},    // not required because doesn't ...
-				{Handle: probes.FileModifiedRet, Required: false}, // ... exist in kernels < 5.3
+			probes: []Probe{
+				{handle: probes.FdInstall, required: true},
+				{handle: probes.FilpClose, required: true},
+				{handle: probes.FileUpdateTime, required: true},
+				{handle: probes.FileUpdateTimeRet, required: true},
+				{handle: probes.FileModified, required: false},    // not required because doesn't ...
+				{handle: probes.FileModifiedRet, required: false}, // ... exist in kernels < 5.3
 			},
 		},
 	},
 	InotifyWatch: {
+		id:      InotifyWatch,
 		id32Bit: Sys32Undefined,
 		name:    "inotify_watch",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.InotifyFindInode, Required: true},
-				{Handle: probes.InotifyFindInodeRet, Required: true},
+			probes: []Probe{
+				{handle: probes.InotifyFindInode, required: true},
+				{handle: probes.InotifyFindInodeRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -9945,15 +10474,16 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	SecurityBpfProg: {
+		id:      SecurityBpfProg,
 		id32Bit: Sys32Undefined,
 		name:    "security_bpf_prog",
 		docPath: "docs/events/builtin/extra/security_bpf_prog.md",
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.SecurityBpfProg, Required: true},
-				{Handle: probes.BpfCheck, Required: true},
-				{Handle: probes.CheckHelperCall, Required: false},
-				{Handle: probes.CheckMapFuncCompatibility, Required: false},
+			probes: []Probe{
+				{handle: probes.SecurityBpfProg, required: true},
+				{handle: probes.BpfCheck, required: true},
+				{handle: probes.CheckHelperCall, required: false},
+				{handle: probes.CheckMapFuncCompatibility, required: false},
 			},
 		},
 		sets: []string{},
@@ -9966,15 +10496,16 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	ProcessExecuteFailed: {
+		id:      ProcessExecuteFailed,
 		id32Bit: Sys32Undefined,
 		name:    "process_execute_failed",
 		sets:    []string{"proc"},
 		dependencies: Dependencies{
-			Probes: []Probe{
-				{Handle: probes.ExecBinprm, Required: true},
-				{Handle: probes.ExecBinprmRet, Required: true},
+			probes: []Probe{
+				{handle: probes.ExecBinprm, required: true},
+				{handle: probes.ExecBinprmRet, required: true},
 			},
-			TailCalls: []TailCall{
+			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Execve), uint32(Execveat)}},
 				{"prog_array", "trace_ret_exec_binprm1", []uint32{TailExecBinprm1}},
 				{"prog_array", "trace_ret_exec_binprm2", []uint32{TailExecBinprm2}},
@@ -9999,35 +10530,37 @@ var CoreEvents = map[ID]Event{
 	// Begin of Network Protocol Event Types
 	//
 	NetPacketBase: {
+		id:       NetPacketBase,
 		id32Bit:  Sys32Undefined,
 		name:     "net_packet_base",
 		internal: true,
 		dependencies: Dependencies{
-			Capabilities: Capabilities{
-				capabilities.EBPF: []cap.Value{
+			capabilities: Capabilities{
+				ebpf: []cap.Value{
 					cap.NET_ADMIN, // needed for BPF_PROG_TYPE_CGROUP_SKB
 				},
 			},
-			Probes: []Probe{
-				{Handle: probes.CgroupSKBIngress, Required: true},
-				{Handle: probes.CgroupSKBEgress, Required: true},
-				{Handle: probes.SockAllocFile, Required: true},
-				{Handle: probes.SockAllocFileRet, Required: true},
-				{Handle: probes.CgroupBPFRunFilterSKB, Required: true},
-				{Handle: probes.SecuritySocketRecvmsg, Required: true},
-				{Handle: probes.SecuritySocketSendmsg, Required: true},
-				{Handle: probes.SecuritySkClone, Required: true},
+			probes: []Probe{
+				{handle: probes.CgroupSKBIngress, required: true},
+				{handle: probes.CgroupSKBEgress, required: true},
+				{handle: probes.SockAllocFile, required: true},
+				{handle: probes.SockAllocFileRet, required: true},
+				{handle: probes.CgroupBPFRunFilterSKB, required: true},
+				{handle: probes.SecuritySocketRecvmsg, required: true},
+				{handle: probes.SecuritySocketSendmsg, required: true},
+				{handle: probes.SecuritySkClone, required: true},
 			},
 		},
 		sets:   []string{"network_events"},
 		params: []trace.ArgMeta{},
 	},
 	NetPacketIPBase: {
+		id:       NetPacketIPBase,
 		id32Bit:  Sys32Undefined,
 		name:     "net_packet_ip_base",
 		internal: true,
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketBase,
 			},
 		},
@@ -10037,10 +10570,11 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	NetPacketIPv4: {
+		id:      NetPacketIPv4,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_ipv4",
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketIPBase,
 			},
 		},
@@ -10052,10 +10586,11 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	NetPacketIPv6: {
+		id:      NetPacketIPv6,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_ipv6",
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketIPBase,
 			},
 		},
@@ -10067,11 +10602,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	NetPacketTCPBase: {
+		id:       NetPacketTCPBase,
 		id32Bit:  Sys32Undefined,
 		name:     "net_packet_tcp_base",
 		internal: true,
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketBase,
 			},
 		},
@@ -10081,10 +10617,11 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	NetPacketTCP: {
+		id:      NetPacketTCP,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_tcp",
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketTCPBase,
 			},
 		},
@@ -10098,11 +10635,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	NetPacketUDPBase: {
+		id:       NetPacketUDPBase,
 		id32Bit:  Sys32Undefined,
 		name:     "net_packet_udp_base",
 		internal: true,
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketBase,
 			},
 		},
@@ -10112,10 +10650,11 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	NetPacketUDP: {
+		id:      NetPacketUDP,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_udp",
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketUDPBase,
 			},
 		},
@@ -10129,10 +10668,11 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	NetPacketICMPBase: {
+		id:      NetPacketICMPBase,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_icmp_base",
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketBase,
 			},
 		},
@@ -10143,10 +10683,11 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	NetPacketICMP: {
+		id:      NetPacketICMP,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_icmp",
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketICMPBase,
 			},
 		},
@@ -10158,11 +10699,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	NetPacketICMPv6Base: {
+		id:       NetPacketICMPv6Base,
 		id32Bit:  Sys32Undefined,
 		name:     "net_packet_icmpv6_base",
 		internal: true,
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketBase,
 			},
 		},
@@ -10172,10 +10714,11 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	NetPacketICMPv6: {
+		id:      NetPacketICMPv6,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_icmpv6",
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketICMPv6Base,
 			},
 		},
@@ -10187,11 +10730,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	NetPacketDNSBase: {
+		id:       NetPacketDNSBase,
 		id32Bit:  Sys32Undefined,
 		name:     "net_packet_dns_base",
 		internal: true,
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketBase,
 			},
 		},
@@ -10201,10 +10745,11 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	NetPacketDNS: {
+		id:      NetPacketDNS,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_dns", // preferred event to write signatures
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketDNSBase,
 			},
 		},
@@ -10218,10 +10763,11 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	NetPacketDNSRequest: {
+		id:      NetPacketDNSRequest,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_dns_request", // simple dns event compatible dns_request (deprecated)
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketDNSBase,
 			},
 		},
@@ -10232,10 +10778,11 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	NetPacketDNSResponse: {
+		id:      NetPacketDNSResponse,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_dns_response", // simple dns event compatible dns_response (deprecated)
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketDNSBase,
 			},
 		},
@@ -10246,11 +10793,12 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	NetPacketHTTPBase: {
+		id:       NetPacketHTTPBase,
 		id32Bit:  Sys32Undefined,
 		name:     "net_packet_http_base",
 		internal: true,
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketBase,
 			},
 		},
@@ -10260,10 +10808,11 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	NetPacketHTTP: {
+		id:      NetPacketHTTP,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_http", // preferred event to write signatures
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketHTTPBase,
 			},
 		},
@@ -10277,10 +10826,11 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	NetPacketHTTPRequest: {
+		id:      NetPacketHTTPRequest,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_http_request",
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketHTTPBase,
 			},
 		},
@@ -10291,10 +10841,11 @@ var CoreEvents = map[ID]Event{
 		},
 	},
 	NetPacketHTTPResponse: {
+		id:      NetPacketHTTPResponse,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_http_response",
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketHTTPBase,
 			},
 		},
@@ -10304,12 +10855,13 @@ var CoreEvents = map[ID]Event{
 			{Type: "trace.ProtoHTTPResponse", Name: "http_response"},
 		},
 	},
-	NetPacketCapture: { // all packets have full payload (sent in a dedicated perfbuffer)
+	NetPacketCapture: {
+		id:       NetPacketCapture, // all packets have full payload (sent in a dedicated perfbuffer)
 		id32Bit:  Sys32Undefined,
 		name:     "net_packet_capture",
 		internal: true,
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketBase,
 			},
 		},
@@ -10317,12 +10869,13 @@ var CoreEvents = map[ID]Event{
 			{Type: "bytes", Name: "payload"},
 		},
 	},
-	CaptureNetPacket: { // network packet capture pseudo event
+	CaptureNetPacket: {
+		id:       CaptureNetPacket, // network packet capture pseudo event
 		id32Bit:  Sys32Undefined,
 		name:     "capture_net_packet",
 		internal: true,
 		dependencies: Dependencies{
-			Events: []ID{
+			events: []ID{
 				NetPacketCapture,
 			},
 		},
