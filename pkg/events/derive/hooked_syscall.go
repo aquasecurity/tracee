@@ -57,8 +57,8 @@ func analyzeHookedAddresses(addresses []uint64, kernelSymbols helpers.KernelSymb
 
 		var hookedSyscallName string
 
-		if events.Core.IsEventDefined(syscallID) {
-			hookedSyscallName = events.Core.GetEventByID(syscallID).GetName()
+		if events.Core.IsDefined(syscallID) {
+			hookedSyscallName = events.Core.GetDefinitionByID(syscallID).GetName()
 		} else {
 			hookedSyscallName = fmt.Sprint(syscallID)
 		}

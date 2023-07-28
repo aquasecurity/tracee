@@ -8,11 +8,11 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-func TestNewEventDefinition(t *testing.T) {
-	expected := Event{
+func TestNewDefinition(t *testing.T) {
+	expectedDefinition := Definition{
 		name: "hooked_seq_ops2",
 		dependencies: Dependencies{
-			events:       []ID{PrintNetSeqOps, DoInitModule},
+			ids:          []ID{PrintNetSeqOps, DoInitModule},
 			kSymbols:     []KSymbol{},
 			probes:       []Probe{},
 			tailCalls:    []TailCall{},
@@ -21,7 +21,7 @@ func TestNewEventDefinition(t *testing.T) {
 		sets: []string{"signatures"},
 	}
 
-	e := NewEvent(
+	eventDefinition := NewDefinition(
 		0,
 		Sys32Undefined,
 		"hooked_seq_ops2",
@@ -39,23 +39,23 @@ func TestNewEventDefinition(t *testing.T) {
 		[]trace.ArgMeta{},
 	)
 
-	assert.Equal(t, expected.GetName(), e.GetName())
-	assert.Equal(t, expected.GetDependencies(), e.GetDependencies())
+	assert.Equal(t, expectedDefinition.GetName(), eventDefinition.GetName())
+	assert.Equal(t, expectedDefinition.GetDependencies(), eventDefinition.GetDependencies())
 }
 
 func TestAdd(t *testing.T) {
 	tests := []struct {
 		name string
-		evt  Event
+		evt  Definition
 		err  string
 	}{
 		{
-			name: "new event",
-			evt: Event{
+			name: "new definition",
+			evt: Definition{
 				id32Bit: ID(6000),
 				name:    "new_event",
 				dependencies: Dependencies{
-					events: []ID{
+					ids: []ID{
 						PrintNetSeqOps,
 						DoInitModule,
 					},
@@ -64,34 +64,34 @@ func TestAdd(t *testing.T) {
 			},
 		},
 		{
-			name: "event id already exist",
-			evt: Event{
+			name: "definition id already exists",
+			evt: Definition{
 				id32Bit: ID(700),
 				name:    "new_event",
 				dependencies: Dependencies{
-					events: []ID{
+					ids: []ID{
 						PrintNetSeqOps,
 						DoInitModule,
 					},
 				},
 				sets: []string{"signatures"},
 			},
-			err: "error event id already exist: 700",
+			err: "definition id already exists: 700",
 		},
 		{
-			name: "event name already exist",
-			evt: Event{
+			name: "definition name already exists",
+			evt: Definition{
 				id32Bit: ID(6001),
 				name:    "net_packet",
 				dependencies: Dependencies{
-					events: []ID{
+					ids: []ID{
 						PrintNetSeqOps,
 						DoInitModule,
 					},
 				},
 				sets: []string{"signatures"},
 			},
-			err: "error event name already exist: net_packet",
+			err: "definition name already exists: net_packet",
 		},
 	}
 
@@ -103,11 +103,11 @@ func TestAdd(t *testing.T) {
 				return
 			}
 
-			id, ok := Core.GetEventIDByName(test.evt.GetName())
+			eventDefID, ok := Core.GetDefinitionIDByName(test.evt.GetName())
 			assert.True(t, ok)
 
-			event := Core.GetEventByID(id)
-			assert.Equal(t, test.evt, event)
+			eventDefinition := Core.GetDefinitionByID(eventDefID)
+			assert.Equal(t, test.evt, eventDefinition)
 		})
 	}
 }

@@ -48,7 +48,7 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 		return fmt.Errorf("error reading events template: %v", err)
 	}
 
-	evtChannel := make(chan events.Event, 1)
+	evtChannel := make(chan events.Definition, 1)
 	retChannel := make(chan WorkRet, 1)
 	wrkChannel := make(chan string, 1)
 
@@ -106,14 +106,14 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 
 	// Pick all events
 
-	var evt events.Event
+	var evt events.Definition
 
-	allEvents := events.Core.GetEvents()
+	eventDefinitions := events.Core.GetDefinitions()
 
 	// Check if the given events exist
 
 	for _, given := range r.GivenEvents {
-		_, ok := events.Core.GetEventIDByName(given)
+		_, ok := events.Core.GetDefinitionIDByName(given)
 		if !ok {
 			logger.Errorw("Event definition not found", "event", given)
 		}
@@ -121,7 +121,7 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 
 	// Run all the events map through the GPT3 API
 
-	for _, evt = range allEvents {
+	for _, evt = range eventDefinitions {
 		if !evt.IsSyscall() {
 			continue
 		}
@@ -172,7 +172,7 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 }
 
 func (r GPTDocsRunner) GenerateSyscall(
-	ctx context.Context, template []byte, evt events.Event,
+	ctx context.Context, template []byte, evt events.Definition,
 ) (
 	string, error,
 ) {

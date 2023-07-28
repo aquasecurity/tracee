@@ -102,13 +102,13 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]eve
 	excludeEvents := eventFilter.NotEqual
 	var setsToTrace []string
 
-	var res map[events.ID]string
+	var idToName map[events.ID]string
 	setsToEvents := make(map[string][]events.ID)
 	isExcluded := make(map[events.ID]bool)
 
 	// build a map: k:set, v:eventID
-	for id, event := range events.Core.GetEvents() {
-		for _, set := range event.GetSets() {
+	for id, eventDefinition := range events.Core.GetDefinitions() {
+		for _, set := range eventDefinition.GetSets() {
 			setsToEvents[set] = append(setsToEvents[set], id)
 		}
 	}
@@ -167,14 +167,14 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]eve
 	}
 
 	// build a map: k:eventID, v:eventName with all events to trace
-	res = make(map[events.ID]string, events.Core.Length())
+	idToName = make(map[events.ID]string, events.Core.Length())
 	for _, name := range eventsToTrace {
 		if strings.HasSuffix(name, "*") { // handle event prefixes with wildcards
 			found := false
 			prefix := name[:len(name)-1]
 			for event, id := range eventsNameToID {
 				if strings.HasPrefix(event, prefix) && !isExcluded[id] {
-					res[id] = event
+					idToName[id] = event
 					found = true
 				}
 			}
@@ -191,7 +191,7 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]eve
 				}
 				return nil, InvalidEventError(name)
 			}
-			res[id] = name
+			idToName[id] = name
 		}
 	}
 
@@ -200,11 +200,10 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]eve
 		setEvents := setsToEvents[set]
 		for _, id := range setEvents {
 			if !isExcluded[id] {
-				evtDef := events.Core.GetEventByID(id)
-				res[id] = evtDef.GetName()
+				idToName[id] = events.Core.GetDefinitionByID(id).GetName()
 			}
 		}
 	}
 
-	return res, nil
+	return idToName, nil
 }

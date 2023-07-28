@@ -7,7 +7,7 @@ import (
 )
 
 type Dependencies struct {
-	events       []ID
+	ids          []ID
 	kSymbols     []KSymbol
 	probes       []Probe
 	tailCalls    []TailCall
@@ -15,14 +15,14 @@ type Dependencies struct {
 }
 
 func NewDependencies(
-	givenEvents []ID,
+	givenIDs []ID,
 	givenkSymbols []KSymbol,
 	givenProbes []Probe,
 	givenTailCalls []TailCall,
 	givenCapabilities Capabilities,
 ) Dependencies {
 	return Dependencies{
-		events:       givenEvents,
+		ids:          givenIDs,
 		kSymbols:     givenkSymbols,
 		probes:       givenProbes,
 		tailCalls:    givenTailCalls,
@@ -30,11 +30,11 @@ func NewDependencies(
 	}
 }
 
-func (d Dependencies) GetEvents() []ID {
-	if d.events == nil {
+func (d Dependencies) GetIDs() []ID {
+	if d.ids == nil {
 		return []ID{}
 	}
-	return d.events
+	return d.ids
 }
 
 func (d Dependencies) GetKSymbols() []KSymbol {

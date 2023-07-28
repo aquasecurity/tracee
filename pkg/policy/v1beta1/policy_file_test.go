@@ -11,7 +11,7 @@ import (
 )
 
 func TestPolicyValidate(t *testing.T) {
-	fakeSignatureEvent := events.NewEvent(
+	fakeSigEventDefinition := events.NewDefinition(
 		0,
 		events.Sys32Undefined,
 		"fake_signature",
@@ -29,7 +29,7 @@ func TestPolicyValidate(t *testing.T) {
 		[]trace.ArgMeta{},
 	)
 
-	err := events.Core.Add(9000, fakeSignatureEvent)
+	err := events.Core.Add(9000, fakeSigEventDefinition)
 	assert.NilError(t, err)
 
 	tests := []struct {

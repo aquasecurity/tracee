@@ -78,7 +78,7 @@ func Test_DeriveEvent(t *testing.T) {
 func Test_DeriveSingleEvent(t *testing.T) {
 	testEventID := events.ID(0)
 
-	evtDef := events.NewEvent(
+	eventDefinition := events.NewDefinition(
 		testEventID,           // ID
 		events.Sys32Undefined, // ID32Bit
 		"test_event",          // Name
@@ -107,8 +107,8 @@ func Test_DeriveSingleEvent(t *testing.T) {
 	}()
 
 	// mock the getEventDefinition function
-	getEventDefinition = func(id events.ID) events.Event {
-		return evtDef
+	getEventDefinition = func(id events.ID) events.Definition {
+		return eventDefinition
 	}
 
 	baseEvent := getTestEvent()
@@ -151,7 +151,7 @@ func Test_DeriveSingleEvent(t *testing.T) {
 		},
 		{
 			Name:                "sad flow - unexpected argument count",
-			ExpectedError:       unexpectedArgCountError(evtDef.GetName(), len(evtDef.GetParams()), 3),
+			ExpectedError:       unexpectedArgCountError(eventDefinition.GetName(), len(eventDefinition.GetParams()), 3),
 			ArgsDeriveFunc:      illegalDeriveEventArgs,
 			DerivedEventsAmount: 0,
 		},
@@ -174,7 +174,7 @@ func Test_DeriveSingleEvent(t *testing.T) {
 func TestDeriveMultipleEvents(t *testing.T) {
 	testEventID := events.ID(0)
 
-	evtDef := events.NewEvent(
+	eventDefinition := events.NewDefinition(
 		testEventID,           // ID
 		events.Sys32Undefined, // ID32Bit
 		"test_event",          // Name
@@ -199,8 +199,8 @@ func TestDeriveMultipleEvents(t *testing.T) {
 	defer func() {
 		getEventDefinition = savedEventDefFunc
 	}()
-	getEventDefinition = func(id events.ID) events.Event {
-		return evtDef
+	getEventDefinition = func(id events.ID) events.Definition {
+		return eventDefinition
 	}
 
 	baseEvent := getTestEvent()
@@ -262,7 +262,7 @@ func TestDeriveMultipleEvents(t *testing.T) {
 		},
 		{
 			Name:           "Fail new event creation",
-			ExpectedErrors: []error{fmt.Errorf("error deriving event \"%s\": expected %d arguments but given %d", evtDef.GetName(), len(evtDef.GetParams()), 3)},
+			ExpectedErrors: []error{fmt.Errorf("error deriving event \"%s\": expected %d arguments but given %d", eventDefinition.GetName(), len(eventDefinition.GetParams()), 3)},
 			ArgsDeriveFunc: func(event trace.Event) ([][]interface{}, []error) {
 				return [][]interface{}{{1, 2, 3}}, nil
 			},
@@ -270,7 +270,7 @@ func TestDeriveMultipleEvents(t *testing.T) {
 		},
 		{
 			Name:           "Fail new event creation and derive args",
-			ExpectedErrors: []error{fmt.Errorf(deriveArgsError), fmt.Errorf("error deriving event \"%s\": expected %d arguments but given %d", evtDef.GetName(), len(evtDef.GetParams()), 3)},
+			ExpectedErrors: []error{fmt.Errorf(deriveArgsError), fmt.Errorf("error deriving event \"%s\": expected %d arguments but given %d", eventDefinition.GetName(), len(eventDefinition.GetParams()), 3)},
 			ArgsDeriveFunc: func(event trace.Event) ([][]interface{}, []error) {
 				return [][]interface{}{{1, 2, 3}}, []error{fmt.Errorf(deriveArgsError)}
 			},

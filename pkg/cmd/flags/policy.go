@@ -116,8 +116,7 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 	eventsNameToID := events.Core.NamesToIDs()
 	// remove internal events since they shouldn't be accessible by users
 	for event, id := range eventsNameToID {
-		evtDef := events.Core.GetEventByID(id)
-		if evtDef.IsInternal() {
+		if events.Core.GetDefinitionByID(id).IsInternal() {
 			delete(eventsNameToID, event)
 		}
 	}

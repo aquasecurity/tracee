@@ -4,7 +4,7 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-type Event struct {
+type Definition struct {
 	id           ID // TODO: use id ?
 	id32Bit      ID
 	name         string
@@ -16,7 +16,7 @@ type Event struct {
 	params       []trace.ArgMeta
 }
 
-func NewEvent(
+func NewDefinition(
 	id ID,
 	id32Bit ID,
 	name string,
@@ -26,8 +26,8 @@ func NewEvent(
 	sets []string,
 	deps Dependencies,
 	params []trace.ArgMeta,
-) Event {
-	return Event{
+) Definition {
+	return Definition{
 		id:           id,
 		id32Bit:      id32Bit,
 		name:         name,
@@ -42,44 +42,44 @@ func NewEvent(
 
 // Getters (immutable data)
 
-func (e Event) GetID() ID {
-	return e.id
+func (d Definition) GetID() ID {
+	return d.id
 }
 
-func (e Event) GetID32Bit() ID {
-	return e.id32Bit
+func (d Definition) GetID32Bit() ID {
+	return d.id32Bit
 }
 
-func (e Event) GetName() string {
-	return e.name
+func (d Definition) GetName() string {
+	return d.name
 }
 
-func (e Event) GetDocPath() string {
-	return e.docPath
+func (d Definition) GetDocPath() string {
+	return d.docPath
 }
 
-func (e Event) IsInternal() bool {
-	return e.internal
+func (d Definition) IsInternal() bool {
+	return d.internal
 }
 
-func (e Event) IsSyscall() bool {
-	return e.syscall
+func (d Definition) IsSyscall() bool {
+	return d.syscall
 }
 
-func (e Event) GetDependencies() Dependencies {
-	return e.dependencies
+func (d Definition) GetDependencies() Dependencies {
+	return d.dependencies
 }
 
-func (e Event) GetSets() []string {
-	return e.sets
+func (d Definition) GetSets() []string {
+	return d.sets
 }
 
-func (e Event) GetParams() []trace.ArgMeta {
-	return e.params
+func (d Definition) GetParams() []trace.ArgMeta {
+	return d.params
 }
 
-func (e Event) IsSignature() bool {
-	if e.id >= StartSignatureID && e.id <= MaxSignatureID {
+func (d Definition) IsSignature() bool {
+	if d.id >= StartSignatureID && d.id <= MaxSignatureID {
 		return true
 	}
 

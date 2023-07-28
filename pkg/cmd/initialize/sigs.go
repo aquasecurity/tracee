@@ -8,7 +8,7 @@ import (
 )
 
 func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
-	id := startId
+	newEventDefID := startId
 
 	for _, s := range sigs {
 		m, err := s.GetMetadata()
@@ -26,17 +26,17 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 		evtDependency := make([]events.ID, 0)
 
 		for _, s := range selectedEvents {
-			eventID, found := events.Core.GetEventIDByName(s.Name)
+			eventDefID, found := events.Core.GetDefinitionIDByName(s.Name)
 			if !found {
 				logger.Errorw("Failed to load event dependency", "event", s.Name)
 				continue
 			}
 
-			evtDependency = append(evtDependency, eventID)
+			evtDependency = append(evtDependency, eventDefID)
 		}
 
-		event := events.NewEvent(
-			id,                                // id,
+		newEventDef := events.NewDefinition(
+			newEventDefID,                     // id,
 			events.Sys32Undefined,             // id32
 			m.EventName,                       // eventName
 			"",                                // docPath
@@ -53,12 +53,12 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 			[]trace.ArgMeta{},
 		)
 
-		err = events.Core.Add(id, event)
+		err = events.Core.Add(newEventDefID, newEventDef)
 		if err != nil {
 			logger.Errorw("Failed to add event definition", "error", err)
 			continue
 		}
 
-		id++
+		newEventDefID++
 	}
 }
