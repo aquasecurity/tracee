@@ -119,7 +119,24 @@ func TestDefinitionGroup_Length(t *testing.T) {
 	require.Equal(t, defGroup.Length(), 2) // definition group with two definitions
 }
 
-// TODO: func TestDefinitionGroup_GetDefinitions(t *testing.T)
+// TestDefinitionGroup_GetDefinitions tests that GetDefinitions returns a map of definition IDs to their definitions.
+func TestDefinitionGroup_GetDefinitions(t *testing.T) {
+	defGroup := NewDefinitionGroup()
+
+	id1 := ID(1)
+	id2 := ID(2)
+
+	def1 := NewDefinition(id1, id1+1000, "def1", "", false, false, []string{}, Dependencies{}, nil)
+	def2 := NewDefinition(id2, id2+1000, "def2", "", false, false, []string{}, Dependencies{}, nil)
+
+	defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
+
+	defs := defGroup.GetDefinitions()
+
+	require.Equal(t, len(defs), len(defGroup.definitions)) // same number of definitions
+	require.Contains(t, defs, def1)                        // same definition
+	require.Contains(t, defs, def2)                        // same definition
+}
 
 // TestDefinitionGroup_NamesToIDs tests that NamesToIDs returns a map of definition names to their IDs.
 func TestDefinitionGroup_NamesToIDs(t *testing.T) {
@@ -217,7 +234,29 @@ func TestDefinitionGroup_Length_MultipleThreads(t *testing.T) {
 	require.Equal(t, amountOfTestThreads, defGroup.Length()) // definition group with 20 definitions
 }
 
-// TODO: func TestDefinitionGroup_GetDefinitions_MultipleThreads(t *testing.T)
+// TestDefinitionGroup_GetDefinitions_MultipleThread tests that GetDefinitions is thread-safe.
+func TestDefinitionGroup_GetDefinitions_MultipleThread(t *testing.T) {
+	defGroup := NewDefinitionGroup()
+
+	names := getNames()
+
+	wg := &sync.WaitGroup{}
+
+	for name, id := range names {
+		wg.Add(1)
+		go func(name string, id ID) {
+			def := NewDefinition(id, id+1000, name, "", false, false, []string{}, Dependencies{}, nil)
+			err := defGroup.AddBatch(map[ID]Definition{id: def})
+			require.NoError(t, err)
+			defGroup.GetDefinitions() // concurrent calls
+			wg.Done()
+		}(name, id)
+	}
+
+	wg.Wait()
+
+	require.Equal(t, amountOfTestThreads, defGroup.Length()) // definition group with 20 definitions
+}
 
 // TestDefinitionGroup_NamesToIDs_MultipleThreads tests that NamesToIDs is thread-safe.
 func TestDefinitionGroup_NamesToIDs_MultipleThreads(t *testing.T) {
