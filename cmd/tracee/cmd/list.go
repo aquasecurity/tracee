@@ -6,7 +6,7 @@ import (
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/spf13/cobra"
 
-	tcmd "github.com/aquasecurity/tracee/pkg/cmd"
+	"github.com/aquasecurity/tracee/pkg/cmd"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -15,6 +15,12 @@ import (
 
 func init() {
 	rootCmd.AddCommand(listCmd)
+	listCmd.Flags().BoolP(
+		"wide",
+		"w",
+		false,
+		"no wrapping of output lines",
+	)
 	listCmd.Flags().StringArray(
 		"signatures-dir",
 		[]string{},
@@ -27,9 +33,9 @@ var listCmd = &cobra.Command{
 	Aliases: []string{"l"},
 	Short:   "List traceable events",
 	Long:    ``,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(c *cobra.Command, args []string) {
 		// Get signatures to update event list
-		sigsDir, err := cmd.Flags().GetStringArray("signatures-dir")
+		sigsDir, err := c.Flags().GetStringArray("signatures-dir")
 		if err != nil {
 			logger.Fatalw("Failed to get signatures-dir flag", "err", err)
 			os.Exit(1)
@@ -48,7 +54,10 @@ var listCmd = &cobra.Command{
 		}
 
 		initialize.CreateEventsFromSignatures(events.StartSignatureID, sigs)
-		tcmd.PrintEventList(true) // list events
+
+		includeSigs := true
+		wideOutput := c.Flags().Lookup("wide").Value.String() == "true"
+		cmd.PrintEventList(includeSigs, wideOutput) // list events
 	},
 	DisableFlagsInUseLine: true,
 }

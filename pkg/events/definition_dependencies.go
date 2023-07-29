@@ -6,6 +6,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 )
 
+// Dependencies is a struct that holds all the dependencies of a given event definition.
 type Dependencies struct {
 	ids          []ID
 	kSymbols     []KSymbol
