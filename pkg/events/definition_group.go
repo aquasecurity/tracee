@@ -1,6 +1,7 @@
 package events
 
 import (
+	"sort"
 	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -15,6 +16,12 @@ type EventState struct {
 }
 
 // ATTENTION: the definition group is instantiable (all the rest is immutable)
+
+type ByID []Definition
+
+func (a ByID) Len() int           { return len(a) }
+func (a ByID) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByID) Less(i, j int) bool { return a[i].id < a[j].id }
 
 //
 // DefinitionGroup
@@ -36,17 +43,17 @@ func NewDefinitionGroup() *DefinitionGroup {
 
 // GetDefinitions returns a new map of existing definitions.
 // TODO: iterate internally after event definition refactor is finished ?
-func (e *DefinitionGroup) GetDefinitions() map[ID]Definition {
+func (e *DefinitionGroup) GetDefinitions() []Definition {
 	e.mutex.RLock()
 	defer e.mutex.RUnlock()
 
-	mapCopy := make(map[ID]Definition, len(e.definitions))
-
-	for id, def := range e.definitions {
-		mapCopy[id] = def
+	definitions := make([]Definition, 0, len(e.definitions))
+	for _, def := range e.definitions {
+		definitions = append(definitions, def)
 	}
+	sort.Sort(ByID(definitions))
 
-	return mapCopy
+	return definitions
 }
 
 // GetDefinitionIDByName returns a definition ID by its name.

@@ -34,7 +34,7 @@ func main() {
 			flags.PrintAndExitIfHelp(c)
 
 			if c.Bool("list") {
-				cmd.PrintEventList(false) // list events
+				cmd.PrintEventList(false, false) // list events
 				return nil
 			}
 			initialize.SetLibbpfgoCallbacks()

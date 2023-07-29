@@ -2,17 +2,14 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strconv"
-	"strings"
 	"syscall"
 
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/server"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -102,84 +99,6 @@ func (r Runner) Run(ctx context.Context) error {
 			return err
 		}
 	}
-}
-
-func PrintEventList(printRulesSet bool) {
-	padChar := " "
-	titleHeaderPadFirst := getPad(padChar, 24)
-	titleHeaderPadSecond := getPad(padChar, 36)
-
-	var b strings.Builder
-
-	if printRulesSet {
-		b.WriteString("Rules: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
-		b.WriteString("_____  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________" + "\n\n")
-		printEventGroup(&b, events.StartSignatureID, events.MaxSignatureID)
-		b.WriteString("\n")
-	}
-
-	titleHeaderPadFirst = getPad(padChar, 17)
-	b.WriteString("System Calls: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
-	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________" + "\n\n")
-	printEventGroup(&b, 0, events.MaxSyscallID)
-	b.WriteString("\n\nOther Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
-	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
-	printEventGroup(&b, events.SysEnter, events.MaxCommonID)
-	printEventGroup(&b, events.InitNamespaces, events.MaxUserSpace)
-
-	titleHeaderPadFirst = getPad(padChar, 15)
-	b.WriteString("\n\nNetwork Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
-	b.WriteString("______________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
-	printEventGroup(&b, events.NetPacketIPv4, events.MaxUserNetID)
-	fmt.Println(b.String())
-}
-
-func printEventGroup(b *strings.Builder, firstEventID, lastEventID events.ID) {
-	for i := firstEventID; i < lastEventID; i++ {
-		if !events.Core.IsDefined(i) {
-			continue
-		}
-		eventDefinition := events.Core.GetDefinitionByID(i)
-		if eventDefinition.IsInternal() {
-			continue
-		}
-		if eventDefinition.GetSets() != nil {
-			eventSets := fmt.Sprintf(
-				"%-30s %-40s %s\n",
-				eventDefinition.GetName(),
-				fmt.Sprintf("%v", eventDefinition.GetSets()), getFormattedEventParams(i),
-			)
-			b.WriteString(eventSets)
-		} else {
-			b.WriteString(eventDefinition.GetName() + "\n")
-		}
-	}
-}
-
-func getFormattedEventParams(eventID events.ID) string {
-	if !events.Core.IsDefined(eventID) {
-		return "()"
-	}
-	var verboseEventParams string
-	verboseEventParams += "("
-	prefix := ""
-	for index, arg := range events.Core.GetDefinitionByID(eventID).GetParams() {
-		if index == 0 {
-			verboseEventParams += arg.Type + " " + arg.Name
-			prefix = ", "
-			continue
-		}
-		verboseEventParams += prefix + arg.Type + " " + arg.Name
-	}
-	verboseEventParams += ")"
-	return verboseEventParams
-}
-
-func getPad(padChar string, padLength int) (pad string) {
-	for i := 0; i < padLength; i++ {
-		pad += padChar
-	}
-	return pad
 }
 
 func GetContainerMode(cfg config.Config) config.ContainerMode {
