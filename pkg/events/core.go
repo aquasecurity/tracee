@@ -12,6 +12,7 @@ import (
 const (
 	Sys32Undefined ID = 0xfffffff - 1 // u32 overflows are compiler implementation dependent.
 	Undefined      ID = 0xfffffff
+	Unsupported    ID = 10000
 )
 
 type ID int32
