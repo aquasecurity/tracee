@@ -507,33 +507,50 @@ func (t *Tracee) generateInitValues() (InitValues, error) {
 
 // initTailCall initializes a given tailcall.
 func (t *Tracee) initTailCall(tailCall events.TailCall) error {
-	bpfMap, err := t.bpfModule.GetMap(tailCall.GetMapName())
+	tailCallMapName := tailCall.GetMapName()
+	tailCallProgName := tailCall.GetProgName()
+	tailCallIndexes := tailCall.GetIndexes()
+
+	// Pick eBPF map by name.
+	bpfMap, err := t.bpfModule.GetMap(tailCallMapName)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-	progName := tailCall.GetProgName()
-	bpfProg, err := t.bpfModule.GetProgram(progName)
+	// Pick eBPF program by name.
+	bpfProg, err := t.bpfModule.GetProgram(tailCallProgName)
 	if err != nil {
-		return errfmt.Errorf("could not get BPF program %s: %v", progName, err)
+		return errfmt.Errorf("could not get BPF program %s: %v", tailCallProgName, err)
 	}
-	fd := bpfProg.FileDescriptor()
-	if fd < 0 {
-		return errfmt.Errorf("could not get BPF program FD for %s: %v", progName, err)
+	// Pick eBPF program file descriptor.
+	bpfProgFD := bpfProg.FileDescriptor()
+	if bpfProgFD < 0 {
+		return errfmt.Errorf("could not get BPF program FD for %s: %v", tailCallProgName, err)
 	}
 
-	// Attach internal syscall probes if needed.
-	for _, index := range tailCall.GetIndexes() {
+	once := &sync.Once{}
+
+	// Pick all indexes (event, or syscall, IDs) the BPF program should be related to.
+	for _, index := range tailCallIndexes {
+		// Special treatment for indexes of syscall events.
 		if events.Core.GetDefinitionByID(events.ID(index)).IsSyscall() {
-			err := t.probes.Attach(probes.SyscallEnter__Internal)
-			if err != nil {
-				return errfmt.WrapError(err)
-			}
-			err = t.probes.Attach(probes.SyscallExit__Internal)
-			if err != nil {
-				return errfmt.WrapError(err)
+			// Optimization: enable enter/exit probes only if at least one syscall is enabled.
+			once.Do(func() {
+				err := t.probes.Attach(probes.SyscallEnter__Internal)
+				if err != nil {
+					logger.Errorw("error attaching to syscall enter", "error", err)
+				}
+				err = t.probes.Attach(probes.SyscallExit__Internal)
+				if err != nil {
+					logger.Errorw("error attaching to syscall enter", "error", err)
+				}
+			})
+			// Workaround: Do not map eBPF program to unsupported syscalls (arm64, e.g.)
+			if index >= uint32(events.Unsupported) {
+				continue
 			}
 		}
-		err := bpfMap.Update(unsafe.Pointer(&index), unsafe.Pointer(&fd))
+		// Update given eBPF map with the eBPF program file descriptor at given index.
+		err := bpfMap.Update(unsafe.Pointer(&index), unsafe.Pointer(&bpfProgFD))
 		if err != nil {
 			return errfmt.WrapError(err)
 		}

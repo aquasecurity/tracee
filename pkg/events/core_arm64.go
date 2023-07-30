@@ -353,7 +353,7 @@ const (
 
 // following syscalls are undefined on arm64
 const (
-	Open ID = iota + 10000
+	Open ID = iota + Unsupported
 	Stat
 	Lstat
 	Poll
@@ -954,7 +954,7 @@ const (
 
 // following syscalls are undefined on arm32
 const (
-	Sys32arch_prctl ID = iota + 10000
+	Sys32arch_prctl ID = iota + Unsupported
 	Sys32getpmsg
 	Sys32putpmsg
 	Sys32set_thread_area

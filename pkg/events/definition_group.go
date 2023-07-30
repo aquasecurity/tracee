@@ -43,12 +43,12 @@ func NewDefinitionGroup() *DefinitionGroup {
 
 // GetDefinitions returns a new map of existing definitions.
 // TODO: iterate internally after event definition refactor is finished ?
-func (e *DefinitionGroup) GetDefinitions() []Definition {
-	e.mutex.RLock()
-	defer e.mutex.RUnlock()
+func (d *DefinitionGroup) GetDefinitions() []Definition {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
 
-	definitions := make([]Definition, 0, len(e.definitions))
-	for _, def := range e.definitions {
+	definitions := make([]Definition, 0, len(d.definitions))
+	for _, def := range d.definitions {
 		definitions = append(definitions, def)
 	}
 	sort.Sort(ByID(definitions))
@@ -57,15 +57,15 @@ func (e *DefinitionGroup) GetDefinitions() []Definition {
 }
 
 // GetDefinitionIDByName returns a definition ID by its name.
-func (e *DefinitionGroup) GetDefinitionIDByName(givenName string) (ID, bool) {
-	e.mutex.RLock()
-	defer e.mutex.RUnlock()
-	return e.getDefinitionIDByName(givenName)
+func (d *DefinitionGroup) GetDefinitionIDByName(givenName string) (ID, bool) {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	return d.getDefinitionIDByName(givenName)
 }
 
 // getDefinitionIDByName returns a definition ID by its name (no locking).
-func (e *DefinitionGroup) getDefinitionIDByName(givenName string) (ID, bool) {
-	for id, def := range e.definitions {
+func (d *DefinitionGroup) getDefinitionIDByName(givenName string) (ID, bool) {
+	for id, def := range d.definitions {
 		if def.GetName() == givenName {
 			return id, true
 		}
@@ -77,11 +77,11 @@ func (e *DefinitionGroup) getDefinitionIDByName(givenName string) (ID, bool) {
 
 // GetDefinitionByID returns a definition by its ID.
 // NOTE: should be used together with IsDefined when definition might not exist.
-func (e *DefinitionGroup) GetDefinitionByID(givenDef ID) Definition {
-	e.mutex.RLock()
-	defer e.mutex.RUnlock()
+func (d *DefinitionGroup) GetDefinitionByID(givenDef ID) Definition {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
 
-	def, ok := e.definitions[givenDef]
+	def, ok := d.definitions[givenDef]
 	if !ok {
 		logger.Debugw("definition id not found", "id", givenDef)
 		return Definition{id: Undefined}
@@ -92,35 +92,35 @@ func (e *DefinitionGroup) GetDefinitionByID(givenDef ID) Definition {
 
 // IsDefined returns true if the definition exists in the definition group.
 // NOTE: needed as GetDefinitionByID() is used as GetDefinitionByID().Method() multiple times.
-func (e *DefinitionGroup) IsDefined(givenDef ID) bool {
-	e.mutex.RLock()
-	defer e.mutex.RUnlock()
+func (d *DefinitionGroup) IsDefined(givenDef ID) bool {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
 
-	_, ok := e.definitions[givenDef]
+	_, ok := d.definitions[givenDef]
 	return ok
 }
 
 // Length returns the number of definitions in the definition group.
-func (e *DefinitionGroup) Length() int {
-	e.mutex.RLock()
-	defer e.mutex.RUnlock()
-	return len(e.definitions)
+func (d *DefinitionGroup) Length() int {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	return len(d.definitions)
 }
 
 // Add adds a definition to the definition group.
-func (e *DefinitionGroup) Add(givenId ID, givenDef Definition) error {
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-	return e.add(givenId, givenDef)
+func (d *DefinitionGroup) Add(givenId ID, givenDef Definition) error {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	return d.add(givenId, givenDef)
 }
 
 // AddBatch adds multiple definitions to the definition group.
-func (e *DefinitionGroup) AddBatch(givenDefs map[ID]Definition) error {
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
+func (d *DefinitionGroup) AddBatch(givenDefs map[ID]Definition) error {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 
 	for id, def := range givenDefs {
-		err := e.add(id, def)
+		err := d.add(id, def)
 		if err != nil {
 			return err
 		}
@@ -130,29 +130,29 @@ func (e *DefinitionGroup) AddBatch(givenDefs map[ID]Definition) error {
 }
 
 // add adds a definition to the definition group (no locking).
-func (e *DefinitionGroup) add(givenId ID, givenDef Definition) error {
-	if _, ok := e.definitions[givenId]; ok {
+func (d *DefinitionGroup) add(givenId ID, givenDef Definition) error {
+	if _, ok := d.definitions[givenId]; ok {
 		return definitionIDAlreadyExistsErr(givenId)
 	}
 
 	n := givenDef.GetName()
-	if _, ok := e.getDefinitionIDByName(n); ok {
+	if _, ok := d.getDefinitionIDByName(n); ok {
 		return definitionNameAlreadyExistsErr(n)
 	}
 
-	e.definitions[givenId] = givenDef
+	d.definitions[givenId] = givenDef
 
 	return nil
 }
 
 // NamesToIDs returns a new map of definition names to their IDs.
-func (e *DefinitionGroup) NamesToIDs() map[string]ID {
-	e.mutex.RLock()
-	defer e.mutex.RUnlock()
+func (d *DefinitionGroup) NamesToIDs() map[string]ID {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
 
-	namesToIds := make(map[string]ID, len(e.definitions))
+	namesToIds := make(map[string]ID, len(d.definitions))
 
-	for id, def := range e.definitions {
+	for id, def := range d.definitions {
 		namesToIds[def.GetName()] = id
 	}
 
@@ -160,13 +160,13 @@ func (e *DefinitionGroup) NamesToIDs() map[string]ID {
 }
 
 // IDs32ToIDs returns a new map of 32-bit definition IDs to their IDs.
-func (e *DefinitionGroup) IDs32ToIDs() map[ID]ID {
-	e.mutex.RLock()
-	defer e.mutex.RUnlock()
+func (d *DefinitionGroup) IDs32ToIDs() map[ID]ID {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
 
-	idS32ToIDs := make(map[ID]ID, len(e.definitions))
+	idS32ToIDs := make(map[ID]ID, len(d.definitions))
 
-	for id, def := range e.definitions {
+	for id, def := range d.definitions {
 		id32Bit := def.GetID32Bit()
 
 		if id32Bit != Sys32Undefined {
@@ -178,15 +178,15 @@ func (e *DefinitionGroup) IDs32ToIDs() map[ID]ID {
 }
 
 // GetTailCalls returns a list of tailcalls of all definitions in the group (for initialization).
-func (e *DefinitionGroup) GetTailCalls(state map[ID]EventState) []TailCall {
-	e.mutex.RLock()
-	defer e.mutex.RUnlock()
+func (d *DefinitionGroup) GetTailCalls(state map[ID]EventState) []TailCall {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
 
 	var tailCalls []TailCall
 
-	for id, def := range e.definitions {
-		if state[id].Submit > 0 { // only traced events to provide their tailcalls
-			tailCalls = append(tailCalls, def.GetDependencies().GetTailCalls()...)
+	for evtDefID, evtDef := range d.definitions {
+		if state[evtDefID].Submit > 0 { // only traced events to provide their tailcalls
+			tailCalls = append(tailCalls, evtDef.GetDependencies().GetTailCalls()...)
 		}
 	}
 
