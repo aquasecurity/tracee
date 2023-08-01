@@ -3,10 +3,7 @@ package flags
 import (
 	"strings"
 
-	"github.com/aquasecurity/libbpfgo/helpers"
-
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 func filterHelp() string {
@@ -111,31 +108,6 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]eve
 		for _, set := range eventDefinition.GetSets() {
 			setsToEvents[set] = append(setsToEvents[set], eventDefinition.GetID())
 		}
-	}
-
-	// Exclude network events from the default set if kernel v4.19.
-	// Issue: https://github.com/aquasecurity/tracee/issues/1602
-	// TODO: workaround until we have the feature probing mechanism
-	if osInfo, err := helpers.GetOSInfo(); err == nil {
-		kernel51ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("5.1.0")
-		if err != nil {
-			logger.Errorw("Failed to compare kernel version", "error", err)
-		} else {
-			if kernel51ComparedToRunningKernel == helpers.KernelVersionNewer {
-				id_like := osInfo.GetOSReleaseFieldValue(helpers.OS_ID_LIKE)
-				if !strings.Contains(id_like, "rhel") {
-					// disable network events for v4.19 kernels other than RHEL based ones
-					logger.Debugw("Kernel <= v5.1, disabling network events from default set")
-					for _, id := range setsToEvents["default"] {
-						if id >= events.NetPacketIPv4 && id <= events.MaxUserNetID {
-							isExcluded[id] = true
-						}
-					}
-				}
-			}
-		}
-	} else {
-		logger.Errorw("Failed to get OS info", "error", err)
 	}
 
 	// mark excluded events (isExcluded) by their id
