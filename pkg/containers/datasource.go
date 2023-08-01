@@ -27,8 +27,9 @@ func (ctx SignaturesDataSource) Get(key interface{}) (map[string]interface{}, er
 		if cgroup.Container.ContainerId == containerId {
 			containerData := cgroup.Container
 			podData := containerData.Pod
-			result := make(map[string]interface{}, 7)
+			result := make(map[string]interface{}, 8)
 			result["container_id"] = containerData.ContainerId
+			result["container_ctime"] = int(cgroup.Ctime.UnixNano())
 			result["container_name"] = containerData.Name
 			result["container_image"] = containerData.Image
 			result["k8s_pod_id"] = podData.UID
@@ -48,6 +49,7 @@ func (ctx SignaturesDataSource) Keys() []string {
 func (ctx SignaturesDataSource) Schema() string {
 	schemaMap := map[string]string{
 		"container_id":      "string",
+		"container_ctime":   "int",
 		"container_name":    "string",
 		"container_image":   "string",
 		"k8s_pod_id":        "string",
