@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
@@ -9,6 +10,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -37,6 +39,29 @@ type Config struct {
 
 // Validate does static validation of the configuration
 func (c Config) Validate() error {
+	// Validate kernel version
+	// For valid versions see https://aquasecurity.github.io/tracee/latest/getting-started/installing/prerequisites/
+
+	// Default minimum kernel version
+	minimalKernelVersion := "5.4"
+	releaseID := c.OSInfo.GetOSReleaseID()
+	if isRhelStyleDistribution(releaseID) {
+		// In rhel style distributions tracee is supported in 4.18 kernels as well
+		minimalKernelVersion = "4.18"
+	}
+
+	res, err := c.OSInfo.CompareOSBaseKernelRelease(minimalKernelVersion)
+	if err != nil {
+		logger.Warnw("couldn't check kernel version compatibility, tracee will continue to run without kernel validation", "error", err)
+	} else {
+		if res == helpers.KernelVersionNewer {
+			return fmt.Errorf("unsupported kernel version, must be at least %s", minimalKernelVersion)
+		}
+		if res == helpers.KernelVersionInvalid {
+			return fmt.Errorf("invalid kernel version to compare: %s", minimalKernelVersion)
+		}
+	}
+
 	// Policies
 	for p := range c.Policies.Map() {
 		if p == nil {
@@ -90,6 +115,13 @@ func (c Config) Validate() error {
 	}
 
 	return nil
+}
+
+func isRhelStyleDistribution(osReleaseID helpers.OSReleaseID) bool {
+	return osReleaseID == helpers.CENTOS ||
+		osReleaseID == helpers.ALMA ||
+		osReleaseID == helpers.FEDORA ||
+		osReleaseID == helpers.RHEL
 }
 
 //

@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 
+	libbpfgo "github.com/aquasecurity/libbpfgo/helpers"
+
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -1632,6 +1634,9 @@ func Test_EventFilters(t *testing.T) {
 	}
 
 	// run tests cases
+	osinfo, err := libbpfgo.GetOSInfo()
+	require.NoError(t, err)
+
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			// prepare tracee config
@@ -1641,6 +1646,7 @@ func Test_EventFilters(t *testing.T) {
 				Capabilities: &config.CapabilitiesConfig{
 					BypassCaps: true,
 				},
+				OSInfo: osinfo,
 			}
 
 			ctx, cancel := context.WithCancel(context.Background())
