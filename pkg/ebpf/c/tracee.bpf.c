@@ -504,14 +504,16 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     struct task_struct *parent = (struct task_struct *) ctx->args[0];
     struct task_struct *child = (struct task_struct *) ctx->args[1];
 
-    u64 start_time = get_task_start_time(child);
+    u64 parent_start_time = get_task_start_time(parent);
+    u64 task_start_time = get_task_start_time(child);
 
     task_info_t task = {};
     __builtin_memcpy(&task, p.task_info, sizeof(task_info_t));
     task.recompute_scope = true;
     task.context.tid = get_task_ns_pid(child);
     task.context.host_tid = get_task_host_pid(child);
-    task.context.start_time = start_time;
+    task.context.task_start_time = task_start_time;
+    task.context.parent_start_time = parent_start_time;
     ret = bpf_map_update_elem(&task_info_map, &task.context.host_tid, &task, BPF_ANY);
     if (ret < 0)
         tracee_log(ctx, BPF_LOG_LVL_DEBUG, BPF_LOG_ID_MAP_UPDATE_ELEM, ret);
@@ -575,7 +577,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         save_to_submit_buf(&p.event->args_buf, (void *) &child_ns_pid, sizeof(int), 5);
         save_to_submit_buf(&p.event->args_buf, (void *) &child_tgid, sizeof(int), 6);
         save_to_submit_buf(&p.event->args_buf, (void *) &child_ns_tgid, sizeof(int), 7);
-        save_to_submit_buf(&p.event->args_buf, (void *) &start_time, sizeof(u64), 8);
+        save_to_submit_buf(&p.event->args_buf, (void *) &task_start_time, sizeof(u64), 8);
 
         events_perf_submit(&p, SCHED_PROCESS_FORK, 0);
     }

@@ -183,16 +183,23 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 			}
 
 			// Currently, the timestamp received from the bpf code is of the monotonic clock.
-			// Todo: The monotonic clock doesn't take into account system sleep time.
-			// Starting from kernel 5.7, we can get the timestamp relative to the system boot time instead which is preferable.
+			//
+			// TODO: The monotonic clock doesn't take into account system sleep time.
+			// Starting from kernel 5.7, we can get the timestamp relative to the system boot time
+			// instead which is preferable.
+
+			timeStamp := uint64(0)
+			startTime := uint64(0)
+
 			if t.config.Output.RelativeTime {
-				// To get the monotonic time since tracee was started, we have to subtract the start time from the timestamp.
-				ctx.Ts -= t.startTime
-				ctx.StartTime -= t.startTime
+				// To get the monotonic time since tracee was started, we have to subtract the start
+				// time from the timestamp.
+				timeStamp = ctx.Ts - t.startTime
+				startTime = ctx.StartTime - t.startTime
 			} else {
 				// To get the current ("wall") time, we add the boot time into it.
-				ctx.Ts += t.bootTime
-				ctx.StartTime += t.bootTime
+				timeStamp = ctx.Ts + t.bootTime
+				startTime = ctx.StartTime + t.bootTime
 			}
 
 			containerInfo := t.containers.GetCgroupInfo(ctx.CgroupID).Container
@@ -221,8 +228,8 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 			// get an event pointer from the pool
 			evt := t.eventsPool.Get().(*trace.Event)
 			// populate all the fields of the event used in this stage, and reset the rest
-			evt.Timestamp = int(ctx.Ts)
-			evt.ThreadStartTime = int(ctx.StartTime)
+			evt.Timestamp = int(timeStamp)
+			evt.ThreadStartTime = int(startTime)
 			evt.ProcessorID = int(ctx.ProcessorId)
 			evt.ProcessID = int(ctx.Pid)
 			evt.ThreadID = int(ctx.Tid)
@@ -251,6 +258,24 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 			evt.ContextFlags = flags
 			evt.Syscall = syscall
 			evt.Metadata = nil
+
+			// Create unique identifier for both, the task and its parent. This will allow the
+			// engine to correlate events from the same task and from the same parent task. The
+			// identifier will never be the same even if the task is reused (e.g. a process forked
+			// and the child process reused the same PID).
+			evt.ProcIdentifier = trace.ProcUniqueIdentifier{
+				TaskStartTime:   ctx.StartTime,
+				ParentStartTime: ctx.ParentStartTime,
+				TaskHash:        utils.HashU32AndU64(ctx.Pid, ctx.StartTime),
+				ParentHash:      utils.HashU32AndU64(ctx.Ppid, ctx.ParentStartTime),
+			}
+
+			// DEBUG (keep this until process tree is fully implemented)
+			//
+			// fmt.Printf("task start time: %d\n", ctx.StartTime)
+			// fmt.Printf("parent start time: %d\n", ctx.ParentStartTime)
+			// fmt.Printf("task hash: %d\n", utils.HashU32AndU64(ctx.HostPid, ctx.StartTime))
+			// fmt.Printf("parent hash: %d\n", utils.HashU32AndU64(ctx.HostPpid, ctx.ParentStartTime))
 
 			// If there aren't any policies that need filtering in userland, tracee **may** skip
 			// this event, as long as there aren't any derivatives or signatures that depend on it.

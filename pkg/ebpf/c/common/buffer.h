@@ -3,6 +3,7 @@
 
 #include <vmlinux.h>
 
+#include <common/hash.h>
 #include <common/network.h>
 
 // PROTOTYPES
@@ -339,6 +340,10 @@ statfunc int events_perf_submit(program_data_t *p, u32 id, long ret)
 {
     p->event->context.eventid = id;
     p->event->context.retval = ret;
+
+    // KEEP THIS FOR DEBUGGING (until process tree is fully implemented)
+    // u32 hash = (u64) hash_u32_and_u64(p->event->context.task.pid, p->event->context.task.task_start_time);
+    // bpf_printk("hash: %u\n", hash);
 
     // Get Stack trace
     if (p->config->options & OPT_CAPTURE_STACK_TRACES) {

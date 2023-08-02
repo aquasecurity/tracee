@@ -1,6 +1,7 @@
 #ifndef __COMMON_CONTEXT_H__
 #define __COMMON_CONTEXT_H__
 
+#include "common/hash.h"
 #include <vmlinux.h>
 
 #include <common/task.h>
@@ -22,7 +23,8 @@ init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 
 {
     long ret = 0;
     u64 id = bpf_get_current_pid_tgid();
-    context->task.start_time = get_task_start_time(task);
+    context->task.task_start_time = get_task_start_time(task);
+    context->task.parent_start_time = get_parent_start_time(task);
     context->task.host_tid = id;
     context->task.host_pid = id >> 32;
     context->task.host_ppid = get_task_ppid(task);

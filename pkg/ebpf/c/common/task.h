@@ -149,6 +149,12 @@ statfunc u64 get_task_start_time(struct task_struct *task)
     return BPF_CORE_READ(task, start_time);
 }
 
+statfunc u64 get_parent_start_time(struct task_struct *task)
+{
+    struct task_struct *parent = BPF_CORE_READ(task, real_parent);
+    return BPF_CORE_READ(parent, start_time);
+}
+
 statfunc u32 get_task_host_pid(struct task_struct *task)
 {
     return BPF_CORE_READ(task, pid);

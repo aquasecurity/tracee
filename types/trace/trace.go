@@ -14,36 +14,55 @@ import (
 
 // Event is a single result of an ebpf event process. It is used as a payload later delivered to tracee-rules.
 type Event struct {
-	Timestamp             int          `json:"timestamp"`
-	ThreadStartTime       int          `json:"threadStartTime"`
-	ProcessorID           int          `json:"processorId"`
-	ProcessID             int          `json:"processId"`
-	CgroupID              uint         `json:"cgroupId"`
-	ThreadID              int          `json:"threadId"`
-	ParentProcessID       int          `json:"parentProcessId"`
-	HostProcessID         int          `json:"hostProcessId"`
-	HostThreadID          int          `json:"hostThreadId"`
-	HostParentProcessID   int          `json:"hostParentProcessId"`
-	UserID                int          `json:"userId"`
-	MountNS               int          `json:"mountNamespace"`
-	PIDNS                 int          `json:"pidNamespace"`
-	ProcessName           string       `json:"processName"`
-	HostName              string       `json:"hostName"`
-	ContainerID           string       `json:"containerId"`
-	Container             Container    `json:"container,omitempty"`
-	Kubernetes            Kubernetes   `json:"kubernetes,omitempty"`
-	EventID               int          `json:"eventId,string"`
-	EventName             string       `json:"eventName"`
-	MatchedPoliciesKernel uint64       `json:"-"`
-	MatchedPoliciesUser   uint64       `json:"-"`
-	MatchedPolicies       []string     `json:"matchedPolicies,omitempty"`
-	ArgsNum               int          `json:"argsNum"`
-	ReturnValue           int          `json:"returnValue"`
-	Syscall               string       `json:"syscall"`
-	StackAddresses        []uint64     `json:"stackAddresses"`
-	ContextFlags          ContextFlags `json:"contextFlags"`
-	Args                  []Argument   `json:"args"` // Arguments are ordered according their appearance in the original event
-	Metadata              *Metadata    `json:"metadata,omitempty"`
+	Timestamp             int                  `json:"timestamp"`
+	ThreadStartTime       int                  `json:"threadStartTime"`
+	ProcessorID           int                  `json:"processorId"`
+	ProcessID             int                  `json:"processId"`
+	CgroupID              uint                 `json:"cgroupId"`
+	ThreadID              int                  `json:"threadId"`
+	ParentProcessID       int                  `json:"parentProcessId"`
+	HostProcessID         int                  `json:"hostProcessId"`
+	HostThreadID          int                  `json:"hostThreadId"`
+	HostParentProcessID   int                  `json:"hostParentProcessId"`
+	UserID                int                  `json:"userId"`
+	MountNS               int                  `json:"mountNamespace"`
+	PIDNS                 int                  `json:"pidNamespace"`
+	ProcessName           string               `json:"processName"`
+	HostName              string               `json:"hostName"`
+	ContainerID           string               `json:"containerId"`
+	Container             Container            `json:"container,omitempty"`
+	Kubernetes            Kubernetes           `json:"kubernetes,omitempty"`
+	EventID               int                  `json:"eventId,string"`
+	EventName             string               `json:"eventName"`
+	MatchedPoliciesKernel uint64               `json:"-"`
+	MatchedPoliciesUser   uint64               `json:"-"`
+	MatchedPolicies       []string             `json:"matchedPolicies,omitempty"`
+	ArgsNum               int                  `json:"argsNum"`
+	ReturnValue           int                  `json:"returnValue"`
+	Syscall               string               `json:"syscall"`
+	StackAddresses        []uint64             `json:"stackAddresses"`
+	ContextFlags          ContextFlags         `json:"contextFlags"`
+	ProcIdentifier        ProcUniqueIdentifier `json:"-"`    // unique identifier for the process that generated the event
+	Args                  []Argument           `json:"args"` // args are ordered according their appearance in the original event
+	Metadata              *Metadata            `json:"metadata,omitempty"`
+}
+
+// For an OS process to be uniquely identified, tracee builds a hash consisting of:
+//
+// u64: task start time (from event context)
+// u32: task pid (from event context)
+//
+// murmur([]byte) where slice of bytes is a concatenation (not a sum) of the 2 values above.
+//
+// NOTE: Since the ThreadStartTime might be changed (if relative time is configured) it is
+// imperative that we keep track of the original 'task' (process) start time, its parent start time,
+// and both PIDs for the task and its parent.
+
+type ProcUniqueIdentifier struct {
+	TaskHash        uint32
+	ParentHash      uint32
+	TaskStartTime   uint64
+	ParentStartTime uint64
 }
 
 type Container struct {

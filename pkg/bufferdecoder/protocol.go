@@ -25,6 +25,7 @@ const (
 type Context struct {
 	Ts              uint64
 	StartTime       uint64
+	ParentStartTime uint64
 	CgroupID        uint64
 	Pid             uint32
 	Tid             uint32
@@ -48,7 +49,7 @@ type Context struct {
 }
 
 func (Context) GetSizeBytes() int {
-	return 128
+	return 136
 }
 
 type ChunkMeta struct {
