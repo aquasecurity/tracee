@@ -688,7 +688,21 @@ struct kset {
     struct list_head list;
 };
 
-struct module_layout {
+enum mod_mem_type
+{
+    MOD_TEXT = 0,
+    MOD_DATA,
+    MOD_RODATA,
+    MOD_RO_AFTER_INIT,
+    MOD_INIT_TEXT,
+    MOD_INIT_DATA,
+    MOD_INIT_RODATA,
+
+    MOD_MEM_NUM_TYPES,
+    MOD_INVALID = -1,
+};
+
+struct module_memory {
     void *base;
 };
 
@@ -698,7 +712,7 @@ struct module {
     const char *version;
     const char *srcversion;
     struct module_kobject mkobj;
-    struct module_layout core_layout;
+    struct module_memory mem[MOD_MEM_NUM_TYPES]; // kernel versions >= 6.4
 };
 
 struct rb_node {
