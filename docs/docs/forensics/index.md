@@ -30,7 +30,7 @@ Tracee can capture the following types of artifacts:
     file will be captured. I/O files can be filtered using 3 optional filters:
     1. path - prefix of the file written/read. Up to 3 path filters can be
        provided per capture type.
-    2. type - file's type can be `pipe`, `socket` or `regular`.
+    2. type - file's type can be `pipe`, `socket`, `elf` or `regular`.
     3. fd - standard FD, one of the following: `stdin`, `stdout` and `stderr`.
 
     ***write example***
