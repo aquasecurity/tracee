@@ -85,6 +85,18 @@ struct kernel_cap_struct___older {
 
 typedef struct kernel_cap_struct___older kernel_cap_t___older;
 
+// struct module //
+
+struct module_layout {
+    void *base;
+};
+
+struct module___older_v64 {
+    struct module_layout core_layout;
+};
+
+///////////////////
+
 #pragma clang attribute pop
 
 #endif

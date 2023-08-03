@@ -857,8 +857,14 @@ statfunc int check_is_proc_modules_hooked(program_data_t *p)
         }
 
         // Check with the address being the start of the memory area, since
-        // the address from /proc/modules is the base core layout.
-        mod_base_addr = (u64) BPF_CORE_READ(pos, core_layout.base);
+        // this is what is given from /proc/modules.
+        if (bpf_core_field_exists(pos->mem)) { // Version >= v6.4
+            mod_base_addr = (u64) BPF_CORE_READ(pos, mem[MOD_TEXT].base);
+        } else {
+            struct module___older_v64 *old_mod = (void *) pos;
+            mod_base_addr = (u64) BPF_CORE_READ(old_mod, core_layout.base);
+        }
+
         if (unlikely(mod_base_addr == 0)) { // Module memory was possibly tampered.. submit an error
             ret = 7;
             break;
