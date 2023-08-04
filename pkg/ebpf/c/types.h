@@ -13,32 +13,32 @@
 //       by their pid, but also by their start time).
 
 typedef struct task_context {
-    u64 task_start_time;             // task's start time
-    u64 parent_start_time;           // task's parent start time
-    u64 cgroup_id;                   // control group ID
-    u32 pid;                         // PID as in the userspace term
-    u32 tid;                         // TID as in the userspace term
-    u32 ppid;                        // Parent PID as in the userspace term
-    u32 host_pid;                    // PID in host pid namespace
-    u32 host_tid;                    // TID in host pid namespace
-    u32 host_ppid;                   // Parent PID in host pid namespace
-    u32 uid;                         // task's effective UID
-    u32 mnt_id;                      // task's mount namespace ID
-    u32 pid_id;                      // task's pid namespace ID
-    char comm[TASK_COMM_LEN];        // task's comm
-    char uts_name[TASK_COMM_LEN];    // task's uts name
-    u32 flags;                       // task's status flags (see context_flags_e)
+    u64 task_start_time;          // task's start time
+    u64 parent_start_time;        // task's parent start time
+    u64 cgroup_id;                // control group ID
+    u32 pid;                      // PID as in the userspace term
+    u32 tid;                      // TID as in the userspace term
+    u32 ppid;                     // Parent PID as in the userspace term
+    u32 host_pid;                 // PID in host pid namespace
+    u32 host_tid;                 // TID in host pid namespace
+    u32 host_ppid;                // Parent PID in host pid namespace
+    u32 uid;                      // task's effective UID
+    u32 mnt_id;                   // task's mount namespace ID
+    u32 pid_id;                   // task's pid namespace ID
+    char comm[TASK_COMM_LEN];     // task's comm
+    char uts_name[TASK_COMM_LEN]; // task's uts name
+    u32 flags;                    // task's status flags (see context_flags_e)
 } task_context_t;
 
 typedef struct event_context {
-    u64 ts;                          // timestamp
+    u64 ts; // timestamp
     task_context_t task;
     u32 eventid;
-    s32 syscall;                     // syscall that triggered the event
+    s32 syscall; // syscall that triggered the event
     u64 matched_policies;
-    s64 retval;                      // syscall return value
+    s64 retval; // syscall return value
     u32 stack_id;
-    u16 processor_id;                // ID of the processor that processed the event
+    u16 processor_id; // ID of the processor that processed the event
 } event_context_t;
 
 enum event_id_e
@@ -359,13 +359,14 @@ typedef struct event_data {
     u64 param_types;
 } event_data_t;
 
-// A control plane signal - sent to indicate some critical event which should be processed
-// with priority.
+// Control Plane Signal
 //
-// Signals currently consist of shortened events sent only with their arguments.
-// As such, they consist of an event id and an argument buffer.
-// If we ever require a signal independent of an event, the event_id field should change
-// accordingly.
+// Higher priority (and, most of the times, simpler) events to be processed faster by userland.
+//
+// Signals currently consist of shortened events sent only with their arguments. As such, they
+// consist of an event id and an argument buffer. If we ever require a signal independent of an
+// event, the event_id field should change accordingly.
+
 typedef struct controlplane_signal {
     u32 event_id;
     args_buffer_t args_buf;

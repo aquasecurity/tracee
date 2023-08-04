@@ -122,16 +122,6 @@ func (t *Tracee) Stats() *metrics.Stats {
 	return &t.stats
 }
 
-// GetEssentialEventsList sets the default events used by tracee
-func GetEssentialEventsList() map[events.ID]events.EventState {
-	// Set essential events
-	return map[events.ID]events.EventState{
-		events.SchedProcessExec: {},
-		events.SchedProcessExit: {},
-		events.SchedProcessFork: {},
-	}
-}
-
 // GetCaptureEventsList sets events used to capture data
 func GetCaptureEventsList(cfg config.Config) map[events.ID]events.EventState {
 	captureEvents := make(map[events.ID]events.EventState)
@@ -178,19 +168,23 @@ func GetCaptureEventsList(cfg config.Config) map[events.ID]events.EventState {
 	return captureEvents
 }
 
-func (t *Tracee) handleEventsDependencies(givenEventId events.ID, submitMap uint64) {
-	givenEventDefinition := events.Core.GetDefinitionByID(givenEventId)
-	for _, depEventId := range givenEventDefinition.GetDependencies().GetIDs() {
+// handleEventsDependencies handles all events dependencies recursively.
+func (t *Tracee) handleEventsDependencies(givenEvtId events.ID, givenEvtState events.EventState) {
+	givenEvtDefinition := events.Core.GetDefinitionByID(givenEvtId)
+
+	for _, depEventId := range givenEvtDefinition.GetDependencies().GetIDs() {
 		depEventState, ok := t.eventsState[depEventId]
 		if !ok {
 			depEventState = events.EventState{}
-			t.handleEventsDependencies(depEventId, submitMap)
+			t.handleEventsDependencies(depEventId, givenEvtState) // dependencies of dependencies
 		}
 
-		depEventState.Submit |= submitMap
+		depEventState.Submit |= givenEvtState.Submit
+		depEventState.Control = givenEvtState.Control
+
 		t.eventsState[depEventId] = depEventState
 
-		if events.Core.GetDefinitionByID(givenEventId).IsSignature() {
+		if events.Core.GetDefinitionByID(givenEvtId).IsSignature() {
 			t.eventSignatures[depEventId] = true
 		}
 	}
@@ -213,8 +207,18 @@ func New(cfg config.Config) (*Tracee, error) {
 		writtenFiles:    make(map[string]string),
 		readFiles:       make(map[string]string),
 		capturedFiles:   make(map[string]int64),
-		eventsState:     GetEssentialEventsList(),
+		eventsState:     make(map[events.ID]events.EventState),
 		eventSignatures: make(map[events.ID]bool),
+	}
+
+	// SchedProcessFork, ShedProcessExec and SchedProcessExit are needed not only for the control
+	// plane, but also for events processed by regular pipeline. In the future, it is possible that
+	// all events like that will be processed by the control plane, and not by the regular pipeline.
+	// For now, we need to make sure that these events are processed by both.
+	for _, evtID := range controlplane.CoreEventsNeeded {
+		t.eventsState[evtID] = events.EventState{
+			Control: true,
+		}
 	}
 
 	// Initialize capabilities rings soon
@@ -248,8 +252,8 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	// Handle all essential events dependencies
 
-	for id, evt := range t.eventsState {
-		t.handleEventsDependencies(id, evt.Submit)
+	for id, state := range t.eventsState {
+		t.handleEventsDependencies(id, state)
 	}
 
 	// Update capabilities rings with all events dependencies
@@ -1226,7 +1230,11 @@ func (t *Tracee) initBPF() error {
 	}
 
 	// Initialize control plane
-	t.controlPlane, err = controlplane.NewController(t.bpfModule, t.containers, t.config.ContainersEnrich)
+	t.controlPlane, err = controlplane.NewController(
+		t.bpfModule,
+		t.containers,
+		t.config.ContainersEnrich,
+	)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

@@ -507,6 +507,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     u64 parent_start_time = get_task_start_time(parent);
     u64 task_start_time = get_task_start_time(child);
 
+    // Update task_info_map with the new task (child)
     task_info_t task = {};
     __builtin_memcpy(&task, p.task_info, sizeof(task_info_t));
     task.recompute_scope = true;
@@ -518,27 +519,26 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     if (ret < 0)
         tracee_log(ctx, BPF_LOG_LVL_DEBUG, BPF_LOG_ID_MAP_UPDATE_ELEM, ret);
 
+    // Pick new values for the child
     int parent_pid = get_task_host_pid(parent);
-    int child_pid = get_task_host_pid(child);
-
     int parent_tgid = get_task_host_tgid(parent);
+    int child_pid = get_task_host_pid(child);
     int child_tgid = get_task_host_tgid(child);
 
+    // Check if this is a new process (and not just another thread) and add it to proc_info_map
     proc_info_t *c_proc_info = bpf_map_lookup_elem(&proc_info_map, &child_tgid);
     if (c_proc_info == NULL) {
-        // this is a new process (and not just another thread) - add it to proc_info_map
-
         proc_info_t *p_proc_info = bpf_map_lookup_elem(&proc_info_map, &parent_tgid);
         if (unlikely(p_proc_info == NULL)) {
-            // parent proc should exist in proc_map (init_program_data should have set it)
+            // init_program_data should have set proc_info for the parent already
             tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
             return 0;
         }
 
+        // Update the child proc_info_map entry with same values as parent
         bpf_map_update_elem(&proc_info_map, &child_tgid, p_proc_info, BPF_NOEXIST);
         c_proc_info = bpf_map_lookup_elem(&proc_info_map, &child_tgid);
-        // appease the verifier
-        if (unlikely(c_proc_info == NULL)) {
+        if (unlikely(c_proc_info == NULL)) { // verifier needs
             tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
             return 0;
         }
@@ -547,7 +547,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         c_proc_info->new_proc = true;
     }
 
-    // update process tree map if the parent has an entry
+    // If process tree filter is enabled, update the child with the parent's scopes
     if (p.config->proc_tree_filter_enabled_scopes) {
         u32 *tgid_filtered = bpf_map_lookup_elem(&process_tree_map, &parent_tgid);
         if (tgid_filtered) {
@@ -557,32 +557,51 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         }
     }
 
+    // TODO: decide if SCHED_PROCESS_FORK signal should be always submitted or just for traced evts
     if (!should_trace(&p))
         return 0;
 
     // follow every pid that passed the should_trace() checks (used by the follow filter)
     c_proc_info->follow_in_scopes = p.task_info->matched_scopes;
 
+    int parent_ns_pid = get_task_ns_pid(parent);
+    int parent_ns_tgid = get_task_ns_tgid(parent);
+    int child_ns_pid = get_task_ns_pid(child);
+    int child_ns_tgid = get_task_ns_tgid(child);
+
+    // parent
+    save_to_submit_buf(&p.event->args_buf, (void *) &parent_pid, sizeof(int), 0);
+    save_to_submit_buf(&p.event->args_buf, (void *) &parent_ns_pid, sizeof(int), 1);
+    save_to_submit_buf(&p.event->args_buf, (void *) &parent_tgid, sizeof(int), 2);
+    save_to_submit_buf(&p.event->args_buf, (void *) &parent_ns_tgid, sizeof(int), 3);
+    save_to_submit_buf(&p.event->args_buf, (void *) &parent_start_time, sizeof(u64), 4);
+    // child
+    save_to_submit_buf(&p.event->args_buf, (void *) &child_pid, sizeof(int), 5);
+    save_to_submit_buf(&p.event->args_buf, (void *) &child_ns_pid, sizeof(int), 6);
+    save_to_submit_buf(&p.event->args_buf, (void *) &child_tgid, sizeof(int), 7);
+    save_to_submit_buf(&p.event->args_buf, (void *) &child_ns_tgid, sizeof(int), 8);
+    save_to_submit_buf(&p.event->args_buf, (void *) &task_start_time, sizeof(u64), 9);
+
+    // Submit the regular SCHED_PROCESS_FORK event
+
     if (should_submit(SCHED_PROCESS_FORK, p.event) || p.config->options & OPT_PROCESS_INFO) {
-        int parent_ns_pid = get_task_ns_pid(parent);
-        int parent_ns_tgid = get_task_ns_tgid(parent);
-        int child_ns_pid = get_task_ns_pid(child);
-        int child_ns_tgid = get_task_ns_tgid(child);
-
-        save_to_submit_buf(&p.event->args_buf, (void *) &parent_pid, sizeof(int), 0);
-        save_to_submit_buf(&p.event->args_buf, (void *) &parent_ns_pid, sizeof(int), 1);
-        save_to_submit_buf(&p.event->args_buf, (void *) &parent_tgid, sizeof(int), 2);
-        save_to_submit_buf(&p.event->args_buf, (void *) &parent_ns_tgid, sizeof(int), 3);
-        save_to_submit_buf(&p.event->args_buf, (void *) &child_pid, sizeof(int), 4);
-        save_to_submit_buf(&p.event->args_buf, (void *) &child_ns_pid, sizeof(int), 5);
-        save_to_submit_buf(&p.event->args_buf, (void *) &child_tgid, sizeof(int), 6);
-        save_to_submit_buf(&p.event->args_buf, (void *) &child_ns_tgid, sizeof(int), 7);
-        save_to_submit_buf(&p.event->args_buf, (void *) &task_start_time, sizeof(u64), 8);
-
         events_perf_submit(&p, SCHED_PROCESS_FORK, 0);
     }
 
-    return 0;
+    // Submit SCHED_PROCESS_FORK signal event now (only args, other perfbuffer)
+
+    controlplane_signal_t *signal = init_controlplane_signal();
+    if (unlikely(signal == NULL))
+        return 0;
+
+    // ATTENTION:
+    //
+    // 1. __builtin_memcpy won't work in between 2 eBPF maps
+    // 2. calling save_to_submit_buf(signal) would raise instr count too much
+    //
+    buffer_memcpy(&signal->args_buf, &p.event->args_buf, sizeof(signal->args_buf));
+
+    return signal_perf_submit(ctx, signal, SCHED_PROCESS_FORK);
 }
 
 // number of iterations - value that the verifier was seen to cope with - the higher, the better
@@ -1082,7 +1101,6 @@ int lkm_seeker_new_mod_only_tail(struct pt_regs *ctx)
     return 0;
 }
 
-// trace/events/sched.h: TP_PROTO(struct task_struct *p, pid_t old_pid, struct linux_binprm *bprm)
 SEC("raw_tracepoint/sched_process_exec")
 int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 {
@@ -1090,13 +1108,14 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx))
         return 0;
 
-    // Perform the following checks before should_trace() so we can filter by newly created
-    // containers/processes.  We assume that a new container/pod has started when a process of a
-    // newly created cgroup and mount ns executed a binary
+    // Perform the checks below, before should_trace(), so we can filter by newly created
+    // containers/processes. Assume a new container/pod has started when a process of a newly
+    // created cgroup and mount ns executed a binary.
     if (p.task_info->container_state == CONTAINER_CREATED) {
         u32 mntns = get_task_mnt_ns_id(p.event->task);
         struct task_struct *parent = get_parent_task(p.event->task);
         u32 parent_mntns = get_task_mnt_ns_id(parent);
+
         if (mntns != parent_mntns) {
             u32 cgroup_id_lsb = p.event->context.task.cgroup_id;
             u8 state = CONTAINER_STARTED;
@@ -1110,41 +1129,36 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     p.task_info->recompute_scope = true;
 
     struct linux_binprm *bprm = (struct linux_binprm *) ctx->args[2];
-    if (bprm == NULL) {
+    if (bprm == NULL)
         return -1;
-    }
-    struct file *file = get_file_ptr_from_bprm(bprm);
-    void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
 
-    proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &p.event->context.task.host_pid);
-    if (proc_info == NULL) {
+    proc_info_t *pinfo = bpf_map_lookup_elem(&proc_info_map, &p.event->context.task.host_pid);
+    if (pinfo == NULL) {
         // entry should exist in proc_map (init_program_data should have set it otherwise)
         tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
         return 0;
     }
 
-    proc_info->new_proc = true;
+    pinfo->new_proc = true;
 
-    // extract the binary name to be used in should_trace
-    __builtin_memset(proc_info->binary.path, 0, MAX_BIN_PATH_SIZE);
-    bpf_probe_read_str(proc_info->binary.path, MAX_BIN_PATH_SIZE, file_path);
-    proc_info->binary.mnt_id = p.event->context.task.mnt_id;
+    struct file *file = get_file_ptr_from_bprm(bprm);
+    void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
+
+    // Extract the binary name to be used in should_trace
+    __builtin_memset(pinfo->binary.path, 0, MAX_BIN_PATH_SIZE);
+    bpf_probe_read_str(pinfo->binary.path, MAX_BIN_PATH_SIZE, file_path);
+    pinfo->binary.mnt_id = p.event->context.task.mnt_id;
 
     if (!should_trace(&p))
         return 0;
 
     // Follow this task for matched scopes
-    proc_info->follow_in_scopes = p.task_info->matched_scopes;
+    pinfo->follow_in_scopes = p.task_info->matched_scopes;
 
-    if (!should_submit(SCHED_PROCESS_EXEC, p.event) &&
-        (p.config->options & OPT_PROCESS_INFO) != OPT_PROCESS_INFO)
-        return 0;
+    // NOTE: In >= v5.9, there are two new fields in bprm to be considered:
+    //       1. struct file *executable - gives the executable name passed to an interpreter
+    //       2. fdpath                  - gives generated fname for execveat (after resolving dirfd)
 
-    // Note: Starting from kernel 5.9, there are two new interesting fields in bprm that we
-    // should consider adding:
-    // 1. struct file *executable - can be used to get the executable name passed to an
-    // interpreter
-    // 2. fdpath                  - generated filename for execveat (after resolving dirfd)
     const char *filename = get_binprm_filename(bprm);
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
@@ -1157,18 +1171,20 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     save_to_submit_buf(&p.event->args_buf, &inode_nr, sizeof(unsigned long), 3);
     save_to_submit_buf(&p.event->args_buf, &ctime, sizeof(u64), 4);
     save_to_submit_buf(&p.event->args_buf, &inode_mode, sizeof(umode_t), 5);
+
     // If the interpreter file is the same as the executed one, it means that there is no
     // interpreter. For more information, see the load_elf_phdrs kprobe program.
-    if (proc_info->interpreter.id.inode != 0 && (proc_info->interpreter.id.device != s_dev ||
-                                                 proc_info->interpreter.id.inode != inode_nr)) {
-        save_str_to_buf(&p.event->args_buf, &proc_info->interpreter.pathname, 6);
-        save_to_submit_buf(&p.event->args_buf, &proc_info->interpreter.id.device, sizeof(dev_t), 7);
-        save_to_submit_buf(
-            &p.event->args_buf, &proc_info->interpreter.id.inode, sizeof(unsigned long), 8);
-        save_to_submit_buf(&p.event->args_buf, &proc_info->interpreter.id.ctime, sizeof(u64), 9);
+
+    file_info_t *interp = &pinfo->interpreter;
+    if (interp->id.inode != 0 && (interp->id.device != s_dev || interp->id.inode != inode_nr)) {
+        save_str_to_buf(&p.event->args_buf, &interp->pathname, 6);
+        save_to_submit_buf(&p.event->args_buf, &interp->id.device, sizeof(dev_t), 7);
+        save_to_submit_buf(&p.event->args_buf, &interp->id.inode, sizeof(unsigned long), 8);
+        save_to_submit_buf(&p.event->args_buf, &interp->id.ctime, sizeof(u64), 9);
     }
 
     bpf_tail_call(ctx, &prog_array_tp, TAIL_SCHED_PROCESS_EXEC_EVENT_SUBMIT);
+
     return -1;
 }
 
@@ -1208,6 +1224,7 @@ int sched_process_exec_event_submit_tail(struct bpf_raw_tracepoint_args *ctx)
     save_to_submit_buf(&p.event->args_buf, &stdin_type, sizeof(unsigned short), 12);
     save_str_to_buf(&p.event->args_buf, stdin_path, 13);
     save_to_submit_buf(&p.event->args_buf, &invoked_from_kernel, sizeof(int), 14);
+
     if (p.config->options & OPT_EXEC_ENV) {
         unsigned long env_start, env_end;
         env_start = get_env_start_from_mm(mm);
@@ -1218,11 +1235,29 @@ int sched_process_exec_event_submit_tail(struct bpf_raw_tracepoint_args *ctx)
             &p.event->args_buf, (void *) env_start, (void *) env_end, envc, 15);
     }
 
-    events_perf_submit(&p, SCHED_PROCESS_EXEC, 0);
-    return 0;
+    bool sb = should_submit(SCHED_PROCESS_EXEC, p.event);
+    bool opt = (p.config->options & OPT_PROCESS_INFO) == OPT_PROCESS_INFO;
+    bool should_submit = (sb || opt);
+
+    if (should_submit)
+        events_perf_submit(&p, SCHED_PROCESS_EXEC, 0);
+
+    // Submit SCHED_PROCESS_EXEC signal event now (only args, other perfbuffer)
+
+    controlplane_signal_t *signal = init_controlplane_signal();
+    if (unlikely(signal == NULL))
+        return 0;
+
+    // ATTENTION:
+    //
+    // 1. __builtin_memcpy won't work in between 2 eBPF maps
+    // 2. calling save_to_submit_buf(signal) would raise instr count too much
+    //
+    buffer_memcpy(&signal->args_buf, &p.event->args_buf, sizeof(signal->args_buf));
+
+    return signal_perf_submit(ctx, signal, SCHED_PROCESS_EXEC);
 }
 
-// trace/events/sched.h: TP_PROTO(struct task_struct *p)
 SEC("raw_tracepoint/sched_process_exit")
 int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 {
@@ -1237,28 +1272,46 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 
     bool group_dead = false;
     struct task_struct *task = p.event->task;
-    struct signal_struct *signal = BPF_CORE_READ(task, signal);
-    atomic_t live = BPF_CORE_READ(signal, live);
+    struct signal_struct *sigstruct = BPF_CORE_READ(task, signal);
+    atomic_t live = BPF_CORE_READ(sigstruct, live);
+
     // This check could be true for multiple thread exits if the thread count was 0 when the hooks
     // were triggered. This could happen for example if the threads performed exit in different CPUs
     // simultaneously.
-    if (live.counter == 0) {
+    if (!live.counter)
         group_dead = true;
-    }
-
-    if (!traced)
-        return 0;
 
     long exit_code = get_task_exit_code(p.event->task);
+    save_to_submit_buf(&p.event->args_buf, (void *) &exit_code, sizeof(long), 0);
+    save_to_submit_buf(&p.event->args_buf, (void *) &group_dead, sizeof(bool), 1);
 
-    if (should_submit(SCHED_PROCESS_EXIT, p.event) || p.config->options & OPT_PROCESS_INFO) {
-        save_to_submit_buf(&p.event->args_buf, (void *) &exit_code, sizeof(long), 0);
-        save_to_submit_buf(&p.event->args_buf, (void *) &group_dead, sizeof(bool), 1);
-
-        events_perf_submit(&p, SCHED_PROCESS_EXIT, 0);
+    if (traced) {
+        if (should_submit(SCHED_PROCESS_EXIT, p.event) || p.config->options & OPT_PROCESS_INFO) {
+            events_perf_submit(&p, SCHED_PROCESS_EXIT, 0);
+        }
     }
 
-    return 0;
+    // Submit SCHED_PROCESS_EXIT signal event now (only args, other perfbuffer)
+
+    // args: host_pid and exit_time used by control plane only
+
+    u64 exit_time = bpf_ktime_get_ns();
+    save_to_submit_buf(
+        &p.event->args_buf, (void *) &p.event->context.task.host_pid, sizeof(u32), 2);
+    save_to_submit_buf(&p.event->args_buf, (void *) &exit_time, sizeof(u64), 3);
+
+    controlplane_signal_t *signal = init_controlplane_signal();
+    if (unlikely(signal == NULL))
+        return 0;
+
+    // ATTENTION:
+    //
+    // 1. __builtin_memcpy won't work in between 2 eBPF maps
+    // 2. calling save_to_submit_buf(signal) would raise instr count too much
+    //
+    buffer_memcpy(&signal->args_buf, &p.event->args_buf, sizeof(signal->args_buf));
+
+    return signal_perf_submit(ctx, signal, SCHED_PROCESS_EXIT);
 }
 
 // trace/events/sched.h: TP_PROTO(struct task_struct *p)
@@ -5941,12 +5994,17 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_http)
     return 1; // NOTE: might block HTTP here if needed (return 0)
 }
 
+// clang-format on
+
+// END OF Network Packets
+
 //
 // Control Plane Programs
 //
-// Control Plane programs are almost duplicate programs of select events which we send as
-// direct signals to tracee in a separate buffer.
-// This is done to mitigate the consenquences of losing these events in the main perf buffer.
+// Control Plane programs are almost duplicate programs of select events which we send as direct
+// signals to tracee in a separate buffer. This is done to mitigate the consenquences of losing
+// these events in the main perf buffer.
+//
 
 SEC("raw_tracepoint/cgroup_mkdir_signal")
 int cgroup_mkdir_signal(struct bpf_raw_tracepoint_args *ctx)
@@ -5955,6 +6013,7 @@ int cgroup_mkdir_signal(struct bpf_raw_tracepoint_args *ctx)
     config_entry_t *cfg = bpf_map_lookup_elem(&config_map, &zero);
     if (unlikely(cfg == NULL))
         return 0;
+
     controlplane_signal_t *signal = init_controlplane_signal();
     if (unlikely(signal == NULL))
         return 0;
@@ -5979,9 +6038,8 @@ int cgroup_mkdir_signal(struct bpf_raw_tracepoint_args *ctx)
     save_to_submit_buf(&signal->args_buf, &cgroup_id, sizeof(u64), 0);
     save_str_to_buf(&signal->args_buf, path, 1);
     save_to_submit_buf(&signal->args_buf, &hierarchy_id, sizeof(u32), 2);
-    signal_perf_submit(ctx, signal, CGROUP_MKDIR);
 
-    return 0;
+    return signal_perf_submit(ctx, signal, CGROUP_MKDIR);
 }
 
 SEC("raw_tracepoint/cgroup_rmdir_signal")
@@ -5991,6 +6049,7 @@ int cgroup_rmdir_signal(struct bpf_raw_tracepoint_args *ctx)
     config_entry_t *cfg = bpf_map_lookup_elem(&config_map, &zero);
     if (unlikely(cfg == NULL))
         return 0;
+
     controlplane_signal_t *signal = init_controlplane_signal();
     if (unlikely(signal == NULL))
         return 0;
@@ -6012,9 +6071,22 @@ int cgroup_rmdir_signal(struct bpf_raw_tracepoint_args *ctx)
     save_to_submit_buf(&signal->args_buf, &cgroup_id, sizeof(u64), 0);
     save_str_to_buf(&signal->args_buf, path, 1);
     save_to_submit_buf(&signal->args_buf, &hierarchy_id, sizeof(u32), 2);
-    signal_perf_submit(ctx, signal, CGROUP_RMDIR);
 
-    return 0;
+    return signal_perf_submit(ctx, signal, CGROUP_RMDIR);
 }
 
-// clang-format on
+//
+// NOTE: The sched_process_{fork,exec,exit} control events are submitted by the
+// the regular programs, since those programs are too complex to be duplicated
+// and would cause overhead in execution as well.
+//
+// SEC("raw_tracepoint/sched_process_fork_signal")
+// int sched_process_fork_signal(struct bpf_raw_tracepoint_args *ctx)
+//
+// SEC("raw_tracepoint/sched_process_exit_signal")
+// int sched_process_exit_signal(struct bpf_raw_tracepoint_args *ctx)
+//
+// SEC("raw_tracepoint/sched_process_exec_signal")
+// int sched_process_exec_signal(struct bpf_raw_tracepoint_args *ctx)
+
+// END OF Control Plane Programs

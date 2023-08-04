@@ -12,6 +12,8 @@ import (
 //
 // ProbeGroup
 //
+// ATTENTION: Do not implement GetProbe() as the synchronization is handled by the ProbeGroup.
+//
 
 // ProbeGroup is a collection of probes.
 type ProbeGroup struct {
@@ -30,7 +32,7 @@ func NewProbeGroup(m *bpf.Module, p map[Handle]Probe) *ProbeGroup {
 }
 
 // GetProbe returns a probe type by its handle.
-func (p *ProbeGroup) GetProbeType(handle Handle) string {
+func (p *ProbeGroup) GetProbeTypeByHandle(handle Handle) string {
 	p.probesLock.Lock()
 	defer p.probesLock.Unlock()
 
@@ -49,6 +51,24 @@ func (p *ProbeGroup) GetProbeType(handle Handle) string {
 		}
 	}
 
+	return ""
+}
+
+// GetProbeNmae returns a probe name by its handle.
+func (p *ProbeGroup) GetProgramNameByHandle(handle Handle) string {
+	p.probesLock.Lock()
+	defer p.probesLock.Unlock()
+
+	switch p.probes[handle].(type) {
+	case *TraceProbe:
+		return p.probes[handle].(*TraceProbe).programName
+	case *Uprobe:
+		return p.probes[handle].(*Uprobe).programName
+	case *CgroupProbe:
+		return p.probes[handle].(*CgroupProbe).programName
+	}
+
+	// default
 	return ""
 }
 

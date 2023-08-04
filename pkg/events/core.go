@@ -8895,6 +8895,7 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "parent_ns_tid"},
 			{Type: "int", Name: "parent_pid"},
 			{Type: "int", Name: "parent_ns_pid"},
+			{Type: "unsigned long", Name: "parent_start_time"},
 			{Type: "int", Name: "child_tid"},
 			{Type: "int", Name: "child_ns_tid"},
 			{Type: "int", Name: "child_pid"},
@@ -8957,12 +8958,14 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 		sets: []string{"proc", "proc_life"},
+		// The "process_group_exit" field value represents that all threads exited at the event
+		// time. Multiple exits of threads of the same process group at the same time could result
+		// that all threads exit events would have 'true' value in this field altogether.
 		params: []trace.ArgMeta{
 			{Type: "long", Name: "exit_code"},
-			// The field value represents that all threads exited at the event time.
-			// Multiple exits of threads of the same process group at the same time could result that all threads exit
-			// events would have 'true' value in this field altogether.
 			{Type: "bool", Name: "process_group_exit"},
+			{Type: "int", Name: "host_pid"},            // used by control plane
+			{Type: "unsigned long", Name: "exit_time"}, // used by control plane
 		},
 	},
 	SchedSwitch: {

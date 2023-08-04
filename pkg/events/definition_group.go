@@ -11,8 +11,9 @@ import (
 // TODO: add states to the EventGroup struct (to keep states of events from that group)
 
 type EventState struct {
-	Submit uint64 // should be submitted to userspace (by policies bitmap)
-	Emit   uint64 // should be emitted to the user (by policies bitmap)
+	Submit  uint64 // should be submitted to userspace (by policies bitmap)
+	Emit    uint64 // should be emitted to the user (by policies bitmap)
+	Control bool   // needed by the control plane (submits independently of policies bitmap)
 }
 
 // ATTENTION: the definition group is instantiable (all the rest is immutable)
@@ -185,7 +186,7 @@ func (d *DefinitionGroup) GetTailCalls(state map[ID]EventState) []TailCall {
 	var tailCalls []TailCall
 
 	for evtDefID, evtDef := range d.definitions {
-		if state[evtDefID].Submit > 0 { // only traced events to provide their tailcalls
+		if state[evtDefID].Submit > 0 || state[evtDefID].Control {
 			tailCalls = append(tailCalls, evtDef.GetDependencies().GetTailCalls()...)
 		}
 	}
