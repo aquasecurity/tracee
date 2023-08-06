@@ -23,8 +23,8 @@ func ParseArgs(event *trace.Event) error {
 	event.ParsedArgs = make([]trace.Argument, len(event.Args))
 	copy(event.ParsedArgs, event.Args)
 	for i := range event.ParsedArgs {
-		if ptr, isUintptr := event.Args[i].Value.(uintptr); isUintptr {
-			event.Args[i].Value = "0x" + strconv.FormatUint(uint64(ptr), 16)
+		if ptr, isUintptr := event.ParsedArgs[i].Value.(uintptr); isUintptr {
+			event.ParsedArgs[i].Value = "0x" + strconv.FormatUint(uint64(ptr), 16)
 		}
 	}
 
