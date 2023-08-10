@@ -106,25 +106,28 @@ Let's edit the tracee-policies ConfigMap using kubectl:
 kubectl edit cm/tracee-policies -n tracee-system
 ```
 
-The ConfigMap will open in your default text editor. Locate the signatures.yaml section.
+The ConfigMap will open in your default text editor. Locate the data section.
 
-To add a new policy for tracking execve events, append the following YAML block under the signatures.yaml section, maintaining proper indentation:
+To add a new policy for tracking execve events, add the following YAML block before the signatures.yaml section, maintaining proper indentation:
 
 ```yaml
-events.yaml: |-
-  apiVersion: aquasecurity.github.io/v1beta1
-  kind: TraceePolicy
-  metadata:
-	  name: execve-event
-	  annotations:
-	  	description: traces all signature events
-  spec:
-	  scope:
-	    - global
-	  rules:
-	    - event: execve
+data:
+  events.yaml: |-
+    apiVersion: aquasecurity.github.io/v1beta1
+    kind: TraceePolicy
+    metadata:
+        name: execve-event
+        annotations:
+          description: traces all execve events
+    spec:
+        scope:
+          - global
+        rules:
+          - event: execve
+  signatures.yaml: |-
+  ...
 ```
-Save and close the file. The changes will be applied automatically.
+Save and close the file. The changes will be applied to the configmap.
 
 !!! note
 	If you having a problem editing the configmap, you can apply it directly with:
