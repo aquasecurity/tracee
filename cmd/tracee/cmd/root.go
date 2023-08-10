@@ -43,6 +43,7 @@ access to hundreds of events that help you understand how your system behaves.`,
 					fmt.Fprintf(os.Stderr, "Run 'tracee --help' for usage.\n")
 					os.Exit(1)
 				}
+				initConfig()
 			}
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -72,8 +73,6 @@ access to hundreds of events that help you understand how your system behaves.`,
 func initCmd() error {
 	rootCmd.SetOut(os.Stdout)
 	rootCmd.SetErr(os.Stderr)
-
-	cobra.OnInitialize(initConfig)
 
 	// disable default help command (./tracee help) overriding it with an empty command
 	rootCmd.SetHelpCommand(&cobra.Command{})
