@@ -72,9 +72,11 @@ scope:
 ### !container
 Events are collected from everything but containers:
 
+NOTE: YAML requires that values containing special characters, in this case `!`, be enclosed in quotes!
+
 ```yaml
 scope:
-    - !container
+    - "!container"
 ```
 
 ### tree
