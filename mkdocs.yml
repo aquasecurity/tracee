@@ -25,6 +25,7 @@ nav:
       - Working with Tracee's Policies on Kubernetes: tutorials/k8s-policies.md
       - Deploy Tracee Grafana Dashboard: tutorials/deploy-grafana-dashboard.md
       - Accessing Tracee Logs through Promtail and Loki: tutorials/promtail.md
+      - Additional Resources: tutorials/additional-resources.md
   - Docs:
       - Overview: docs/overview.md
       - Events:
