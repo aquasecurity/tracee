@@ -38,10 +38,12 @@ func (d Dependencies) GetIDs() []ID {
 	return d.ids
 }
 
+// GetKSymbols returns the KSymbols dependencies of an event.
+// If nil is returned no ksymbols are needed.
+// If an empty array is returned - symbols are needed, but none should specifically
+// be loaded ahead of time.
+// A non-empty array indicates that some symbols should be queried and loaded ahead of time.
 func (d Dependencies) GetKSymbols() []KSymbol {
-	if d.kSymbols == nil {
-		return []KSymbol{}
-	}
 	return d.kSymbols
 }
 

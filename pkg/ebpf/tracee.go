@@ -497,8 +497,8 @@ func (t *Tracee) generateInitValues() (InitValues, error) {
 		if !events.Core.IsDefined(evt) {
 			return initVals, errfmt.Errorf("event %d is undefined", evt)
 		}
-		for range events.Core.GetDefinitionByID(evt).GetDependencies().GetKSymbols() {
-			initVals.Kallsyms = true // only if length > 0
+		if events.Core.GetDefinitionByID(evt).GetDependencies().GetKSymbols() != nil {
+			initVals.Kallsyms = true
 		}
 	}
 
