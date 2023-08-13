@@ -1700,7 +1700,8 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 						}
 					}
 					if err != nil {
-						return errfmt.WrapError(err)
+						logger.Warnw("print_mem_dump: failed to get symbol info", "symbol", name)
+						continue
 					}
 				}
 				eventHandle := t.triggerContexts.Store(event)
