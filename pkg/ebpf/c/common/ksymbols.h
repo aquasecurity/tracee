@@ -41,9 +41,10 @@ statfunc void *get_etext_addr()
 statfunc struct pipe_inode_info *get_file_pipe_info(struct file *file)
 {
     struct pipe_inode_info *pipe = BPF_CORE_READ(file, private_data);
-    char pipe_fops_sym[14] = "pipefifo_fops";
+    char pipe_write_sym[11] = "pipe_write";
+    void *file_write_iter_op = BPF_CORE_READ(file, f_op, write_iter);
 
-    if (BPF_CORE_READ(file, f_op) != get_symbol_addr(pipe_fops_sym))
+    if (file_write_iter_op != get_symbol_addr(pipe_write_sym))
         return NULL;
 
     return pipe;
