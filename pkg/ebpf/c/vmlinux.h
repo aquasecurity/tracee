@@ -423,9 +423,15 @@ typedef unsigned int fmode_t;
 
 struct dir_context {
 };
+struct iov_iter {
+};
+struct kiocb {
+};
+
 struct file_operations {
     int (*iterate_shared)(struct file *, struct dir_context *);
     int (*iterate)(struct file *, struct dir_context *);
+    long (*write_iter)(struct kiocb *, struct iov_iter *);
 };
 
 struct file {

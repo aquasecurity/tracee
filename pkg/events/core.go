@@ -9629,7 +9629,7 @@ var CoreEvents = map[ID]Definition{
 				{handle: probes.DoSpliceRet, required: true},
 			},
 			kSymbols: []KSymbol{
-				{symbol: "pipefifo_fops", required: true},
+				{symbol: "pipe_write", required: true},
 			},
 		},
 		params: []trace.ArgMeta{
@@ -9982,7 +9982,7 @@ var CoreEvents = map[ID]Definition{
 				{"prog_array", "send_bin", []uint32{TailSendBin}},
 			},
 			kSymbols: []KSymbol{
-				{symbol: "pipefifo_fops", required: true},
+				{symbol: "pipe_write", required: true},
 			},
 		},
 	},
@@ -10004,7 +10004,7 @@ var CoreEvents = map[ID]Definition{
 				{"prog_array", "send_bin", []uint32{TailSendBin}},
 			},
 			kSymbols: []KSymbol{
-				{symbol: "pipefifo_fops", required: true},
+				{symbol: "pipe_write", required: true},
 			},
 		},
 	},
