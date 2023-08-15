@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option go_package = "github.co/aquasecurity/tracee/api/v1";
+
+package tracee.v1beta1;
+
+message GetVersionRequest {
+}
+
+message GetVersionResponse {
+    string version = 1;
+}
+
+service TraceeService {
+    rpc GetVersion(GetVersionRequest) returns (GetVersionResponse);
+}
