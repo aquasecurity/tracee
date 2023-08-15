@@ -1,0 +1,91 @@
+.PHONY: all
+all:
+	$(MAKE) protoc-build
+	$(MAKE) protoc-run
+
+#
+# make
+#
+
+.ONESHELL:
+SHELL = /bin/sh
+
+MAKE = make -f $(shell find . -name Makefile.protoc)
+MAKEFLAGS += --no-print-directory
+
+#
+# tools
+#
+
+CMD_DOCKER ?= docker
+
+.check_%:
+#
+	@command -v $* >/dev/null
+	if [ $$? -ne 0 ]; then
+		echo "missing required tool $*"
+		exit 1
+	else
+		touch $@ # avoid target rebuilds due to inexistent file
+	fi
+
+#
+# usage
+#
+
+.PHONY: help
+help:
+	@echo ""
+	@echo "To build the protc docker container:"
+	@echo ""
+	@echo "    $$ make -f builder/Makefile.protoc protoc-build"
+	@echo ""
+	@echo "To run protoc the container:"
+	@echo ""
+	@echo "    $$ make -f builder/Makefile.protoc protoc-run"
+	@echo ""
+	@echo "Or simply:"
+	@echo ""
+	@echo "    $$ make -f builder/Makefile.protoc"
+	@echo ""
+
+#
+# requirements
+#
+
+.PHONY: .check_tree
+.check_tree:
+#
+	@if [ ! -d ./builder ]; then
+		echo "you must be in the root directory"
+		exit 1
+	fi
+
+PROTOC_CONTNAME = tracee-protoc:latest
+
+.PHONY: protoc-build
+protoc-build: \
+	.check_$(CMD_DOCKER) \
+	.check_tree
+#
+	$(CMD_DOCKER) build \
+		-f builder/Dockerfile.protoc \
+		-t $(PROTOC_CONTNAME) \
+		.
+
+.PHONY: protoc-run
+protoc-run: \
+	.check_$(CMD_DOCKER) \
+	.check_tree
+#
+	$(CMD_DOCKER) run --rm \
+		-v $(shell pwd):/tracee \
+		$(PROTOC_CONTNAME) make protoc
+
+
+#
+# clean
+#
+
+.PHONY: clean
+clean:
