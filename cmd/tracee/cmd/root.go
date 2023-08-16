@@ -20,9 +20,10 @@ import (
 )
 
 var (
-	cfgFile  string
-	helpFlag bool
-	rootCmd  = &cobra.Command{
+	cfgFileFlag string
+	helpFlag    bool
+
+	rootCmd = &cobra.Command{
 		Use:   "tracee",
 		Short: "Trace OS events and syscalls using eBPF",
 		Long: `Tracee uses eBPF technology to tap into your system and give you
@@ -44,7 +45,7 @@ access to hundreds of events that help you understand how your system behaves.`,
 					}
 					os.Exit(0)
 				}
-				initConfig()
+				checkConfigFlag()
 			}
 		},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -138,7 +139,7 @@ func initCmd() error {
 
 	// config is not bound to viper
 	rootCmd.Flags().StringVar(
-		&cfgFile,
+		&cfgFileFlag,
 		"config",
 		"",
 		"<file>\t\t\t\tGlobal config file (yaml, json between others - see documentation)",
@@ -323,12 +324,12 @@ func initCmd() error {
 	return nil
 }
 
-func initConfig() {
-	if cfgFile == "" {
+func checkConfigFlag() {
+	if cfgFileFlag == "" {
 		return
 	}
 
-	cfgFile, err := filepath.Abs(cfgFile)
+	cfgFile, err := filepath.Abs(cfgFileFlag)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", errfmt.WrapError(err))
 		os.Exit(1)
