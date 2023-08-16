@@ -331,7 +331,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 				logger.LoggingConfig{
 					Logger: logger.NewLogger(logger.LoggerConfig{
 						Writer:  loggerBuf,
-						Level:   logger.InfoLevel,
+						Level:   logger.NewAtomicLevelAt(logger.InfoLevel),
 						Encoder: logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
 					}),
 					Aggregate: false,

@@ -280,7 +280,7 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 
 	loggerCfg := logger.LoggerConfig{
 		Writer: w,
-		Level:  lvl,
+		Level:  logger.NewAtomicLevelAt(lvl),
 	}
 	if lvl == logger.DebugLevel {
 		loggerCfg.Encoder = logger.NewJSONEncoder(logger.NewDevelopmentEncoderConfig())
