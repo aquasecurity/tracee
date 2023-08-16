@@ -20,8 +20,9 @@ import (
 )
 
 var (
-	cfgFile string
-	rootCmd = &cobra.Command{
+	cfgFile  string
+	helpFlag bool
+	rootCmd  = &cobra.Command{
 		Use:   "tracee",
 		Short: "Trace OS events and syscalls using eBPF",
 		Long: `Tracee uses eBPF technology to tap into your system and give you
@@ -29,20 +30,19 @@ access to hundreds of events that help you understand how your system behaves.`,
 		DisableFlagParsing: true, // in order to have fine grained control over flags parsing
 		PreRun: func(cmd *cobra.Command, args []string) {
 			if len(args) > 0 {
-				// parse --help, -h flags as the first argument
-				if len(args) == 1 && (args[0] == "--help" || args[0] == "-h") {
+				// parse all flags
+				if err := cmd.Flags().Parse(args); err != nil {
+					fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+					fmt.Fprintf(os.Stderr, "Run 'tracee --help' for usage.\n")
+					os.Exit(1)
+				}
+
+				if helpFlag {
 					if err := cmd.Help(); err != nil {
 						fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 						os.Exit(1)
 					}
 					os.Exit(0)
-				}
-
-				// parse all other flags
-				if err := cmd.Flags().Parse(args); err != nil {
-					fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-					fmt.Fprintf(os.Stderr, "Run 'tracee --help' for usage.\n")
-					os.Exit(1)
 				}
 				initConfig()
 			}
@@ -77,6 +77,15 @@ func initCmd() error {
 
 	// disable default help command (./tracee help) overriding it with an empty command
 	rootCmd.SetHelpCommand(&cobra.Command{})
+
+	// help is not bound to viper
+	rootCmd.Flags().BoolVarP(
+		&helpFlag,
+		"help",
+		"h",
+		false,
+		"",
+	)
 
 	// Scope/Event/Policy flags
 
