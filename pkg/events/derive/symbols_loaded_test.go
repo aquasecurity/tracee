@@ -240,7 +240,7 @@ func setMockLogger(l logger.Level) <-chan []byte {
 	mockLogger := logger.NewLogger(
 		logger.LoggerConfig{
 			Writer:  mw,
-			Level:   l,
+			Level:   logger.NewAtomicLevelAt(l),
 			Encoder: logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
 		},
 	)
