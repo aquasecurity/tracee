@@ -291,6 +291,7 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 	llogger := logger.NewLogger(loggerCfg)
 	return logger.LoggingConfig{
 		Logger:        llogger,
+		LoggerConfig:  loggerCfg,
 		Filter:        filter,
 		Aggregate:     agg,
 		FlushInterval: interval,
