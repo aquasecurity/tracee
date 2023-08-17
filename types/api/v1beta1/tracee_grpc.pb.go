@@ -4,7 +4,7 @@
 // - protoc             v4.23.4
 // source: types/api/v1beta1/tracee.proto
 
-package v1
+package v1beta1
 
 import (
 	context "context"
