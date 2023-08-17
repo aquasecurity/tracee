@@ -31,7 +31,7 @@ func TestServer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	go grpcServer.Start(ctx)
+	go grpcServer.Start(ctx, nil)
 
 	c := grpcClient("unix", unixSock)
 

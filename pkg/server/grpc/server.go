@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 
+	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	pb "github.com/aquasecurity/tracee/types/api/v1beta1"
 )
@@ -31,7 +32,7 @@ func New(protocol, listenAddr string) (*Server, error) {
 	return &Server{listener: lis, protocol: protocol, listenAddr: listenAddr}, nil
 }
 
-func (s *Server) Start(ctx context.Context) {
+func (s *Server) Start(ctx context.Context, t *tracee.Tracee) {
 	srvCtx, srvCancel := context.WithCancel(ctx)
 	defer srvCancel()
 
@@ -43,6 +44,7 @@ func (s *Server) Start(ctx context.Context) {
 
 	grpcServer := grpc.NewServer(grpc.KeepaliveParams(keepaliveParams))
 	pb.RegisterTraceeServiceServer(grpcServer, &TraceeService{})
+	pb.RegisterDiagnosticServiceServer(grpcServer, &DiagnosticService{tracee: t})
 
 	go func() {
 		logger.Debugw("Starting grpc server", "protocol", s.protocol, "address", s.listenAddr)

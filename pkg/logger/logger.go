@@ -88,7 +88,7 @@ const (
 // Tracee offers aggregation and filtering support on top of any logger implementation complying to it's interface.
 type LoggingConfig struct {
 	Logger        LoggerInterface
-	loggerConfig  LoggerConfig
+	LoggerConfig  LoggerConfig
 	Filter        LoggerFilter
 	Aggregate     bool
 	FlushInterval time.Duration
@@ -105,7 +105,7 @@ type LoggerConfig struct {
 // SetLevel sets the logging level of the package level logger.
 // It is thread safe.
 func (lc LoggingConfig) SetLevel(lvl Level) {
-	lc.loggerConfig.Level.SetLevel(lvl)
+	lc.LoggerConfig.Level.SetLevel(lvl)
 }
 
 func defaultEncoder() Encoder {
@@ -124,7 +124,7 @@ func NewDefaultLoggingConfig() LoggingConfig {
 	loggerConfig := NewDefaultLoggerConfig()
 	return LoggingConfig{
 		Logger:        NewLogger(loggerConfig),
-		loggerConfig:  loggerConfig,
+		LoggerConfig:  loggerConfig,
 		Filter:        NewLoggerFilter(),
 		Aggregate:     false,
 		FlushInterval: DefaultFlushInterval,

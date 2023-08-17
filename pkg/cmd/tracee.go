@@ -47,7 +47,7 @@ func (r Runner) Run(ctx context.Context) error {
 
 			// start server if one is configured
 			if r.GRPCServer != nil {
-				go r.GRPCServer.Start(ctx)
+				go r.GRPCServer.Start(ctx, t)
 			}
 		},
 	)
