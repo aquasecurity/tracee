@@ -14927,22 +14927,25 @@
 <p>Let's edit the tracee-policies ConfigMap using kubectl:</p>
 <div class="highlight"><pre><span></span><code><span class="go">kubectl edit cm/tracee-policies -n tracee-system</span>
 </code></pre></div>
-<p>The ConfigMap will open in your default text editor. Locate the signatures.yaml section.</p>
-<p>To add a new policy for tracking execve events, append the following YAML block under the signatures.yaml section, maintaining proper indentation:</p>
-<p><div class="highlight"><pre><span></span><code><span class="nt">events.yaml</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
-<span class="w">  </span><span class="no">apiVersion: aquasecurity.github.io/v1beta1</span>
-<span class="w">  </span><span class="no">kind: TraceePolicy</span>
-<span class="w">  </span><span class="no">metadata:</span>
-<span class="w">      </span><span class="no">name: execve-event</span>
-<span class="w">      </span><span class="no">annotations:</span>
-<span class="w">        </span><span class="no">description: traces all signature events</span>
-<span class="w">  </span><span class="no">spec:</span>
-<span class="w">      </span><span class="no">scope:</span>
-<span class="w">        </span><span class="no">- global</span>
-<span class="w">      </span><span class="no">rules:</span>
-<span class="w">        </span><span class="no">- event: execve</span>
+<p>The ConfigMap will open in your default text editor. Locate the data section.</p>
+<p>To add a new policy for tracking execve events, add the following YAML block before the signatures.yaml section, maintaining proper indentation:</p>
+<p><div class="highlight"><pre><span></span><code><span class="nt">data</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">events.yaml</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
+<span class="w">    </span><span class="no">apiVersion: aquasecurity.github.io/v1beta1</span>
+<span class="w">    </span><span class="no">kind: TraceePolicy</span>
+<span class="w">    </span><span class="no">metadata:</span>
+<span class="w">        </span><span class="no">name: execve-event</span>
+<span class="w">        </span><span class="no">annotations:</span>
+<span class="w">          </span><span class="no">description: traces all execve events</span>
+<span class="w">    </span><span class="no">spec:</span>
+<span class="w">        </span><span class="no">scope:</span>
+<span class="w">          </span><span class="no">- global</span>
+<span class="w">        </span><span class="no">rules:</span>
+<span class="w">          </span><span class="no">- event: execve</span>
+<span class="w">  </span><span class="nt">signatures.yaml</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|-</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
 </code></pre></div>
-Save and close the file. The changes will be applied automatically.</p>
+Save and close the file. The changes will be applied to the configmap.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>If you having a problem editing the configmap, you can apply it directly with:
