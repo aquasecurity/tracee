@@ -7,32 +7,37 @@
 #include <linux/limits.h>
 #include <common/consts.h>
 
+// NOTE: Both, the task_start_time and parent_start_time, are used to uniquely identify a task. The
+//       uniqueness of a task is a hash(pid, start_time) u32 result. We need both, the task and its
+//       parent, to be unique in order to construct a faithful process tree (relating tasks not only
+//       by their pid, but also by their start time).
+
 typedef struct task_context {
-    u64 start_time; // thread's start time
-    u64 cgroup_id;
-    u32 pid;       // PID as in the userspace term
-    u32 tid;       // TID as in the userspace term
-    u32 ppid;      // Parent PID as in the userspace term
-    u32 host_pid;  // PID in host pid namespace
-    u32 host_tid;  // TID in host pid namespace
-    u32 host_ppid; // Parent PID in host pid namespace
-    u32 uid;
-    u32 mnt_id;
-    u32 pid_id;
-    char comm[TASK_COMM_LEN];
-    char uts_name[TASK_COMM_LEN];
-    u32 flags;
+    u64 start_time;               // task's start time
+    u64 cgroup_id;                // control group ID
+    u32 pid;                      // PID as in the userspace term
+    u32 tid;                      // TID as in the userspace term
+    u32 ppid;                     // Parent PID as in the userspace term
+    u32 host_pid;                 // PID in host pid namespace
+    u32 host_tid;                 // TID in host pid namespace
+    u32 host_ppid;                // Parent PID in host pid namespace
+    u32 uid;                      // task's effective UID
+    u32 mnt_id;                   // task's mount namespace ID
+    u32 pid_id;                   // task's pid namespace ID
+    char comm[TASK_COMM_LEN];     // task's comm
+    char uts_name[TASK_COMM_LEN]; // task's uts name
+    u32 flags;                    // task's status flags (see context_flags_e)
 } task_context_t;
 
 typedef struct event_context {
-    u64 ts; // Timestamp
+    u64 ts; // timestamp
     task_context_t task;
     u32 eventid;
-    s32 syscall; // The syscall which triggered the event
+    s32 syscall; // syscall that triggered the event
     u64 matched_policies;
     s64 retval;
     u32 stack_id;
-    u16 processor_id; // The ID of the processor which processed the event
+    u16 processor_id; // ID of the processor that processed the event
 } event_context_t;
 
 enum event_id_e

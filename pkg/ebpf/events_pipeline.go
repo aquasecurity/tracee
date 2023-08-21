@@ -183,16 +183,23 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 			}
 
 			// Currently, the timestamp received from the bpf code is of the monotonic clock.
-			// Todo: The monotonic clock doesn't take into account system sleep time.
-			// Starting from kernel 5.7, we can get the timestamp relative to the system boot time instead which is preferable.
+			//
+			// TODO: The monotonic clock doesn't take into account system sleep time.
+			// Starting from kernel 5.7, we can get the timestamp relative to the system boot time
+			// instead which is preferable.
+
+			timeStamp := uint64(0)
+			startTime := uint64(0)
+
 			if t.config.Output.RelativeTime {
-				// To get the monotonic time since tracee was started, we have to subtract the start time from the timestamp.
-				ctx.Ts -= t.startTime
-				ctx.StartTime -= t.startTime
+				// To get the monotonic time since tracee was started, we have to subtract the start
+				// time from the timestamp.
+				timeStamp = ctx.Ts - t.startTime
+				startTime = ctx.StartTime - t.startTime
 			} else {
 				// To get the current ("wall") time, we add the boot time into it.
-				ctx.Ts += t.bootTime
-				ctx.StartTime += t.bootTime
+				timeStamp = ctx.Ts + t.bootTime
+				startTime = ctx.StartTime + t.bootTime
 			}
 
 			containerInfo := t.containers.GetCgroupInfo(ctx.CgroupID).Container
@@ -220,9 +227,11 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 
 			// get an event pointer from the pool
 			evt := t.eventsPool.Get().(*trace.Event)
+
 			// populate all the fields of the event used in this stage, and reset the rest
-			evt.Timestamp = int(ctx.Ts)
-			evt.ThreadStartTime = int(ctx.StartTime)
+			evt.EntityID = utils.HashU32AndU64(ctx.HostTid, ctx.StartTime) // unique ID for the task
+			evt.Timestamp = int(timeStamp)
+			evt.ThreadStartTime = int(startTime)
 			evt.ProcessorID = int(ctx.ProcessorId)
 			evt.ProcessID = int(ctx.Pid)
 			evt.ThreadID = int(ctx.Tid)
@@ -251,6 +260,14 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 			evt.ContextFlags = flags
 			evt.Syscall = syscall
 			evt.Metadata = nil
+
+			// DEBUG (keep this until process tree is fully implemented)
+			//
+			// fmt.Printf("PID: %d TID: %d (hash: %d)\n",
+			// 	ctx.HostPid,
+			// 	ctx.HostTid,
+			// 	utils.HashU32AndU64(ctx.HostTid, ctx.StartTime),
+			// )
 
 			// If there aren't any policies that need filtering in userland, tracee **may** skip
 			// this event, as long as there aren't any derivatives or signatures that depend on it.
