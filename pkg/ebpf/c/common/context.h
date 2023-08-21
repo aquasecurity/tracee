@@ -1,6 +1,7 @@
 #ifndef __COMMON_CONTEXT_H__
 #define __COMMON_CONTEXT_H__
 
+#include "common/hash.h"
 #include <vmlinux.h>
 
 #include <common/task.h>
