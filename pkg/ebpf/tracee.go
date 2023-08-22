@@ -215,6 +215,9 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	t.eventsState[events.SignalCgroupMkdir] = policy.AlwaysSubmit
 	t.eventsState[events.SignalCgroupRmdir] = policy.AlwaysSubmit
+	t.eventsState[events.SignalSchedProcessFork] = policy.AlwaysSubmit
+	// t.eventsState[events.SignalSchedProcessExec] = policy.AlwaysSubmit
+	// t.eventsState[events.SignalSchedProcessExit] = policy.AlwaysSubmit
 
 	// Pseudo events added by capture (if enabled by the user)
 

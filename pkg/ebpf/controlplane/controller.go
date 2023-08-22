@@ -92,6 +92,8 @@ func (p *Controller) processSignal(signal signal) error {
 		return p.processCgroupMkdir(signal.args)
 	case events.SignalCgroupRmdir:
 		return p.processCgroupRmdir(signal.args)
+	case events.SignalSchedProcessFork:
+		fmt.Printf("TODO\n")
 	}
 	return nil
 }

@@ -5939,6 +5939,8 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_http)
     return 1; // NOTE: might block HTTP here if needed (return 0)
 }
 
+// clang-format on
+
 //
 // Control Plane Programs
 //
@@ -6016,4 +6018,69 @@ int cgroup_rmdir_signal(struct bpf_raw_tracepoint_args *ctx)
     return 0;
 }
 
-// clang-format on
+SEC("raw_tracepoint/sched_process_fork")
+int sched_process_fork_signal(struct bpf_raw_tracepoint_args *ctx)
+{
+    controlplane_signal_t *signal = init_controlplane_signal();
+    if (unlikely(signal == NULL))
+        return 0;
+
+    long ret = 0;
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    struct task_struct *parent = (struct task_struct *) ctx->args[0];
+    struct task_struct *child = (struct task_struct *) ctx->args[1];
+
+    u64 child_starttime = get_task_start_time(child);
+    u64 parent_starttime = get_task_start_time(parent);
+
+    int parent_pid = get_task_host_pid(parent);
+    int child_pid = get_task_host_pid(child);
+
+    int parent_tgid = get_task_host_tgid(parent);
+    int child_tgid = get_task_host_tgid(child);
+
+    int parent_ns_pid = get_task_ns_pid(parent);
+    int parent_ns_tgid = get_task_ns_tgid(parent);
+    int child_ns_pid = get_task_ns_pid(child);
+    int child_ns_tgid = get_task_ns_tgid(child);
+
+    bpf_printk("parent_pid: %d, parent_tid: %d", parent_pid, parent_tgid);
+    bpf_printk("child_pid: %d, child_tid: %d", child_pid, child_tgid);
+
+    save_to_submit_buf(&signal->args_buf, (void *) &parent_pid, sizeof(int), 0);
+    save_to_submit_buf(&signal->args_buf, (void *) &parent_ns_pid, sizeof(int), 1);
+    save_to_submit_buf(&signal->args_buf, (void *) &parent_tgid, sizeof(int), 2);
+    save_to_submit_buf(&signal->args_buf, (void *) &parent_ns_tgid, sizeof(int), 3);
+    save_to_submit_buf(&signal->args_buf, (void *) &parent_starttime, sizeof(u64), 4);
+
+    save_to_submit_buf(&signal->args_buf, (void *) &child_pid, sizeof(int), 5);
+    save_to_submit_buf(&signal->args_buf, (void *) &child_ns_pid, sizeof(int), 6);
+    save_to_submit_buf(&signal->args_buf, (void *) &child_tgid, sizeof(int), 7);
+    save_to_submit_buf(&signal->args_buf, (void *) &child_ns_tgid, sizeof(int), 8);
+    save_to_submit_buf(&signal->args_buf, (void *) &child_starttime, sizeof(u64), 9);
+
+    signal_perf_submit(ctx, signal, SIGNAL_SCHED_PROCESS_FORK);
+
+    return 0;
+}
+
+SEC("raw_tracepoint/sched_process_exec")
+int sched_process_exec_signal(struct bpf_raw_tracepoint_args *ctx)
+{
+    int i = 0;
+
+    return 0;
+}
+
+SEC("raw_tracepoint/sched_process_exit")
+int sched_process_exit_signal(struct bpf_raw_tracepoint_args *ctx)
+{
+    int i = 0;
+
+    return 0;
+}
+
+// END OF Control Plane Programs

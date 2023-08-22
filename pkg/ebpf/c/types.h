@@ -131,7 +131,10 @@ enum event_id_e
 enum signal_evet_id_e
 {
     SIGNAL_CGROUP_MKDIR = 5000,
-    SIGNAL_CGROUP_RMDIR
+    SIGNAL_CGROUP_RMDIR,
+    SIGNAL_SCHED_PROCESS_FORK,
+    SIGNAL_SCHED_PROCESS_EXEC,
+    SIGNAL_SCHED_PROCESS_EXIT,
 };
 
 typedef struct args {
