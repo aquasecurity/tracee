@@ -4165,6 +4165,8 @@ int BPF_KPROBE(trace_ret_do_init_module)
     return events_perf_submit(&p, DO_INIT_MODULE, ret_val);
 }
 
+// clang-format off
+
 SEC("kprobe/load_elf_phdrs")
 int BPF_KPROBE(trace_load_elf_phdrs)
 {
@@ -4183,12 +4185,12 @@ int BPF_KPROBE(trace_load_elf_phdrs)
     }
 
     struct file *loaded_elf = (struct file *) PT_REGS_PARM2(ctx);
-    const char *elf_pathname =
-        (char *) get_path_str(__builtin_preserve_access_index(&loaded_elf->f_path));
+    const char *elf_pathname = (char *) get_path_str(__builtin_preserve_access_index(&loaded_elf->f_path));
 
-    // The interpreter field will be updated for any loading of an elf, both for the binary
-    // and for the interpreter. Because the interpreter is loaded only after the executed elf is
-    // loaded, the value of the executed binary should be overridden by the interpreter.
+    // The interpreter field will be updated for any loading of an elf, both for the binary and for
+    // the interpreter. Because the interpreter is loaded only after the executed elf is loaded, the
+    // value of the executed binary should be overridden by the interpreter.
+
     size_t sz = sizeof(proc_info->interpreter.pathname);
     bpf_probe_read_str(proc_info->interpreter.pathname, sz, elf_pathname);
     proc_info->interpreter.id.device = get_dev_from_file(loaded_elf);
@@ -4198,14 +4200,14 @@ int BPF_KPROBE(trace_load_elf_phdrs)
     if (should_submit(LOAD_ELF_PHDRS, p.event)) {
         save_str_to_buf(&p.event->args_buf, (void *) elf_pathname, 0);
         save_to_submit_buf(&p.event->args_buf, &proc_info->interpreter.id.device, sizeof(dev_t), 1);
-        save_to_submit_buf(
-            &p.event->args_buf, &proc_info->interpreter.id.inode, sizeof(unsigned long), 2);
-
+        save_to_submit_buf(&p.event->args_buf, &proc_info->interpreter.id.inode, sizeof(unsigned long), 2);
         events_perf_submit(&p, LOAD_ELF_PHDRS, 0);
     }
 
     return 0;
 }
+
+// clang-format on
 
 SEC("kprobe/security_file_permission")
 int BPF_KPROBE(trace_security_file_permission)
@@ -5986,6 +5988,8 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_http)
     return 1; // NOTE: might block HTTP here if needed (return 0)
 }
 
+// clang-format on
+
 //
 // Control Plane Programs
 //
@@ -5993,6 +5997,8 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_http)
 // signals to tracee in a separate buffer. This is done to mitigate the consenquences of losing
 // these events in the main perf buffer.
 //
+
+// Containers Lifecyle
 
 SEC("raw_tracepoint/cgroup_mkdir_signal")
 int cgroup_mkdir_signal(struct bpf_raw_tracepoint_args *ctx)
@@ -6063,4 +6069,200 @@ int cgroup_rmdir_signal(struct bpf_raw_tracepoint_args *ctx)
     return 0;
 }
 
+// Processes Lifecycle
+
+// NOTE: sched_process_fork is called by kernel_clone(), which is executed during
+//       clone() calls as well, not only fork(). This means that sched_process_fork()
+//       is also able to pick the creation of LWPs through clone().
+
+SEC("raw_tracepoint/sched_process_fork")
+int sched_process_fork_signal(struct bpf_raw_tracepoint_args *ctx)
+{
+    controlplane_signal_t *signal = init_controlplane_signal();
+    if (unlikely(signal == NULL))
+        return 0;
+
+    struct task_struct *parent = (struct task_struct *) ctx->args[0];
+    struct task_struct *leader = BPF_CORE_READ(parent, group_leader);
+
+    // Pick the leader (and not LWPs) as parent to construct the process tree:
+
+    u64 parent_starttime = get_task_start_time(leader);
+    int parent_pid = get_task_host_pid(leader);
+    int parent_tgid = get_task_host_tgid(leader);
+    int parent_ns_pid = get_task_ns_pid(leader);
+    int parent_ns_tgid = get_task_ns_tgid(leader);
+
+    struct task_struct *child = (struct task_struct *) ctx->args[1];
+
+    u64 child_starttime = get_task_start_time(child);
+    int child_pid = get_task_host_pid(child);
+    int child_tgid = get_task_host_tgid(child);
+    int child_ns_pid = get_task_ns_pid(child);
+    int child_ns_tgid = get_task_ns_tgid(child);
+
+    // Hashes
+
+    u32 task_hash = hash_u32_and_u64(get_task_host_tgid(child), child_starttime);
+    u32 parent_hash = hash_u32_and_u64(get_task_host_tgid(parent), parent_starttime);
+    save_to_submit_buf(&signal->args_buf, (void *) &task_hash, sizeof(u32), 0);
+    save_to_submit_buf(&signal->args_buf, (void *) &parent_hash, sizeof(u32), 1);
+
+    // Fork logic
+
+    // parent
+    save_to_submit_buf(&signal->args_buf, (void *) &parent_tgid, sizeof(int), 2);
+    save_to_submit_buf(&signal->args_buf, (void *) &parent_ns_tgid, sizeof(int), 3);
+    save_to_submit_buf(&signal->args_buf, (void *) &parent_pid, sizeof(int), 4);
+    save_to_submit_buf(&signal->args_buf, (void *) &parent_ns_pid, sizeof(int), 5);
+    save_to_submit_buf(&signal->args_buf, (void *) &parent_starttime, sizeof(u64), 6);
+    // child
+    save_to_submit_buf(&signal->args_buf, (void *) &child_tgid, sizeof(int), 7);
+    save_to_submit_buf(&signal->args_buf, (void *) &child_ns_tgid, sizeof(int), 8);
+    save_to_submit_buf(&signal->args_buf, (void *) &child_pid, sizeof(int), 9);
+    save_to_submit_buf(&signal->args_buf, (void *) &child_ns_pid, sizeof(int), 10);
+    save_to_submit_buf(&signal->args_buf, (void *) &child_starttime, sizeof(u64), 11);
+
+    signal_perf_submit(ctx, signal, SIGNAL_SCHED_PROCESS_FORK);
+
+    return 0;
+}
+
+// clang-format off
+
+SEC("raw_tracepoint/sched_process_exec")
+int sched_process_exec_signal(struct bpf_raw_tracepoint_args *ctx)
+{
+    controlplane_signal_t *signal = init_controlplane_signal();
+    if (unlikely(signal == NULL))
+        return 0;
+
+    // Hashes
+
+    u64 id = bpf_get_current_pid_tgid();
+    u32 host_tid = id;
+    u32 host_pid = id >> 32;
+
+    struct task_struct *task = (struct task_struct *) ctx->args[0];
+    if (task == NULL)
+        return -1;
+    struct task_struct *parent = get_parent_task(task);
+    if (parent == NULL)
+        return -1;
+    struct task_struct *leader = BPF_CORE_READ(parent, group_leader);
+    if (leader == NULL)
+        return -1;
+
+    // Hash is always calculated with TID + START_TIME, for processes PID == TID
+    u32 task_hash = hash_u32_and_u64(get_task_host_tgid(task), get_task_start_time(task));
+    save_to_submit_buf(&signal->args_buf, (void *) &task_hash, sizeof(u32), 0);
+
+    // Exec logic
+
+    struct linux_binprm *bprm = (struct linux_binprm *) ctx->args[2];
+    if (bprm == NULL)
+        return -1;
+
+    // The proc_info entry is created by sched_process_fork regular probe.
+    proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &host_pid);
+    if (proc_info == NULL)
+        return 0;
+
+    struct file *file = get_file_ptr_from_bprm(bprm);
+    void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
+
+    const char *filename = get_binprm_filename(bprm);
+    dev_t s_dev = get_dev_from_file(file);
+    unsigned long inode_nr = get_inode_nr_from_file(file);
+    u64 ctime = get_ctime_nanosec_from_file(file);
+    umode_t inode_mode = get_inode_mode_from_file(file);
+
+    save_str_to_buf(&signal->args_buf, (void *) filename, 1);                   // cmdpath
+    save_str_to_buf(&signal->args_buf, file_path, 2);                           // pathname
+    save_to_submit_buf(&signal->args_buf, &s_dev, sizeof(dev_t), 3);            // dev
+    save_to_submit_buf(&signal->args_buf, &inode_nr, sizeof(unsigned long), 4); // inode
+    save_to_submit_buf(&signal->args_buf, &ctime, sizeof(u64), 5);              // ctime
+    save_to_submit_buf(&signal->args_buf, &inode_mode, sizeof(umode_t), 6);     // inode_mode
+
+    // The proc_info interpreter field is set by "load_elf_phdrs" kprobe program.
+    save_str_to_buf(&signal->args_buf, &proc_info->interpreter.pathname, 7);                           // interpreter_pathname
+    save_to_submit_buf(&signal->args_buf, &proc_info->interpreter.id.device, sizeof(dev_t), 8);        // interpreter_dev
+    save_to_submit_buf(&signal->args_buf, &proc_info->interpreter.id.inode, sizeof(unsigned long), 9); // interpreter_inode
+    save_to_submit_buf(&signal->args_buf, &proc_info->interpreter.id.ctime, sizeof(u64), 10);          // interpreter_ctime
+
+    struct mm_struct *mm = get_mm_from_task(task); // bprm->mm is null here, but task->mm is not
+
+    unsigned long arg_start, arg_end;
+    arg_start = get_arg_start_from_mm(mm);
+    arg_end = get_arg_end_from_mm(mm);
+    int argc = get_argc_from_bprm(bprm);
+
+    struct file *stdin_file = get_struct_file_from_fd(0);
+    unsigned short stdin_type = get_inode_mode_from_file(stdin_file) & S_IFMT;
+    void *stdin_path = get_path_str(__builtin_preserve_access_index(&stdin_file->f_path));
+    const char *interp = get_binprm_interp(bprm);
+
+    int invoked_from_kernel = 0;
+    if (get_task_parent_flags(task) & PF_KTHREAD)
+        invoked_from_kernel = 1;
+
+    save_args_str_arr_to_buf(&signal->args_buf, (void *) arg_start, (void *) arg_end, argc, 11); // argv
+    save_str_to_buf(&signal->args_buf, (void *) interp, 12);                                     // interp
+    save_to_submit_buf(&signal->args_buf, &stdin_type, sizeof(unsigned short), 13);              // stdin_type
+    save_str_to_buf(&signal->args_buf, stdin_path, 14);                                          // stdin_path
+    save_to_submit_buf(&signal->args_buf, &invoked_from_kernel, sizeof(int), 15);                // invoked_from_kernel
+
+    signal_perf_submit(ctx, signal, SIGNAL_SCHED_PROCESS_EXEC);
+
+    return 0;
+}
+
 // clang-format on
+
+SEC("raw_tracepoint/sched_process_exit")
+int sched_process_exit_signal(struct bpf_raw_tracepoint_args *ctx)
+{
+    controlplane_signal_t *signal = init_controlplane_signal();
+    if (unlikely(signal == NULL))
+        return 0;
+
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task();
+
+    // hashes
+
+    u64 id = bpf_get_current_pid_tgid();
+    u32 host_tid = id;
+    u32 host_pid = id >> 32;
+
+    struct task_struct *parent = get_parent_task(task);
+    if (parent == NULL)
+        return -1;
+    struct task_struct *leader = BPF_CORE_READ(parent, group_leader);
+    if (leader == NULL)
+        return -1;
+
+    u32 task_hash = hash_u32_and_u64(get_task_host_tgid(task), get_task_start_time(task));
+    save_to_submit_buf(&signal->args_buf, (void *) &task_hash, sizeof(u32), 0);
+
+    // exit logic
+
+    bool group_dead = false;
+    struct signal_struct *s = BPF_CORE_READ(task, signal);
+    atomic_t live = BPF_CORE_READ(s, live);
+
+    if (live.counter == 0)
+        group_dead = true;
+
+    long exit_code = get_task_exit_code(task);
+    u64 exit_time = bpf_ktime_get_ns();
+
+    save_to_submit_buf(&signal->args_buf, (void *) &exit_code, sizeof(long), 1);
+    save_to_submit_buf(&signal->args_buf, (void *) &exit_time, sizeof(u64), 2);
+    save_to_submit_buf(&signal->args_buf, (void *) &group_dead, sizeof(bool), 3);
+
+    signal_perf_submit(ctx, signal, SIGNAL_SCHED_PROCESS_EXIT);
+
+    return 0;
+}
+
+// END OF Control Plane Programs
