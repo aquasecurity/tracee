@@ -128,6 +128,12 @@ enum event_id_e
     MAX_EVENT_ID,
 };
 
+enum signal_evet_id_e
+{
+    SIGNAL_CGROUP_MKDIR = 5000,
+    SIGNAL_CGROUP_RMDIR
+};
+
 typedef struct args {
     unsigned long args[6];
 } args_t;
