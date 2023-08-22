@@ -7,11 +7,6 @@
 #include <linux/limits.h>
 #include <common/consts.h>
 
-// NOTE: Both, the task_start_time and parent_start_time, are used to uniquely identify a task. The
-//       uniqueness of a task is a hash(pid, start_time) u32 result. We need both, the task and its
-//       parent, to be unique in order to construct a faithful process tree (relating tasks not only
-//       by their pid, but also by their start time).
-
 typedef struct task_context {
     u64 start_time;               // task's start time
     u64 cgroup_id;                // control group ID
@@ -128,10 +123,13 @@ enum event_id_e
     MAX_EVENT_ID,
 };
 
-enum signal_evet_id_e
+enum signal_event_id_e
 {
     SIGNAL_CGROUP_MKDIR = 5000,
-    SIGNAL_CGROUP_RMDIR
+    SIGNAL_CGROUP_RMDIR,
+    SIGNAL_SCHED_PROCESS_FORK,
+    SIGNAL_SCHED_PROCESS_EXEC,
+    SIGNAL_SCHED_PROCESS_EXIT,
 };
 
 typedef struct args {

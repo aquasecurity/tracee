@@ -208,6 +208,9 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool) (*ProbeGroup, err
 		LayoutAndAllocate:          NewTraceProbe(KretProbe, "layout_and_allocate", "trace_ret_layout_and_allocate"),
 		SignalCgroupMkdir:          NewTraceProbe(RawTracepoint, "cgroup:cgroup_mkdir", "cgroup_mkdir_signal"),
 		SignalCgroupRmdir:          NewTraceProbe(RawTracepoint, "cgroup:cgroup_rmdir", "cgroup_rmdir_signal"),
+		SignalSchedProcessFork:     NewTraceProbe(RawTracepoint, "sched:sched_process_fork", "sched_process_fork_signal"),
+		SignalSchedProcessExec:     NewTraceProbe(RawTracepoint, "sched:sched_process_exec", "sched_process_exec_signal"),
+		SignalSchedProcessExit:     NewTraceProbe(RawTracepoint, "sched:sched_process_exit", "sched_process_exit_signal"),
 	}
 
 	if !netEnabled {
