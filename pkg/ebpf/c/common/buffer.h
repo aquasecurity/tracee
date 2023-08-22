@@ -17,9 +17,9 @@ statfunc int save_u64_arr_to_buf(args_buffer_t *, const u64 __user *, int, u8);
 statfunc int save_str_arr_to_buf(args_buffer_t *, const char __user *const __user *, u8);
 statfunc int save_args_str_arr_to_buf(args_buffer_t *, const char *, const char *, int, u8);
 statfunc int save_sockaddr_to_buf(args_buffer_t *, struct socket *, u8);
+statfunc int save_args_to_submit_buf(event_data_t *, args_t *);
 statfunc int events_perf_submit(program_data_t *, u32 id, long);
 statfunc int signal_perf_submit(void *, controlplane_signal_t *sig, u32 id);
-statfunc int save_args_to_submit_buf(event_data_t *, args_t *);
 
 // FUNCTIONS
 
@@ -336,51 +336,6 @@ statfunc int save_sockaddr_to_buf(args_buffer_t *buf, struct socket *sock, u8 in
     return 0;
 }
 
-statfunc int events_perf_submit(program_data_t *p, u32 id, long ret)
-{
-    p->event->context.eventid = id;
-    p->event->context.retval = ret;
-
-    // KEEP THIS FOR DEBUGGING (until process tree is fully implemented)
-    // u32 hash = (u64) hash_u32_and_u64(p->event->context.task.pid,
-    // p->event->context.task.start_time); bpf_printk("hash: %u", hash);
-
-    // Get Stack trace
-    if (p->config->options & OPT_CAPTURE_STACK_TRACES) {
-        int stack_id = bpf_get_stackid(p->ctx, &stack_addresses, BPF_F_USER_STACK);
-        if (stack_id >= 0) {
-            p->event->context.stack_id = stack_id;
-        }
-    }
-
-    u32 size = sizeof(event_context_t) + sizeof(u8) +
-               p->event->args_buf.offset; // context + argnum + arg buffer size
-
-    // inline bounds check to force compiler to use the register of size
-    asm volatile("if %[size] < %[max_size] goto +1;\n"
-                 "%[size] = %[max_size];\n"
-                 :
-                 : [size] "r"(size), [max_size] "i"(MAX_EVENT_SIZE));
-
-    return bpf_perf_event_output(p->ctx, &events, BPF_F_CURRENT_CPU, p->event, size);
-}
-
-statfunc int signal_perf_submit(void *ctx, controlplane_signal_t *sig, u32 id)
-{
-    sig->event_id = id;
-
-    u32 size =
-        sizeof(u32) + sizeof(u8) + sig->args_buf.offset; // signal id + argnum + arg buffer size
-
-    // inline bounds check to force compiler to use the register of size
-    asm volatile("if %[size] < %[max_size] goto +1;\n"
-                 "%[size] = %[max_size];\n"
-                 :
-                 : [size] "r"(size), [max_size] "i"(MAX_SIGNAL_SIZE));
-
-    return bpf_perf_event_output(ctx, &signals, BPF_F_CURRENT_CPU, sig, size);
-}
-
 #define DEC_ARG(n, enc_arg) ((enc_arg >> (8 * n)) & 0xFF)
 
 statfunc int save_args_to_submit_buf(event_data_t *event, args_t *args)
@@ -486,6 +441,51 @@ statfunc int save_args_to_submit_buf(event_data_t *event, args_t *args)
     }
 
     return arg_num;
+}
+
+statfunc int events_perf_submit(program_data_t *p, u32 id, long ret)
+{
+    p->event->context.eventid = id;
+    p->event->context.retval = ret;
+
+    // KEEP THIS FOR DEBUGGING (until process tree is fully implemented)
+    // u32 hash = (u64) hash_u32_and_u64(p->event->context.task.pid,
+    // p->event->context.task.start_time); bpf_printk("hash: %u", hash);
+
+    // Get Stack trace
+    if (p->config->options & OPT_CAPTURE_STACK_TRACES) {
+        int stack_id = bpf_get_stackid(p->ctx, &stack_addresses, BPF_F_USER_STACK);
+        if (stack_id >= 0) {
+            p->event->context.stack_id = stack_id;
+        }
+    }
+
+    u32 size = sizeof(event_context_t) + sizeof(u8) +
+               p->event->args_buf.offset; // context + argnum + arg buffer size
+
+    // inline bounds check to force compiler to use the register of size
+    asm volatile("if %[size] < %[max_size] goto +1;\n"
+                 "%[size] = %[max_size];\n"
+                 :
+                 : [size] "r"(size), [max_size] "i"(MAX_EVENT_SIZE));
+
+    return bpf_perf_event_output(p->ctx, &events, BPF_F_CURRENT_CPU, p->event, size);
+}
+
+statfunc int signal_perf_submit(void *ctx, controlplane_signal_t *sig, u32 id)
+{
+    sig->event_id = id;
+
+    u32 size =
+        sizeof(u32) + sizeof(u8) + sig->args_buf.offset; // signal id + argnum + arg buffer size
+
+    // inline bounds check to force compiler to use the register of size
+    asm volatile("if %[size] < %[max_size] goto +1;\n"
+                 "%[size] = %[max_size];\n"
+                 :
+                 : [size] "r"(size), [max_size] "i"(MAX_SIGNAL_SIZE));
+
+    return bpf_perf_event_output(ctx, &signals, BPF_F_CURRENT_CPU, sig, size);
 }
 
 #endif
