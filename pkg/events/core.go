@@ -144,6 +144,13 @@ const (
 	CaptureFileRead
 )
 
+// Signal meta-events
+
+const (
+	SignalCgroupMkdir ID = iota + 5000
+	SignalCgroupRmdir
+)
+
 // Signature events
 const (
 	StartSignatureID ID = 6000
@@ -11077,6 +11084,41 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "kernel_invoked"},
 			{Type: "const char*const*", Name: "binary.arguments"},
 			{Type: "const char*const*", Name: "environment"},
+		},
+	},
+	//
+	// Begin of Signal Events (Control Plane)
+	//
+	SignalCgroupMkdir: {
+		id:      SignalCgroupMkdir,
+		id32Bit: Sys32Undefined,
+		name:    "signal_cgroup_mkdir",
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SignalCgroupMkdir, required: true},
+			},
+		},
+		sets: []string{},
+		params: []trace.ArgMeta{
+			{Type: "u64", Name: "cgroup_id"},
+			{Type: "const char*", Name: "cgroup_path"},
+			{Type: "u32", Name: "hierarchy_id"},
+		},
+	},
+	SignalCgroupRmdir: {
+		id:      SignalCgroupRmdir,
+		id32Bit: Sys32Undefined,
+		name:    "signal_cgroup_rmdir",
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SignalCgroupRmdir, required: true},
+			},
+		},
+		sets: []string{},
+		params: []trace.ArgMeta{
+			{Type: "u64", Name: "cgroup_id"},
+			{Type: "const char*", Name: "cgroup_path"},
+			{Type: "u32", Name: "hierarchy_id"},
 		},
 	},
 	//
