@@ -8,7 +8,7 @@ message GetMetricsRequest {
 }
 
 message GetMetricsResponse {
-    uint64 EventCount = 1;
+	uint64 EventCount = 1;
 	uint64 EventsFiltered = 2;
 	uint64 NetCapCount = 3;
 	uint64 BPFLogsCount = 4;
@@ -20,8 +20,8 @@ message GetMetricsResponse {
 }
 
 enum LogLevel {
-	Info = 0;
-	Debug = 1;
+	Debug = 0;
+	Info = 1;
 	Warn = 2;
 	Error = 3; 
 	DPanic = 4; 
