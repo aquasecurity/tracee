@@ -11,7 +11,12 @@ func ArgVal[T any](args []trace.Argument, argName string) (T, error) {
 			val, ok := arg.Value.(T)
 			if !ok {
 				zeroVal := *new(T)
-				return zeroVal, errfmt.Errorf("argument %s is not of type %T", argName, zeroVal)
+				return zeroVal, errfmt.Errorf(
+					"argument %s is not of type %T, is of type %T",
+					argName,
+					zeroVal,
+					arg.Value,
+				)
 			}
 			return val, nil
 		}
