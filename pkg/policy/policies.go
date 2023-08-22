@@ -3,9 +3,18 @@ package policy
 import (
 	"sync/atomic"
 
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
+
+const (
+	allPoliciesOn = 0xFFFFFFFFFFFFFFFF
+)
+
+var AlwaysSubmit = events.EventState{
+	Submit: allPoliciesOn,
+}
 
 // TODO: add locking mechanism as policies will change at runtime
 type Policies struct {
