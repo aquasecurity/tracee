@@ -8,7 +8,6 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/containers"
-	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
@@ -16,27 +15,29 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-const pollTimeout int = 300 // from tracee.go (move to a consts package?)
+// TODO: With the introduction of signal events, the control plane can now have a generic argument
+// parsing, just like the regular pipeline. So all arguments can be parsed before the handlers are
+// called.
 
-// Control Plane probe handles
-const (
-	cgroupMkdirControlProbe probes.Handle = iota
-	cgroupRmdirControlProbe
-)
+const pollTimeout int = 300 // from tracee.go (move to a consts package?)
 
 type Controller struct {
 	ctx            context.Context
 	signalChan     chan []byte
 	lostSignalChan chan uint64
 	bpfModule      *libbpfgo.Module
-	probeGroup     *probes.ProbeGroup
 	signalBuffer   *libbpfgo.PerfBuffer
 	cgroupManager  *containers.Containers
 	enrichEnabled  bool
 }
 
-func NewController(bpfModule *libbpfgo.Module, cgroupManager *containers.Containers, enrichEnabled bool) (*Controller, error) {
+func NewController(
+	bpfModule *libbpfgo.Module,
+	cgroupManager *containers.Containers,
+	enrichEnabled bool,
+) (*Controller, error) {
 	var err error
+
 	p := &Controller{
 		signalChan:     make(chan []byte, 100),
 		lostSignalChan: make(chan uint64),
@@ -44,42 +45,17 @@ func NewController(bpfModule *libbpfgo.Module, cgroupManager *containers.Contain
 		cgroupManager:  cgroupManager,
 		enrichEnabled:  enrichEnabled,
 	}
+
 	p.signalBuffer, err = bpfModule.InitPerfBuf("signals", p.signalChan, p.lostSignalChan, 1024)
 	if err != nil {
 		return nil, err
 	}
 
-	p.probeGroup = probes.NewProbeGroup(bpfModule, map[probes.Handle]probes.Probe{
-		cgroupMkdirControlProbe: probes.NewTraceProbe(
-			probes.RawTracepoint,
-			"cgroup:cgroup_mkdir",
-			"cgroup_mkdir_signal",
-		),
-		cgroupRmdirControlProbe: probes.NewTraceProbe(
-			probes.RawTracepoint,
-			"cgroup:cgroup_rmdir",
-			"cgroup_rmdir_signal",
-		),
-	})
-
 	return p, nil
 }
 
-func (p *Controller) Attach() error {
-	err := p.probeGroup.Attach(cgroupMkdirControlProbe)
-	if err != nil {
-		return fmt.Errorf("failed to attach cgroup_mkdir probe in control plane: %v", err)
-	}
-	err = p.probeGroup.Attach(cgroupRmdirControlProbe)
-	if err != nil {
-		return fmt.Errorf("failed to attach cgroup_rmdir probe in control plane: %v", err)
-	}
-	return nil
-}
-
-func (p *Controller) Start() error {
+func (p *Controller) Start() {
 	p.signalBuffer.Poll(pollTimeout)
-	return nil
 }
 
 func (p *Controller) Run(ctx context.Context) {
@@ -107,19 +83,24 @@ func (p *Controller) Run(ctx context.Context) {
 
 func (p *Controller) Stop() error {
 	p.signalBuffer.Stop()
-	return p.probeGroup.DetachAll()
+	return nil
 }
 
 func (p *Controller) processSignal(signal signal) error {
 	switch signal.eventID {
-	case events.CgroupMkdir:
+	case events.SignalCgroupMkdir:
 		return p.processCgroupMkdir(signal.args)
-	case events.CgroupRmdir:
+	case events.SignalCgroupRmdir:
 		return p.processCgroupRmdir(signal.args)
 	}
 	return nil
 }
 
+//
+// Containers Lifecycle
+//
+
+// processCgroupMkdir handles the cgroup_mkdir signal.
 func (p *Controller) processCgroupMkdir(args []trace.Argument) error {
 	cgroupId, err := parse.ArgVal[uint64](args, "cgroup_id")
 	if err != nil {
@@ -138,19 +119,17 @@ func (p *Controller) processCgroupMkdir(args []trace.Argument) error {
 		return errfmt.WrapError(err)
 	}
 	if info.Container.ContainerId == "" && !info.Dead {
-		// If cgroupId is from a regular cgroup directory, and not the
-		// container base directory (from known runtimes), it should be
-		// removed from the containers bpf map.
+		// If cgroupId is from a regular cgroup directory, and not the container base directory
+		// (from known runtimes), it should be removed from the containers bpf map.
 		err := capabilities.GetInstance().EBPF(
 			func() error {
 				return p.cgroupManager.RemoveFromBPFMap(p.bpfModule, cgroupId, hId)
 			},
 		)
 		if err != nil {
-			// If the cgroupId was not found in bpf map, this could mean that
-			// it is not a container cgroup and, as a systemd cgroup, could have been
-			// created and removed very quickly.
-			// In this case, we don't want to return an error.
+			// If the cgroupId was not found in bpf map, this could mean that it is not a container
+			// cgroup and, as a systemd cgroup, could have been created and removed very quickly. In
+			// this case, we don't want to return an error.
 			logger.Debugw("Failed to remove entry from containers bpf map", "error", err)
 		}
 		return errfmt.WrapError(err)
@@ -169,6 +148,7 @@ func (p *Controller) processCgroupMkdir(args []trace.Argument) error {
 	return nil
 }
 
+// processCgroupRmdir handles the cgroup_rmdir signal.
 func (p *Controller) processCgroupRmdir(args []trace.Argument) error {
 	cgroupId, err := parse.ArgVal[uint64](args, "cgroup_id")
 	if err != nil {
