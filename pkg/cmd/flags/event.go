@@ -37,7 +37,7 @@ func PrepareEventMapFromFlags(eventsArr []string) (PolicyEventMap, error) {
 			return nil, err
 		}
 
-		evtFlags = append(evtFlags, parsed)
+		evtFlags = append(evtFlags, parsed...)
 	}
 
 	eventMap := make(PolicyEventMap)
@@ -46,66 +46,105 @@ func PrepareEventMapFromFlags(eventsArr []string) (PolicyEventMap, error) {
 	return eventMap, nil
 }
 
-// parseEventFlag parses an event flag and returns an eventFlag struct with
-// pre-parsed fields, or an error if the flag is invalid.
-func parseEventFlag(flag string) (eventFlag, error) {
+// parseEventFlag parses an event flag and returns a slice of eventFlag struct
+// with pre-parsed fields, or an error if the flag is invalid.
+func parseEventFlag(flag string) ([]eventFlag, error) {
 	if flag == "" {
-		return eventFlag{}, errfmt.WrapError(InvalidFlagEmpty())
+		return []eventFlag{}, errfmt.WrapError(InvalidFlagEmpty())
 	}
 
-	// get first idx of any operator
+	// get first idx of any expression operator (=, !=, <, >, <=, >=)
 	operatorIdx := strings.IndexAny(flag, "=!<>")
-	if operatorIdx == -1 { // no operator
-		// "openat.context.container" edge case
-		if strings.Contains(flag, ".") {
+
+	//
+	// without expression operator
+	//
+
+	if operatorIdx == -1 { // no operator, as a set flag
+		if strings.Contains(flag, ".") { // "openat.context.container" edge case
 			evtParts, err := getEventFilterParts(flag, flag)
 			if err != nil {
-				return eventFlag{}, errfmt.WrapError(err)
+				return []eventFlag{}, errfmt.WrapError(err)
 			}
 
-			return eventFlag{
-				full:            flag,
-				eventFilter:     flag,
-				eventName:       evtParts.name,
-				eventOptionType: evtParts.optType,
-				eventOptionName: evtParts.optName,
+			return []eventFlag{
+				{
+					full:            flag,
+					eventFilter:     flag,
+					eventName:       evtParts.name,
+					eventOptionType: evtParts.optType,
+					eventOptionName: evtParts.optName,
+				},
 			}, nil
 		}
 
-		if hasLeadingOrTrailingWhitespace(flag) {
-			return eventFlag{}, errfmt.WrapError(InvalidFilterFlagFormat(flag))
+		// parse multiple event names separated by comma
+		evtNames := strings.Split(flag, ",")
+		evtFlags := make([]eventFlag, 0, len(evtNames))
+		for _, evtName := range evtNames {
+			if evtName == "" {
+				return []eventFlag{}, errfmt.WrapError(InvalidFilterFlagFormat(flag))
+			}
+			if hasLeadingOrTrailingWhitespace(evtName) {
+				return []eventFlag{}, errfmt.WrapError(InvalidFilterFlagFormat(flag))
+			}
+
+			// unset flag
+			if evtName[0] == '-' {
+				name := evtName[1:]
+				if hasLeadingOrTrailingWhitespace(name) {
+					return []eventFlag{}, errfmt.WrapError(InvalidFilterFlagFormat(flag))
+				}
+
+				evtFlags = append(evtFlags, eventFlag{
+					full:      evtName,
+					eventName: name,
+					operator:  "-",
+				})
+
+				continue
+			}
+
+			// set flag
+			evtFlags = append(evtFlags, eventFlag{
+				full:      evtName,
+				eventName: evtName,
+			})
 		}
 
-		return eventFlag{
-			full:      flag,
-			eventName: flag,
-		}, nil
+		return evtFlags, nil
 	}
+
+	//
+	// with expression operator
+	//
 
 	// validate event filter
 	evtFilter := flag[:operatorIdx]
 	evtParts, err := getEventFilterParts(evtFilter, flag)
 	if err != nil {
-		return eventFlag{}, errfmt.WrapError(err)
+		return []eventFlag{}, errfmt.WrapError(err)
 	}
 	filter := flag[len(evtParts.name)+1:]
 
 	// validate operator and values
 	opAndValParts, err := getOperatorAndValuesParts(flag, operatorIdx)
 	if err != nil {
-		return eventFlag{}, errfmt.WrapError(err)
+		return []eventFlag{}, errfmt.WrapError(err)
 	}
 
-	return eventFlag{
-		full:              flag,                            // "openat.args.pathname=/etc/*"
-		eventFilter:       evtFilter,                       // "openat.args.pathname"
-		eventName:         evtParts.name,                   // "openat"
-		eventOptionType:   evtParts.optType,                // "args"
-		eventOptionName:   evtParts.optName,                // "pathname"
-		operator:          opAndValParts.operator,          // "="
-		values:            opAndValParts.values,            // "/etc/*"
-		operatorAndValues: opAndValParts.operatorAndValues, // "=/etc/*"
-		filter:            filter,                          // "args.pathname=/etc/*"
+	return []eventFlag{
+		{
+			full:              flag,                            // "openat.args.pathname=/etc/*"
+			eventFilter:       evtFilter,                       // "openat.args.pathname"
+			eventName:         evtParts.name,                   // "openat"
+			eventOptionType:   evtParts.optType,                // "args"
+			eventOptionName:   evtParts.optName,                // "pathname"
+			operator:          opAndValParts.operator,          // "="
+			values:            opAndValParts.values,            // "/etc/*"
+			operatorAndValues: opAndValParts.operatorAndValues, // "=/etc/*"
+			filter:            filter,                          // "args.pathname=/etc/*"
+		},
 	}, nil
 }
 

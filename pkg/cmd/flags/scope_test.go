@@ -21,6 +21,8 @@ func Test_parseScopeFlag(t *testing.T) {
 			expectedResult: scopeFlag{
 				full:              "filterName",
 				scopeName:         "filterName",
+				operator:          "",
+				values:            "",
 				operatorAndValues: "",
 			},
 			expectedError: nil,
@@ -30,8 +32,8 @@ func Test_parseScopeFlag(t *testing.T) {
 			flag: "!filterName",
 			expectedResult: scopeFlag{
 				full:              "!filterName",
-				scopeName:         "!filterName",
-				operator:          "", // negation is not saved as operator
+				scopeName:         "filterName",
+				operator:          "!",
 				values:            "",
 				operatorAndValues: "",
 			},
