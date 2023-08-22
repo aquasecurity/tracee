@@ -162,18 +162,17 @@ func GetCaptureEventsList(cfg config.Config) map[events.ID]events.EventState {
 
 // handleEventsDependencies handles all events dependencies recursively.
 func (t *Tracee) handleEventsDependencies(givenEvtId events.ID, givenEvtState events.EventState) {
-	givenEvtDefinition := events.Core.GetDefinitionByID(givenEvtId)
-
-	for _, depEventId := range givenEvtDefinition.GetDependencies().GetIDs() {
-		t.handleEventsDependencies(depEventId, givenEvtState) // deps of deps of deps...
-
-		dependEvtState, ok := t.eventsState[depEventId]
+	givenEventDefinition := events.Core.GetDefinitionByID(givenEvtId)
+	for _, depEventId := range givenEventDefinition.GetDependencies().GetIDs() {
+		depEventState, ok := t.eventsState[depEventId]
 		if !ok {
-			t.eventsState[depEventId] = events.EventState{}
+			depEventState = events.EventState{}
+			t.handleEventsDependencies(depEventId, givenEvtState)
 		}
 
 		// Make sure dependencies are submitted if the given event is submitted.
-		dependEvtState.Submit |= givenEvtState.Submit
+		depEventState.Submit |= givenEvtState.Submit
+		t.eventsState[depEventId] = depEventState
 
 		// If the given event is a signature, mark all dependencies as signatures.
 		if events.Core.GetDefinitionByID(givenEvtId).IsSignature() {
@@ -220,10 +219,13 @@ func New(cfg config.Config) (*Tracee, error) {
 	t.eventsState[events.SchedProcessExit] = events.EventState{}
 	t.eventsState[events.SchedProcessFork] = events.EventState{}
 
-	// Pseudo events added by control plane: EventState only used so Tracee can initialize them
+	// Pseudo events added by control plane
 
 	t.eventsState[events.SignalCgroupMkdir] = policy.AlwaysSubmit
 	t.eventsState[events.SignalCgroupRmdir] = policy.AlwaysSubmit
+	t.eventsState[events.SignalSchedProcessFork] = policy.AlwaysSubmit
+	t.eventsState[events.SignalSchedProcessExec] = policy.AlwaysSubmit
+	t.eventsState[events.SignalSchedProcessExit] = policy.AlwaysSubmit
 
 	// Pseudo events added by capture (if enabled by the user)
 

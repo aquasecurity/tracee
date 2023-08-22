@@ -129,4 +129,7 @@ const (
 	LayoutAndAllocate
 	SignalCgroupMkdir
 	SignalCgroupRmdir
+	SignalSchedProcessFork
+	SignalSchedProcessExec
+	SignalSchedProcessExit
 )

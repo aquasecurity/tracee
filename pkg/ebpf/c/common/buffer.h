@@ -448,10 +448,6 @@ statfunc int events_perf_submit(program_data_t *p, u32 id, long ret)
     p->event->context.eventid = id;
     p->event->context.retval = ret;
 
-    // KEEP THIS FOR DEBUGGING (until process tree is fully implemented)
-    // u32 hash = (u64) hash_u32_and_u64(p->event->context.task.pid,
-    // p->event->context.task.start_time); bpf_printk("hash: %u", hash);
-
     // Get Stack trace
     if (p->config->options & OPT_CAPTURE_STACK_TRACES) {
         int stack_id = bpf_get_stackid(p->ctx, &stack_addresses, BPF_F_USER_STACK);

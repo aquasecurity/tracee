@@ -149,6 +149,9 @@ const (
 const (
 	SignalCgroupMkdir ID = iota + 5000
 	SignalCgroupRmdir
+	SignalSchedProcessFork
+	SignalSchedProcessExec
+	SignalSchedProcessExit
 )
 
 // Signature events
@@ -11119,6 +11122,86 @@ var CoreEvents = map[ID]Definition{
 			{Type: "u64", Name: "cgroup_id"},
 			{Type: "const char*", Name: "cgroup_path"},
 			{Type: "u32", Name: "hierarchy_id"},
+		},
+	},
+	SignalSchedProcessFork: {
+		id:      SignalSchedProcessFork,
+		id32Bit: Sys32Undefined,
+		name:    "signal_sched_process_fork",
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SignalSchedProcessFork, required: true},
+			},
+		},
+		sets: []string{},
+		params: []trace.ArgMeta{
+			{Type: "u32", Name: "task_hash"},
+			{Type: "u32", Name: "parent_hash"},
+			{Type: "int", Name: "parent_tid"},
+			{Type: "int", Name: "parent_ns_tid"},
+			{Type: "int", Name: "parent_pid"},
+			{Type: "int", Name: "parent_ns_pid"},
+			{Type: "unsigned long", Name: "parent_start_time"},
+			{Type: "int", Name: "child_tid"},
+			{Type: "int", Name: "child_ns_tid"},
+			{Type: "int", Name: "child_pid"},
+			{Type: "int", Name: "child_ns_pid"},
+			{Type: "unsigned long", Name: "child_start_time"},
+		},
+	},
+	SignalSchedProcessExec: {
+		id:      SignalSchedProcessExec,
+		id32Bit: Sys32Undefined,
+		name:    "signal_sched_process_exec",
+		dependencies: Dependencies{
+			ids: []ID{
+				SchedProcessFork, // proc_info_map with new tasks
+				LoadElfPhdrs,     // interpreter info
+			},
+			probes: []Probe{
+				{handle: probes.SignalSchedProcessExec, required: true},
+			},
+			tailCalls: []TailCall{},
+			capabilities: Capabilities{
+				base: []cap.Value{},
+			},
+		},
+		sets: []string{"default", "proc"},
+		params: []trace.ArgMeta{
+			{Type: "u32", Name: "task_hash"},
+			{Type: "const char*", Name: "cmdpath"},
+			{Type: "const char*", Name: "pathname"},
+			{Type: "dev_t", Name: "dev"},
+			{Type: "unsigned long", Name: "inode"},
+			{Type: "unsigned long", Name: "ctime"},
+			{Type: "umode_t", Name: "inode_mode"},
+			{Type: "const char*", Name: "interpreter_pathname"},
+			{Type: "dev_t", Name: "interpreter_dev"},
+			{Type: "unsigned long", Name: "interpreter_inode"},
+			{Type: "unsigned long", Name: "interpreter_ctime"},
+			{Type: "const char**", Name: "argv"},
+			{Type: "const char*", Name: "interp"},
+			{Type: "umode_t", Name: "stdin_type"},
+			{Type: "char*", Name: "stdin_path"},
+			{Type: "int", Name: "invoked_from_kernel"},
+		},
+	},
+	SignalSchedProcessExit: {
+		id:      SignalSchedProcessExit,
+		id32Bit: Sys32Undefined,
+		name:    "signal_sched_process_exit",
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SignalSchedProcessExit, required: true},
+				{handle: probes.SchedProcessFree, required: true},
+			},
+		},
+		sets: []string{"proc", "proc_life"},
+		params: []trace.ArgMeta{
+			{Type: "u32", Name: "task_hash"},
+			{Type: "long", Name: "exit_code"},
+			{Type: "unsigned long", Name: "exit_time"},
+			{Type: "bool", Name: "process_group_exit"},
 		},
 	},
 	//
