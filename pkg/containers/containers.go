@@ -479,5 +479,13 @@ func (c *Containers) RemoveFromBPFMap(bpfModule *libbpfgo.Module, cgroupId uint6
 	}
 
 	cgroupIdLsb := uint32(cgroupId)
-	return containersMap.DeleteKey(unsafe.Pointer(&cgroupIdLsb))
+	err = containersMap.DeleteKey(unsafe.Pointer(&cgroupIdLsb))
+
+	// ignores the error if the cgroup was already deleted
+	if errors.Is(err, syscall.ENOENT) {
+		logger.Debugw("cgroup already deleted", "error", err)
+		return nil
+	}
+
+	return err
 }
