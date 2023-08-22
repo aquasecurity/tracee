@@ -2615,6 +2615,7 @@ statfunc u32 send_bin_helper(void *ctx, void *prog_array, int tail_call)
         bin_args->iov_idx++;
         if (bin_args->iov_idx < bin_args->iov_len) {
             // Handle the rest of write recursively
+            bin_args->start_off += bin_args->full_size;
             struct iovec io_vec;
             bpf_probe_read(&io_vec, sizeof(struct iovec), &bin_args->vec[bin_args->iov_idx]);
             bin_args->ptr = io_vec.iov_base;
@@ -2697,6 +2698,7 @@ statfunc u32 send_bin_helper(void *ctx, void *prog_array, int tail_call)
     bin_args->iov_idx++;
     if (bin_args->iov_idx < bin_args->iov_len) {
         // Handle the rest of write recursively
+        bin_args->start_off += bin_args->full_size;
         struct iovec io_vec;
         bpf_probe_read(&io_vec, sizeof(struct iovec), &bin_args->vec[bin_args->iov_idx]);
         bin_args->ptr = io_vec.iov_base;
@@ -2844,11 +2846,11 @@ extract_vfs_ret_io_data(struct pt_regs *ctx, args_t *saved_args, io_data_t *io_d
 {
     io_data->is_buf = is_buf;
     if (is_buf) {
-        io_data->ptr = (void *) saved_args->args[1];
-        io_data->len = (size_t) PT_REGS_RC(ctx);
+        io_data->ptr = (void *) saved_args->args[1]; // pointer to buf
+        io_data->len = (size_t) PT_REGS_RC(ctx);     // number of bytes written to buf
     } else {
-        io_data->ptr = (struct iovec *) saved_args->args[1];
-        io_data->len = saved_args->args[2];
+        io_data->ptr = (struct iovec *) saved_args->args[1]; // pointer to iovec array
+        io_data->len = saved_args->args[2];                  // number of iovec elements in array
     }
 }
 
@@ -2906,7 +2908,6 @@ statfunc int capture_file_write(struct pt_regs *ctx, u32 event_id, bool is_buf)
     }
 
     bin_args_t bin_args = {};
-    u64 id = bpf_get_current_pid_tgid();
     fill_vfs_file_bin_args(SEND_VFS_WRITE, file, pos, io_data, PT_REGS_RC(ctx), pid, &bin_args);
 
     // Send file data

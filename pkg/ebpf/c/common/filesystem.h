@@ -412,7 +412,12 @@ statfunc void fill_vfs_file_bin_args_io_data(io_data_t io_data, bin_args_t *bin_
 {
     bin_args->ptr = io_data.ptr;
     bin_args->full_size = io_data.len;
+
+    // handle case of write using iovec
     if (!io_data.is_buf && io_data.len > 0) {
+        bin_args->vec = io_data.ptr;
+        bin_args->iov_len = io_data.len;
+        bin_args->iov_idx = 0;
         struct iovec io_vec;
         bpf_probe_read(&io_vec, sizeof(struct iovec), &bin_args->vec[0]);
         bin_args->ptr = io_vec.iov_base;
