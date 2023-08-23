@@ -21,7 +21,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 	"github.com/aquasecurity/tracee/types/detect"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
@@ -211,8 +210,6 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	if err != nil {
 		return runner, errfmt.Errorf("failed preparing BPF object: %v", err)
 	}
-
-	cfg.ChanEvents = make(chan trace.Event, 1000)
 
 	// Prepare the server
 

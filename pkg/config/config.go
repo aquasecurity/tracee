@@ -11,7 +11,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // Config is a struct containing user defined configuration of tracee
@@ -27,7 +26,6 @@ type Config struct {
 	BTFObjPath         string
 	BPFObjBytes        []byte
 	KernelConfig       *helpers.KernelConfig
-	ChanEvents         chan trace.Event
 	OSInfo             *helpers.OSInfo
 	Sockets            runtime.Sockets
 	ContainersEnrich   bool
@@ -82,11 +80,6 @@ func (c Config) Validate() error {
 	// BPF
 	if c.BPFObjBytes == nil {
 		return errfmt.Errorf("nil bpf object in memory")
-	}
-
-	// Events channel
-	if c.ChanEvents == nil {
-		return errfmt.Errorf("nil events channel")
 	}
 
 	return nil
