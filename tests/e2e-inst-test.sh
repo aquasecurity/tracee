@@ -13,7 +13,7 @@ SCRIPT_TMP_DIR=/tmp
 TRACEE_TMP_DIR=/tmp/tracee
 
 # Default test to run if no other is given
-TESTS=${INSTTESTS:=VFS_WRITE}
+TESTS=${INSTTESTS:=ACCESS_REMOTE_VM}
 
 info_exit() {
     echo -n "INFO: "

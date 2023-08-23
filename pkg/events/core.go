@@ -105,6 +105,7 @@ const (
 	HiddenKernelModuleSeeker
 	ModuleLoad
 	ModuleFree
+	AccessRemoteVm
 	MaxCommonID
 )
 
@@ -11274,6 +11275,33 @@ var CoreEvents = map[ID]Definition{
 			{Type: "u32", Name: "leader_hash"},
 			{Type: "long", Name: "exit_code"},
 			{Type: "bool", Name: "process_group_exit"},
+		},
+	},
+	AccessRemoteVm: {
+		id:      AccessRemoteVm,
+		id32Bit: Sys32Undefined,
+		name:    "access_remote_vm",
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.GetUserPagesRemote, required: true, relevantKernels: []KernelDependency{{version: "6.4", comparison: OlderEquals}}},
+				{handle: probes.GetUserPagesRemoteRet, required: true, relevantKernels: []KernelDependency{{version: "6.4", comparison: OlderEquals}}},
+				{handle: probes.GenericAccessPhys, required: false}, // Exist if CONFIG_HAVE_IOREMAP_PROT
+			},
+			kSymbols: []KSymbol{
+				{symbol: "special_mapping_vmops", required: false},
+				{symbol: "legacy_special_mapping_vmops", required: false},
+			},
+		},
+		sets: []string{},
+		params: []trace.ArgMeta{
+			{Type: "int", Name: "remote_pid"},
+			{Type: "void *", Name: "start_address"},
+			{Type: "unsigned int", Name: "gup_flags"},
+			{Type: "unsigned long", Name: "vm_flags"},
+			{Type: "const char*", Name: "mapped.path"},
+			{Type: "dev_t", Name: "mapped.device_id"},
+			{Type: "unsigned long", Name: "mapped.inode_number"},
+			{Type: "unsigned long", Name: "mapped.ctime"},
 		},
 	},
 	//
