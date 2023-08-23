@@ -283,10 +283,27 @@ typedef struct {
 struct signal_struct {
     atomic_t live;
 };
+typedef unsigned long vm_flags_t;
+
+struct vm_special_mapping {
+    const char *name;
+};
 
 struct vm_area_struct {
-    long unsigned int vm_flags;
+    union {
+        struct {
+            unsigned long vm_start;
+            unsigned long vm_end;
+        };
+    };
+    struct mm_struct *vm_mm;
+    union {
+        const vm_flags_t vm_flags;
+        vm_flags_t __vm_flags;
+    };
     struct file *vm_file;
+    void *vm_private_data;
+    const struct vm_operations_struct *vm_ops;
 };
 
 typedef unsigned int __kernel_gid32_t;
@@ -642,9 +659,13 @@ struct mm_struct {
     struct {
         long unsigned int arg_start;
         long unsigned int arg_end;
+        long unsigned int start_brk;
+        long unsigned int brk;
+        long unsigned int start_stack;
         long unsigned int env_start;
         long unsigned int env_end;
     };
+    struct task_struct *owner;
 };
 
 struct vfsmount {
