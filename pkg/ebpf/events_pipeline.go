@@ -580,13 +580,14 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 				}
 			}
 
-			// Send the event to the printers.
+			// Send the event to the streams.
 			select {
-			case t.config.ChanEvents <- *event:
-				_ = t.stats.EventCount.Increment()
-				t.eventsPool.Put(event)
 			case <-ctx.Done():
 				return
+			default:
+				t.streamsManager.Publish(ctx, *event)
+				_ = t.stats.EventCount.Increment()
+				t.eventsPool.Put(event)
 			}
 		}
 	}()

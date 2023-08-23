@@ -70,6 +70,9 @@ func (r Runner) Run(ctx context.Context) error {
 		}
 	}()
 
+	stream := t.SubscribeAll()
+	defer t.Unsubscribe(stream)
+
 	// Preeamble
 
 	r.Printer.Preamble()
@@ -79,7 +82,7 @@ func (r Runner) Run(ctx context.Context) error {
 	go func() {
 		for {
 			select {
-			case event := <-r.TraceeConfig.ChanEvents:
+			case event := <-stream.ReceiveEvents():
 				r.Printer.Print(event)
 			case <-ctx.Done():
 				return
@@ -88,22 +91,19 @@ func (r Runner) Run(ctx context.Context) error {
 	}()
 
 	// Blocks (until ctx is Done)
-
 	err = t.Run(ctx)
 
-	// Drain remaininig channel events (sent during shutdown)
-
-	for {
-		select {
-		case event := <-r.TraceeConfig.ChanEvents:
-			r.Printer.Print(event)
-		default:
-			stats := t.Stats()
-			r.Printer.Epilogue(*stats)
-			r.Printer.Close()
-			return err
-		}
+	// Drain remaininig channel events (sent during shutdown),
+	// the channel is closed by the tracee when it's done
+	for event := range stream.ReceiveEvents() {
+		r.Printer.Print(event)
 	}
+
+	stats := t.Stats()
+	r.Printer.Epilogue(*stats)
+	r.Printer.Close()
+
+	return err
 }
 
 func GetContainerMode(cfg config.Config) config.ContainerMode {

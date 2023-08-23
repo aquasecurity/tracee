@@ -13,7 +13,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
@@ -160,8 +159,6 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	if err != nil {
 		return runner, errfmt.Errorf("failed preparing BPF object: %v", err)
 	}
-
-	cfg.ChanEvents = make(chan trace.Event, 1000)
 
 	httpServer, err := server.PrepareHTTPServer(
 		c.String(server.HTTPListenEndpointFlag),

@@ -17,6 +17,8 @@ const (
 	ContIdFilter         = "cont_id_filter"
 	BinaryFilterMap      = "binary_filter"
 	ProcInfoMap          = "proc_info_map"
+
+	AllPoliciesOn = 0xFFFFFFFFFFFFFFFF
 )
 
 type Policy struct {

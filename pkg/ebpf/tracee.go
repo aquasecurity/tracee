@@ -42,6 +42,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
+	"github.com/aquasecurity/tracee/pkg/streams"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
@@ -116,6 +117,8 @@ type Tracee struct {
 	// Specific Events Needs
 	triggerContexts trigger.Context
 	readyCallback   func(gocontext.Context)
+	// Streams
+	streamsManager *streams.StreamsManager
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -215,6 +218,7 @@ func New(cfg config.Config) (*Tracee, error) {
 		capturedFiles:   make(map[string]int64),
 		eventsState:     GetEssentialEventsList(),
 		eventSignatures: make(map[events.ID]bool),
+		streamsManager:  streams.NewStreamsManager(),
 	}
 
 	// Initialize capabilities rings soon
@@ -1432,6 +1436,11 @@ func updateCaptureMapFile(fileDir *os.File, filePath string, capturedFiles map[s
 
 // Close cleans up created resources
 func (t *Tracee) Close() {
+	// clean up (unsubscribe) all streams connected if tracee is done
+	if t.streamsManager != nil {
+		t.streamsManager.Close()
+	}
+
 	if t.probes != nil {
 		err := t.probes.DetachAll()
 		if err != nil {
@@ -1735,4 +1744,35 @@ func (t *Tracee) ready(ctx gocontext.Context) {
 //go:noinline
 func (t *Tracee) triggerMemDumpCall(address uint64, length uint64, eventHandle uint64) error {
 	return nil
+}
+
+// SubscribeAll returns a stream subscribed to all policies
+func (t *Tracee) SubscribeAll() *streams.Stream {
+	return t.subscribe(policy.AllPoliciesOn)
+}
+
+// Subscribe returns a stream subscribed to selected policies
+func (t *Tracee) Subscribe(policyNames []string) (*streams.Stream, error) {
+	var policyMask uint64
+
+	for _, policyName := range policyNames {
+		p, err := t.config.Policies.LookupByName(policyName)
+		if err != nil {
+			return nil, err
+		}
+		utils.SetBit(&policyMask, uint(p.ID))
+	}
+
+	return t.subscribe(policyMask), nil
+}
+
+func (t *Tracee) subscribe(policyMask uint64) *streams.Stream {
+	// TODO: the channel size matches the pipeline channel size,
+	// but we should make it configurable in the future.
+	return t.streamsManager.Subscribe(policyMask, 10000)
+}
+
+// Unsubscribe unsubscribes stream
+func (t *Tracee) Unsubscribe(s *streams.Stream) {
+	t.streamsManager.Unsubscribe(s)
 }
