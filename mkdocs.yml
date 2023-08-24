@@ -530,6 +530,7 @@ nav:
           - Secure Tracing: docs/deep-dive/secure-tracing.md
   - Contributing:
       - Overview: contributing/overview.md
+      - Documentation: contributing/documentation.md
       - Source Code Guidelines: contributing/guidelines.md
       - Architecture: contributing/architecture.md
       - Setup Development Machine with Vagrant: contributing/setup-development-machine-with-vagrant.md
