@@ -14,7 +14,7 @@ import (
 // Processes Lifecycle
 //
 
-func (p *Controller) processSchedProcessFork(args []trace.Argument) error {
+func (ctrl *Controller) processSchedProcessFork(args []trace.Argument) error {
 	var file *os.File
 
 	if len(args) != 12 {
@@ -100,10 +100,12 @@ func (p *Controller) processSchedProcessFork(args []trace.Argument) error {
 	// END OF DEBUG
 	// }
 
+	// c.FeedFromFork(childPid, childTid, childStartTime, parentPid, parentTid, parentStartTime)
+
 	return nil
 }
 
-func (p *Controller) processSchedProcessExec(args []trace.Argument) error {
+func (ctrl *Controller) processSchedProcessExec(args []trace.Argument) error {
 	var file *os.File
 
 	if len(args) != 16 {
@@ -208,7 +210,7 @@ func (p *Controller) processSchedProcessExec(args []trace.Argument) error {
 	return nil
 }
 
-func (p *Controller) processSchedProcessExit(args []trace.Argument) error {
+func (ctrl *Controller) processSchedProcessExit(args []trace.Argument) error {
 	var file *os.File
 
 	if len(args) != 4 {
