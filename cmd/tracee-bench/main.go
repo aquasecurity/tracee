@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/api"
-	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/urfave/cli/v2"
 )
 
@@ -86,7 +86,7 @@ func main() {
 			}
 
 			done := sigHandler()
-			prom := v1.NewAPI(client)
+			prom := promv1.NewAPI(client)
 			ticker := time.NewTicker(time.Duration(ctx.Int(periodFlag)) * time.Second)
 
 			// promql queries
