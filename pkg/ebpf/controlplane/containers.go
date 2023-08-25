@@ -13,7 +13,7 @@ import (
 //
 
 // processCgroupMkdir handles the cgroup_mkdir signal.
-func (p *Controller) processCgroupMkdir(args []trace.Argument) error {
+func (ctrl *Controller) processCgroupMkdir(args []trace.Argument) error {
 	cgroupId, err := parse.ArgVal[uint64](args, "cgroup_id")
 	if err != nil {
 		return errfmt.Errorf("error parsing cgroup_mkdir signal args: %v", err)
@@ -26,7 +26,7 @@ func (p *Controller) processCgroupMkdir(args []trace.Argument) error {
 	if err != nil {
 		return errfmt.Errorf("error parsing cgroup_mkdir signal args: %v", err)
 	}
-	info, err := p.cgroupManager.CgroupMkdir(cgroupId, path, hId)
+	info, err := ctrl.cgroupManager.CgroupMkdir(cgroupId, path, hId)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -35,7 +35,7 @@ func (p *Controller) processCgroupMkdir(args []trace.Argument) error {
 		// (from known runtimes), it should be removed from the containers bpf map.
 		err := capabilities.GetInstance().EBPF(
 			func() error {
-				return p.cgroupManager.RemoveFromBPFMap(p.bpfModule, cgroupId, hId)
+				return ctrl.cgroupManager.RemoveFromBPFMap(ctrl.bpfModule, cgroupId, hId)
 			},
 		)
 		if err != nil {
@@ -47,10 +47,10 @@ func (p *Controller) processCgroupMkdir(args []trace.Argument) error {
 		return errfmt.WrapError(err)
 	}
 
-	if p.enrichEnabled {
+	if ctrl.enrichEnabled {
 		// If cgroupId belongs to a container, enrich now (in a goroutine)
 		go func() {
-			_, err := p.cgroupManager.EnrichCgroupInfo(cgroupId)
+			_, err := ctrl.cgroupManager.EnrichCgroupInfo(cgroupId)
 			if err != nil {
 				logger.Errorw("error triggering container enrich in control plane", "error", err)
 			}
@@ -61,7 +61,7 @@ func (p *Controller) processCgroupMkdir(args []trace.Argument) error {
 }
 
 // processCgroupRmdir handles the cgroup_rmdir signal.
-func (p *Controller) processCgroupRmdir(args []trace.Argument) error {
+func (ctrl *Controller) processCgroupRmdir(args []trace.Argument) error {
 	cgroupId, err := parse.ArgVal[uint64](args, "cgroup_id")
 	if err != nil {
 		return errfmt.Errorf("error parsing cgroup_rmdir args: %v", err)
@@ -71,6 +71,6 @@ func (p *Controller) processCgroupRmdir(args []trace.Argument) error {
 	if err != nil {
 		return errfmt.Errorf("error parsing cgroup_rmdir args: %v", err)
 	}
-	p.cgroupManager.CgroupRemove(cgroupId, hId)
+	ctrl.cgroupManager.CgroupRemove(cgroupId, hId)
 	return nil
 }
