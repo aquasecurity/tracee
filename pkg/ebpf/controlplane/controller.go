@@ -9,6 +9,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/proctree"
 )
 
 // TODO: With the introduction of signal events, the control plane can now have a generic argument
@@ -24,6 +25,7 @@ type Controller struct {
 	bpfModule      *libbpfgo.Module
 	signalBuffer   *libbpfgo.PerfBuffer
 	cgroupManager  *containers.Containers
+	processTree    *proctree.ProcessTree
 	enrichEnabled  bool
 }
 
@@ -31,6 +33,7 @@ func NewController(
 	bpfModule *libbpfgo.Module,
 	cgroupManager *containers.Containers,
 	enrichEnabled bool,
+	procTree *proctree.ProcessTree,
 ) (*Controller, error) {
 	var err error
 
@@ -39,6 +42,7 @@ func NewController(
 		lostSignalChan: make(chan uint64),
 		bpfModule:      bpfModule,
 		cgroupManager:  cgroupManager,
+		processTree:    procTree,
 		enrichEnabled:  enrichEnabled,
 	}
 
@@ -50,50 +54,50 @@ func NewController(
 	return p, nil
 }
 
-func (p *Controller) Start() {
-	p.signalBuffer.Poll(pollTimeout)
+func (ctrl *Controller) Start() {
+	ctrl.signalBuffer.Poll(pollTimeout)
 }
 
-func (p *Controller) Run(ctx context.Context) {
-	p.ctx = ctx
+func (ctrl *Controller) Run(ctx context.Context) {
+	ctrl.ctx = ctx
 	for {
 		select {
-		case signalData := <-p.signalChan:
+		case signalData := <-ctrl.signalChan:
 			signal := signal{}
 			err := signal.Unmarshal(signalData)
 			if err != nil {
 				logger.Errorw("error unmarshaling signal ebpf buffer", "error", err)
 				continue
 			}
-			err = p.processSignal(signal)
+			err = ctrl.processSignal(signal)
 			if err != nil {
 				logger.Errorw("error processing control plane signal", "error", err)
 			}
-		case lost := <-p.lostSignalChan:
+		case lost := <-ctrl.lostSignalChan:
 			logger.Warnw(fmt.Sprintf("Lost %d control plane signals", lost))
-		case <-p.ctx.Done():
+		case <-ctrl.ctx.Done():
 			return
 		}
 	}
 }
 
-func (p *Controller) Stop() error {
-	p.signalBuffer.Stop()
+func (ctrl *Controller) Stop() error {
+	ctrl.signalBuffer.Stop()
 	return nil
 }
 
-func (p *Controller) processSignal(signal signal) error {
+func (ctrl *Controller) processSignal(signal signal) error {
 	switch signal.eventID {
 	case events.SignalCgroupMkdir:
-		return p.processCgroupMkdir(signal.args)
+		return ctrl.processCgroupMkdir(signal.args)
 	case events.SignalCgroupRmdir:
-		return p.processCgroupRmdir(signal.args)
+		return ctrl.processCgroupRmdir(signal.args)
 	case events.SignalSchedProcessFork:
-		return p.processSchedProcessFork(signal.args)
+		return ctrl.processSchedProcessFork(signal.args)
 	case events.SignalSchedProcessExec:
-		return p.processSchedProcessExec(signal.args)
+		return ctrl.processSchedProcessExec(signal.args)
 	case events.SignalSchedProcessExit:
-		return p.processSchedProcessExit(signal.args)
+		return ctrl.processSchedProcessExit(signal.args)
 	}
 	return nil
 }
