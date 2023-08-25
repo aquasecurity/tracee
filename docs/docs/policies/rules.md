@@ -7,6 +7,62 @@ Rules determine which events a policy should trace.
 An event can match all occurrences of events for a specific scope, or specific events depending on its filters.
 Events support three types of filters: `context`, `arguments` and `return value`. 
 
+### Type of Events
+
+You can add as events either of the following:
+
+**[A syscall](../events/builtin/syscalls/index.md)**
+
+Example Scope Section referencing the `open` syscall:
+
+```bash
+spec:
+	scope:
+	    - global
+	rules:
+	    event: open
+```
+
+**[Network Events](../events/builtin/network.md)**
+
+Network Events can be specified from the list of `Available network events`.
+
+For example:
+
+```bash
+spec:
+	scope:
+	    - global
+	rules:
+	    event: net_packet_ipv4
+```
+
+**[A behavioural Signature](../events/builtin/signatures.md)**
+
+To specified one of the behavioral signatures as event, simply provide the name of the signature in the YAML manifest of the Tracee Policy:
+
+```bash
+spec:
+	scope:
+	    - global
+	rules:
+	    event: TRC-101
+```
+
+**[Any of our extra events](../events/builtin/extra/bpf_attach.md)**
+
+Any of the extra events listed in the Tracee documentation can be listed in the Tracee Policy.
+
+For instance, to specify the [do_sigaction](../events/builtin/extra/do_sigaction.md) event, provide the name in the YAML manifest:
+
+```bash
+spec:
+	scope:
+	    - global
+	rules:
+	    event: do_sigaction
+```
+
 ## Context filters
 
 Context is data which is collected along the event. They can be filtered like:
