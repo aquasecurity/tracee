@@ -36,7 +36,7 @@ EOF
 tracee --policies sample_policy.yaml
 ```
 
-If no event is passed with [filters] or [policies], tracee will start with a sane default.
+If no event is passed with [filters] or [policies], tracee will start with a set of default events.
 Below a list of tracee default events.
 
 ### Default events
