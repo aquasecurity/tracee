@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"math/rand"
 	"strings"
+	"time"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 )
@@ -45,4 +47,9 @@ func Max(x, y uint64) uint64 {
 		return x
 	}
 	return y
+}
+
+// GenerateRandomDuration returns a random duration between min and max, inclusive
+func GenerateRandomDuration(min, max int) time.Duration {
+	return time.Duration(rand.Intn(max-min+1)+min) * time.Second
 }

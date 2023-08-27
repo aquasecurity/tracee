@@ -129,6 +129,7 @@ const (
 	SymbolsLoaded
 	SymbolsCollision
 	HiddenKernelModule
+	FtraceHook
 	MaxUserSpace
 )
 
@@ -10525,6 +10526,21 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "kernel_invoked"},
 			{Type: "const char*const*", Name: "binary.arguments"},
 			{Type: "const char*const*", Name: "environment"},
+		},
+	},
+	FtraceHook: {
+		id:      FtraceHook,
+		id32Bit: Sys32Undefined,
+		name:    "ftrace_hook",
+		sets:    []string{},
+		params: []trace.ArgMeta{
+			{Type: "const char*", Name: "symbol"},
+			{Type: "const char*", Name: "trampoline"},
+			{Type: "const char*", Name: "callback"},
+			{Type: "off_t", Name: "callback_offset"},
+			{Type: "const char*", Name: "callback_owner"},
+			{Type: "const char*", Name: "flags"},
+			{Type: "unsigned long", Name: "count"},
 		},
 	},
 	//

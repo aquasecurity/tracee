@@ -98,6 +98,10 @@ func (p *ProbeGroup) Autoload(handle Handle, autoload bool) error {
 	return p.probes[handle].autoload(p.module, autoload)
 }
 
+func (p *ProbeGroup) GetProbeByHandle(handle Handle) Probe {
+	return p.probes[handle]
+}
+
 // NewDefaultProbeGroup initializes the default ProbeGroup (TODO: extensions will use probe groups)
 func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool) (*ProbeGroup, error) {
 	binaryPath := "/proc/self/exe"
