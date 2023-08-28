@@ -11093,15 +11093,16 @@ var CoreEvents = map[ID]Definition{
 	// Begin of Signal Events (Control Plane)
 	//
 	SignalCgroupMkdir: {
-		id:      SignalCgroupMkdir,
-		id32Bit: Sys32Undefined,
-		name:    "signal_cgroup_mkdir",
+		id:       SignalCgroupMkdir,
+		id32Bit:  Sys32Undefined,
+		name:     "signal_cgroup_mkdir",
+		internal: true,
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SignalCgroupMkdir, required: true},
 			},
 		},
-		sets: []string{},
+		sets: []string{"signal"},
 		params: []trace.ArgMeta{
 			{Type: "u64", Name: "cgroup_id"},
 			{Type: "const char*", Name: "cgroup_path"},
@@ -11109,15 +11110,16 @@ var CoreEvents = map[ID]Definition{
 		},
 	},
 	SignalCgroupRmdir: {
-		id:      SignalCgroupRmdir,
-		id32Bit: Sys32Undefined,
-		name:    "signal_cgroup_rmdir",
+		id:       SignalCgroupRmdir,
+		id32Bit:  Sys32Undefined,
+		name:     "signal_cgroup_rmdir",
+		internal: true,
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SignalCgroupRmdir, required: true},
 			},
 		},
-		sets: []string{},
+		sets: []string{"signal"},
 		params: []trace.ArgMeta{
 			{Type: "u64", Name: "cgroup_id"},
 			{Type: "const char*", Name: "cgroup_path"},
@@ -11125,23 +11127,34 @@ var CoreEvents = map[ID]Definition{
 		},
 	},
 	SignalSchedProcessFork: {
-		id:      SignalSchedProcessFork,
-		id32Bit: Sys32Undefined,
-		name:    "signal_sched_process_fork",
+		id:       SignalSchedProcessFork,
+		id32Bit:  Sys32Undefined,
+		name:     "signal_sched_process_fork",
+		internal: true,
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SignalSchedProcessFork, required: true},
 			},
 		},
-		sets: []string{},
+		sets: []string{"signal"},
 		params: []trace.ArgMeta{
+			{Type: "u64", Name: "timestamp"},
 			{Type: "u32", Name: "task_hash"},
 			{Type: "u32", Name: "parent_hash"},
+			{Type: "u32", Name: "leader_hash"},
+			// parent
 			{Type: "int", Name: "parent_tid"},
 			{Type: "int", Name: "parent_ns_tid"},
 			{Type: "int", Name: "parent_pid"},
 			{Type: "int", Name: "parent_ns_pid"},
 			{Type: "unsigned long", Name: "parent_start_time"},
+			// leader
+			{Type: "int", Name: "leader_tid"},
+			{Type: "int", Name: "leader_ns_tid"},
+			{Type: "int", Name: "leader_pid"},
+			{Type: "int", Name: "leader_ns_pid"},
+			{Type: "unsigned long", Name: "leader_start_time"},
+			// child
 			{Type: "int", Name: "child_tid"},
 			{Type: "int", Name: "child_ns_tid"},
 			{Type: "int", Name: "child_pid"},
@@ -11150,9 +11163,10 @@ var CoreEvents = map[ID]Definition{
 		},
 	},
 	SignalSchedProcessExec: {
-		id:      SignalSchedProcessExec,
-		id32Bit: Sys32Undefined,
-		name:    "signal_sched_process_exec",
+		id:       SignalSchedProcessExec,
+		id32Bit:  Sys32Undefined,
+		name:     "signal_sched_process_exec",
+		internal: true,
 		dependencies: Dependencies{
 			ids: []ID{
 				SchedProcessFork, // proc_info_map with new tasks
@@ -11161,13 +11175,10 @@ var CoreEvents = map[ID]Definition{
 			probes: []Probe{
 				{handle: probes.SignalSchedProcessExec, required: true},
 			},
-			tailCalls: []TailCall{},
-			capabilities: Capabilities{
-				base: []cap.Value{},
-			},
 		},
-		sets: []string{"default", "proc"},
+		sets: []string{"signal"},
 		params: []trace.ArgMeta{
+			{Type: "u64", Name: "timestamp"},
 			{Type: "u32", Name: "task_hash"},
 			{Type: "const char*", Name: "cmdpath"},
 			{Type: "const char*", Name: "pathname"},
@@ -11187,20 +11198,21 @@ var CoreEvents = map[ID]Definition{
 		},
 	},
 	SignalSchedProcessExit: {
-		id:      SignalSchedProcessExit,
-		id32Bit: Sys32Undefined,
-		name:    "signal_sched_process_exit",
+		id:       SignalSchedProcessExit,
+		id32Bit:  Sys32Undefined,
+		name:     "signal_sched_process_exit",
+		internal: true,
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SignalSchedProcessExit, required: true},
 				{handle: probes.SchedProcessFree, required: true},
 			},
 		},
-		sets: []string{"proc", "proc_life"},
+		sets: []string{"signal"},
 		params: []trace.ArgMeta{
 			{Type: "u32", Name: "task_hash"},
 			{Type: "long", Name: "exit_code"},
-			{Type: "unsigned long", Name: "exit_time"},
+			{Type: "unsigned long", Name: "exit_time"}, // timestamp as well
 			{Type: "bool", Name: "process_group_exit"},
 		},
 	},

@@ -94,4 +94,16 @@ u32 hash_u32_and_u64(u32 arg1, u64 arg2)
     return murmur32(buffer, 4 + 8); // 4 + 8 = sizeof(u32) + sizeof(u64)
 }
 
+// hash_task_id is a wrapper, around HashU32AndU64, that rounds up the timestamp argument to the
+// precision userland will obtain from the procfs (since start_time is measured in clock ticks).
+// This is needed so the process tree can be updated by procfs readings as well. The userland
+// precision is defined by USER_HZ, which is 100HZ in almost all cases (untrue for embedded systems
+
+u32 hash_task_id(u32 arg1, u64 arg2)
+{
+    u64 round = arg2 / 10000000LL; // (1000000000 / USER_HZ) = 10000000
+    round *= 10000000LL;
+    return hash_u32_and_u64(arg1, round);
+}
+
 #endif

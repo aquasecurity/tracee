@@ -35,7 +35,7 @@ type ProcStat struct {
 	Nice                int    // process nice value
 	NumThreads          int    // number of threads in this process
 	ItRealValue         int64  // (obsolete, always 0)
-	StartTime           int64  // time the process started after system boot
+	StartTime           int64  // time the process started after system boot (in clock ticks)
 	Vsize               int64  // virtual memory size
 	Rss                 int64  // resident set memory size
 	Rsslim              uint64 // current limit in bytes on the rss

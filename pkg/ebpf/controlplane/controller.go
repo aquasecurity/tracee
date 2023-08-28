@@ -60,6 +60,23 @@ func (ctrl *Controller) Start() {
 
 func (ctrl *Controller) Run(ctx context.Context) {
 	ctrl.ctx = ctx
+
+	// DEBUG: uncomment to print process tree periodically (for debugging purposes)
+	// go func() {
+	// 	for {
+	// 		time.Sleep(5 * time.Second)
+	// 		fmt.Printf("%s", ctrl.processTree)
+	// 	}
+	// }()
+
+	// TODO: Should tracee run the FeedFromProcFS periodically?
+	go func() {
+		err := ctrl.processTree.FeedFromProcFS()
+		if err != nil {
+			logger.Debugw("error feeding process tree from procfs", "error", err)
+		}
+	}()
+
 	for {
 		select {
 		case signalData := <-ctrl.signalChan:
