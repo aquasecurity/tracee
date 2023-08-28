@@ -3,9 +3,16 @@ package changelog
 import "time"
 
 type item[T any] struct {
-	stamp time.Time // timestamp of the change
-	value T         // value of the change
+	timestamp time.Time // timestamp of the change
+	value     T         // value of the change
 }
+
+// The changelog package provides a changelog data structure. It is a list of changes, each with a
+// timestamp. The changelog can be queried for the value at a given time.
+
+// ATTENTION: You should use Changelog within a struct and provide methods to access it,
+// coordinating access through your struct mutexes. DO NOT EXPOSE the changelog object directly to
+// the outside world as it is not thread-safe.
 
 type Changelog[T any] struct {
 	changes []item[T] // list of changes
@@ -13,33 +20,48 @@ type Changelog[T any] struct {
 
 // Getters
 
+// GetCurrent: Observation on single element changelog.
+//
+// If there's one element in the changelog, after the loop, left would be set to 1 if the single
+// timestamp is before the targetTime, and 0 if it's equal or after.
+//
+// BEFORE: If the single timestamp is before the targetTime, when we return
+// clv.changes[left-1].value, returns clv.changes[0].value, which is the expected behavior.
+//
+// AFTER: If the single timestamp is equal to, or after the targetTime, the current logic would
+// return a "zero" value because of the condition if left == 0.
+//
+// We need to find the last change that occurred before or exactly at the targetTime. The binary
+// search loop finds the position where a new entry with the targetTime timestamp would be inserted
+// to maintain chronological order:
+//
+// This position is stored in "left".
+//
+// So, to get the last entry that occurred before the targetTime, we need to access the previous
+// position, which is left-1.
+//
 // GetCurrent returns the latest value of the changelog.
 func (clv *Changelog[T]) GetCurrent() T {
 	if len(clv.changes) == 0 {
-		var zero T
-		return zero
+		return returnZero[T]()
 	}
+
 	return clv.changes[len(clv.changes)-1].value
 }
 
 // Get returns the value of the changelog at the given time.
 func (clv *Changelog[T]) Get(targetTime time.Time) T {
-	left, right := 0, len(clv.changes)
-
-	for left < right {
-		middle := (left + right) / 2
-		if clv.changes[middle].stamp.Before(targetTime) {
-			left = middle + 1
-		} else {
-			right = middle
-		}
+	if len(clv.changes) == 0 {
+		return returnZero[T]()
 	}
-	if left == 0 {
+
+	idx := clv.findIndex(targetTime)
+	if idx == 0 {
 		var zero T
 		return zero
 	}
 
-	return clv.changes[left-1].value
+	return clv.changes[idx-1].value
 }
 
 // GetAll returns all the values of the changelog.
@@ -68,11 +90,11 @@ func (clv *Changelog[T]) Set(value T, targetTime time.Time) {
 // setAt sets the value of the changelog at the given time.
 func (clv *Changelog[T]) setAt(value T, targetTime time.Time) {
 	entry := item[T]{
-		stamp: targetTime,
-		value: value,
+		timestamp: targetTime,
+		value:     value,
 	}
 
-	idx := clv.findIndex(entry.stamp)
+	idx := clv.findIndex(entry.timestamp)
 	clv.changes = append(clv.changes, item[T]{})
 	copy(clv.changes[idx+1:], clv.changes[idx:])
 	clv.changes[idx] = entry
@@ -84,7 +106,7 @@ func (clv *Changelog[T]) findIndex(target time.Time) int {
 
 	for left < right {
 		middle := (left + right) / 2
-		if clv.changes[middle].stamp.Before(target) {
+		if clv.changes[middle].timestamp.Before(target) {
 			left = middle + 1
 		} else {
 			right = middle
@@ -92,4 +114,10 @@ func (clv *Changelog[T]) findIndex(target time.Time) int {
 	}
 
 	return left
+}
+
+// returnZero returns the zero value of the type T.
+func returnZero[T any]() T {
+	var zero T
+	return zero
 }

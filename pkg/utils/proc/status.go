@@ -107,6 +107,21 @@ func (ps ProcStatus) GetPPid() int {
 	return ps.getInt("PPid")
 }
 
+// GetNsTgid returns thread group ID in the namespace of the process.
+func (ps ProcStatus) GetNsTgid() int {
+	return ps.getInt("NStgid")
+}
+
+// GetNsPid returns process ID in the namespace of the process.
+func (ps ProcStatus) GetNsPid() int {
+	return ps.getInt("NSpid")
+}
+
+// GetNsPPid returns parent process ID in the namespace of the process.
+func (ps ProcStatus) GetNsPPid() int {
+	return ps.getInt("NSpgid")
+}
+
 // GetThreads returns number of threads in process.
 func (ps ProcStatus) GetThreads() int {
 	return ps.getInt("Threads")

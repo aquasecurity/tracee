@@ -164,6 +164,11 @@ statfunc struct task_struct *get_parent_task(struct task_struct *task)
     return BPF_CORE_READ(task, real_parent);
 }
 
+statfunc struct task_struct *get_leader_task(struct task_struct *task)
+{
+    return BPF_CORE_READ(task, group_leader);
+}
+
 statfunc u32 get_task_exit_code(struct task_struct *task)
 {
     return BPF_CORE_READ(task, exit_code);

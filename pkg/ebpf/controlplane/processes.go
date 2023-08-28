@@ -1,11 +1,10 @@
 package controlplane
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -15,13 +14,16 @@ import (
 //
 
 func (ctrl *Controller) processSchedProcessFork(args []trace.Argument) error {
-	var file *os.File
-
-	if len(args) != 12 {
-		return errfmt.Errorf("got %d args instead of %d", len(args), 12)
+	paramsLength := len(events.Core.GetDefinitionByID(events.SignalSchedProcessFork).GetParams())
+	if len(args) != paramsLength {
+		return errfmt.Errorf("got %d args instead of %d", len(args), paramsLength)
 	}
 
-	taskHash, err := parse.ArgVal[uint32](args, "task_hash")
+	timestamp, err := parse.ArgVal[uint64](args, "timestamp")
+	if err != nil {
+		return errfmt.Errorf("error parsing timestamp: %v", err)
+	}
+	childHash, err := parse.ArgVal[uint32](args, "task_hash")
 	if err != nil {
 		return errfmt.Errorf("error parsing task_hash: %v", err)
 	}
@@ -29,8 +31,12 @@ func (ctrl *Controller) processSchedProcessFork(args []trace.Argument) error {
 	if err != nil {
 		return errfmt.Errorf("error parsing parent_hash: %v", err)
 	}
+	leaderHash, err := parse.ArgVal[uint32](args, "leader_hash")
+	if err != nil {
+		return errfmt.Errorf("error parsing leader_hash: %v", err)
+	}
 
-	// Parent
+	// Parent (the parent of the thread group leader, no matter if child is a process or LWP)
 
 	parentTid, err := parse.ArgVal[int32](args, "parent_tid")
 	if err != nil {
@@ -53,7 +59,30 @@ func (ctrl *Controller) processSchedProcessFork(args []trace.Argument) error {
 		return errfmt.Errorf("error parsing parent_start_time: %v", err)
 	}
 
-	// Child
+	// Thread Group Leader (might be the same as the "child", if "child" is a process)
+
+	leaderTid, err := parse.ArgVal[int32](args, "leader_tid")
+	if err != nil {
+		return errfmt.Errorf("error parsing leader_tid: %v", err)
+	}
+	leaderNsTid, err := parse.ArgVal[int32](args, "leader_ns_tid")
+	if err != nil {
+		return errfmt.Errorf("error parsing leader_ns_tid: %v", err)
+	}
+	leaderPid, err := parse.ArgVal[int32](args, "leader_pid")
+	if err != nil {
+		return errfmt.Errorf("error parsing leader_pid: %v", err)
+	}
+	leaderNsPid, err := parse.ArgVal[int32](args, "leader_ns_pid")
+	if err != nil {
+		return errfmt.Errorf("error parsing leader_ns_pid: %v", err)
+	}
+	leaderStartTime, err := parse.ArgVal[uint64](args, "leader_start_time")
+	if err != nil {
+		return errfmt.Errorf("error parsing leader_start_time: %v", err)
+	}
+
+	// Child (might be a process or a thread)
 
 	childTid, err := parse.ArgVal[int32](args, "child_tid")
 	if err != nil {
@@ -78,46 +107,57 @@ func (ctrl *Controller) processSchedProcessFork(args []trace.Argument) error {
 
 	// Sanity check: check if eBPF Hash matches userland Hash
 
-	taskHashVerifier := utils.HashU32AndU64(uint32(childTid), childStartTime)
-	parentHashVerifier := utils.HashU32AndU64(uint32(parentTid), parentStartTime)
+	taskHashVerifier := utils.HashTaskID(uint32(childTid), childStartTime)
+	parentHashVerifier := utils.HashTaskID(uint32(parentTid), parentStartTime)
+	leaderHashVerifier := utils.HashTaskID(uint32(leaderTid), leaderStartTime)
 
-	if taskHash != taskHashVerifier || parentHash != parentHashVerifier {
+	if childHash != taskHashVerifier ||
+		parentHash != parentHashVerifier ||
+		leaderHash != leaderHashVerifier {
 		return errfmt.Errorf("eBPF Hash does not match")
 	}
 
-	// if childTid != childPid {
-	// DEBUG (remove only when process tree is implemented)
-	file, _ = os.Open("/dev/null")
-	defer func() {
-		_ = file.Close()
-	}()
-	// file = os.Stdout
-	fmt.Fprintf(file, "--\nFork event received:\n")
-	fmt.Fprintf(file, "Parent Hash: %v (Verifier: %v)\n", parentHash, parentHashVerifier)
-	fmt.Fprintf(file, "Parent: tid=%v ns_tid=%v pid=%v ns_pid=%v start_time=%v\n", parentTid, parentNsTid, parentPid, parentNsPid, parentStartTime)
-	fmt.Fprintf(file, "Task Hash: %v (Verifier: %d)\n", taskHash, taskHashVerifier)
-	fmt.Fprintf(file, "Child: tid=%v ns_tid=%v pid=%v ns_pid=%v start_time=%v\n", childTid, childNsTid, childPid, childNsPid, childStartTime)
-	// END OF DEBUG
-	// }
-
-	// c.FeedFromFork(childPid, childTid, childStartTime, parentPid, parentTid, parentStartTime)
-
-	return nil
+	return ctrl.processTree.FeedFromFork(
+		proctree.ForkFeed{
+			TimeStamp:       timestamp,
+			ChildHash:       childHash,
+			ParentHash:      parentHash,
+			LeaderHash:      leaderHash,
+			ParentTid:       parentTid,
+			ParentNsTid:     parentNsTid,
+			ParentPid:       parentPid,
+			ParentNsPid:     parentNsPid,
+			ParentStartTime: parentStartTime,
+			LeaderTid:       leaderTid,
+			LeaderNsTid:     leaderNsTid,
+			LeaderPid:       leaderPid,
+			LeaderNsPid:     leaderNsPid,
+			LeaderStartTime: leaderStartTime,
+			ChildTid:        childTid,
+			ChildNsTid:      childNsTid,
+			ChildPid:        childPid,
+			ChildNsPid:      childNsPid,
+			ChildStartTime:  childStartTime,
+		},
+	)
 }
 
 func (ctrl *Controller) processSchedProcessExec(args []trace.Argument) error {
-	var file *os.File
-
-	if len(args) != 16 {
-		return errfmt.Errorf("got %d args instead of %d", len(args), 16)
+	paramsLength := len(events.Core.GetDefinitionByID(events.SignalSchedProcessExec).GetParams())
+	if len(args) != paramsLength {
+		return errfmt.Errorf("got %d args instead of %d", len(args), paramsLength)
 	}
 
+	timestamp, err := parse.ArgVal[uint64](args, "timestamp")
+	if err != nil {
+		return errfmt.Errorf("error parsing timestamp: %v", err)
+	}
 	taskHash, err := parse.ArgVal[uint32](args, "task_hash")
 	if err != nil {
 		return errfmt.Errorf("error parsing task_hash: %v", err)
 	}
 
-	// command
+	// Executable
 
 	cmdPath, err := parse.ArgVal[string](args, "cmdpath")
 	if err != nil {
@@ -144,30 +184,20 @@ func (ctrl *Controller) processSchedProcessExec(args []trace.Argument) error {
 		return errfmt.Errorf("error parsing inode_mode: %v", err)
 	}
 
-	// interpreter
+	// Interpreter
 
-	interPathName, err := parse.ArgVal[string](args, "interpreter_pathname")
-	if err != nil {
-		return errfmt.Errorf("error parsing interpreter_pathname: %v", err)
-	}
-	interDev, err := parse.ArgVal[uint32](args, "interpreter_dev")
-	if err != nil {
-		return errfmt.Errorf("error parsing interpreter_dev: %v", err)
-	}
-	interInode, err := parse.ArgVal[uint64](args, "interpreter_inode")
-	if err != nil {
-		return errfmt.Errorf("error parsing interpreter_inode: %v", err)
-	}
-	interCtime, err := parse.ArgVal[uint64](args, "interpreter_ctime")
-	if err != nil {
-		return errfmt.Errorf("error parsing interpreter_ctime: %v", err)
-	}
+	// these 4 fields might be empty, do not check of error
+	interPathName, _ := parse.ArgVal[string](args, "interpreter_pathname")
+	interDev, _ := parse.ArgVal[uint32](args, "interpreter_dev")
+	interInode, _ := parse.ArgVal[uint64](args, "interpreter_inode")
+	interCtime, _ := parse.ArgVal[uint64](args, "interpreter_ctime")
+
 	interpreter, err := parse.ArgVal[string](args, "interp")
 	if err != nil {
 		return errfmt.Errorf("error parsing interp: %v", err)
 	}
 
-	// stdin
+	// Other
 
 	stdinType, err := parse.ArgVal[uint16](args, "stdin_type")
 	if err != nil {
@@ -177,44 +207,37 @@ func (ctrl *Controller) processSchedProcessExec(args []trace.Argument) error {
 	if err != nil {
 		return errfmt.Errorf("error parsing stdin_path: %v", err)
 	}
-
 	invokedFromKernel, err := parse.ArgVal[int32](args, "invoked_from_kernel")
 	if err != nil {
 		return errfmt.Errorf("error parsing invoked_from_kernel: %v", err)
 	}
 
-	// DEBUG (remove only when process tree is implemented)
-	file, _ = os.Open("/dev/null")
-	defer func() {
-		_ = file.Close()
-	}()
-	// file = os.Stdout
-	fmt.Fprintf(file, "--\nExec event received:\n")
-	fmt.Fprintf(file, "taskHash=%v\n", taskHash)
-	fmt.Fprintf(file, "cmdPath=%v\n", cmdPath)
-	fmt.Fprintf(file, "pathName=%v\n", pathName)
-	fmt.Fprintf(file, "interPathName=%v\n", interPathName)
-	fmt.Fprintf(file, "interpreter=%v\n", interpreter)
-	fmt.Fprintf(file, "stdinPath=%v\n", stdinPath)
-	fmt.Fprintf(file, "dev=%v\n", dev)
-	fmt.Fprintf(file, "interDev=%v\n", interDev)
-	fmt.Fprintf(file, "inode=%v\n", inode)
-	fmt.Fprintf(file, "ctime=%v\n", ctime)
-	fmt.Fprintf(file, "interInode=%v\n", interInode)
-	fmt.Fprintf(file, "interCtime=%v\n", interCtime)
-	fmt.Fprintf(file, "inodeMode=%v\n", inodeMode)
-	fmt.Fprintf(file, "stdinType=%v\n", stdinType)
-	fmt.Fprintf(file, "invokedFromKernel=%v\n", invokedFromKernel)
-	// END OF DEBUG
-
-	return nil
+	return ctrl.processTree.FeedFromExec(
+		proctree.ExecFeed{
+			TimeStamp:         timestamp,
+			TaskHash:          taskHash,
+			CmdPath:           cmdPath,
+			PathName:          pathName,
+			Dev:               dev,
+			Inode:             inode,
+			Ctime:             ctime,
+			InodeMode:         inodeMode,
+			InterPathName:     interPathName,
+			InterDev:          interDev,
+			InterInode:        interInode,
+			InterCtime:        interCtime,
+			Interpreter:       interpreter,
+			StdinType:         stdinType,
+			StdinPath:         stdinPath,
+			InvokedFromKernel: invokedFromKernel,
+		},
+	)
 }
 
 func (ctrl *Controller) processSchedProcessExit(args []trace.Argument) error {
-	var file *os.File
-
-	if len(args) != 4 {
-		return errfmt.Errorf("got %d args instead of %d", len(args), 4)
+	paramsLength := len(events.Core.GetDefinitionByID(events.SignalSchedProcessExit).GetParams())
+	if len(args) != paramsLength {
+		return errfmt.Errorf("got %d args instead of %d", len(args), paramsLength)
 	}
 
 	taskHash, err := parse.ArgVal[uint32](args, "task_hash")
@@ -234,18 +257,13 @@ func (ctrl *Controller) processSchedProcessExit(args []trace.Argument) error {
 		return errfmt.Errorf("error parsing process_group_exit: %v", err)
 	}
 
-	// DEBUG (remove only when process tree is implemented)
-	file, _ = os.Open("/dev/null")
-	defer func() {
-		_ = file.Close()
-	}()
-	// file = os.Stdout
-	fmt.Fprintf(file, "--\nExit event received:\n")
-	fmt.Fprintf(file, "taskHash=%v\n", taskHash)
-	fmt.Fprintf(file, "exitCode=%d\n", exitCode)
-	fmt.Fprintf(file, "groupExit=%t\n", groupExit)
-	fmt.Fprintf(file, "exitTime=%d\n", exitTime)
-	// END OF DEBUG
-
-	return nil
+	return ctrl.processTree.FeedFromExit(
+		proctree.ExitFeed{
+			TimeStamp: exitTime, // time of exit is already a timestamp
+			TaskHash:  taskHash,
+			ExitCode:  exitCode,
+			ExitTime:  exitTime,
+			Group:     groupExit,
+		},
+	)
 }
