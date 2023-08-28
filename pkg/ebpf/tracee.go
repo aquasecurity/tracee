@@ -41,6 +41,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/pkg/policy"
+	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/streams"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -114,6 +115,8 @@ type Tracee struct {
 	contSymbolsLoader *sharedobjs.ContainersSymbolsLoader
 	// Control Plane
 	controlPlane *controlplane.Controller
+	// Process Tree
+	processTree *proctree.ProcessTree
 	// Specific Events Needs
 	triggerContexts trigger.Context
 	readyCallback   func(gocontext.Context)
@@ -1228,8 +1231,20 @@ func (t *Tracee) initBPF() error {
 		return errfmt.WrapError(err)
 	}
 
-	// Initialize control plane
-	t.controlPlane, err = controlplane.NewController(t.bpfModule, t.containers, t.config.ContainersEnrich)
+	// Initialize Process Tree (right before Control Plane starts)
+
+	t.processTree, err = proctree.NewProcessTree()
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Initialize Control Plane
+	t.controlPlane, err = controlplane.NewController(
+		t.bpfModule,
+		t.containers,
+		t.config.ContainersEnrich,
+		t.processTree,
+	)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

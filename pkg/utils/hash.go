@@ -75,3 +75,15 @@ func HashU32AndU64(arg1 uint32, arg2 uint64) uint32 {
 	binary.BigEndian.PutUint64(buffer[4:], arg2) // network byte order
 	return Murmur32(buffer)
 }
+
+// HashTaskID is a wrapper, around HashU32AndU64, that rounds up the timestamp argument to the
+// precision userland will obtain from the procfs (since start_time is measured in clock ticks).
+// This is needed so the process tree can be updated by procfs readings as well. The userland
+// precision is defined by USER_HZ, which is 100HZ in almost all cases (untrue for embedded systems
+// and custom kernels).
+
+func HashTaskID(arg1 uint32, arg2 uint64) uint32 {
+	round := arg2 / 10000000 // (1000000000 / USER_HZ) = 10000000
+	round *= 10000000
+	return HashU32AndU64(arg1, round)
+}
