@@ -1366,16 +1366,16 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.ready(ctx)          // executes ready callback, non blocking
 	<-ctx.Done()          // block until ctx is cancelled elsewhere
 
-	// Stop perf buffers
+	// Close perf buffers
 
-	t.eventsPerfMap.Stop()
+	t.eventsPerfMap.Close()
 	if t.config.BlobPerfBufferSize > 0 {
-		t.fileWrPerfMap.Stop()
+		t.fileWrPerfMap.Close()
 	}
 	if pcaps.PcapsEnabled(t.config.Capture.Net) {
-		t.netCapPerfMap.Stop()
+		t.netCapPerfMap.Close()
 	}
-	t.bpfLogsPerfMap.Stop()
+	t.bpfLogsPerfMap.Close()
 
 	// TODO: move logic below somewhere else (related to file writes)
 
