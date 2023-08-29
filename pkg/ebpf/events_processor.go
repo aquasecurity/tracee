@@ -38,17 +38,18 @@ func (t *Tracee) processLostEvents() {
 
 	for {
 		select {
-		case lost := <-t.lostEvChannel:
-			// When terminating tracee-ebpf the lost channel receives multiple "0 lost events" events.
-			// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:
-			// https://github.com/aquasecurity/libbpfgo/issues/122
-			if lost > 0 {
-				if err := t.stats.LostEvCount.Increment(lost); err != nil {
-					logger.Errorw("Incrementing lost event count", "error", err)
-				}
-				logger.Warnw(fmt.Sprintf("Lost %d events", lost))
+		case lost, ok := <-t.lostEvChannel:
+			if !ok { // channel closed
+				return
 			}
-		// Since this is an end-state goroutine, it should be terminated only when Tracee done channel is closed.
+
+			if err := t.stats.LostEvCount.Increment(lost); err != nil {
+				logger.Errorw("Incrementing lost event count", "error", err)
+			}
+			logger.Warnw(fmt.Sprintf("Lost %d events", lost))
+
+		// Since this is an end-state goroutine, it should be terminated only
+		// when Tracee done channel is closed.
 		case <-t.done:
 			return
 		}
