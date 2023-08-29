@@ -39,7 +39,7 @@ spec:
 
 **[A behavioural Signature](../events/builtin/signatures.md)**
 
-To specified one of the behavioral signatures as event, simply provide the name of the signature in the YAML manifest of the Tracee Policy:
+To specify one of the behavioral signatures as an event,
 
 ```bash
 spec:
