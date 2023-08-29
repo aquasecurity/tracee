@@ -9,7 +9,7 @@ Events support three types of filters: `context`, `arguments` and `return value`
 
 ### Type of Events
 
-You can add as events either of the following:
+You can add events as either of the following:
 
 **[A syscall](../events/builtin/syscalls/index.md)**
 
