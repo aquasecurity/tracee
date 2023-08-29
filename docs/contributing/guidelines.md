@@ -1,7 +1,7 @@
 ## Style Guide for Contributors
 
 For those willing to contribute to Tracee, this repository has code formatting
-guidelines being enforced. It is recommended that, before commiting your
+guidelines being enforced. It is recommended that, before committing your
 changes, you run the following command:
 
 1. Check for formatting issues
