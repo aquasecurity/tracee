@@ -42,9 +42,17 @@ type Event struct {
 	Syscall               string       `json:"syscall"`
 	StackAddresses        []uint64     `json:"stackAddresses"`
 	ContextFlags          ContextFlags `json:"contextFlags"`
-	Args                  []Argument   `json:"args"` // Arguments are ordered according their appearance in the original event
+	EntityID              uint32       `json:"-"`    // task unique identifier (*)
+	Args                  []Argument   `json:"args"` // args are ordered according their appearance in the original event
 	Metadata              *Metadata    `json:"metadata,omitempty"`
 }
+
+// (*) For an OS task to be uniquely identified, tracee builds a hash consisting of:
+//
+// u64: task start time (from event context)
+// u32: task thread id (from event context)
+//
+// murmur([]byte) where slice of bytes is a concatenation (not a sum) of the 2 values above.
 
 type Container struct {
 	ID          string `json:"id,omitempty"`
