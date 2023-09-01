@@ -23,6 +23,8 @@ spec:
 	    event: open
 ```
 
+The name of the syscall is going to be the name of the event.
+
 **[Network Events](../events/builtin/network.md)**
 
 Network Events can be specified from the list of `Available network events`.
@@ -39,14 +41,14 @@ spec:
 
 **[A behavioural Signature](../events/builtin/signatures.md)**
 
-To specify one of the behavioral signatures as an event,
+To specify one of the behavioral signatures as an event, use the name of the signature from the table in the documentation as the event name:
 
 ```bash
 spec:
 	scope:
 	    - global
 	rules:
-	    event: TRC-101
+	    event: anti_debugging
 ```
 
 **[Any of our extra events](../events/builtin/extra/bpf_attach.md)**
