@@ -47,23 +47,12 @@ func PrepareFilterMapsFromPolicies(policies []v1beta1.PolicyFile) (PolicyScopeMa
 				break
 			}
 
-			var scopeName, operatorAndValues string
-
-			switch s {
-			case "follow", "!container", "container":
-				scopeName = s
-				operatorAndValues = ""
-			default:
-				operatorIdx := strings.IndexAny(s, "=!<>")
-				scopeName = s[:operatorIdx]
-				operatorAndValues = s[operatorIdx:]
+			parsed, err := parseScopeFlag(s)
+			if err != nil {
+				return nil, nil, errfmt.WrapError(err)
 			}
 
-			scopeFlags = append(scopeFlags, scopeFlag{
-				full:              s,
-				scopeName:         scopeName,
-				operatorAndValues: operatorAndValues,
-			})
+			scopeFlags = append(scopeFlags, parsed)
 		}
 
 		policyScopeMap[pIdx] = policyScopes{

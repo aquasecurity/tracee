@@ -118,6 +118,8 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 						{
 							full:              "uid>=1000",
 							scopeName:         "uid",
+							operator:          ">=",
+							values:            "1000",
 							operatorAndValues: ">=1000",
 						},
 					},
@@ -153,6 +155,8 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 						{
 							full:              "pid<=10",
 							scopeName:         "pid",
+							operator:          "<=",
+							values:            "10",
 							operatorAndValues: "<=10",
 						},
 					},
@@ -188,6 +192,8 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 						{
 							full:              "mntns=4026531840",
 							scopeName:         "mntns",
+							operator:          "=",
+							values:            "4026531840",
 							operatorAndValues: "=4026531840",
 						},
 					},
@@ -223,6 +229,8 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 						{
 							full:              "pidns!=4026531836",
 							scopeName:         "pidns",
+							operator:          "!=",
+							values:            "4026531836",
 							operatorAndValues: "!=4026531836",
 						},
 					},
@@ -258,6 +266,8 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 						{
 							full:              "uts!=ab356bc4dd554",
 							scopeName:         "uts",
+							operator:          "!=",
+							values:            "ab356bc4dd554",
 							operatorAndValues: "!=ab356bc4dd554",
 						},
 					},
@@ -293,6 +303,8 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 						{
 							full:              "comm=bash",
 							scopeName:         "comm",
+							operator:          "=",
+							values:            "bash",
 							operatorAndValues: "=bash",
 						},
 					},
@@ -328,6 +340,8 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 						{
 							full:              "container=new",
 							scopeName:         "container",
+							operator:          "=",
+							values:            "new",
 							operatorAndValues: "=new",
 						},
 					},
@@ -362,7 +376,9 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 					scopeFlags: []scopeFlag{
 						{
 							full:              "!container",
-							scopeName:         "!container",
+							scopeName:         "container",
+							operator:          "!",
+							values:            "",
 							operatorAndValues: "",
 						},
 					},
@@ -398,6 +414,8 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 						{
 							full:              "container",
 							scopeName:         "container",
+							operator:          "",
+							values:            "",
 							operatorAndValues: "",
 						},
 					},
@@ -433,6 +451,8 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 						{
 							full:              "tree=3213,5200",
 							scopeName:         "tree",
+							operator:          "=",
+							values:            "3213,5200",
 							operatorAndValues: "=3213,5200",
 						},
 					},
@@ -468,6 +488,8 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 						{
 							full:              "tree=3213",
 							scopeName:         "tree",
+							operator:          "=",
+							values:            "3213",
 							operatorAndValues: "=3213",
 						},
 					},
@@ -503,6 +525,8 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 						{
 							full:              "binary=host:/usr/bin/ls",
 							scopeName:         "binary",
+							operator:          "=",
+							values:            "host:/usr/bin/ls",
 							operatorAndValues: "=host:/usr/bin/ls",
 						},
 					},
@@ -539,6 +563,8 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 						{
 							full:              "bin=4026532448:/usr/bin/ls",
 							scopeName:         "bin",
+							operator:          "=",
+							values:            "4026532448:/usr/bin/ls",
 							operatorAndValues: "=4026532448:/usr/bin/ls",
 						},
 					},
@@ -574,6 +600,8 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 						{
 							full:              "follow",
 							scopeName:         "follow",
+							operator:          "",
+							values:            "",
 							operatorAndValues: "",
 						},
 					},
@@ -609,21 +637,29 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 						{
 							full:              "comm=bash",
 							scopeName:         "comm",
+							operator:          "=",
+							values:            "bash",
 							operatorAndValues: "=bash",
 						},
 						{
 							full:              "follow",
 							scopeName:         "follow",
+							operator:          "",
+							values:            "",
 							operatorAndValues: "",
 						},
 						{
 							full:              "!container",
-							scopeName:         "!container",
+							scopeName:         "container",
+							operator:          "!",
+							values:            "",
 							operatorAndValues: "",
 						},
 						{
 							full:              "uid=1000",
 							scopeName:         "uid",
+							operator:          "=",
+							values:            "1000",
 							operatorAndValues: "=1000",
 						},
 					},
@@ -1722,6 +1758,8 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				for i, sf := range v.scopeFlags {
 					assert.Equal(t, sf.full, ps.scopeFlags[i].full)
 					assert.Equal(t, sf.scopeName, ps.scopeFlags[i].scopeName)
+					assert.Equal(t, sf.operator, ps.scopeFlags[i].operator)
+					assert.Equal(t, sf.values, ps.scopeFlags[i].values)
 					assert.Equal(t, sf.operatorAndValues, ps.scopeFlags[i].operatorAndValues)
 				}
 			}
