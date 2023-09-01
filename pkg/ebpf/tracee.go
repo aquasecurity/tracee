@@ -119,6 +119,8 @@ type Tracee struct {
 	readyCallback   func(gocontext.Context)
 	// Streams
 	streamsManager *streams.StreamsManager
+	// policiesManager manages if policy is enabled or disabled globally
+	policiesManager *policiesManager
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -208,6 +210,8 @@ func New(cfg config.Config) (*Tracee, error) {
 		return nil, errfmt.Errorf("validation error: %v", err)
 	}
 
+	policiesManager := newPoliciesManager()
+
 	// Create Tracee
 
 	t := &Tracee{
@@ -219,6 +223,7 @@ func New(cfg config.Config) (*Tracee, error) {
 		eventsState:     GetEssentialEventsList(),
 		eventSignatures: make(map[events.ID]bool),
 		streamsManager:  streams.NewStreamsManager(),
+		policiesManager: policiesManager,
 	}
 
 	// Initialize capabilities rings soon
@@ -247,6 +252,8 @@ func New(cfg config.Config) (*Tracee, error) {
 			utils.SetBit(&submit, uint(p.ID))
 			utils.SetBit(&emit, uint(p.ID))
 			t.eventsState[e] = events.EventState{Submit: submit, Emit: emit}
+
+			policiesManager.EnablePolicy(p.ID)
 		}
 	}
 
@@ -1775,4 +1782,30 @@ func (t *Tracee) subscribe(policyMask uint64) *streams.Stream {
 // Unsubscribe unsubscribes stream
 func (t *Tracee) Unsubscribe(s *streams.Stream) {
 	t.streamsManager.Unsubscribe(s)
+}
+
+// EnablePolicy enables policies by name
+func (t *Tracee) EnablePolicies(policyNames []string) error {
+	for _, policyName := range policyNames {
+		p, err := t.config.Policies.LookupByName(policyName)
+		if err != nil {
+			return err
+		}
+		t.policiesManager.EnablePolicy(p.ID)
+	}
+
+	return nil
+}
+
+// DisablePolicy disables policies by name
+func (t *Tracee) DisablePolicies(policyNames []string) error {
+	for _, policyName := range policyNames {
+		p, err := t.config.Policies.LookupByName(policyName)
+		if err != nil {
+			return err
+		}
+		t.policiesManager.DisablePolicy(p.ID)
+	}
+
+	return nil
 }

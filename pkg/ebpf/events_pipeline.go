@@ -569,6 +569,17 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 				continue
 			}
 
+			// Is the policy globally disabled?
+			// This just drops disabled events at the final stage of the pipeline.
+			// As discussed offline, it will be replaced by a mechanism that also updates kernel space.
+			// Probably the policies versioning.
+			event.MatchedPoliciesUser = t.policiesManager.Match(event.MatchedPoliciesUser)
+			if event.MatchedPoliciesUser == 0 {
+				logger.Debugw("event dropped because its policy is disabled", "event", event.EventName)
+				t.eventsPool.Put(event)
+				continue
+			}
+
 			// Populate the event with the names of the matched policies.
 			event.MatchedPolicies = t.config.Policies.MatchedNames(event.MatchedPoliciesUser)
 
