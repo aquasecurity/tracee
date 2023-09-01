@@ -119,6 +119,8 @@ type Tracee struct {
 	readyCallback   func(gocontext.Context)
 	// Streams
 	streamsManager *streams.StreamsManager
+	// policyManager manages policy state
+	policyManager *policyManager
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -208,6 +210,8 @@ func New(cfg config.Config) (*Tracee, error) {
 		return nil, errfmt.Errorf("validation error: %v", err)
 	}
 
+	policyManager := newPolicyManager()
+
 	// Create Tracee
 
 	t := &Tracee{
@@ -219,6 +223,7 @@ func New(cfg config.Config) (*Tracee, error) {
 		eventsState:     GetEssentialEventsList(),
 		eventSignatures: make(map[events.ID]bool),
 		streamsManager:  streams.NewStreamsManager(),
+		policyManager:   policyManager,
 	}
 
 	// Initialize capabilities rings soon
@@ -247,6 +252,8 @@ func New(cfg config.Config) (*Tracee, error) {
 			utils.SetBit(&submit, uint(p.ID))
 			utils.SetBit(&emit, uint(p.ID))
 			t.eventsState[e] = events.EventState{Submit: submit, Emit: emit}
+
+			policyManager.EnableRule(p.ID, e)
 		}
 	}
 
@@ -1775,4 +1782,42 @@ func (t *Tracee) subscribe(policyMask uint64) *streams.Stream {
 // Unsubscribe unsubscribes stream
 func (t *Tracee) Unsubscribe(s *streams.Stream) {
 	t.streamsManager.Unsubscribe(s)
+}
+
+// EnableRule enables a rule in the specified policies
+func (t *Tracee) EnableRule(policyNames []string, ruleId string) error {
+	eventID, found := events.Core.GetDefinitionIDByName(ruleId)
+	if !found {
+		return errfmt.Errorf("error rule not found: %s", ruleId)
+	}
+
+	for _, policyName := range policyNames {
+		p, err := t.config.Policies.LookupByName(policyName)
+		if err != nil {
+			return err
+		}
+
+		t.policyManager.EnableRule(p.ID, eventID)
+	}
+
+	return nil
+}
+
+// DisableRule disables a rule in the specified policies
+func (t *Tracee) DisableRule(policyNames []string, ruleId string) error {
+	eventID, found := events.Core.GetDefinitionIDByName(ruleId)
+	if !found {
+		return errfmt.Errorf("error rule not found: %s", ruleId)
+	}
+
+	for _, policyName := range policyNames {
+		p, err := t.config.Policies.LookupByName(policyName)
+		if err != nil {
+			return err
+		}
+
+		t.policyManager.DisableRule(p.ID, eventID)
+	}
+
+	return nil
 }
