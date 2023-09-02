@@ -1,0 +1,123 @@
+syntax = "proto3";
+
+option go_package = "github.co/aquasecurity/tracee/api/v1beta1";
+
+package tracee.v1beta1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+
+message Event {
+    google.protobuf.Timestamp timestamp = 1;
+    uint32 id = 2;
+    string name = 3;
+    Policies policies = 4;
+    Context context = 5;
+    // repeated EventData data = 6; TODO: event data is coming on a separate PR
+    optional Threat threat = 7;
+}
+
+message Policies {
+    repeated string matched = 1;
+}
+
+message Context {
+    optional Process process = 1;
+    optional Container container = 2;
+    optional K8s k8s = 3;
+}
+
+message Process  {
+    Executable executable = 1;
+    google.protobuf.UInt32Value entity_id = 2;
+    google.protobuf.UInt32Value pid = 3;
+    google.protobuf.UInt32Value namespaced_pid = 4;
+    User real_user = 5;
+    Thread thread = 6;
+    optional Parent parent = 7;
+}
+
+message Parent  {
+    Executable executable = 1;
+    google.protobuf.UInt32Value entity_id = 2;
+    google.protobuf.UInt32Value pid = 3;
+    optional google.protobuf.UInt32Value namespaced_pid = 4;
+    optional User real_user = 5;
+    optional Thread thread = 6;
+    optional Process parent = 7;
+}
+
+message Executable {
+    string name = 1;
+}
+
+message User {
+    google.protobuf.UInt32Value id = 1;
+}
+
+message Thread {
+    google.protobuf.Timestamp start = 1;
+    string name = 2;
+    google.protobuf.UInt32Value tid = 3;
+    google.protobuf.UInt32Value namespaced_tid = 4;
+    string syscall = 5;
+    bool compat = 6;
+    optional UserStackTrace user_stack_trace = 7;
+}
+
+message UserStackTrace {
+    repeated uint64 addresses = 1;
+}
+
+message Container {
+    string id = 1;
+    string name = 2; 
+    ContainerImage image = 3;
+    bool started = 4;
+}
+
+message ContainerImage {
+    string id = 1;
+    repeated string repo_digests = 2;
+    string name = 3;
+}
+
+message K8s {
+    Pod pod = 1;
+    K8sNamespace namespace = 2;
+}
+
+message Pod {
+    string name = 1;
+    string uid = 2;
+    map<string, string> labels = 3;
+}
+
+message K8sNamespace {
+    string name = 1;
+}
+
+enum Severity {
+    INFO = 0;
+    LOW = 1;
+    MEDIUM = 2;
+    HIGH = 3;
+    CRITICAL = 4;
+}
+
+message Threat {
+    string description = 1;
+    MitreTatic mitre_tactic = 2;
+    MitreTechnique mitre_technique = 3;
+    Severity severity = 4;
+}
+
+message MitreTatic {
+    string name = 1;
+}
+
+message MitreTechnique {
+    string id = 1;
+    string external_id = 2;
+    string name = 3;
+}
