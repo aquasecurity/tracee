@@ -3032,7 +3032,7 @@ int BPF_KPROBE(trace_ret_vfs_readv)
     return do_file_io_operation(ctx, VFS_READV, TAIL_VFS_READV, true, false);
 }
 
-SEC("kretprobe/vfs_readV_tail")
+SEC("kretprobe/vfs_readv_tail")
 int BPF_KPROBE(trace_ret_vfs_readv_tail)
 {
     return capture_file_read(ctx, VFS_READV, false);
