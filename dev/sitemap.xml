@@ -2546,6 +2546,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/getting-started/docker-quickstart/</loc>
+         <lastmod>2023-09-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/getting-started/kubernetes-quickstart/</loc>
          <lastmod>2023-09-03</lastmod>
          <changefreq>daily</changefreq>
