@@ -453,18 +453,22 @@ statfunc void fill_file_header(u8 header[FILE_MAGIC_HDR_SIZE], io_data_t io_data
 {
     u32 len = (u32) io_data.len;
     if (io_data.is_buf) {
-        if (len < FILE_MAGIC_HDR_SIZE)
-            bpf_probe_read(header, len & FILE_MAGIC_MASK, io_data.ptr);
-        else
-            bpf_probe_read(header, FILE_MAGIC_HDR_SIZE, io_data.ptr);
+        // inline bounds check to force compiler to use the register of len
+        asm volatile("if %[size] < %[max_size] goto +1;\n"
+                     "%[size] = %[max_size];\n"
+                     :
+                     : [size] "r"(len), [max_size] "i"(FILE_MAGIC_HDR_SIZE));
+        bpf_probe_read(header, len, io_data.ptr);
     } else {
         struct iovec io_vec;
         __builtin_memset(&io_vec, 0, sizeof(io_vec));
         bpf_probe_read(&io_vec, sizeof(struct iovec), io_data.ptr);
-        if (len < FILE_MAGIC_HDR_SIZE)
-            bpf_probe_read(header, len & FILE_MAGIC_MASK, io_vec.iov_base);
-        else
-            bpf_probe_read(header, FILE_MAGIC_HDR_SIZE, io_vec.iov_base);
+        // inline bounds check to force compiler to use the register of len
+        asm volatile("if %[size] < %[max_size] goto +1;\n"
+                     "%[size] = %[max_size];\n"
+                     :
+                     : [size] "r"(len), [max_size] "i"(FILE_MAGIC_HDR_SIZE));
+        bpf_probe_read(header, len, io_vec.iov_base);
     }
 }
 
