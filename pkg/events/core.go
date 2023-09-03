@@ -9974,6 +9974,7 @@ var CoreEvents = map[ID]Definition{
 				{handle: probes.VfsWriteVRet, required: false},
 				{handle: probes.KernelWrite, required: false},
 				{handle: probes.KernelWriteRet, required: false},
+				{handle: probes.SecurityInodeUnlink, required: false}, // Used for ELF filter
 			},
 			tailCalls: []TailCall{
 				{"prog_array", "trace_ret_vfs_write_tail", []uint32{TailVfsWrite}},
@@ -9997,6 +9998,7 @@ var CoreEvents = map[ID]Definition{
 				{handle: probes.VfsReadRet, required: true},
 				{handle: probes.VfsReadV, required: false},
 				{handle: probes.VfsReadVRet, required: false},
+				{handle: probes.SecurityInodeUnlink, required: false}, // Used for ELF filter
 			},
 			tailCalls: []TailCall{
 				{"prog_array", "trace_ret_vfs_read_tail", []uint32{TailVfsRead}},
