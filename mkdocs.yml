@@ -10,6 +10,7 @@ nav:
   - Getting Started:
       - Overview: index.md
       - Kubernetes - Quick Start: getting-started/kubernetes-quickstart.md
+      - Docker - Quick Start: getting-started/docker-quickstart.md
       - Installation:
           - Getting Tracee: getting-started/installing/getting.md
           - Prerequisites: getting-started/installing/prerequisites.md
