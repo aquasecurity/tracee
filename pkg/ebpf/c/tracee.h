@@ -56,9 +56,9 @@ statfunc int submit_magic_write(program_data_t *, file_info_t *, io_data_t, u32)
 statfunc bool should_submit_io_event(u32, program_data_t *);
 statfunc int do_file_io_operation(struct pt_regs *, u32, u32, bool, bool);
 statfunc void extract_vfs_ret_io_data(struct pt_regs *, args_t *, io_data_t *, bool);
-statfunc bool filter_file_write_capture(program_data_t *, struct file *, io_data_t, off_t);
+statfunc bool filter_file_write_capture(program_data_t *, struct file *);
 statfunc int capture_file_write(struct pt_regs *, u32, bool);
-statfunc bool filter_file_read_capture(program_data_t *, struct file *, io_data_t, off_t);
+statfunc bool filter_file_read_capture(program_data_t *, struct file *);
 statfunc int capture_file_read(struct pt_regs *, u32, bool);
 statfunc struct pipe_buffer *get_last_write_pipe_buffer(struct pipe_inode_info *);
 

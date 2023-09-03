@@ -37,7 +37,6 @@ statfunc struct super_block *get_super_block_from_inode(struct inode *);
 statfunc unsigned long get_s_magic_from_super_block(struct super_block *);
 statfunc void fill_vfs_file_metadata(struct file *, u32, u8 *);
 statfunc void fill_vfs_file_bin_args_io_data(io_data_t, bin_args_t *);
-statfunc void fill_file_header(u8[FILE_MAGIC_HDR_SIZE], io_data_t);
 statfunc void
 fill_vfs_file_bin_args(u32, struct file *, loff_t *, io_data_t, size_t, int, bin_args_t *);
 
@@ -447,25 +446,6 @@ statfunc void fill_vfs_file_bin_args(u32 type,
     fill_vfs_file_metadata(file, pid, &bin_args->metadata[0]);
     bin_args->start_off = start_pos;
     fill_vfs_file_bin_args_io_data(io_data, bin_args);
-}
-
-statfunc void fill_file_header(u8 header[FILE_MAGIC_HDR_SIZE], io_data_t io_data)
-{
-    u32 len = (u32) io_data.len;
-    if (io_data.is_buf) {
-        if (len < FILE_MAGIC_HDR_SIZE)
-            bpf_probe_read(header, len & FILE_MAGIC_MASK, io_data.ptr);
-        else
-            bpf_probe_read(header, FILE_MAGIC_HDR_SIZE, io_data.ptr);
-    } else {
-        struct iovec io_vec;
-        __builtin_memset(&io_vec, 0, sizeof(io_vec));
-        bpf_probe_read(&io_vec, sizeof(struct iovec), io_data.ptr);
-        if (len < FILE_MAGIC_HDR_SIZE)
-            bpf_probe_read(header, len & FILE_MAGIC_MASK, io_vec.iov_base);
-        else
-            bpf_probe_read(header, FILE_MAGIC_HDR_SIZE, io_vec.iov_base);
-    }
 }
 
 #endif

@@ -2044,40 +2044,22 @@ int BPF_KPROBE(trace_security_inode_unlink)
     if (!should_trace(&p))
         return 0;
 
-    bool should_trace_inode_unlink = should_submit(SECURITY_INODE_UNLINK, p.event);
-    bool should_capture_io = false;
-    if ((p.config->options & (OPT_CAPTURE_FILES_READ | OPT_CAPTURE_FILES_WRITE)) != 0)
-        should_capture_io = true;
-
-    if (!should_trace_inode_unlink && !should_capture_io)
+    if (!should_submit(SECURITY_INODE_UNLINK, p.event))
         return 0;
-
-    file_id_t unlinked_file_id = {};
-    int ret = 0;
 
     // struct inode *dir = (struct inode *)PT_REGS_PARM1(ctx);
     struct dentry *dentry = (struct dentry *) PT_REGS_PARM2(ctx);
-    unlinked_file_id.inode = get_inode_nr_from_dentry(dentry);
-    unlinked_file_id.device = get_dev_from_dentry(dentry);
+    void *dentry_path = get_dentry_path_str(dentry);
+    unsigned long inode_nr = get_inode_nr_from_dentry(dentry);
+    dev_t dev = get_dev_from_dentry(dentry);
+    u64 ctime = get_ctime_nanosec_from_dentry(dentry);
 
-    if (should_trace_inode_unlink) {
-        void *dentry_path = get_dentry_path_str(dentry);
-        unlinked_file_id.ctime = get_ctime_nanosec_from_dentry(dentry);
+    save_str_to_buf(&p.event->args_buf, dentry_path, 0);
+    save_to_submit_buf(&p.event->args_buf, &inode_nr, sizeof(unsigned long), 1);
+    save_to_submit_buf(&p.event->args_buf, &dev, sizeof(dev_t), 2);
+    save_to_submit_buf(&p.event->args_buf, &ctime, sizeof(u64), 3);
 
-        save_str_to_buf(&p.event->args_buf, dentry_path, 0);
-        save_to_submit_buf(&p.event->args_buf, &unlinked_file_id.inode, sizeof(unsigned long), 1);
-        save_to_submit_buf(&p.event->args_buf, &unlinked_file_id.device, sizeof(dev_t), 2);
-        save_to_submit_buf(&p.event->args_buf, &unlinked_file_id.ctime, sizeof(u64), 3);
-        ret = events_perf_submit(&p, SECURITY_INODE_UNLINK, 0);
-    }
-
-    if (should_capture_io) {
-        // We want to avoid reacquisition of the same inode-device affecting capture behavior
-        unlinked_file_id.ctime = 0;
-        bpf_map_delete_elem(&elf_files_map, &unlinked_file_id);
-    }
-
-    return ret;
+    return events_perf_submit(&p, SECURITY_INODE_UNLINK, 0);
 }
 
 SEC("kprobe/commit_creds")
@@ -2751,7 +2733,20 @@ submit_magic_write(program_data_t *p, file_info_t *file_info, io_data_t io_data,
 
     save_str_to_buf(&(p->event->args_buf), file_info->pathname_p, 0);
 
-    fill_file_header(header, io_data);
+    if (io_data.is_buf) {
+        if (header_bytes < FILE_MAGIC_HDR_SIZE)
+            bpf_probe_read(header, header_bytes & FILE_MAGIC_MASK, io_data.ptr);
+        else
+            bpf_probe_read(header, FILE_MAGIC_HDR_SIZE, io_data.ptr);
+    } else {
+        struct iovec io_vec;
+        __builtin_memset(&io_vec, 0, sizeof(io_vec));
+        bpf_probe_read(&io_vec, sizeof(struct iovec), io_data.ptr);
+        if (header_bytes < FILE_MAGIC_HDR_SIZE)
+            bpf_probe_read(header, header_bytes & FILE_MAGIC_MASK, io_vec.iov_base);
+        else
+            bpf_probe_read(header, FILE_MAGIC_HDR_SIZE, io_vec.iov_base);
+    }
 
     save_bytes_to_buf(&(p->event->args_buf), header, header_bytes, 1);
     save_to_submit_buf(&(p->event->args_buf), &file_info->id.device, sizeof(dev_t), 2);
@@ -2860,16 +2855,10 @@ extract_vfs_ret_io_data(struct pt_regs *ctx, args_t *saved_args, io_data_t *io_d
 }
 
 // Filter capture of file writes according to path prefix, type and fd.
-statfunc bool
-filter_file_write_capture(program_data_t *p, struct file *file, io_data_t io_data, off_t start_pos)
+statfunc bool filter_file_write_capture(program_data_t *p, struct file *file)
 {
     return filter_file_path(p->ctx, &file_write_path_filter, file) ||
-           filter_file_type(p->ctx,
-                            &file_type_filter,
-                            CAPTURE_WRITE_TYPE_FILTER_IDX,
-                            file,
-                            io_data,
-                            start_pos) ||
+           filter_file_type(p->ctx, &file_type_filter, CAPTURE_WRITE_TYPE_FILTER_IDX, file) ||
            filter_file_fd(p->ctx, &file_type_filter, CAPTURE_WRITE_TYPE_FILTER_IDX, file);
 }
 
@@ -2900,15 +2889,8 @@ statfunc int capture_file_write(struct pt_regs *ctx, u32 event_id, bool is_buf)
     extract_vfs_ret_io_data(ctx, &saved_args, &io_data, is_buf);
     struct file *file = (struct file *) saved_args.args[0];
     loff_t *pos = (loff_t *) saved_args.args[3];
-    size_t written_bytes = PT_REGS_RC(ctx);
 
-    off_t start_pos;
-    bpf_probe_read(&start_pos, sizeof(off_t), pos);
-    // Calculate write start offset
-    if (start_pos != 0)
-        start_pos -= written_bytes;
-
-    if (filter_file_write_capture(&p, file, io_data, start_pos)) {
+    if (filter_file_write_capture(&p, file)) {
         // There is a filter, but no match
         del_args(event_id);
         return 0;
@@ -2934,12 +2916,10 @@ statfunc int capture_file_write(struct pt_regs *ctx, u32 event_id, bool is_buf)
 }
 
 // Filter capture of file reads according to path prefix, type and fd.
-statfunc bool
-filter_file_read_capture(program_data_t *p, struct file *file, io_data_t io_data, off_t start_pos)
+statfunc bool filter_file_read_capture(program_data_t *p, struct file *file)
 {
     return filter_file_path(p->ctx, &file_read_path_filter, file) ||
-           filter_file_type(
-               p->ctx, &file_type_filter, CAPTURE_READ_TYPE_FILTER_IDX, file, io_data, start_pos) ||
+           filter_file_type(p->ctx, &file_type_filter, CAPTURE_READ_TYPE_FILTER_IDX, file) ||
            filter_file_fd(p->ctx, &file_type_filter, CAPTURE_READ_TYPE_FILTER_IDX, file);
 }
 
@@ -2966,15 +2946,8 @@ statfunc int capture_file_read(struct pt_regs *ctx, u32 event_id, bool is_buf)
     extract_vfs_ret_io_data(ctx, &saved_args, &io_data, is_buf);
     struct file *file = (struct file *) saved_args.args[0];
     loff_t *pos = (loff_t *) saved_args.args[3];
-    size_t read_bytes = PT_REGS_RC(ctx);
 
-    off_t start_pos;
-    bpf_probe_read(&start_pos, sizeof(off_t), pos);
-    // Calculate write start offset
-    if (start_pos != 0)
-        start_pos -= read_bytes;
-
-    if (filter_file_read_capture(&p, file, io_data, start_pos)) {
+    if (filter_file_read_capture(&p, file)) {
         // There is a filter, but no match
         del_args(event_id);
         return 0;

@@ -48,7 +48,7 @@ The different filter types have logical 'and' between them, but logical 'or' bet
 The filter is given in the following format - <read/write>:<filter_type>=<filter_value>
 Filters types:
 path               A filter for the file path prefix (up to 50 characters). Up to 3 filters can be given. Identical to using '<read/write>=/path/prefix*'.
-type               A file type from the following options: 'regular', 'pipe', 'socket' and 'elf'.
+type               A file type from the following options: 'regular', 'pipe' and 'socket'.
 fd                 The file descriptor of the file. Can be one of the three standards - 'stdin', 'stdout' and 'stderr'.
 
 
@@ -272,7 +272,6 @@ var captureFileTypeStringToFlag = map[string]config.FileCaptureType{
 	"pipe":    config.CapturePipeFiles,
 	"socket":  config.CaptureSocketFiles,
 	"regular": config.CaptureRegularFiles,
-	"elf":     config.CaptureELFFiles,
 }
 
 // parseFileCaptureType parse file type string to its matching bit-flag value

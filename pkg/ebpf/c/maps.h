@@ -117,7 +117,6 @@ BPF_HASH(logs_count, bpf_log_t, bpf_log_count_t, 4096);            // logs count
 BPF_PERCPU_ARRAY(scratch_map, scratch_t, 1);                       // scratch space to avoid allocating stuff on the stack
 BPF_LRU_HASH(file_modification_map, file_mod_key_t, int, 10240);   // hold file data to decide if should submit file modification event
 BPF_LRU_HASH(io_file_path_cache_map, file_id_t, path_buf_t, 5);    // store cache for IO operations path
-BPF_LRU_HASH(elf_files_map, file_id_t, bool, 64);                  // store cache for file ELF type check
 
 // clang-format on
 

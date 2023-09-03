@@ -123,7 +123,6 @@ const (
 	CaptureRegularFiles FileCaptureType = 1 << iota
 	CapturePipeFiles
 	CaptureSocketFiles
-	CaptureELFFiles
 )
 
 // Filters for FDs flags
