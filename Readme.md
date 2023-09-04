@@ -28,10 +28,12 @@ Installation options:
 * [Experiment using the Tracee container image.](https://aquasecurity.github.io/tracee/latest/getting-started/docker-quickstart)
 
 Steps to get started:
+
 1. [Install Tracee in your Kubernetes cluster through Helm](https://aquasecurity.github.io/tracee/latest/getting-started/kubernetes-quickstart/)
 2. Query logs to see detected events
 
 Next, try one of our tutorials:
+
 3. Filter events through [Tracee Policies](https://aquasecurity.github.io/tracee/latest/tutorials/k8s-policies/) 
 4. [Manage logs through Grafana Loki](https://aquasecurity.github.io/tracee/latest/tutorials/promtail/) or your preferred monitoring solution
 
