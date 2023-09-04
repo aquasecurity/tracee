@@ -1,0 +1,12 @@
+apiVersion: aquasecurity.github.io/v1beta1
+kind: TraceePolicy
+metadata:
+  name: write
+  annotations:
+    # https://aquasecurity.github.io/tracee/latest/docs/events/builtin/syscalls/write/
+    description: traces write events across all scopes
+spec:
+  scope: 
+    - global
+  rules:
+    - event: write
