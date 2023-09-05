@@ -214,15 +214,10 @@ func (t *Tracee) processFileCaptures(ctx context.Context) {
 			}
 
 		case lost := <-t.lostCapturesChannel:
-			// When terminating tracee-ebpf the lost channel receives multiple "0 lost events" events.
-			// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:
-			// https://github.com/aquasecurity/libbpfgo/issues/122
-			if lost > 0 {
-				if err := t.stats.LostWrCount.Increment(lost); err != nil {
-					logger.Errorw("Incrementing lost capture count", "error", err)
-				}
-				logger.Warnw(fmt.Sprintf("Lost %d capture events", lost))
+			if err := t.stats.LostWrCount.Increment(lost); err != nil {
+				logger.Errorw("Incrementing lost capture count", "error", err)
 			}
+			logger.Warnw(fmt.Sprintf("Lost %d capture events", lost))
 
 		case <-ctx.Done():
 			return
