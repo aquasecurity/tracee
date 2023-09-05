@@ -36,19 +36,22 @@ func (t *Tracee) processLostEvents() {
 	logger.Debugw("Starting processLostEvents goroutine")
 	defer logger.Debugw("Stopped processLostEvents goroutine")
 
+	// Since this is an end-stage goroutine, it should be terminated when:
+	// - lostEvChannel is closed, or finally when;
+	// - internal done channel is closed (not ctx).
 	for {
 		select {
-		case lost := <-t.lostEvChannel:
-			// When terminating tracee-ebpf the lost channel receives multiple "0 lost events" events.
-			// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:
-			// https://github.com/aquasecurity/libbpfgo/issues/122
-			if lost > 0 {
-				if err := t.stats.LostEvCount.Increment(lost); err != nil {
-					logger.Errorw("Incrementing lost event count", "error", err)
-				}
-				logger.Warnw(fmt.Sprintf("Lost %d events", lost))
+		case lost, ok := <-t.lostEvChannel:
+			if !ok {
+				return // lostEvChannel is closed, lost is zero value
 			}
-		// Since this is an end-state goroutine, it should be terminated only when Tracee done channel is closed.
+
+			if err := t.stats.LostEvCount.Increment(lost); err != nil {
+				logger.Errorw("Incrementing lost event count", "error", err)
+			}
+			logger.Warnw(fmt.Sprintf("Lost %d events", lost))
+
+		// internal done channel is closed when Tracee is stopped via Tracee.Close()
 		case <-t.done:
 			return
 		}
