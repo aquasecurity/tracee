@@ -1,6 +1,8 @@
 package initialize
 
 import (
+	"strconv"
+
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/detect"
@@ -35,10 +37,27 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 			evtDependency = append(evtDependency, eventDefID)
 		}
 
+		version, err := events.NewVersionFromString(m.Version)
+		// if the version is not valid semver, set it to 1.0.X,
+		// where X is either 0 or the version number from the signature
+		if err != nil {
+			var x uint64
+
+			if m.Version != "" {
+				n, _ := strconv.Atoi(m.Version)
+				// if there is an error, n is 0, setting the version to 1.0.0
+				x = uint64(n)
+			}
+
+			version = events.NewVersion(1, 0, x)
+		}
+
 		newEventDef := events.NewDefinition(
 			newEventDefID,                     // id,
 			events.Sys32Undefined,             // id32
 			m.EventName,                       // eventName
+			version,                           // version
+			m.Description,                     // description
 			"",                                // docPath
 			false,                             // internal
 			false,                             // syscall

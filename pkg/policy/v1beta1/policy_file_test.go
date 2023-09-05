@@ -15,6 +15,8 @@ func TestPolicyValidate(t *testing.T) {
 		0,
 		events.Sys32Undefined,
 		"fake_signature",
+		events.NewVersion(1, 0, 0), // Version
+		"fake_description",
 		"",
 		false,
 		false,

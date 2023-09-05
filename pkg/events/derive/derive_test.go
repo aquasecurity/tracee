@@ -79,14 +79,16 @@ func Test_DeriveSingleEvent(t *testing.T) {
 	testEventID := events.ID(0)
 
 	eventDefinition := events.NewDefinition(
-		testEventID,           // ID
-		events.Sys32Undefined, // ID32Bit
-		"test_event",          // Name
-		"test_event",          // DocPath
-		false,                 // Internal
-		false,                 // Syscall
-		[]string{},            // Sets
-		events.Dependencies{}, // Dependencies
+		testEventID,                // ID
+		events.Sys32Undefined,      // ID32Bit
+		"test_event",               // Name
+		events.NewVersion(1, 0, 0), // Version
+		"description",              // Description
+		"test_event",               // DocPath
+		false,                      // Internal
+		false,                      // Syscall
+		[]string{},                 // Sets
+		events.Dependencies{},      // Dependencies
 		[]trace.ArgMeta{
 			{
 				Name: "arg1",
@@ -175,14 +177,16 @@ func TestDeriveMultipleEvents(t *testing.T) {
 	testEventID := events.ID(0)
 
 	eventDefinition := events.NewDefinition(
-		testEventID,           // ID
-		events.Sys32Undefined, // ID32Bit
-		"test_event",          // Name
-		"test_event",          // DocPath
-		false,                 // Internal
-		false,                 // Syscall
-		[]string{},            // Sets
-		events.Dependencies{}, // Dependencies
+		testEventID,                // ID
+		events.Sys32Undefined,      // ID32Bit
+		"test_event",               // Name
+		events.NewVersion(1, 0, 0), // Version
+		"description",              // Description
+		"test_event",               // DocPath
+		false,                      // Internal
+		false,                      // Syscall
+		[]string{},                 // Sets
+		events.Dependencies{},      // Dependencies
 		[]trace.ArgMeta{
 			{
 				Name: "arg1",

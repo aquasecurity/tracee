@@ -25,6 +25,8 @@ func TestNewDefinition(t *testing.T) {
 		0,
 		Sys32Undefined,
 		"hooked_seq_ops2",
+		version,
+		"",
 		"",
 		false,
 		false,

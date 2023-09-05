@@ -32,6 +32,8 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					events.ID(6001),                   // id,
 					events.Sys32Undefined,             // id32
 					"fake_event_0",                    // eventName
+					events.NewVersion(1, 0, 0),        // version
+					"fake_description",                // description
 					"",                                // docPath
 					false,                             // internal
 					false,                             // syscall
@@ -64,6 +66,8 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					events.ID(6010),                   // id,
 					events.Sys32Undefined,             // id32
 					"fake_event_1",                    // eventName
+					events.NewVersion(1, 0, 0),        // version
+					"fake_description",                // description
 					"",                                // docPath
 					false,                             // internal
 					false,                             // syscall
@@ -81,6 +85,8 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					events.ID(6011),                   // id,
 					events.Sys32Undefined,             // id32
 					"fake_event_2",                    // eventName
+					events.NewVersion(1, 0, 0),        // version
+					"fake_description",                // description
 					"",                                // docPath
 					false,                             // internal
 					false,                             // syscall
@@ -115,6 +121,8 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					events.ID(6100),                   // id,
 					events.Sys32Undefined,             // id32
 					"fake_event_3",                    // eventName
+					events.NewVersion(1, 0, 0),        // version
+					"fake_description",                // description
 					"",                                // docPath
 					false,                             // internal
 					false,                             // syscall
@@ -163,7 +171,9 @@ func newFakeSignature(name string, deps []string) detect.Signature {
 	return &signature.FakeSignature{
 		FakeGetMetadata: func() (detect.SignatureMetadata, error) {
 			return detect.SignatureMetadata{
-				EventName: name,
+				EventName:   name,
+				Description: "fake_description",
+				Version:     "1.0.0",
 			}, nil
 		},
 		FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
