@@ -499,6 +499,7 @@ nav:
                 - hidden_kernel_module: docs/events/builtin/extra/hidden_kernel_module.md
                 - process_execute_failed: docs/events/builtin/extra/process_execute_failed.md
                 - security_bpf_prog: docs/events/builtin/extra/security_bpf_prog.md
+                - security_bprm_check: docs/events/builtin/extra/security_bprm_check.md
           - Custom Events:
               - Overview: docs/events/custom/overview.md
               - Go: docs/events/custom/golang.md
