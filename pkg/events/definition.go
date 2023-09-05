@@ -8,6 +8,8 @@ type Definition struct {
 	id           ID // TODO: use id ?
 	id32Bit      ID
 	name         string
+	version      Version
+	description  string
 	docPath      string // Relative to the 'doc/events' directory
 	internal     bool
 	syscall      bool
@@ -20,6 +22,8 @@ func NewDefinition(
 	id ID,
 	id32Bit ID,
 	name string,
+	version Version,
+	description string,
 	docPath string,
 	internal bool,
 	syscall bool,
@@ -31,6 +35,8 @@ func NewDefinition(
 		id:           id,
 		id32Bit:      id32Bit,
 		name:         name,
+		version:      version,
+		description:  description,
 		docPath:      docPath,
 		internal:     internal,
 		syscall:      syscall,
@@ -52,6 +58,14 @@ func (d Definition) GetID32Bit() ID {
 
 func (d Definition) GetName() string {
 	return d.name
+}
+
+func (d Definition) GetVersion() Version {
+	return d.version
+}
+
+func (d Definition) GetDescription() string {
+	return d.description
 }
 
 func (d Definition) GetDocPath() string {

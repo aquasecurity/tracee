@@ -88,13 +88,15 @@ func createFakeEventAndFinding() detect.Finding {
 	eventName := "fake_signature_event"
 
 	eventDefinition := events.NewDefinition(
-		0,                      // id
-		events.Sys32Undefined,  // id32
-		eventName,              // eventName
-		"",                     // docPath
-		false,                  // internal
-		false,                  // syscall
-		[]string{"signatures"}, // sets
+		0,                          // id
+		events.Sys32Undefined,      // id32
+		eventName,                  // eventName
+		events.NewVersion(1, 0, 0), // Version
+		"fake_description",         // description
+		"",                         // docPath
+		false,                      // internal
+		false,                      // syscall
+		[]string{"signatures"},     // sets
 		events.NewDependencies(
 			[]events.ID{events.Ptrace},
 			[]events.KSymbol{},
