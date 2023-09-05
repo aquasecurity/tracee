@@ -497,8 +497,8 @@ func (t *Tracee) generateInitValues() (InitValues, error) {
 		if !events.Core.IsDefined(evt) {
 			return initVals, errfmt.Errorf("event %d is undefined", evt)
 		}
-		if events.Core.GetDefinitionByID(evt).GetDependencies().GetKSymbols() != nil {
-			initVals.Kallsyms = true
+		for range events.Core.GetDefinitionByID(evt).GetDependencies().GetKSymbols() {
+			initVals.Kallsyms = true // only if length > 0
 		}
 	}
 
@@ -1700,8 +1700,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 						}
 					}
 					if err != nil {
-						logger.Warnw("print_mem_dump: failed to get symbol info", "symbol", name)
-						continue
+						return errfmt.WrapError(err)
 					}
 				}
 				eventHandle := t.triggerContexts.Store(event)
