@@ -10344,7 +10344,13 @@ var CoreEvents = map[ID]Definition{
 			ids: []ID{
 				DoInitModule,
 			},
-			kSymbols: []KSymbol{},
+			kSymbols: []KSymbol{
+				// Special case for this event: Single symbol, common to all kernel versions. Placed
+				// here so the ksymbols engine is always enabled, during tracee startup. The symbols
+				// are resolved dynamically, during runtime depending on the arguments passed to
+				// the event.
+				{symbol: "_stext", required: true},
+			},
 			capabilities: Capabilities{
 				base: []cap.Value{
 					cap.SYSLOG, // read /proc/kallsyms
