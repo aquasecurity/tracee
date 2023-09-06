@@ -4,6 +4,8 @@ option go_package = "github.co/aquasecurity/tracee/api/v1beta1";
 
 package tracee.v1beta1;
 
+import "types/api/v1beta1/definition.proto";
+
 message GetVersionRequest {
 }
 
@@ -11,6 +13,17 @@ message GetVersionResponse {
     string version = 1;
 }
 
+message GetEventDefinitionRequest {
+    string name = 1;
+    // TODO: tags
+}
+
+message GetEventDefinitionResponse {
+    repeated EventDefinition definitions = 1;
+}
+
 service TraceeService {
+    rpc GetEventDefinition(GetEventDefinitionRequest) returns (GetEventDefinitionResponse);
+
     rpc GetVersion(GetVersionRequest) returns (GetVersionResponse);
 }

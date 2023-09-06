@@ -22,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TraceeServiceClient interface {
+	GetEventDefinition(ctx context.Context, in *GetEventDefinitionRequest, opts ...grpc.CallOption) (*GetEventDefinitionResponse, error)
 	GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*GetVersionResponse, error)
 }
 
@@ -31,6 +32,15 @@ type traceeServiceClient struct {
 
 func NewTraceeServiceClient(cc grpc.ClientConnInterface) TraceeServiceClient {
 	return &traceeServiceClient{cc}
+}
+
+func (c *traceeServiceClient) GetEventDefinition(ctx context.Context, in *GetEventDefinitionRequest, opts ...grpc.CallOption) (*GetEventDefinitionResponse, error) {
+	out := new(GetEventDefinitionResponse)
+	err := c.cc.Invoke(ctx, "/tracee.v1beta1.TraceeService/GetEventDefinition", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *traceeServiceClient) GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*GetVersionResponse, error) {
@@ -46,6 +56,7 @@ func (c *traceeServiceClient) GetVersion(ctx context.Context, in *GetVersionRequ
 // All implementations must embed UnimplementedTraceeServiceServer
 // for forward compatibility
 type TraceeServiceServer interface {
+	GetEventDefinition(context.Context, *GetEventDefinitionRequest) (*GetEventDefinitionResponse, error)
 	GetVersion(context.Context, *GetVersionRequest) (*GetVersionResponse, error)
 	mustEmbedUnimplementedTraceeServiceServer()
 }
@@ -54,6 +65,9 @@ type TraceeServiceServer interface {
 type UnimplementedTraceeServiceServer struct {
 }
 
+func (UnimplementedTraceeServiceServer) GetEventDefinition(context.Context, *GetEventDefinitionRequest) (*GetEventDefinitionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEventDefinition not implemented")
+}
 func (UnimplementedTraceeServiceServer) GetVersion(context.Context, *GetVersionRequest) (*GetVersionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetVersion not implemented")
 }
@@ -68,6 +82,24 @@ type UnsafeTraceeServiceServer interface {
 
 func RegisterTraceeServiceServer(s grpc.ServiceRegistrar, srv TraceeServiceServer) {
 	s.RegisterService(&TraceeService_ServiceDesc, srv)
+}
+
+func _TraceeService_GetEventDefinition_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEventDefinitionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TraceeServiceServer).GetEventDefinition(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/tracee.v1beta1.TraceeService/GetEventDefinition",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TraceeServiceServer).GetEventDefinition(ctx, req.(*GetEventDefinitionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _TraceeService_GetVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -95,6 +127,10 @@ var TraceeService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "tracee.v1beta1.TraceeService",
 	HandlerType: (*TraceeServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetEventDefinition",
+			Handler:    _TraceeService_GetEventDefinition_Handler,
+		},
 		{
 			MethodName: "GetVersion",
 			Handler:    _TraceeService_GetVersion_Handler,
