@@ -104,8 +104,8 @@ func parseScopeFlag(flag string) (scopeFlag, error) {
 	}
 
 	return scopeFlag{
-		full:              flag,                            // "binary=host:/usr/bin/ls"
-		scopeName:         scopeName,                       // "binary"
+		full:              flag,                            // "executable=host:/usr/bin/ls"
+		scopeName:         scopeName,                       // "executable"
 		operator:          opAndValParts.operator,          // "="
 		values:            opAndValParts.values,            // "host:/usr/bin/ls"
 		operatorAndValues: opAndValParts.operatorAndValues, // "=host:/usr/bin/ls"

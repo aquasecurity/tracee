@@ -5,7 +5,7 @@ tracee **--scope** - Select the scope for tracing events
 
 ## SYNOPSIS
 
-tracee **--scope** [\<[uid|pid][=|!=|\<|\>|\<=|\>=]value1(,value2...)\> | \<[mntns|pidns|tree][=|!=]value1(,value2...)\> | \<[uts|comm|container|binary][=|!=]value1(,value2...)\>] | \<not-container\> | \<container[=|!=]value\> | \<[container|pid]=new\> | \<follow\>]  ...
+tracee **--scope** [\<[uid|pid][=|!=|\<|\>|\<=|\>=]value1(,value2...)\> | \<[mntns|pidns|tree][=|!=]value1(,value2...)\> | \<[uts|comm|container|[executable|exec|binary|bin]][=|!=]value1(,value2...)\>] | \<not-container\> | \<container[=|!=]value\> | \<[container|pid]=new\> | \<follow\>]  ...
 
 ## DESCRIPTION
 
@@ -41,7 +41,7 @@ Available for the following string fields:
 - uts: Select events based on UTS (Unix Timesharing System) names.
 - comm: Select events based on process command names.
 - container: Select events from specific container IDs.
-- binary: Select events based on the binary path.
+- executable: Select events based on the executable path.
 
 Strings can be compared as a prefix if ending with '\*', or as a suffix if starting with '\*'.
 
@@ -178,22 +178,26 @@ The following special filters can be used within the scope filter expressions:
   --scope comm=ls
   ```
 
-- To trace only events from the '/usr/bin/ls' binary, use the following flag:
+- To trace only events from the '/usr/bin/ls' executable, use the executable flag (or the binary alias):
+
+  ```console
+  --scope executable=/usr/bin/ls
+  ```
 
   ```console
   --scope binary=/usr/bin/ls
   ```
 
-- To trace only events from the '/usr/bin/ls' binary in the host mount namespace, use the following flag:
+- To trace only events from the '/usr/bin/ls' executable in the host mount namespace, use the following flag:
 
   ```console
-  --scope binary=host:/usr/bin/ls
+  --scope executable=host:/usr/bin/ls
   ```
 
-- To trace only events from the '/usr/bin/ls' binary in the 4026532448 mount namespace, use the following flag:
+- To trace only events from the '/usr/bin/ls' executable in the 4026532448 mount namespace, use the following flag:
 
   ```console
-  --scope binary=4026532448:/usr/bin/ls
+  --scope executable=4026532448:/usr/bin/ls
   ```
 
 - To trace all events that originated from 'bash' or from one of the processes spawned by 'bash', use the following flag:

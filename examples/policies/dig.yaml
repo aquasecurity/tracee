@@ -3,10 +3,10 @@ kind: TraceePolicy
 metadata:
   name: dig
   annotations:
-    description: traces dns events from the dig binary
+    description: traces dns events from the dig executable
 spec:
-  scope: 
-    - binary=/usr/bin/dig
+  scope:
+    - executable=/usr/bin/dig
   rules:
-    - event: net_packet_dns_request        
+    - event: net_packet_dns_request
     - event: net_packet_dns_response

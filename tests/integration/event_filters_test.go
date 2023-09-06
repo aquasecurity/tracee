@@ -462,17 +462,17 @@ func Test_EventFilters(t *testing.T) {
 			test:         ExpectAllInOrder,
 		},
 		{
-			name: "bin: event: trace events in separate policies from who and uname binary",
+			name: "exec: event: trace events in separate policies from who and uname executable",
 			policyFiles: []policyFileWithID{
 				{
 					id: 1,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "bin-event-1",
+							Name: "exec-event-1",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
-								"bin=/usr/bin/who",
+								"exec=/usr/bin/who",
 							},
 							DefaultActions: []string{"log"},
 							Rules: []v1beta1.Rule{
@@ -488,11 +488,11 @@ func Test_EventFilters(t *testing.T) {
 					id: 2,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "bin-event-2",
+							Name: "exec-event-2",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
-								"bin=/usr/bin/uname",
+								"exec=/usr/bin/uname",
 							},
 							DefaultActions: []string{"log"},
 							Rules: []v1beta1.Rule{
@@ -509,14 +509,14 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents("who",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("bin-event-1"), orPolIDs(1)),
+						expectEvent(anyHost, "who", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("exec-event-1"), orPolIDs(1)),
 					},
 					[]string{},
 				),
 				newCmdEvents("uname",
 					1*time.Second,
 					[]trace.Event{
-						expectEvent(anyHost, "uname", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("bin-event-2"), orPolIDs(2)),
+						expectEvent(anyHost, "uname", testutils.CPUForTests, anyPID, 0, events.SchedProcessExec, orPolNames("exec-event-2"), orPolIDs(2)),
 					},
 					[]string{},
 				),
@@ -701,17 +701,17 @@ func Test_EventFilters(t *testing.T) {
 			test:         ExpectAllEqualTo,
 		},
 		{
-			name: "bin: event: trace only setns events from \"/usr/bin/dockerd\" binary",
+			name: "exec: event: trace only setns events from \"/usr/bin/dockerd\" executable",
 			policyFiles: []policyFileWithID{
 				{
 					id: 1,
 					policyFile: v1beta1.PolicyFile{
 						Metadata: v1beta1.Metadata{
-							Name: "bin-event",
+							Name: "exec-event",
 						},
 						Spec: v1beta1.PolicySpec{
 							Scope: []string{
-								"bin=/usr/bin/dockerd",
+								"exec=/usr/bin/dockerd",
 							},
 							DefaultActions: []string{"log"},
 							Rules: []v1beta1.Rule{
@@ -730,7 +730,7 @@ func Test_EventFilters(t *testing.T) {
 					10*time.Second, // give some time for the container to start (possibly downloading the image)
 					[]trace.Event{
 						// using anyComm as some versions of dockerd may result in e.g. "dockerd" or "exe"
-						expectEvent(anyHost, anyComm, anyProcessorID, anyPID, 0, events.Setns, orPolNames("bin-event"), orPolIDs(1)),
+						expectEvent(anyHost, anyComm, anyProcessorID, anyPID, 0, events.Setns, orPolNames("exec-event"), orPolIDs(1)),
 					},
 					[]string{},
 				),
