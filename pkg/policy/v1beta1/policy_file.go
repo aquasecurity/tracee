@@ -129,7 +129,7 @@ func (p PolicyFile) validateScope() error {
 		"uts",
 		"comm",
 		"container",
-		"!container",
+		"not-container",
 		"tree",
 		"binary",
 		"bin",
@@ -168,13 +168,16 @@ func (p PolicyFile) validateScope() error {
 
 func parseScope(policyName, scope string) (string, error) {
 	switch scope {
-	case "follow", "!container", "container":
+	case "follow", "not-container", "container":
 		return scope, nil
 	default:
 		operatorIdx := strings.IndexAny(scope, "=!<>")
 
 		if operatorIdx == -1 {
 			return "", errfmt.Errorf("policy %s, scope %s is not valid", policyName, scope)
+		}
+		if operatorIdx == 0 {
+			return scope, nil
 		}
 
 		return scope[:operatorIdx], nil

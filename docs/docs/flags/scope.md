@@ -5,7 +5,7 @@ tracee **--scope** - Select the scope for tracing events
 
 ## SYNOPSIS
 
-tracee **--scope** [\<[uid|pid][=|!=|\<|\>|\<=|\>=]value1(,value2...)\> | \<[mntns|pidns|tree][=|!=]value1(,value2...)\> | \<[uts|comm|container|binary][=|!=]value1(,value2...)\>] | \<[!]container\> | \<container[=|!=]value\> | \<[container|pid]=new\> | \<follow\>]  ...
+tracee **--scope** [\<[uid|pid][=|!=|\<|\>|\<=|\>=]value1(,value2...)\> | \<[mntns|pidns|tree][=|!=]value1(,value2...)\> | \<[uts|comm|container|binary][=|!=]value1(,value2...)\>] | \<not-container\> | \<container[=|!=]value\> | \<[container|pid]=new\> | \<follow\>]  ...
 
 ## DESCRIPTION
 
@@ -109,7 +109,7 @@ The following special filters can be used within the scope filter expressions:
 - To trace only events from the host, use the following flag:
 
   ```console
-  --scope '!container'
+  --scope not-container
   ```
 
 - To trace only events from uid 0, use the following flag:

@@ -29,11 +29,23 @@ func Test_parseScopeFlag(t *testing.T) {
 		},
 		{
 			name: "Valid flag without operatorAndValues",
-			flag: "!filterName",
+			flag: "not-f",
 			expectedResult: scopeFlag{
-				full:              "!filterName",
+				full:              "not-f",
+				scopeName:         "f",
+				operator:          "not",
+				values:            "",
+				operatorAndValues: "",
+			},
+			expectedError: nil,
+		},
+		{
+			name: "Valid flag without operatorAndValues",
+			flag: "not-filterName",
+			expectedResult: scopeFlag{
+				full:              "not-filterName",
 				scopeName:         "filterName",
-				operator:          "!",
+				operator:          "not",
 				values:            "",
 				operatorAndValues: "",
 			},
@@ -193,6 +205,12 @@ func Test_parseScopeFlag(t *testing.T) {
 			expectedError:  InvalidFlagEmpty(),
 		},
 		// InvalidFilterFlagFormat
+		{
+			name:           "InvalidFilterFlagFormat",
+			flag:           "not-",
+			expectedResult: scopeFlag{},
+			expectedError:  InvalidFilterFlagFormat("not-"),
+		},
 		{
 			name:           "InvalidFilterFlagFormat",
 			flag:           "filterName=",

@@ -5,7 +5,7 @@ metadata:
   annotations:
     description: traces anti_debugging in the host
 spec:
-  scope: 
-    - "!container"
+  scope:
+    - not-container
   rules:
     - event: anti_debugging
