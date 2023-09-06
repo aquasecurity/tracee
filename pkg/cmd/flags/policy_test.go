@@ -357,13 +357,13 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 		},
 		{
-			testName: "!container",
+			testName: "not-container",
 			policy: v1beta1.PolicyFile{
 				Metadata: v1beta1.Metadata{
-					Name: "!container-scope",
+					Name: "not-container-scope",
 				},
 				Spec: v1beta1.PolicySpec{
-					Scope:          []string{"!container"},
+					Scope:          []string{"not-container"},
 					DefaultActions: []string{"log"},
 					Rules: []v1beta1.Rule{
 						{Event: "write"},
@@ -372,12 +372,12 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyScopeMap: PolicyScopeMap{
 				0: {
-					policyName: "!container-scope",
+					policyName: "not-container-scope",
 					scopeFlags: []scopeFlag{
 						{
-							full:              "!container",
+							full:              "not-container",
 							scopeName:         "container",
-							operator:          "!",
+							operator:          "not",
 							values:            "",
 							operatorAndValues: "",
 						},
@@ -386,7 +386,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 			},
 			expPolicyEventMap: PolicyEventMap{
 				0: {
-					policyName: "!container-scope",
+					policyName: "not-container-scope",
 					eventFlags: []eventFlag{
 						writeEvtFlag,
 					},
@@ -623,7 +623,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 					Name: "multiple-scope",
 				},
 				Spec: v1beta1.PolicySpec{
-					Scope:          []string{"comm=bash", "follow", "!container", "uid=1000"},
+					Scope:          []string{"comm=bash", "follow", "not-container", "uid=1000"},
 					DefaultActions: []string{"log"},
 					Rules: []v1beta1.Rule{
 						{Event: "write"},
@@ -649,9 +649,9 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 							operatorAndValues: "",
 						},
 						{
-							full:              "!container",
+							full:              "not-container",
 							scopeName:         "container",
-							operator:          "!",
+							operator:          "not",
 							values:            "",
 							operatorAndValues: "",
 						},

@@ -54,7 +54,7 @@ Scope examples:
   --scope container=ab356bc4dd554                              | only trace events from container id ab356bc4dd554
   --scope container                                            | only trace events from containers
   --scope c                                                    | only trace events from containers (same as above)
-  --scope '!container'                                         | only trace events from the host
+  --scope not-container                                        | only trace events from the host
   --scope uid=0                                                | only trace events from uid 0
   --scope mntns=4026531840                                     | only trace events from mntns id 4026531840
   --scope pidns!=4026531836                                    | only trace events from pidns id not equal to 4026531840

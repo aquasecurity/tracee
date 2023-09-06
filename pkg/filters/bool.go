@@ -92,7 +92,7 @@ func (f *BoolFilter) Parse(operatorAndValues string) error {
 	}
 
 	// case of !field
-	if operatorAndValues[0] == '!' {
+	if strings.HasPrefix(operatorAndValues, "not-") {
 		f.falseEnabled = true
 		return nil
 	}

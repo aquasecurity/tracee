@@ -137,8 +137,8 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 			}
 
 			if scopeFlag.scopeName == "container" {
-				if scopeFlag.operator == "!" {
-					err := p.ContFilter.Parse(scopeFlag.full) // !container
+				if scopeFlag.operator == "not" {
+					err := p.ContFilter.Parse(scopeFlag.full)
 					if err != nil {
 						return nil, err
 					}

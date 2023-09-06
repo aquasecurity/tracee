@@ -130,7 +130,7 @@ expected.
 
     ```text
     1) --scope container # all container events
-    2) --scope '!container' # events from the host only
+    2) --scope not-container # events from the host only
     3) --scope container=new # containers created after tracee-ebf execution
     4) --scope container=3f93da58be3c --events openat
     5) --scope container=new --events openat.args.pathname=/etc/shadow

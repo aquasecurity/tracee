@@ -36,7 +36,7 @@ func TestBoolFilter(t *testing.T) {
 		},
 		{
 			name:         "eval false 1",
-			expressions:  []string{"!container"},
+			expressions:  []string{"not-container"},
 			expected:     false,
 			filterResult: []bool{false, true},
 		},
@@ -54,7 +54,7 @@ func TestBoolFilter(t *testing.T) {
 		},
 		{
 			name:         "eval false then true",
-			expressions:  []string{"!container", "=true"},
+			expressions:  []string{"not-container", "=true"},
 			expected:     true,
 			filterResult: []bool{true, true},
 		},

@@ -56,15 +56,19 @@ func parseScopeFlag(flag string) (scopeFlag, error) {
 	// without expression operator
 	//
 
-	if operatorIdx == -1 || // no operator, as a set flag
-		(operatorIdx == 0 && flag[0] == '!') { // negation, as an unset flag
+	if operatorIdx == -1 { // no expression operator
 		if hasLeadingOrTrailingWhitespace(flag) {
 			return scopeFlag{}, errfmt.WrapError(InvalidFilterFlagFormat(flag))
 		}
 
 		// unset flag
-		if operatorIdx == 0 {
-			name := flag[1:]
+		unsetPrefix := "not-"
+		if strings.HasPrefix(flag, unsetPrefix) {
+			if len(flag) == len(unsetPrefix) {
+				return scopeFlag{}, errfmt.WrapError(InvalidFilterFlagFormat(flag))
+			}
+
+			name := flag[len(unsetPrefix):]
 			if hasLeadingOrTrailingWhitespace(name) {
 				return scopeFlag{}, errfmt.WrapError(InvalidFilterFlagFormat(flag))
 			}
@@ -72,7 +76,7 @@ func parseScopeFlag(flag string) (scopeFlag, error) {
 			return scopeFlag{
 				full:      flag,
 				scopeName: name,
-				operator:  flag[:1],
+				operator:  unsetPrefix[:len(unsetPrefix)-1],
 			}, nil
 		}
 
