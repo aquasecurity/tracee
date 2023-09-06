@@ -150,12 +150,12 @@ expected.
         Do not use given command prefix for these examples as they're filtering
         by command name as well.
 
-1. **Binary Path** `(Operators: =, !=)`
+1. **Executable Path** `(Operators: =, !=)`
 
     ```text
-    1) --scope binary=/usr/bin/ls
-    2) --scope binary=host:/usr/bin/ls
-    3) --scope binary=4026532448:/usr/bin/ls
+    1) --scope executable=/usr/bin/ls
+    2) --scope executable=host:/usr/bin/ls
+    3) --scope executable=4026532448:/usr/bin/ls
     ```
 
     !!! Note

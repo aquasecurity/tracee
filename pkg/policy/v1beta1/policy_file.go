@@ -131,8 +131,7 @@ func (p PolicyFile) validateScope() error {
 		"container",
 		"not-container",
 		"tree",
-		"binary",
-		"bin",
+		"exec", "executable", "bin", "binary",
 		"follow",
 	}
 
