@@ -9189,6 +9189,16 @@ var CoreEvents = map[ID]Definition{
 		dependencies: Dependencies{
 			probes: []Probe{
 				{handle: probes.SecurityBPRMCheck, required: true},
+				{handle: probes.SyscallEnter__Internal, required: true},
+			},
+			tailCalls: []TailCall{
+				{
+					"sys_enter_init_tail",
+					"sys_enter_init",
+					[]uint32{
+						uint32(Execve), uint32(Execveat),
+					},
+				},
 			},
 		},
 		sets: []string{"lsm_hooks", "proc", "proc_life"},
@@ -9196,6 +9206,8 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "dev_t", Name: "dev"},
 			{Type: "unsigned long", Name: "inode"},
+			{Type: "const char*const*", Name: "argv"},
+			{Type: "const char*const*", Name: "envp"},
 		},
 	},
 	SecurityFileOpen: {

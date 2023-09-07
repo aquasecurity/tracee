@@ -1946,9 +1946,28 @@ int BPF_KPROBE(trace_security_bprm_check)
     unsigned long inode_nr = get_inode_nr_from_file(file);
     void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
 
+    syscall_data_t *sys = &p.task_info->syscall_data;
+    const char *const *argv = NULL;
+    const char *const *envp = NULL;
+    switch (sys->id) {
+        case SYSCALL_EXECVE:
+            argv = (const char *const *) sys->args.args[1];
+            envp = (const char *const *) sys->args.args[2];
+            break;
+        case SYSCALL_EXECVEAT:
+            argv = (const char *const *) sys->args.args[2];
+            envp = (const char *const *) sys->args.args[3];
+            break;
+        default:
+            break;
+    }
+
     save_str_to_buf(&p.event->args_buf, file_path, 0);
     save_to_submit_buf(&p.event->args_buf, &s_dev, sizeof(dev_t), 1);
     save_to_submit_buf(&p.event->args_buf, &inode_nr, sizeof(unsigned long), 2);
+    save_str_arr_to_buf(&p.event->args_buf, argv, 3);
+    if (p.config->options & OPT_EXEC_ENV)
+        save_str_arr_to_buf(&p.event->args_buf, envp, 4);
 
     return events_perf_submit(&p, SECURITY_BPRM_CHECK, 0);
 }
