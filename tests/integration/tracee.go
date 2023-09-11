@@ -91,7 +91,7 @@ func startTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 	trc, err := tracee.New(cfg)
 	require.NoError(t, err)
 
-	err = trc.Init()
+	err = trc.Init(ctx)
 	require.NoError(t, err)
 
 	t.Logf("started tracee...\n")
