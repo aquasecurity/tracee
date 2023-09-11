@@ -80,6 +80,8 @@ func (pt *ProcessTree) String() string {
 	newTable := func() *tablewriter.Table {
 		table := tablewriter.NewWriter(buffer)
 		table.SetHeader([]string{"Ppid", "Tid", "Pid", "Date", "CMD", "Children", "Threads"})
+		// If debug() is enabled:
+		// table.SetHeader([]string{"Ppid", "Tid", "Pid", "StartTime", "Hash", "CMD", "Children", "Threads"})
 		table.SetAutoWrapText(false)
 		table.SetRowLine(false)
 		table.SetAutoFormatHeaders(true)
@@ -109,6 +111,9 @@ func (pt *ProcessTree) String() string {
 		if len(execName) > 25 {
 			execName = execName[:20] + "..."
 		}
+		// If debug() is enabled (and add hashString and start_time to unsortedRows)
+		// hashStr := fmt.Sprintf("%v", process.GetHash())
+		// start_time := process.GetInfo().GetStartTimeNS()
 		tid := fmt.Sprintf("%v", processFeed.Tid)
 		pid := fmt.Sprintf("%v", processFeed.Pid)
 		ppid := fmt.Sprintf("%v", processFeed.PPid)

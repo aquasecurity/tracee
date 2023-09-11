@@ -3,6 +3,7 @@ package controlplane
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/aquasecurity/libbpfgo"
 
@@ -29,6 +30,7 @@ type Controller struct {
 	enrichEnabled  bool
 }
 
+// NewController creates a new controller.
 func NewController(
 	bpfModule *libbpfgo.Module,
 	cgroupManager *containers.Containers,
@@ -54,28 +56,17 @@ func NewController(
 	return p, nil
 }
 
+// Start starts the controller.
 func (ctrl *Controller) Start() {
 	ctrl.signalBuffer.Poll(pollTimeout)
 }
 
+// Run runs the controller.
 func (ctrl *Controller) Run(ctx context.Context) {
 	ctrl.ctx = ctx
 
-	// DEBUG: uncomment to print process tree periodically (for debugging purposes)
-	// go func() {
-	// 	for {
-	// 		time.Sleep(5 * time.Second)
-	// 		fmt.Printf("%s", ctrl.processTree)
-	// 	}
-	// }()
-
-	// TODO: Should tracee run the FeedFromProcFS periodically?
-	go func() {
-		err := ctrl.processTree.FeedFromProcFS()
-		if err != nil {
-			logger.Debugw("error feeding process tree from procfs", "error", err)
-		}
-	}()
+	ctrl.debug(false)
+	ctrl.readProcFS()
 
 	for {
 		select {
@@ -98,11 +89,13 @@ func (ctrl *Controller) Run(ctx context.Context) {
 	}
 }
 
+// Stop stops the controller.
 func (ctrl *Controller) Stop() error {
 	ctrl.signalBuffer.Stop()
 	return nil
 }
 
+// processSignal processes a signal from the control plane.
 func (ctrl *Controller) processSignal(signal signal) error {
 	switch signal.id {
 	case events.SignalCgroupMkdir:
@@ -117,4 +110,50 @@ func (ctrl *Controller) processSignal(signal signal) error {
 		return ctrl.processSchedProcessExit(signal.args)
 	}
 	return nil
+}
+
+// Private
+
+// readProcFS reads the procfs and feeds the process tree with data.
+func (ctrl *Controller) readProcFS() {
+	go func() {
+		err := ctrl.processTree.FeedFromProcFS()
+		if err != nil {
+			logger.Debugw("error feeding process tree from procfs", "error", err)
+		}
+	}()
+}
+
+// debug prints the process tree every 5 seconds (for debugging purposes).
+func (ctrl *Controller) debug(enable bool) {
+	//
+	// A "hash does not match" warning is enough to tell developers there is something wrong with
+	// the Hash calculation. After that, having, or not having, the hash available won't give you
+	// any details (as you need the "tid" and "starttime" in both ends: userland and bpf).
+	//
+	// This is where the "debug" function enters. The "best way" to debug hash problems is:
+	//
+	// 1. To enable the process tree "display" (this function);
+	// 2. To bpf_printk the "hash" and "start_time" at sched_process_exit_signal() in eBPF code;
+	// 3. To start a simple multi-threaded application (with processes and threads): https://gist.github.com/rafaeldtinoco/4b0a13213283ad636d5cc33be053a817
+	// 4. To start tracee.
+	//
+	// Wait for the tree to be printed by proctree_output.go code (with "main" program on it, and
+	// its threads), exit "main program" and check "bpf tracelog". You will be able to compare the
+	// hash from the exit hook with the process tree one (and check different values).
+	//
+	// You may also execute "main" program after tracee has started, with debug enabled, and check
+	// if the process tree shows it, and its threads, correctly.
+	//
+	// NOTE: Of course there are other ways of debugging, this one is the fastest and simpler
+	// (without adding/removing too much code).
+
+	if enable {
+		go func() {
+			for {
+				time.Sleep(5 * time.Second)
+				fmt.Printf("%s", ctrl.processTree)
+			}
+		}()
+	}
 }
