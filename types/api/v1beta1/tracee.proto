@@ -22,8 +22,29 @@ message GetEventDefinitionResponse {
     repeated EventDefinition definitions = 1;
 }
 
+message EnablePolicyRuleRequest {
+    string policy_name = 1;
+    string rule_id = 2;
+}
+
+message EnablePolicyRuleResponse {
+
+}
+
+message DisablePolicyRuleRequest {
+    string policy_name = 1;
+    string rule_id = 2;
+}
+
+message DisablePolicyRuleResponse {
+
+}
+
 service TraceeService {
     rpc GetEventDefinition(GetEventDefinitionRequest) returns (GetEventDefinitionResponse);
+
+    rpc EnablePolicyRule(EnablePolicyRuleRequest) returns (EnablePolicyRuleResponse);
+    rpc DisablePolicyRule(DisablePolicyRuleRequest) returns (DisablePolicyRuleResponse);
 
     rpc GetVersion(GetVersionRequest) returns (GetVersionResponse);
 }

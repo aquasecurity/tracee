@@ -23,6 +23,8 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TraceeServiceClient interface {
 	GetEventDefinition(ctx context.Context, in *GetEventDefinitionRequest, opts ...grpc.CallOption) (*GetEventDefinitionResponse, error)
+	EnablePolicyRule(ctx context.Context, in *EnablePolicyRuleRequest, opts ...grpc.CallOption) (*EnablePolicyRuleResponse, error)
+	DisablePolicyRule(ctx context.Context, in *DisablePolicyRuleRequest, opts ...grpc.CallOption) (*DisablePolicyRuleResponse, error)
 	GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*GetVersionResponse, error)
 }
 
@@ -43,6 +45,24 @@ func (c *traceeServiceClient) GetEventDefinition(ctx context.Context, in *GetEve
 	return out, nil
 }
 
+func (c *traceeServiceClient) EnablePolicyRule(ctx context.Context, in *EnablePolicyRuleRequest, opts ...grpc.CallOption) (*EnablePolicyRuleResponse, error) {
+	out := new(EnablePolicyRuleResponse)
+	err := c.cc.Invoke(ctx, "/tracee.v1beta1.TraceeService/EnablePolicyRule", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *traceeServiceClient) DisablePolicyRule(ctx context.Context, in *DisablePolicyRuleRequest, opts ...grpc.CallOption) (*DisablePolicyRuleResponse, error) {
+	out := new(DisablePolicyRuleResponse)
+	err := c.cc.Invoke(ctx, "/tracee.v1beta1.TraceeService/DisablePolicyRule", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *traceeServiceClient) GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*GetVersionResponse, error) {
 	out := new(GetVersionResponse)
 	err := c.cc.Invoke(ctx, "/tracee.v1beta1.TraceeService/GetVersion", in, out, opts...)
@@ -57,6 +77,8 @@ func (c *traceeServiceClient) GetVersion(ctx context.Context, in *GetVersionRequ
 // for forward compatibility
 type TraceeServiceServer interface {
 	GetEventDefinition(context.Context, *GetEventDefinitionRequest) (*GetEventDefinitionResponse, error)
+	EnablePolicyRule(context.Context, *EnablePolicyRuleRequest) (*EnablePolicyRuleResponse, error)
+	DisablePolicyRule(context.Context, *DisablePolicyRuleRequest) (*DisablePolicyRuleResponse, error)
 	GetVersion(context.Context, *GetVersionRequest) (*GetVersionResponse, error)
 	mustEmbedUnimplementedTraceeServiceServer()
 }
@@ -67,6 +89,12 @@ type UnimplementedTraceeServiceServer struct {
 
 func (UnimplementedTraceeServiceServer) GetEventDefinition(context.Context, *GetEventDefinitionRequest) (*GetEventDefinitionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetEventDefinition not implemented")
+}
+func (UnimplementedTraceeServiceServer) EnablePolicyRule(context.Context, *EnablePolicyRuleRequest) (*EnablePolicyRuleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EnablePolicyRule not implemented")
+}
+func (UnimplementedTraceeServiceServer) DisablePolicyRule(context.Context, *DisablePolicyRuleRequest) (*DisablePolicyRuleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DisablePolicyRule not implemented")
 }
 func (UnimplementedTraceeServiceServer) GetVersion(context.Context, *GetVersionRequest) (*GetVersionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetVersion not implemented")
@@ -102,6 +130,42 @@ func _TraceeService_GetEventDefinition_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TraceeService_EnablePolicyRule_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EnablePolicyRuleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TraceeServiceServer).EnablePolicyRule(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/tracee.v1beta1.TraceeService/EnablePolicyRule",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TraceeServiceServer).EnablePolicyRule(ctx, req.(*EnablePolicyRuleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TraceeService_DisablePolicyRule_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DisablePolicyRuleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TraceeServiceServer).DisablePolicyRule(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/tracee.v1beta1.TraceeService/DisablePolicyRule",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TraceeServiceServer).DisablePolicyRule(ctx, req.(*DisablePolicyRuleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TraceeService_GetVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetVersionRequest)
 	if err := dec(in); err != nil {
@@ -130,6 +194,14 @@ var TraceeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetEventDefinition",
 			Handler:    _TraceeService_GetEventDefinition_Handler,
+		},
+		{
+			MethodName: "EnablePolicyRule",
+			Handler:    _TraceeService_EnablePolicyRule_Handler,
+		},
+		{
+			MethodName: "DisablePolicyRule",
+			Handler:    _TraceeService_DisablePolicyRule_Handler,
 		},
 		{
 			MethodName: "GetVersion",
