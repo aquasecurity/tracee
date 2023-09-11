@@ -117,7 +117,7 @@ func (ctrl *Controller) processSignal(signal signal) error {
 // readProcFS reads the procfs and feeds the process tree with data.
 func (ctrl *Controller) readProcFS() {
 	go func() {
-		err := ctrl.processTree.FeedFromProcFS()
+		err := ctrl.processTree.FeedFromProcFS(proctree.AllPIDs)
 		if err != nil {
 			logger.Debugw("error feeding process tree from procfs", "error", err)
 		}
