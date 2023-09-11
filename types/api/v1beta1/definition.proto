@@ -7,7 +7,7 @@ package tracee.v1beta1;
 message EventDefinition {
 	int32 id = 1;
 	string name = 2;
-	string version= 3;
+	Version version= 3;
 	string description = 4 ;
 	repeated string tags = 5;
 	repeated Param params = 6;
@@ -16,4 +16,10 @@ message EventDefinition {
 message Param {
 	string name = 1;
 	string type = 2;
+}
+
+message Version {
+	uint64 major = 1;
+	uint64 minor = 2;
+	uint64 patch = 3;
 }
