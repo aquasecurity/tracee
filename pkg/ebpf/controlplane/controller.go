@@ -104,7 +104,7 @@ func (ctrl *Controller) Stop() error {
 }
 
 func (ctrl *Controller) processSignal(signal signal) error {
-	switch signal.eventID {
+	switch signal.id {
 	case events.SignalCgroupMkdir:
 		return ctrl.processCgroupMkdir(signal.args)
 	case events.SignalCgroupRmdir:
