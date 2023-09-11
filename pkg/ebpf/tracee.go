@@ -12,11 +12,9 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
 	"unsafe"
 
 	lru "github.com/hashicorp/golang-lru/v2"
-	"golang.org/x/sys/unix"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	bpf "github.com/aquasecurity/libbpfgo"
@@ -482,26 +480,10 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		},
 	}
 
-	// Tracee bpf code uses monotonic clock as event timestamp. Get current
-	// monotonic clock so tracee can calculate event timestamps relative to it.
-
-	var ts unix.Timespec
-	err = unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts)
-	if err != nil {
-		return errfmt.Errorf("getting clock time %v", err)
-	}
-	startTime := ts.Nano()
-
-	// Calculate the boot time using the monotonic time (since this is the clock
-	// we're using as a timestamp) Note: this is NOT the real boot time, as the
-	// monotonic clock doesn't take into account system sleeps.
-
-	bootTime := time.Now().UnixNano() - startTime
-
 	// Initialize times
 
-	t.startTime = uint64(startTime)
-	t.bootTime = uint64(bootTime)
+	t.startTime = uint64(utils.GetStartTimeNS())
+	t.bootTime = uint64(utils.GetBootTimeNS())
 
 	return nil
 }
