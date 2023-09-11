@@ -1,11 +1,52 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+host_os = case
+when Vagrant::Util::Platform.linux?
+  "Linux"
+when Vagrant::Util::Platform.darwin?
+  "Darwin"
+else  
+  puts "ERROR: Host OS is not supported."
+  abort
+end
+
+arch = case `uname -m`.strip
+when "x86_64", "amd64"
+  "amd64"
+when "aarch64", "arm64"
+  "arm64"
+else
+  puts "ERROR: Architecture #{arch_raw} is not supported."
+  abort
+end
+
+vm_name = "tracee-#{arch}-vm"
+
 Vagrant.configure("2") do |config|
-  # config.vm.box = "ubuntu/focal64"     # Ubuntu 20.04 Focal Fossa (non CO-RE)
-  # config.vm.box = "ubuntu/hirsute64"   # Ubuntu 21.04 Hirsute Hippo (CO-RE)
-  # config.vm.box = "ubuntu/impish64"    # Ubuntu 21.10 Impish Indri (CO-RE)
-  config.vm.box = "ubuntu/jammy64"       # Ubuntu 22.04 Jammy Jellyfish (CO-RE)
+  case arch
+  when "amd64"
+    # config.vm.box = "ubuntu/focal64"     # Ubuntu 20.04 Focal Fossa (non CO-RE)
+    # config.vm.box = "ubuntu/hirsute64"   # Ubuntu 21.04 Hirsute Hippo (CO-RE)
+    # config.vm.box = "ubuntu/impish64"    # Ubuntu 21.10 Impish Indri (CO-RE)
+    config.vm.box = "ubuntu/jammy64"       # Ubuntu 22.04 Jammy Jellyfish (CO-RE)
+  when "arm64"
+    config.vm.box = "bento/ubuntu-22.04-arm64"
+  end
+
+  case host_os
+  when "Linux"
+    config.vm.provider "virtualbox" do |vb|
+      vb.name = vm_name
+      vb.cpus = "4"
+      vb.memory = "2048"
+      vb.gui = false
+    end
+  when "Darwin"
+    config.vm.provider "parallels" do |prl|
+      prl.name = vm_name
+    end
+  end
 
   config.ssh.extra_args = ["-t", "cd /vagrant; bash --login"]
 
@@ -23,12 +64,6 @@ Vagrant.configure("2") do |config|
   #
   # TIP For Google Chrome you may allow insecure TLS connections at chrome://flags/#allow-insecure-localhost
   config.vm.network :forwarded_port, guest: 10443, host: 10443
-
-  config.vm.provider "virtualbox" do |vb|
-    vb.gui = false
-    vb.cpus = 4
-    vb.memory = "2048"
-  end
 
   config.vm.provision "shell", privileged: true, inline: <<-SHELL
     VAGRANT_HOME="/home/vagrant"
@@ -58,11 +93,12 @@ Vagrant.configure("2") do |config|
 
     apt-get install --yes zlib1g-dev libelf-dev
     apt-get install --yes protobuf-compiler
-    apt-get install --yes linux-tools-"$(uname -r)"
+    apt-get install --yes linux-tools-"$(uname -r)" ||
+      apt-get install --yes linux-tools-generic
 
     # golang
-    wget --quiet https://golang.org/dl/go$GO_VERSION.linux-amd64.tar.gz
-    tar -C /usr/local -xzf go$GO_VERSION.linux-amd64.tar.gz
+    wget --quiet https://golang.org/dl/go$GO_VERSION.linux-#{arch}.tar.gz
+    tar -C /usr/local -xzf go$GO_VERSION.linux-#{arch}.tar.gz
     GOBIN_PATH=/usr/local/go/bin
     echo "export PATH=$PATH:$GOBIN_PATH" >> $VAGRANT_HOME/.profile
     # integration tests run as root, so go needs to be in root's path as well
@@ -113,7 +149,7 @@ Vagrant.configure("2") do |config|
     # opa
     #
 
-    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/$OPA_VERSION/opa_linux_amd64
+    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/$OPA_VERSION/opa_linux_#{arch}
     chmod 755 /usr/bin/opa
   SHELL
 end
