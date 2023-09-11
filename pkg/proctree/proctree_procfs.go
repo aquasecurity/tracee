@@ -11,9 +11,18 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
 )
 
+const (
+	AllPIDs = 0
+)
+
 // FeedFromProcFS feeds the process tree with data from procfs.
-func (pt *ProcessTree) FeedFromProcFS() error {
+func (pt *ProcessTree) FeedFromProcFS(givenPid int) error {
 	procDir := "/proc"
+
+	//
+	// Internal Functions:
+	// (avoid code dedup and exposing them to the public API)
+	//
 
 	// getProcessByPID returns a process by its PID.
 	getProcessByPID := func(pid int) (*Process, error) {
@@ -67,8 +76,8 @@ func (pt *ProcessTree) FeedFromProcFS() error {
 				Tid:         int(status.GetPid()),    // status: pid == tid
 				Pid:         int(status.GetTgid()),   // status: tgid == pid
 				PPid:        int(status.GetPPid()),   // status: ppid == ppid
-				NsTid:       int(status.GetNsTgid()), // status: nstgid == nspid
-				NsPid:       int(status.GetNsPid()),  // status: nspid == nspid
+				NsTid:       int(status.GetNsPid()),  // status: nspid == nspid
+				NsPid:       int(status.GetNsTgid()), // status: nstgid == nspid
 				NsPPid:      int(status.GetNsPPid()), // status: nsppid == nsppid
 				Uid:         -1,                      // do not change the parent UID
 				Gid:         -1,                      // do not change the parent GID
@@ -123,8 +132,8 @@ func (pt *ProcessTree) FeedFromProcFS() error {
 				Tid:         int(status.GetPid()),    // status: pid == tid
 				Pid:         int(status.GetTgid()),   // status: tgid == pid
 				PPid:        int(status.GetPPid()),   // status: ppid == ppid
-				NsTid:       int(status.GetNsTgid()), // status: nstgid == nspid
-				NsPid:       int(status.GetNsPid()),  // status: nspid == nspid
+				NsTid:       int(status.GetNsPid()),  // status: nspid == nspid
+				NsPid:       int(status.GetNsTgid()), // status: nstgid == nspid
 				NsPPid:      int(status.GetNsPPid()), // status: nsppid == nsppid
 				Uid:         -1,                      // do not change the parent UID
 				Gid:         -1,                      // do not change the parent GID
@@ -151,7 +160,55 @@ func (pt *ProcessTree) FeedFromProcFS() error {
 		return nil
 	}
 
-	// Walk the procfs tree
+	// dealWithProcFsEntry deals with a process from procfs.
+	dealWithProcFsEntry := func(p int) error {
+		_, err := os.Stat(fmt.Sprintf("/proc/%v", p))
+		if os.IsNotExist(err) {
+			return errfmt.Errorf("could not find process %v", p)
+		}
+
+		err = dealWithProc(p) // run for the given process
+		if err != nil {
+			logger.Debugw("proctree from procfs (process)", "pid", p, "err", err)
+			return err
+		}
+
+		taskPath := fmt.Sprintf("/proc/%v/task", p)
+		taskDirs, err := os.ReadDir(taskPath)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		for _, taskDir := range taskDirs {
+			if !taskDir.IsDir() {
+				continue
+			}
+			tid, err := strconv.Atoi(taskDir.Name())
+			if err != nil {
+				continue
+			}
+
+			err = dealWithThread(p, tid) // run for all threads of the given process
+			if err != nil {
+				logger.Debugw("proctree from procfs (thread)", "pid", p, "tid", tid, "err", err)
+				continue
+			}
+		}
+
+		return nil
+	}
+
+	//
+	// Code
+	//
+
+	// If a PID is given, only deal with that process
+
+	if givenPid > 0 {
+		return dealWithProcFsEntry(givenPid)
+	}
+
+	// OR... Walk the procfs tree...
 
 	dirs, err := os.ReadDir(procDir)
 	if err != nil {
@@ -166,33 +223,7 @@ func (pt *ProcessTree) FeedFromProcFS() error {
 			continue
 		}
 
-		err = dealWithProc(pid) // run for each process
-		if err != nil {
-			logger.Debugw("proctree from procfs (process)", "pid", pid, "err", err)
-			continue
-		}
-
-		taskPath := fmt.Sprintf("/proc/%v/task", pid)
-		taskDirs, err := os.ReadDir(taskPath)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		for _, taskDir := range taskDirs {
-			if !taskDir.IsDir() {
-				continue
-			}
-			tid, err := strconv.Atoi(taskDir.Name())
-			if err != nil {
-				continue
-			}
-
-			err = dealWithThread(pid, tid) // run for each processes thread
-			if err != nil {
-				logger.Debugw("proctree from procfs (thread)", "pid", pid, "tid", tid, "err", err)
-				continue
-			}
-		}
+		_ = dealWithProcFsEntry(pid) // run for each existing process
 	}
 
 	return nil
