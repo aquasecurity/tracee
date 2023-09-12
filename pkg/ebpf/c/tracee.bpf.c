@@ -14,7 +14,6 @@
 #include <bpf/bpf_endian.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
-
 #include <maps.h>
 #include <types.h>
 #include <capture_filtering.h>
@@ -6179,21 +6178,24 @@ int sched_process_exec_signal(struct bpf_raw_tracepoint_args *ctx)
 
     // Hashes
 
-    u64 id = bpf_get_current_pid_tgid();
-    u32 host_tid = id;
-    u32 host_pid = id >> 32;
-
     struct task_struct *task = (struct task_struct *) ctx->args[0];
     if (task == NULL)
         return -1;
+    struct task_struct *leader = get_leader_task(task);
+    struct task_struct *parent = get_leader_task(get_parent_task(leader));
+
+    // The hash is always calculated with "task_struct->pid + start_time".
+    u32 task_hash = hash_task_id(get_task_host_tgid(task), get_task_start_time(task));
+    u32 parent_hash = hash_task_id(get_task_host_tgid(parent), get_task_start_time(parent));
+    u32 leader_hash = hash_task_id(get_task_host_tgid(leader), get_task_start_time(leader));
 
     // The event timestamp, so process tree info can be changelog'ed.
     u64 timestamp = bpf_ktime_get_ns();
     save_to_submit_buf(&signal->args_buf, &timestamp, sizeof(u64), 0);
 
-    // The hash is always calculated with "task_struct->pid + start_time".
-    u32 task_hash = hash_task_id(get_task_host_tgid(task), get_task_start_time(task));
     save_to_submit_buf(&signal->args_buf, (void *) &task_hash, sizeof(u32), 1);
+    save_to_submit_buf(&signal->args_buf, (void *) &parent_hash, sizeof(u32), 2);
+    save_to_submit_buf(&signal->args_buf, (void *) &leader_hash, sizeof(u32), 3);
 
     // Exec logic
 
@@ -6201,7 +6203,7 @@ int sched_process_exec_signal(struct bpf_raw_tracepoint_args *ctx)
     if (bprm == NULL)
         return -1;
 
-    // The proc_info entry is created by sched_process_fork regular probe.
+    u32 host_pid = get_task_host_tgid(task);
     proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &host_pid);
     if (proc_info == NULL)
         return 0;
@@ -6215,18 +6217,18 @@ int sched_process_exec_signal(struct bpf_raw_tracepoint_args *ctx)
     u64 ctime = get_ctime_nanosec_from_file(file);
     umode_t inode_mode = get_inode_mode_from_file(file);
 
-    save_str_to_buf(&signal->args_buf, (void *) filename, 2);                   // cmdpath
-    save_str_to_buf(&signal->args_buf, file_path, 3);                           // pathname
-    save_to_submit_buf(&signal->args_buf, &s_dev, sizeof(dev_t), 4);            // dev
-    save_to_submit_buf(&signal->args_buf, &inode_nr, sizeof(unsigned long), 5); // inode
-    save_to_submit_buf(&signal->args_buf, &ctime, sizeof(u64), 6);              // ctime
-    save_to_submit_buf(&signal->args_buf, &inode_mode, sizeof(umode_t), 7);     // inode_mode
+    save_str_to_buf(&signal->args_buf, (void *) filename, 4);                   // cmdpath
+    save_str_to_buf(&signal->args_buf, file_path, 5);                           // pathname
+    save_to_submit_buf(&signal->args_buf, &s_dev, sizeof(dev_t), 6);            // dev
+    save_to_submit_buf(&signal->args_buf, &inode_nr, sizeof(unsigned long), 7); // inode
+    save_to_submit_buf(&signal->args_buf, &ctime, sizeof(u64), 8);              // ctime
+    save_to_submit_buf(&signal->args_buf, &inode_mode, sizeof(umode_t), 9);     // inode_mode
 
     // The proc_info interpreter field is set by "load_elf_phdrs" kprobe program.
-    save_str_to_buf(&signal->args_buf, &proc_info->interpreter.pathname, 8);                            // interpreter_pathname
-    save_to_submit_buf(&signal->args_buf, &proc_info->interpreter.id.device, sizeof(dev_t), 9);         // interpreter_dev
-    save_to_submit_buf(&signal->args_buf, &proc_info->interpreter.id.inode, sizeof(unsigned long), 10); // interpreter_inode
-    save_to_submit_buf(&signal->args_buf, &proc_info->interpreter.id.ctime, sizeof(u64), 11);           // interpreter_ctime
+    save_str_to_buf(&signal->args_buf, &proc_info->interpreter.pathname, 10);                           // interpreter_pathname
+    save_to_submit_buf(&signal->args_buf, &proc_info->interpreter.id.device, sizeof(dev_t), 11);        // interpreter_dev
+    save_to_submit_buf(&signal->args_buf, &proc_info->interpreter.id.inode, sizeof(unsigned long), 12); // interpreter_inode
+    save_to_submit_buf(&signal->args_buf, &proc_info->interpreter.id.ctime, sizeof(u64), 13);           // interpreter_ctime
 
     struct mm_struct *mm = get_mm_from_task(task); // bprm->mm is null here, but task->mm is not
 
@@ -6244,11 +6246,11 @@ int sched_process_exec_signal(struct bpf_raw_tracepoint_args *ctx)
     if (get_task_parent_flags(task) & PF_KTHREAD)
         invoked_from_kernel = 1;
 
-    save_args_str_arr_to_buf(&signal->args_buf, (void *) arg_start, (void *) arg_end, argc, 12); // argv
-    save_str_to_buf(&signal->args_buf, (void *) interp, 13);                                     // interp
-    save_to_submit_buf(&signal->args_buf, &stdin_type, sizeof(unsigned short), 14);              // stdin_type
-    save_str_to_buf(&signal->args_buf, stdin_path, 15);                                          // stdin_path
-    save_to_submit_buf(&signal->args_buf, &invoked_from_kernel, sizeof(int), 16);                // invoked_from_kernel
+    save_args_str_arr_to_buf(&signal->args_buf, (void *) arg_start, (void *) arg_end, argc, 14); // argv
+    save_str_to_buf(&signal->args_buf, (void *) interp, 15);                                     // interp
+    save_to_submit_buf(&signal->args_buf, &stdin_type, sizeof(unsigned short), 16);              // stdin_type
+    save_str_to_buf(&signal->args_buf, stdin_path, 17);                                          // stdin_path
+    save_to_submit_buf(&signal->args_buf, &invoked_from_kernel, sizeof(int), 18);                // invoked_from_kernel
 
     signal_perf_submit(ctx, signal, SIGNAL_SCHED_PROCESS_EXEC);
 
@@ -6264,16 +6266,26 @@ int sched_process_exit_signal(struct bpf_raw_tracepoint_args *ctx)
     if (unlikely(signal == NULL))
         return 0;
 
-    struct task_struct *task = (struct task_struct *) bpf_get_current_task();
+    // Hashes
 
-    u64 id = bpf_get_current_pid_tgid();
-    u32 host_tid = id;
-    u32 host_pid = id >> 32;
-    u64 start_time = get_task_start_time(task);
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task();
+    if (task == NULL)
+        return -1;
+    struct task_struct *leader = get_leader_task(task);
+    struct task_struct *parent = get_leader_task(get_parent_task(leader));
 
     // The hash is always calculated with "task_struct->pid + start_time".
-    u32 hash = hash_task_id(host_tid, start_time);
-    save_to_submit_buf(&signal->args_buf, (void *) &hash, sizeof(u32), 0);
+    u32 task_hash = hash_task_id(get_task_host_tgid(task), get_task_start_time(task));
+    u32 parent_hash = hash_task_id(get_task_host_tgid(parent), get_task_start_time(parent));
+    u32 leader_hash = hash_task_id(get_task_host_tgid(leader), get_task_start_time(leader));
+
+    // The event timestamp, so process tree info can be changelog'ed.
+    u64 timestamp = bpf_ktime_get_ns();
+    save_to_submit_buf(&signal->args_buf, &timestamp, sizeof(u64), 0);
+
+    save_to_submit_buf(&signal->args_buf, (void *) &task_hash, sizeof(u32), 1);
+    save_to_submit_buf(&signal->args_buf, (void *) &parent_hash, sizeof(u32), 2);
+    save_to_submit_buf(&signal->args_buf, (void *) &leader_hash, sizeof(u32), 3);
 
     // Exit logic.
 
@@ -6285,11 +6297,9 @@ int sched_process_exit_signal(struct bpf_raw_tracepoint_args *ctx)
         group_dead = true;
 
     long exit_code = get_task_exit_code(task);
-    u64 exit_time = bpf_ktime_get_ns();
 
-    save_to_submit_buf(&signal->args_buf, (void *) &exit_code, sizeof(long), 1);
-    save_to_submit_buf(&signal->args_buf, (void *) &exit_time, sizeof(u64), 2);
-    save_to_submit_buf(&signal->args_buf, (void *) &group_dead, sizeof(bool), 3);
+    save_to_submit_buf(&signal->args_buf, (void *) &exit_code, sizeof(long), 4);
+    save_to_submit_buf(&signal->args_buf, (void *) &group_dead, sizeof(bool), 5);
 
     signal_perf_submit(ctx, signal, SIGNAL_SCHED_PROCESS_EXIT);
 
