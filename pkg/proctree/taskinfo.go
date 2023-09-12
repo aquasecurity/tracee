@@ -78,7 +78,6 @@ func (ti *TaskInfo) SetFeedAt(feed TaskInfoFeed, targetTime time.Time) {
 	ti.setFeedAt(feed, targetTime) // set values at the given time
 }
 
-// setFeedAt sets the values of the task from the given feed at the given time.
 func (ti *TaskInfo) setFeedAt(feed TaskInfoFeed, targetTime time.Time) {
 	if feed.Name != "" {
 		ti.name.Set(feed.Name, targetTime)
