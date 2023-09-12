@@ -2,6 +2,9 @@ package proctree
 
 import (
 	"sync"
+	"time"
+
+	ch "github.com/aquasecurity/tracee/pkg/changelog"
 )
 
 // FileInfoFeed allows external packages to set/get multiple values of a task at once.
@@ -20,19 +23,25 @@ type FileInfoFeed struct {
 
 // FileInfo represents a file.
 type FileInfo struct {
-	name      string // file name
-	path      string // file path
-	dev       int    // device number of the file
-	ctime     int    // creation time of the file
-	inode     int    // inode number of the file
-	inodeMode int    // inode mode of the file
+	name      *ch.Changelog[string] // file name
+	path      *ch.Changelog[string] // file path
+	dev       *ch.Changelog[int]    // device number of the file
+	ctime     *ch.Changelog[int]    // creation time of the file
+	inode     *ch.Changelog[int]    // inode number of the file
+	inodeMode *ch.Changelog[int]    // inode mode of the file
 	mutex     *sync.RWMutex
 }
 
 // NewFileInfo creates a new file.
 func NewFileInfo() *FileInfo {
 	return &FileInfo{
-		mutex: &sync.RWMutex{},
+		name:      ch.NewChangelog[string](),
+		path:      ch.NewChangelog[string](),
+		dev:       ch.NewChangelog[int](),
+		ctime:     ch.NewChangelog[int](),
+		inode:     ch.NewChangelog[int](),
+		inodeMode: ch.NewChangelog[int](),
+		mutex:     &sync.RWMutex{},
 	}
 }
 
@@ -45,42 +54,63 @@ func NewFileInfoFeed(feed FileInfoFeed) *FileInfo {
 
 // Multiple values at once (using a feed structure)
 
-// SetFeed sets the values of the file from the given feed.
+// SetFeed sets the values of the file from a feed.
 func (fi *FileInfo) SetFeed(feed FileInfoFeed) {
 	fi.mutex.Lock()
 	defer fi.mutex.Unlock()
+	fi.SetFeedAt(feed, time.Now())
+}
 
-	if feed.Name != "" && fi.name != feed.Name {
-		fi.name = feed.Name
+// SetFeedAt sets the values of the file from a feed at the given time.
+func (fi *FileInfo) SetFeedAt(feed FileInfoFeed, targetTime time.Time) {
+	fi.mutex.Lock()
+	defer fi.mutex.Unlock()
+	fi.setFeedAt(feed, targetTime)
+}
+
+func (fi *FileInfo) setFeedAt(feed FileInfoFeed, targetTime time.Time) {
+	if feed.Name != "" {
+		fi.name.Set(feed.Name, targetTime)
 	}
-	if feed.Path != "" && fi.path != feed.Path {
-		fi.path = feed.Path
+	if feed.Path != "" {
+		fi.path.Set(feed.Path, targetTime)
 	}
-	if feed.Dev >= 0 && fi.dev != feed.Dev {
-		fi.dev = feed.Dev
+	if feed.Dev >= 0 {
+		fi.dev.Set(feed.Dev, targetTime)
 	}
-	if feed.Ctime >= 0 && fi.ctime != feed.Ctime {
-		fi.ctime = feed.Ctime
+	if feed.Ctime >= 0 {
+		fi.ctime.Set(feed.Ctime, targetTime)
 	}
-	if feed.Inode >= 0 && fi.inode != feed.Inode {
-		fi.inode = feed.Inode
+	if feed.Inode >= 0 {
+		fi.inode.Set(feed.Inode, targetTime)
 	}
-	if feed.InodeMode >= 0 && fi.inodeMode != feed.InodeMode {
-		fi.inodeMode = feed.InodeMode
+	if feed.InodeMode >= 0 {
+		fi.inodeMode.Set(feed.InodeMode, targetTime)
 	}
 }
 
-// GetValue returns the values of the file as a feed.
+// GetFeed returns the values of the file as a feed.
 func (fi *FileInfo) GetFeed() FileInfoFeed {
 	fi.mutex.RLock()
 	defer fi.mutex.RUnlock()
+	return fi.getFeedAt(time.Now())
+}
+
+// GetFeedAt returns the values of the file as a feed at the given time.
+func (fi *FileInfo) GetFeedAt(targetTime time.Time) FileInfoFeed {
+	fi.mutex.RLock()
+	defer fi.mutex.RUnlock()
+	return fi.getFeedAt(targetTime) // return values at the given time
+}
+
+func (fi *FileInfo) getFeedAt(targetTime time.Time) FileInfoFeed {
 	return FileInfoFeed{
-		Name:      fi.name,
-		Path:      fi.path,
-		Dev:       fi.dev,
-		Ctime:     fi.ctime,
-		Inode:     fi.inode,
-		InodeMode: fi.inodeMode,
+		Name:      fi.name.Get(targetTime),
+		Path:      fi.path.Get(targetTime),
+		Dev:       fi.dev.Get(targetTime),
+		Ctime:     fi.ctime.Get(targetTime),
+		Inode:     fi.inode.Get(targetTime),
+		InodeMode: fi.inodeMode.Get(targetTime),
 	}
 }
 
@@ -90,42 +120,84 @@ func (fi *FileInfo) GetFeed() FileInfoFeed {
 func (fi *FileInfo) SetName(name string) {
 	fi.mutex.Lock()
 	defer fi.mutex.Unlock()
-	fi.name = name
+	fi.name.Set(name, time.Now())
+}
+
+// SetNameAt sets the name of the file at the given time.
+func (fi *FileInfo) SetNameAt(name string, targetTime time.Time) {
+	fi.mutex.Lock()
+	defer fi.mutex.Unlock()
+	fi.name.Set(name, targetTime)
 }
 
 // SetPath sets the path of the file.
 func (fi *FileInfo) SetPath(path string) {
 	fi.mutex.Lock()
 	defer fi.mutex.Unlock()
-	fi.path = path
+	fi.path.Set(path, time.Now())
 }
 
-// SetDev sets the dev of the file.
+// SetPathAt sets the path of the file at the given time.
+func (fi *FileInfo) SetPathAt(path string, targetTime time.Time) {
+	fi.mutex.Lock()
+	defer fi.mutex.Unlock()
+	fi.path.Set(path, targetTime)
+}
+
+// SetDev sets the device number of the file.
 func (fi *FileInfo) SetDev(dev int) {
 	fi.mutex.Lock()
 	defer fi.mutex.Unlock()
-	fi.dev = dev
+	fi.dev.Set(dev, time.Now())
 }
 
-// SetCtime sets the ctime of the file.
+// SetDevAt sets the device number of the file at the given time.
+func (fi *FileInfo) SetDevAt(dev int, targetTime time.Time) {
+	fi.mutex.Lock()
+	defer fi.mutex.Unlock()
+	fi.dev.Set(dev, targetTime)
+}
+
+// SetCtime sets the creation time of the file.
 func (fi *FileInfo) SetCtime(ctime int) {
 	fi.mutex.Lock()
 	defer fi.mutex.Unlock()
-	fi.ctime = ctime
+	fi.ctime.Set(ctime, time.Now())
 }
 
-// SetInode sets the inode of the file.
+// SetCtimeAt sets the creation time of the file at the given time.
+func (fi *FileInfo) SetCtimeAt(ctime int, targetTime time.Time) {
+	fi.mutex.Lock()
+	defer fi.mutex.Unlock()
+	fi.ctime.Set(ctime, targetTime)
+}
+
+// SetInode sets the inode number of the file.
 func (fi *FileInfo) SetInode(inode int) {
 	fi.mutex.Lock()
 	defer fi.mutex.Unlock()
-	fi.inode = inode
+	fi.inode.Set(inode, time.Now())
+}
+
+// SetInodeAt sets the inode number of the file at the given time.
+func (fi *FileInfo) SetInodeAt(inode int, targetTime time.Time) {
+	fi.mutex.Lock()
+	defer fi.mutex.Unlock()
+	fi.inode.Set(inode, targetTime)
 }
 
 // SetInodeMode sets the inode mode of the file.
 func (fi *FileInfo) SetInodeMode(inodeMode int) {
 	fi.mutex.Lock()
 	defer fi.mutex.Unlock()
-	fi.inodeMode = inodeMode
+	fi.inodeMode.Set(inodeMode, time.Now())
+}
+
+// SetInodeModeAt sets the inode mode of the file at the given time.
+func (fi *FileInfo) SetInodeModeAt(inodeMode int, targetTime time.Time) {
+	fi.mutex.Lock()
+	defer fi.mutex.Unlock()
+	fi.inodeMode.Set(inodeMode, targetTime)
 }
 
 // Getters
@@ -134,40 +206,82 @@ func (fi *FileInfo) SetInodeMode(inodeMode int) {
 func (fi *FileInfo) GetName() string {
 	fi.mutex.RLock()
 	defer fi.mutex.RUnlock()
-	return fi.name
+	return fi.name.Get(time.Now())
+}
+
+// GetNameAt returns the name of the file at the given time.
+func (fi *FileInfo) GetNameAt(targetTime time.Time) string {
+	fi.mutex.RLock()
+	defer fi.mutex.RUnlock()
+	return fi.name.Get(targetTime)
 }
 
 // GetPath returns the path of the file.
 func (fi *FileInfo) GetPath() string {
 	fi.mutex.RLock()
 	defer fi.mutex.RUnlock()
-	return fi.path
+	return fi.path.Get(time.Now())
 }
 
-// GetDev returns the dev of the file.
+// GetPathAt returns the path of the file at the given time.
+func (fi *FileInfo) GetPathAt(targetTime time.Time) string {
+	fi.mutex.RLock()
+	defer fi.mutex.RUnlock()
+	return fi.path.Get(targetTime)
+}
+
+// GetDev returns the device number of the file.
 func (fi *FileInfo) GetDev() int {
 	fi.mutex.RLock()
 	defer fi.mutex.RUnlock()
-	return fi.dev
+	return fi.dev.Get(time.Now())
 }
 
-// GetCtime returns the ctime of the file.
+// GetDevAt returns the device number of the file at the given time.
+func (fi *FileInfo) GetDevAt(targetTime time.Time) int {
+	fi.mutex.RLock()
+	defer fi.mutex.RUnlock()
+	return fi.dev.Get(targetTime)
+}
+
+// GetCtime returns the creation time of the file.
 func (fi *FileInfo) GetCtime() int {
 	fi.mutex.RLock()
 	defer fi.mutex.RUnlock()
-	return fi.ctime
+	return fi.ctime.Get(time.Now())
 }
 
-// GetInode returns the inode of the file.
+// GetCtimeAt returns the creation time of the file at the given time.
+func (fi *FileInfo) GetCtimeAt(targetTime time.Time) int {
+	fi.mutex.RLock()
+	defer fi.mutex.RUnlock()
+	return fi.ctime.Get(targetTime)
+}
+
+// GetInode returns the inode number of the file.
 func (fi *FileInfo) GetInode() int {
 	fi.mutex.RLock()
 	defer fi.mutex.RUnlock()
-	return fi.inode
+	return fi.inode.Get(time.Now())
+}
+
+// GetInodeAt returns the inode number of the file at the given time.
+func (fi *FileInfo) GetInodeAt(targetTime time.Time) int {
+	fi.mutex.RLock()
+	defer fi.mutex.RUnlock()
+	return fi.inode.Get(targetTime)
 }
 
 // GetInodeMode returns the inode mode of the file.
 func (fi *FileInfo) GetInodeMode() int {
 	fi.mutex.RLock()
 	defer fi.mutex.RUnlock()
-	return fi.inodeMode
+	return fi.inodeMode.Get(time.Now())
+}
+
+// GetInodeModeAt returns the inode mode of the file at the given time.
+func (fi *FileInfo) GetInodeModeAt(targetTime time.Time) int {
+	fi.mutex.RLock()
+	defer fi.mutex.RUnlock()
+	return fi.inodeMode.Get(targetTime)
 }
