@@ -361,6 +361,19 @@ func (t *Tracee) Init() error {
 		logger.Debugw("Initializing buckets cache", "error", errfmt.WrapError(err))
 	}
 
+	// Initialize Process Tree
+
+	err = capabilities.GetInstance().Specific(
+		func() error {
+			t.processTree, err = proctree.NewProcessTree()
+			return err
+		},
+		cap.DAC_READ_SEARCH,
+	)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
 	// Initialize cgroups filesystems
 
 	t.cgroups, err = cgroup.NewCgroups()
@@ -1221,13 +1234,6 @@ func (t *Tracee) initBPF() error {
 	// Populate eBPF maps with initial data
 
 	err = t.populateBPFMaps()
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	// Initialize Process Tree (right before Control Plane starts)
-
-	t.processTree, err = proctree.NewProcessTree()
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
