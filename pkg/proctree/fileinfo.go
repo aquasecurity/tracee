@@ -18,16 +18,14 @@ type FileInfoFeed struct {
 // File Info
 //
 
-// TODO: Add Changelog to the file info variables (just like Task Info).
-
 // FileInfo represents a file.
 type FileInfo struct {
-	name      string
-	path      string
-	dev       int
-	ctime     int
-	inode     int
-	inodeMode int
+	name      string // file name
+	path      string // file path
+	dev       int    // device number of the file
+	ctime     int    // creation time of the file
+	inode     int    // inode number of the file
+	inodeMode int    // inode mode of the file
 	mutex     *sync.RWMutex
 }
 

@@ -73,6 +73,7 @@ func (pt *ProcessTree) FeedFromProcFS(givenPid int) error {
 		procInfo := process.GetInfo()
 		procInfo.SetFeed(
 			TaskInfoFeed{
+				Name:        status.GetName(),
 				Tid:         int(status.GetPid()),    // status: pid == tid
 				Pid:         int(status.GetTgid()),   // status: tgid == pid
 				PPid:        int(status.GetPPid()),   // status: ppid == ppid
@@ -84,7 +85,6 @@ func (pt *ProcessTree) FeedFromProcFS(givenPid int) error {
 				StartTimeNS: startTimeNs,
 			},
 		)
-		process.GetExecutable().SetName(status.GetName())
 
 		// update given process parent (if exists)
 		parent, err := getProcessByPID(status.GetPPid())

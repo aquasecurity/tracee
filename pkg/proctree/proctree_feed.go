@@ -86,6 +86,7 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 		leader = pt.GetOrCreateProcessByHash(feed.LeaderHash)
 		leader.GetInfo().SetFeedAt(
 			TaskInfoFeed{
+				Name:        parent.GetInfo().GetName(),
 				Tid:         int(feed.LeaderTid),
 				Pid:         int(feed.LeaderPid),
 				NsTid:       int(feed.LeaderNsTid),
@@ -115,6 +116,7 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 	thread := pt.GetOrCreateThreadByHash(feed.ChildHash)
 	thread.GetInfo().SetFeedAt(
 		TaskInfoFeed{
+			Name:        leader.GetInfo().GetName(),
 			Tid:         int(feed.ChildTid),
 			Pid:         int(feed.ChildPid),
 			NsTid:       int(feed.ChildNsTid),
@@ -199,6 +201,7 @@ func (pt *ProcessTree) FeedFromExec(feed ExecFeed) error {
 		return nil
 	}
 
+	process.GetInfo().SetNameAt(feed.CmdPath, utils.NsSinceBootTimeToTime(feed.TimeStamp))
 	process.GetExecutable().SetFeed(
 		FileInfoFeed{
 			Name:      feed.CmdPath,

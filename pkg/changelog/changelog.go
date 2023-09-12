@@ -15,7 +15,16 @@ type item[T any] struct {
 // the outside world as it is not thread-safe.
 
 type Changelog[T any] struct {
-	changes []item[T] // list of changes
+	changes    []item[T]              // list of changes
+	timestamps map[time.Time]struct{} // set of timestamps (used to avoid duplicates)
+}
+
+// NewChangelog creates a new changelog.
+func NewChangelog[T any]() *Changelog[T] {
+	return &Changelog[T]{
+		changes:    []item[T]{},
+		timestamps: map[time.Time]struct{}{},
+	}
 }
 
 // Getters
@@ -89,6 +98,10 @@ func (clv *Changelog[T]) Set(value T, targetTime time.Time) {
 
 // setAt sets the value of the changelog at the given time.
 func (clv *Changelog[T]) setAt(value T, targetTime time.Time) {
+	if _, ok := clv.timestamps[targetTime]; ok {
+		return // already set
+	}
+
 	entry := item[T]{
 		timestamp: targetTime,
 		value:     value,
@@ -98,6 +111,8 @@ func (clv *Changelog[T]) setAt(value T, targetTime time.Time) {
 	clv.changes = append(clv.changes, item[T]{})
 	copy(clv.changes[idx+1:], clv.changes[idx:])
 	clv.changes[idx] = entry
+
+	clv.timestamps[targetTime] = struct{}{} // mark timestamp as set
 }
 
 // findIndex returns the index of the first item in the changelog that is after the given time.
