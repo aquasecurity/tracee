@@ -106,8 +106,14 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 	// Case 01: The child is a process (if leader == child, work is done)
 
 	if feed.ChildHash == feed.LeaderHash {
-		leader.GetExecutable().SetFeed(parent.GetExecutable().GetFeed())
-		leader.GetInterpreter().SetFeed(parent.GetInterpreter().GetFeed())
+		leader.GetExecutable().SetFeedAt(
+			parent.GetExecutable().GetFeed(),
+			utils.NsSinceBootTimeToTime(feed.TimeStamp),
+		)
+		leader.GetInterpreter().SetFeedAt(
+			parent.GetInterpreter().GetFeed(),
+			utils.NsSinceBootTimeToTime(feed.TimeStamp),
+		)
 		return nil
 	}
 
