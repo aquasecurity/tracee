@@ -1773,6 +1773,28 @@ func (t *Tracee) Unsubscribe(s *streams.Stream) {
 	t.streamsManager.Unsubscribe(s)
 }
 
+func (t *Tracee) EnableEvent(eventName string) error {
+	id, found := events.Core.GetDefinitionIDByName(eventName)
+	if !found {
+		return errfmt.Errorf("error event not found: %s", eventName)
+	}
+
+	t.policyManager.EnableEvent(id)
+
+	return nil
+}
+
+func (t *Tracee) DisableEvent(eventName string) error {
+	id, found := events.Core.GetDefinitionIDByName(eventName)
+	if !found {
+		return errfmt.Errorf("error event not found: %s", eventName)
+	}
+
+	t.policyManager.DisableEvent(id)
+
+	return nil
+}
+
 // EnableRule enables a rule in the specified policies
 func (t *Tracee) EnableRule(policyNames []string, ruleId string) error {
 	eventID, found := events.Core.GetDefinitionIDByName(ruleId)

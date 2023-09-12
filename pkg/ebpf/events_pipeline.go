@@ -570,9 +570,9 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 				continue // might happen during initialization (ctrl+c seg faults)
 			}
 
-			// Is the rule disabled for the matched policies?
-			if !t.policyManager.IsRuleEnabled(event.MatchedPoliciesUser, events.ID(event.EventID)) {
-				logger.Debugw("event dropped because matched rule disabled", "event", event.EventName)
+			// Is the event enabled for the policies or globally?
+			if !t.policyManager.IsEnabled(event.MatchedPoliciesUser, events.ID(event.EventID)) {
+				logger.Debugw("event dropped because it is not enabled", "event", event.EventName)
 				t.eventsPool.Put(event)
 				continue
 			}
