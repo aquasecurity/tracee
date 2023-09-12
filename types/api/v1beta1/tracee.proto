@@ -22,8 +22,27 @@ message GetEventDefinitionResponse {
     repeated EventDefinition definitions = 1;
 }
 
+message EnableEventRequest {
+    string name = 1;
+}
+
+message EnableEventResponse {
+
+}
+
+message DisableEventRequest {
+    string name = 1;
+}
+
+message DisableEventResponse {
+
+}
+
 service TraceeService {
     rpc GetEventDefinition(GetEventDefinitionRequest) returns (GetEventDefinitionResponse);
+
+    rpc EnableEvent(EnableEventRequest) returns (EnableEventResponse);
+    rpc DisableEvent(DisableEventRequest) returns (DisableEventResponse);
 
     rpc GetVersion(GetVersionRequest) returns (GetVersionResponse);
 }

@@ -23,6 +23,8 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TraceeServiceClient interface {
 	GetEventDefinition(ctx context.Context, in *GetEventDefinitionRequest, opts ...grpc.CallOption) (*GetEventDefinitionResponse, error)
+	EnableEvent(ctx context.Context, in *EnableEventRequest, opts ...grpc.CallOption) (*EnableEventResponse, error)
+	DisableEvent(ctx context.Context, in *DisableEventRequest, opts ...grpc.CallOption) (*DisableEventResponse, error)
 	GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*GetVersionResponse, error)
 }
 
@@ -43,6 +45,24 @@ func (c *traceeServiceClient) GetEventDefinition(ctx context.Context, in *GetEve
 	return out, nil
 }
 
+func (c *traceeServiceClient) EnableEvent(ctx context.Context, in *EnableEventRequest, opts ...grpc.CallOption) (*EnableEventResponse, error) {
+	out := new(EnableEventResponse)
+	err := c.cc.Invoke(ctx, "/tracee.v1beta1.TraceeService/EnableEvent", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *traceeServiceClient) DisableEvent(ctx context.Context, in *DisableEventRequest, opts ...grpc.CallOption) (*DisableEventResponse, error) {
+	out := new(DisableEventResponse)
+	err := c.cc.Invoke(ctx, "/tracee.v1beta1.TraceeService/DisableEvent", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *traceeServiceClient) GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*GetVersionResponse, error) {
 	out := new(GetVersionResponse)
 	err := c.cc.Invoke(ctx, "/tracee.v1beta1.TraceeService/GetVersion", in, out, opts...)
@@ -57,6 +77,8 @@ func (c *traceeServiceClient) GetVersion(ctx context.Context, in *GetVersionRequ
 // for forward compatibility
 type TraceeServiceServer interface {
 	GetEventDefinition(context.Context, *GetEventDefinitionRequest) (*GetEventDefinitionResponse, error)
+	EnableEvent(context.Context, *EnableEventRequest) (*EnableEventResponse, error)
+	DisableEvent(context.Context, *DisableEventRequest) (*DisableEventResponse, error)
 	GetVersion(context.Context, *GetVersionRequest) (*GetVersionResponse, error)
 	mustEmbedUnimplementedTraceeServiceServer()
 }
@@ -67,6 +89,12 @@ type UnimplementedTraceeServiceServer struct {
 
 func (UnimplementedTraceeServiceServer) GetEventDefinition(context.Context, *GetEventDefinitionRequest) (*GetEventDefinitionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetEventDefinition not implemented")
+}
+func (UnimplementedTraceeServiceServer) EnableEvent(context.Context, *EnableEventRequest) (*EnableEventResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EnableEvent not implemented")
+}
+func (UnimplementedTraceeServiceServer) DisableEvent(context.Context, *DisableEventRequest) (*DisableEventResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DisableEvent not implemented")
 }
 func (UnimplementedTraceeServiceServer) GetVersion(context.Context, *GetVersionRequest) (*GetVersionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetVersion not implemented")
@@ -102,6 +130,42 @@ func _TraceeService_GetEventDefinition_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TraceeService_EnableEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EnableEventRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TraceeServiceServer).EnableEvent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/tracee.v1beta1.TraceeService/EnableEvent",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TraceeServiceServer).EnableEvent(ctx, req.(*EnableEventRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TraceeService_DisableEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DisableEventRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TraceeServiceServer).DisableEvent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/tracee.v1beta1.TraceeService/DisableEvent",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TraceeServiceServer).DisableEvent(ctx, req.(*DisableEventRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TraceeService_GetVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetVersionRequest)
 	if err := dec(in); err != nil {
@@ -130,6 +194,14 @@ var TraceeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetEventDefinition",
 			Handler:    _TraceeService_GetEventDefinition_Handler,
+		},
+		{
+			MethodName: "EnableEvent",
+			Handler:    _TraceeService_EnableEvent_Handler,
+		},
+		{
+			MethodName: "DisableEvent",
+			Handler:    _TraceeService_DisableEvent_Handler,
 		},
 		{
 			MethodName: "GetVersion",
