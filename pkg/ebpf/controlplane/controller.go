@@ -64,9 +64,7 @@ func (ctrl *Controller) Start() {
 // Run runs the controller.
 func (ctrl *Controller) Run(ctx context.Context) {
 	ctrl.ctx = ctx
-
 	ctrl.debug(false)
-	ctrl.readProcFS()
 
 	for {
 		select {
@@ -113,16 +111,6 @@ func (ctrl *Controller) processSignal(signal signal) error {
 }
 
 // Private
-
-// readProcFS reads the procfs and feeds the process tree with data.
-func (ctrl *Controller) readProcFS() {
-	go func() {
-		err := ctrl.processTree.FeedFromProcFS(proctree.AllPIDs)
-		if err != nil {
-			logger.Debugw("error feeding process tree from procfs", "error", err)
-		}
-	}()
-}
 
 // debug prints the process tree every 5 seconds (for debugging purposes).
 func (ctrl *Controller) debug(enable bool) {

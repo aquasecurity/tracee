@@ -176,7 +176,6 @@ func (pt *ProcessTree) FeedFromProcFS(givenPid int) error {
 		taskPath := fmt.Sprintf("/proc/%v/task", p)
 		taskDirs, err := os.ReadDir(taskPath)
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
 		for _, taskDir := range taskDirs {
