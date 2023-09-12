@@ -58,43 +58,51 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 
 	// Update the parent process (might already exist)
 
-	parent := pt.GetOrCreateProcessByHash(feed.ParentHash) // always a real process
-	parent.GetInfo().SetFeedAt(
-		TaskInfoFeed{
-			Tid:         int(feed.ParentTid),
-			Pid:         int(feed.ParentPid),
-			NsTid:       int(feed.ParentNsTid),
-			NsPid:       int(feed.ParentNsPid),
-			StartTimeNS: feed.ParentStartTime,
-			PPid:        -1, // do not change the parent PID
-			NsPPid:      -1, // do not change the ns parent PID
-			Uid:         -1, // do not change the parent UID
-			Gid:         -1, // do not change the parent GID
-		},
-		utils.NsSinceBootTimeToTime(feed.TimeStamp),
-	)
+	parent, ok := pt.GetProcessByHash(feed.ParentHash) // always a real process
+	if !ok {
+		parent = pt.GetOrCreateProcessByHash(feed.ParentHash)
+		parent.GetInfo().SetFeedAt(
+			TaskInfoFeed{
+				Tid:         int(feed.ParentTid),
+				Pid:         int(feed.ParentPid),
+				NsTid:       int(feed.ParentNsTid),
+				NsPid:       int(feed.ParentNsPid),
+				StartTimeNS: feed.ParentStartTime,
+				PPid:        -1, // do not change the parent PID
+				NsPPid:      -1, // do not change the ns parent PID
+				Uid:         -1, // do not change the parent UID
+				Gid:         -1, // do not change the parent GID
+			},
+			utils.NsSinceBootTimeToTime(feed.TimeStamp),
+		)
+	}
+
 	parent.AddChild(feed.LeaderHash) // add the leader as a child of the parent
 
 	// Update the leader process (might already exist, might be the same as child)
 
-	leader := pt.GetOrCreateProcessByHash(feed.LeaderHash)
-	leader.GetInfo().SetFeedAt(
-		TaskInfoFeed{
-			Tid:         int(feed.LeaderTid),
-			Pid:         int(feed.LeaderPid),
-			NsTid:       int(feed.LeaderNsTid),
-			NsPid:       int(feed.LeaderNsPid),
-			StartTimeNS: feed.LeaderStartTime,
-			PPid:        int(feed.ParentPid),
-			NsPPid:      int(feed.ParentNsPid),
-			Uid:         0, // TODO: implement
-			Gid:         0, // TODO: implement
-		},
-		utils.NsSinceBootTimeToTime(feed.TimeStamp),
-	)
+	leader, ok := pt.GetProcessByHash(feed.LeaderHash)
+	if !ok {
+		leader = pt.GetOrCreateProcessByHash(feed.LeaderHash)
+		leader.GetInfo().SetFeedAt(
+			TaskInfoFeed{
+				Tid:         int(feed.LeaderTid),
+				Pid:         int(feed.LeaderPid),
+				NsTid:       int(feed.LeaderNsTid),
+				NsPid:       int(feed.LeaderNsPid),
+				StartTimeNS: feed.LeaderStartTime,
+				PPid:        int(feed.ParentPid),
+				NsPPid:      int(feed.ParentNsPid),
+				Uid:         0, // TODO: implement
+				Gid:         0, // TODO: implement
+			},
+			utils.NsSinceBootTimeToTime(feed.TimeStamp),
+		)
+	}
+
 	leader.SetParentHash(feed.ParentHash)
 
-	// Case 01: The child is a process (if leader == child)
+	// Case 01: The child is a process (if leader == child, work is done)
 
 	if feed.ChildHash == feed.LeaderHash {
 		leader.GetExecutable().SetFeed(parent.GetExecutable().GetFeed())
@@ -119,6 +127,7 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 		},
 		utils.NsSinceBootTimeToTime(feed.TimeStamp),
 	)
+
 	thread.SetParentHash(feed.ParentHash) // all threads have the same parent as the thread group leader
 	thread.SetLeaderHash(feed.LeaderHash) // thread group leader is a "process" (not a thread)
 	leader.AddThread(feed.ChildHash)      // add the thread to the thread group leader
@@ -234,23 +243,23 @@ func (pt *ProcessTree) FeedFromExit(feed ExitFeed) error {
 	// fmt.Fprintf(file, "exitTime=%d\n", feed.ExitTime)
 	// END OF DEBUG
 
-	process, procOk := pt.GetProcessByHash(feed.TaskHash)
-	thread, threadOk := pt.GetThreadByHash(feed.TaskHash)
+	// No need to remove the process from the tree, nor remove the parent-child relationship. They
+	// will be removed when the process is evicted from the tree.
 
-	if !procOk && !threadOk {
-		logger.Debugw("process or thread not found (evicted ?)", "taskHash", feed.TaskHash)
+	process, procOk := pt.GetProcessByHash(feed.TaskHash)
+	if procOk {
+		process.GetInfo().SetExitTime(feed.ExitTime)
 		return nil
 	}
 
-	// No need to remove the process from the tree, nor remove the parent-child relationship.
-	// They will be removed when the process is evicted from the tree.
-
-	if procOk {
-		process.GetInfo().SetExitTime(feed.ExitTime)
-	}
-
+	thread, threadOk := pt.GetThreadByHash(feed.TaskHash)
 	if threadOk {
 		thread.GetInfo().SetExitTime(feed.ExitTime)
+		return nil
+	}
+
+	if !procOk && !threadOk {
+		logger.Debugw("process or thread not found (evicted ?)", "taskHash", feed.TaskHash)
 	}
 
 	return nil
