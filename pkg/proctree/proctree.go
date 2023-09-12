@@ -1,7 +1,9 @@
 package proctree
 
 import (
+	"context"
 	"sync"
+	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
 
@@ -42,15 +44,55 @@ type ProcessTree struct {
 }
 
 // NewProcessTree creates a new process tree.
-func NewProcessTree() (*ProcessTree, error) {
-	processes, err := lru.New[uint32, *Process](proctreeCacheSize)
+func NewProcessTree(ctx context.Context) (*ProcessTree, error) {
+	evicted := 0
+
+	// Create caches for processes.
+	processes, err := lru.NewWithEvict[uint32, *Process](
+		proctreeCacheSize,
+		func(uint32, *Process) { evicted++ },
+	)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	threads, err := lru.New[uint32, *Thread](proctreeCacheSize)
+
+	// Create caches for threads.
+	threads, err := lru.NewWithEvict[uint32, *Thread](
+		proctreeCacheSize,
+		func(uint32, *Thread) { evicted++ },
+	)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
+
+	// Report cache stats if debug is enabled.
+	go func() {
+		ticker15s := time.NewTicker(15 * time.Second)
+		ticker1m := time.NewTicker(1 * time.Minute)
+		defer ticker15s.Stop()
+		defer ticker1m.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker15s.C:
+				if evicted != 0 {
+					logger.Debugw("proctree cache stats",
+						"recently evicted", evicted,
+						"total processes", processes.Len(),
+						"total threads", threads.Len(),
+					)
+					evicted = 0
+				}
+			case <-ticker1m.C:
+				logger.Debugw("proctree cache stats",
+					"total processes", processes.Len(),
+					"total threads", threads.Len(),
+				)
+			}
+		}
+	}()
 
 	procTree := &ProcessTree{
 		processes: processes,
