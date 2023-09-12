@@ -6,6 +6,7 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 //
@@ -51,11 +52,21 @@ func NewProcessTree() (*ProcessTree, error) {
 		return nil, errfmt.WrapError(err)
 	}
 
-	return &ProcessTree{
+	procTree := &ProcessTree{
 		processes: processes,
 		threads:   threads,
 		mutex:     &sync.RWMutex{},
-	}, nil
+	}
+
+	// Walk procfs and feed the process tree with data.
+	go func() {
+		err := procTree.FeedFromProcFS(AllPIDs)
+		if err != nil {
+			logger.Debugw("error feeding process tree from procfs", "error", err)
+		}
+	}()
+
+	return procTree, nil
 }
 
 //
