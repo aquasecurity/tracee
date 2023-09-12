@@ -38,9 +38,11 @@ const proctreeCacheSize = 65536 // 64K (should be enough for most use cases)
 
 // ProcessTree is a tree of processes and threads.
 type ProcessTree struct {
-	processes *lru.Cache[uint32, *Process] // hash -> process
-	threads   *lru.Cache[uint32, *Thread]  // hash -> threads
-	mutex     *sync.RWMutex
+	processes  *lru.Cache[uint32, *Process] // hash -> process
+	threads    *lru.Cache[uint32, *Thread]  // hash -> threads
+	procfsChan chan int
+	ctx        context.Context
+	mutex      *sync.RWMutex
 }
 
 // NewProcessTree creates a new process tree.
@@ -97,16 +99,12 @@ func NewProcessTree(ctx context.Context) (*ProcessTree, error) {
 	procTree := &ProcessTree{
 		processes: processes,
 		threads:   threads,
+		ctx:       ctx,
 		mutex:     &sync.RWMutex{},
 	}
 
 	// Walk procfs and feed the process tree with data.
-	go func() {
-		err := procTree.FeedFromProcFS(AllPIDs)
-		if err != nil {
-			logger.Debugw("error feeding process tree from procfs", "error", err)
-		}
-	}()
+	procTree.FeedFromProcFSAsync(AllPIDs)
 
 	return procTree, nil
 }

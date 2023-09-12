@@ -19,6 +19,8 @@ func (ctrl *Controller) processSchedProcessFork(args []trace.Argument) error {
 		return errfmt.Errorf("got %d args instead of %d", len(args), paramsLength)
 	}
 
+	// Process & Event identification arguments
+
 	timestamp, err := parse.ArgVal[uint64](args, "timestamp")
 	if err != nil {
 		return errfmt.Errorf("error parsing timestamp: %v", err)
@@ -148,6 +150,8 @@ func (ctrl *Controller) processSchedProcessExec(args []trace.Argument) error {
 		return errfmt.Errorf("got %d args instead of %d", len(args), paramsLength)
 	}
 
+	// Process & Event identification arguments
+
 	timestamp, err := parse.ArgVal[uint64](args, "timestamp")
 	if err != nil {
 		return errfmt.Errorf("error parsing timestamp: %v", err)
@@ -155,6 +159,14 @@ func (ctrl *Controller) processSchedProcessExec(args []trace.Argument) error {
 	taskHash, err := parse.ArgVal[uint32](args, "task_hash")
 	if err != nil {
 		return errfmt.Errorf("error parsing task_hash: %v", err)
+	}
+	parentHash, err := parse.ArgVal[uint32](args, "parent_hash")
+	if err != nil {
+		return errfmt.Errorf("error parsing parent_hash: %v", err)
+	}
+	leaderHash, err := parse.ArgVal[uint32](args, "leader_hash")
+	if err != nil {
+		return errfmt.Errorf("error parsing leader_hash: %v", err)
 	}
 
 	// Executable
@@ -216,6 +228,8 @@ func (ctrl *Controller) processSchedProcessExec(args []trace.Argument) error {
 		proctree.ExecFeed{
 			TimeStamp:         timestamp,
 			TaskHash:          taskHash,
+			ParentHash:        parentHash,
+			LeaderHash:        leaderHash,
 			CmdPath:           cmdPath,
 			PathName:          pathName,
 			Dev:               dev,
@@ -240,17 +254,30 @@ func (ctrl *Controller) processSchedProcessExit(args []trace.Argument) error {
 		return errfmt.Errorf("got %d args instead of %d", len(args), paramsLength)
 	}
 
+	// Process & Event identification arguments
+
+	timestamp, err := parse.ArgVal[uint64](args, "timestamp")
+	if err != nil {
+		return errfmt.Errorf("error parsing timestamp: %v", err)
+	}
 	taskHash, err := parse.ArgVal[uint32](args, "task_hash")
 	if err != nil {
 		return errfmt.Errorf("error parsing task_hash: %v", err)
 	}
+	parentHash, err := parse.ArgVal[uint32](args, "parent_hash")
+	if err != nil {
+		return errfmt.Errorf("error parsing parent_hash: %v", err)
+	}
+	leaderHash, err := parse.ArgVal[uint32](args, "leader_hash")
+	if err != nil {
+		return errfmt.Errorf("error parsing leader_hash: %v", err)
+	}
+
+	// Exit logic arguments
+
 	exitCode, err := parse.ArgVal[int64](args, "exit_code")
 	if err != nil {
 		return errfmt.Errorf("error parsing exit_code: %v", err)
-	}
-	exitTime, err := parse.ArgVal[uint64](args, "exit_time")
-	if err != nil {
-		return errfmt.Errorf("error parsing exit_time: %v", err)
 	}
 	groupExit, err := parse.ArgVal[bool](args, "process_group_exit")
 	if err != nil {
@@ -259,11 +286,12 @@ func (ctrl *Controller) processSchedProcessExit(args []trace.Argument) error {
 
 	return ctrl.processTree.FeedFromExit(
 		proctree.ExitFeed{
-			TimeStamp: exitTime, // time of exit is already a timestamp
-			TaskHash:  taskHash,
-			ExitCode:  exitCode,
-			ExitTime:  exitTime,
-			Group:     groupExit,
+			TimeStamp:  timestamp, // time of exit is already a timestamp
+			TaskHash:   taskHash,
+			ParentHash: parentHash,
+			LeaderHash: leaderHash,
+			ExitCode:   exitCode,
+			Group:      groupExit,
 		},
 	)
 }

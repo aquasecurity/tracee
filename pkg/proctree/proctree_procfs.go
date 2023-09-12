@@ -15,6 +15,32 @@ const (
 	AllPIDs = 0
 )
 
+func (pt *ProcessTree) feedFromProcFSLoop() {
+	pt.procfsChan = make(chan int, 1000)
+	go func() {
+		for {
+			select {
+			case <-pt.ctx.Done():
+				return
+			case givenPid := <-pt.procfsChan:
+				err := pt.FeedFromProcFS(givenPid)
+				if err != nil {
+					logger.Debugw("proctree from procfs", "err", err)
+				}
+			}
+		}
+	}()
+}
+
+// FeedFromProcFSAsync feeds the process tree with data from procfs asynchronously.
+func (pt *ProcessTree) FeedFromProcFSAsync(givenPid int) {
+	if pt.procfsChan == nil {
+		logger.Debugw("starting procfs proctree loop") // will tell if called more than once
+		pt.feedFromProcFSLoop()
+	}
+	pt.procfsChan <- givenPid // feed the loop
+}
+
 // FeedFromProcFS feeds the process tree with data from procfs.
 func (pt *ProcessTree) FeedFromProcFS(givenPid int) error {
 	procDir := "/proc"
