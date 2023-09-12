@@ -11179,16 +11179,21 @@ var CoreEvents = map[ID]Definition{
 		params: []trace.ArgMeta{
 			{Type: "u64", Name: "timestamp"},
 			{Type: "u32", Name: "task_hash"},
+			{Type: "u32", Name: "parent_hash"},
+			{Type: "u32", Name: "leader_hash"},
+			// command
 			{Type: "const char*", Name: "cmdpath"},
 			{Type: "const char*", Name: "pathname"},
 			{Type: "dev_t", Name: "dev"},
 			{Type: "unsigned long", Name: "inode"},
 			{Type: "unsigned long", Name: "ctime"},
 			{Type: "umode_t", Name: "inode_mode"},
+			// interpreter
 			{Type: "const char*", Name: "interpreter_pathname"},
 			{Type: "dev_t", Name: "interpreter_dev"},
 			{Type: "unsigned long", Name: "interpreter_inode"},
 			{Type: "unsigned long", Name: "interpreter_ctime"},
+			// other
 			{Type: "const char**", Name: "argv"},
 			{Type: "const char*", Name: "interp"},
 			{Type: "umode_t", Name: "stdin_type"},
@@ -11208,9 +11213,11 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{"signal"},
 		params: []trace.ArgMeta{
+			{Type: "u64", Name: "timestamp"},
 			{Type: "u32", Name: "task_hash"},
+			{Type: "u32", Name: "parent_hash"},
+			{Type: "u32", Name: "leader_hash"},
 			{Type: "long", Name: "exit_code"},
-			{Type: "unsigned long", Name: "exit_time"}, // timestamp as well
 			{Type: "bool", Name: "process_group_exit"},
 		},
 	},

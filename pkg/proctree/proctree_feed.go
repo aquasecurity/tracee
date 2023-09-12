@@ -75,6 +75,8 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 			},
 			utils.NsSinceBootTimeToTime(feed.TimeStamp),
 		)
+		// try to enrich from procfs asynchronously (instead of reading procfs continuously)
+		pt.FeedFromProcFSAsync(int(feed.ParentPid))
 	}
 
 	parent.AddChild(feed.LeaderHash) // add the leader as a child of the parent
@@ -99,6 +101,8 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 			},
 			utils.NsSinceBootTimeToTime(feed.TimeStamp),
 		)
+		// try to enrich from procfs asynchronously (instead of reading procfs continuously)
+		pt.FeedFromProcFSAsync(int(feed.LeaderPid))
 	}
 
 	leader.SetParentHash(feed.ParentHash)
@@ -146,6 +150,8 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 type ExecFeed struct {
 	TimeStamp         uint64
 	TaskHash          uint32
+	ParentHash        uint32
+	LeaderHash        uint32
 	CmdPath           string
 	PathName          string
 	Dev               uint32
@@ -185,30 +191,36 @@ func (pt *ProcessTree) FeedFromExec(feed ExecFeed) error {
 	// fmt.Fprintf(file, "invokedFromKernel=%v\n", feed.InvokedFromKernel)
 	// END OF DEBUG
 
-	process, procOk := pt.GetProcessByHash(feed.TaskHash)
-	_, threadOk := pt.GetThreadByHash(feed.TaskHash)
+	if feed.TaskHash != feed.LeaderHash {
+		// Running execve() from a thread is discouraged and behavior can be unexpected:
+		//
+		// 1. All threads are terminated.
+		// 2. PID remains the same.
+		// 3. New process is single threaded.
+		// 4. Inherited Attributed (open fds, proc group, ID, UID, GID, ... are retained)
+		// 5. Still, it isn't forbidden and should be handled.
 
-	if !procOk && !threadOk {
-		logger.Debugw("process or thread not found (evicted ?)", "taskHash", feed.TaskHash)
-		return nil
-	}
-
-	// Running execve() from a thread is discouraged and behavior can be unexpected:
-	//
-	// 1. All threads are terminated.
-	// 2. PID remains the same.
-	// 3. New process is single threaded.
-	// 4. Inherited Attributed (open fds, proc group, ID, UID, GID, ... are retained)
-	// 5. Still, it isn't forbidden and should be handled.
-
-	if threadOk {
 		// TODO: handle execve() from a thread
 		logger.Debugw("exec event received for a thread", "taskHash", feed.TaskHash)
 		return nil
 	}
 
-	process.GetInfo().SetNameAt(feed.CmdPath, utils.NsSinceBootTimeToTime(feed.TimeStamp))
-	process.GetExecutable().SetFeed(
+	// Update the process: it is very likely that the process already exists because of the fork
+	// event. There are small chances that it might not exist yet due to signal event ordering. If
+	// that is the case, the process will be created and only the information about the
+	// executable/interpreter will be updated. This way, when the fork event is received, the
+	// process will be updated with the correct information.
+
+	process := pt.GetOrCreateProcessByHash(feed.TaskHash) // create if not exists
+
+	process.SetParentHash(feed.ParentHash) // faster than checking if already set
+
+	process.GetInfo().SetNameAt(
+		feed.CmdPath,
+		utils.NsSinceBootTimeToTime(feed.TimeStamp),
+	)
+
+	process.GetExecutable().SetFeedAt(
 		FileInfoFeed{
 			Name:      feed.CmdPath,
 			Path:      feed.PathName,
@@ -217,8 +229,10 @@ func (pt *ProcessTree) FeedFromExec(feed ExecFeed) error {
 			Inode:     int(feed.Inode),
 			InodeMode: int(feed.InodeMode),
 		},
+		utils.NsSinceBootTimeToTime(feed.TimeStamp),
 	)
-	process.GetInterpreter().SetFeed(
+
+	process.GetInterpreter().SetFeedAt(
 		FileInfoFeed{
 			Name:      feed.Interpreter,
 			Path:      feed.InterPathName,
@@ -227,17 +241,19 @@ func (pt *ProcessTree) FeedFromExec(feed ExecFeed) error {
 			Inode:     int(feed.InterInode),
 			InodeMode: -1, // no inode mode for interpreter
 		},
+		utils.NsSinceBootTimeToTime(feed.TimeStamp),
 	)
 
 	return nil
 }
 
 type ExitFeed struct {
-	TimeStamp uint64
-	TaskHash  uint32
-	ExitCode  int64
-	ExitTime  uint64
-	Group     bool
+	TimeStamp  uint64
+	TaskHash   uint32
+	ParentHash uint32
+	LeaderHash uint32
+	ExitCode   int64
+	Group      bool
 }
 
 // FeedFromExit feeds the process tree with an exit event.
@@ -252,24 +268,22 @@ func (pt *ProcessTree) FeedFromExit(feed ExitFeed) error {
 	// fmt.Fprintf(file, "exitTime=%d\n", feed.ExitTime)
 	// END OF DEBUG
 
-	// No need to remove the process from the tree, nor remove the parent-child relationship. They
-	// will be removed when the process is evicted from the tree.
+	if feed.TaskHash != feed.LeaderHash { // task is a thread
+		thread, threadOk := pt.GetThreadByHash(feed.TaskHash)
+		if threadOk {
+			thread.GetInfo().SetExitTime(feed.TimeStamp)
+			return nil
+		}
+		return nil
+	}
 
 	process, procOk := pt.GetProcessByHash(feed.TaskHash)
 	if procOk {
-		process.GetInfo().SetExitTime(feed.ExitTime)
+		process.GetInfo().SetExitTime(feed.TimeStamp)
 		return nil
 	}
 
-	thread, threadOk := pt.GetThreadByHash(feed.TaskHash)
-	if threadOk {
-		thread.GetInfo().SetExitTime(feed.ExitTime)
-		return nil
-	}
-
-	if !procOk && !threadOk {
-		logger.Debugw("process or thread not found (evicted ?)", "taskHash", feed.TaskHash)
-	}
+	// its okay if the process doesn't exist (might have been evicted from the tree)
 
 	return nil
 }
