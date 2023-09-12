@@ -7,7 +7,7 @@ import (
 )
 
 func TestChangelog(t *testing.T) {
-	cl := &Changelog[int]{}
+	cl := NewChangelog[int]()
 
 	// Test GetCurrent on an empty changelog
 	if cl.GetCurrent() != 0 {
@@ -22,7 +22,7 @@ func TestChangelog(t *testing.T) {
 
 	// Test Get on an empty changelog
 
-	cl = &Changelog[int]{}
+	cl = NewChangelog[int]()
 
 	if cl.Get(time.Now()) != 0 {
 		t.Errorf("Get on empty changelog should return 0")
@@ -30,7 +30,7 @@ func TestChangelog(t *testing.T) {
 
 	// Test 1 second interval among changes
 
-	cl = &Changelog[int]{}
+	cl = NewChangelog[int]()
 
 	cl.SetCurrent(1)
 	time.Sleep(2 * time.Second)
@@ -53,7 +53,7 @@ func TestChangelog(t *testing.T) {
 	// Test 100 milliseconds interval among changes
 	// NOTE: If this test becomes flaky we can change/remove it.
 
-	cl = &Changelog[int]{}
+	cl = NewChangelog[int]()
 
 	cl.SetCurrent(1)
 	time.Sleep(100 * time.Millisecond)

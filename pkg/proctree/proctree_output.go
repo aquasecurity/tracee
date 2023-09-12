@@ -79,7 +79,7 @@ func (pt *ProcessTree) String() string {
 	// Use tablewriter to print the tree in a table
 	newTable := func() *tablewriter.Table {
 		table := tablewriter.NewWriter(buffer)
-		table.SetHeader([]string{"Ppid", "Tid", "Pid", "Date", "CMD", "Children", "Threads"})
+		table.SetHeader([]string{"Ppid", "Tid", "Pid", "Date", "Comm", "Children", "Threads"})
 		// If debug() is enabled:
 		// table.SetHeader([]string{"Ppid", "Tid", "Pid", "StartTime", "Hash", "CMD", "Children", "Threads"})
 		table.SetAutoWrapText(false)
@@ -107,7 +107,7 @@ func (pt *ProcessTree) String() string {
 
 		// create a row for the table
 		processFeed := process.GetInfo().GetFeed()
-		execName := process.GetExecutable().GetName()
+		execName := processFeed.Name
 		if len(execName) > 25 {
 			execName = execName[:20] + "..."
 		}

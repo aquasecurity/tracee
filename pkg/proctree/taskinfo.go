@@ -10,6 +10,7 @@ import (
 
 // TaskInfoFeed allows external packages to set/get multiple values of a task at once.
 type TaskInfoFeed struct {
+	Name        string
 	Tid         int
 	Pid         int
 	PPid        int
@@ -28,27 +29,28 @@ type TaskInfoFeed struct {
 
 // TaskInfo represents a task.
 type TaskInfo struct {
-	// TODO: Put Comm in here and not inside the file info.
-	tid         int                // immutable
-	pid         int                // immutable
-	pPid        *ch.Changelog[int] // variable (process can be reparented)
-	nsTid       int                // immutable
-	nsPid       int                // immutable
-	nsPPid      *ch.Changelog[int] // variable (process can be reparented)
-	uid         *ch.Changelog[int] // variable (process uid can be changed)
-	gid         *ch.Changelog[int] // variable (process gid can be changed)
-	startTimeNS uint64             // this is a duration, in ns, since boot (immutable)
-	exitTimeNS  uint64             // this is a duration, in ns, since boot (immutable)
+	name        *ch.Changelog[string] // variable (process name can be changed)
+	tid         int                   // immutable
+	pid         int                   // immutable
+	pPid        *ch.Changelog[int]    // variable (process can be reparented)
+	nsTid       int                   // immutable
+	nsPid       int                   // immutable
+	nsPPid      *ch.Changelog[int]    // variable (process can be reparented)
+	uid         *ch.Changelog[int]    // variable (process uid can be changed)
+	gid         *ch.Changelog[int]    // variable (process gid can be changed)
+	startTimeNS uint64                // this is a duration, in ns, since boot (immutable)
+	exitTimeNS  uint64                // this is a duration, in ns, since boot (immutable)
 	mutex       *sync.RWMutex
 }
 
 // NewTaskInfo creates a new task.
 func NewTaskInfo() *TaskInfo {
 	return &TaskInfo{
-		pPid:   &ch.Changelog[int]{},
-		nsPPid: &ch.Changelog[int]{},
-		uid:    &ch.Changelog[int]{},
-		gid:    &ch.Changelog[int]{},
+		name:   ch.NewChangelog[string](),
+		pPid:   ch.NewChangelog[int](),
+		nsPPid: ch.NewChangelog[int](),
+		uid:    ch.NewChangelog[int](),
+		gid:    ch.NewChangelog[int](),
 		mutex:  &sync.RWMutex{},
 	}
 }
@@ -78,6 +80,9 @@ func (ti *TaskInfo) SetFeedAt(feed TaskInfoFeed, targetTime time.Time) {
 
 // setFeedAt sets the values of the task from the given feed at the given time.
 func (ti *TaskInfo) setFeedAt(feed TaskInfoFeed, targetTime time.Time) {
+	if feed.Name != "" {
+		ti.name.Set(feed.Name, targetTime)
+	}
 	if feed.Tid > 0 {
 		ti.tid = feed.Tid
 	}
@@ -126,6 +131,7 @@ func (ti *TaskInfo) GetFeedAt(targetTime time.Time) TaskInfoFeed {
 
 func (ti *TaskInfo) getFeedAt(targetTime time.Time) TaskInfoFeed {
 	return TaskInfoFeed{
+		Name:        ti.name.Get(targetTime),
 		Tid:         ti.tid,
 		Pid:         ti.pid,
 		PPid:        ti.pPid.Get(targetTime),
@@ -140,6 +146,20 @@ func (ti *TaskInfo) getFeedAt(targetTime time.Time) TaskInfoFeed {
 }
 
 // Setters
+
+// SetName sets the name of the task.
+func (ti *TaskInfo) SetName(name string) {
+	ti.mutex.Lock()
+	defer ti.mutex.Unlock()
+	ti.name.Set(name, time.Now())
+}
+
+// SetNameAt sets the name of the task at the given time.
+func (ti *TaskInfo) SetNameAt(name string, targetTime time.Time) {
+	ti.mutex.Lock()
+	defer ti.mutex.Unlock()
+	ti.name.Set(name, targetTime)
+}
 
 // SetTid sets the tid of the task.
 func (ti *TaskInfo) SetTid(tid int) {
@@ -240,6 +260,20 @@ func (ti *TaskInfo) SetGidAt(gid int, targetTime time.Time) {
 }
 
 // Getters
+
+// GetName returns the name of the task.
+func (ti *TaskInfo) GetName() string {
+	ti.mutex.RLock()
+	defer ti.mutex.RUnlock()
+	return ti.name.GetCurrent()
+}
+
+// GetNameAt returns the name of the task at the given time.
+func (ti *TaskInfo) GetNameAt(targetTime time.Time) string {
+	ti.mutex.RLock()
+	defer ti.mutex.RUnlock()
+	return ti.name.Get(targetTime)
+}
 
 // GetTid returns the tid of the task.
 func (ti *TaskInfo) GetTid() int {
