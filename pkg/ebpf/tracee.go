@@ -317,7 +317,7 @@ func New(cfg config.Config) (*Tracee, error) {
 // performing external system operations to initialize them. NOTE: any
 // initialization logic, especially one that causes side effects, should go
 // here and not New().
-func (t *Tracee) Init() error {
+func (t *Tracee) Init(ctx gocontext.Context) error {
 	// Initialize needed values
 
 	initReq, err := t.generateInitValues()
@@ -371,7 +371,7 @@ func (t *Tracee) Init() error {
 
 	err = capabilities.GetInstance().Specific(
 		func() error {
-			t.processTree, err = proctree.NewProcessTree()
+			t.processTree, err = proctree.NewProcessTree(ctx)
 			return err
 		},
 		cap.DAC_READ_SEARCH,
