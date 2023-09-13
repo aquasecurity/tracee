@@ -13,6 +13,7 @@ func PrintAndExitIfHelp(ctx *cli.Context) {
 	keys := []string{
 		"crs",
 		"cache",
+		"proctree",
 		"capture",
 		"scope",
 		"events",
@@ -51,6 +52,8 @@ func GetHelpString(key string) string {
 		return containersHelp()
 	case "cache":
 		return cacheHelp()
+	case "proctree":
+		return procTreeHelp()
 	case "capture":
 		return captureHelp()
 	case "scope", "events":

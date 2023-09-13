@@ -10,6 +10,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/policy"
+	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 )
 
@@ -20,6 +21,7 @@ type Config struct {
 	Capabilities       *CapabilitiesConfig
 	Output             *OutputConfig
 	Cache              queue.CacheConfig
+	ProcTree           proctree.ProcTreeConfig
 	PerfBufferSize     int
 	BlobPerfBufferSize int
 	MaxPidsCache       int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)

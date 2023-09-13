@@ -1,6 +1,8 @@
 blob-perf-buffer-size: 1024
 cache:
     - none
+proctree:
+    - none
 capabilities: []
 containers: false
 crs: []
