@@ -34,18 +34,6 @@ type ForkFeed struct {
 
 // FeedFromFork feeds the process tree with a fork event.
 func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
-	// DEBUG (TODO: remove this)
-	// file, _ := os.Open("/dev/null")
-	// file := os.Stdout
-	// fmt.Fprintf(file, "--\nFork event received:\n")
-	// fmt.Fprintf(file, "Parent Hash: %v\n", feed.ParentHash)
-	// fmt.Fprintf(file, "Leader Hash: %v\n", feed.LeaderHash)
-	// fmt.Fprintf(file, "Task   Hash: %v\n", feed.ChildHash)
-	// fmt.Fprintf(file, "PARENT:\ttid=%05d pid=%05d nspid=%05d nstid=%05d\n", feed.ParentTid, feed.ParentPid, feed.ParentNsPid, feed.ParentNsTid)
-	// fmt.Fprintf(file, "LEADER:\ttid=%05d pid=%05d nspid=%05d nstid=%05d\n", feed.LeaderTid, feed.LeaderPid, feed.LeaderNsPid, feed.LeaderNsTid)
-	// fmt.Fprintf(file, "CHILD: \ttid=%05d pid=%05d nspid=%05d nstid=%05d\n", feed.ChildTid, feed.ChildPid, feed.ChildNsPid, feed.ChildNsTid)
-	// END OF DEBUG
-
 	if feed.ChildHash == 0 || feed.ParentHash == 0 {
 		return errfmt.Errorf("invalid task hash")
 	}
@@ -170,27 +158,6 @@ type ExecFeed struct {
 
 // FeedFromExec feeds the process tree with an exec event.
 func (pt *ProcessTree) FeedFromExec(feed ExecFeed) error {
-	// DEBUG (TODO: remove this)
-	// file, _ := os.Open("/dev/null")
-	// file := os.Stdout
-	// fmt.Fprintf(file, "--\nExec event received:\n")
-	// fmt.Fprintf(file, "taskHash=%v\n", feed.TaskHash)
-	// fmt.Fprintf(file, "cmdPath=%v\n", feed.CmdPath)
-	// fmt.Fprintf(file, "pathName=%v\n", feed.PathName)
-	// fmt.Fprintf(file, "interPathName=%v\n", feed.InterPathName)
-	// fmt.Fprintf(file, "interpreter=%v\n", feed.Interpreter)
-	// fmt.Fprintf(file, "stdinPath=%v\n", feed.StdinPath)
-	// fmt.Fprintf(file, "dev=%v\n", feed.Dev)
-	// fmt.Fprintf(file, "interDev=%v\n", feed.InterDev)
-	// fmt.Fprintf(file, "inode=%v\n", feed.Inode)
-	// fmt.Fprintf(file, "ctime=%v\n", feed.Ctime)
-	// fmt.Fprintf(file, "interInode=%v\n", feed.InterInode)
-	// fmt.Fprintf(file, "interCtime=%v\n", feed.InterCtime)
-	// fmt.Fprintf(file, "inodeMode=%v\n", feed.InodeMode)
-	// fmt.Fprintf(file, "stdinType=%v\n", feed.StdinType)
-	// fmt.Fprintf(file, "invokedFromKernel=%v\n", feed.InvokedFromKernel)
-	// END OF DEBUG
-
 	if feed.TaskHash != feed.LeaderHash {
 		// Running execve() from a thread is discouraged and behavior can be unexpected:
 		//
@@ -258,16 +225,6 @@ type ExitFeed struct {
 
 // FeedFromExit feeds the process tree with an exit event.
 func (pt *ProcessTree) FeedFromExit(feed ExitFeed) error {
-	// DEBUG (remove only when process tree is implemented)
-	// file, _ := os.Open("/dev/null")
-	// file := os.Stdout
-	// fmt.Fprintf(file, "--\nExit event received:\n")
-	// fmt.Fprintf(file, "taskHash=%v\n", feed.TaskHash)
-	// fmt.Fprintf(file, "exitCode=%d\n", feed.ExitCode)
-	// fmt.Fprintf(file, "groupExit=%t\n", feed.Group)
-	// fmt.Fprintf(file, "exitTime=%d\n", feed.ExitTime)
-	// END OF DEBUG
-
 	if feed.TaskHash != feed.LeaderHash { // task is a thread
 		thread, threadOk := pt.GetThreadByHash(feed.TaskHash)
 		if threadOk {
