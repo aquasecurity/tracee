@@ -1,6 +1,10 @@
 package changelog
 
-import "time"
+import (
+	"time"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
+)
 
 type item[T any] struct {
 	timestamp time.Time // timestamp of the change
@@ -98,8 +102,17 @@ func (clv *Changelog[T]) Set(value T, targetTime time.Time) {
 
 // setAt sets the value of the changelog at the given time.
 func (clv *Changelog[T]) setAt(value T, targetTime time.Time) {
-	if _, ok := clv.timestamps[targetTime]; ok {
-		return // already set
+	// If the timestamp is already set, update that value only.
+	_, ok := clv.timestamps[targetTime]
+	if ok {
+		index := clv.findIndex(targetTime)
+		if !clv.changes[index].timestamp.Equal(targetTime) { // sanity check only (time exists already)
+			logger.Debugw("changelog error: timestamp mismatch")
+			return
+		}
+		// Should an debug/error be logged if the value is different ?
+		clv.changes[index].value = value
+		return
 	}
 
 	entry := item[T]{
@@ -107,12 +120,14 @@ func (clv *Changelog[T]) setAt(value T, targetTime time.Time) {
 		value:     value,
 	}
 
+	// Insert the new entry in the changelog, keeping the list sorted by timestamp.
 	idx := clv.findIndex(entry.timestamp)
 	clv.changes = append(clv.changes, item[T]{})
 	copy(clv.changes[idx+1:], clv.changes[idx:])
 	clv.changes[idx] = entry
 
-	clv.timestamps[targetTime] = struct{}{} // mark timestamp as set
+	// Mark the timestamp as set.
+	clv.timestamps[targetTime] = struct{}{}
 }
 
 // findIndex returns the index of the first item in the changelog that is after the given time.
