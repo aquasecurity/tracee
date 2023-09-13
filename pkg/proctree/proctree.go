@@ -49,6 +49,7 @@ type ProcessTree struct {
 	processes  *lru.Cache[uint32, *Process] // hash -> process
 	threads    *lru.Cache[uint32, *Thread]  // hash -> threads
 	procfsChan chan int
+	procfsOnce *sync.Once
 	ctx        context.Context
 	mutex      *sync.RWMutex
 }
