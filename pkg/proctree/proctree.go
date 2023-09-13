@@ -56,12 +56,13 @@ type ProcessTree struct {
 
 // NewProcessTree creates a new process tree.
 func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, error) {
-	evicted := 0
+	procEvited := 0
+	thrEvicted := 0
 
 	// Create caches for processes.
 	processes, err := lru.NewWithEvict[uint32, *Process](
 		config.ProcessCacheSize,
-		func(uint32, *Process) { evicted++ },
+		func(uint32, *Process) { procEvited++ },
 	)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
@@ -70,7 +71,7 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, e
 	// Create caches for threads.
 	threads, err := lru.NewWithEvict[uint32, *Thread](
 		config.ThreadCacheSize,
-		func(uint32, *Thread) { evicted++ },
+		func(uint32, *Thread) { thrEvicted++ },
 	)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
@@ -88,13 +89,15 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, e
 			case <-ctx.Done():
 				return
 			case <-ticker15s.C:
-				if evicted != 0 {
+				if procEvited != 0 || thrEvicted != 0 {
 					logger.Debugw("proctree cache stats",
-						"recently evicted", evicted,
+						"processes evicted", procEvited,
 						"total processes", processes.Len(),
+						"threads evicted", thrEvicted,
 						"total threads", threads.Len(),
 					)
-					evicted = 0
+					procEvited = 0
+					thrEvicted = 0
 				}
 			case <-ticker1m.C:
 				logger.Debugw("proctree cache stats",
