@@ -101,6 +101,14 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		logger.Debugw("Cache", "type", cfg.Cache.String())
 	}
 
+	// Process Tree command line flags
+
+	procTree, err := flags.PrepareProcTree(viper.GetStringSlice("proctree"))
+	if err != nil {
+		return runner, err
+	}
+	cfg.ProcTree = procTree
+
 	// Capture command line flags - via cobra flag
 
 	captureFlags, err := c.Flags().GetStringArray("capture")

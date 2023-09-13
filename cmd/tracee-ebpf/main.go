@@ -92,6 +92,12 @@ func main() {
 				Usage:   "control event caching queues. run '--cache help' for more info.",
 			},
 			&cli.StringSliceFlag{
+				Name:    "proctree",
+				Aliases: []string{"t"},
+				Value:   cli.NewStringSlice("none"),
+				Usage:   "process tree cache sizes. run '--proctree help' for more info.",
+			},
+			&cli.StringSliceFlag{
 				Name:  "crs",
 				Usage: "define connected container runtimes. run '--crs help' for more info.",
 				Value: cli.NewStringSlice(),

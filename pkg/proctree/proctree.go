@@ -34,7 +34,15 @@ import (
 // can be logged as a process artifact.
 //
 
-const proctreeCacheSize = 65536 // 64K (should be enough for most use cases)
+const (
+	DefaultProcessCacheSize = 32768
+	DefaultThreadCacheSize  = 32768
+)
+
+type ProcTreeConfig struct {
+	ProcessCacheSize int
+	ThreadCacheSize  int
+}
 
 // ProcessTree is a tree of processes and threads.
 type ProcessTree struct {
@@ -46,12 +54,12 @@ type ProcessTree struct {
 }
 
 // NewProcessTree creates a new process tree.
-func NewProcessTree(ctx context.Context) (*ProcessTree, error) {
+func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, error) {
 	evicted := 0
 
 	// Create caches for processes.
 	processes, err := lru.NewWithEvict[uint32, *Process](
-		proctreeCacheSize,
+		config.ProcessCacheSize,
 		func(uint32, *Process) { evicted++ },
 	)
 	if err != nil {
@@ -60,7 +68,7 @@ func NewProcessTree(ctx context.Context) (*ProcessTree, error) {
 
 	// Create caches for threads.
 	threads, err := lru.NewWithEvict[uint32, *Thread](
-		proctreeCacheSize,
+		config.ThreadCacheSize,
 		func(uint32, *Thread) { evicted++ },
 	)
 	if err != nil {

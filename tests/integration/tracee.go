@@ -16,6 +16,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/config"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/proctree"
 	uproc "github.com/aquasecurity/tracee/pkg/utils/proc"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -65,6 +66,11 @@ func startTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 
 	cfg.PerfBufferSize = 1024
 	cfg.BlobPerfBufferSize = 1024
+
+	cfg.ProcTree = proctree.ProcTreeConfig{
+		ProcessCacheSize: 4096,
+		ThreadCacheSize:  4096,
+	}
 
 	errChan := make(chan error)
 
