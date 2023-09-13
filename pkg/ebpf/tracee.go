@@ -114,7 +114,8 @@ type Tracee struct {
 	// Control Plane
 	controlPlane *controlplane.Controller
 	// Process Tree
-	processTree *proctree.ProcessTree
+	processTree       *proctree.ProcessTree
+	procTreeProcessor map[events.ID][]func(evt *trace.Event) error
 	// Specific Events Needs
 	triggerContexts trigger.Context
 	readyCallback   func(gocontext.Context)

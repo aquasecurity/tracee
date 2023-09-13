@@ -129,23 +129,32 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, e
 func (pt *ProcessTree) GetProcessByHash(hash uint32) (*Process, bool) {
 	pt.mutex.RLock()
 	defer pt.mutex.RUnlock()
-	process, ok := pt.processes.Get(hash)
-	return process, ok
+	return pt.processes.Get(hash)
 }
 
 // GetOrCreateProcessByHash returns a process by its hash, or creates a new one if it doesn't exist.
 func (pt *ProcessTree) GetOrCreateProcessByHash(hash uint32) *Process {
 	pt.mutex.RLock()
 	defer pt.mutex.RUnlock()
+	process, _ := pt.getOrCreateProcessByHashOkay(hash)
+	return process
+}
 
+// GetOrCreateProcessByHashOkay returns a process by its hash, or creates a new one if it doesn't exist.
+func (pt *ProcessTree) GetProcessByHashOkay(hash uint32) (*Process, bool) {
+	pt.mutex.RLock()
+	defer pt.mutex.RUnlock()
+	return pt.getOrCreateProcessByHashOkay(hash)
+}
+
+func (pt *ProcessTree) getOrCreateProcessByHashOkay(hash uint32) (*Process, bool) {
 	process, ok := pt.processes.Get(hash)
 	if !ok {
 		process = NewProcess(hash) // create a new process
 		pt.processes.Add(hash, process)
-		return process
+		return process, ok
 	}
-
-	return process // return an existing process
+	return process, ok // return an existing process
 }
 
 //
@@ -156,21 +165,30 @@ func (pt *ProcessTree) GetOrCreateProcessByHash(hash uint32) *Process {
 func (pt *ProcessTree) GetThreadByHash(hash uint32) (*Thread, bool) {
 	pt.mutex.RLock()
 	defer pt.mutex.RUnlock()
-	thread, ok := pt.threads.Get(hash)
-	return thread, ok
+	return pt.threads.Get(hash)
 }
 
 // GetOrCreateThreadByHash returns a thread by its hash, or creates a new one if it doesn't exist.
 func (pt *ProcessTree) GetOrCreateThreadByHash(hash uint32) *Thread {
 	pt.mutex.RLock()
 	defer pt.mutex.RUnlock()
+	thread, _ := pt.getOrCreateThreadByHashOkay(hash)
+	return thread
+}
 
+// GetOrCreateThreadByHashOkay returns a thread by its hash, or creates a new one if it doesn't exist.
+func (pt *ProcessTree) GetOrCreateThreadByHashOkay(hash uint32) (*Thread, bool) {
+	pt.mutex.RLock()
+	defer pt.mutex.RUnlock()
+	return pt.getOrCreateThreadByHashOkay(hash)
+}
+
+func (pt *ProcessTree) getOrCreateThreadByHashOkay(hash uint32) (*Thread, bool) {
 	thread, ok := pt.threads.Get(hash)
 	if !ok {
 		thread = NewThread(hash) // create a new thread
 		pt.threads.Add(hash, thread)
-		return thread
+		return thread, ok
 	}
-
-	return thread // return an existing thread
+	return thread, ok // return an existing thread
 }
