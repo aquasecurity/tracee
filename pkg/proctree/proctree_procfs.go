@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"sync"
+	"time"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -11,21 +13,24 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
 )
 
+const debugMsgs = false // debug messages can be too verbose, so they are disabled by default
+
 const (
 	AllPIDs = 0
 )
 
 func (pt *ProcessTree) feedFromProcFSLoop() {
-	pt.procfsChan = make(chan int, 1000)
 	go func() {
 		for {
 			select {
+			case <-time.After(15 * time.Second):
+				pt.procfsOnce = new(sync.Once) // reset the once every 15 seconds
 			case <-pt.ctx.Done():
 				return
 			case givenPid := <-pt.procfsChan:
 				err := pt.FeedFromProcFS(givenPid)
-				if err != nil {
-					logger.Debugw("proctree from procfs", "err", err)
+				if err != nil && debugMsgs {
+					logger.Debugw("proctree from procfs (loop)", "err", err)
 				}
 			}
 		}
@@ -36,9 +41,22 @@ func (pt *ProcessTree) feedFromProcFSLoop() {
 func (pt *ProcessTree) FeedFromProcFSAsync(givenPid int) {
 	if pt.procfsChan == nil {
 		logger.Debugw("starting procfs proctree loop") // will tell if called more than once
+		pt.procfsChan = make(chan int, 100)
 		pt.feedFromProcFSLoop()
 	}
-	pt.procfsChan <- givenPid // feed the loop
+	if pt.procfsOnce == nil {
+		pt.procfsOnce = new(sync.Once)
+	}
+
+	// feed the loop without blocking (if the loop is busy, given pid won't be processed)
+	select {
+	case pt.procfsChan <- givenPid: // feed the loop
+	default:
+		pt.procfsOnce.Do(func() {
+			// only log once if the loop is busy (avoid spamming the logs), once is reset every 15s
+			logger.Debugw("procfs proctree loop is busy")
+		})
+	}
 }
 
 // FeedFromProcFS feeds the process tree with data from procfs.
@@ -195,7 +213,9 @@ func (pt *ProcessTree) FeedFromProcFS(givenPid int) error {
 
 		err = dealWithProc(p) // run for the given process
 		if err != nil {
-			logger.Debugw("proctree from procfs (process)", "pid", p, "err", err)
+			if debugMsgs {
+				logger.Debugw("proctree from procfs (process)", "pid", p, "err", err)
+			}
 			return err
 		}
 
@@ -215,7 +235,9 @@ func (pt *ProcessTree) FeedFromProcFS(givenPid int) error {
 
 			err = dealWithThread(p, tid) // run for all threads of the given process
 			if err != nil {
-				logger.Debugw("proctree from procfs (thread)", "pid", p, "tid", tid, "err", err)
+				if debugMsgs {
+					logger.Debugw("proctree from procfs (thread)", "pid", p, "tid", tid, "err", err)
+				}
 				continue
 			}
 		}
