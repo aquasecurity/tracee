@@ -365,7 +365,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	err = capabilities.GetInstance().Specific(
 		func() error {
-			t.processTree, err = proctree.NewProcessTree(ctx)
+			t.processTree, err = proctree.NewProcessTree(ctx, t.config.ProcTree)
 			return err
 		},
 		cap.DAC_READ_SEARCH,

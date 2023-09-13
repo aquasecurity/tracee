@@ -80,6 +80,14 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 		logger.Debugw("Cache", "type", cfg.Cache.String())
 	}
 
+	// Cache command line flags
+
+	procTree, err := flags.PrepareProcTree(c.StringSlice("proctree"))
+	if err != nil {
+		return runner, err
+	}
+	cfg.ProcTree = procTree
+
 	// Capture command line flags
 
 	capture, err := flags.PrepareCapture(c.StringSlice("capture"), false)

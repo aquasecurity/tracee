@@ -3,6 +3,9 @@
     "cache": [
         "none"
     ],
+    "proctree": [
+        "none"
+    ],
     "capabilities": [],
     "containers": false,
     "crs": [],

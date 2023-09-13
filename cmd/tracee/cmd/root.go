@@ -223,6 +223,17 @@ func initCmd() error {
 		return errfmt.WrapError(err)
 	}
 
+	rootCmd.Flags().StringArrayP(
+		"proctree",
+		"t",
+		[]string{"none"},
+		"[process|thread]\t\t\tControl process tree cache sizes",
+	)
+	err = viper.BindPFlag("proctree", rootCmd.Flags().Lookup("proctree"))
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
 	// Server flags
 
 	rootCmd.Flags().Bool(
