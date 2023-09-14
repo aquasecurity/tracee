@@ -6,7 +6,11 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
-type item[T any] struct {
+type comparable interface {
+	~int | ~float64 | ~string
+}
+
+type item[T comparable] struct {
 	timestamp time.Time // timestamp of the change
 	value     T         // value of the change
 }
@@ -18,13 +22,13 @@ type item[T any] struct {
 // coordinating access through your struct mutexes. DO NOT EXPOSE the changelog object directly to
 // the outside world as it is not thread-safe.
 
-type Changelog[T any] struct {
+type Changelog[T comparable] struct {
 	changes    []item[T]              // list of changes
 	timestamps map[time.Time]struct{} // set of timestamps (used to avoid duplicates)
 }
 
 // NewChangelog creates a new changelog.
-func NewChangelog[T any]() *Changelog[T] {
+func NewChangelog[T comparable]() *Changelog[T] {
 	return &Changelog[T]{
 		changes:    []item[T]{},
 		timestamps: map[time.Time]struct{}{},
@@ -107,10 +111,12 @@ func (clv *Changelog[T]) setAt(value T, targetTime time.Time) {
 	if ok {
 		index := clv.findIndex(targetTime)
 		if !clv.changes[index].timestamp.Equal(targetTime) { // sanity check only (time exists already)
-			logger.Debugw("changelog error: timestamp mismatch")
+			logger.Debugw("changelog internal error: timestamp mismatch")
 			return
 		}
-		// Should an debug/error be logged if the value is different ?
+		if clv.changes[index].value != value {
+			logger.Debugw("changelog error: value mismatch for same timestamp")
+		}
 		clv.changes[index].value = value
 		return
 	}
