@@ -7,7 +7,6 @@ import (
 )
 
 func (t *Tracee) processProcTreeSetuid(event *trace.Event) error {
-
 	hash := event.EntityID
 
 	if event.ProcessID != event.ThreadID {
