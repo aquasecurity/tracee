@@ -365,17 +365,19 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		logger.Debugw("Initializing buckets cache", "error", errfmt.WrapError(err))
 	}
 
-	// Initialize Process Tree
+	// Initialize Process Tree (if enabled)
 
-	err = capabilities.GetInstance().Specific(
-		func() error {
-			t.processTree, err = proctree.NewProcessTree(ctx, t.config.ProcTree)
-			return err
-		},
-		cap.DAC_READ_SEARCH,
-	)
-	if err != nil {
-		return errfmt.WrapError(err)
+	if t.config.ProcTree.Enabled {
+		err = capabilities.GetInstance().Specific(
+			func() error {
+				t.processTree, err = proctree.NewProcessTree(ctx, t.config.ProcTree)
+				return err
+			},
+			cap.DAC_READ_SEARCH,
+		)
+		if err != nil {
+			return errfmt.WrapError(err)
+		}
 	}
 
 	// Initialize cgroups filesystems

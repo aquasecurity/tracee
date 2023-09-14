@@ -68,6 +68,7 @@ func startTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 	cfg.BlobPerfBufferSize = 1024
 
 	cfg.ProcTree = proctree.ProcTreeConfig{
+		Enabled:          true,
 		ProcessCacheSize: 4096,
 		ThreadCacheSize:  4096,
 	}

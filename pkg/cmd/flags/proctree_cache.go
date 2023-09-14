@@ -10,11 +10,12 @@ import (
 )
 
 func procTreeHelp() string {
-	return `Select different cache sizes for the process tree.
+	return `Select different options for the process tree.
 
 Example:
-  --proctree process=8192 	    | will cache up to 8192 processes in the tree (LRU cache).
-  --proctree thread=4096  	    | will cache up to 4096 threads in the tree (LRU cache).
+  --proctree enabled            | will enable the process tree with default settings (disabled by default).
+  --proctree process=8192       | will cache up to 8192 processes in the tree (LRU cache).
+  --proctree thread=4096        | will cache up to 4096 threads in the tree (LRU cache).
 
 Use comma OR use the flag multiple times to choose multiple options:
   --proctree process=X,thread=Y
@@ -42,6 +43,10 @@ func PrepareProcTree(cacheSlice []string) (proctree.ProcTreeConfig, error) {
 		values := strings.Split(slice, ",")
 
 		for _, value := range values {
+			if strings.HasPrefix(value, "enabled") {
+				config.Enabled = true
+				continue
+			}
 			if strings.HasPrefix(value, "process=") {
 				num := strings.TrimPrefix(value, "process=")
 				size, err := strconv.Atoi(num)
@@ -51,6 +56,7 @@ func PrepareProcTree(cacheSlice []string) (proctree.ProcTreeConfig, error) {
 				if size > 4096 { // minimum size is 4096 (or the default is used)
 					config.ProcessCacheSize = size
 				}
+				config.Enabled = true
 				continue
 			}
 			if strings.HasPrefix(value, "thread=") {
@@ -62,13 +68,16 @@ func PrepareProcTree(cacheSlice []string) (proctree.ProcTreeConfig, error) {
 				if size > 4096 { // minimum size is 4096 (or the default is used)
 					config.ThreadCacheSize = size
 				}
+				config.Enabled = true
 				continue
 			}
 			err = fmt.Errorf("unrecognized proctree option format: %v", value)
 		}
 	}
 
-	logger.Debugw("proctree cache size", "process", config.ProcessCacheSize, "thread", config.ThreadCacheSize)
+	if config.Enabled {
+		logger.Debugw("proctree cache size", "process", config.ProcessCacheSize, "thread", config.ThreadCacheSize)
+	}
 
 	return config, err
 }

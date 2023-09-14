@@ -40,6 +40,7 @@ const (
 )
 
 type ProcTreeConfig struct {
+	Enabled          bool
 	ProcessCacheSize int
 	ThreadCacheSize  int
 }

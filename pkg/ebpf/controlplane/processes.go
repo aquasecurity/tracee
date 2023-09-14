@@ -14,6 +14,10 @@ import (
 //
 
 func (ctrl *Controller) processSchedProcessFork(args []trace.Argument) error {
+	if ctrl.processTree == nil {
+		return nil // process tree is disabled
+	}
+
 	paramsLength := len(events.Core.GetDefinitionByID(events.SignalSchedProcessFork).GetParams())
 	if len(args) != paramsLength {
 		return errfmt.Errorf("got %d args instead of %d", len(args), paramsLength)
@@ -145,6 +149,10 @@ func (ctrl *Controller) processSchedProcessFork(args []trace.Argument) error {
 }
 
 func (ctrl *Controller) processSchedProcessExec(args []trace.Argument) error {
+	if ctrl.processTree == nil {
+		return nil // process tree is disabled
+	}
+
 	paramsLength := len(events.Core.GetDefinitionByID(events.SignalSchedProcessExec).GetParams())
 	if len(args) != paramsLength {
 		return errfmt.Errorf("got %d args instead of %d", len(args), paramsLength)
@@ -249,6 +257,10 @@ func (ctrl *Controller) processSchedProcessExec(args []trace.Argument) error {
 }
 
 func (ctrl *Controller) processSchedProcessExit(args []trace.Argument) error {
+	if ctrl.processTree == nil {
+		return nil // process tree is disabled
+	}
+
 	paramsLength := len(events.Core.GetDefinitionByID(events.SignalSchedProcessExit).GetParams())
 	if len(args) != paramsLength {
 		return errfmt.Errorf("got %d args instead of %d", len(args), paramsLength)

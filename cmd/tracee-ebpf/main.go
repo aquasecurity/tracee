@@ -95,7 +95,7 @@ func main() {
 				Name:    "proctree",
 				Aliases: []string{"t"},
 				Value:   cli.NewStringSlice("none"),
-				Usage:   "process tree cache sizes. run '--proctree help' for more info.",
+				Usage:   "process tree options. run '--proctree help' for more info.",
 			},
 			&cli.StringSliceFlag{
 				Name:  "crs",
