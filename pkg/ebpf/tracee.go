@@ -216,15 +216,9 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	// Initialize events state with mandatory events
 
-	// - tracee is capturing exec (needs processSchedProcessExec)
-	// - tracee is on analyze mode (no control plane available for proctree)
-	// - analyze mode will enable needed events at: https://github.com/aquasecurity/tracee/pull/3468
-
-	if t.config.Capture.Exec || t.config.Output.ExecHash {
-		t.eventsState[events.SchedProcessExec] = events.EventState{}
-	}
-	// t.eventsState[events.SchedProcessExit] = events.EventState{}
-	// t.eventsState[events.SchedProcessFork] = events.EventState{}
+	t.eventsState[events.SchedProcessExec] = events.EventState{}
+	t.eventsState[events.SchedProcessExit] = events.EventState{}
+	t.eventsState[events.SchedProcessFork] = events.EventState{}
 
 	// Pseudo events added by control plane
 
