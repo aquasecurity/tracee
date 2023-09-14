@@ -136,7 +136,7 @@ func (ctrl *Controller) debug(enable bool) {
 	// NOTE: Of course there are other ways of debugging, this one is the fastest and simpler
 	// (without adding/removing too much code).
 
-	if enable {
+	if enable && ctrl.processTree != nil { // debug AND process tree are enabled
 		go func() {
 			for {
 				time.Sleep(5 * time.Second)
