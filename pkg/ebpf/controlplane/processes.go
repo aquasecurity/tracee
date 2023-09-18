@@ -212,7 +212,7 @@ func (ctrl *Controller) processSchedProcessExec(args []trace.Argument) error {
 	interInode, _ := parse.ArgVal[uint64](args, "interpreter_inode")
 	interCtime, _ := parse.ArgVal[uint64](args, "interpreter_ctime")
 
-	interpreter, err := parse.ArgVal[string](args, "interp")
+	interp, err := parse.ArgVal[string](args, "interp")
 	if err != nil {
 		return errfmt.Errorf("error parsing interp: %v", err)
 	}
@@ -244,11 +244,11 @@ func (ctrl *Controller) processSchedProcessExec(args []trace.Argument) error {
 			Inode:             inode,
 			Ctime:             ctime,
 			InodeMode:         inodeMode,
-			InterPathName:     interPathName,
-			InterDev:          interDev,
-			InterInode:        interInode,
-			InterCtime:        interCtime,
-			Interpreter:       interpreter,
+			InterpreterPath:   interPathName,
+			InterpreterDev:    interDev,
+			InterpreterInode:  interInode,
+			InterpreterCtime:  interCtime,
+			Interp:            interp,
 			StdinType:         stdinType,
 			StdinPath:         stdinPath,
 			InvokedFromKernel: invokedFromKernel,

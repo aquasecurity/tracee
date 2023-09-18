@@ -146,11 +146,11 @@ type ExecFeed struct {
 	Inode             uint64
 	Ctime             uint64
 	InodeMode         uint16
-	InterPathName     string
-	InterDev          uint32
-	InterInode        uint64
-	InterCtime        uint64
-	Interpreter       string
+	InterpreterPath   string
+	InterpreterDev    uint32
+	InterpreterInode  uint64
+	InterpreterCtime  uint64
+	Interp            string
 	StdinType         uint16
 	StdinPath         string
 	InvokedFromKernel int32
@@ -189,7 +189,6 @@ func (pt *ProcessTree) FeedFromExec(feed ExecFeed) error {
 
 	process.GetExecutable().SetFeedAt(
 		FileInfoFeed{
-			Name:      feed.CmdPath,
 			Path:      feed.PathName,
 			Dev:       int(feed.Dev),
 			Ctime:     int(feed.Ctime),
@@ -201,12 +200,18 @@ func (pt *ProcessTree) FeedFromExec(feed ExecFeed) error {
 
 	process.GetInterpreter().SetFeedAt(
 		FileInfoFeed{
-			Name:      feed.Interpreter,
-			Path:      feed.InterPathName,
-			Dev:       int(feed.InterDev),
-			Ctime:     int(feed.InterCtime),
-			Inode:     int(feed.InterInode),
+			Path:      feed.InterpreterPath,
+			Dev:       int(feed.InterpreterDev),
+			Ctime:     int(feed.InterpreterCtime),
+			Inode:     int(feed.InterpreterInode),
 			InodeMode: -1, // no inode mode for interpreter
+		},
+		utils.NsSinceBootTimeToTime(feed.TimeStamp),
+	)
+
+	process.GetInterp().SetFeedAt(
+		FileInfoFeed{
+			Path: feed.Interp,
 		},
 		utils.NsSinceBootTimeToTime(feed.TimeStamp),
 	)
