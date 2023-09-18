@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.2.8+insiders-4.40.4">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.3.1+insiders-4.41.0">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.c4d31a9e.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.176649b9.min.css">
       
       
 
@@ -13757,10 +13757,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#container_1" class="md-nav__link">
+  <a href="#not-container" class="md-nav__link">
     <span class="md-ellipsis">
       
-        !container
+        not-container
       
     </span>
   </a>
@@ -13779,10 +13779,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#binary-bin" class="md-nav__link">
+  <a href="#executable-exec" class="md-nav__link">
     <span class="md-ellipsis">
       
-        binary, bin
+        executable, exec
       
     </span>
   </a>
@@ -15046,10 +15046,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#container_1" class="md-nav__link">
+  <a href="#not-container" class="md-nav__link">
     <span class="md-ellipsis">
       
-        !container
+        not-container
       
     </span>
   </a>
@@ -15068,10 +15068,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#binary-bin" class="md-nav__link">
+  <a href="#executable-exec" class="md-nav__link">
     <span class="md-ellipsis">
       
-        binary, bin
+        executable, exec
       
     </span>
   </a>
@@ -15147,21 +15147,20 @@
 <div class="highlight"><pre><span></span><code><span class="nt">scope</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">container</span>
 </code></pre></div>
-<h3 id="container_1">!container<a class="headerlink" href="#container_1" title="Permanent link">&para;</a></h3>
+<h3 id="not-container">not-container<a class="headerlink" href="#not-container" title="Permanent link">&para;</a></h3>
 <p>Events are collected from everything but containers:</p>
-<p>NOTE: YAML requires that values containing special characters, in this case <code>!</code>, be enclosed in quotes!</p>
 <div class="highlight"><pre><span></span><code><span class="nt">scope</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;!container&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">not-container</span>
 </code></pre></div>
 <h3 id="tree">tree<a class="headerlink" href="#tree" title="Permanent link">&para;</a></h3>
 <p>Events are collected from process tree:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">scope</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tree=1000</span>
 </code></pre></div>
-<h3 id="binary-bin">binary, bin<a class="headerlink" href="#binary-bin" title="Permanent link">&para;</a></h3>
-<p>Events are collected from binary:</p>
+<h3 id="executable-exec">executable, exec<a class="headerlink" href="#executable-exec" title="Permanent link">&para;</a></h3>
+<p>Events are collected from executable:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">scope</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">binary=/usr/bin/dig</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">executable=/usr/bin/dig</span>
 </code></pre></div>
 <h3 id="follow">follow<a class="headerlink" href="#follow" title="Permanent link">&para;</a></h3>
 <p>Events collected follow process children:</p>

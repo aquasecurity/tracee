@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.2.8+insiders-4.40.4">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.3.1+insiders-4.41.0">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.c4d31a9e.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.176649b9.min.css">
       
       
 
@@ -15015,7 +15015,7 @@ can be listed by using <code>list</code> command line argument.</p>
 <li>
 <p><strong>Container</strong> <code>(Operators: =, != and "new". Boolean)</code></p>
 <div class="highlight"><pre><span></span><code>1) --scope container # all container events
-2) --scope &#39;!container&#39; # events from the host only
+2) --scope not-container # events from the host only
 3) --scope container=new # containers created after tracee-ebf execution
 4) --scope container=3f93da58be3c --events openat
 5) --scope container=new --events openat.args.pathname=/etc/shadow
@@ -15037,10 +15037,10 @@ by command name as well.</p>
 </div>
 </li>
 <li>
-<p><strong>Binary Path</strong> <code>(Operators: =, !=)</code></p>
-<div class="highlight"><pre><span></span><code>1) --scope binary=/usr/bin/ls
-2) --scope binary=host:/usr/bin/ls
-3) --scope binary=4026532448:/usr/bin/ls
+<p><strong>Executable Path</strong> <code>(Operators: =, !=)</code></p>
+<div class="highlight"><pre><span></span><code>1) --scope executable=/usr/bin/ls
+2) --scope executable=host:/usr/bin/ls
+3) --scope executable=4026532448:/usr/bin/ls
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
