@@ -65,12 +65,10 @@ github.com/agnivade/levenshtein v1.1.1/go.mod h1:veldBMzWxcCG2ZvUTKD2kJNRdCk5hVb
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20230321174746-8dcc6526cfb1 h1:X8MJ0fnN5FPdcGF5Ij2/OW+HgiJrRg3AfHAx1PJtIzM=
 github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20230321174746-8dcc6526cfb1/go.mod h1:pSwJ0fSY5KhvocuWSx4fz3BA8OrA1bQn+K1Eli3BRwM=
-github.com/aquasecurity/libbpfgo v0.4.8-libbpf-1.2.0.0.20230509162948-80f41e18e690 h1:iDvZaf9Xcw9JfzJyqG9L9cYDwSpaFRg5pLddu4IvId0=
-github.com/aquasecurity/libbpfgo v0.4.8-libbpf-1.2.0.0.20230509162948-80f41e18e690/go.mod h1:UD3Mfr+JZ/ASK2VMucI/zAdEhb35LtvYXvAUdrdqE9s=
+github.com/aquasecurity/libbpfgo v0.5.0-libbpf-1.2 h1:Yywi9wC3GPDOgR8wr6P9geY2qvFqKxH5sctMOssw+MQ=
+github.com/aquasecurity/libbpfgo v0.5.0-libbpf-1.2/go.mod h1:0rEApF1YBHGuZ4C8OYI9q5oDBVpgqtRqYATePl9mCDk=
 github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230321190037-f591a2c5734f h1:l127H3NqJBmw+XMt+haBOeZIrBppuw7TJz26cWMI9kY=
 github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230321190037-f591a2c5734f/go.mod h1:j/TQLmsZpOIdF3CnJODzYngG4yu1YoDCoRMELxkQSSA=
-github.com/aquasecurity/tracee/types v0.0.0-20230817130859-7d4b8c20396c h1:0fTbrZsLLIFC17bbm1XGoMZEJvFyfIT3mJJhwXMHVpA=
-github.com/aquasecurity/tracee/types v0.0.0-20230817130859-7d4b8c20396c/go.mod h1:sorAC3uGSNB/b8A9PjG1MSbENl81dR7azTSj+HclE+A=
 github.com/aquasecurity/tracee/types v0.0.0-20230912172206-3c8a64ecec2c h1:1HsKkFRTBxJ6MkwWq7bMlKq85VkcRxlc+57FV5zhu80=
 github.com/aquasecurity/tracee/types v0.0.0-20230912172206-3c8a64ecec2c/go.mod h1:sorAC3uGSNB/b8A9PjG1MSbENl81dR7azTSj+HclE+A=
 github.com/arbovm/levenshtein v0.0.0-20160628152529-48b4e1c0c4d0 h1:jfIu9sQUG6Ig+0+Ap1h4unLjW6YQJpKZVmUzxsD4E/Q=
@@ -426,8 +424,8 @@ github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
-github.com/stretchr/testify v1.8.2 h1:+h33VjcLVPDHtOdpUCuF+7gSuG3yGIftsP1YvFihtJ8=
-github.com/stretchr/testify v1.8.2/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
+github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
+github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/subosito/gotenv v1.4.2 h1:X1TuBLAMDFbaTAChgCBLu3DU3UPyELpnF2jjJ2cz/S8=
 github.com/subosito/gotenv v1.4.2/go.mod h1:ayKnFf/c6rvx/2iiLrJUk1e6plDbT3edrFNGqEflhK0=
 github.com/tchap/go-patricia/v2 v2.3.1 h1:6rQp39lgIYZ+MHmdEq4xzuk1t7OdC35z/xm0BGhTkes=

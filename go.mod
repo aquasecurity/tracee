@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/IBM/fluent-forward-go v0.2.1
 	github.com/Masterminds/sprig/v3 v3.2.3
-	github.com/aquasecurity/libbpfgo v0.4.8-libbpf-1.2.0.0.20230509162948-80f41e18e690
+	github.com/aquasecurity/libbpfgo v0.5.0-libbpf-1.2
 	github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230321190037-f591a2c5734f
 	github.com/aquasecurity/tracee/types v0.0.0-20230912172206-3c8a64ecec2c
 	github.com/containerd/containerd v1.7.0
@@ -22,7 +22,7 @@ require (
 	github.com/sashabaranov/go-gpt3 v1.4.0
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.15.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli/v2 v2.3.0
 	go.uber.org/goleak v1.1.12
 	go.uber.org/zap v1.24.0
@@ -103,7 +103,7 @@ require (
 
 require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
-	github.com/Masterminds/semver/v3 v3.2.1 // indirect
+	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/Microsoft/hcsshim v0.10.0-rc.8 // indirect
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
