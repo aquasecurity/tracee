@@ -37,20 +37,6 @@ func SendKsymbolsToMap(bpfKsymsMap *libbpfgo.BPFMap, ksymbols map[string]*helper
 	return nil
 }
 
-// ValidateKsymbolsTable checks if the addresses in the table are valid by
-// checking a specific symbol address. The reason for the addresses to be
-// invalid is if the capabilities required to read the kallsyms file are not
-// given. The chosen symbol used here is "security_file_open" because it is a
-// must-have symbol for tracee to run.
-func ValidateKsymbolsTable(ksyms helpers.KernelSymbolTable) bool {
-	sym, err := ksyms.GetSymbolByName(globalSymbolOwner, "security_file_open")
-	if err != nil || sym.Address == 0 {
-		return false
-	}
-
-	return true
-}
-
 func (t *Tracee) NewKernelSymbols() error {
 	// reading kallsyms needs CAP_SYSLOG
 	kernelSymbols, err := helpers.NewLazyKernelSymbolsMap()
@@ -58,9 +44,6 @@ func (t *Tracee) NewKernelSymbols() error {
 		return errfmt.WrapError(err)
 	}
 
-	if !ValidateKsymbolsTable(kernelSymbols) {
-		return errfmt.Errorf("invalid ksymbol table (capabilities issue ?)")
-	}
 	t.kernelSymbols = kernelSymbols
 
 	return nil

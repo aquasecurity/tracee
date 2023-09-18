@@ -928,10 +928,13 @@ func (t *Tracee) validateKallsymsDependencies() {
 	// Figuring out for each event if it has missing required symbols and which
 	missingSymsPerEvent := make(map[events.ID][]string)
 	for sym, depEventsIDs := range symsToDependentEvents {
-		_, ok := kallsymsValues[sym]
-		if ok {
+		ksym, ok := kallsymsValues[sym]
+		if ok && ksym.Address != 0 {
+			// found and valid address
 			continue
 		}
+
+		// missing symbol or invalid address
 		for _, depEventID := range depEventsIDs {
 			eventMissingSyms, ok := missingSymsPerEvent[depEventID]
 			if ok {
