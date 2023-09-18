@@ -14,12 +14,12 @@ func procTreeHelp() string {
 
 Example:
   --proctree enabled            | will enable the process tree with default settings (disabled by default).
-  --proctree process=8192       | will cache up to 8192 processes in the tree (LRU cache).
-  --proctree thread=4096        | will cache up to 4096 threads in the tree (LRU cache).
+  --proctree process-cache=8192 | will cache up to 8192 processes in the tree (LRU cache).
+  --proctree thread-cache=4096  | will cache up to 4096 threads in the tree (LRU cache).
 
 Use comma OR use the flag multiple times to choose multiple options:
-  --proctree process=X,thread=Y
-  --proctree process=X --proctree thread=Y
+  --proctree process-cache=X,thread-cache=Y
+  --proctree process-cache=X --proctree thread-cache=Y
 `
 }
 
@@ -36,7 +36,6 @@ func PrepareProcTree(cacheSlice []string) (proctree.ProcTreeConfig, error) {
 			return config, fmt.Errorf(procTreeHelp())
 		}
 		if strings.HasPrefix(slice, "none") {
-			logger.Debugw("proctree cache has default size")
 			return config, nil
 		}
 
@@ -44,28 +43,29 @@ func PrepareProcTree(cacheSlice []string) (proctree.ProcTreeConfig, error) {
 
 		for _, value := range values {
 			if strings.HasPrefix(value, "enabled") {
+				logger.Debugw("proctree is enabled")
 				config.Enabled = true
 				continue
 			}
-			if strings.HasPrefix(value, "process=") {
-				num := strings.TrimPrefix(value, "process=")
+			if strings.HasPrefix(value, "process-cache=") {
+				num := strings.TrimPrefix(value, "process-cache=")
 				size, err := strconv.Atoi(num)
 				if err != nil {
 					return config, err
 				}
-				if size > 4096 { // minimum size is 4096 (or the default is used)
+				if size >= 4096 { // minimum size is 4096 (or the default is used)
 					config.ProcessCacheSize = size
 				}
 				config.Enabled = true
 				continue
 			}
-			if strings.HasPrefix(value, "thread=") {
-				num := strings.TrimPrefix(value, "thread=")
+			if strings.HasPrefix(value, "thread-cache=") {
+				num := strings.TrimPrefix(value, "thread-cache=")
 				size, err := strconv.Atoi(num)
 				if err != nil {
 					return config, err
 				}
-				if size > 4096 { // minimum size is 4096 (or the default is used)
+				if size >= 4096 { // minimum size is 4096 (or the default is used)
 					config.ThreadCacheSize = size
 				}
 				config.Enabled = true
