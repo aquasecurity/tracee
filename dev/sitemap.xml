@@ -11,6 +11,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/contributing/documentation/</loc>
+         <lastmod>2023-09-18</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/contributing/guidelines/</loc>
          <lastmod>2023-09-18</lastmod>
          <changefreq>daily</changefreq>
