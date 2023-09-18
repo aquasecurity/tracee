@@ -14,7 +14,8 @@ type Process struct {
 	parentHash  uint32              // hash of parent
 	info        *TaskInfo           // task info
 	executable  *FileInfo           // executable info
-	interpreter *FileInfo           // interpreter info
+	interpreter *FileInfo           // interpreter info (binary format interpreter/loader)
+	interp      *FileInfo           // interpreter (scripting language interpreter)
 	children    map[uint32]struct{} // hash of childrens
 	threads     map[uint32]struct{} // hash of threads
 	// Control fields
@@ -29,6 +30,7 @@ func NewProcess(hash uint32) *Process {
 		info:        NewTaskInfo(),
 		executable:  NewFileInfo(),
 		interpreter: NewFileInfo(),
+		interp:      NewFileInfo(),
 		children:    make(map[uint32]struct{}),
 		threads:     make(map[uint32]struct{}),
 		mutex:       &sync.RWMutex{},
@@ -70,6 +72,13 @@ func (p *Process) GetInterpreter() *FileInfo {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 	return p.interpreter
+}
+
+// GetInterp returns a instanced interpreter.
+func (p *Process) GetInterp() *FileInfo {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+	return p.interp
 }
 
 // Setters

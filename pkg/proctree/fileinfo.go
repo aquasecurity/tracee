@@ -9,7 +9,7 @@ import (
 
 // FileInfoFeed allows external packages to set/get multiple values of a task at once.
 type FileInfoFeed struct {
-	Name      string
+	// Name      string
 	Path      string
 	Dev       int
 	Ctime     int
@@ -23,7 +23,6 @@ type FileInfoFeed struct {
 
 // FileInfo represents a file.
 type FileInfo struct {
-	name      *ch.Changelog[string] // file name
 	path      *ch.Changelog[string] // file path
 	dev       *ch.Changelog[int]    // device number of the file
 	ctime     *ch.Changelog[int]    // creation time of the file
@@ -35,7 +34,6 @@ type FileInfo struct {
 // NewFileInfo creates a new file.
 func NewFileInfo() *FileInfo {
 	return &FileInfo{
-		name:      ch.NewChangelog[string](),
 		path:      ch.NewChangelog[string](),
 		dev:       ch.NewChangelog[int](),
 		ctime:     ch.NewChangelog[int](),
@@ -69,9 +67,6 @@ func (fi *FileInfo) SetFeedAt(feed FileInfoFeed, targetTime time.Time) {
 }
 
 func (fi *FileInfo) setFeedAt(feed FileInfoFeed, targetTime time.Time) {
-	if feed.Name != "" {
-		fi.name.Set(feed.Name, targetTime)
-	}
 	if feed.Path != "" {
 		fi.path.Set(feed.Path, targetTime)
 	}
@@ -105,7 +100,6 @@ func (fi *FileInfo) GetFeedAt(targetTime time.Time) FileInfoFeed {
 
 func (fi *FileInfo) getFeedAt(targetTime time.Time) FileInfoFeed {
 	return FileInfoFeed{
-		Name:      fi.name.Get(targetTime),
 		Path:      fi.path.Get(targetTime),
 		Dev:       fi.dev.Get(targetTime),
 		Ctime:     fi.ctime.Get(targetTime),
@@ -115,20 +109,6 @@ func (fi *FileInfo) getFeedAt(targetTime time.Time) FileInfoFeed {
 }
 
 // Setters
-
-// SetName sets the name of the file.
-func (fi *FileInfo) SetName(name string) {
-	fi.mutex.Lock()
-	defer fi.mutex.Unlock()
-	fi.name.Set(name, time.Now())
-}
-
-// SetNameAt sets the name of the file at the given time.
-func (fi *FileInfo) SetNameAt(name string, targetTime time.Time) {
-	fi.mutex.Lock()
-	defer fi.mutex.Unlock()
-	fi.name.Set(name, targetTime)
-}
 
 // SetPath sets the path of the file.
 func (fi *FileInfo) SetPath(path string) {
@@ -201,20 +181,6 @@ func (fi *FileInfo) SetInodeModeAt(inodeMode int, targetTime time.Time) {
 }
 
 // Getters
-
-// GetName returns the name of the file.
-func (fi *FileInfo) GetName() string {
-	fi.mutex.RLock()
-	defer fi.mutex.RUnlock()
-	return fi.name.Get(time.Now())
-}
-
-// GetNameAt returns the name of the file at the given time.
-func (fi *FileInfo) GetNameAt(targetTime time.Time) string {
-	fi.mutex.RLock()
-	defer fi.mutex.RUnlock()
-	return fi.name.Get(targetTime)
-}
 
 // GetPath returns the path of the file.
 func (fi *FileInfo) GetPath() string {

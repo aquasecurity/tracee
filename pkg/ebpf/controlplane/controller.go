@@ -64,7 +64,7 @@ func (ctrl *Controller) Start() {
 // Run runs the controller.
 func (ctrl *Controller) Run(ctx context.Context) {
 	ctrl.ctx = ctx
-	ctrl.debug(false)
+	ctrl.debug(false) // change this to "true" to enable process tree printing periodically.
 
 	for {
 		select {
