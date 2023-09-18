@@ -13703,6 +13703,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Events">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type-of-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type of Events
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -15119,6 +15136,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Events">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type-of-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type of Events
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -15390,6 +15424,43 @@
 <h2 id="events">Events<a class="headerlink" href="#events" title="Permanent link">&para;</a></h2>
 <p>An event can match all occurrences of events for a specific scope, or specific events depending on its filters.
 Events support three types of filters: <code>context</code>, <code>arguments</code> and <code>return value</code>. </p>
+<h3 id="type-of-events">Type of Events<a class="headerlink" href="#type-of-events" title="Permanent link">&para;</a></h3>
+<p>You can add events as either of the following:</p>
+<p><strong><a href="../../events/builtin/syscalls/">A syscall</a></strong></p>
+<p>Example Scope Section referencing the <code>open</code> syscall:</p>
+<div class="highlight"><pre><span></span><code>spec:
+<span class="w">    </span>scope:
+<span class="w">        </span>-<span class="w"> </span>global
+<span class="w">    </span>rules:
+<span class="w">        </span>event:<span class="w"> </span>open
+</code></pre></div>
+<p>The name of the syscall is going to be the name of the event.</p>
+<p><strong><a href="../../events/builtin/network/">Network Events</a></strong></p>
+<p>Network Events can be specified from the list of <code>Available network events</code>.</p>
+<p>For example:</p>
+<div class="highlight"><pre><span></span><code>spec:
+<span class="w">    </span>scope:
+<span class="w">        </span>-<span class="w"> </span>global
+<span class="w">    </span>rules:
+<span class="w">        </span>event:<span class="w"> </span>net_packet_ipv4
+</code></pre></div>
+<p><strong><a href="../../events/builtin/signatures/">A behavioural Signature</a></strong></p>
+<p>To specify one of the behavioral signatures as an event, use the name of the signature from the table in the documentation as the event name:</p>
+<div class="highlight"><pre><span></span><code>spec:
+<span class="w">    </span>scope:
+<span class="w">        </span>-<span class="w"> </span>global
+<span class="w">    </span>rules:
+<span class="w">        </span>event:<span class="w"> </span>anti_debugging
+</code></pre></div>
+<p><strong><a href="../../events/builtin/extra/bpf_attach/">Any of our extra events</a></strong></p>
+<p>Any of the extra events listed in the Tracee documentation can be listed in the Tracee Policy.</p>
+<p>For instance, to specify the <a href="../../events/builtin/extra/do_sigaction/">do_sigaction</a> event, provide the name in the YAML manifest:</p>
+<div class="highlight"><pre><span></span><code>spec:
+<span class="w">    </span>scope:
+<span class="w">        </span>-<span class="w"> </span>global
+<span class="w">    </span>rules:
+<span class="w">        </span>event:<span class="w"> </span>do_sigaction
+</code></pre></div>
 <h2 id="context-filters">Context filters<a class="headerlink" href="#context-filters" title="Permanent link">&para;</a></h2>
 <p>Context is data which is collected along the event. They can be filtered like:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aquasecurity.github.io/v1beta1</span>
