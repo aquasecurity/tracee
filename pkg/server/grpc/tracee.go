@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/version"
 	pb "github.com/aquasecurity/tracee/types/api/v1beta1"
@@ -11,6 +12,25 @@ import (
 
 type TraceeService struct {
 	pb.UnimplementedTraceeServiceServer
+	tracee *tracee.Tracee
+}
+
+func (s *TraceeService) EnableEvent(ctx context.Context, in *pb.EnableEventRequest) (*pb.EnableEventResponse, error) {
+	err := s.tracee.EnableEvent(in.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.EnableEventResponse{}, nil
+}
+
+func (s *TraceeService) DisableEvent(ctx context.Context, in *pb.DisableEventRequest) (*pb.DisableEventResponse, error) {
+	err := s.tracee.DisableEvent(in.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.DisableEventResponse{}, nil
 }
 
 func (s *TraceeService) GetEventDefinition(ctx context.Context, in *pb.GetEventDefinitionRequest) (*pb.GetEventDefinitionResponse, error) {
