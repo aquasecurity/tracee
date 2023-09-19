@@ -10,8 +10,8 @@ You can load multiple (up to 64) policies into Tracee using the --policy flag pr
 Following is a sample policy:
 
 ```yaml
-apiVersion: aquasecurity.github.io/v1beta1
-kind: TraceePolicy
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
 metadata:
 	name: overview-policy
 	annotations:

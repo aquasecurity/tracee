@@ -72,11 +72,11 @@ func (p PolicyFile) Validate() error {
 		return errfmt.Errorf("policy name %s is invalid: %s", p.Name(), err)
 	}
 
-	if p.APIVersion != "aquasecurity.github.io/v1beta1" {
+	if p.APIVersion != "tracee.aquasec.com/v1beta1" {
 		return errfmt.Errorf("policy %s, apiVersion not supported", p.Name())
 	}
 
-	if p.Kind != "TraceePolicy" {
+	if p.Kind != "Policy" {
 		return errfmt.Errorf("policy %s, kind not supported", p.Name())
 	}
 
