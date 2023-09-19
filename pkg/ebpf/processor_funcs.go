@@ -5,12 +5,9 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
-	"sync"
 
 	"golang.org/x/sys/unix"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
-
-	"github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -21,112 +18,7 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-var (
-	// initializing kernelReadFileTypes once at init.
-	kernelReadFileTypes map[int32]trace.KernelReadType
-	// exec hash might add capabilities to base ring
-	onceExecHash sync.Once
-)
-
-func init() {
-	initKernelReadFileTypes()
-}
-
-func (t *Tracee) processLostEvents() {
-	logger.Debugw("Starting processLostEvents goroutine")
-	defer logger.Debugw("Stopped processLostEvents goroutine")
-
-	// Since this is an end-stage goroutine, it should be terminated when:
-	// - lostEvChannel is closed, or finally when;
-	// - internal done channel is closed (not ctx).
-	for {
-		select {
-		case lost, ok := <-t.lostEvChannel:
-			if !ok {
-				return // lostEvChannel is closed, lost is zero value
-			}
-
-			if err := t.stats.LostEvCount.Increment(lost); err != nil {
-				logger.Errorw("Incrementing lost event count", "error", err)
-			}
-			logger.Warnw(fmt.Sprintf("Lost %d events", lost))
-
-		// internal done channel is closed when Tracee is stopped via Tracee.Close()
-		case <-t.done:
-			return
-		}
-	}
-}
-
-const (
-	IterateShared int = iota
-	Iterate
-)
-
-func (t *Tracee) processEvent(event *trace.Event) []error {
-	eventId := events.ID(event.EventID)
-	processors := t.eventProcessor[eventId]
-	errs := []error{}
-	for _, procFunc := range processors {
-		err := procFunc(event)
-		if err != nil {
-			logger.Errorw("Error processing event", "event", event.EventName, "error", err)
-			errs = append(errs, err)
-		}
-	}
-	return errs
-}
-
-// RegisterEventProcessor registers a pipeline processing handler for an event
-func (t *Tracee) RegisterEventProcessor(id events.ID, proc func(evt *trace.Event) error) error {
-	if t.eventProcessor == nil {
-		return errfmt.Errorf("tracee not initialized yet")
-	}
-	if t.eventProcessor[id] == nil {
-		t.eventProcessor[id] = make([]func(evt *trace.Event) error, 0)
-	}
-	t.eventProcessor[id] = append(t.eventProcessor[id], proc)
-	return nil
-}
-
-// registerEventProcessors registers tracee's internal default event processors
-func (t *Tracee) registerEventProcessors() {
-	if t.eventProcessor == nil {
-		t.eventProcessor = make(map[events.ID][]func(evt *trace.Event) error)
-	}
-
-	// no need to error check since we know the error is initialization related
-	t.RegisterEventProcessor(events.VfsWrite, t.processWriteEvent)
-	t.RegisterEventProcessor(events.VfsWritev, t.processWriteEvent)
-	t.RegisterEventProcessor(events.KernelWrite, t.processWriteEvent)
-	t.RegisterEventProcessor(events.SchedProcessExec, t.processSchedProcessExec)
-	t.RegisterEventProcessor(events.SchedProcessFork, t.processSchedProcessFork)
-	t.RegisterEventProcessor(events.DoInitModule, t.processDoInitModule)
-	t.RegisterEventProcessor(events.HookedProcFops, t.processHookedProcFops)
-	t.RegisterEventProcessor(events.PrintNetSeqOps, t.processTriggeredEvent)
-	t.RegisterEventProcessor(events.PrintSyscallTable, t.processTriggeredEvent)
-	t.RegisterEventProcessor(events.SecurityKernelReadFile, processKernelReadFile)
-	t.RegisterEventProcessor(events.SecurityPostReadFile, processKernelReadFile)
-	t.RegisterEventProcessor(events.PrintMemDump, t.processTriggeredEvent)
-	t.RegisterEventProcessor(events.PrintMemDump, t.processPrintMemDump)
-}
-
-// convertArgMonotonicToEpochTime change time from monotonic relative time to time since epoch.
-// Monotonic time is timestamp relative to the boot time (not including sleep time)
-// Add the boot time to receive timestamp which is approximately relative to epoch.
-func (t *Tracee) convertArgMonotonicToEpochTime(event *trace.Event, argName string) error {
-	relTimeArg := events.GetArg(event, argName)
-	if relTimeArg == nil {
-		return errfmt.Errorf("couldn't find argument %s of event %s", argName, event.EventName)
-	}
-	relTime, ok := relTimeArg.Value.(uint64)
-	if !ok {
-		return errfmt.Errorf("argument %s of event %s is not of type uint64", argName, event.EventName)
-	}
-	relTimeArg.Value = relTime + t.bootTime
-	return nil
-}
-
+// processWriteEvent processes a write event by indexing the written file.
 func (t *Tracee) processWriteEvent(event *trace.Event) error {
 	// only capture written files
 	if !t.config.Capture.FileWrite.Capture {
@@ -165,6 +57,7 @@ func (t *Tracee) processWriteEvent(event *trace.Event) error {
 	return nil
 }
 
+// processReadEvent processes a read event by indexing the read file.
 func (t *Tracee) processReadEvent(event *trace.Event) error {
 	// only capture read files
 	if !t.config.Capture.FileRead.Capture {
@@ -203,6 +96,22 @@ func (t *Tracee) processReadEvent(event *trace.Event) error {
 	return nil
 }
 
+// processKernelReadFile processes a security read event and changes the read type value.
+func processKernelReadFile(event *trace.Event) error {
+	readTypeArg := events.GetArg(event, "type")
+	readTypeInt, ok := readTypeArg.Value.(int32)
+	if !ok {
+		return errfmt.Errorf("missing argument %s in event %s", "type", event.EventName)
+	}
+	readType, idExists := kernelReadFileTypes[readTypeInt]
+	if !idExists {
+		return errfmt.Errorf("kernelReadFileId doesn't exist in kernelReadFileType map")
+	}
+	readTypeArg.Value = readType
+	return nil
+}
+
+// processSchedProcessExec processes a sched_process_exec event by capturing the executed file.
 func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 	// cache this pid by it's mnt ns
 	if event.ProcessID == 1 {
@@ -220,9 +129,8 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 		if filePath == "" || filePath[0] != '/' {
 			return nil
 		}
-		// try to access the root fs via another process in the same mount
-		// namespace (as the process from the current event might have
-		// already died)
+		// try to access the root fs via another process in the same mount namespace (as the process
+		// from the current event might have already died)
 		pids := t.pidsInMntns.GetBucket(uint32(event.MountNS))
 		for _, pid := range pids { // will break on success
 			err = nil
@@ -251,10 +159,9 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 				// don't capture same file twice unless it was modified
 				lastCtime, ok := t.capturedFiles[capturedFileID]
 				if !ok || lastCtime != castedSourceFileCtime {
-					// capture (SchedProcessExec sets base capabilities to have
-					// cap.SYS_PTRACE set. This is needed at this point because
-					// raising and dropping capabilities too frequently would
-					// have a big performance impact)
+					// capture (SchedProcessExec sets base capabilities to have cap.SYS_PTRACE set.
+					// This is needed at this point because raising and dropping capabilities too
+					// frequently would have a big performance impact)
 					err := utils.CopyRegularFileByRelativePath(
 						sourceFilePath,
 						t.OutDir,
@@ -276,10 +183,9 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 				if ok && hashInfoObj.LastCtime == castedSourceFileCtime {
 					currentHash = hashInfoObj.Hash
 				} else {
-					// if ExecHash is enabled, we need to make sure base ring
-					// has the needed capabilities (cap.SYS_PTRACE), since it
-					// might not always have been enabled by event capabilities
-					// requirements (there is no "exec hash" event) from
+					// if ExecHash is enabled, we need to make sure base ring has the needed
+					// capabilities (cap.SYS_PTRACE), since it might not always have been enabled by
+					// event capabilities requirements (there is no "exec hash" event) from
 					// SchedProcessExec event.
 					onceExecHash.Do(func() {
 						err = capabilities.GetInstance().BaseRingAdd(cap.SYS_PTRACE)
@@ -308,13 +214,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 	return nil
 }
 
-func (t *Tracee) processSchedProcessFork(event *trace.Event) error {
-	return t.convertArgMonotonicToEpochTime(event, "start_time")
-}
-
-// In case FinitModule and InitModule occurs, it means that a kernel module
-// was loaded and tracee needs to check if it hooked the syscall table and
-// seq_ops
+// processDoFinitModule hndles a do_finit_module event and triggers other hooking detection logic.
 func (t *Tracee) processDoInitModule(event *trace.Event) error {
 	_, okSyscalls := t.eventsState[events.HookedSyscalls]
 	_, okSeqOps := t.eventsState[events.HookedSeqOps]
@@ -334,12 +234,14 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 			return errfmt.WrapError(err)
 		}
 		if okSyscalls {
+			// Trigger syscalls hooking detection
 			err = t.triggerSyscallsIntegrityCheck(*event)
 			if err != nil {
 				logger.Warnw("hooked_syscalls returned an error", "error", err)
 			}
 		}
 		if okSeqOps {
+			// Trigger seq_ops hooking detection
 			t.triggerSeqOpsIntegrityCheck(*event)
 		}
 		if okMemDump {
@@ -353,6 +255,12 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 	return nil
 }
 
+const (
+	IterateShared int = iota
+	Iterate
+)
+
+// processHookedProcFops processes a hooked_proc_fops event.
 func (t *Tracee) processHookedProcFops(event *trace.Event) error {
 	fopsAddresses, err := parse.ArgVal[[]uint64](event.Args, "hooked_fops_pointers")
 	if err != nil || fopsAddresses == nil {
@@ -380,6 +288,7 @@ func (t *Tracee) processHookedProcFops(event *trace.Event) error {
 	return nil
 }
 
+// processTriggeredEvent processes a triggered event (e.g. print_syscall_table, print_net_seq_ops).
 func (t *Tracee) processTriggeredEvent(event *trace.Event) error {
 	// Initial event - no need to process
 	if event.Timestamp == 0 {
@@ -389,98 +298,14 @@ func (t *Tracee) processTriggeredEvent(event *trace.Event) error {
 	if err != nil {
 		return errfmt.Errorf("failed to apply invoke context on %s event: %s", event.EventName, err)
 	}
-	// This was previously event = &withInvokingContext. However, if applied
-	// as such, withInvokingContext will go out of policy and the reference
-	// will be moved back as such we apply the value internally and not
-	// through a reference switch
+	// This was previously event = &withInvokingContext. However, if applied as such,
+	// withInvokingContext will go out of policy and the reference will be moved back as such we
+	// apply the value internally and not through a reference switch
 	(*event) = withInvokingContext
 	return nil
 }
 
-func initKernelReadFileTypes() {
-	osInfo, err := helpers.GetOSInfo()
-	if err != nil {
-		return
-	}
-
-	kernel593ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("5.9.3")
-	if err != nil {
-		return
-	}
-	kernel570ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("5.7.0")
-	if err != nil {
-		return
-	}
-	kernel592ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("5.9.2")
-	if err != nil {
-		return
-	}
-	kernel5818ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("5.8.18")
-	if err != nil {
-		return
-	}
-	kernel4180ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("4.18.0")
-	if err != nil {
-		return
-	}
-
-	if kernel593ComparedToRunningKernel == helpers.KernelVersionOlder {
-		// running kernel version: >=5.9.3
-		kernelReadFileTypes = map[int32]trace.KernelReadType{
-			0: trace.KernelReadUnknown,
-			1: trace.KernelReadFirmware,
-			2: trace.KernelReadKernelModule,
-			3: trace.KernelReadKExecImage,
-			4: trace.KernelReadKExecInitRAMFS,
-			5: trace.KernelReadSecurityPolicy,
-			6: trace.KernelReadx509Certificate,
-		}
-	} else if kernel570ComparedToRunningKernel == helpers.KernelVersionOlder /* Running kernel is newer than 5.7.0 */ &&
-		kernel592ComparedToRunningKernel != helpers.KernelVersionOlder /* Running kernel is equal or older than 5.9.2*/ &&
-		kernel5818ComparedToRunningKernel != helpers.KernelVersionEqual /* Running kernel is not 5.8.18 */ {
-		// running kernel version: >=5.7 && <=5.9.2 && !=5.8.18
-		kernelReadFileTypes = map[int32]trace.KernelReadType{
-			0: trace.KernelReadUnknown,
-			1: trace.KernelReadFirmware,
-			2: trace.KernelReadFirmware,
-			3: trace.KernelReadFirmware,
-			4: trace.KernelReadKernelModule,
-			5: trace.KernelReadKExecImage,
-			6: trace.KernelReadKExecInitRAMFS,
-			7: trace.KernelReadSecurityPolicy,
-			8: trace.KernelReadx509Certificate,
-		}
-	} else if kernel5818ComparedToRunningKernel == helpers.KernelVersionEqual /* Running kernel is 5.8.18 */ ||
-		(kernel570ComparedToRunningKernel == helpers.KernelVersionNewer && /* Running kernel is older than 5.7.0 */
-			kernel4180ComparedToRunningKernel != helpers.KernelVersionOlder) /* Running kernel is 4.18 or newer */ {
-		// running kernel version: ==5.8.18 || (<5.7 && >=4.18)
-		kernelReadFileTypes = map[int32]trace.KernelReadType{
-			0: trace.KernelReadUnknown,
-			1: trace.KernelReadFirmware,
-			2: trace.KernelReadFirmware,
-			3: trace.KernelReadKernelModule,
-			4: trace.KernelReadKExecImage,
-			5: trace.KernelReadKExecInitRAMFS,
-			6: trace.KernelReadSecurityPolicy,
-			7: trace.KernelReadx509Certificate,
-		}
-	}
-}
-
-func processKernelReadFile(event *trace.Event) error {
-	readTypeArg := events.GetArg(event, "type")
-	readTypeInt, ok := readTypeArg.Value.(int32)
-	if !ok {
-		return errfmt.Errorf("missing argument %s in event %s", "type", event.EventName)
-	}
-	readType, idExists := kernelReadFileTypes[readTypeInt]
-	if !idExists {
-		return errfmt.Errorf("kernelReadFileId doesn't exist in kernelReadFileType map")
-	}
-	readTypeArg.Value = readType
-	return nil
-}
-
+// processPrintSyscallTable processes a print_syscall_table event.
 func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 	address, err := parse.ArgVal[uintptr](event.Args, "address")
 	if err != nil || address == 0 {
