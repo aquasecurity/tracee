@@ -43,7 +43,7 @@ func (s *Server) Start(ctx context.Context, t *tracee.Tracee) {
 	}
 
 	grpcServer := grpc.NewServer(grpc.KeepaliveParams(keepaliveParams))
-	pb.RegisterTraceeServiceServer(grpcServer, &TraceeService{})
+	pb.RegisterTraceeServiceServer(grpcServer, &TraceeService{tracee: t})
 	pb.RegisterDiagnosticServiceServer(grpcServer, &DiagnosticService{tracee: t})
 
 	go func() {
