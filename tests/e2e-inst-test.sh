@@ -52,6 +52,9 @@ TESTS=${INSTTESTS:=VFS_WRITE}
 rm -rf $TRACEE_TMP_DIR/* || error_exit "could not delete $TRACEE_TMP_DIR"
 git config --global --add safe.directory "*"
 
+apt update
+apt install python3
+
 info
 info "= ENVIRONMENT ================================================="
 info
@@ -92,6 +95,7 @@ for TEST in $TESTS; do
         --log file:$SCRIPT_TMP_DIR/tracee-log-$$ \
         --signatures-dir $SIG_DIR \
         --scope comm=echo,mv,ls,tracee \
+        --proctree enabled=true \
         --events signatures &
 
     # wait tracee-ebpf to be started (30 sec most)
