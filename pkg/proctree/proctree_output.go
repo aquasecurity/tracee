@@ -28,7 +28,7 @@ func (pt *ProcessTree) String() string {
 			if !ok {
 				continue
 			}
-			if child.info.HasExited() { // only running children
+			if !child.info.IsAlive() { // only running children
 				continue
 			}
 			pid := fmt.Sprintf("%d", child.GetInfo().GetPid())
@@ -56,7 +56,7 @@ func (pt *ProcessTree) String() string {
 			if !ok {
 				continue
 			}
-			if thread.info.HasExited() { // only running threads
+			if !thread.info.IsAlive() { // only running threads
 				continue
 			}
 			tid := fmt.Sprintf("%d", thread.GetInfo().GetTid())
@@ -79,9 +79,9 @@ func (pt *ProcessTree) String() string {
 	// Use tablewriter to print the tree in a table
 	newTable := func() *tablewriter.Table {
 		table := tablewriter.NewWriter(buffer)
-		table.SetHeader([]string{"Ppid", "Tid", "Pid", "Date", "Comm", "Children", "Threads"})
+		table.SetHeader([]string{"Ppid", "Tid", "Pid", "EntityId", "Date", "Comm", "Children", "Threads"})
 		// If debug() is enabled:
-		// table.SetHeader([]string{"Ppid", "Tid", "Pid", "StartTime", "Hash", "CMD", "Children", "Threads"})
+		// table.SetHeader([]string{"Ppid", "Tid", "Pid", "StartTime", "EntityId", "CMD", "Children", "Threads"})
 		table.SetAutoWrapText(false)
 		table.SetRowLine(false)
 		table.SetAutoFormatHeaders(true)
@@ -101,7 +101,7 @@ func (pt *ProcessTree) String() string {
 		if !ok {
 			continue
 		}
-		if process.info.HasExited() {
+		if !process.info.IsAlive() {
 			continue // only running processes
 		}
 

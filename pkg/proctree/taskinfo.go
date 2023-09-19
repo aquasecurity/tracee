@@ -394,9 +394,27 @@ func (ti *TaskInfo) GetExitTime() time.Time {
 	return bootTime.Add(duration)
 }
 
-// HasExited returns true if the task has exited.
-func (ti *TaskInfo) HasExited() bool {
+// IsAlive returns true if the task has exited.
+func (ti *TaskInfo) IsAlive() bool {
 	ti.mutex.RLock()
 	defer ti.mutex.RUnlock()
-	return ti.exitTimeNS != 0
+	return ti.exitTimeNS == 0
+}
+
+// IsAliveAt return whether the task is alive in the given time, either because it didn't start
+// yet or it has exited.
+func (ti *TaskInfo) IsAliveAt(targetTime time.Time) bool {
+	ti.mutex.RLock()
+	defer ti.mutex.RUnlock()
+	if ti.exitTimeNS != 0 {
+		if targetTime.After(utils.NsSinceBootTimeToTime(ti.exitTimeNS)) {
+			return false
+		}
+	}
+	// If start time is not initialized it will count as 0 ns, meaning it will be before any
+	// query time given.
+	if targetTime.Before(utils.NsSinceBootTimeToTime(ti.startTimeNS)) {
+		return false
+	}
+	return true
 }
