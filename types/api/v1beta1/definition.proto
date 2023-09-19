@@ -10,12 +10,6 @@ message EventDefinition {
 	Version version= 3;
 	string description = 4 ;
 	repeated string tags = 5;
-	repeated Param params = 6;
-}
-
-message Param {
-	string name = 1;
-	string type = 2;
 }
 
 message Version {
