@@ -6,6 +6,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -119,7 +120,17 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 
 // PrepareBuiltinDataSources returns a list of all data sources tracee makes available built-in
 func (t *Tracee) PrepareBuiltinDataSources() []detect.DataSource {
-	return []detect.DataSource{
-		containers.NewDataSource(t.containers),
+	datasources := []detect.DataSource{}
+
+	// Containers Data Source
+	datasources = append(datasources, containers.NewDataSource(t.containers))
+
+	// Process Tree Data Source
+	switch t.config.ProcTree.Source {
+	case proctree.SourceNone:
+	default:
+		datasources = append(datasources, proctree.NewDataSource(t.processTree))
 	}
+
+	return datasources
 }

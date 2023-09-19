@@ -28,7 +28,7 @@ func (pt *ProcessTree) String() string {
 			if !ok {
 				continue
 			}
-			if child.info.HasExited() { // only running children
+			if !child.GetInfo().IsAlive() {
 				continue
 			}
 			pid := fmt.Sprintf("%d", child.GetInfo().GetPid())
@@ -56,7 +56,7 @@ func (pt *ProcessTree) String() string {
 			if !ok {
 				continue
 			}
-			if thread.info.HasExited() { // only running threads
+			if !thread.GetInfo().IsAlive() { // only running threads
 				continue
 			}
 			tid := fmt.Sprintf("%d", thread.GetInfo().GetTid())
@@ -114,8 +114,8 @@ func (pt *ProcessTree) String() string {
 		if !ok {
 			continue
 		}
-		if process.info.HasExited() {
-			continue // only running processes
+		if !process.GetInfo().IsAlive() { // only running processes
+			continue
 		}
 
 		// create a row for the table
