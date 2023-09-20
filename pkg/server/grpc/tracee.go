@@ -69,15 +69,6 @@ func getDefinitions(in *pb.GetEventDefinitionRequest) ([]events.Definition, erro
 }
 
 func convertDefinitionToProto(d events.Definition) *pb.EventDefinition {
-	params := make([]*pb.Param, len(d.GetParams()))
-
-	for i, p := range d.GetParams() {
-		params[i] = &pb.Param{
-			Name: p.Name,
-			Type: p.Type,
-		}
-	}
-
 	v := &pb.Version{
 		Major: d.GetVersion().Major(),
 		Minor: d.GetVersion().Minor(),
@@ -90,6 +81,5 @@ func convertDefinitionToProto(d events.Definition) *pb.EventDefinition {
 		Version:     v,
 		Description: d.GetDescription(),
 		Tags:        d.GetSets(),
-		Params:      params,
 	}
 }
