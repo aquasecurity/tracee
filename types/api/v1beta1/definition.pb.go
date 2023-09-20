@@ -30,7 +30,6 @@ type EventDefinition struct {
 	Version     *Version `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
 	Description string   `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
 	Tags        []string `protobuf:"bytes,5,rep,name=tags,proto3" json:"tags,omitempty"`
-	Params      []*Param `protobuf:"bytes,6,rep,name=params,proto3" json:"params,omitempty"`
 }
 
 func (x *EventDefinition) Reset() {
@@ -100,68 +99,6 @@ func (x *EventDefinition) GetTags() []string {
 	return nil
 }
 
-func (x *EventDefinition) GetParams() []*Param {
-	if x != nil {
-		return x.Params
-	}
-	return nil
-}
-
-type Param struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Type string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
-}
-
-func (x *Param) Reset() {
-	*x = Param{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_types_api_v1beta1_definition_proto_msgTypes[1]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *Param) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Param) ProtoMessage() {}
-
-func (x *Param) ProtoReflect() protoreflect.Message {
-	mi := &file_types_api_v1beta1_definition_proto_msgTypes[1]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Param.ProtoReflect.Descriptor instead.
-func (*Param) Descriptor() ([]byte, []int) {
-	return file_types_api_v1beta1_definition_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *Param) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *Param) GetType() string {
-	if x != nil {
-		return x.Type
-	}
-	return ""
-}
-
 type Version struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -175,7 +112,7 @@ type Version struct {
 func (x *Version) Reset() {
 	*x = Version{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_types_api_v1beta1_definition_proto_msgTypes[2]
+		mi := &file_types_api_v1beta1_definition_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -188,7 +125,7 @@ func (x *Version) String() string {
 func (*Version) ProtoMessage() {}
 
 func (x *Version) ProtoReflect() protoreflect.Message {
-	mi := &file_types_api_v1beta1_definition_proto_msgTypes[2]
+	mi := &file_types_api_v1beta1_definition_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -201,7 +138,7 @@ func (x *Version) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Version.ProtoReflect.Descriptor instead.
 func (*Version) Descriptor() ([]byte, []int) {
-	return file_types_api_v1beta1_definition_proto_rawDescGZIP(), []int{2}
+	return file_types_api_v1beta1_definition_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *Version) GetMajor() uint64 {
@@ -231,7 +168,7 @@ var file_types_api_v1beta1_definition_proto_rawDesc = []byte{
 	0x0a, 0x22, 0x74, 0x79, 0x70, 0x65, 0x73, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x62, 0x65,
 	0x74, 0x61, 0x31, 0x2f, 0x64, 0x65, 0x66, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x70,
 	0x72, 0x6f, 0x74, 0x6f, 0x12, 0x0e, 0x74, 0x72, 0x61, 0x63, 0x65, 0x65, 0x2e, 0x76, 0x31, 0x62,
-	0x65, 0x74, 0x61, 0x31, 0x22, 0xcd, 0x01, 0x0a, 0x0f, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x44, 0x65,
+	0x65, 0x74, 0x61, 0x31, 0x22, 0x9e, 0x01, 0x0a, 0x0f, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x44, 0x65,
 	0x66, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x05, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65,
 	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x31, 0x0a, 0x07,
@@ -241,13 +178,7 @@ var file_types_api_v1beta1_definition_proto_rawDesc = []byte{
 	0x20, 0x0a, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x04,
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f,
 	0x6e, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x61, 0x67, 0x73, 0x18, 0x05, 0x20, 0x03, 0x28, 0x09, 0x52,
-	0x04, 0x74, 0x61, 0x67, 0x73, 0x12, 0x2d, 0x0a, 0x06, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x18,
-	0x06, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x74, 0x72, 0x61, 0x63, 0x65, 0x65, 0x2e, 0x76,
-	0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2e, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x52, 0x06, 0x70, 0x61,
-	0x72, 0x61, 0x6d, 0x73, 0x22, 0x2f, 0x0a, 0x05, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x12, 0x12, 0x0a,
-	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d,
-	0x65, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x04, 0x74, 0x79, 0x70, 0x65, 0x22, 0x4b, 0x0a, 0x07, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e,
+	0x04, 0x74, 0x61, 0x67, 0x73, 0x22, 0x4b, 0x0a, 0x07, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e,
 	0x12, 0x14, 0x0a, 0x05, 0x6d, 0x61, 0x6a, 0x6f, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52,
 	0x05, 0x6d, 0x61, 0x6a, 0x6f, 0x72, 0x12, 0x14, 0x0a, 0x05, 0x6d, 0x69, 0x6e, 0x6f, 0x72, 0x18,
 	0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x05, 0x6d, 0x69, 0x6e, 0x6f, 0x72, 0x12, 0x14, 0x0a, 0x05,
@@ -270,20 +201,18 @@ func file_types_api_v1beta1_definition_proto_rawDescGZIP() []byte {
 	return file_types_api_v1beta1_definition_proto_rawDescData
 }
 
-var file_types_api_v1beta1_definition_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_types_api_v1beta1_definition_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_types_api_v1beta1_definition_proto_goTypes = []interface{}{
 	(*EventDefinition)(nil), // 0: tracee.v1beta1.EventDefinition
-	(*Param)(nil),           // 1: tracee.v1beta1.Param
-	(*Version)(nil),         // 2: tracee.v1beta1.Version
+	(*Version)(nil),         // 1: tracee.v1beta1.Version
 }
 var file_types_api_v1beta1_definition_proto_depIdxs = []int32{
-	2, // 0: tracee.v1beta1.EventDefinition.version:type_name -> tracee.v1beta1.Version
-	1, // 1: tracee.v1beta1.EventDefinition.params:type_name -> tracee.v1beta1.Param
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	1, // 0: tracee.v1beta1.EventDefinition.version:type_name -> tracee.v1beta1.Version
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_types_api_v1beta1_definition_proto_init() }
@@ -305,18 +234,6 @@ func file_types_api_v1beta1_definition_proto_init() {
 			}
 		}
 		file_types_api_v1beta1_definition_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Param); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_types_api_v1beta1_definition_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Version); i {
 			case 0:
 				return &v.state
@@ -335,7 +252,7 @@ func file_types_api_v1beta1_definition_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_types_api_v1beta1_definition_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
