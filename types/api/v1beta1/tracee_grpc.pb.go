@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TraceeServiceClient interface {
 	GetEventDefinition(ctx context.Context, in *GetEventDefinitionRequest, opts ...grpc.CallOption) (*GetEventDefinitionResponse, error)
+	StreamEvents(ctx context.Context, in *StreamEventsRequest, opts ...grpc.CallOption) (TraceeService_StreamEventsClient, error)
 	EnableEvent(ctx context.Context, in *EnableEventRequest, opts ...grpc.CallOption) (*EnableEventResponse, error)
 	DisableEvent(ctx context.Context, in *DisableEventRequest, opts ...grpc.CallOption) (*DisableEventResponse, error)
 	GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*GetVersionResponse, error)
@@ -43,6 +44,38 @@ func (c *traceeServiceClient) GetEventDefinition(ctx context.Context, in *GetEve
 		return nil, err
 	}
 	return out, nil
+}
+
+func (c *traceeServiceClient) StreamEvents(ctx context.Context, in *StreamEventsRequest, opts ...grpc.CallOption) (TraceeService_StreamEventsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &TraceeService_ServiceDesc.Streams[0], "/tracee.v1beta1.TraceeService/StreamEvents", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &traceeServiceStreamEventsClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type TraceeService_StreamEventsClient interface {
+	Recv() (*StreamEventsResponse, error)
+	grpc.ClientStream
+}
+
+type traceeServiceStreamEventsClient struct {
+	grpc.ClientStream
+}
+
+func (x *traceeServiceStreamEventsClient) Recv() (*StreamEventsResponse, error) {
+	m := new(StreamEventsResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *traceeServiceClient) EnableEvent(ctx context.Context, in *EnableEventRequest, opts ...grpc.CallOption) (*EnableEventResponse, error) {
@@ -77,6 +110,7 @@ func (c *traceeServiceClient) GetVersion(ctx context.Context, in *GetVersionRequ
 // for forward compatibility
 type TraceeServiceServer interface {
 	GetEventDefinition(context.Context, *GetEventDefinitionRequest) (*GetEventDefinitionResponse, error)
+	StreamEvents(*StreamEventsRequest, TraceeService_StreamEventsServer) error
 	EnableEvent(context.Context, *EnableEventRequest) (*EnableEventResponse, error)
 	DisableEvent(context.Context, *DisableEventRequest) (*DisableEventResponse, error)
 	GetVersion(context.Context, *GetVersionRequest) (*GetVersionResponse, error)
@@ -89,6 +123,9 @@ type UnimplementedTraceeServiceServer struct {
 
 func (UnimplementedTraceeServiceServer) GetEventDefinition(context.Context, *GetEventDefinitionRequest) (*GetEventDefinitionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetEventDefinition not implemented")
+}
+func (UnimplementedTraceeServiceServer) StreamEvents(*StreamEventsRequest, TraceeService_StreamEventsServer) error {
+	return status.Errorf(codes.Unimplemented, "method StreamEvents not implemented")
 }
 func (UnimplementedTraceeServiceServer) EnableEvent(context.Context, *EnableEventRequest) (*EnableEventResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method EnableEvent not implemented")
@@ -128,6 +165,27 @@ func _TraceeService_GetEventDefinition_Handler(srv interface{}, ctx context.Cont
 		return srv.(TraceeServiceServer).GetEventDefinition(ctx, req.(*GetEventDefinitionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _TraceeService_StreamEvents_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StreamEventsRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(TraceeServiceServer).StreamEvents(m, &traceeServiceStreamEventsServer{stream})
+}
+
+type TraceeService_StreamEventsServer interface {
+	Send(*StreamEventsResponse) error
+	grpc.ServerStream
+}
+
+type traceeServiceStreamEventsServer struct {
+	grpc.ServerStream
+}
+
+func (x *traceeServiceStreamEventsServer) Send(m *StreamEventsResponse) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 func _TraceeService_EnableEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -208,6 +266,12 @@ var TraceeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _TraceeService_GetVersion_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StreamEvents",
+			Handler:       _TraceeService_StreamEvents_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "types/api/v1beta1/tracee.proto",
 }
