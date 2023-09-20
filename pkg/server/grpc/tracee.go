@@ -3,16 +3,55 @@ package grpc
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/mennanov/fmutils"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/streams"
 	"github.com/aquasecurity/tracee/pkg/version"
 	pb "github.com/aquasecurity/tracee/types/api/v1beta1"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type TraceeService struct {
 	pb.UnimplementedTraceeServiceServer
 	tracee *tracee.Tracee
+}
+
+func (s *TraceeService) StreamEvents(in *pb.StreamEventsRequest, grpcStream pb.TraceeService_StreamEventsServer) error {
+	var stream *streams.Stream
+	var err error
+
+	if len(in.Policies) == 0 {
+		stream = s.tracee.SubscribeAll()
+	} else {
+		stream, err = s.tracee.Subscribe(in.Policies)
+		if err != nil {
+			return err
+		}
+	}
+	defer s.tracee.Unsubscribe(stream)
+
+	mask := fmutils.NestedMaskFromPaths(in.GetMask().GetPaths())
+
+	for e := range stream.ReceiveEvents() {
+		// TODO: this conversion is temporary, we will use the new event structure
+		// on tracee internals, so the event received by the stream will already be a proto
+		eventProto := convertTraceeEventToProto(e)
+		mask.Filter(eventProto)
+
+		err := grpcStream.Send(&pb.StreamEventsResponse{Event: eventProto})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *TraceeService) EnableEvent(ctx context.Context, in *pb.EnableEventRequest) (*pb.EnableEventResponse, error) {
@@ -82,4 +121,199 @@ func convertDefinitionToProto(d events.Definition) *pb.EventDefinition {
 		Description: d.GetDescription(),
 		Tags:        d.GetSets(),
 	}
+}
+
+func convertTraceeEventToProto(e trace.Event) *pb.Event {
+	process := getProcess(e)
+	container := getContainer(e)
+	k8s := getK8s(e)
+
+	var eventContext *pb.Context
+	if process != nil || container != nil || k8s != nil {
+		eventContext = &pb.Context{
+			Process:   process,
+			Container: container,
+			K8S:       k8s,
+		}
+	}
+
+	event := &pb.Event{
+		Id:   uint32(e.EventID),
+		Name: e.EventName,
+		Policies: &pb.Policies{
+			Matched: e.MatchedPolicies,
+		},
+		Context: eventContext,
+		Threat:  getThreat(e),
+	}
+
+	if e.Timestamp != 0 {
+		event.Timestamp = timestamppb.New(time.Unix(int64(e.Timestamp), 0))
+	}
+
+	return event
+}
+
+func getProcess(e trace.Event) *pb.Process {
+	var userStackTrace *pb.UserStackTrace
+
+	if len(e.StackAddresses) > 0 {
+		userStackTrace = &pb.UserStackTrace{
+			Addresses: getStackAddress(e.StackAddresses),
+		}
+	}
+
+	var threadStartTime *timestamp.Timestamp
+	if e.ThreadStartTime != 0 {
+		threadStartTime = timestamppb.New(time.Unix(int64(e.ThreadStartTime), 0))
+	}
+
+	return &pb.Process{
+		// Executable
+		EntityId:      wrapperspb.UInt32(e.EntityID),
+		Pid:           wrapperspb.UInt32(uint32(e.HostProcessID)),
+		NamespacedPid: wrapperspb.UInt32(uint32(e.ProcessID)),
+		RealUser: &pb.User{
+			Id: wrapperspb.UInt32(uint32(e.UserID)),
+		},
+		Thread: &pb.Thread{
+			Start:          threadStartTime,
+			Name:           e.ProcessName,
+			Tid:            wrapperspb.UInt32(uint32(e.HostThreadID)),
+			NamespacedTid:  wrapperspb.UInt32(uint32(e.ThreadID)),
+			Syscall:        e.Syscall,
+			Compat:         e.ContextFlags.ContainerStarted,
+			UserStackTrace: userStackTrace,
+		},
+		Parent: &pb.Parent{
+			Pid:           wrapperspb.UInt32(uint32(e.HostParentProcessID)),
+			NamespacedPid: wrapperspb.UInt32(uint32(e.ParentProcessID)),
+		},
+	}
+}
+
+func getContainer(e trace.Event) *pb.Container {
+	if e.Container.ID == "" && e.Container.Name == "" {
+		return nil
+	}
+
+	container := &pb.Container{
+		Id:   e.Container.ID,
+		Name: e.Container.Name,
+	}
+
+	if e.Container.ImageName != "" {
+		var repoDigest []string
+		if e.Container.ImageDigest != "" {
+			repoDigest = []string{e.Container.ImageDigest}
+		}
+
+		container.Image = &pb.ContainerImage{
+			Name:        e.Container.ImageName,
+			RepoDigests: repoDigest,
+		}
+	}
+
+	return container
+}
+
+func getK8s(e trace.Event) *pb.K8S {
+	if e.Kubernetes.PodName == "" &&
+		e.Kubernetes.PodUID == "" &&
+		e.Kubernetes.PodNamespace == "" {
+		return nil
+	}
+
+	return &pb.K8S{
+		Namespace: &pb.K8SNamespace{
+			Name: e.Kubernetes.PodNamespace,
+		},
+		Pod: &pb.Pod{
+			Name: e.Kubernetes.PodName,
+			Uid:  e.Kubernetes.PodUID,
+		},
+	}
+}
+
+func getThreat(e trace.Event) *pb.Threat {
+	if e.Metadata == nil || e.Metadata.Properties == nil {
+		return nil
+	}
+	// if metadata doesn't contain severity, it's not a threat,
+	// severity is set when we have a finding from the signature engine
+	// pkg/ebpf/fiding.go
+	_, ok := e.Metadata.Properties["Severity"]
+	if !ok {
+		return nil
+	}
+
+	var (
+		mitreTactic            string
+		mitreTechniqueId       string
+		mitreTechniqueName     string
+		mitreTechniqueExternal string
+	)
+
+	if _, ok := e.Metadata.Properties["Category"]; ok {
+		if val, ok := e.Metadata.Properties["Category"].(string); ok {
+			mitreTactic = val
+		}
+	}
+
+	if _, ok := e.Metadata.Properties["id"]; ok {
+		if val, ok := e.Metadata.Properties["id"].(string); ok {
+			mitreTechniqueId = val
+		}
+	}
+
+	if _, ok := e.Metadata.Properties["Technique"]; ok {
+		if val, ok := e.Metadata.Properties["Technique"].(string); ok {
+			mitreTechniqueName = val
+		}
+	}
+
+	if _, ok := e.Metadata.Properties["external_id"]; ok {
+		if val, ok := e.Metadata.Properties["external_id"].(string); ok {
+			mitreTechniqueExternal = val
+		}
+	}
+
+	return &pb.Threat{
+		Description: e.Metadata.Description,
+		MitreTactic: &pb.MitreTatic{
+			Name: mitreTactic,
+		},
+		MitreTechnique: &pb.MitreTechnique{
+			Id:         mitreTechniqueId,
+			Name:       mitreTechniqueName,
+			ExternalId: mitreTechniqueExternal,
+		},
+		Severity: getSeverity(e),
+	}
+}
+
+func getSeverity(e trace.Event) pb.Severity {
+	switch e.Metadata.Properties["Severity"].(int) {
+	case 0:
+		return pb.Severity_INFO
+	case 1:
+		return pb.Severity_LOW
+	case 2:
+		return pb.Severity_MEDIUM
+	case 3:
+		return pb.Severity_HIGH
+	case 4:
+		return pb.Severity_CRITICAL
+	}
+
+	return -1
+}
+
+func getStackAddress(stackAddresses []uint64) []*pb.StackAddress {
+	var out []*pb.StackAddress
+	for _, addr := range stackAddresses {
+		out = append(out, &pb.StackAddress{Address: addr})
+	}
+
+	return out
 }

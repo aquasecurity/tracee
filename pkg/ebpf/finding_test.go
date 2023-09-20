@@ -68,6 +68,11 @@ func TestFindingToEvent(t *testing.T) {
 				"prop2":         1,
 				"signatureID":   "fake_signature_id",
 				"signatureName": "fake_signature_event",
+				"Severity":      2,
+				"Category":      "privilege-escalation",
+				"Technique":     "Exploitation for Privilege Escalation",
+				"id":            "attack-pattern--b21c3b2d-02e6-45b1-980b-e69051040839",
+				"external_id":   "t1000",
 			},
 		},
 	}
@@ -118,8 +123,13 @@ func createFakeEventAndFinding() detect.Finding {
 			Description: "description",
 			Tags:        []string{"tag1", "tag2"},
 			Properties: map[string]interface{}{
-				"prop1": "value1",
-				"prop2": 1,
+				"prop1":       "value1",
+				"prop2":       1,
+				"Severity":    2,
+				"Category":    "privilege-escalation",
+				"Technique":   "Exploitation for Privilege Escalation",
+				"id":          "attack-pattern--b21c3b2d-02e6-45b1-980b-e69051040839",
+				"external_id": "t1000",
 			},
 		},
 		Data: map[string]interface{}{

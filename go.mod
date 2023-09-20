@@ -7,7 +7,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/aquasecurity/libbpfgo v0.5.0-libbpf-1.2
 	github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230321190037-f591a2c5734f
-	github.com/aquasecurity/tracee/types v0.0.0-20230920143310-60be014096d9
+	github.com/aquasecurity/tracee/types v0.0.0-20230923123718-eb2945f4d1e1
 	github.com/containerd/containerd v1.7.0
 	github.com/docker/docker v23.0.5+incompatible
 	github.com/golang/protobuf v1.5.3
@@ -16,6 +16,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/hashicorp/golang-lru/v2 v2.0.2
 	github.com/kubernetes/cri-api v0.27.1
+	github.com/mennanov/fmutils v0.2.0
 	github.com/open-policy-agent/opa v0.52.0
 	github.com/prometheus/client_golang v1.15.1
 	github.com/pyroscope-io/pyroscope v0.37.2

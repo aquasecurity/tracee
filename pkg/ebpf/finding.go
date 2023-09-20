@@ -123,5 +123,15 @@ func getMetadataFromSignatureMetadata(sigMetadata detect.SignatureMetadata) *tra
 	metadata.Properties["signatureID"] = sigMetadata.ID
 	metadata.Properties["signatureName"] = sigMetadata.Name
 
+	// This is temporary, we passing all the signatures metadata,
+	// so we can create the Threat in the protobuf for the grpc API,
+	// once we refactor tracee to use the new event structure,
+	// we will create the Threat here, or maybe return it from the rule engine
+	metadata.Properties["Severity"] = sigMetadata.Properties["Severity"]
+	metadata.Properties["Category"] = sigMetadata.Properties["Category"]
+	metadata.Properties["Technique"] = sigMetadata.Properties["Technique"]
+	metadata.Properties["id"] = sigMetadata.Properties["id"]
+	metadata.Properties["external_id"] = sigMetadata.Properties["external_id"]
+
 	return metadata
 }
