@@ -897,57 +897,54 @@ func (t *Tracee) computeConfigValues() []byte {
 	return configVal
 }
 
+func (t *Tracee) checkUnavailableKSymbols(eventsState map[events.ID]events.EventState) map[events.ID][]string {
+	reqKSyms := []string{}
+	kSymbolsToEvents := make(map[string][]events.ID)
+	unavailableKSymsForEventID := make(map[events.ID][]string)
+
+	for id := range eventsState {
+		evtDefinition := events.Core.GetDefinitionByID(id)
+		for _, symDep := range evtDefinition.GetDependencies().GetKSymbols() {
+			if !symDep.IsRequired() {
+				continue
+			}
+
+			symbol := symDep.GetSymbol()
+			reqKSyms = append(reqKSyms, symbol)
+			kSymbolsToEvents[symbol] = append(kSymbolsToEvents[symbol], id)
+		}
+	}
+
+	kallsymsValues := LoadKallsymsValues(t.kernelSymbols, reqKSyms)
+
+	for symName, evtsIDs := range kSymbolsToEvents {
+		ksym, ok := kallsymsValues[symName]
+		if ok && ksym.Address != 0 {
+			continue
+		}
+
+		for _, evtID := range evtsIDs {
+			unavailableKSymsForEventID[evtID] = append(unavailableKSymsForEventID[evtID], symName)
+		}
+	}
+
+	return unavailableKSymsForEventID
+}
+
 // validateKallsymsDependencies load all symbols required by events dependencies
 // from the kallsyms file to check for missing symbols. If some symbols are
 // missing, it will cancel their event with informative error message.
 func (t *Tracee) validateKallsymsDependencies() {
-	var reqKsyms []string
-	symsToDependentEvents := make(map[string][]events.ID)
-	for id := range t.eventsState {
-		for _, symDep := range events.Core.GetDefinitionByID(id).GetDependencies().GetKSymbols() {
-			reqKsyms = append(reqKsyms, symDep.GetSymbol())
-			if symDep.IsRequired() {
-				symEvents, ok := symsToDependentEvents[symDep.GetSymbol()]
-				if ok {
-					symEvents = append(symEvents, id)
-				} else {
-					symEvents = []events.ID{id}
-				}
-				symsToDependentEvents[symDep.GetSymbol()] = symEvents
-			}
-		}
-	}
+	unavKSymbols := t.checkUnavailableKSymbols(t.eventsState)
 
-	kallsymsValues := LoadKallsymsValues(t.kernelSymbols, reqKsyms)
-
-	// Figuring out for each event if it has missing required symbols and which
-	missingSymsPerEvent := make(map[events.ID][]string)
-	for sym, depEventsIDs := range symsToDependentEvents {
-		ksym, ok := kallsymsValues[sym]
-		if ok && ksym.Address != 0 {
-			// found and valid address
-			continue
-		}
-
-		// missing symbol or invalid address
-		for _, depEventID := range depEventsIDs {
-			eventMissingSyms, ok := missingSymsPerEvent[depEventID]
-			if ok {
-				eventMissingSyms = append(eventMissingSyms, sym)
-			} else {
-				eventMissingSyms = []string{sym}
-			}
-			missingSymsPerEvent[depEventID] = eventMissingSyms
-		}
-	}
-
-	// Cancel events with missing symbols dependencies
-	for eventToCancel, missingDepSyms := range missingSymsPerEvent {
+	// Cancel events with unavailable symbols dependencies
+	for eventToCancel, missingDepSyms := range unavKSymbols {
 		eventNameToCancel := events.Core.GetDefinitionByID(eventToCancel).GetName()
 		logger.Errorw(
 			"Event canceled because of missing kernel symbol dependency",
 			"missing symbols", missingDepSyms, "event", eventNameToCancel,
 		)
+
 		delete(t.eventsState, eventToCancel)
 	}
 }
