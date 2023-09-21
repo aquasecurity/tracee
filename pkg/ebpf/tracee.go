@@ -1155,14 +1155,15 @@ func (t *Tracee) populateBPFMaps() error {
 // attachProbes attaches selected events probes to their respective eBPF progs
 func (t *Tracee) attachProbes() error {
 	var err error
+	probesToEvents := make(map[events.Probe][]events.ID)
 
 	// attach all probes for the events being filtered
-	for tr := range t.eventsState {
-		if !events.Core.IsDefined(tr) {
+	for id := range t.eventsState {
+		if !events.Core.IsDefined(id) {
 			continue
 		}
 
-		eventDefinition := events.Core.GetDefinitionByID(tr)
+		eventDefinition := events.Core.GetDefinitionByID(id)
 
 		// attach internal syscall probes for selected syscall events, if any
 		if eventDefinition.IsSyscall() {
@@ -1176,11 +1177,25 @@ func (t *Tracee) attachProbes() error {
 			}
 		}
 
+		// save required probes for later attachment
+		for _, probeDep := range eventDefinition.GetDependencies().GetProbes() {
+			probesToEvents[probeDep] = append(probesToEvents[probeDep], id)
+		}
+	}
+
+	for probe, evtsIDs := range probesToEvents {
 		// attach probes for selected events
-		for _, dep := range eventDefinition.GetDependencies().GetProbes() {
-			err = t.probes.Attach(dep.GetHandle(), t.cgroups)
-			if err != nil && dep.IsRequired() {
-				return errfmt.Errorf("failed to attach required probe: %v", err)
+		err = t.probes.Attach(probe.GetHandle(), t.cgroups)
+		if err != nil && probe.IsRequired() {
+			// if a required probe fails to attach, cancel all events that depend on it
+			for _, evtID := range evtsIDs {
+				evtName := events.Core.GetDefinitionByID(evtID).GetName()
+				logger.Errorw(
+					"Event canceled because of missing probe dependency",
+					"missing probe", probe.GetHandle(), "event", evtName,
+				)
+
+				delete(t.eventsState, evtID)
 			}
 		}
 	}
