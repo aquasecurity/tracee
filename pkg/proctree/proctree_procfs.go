@@ -170,13 +170,6 @@ func dealWithThread(pt *ProcessTree, pid int, tid int) error {
 	if pid <= 0 {
 		return errfmt.Errorf("invalid PID")
 	}
-	if pid == tid {
-		// This is a "thread group leader" and, within the proctree, the leaders are processes.
-		// Main reason for this is that, whenever artifacts are generated from a thread, they
-		// are associated with the process (and not the threads). This gives tracee a
-		// centralized place to store all artifacts from multiple threads.
-		return nil
-	}
 	status, err := proc.NewThreadProcStatus(pid, tid)
 	if err != nil {
 		return errfmt.Errorf("%v", err)

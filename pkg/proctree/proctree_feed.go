@@ -69,7 +69,7 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 
 	parent.AddChild(feed.LeaderHash) // add the leader as a child of the parent
 
-	// Update the leader process (might already exist, might be the same as child)
+	// Update the leader process (might exist, might be the same as child if child is a process)
 
 	leader, ok := pt.GetProcessByHash(feed.LeaderHash)
 	if !ok {
@@ -95,7 +95,7 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 
 	leader.SetParentHash(feed.ParentHash)
 
-	// Case 01: The child is a process (if leader == child, work is done)
+	// If leader == child, then the child is a process and needs to be updated.
 
 	if feed.ChildHash == feed.LeaderHash {
 		leader.GetExecutable().SetFeedAt(
@@ -106,10 +106,9 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 			parent.GetInterpreter().GetFeed(),
 			utils.NsSinceBootTimeToTime(feed.TimeStamp),
 		)
-		return nil
 	}
 
-	// Case 02: The child is a thread, and leader is the thread group leader.
+	// In all cases (task is a process, or a thread) there is a thread entry.
 
 	thread := pt.GetOrCreateThreadByHash(feed.ChildHash)
 	thread.GetInfo().SetFeedAt(
@@ -129,7 +128,7 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 	)
 
 	thread.SetParentHash(feed.ParentHash) // all threads have the same parent as the thread group leader
-	thread.SetLeaderHash(feed.LeaderHash) // thread group leader is a "process" (not a thread)
+	thread.SetLeaderHash(feed.LeaderHash) // thread group leader is a "process" and a "thread"
 	leader.AddThread(feed.ChildHash)      // add the thread to the thread group leader
 
 	return nil
@@ -230,22 +229,14 @@ type ExitFeed struct {
 
 // FeedFromExit feeds the process tree with an exit event.
 func (pt *ProcessTree) FeedFromExit(feed ExitFeed) error {
-	if feed.TaskHash != feed.LeaderHash { // task is a thread
-		thread, threadOk := pt.GetThreadByHash(feed.TaskHash)
-		if threadOk {
-			thread.GetInfo().SetExitTime(feed.TimeStamp)
-			return nil
-		}
-		return nil
-	}
-
 	process, procOk := pt.GetProcessByHash(feed.TaskHash)
 	if procOk {
 		process.GetInfo().SetExitTime(feed.TimeStamp)
-		return nil
 	}
-
-	// its okay if the process doesn't exist (might have been evicted from the tree)
+	thread, threadOk := pt.GetThreadByHash(feed.TaskHash)
+	if threadOk {
+		thread.GetInfo().SetExitTime(feed.TimeStamp)
+	}
 
 	return nil
 }
