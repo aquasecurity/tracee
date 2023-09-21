@@ -17,7 +17,7 @@ Tracee provides a rich filtering mechanism that allows you to eliminate noise an
 * Easy configuration through Tracee Policies 
 * Kubernetes native user experience that is targetted at cluster administrators
 
-> We release new features and changes on a regular basis. Learn more about the letest release in our [discussions.](https://github.com/aquasecurity/tracee/discussions)
+> We release new features and changes on a regular basis. Learn more about the latest release in our [discussions.](https://github.com/aquasecurity/tracee/discussions)
 
 To learn more about Tracee, check out the [documentation](https://aquasecurity.github.io/tracee/latest/docs/overview/). 
 
@@ -42,7 +42,7 @@ Example log output in Tracee pod
 ## Contributing
   
 Join the community, and talk to us about any matter in the [GitHub Discussions](https://github.com/aquasecurity/tracee/discussions) or [Slack](https://slack.aquasec.com).  
-If you run into any trouble using Tracee or you would like to give use user feedback, please [create an issue.](https://github.com/aquasecurity/tracee/issues)
+If you run into any trouble using Tracee or you would like to give us your feedback, please [create an issue.](https://github.com/aquasecurity/tracee/issues)
 
 Find more information on [contributing to the source code](https://aquasecurity.github.io/tracee/latest/contributing/overview/) in the documentation.
 
