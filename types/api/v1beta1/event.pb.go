@@ -659,7 +659,7 @@ type UserStackTrace struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Addresses []uint64 `protobuf:"varint,1,rep,packed,name=addresses,proto3" json:"addresses,omitempty"`
+	Addresses []*StackAddress `protobuf:"bytes,1,rep,name=addresses,proto3" json:"addresses,omitempty"`
 }
 
 func (x *UserStackTrace) Reset() {
@@ -694,11 +694,66 @@ func (*UserStackTrace) Descriptor() ([]byte, []int) {
 	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *UserStackTrace) GetAddresses() []uint64 {
+func (x *UserStackTrace) GetAddresses() []*StackAddress {
 	if x != nil {
 		return x.Addresses
 	}
 	return nil
+}
+
+type StackAddress struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Address uint64 `protobuf:"varint,1,opt,name=address,proto3" json:"address,omitempty"`
+	Symbol  string `protobuf:"bytes,2,opt,name=symbol,proto3" json:"symbol,omitempty"`
+}
+
+func (x *StackAddress) Reset() {
+	*x = StackAddress{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_types_api_v1beta1_event_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *StackAddress) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StackAddress) ProtoMessage() {}
+
+func (x *StackAddress) ProtoReflect() protoreflect.Message {
+	mi := &file_types_api_v1beta1_event_proto_msgTypes[9]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StackAddress.ProtoReflect.Descriptor instead.
+func (*StackAddress) Descriptor() ([]byte, []int) {
+	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *StackAddress) GetAddress() uint64 {
+	if x != nil {
+		return x.Address
+	}
+	return 0
+}
+
+func (x *StackAddress) GetSymbol() string {
+	if x != nil {
+		return x.Symbol
+	}
+	return ""
 }
 
 type Container struct {
@@ -715,7 +770,7 @@ type Container struct {
 func (x *Container) Reset() {
 	*x = Container{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_types_api_v1beta1_event_proto_msgTypes[9]
+		mi := &file_types_api_v1beta1_event_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -728,7 +783,7 @@ func (x *Container) String() string {
 func (*Container) ProtoMessage() {}
 
 func (x *Container) ProtoReflect() protoreflect.Message {
-	mi := &file_types_api_v1beta1_event_proto_msgTypes[9]
+	mi := &file_types_api_v1beta1_event_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -741,7 +796,7 @@ func (x *Container) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Container.ProtoReflect.Descriptor instead.
 func (*Container) Descriptor() ([]byte, []int) {
-	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{9}
+	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *Container) GetId() string {
@@ -785,7 +840,7 @@ type ContainerImage struct {
 func (x *ContainerImage) Reset() {
 	*x = ContainerImage{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_types_api_v1beta1_event_proto_msgTypes[10]
+		mi := &file_types_api_v1beta1_event_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -798,7 +853,7 @@ func (x *ContainerImage) String() string {
 func (*ContainerImage) ProtoMessage() {}
 
 func (x *ContainerImage) ProtoReflect() protoreflect.Message {
-	mi := &file_types_api_v1beta1_event_proto_msgTypes[10]
+	mi := &file_types_api_v1beta1_event_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -811,7 +866,7 @@ func (x *ContainerImage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContainerImage.ProtoReflect.Descriptor instead.
 func (*ContainerImage) Descriptor() ([]byte, []int) {
-	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{10}
+	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ContainerImage) GetId() string {
@@ -847,7 +902,7 @@ type K8S struct {
 func (x *K8S) Reset() {
 	*x = K8S{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_types_api_v1beta1_event_proto_msgTypes[11]
+		mi := &file_types_api_v1beta1_event_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -860,7 +915,7 @@ func (x *K8S) String() string {
 func (*K8S) ProtoMessage() {}
 
 func (x *K8S) ProtoReflect() protoreflect.Message {
-	mi := &file_types_api_v1beta1_event_proto_msgTypes[11]
+	mi := &file_types_api_v1beta1_event_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -873,7 +928,7 @@ func (x *K8S) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use K8S.ProtoReflect.Descriptor instead.
 func (*K8S) Descriptor() ([]byte, []int) {
-	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{11}
+	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *K8S) GetPod() *Pod {
@@ -903,7 +958,7 @@ type Pod struct {
 func (x *Pod) Reset() {
 	*x = Pod{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_types_api_v1beta1_event_proto_msgTypes[12]
+		mi := &file_types_api_v1beta1_event_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -916,7 +971,7 @@ func (x *Pod) String() string {
 func (*Pod) ProtoMessage() {}
 
 func (x *Pod) ProtoReflect() protoreflect.Message {
-	mi := &file_types_api_v1beta1_event_proto_msgTypes[12]
+	mi := &file_types_api_v1beta1_event_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -929,7 +984,7 @@ func (x *Pod) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Pod.ProtoReflect.Descriptor instead.
 func (*Pod) Descriptor() ([]byte, []int) {
-	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{12}
+	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *Pod) GetName() string {
@@ -964,7 +1019,7 @@ type K8SNamespace struct {
 func (x *K8SNamespace) Reset() {
 	*x = K8SNamespace{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_types_api_v1beta1_event_proto_msgTypes[13]
+		mi := &file_types_api_v1beta1_event_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -977,7 +1032,7 @@ func (x *K8SNamespace) String() string {
 func (*K8SNamespace) ProtoMessage() {}
 
 func (x *K8SNamespace) ProtoReflect() protoreflect.Message {
-	mi := &file_types_api_v1beta1_event_proto_msgTypes[13]
+	mi := &file_types_api_v1beta1_event_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -990,7 +1045,7 @@ func (x *K8SNamespace) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use K8SNamespace.ProtoReflect.Descriptor instead.
 func (*K8SNamespace) Descriptor() ([]byte, []int) {
-	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{13}
+	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *K8SNamespace) GetName() string {
@@ -1014,7 +1069,7 @@ type Threat struct {
 func (x *Threat) Reset() {
 	*x = Threat{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_types_api_v1beta1_event_proto_msgTypes[14]
+		mi := &file_types_api_v1beta1_event_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1027,7 +1082,7 @@ func (x *Threat) String() string {
 func (*Threat) ProtoMessage() {}
 
 func (x *Threat) ProtoReflect() protoreflect.Message {
-	mi := &file_types_api_v1beta1_event_proto_msgTypes[14]
+	mi := &file_types_api_v1beta1_event_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1040,7 +1095,7 @@ func (x *Threat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Threat.ProtoReflect.Descriptor instead.
 func (*Threat) Descriptor() ([]byte, []int) {
-	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{14}
+	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *Threat) GetDescription() string {
@@ -1082,7 +1137,7 @@ type MitreTatic struct {
 func (x *MitreTatic) Reset() {
 	*x = MitreTatic{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_types_api_v1beta1_event_proto_msgTypes[15]
+		mi := &file_types_api_v1beta1_event_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1095,7 +1150,7 @@ func (x *MitreTatic) String() string {
 func (*MitreTatic) ProtoMessage() {}
 
 func (x *MitreTatic) ProtoReflect() protoreflect.Message {
-	mi := &file_types_api_v1beta1_event_proto_msgTypes[15]
+	mi := &file_types_api_v1beta1_event_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1108,7 +1163,7 @@ func (x *MitreTatic) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MitreTatic.ProtoReflect.Descriptor instead.
 func (*MitreTatic) Descriptor() ([]byte, []int) {
-	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{15}
+	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *MitreTatic) GetName() string {
@@ -1131,7 +1186,7 @@ type MitreTechnique struct {
 func (x *MitreTechnique) Reset() {
 	*x = MitreTechnique{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_types_api_v1beta1_event_proto_msgTypes[16]
+		mi := &file_types_api_v1beta1_event_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1144,7 +1199,7 @@ func (x *MitreTechnique) String() string {
 func (*MitreTechnique) ProtoMessage() {}
 
 func (x *MitreTechnique) ProtoReflect() protoreflect.Message {
-	mi := &file_types_api_v1beta1_event_proto_msgTypes[16]
+	mi := &file_types_api_v1beta1_event_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1157,7 +1212,7 @@ func (x *MitreTechnique) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MitreTechnique.ProtoReflect.Descriptor instead.
 func (*MitreTechnique) Descriptor() ([]byte, []int) {
-	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{16}
+	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *MitreTechnique) GetId() string {
@@ -1305,10 +1360,16 @@ var file_types_api_v1beta1_event_proto_rawDesc = []byte{
 	0x74, 0x61, 0x31, 0x2e, 0x55, 0x73, 0x65, 0x72, 0x53, 0x74, 0x61, 0x63, 0x6b, 0x54, 0x72, 0x61,
 	0x63, 0x65, 0x48, 0x00, 0x52, 0x0e, 0x75, 0x73, 0x65, 0x72, 0x53, 0x74, 0x61, 0x63, 0x6b, 0x54,
 	0x72, 0x61, 0x63, 0x65, 0x88, 0x01, 0x01, 0x42, 0x13, 0x0a, 0x11, 0x5f, 0x75, 0x73, 0x65, 0x72,
-	0x5f, 0x73, 0x74, 0x61, 0x63, 0x6b, 0x5f, 0x74, 0x72, 0x61, 0x63, 0x65, 0x22, 0x2e, 0x0a, 0x0e,
-	0x55, 0x73, 0x65, 0x72, 0x53, 0x74, 0x61, 0x63, 0x6b, 0x54, 0x72, 0x61, 0x63, 0x65, 0x12, 0x1c,
+	0x5f, 0x73, 0x74, 0x61, 0x63, 0x6b, 0x5f, 0x74, 0x72, 0x61, 0x63, 0x65, 0x22, 0x4c, 0x0a, 0x0e,
+	0x55, 0x73, 0x65, 0x72, 0x53, 0x74, 0x61, 0x63, 0x6b, 0x54, 0x72, 0x61, 0x63, 0x65, 0x12, 0x3a,
 	0x0a, 0x09, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28,
-	0x04, 0x52, 0x09, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x65, 0x73, 0x22, 0x7f, 0x0a, 0x09,
+	0x0b, 0x32, 0x1c, 0x2e, 0x74, 0x72, 0x61, 0x63, 0x65, 0x65, 0x2e, 0x76, 0x31, 0x62, 0x65, 0x74,
+	0x61, 0x31, 0x2e, 0x53, 0x74, 0x61, 0x63, 0x6b, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x52,
+	0x09, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x65, 0x73, 0x22, 0x40, 0x0a, 0x0c, 0x53, 0x74,
+	0x61, 0x63, 0x6b, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x18, 0x0a, 0x07, 0x61, 0x64,
+	0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x07, 0x61, 0x64, 0x64,
+	0x72, 0x65, 0x73, 0x73, 0x12, 0x16, 0x0a, 0x06, 0x73, 0x79, 0x6d, 0x62, 0x6f, 0x6c, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73, 0x79, 0x6d, 0x62, 0x6f, 0x6c, 0x22, 0x7f, 0x0a, 0x09,
 	0x43, 0x6f, 0x6e, 0x74, 0x61, 0x69, 0x6e, 0x65, 0x72, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d,
 	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x34, 0x0a,
@@ -1387,7 +1448,7 @@ func file_types_api_v1beta1_event_proto_rawDescGZIP() []byte {
 }
 
 var file_types_api_v1beta1_event_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_types_api_v1beta1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_types_api_v1beta1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_types_api_v1beta1_event_proto_goTypes = []interface{}{
 	(Severity)(0),                // 0: tracee.v1beta1.Severity
 	(*Event)(nil),                // 1: tracee.v1beta1.Event
@@ -1399,57 +1460,59 @@ var file_types_api_v1beta1_event_proto_goTypes = []interface{}{
 	(*User)(nil),                 // 7: tracee.v1beta1.User
 	(*Thread)(nil),               // 8: tracee.v1beta1.Thread
 	(*UserStackTrace)(nil),       // 9: tracee.v1beta1.UserStackTrace
-	(*Container)(nil),            // 10: tracee.v1beta1.Container
-	(*ContainerImage)(nil),       // 11: tracee.v1beta1.ContainerImage
-	(*K8S)(nil),                  // 12: tracee.v1beta1.K8s
-	(*Pod)(nil),                  // 13: tracee.v1beta1.Pod
-	(*K8SNamespace)(nil),         // 14: tracee.v1beta1.K8sNamespace
-	(*Threat)(nil),               // 15: tracee.v1beta1.Threat
-	(*MitreTatic)(nil),           // 16: tracee.v1beta1.MitreTatic
-	(*MitreTechnique)(nil),       // 17: tracee.v1beta1.MitreTechnique
-	nil,                          // 18: tracee.v1beta1.Pod.LabelsEntry
-	(*timestamp.Timestamp)(nil),  // 19: google.protobuf.Timestamp
-	(*wrappers.UInt32Value)(nil), // 20: google.protobuf.UInt32Value
+	(*StackAddress)(nil),         // 10: tracee.v1beta1.StackAddress
+	(*Container)(nil),            // 11: tracee.v1beta1.Container
+	(*ContainerImage)(nil),       // 12: tracee.v1beta1.ContainerImage
+	(*K8S)(nil),                  // 13: tracee.v1beta1.K8s
+	(*Pod)(nil),                  // 14: tracee.v1beta1.Pod
+	(*K8SNamespace)(nil),         // 15: tracee.v1beta1.K8sNamespace
+	(*Threat)(nil),               // 16: tracee.v1beta1.Threat
+	(*MitreTatic)(nil),           // 17: tracee.v1beta1.MitreTatic
+	(*MitreTechnique)(nil),       // 18: tracee.v1beta1.MitreTechnique
+	nil,                          // 19: tracee.v1beta1.Pod.LabelsEntry
+	(*timestamp.Timestamp)(nil),  // 20: google.protobuf.Timestamp
+	(*wrappers.UInt32Value)(nil), // 21: google.protobuf.UInt32Value
 }
 var file_types_api_v1beta1_event_proto_depIdxs = []int32{
-	19, // 0: tracee.v1beta1.Event.timestamp:type_name -> google.protobuf.Timestamp
+	20, // 0: tracee.v1beta1.Event.timestamp:type_name -> google.protobuf.Timestamp
 	2,  // 1: tracee.v1beta1.Event.policies:type_name -> tracee.v1beta1.Policies
 	3,  // 2: tracee.v1beta1.Event.context:type_name -> tracee.v1beta1.Context
-	15, // 3: tracee.v1beta1.Event.threat:type_name -> tracee.v1beta1.Threat
+	16, // 3: tracee.v1beta1.Event.threat:type_name -> tracee.v1beta1.Threat
 	4,  // 4: tracee.v1beta1.Context.process:type_name -> tracee.v1beta1.Process
-	10, // 5: tracee.v1beta1.Context.container:type_name -> tracee.v1beta1.Container
-	12, // 6: tracee.v1beta1.Context.k8s:type_name -> tracee.v1beta1.K8s
+	11, // 5: tracee.v1beta1.Context.container:type_name -> tracee.v1beta1.Container
+	13, // 6: tracee.v1beta1.Context.k8s:type_name -> tracee.v1beta1.K8s
 	6,  // 7: tracee.v1beta1.Process.executable:type_name -> tracee.v1beta1.Executable
-	20, // 8: tracee.v1beta1.Process.entity_id:type_name -> google.protobuf.UInt32Value
-	20, // 9: tracee.v1beta1.Process.pid:type_name -> google.protobuf.UInt32Value
-	20, // 10: tracee.v1beta1.Process.namespaced_pid:type_name -> google.protobuf.UInt32Value
+	21, // 8: tracee.v1beta1.Process.entity_id:type_name -> google.protobuf.UInt32Value
+	21, // 9: tracee.v1beta1.Process.pid:type_name -> google.protobuf.UInt32Value
+	21, // 10: tracee.v1beta1.Process.namespaced_pid:type_name -> google.protobuf.UInt32Value
 	7,  // 11: tracee.v1beta1.Process.real_user:type_name -> tracee.v1beta1.User
 	8,  // 12: tracee.v1beta1.Process.thread:type_name -> tracee.v1beta1.Thread
 	5,  // 13: tracee.v1beta1.Process.parent:type_name -> tracee.v1beta1.Parent
 	6,  // 14: tracee.v1beta1.Parent.executable:type_name -> tracee.v1beta1.Executable
-	20, // 15: tracee.v1beta1.Parent.entity_id:type_name -> google.protobuf.UInt32Value
-	20, // 16: tracee.v1beta1.Parent.pid:type_name -> google.protobuf.UInt32Value
-	20, // 17: tracee.v1beta1.Parent.namespaced_pid:type_name -> google.protobuf.UInt32Value
+	21, // 15: tracee.v1beta1.Parent.entity_id:type_name -> google.protobuf.UInt32Value
+	21, // 16: tracee.v1beta1.Parent.pid:type_name -> google.protobuf.UInt32Value
+	21, // 17: tracee.v1beta1.Parent.namespaced_pid:type_name -> google.protobuf.UInt32Value
 	7,  // 18: tracee.v1beta1.Parent.real_user:type_name -> tracee.v1beta1.User
 	8,  // 19: tracee.v1beta1.Parent.thread:type_name -> tracee.v1beta1.Thread
 	4,  // 20: tracee.v1beta1.Parent.parent:type_name -> tracee.v1beta1.Process
-	20, // 21: tracee.v1beta1.User.id:type_name -> google.protobuf.UInt32Value
-	19, // 22: tracee.v1beta1.Thread.start:type_name -> google.protobuf.Timestamp
-	20, // 23: tracee.v1beta1.Thread.tid:type_name -> google.protobuf.UInt32Value
-	20, // 24: tracee.v1beta1.Thread.namespaced_tid:type_name -> google.protobuf.UInt32Value
+	21, // 21: tracee.v1beta1.User.id:type_name -> google.protobuf.UInt32Value
+	20, // 22: tracee.v1beta1.Thread.start:type_name -> google.protobuf.Timestamp
+	21, // 23: tracee.v1beta1.Thread.tid:type_name -> google.protobuf.UInt32Value
+	21, // 24: tracee.v1beta1.Thread.namespaced_tid:type_name -> google.protobuf.UInt32Value
 	9,  // 25: tracee.v1beta1.Thread.user_stack_trace:type_name -> tracee.v1beta1.UserStackTrace
-	11, // 26: tracee.v1beta1.Container.image:type_name -> tracee.v1beta1.ContainerImage
-	13, // 27: tracee.v1beta1.K8s.pod:type_name -> tracee.v1beta1.Pod
-	14, // 28: tracee.v1beta1.K8s.namespace:type_name -> tracee.v1beta1.K8sNamespace
-	18, // 29: tracee.v1beta1.Pod.labels:type_name -> tracee.v1beta1.Pod.LabelsEntry
-	16, // 30: tracee.v1beta1.Threat.mitre_tactic:type_name -> tracee.v1beta1.MitreTatic
-	17, // 31: tracee.v1beta1.Threat.mitre_technique:type_name -> tracee.v1beta1.MitreTechnique
-	0,  // 32: tracee.v1beta1.Threat.severity:type_name -> tracee.v1beta1.Severity
-	33, // [33:33] is the sub-list for method output_type
-	33, // [33:33] is the sub-list for method input_type
-	33, // [33:33] is the sub-list for extension type_name
-	33, // [33:33] is the sub-list for extension extendee
-	0,  // [0:33] is the sub-list for field type_name
+	10, // 26: tracee.v1beta1.UserStackTrace.addresses:type_name -> tracee.v1beta1.StackAddress
+	12, // 27: tracee.v1beta1.Container.image:type_name -> tracee.v1beta1.ContainerImage
+	14, // 28: tracee.v1beta1.K8s.pod:type_name -> tracee.v1beta1.Pod
+	15, // 29: tracee.v1beta1.K8s.namespace:type_name -> tracee.v1beta1.K8sNamespace
+	19, // 30: tracee.v1beta1.Pod.labels:type_name -> tracee.v1beta1.Pod.LabelsEntry
+	17, // 31: tracee.v1beta1.Threat.mitre_tactic:type_name -> tracee.v1beta1.MitreTatic
+	18, // 32: tracee.v1beta1.Threat.mitre_technique:type_name -> tracee.v1beta1.MitreTechnique
+	0,  // 33: tracee.v1beta1.Threat.severity:type_name -> tracee.v1beta1.Severity
+	34, // [34:34] is the sub-list for method output_type
+	34, // [34:34] is the sub-list for method input_type
+	34, // [34:34] is the sub-list for extension type_name
+	34, // [34:34] is the sub-list for extension extendee
+	0,  // [0:34] is the sub-list for field type_name
 }
 
 func init() { file_types_api_v1beta1_event_proto_init() }
@@ -1567,7 +1630,7 @@ func file_types_api_v1beta1_event_proto_init() {
 			}
 		}
 		file_types_api_v1beta1_event_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Container); i {
+			switch v := v.(*StackAddress); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1579,7 +1642,7 @@ func file_types_api_v1beta1_event_proto_init() {
 			}
 		}
 		file_types_api_v1beta1_event_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ContainerImage); i {
+			switch v := v.(*Container); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1591,7 +1654,7 @@ func file_types_api_v1beta1_event_proto_init() {
 			}
 		}
 		file_types_api_v1beta1_event_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*K8S); i {
+			switch v := v.(*ContainerImage); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1603,7 +1666,7 @@ func file_types_api_v1beta1_event_proto_init() {
 			}
 		}
 		file_types_api_v1beta1_event_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Pod); i {
+			switch v := v.(*K8S); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1615,7 +1678,7 @@ func file_types_api_v1beta1_event_proto_init() {
 			}
 		}
 		file_types_api_v1beta1_event_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*K8SNamespace); i {
+			switch v := v.(*Pod); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1627,7 +1690,7 @@ func file_types_api_v1beta1_event_proto_init() {
 			}
 		}
 		file_types_api_v1beta1_event_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Threat); i {
+			switch v := v.(*K8SNamespace); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1639,7 +1702,7 @@ func file_types_api_v1beta1_event_proto_init() {
 			}
 		}
 		file_types_api_v1beta1_event_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MitreTatic); i {
+			switch v := v.(*Threat); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1651,6 +1714,18 @@ func file_types_api_v1beta1_event_proto_init() {
 			}
 		}
 		file_types_api_v1beta1_event_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*MitreTatic); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_types_api_v1beta1_event_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MitreTechnique); i {
 			case 0:
 				return &v.state
@@ -1674,7 +1749,7 @@ func file_types_api_v1beta1_event_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_types_api_v1beta1_event_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   18,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

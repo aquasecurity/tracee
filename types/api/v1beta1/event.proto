@@ -66,7 +66,12 @@ message Thread {
 }
 
 message UserStackTrace {
-    repeated uint64 addresses = 1;
+    repeated StackAddress addresses = 1;
+}
+
+message StackAddress {
+	uint64 address = 1;
+	string symbol = 2;
 }
 
 message Container {
