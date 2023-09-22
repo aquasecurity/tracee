@@ -6,6 +6,7 @@ package tracee.v1beta1;
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
+import "types/api/v1beta1/event_data.proto";
 
 message Event {
     google.protobuf.Timestamp timestamp = 1;
@@ -13,7 +14,7 @@ message Event {
     string name = 3;
     Policies policies = 4;
     Context context = 5;
-    // repeated EventData data = 6; TODO: event data is coming on a separate PR
+    map<string, EventValue> event_data = 6;
     optional Threat threat = 7;
 }
 
