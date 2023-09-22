@@ -1327,9 +1327,9 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 		logger.Warnw("hooked_syscalls returned an error", "error", err)
 	}
 	t.triggerSeqOpsIntegrityCheck(trace.Event{})
-	err = t.triggerMemDump(trace.Event{})
-	if err != nil {
-		logger.Warnw("print_mem_dump returned an error", "error", err)
+	errs := t.triggerMemDump(trace.Event{})
+	for _, err := range errs {
+		logger.Warnw("Memory dump", "error", err)
 	}
 
 	go t.lkmSeekerRoutine(ctx)
@@ -1636,20 +1636,20 @@ func (t *Tracee) triggerSeqOpsIntegrityCheckCall(
 
 // triggerMemDump is used by a Uprobe to trigger an eBPF program
 // that prints the first bytes of requested symbols or addresses
-func (t *Tracee) triggerMemDump(event trace.Event) error {
+func (t *Tracee) triggerMemDump(event trace.Event) []error {
 	if _, ok := t.eventsState[events.PrintMemDump]; !ok {
 		return nil
 	}
 
-	errArgFilter := make(map[int]error, 0)
+	errs := []error{}
 
 	for p := range t.config.Policies.Map() {
 		printMemDumpFilters := p.ArgFilter.GetEventFilters(events.PrintMemDump)
 		if len(printMemDumpFilters) == 0 {
-			errArgFilter[p.ID] = fmt.Errorf("policy %d: no address or symbols were provided to print_mem_dump event. "+
+			errs = append(errs, errfmt.Errorf("policy %d: no address or symbols were provided to print_mem_dump event. "+
 				"please provide it via -e print_mem_dump.args.address=<hex address>"+
 				", -e print_mem_dump.args.symbol_name=<owner>:<symbol> or "+
-				"-e print_mem_dump.args.symbol_name=<symbol> if specifying a system owned symbol", p.ID)
+				"-e print_mem_dump.args.symbol_name=<symbol> if specifying a system owned symbol", p.ID))
 
 			continue
 		}
@@ -1664,7 +1664,9 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 			field := lengthFilter.Equal()[0]
 			length, err = strconv.ParseUint(field, 10, 64)
 			if err != nil {
-				return errfmt.WrapError(err)
+				errs = append(errs, errfmt.Errorf("policy %d: invalid length provided to print_mem_dump event: %v", p.ID, err))
+
+				continue
 			}
 		}
 
@@ -1673,7 +1675,9 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 			for _, field := range addressFilter.Equal() {
 				address, err := strconv.ParseUint(field, 16, 64)
 				if err != nil {
-					return errfmt.WrapError(err)
+					errs[p.ID] = errfmt.Errorf("policy %d: invalid address provided to print_mem_dump event: %v", p.ID, err)
+
+					continue
 				}
 				eventHandle := t.triggerContexts.Store(event)
 				_ = t.triggerMemDumpCall(address, length, eventHandle)
@@ -1694,21 +1698,43 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 					owner = symbolSlice[0]
 					name = symbolSlice[1]
 				} else {
-					return errfmt.Errorf("invalid symbols provided %s - more than one ':' provided", field)
+					errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s - more than one ':' provided", p.ID, field))
+
+					continue
 				}
 				symbol, err := t.kernelSymbols.GetSymbolByName(owner, name)
 				if err != nil {
+					if owner != "system" {
+						errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s - %v", p.ID, field, err))
+
+						continue
+					}
+
 					// Checking if the user specified a syscall name
-					if owner == "system" {
-						for _, prefix := range []string{"sys_", "__x64_sys_", "__arm64_sys_"} {
-							symbol, err = t.kernelSymbols.GetSymbolByName(owner, prefix+name)
-							if err == nil {
-								break
-							}
+					prefixes := []string{"sys_", "__x64_sys_", "__arm64_sys_"}
+					var errSyscall error
+					for _, prefix := range prefixes {
+						symbol, errSyscall = t.kernelSymbols.GetSymbolByName(owner, prefix+name)
+						if errSyscall == nil {
+							err = nil
+							break
 						}
 					}
 					if err != nil {
-						return errfmt.WrapError(err)
+						// syscall not found for the given name using all the prefixes
+						valuesStr := make([]string, 0)
+						valuesStr = append(valuesStr, owner+"_")
+						valuesStr = append(valuesStr, prefixes...)
+						valuesStr = append(valuesStr, name)
+
+						values := make([]interface{}, len(valuesStr))
+						for i, v := range valuesStr {
+							values[i] = v
+						}
+						attemptedSymbols := fmt.Sprintf("{%s,%s,%s,%s}%s", values...)
+						errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s", p.ID, attemptedSymbols))
+
+						continue
 					}
 				}
 				eventHandle := t.triggerContexts.Store(event)
@@ -1717,13 +1743,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) error {
 		}
 	}
 
-	for k, v := range errArgFilter {
-		if v != nil {
-			return errfmt.Errorf("error setting %v filter: %v", k, v)
-		}
-	}
-
-	return nil
+	return errs
 }
 
 // AddReadyCallback sets a callback function to be called when the tracee started all its probes
