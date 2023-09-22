@@ -1,0 +1,135 @@
+syntax = "proto3";
+
+option go_package = "github.co/aquasecurity/tracee/api/v1beta1";
+
+package tracee.v1beta1;
+
+import "google/protobuf/wrappers.proto";
+
+message EventValue {
+    oneof value {
+        google.protobuf.Int32Value int32 = 1; // intT
+        google.protobuf.Int64Value int64 = 2; // longT
+        google.protobuf.UInt32Value uint32 = 3; // uintT, modeT, devT, u8T, u16T
+        google.protobuf.UInt64Value uint64 = 4; // ulongT, offT, sizeT, pointerT
+        google.protobuf.StringValue string = 5; // strT
+        google.protobuf.BytesValue bytes = 6; // bytesT
+        google.protobuf.BoolValue bool = 7; // boolT
+        StringArrayValue string_array = 10; // strArrT, argsArrT
+        IntArrayValue int_array = 11; // intArr2T
+        UInt64ArrayValue uint64_array = 12; // uint64ArrT
+        SockAddrValue sockaddr = 13; // sockaddrT
+        CredValue cred = 14; // credT
+        TimespecValue timespec = 15; // timespecT
+        ArgsValue args = 16;
+        TriggerEvent trigger_event = 17;
+    }
+}
+
+message TriggerEvent {
+    uint32 id = 1;
+    string name = 2;
+    map<string, EventValue> data = 3;
+}
+
+message StringArrayValue {
+    repeated google.protobuf.StringValue array = 1;
+}
+
+message IntArrayValue {
+    repeated google.protobuf.Int32Value array = 1;
+}
+
+message UInt64ArrayValue {
+    repeated google.protobuf.UInt64Value array = 1;
+}
+
+message CredValue {
+    google.protobuf.UInt32Value uid = 1;
+    google.protobuf.UInt32Value gid = 2;
+    google.protobuf.UInt32Value suid = 3;
+    google.protobuf.UInt32Value sgid = 4;
+    google.protobuf.UInt32Value euid = 5;
+    google.protobuf.UInt32Value egid = 6;
+    google.protobuf.UInt32Value fsuid = 7;
+    google.protobuf.UInt32Value fsgid = 8;
+    google.protobuf.UInt32Value user_namespace = 9;
+    google.protobuf.UInt32Value secure_bits = 10;
+    repeated Capability cap_inheritable = 11;
+    repeated Capability cap_permitted = 12;
+    repeated Capability cap_effective = 13;
+    repeated Capability cap_bounding = 14;
+    repeated Capability cap_ambient = 15;
+}
+
+message TimespecValue {
+    google.protobuf.DoubleValue value = 1;
+}
+
+message ArgsValue {
+    repeated EventValue args = 1;
+}
+
+message SockAddrValue {
+    sa_family_t sa_family = 1;
+    string sun_path = 2;
+    string sin_addr = 3;
+    uint32 sin_port = 4;
+    string sin6_addr = 5;
+    uint32 sin6_port = 6;
+    uint32 sin6_flowinfo = 7;
+    uint32 sin6_scopeid = 8;
+}
+
+enum sa_family_t {
+  SA_FAMILY_T_UNSPEC = 0;
+  // POSIX.1g used the name AF_LOCAL as a synonym for AF_UNIX,
+  // but this name is not used in SUSv3.
+  AF_UNIX = 1;
+  AF_INET = 2;
+  AF_INET6 = 10;
+}
+
+// https://pkg.go.dev/kernel.org/pub/linux/libs/security/libcap/cap@v1.2.68#Value
+enum Capability {
+    CAP_CHOWN = 0;
+    DAC_OVERRIDE = 1;
+    CAP_DAC_READ_SEARCH = 2;
+    CAP_FOWNER = 3;
+    CAP_FSETID = 4;
+    CAP_KILL = 5;
+    CAP_SETGID = 6;
+    CAP_SETUID = 7;
+    CAP_SETPCAP = 8;
+    CAP_NET_BIND_SERVICE = 10;
+    CAP_NET_BROADCAST = 11;
+    CAP_NET_ADMIN = 12;
+    CAP_NET_RAW = 13;
+    CAP_IPC_LOCK = 14;
+    CAP_IPC_OWNER = 15;
+    CAP_SYS_MODULE = 16;
+    CAP_SYS_RAWIO = 17;
+    CAP_SYS_CHROOT = 18;
+    CAP_SYS_PTRACE = 19;
+    CAP_SYS_PACCT = 20;
+    CAP_SYS_ADMIN = 21;
+    CAP_SYS_BOOT = 22;
+    CAP_SYS_NICE = 23;
+    CAP_SYS_RESOURCE = 24;
+    CAP_SYS_TIME = 25;
+    CAP_SYS_TTY_CONFIG = 26;
+    CAP_MKNOD = 27;
+    CAP_LEASE = 28;
+    CAP_AUDIT_WRITE = 29;
+    CAP_AUDIT_CONTROL = 30;
+    CAP_SETFCAP = 31;
+    CAP_MAC_OVERRIDE = 32;
+    CAP_MAC_ADMIN = 33;
+    CAP_SYSLOG = 34;
+    CAP_WAKE_ALARM = 35;
+    CAP_BLOCK_SUSPEND = 36;
+    CAP_AUDIT_READ = 37;
+    CAP_PERFMON = 38;
+    CAP_BPF = 39;
+    CAP_CHECKPOINT_RESTORE = 40;
+}
