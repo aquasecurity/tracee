@@ -499,56 +499,61 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx))
         return 0;
 
-    // Note: we don't place should_trace() here, so we can keep track of the cgroups in the system
+    // NOTE: proc_info_map updates before should_trace() as the entries are needed in other places.
+
     struct task_struct *parent = (struct task_struct *) ctx->args[0];
     struct task_struct *child = (struct task_struct *) ctx->args[1];
 
-    u64 start_time = get_task_start_time(child);
+    // Information needed before the event:
+    int parent_pid = get_task_host_tgid(parent);
+    u64 child_start_time = get_task_start_time(child);
+    int child_pid = get_task_host_tgid(child);
+    int child_tid = get_task_host_pid(child);
+    int child_ns_pid = get_task_ns_tgid(child);
+    int child_ns_tid = get_task_ns_pid(child);
+
+    // Update the task_info map with the new task's info
 
     task_info_t task = {};
     __builtin_memcpy(&task, p.task_info, sizeof(task_info_t));
     task.recompute_scope = true;
-    task.context.tid = get_task_ns_pid(child);
-    task.context.host_tid = get_task_host_pid(child);
-    task.context.start_time = start_time;
+    task.context.tid = child_ns_tid;
+    task.context.host_tid = child_tid;
+    task.context.start_time = child_start_time;
     ret = bpf_map_update_elem(&task_info_map, &task.context.host_tid, &task, BPF_ANY);
     if (ret < 0)
         tracee_log(ctx, BPF_LOG_LVL_DEBUG, BPF_LOG_ID_MAP_UPDATE_ELEM, ret);
 
-    int parent_pid = get_task_host_pid(parent);
-    int child_pid = get_task_host_pid(child);
+    // Update the proc_info_map with the new process's info (from parent)
 
-    int parent_tgid = get_task_host_tgid(parent);
-    int child_tgid = get_task_host_tgid(child);
-
-    proc_info_t *c_proc_info = bpf_map_lookup_elem(&proc_info_map, &child_tgid);
+    proc_info_t *c_proc_info = bpf_map_lookup_elem(&proc_info_map, &child_pid);
     if (c_proc_info == NULL) {
-        // this is a new process (and not just another thread) - add it to proc_info_map
-
-        proc_info_t *p_proc_info = bpf_map_lookup_elem(&proc_info_map, &parent_tgid);
+        // It is a new process (not another thread): add it to proc_info_map.
+        proc_info_t *p_proc_info = bpf_map_lookup_elem(&proc_info_map, &parent_pid);
         if (unlikely(p_proc_info == NULL)) {
-            // parent proc should exist in proc_map (init_program_data should have set it)
+            // parent should exist in proc_info_map (init_program_data sets it)
             tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
             return 0;
         }
 
-        bpf_map_update_elem(&proc_info_map, &child_tgid, p_proc_info, BPF_NOEXIST);
-        c_proc_info = bpf_map_lookup_elem(&proc_info_map, &child_tgid);
-        // appease the verifier
+        // Copy the parent's proc_info to the child's enty.
+        bpf_map_update_elem(&proc_info_map, &child_pid, p_proc_info, BPF_NOEXIST);
+        c_proc_info = bpf_map_lookup_elem(&proc_info_map, &child_pid);
         if (unlikely(c_proc_info == NULL)) {
             tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
             return 0;
         }
 
-        c_proc_info->follow_in_scopes = 0;
-        c_proc_info->new_proc = true;
+        c_proc_info->follow_in_scopes = 0; // updated later if should_trace() passes (follow filter)
+        c_proc_info->new_proc = true;      // started after tracee (new_pid filter)
     }
 
-    // update process tree map if the parent has an entry
+    // Update the process tree map (filter related) if the parent has an entry.
+
     if (p.config->proc_tree_filter_enabled_scopes) {
-        u32 *tgid_filtered = bpf_map_lookup_elem(&process_tree_map, &parent_tgid);
+        u32 *tgid_filtered = bpf_map_lookup_elem(&process_tree_map, &parent_pid);
         if (tgid_filtered) {
-            ret = bpf_map_update_elem(&process_tree_map, &child_tgid, tgid_filtered, BPF_ANY);
+            ret = bpf_map_update_elem(&process_tree_map, &child_pid, tgid_filtered, BPF_ANY);
             if (ret < 0)
                 tracee_log(ctx, BPF_LOG_LVL_DEBUG, BPF_LOG_ID_MAP_UPDATE_ELEM, ret);
         }
@@ -557,25 +562,70 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     if (!should_trace(&p))
         return 0;
 
-    // follow every pid that passed the should_trace() checks (used by the follow filter)
+    // Always follow every pid that passed the should_trace() checks (follow filter)
     c_proc_info->follow_in_scopes = p.task_info->matched_scopes;
 
+    // Submit the event
+
     if (should_submit(SCHED_PROCESS_FORK, p.event) || p.config->options & OPT_PROCESS_INFO) {
-        int parent_ns_pid = get_task_ns_pid(parent);
-        int parent_ns_tgid = get_task_ns_tgid(parent);
-        int child_ns_pid = get_task_ns_pid(child);
-        int child_ns_tgid = get_task_ns_tgid(child);
+        // Parent information.
+        u64 parent_start_time = get_task_start_time(parent);
+        int parent_tid = get_task_host_pid(parent);
+        int parent_ns_pid = get_task_ns_tgid(parent);
+        int parent_ns_tid = get_task_ns_pid(parent);
 
-        save_to_submit_buf(&p.event->args_buf, (void *) &parent_pid, sizeof(int), 0);
-        save_to_submit_buf(&p.event->args_buf, (void *) &parent_ns_pid, sizeof(int), 1);
-        save_to_submit_buf(&p.event->args_buf, (void *) &parent_tgid, sizeof(int), 2);
-        save_to_submit_buf(&p.event->args_buf, (void *) &parent_ns_tgid, sizeof(int), 3);
-        save_to_submit_buf(&p.event->args_buf, (void *) &child_pid, sizeof(int), 4);
-        save_to_submit_buf(&p.event->args_buf, (void *) &child_ns_pid, sizeof(int), 5);
-        save_to_submit_buf(&p.event->args_buf, (void *) &child_tgid, sizeof(int), 6);
-        save_to_submit_buf(&p.event->args_buf, (void *) &child_ns_tgid, sizeof(int), 7);
-        save_to_submit_buf(&p.event->args_buf, (void *) &start_time, sizeof(u64), 8);
+        // Parent (might be a thread or a process).
+        save_to_submit_buf(&p.event->args_buf, (void *) &parent_tid, sizeof(int), 0);
+        save_to_submit_buf(&p.event->args_buf, (void *) &parent_ns_tid, sizeof(int), 1);
+        save_to_submit_buf(&p.event->args_buf, (void *) &parent_pid, sizeof(int), 2);
+        save_to_submit_buf(&p.event->args_buf, (void *) &parent_ns_pid, sizeof(int), 3);
+        save_to_submit_buf(&p.event->args_buf, (void *) &parent_start_time, sizeof(u64), 4);
 
+        // Child (might be a lwp or a process, sched_process_fork trace is calle by clone() also).
+        save_to_submit_buf(&p.event->args_buf, (void *) &child_tid, sizeof(int), 5);
+        save_to_submit_buf(&p.event->args_buf, (void *) &child_ns_tid, sizeof(int), 6);
+        save_to_submit_buf(&p.event->args_buf, (void *) &child_pid, sizeof(int), 7);
+        save_to_submit_buf(&p.event->args_buf, (void *) &child_ns_pid, sizeof(int), 8);
+        save_to_submit_buf(&p.event->args_buf, (void *) &child_start_time, sizeof(u64), 9);
+
+        // Process tree information (if needed).
+        if (p.config->options & OPT_FORK_PROCTREE) {
+            // Both, the thread group leader and the "up_parent" (the first process, not lwp, found
+            // as a parent of the child in the hierarchy), are needed by the userland process tree.
+            // The userland process tree default source of events is the signal events, but there is
+            // an option to use regular event for maintaining it as well (and it is needed for some
+            // situatins). These arguments will always be removed by userland event processors.
+            struct task_struct *leader = get_leader_task(child);
+            struct task_struct *up_parent = get_leader_task(get_parent_task(leader));
+
+            // Up Parent information: Go up in hierarchy until parent is process.
+            u64 up_parent_start_time = get_task_start_time(up_parent);
+            int up_parent_pid = get_task_host_tgid(up_parent);
+            int up_parent_tid = get_task_host_pid(up_parent);
+            int up_parent_ns_pid = get_task_ns_tgid(up_parent);
+            int up_parent_ns_tid = get_task_ns_pid(up_parent);
+            // Leader information.
+            u64 leader_start_time = get_task_start_time(leader);
+            int leader_pid = get_task_host_tgid(leader);
+            int leader_tid = get_task_host_pid(leader);
+            int leader_ns_pid = get_task_ns_tgid(leader);
+            int leader_ns_tid = get_task_ns_pid(leader);
+
+            // Up Parent: always a process (might be the same as Parent if parent is a process).
+            save_to_submit_buf(&p.event->args_buf, (void *) &up_parent_tid, sizeof(int), 10);
+            save_to_submit_buf(&p.event->args_buf, (void *) &up_parent_ns_tid, sizeof(int), 11);
+            save_to_submit_buf(&p.event->args_buf, (void *) &up_parent_pid, sizeof(int), 12);
+            save_to_submit_buf(&p.event->args_buf, (void *) &up_parent_ns_pid, sizeof(int), 13);
+            save_to_submit_buf(&p.event->args_buf, (void *) &up_parent_start_time, sizeof(u64), 14);
+            // Leader: always a process (might be the same as the Child if child is a process).
+            save_to_submit_buf(&p.event->args_buf, (void *) &leader_tid, sizeof(int), 15);
+            save_to_submit_buf(&p.event->args_buf, (void *) &leader_ns_tid, sizeof(int), 16);
+            save_to_submit_buf(&p.event->args_buf, (void *) &leader_pid, sizeof(int), 17);
+            save_to_submit_buf(&p.event->args_buf, (void *) &leader_ns_pid, sizeof(int), 18);
+            save_to_submit_buf(&p.event->args_buf, (void *) &leader_start_time, sizeof(u64), 19);
+        }
+
+        // Submit
         events_perf_submit(&p, SCHED_PROCESS_FORK, 0);
     }
 
@@ -1079,6 +1129,8 @@ int lkm_seeker_new_mod_only_tail(struct pt_regs *ctx)
     return 0;
 }
 
+// clang-format off
+
 // trace/events/sched.h: TP_PROTO(struct task_struct *p, pid_t old_pid, struct linux_binprm *bprm)
 SEC("raw_tracepoint/sched_process_exec")
 int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
@@ -1087,9 +1139,10 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx))
         return 0;
 
-    // Perform the following checks before should_trace() so we can filter by newly created
-    // containers/processes.  We assume that a new container/pod has started when a process of a
-    // newly created cgroup and mount ns executed a binary
+    // Perform checks below before should_trace(), so tracee can filter by newly created containers
+    // or processes. Assume that a new container, or pod, has started when a process of a newly
+    // created cgroup and mount ns executed a binary.
+
     if (p.task_info->container_state == CONTAINER_CREATED) {
         u32 mntns = get_task_mnt_ns_id(p.event->task);
         struct task_struct *parent = get_parent_task(p.event->task);
@@ -1099,30 +1152,31 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
             u8 state = CONTAINER_STARTED;
             bpf_map_update_elem(&containers_map, &cgroup_id_lsb, &state, BPF_ANY);
             p.task_info->container_state = state;
-            p.event->context.task.flags |= CONTAINER_STARTED_FLAG; // Change for current event
-            p.task_info->context.flags |= CONTAINER_STARTED_FLAG;  // Change for future task events
+            p.event->context.task.flags |= CONTAINER_STARTED_FLAG; // change for current event
+            p.task_info->context.flags |= CONTAINER_STARTED_FLAG;  // change for future task events
         }
     }
 
-    p.task_info->recompute_scope = true;
+    p.task_info->recompute_scope = true; // a new task should always have the scope recomputed
 
     struct linux_binprm *bprm = (struct linux_binprm *) ctx->args[2];
-    if (bprm == NULL) {
+    if (bprm == NULL)
         return -1;
-    }
+
     struct file *file = get_file_ptr_from_bprm(bprm);
     void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
 
+    // Pick data about the process from proc_info_map
     proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &p.event->context.task.host_pid);
     if (proc_info == NULL) {
-        // entry should exist in proc_map (init_program_data should have set it otherwise)
+        // init_program_data should have created an entry in proc_info_map for this pid
         tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
         return 0;
     }
 
-    proc_info->new_proc = true;
+    proc_info->new_proc = true; // task has started after tracee started running
 
-    // extract the binary name to be used in should_trace
+    // Extract the binary name to be used in should_trace
     __builtin_memset(proc_info->binary.path, 0, MAX_BIN_PATH_SIZE);
     bpf_probe_read_str(proc_info->binary.path, MAX_BIN_PATH_SIZE, file_path);
     proc_info->binary.mnt_id = p.event->context.task.mnt_id;
@@ -1130,44 +1184,53 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     if (!should_trace(&p))
         return 0;
 
-    // Follow this task for matched scopes
-    proc_info->follow_in_scopes = p.task_info->matched_scopes;
+    proc_info->follow_in_scopes = p.task_info->matched_scopes; // follow task for matched scopes
 
     if (!should_submit(SCHED_PROCESS_EXEC, p.event) &&
         (p.config->options & OPT_PROCESS_INFO) != OPT_PROCESS_INFO)
         return 0;
 
-    // Note: Starting from kernel 5.9, there are two new interesting fields in bprm that we
-    // should consider adding:
-    // 1. struct file *executable - can be used to get the executable name passed to an
-    // interpreter
-    // 2. fdpath                  - generated filename for execveat (after resolving dirfd)
+    // Note: From v5.9+, there are two interesting fields in bprm that could be added:
+    // 1. struct file *executable: the executable name passed to an interpreter
+    // 2. fdpath: generated filename for execveat (after resolving dirfd)
+
     const char *filename = get_binprm_filename(bprm);
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
     u64 ctime = get_ctime_nanosec_from_file(file);
     umode_t inode_mode = get_inode_mode_from_file(file);
 
-    save_str_to_buf(&p.event->args_buf, (void *) filename, 0);
-    save_str_to_buf(&p.event->args_buf, file_path, 1);
-    save_to_submit_buf(&p.event->args_buf, &s_dev, sizeof(dev_t), 2);
-    save_to_submit_buf(&p.event->args_buf, &inode_nr, sizeof(unsigned long), 3);
-    save_to_submit_buf(&p.event->args_buf, &ctime, sizeof(u64), 4);
-    save_to_submit_buf(&p.event->args_buf, &inode_mode, sizeof(umode_t), 5);
-    // If the interpreter file is the same as the executed one, it means that there is no
-    // interpreter. For more information, see the load_elf_phdrs kprobe program.
-    if (proc_info->interpreter.id.inode != 0 && (proc_info->interpreter.id.device != s_dev ||
-                                                 proc_info->interpreter.id.inode != inode_nr)) {
-        save_str_to_buf(&p.event->args_buf, &proc_info->interpreter.pathname, 6);
-        save_to_submit_buf(&p.event->args_buf, &proc_info->interpreter.id.device, sizeof(dev_t), 7);
-        save_to_submit_buf(
-            &p.event->args_buf, &proc_info->interpreter.id.inode, sizeof(unsigned long), 8);
-        save_to_submit_buf(&p.event->args_buf, &proc_info->interpreter.id.ctime, sizeof(u64), 9);
+    save_str_to_buf(&p.event->args_buf, (void *) filename, 0);                   // executable name
+    save_str_to_buf(&p.event->args_buf, file_path, 1);                           // executable path
+    save_to_submit_buf(&p.event->args_buf, &s_dev, sizeof(dev_t), 2);            // device number
+    save_to_submit_buf(&p.event->args_buf, &inode_nr, sizeof(unsigned long), 3); // inode number 
+    save_to_submit_buf(&p.event->args_buf, &ctime, sizeof(u64), 4);              // changed time
+    save_to_submit_buf(&p.event->args_buf, &inode_mode, sizeof(umode_t), 5);     // inode mode
+
+    // NOTES:
+    // - interp is the real interpreter (sh, bash, python, perl, ...)
+    // - interpreter is the binary interpreter (ld.so), also known as the loader
+    // - interpreter might be the same as executable (so there is no interpreter)
+
+    // Check if there is an interpreter and if it is different from the executable:
+
+    bool itp_inode_exists = proc_info->interpreter.id.inode != 0;
+    bool itp_dev_diff = proc_info->interpreter.id.device != s_dev;
+    bool itp_inode_diff = proc_info->interpreter.id.inode != inode_nr;
+
+    if (itp_inode_exists && (itp_dev_diff || itp_inode_diff)) {
+        save_str_to_buf(&p.event->args_buf, &proc_info->interpreter.pathname, 6);                    // interpreter path
+        save_to_submit_buf(&p.event->args_buf, &proc_info->interpreter.id.device, sizeof(dev_t), 7); // interpreter device number
+        save_to_submit_buf(&p.event->args_buf, &proc_info->interpreter.id.inode, sizeof(u64), 8);    // interpreter inode number
+        save_to_submit_buf(&p.event->args_buf, &proc_info->interpreter.id.ctime, sizeof(u64), 9);    // interpreter changed time
     }
 
     bpf_tail_call(ctx, &prog_array_tp, TAIL_SCHED_PROCESS_EXEC_EVENT_SUBMIT);
-    return -1;
+
+    return 0;
 }
+
+// clang-format on
 
 SEC("raw_tracepoint/sched_process_exec_event_submit_tail")
 int sched_process_exec_event_submit_tail(struct bpf_raw_tracepoint_args *ctx)
@@ -6081,9 +6144,10 @@ int sched_process_fork_signal(struct bpf_raw_tracepoint_args *ctx)
     if (unlikely(signal == NULL))
         return 0;
 
+    struct task_struct *parent = (struct task_struct *) ctx->args[0];
     struct task_struct *child = (struct task_struct *) ctx->args[1];
     struct task_struct *leader = get_leader_task(child);
-    struct task_struct *parent = get_leader_task(get_parent_task(leader));
+    struct task_struct *up_parent = get_leader_task(get_parent_task(leader));
 
     // In the Linux kernel:
     //
@@ -6112,55 +6176,65 @@ int sched_process_fork_signal(struct bpf_raw_tracepoint_args *ctx)
     // userland pid = kernel tgid
     // userland tgid = kernel pid
 
-    u64 parent_starttime = get_task_start_time(parent);
+    // The event timestamp, so process tree info can be changelog'ed.
+    u64 timestamp = bpf_ktime_get_ns();
+    save_to_submit_buf(&signal->args_buf, &timestamp, sizeof(u64), 0);
+
+    // Parent information.
+    u64 parent_start_time = get_task_start_time(parent);
     int parent_pid = get_task_host_tgid(parent);
     int parent_tid = get_task_host_pid(parent);
     int parent_ns_pid = get_task_ns_tgid(parent);
     int parent_ns_tid = get_task_ns_pid(parent);
 
-    u64 leader_starttime = get_task_start_time(leader);
-    int leader_pid = get_task_host_tgid(leader);
-    int leader_tid = get_task_host_pid(leader);
-    int leader_ns_pid = get_task_ns_tgid(leader);
-    int leader_ns_tid = get_task_ns_pid(leader);
-
-    u64 child_starttime = get_task_start_time(child);
+    // Child information.
+    u64 child_start_time = get_task_start_time(child);
     int child_pid = get_task_host_tgid(child);
     int child_tid = get_task_host_pid(child);
     int child_ns_pid = get_task_ns_tgid(child);
     int child_ns_tid = get_task_ns_pid(child);
 
-    // The event timestamp, so process tree info can be changelog'ed.
-    u64 timestamp = bpf_ktime_get_ns();
-    save_to_submit_buf(&signal->args_buf, &timestamp, sizeof(u64), 0);
+    // Up Parent information: Go up in hierarchy until parent is process.
+    u64 up_parent_start_time = get_task_start_time(up_parent);
+    int up_parent_pid = get_task_host_tgid(up_parent);
+    int up_parent_tid = get_task_host_pid(up_parent);
+    int up_parent_ns_pid = get_task_ns_tgid(up_parent);
+    int up_parent_ns_tid = get_task_ns_pid(up_parent);
 
-    // The hash is always calculated with "task_struct->pid + start_time".
-    u32 task_hash = hash_task_id(child_tid, child_starttime);
-    u32 parent_hash = hash_task_id(parent_tid, parent_starttime);
-    u32 leader_hash = hash_task_id(leader_tid, leader_starttime);
+    // Leader information.
+    u64 leader_start_time = get_task_start_time(leader);
+    int leader_pid = get_task_host_tgid(leader);
+    int leader_tid = get_task_host_pid(leader);
+    int leader_ns_pid = get_task_ns_tgid(leader);
+    int leader_ns_tid = get_task_ns_pid(leader);
 
-    // hashes
-    save_to_submit_buf(&signal->args_buf, (void *) &task_hash, sizeof(u32), 1);
-    save_to_submit_buf(&signal->args_buf, (void *) &parent_hash, sizeof(u32), 2);
-    save_to_submit_buf(&signal->args_buf, (void *) &leader_hash, sizeof(u32), 3);
-    // parent
-    save_to_submit_buf(&signal->args_buf, (void *) &parent_tid, sizeof(int), 4);
-    save_to_submit_buf(&signal->args_buf, (void *) &parent_ns_tid, sizeof(int), 5);
-    save_to_submit_buf(&signal->args_buf, (void *) &parent_pid, sizeof(int), 6);
-    save_to_submit_buf(&signal->args_buf, (void *) &parent_ns_pid, sizeof(int), 7);
-    save_to_submit_buf(&signal->args_buf, (void *) &parent_starttime, sizeof(u64), 8);
-    // leader
-    save_to_submit_buf(&signal->args_buf, (void *) &leader_tid, sizeof(int), 9);
-    save_to_submit_buf(&signal->args_buf, (void *) &leader_ns_tid, sizeof(int), 10);
-    save_to_submit_buf(&signal->args_buf, (void *) &leader_pid, sizeof(int), 11);
-    save_to_submit_buf(&signal->args_buf, (void *) &leader_ns_pid, sizeof(int), 12);
-    save_to_submit_buf(&signal->args_buf, (void *) &leader_starttime, sizeof(u64), 13);
-    // child
-    save_to_submit_buf(&signal->args_buf, (void *) &child_tid, sizeof(int), 14);
-    save_to_submit_buf(&signal->args_buf, (void *) &child_ns_tid, sizeof(int), 15);
-    save_to_submit_buf(&signal->args_buf, (void *) &child_pid, sizeof(int), 16);
-    save_to_submit_buf(&signal->args_buf, (void *) &child_ns_pid, sizeof(int), 17);
-    save_to_submit_buf(&signal->args_buf, (void *) &child_starttime, sizeof(u64), 18);
+    // Parent (might be a thread or a process).
+    save_to_submit_buf(&signal->args_buf, (void *) &parent_tid, sizeof(int), 1);
+    save_to_submit_buf(&signal->args_buf, (void *) &parent_ns_tid, sizeof(int), 2);
+    save_to_submit_buf(&signal->args_buf, (void *) &parent_pid, sizeof(int), 3);
+    save_to_submit_buf(&signal->args_buf, (void *) &parent_ns_pid, sizeof(int), 4);
+    save_to_submit_buf(&signal->args_buf, (void *) &parent_start_time, sizeof(u64), 5);
+
+    // Child (might be a thread or a process, sched_process_fork trace is calle by clone() also).
+    save_to_submit_buf(&signal->args_buf, (void *) &child_tid, sizeof(int), 6);
+    save_to_submit_buf(&signal->args_buf, (void *) &child_ns_tid, sizeof(int), 7);
+    save_to_submit_buf(&signal->args_buf, (void *) &child_pid, sizeof(int), 8);
+    save_to_submit_buf(&signal->args_buf, (void *) &child_ns_pid, sizeof(int), 9);
+    save_to_submit_buf(&signal->args_buf, (void *) &child_start_time, sizeof(u64), 10);
+
+    // Up Parent: always a real process (might be the same as Parent if it is a real process).
+    save_to_submit_buf(&signal->args_buf, (void *) &up_parent_tid, sizeof(int), 11);
+    save_to_submit_buf(&signal->args_buf, (void *) &up_parent_ns_tid, sizeof(int), 12);
+    save_to_submit_buf(&signal->args_buf, (void *) &up_parent_pid, sizeof(int), 13);
+    save_to_submit_buf(&signal->args_buf, (void *) &up_parent_ns_pid, sizeof(int), 14);
+    save_to_submit_buf(&signal->args_buf, (void *) &up_parent_start_time, sizeof(u64), 15);
+
+    // Leader: always a real process (might be the same as the Child if child is a real process).
+    save_to_submit_buf(&signal->args_buf, (void *) &leader_tid, sizeof(int), 16);
+    save_to_submit_buf(&signal->args_buf, (void *) &leader_ns_tid, sizeof(int), 17);
+    save_to_submit_buf(&signal->args_buf, (void *) &leader_pid, sizeof(int), 18);
+    save_to_submit_buf(&signal->args_buf, (void *) &leader_ns_pid, sizeof(int), 19);
+    save_to_submit_buf(&signal->args_buf, (void *) &leader_start_time, sizeof(u64), 20);
 
     signal_perf_submit(ctx, signal, SIGNAL_SCHED_PROCESS_FORK);
 
@@ -6203,6 +6277,7 @@ int sched_process_exec_signal(struct bpf_raw_tracepoint_args *ctx)
     if (bprm == NULL)
         return -1;
 
+    // Pick the interpreter path from the proc_info map, which is set by the "load_elf_phdrs".
     u32 host_pid = get_task_host_tgid(task);
     proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &host_pid);
     if (proc_info == NULL)
@@ -6210,25 +6285,24 @@ int sched_process_exec_signal(struct bpf_raw_tracepoint_args *ctx)
 
     struct file *file = get_file_ptr_from_bprm(bprm);
     void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
-
     const char *filename = get_binprm_filename(bprm);
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
     u64 ctime = get_ctime_nanosec_from_file(file);
     umode_t inode_mode = get_inode_mode_from_file(file);
 
-    save_str_to_buf(&signal->args_buf, (void *) filename, 4);                   // cmdpath
-    save_str_to_buf(&signal->args_buf, file_path, 5);                           // pathname
-    save_to_submit_buf(&signal->args_buf, &s_dev, sizeof(dev_t), 6);            // dev
-    save_to_submit_buf(&signal->args_buf, &inode_nr, sizeof(unsigned long), 7); // inode
-    save_to_submit_buf(&signal->args_buf, &ctime, sizeof(u64), 8);              // ctime
-    save_to_submit_buf(&signal->args_buf, &inode_mode, sizeof(umode_t), 9);     // inode_mode
-
+    save_str_to_buf(&signal->args_buf, (void *) filename, 4);                   // executable name
+    save_str_to_buf(&signal->args_buf, file_path, 5);                           // executable path
+    save_to_submit_buf(&signal->args_buf, &s_dev, sizeof(dev_t), 6);            // device number
+    save_to_submit_buf(&signal->args_buf, &inode_nr, sizeof(unsigned long), 7); // inode number
+    save_to_submit_buf(&signal->args_buf, &ctime, sizeof(u64), 8);              // creation time
+    save_to_submit_buf(&signal->args_buf, &inode_mode, sizeof(umode_t), 9);     // inode mode
+    
     // The proc_info interpreter field is set by "load_elf_phdrs" kprobe program.
-    save_str_to_buf(&signal->args_buf, &proc_info->interpreter.pathname, 10);                           // interpreter_pathname
-    save_to_submit_buf(&signal->args_buf, &proc_info->interpreter.id.device, sizeof(dev_t), 11);        // interpreter_dev
-    save_to_submit_buf(&signal->args_buf, &proc_info->interpreter.id.inode, sizeof(unsigned long), 12); // interpreter_inode
-    save_to_submit_buf(&signal->args_buf, &proc_info->interpreter.id.ctime, sizeof(u64), 13);           // interpreter_ctime
+    save_str_to_buf(&signal->args_buf, &proc_info->interpreter.pathname, 10);                    // interpreter path
+    save_to_submit_buf(&signal->args_buf, &proc_info->interpreter.id.device, sizeof(dev_t), 11); // interpreter device number
+    save_to_submit_buf(&signal->args_buf, &proc_info->interpreter.id.inode, sizeof(u64), 12);    // interpreter inode number
+    save_to_submit_buf(&signal->args_buf, &proc_info->interpreter.id.ctime, sizeof(u64), 13);    // interpreter creation time
 
     struct mm_struct *mm = get_mm_from_task(task); // bprm->mm is null here, but task->mm is not
 
@@ -6248,9 +6322,9 @@ int sched_process_exec_signal(struct bpf_raw_tracepoint_args *ctx)
 
     save_args_str_arr_to_buf(&signal->args_buf, (void *) arg_start, (void *) arg_end, argc, 14); // argv
     save_str_to_buf(&signal->args_buf, (void *) interp, 15);                                     // interp
-    save_to_submit_buf(&signal->args_buf, &stdin_type, sizeof(unsigned short), 16);              // stdin_type
-    save_str_to_buf(&signal->args_buf, stdin_path, 17);                                          // stdin_path
-    save_to_submit_buf(&signal->args_buf, &invoked_from_kernel, sizeof(int), 18);                // invoked_from_kernel
+    save_to_submit_buf(&signal->args_buf, &stdin_type, sizeof(unsigned short), 16);              // stdin type
+    save_str_to_buf(&signal->args_buf, stdin_path, 17);                                          // stdin path
+    save_to_submit_buf(&signal->args_buf, &invoked_from_kernel, sizeof(int), 18);                // invoked from kernel ?
 
     signal_perf_submit(ctx, signal, SIGNAL_SCHED_PROCESS_EXEC);
 

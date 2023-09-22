@@ -39,8 +39,31 @@ const (
 	DefaultThreadCacheSize  = 32768
 )
 
+type SourceType int
+
+const (
+	SourceNone    SourceType = iota // disabled
+	SourceSignals                   // event from control plane enrich the process tree
+	SourceEvents                    // event from pipeline enrich the process tree
+	SourceBoth                      // events from both pipelines enrich the process tree
+)
+
+func (s SourceType) String() string {
+	switch s {
+	case SourceNone:
+		return "none"
+	case SourceSignals:
+		return "signals"
+	case SourceEvents:
+		return "events"
+	case SourceBoth:
+		return "signals and events"
+	}
+	return "unknown"
+}
+
 type ProcTreeConfig struct {
-	Enabled          bool
+	Source           SourceType
 	ProcessCacheSize int
 	ThreadCacheSize  int
 }
@@ -49,10 +72,10 @@ type ProcTreeConfig struct {
 type ProcessTree struct {
 	processes  *lru.Cache[uint32, *Process] // hash -> process
 	threads    *lru.Cache[uint32, *Thread]  // hash -> threads
-	procfsChan chan int
-	procfsOnce *sync.Once
-	ctx        context.Context
-	mutex      *sync.RWMutex
+	procfsChan chan int                     // channel of pids to read from procfs
+	procfsOnce *sync.Once                   // busy loop debug message throttling
+	ctx        context.Context              // context for the process tree
+	mutex      *sync.RWMutex                // mutex for the process tree
 }
 
 // NewProcessTree creates a new process tree.

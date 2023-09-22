@@ -13,12 +13,16 @@ func procTreeHelp() string {
 	return `Select different options for the process tree.
 
 Example:
-  --proctree enabled            | will enable the process tree with default settings (disabled by default).
-  --proctree process-cache=8192 | will cache up to 8192 processes in the tree (LRU cache).
-  --proctree thread-cache=4096  | will cache up to 4096 threads in the tree (LRU cache).
+  --proctree source=[none|events|signals|both]
+      none         | process tree is disabled (default).
+      events       | process tree is built from events.
+      signals      | process tree is built from signals.
+      both         | process tree is built from both events and signals.
+  --proctree process-cache=8192  | will cache up to 8192 processes in the tree (LRU cache).
+  --proctree thread-cache=4096   | will cache up to 4096 threads in the tree (LRU cache).
 
 Use comma OR use the flag multiple times to choose multiple options:
-  --proctree process-cache=X,thread-cache=Y
+  --proctree source=A,process-cache=B,thread-cache=C
   --proctree process-cache=X --proctree thread-cache=Y
 `
 }
@@ -27,9 +31,12 @@ func PrepareProcTree(cacheSlice []string) (proctree.ProcTreeConfig, error) {
 	var err error
 
 	config := proctree.ProcTreeConfig{
+		Source:           proctree.SourceNone, // disabled by default
 		ProcessCacheSize: proctree.DefaultProcessCacheSize,
 		ThreadCacheSize:  proctree.DefaultThreadCacheSize,
 	}
+
+	cacheSet := false
 
 	for _, slice := range cacheSlice {
 		if strings.HasPrefix(slice, "help") {
@@ -42,9 +49,21 @@ func PrepareProcTree(cacheSlice []string) (proctree.ProcTreeConfig, error) {
 		values := strings.Split(slice, ",")
 
 		for _, value := range values {
-			if strings.HasPrefix(value, "enabled") {
-				logger.Debugw("proctree is enabled")
-				config.Enabled = true
+			if strings.HasPrefix(value, "source=") {
+				option := strings.TrimPrefix(value, "source=")
+				switch option {
+				case "none":
+					config.Source = proctree.SourceNone
+				case "events":
+					config.Source = proctree.SourceEvents
+				case "signals":
+					config.Source = proctree.SourceSignals
+				case "both":
+					config.Source = proctree.SourceBoth
+				default:
+					return config, fmt.Errorf("unrecognized proctree source option: %v", option)
+				}
+				cacheSet = true // at least the default ones
 				continue
 			}
 			if strings.HasPrefix(value, "process-cache=") {
@@ -56,7 +75,7 @@ func PrepareProcTree(cacheSlice []string) (proctree.ProcTreeConfig, error) {
 				if size >= 4096 { // minimum size is 4096 (or the default is used)
 					config.ProcessCacheSize = size
 				}
-				config.Enabled = true
+				cacheSet = true
 				continue
 			}
 			if strings.HasPrefix(value, "thread-cache=") {
@@ -68,14 +87,19 @@ func PrepareProcTree(cacheSlice []string) (proctree.ProcTreeConfig, error) {
 				if size >= 4096 { // minimum size is 4096 (or the default is used)
 					config.ThreadCacheSize = size
 				}
-				config.Enabled = true
+				cacheSet = true
 				continue
 			}
 			err = fmt.Errorf("unrecognized proctree option format: %v", value)
 		}
 	}
 
-	if config.Enabled {
+	if cacheSet && config.Source == proctree.SourceNone {
+		return config, fmt.Errorf("proctree cache was set but no source was given")
+	}
+
+	if config.Source != proctree.SourceNone {
+		logger.Debugw("proctree is enabled and it source is set to", "source", config.Source.String())
 		logger.Debugw("proctree cache size", "process", config.ProcessCacheSize, "thread", config.ThreadCacheSize)
 	}
 

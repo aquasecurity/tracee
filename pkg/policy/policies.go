@@ -8,12 +8,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
-const (
-	allPoliciesOn = 0xFFFFFFFFFFFFFFFF
-)
-
 var AlwaysSubmit = events.EventState{
-	Submit: allPoliciesOn,
+	Submit: AllPoliciesOn,
 }
 
 // TODO: add locking mechanism as policies will change at runtime

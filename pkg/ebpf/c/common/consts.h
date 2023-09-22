@@ -39,6 +39,7 @@
 #define OPT_TRANSLATE_FD_FILEPATH (1 << 7)
 #define OPT_CAPTURE_BPF           (1 << 8)
 #define OPT_CAPTURE_FILES_READ    (1 << 9)
+#define OPT_FORK_PROCTREE         (1 << 10)
 
 #define STDIN  0
 #define STDOUT 1

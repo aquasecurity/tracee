@@ -182,26 +182,6 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				stackAddresses = t.getStackAddresses(ctx.StackID)
 			}
 
-			// Currently, the timestamp received from the bpf code is of the monotonic clock.
-			//
-			// TODO: The monotonic clock doesn't take into account system sleep time.
-			// Starting from kernel 5.7, we can get the timestamp relative to the system boot time
-			// instead which is preferable.
-
-			timeStamp := uint64(0)
-			startTime := uint64(0)
-
-			if t.config.Output.RelativeTime {
-				// To get the monotonic time since tracee was started, we have to subtract the start
-				// time from the timestamp.
-				timeStamp = ctx.Ts - t.startTime
-				startTime = ctx.StartTime - t.startTime
-			} else {
-				// To get the current ("wall") time, we add the boot time into it.
-				timeStamp = ctx.Ts + t.bootTime
-				startTime = ctx.StartTime + t.bootTime
-			}
-
 			containerInfo := t.containers.GetCgroupInfo(ctx.CgroupID).Container
 			containerData := trace.Container{
 				ID:          containerInfo.ContainerId,
@@ -229,8 +209,11 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 			evt := t.eventsPool.Get().(*trace.Event)
 
 			// populate all the fields of the event used in this stage, and reset the rest
-			evt.Timestamp = int(timeStamp)
-			evt.ThreadStartTime = int(startTime)
+
+			// evt.Timestamp = int(timeStamp)
+			// evt.ThreadStartTime = int(startTime)
+			evt.Timestamp = int(ctx.Ts)
+			evt.ThreadStartTime = int(ctx.StartTime)
 			evt.ProcessorID = int(ctx.ProcessorId)
 			evt.ProcessID = int(ctx.Pid)
 			evt.ThreadID = int(ctx.Tid)
