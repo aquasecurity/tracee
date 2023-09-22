@@ -76,11 +76,17 @@ func (pt *ProcessTree) String() string {
 		return thrTids
 	}
 
+	//
+	// The whole process tree output is for debugging only, but if the developer is seeking to debug
+	// the hashing for processes and threads, then they should uncomment some lines below to add
+	// "hash" and "start_time" to the table.
+	//
+
 	// Use tablewriter to print the tree in a table
 	newTable := func() *tablewriter.Table {
 		table := tablewriter.NewWriter(buffer)
 		table.SetHeader([]string{"Ppid", "Tid", "Pid", "Date", "Comm", "Children", "Threads"})
-		// If debug() is enabled:
+		// uncomment to add "hash" and "start_time" to the table
 		// table.SetHeader([]string{"Ppid", "Tid", "Pid", "StartTime", "Hash", "CMD", "Children", "Threads"})
 		table.SetAutoWrapText(false)
 		table.SetRowLine(false)
@@ -90,6 +96,13 @@ func (pt *ProcessTree) String() string {
 		table.SetHeaderLine(true)
 		table.SetBorder(true)
 		return table
+	}
+
+	stringify := func(value int) string {
+		if value == 0 {
+			return ""
+		}
+		return fmt.Sprintf("%v", value)
 	}
 
 	unsortedRows := [][]string{}
@@ -111,18 +124,21 @@ func (pt *ProcessTree) String() string {
 		if len(execName) > 25 {
 			execName = execName[:20] + "..."
 		}
-		// If debug() is enabled (and add hashString and start_time to unsortedRows)
+		// uncomment to add "hash" and "start_time" to the table
 		// hashStr := fmt.Sprintf("%v", process.GetHash())
-		// start_time := process.GetInfo().GetStartTimeNS()
-		tid := fmt.Sprintf("%v", processFeed.Tid)
-		pid := fmt.Sprintf("%v", processFeed.Pid)
-		ppid := fmt.Sprintf("%v", processFeed.PPid)
+		// startTime := fmt.Sprintf("%v", process.GetInfo().GetStartTimeNS())
+		tid := stringify(processFeed.Tid)
+		pid := stringify(processFeed.Pid)
+		ppid := stringify(processFeed.PPid)
 		date := process.GetInfo().GetStartTime().Format("2006-01-02 15:04:05")
 
 		// add the row to the table
 		unsortedRows = append(unsortedRows,
 			[]string{
-				ppid, tid, pid, date, execName,
+				ppid, tid, pid,
+				// uncomment to add "hash" and "start_time" to the table
+				// startTime, hashStr,
+				date, execName,
 				getListOfChildrenPids(process),
 				getListOfThreadsTids(process),
 			},

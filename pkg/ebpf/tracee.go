@@ -214,20 +214,38 @@ func New(cfg config.Config) (*Tracee, error) {
 	}
 	caps := capabilities.GetInstance()
 
-	// Initialize events state with mandatory events
+	// Initialize events state with mandatory events (TODO: review this need for sched exec)
 
+	t.eventsState[events.SchedProcessFork] = events.EventState{}
 	t.eventsState[events.SchedProcessExec] = events.EventState{}
 	t.eventsState[events.SchedProcessExit] = events.EventState{}
-	t.eventsState[events.SchedProcessFork] = events.EventState{}
 
-	// Pseudo events added by control plane
+	// Control Plane Events
 
 	t.eventsState[events.SignalCgroupMkdir] = policy.AlwaysSubmit
 	t.eventsState[events.SignalCgroupRmdir] = policy.AlwaysSubmit
-	if t.config.ProcTree.Enabled {
+
+	// Control Plane Process Tree Events
+
+	pipeEvts := func() {
+		t.eventsState[events.SchedProcessFork] = policy.AlwaysSubmit
+		t.eventsState[events.SchedProcessExec] = policy.AlwaysSubmit
+		t.eventsState[events.SchedProcessExit] = policy.AlwaysSubmit
+	}
+	signalEvts := func() {
 		t.eventsState[events.SignalSchedProcessFork] = policy.AlwaysSubmit
 		t.eventsState[events.SignalSchedProcessExec] = policy.AlwaysSubmit
 		t.eventsState[events.SignalSchedProcessExit] = policy.AlwaysSubmit
+	}
+
+	switch t.config.ProcTree.Source {
+	case proctree.SourceBoth:
+		pipeEvts()
+		signalEvts()
+	case proctree.SourceSignals:
+		signalEvts()
+	case proctree.SourceEvents:
+		pipeEvts()
 	}
 
 	// Pseudo events added by capture (if enabled by the user)
@@ -363,7 +381,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize Process Tree (if enabled)
 
-	if t.config.ProcTree.Enabled {
+	if t.config.ProcTree.Source != proctree.SourceNone {
 		err = capabilities.GetInstance().Specific(
 			func() error {
 				t.processTree, err = proctree.NewProcessTree(ctx, t.config.ProcTree)
@@ -720,6 +738,7 @@ const (
 	optTranslateFDFilePath
 	optCaptureBpf
 	optCaptureFileRead
+	optForkProcTree
 )
 
 func (t *Tracee) getOptionsConfig() uint32 {
@@ -752,6 +771,10 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	}
 	if t.config.Output.ParseArgumentsFDs {
 		cOptVal = cOptVal | optTranslateFDFilePath
+	}
+	switch t.config.ProcTree.Source {
+	case proctree.SourceBoth, proctree.SourceEvents:
+		cOptVal = cOptVal | optForkProcTree // tell sched_process_fork to be prolix
 	}
 
 	return cOptVal

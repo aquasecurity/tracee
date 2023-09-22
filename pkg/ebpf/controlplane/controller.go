@@ -101,12 +101,13 @@ func (ctrl *Controller) processSignal(signal signal) error {
 	case events.SignalCgroupRmdir:
 		return ctrl.processCgroupRmdir(signal.args)
 	case events.SignalSchedProcessFork:
-		return ctrl.processSchedProcessFork(signal.args)
+		return ctrl.procTreeForkProcessor(signal.args)
 	case events.SignalSchedProcessExec:
-		return ctrl.processSchedProcessExec(signal.args)
+		return ctrl.procTreeExecProcessor(signal.args)
 	case events.SignalSchedProcessExit:
-		return ctrl.processSchedProcessExit(signal.args)
+		return ctrl.procTreeExitProcessor(signal.args)
 	}
+
 	return nil
 }
 
@@ -115,11 +116,7 @@ func (ctrl *Controller) processSignal(signal signal) error {
 // debug prints the process tree every 5 seconds (for debugging purposes).
 func (ctrl *Controller) debug(enable bool) {
 	//
-	// A "hash does not match" warning is enough to tell developers there is something wrong with
-	// the Hash calculation. After that, having, or not having, the hash available won't give you
-	// any details (as you need the "tid" and "starttime" in both ends: userland and bpf).
-	//
-	// This is where the "debug" function enters. The "best way" to debug hash problems is:
+	// The "best way" to debug hash problems is:
 	//
 	// 1. To enable the process tree "display" (this function);
 	// 2. To bpf_printk the "hash" and "start_time" at sched_process_exit_signal() in eBPF code;

@@ -214,7 +214,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 	return nil
 }
 
-// processDoFinitModule hndles a do_finit_module event and triggers other hooking detection logic.
+// processDoFinitModule handles a do_finit_module event and triggers other hooking detection logic.
 func (t *Tracee) processDoInitModule(event *trace.Event) error {
 	_, okSyscalls := t.eventsState[events.HookedSyscalls]
 	_, okSeqOps := t.eventsState[events.HookedSeqOps]
@@ -323,5 +323,58 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 	event.Args[4].Value = arch
 	event.Args[5].Value = symbol.Name
 	event.Args[6].Value = symbol.Owner
+	return nil
+}
+
+//
+// Timing related functions
+//
+
+// normalizeEventCtxTimes normalizes the event context timings to be relative to tracee start time
+// or current time.
+func (t *Tracee) normalizeEventCtxTimes(event *trace.Event) error {
+	//
+	// Currently, the timestamp received from the bpf code is of the monotonic clock.
+	//
+	// TODO: The monotonic clock doesn't take into account system sleep time.
+	// Starting from kernel 5.7, we can get the timestamp relative to the system boot time
+	// instead which is preferable.
+
+	if t.config.Output.RelativeTime {
+		// monotonic time since tracee started: timestamp - tracee starttime
+		event.Timestamp = event.Timestamp - int(t.startTime)
+		event.ThreadStartTime = event.ThreadStartTime - int(t.startTime)
+	} else {
+		// current ("wall") time: add boot time to timestamp
+		event.Timestamp = event.Timestamp + int(t.bootTime)
+		event.ThreadStartTime = event.ThreadStartTime + int(t.bootTime)
+	}
+
+	return nil
+}
+
+// processSchedProcessFork processes a sched_process_fork event by normalizing the start time.
+func (t *Tracee) processSchedProcessFork(event *trace.Event) error {
+	return t.normalizeEventArgTime(event, "start_time")
+}
+
+// normalizeEventArgTime normalizes the event arg time to be relative to tracee start time or
+// current time.
+func (t *Tracee) normalizeEventArgTime(event *trace.Event, argName string) error {
+	arg := events.GetArg(event, argName)
+	if arg == nil {
+		return errfmt.Errorf("couldn't find argument %s of event %s", argName, event.EventName)
+	}
+	argTime, ok := arg.Value.(uint64)
+	if !ok {
+		return errfmt.Errorf("argument %s of event %s is not of type uint64", argName, event.EventName)
+	}
+	if t.config.Output.RelativeTime {
+		// monotonic time since tracee started: timestamp - tracee starttime
+		arg.Value = argTime - t.startTime
+	} else {
+		// current ("wall") time: add boot time to timestamp
+		arg.Value = argTime + t.bootTime
+	}
 	return nil
 }

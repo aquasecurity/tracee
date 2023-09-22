@@ -64,7 +64,7 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 			utils.NsSinceBootTimeToTime(feed.TimeStamp),
 		)
 		// try to enrich from procfs asynchronously (instead of reading procfs continuously)
-		pt.FeedFromProcFSAsync(int(feed.ParentPid))
+		pt.FeedFromProcFSAsync(int(feed.ParentPid)) // TODO: only if not in analyze mode
 	}
 
 	parent.AddChild(feed.LeaderHash) // add the leader as a child of the parent
@@ -90,7 +90,7 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 			utils.NsSinceBootTimeToTime(feed.TimeStamp),
 		)
 		// try to enrich from procfs asynchronously (instead of reading procfs continuously)
-		pt.FeedFromProcFSAsync(int(feed.LeaderPid))
+		pt.FeedFromProcFSAsync(int(feed.LeaderPid)) // TODO: only if not in analyze mode
 	}
 
 	leader.SetParentHash(feed.ParentHash)
@@ -157,7 +157,7 @@ type ExecFeed struct {
 
 // FeedFromExec feeds the process tree with an exec event.
 func (pt *ProcessTree) FeedFromExec(feed ExecFeed) error {
-	if feed.TaskHash != feed.LeaderHash {
+	if feed.LeaderHash != 0 && feed.TaskHash != feed.LeaderHash {
 		// Running execve() from a thread is discouraged and behavior can be unexpected:
 		//
 		// 1. All threads are terminated.
@@ -179,7 +179,9 @@ func (pt *ProcessTree) FeedFromExec(feed ExecFeed) error {
 
 	process := pt.GetOrCreateProcessByHash(feed.TaskHash) // create if not exists
 
-	process.SetParentHash(feed.ParentHash) // faster than checking if already set
+	if feed.ParentHash != 0 {
+		process.SetParentHash(feed.ParentHash) // faster than checking if already set
+	}
 
 	process.GetInfo().SetNameAt(
 		feed.CmdPath,
@@ -229,13 +231,13 @@ type ExitFeed struct {
 
 // FeedFromExit feeds the process tree with an exit event.
 func (pt *ProcessTree) FeedFromExit(feed ExitFeed) error {
-	process, procOk := pt.GetProcessByHash(feed.TaskHash)
-	if procOk {
-		process.GetInfo().SetExitTime(feed.TimeStamp)
-	}
 	thread, threadOk := pt.GetThreadByHash(feed.TaskHash)
 	if threadOk {
 		thread.GetInfo().SetExitTime(feed.TimeStamp)
+	}
+	process, procOk := pt.GetProcessByHash(feed.TaskHash)
+	if procOk {
+		process.GetInfo().SetExitTime(feed.TimeStamp)
 	}
 
 	return nil

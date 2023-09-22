@@ -67,10 +67,9 @@ func startTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 	cfg.PerfBufferSize = 1024
 	cfg.BlobPerfBufferSize = 1024
 
+	// No process tree in the integration tests
 	cfg.ProcTree = proctree.ProcTreeConfig{
-		Enabled:          true,
-		ProcessCacheSize: 4096,
-		ThreadCacheSize:  4096,
+		Source: proctree.SourceNone,
 	}
 
 	errChan := make(chan error)

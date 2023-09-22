@@ -8,6 +8,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -24,11 +25,11 @@ func init() {
 func (t *Tracee) processEvent(event *trace.Event) []error {
 	errs := []error{}
 
-	eventId := events.ID(event.EventID)     // pick event id from event
-	processors := t.eventProcessor[eventId] // pick processors from eventProcessor map
+	processors := t.eventProcessor[events.ID(event.EventID)]         // this event processors
+	processors = append(processors, t.eventProcessor[events.All]...) // all events processors
 
-	for _, procFunc := range processors {
-		err := procFunc(event) // process event
+	for _, processor := range processors {
+		err := processor(event)
 		if err != nil {
 			logger.Errorw("Error processing event", "event", event.EventName, "error", err)
 			errs = append(errs, err)
@@ -78,6 +79,15 @@ func (t *Tracee) RegisterEventProcessor(id events.ID, proc func(evt *trace.Event
 
 // registerEventProcessors registers all event processors, each to a specific event id.
 func (t *Tracee) registerEventProcessors() {
+	// Process events for the process tree before the regular event processing
+	switch t.config.ProcTree.Source {
+	case proctree.SourceBoth, proctree.SourceEvents:
+		t.RegisterEventProcessor(events.SchedProcessFork, t.procTreeForkProcessor)
+		t.RegisterEventProcessor(events.SchedProcessExec, t.procTreeExecProcessor)
+		t.RegisterEventProcessor(events.SchedProcessExit, t.procTreeExitProcessor)
+	}
+	t.RegisterEventProcessor(events.SchedProcessFork, t.procTreeForkRemoveArgs)
+	// Process events from the regular pipeline
 	t.RegisterEventProcessor(events.VfsWrite, t.processWriteEvent)
 	t.RegisterEventProcessor(events.VfsWritev, t.processWriteEvent)
 	t.RegisterEventProcessor(events.KernelWrite, t.processWriteEvent)
@@ -90,9 +100,16 @@ func (t *Tracee) registerEventProcessors() {
 	t.RegisterEventProcessor(events.PrintSyscallTable, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processPrintMemDump)
+	// Convert all time relate args to nanoseconds since epoch (add more events as needed)
+	t.RegisterEventProcessor(events.SchedProcessFork, t.processSchedProcessFork)
+	t.RegisterEventProcessor(events.All, t.normalizeEventCtxTimes)
 }
 
 func initKernelReadFileTypes() {
+	// TODO: Since we now moved to CORE only - we can probably avoid having all the logic below and
+	// simply check for the enum value in bpf code. This will make the event more stable for
+	// existing kernels as well as future kernels as well.
+
 	osInfo, err := helpers.GetOSInfo()
 	if err != nil {
 		return
