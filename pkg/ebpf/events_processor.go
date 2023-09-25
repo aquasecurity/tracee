@@ -343,8 +343,8 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 			t.triggerSeqOpsIntegrityCheck(*event)
 		}
 		if okMemDump {
-			errs := t.triggerMemDump(*event)
-			for _, err := range errs {
+			err := t.triggerMemDump(*event)
+			if err != nil {
 				logger.Warnw("Memory dump", "error", err)
 			}
 		}
