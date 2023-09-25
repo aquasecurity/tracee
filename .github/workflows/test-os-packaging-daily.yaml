@@ -14,13 +14,13 @@ jobs:
       fail-fast: false
       matrix:
         flavor: [
-            # llvm repository is broken for bionic
-            # {distro: ubuntu, version: bionic},
+            # TODO: keep this list updated as distros come and go
             { distro: ubuntu, version: focal },
             { distro: ubuntu, version: jammy },
-            { distro: ubuntu, version: kinetic },
-            { distro: fedora, version: 36 },
+            { distro: ubuntu, version: lunar },
             { distro: fedora, version: 37 },
+            { distro: fedora, version: 38 },
+            { distro: fedora, version: 39 },
           ]
     steps:
       - name: Checkout Code

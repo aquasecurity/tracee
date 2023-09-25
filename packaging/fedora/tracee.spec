@@ -3,9 +3,6 @@ Version:	VERSION
 Release:	RELEASE
 License:    Apache-2.0 AND GPL-2.0
 Summary:	Security and forensics tool with a runtime detection engine.
-BuildRequires:	llvm
-BuildRequires:	clang
-BuildRequires:	golang
 BuildRequires:	make
 BuildRequires:	elfutils-libelf-devel
 BuildRequires:	zlib-devel

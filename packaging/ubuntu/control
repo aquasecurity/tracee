@@ -9,11 +9,8 @@ Build-Depends: debhelper,
                dpkg-dev,
                git,
                pkg-config,
-               clang,
-               llvm,
                libelf-dev,
-               zlib1g-dev,
-               golang
+               zlib1g-dev
 Standards-Version: 4.5.0
 Vcs-Git: https://github.com/aquasecurity/tracee.git
 Homepage: https://www.aquasec.com/products/tracee/
