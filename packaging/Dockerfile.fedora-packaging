@@ -16,7 +16,7 @@ ARG gid
 RUN yum update -y && \
     yum install -y sudo coreutils findutils && \
     yum install -y bash git curl rsync && \
-    yum install -y llvm clang golang make gcc && \
+    yum install -y make gcc && \
     yum install -y kernel-devel && \
     yum install -y elfutils-libelf-devel && \
     yum install -y zlib-devel && \
@@ -25,7 +25,7 @@ RUN yum update -y && \
 # install OPA
 
 RUN altarch=$(uname -m | sed 's:x86_64:amd64:g' | sed 's:aarch64:arm64:g') && \
-    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.48.0/opa_linux_${altarch}_static && \
+    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.56.0/opa_linux_${altarch}_static && \
     chmod 755 /usr/bin/opa
 
 # allow TRACEE* and LIBBPFGO* environment variables through sudo
@@ -53,11 +53,36 @@ RUN export uid=$uid gid=$gid && \
 # install golang
 
 RUN altarch=$(uname -m | sed 's:x86_64:amd64:g' | sed 's:aarch64:arm64:g') && \
-    curl -L -o /tmp/golang.tar.xz https://go.dev/dl/go1.19.5.linux-${altarch}.tar.gz && \
-    tar -C /usr/local -xzf /tmp/golang.tar.xz && \
+    curl -L -o /tmp/golang.tar.gz https://go.dev/dl/go1.20.8.linux-${altarch}.tar.gz && \
+    tar -C /usr/local -xzf /tmp/golang.tar.gz && \
     echo "export GOROOT=/usr/local/go" >> /home/tracee/.bashrc && \
     echo "export GOPATH=/home/tracee/go" >> /home/tracee/.bashrc && \
-    echo "export PATH=/home/tracee/go/bin:/usr/local/go/bin:$PATH" >> /home/tracee/.bashrc
+    echo "export PATH=/home/tracee/go/bin:/usr/local/go/bin:$PATH" >> /home/tracee/.bashrc && \
+    ln -s /usr/local/go/bin/go /usr/bin/go || true && \
+    ln -s /usr/local/go/bin/gofmt /usr/bin/gofmt || true
+
+# install clang
+
+RUN export DEBIAN_FRONTEND=noninteractive && \
+    curl -L -o /tmp/clang.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.6/clang+llvm-14.0.6-x86_64-linux-gnu-rhel-8.4.tar.xz && \
+    tar -C /usr/local -xJf /tmp/clang.tar.xz && \
+    mv "/usr/local/clang+llvm-14.0.6-x86_64-linux-gnu-rhel-8.4" /usr/local/clang && \
+    echo "export PATH=/usr/local/clang/bin:$PATH" >> /home/tracee/.bashrc && \
+    ln -s /usr/local/clang/bin/clang /usr/bin/clang || true && \
+    ln -s /usr/local/clang/bin/clang++ /usr/bin/clang++ || true && \
+    ln -s /usr/local/clang/bin/clangd /usr/bin/clangd || true && \
+    ln -s /usr/local/clang/bin/clang-format /usr/bin/clang-format || true && \
+    ln -s /usr/local/clang/bin/lld /usr/bin/lld || true && \
+    ln -s /usr/local/clang/bin/llc /usr/bin/llc || true && \
+    ln -s /usr/local/clang/bin/llvm-strip /usr/bin/llvm-strip || true && \
+    ln -s /usr/local/clang/bin/llvm-config /usr/bin/llvm-config || true && \
+    ln -s /usr/local/clang/bin/ld.lld /usr/bin/ld.lld || true && \
+    ln -s /usr/local/clang/bin/llvm-ar /usr/bin/llvm-ar || true && \
+    ln -s /usr/local/clang/bin/llvm-nm /usr/bin/llvm-nm || true && \
+    ln -s /usr/local/clang/bin/llvm-objcopy /usr/bin/llvm-objcopy || true && \
+    ln -s /usr/local/clang/bin/llvm-objdump /usr/bin/llvm-objdump || true && \
+    ln -s /usr/local/clang/bin/llvm-readelf /usr/bin/llvm-readelf || true && \
+    ln -s /usr/local/clang/bin/opt /usr/bin/opt || true
 
 # TODO: install clang (do not use distro clang packages)
 
