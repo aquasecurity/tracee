@@ -29,7 +29,9 @@ func Test_convertEventWithProcessContext(t *testing.T) {
 		MatchedPolicies:     []string{"policyTest"},
 		Syscall:             "syscall",
 		ContextFlags:        trace.ContextFlags{ContainerStarted: true},
-		EntityID:            9,
+		ThreadEntityId:      9,
+		ProcessEntityId:     10,
+		ParentEntityId:      11,
 	}
 
 	protoEvent := convertTraceeEventToProto(traceEvent)
@@ -42,7 +44,9 @@ func Test_convertEventWithProcessContext(t *testing.T) {
 	assert.Equal(t, uint32(6), protoEvent.Context.Process.Parent.Pid.Value)
 	assert.Equal(t, uint32(7), protoEvent.Context.Process.RealUser.Id.Value)
 	assert.Equal(t, uint32(8), protoEvent.Id)
-	assert.Equal(t, uint32(9), protoEvent.Context.Process.EntityId.Value)
+	assert.Equal(t, uint32(9), protoEvent.Context.Process.Thread.EntityId.Value)
+	assert.Equal(t, uint32(10), protoEvent.Context.Process.EntityId.Value)
+	assert.Equal(t, uint32(11), protoEvent.Context.Process.Parent.EntityId.Value)
 	assert.Equal(t, "eventTest", protoEvent.Name)
 	assert.DeepEqual(t, []string{"policyTest"}, protoEvent.Policies.Matched)
 	assert.Equal(t, "processTest", protoEvent.Context.Process.Thread.Name)
@@ -64,7 +68,11 @@ func Test_convertEventWithStackaddresses(t *testing.T) {
 	}
 
 	for i := range expected {
-		assert.DeepEqual(t, expected[i].Address, protoEvent.Context.Process.Thread.UserStackTrace.Addresses[i].Address)
+		assert.DeepEqual(
+			t,
+			expected[i].Address,
+			protoEvent.Context.Process.Thread.UserStackTrace.Addresses[i].Address,
+		)
 	}
 }
 

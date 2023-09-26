@@ -32,6 +32,13 @@ init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 
     context->task.mnt_id = get_task_mnt_ns_id(task);
     context->task.pid_id = get_task_pid_ns_id(task);
     context->task.uid = bpf_get_current_uid_gid();
+    context->task.task_hash_id = hash_task_id(context->task.host_tid, get_task_start_time(task));
+    struct task_struct *leader = get_leader_task(task);
+    context->task.leader_hash_id =
+        hash_task_id(get_task_host_tgid(leader), get_task_start_time(leader));
+    struct task_struct *parent = get_leader_task(get_parent_task(leader));
+    context->task.parent_hash_id =
+        hash_task_id(get_task_host_tgid(parent), get_task_start_time(parent));
     context->task.flags = 0;
     if (is_compat(task))
         context->task.flags |= IS_COMPAT_FLAG;

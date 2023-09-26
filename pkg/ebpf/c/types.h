@@ -21,7 +21,11 @@ typedef struct task_context {
     u32 pid_id;                   // task's pid namespace ID
     char comm[TASK_COMM_LEN];     // task's comm
     char uts_name[TASK_COMM_LEN]; // task's uts name
+    u32 task_hash_id;             // task's unique ID calculate from tid and start time
+    u32 leader_hash_id;           // task leader's unique ID calculate from tid and start time
+    u32 parent_hash_id;           // task leader's unique ID calculate from tid and start time
     u32 flags;                    // task's status flags (see context_flags_e)
+    u32 padding;                  // Used to fix the size to multiples of DWORD (8 bytes)
 } task_context_t;
 
 typedef struct event_context {

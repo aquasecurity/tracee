@@ -170,7 +170,7 @@ func getProcess(e trace.Event) *pb.Process {
 
 	return &pb.Process{
 		// Executable
-		EntityId:      wrapperspb.UInt32(e.EntityID),
+		EntityId:      wrapperspb.UInt32(e.ProcessEntityId),
 		Pid:           wrapperspb.UInt32(uint32(e.HostProcessID)),
 		NamespacedPid: wrapperspb.UInt32(uint32(e.ProcessID)),
 		RealUser: &pb.User{
@@ -179,6 +179,7 @@ func getProcess(e trace.Event) *pb.Process {
 		Thread: &pb.Thread{
 			Start:          threadStartTime,
 			Name:           e.ProcessName,
+			EntityId:       wrapperspb.UInt32(e.ThreadEntityId),
 			Tid:            wrapperspb.UInt32(uint32(e.HostThreadID)),
 			NamespacedTid:  wrapperspb.UInt32(uint32(e.ThreadID)),
 			Syscall:        e.Syscall,
@@ -186,6 +187,7 @@ func getProcess(e trace.Event) *pb.Process {
 			UserStackTrace: userStackTrace,
 		},
 		Parent: &pb.Parent{
+			EntityId:      wrapperspb.UInt32(e.ParentEntityId),
 			Pid:           wrapperspb.UInt32(uint32(e.HostParentProcessID)),
 			NamespacedPid: wrapperspb.UInt32(uint32(e.ParentProcessID)),
 		},

@@ -229,7 +229,6 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 			evt := t.eventsPool.Get().(*trace.Event)
 
 			// populate all the fields of the event used in this stage, and reset the rest
-			evt.EntityID = utils.HashTaskID(ctx.HostTid, ctx.StartTime) // unique ID for the task
 			evt.Timestamp = int(timeStamp)
 			evt.ThreadStartTime = int(startTime)
 			evt.ProcessorID = int(ctx.ProcessorId)
@@ -260,6 +259,9 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 			evt.ContextFlags = flags
 			evt.Syscall = syscall
 			evt.Metadata = nil
+			evt.ThreadEntityId = ctx.TaskHash
+			evt.ProcessEntityId = ctx.LeaderHash
+			evt.ParentEntityId = ctx.ParentHash
 
 			// If there aren't any policies that need filtering in userland, tracee **may** skip
 			// this event, as long as there aren't any derivatives or signatures that depend on it.
