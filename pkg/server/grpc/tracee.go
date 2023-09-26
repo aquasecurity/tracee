@@ -12,6 +12,7 @@ import (
 
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/streams"
 	"github.com/aquasecurity/tracee/pkg/version"
 	pb "github.com/aquasecurity/tracee/types/api/v1beta1"
@@ -42,10 +43,15 @@ func (s *TraceeService) StreamEvents(in *pb.StreamEventsRequest, grpcStream pb.T
 	for e := range stream.ReceiveEvents() {
 		// TODO: this conversion is temporary, we will use the new event structure
 		// on tracee internals, so the event received by the stream will already be a proto
-		eventProto := convertTraceeEventToProto(e)
+		eventProto, err := convertTraceeEventToProto(e)
+		if err != nil {
+			logger.Errorw("error can't create event proto: " + err.Error())
+			continue
+		}
+
 		mask.Filter(eventProto)
 
-		err := grpcStream.Send(&pb.StreamEventsResponse{Event: eventProto})
+		err = grpcStream.Send(&pb.StreamEventsResponse{Event: eventProto})
 		if err != nil {
 			return err
 		}
@@ -123,7 +129,7 @@ func convertDefinitionToProto(d events.Definition) *pb.EventDefinition {
 	}
 }
 
-func convertTraceeEventToProto(e trace.Event) *pb.Event {
+func convertTraceeEventToProto(e trace.Event) (*pb.Event, error) {
 	process := getProcess(e)
 	container := getContainer(e)
 	k8s := getK8s(e)
@@ -137,21 +143,27 @@ func convertTraceeEventToProto(e trace.Event) *pb.Event {
 		}
 	}
 
+	eventData, err := getEventData(e)
+	if err != nil {
+		return nil, err
+	}
+
 	event := &pb.Event{
 		Id:   uint32(e.EventID),
 		Name: e.EventName,
 		Policies: &pb.Policies{
 			Matched: e.MatchedPolicies,
 		},
-		Context: eventContext,
-		Threat:  getThreat(e),
+		Context:   eventContext,
+		Threat:    getThreat(e),
+		EventData: eventData,
 	}
 
 	if e.Timestamp != 0 {
 		event.Timestamp = timestamppb.New(time.Unix(int64(e.Timestamp), 0))
 	}
 
-	return event
+	return event, nil
 }
 
 func getProcess(e trace.Event) *pb.Process {
@@ -250,10 +262,9 @@ func getThreat(e trace.Event) *pb.Threat {
 	}
 
 	var (
-		mitreTactic            string
-		mitreTechniqueId       string
-		mitreTechniqueName     string
-		mitreTechniqueExternal string
+		mitreTactic        string
+		mitreTechniqueId   string
+		mitreTechniqueName string
 	)
 
 	if _, ok := e.Metadata.Properties["Category"]; ok {
@@ -262,8 +273,8 @@ func getThreat(e trace.Event) *pb.Threat {
 		}
 	}
 
-	if _, ok := e.Metadata.Properties["id"]; ok {
-		if val, ok := e.Metadata.Properties["id"].(string); ok {
+	if _, ok := e.Metadata.Properties["external_id"]; ok {
+		if val, ok := e.Metadata.Properties["external_id"].(string); ok {
 			mitreTechniqueId = val
 		}
 	}
@@ -274,21 +285,16 @@ func getThreat(e trace.Event) *pb.Threat {
 		}
 	}
 
-	if _, ok := e.Metadata.Properties["external_id"]; ok {
-		if val, ok := e.Metadata.Properties["external_id"].(string); ok {
-			mitreTechniqueExternal = val
-		}
-	}
-
 	return &pb.Threat{
 		Description: e.Metadata.Description,
-		MitreTactic: &pb.MitreTatic{
-			Name: mitreTactic,
-		},
-		MitreTechnique: &pb.MitreTechnique{
-			Id:         mitreTechniqueId,
-			Name:       mitreTechniqueName,
-			ExternalId: mitreTechniqueExternal,
+		Mitre: &pb.Mitre{
+			Tactic: &pb.MitreTactic{
+				Name: mitreTactic,
+			},
+			Technique: &pb.MitreTechnique{
+				Id:   mitreTechniqueId,
+				Name: mitreTechniqueName,
+			},
 		},
 		Severity: getSeverity(e),
 	}
