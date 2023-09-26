@@ -7,9 +7,9 @@
 package v1beta1
 
 import (
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -300,49 +300,49 @@ func (m *EventValue) GetValue() isEventValue_Value {
 	return nil
 }
 
-func (x *EventValue) GetInt32() *wrappers.Int32Value {
+func (x *EventValue) GetInt32() *wrapperspb.Int32Value {
 	if x, ok := x.GetValue().(*EventValue_Int32); ok {
 		return x.Int32
 	}
 	return nil
 }
 
-func (x *EventValue) GetInt64() *wrappers.Int64Value {
+func (x *EventValue) GetInt64() *wrapperspb.Int64Value {
 	if x, ok := x.GetValue().(*EventValue_Int64); ok {
 		return x.Int64
 	}
 	return nil
 }
 
-func (x *EventValue) GetUint32() *wrappers.UInt32Value {
+func (x *EventValue) GetUint32() *wrapperspb.UInt32Value {
 	if x, ok := x.GetValue().(*EventValue_Uint32); ok {
 		return x.Uint32
 	}
 	return nil
 }
 
-func (x *EventValue) GetUint64() *wrappers.UInt64Value {
+func (x *EventValue) GetUint64() *wrapperspb.UInt64Value {
 	if x, ok := x.GetValue().(*EventValue_Uint64); ok {
 		return x.Uint64
 	}
 	return nil
 }
 
-func (x *EventValue) GetString_() *wrappers.StringValue {
+func (x *EventValue) GetString_() *wrapperspb.StringValue {
 	if x, ok := x.GetValue().(*EventValue_String_); ok {
 		return x.String_
 	}
 	return nil
 }
 
-func (x *EventValue) GetBytes() *wrappers.BytesValue {
+func (x *EventValue) GetBytes() *wrapperspb.BytesValue {
 	if x, ok := x.GetValue().(*EventValue_Bytes); ok {
 		return x.Bytes
 	}
 	return nil
 }
 
-func (x *EventValue) GetBool() *wrappers.BoolValue {
+func (x *EventValue) GetBool() *wrapperspb.BoolValue {
 	if x, ok := x.GetValue().(*EventValue_Bool); ok {
 		return x.Bool
 	}
@@ -410,31 +410,31 @@ type isEventValue_Value interface {
 }
 
 type EventValue_Int32 struct {
-	Int32 *wrappers.Int32Value `protobuf:"bytes,1,opt,name=int32,proto3,oneof"` // intT
+	Int32 *wrapperspb.Int32Value `protobuf:"bytes,1,opt,name=int32,proto3,oneof"` // intT
 }
 
 type EventValue_Int64 struct {
-	Int64 *wrappers.Int64Value `protobuf:"bytes,2,opt,name=int64,proto3,oneof"` // longT
+	Int64 *wrapperspb.Int64Value `protobuf:"bytes,2,opt,name=int64,proto3,oneof"` // longT
 }
 
 type EventValue_Uint32 struct {
-	Uint32 *wrappers.UInt32Value `protobuf:"bytes,3,opt,name=uint32,proto3,oneof"` // uintT, modeT, devT, u8T, u16T
+	Uint32 *wrapperspb.UInt32Value `protobuf:"bytes,3,opt,name=uint32,proto3,oneof"` // uintT, modeT, devT, u8T, u16T
 }
 
 type EventValue_Uint64 struct {
-	Uint64 *wrappers.UInt64Value `protobuf:"bytes,4,opt,name=uint64,proto3,oneof"` // ulongT, offT, sizeT, pointerT
+	Uint64 *wrapperspb.UInt64Value `protobuf:"bytes,4,opt,name=uint64,proto3,oneof"` // ulongT, offT, sizeT, pointerT
 }
 
 type EventValue_String_ struct {
-	String_ *wrappers.StringValue `protobuf:"bytes,5,opt,name=string,proto3,oneof"` // strT
+	String_ *wrapperspb.StringValue `protobuf:"bytes,5,opt,name=string,proto3,oneof"` // strT
 }
 
 type EventValue_Bytes struct {
-	Bytes *wrappers.BytesValue `protobuf:"bytes,6,opt,name=bytes,proto3,oneof"` // bytesT
+	Bytes *wrapperspb.BytesValue `protobuf:"bytes,6,opt,name=bytes,proto3,oneof"` // bytesT
 }
 
 type EventValue_Bool struct {
-	Bool *wrappers.BoolValue `protobuf:"bytes,7,opt,name=bool,proto3,oneof"` // boolT
+	Bool *wrapperspb.BoolValue `protobuf:"bytes,7,opt,name=bool,proto3,oneof"` // boolT
 }
 
 type EventValue_StringArray struct {
@@ -567,7 +567,7 @@ type StringArrayValue struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Array []*wrappers.StringValue `protobuf:"bytes,1,rep,name=array,proto3" json:"array,omitempty"`
+	Array []*wrapperspb.StringValue `protobuf:"bytes,1,rep,name=array,proto3" json:"array,omitempty"`
 }
 
 func (x *StringArrayValue) Reset() {
@@ -602,7 +602,7 @@ func (*StringArrayValue) Descriptor() ([]byte, []int) {
 	return file_types_api_v1beta1_event_data_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *StringArrayValue) GetArray() []*wrappers.StringValue {
+func (x *StringArrayValue) GetArray() []*wrapperspb.StringValue {
 	if x != nil {
 		return x.Array
 	}
@@ -614,7 +614,7 @@ type IntArrayValue struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Array []*wrappers.Int32Value `protobuf:"bytes,1,rep,name=array,proto3" json:"array,omitempty"`
+	Array []*wrapperspb.Int32Value `protobuf:"bytes,1,rep,name=array,proto3" json:"array,omitempty"`
 }
 
 func (x *IntArrayValue) Reset() {
@@ -649,7 +649,7 @@ func (*IntArrayValue) Descriptor() ([]byte, []int) {
 	return file_types_api_v1beta1_event_data_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *IntArrayValue) GetArray() []*wrappers.Int32Value {
+func (x *IntArrayValue) GetArray() []*wrapperspb.Int32Value {
 	if x != nil {
 		return x.Array
 	}
@@ -661,7 +661,7 @@ type UInt64ArrayValue struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Array []*wrappers.UInt64Value `protobuf:"bytes,1,rep,name=array,proto3" json:"array,omitempty"`
+	Array []*wrapperspb.UInt64Value `protobuf:"bytes,1,rep,name=array,proto3" json:"array,omitempty"`
 }
 
 func (x *UInt64ArrayValue) Reset() {
@@ -696,7 +696,7 @@ func (*UInt64ArrayValue) Descriptor() ([]byte, []int) {
 	return file_types_api_v1beta1_event_data_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *UInt64ArrayValue) GetArray() []*wrappers.UInt64Value {
+func (x *UInt64ArrayValue) GetArray() []*wrapperspb.UInt64Value {
 	if x != nil {
 		return x.Array
 	}
@@ -708,21 +708,21 @@ type CredValue struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Uid            *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=uid,proto3" json:"uid,omitempty"`
-	Gid            *wrappers.UInt32Value `protobuf:"bytes,2,opt,name=gid,proto3" json:"gid,omitempty"`
-	Suid           *wrappers.UInt32Value `protobuf:"bytes,3,opt,name=suid,proto3" json:"suid,omitempty"`
-	Sgid           *wrappers.UInt32Value `protobuf:"bytes,4,opt,name=sgid,proto3" json:"sgid,omitempty"`
-	Euid           *wrappers.UInt32Value `protobuf:"bytes,5,opt,name=euid,proto3" json:"euid,omitempty"`
-	Egid           *wrappers.UInt32Value `protobuf:"bytes,6,opt,name=egid,proto3" json:"egid,omitempty"`
-	Fsuid          *wrappers.UInt32Value `protobuf:"bytes,7,opt,name=fsuid,proto3" json:"fsuid,omitempty"`
-	Fsgid          *wrappers.UInt32Value `protobuf:"bytes,8,opt,name=fsgid,proto3" json:"fsgid,omitempty"`
-	UserNamespace  *wrappers.UInt32Value `protobuf:"bytes,9,opt,name=user_namespace,json=userNamespace,proto3" json:"user_namespace,omitempty"`
-	SecureBits     *wrappers.UInt32Value `protobuf:"bytes,10,opt,name=secure_bits,json=secureBits,proto3" json:"secure_bits,omitempty"`
-	CapInheritable []Capability          `protobuf:"varint,11,rep,packed,name=cap_inheritable,json=capInheritable,proto3,enum=tracee.v1beta1.Capability" json:"cap_inheritable,omitempty"`
-	CapPermitted   []Capability          `protobuf:"varint,12,rep,packed,name=cap_permitted,json=capPermitted,proto3,enum=tracee.v1beta1.Capability" json:"cap_permitted,omitempty"`
-	CapEffective   []Capability          `protobuf:"varint,13,rep,packed,name=cap_effective,json=capEffective,proto3,enum=tracee.v1beta1.Capability" json:"cap_effective,omitempty"`
-	CapBounding    []Capability          `protobuf:"varint,14,rep,packed,name=cap_bounding,json=capBounding,proto3,enum=tracee.v1beta1.Capability" json:"cap_bounding,omitempty"`
-	CapAmbient     []Capability          `protobuf:"varint,15,rep,packed,name=cap_ambient,json=capAmbient,proto3,enum=tracee.v1beta1.Capability" json:"cap_ambient,omitempty"`
+	Uid            *wrapperspb.UInt32Value `protobuf:"bytes,1,opt,name=uid,proto3" json:"uid,omitempty"`
+	Gid            *wrapperspb.UInt32Value `protobuf:"bytes,2,opt,name=gid,proto3" json:"gid,omitempty"`
+	Suid           *wrapperspb.UInt32Value `protobuf:"bytes,3,opt,name=suid,proto3" json:"suid,omitempty"`
+	Sgid           *wrapperspb.UInt32Value `protobuf:"bytes,4,opt,name=sgid,proto3" json:"sgid,omitempty"`
+	Euid           *wrapperspb.UInt32Value `protobuf:"bytes,5,opt,name=euid,proto3" json:"euid,omitempty"`
+	Egid           *wrapperspb.UInt32Value `protobuf:"bytes,6,opt,name=egid,proto3" json:"egid,omitempty"`
+	Fsuid          *wrapperspb.UInt32Value `protobuf:"bytes,7,opt,name=fsuid,proto3" json:"fsuid,omitempty"`
+	Fsgid          *wrapperspb.UInt32Value `protobuf:"bytes,8,opt,name=fsgid,proto3" json:"fsgid,omitempty"`
+	UserNamespace  *wrapperspb.UInt32Value `protobuf:"bytes,9,opt,name=user_namespace,json=userNamespace,proto3" json:"user_namespace,omitempty"`
+	SecureBits     *wrapperspb.UInt32Value `protobuf:"bytes,10,opt,name=secure_bits,json=secureBits,proto3" json:"secure_bits,omitempty"`
+	CapInheritable []Capability            `protobuf:"varint,11,rep,packed,name=cap_inheritable,json=capInheritable,proto3,enum=tracee.v1beta1.Capability" json:"cap_inheritable,omitempty"`
+	CapPermitted   []Capability            `protobuf:"varint,12,rep,packed,name=cap_permitted,json=capPermitted,proto3,enum=tracee.v1beta1.Capability" json:"cap_permitted,omitempty"`
+	CapEffective   []Capability            `protobuf:"varint,13,rep,packed,name=cap_effective,json=capEffective,proto3,enum=tracee.v1beta1.Capability" json:"cap_effective,omitempty"`
+	CapBounding    []Capability            `protobuf:"varint,14,rep,packed,name=cap_bounding,json=capBounding,proto3,enum=tracee.v1beta1.Capability" json:"cap_bounding,omitempty"`
+	CapAmbient     []Capability            `protobuf:"varint,15,rep,packed,name=cap_ambient,json=capAmbient,proto3,enum=tracee.v1beta1.Capability" json:"cap_ambient,omitempty"`
 }
 
 func (x *CredValue) Reset() {
@@ -757,70 +757,70 @@ func (*CredValue) Descriptor() ([]byte, []int) {
 	return file_types_api_v1beta1_event_data_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *CredValue) GetUid() *wrappers.UInt32Value {
+func (x *CredValue) GetUid() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.Uid
 	}
 	return nil
 }
 
-func (x *CredValue) GetGid() *wrappers.UInt32Value {
+func (x *CredValue) GetGid() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.Gid
 	}
 	return nil
 }
 
-func (x *CredValue) GetSuid() *wrappers.UInt32Value {
+func (x *CredValue) GetSuid() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.Suid
 	}
 	return nil
 }
 
-func (x *CredValue) GetSgid() *wrappers.UInt32Value {
+func (x *CredValue) GetSgid() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.Sgid
 	}
 	return nil
 }
 
-func (x *CredValue) GetEuid() *wrappers.UInt32Value {
+func (x *CredValue) GetEuid() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.Euid
 	}
 	return nil
 }
 
-func (x *CredValue) GetEgid() *wrappers.UInt32Value {
+func (x *CredValue) GetEgid() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.Egid
 	}
 	return nil
 }
 
-func (x *CredValue) GetFsuid() *wrappers.UInt32Value {
+func (x *CredValue) GetFsuid() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.Fsuid
 	}
 	return nil
 }
 
-func (x *CredValue) GetFsgid() *wrappers.UInt32Value {
+func (x *CredValue) GetFsgid() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.Fsgid
 	}
 	return nil
 }
 
-func (x *CredValue) GetUserNamespace() *wrappers.UInt32Value {
+func (x *CredValue) GetUserNamespace() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.UserNamespace
 	}
 	return nil
 }
 
-func (x *CredValue) GetSecureBits() *wrappers.UInt32Value {
+func (x *CredValue) GetSecureBits() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.SecureBits
 	}
@@ -867,7 +867,7 @@ type TimespecValue struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Value *wrappers.DoubleValue `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+	Value *wrapperspb.DoubleValue `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
 }
 
 func (x *TimespecValue) Reset() {
@@ -902,7 +902,7 @@ func (*TimespecValue) Descriptor() ([]byte, []int) {
 	return file_types_api_v1beta1_event_data_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *TimespecValue) GetValue() *wrappers.DoubleValue {
+func (x *TimespecValue) GetValue() *wrapperspb.DoubleValue {
 	if x != nil {
 		return x.Value
 	}
@@ -1303,26 +1303,26 @@ func file_types_api_v1beta1_event_data_proto_rawDescGZIP() []byte {
 var file_types_api_v1beta1_event_data_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_types_api_v1beta1_event_data_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_types_api_v1beta1_event_data_proto_goTypes = []interface{}{
-	(SaFamilyT)(0),               // 0: tracee.v1beta1.sa_family_t
-	(Capability)(0),              // 1: tracee.v1beta1.Capability
-	(*EventValue)(nil),           // 2: tracee.v1beta1.EventValue
-	(*TriggerEvent)(nil),         // 3: tracee.v1beta1.TriggerEvent
-	(*StringArrayValue)(nil),     // 4: tracee.v1beta1.StringArrayValue
-	(*IntArrayValue)(nil),        // 5: tracee.v1beta1.IntArrayValue
-	(*UInt64ArrayValue)(nil),     // 6: tracee.v1beta1.UInt64ArrayValue
-	(*CredValue)(nil),            // 7: tracee.v1beta1.CredValue
-	(*TimespecValue)(nil),        // 8: tracee.v1beta1.TimespecValue
-	(*ArgsValue)(nil),            // 9: tracee.v1beta1.ArgsValue
-	(*SockAddrValue)(nil),        // 10: tracee.v1beta1.SockAddrValue
-	nil,                          // 11: tracee.v1beta1.TriggerEvent.DataEntry
-	(*wrappers.Int32Value)(nil),  // 12: google.protobuf.Int32Value
-	(*wrappers.Int64Value)(nil),  // 13: google.protobuf.Int64Value
-	(*wrappers.UInt32Value)(nil), // 14: google.protobuf.UInt32Value
-	(*wrappers.UInt64Value)(nil), // 15: google.protobuf.UInt64Value
-	(*wrappers.StringValue)(nil), // 16: google.protobuf.StringValue
-	(*wrappers.BytesValue)(nil),  // 17: google.protobuf.BytesValue
-	(*wrappers.BoolValue)(nil),   // 18: google.protobuf.BoolValue
-	(*wrappers.DoubleValue)(nil), // 19: google.protobuf.DoubleValue
+	(SaFamilyT)(0),                 // 0: tracee.v1beta1.sa_family_t
+	(Capability)(0),                // 1: tracee.v1beta1.Capability
+	(*EventValue)(nil),             // 2: tracee.v1beta1.EventValue
+	(*TriggerEvent)(nil),           // 3: tracee.v1beta1.TriggerEvent
+	(*StringArrayValue)(nil),       // 4: tracee.v1beta1.StringArrayValue
+	(*IntArrayValue)(nil),          // 5: tracee.v1beta1.IntArrayValue
+	(*UInt64ArrayValue)(nil),       // 6: tracee.v1beta1.UInt64ArrayValue
+	(*CredValue)(nil),              // 7: tracee.v1beta1.CredValue
+	(*TimespecValue)(nil),          // 8: tracee.v1beta1.TimespecValue
+	(*ArgsValue)(nil),              // 9: tracee.v1beta1.ArgsValue
+	(*SockAddrValue)(nil),          // 10: tracee.v1beta1.SockAddrValue
+	nil,                            // 11: tracee.v1beta1.TriggerEvent.DataEntry
+	(*wrapperspb.Int32Value)(nil),  // 12: google.protobuf.Int32Value
+	(*wrapperspb.Int64Value)(nil),  // 13: google.protobuf.Int64Value
+	(*wrapperspb.UInt32Value)(nil), // 14: google.protobuf.UInt32Value
+	(*wrapperspb.UInt64Value)(nil), // 15: google.protobuf.UInt64Value
+	(*wrapperspb.StringValue)(nil), // 16: google.protobuf.StringValue
+	(*wrapperspb.BytesValue)(nil),  // 17: google.protobuf.BytesValue
+	(*wrapperspb.BoolValue)(nil),   // 18: google.protobuf.BoolValue
+	(*wrapperspb.DoubleValue)(nil), // 19: google.protobuf.DoubleValue
 }
 var file_types_api_v1beta1_event_data_proto_depIdxs = []int32{
 	12, // 0: tracee.v1beta1.EventValue.int32:type_name -> google.protobuf.Int32Value
