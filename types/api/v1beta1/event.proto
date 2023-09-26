@@ -59,11 +59,12 @@ message User {
 message Thread {
     google.protobuf.Timestamp start = 1;
     string name = 2;
-    google.protobuf.UInt32Value tid = 3;
-    google.protobuf.UInt32Value namespaced_tid = 4;
-    string syscall = 5;
-    bool compat = 6;
-    optional UserStackTrace user_stack_trace = 7;
+    google.protobuf.UInt32Value entity_id = 3;
+    google.protobuf.UInt32Value tid = 4;
+    google.protobuf.UInt32Value namespaced_tid = 5;
+    string syscall = 6;
+    bool compat = 7;
+    optional UserStackTrace user_stack_trace = 8;
 }
 
 message UserStackTrace {
