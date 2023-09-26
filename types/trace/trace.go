@@ -42,8 +42,10 @@ type Event struct {
 	Syscall               string       `json:"syscall"`
 	StackAddresses        []uint64     `json:"stackAddresses"`
 	ContextFlags          ContextFlags `json:"contextFlags"`
-	EntityID              uint32       `json:"-"`    // task unique identifier (*)
-	Args                  []Argument   `json:"args"` // args are ordered according their appearance in the original event
+	ThreadEntityId        uint32       `json:"threadEntityId"`  // thread task unique identifier (*)
+	ProcessEntityId       uint32       `json:"processEntityId"` // process unique identifier (*)
+	ParentEntityId        uint32       `json:"parentEntityId"`  // parent process unique identifier (*)
+	Args                  []Argument   `json:"args"`            // args are ordered according their appearance in the original event
 	Metadata              *Metadata    `json:"metadata,omitempty"`
 }
 
