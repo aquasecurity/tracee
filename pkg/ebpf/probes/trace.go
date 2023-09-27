@@ -50,6 +50,18 @@ func NewTraceProbe(t ProbeType, evtName string, progName string) *TraceProbe {
 	}
 }
 
+func (p *TraceProbe) GetEventName() string {
+	return p.eventName
+}
+
+func (p *TraceProbe) GetProgramName() string {
+	return p.programName
+}
+
+func (p *TraceProbe) GetProbeType() ProbeType {
+	return p.probeType
+}
+
 func (p *TraceProbe) attach(module *bpf.Module, args ...interface{}) error {
 	var link *bpf.BPFLink
 

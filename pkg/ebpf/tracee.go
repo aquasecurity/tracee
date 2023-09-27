@@ -1510,6 +1510,35 @@ func computeFileHash(file *os.File) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
+func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
+	selfLoadedPrograms := map[string]int{} // Symbol to number of hooks of this symbol (kprobe and kretprobe will yield 2)
+
+	for tr := range t.eventsState {
+		if !events.Core.IsDefined(tr) {
+			continue
+		}
+
+		givenEventDefinition := events.Core.GetDefinitionByID(tr)
+		for _, eventsProbe := range givenEventDefinition.GetDependencies().GetProbes() {
+			probe, ok := t.probes.GetProbeByHandle(eventsProbe.GetHandle()).(*probes.TraceProbe)
+			if !ok {
+				continue
+			}
+
+			if kprobesOnly {
+				// Currently, of the program types that tracee uses, only k[ret]probe may use ftrace behind the scenes
+				if probType := probe.GetProbeType(); probType != probes.KProbe && probType != probes.KretProbe {
+					continue
+				}
+			}
+
+			selfLoadedPrograms[probe.GetEventName()]++
+		}
+	}
+
+	return selfLoadedPrograms
+}
+
 // invokeInitEvents emits Tracee events, called Initialization Events, that are generated from the
 // userland process itself, and not from the kernel. These events usually serve as informational
 // events for the signatures engine/logic.
@@ -1537,6 +1566,23 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 			out <- &e
 			_ = t.stats.EventCount.Increment()
 		}
+	}
+
+	emit = t.eventsState[events.FtraceHook].Emit
+	if emit > 0 {
+		ftraceBaseEvent := events.GetFtraceBaseEvent()
+		setMatchedPolicies(ftraceBaseEvent, emit)
+		logger.Debugw("started ftraceHook goroutine")
+
+		// TODO: Ideally, this should be inside the goroutine and be computed before each run,
+		// as in the future tracee events may be changed in run time.
+		// Currently, moving it inside the goroutine leads to a circular importing due to
+		// eventsState (which is used inside the goroutine).
+		// eventsState is planned to be removed, and this call should move inside the routine
+		// once that happens.
+		selfLoadedFtraceProgs := t.getSelfLoadedPrograms(true)
+
+		go events.FtraceHookEvent(t.stats.EventCount, out, ftraceBaseEvent, selfLoadedFtraceProgs)
 	}
 }
 
