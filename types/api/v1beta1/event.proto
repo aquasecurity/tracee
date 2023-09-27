@@ -114,9 +114,13 @@ enum Severity {
 
 message Threat {
     string description = 1;
-    MitreTatic mitre_tactic = 2;
-    MitreTechnique mitre_technique = 3;
-    Severity severity = 4;
+    Mitre mitre = 2;
+    Severity severity = 3;
+}
+
+message Mitre {
+    MitreTatic tatic = 1;
+    MitreTechnique technique = 2;
 }
 
 message MitreTatic {
@@ -125,6 +129,5 @@ message MitreTatic {
 
 message MitreTechnique {
     string id = 1;
-    string external_id = 2;
-    string name = 3;
+    string name = 2;
 }
