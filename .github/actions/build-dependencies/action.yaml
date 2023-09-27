@@ -1,19 +1,6 @@
 name: Build Dependencies
 description: |
   Install build dependencies to test and compile tracee artifacts
-inputs:
-  # set default versions in a single place (as default)
-  clang-version:
-    description: clang version
-    default: "14"
-  go-version:
-    description: go version
-    required: true
-    default: "1.19.5"
-  opa-version:
-    description: opa version
-    required: true
-    default: "v0.48.0"
 runs:
   using: composite
   steps:
@@ -24,28 +11,62 @@ runs:
         sudo apt-get install -y zlib1g-dev libelf-dev
         sudo apt-get install -y software-properties-common
       shell: bash
-    - name: Install Clang
-      run: |
-        curl -L -o /tmp/llvm.sh https://apt.llvm.org/llvm.sh
-        sudo chmod 755 /tmp/llvm.sh
-        sudo /tmp/llvm.sh ${{ inputs.clang-version }}
-        sudo update-alternatives --remove-all clang || true
-        sudo update-alternatives --remove-all llc || true
-        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${{ inputs.clang-version }} 1
-        sudo update-alternatives --install /usr/bin/llc llc /usr/bin/llc-${{ inputs.clang-version }} 1
-      shell: bash
     - name: Install Golang
       run: |
-        curl -L -o /tmp/go.tar.xz https://go.dev/dl/go${{ inputs.go-version }}.linux-amd64.tar.gz
-        sudo tar -C /usr/local -xzf /tmp/go.tar.xz
-        sudo update-alternatives --remove-all go || true
-        sudo update-alternatives --remove-all gofmt || true
-        sudo update-alternatives --install /usr/bin/go go /usr/local/go/bin/go 1
-        sudo update-alternatives --install /usr/bin/gofmt gofmt /usr/local/go/bin/gofmt 1
+        sudo rm -f /usr/bin/go
+        sudo rm -f /usr/bin/gofmt
+        curl -L -o /tmp/golang.tar.gz https://go.dev/dl/go1.20.8.linux-amd64.tar.gz
+        sudo tar -C /usr/local -xzf /tmp/golang.tar.gz
+        sudo ln -s /usr/local/go/bin/go /usr/bin/go
+        sudo ln -s /usr/local/go/bin/gofmt /usr/bin/gofmt
+      shell: bash
+    - name: Install Clang Format 12
+      run: |
+        sudo rm -f /usr/bin/clang-format-12
+        curl -L -o /tmp/clang-format-12 https://github.com/muttleyxd/clang-tools-static-binaries/releases/download/master-f4f85437/clang-format-12.0.1_linux-amd64
+        sudo mv /tmp/clang-format-12 /usr/bin/clang-format-12
+        sudo chmod 755 /usr/bin/clang-format-12
+      shell: bash
+    - name: Install Clang
+      run: |
+        sudo rm -f /usr/bin/cc
+        sudo rm -f /usr/bin/clang
+        sudo rm -f /usr/bin/clang++
+        sudo rm -f /usr/bin/llc
+        sudo rm -f /usr/bin/lld
+        sudo rm -f /usr/bin/clangd
+        sudo rm -f /usr/bin/clang-format
+        sudo rm -f /usr/bin/llvm-strip
+        sudo rm -f /usr/bin/llvm-config
+        sudo rm -f /usr/bin/ld.lld
+        sudo rm -f /usr/bin/llvm-ar
+        sudo rm -f /usr/bin/llvm-nm
+        sudo rm -f /usr/bin/llvm-objcopy
+        sudo rm -f /usr/bin/llvm-objdump
+        sudo rm -f /usr/bin/llvm-readelf
+        sudo rm -f /usr/bin/opt
+        curl -L -o /tmp/clang.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.6/clang+llvm-14.0.6-x86_64-linux-gnu-rhel-8.4.tar.xz
+        sudo tar -C /usr/local -xJf /tmp/clang.tar.xz
+        sudo mv "/usr/local/clang+llvm-14.0.6-x86_64-linux-gnu-rhel-8.4" /usr/local/clang
+        sudo ln -s /usr/local/clang/bin/clang /usr/bin/clang
+        sudo ln -s /usr/local/clang/bin/clang++ /usr/bin/clang++
+        sudo ln -s /usr/local/clang/bin/clangd /usr/bin/clangd
+        sudo ln -s /usr/local/clang/bin/clang-format /usr/bin/clang-format
+        sudo ln -s /usr/local/clang/bin/lld /usr/bin/lld
+        sudo ln -s /usr/local/clang/bin/llc /usr/bin/llc
+        sudo ln -s /usr/local/clang/bin/llvm-strip /usr/bin/llvm-strip
+        sudo ln -s /usr/local/clang/bin/llvm-config /usr/bin/llvm-config
+        sudo ln -s /usr/local/clang/bin/ld.lld /usr/bin/ld.lld
+        sudo ln -s /usr/local/clang/bin/llvm-ar /usr/bin/llvm-ar
+        sudo ln -s /usr/local/clang/bin/llvm-nm /usr/bin/llvm-nm
+        sudo ln -s /usr/local/clang/bin/llvm-objcopy /usr/bin/llvm-objcopy
+        sudo ln -s /usr/local/clang/bin/llvm-objdump /usr/bin/llvm-objdump
+        sudo ln -s /usr/local/clang/bin/llvm-readelf /usr/bin/llvm-readelf
+        sudo ln -s /usr/local/clang/bin/opt /usr/bin/opt
       shell: bash
     - name: Install OPA
       run: |
-        sudo curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/${{ inputs.opa-version }}/opa_linux_amd64
+        sudo curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.56.0/opa_linux_amd64_static
         sudo chmod 755 /usr/bin/opa
       shell: bash
     - name: Install staticchecker
