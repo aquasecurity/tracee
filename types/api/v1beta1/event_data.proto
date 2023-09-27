@@ -16,7 +16,7 @@ message EventValue {
         google.protobuf.BytesValue bytes = 6; // bytesT
         google.protobuf.BoolValue bool = 7; // boolT
         StringArrayValue str_array = 10; // strArrT, argsArrT
-        Int32ArrayValue int_array = 11; // intArr2T
+        Int32ArrayValue int32_array = 11; // intArr2T
         UInt64ArrayValue u_int64_array = 12; // uint64ArrT
         SockAddrValue sockaddr = 13; // sockaddrT
         CredValue cred = 14; // credT
