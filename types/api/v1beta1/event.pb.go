@@ -1075,10 +1075,9 @@ type Threat struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Description    string          `protobuf:"bytes,1,opt,name=description,proto3" json:"description,omitempty"`
-	MitreTactic    *MitreTatic     `protobuf:"bytes,2,opt,name=mitre_tactic,json=mitreTactic,proto3" json:"mitre_tactic,omitempty"`
-	MitreTechnique *MitreTechnique `protobuf:"bytes,3,opt,name=mitre_technique,json=mitreTechnique,proto3" json:"mitre_technique,omitempty"`
-	Severity       Severity        `protobuf:"varint,4,opt,name=severity,proto3,enum=tracee.v1beta1.Severity" json:"severity,omitempty"`
+	Description string   `protobuf:"bytes,1,opt,name=description,proto3" json:"description,omitempty"`
+	Mitre       *Mitre   `protobuf:"bytes,2,opt,name=mitre,proto3" json:"mitre,omitempty"`
+	Severity    Severity `protobuf:"varint,3,opt,name=severity,proto3,enum=tracee.v1beta1.Severity" json:"severity,omitempty"`
 }
 
 func (x *Threat) Reset() {
@@ -1120,16 +1119,9 @@ func (x *Threat) GetDescription() string {
 	return ""
 }
 
-func (x *Threat) GetMitreTactic() *MitreTatic {
+func (x *Threat) GetMitre() *Mitre {
 	if x != nil {
-		return x.MitreTactic
-	}
-	return nil
-}
-
-func (x *Threat) GetMitreTechnique() *MitreTechnique {
-	if x != nil {
-		return x.MitreTechnique
+		return x.Mitre
 	}
 	return nil
 }
@@ -1139,6 +1131,61 @@ func (x *Threat) GetSeverity() Severity {
 		return x.Severity
 	}
 	return Severity_INFO
+}
+
+type Mitre struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Tatic     *MitreTatic     `protobuf:"bytes,1,opt,name=tatic,proto3" json:"tatic,omitempty"`
+	Technique *MitreTechnique `protobuf:"bytes,2,opt,name=technique,proto3" json:"technique,omitempty"`
+}
+
+func (x *Mitre) Reset() {
+	*x = Mitre{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_types_api_v1beta1_event_proto_msgTypes[16]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Mitre) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Mitre) ProtoMessage() {}
+
+func (x *Mitre) ProtoReflect() protoreflect.Message {
+	mi := &file_types_api_v1beta1_event_proto_msgTypes[16]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Mitre.ProtoReflect.Descriptor instead.
+func (*Mitre) Descriptor() ([]byte, []int) {
+	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *Mitre) GetTatic() *MitreTatic {
+	if x != nil {
+		return x.Tatic
+	}
+	return nil
+}
+
+func (x *Mitre) GetTechnique() *MitreTechnique {
+	if x != nil {
+		return x.Technique
+	}
+	return nil
 }
 
 type MitreTatic struct {
@@ -1152,7 +1199,7 @@ type MitreTatic struct {
 func (x *MitreTatic) Reset() {
 	*x = MitreTatic{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_types_api_v1beta1_event_proto_msgTypes[16]
+		mi := &file_types_api_v1beta1_event_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1165,7 +1212,7 @@ func (x *MitreTatic) String() string {
 func (*MitreTatic) ProtoMessage() {}
 
 func (x *MitreTatic) ProtoReflect() protoreflect.Message {
-	mi := &file_types_api_v1beta1_event_proto_msgTypes[16]
+	mi := &file_types_api_v1beta1_event_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1178,7 +1225,7 @@ func (x *MitreTatic) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MitreTatic.ProtoReflect.Descriptor instead.
 func (*MitreTatic) Descriptor() ([]byte, []int) {
-	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{16}
+	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *MitreTatic) GetName() string {
@@ -1193,15 +1240,14 @@ type MitreTechnique struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id         string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	ExternalId string `protobuf:"bytes,2,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
-	Name       string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Id   string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 }
 
 func (x *MitreTechnique) Reset() {
 	*x = MitreTechnique{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_types_api_v1beta1_event_proto_msgTypes[17]
+		mi := &file_types_api_v1beta1_event_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1214,7 +1260,7 @@ func (x *MitreTechnique) String() string {
 func (*MitreTechnique) ProtoMessage() {}
 
 func (x *MitreTechnique) ProtoReflect() protoreflect.Message {
-	mi := &file_types_api_v1beta1_event_proto_msgTypes[17]
+	mi := &file_types_api_v1beta1_event_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1227,19 +1273,12 @@ func (x *MitreTechnique) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MitreTechnique.ProtoReflect.Descriptor instead.
 func (*MitreTechnique) Descriptor() ([]byte, []int) {
-	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{17}
+	return file_types_api_v1beta1_event_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *MitreTechnique) GetId() string {
 	if x != nil {
 		return x.Id
-	}
-	return ""
-}
-
-func (x *MitreTechnique) GetExternalId() string {
-	if x != nil {
-		return x.ExternalId
 	}
 	return ""
 }
@@ -1433,36 +1472,36 @@ var file_types_api_v1beta1_event_proto_rawDesc = []byte{
 	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01,
 	0x22, 0x22, 0x0a, 0x0c, 0x4b, 0x38, 0x73, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x70, 0x61, 0x63, 0x65,
 	0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04,
-	0x6e, 0x61, 0x6d, 0x65, 0x22, 0xe8, 0x01, 0x0a, 0x06, 0x54, 0x68, 0x72, 0x65, 0x61, 0x74, 0x12,
+	0x6e, 0x61, 0x6d, 0x65, 0x22, 0x8d, 0x01, 0x0a, 0x06, 0x54, 0x68, 0x72, 0x65, 0x61, 0x74, 0x12,
 	0x20, 0x0a, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f,
-	0x6e, 0x12, 0x3d, 0x0a, 0x0c, 0x6d, 0x69, 0x74, 0x72, 0x65, 0x5f, 0x74, 0x61, 0x63, 0x74, 0x69,
-	0x63, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x74, 0x72, 0x61, 0x63, 0x65, 0x65,
-	0x2e, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2e, 0x4d, 0x69, 0x74, 0x72, 0x65, 0x54, 0x61,
-	0x74, 0x69, 0x63, 0x52, 0x0b, 0x6d, 0x69, 0x74, 0x72, 0x65, 0x54, 0x61, 0x63, 0x74, 0x69, 0x63,
-	0x12, 0x47, 0x0a, 0x0f, 0x6d, 0x69, 0x74, 0x72, 0x65, 0x5f, 0x74, 0x65, 0x63, 0x68, 0x6e, 0x69,
-	0x71, 0x75, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x74, 0x72, 0x61, 0x63,
-	0x65, 0x65, 0x2e, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2e, 0x4d, 0x69, 0x74, 0x72, 0x65,
-	0x54, 0x65, 0x63, 0x68, 0x6e, 0x69, 0x71, 0x75, 0x65, 0x52, 0x0e, 0x6d, 0x69, 0x74, 0x72, 0x65,
-	0x54, 0x65, 0x63, 0x68, 0x6e, 0x69, 0x71, 0x75, 0x65, 0x12, 0x34, 0x0a, 0x08, 0x73, 0x65, 0x76,
-	0x65, 0x72, 0x69, 0x74, 0x79, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x18, 0x2e, 0x74, 0x72,
-	0x61, 0x63, 0x65, 0x65, 0x2e, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2e, 0x53, 0x65, 0x76,
-	0x65, 0x72, 0x69, 0x74, 0x79, 0x52, 0x08, 0x73, 0x65, 0x76, 0x65, 0x72, 0x69, 0x74, 0x79, 0x22,
-	0x20, 0x0a, 0x0a, 0x4d, 0x69, 0x74, 0x72, 0x65, 0x54, 0x61, 0x74, 0x69, 0x63, 0x12, 0x12, 0x0a,
-	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d,
-	0x65, 0x22, 0x55, 0x0a, 0x0e, 0x4d, 0x69, 0x74, 0x72, 0x65, 0x54, 0x65, 0x63, 0x68, 0x6e, 0x69,
-	0x71, 0x75, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x02, 0x69, 0x64, 0x12, 0x1f, 0x0a, 0x0b, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x5f,
-	0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e,
-	0x61, 0x6c, 0x49, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x03, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x2a, 0x41, 0x0a, 0x08, 0x53, 0x65, 0x76, 0x65,
-	0x72, 0x69, 0x74, 0x79, 0x12, 0x08, 0x0a, 0x04, 0x49, 0x4e, 0x46, 0x4f, 0x10, 0x00, 0x12, 0x07,
-	0x0a, 0x03, 0x4c, 0x4f, 0x57, 0x10, 0x01, 0x12, 0x0a, 0x0a, 0x06, 0x4d, 0x45, 0x44, 0x49, 0x55,
-	0x4d, 0x10, 0x02, 0x12, 0x08, 0x0a, 0x04, 0x48, 0x49, 0x47, 0x48, 0x10, 0x03, 0x12, 0x0c, 0x0a,
-	0x08, 0x43, 0x52, 0x49, 0x54, 0x49, 0x43, 0x41, 0x4c, 0x10, 0x04, 0x42, 0x2b, 0x5a, 0x29, 0x67,
-	0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x2f, 0x61, 0x71, 0x75, 0x61, 0x73, 0x65, 0x63,
-	0x75, 0x72, 0x69, 0x74, 0x79, 0x2f, 0x74, 0x72, 0x61, 0x63, 0x65, 0x65, 0x2f, 0x61, 0x70, 0x69,
-	0x2f, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6e, 0x12, 0x2b, 0x0a, 0x05, 0x6d, 0x69, 0x74, 0x72, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x15, 0x2e, 0x74, 0x72, 0x61, 0x63, 0x65, 0x65, 0x2e, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61,
+	0x31, 0x2e, 0x4d, 0x69, 0x74, 0x72, 0x65, 0x52, 0x05, 0x6d, 0x69, 0x74, 0x72, 0x65, 0x12, 0x34,
+	0x0a, 0x08, 0x73, 0x65, 0x76, 0x65, 0x72, 0x69, 0x74, 0x79, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0e,
+	0x32, 0x18, 0x2e, 0x74, 0x72, 0x61, 0x63, 0x65, 0x65, 0x2e, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61,
+	0x31, 0x2e, 0x53, 0x65, 0x76, 0x65, 0x72, 0x69, 0x74, 0x79, 0x52, 0x08, 0x73, 0x65, 0x76, 0x65,
+	0x72, 0x69, 0x74, 0x79, 0x22, 0x77, 0x0a, 0x05, 0x4d, 0x69, 0x74, 0x72, 0x65, 0x12, 0x30, 0x0a,
+	0x05, 0x74, 0x61, 0x74, 0x69, 0x63, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x74,
+	0x72, 0x61, 0x63, 0x65, 0x65, 0x2e, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2e, 0x4d, 0x69,
+	0x74, 0x72, 0x65, 0x54, 0x61, 0x74, 0x69, 0x63, 0x52, 0x05, 0x74, 0x61, 0x74, 0x69, 0x63, 0x12,
+	0x3c, 0x0a, 0x09, 0x74, 0x65, 0x63, 0x68, 0x6e, 0x69, 0x71, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x74, 0x72, 0x61, 0x63, 0x65, 0x65, 0x2e, 0x76, 0x31, 0x62, 0x65,
+	0x74, 0x61, 0x31, 0x2e, 0x4d, 0x69, 0x74, 0x72, 0x65, 0x54, 0x65, 0x63, 0x68, 0x6e, 0x69, 0x71,
+	0x75, 0x65, 0x52, 0x09, 0x74, 0x65, 0x63, 0x68, 0x6e, 0x69, 0x71, 0x75, 0x65, 0x22, 0x20, 0x0a,
+	0x0a, 0x4d, 0x69, 0x74, 0x72, 0x65, 0x54, 0x61, 0x74, 0x69, 0x63, 0x12, 0x12, 0x0a, 0x04, 0x6e,
+	0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x22,
+	0x34, 0x0a, 0x0e, 0x4d, 0x69, 0x74, 0x72, 0x65, 0x54, 0x65, 0x63, 0x68, 0x6e, 0x69, 0x71, 0x75,
+	0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69,
+	0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x2a, 0x41, 0x0a, 0x08, 0x53, 0x65, 0x76, 0x65, 0x72, 0x69, 0x74,
+	0x79, 0x12, 0x08, 0x0a, 0x04, 0x49, 0x4e, 0x46, 0x4f, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x03, 0x4c,
+	0x4f, 0x57, 0x10, 0x01, 0x12, 0x0a, 0x0a, 0x06, 0x4d, 0x45, 0x44, 0x49, 0x55, 0x4d, 0x10, 0x02,
+	0x12, 0x08, 0x0a, 0x04, 0x48, 0x49, 0x47, 0x48, 0x10, 0x03, 0x12, 0x0c, 0x0a, 0x08, 0x43, 0x52,
+	0x49, 0x54, 0x49, 0x43, 0x41, 0x4c, 0x10, 0x04, 0x42, 0x2b, 0x5a, 0x29, 0x67, 0x69, 0x74, 0x68,
+	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x2f, 0x61, 0x71, 0x75, 0x61, 0x73, 0x65, 0x63, 0x75, 0x72, 0x69,
+	0x74, 0x79, 0x2f, 0x74, 0x72, 0x61, 0x63, 0x65, 0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31,
+	0x62, 0x65, 0x74, 0x61, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1478,7 +1517,7 @@ func file_types_api_v1beta1_event_proto_rawDescGZIP() []byte {
 }
 
 var file_types_api_v1beta1_event_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_types_api_v1beta1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_types_api_v1beta1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_types_api_v1beta1_event_proto_goTypes = []interface{}{
 	(Severity)(0),                // 0: tracee.v1beta1.Severity
 	(*Event)(nil),                // 1: tracee.v1beta1.Event
@@ -1497,57 +1536,59 @@ var file_types_api_v1beta1_event_proto_goTypes = []interface{}{
 	(*Pod)(nil),                  // 14: tracee.v1beta1.Pod
 	(*K8SNamespace)(nil),         // 15: tracee.v1beta1.K8sNamespace
 	(*Threat)(nil),               // 16: tracee.v1beta1.Threat
-	(*MitreTatic)(nil),           // 17: tracee.v1beta1.MitreTatic
-	(*MitreTechnique)(nil),       // 18: tracee.v1beta1.MitreTechnique
-	nil,                          // 19: tracee.v1beta1.Event.EventDataEntry
-	nil,                          // 20: tracee.v1beta1.Pod.LabelsEntry
-	(*timestamp.Timestamp)(nil),  // 21: google.protobuf.Timestamp
-	(*wrappers.UInt32Value)(nil), // 22: google.protobuf.UInt32Value
-	(*EventValue)(nil),           // 23: tracee.v1beta1.EventValue
+	(*Mitre)(nil),                // 17: tracee.v1beta1.Mitre
+	(*MitreTatic)(nil),           // 18: tracee.v1beta1.MitreTatic
+	(*MitreTechnique)(nil),       // 19: tracee.v1beta1.MitreTechnique
+	nil,                          // 20: tracee.v1beta1.Event.EventDataEntry
+	nil,                          // 21: tracee.v1beta1.Pod.LabelsEntry
+	(*timestamp.Timestamp)(nil),  // 22: google.protobuf.Timestamp
+	(*wrappers.UInt32Value)(nil), // 23: google.protobuf.UInt32Value
+	(*EventValue)(nil),           // 24: tracee.v1beta1.EventValue
 }
 var file_types_api_v1beta1_event_proto_depIdxs = []int32{
-	21, // 0: tracee.v1beta1.Event.timestamp:type_name -> google.protobuf.Timestamp
+	22, // 0: tracee.v1beta1.Event.timestamp:type_name -> google.protobuf.Timestamp
 	2,  // 1: tracee.v1beta1.Event.policies:type_name -> tracee.v1beta1.Policies
 	3,  // 2: tracee.v1beta1.Event.context:type_name -> tracee.v1beta1.Context
-	19, // 3: tracee.v1beta1.Event.event_data:type_name -> tracee.v1beta1.Event.EventDataEntry
+	20, // 3: tracee.v1beta1.Event.event_data:type_name -> tracee.v1beta1.Event.EventDataEntry
 	16, // 4: tracee.v1beta1.Event.threat:type_name -> tracee.v1beta1.Threat
 	4,  // 5: tracee.v1beta1.Context.process:type_name -> tracee.v1beta1.Process
 	11, // 6: tracee.v1beta1.Context.container:type_name -> tracee.v1beta1.Container
 	13, // 7: tracee.v1beta1.Context.k8s:type_name -> tracee.v1beta1.K8s
 	6,  // 8: tracee.v1beta1.Process.executable:type_name -> tracee.v1beta1.Executable
-	22, // 9: tracee.v1beta1.Process.entity_id:type_name -> google.protobuf.UInt32Value
-	22, // 10: tracee.v1beta1.Process.pid:type_name -> google.protobuf.UInt32Value
-	22, // 11: tracee.v1beta1.Process.namespaced_pid:type_name -> google.protobuf.UInt32Value
+	23, // 9: tracee.v1beta1.Process.entity_id:type_name -> google.protobuf.UInt32Value
+	23, // 10: tracee.v1beta1.Process.pid:type_name -> google.protobuf.UInt32Value
+	23, // 11: tracee.v1beta1.Process.namespaced_pid:type_name -> google.protobuf.UInt32Value
 	7,  // 12: tracee.v1beta1.Process.real_user:type_name -> tracee.v1beta1.User
 	8,  // 13: tracee.v1beta1.Process.thread:type_name -> tracee.v1beta1.Thread
 	5,  // 14: tracee.v1beta1.Process.parent:type_name -> tracee.v1beta1.Parent
 	6,  // 15: tracee.v1beta1.Parent.executable:type_name -> tracee.v1beta1.Executable
-	22, // 16: tracee.v1beta1.Parent.entity_id:type_name -> google.protobuf.UInt32Value
-	22, // 17: tracee.v1beta1.Parent.pid:type_name -> google.protobuf.UInt32Value
-	22, // 18: tracee.v1beta1.Parent.namespaced_pid:type_name -> google.protobuf.UInt32Value
+	23, // 16: tracee.v1beta1.Parent.entity_id:type_name -> google.protobuf.UInt32Value
+	23, // 17: tracee.v1beta1.Parent.pid:type_name -> google.protobuf.UInt32Value
+	23, // 18: tracee.v1beta1.Parent.namespaced_pid:type_name -> google.protobuf.UInt32Value
 	7,  // 19: tracee.v1beta1.Parent.real_user:type_name -> tracee.v1beta1.User
 	8,  // 20: tracee.v1beta1.Parent.thread:type_name -> tracee.v1beta1.Thread
 	4,  // 21: tracee.v1beta1.Parent.parent:type_name -> tracee.v1beta1.Process
-	22, // 22: tracee.v1beta1.User.id:type_name -> google.protobuf.UInt32Value
-	21, // 23: tracee.v1beta1.Thread.start:type_name -> google.protobuf.Timestamp
-	22, // 24: tracee.v1beta1.Thread.entity_id:type_name -> google.protobuf.UInt32Value
-	22, // 25: tracee.v1beta1.Thread.tid:type_name -> google.protobuf.UInt32Value
-	22, // 26: tracee.v1beta1.Thread.namespaced_tid:type_name -> google.protobuf.UInt32Value
+	23, // 22: tracee.v1beta1.User.id:type_name -> google.protobuf.UInt32Value
+	22, // 23: tracee.v1beta1.Thread.start:type_name -> google.protobuf.Timestamp
+	23, // 24: tracee.v1beta1.Thread.entity_id:type_name -> google.protobuf.UInt32Value
+	23, // 25: tracee.v1beta1.Thread.tid:type_name -> google.protobuf.UInt32Value
+	23, // 26: tracee.v1beta1.Thread.namespaced_tid:type_name -> google.protobuf.UInt32Value
 	9,  // 27: tracee.v1beta1.Thread.user_stack_trace:type_name -> tracee.v1beta1.UserStackTrace
 	10, // 28: tracee.v1beta1.UserStackTrace.addresses:type_name -> tracee.v1beta1.StackAddress
 	12, // 29: tracee.v1beta1.Container.image:type_name -> tracee.v1beta1.ContainerImage
 	14, // 30: tracee.v1beta1.K8s.pod:type_name -> tracee.v1beta1.Pod
 	15, // 31: tracee.v1beta1.K8s.namespace:type_name -> tracee.v1beta1.K8sNamespace
-	20, // 32: tracee.v1beta1.Pod.labels:type_name -> tracee.v1beta1.Pod.LabelsEntry
-	17, // 33: tracee.v1beta1.Threat.mitre_tactic:type_name -> tracee.v1beta1.MitreTatic
-	18, // 34: tracee.v1beta1.Threat.mitre_technique:type_name -> tracee.v1beta1.MitreTechnique
-	0,  // 35: tracee.v1beta1.Threat.severity:type_name -> tracee.v1beta1.Severity
-	23, // 36: tracee.v1beta1.Event.EventDataEntry.value:type_name -> tracee.v1beta1.EventValue
-	37, // [37:37] is the sub-list for method output_type
-	37, // [37:37] is the sub-list for method input_type
-	37, // [37:37] is the sub-list for extension type_name
-	37, // [37:37] is the sub-list for extension extendee
-	0,  // [0:37] is the sub-list for field type_name
+	21, // 32: tracee.v1beta1.Pod.labels:type_name -> tracee.v1beta1.Pod.LabelsEntry
+	17, // 33: tracee.v1beta1.Threat.mitre:type_name -> tracee.v1beta1.Mitre
+	0,  // 34: tracee.v1beta1.Threat.severity:type_name -> tracee.v1beta1.Severity
+	18, // 35: tracee.v1beta1.Mitre.tatic:type_name -> tracee.v1beta1.MitreTatic
+	19, // 36: tracee.v1beta1.Mitre.technique:type_name -> tracee.v1beta1.MitreTechnique
+	24, // 37: tracee.v1beta1.Event.EventDataEntry.value:type_name -> tracee.v1beta1.EventValue
+	38, // [38:38] is the sub-list for method output_type
+	38, // [38:38] is the sub-list for method input_type
+	38, // [38:38] is the sub-list for extension type_name
+	38, // [38:38] is the sub-list for extension extendee
+	0,  // [0:38] is the sub-list for field type_name
 }
 
 func init() { file_types_api_v1beta1_event_proto_init() }
@@ -1750,7 +1791,7 @@ func file_types_api_v1beta1_event_proto_init() {
 			}
 		}
 		file_types_api_v1beta1_event_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MitreTatic); i {
+			switch v := v.(*Mitre); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1762,6 +1803,18 @@ func file_types_api_v1beta1_event_proto_init() {
 			}
 		}
 		file_types_api_v1beta1_event_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*MitreTatic); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_types_api_v1beta1_event_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MitreTechnique); i {
 			case 0:
 				return &v.state
@@ -1785,7 +1838,7 @@ func file_types_api_v1beta1_event_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_types_api_v1beta1_event_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   20,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
