@@ -37,11 +37,9 @@ type Context struct {
 	PidID           uint32
 	Comm            [16]byte
 	UtsName         [16]byte
-	TaskHash        uint32
-	LeaderHash      uint32
-	ParentHash      uint32
 	Flags           uint32
-	_               uint32
+	LeaderStartTime uint64
+	ParentStartTime uint64
 	EventID         events.ID // int32
 	Syscall         int32
 	MatchedPolicies uint64

@@ -68,11 +68,9 @@ func (decoder *EbpfDecoder) DecodeContext(ctx *Context) error {
 	ctx.PidID = binary.LittleEndian.Uint32(decoder.buffer[offset+56 : offset+60])
 	_ = copy(ctx.Comm[:], decoder.buffer[offset+60:offset+76])
 	_ = copy(ctx.UtsName[:], decoder.buffer[offset+76:offset+92])
-	ctx.TaskHash = binary.LittleEndian.Uint32(decoder.buffer[offset+92 : offset+96])
-	ctx.LeaderHash = binary.LittleEndian.Uint32(decoder.buffer[offset+96 : offset+100])
-	ctx.ParentHash = binary.LittleEndian.Uint32(decoder.buffer[offset+100 : offset+104])
-	ctx.Flags = binary.LittleEndian.Uint32(decoder.buffer[offset+104 : offset+108])
-	// 4 byte padding
+	ctx.Flags = binary.LittleEndian.Uint32(decoder.buffer[offset+92 : offset+96])
+	ctx.LeaderStartTime = binary.LittleEndian.Uint64(decoder.buffer[offset+96 : offset+104])
+	ctx.ParentStartTime = binary.LittleEndian.Uint64(decoder.buffer[offset+104 : offset+112])
 	// task_context end
 
 	ctx.EventID = events.ID(int32(binary.LittleEndian.Uint32(decoder.buffer[offset+112 : offset+116])))

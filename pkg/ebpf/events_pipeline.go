@@ -259,9 +259,9 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 			evt.ContextFlags = flags
 			evt.Syscall = syscall
 			evt.Metadata = nil
-			evt.ThreadEntityId = ctx.TaskHash
-			evt.ProcessEntityId = ctx.LeaderHash
-			evt.ParentEntityId = ctx.ParentHash
+			evt.ThreadEntityId = utils.HashTaskID(ctx.HostTid, ctx.StartTime)
+			evt.ProcessEntityId = utils.HashTaskID(ctx.HostPid, ctx.LeaderStartTime)
+			evt.ParentEntityId = utils.HashTaskID(ctx.HostPpid, ctx.ParentStartTime)
 
 			// If there aren't any policies that need filtering in userland, tracee **may** skip
 			// this event, as long as there aren't any derivatives or signatures that depend on it.
