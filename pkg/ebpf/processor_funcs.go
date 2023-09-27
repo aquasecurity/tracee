@@ -216,7 +216,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 
 // processDoFinitModule handles a do_finit_module event and triggers other hooking detection logic.
 func (t *Tracee) processDoInitModule(event *trace.Event) error {
-	_, okSyscalls := t.eventsState[events.HookedSyscalls]
+	_, okSyscalls := t.eventsState[events.HookedSyscall]
 	_, okSeqOps := t.eventsState[events.HookedSeqOps]
 	_, okProcFops := t.eventsState[events.HookedProcFops]
 	_, okMemDump := t.eventsState[events.PrintMemDump]
@@ -233,12 +233,8 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
-		if okSyscalls {
-			// Trigger syscalls hooking detection
-			err = t.triggerSyscallsIntegrityCheck(*event)
-			if err != nil {
-				logger.Warnw("hooked_syscalls returned an error", "error", err)
-			}
+		if okSyscalls && expectedSyscallTableInit {
+			t.triggerSyscallTableIntegrityCheckCall()
 		}
 		if okSeqOps {
 			// Trigger seq_ops hooking detection
