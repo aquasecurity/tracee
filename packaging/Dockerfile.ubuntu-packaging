@@ -55,8 +55,7 @@ RUN export uid=$uid gid=$gid && \
 
 # install golang
 
-RUN export DEBIAN_FRONTEND=noninteractive && \
-    curl -L -o /tmp/golang.tar.gz https://go.dev/dl/go1.20.8.linux-amd64.tar.gz && \
+RUN curl -L -o /tmp/golang.tar.gz https://go.dev/dl/go1.20.8.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf /tmp/golang.tar.gz && \
     echo "export GOROOT=/usr/local/go" >> /home/tracee/.bashrc && \
     echo "export GOPATH=/home/tracee/go" >> /home/tracee/.bashrc && \
@@ -66,8 +65,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
 
 # install clang
 
-RUN export DEBIAN_FRONTEND=noninteractive && \
-    curl -L -o /tmp/clang.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.6/clang+llvm-14.0.6-x86_64-linux-gnu-rhel-8.4.tar.xz && \
+RUN curl -L -o /tmp/clang.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.6/clang+llvm-14.0.6-x86_64-linux-gnu-rhel-8.4.tar.xz && \
     tar -C /usr/local -xJf /tmp/clang.tar.xz && \
     mv "/usr/local/clang+llvm-14.0.6-x86_64-linux-gnu-rhel-8.4" /usr/local/clang && \
     echo "export PATH=/usr/local/clang/bin:$PATH" >> /home/tracee/.bashrc && \
