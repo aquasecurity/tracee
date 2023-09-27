@@ -119,11 +119,11 @@ message Threat {
 }
 
 message Mitre {
-    MitreTatic tatic = 1;
+    MitreTactic tactic = 1;
     MitreTechnique technique = 2;
 }
 
-message MitreTatic {
+message MitreTactic {
     string name = 1;
 }
 
