@@ -22,6 +22,8 @@ typedef struct task_context {
     char comm[TASK_COMM_LEN];     // task's comm
     char uts_name[TASK_COMM_LEN]; // task's uts name
     u32 flags;                    // task's status flags (see context_flags_e)
+    u64 leader_start_time;        // task leader's monotonic start time
+    u64 parent_start_time;        // parent process task leader's monotonic start time
 } task_context_t;
 
 typedef struct event_context {
