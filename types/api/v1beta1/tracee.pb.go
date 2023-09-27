@@ -7,9 +7,9 @@
 package v1beta1
 
 import (
+	field_mask "google.golang.org/genproto/protobuf/field_mask"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -375,8 +375,8 @@ type StreamEventsRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Policies []string               `protobuf:"bytes,1,rep,name=policies,proto3" json:"policies,omitempty"`
-	Mask     *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=mask,proto3" json:"mask,omitempty"`
+	Policies []string              `protobuf:"bytes,1,rep,name=policies,proto3" json:"policies,omitempty"`
+	Mask     *field_mask.FieldMask `protobuf:"bytes,2,opt,name=mask,proto3" json:"mask,omitempty"`
 }
 
 func (x *StreamEventsRequest) Reset() {
@@ -418,7 +418,7 @@ func (x *StreamEventsRequest) GetPolicies() []string {
 	return nil
 }
 
-func (x *StreamEventsRequest) GetMask() *fieldmaskpb.FieldMask {
+func (x *StreamEventsRequest) GetMask() *field_mask.FieldMask {
 	if x != nil {
 		return x.Mask
 	}
@@ -578,7 +578,7 @@ var file_types_api_v1beta1_tracee_proto_goTypes = []interface{}{
 	(*StreamEventsRequest)(nil),        // 8: tracee.v1beta1.StreamEventsRequest
 	(*StreamEventsResponse)(nil),       // 9: tracee.v1beta1.StreamEventsResponse
 	(*EventDefinition)(nil),            // 10: tracee.v1beta1.EventDefinition
-	(*fieldmaskpb.FieldMask)(nil),      // 11: google.protobuf.FieldMask
+	(*field_mask.FieldMask)(nil),       // 11: google.protobuf.FieldMask
 	(*Event)(nil),                      // 12: tracee.v1beta1.Event
 }
 var file_types_api_v1beta1_tracee_proto_depIdxs = []int32{
