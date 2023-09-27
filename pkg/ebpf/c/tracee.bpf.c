@@ -1468,30 +1468,40 @@ int BPF_KPROBE(trace_do_exit)
     return events_perf_submit(&p, DO_EXIT, code);
 }
 
-// uprobe_syscall_trigger submit to the buff the syscalls function handlers
-// address from the syscall table. the syscalls are checked in user mode for hooks.
-
-SEC("uprobe/trigger_syscall_event")
-int uprobe_syscall_trigger(struct pt_regs *ctx)
+statfunc void syscall_table_check(program_data_t *p)
 {
-    u64 table_count = 0;
-    u64 caller_ctx_id = 0;
+    char sys_call_table_symbol[15] = "sys_call_table";
+    u64 *sys_call_table = (u64 *) get_symbol_addr(sys_call_table_symbol);
 
-    // clang-format off
-    //
-    // Golang calling convention per architecture
+    int index = 0; // For the verifier
 
-    #if defined(bpf_target_x86)
-        caller_ctx_id = ctx->bx;                // 1st arg
-        table_count = ctx->cx;                  // 2nd arg
-    #elif defined(bpf_target_arm64)
-        caller_ctx_id = ctx->user_regs.regs[1]; // 1st arg
-        table_count = ctx->user_regs.regs[2];   // 2nd arg
-    #else
-        return 0;
-    #endif
-    // clang-format on
+#pragma unroll
+    for (int i = 0; i < MAX_SYS_CALL_TABLE_SIZE; i++) {
+        index = i;
+        syscall_table_entry_t *expected_entry =
+            bpf_map_lookup_elem(&expected_sys_call_table, &index);
 
+        if (!expected_entry || expected_entry->address == 0) {
+            continue;
+        }
+
+        u64 effective_address;
+        bpf_probe_read(&effective_address, sizeof(u64), sys_call_table + index);
+
+        if (expected_entry->address != effective_address) {
+            reset_event_args(p);
+            save_to_submit_buf(&(p->event->args_buf), &index, sizeof(int), 0);
+            save_to_submit_buf(&(p->event->args_buf), &effective_address, sizeof(u64), 1);
+
+            events_perf_submit(p, SYSCALL_TABLE_CHECK, 0);
+        }
+    }
+}
+
+// syscall_table_check
+SEC("uprobe/syscall_table_check")
+int uprobe_syscall_table_check(struct pt_regs *ctx)
+{
     program_data_t p = {};
     if (!init_program_data(&p, ctx))
         return 0;
@@ -1505,25 +1515,9 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
     p.event->context.syscall = NO_SYSCALL;
     p.event->context.matched_policies = ULLONG_MAX;
 
-    char syscall_table_sym[15] = "sys_call_table";
-    u64 *syscall_table_addr = (u64 *) get_symbol_addr(syscall_table_sym);
+    syscall_table_check(&p);
 
-    if (unlikely(syscall_table_addr == 0))
-        return 0;
-
-    // Get per-cpu string buffer
-    buf_t *string_p = get_buf(STRING_BUF_IDX);
-    if (string_p == NULL)
-        return 0;
-
-    u64 table_size = table_count * sizeof(u64);
-    if ((table_size > MAX_PERCPU_BUFSIZE) || (table_size <= 0)) // verify no wrap occurred
-        return 0;
-
-    save_u64_arr_to_buf(&p.event->args_buf, (const u64 *) syscall_table_addr, table_count, 0);
-    save_to_submit_buf(&p.event->args_buf, (void *) &caller_ctx_id, sizeof(uint64_t), 1);
-
-    return events_perf_submit(&p, PRINT_SYSCALL_TABLE, 0);
+    return 0;
 }
 
 SEC("uprobe/trigger_seq_ops_event")
