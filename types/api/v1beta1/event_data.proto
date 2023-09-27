@@ -16,7 +16,7 @@ message EventValue {
         google.protobuf.BytesValue bytes = 6; // bytesT
         google.protobuf.BoolValue bool = 7; // boolT
         StringArrayValue str_array = 10; // strArrT, argsArrT
-        IntArrayValue int_array = 11; // intArr2T
+        Int32ArrayValue int_array = 11; // intArr2T
         UInt64ArrayValue u_int64_array = 12; // uint64ArrT
         SockAddrValue sockaddr = 13; // sockaddrT
         CredValue cred = 14; // credT
@@ -33,15 +33,15 @@ message TriggerEvent {
 }
 
 message StringArrayValue {
-    repeated google.protobuf.StringValue array = 1;
+    repeated google.protobuf.StringValue value = 1;
 }
 
-message IntArrayValue {
-    repeated google.protobuf.Int32Value array = 1;
+message Int32ArrayValue {
+    repeated google.protobuf.Int32Value value = 1;
 }
 
 message UInt64ArrayValue {
-    repeated google.protobuf.UInt64Value array = 1;
+    repeated google.protobuf.UInt64Value value = 1;
 }
 
 message CredValue {
@@ -67,7 +67,7 @@ message TimespecValue {
 }
 
 message ArgsValue {
-    repeated EventValue args = 1;
+    repeated EventValue value = 1;
 }
 
 message SockAddrValue {
