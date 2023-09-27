@@ -10,14 +10,14 @@ message EventValue {
     oneof value {
         google.protobuf.Int32Value int32 = 1; // intT
         google.protobuf.Int64Value int64 = 2; // longT
-        google.protobuf.UInt32Value uint32 = 3; // uintT, modeT, devT, u8T, u16T
-        google.protobuf.UInt64Value uint64 = 4; // ulongT, offT, sizeT, pointerT
-        google.protobuf.StringValue string = 5; // strT
+        google.protobuf.UInt32Value u_int32 = 3; // uintT, modeT, devT, u8T, u16T
+        google.protobuf.UInt64Value u_int64 = 4; // ulongT, offT, sizeT, pointerT
+        google.protobuf.StringValue str = 5; // strT
         google.protobuf.BytesValue bytes = 6; // bytesT
         google.protobuf.BoolValue bool = 7; // boolT
-        StringArrayValue string_array = 10; // strArrT, argsArrT
+        StringArrayValue str_array = 10; // strArrT, argsArrT
         IntArrayValue int_array = 11; // intArr2T
-        UInt64ArrayValue uint64_array = 12; // uint64ArrT
+        UInt64ArrayValue u_int64_array = 12; // uint64ArrT
         SockAddrValue sockaddr = 13; // sockaddrT
         CredValue cred = 14; // credT
         TimespecValue timespec = 15; // timespecT
