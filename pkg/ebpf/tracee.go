@@ -598,9 +598,9 @@ func (t *Tracee) initDerivationTable() error {
 				DeriveFunction: derive.ContainerRemove(t.containers),
 			},
 		},
-		events.PrintSyscallTable: {
-			events.HookedSyscalls: {
-				Enabled:        shouldSubmit(events.PrintSyscallTable),
+		events.SyscallTableCheck: {
+			events.HookedSyscall: {
+				Enabled:        shouldSubmit(events.SyscallTableCheck),
 				DeriveFunction: derive.DetectHookedSyscall(t.kernelSymbols),
 			},
 		},
@@ -1351,10 +1351,8 @@ const pollTimeout int = 300
 func (t *Tracee) Run(ctx gocontext.Context) error {
 	// Some events need initialization before the perf buffers are polled
 
-	err := t.triggerSyscallsIntegrityCheck(trace.Event{})
-	if err != nil {
-		logger.Warnw("hooked_syscalls returned an error", "error", err)
-	}
+	go t.hookedSyscallTableRoutine(ctx)
+
 	t.triggerSeqOpsIntegrityCheck(trace.Event{})
 	errs := t.triggerMemDump(trace.Event{})
 	for _, err := range errs {
@@ -1630,55 +1628,6 @@ func (t *Tracee) netEnabled() bool {
 //
 // TODO: move to triggerEvents package
 //
-
-// triggerSyscallsIntegrityCheck is used by a Uprobe to trigger an eBPF program
-// that prints the syscall table
-func (t *Tracee) triggerSyscallsIntegrityCheck(event trace.Event) error {
-	_, ok := t.eventsState[events.HookedSyscalls]
-	if !ok {
-		return nil
-	}
-
-	errArgFilter := make(map[int]error, 0)
-
-	for p := range t.config.Policies.Map() {
-		hookedSyscallsFilters := p.ArgFilter.GetEventFilters(events.HookedSyscalls)
-		if len(hookedSyscallsFilters) == 0 {
-			logger.Debugw("policy %d: no syscalls were provided to hooked_syscall event. "+
-				"using default configuration. please provide it via -e hooked_syscalls.args.check_syscalls=<syscall>,<syscall>", p.ID)
-			derive.SyscallsToCheck = events.DefaultSyscallsToCheck()
-		}
-
-		if len(derive.SyscallsToCheck) == 0 {
-			syscallFilter, ok := hookedSyscallsFilters["check_syscalls"].(*filters.StringFilter)
-			if syscallFilter != nil && ok {
-				eventNamesToID := events.Core.NamesToIDs()
-				for _, syscall := range syscallFilter.Equal() {
-					_, ok := eventNamesToID[syscall]
-					if !ok {
-						errArgFilter[p.ID] = fmt.Errorf("policy %d: %s - no such syscall", p.ID, syscall)
-						break
-					}
-					derive.SyscallsToCheck = append(derive.SyscallsToCheck, syscall)
-				}
-			}
-		}
-	}
-
-	for k, v := range errArgFilter {
-		if v != nil {
-			return errfmt.Errorf("error invalid policy %v filter: %v", k, v)
-		}
-	}
-
-	eventHandle := t.triggerContexts.Store(event)
-	t.triggerSyscallsIntegrityCheckCall(uint64(eventHandle), uint64(derive.MaxSupportedSyscallID))
-	return nil
-}
-
-//go:noinline
-func (t *Tracee) triggerSyscallsIntegrityCheckCall(eventHandle uint64, table_size uint64) {
-}
 
 // triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program
 // that prints the seq ops pointers
