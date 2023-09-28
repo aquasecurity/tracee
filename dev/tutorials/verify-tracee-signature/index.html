@@ -13,6 +13,10 @@
         <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/tutorials/verify-tracee-signature/">
       
       
+        <link rel="prev" href="../k8s-policies/">
+      
+      
+        <link rel="next" href="../deploy-grafana-dashboard/">
       
       
         
@@ -23,7 +27,7 @@
     
     
       
-        <title>Cosign: verify tracee signature - Tracee</title>
+        <title>Cosign - verify tracee signature - Tracee</title>
       
     
     
@@ -103,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Cosign: verify tracee signature
+              Cosign - verify tracee signature
             
           </span>
         </div>
@@ -194,10 +198,12 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../overview/" class="md-tabs__link">
           
   
@@ -752,6 +758,8 @@
       
   
   
+    
+  
   
     
     
@@ -761,12 +769,12 @@
       
       
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
@@ -786,7 +794,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -844,6 +852,100 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    
+  
+    Cosign - verify tracee signature
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Cosign - verify tracee signature
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verify-tracee-signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify tracee signature
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -14906,7 +15008,7 @@
 </ul>
 <h2 id="verify-tracee-signature">Verify tracee signature<a class="headerlink" href="#verify-tracee-signature" title="Permanent link">&para;</a></h2>
 <p>Tracee images are signed with cosign keyless. To verify the signature we can run the command:</p>
-<div class="highlight"><pre><span></span><code><span class="go">cosign verify aquasec/tracee:v0.17.0-rc-134-g1e82894f5  --certificate-oidc-issuer https://token.actions.githubusercontent.com --certificate-identity-regexp https://github.com/aquasecurity/tracee | jq</span>
+<div class="highlight"><pre><span></span><code><span class="go">cosign verify aquasec/tracee:v0.17.0-rc-146-g07fb1bfe2  --certificate-oidc-issuer https://token.actions.githubusercontent.com --certificate-identity-regexp https://github.com/aquasecurity/tracee | jq</span>
 </code></pre></div>
 
 

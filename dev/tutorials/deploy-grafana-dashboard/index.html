@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/tutorials/deploy-grafana-dashboard/">
       
       
-        <link rel="prev" href="../k8s-policies/">
+        <link rel="prev" href="../verify-tracee-signature/">
       
       
         <link rel="next" href="../promtail/">
@@ -844,6 +844,32 @@
     
   
     Working with Tracee's Policies on Kubernetes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../verify-tracee-signature/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Cosign - verify tracee signature
   
 
     
@@ -15064,7 +15090,7 @@ forwarded through the following commands:</p>
 <span class="go">    --cgroupns=host --privileged \</span>
 <span class="go">    -v /tmp/tracee:/tmp/tracee  \</span>
 <span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
-<span class="go">    -it -p 3366:3366 aquasec/tracee:v0.17.0-rc-134-g1e82894f5</span>
+<span class="go">    -it -p 3366:3366 aquasec/tracee:v0.17.0-rc-146-g07fb1bfe2</span>
 </code></pre></div>
 <p>Of course, the forwarded metrics ports can be changed, but you should note that
 some of the later instructions depend on these ports.</p>
