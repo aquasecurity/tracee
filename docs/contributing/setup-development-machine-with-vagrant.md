@@ -12,7 +12,9 @@ be on their way.
 ## Prerequisites
 
 - [Vagrant]
-- [Hypervisor] supported by Vagrant, such as [VirtualBox].
+- [Hypervisor] supported by Vagrant, such as [VirtualBox] on a amd64 (Linux)
+machine or [Parallels] on an arm64 M1 (Darwin) machine.
+
 
 ## Create Development Machine
 
@@ -317,6 +319,7 @@ documentation pages.
 [Vagrantfile]: https://github.com/aquasecurity/tracee/blob/{{ git.tag }}/Vagrantfile
 [Hypervisor]: https://www.vagrantup.com/docs/providers
 [VirtualBox]: https://www.virtualbox.org
+[Parallels]: https://www.parallels.com
 [MicroK8s]: https://microk8s.io
 [MicroK8s add-ons]: https://microk8s.io/docs/addons
 [kubectl]: https://kubernetes.io/docs/tasks/tools/#kubectl
