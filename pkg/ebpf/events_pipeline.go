@@ -210,8 +210,6 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 
 			// populate all the fields of the event used in this stage, and reset the rest
 
-			// evt.Timestamp = int(timeStamp)
-			// evt.ThreadStartTime = int(startTime)
 			evt.Timestamp = int(ctx.Ts)
 			evt.ThreadStartTime = int(ctx.StartTime)
 			evt.ProcessorID = int(ctx.ProcessorId)

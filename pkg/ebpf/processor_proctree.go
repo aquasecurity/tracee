@@ -2,8 +2,10 @@ package ebpf
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -242,4 +244,39 @@ func (t *Tracee) procTreeExitProcessor(event *trace.Event) error {
 			Group:      groupExit,
 		},
 	)
+}
+
+//
+// Processors that enrich events with process tree information
+//
+
+// procTreeAddBinInfo enriches the event with processes information from the process tree.
+func (t *Tracee) procTreeAddBinInfo(event *trace.Event) error {
+	currentProcess, procOk := t.processTree.GetProcessByHash(event.ProcessEntityId)
+	if !procOk {
+		_, threadOk := t.processTree.GetThreadByHash(event.ProcessEntityId)
+		if !threadOk {
+			logger.Debugw(
+				"error enriching event executable info",
+				"pid", event.HostProcessID,
+				"tid", event.HostThreadID,
+				"event name", event.EventName,
+				"timestamp", event.Timestamp,
+				"error", "not found in process tree",
+			)
+		}
+		return nil // threads don't have executable info in the process tree
+	}
+
+	// Event timestamp is changed to relative (or not) at the end of all processors only.
+	eventTimestamp := time.Unix(0, int64(event.Timestamp)+int64(t.bootTime))
+
+	executable := currentProcess.GetExecutable()
+
+	// Update the event with the executable information from the process tree.
+	event.Executable.Path = executable.GetPathAt(eventTimestamp)
+
+	// TODO: feed executable information from procfs during proctree initialization.
+
+	return nil
 }
