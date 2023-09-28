@@ -17,7 +17,7 @@ when "x86_64", "amd64"
 when "aarch64", "arm64"
   "arm64"
 else
-  puts "ERROR: Architecture #{arch_raw} is not supported."
+  puts "ERROR: Architecture is not supported."
   abort
 end
 
