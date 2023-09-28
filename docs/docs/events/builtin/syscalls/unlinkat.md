@@ -9,12 +9,10 @@ unlinkat is a system call that deletes a file name, relative to an open director
 
 Unlinkat also allows a user to delete links without traversing whole directory hierarchies, by providing the location of the file (directory) and its name as two separate arguments.
 
-Unlinkat also provides the option to not traverse symbolic links with the **O_NOFOLLOW** flag. This allows users to delete symbolic links more securely.
-
 ## Arguments
 * `dirfd`:`int`[K] - an open file descriptor referring to a directory.
 * `pathname`:`const char*`[KU] - a string containing the name of the file to be deleted, relative to the directory referred to by dirfd.
-* `flags`:`int`[K] - optional flags that can include **O_NOFOLLOW**, **AT_REMOVEDIR**, or **AT_SYMLINK_NOFOLLOW**.
+* `flags`:`int`[K] - optional flags that can include **AT_REMOVEDIR**.
 
 ### Available Tags
 * K - Originated from kernel-space.
@@ -33,7 +31,7 @@ To monitor file deletions.
 Finding malicious file deletions.
 
 ## Issues
-unlinkat is vulnerable to TOCTOU (time of check, time of use) attacks if the **O_NOFOLLOW** flag is not included.
+unlinkat is vulnerable to TOCTOU (time of check, time of use) attacks.
 
 ## Related Events
 unlink(), remove(), readlinkat(), openat()
