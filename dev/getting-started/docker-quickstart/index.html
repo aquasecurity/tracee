@@ -419,6 +419,23 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker - Quick Start
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -434,6 +451,47 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-the-tracee-container-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run the Tracee container images
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -14898,6 +14956,36 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-the-tracee-container-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Run the Tracee container images
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -14913,12 +15001,25 @@
 
 
 <h1 id="docker-quickstart">Docker Quickstart<a class="headerlink" href="#docker-quickstart" title="Permanent link">&para;</a></h1>
-<p>You can easily start experimenting with Tracee using the Docker image as follows:</p>
+<p>This section details how you can run Tracee through a container image.</p>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<p>Please ensure that Docker or another container runtime is working on your machine. </p>
+<h2 id="run-the-tracee-container-images">Run the Tracee container images<a class="headerlink" href="#run-the-tracee-container-images" title="Permanent link">&para;</a></h2>
+<p>All of the Tracee container images are stored in a public registry on <a href="https://hub.docker.com/r/aquasec/tracee">Docker Hub.</a>
+You can easily start experimenting with Tracee using the Docker image.</p>
+<p><strong>On x86 architecture, please run the following command:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
 <span class="go">  --name tracee --rm -it \</span>
 <span class="go">  --pid=host --cgroupns=host --privileged \</span>
 <span class="go">  -v /etc/os-release:/etc/os-release-host:ro \</span>
 <span class="go">  aquasec/tracee:latest</span>
+</code></pre></div>
+<p><strong>If you are on arm64 architecture, you will need to replace the container image tag to <code>aarch64</code>:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
+<span class="go">  --name tracee --rm -it \</span>
+<span class="go">  --pid=host --cgroupns=host --privileged \</span>
+<span class="go">  -v /etc/os-release:/etc/os-release-host:ro \</span>
+<span class="go">  aquasec/tracee:aarch64</span>
 </code></pre></div>
 <p>To learn how to install Tracee in a production environment, <a href="./kubernetes-quickstart">check out the Kubernetes guide</a>.</p>
 
