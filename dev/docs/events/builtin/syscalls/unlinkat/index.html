@@ -15248,12 +15248,11 @@
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
 <p>unlinkat is a system call that deletes a file name, relative to an open directory. The purpose of unlinkat is to provide a more secure and robust way to delete a file than the remove() syscall, as it allows users to avoid race conditions while deleting a file. </p>
 <p>Unlinkat also allows a user to delete links without traversing whole directory hierarchies, by providing the location of the file (directory) and its name as two separate arguments.</p>
-<p>Unlinkat also provides the option to not traverse symbolic links with the <strong>O_NOFOLLOW</strong> flag. This allows users to delete symbolic links more securely.</p>
 <h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>dirfd</code>:<code>int</code>[K] - an open file descriptor referring to a directory.</li>
 <li><code>pathname</code>:<code>const char*</code>[KU] - a string containing the name of the file to be deleted, relative to the directory referred to by dirfd.</li>
-<li><code>flags</code>:<code>int</code>[K] - optional flags that can include <strong>O_NOFOLLOW</strong>, <strong>AT_REMOVEDIR</strong>, or <strong>AT_SYMLINK_NOFOLLOW</strong>.</li>
+<li><code>flags</code>:<code>int</code>[K] - optional flags that can include <strong>AT_REMOVEDIR</strong>.</li>
 </ul>
 <h3 id="available-tags">Available Tags<a class="headerlink" href="#available-tags" title="Permanent link">&para;</a></h3>
 <ul>
@@ -15271,7 +15270,7 @@
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
 <p>Finding malicious file deletions.</p>
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
-<p>unlinkat is vulnerable to TOCTOU (time of check, time of use) attacks if the <strong>O_NOFOLLOW</strong> flag is not included.</p>
+<p>unlinkat is vulnerable to TOCTOU (time of check, time of use) attacks.</p>
 <h2 id="related-events">Related Events<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
 <p>unlink(), remove(), readlinkat(), openat()</p>
 <blockquote>
