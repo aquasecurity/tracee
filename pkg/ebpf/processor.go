@@ -103,6 +103,10 @@ func (t *Tracee) registerEventProcessors() {
 	// Convert all time relate args to nanoseconds since epoch (add more events as needed)
 	t.RegisterEventProcessor(events.SchedProcessFork, t.processSchedProcessFork)
 	t.RegisterEventProcessor(events.All, t.normalizeEventCtxTimes)
+	if t.config.ProcTree.Source != proctree.SourceNone {
+		// Can only be enriched if process tree is enabled
+		t.RegisterEventProcessor(events.All, t.addBinaryInformation)
+	}
 }
 
 func initKernelReadFileTypes() {

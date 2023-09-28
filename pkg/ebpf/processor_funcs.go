@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"golang.org/x/sys/unix"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
@@ -375,6 +376,29 @@ func (t *Tracee) normalizeEventArgTime(event *trace.Event, argName string) error
 	} else {
 		// current ("wall") time: add boot time to timestamp
 		arg.Value = argTime + t.bootTime
+	}
+	return nil
+}
+
+// addBinaryInformation enrich the event with processes information.
+// This is done using the process tree of Tracee
+func (t *Tracee) addBinaryInformation(event *trace.Event) error {
+	currentProcess, found := t.processTree.GetProcessByHash(event.ProcessEntityId)
+	if !found {
+		logger.Debugw(
+			"error enriching event executable info",
+			"pid", event.HostProcessID,
+			"tid", event.HostThreadID,
+			"event name", event.EventName,
+			"timestamp", event.Timestamp,
+			"error", "not found in process tree",
+		)
+		return nil
+	}
+	executable := currentProcess.GetExecutable()
+
+	if executable != nil {
+		event.Executable.Path = executable.GetPathAt(time.Unix(0, int64(event.Timestamp)))
 	}
 	return nil
 }
