@@ -79,15 +79,26 @@ func (t *Tracee) RegisterEventProcessor(id events.ID, proc func(evt *trace.Event
 
 // registerEventProcessors registers all event processors, each to a specific event id.
 func (t *Tracee) registerEventProcessors() {
-	// Process events for the process tree before the regular event processing
+	// Process events for the process tree before the regular event processing.
+	// NOTE: Use the switch case below to register your processor.
 	switch t.config.ProcTree.Source {
-	case proctree.SourceBoth, proctree.SourceEvents:
+	case proctree.SourceNone: // break (proctree is disabled)
+	case proctree.SourceSignals: // break (processors registered in control plane)
+	case proctree.SourceBoth:
+		fallthrough
+	case proctree.SourceEvents: // Register processors for when proctree source is "events"
 		t.RegisterEventProcessor(events.SchedProcessFork, t.procTreeForkProcessor)
 		t.RegisterEventProcessor(events.SchedProcessExec, t.procTreeExecProcessor)
 		t.RegisterEventProcessor(events.SchedProcessExit, t.procTreeExitProcessor)
+		fallthrough
+	default: // Register processors for whenever proc tree is enabled
+		t.RegisterEventProcessor(events.All, t.procTreeAddBinInfo)
 	}
+	// Processors related to proctree that runs even when proctree is disabled
 	t.RegisterEventProcessor(events.SchedProcessFork, t.procTreeForkRemoveArgs)
-	// Process events from the regular pipeline
+
+	// Process events from the regular pipeline.
+	// NOTE: Your processor goes very likely here.
 	t.RegisterEventProcessor(events.VfsWrite, t.processWriteEvent)
 	t.RegisterEventProcessor(events.VfsWritev, t.processWriteEvent)
 	t.RegisterEventProcessor(events.KernelWrite, t.processWriteEvent)
@@ -100,7 +111,9 @@ func (t *Tracee) registerEventProcessors() {
 	t.RegisterEventProcessor(events.PrintSyscallTable, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processPrintMemDump)
-	// Convert all time relate args to nanoseconds since epoch (add more events as needed)
+
+	// Convert all time relate args to nanoseconds since epoch.
+	// NOTE: Make sure to convert time related args (of your event) in here.
 	t.RegisterEventProcessor(events.SchedProcessFork, t.processSchedProcessFork)
 	t.RegisterEventProcessor(events.All, t.normalizeEventCtxTimes)
 }
