@@ -28,6 +28,7 @@ type Event struct {
 	MountNS               int          `json:"mountNamespace"`
 	PIDNS                 int          `json:"pidNamespace"`
 	ProcessName           string       `json:"processName"`
+	Executable            File         `json:"executable"`
 	HostName              string       `json:"hostName"`
 	ContainerID           string       `json:"containerId"`
 	Container             Container    `json:"container,omitempty"`
@@ -82,6 +83,10 @@ type Metadata struct {
 type ContextFlags struct {
 	ContainerStarted bool `json:"containerStarted"`
 	IsCompat         bool `json:"isCompat"`
+}
+
+type File struct {
+	Path string `json:"path"`
 }
 
 // EventOrigin is where a trace.Event occured, it can either be from the host machine or from a container
