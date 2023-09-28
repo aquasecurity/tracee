@@ -79,6 +79,8 @@ github.com/aquasecurity/tracee/types v0.0.0-20230927191939-44ec77c08512 h1:JLiZY
 github.com/aquasecurity/tracee/types v0.0.0-20230927191939-44ec77c08512/go.mod h1:sorAC3uGSNB/b8A9PjG1MSbENl81dR7azTSj+HclE+A=
 github.com/aquasecurity/tracee/types v0.0.0-20230927194039-8ef63357a9e1 h1:s7GI9qm01l7+WJ2XVTcMf7pyCYYh11uzgLfb4PmPTY0=
 github.com/aquasecurity/tracee/types v0.0.0-20230927194039-8ef63357a9e1/go.mod h1:sorAC3uGSNB/b8A9PjG1MSbENl81dR7azTSj+HclE+A=
+github.com/aquasecurity/tracee/types v0.0.0-20230928173155-42f7edddaa2c h1:muqPIoglKKoAONtmDY29b/+5yENoEDZP6chqFfiJEKg=
+github.com/aquasecurity/tracee/types v0.0.0-20230928173155-42f7edddaa2c/go.mod h1:sorAC3uGSNB/b8A9PjG1MSbENl81dR7azTSj+HclE+A=
 github.com/arbovm/levenshtein v0.0.0-20160628152529-48b4e1c0c4d0 h1:jfIu9sQUG6Ig+0+Ap1h4unLjW6YQJpKZVmUzxsD4E/Q=
 github.com/arbovm/levenshtein v0.0.0-20160628152529-48b4e1c0c4d0/go.mod h1:t2tdKJDJF9BV14lnkjHmOQgcvEKgtqs5a1N3LNdJhGE=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
