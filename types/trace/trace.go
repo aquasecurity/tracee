@@ -35,6 +35,7 @@ type Event struct {
 	Kubernetes            Kubernetes   `json:"kubernetes,omitempty"`
 	EventID               int          `json:"eventId,string"`
 	EventName             string       `json:"eventName"`
+	PoliciesVersion       uint16       `json:"-"`
 	MatchedPoliciesKernel uint64       `json:"-"`
 	MatchedPoliciesUser   uint64       `json:"-"`
 	MatchedPolicies       []string     `json:"matchedPolicies,omitempty"`
