@@ -715,6 +715,7 @@ test-unit: \
 		-tags ebpf \
 		-short \
 		-race \
+		-shuffle on \
 		-v \
 		-coverprofile=coverage.txt \
 		./cmd/... \
@@ -729,6 +730,7 @@ test-types: \
 	@cd ./types && $(CMD_GO) test \
 		-short \
 		-race \
+		-shuffle on \
 		-v \
 		-coverprofile=coverage.txt \
 		./...
@@ -758,6 +760,7 @@ test-integration: \
 			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
 			-X main.version=\"$(VERSION)\" \
 			" \
+		-shuffle on \
 		-race \
 		-v \
 		-p 1 \
@@ -794,6 +797,7 @@ test-performance: \
 			-X main.version=\"$(VERSION)\" \
 			" \
 		-race \
+		-shuffle on \
 		-v \
 		-p 1 \
 		-count=1 \
