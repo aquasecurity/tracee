@@ -13,7 +13,10 @@ import (
 )
 
 func TestEventUnmarshalJSON(t *testing.T) {
+	t.Parallel()
+
 	type testCase struct {
+		name        string
 		json        string
 		expect      Event
 		expectError bool
@@ -21,6 +24,7 @@ func TestEventUnmarshalJSON(t *testing.T) {
 
 	testCases := []testCase{
 		{
+			name: "simple event",
 			json: `{"timestamp":26018249532,"processId":12434,"threadId":12434,"parentprocessid":23921,
 			"hostprocessid":12434,"hostthreadid":12434,"hostparentprocessid":23921,"userid":1000,"mountnamespace":4026531840,
 			"pidnamespace":4026531836,"processname":"strace","hostname":"ubuntu","eventid":"101","eventname":"ptrace",
@@ -30,25 +34,34 @@ func TestEventUnmarshalJSON(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		var res Event
-		err := json.Unmarshal([]byte(tc.json), &res)
-		if err != nil {
-			if tc.expectError {
-				continue
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			var res Event
+			err := json.Unmarshal([]byte(tc.json), &res)
+			if err != nil {
+				if tc.expectError {
+					return
+				}
+				t.Error(err)
 			}
-			t.Error(err)
-		}
-		if !reflect.DeepEqual(tc.expect, res) {
-			for _, arg := range res.Args {
-				fmt.Printf("%v (%T)", arg, arg.Value)
+			if !reflect.DeepEqual(tc.expect, res) {
+				for _, arg := range res.Args {
+					fmt.Printf("%v (%T)", arg, arg.Value)
+				}
+				t.Errorf("want %v\n have %v", tc.expect, res)
 			}
-			t.Errorf("want %v\n have %v", tc.expect, res)
-		}
+		})
 	}
 }
 
 func TestArgumentUnmarshalJSON(t *testing.T) {
+	t.Parallel()
+
 	type testCase struct {
+		name        string
 		json        string
 		expect      Argument
 		expectError bool
@@ -63,62 +76,80 @@ func TestArgumentUnmarshalJSON(t *testing.T) {
 	maxFloat64JSON, _ = json.Marshal(float64(math.MaxFloat64))
 	testCases := []testCase{
 		{
+			name:   "int arg",
 			json:   `{ "name":"test", "type":"int", "value": ` + string(maxInt32JSON) + `}`,
 			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "int"}, Value: int32(math.MaxInt32)},
 		},
 		{
+			name:   "unsigned int arg",
 			json:   `{ "name":"test", "type":"unsigned int", "value": ` + string(maxUint32JSON) + `}`,
 			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "unsigned int"}, Value: uint32(math.MaxUint32)},
 		},
 		{
+			name:   "long arg",
 			json:   `{ "name":"test", "type":"long", "value": ` + string(maxInt64JSON) + `}`,
 			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "long"}, Value: int64(math.MaxInt64)},
 		},
 		{
+			name:   "unsigned long arg",
 			json:   `{ "name":"test", "type":"unsigned long", "value": ` + string(maxUint64JSON) + `}`,
 			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "unsigned long"}, Value: uint64(math.MaxUint64)},
 		},
 		{
+			name:   "random_struct* arg",
 			json:   `{ "name":"test", "type":"random_struct*", "value": ` + string(maxUint64JSON) + `}`,
 			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "random_struct*"}, Value: uint64(math.MaxUint64)},
 		},
 		{
+			name:   "float arg",
 			json:   `{ "name":"test", "type":"float", "value": ` + string(maxFloat32JSON) + `}`,
 			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "float"}, Value: float32(math.MaxFloat32)},
 		},
 		{
+			name:   "float64 arg",
 			json:   `{ "name":"test", "type":"float64", "value": ` + string(maxFloat64JSON) + `}`,
 			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "float64"}, Value: float64(math.MaxFloat64)},
 		},
 		{
+			name:   "const char*const* arg",
 			json:   `{ "name":"test", "type":"const char*const*", "value": [ "foo", "bar" ]}`,
 			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "const char*const*"}, Value: []string{"foo", "bar"}},
 		},
 		{
+			name:   "const char*const* arg",
 			json:   `{ "name":"test", "type":"const char*const*", "value": null}`,
 			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "const char*const*"}, Value: nil},
 		},
 		{
+			name:        "err arg",
 			json:        `{ "name":"test", "type":"err", "value": 0}`,
 			expectError: true,
 		},
 	}
 	for _, tc := range testCases {
-		var res Argument
-		err := json.Unmarshal([]byte(tc.json), &res)
-		if err != nil {
-			if tc.expectError {
-				continue
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			var res Argument
+			err := json.Unmarshal([]byte(tc.json), &res)
+			if err != nil {
+				if tc.expectError {
+					return
+				}
+				t.Error(err)
 			}
-			t.Error(err)
-		}
-		if !reflect.DeepEqual(tc.expect, res) {
-			t.Errorf("want %v (Value type %T), have %v (Value type %T)", tc.expect, tc.expect.Value, res, res.Value)
-		}
+			if !reflect.DeepEqual(tc.expect, res) {
+				t.Errorf("want %v (Value type %T), have %v (Value type %T)", tc.expect, tc.expect.Value, res, res.Value)
+			}
+		})
 	}
 }
 
 func TestEvent_Origin(t *testing.T) {
+	t.Parallel()
+
 	type testCase struct {
 		event    Event
 		expected EventOrigin
@@ -154,11 +185,19 @@ func TestEvent_Origin(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		assert.Equal(t, tc.expected, tc.event.Origin())
+		tc := tc
+
+		t.Run(tc.event.EventName, func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, tc.expected, tc.event.Origin())
+		})
 	}
 }
 
 func TestEvent_ToProtocol(t *testing.T) {
+	t.Parallel()
+
 	type testCase struct {
 		payload  Event
 		expected protocol.Event
@@ -235,6 +274,12 @@ func TestEvent_ToProtocol(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		assert.Equal(t, tc.expected, tc.payload.ToProtocol())
+		tc := tc
+
+		t.Run(tc.payload.EventName, func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, tc.expected, tc.payload.ToProtocol())
+		})
 	}
 }

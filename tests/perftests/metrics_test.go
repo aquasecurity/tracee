@@ -97,6 +97,8 @@ func checkIfPprofExist() error {
 
 // TestMetricsExist tests if the metrics endpoint returns all metrics.
 func TestMetricsandPprofExist(t *testing.T) {
+	t.Parallel()
+
 	if !testutils.IsSudoCmdAvailableForThisUser() {
 		t.Skip("skipping: sudo command is not available for this user")
 	}

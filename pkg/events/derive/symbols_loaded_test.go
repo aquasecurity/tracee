@@ -165,12 +165,15 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 
 	t.Run("Happy flow", func(t *testing.T) {
 		for _, testCase := range happyFlowTestCases {
-			t.Run(testCase.name, func(t *testing.T) {
-				errChan := setMockLogger(logger.DebugLevel)
-				defer logger.SetLogger(baseLogger)
+			testCase := testCase
 
-				mockLoader := initLoaderMock(false)
-				mockLoader.addSOSymbols(testCase.loadingSO)
+			errChan := setMockLogger(logger.DebugLevel)
+			mockLoader := initLoaderMock(false)
+			mockLoader.addSOSymbols(testCase.loadingSO)
+
+			t.Run(testCase.name, func(t *testing.T) {
+				t.Parallel()
+
 				gen := initSymbolsLoadedEventGenerator(mockLoader, testCase.watchedSymbols, testCase.whitelistedLibs)
 				eventArgs, err := gen.deriveArgs(generateSOLoadedEvent(pid, testCase.loadingSO.info))
 				assert.Empty(t, errChan)
@@ -187,6 +190,8 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 					assert.Len(t, eventArgs, 0)
 				}
 			})
+
+			logger.SetLogger(baseLogger)
 		}
 	})
 

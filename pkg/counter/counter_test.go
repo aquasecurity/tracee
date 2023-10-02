@@ -11,6 +11,8 @@ import (
 // Increment
 
 func TestIncrement(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(1)
 	c := NewCounter(0)
 
@@ -21,6 +23,8 @@ func TestIncrement(t *testing.T) {
 }
 
 func TestIncrementWithValue(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(9)
 	c := NewCounter(0)
 
@@ -31,6 +35,8 @@ func TestIncrementWithValue(t *testing.T) {
 }
 
 func TestIncrementWithMultipleValue(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(9)
 	c := NewCounter(0)
 
@@ -41,6 +47,8 @@ func TestIncrementWithMultipleValue(t *testing.T) {
 }
 
 func TestIncrementAndRead(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(9)
 	c := NewCounter(0)
 
@@ -52,6 +60,8 @@ func TestIncrementAndRead(t *testing.T) {
 }
 
 func TestZeroedIncrementWithValue(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(9)
 	c := NewCounter(9)
 
@@ -62,6 +72,8 @@ func TestZeroedIncrementWithValue(t *testing.T) {
 }
 
 func TestZeroedIncrementWithMultipleValue(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(9)
 	c := NewCounter(9)
 
@@ -72,6 +84,8 @@ func TestZeroedIncrementWithMultipleValue(t *testing.T) {
 }
 
 func TestIncrementOverflow(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(0)
 	c := NewCounter(uint64(math.MaxUint64) - 1)
 
@@ -85,6 +99,8 @@ func TestIncrementOverflow(t *testing.T) {
 }
 
 func TestIncrementWithValueOverflow(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(0)
 	c := NewCounter(0)
 
@@ -98,6 +114,8 @@ func TestIncrementWithValueOverflow(t *testing.T) {
 }
 
 func TestIncrement_MultipleThreads(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(100000)
 	c := NewCounter(0)
 
@@ -122,6 +140,8 @@ func TestIncrement_MultipleThreads(t *testing.T) {
 // Decrement
 
 func TestDecrement(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(0)
 	c := NewCounter(1)
 
@@ -132,6 +152,8 @@ func TestDecrement(t *testing.T) {
 }
 
 func TestDecrementWithValue(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(1)
 	c := NewCounter(10)
 
@@ -142,6 +164,8 @@ func TestDecrementWithValue(t *testing.T) {
 }
 
 func TestDecrementWithMultipleValue(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(1)
 	c := NewCounter(10)
 
@@ -152,6 +176,8 @@ func TestDecrementWithMultipleValue(t *testing.T) {
 }
 
 func TestDecrementAndRead(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(1)
 	c := NewCounter(10)
 
@@ -163,6 +189,8 @@ func TestDecrementAndRead(t *testing.T) {
 }
 
 func TestZeroedDecrementWithValue(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(9)
 	c := NewCounter(9)
 
@@ -173,6 +201,8 @@ func TestZeroedDecrementWithValue(t *testing.T) {
 }
 
 func TestZeroedDecrementWithMultipleValue(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(9)
 	c := NewCounter(9)
 
@@ -183,6 +213,8 @@ func TestZeroedDecrementWithMultipleValue(t *testing.T) {
 }
 
 func TestDecrementOverflow(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(math.MaxUint64)
 	c := NewCounter(0)
 
@@ -198,6 +230,8 @@ func TestDecrementOverflow(t *testing.T) {
 }
 
 func TestDecrementWithValueOverflow(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(math.MaxUint64 - 8)
 	c := NewCounter(0)
 
@@ -207,6 +241,8 @@ func TestDecrementWithValueOverflow(t *testing.T) {
 }
 
 func TestDecrement_MultipleThreads(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(0)
 	c := NewCounter(100000)
 
@@ -231,6 +267,8 @@ func TestDecrement_MultipleThreads(t *testing.T) {
 // Increment + Decrement
 
 func TestIncrementDecrement(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(0)
 	c := NewCounter(0)
 
@@ -244,6 +282,8 @@ func TestIncrementDecrement(t *testing.T) {
 }
 
 func TestIncrementDecrement_MultipleThreads(t *testing.T) {
+	t.Parallel()
+
 	expected := uint64(0)
 	c := NewCounter(0)
 

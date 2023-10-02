@@ -14,6 +14,8 @@ import (
 )
 
 func TestSignature_GetSelectedEvents(t *testing.T) {
+	t.Parallel()
+
 	signature, err := celsig.NewSignature(celsig.SignatureConfig{
 		Metadata: detect.SignatureMetadata{
 			ID:   "TRC-2",
@@ -39,6 +41,8 @@ func TestSignature_GetSelectedEvents(t *testing.T) {
 }
 
 func TestSignature_OnEvent(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name    string
 		config  celsig.SignatureConfig
@@ -201,7 +205,11 @@ input.sockaddrArg('addr').sin_addr == "216.58.215.110"`,
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			signature, err := celsig.NewSignature(tc.config)
 			require.NoError(t, err)
 			holder := &signaturestest.FindingsHolder{}

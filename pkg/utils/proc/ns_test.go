@@ -8,6 +8,8 @@ import (
 )
 
 func TestExtractNSFromLink(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name          string
 		link          string
@@ -35,7 +37,11 @@ func TestExtractNSFromLink(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
 			ns, err := extractNSFromLink(testCase.link)
 			if testCase.expectedError {
 				assert.Error(t, err)

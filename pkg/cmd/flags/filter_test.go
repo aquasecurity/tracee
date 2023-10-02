@@ -10,6 +10,8 @@ import (
 )
 
 func TestFilter_prepareEventsToTrace(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name        string
 		eventFilter eventFilter
@@ -80,7 +82,11 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 		}
 	}
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			res, err := prepareEventsToTrace(tc.eventFilter, eventsNameToID)
 			if tc.expectedErr != nil {
 				assert.Equal(t, err.Error(), tc.expectedErr.Error())

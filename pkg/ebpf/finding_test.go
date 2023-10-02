@@ -13,6 +13,8 @@ import (
 )
 
 func TestFindingToEvent(t *testing.T) {
+	t.Parallel()
+
 	expected := &trace.Event{
 		EventID:             int(events.StartSignatureID),
 		EventName:           "fake_signature_event",

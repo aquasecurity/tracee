@@ -30,6 +30,8 @@ func (e sortableEventsList) Swap(i, j int) {
 }
 
 func TestEventsChronologicalSorter_addEvent(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		events                []trace.Event
 		expectedCpuQueuesLens map[int]int
@@ -88,7 +90,11 @@ func TestEventsChronologicalSorter_addEvent(t *testing.T) {
 		},
 	}
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
 			errChan := make(chan error)
 			newSorter, err := InitEventSorter()
 			require.NoError(t, err)
@@ -130,6 +136,8 @@ type sorterTestCase struct {
 }
 
 func TestEventsChronologicalSorter_Start(t *testing.T) {
+	t.Parallel()
+
 	sendingInterval := 100 * time.Millisecond
 	testCases := []sorterTestCase{
 		{
@@ -255,7 +263,11 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
 			outputChan := make(chan *trace.Event)
 			fatalErrorsChan := make(chan error)
 			errChan := make(chan error)

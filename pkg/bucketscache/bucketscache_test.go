@@ -10,6 +10,8 @@ import (
 )
 
 func TestBucketsCache(t *testing.T) {
+	t.Parallel()
+
 	var cache bucketscache.BucketsCache
 	cache.Init(5)
 	cache.AddBucketItem(1, 32)

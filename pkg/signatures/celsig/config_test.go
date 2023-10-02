@@ -11,6 +11,8 @@ import (
 )
 
 func TestNewConfigFromFile(t *testing.T) {
+	t.Parallel()
+
 	config, err := celsig.NewConfigFromFile("testdata/rules/anti_debugging_ptraceme.yml")
 	require.NoError(t, err)
 	assert.Equal(t, celsig.SignaturesConfig{

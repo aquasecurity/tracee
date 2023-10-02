@@ -10,6 +10,8 @@ import (
 )
 
 func TestPrepareCache(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		testName      string
 		cacheSlice    []string
@@ -52,7 +54,11 @@ func TestPrepareCache(t *testing.T) {
 	}
 
 	for _, testcase := range testCases {
+		testcase := testcase
+
 		t.Run(testcase.testName, func(t *testing.T) {
+			t.Parallel()
+
 			cache, err := PrepareCache(testcase.cacheSlice)
 			if testcase.expectedError != nil {
 				assert.ErrorContains(t, err, testcase.expectedError.Error())

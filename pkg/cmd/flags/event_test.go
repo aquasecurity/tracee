@@ -8,6 +8,8 @@ import (
 )
 
 func TestParseEventFlag(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name          string
 		eventFlag     string
@@ -404,7 +406,11 @@ func TestParseEventFlag(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
+		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			parsedEventFlag, err := parseEventFlag(tt.eventFlag)
 			if err != nil {
 				require.Contains(t, err.Error(), tt.expectedError.Error())
@@ -416,6 +422,8 @@ func TestParseEventFlag(t *testing.T) {
 }
 
 func TestPrepareEventMapFromFlags(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name      string
 		eventsArr []string
@@ -503,7 +511,11 @@ func TestPrepareEventMapFromFlags(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			eventMap, err := PrepareEventMapFromFlags(tc.eventsArr)
 			assert.Nil(t, err)
 			assert.Equal(t, tc.expected, eventMap)

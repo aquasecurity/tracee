@@ -14,6 +14,8 @@ import (
 )
 
 func TestServer(t *testing.T) {
+	t.Parallel()
+
 	tempDir, err := os.MkdirTemp("", "tracee-tests")
 	if err != nil {
 		t.Fatal(err)

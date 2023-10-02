@@ -7,6 +7,8 @@ import (
 )
 
 func TestGetFtraceFlags(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Parse flags", func(t *testing.T) {
 		testCases := []struct {
 			name          string
@@ -23,13 +25,21 @@ func TestGetFtraceFlags(t *testing.T) {
 		}
 
 		for _, testCase := range testCases {
-			flags := getFtraceFlags(testCase.ftraceParts, &testCase.index)
-			assert.Equal(t, testCase.expectedFlags, flags)
+			testCase := testCase
+
+			t.Run(testCase.name, func(t *testing.T) {
+				t.Parallel()
+
+				flags := getFtraceFlags(testCase.ftraceParts, &testCase.index)
+				assert.Equal(t, testCase.expectedFlags, flags)
+			})
 		}
 	})
 }
 
 func TestGetCallback(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Parse callback", func(t *testing.T) {
 		testCases := []struct {
 			name             string
@@ -44,13 +54,21 @@ func TestGetCallback(t *testing.T) {
 		}
 
 		for _, testCase := range testCases {
-			flags := getCallback(testCase.ftraceParts)
-			assert.Equal(t, testCase.expectedCallback, flags)
+			testCase := testCase
+
+			t.Run(testCase.name, func(t *testing.T) {
+				t.Parallel()
+
+				flags := getCallback(testCase.ftraceParts)
+				assert.Equal(t, testCase.expectedCallback, flags)
+			})
 		}
 	})
 }
 
 func TestFetchTrampAndCallback(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Parse tramp and callback", func(t *testing.T) {
 		testCases := []struct {
 			name             string
@@ -77,6 +95,8 @@ func TestFetchTrampAndCallback(t *testing.T) {
 }
 
 func TestSplitCallback(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Split callback", func(t *testing.T) {
 		testCases := []struct {
 			name             string
@@ -95,10 +115,16 @@ func TestSplitCallback(t *testing.T) {
 		}
 
 		for _, testCase := range testCases {
-			funcName, offset, owner := splitCallback(testCase.callback)
-			assert.Equal(t, testCase.expectedFuncName, funcName)
-			assert.Equal(t, testCase.expectedOffset, offset)
-			assert.Equal(t, testCase.expectedOwner, owner)
+			testCase := testCase
+
+			t.Run(testCase.name, func(t *testing.T) {
+				t.Parallel()
+
+				funcName, offset, owner := splitCallback(testCase.callback)
+				assert.Equal(t, testCase.expectedFuncName, funcName)
+				assert.Equal(t, testCase.expectedOffset, offset)
+				assert.Equal(t, testCase.expectedOwner, owner)
+			})
 		}
 	})
 }

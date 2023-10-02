@@ -7,6 +7,8 @@ import (
 )
 
 func Test_hasLeadingOrTrailingWhitespace(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		input  string
 		output bool
@@ -34,6 +36,8 @@ func Test_hasLeadingOrTrailingWhitespace(t *testing.T) {
 }
 
 func Test_isFlagOperatorValid(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		input  string
 		output bool
@@ -66,6 +70,8 @@ func Test_isFlagOperatorValid(t *testing.T) {
 }
 
 func Test_getEventFilterParts(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name          string
 		filter        string
@@ -157,7 +163,11 @@ func Test_getEventFilterParts(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			parts, err := getEventFilterParts(tc.filter, tc.flag)
 
 			if tc.expectedError == nil {

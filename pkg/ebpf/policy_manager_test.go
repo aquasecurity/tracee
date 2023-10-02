@@ -11,6 +11,8 @@ import (
 )
 
 func TestPolicyManagerEnableRule(t *testing.T) {
+	t.Parallel()
+
 	policyManager := newPolicyManager()
 
 	policy1Mached := uint64(0b10)
@@ -35,6 +37,8 @@ func TestPolicyManagerEnableRule(t *testing.T) {
 }
 
 func TestPolicyManagerDisableRule(t *testing.T) {
+	t.Parallel()
+
 	policyManager := newPolicyManager()
 
 	policy1Mached := uint64(0b10)
@@ -55,6 +59,8 @@ func TestPolicyManagerDisableRule(t *testing.T) {
 }
 
 func TestPolicyManagerEnableAndDisableRuleConcurrent(t *testing.T) {
+	t.Parallel()
+
 	eventsToEnable := []events.ID{
 		events.SecurityBPF,
 		events.SchedGetPriorityMax,
@@ -108,6 +114,8 @@ func TestPolicyManagerEnableAndDisableRuleConcurrent(t *testing.T) {
 }
 
 func TestPolicyManagerEnableEvent(t *testing.T) {
+	t.Parallel()
+
 	policyManager := newPolicyManager()
 
 	assert.False(t, policyManager.isEventEnabled(events.SecurityBPF))
@@ -124,6 +132,8 @@ func TestPolicyManagerEnableEvent(t *testing.T) {
 }
 
 func TestPolicyManagerDisableEvent(t *testing.T) {
+	t.Parallel()
+
 	policyManager := newPolicyManager()
 
 	policyManager.EnableEvent(events.SecurityBPF)
@@ -143,6 +153,8 @@ func TestPolicyManagerDisableEvent(t *testing.T) {
 }
 
 func TestPolicyManagerEnableAndDisableEventConcurrent(t *testing.T) {
+	t.Parallel()
+
 	eventsToEnable := []events.ID{
 		events.SecurityBPF,
 		events.SchedGetPriorityMax,
@@ -201,6 +213,8 @@ func TestPolicyManagerEnableAndDisableEventConcurrent(t *testing.T) {
 }
 
 func TestEnableRuleAlsoEnableEvent(t *testing.T) {
+	t.Parallel()
+
 	policyManager := newPolicyManager()
 
 	assert.False(t, policyManager.IsEventEnabled(events.SecurityBPF))
@@ -211,6 +225,8 @@ func TestEnableRuleAlsoEnableEvent(t *testing.T) {
 }
 
 func TestDisableRuleAlsoEnableEvent(t *testing.T) {
+	t.Parallel()
+
 	policyManager := newPolicyManager()
 
 	assert.False(t, policyManager.IsEventEnabled(events.SecurityFileOpen))
@@ -221,6 +237,8 @@ func TestDisableRuleAlsoEnableEvent(t *testing.T) {
 }
 
 func TestPolicyManagerIsEnabled(t *testing.T) {
+	t.Parallel()
+
 	policyManager := newPolicyManager()
 
 	policy1Mached := uint64(0b10)

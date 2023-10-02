@@ -44,7 +44,11 @@ var testDynamicSymbols = &dynamicSymbols{
 }
 
 func TestHostSharedObjectSymbolsLoader_GetDynamicSymbols(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Happy flow", func(t *testing.T) {
+		t.Parallel()
+
 		failLoadingFunc := func(path string) (*dynamicSymbols, error) {
 			return nil, errors.New("no SO")
 		}
@@ -63,6 +67,8 @@ func TestHostSharedObjectSymbolsLoader_GetDynamicSymbols(t *testing.T) {
 	})
 
 	t.Run("Sad flow", func(t *testing.T) {
+		t.Parallel()
+
 		failLoadingFunc := func(path string) (*dynamicSymbols, error) {
 			return nil, errors.New("no SO")
 		}
@@ -78,7 +84,11 @@ func TestHostSharedObjectSymbolsLoader_GetDynamicSymbols(t *testing.T) {
 }
 
 func TestHostSharedObjectSymbolsLoader_GetExportedSymbols(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Happy flow", func(t *testing.T) {
+		t.Parallel()
+
 		failLoadingFunc := func(path string) (*dynamicSymbols, error) {
 			return nil, errors.New("no SO")
 		}
@@ -97,6 +107,8 @@ func TestHostSharedObjectSymbolsLoader_GetExportedSymbols(t *testing.T) {
 	})
 
 	t.Run("Sad flow", func(t *testing.T) {
+		t.Parallel()
+
 		failLoadingFunc := func(path string) (*dynamicSymbols, error) {
 			return nil, errors.New("no SO")
 		}
@@ -112,7 +124,11 @@ func TestHostSharedObjectSymbolsLoader_GetExportedSymbols(t *testing.T) {
 }
 
 func TestHostSharedObjectSymbolsLoader_GetImportedSymbols(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Happy flow", func(t *testing.T) {
+		t.Parallel()
+
 		failLoadingFunc := func(path string) (*dynamicSymbols, error) {
 			return nil, errors.New("no SO")
 		}
@@ -131,6 +147,8 @@ func TestHostSharedObjectSymbolsLoader_GetImportedSymbols(t *testing.T) {
 	})
 
 	t.Run("Sad flow", func(t *testing.T) {
+		t.Parallel()
+
 		failLoadingFunc := func(path string) (*dynamicSymbols, error) {
 			return nil, errors.New("no SO")
 		}
@@ -146,7 +164,11 @@ func TestHostSharedObjectSymbolsLoader_GetImportedSymbols(t *testing.T) {
 }
 
 func TestHostSharedObjectSymbolsLoader_loadSOSymbols(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Cached SO", func(t *testing.T) {
+		t.Parallel()
+
 		failLoadingFunc := func(path string) (*dynamicSymbols, error) {
 			return nil, errors.New("no SO")
 		}
@@ -165,6 +187,8 @@ func TestHostSharedObjectSymbolsLoader_loadSOSymbols(t *testing.T) {
 	})
 
 	t.Run("Uncached non existing SO", func(t *testing.T) {
+		t.Parallel()
+
 		failLoadingFunc := func(path string) (*dynamicSymbols, error) {
 			return nil, errors.New("no SO")
 		}
@@ -185,6 +209,8 @@ func TestHostSharedObjectSymbolsLoader_loadSOSymbols(t *testing.T) {
 	})
 
 	t.Run("Uncached existing SO", func(t *testing.T) {
+		t.Parallel()
+
 		cachedSymbols := make(map[ObjInfo]*dynamicSymbols)
 		cache := soCacheMock{
 			add: func(obj ObjInfo, dynamicSymbols *dynamicSymbols) {
@@ -207,6 +233,8 @@ func TestHostSharedObjectSymbolsLoader_loadSOSymbols(t *testing.T) {
 }
 
 func TestParseDynamicSymbols(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		Name          string
 		Input         []elf.Symbol
@@ -267,7 +295,11 @@ func TestParseDynamicSymbols(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.Name, func(t *testing.T) {
+			t.Parallel()
+
 			dynamicSymbols := parseDynamicSymbols(testCase.Input)
 			assert.Equal(t, fmt.Sprint(testCase.ExpecteResult.Imported), fmt.Sprint(dynamicSymbols.Imported))
 			assert.Equal(t, fmt.Sprint(testCase.ExpecteResult.Exported), fmt.Sprint(dynamicSymbols.Exported))

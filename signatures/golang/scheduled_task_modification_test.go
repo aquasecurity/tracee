@@ -12,6 +12,8 @@ import (
 )
 
 func TestScheduledTaskModification(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		Name     string
 		Events   []trace.Event
@@ -359,7 +361,11 @@ func TestScheduledTaskModification(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+
 			holder := signaturestest.FindingsHolder{}
 			sig := ScheduledTaskModification{}
 			sig.Init(detect.SignatureContext{Callback: holder.OnFinding})

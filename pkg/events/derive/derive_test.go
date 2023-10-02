@@ -12,6 +12,8 @@ import (
 )
 
 func Test_DeriveEvent(t *testing.T) {
+	t.Parallel()
+
 	testEventID := events.ID(1)
 	failEventID := events.ID(11)
 	deriveEventID := events.ID(12)
@@ -67,7 +69,11 @@ func Test_DeriveEvent(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			derived, errors := mockDerivationTable.DeriveEvent(tc.event)
 			assert.Equal(t, tc.expectedDerived, derived)
 			assert.Equal(t, tc.expectedErrors, errors)
@@ -297,6 +303,8 @@ func TestDeriveMultipleEvents(t *testing.T) {
 }
 
 func TestNewEvent(t *testing.T) {
+	t.Parallel()
+
 	baseEvent := getTestEvent()
 	skeleton := deriveBase{
 		Name: "test_derive",
@@ -336,7 +344,11 @@ func TestNewEvent(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.Name, func(t *testing.T) {
+			t.Parallel()
+
 			evt, err := buildDerivedEvent(&baseEvent, skeleton, testCase.Args)
 			if testCase.ExpectError {
 				assert.Error(t, err)

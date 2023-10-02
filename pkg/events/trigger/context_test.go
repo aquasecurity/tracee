@@ -51,6 +51,8 @@ func EventsMatch(t *testing.T, expected, actual trace.Event) {
 }
 
 func TestStore(t *testing.T) {
+	t.Parallel()
+
 	e := NewFakeTriggerEvent()
 	c := trigger.NewContext()
 
@@ -60,6 +62,8 @@ func TestStore(t *testing.T) {
 }
 
 func TestLoad(t *testing.T) {
+	t.Parallel()
+
 	e := NewFakeTriggerEvent()
 	c := trigger.NewContext()
 
@@ -72,6 +76,8 @@ func TestLoad(t *testing.T) {
 
 // TestStoreAndLoad_MultipleThreads tests that the context store is thread safe.
 func TestStoreAndLoad_MultipleThreads(t *testing.T) {
+	t.Parallel()
+
 	c := trigger.NewContext()
 
 	wg := sync.WaitGroup{}
@@ -95,6 +101,8 @@ func TestStoreAndLoad_MultipleThreads(t *testing.T) {
 }
 
 func TestContext_Apply(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name          string
 		invokingEvent trace.Event
@@ -209,7 +217,11 @@ func TestContext_Apply(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			triggerContexts := trigger.NewContext()
 			triggerContexts.Store(tc.invokingEvent)
 			out, err := triggerContexts.Apply(tc.inputEvent)

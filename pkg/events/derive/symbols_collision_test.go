@@ -344,7 +344,11 @@ func TestSymbolsCollisionArgsGenerator_FindSOCollision(t *testing.T) {
 	}
 
 	for _, filterTestCase := range filtersTestCases {
+		filterTestCase := filterTestCase
+
 		t.Run(filterTestCase.name, func(t *testing.T) {
+			t.Parallel()
+
 			for _, testCase := range testCases {
 				t.Run(testCase.name, func(t *testing.T) {
 					mockLoader := initLoaderMock(false)
@@ -394,7 +398,11 @@ func TestSymbolsCollisionArgsGenerator_deriveArgs(t *testing.T) {
 	pid := 1
 
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
 			mockLoader := initLoaderMock(false)
 			gen := initSOCollisionsEventGenerator(
 				mockLoader,
@@ -452,7 +460,11 @@ func TestSymbolsCollision(t *testing.T) {
 	pid := 1
 
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
 			mockLoader := initLoaderMock(false)
 
 			// Prepare mocked filters for the existing test cases

@@ -12,6 +12,8 @@ import (
 )
 
 func TestPathResolver_ResolveAbsolutePath(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Mountns cache tests", func(t *testing.T) {
 		type process struct {
 			pid   uint32
@@ -69,7 +71,11 @@ func TestPathResolver_ResolveAbsolutePath(t *testing.T) {
 		assert.NoError(t, err)
 
 		for _, testCase := range testCases {
+			testCase := testCase
+
 			t.Run(testCase.Name, func(t *testing.T) {
+				t.Parallel()
+
 				// Initialize a mock for the os.Stat function
 				mfs := fstest.MapFS{}
 				bucket := bucketscache.BucketsCache{}
@@ -131,7 +137,11 @@ func TestPathResolver_ResolveAbsolutePath(t *testing.T) {
 		bucket.Init(20)
 		bucket.AddBucketItem(uint32(testMntNS), 1)
 		for _, testCase := range testCases {
+			testCase := testCase
+
 			t.Run(testCase.name, func(t *testing.T) {
+				t.Parallel()
+
 				// Initialize a mock for the os.Stat function
 				mfs := fstest.MapFS{}
 				if testCase.pathExist {

@@ -7,6 +7,8 @@ import (
 )
 
 func TestEvent_SetHeader(t *testing.T) {
+	t.Parallel()
+
 	evt := Event{
 		Headers: EventHeaders{},
 		Payload: "blah",
