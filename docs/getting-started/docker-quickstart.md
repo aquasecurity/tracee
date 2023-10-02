@@ -22,7 +22,7 @@ docker run \
 
 ### Steps to run the Tracee container image on arm64:
 
-There are a few more steps involved in running Tracee through a container image on arm64.
+There are a few more steps involved in running Tracee through a container image on arm64 (M1).
 
 Prerequisites:
 
