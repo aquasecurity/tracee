@@ -12,6 +12,8 @@ import (
 )
 
 func TestProcFopsHooking(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		Name     string
 		Events   []trace.Event
@@ -93,7 +95,11 @@ func TestProcFopsHooking(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+
 			holder := signaturestest.FindingsHolder{}
 			sig := ProcFopsHooking{}
 			sig.Init(detect.SignatureContext{Callback: holder.OnFinding})

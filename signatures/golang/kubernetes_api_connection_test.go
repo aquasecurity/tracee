@@ -12,6 +12,8 @@ import (
 )
 
 func TestK8sApiConnection(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		Name     string
 		Events   []trace.Event
@@ -130,7 +132,11 @@ func TestK8sApiConnection(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+
 			holder := signaturestest.FindingsHolder{}
 
 			sig := &K8sApiConnection{}

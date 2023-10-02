@@ -12,6 +12,8 @@ import (
 )
 
 func Test_listSigs(t *testing.T) {
+	t.Parallel()
+
 	fakeSigs := []*signature.FakeSignature{
 		{
 			FakeGetMetadata: func() (detect.SignatureMetadata, error) {
@@ -54,6 +56,8 @@ BAR-1      bar signature                       4.5.6   bar signature helps with 
 }
 
 func Test_listEvents(t *testing.T) {
+	t.Parallel()
+
 	fakeSigs := []*signature.FakeSignature{
 		{
 			FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {

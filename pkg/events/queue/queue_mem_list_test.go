@@ -10,6 +10,8 @@ import (
 )
 
 func TestEnqueueDequeue(t *testing.T) {
+	t.Parallel()
+
 	q := NewEventQueueMem(1024)
 	wg := sync.WaitGroup{}
 	wg.Add(1)

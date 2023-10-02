@@ -10,6 +10,8 @@ import (
 )
 
 func TestReadArgFromBuff(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name          string
 		input         []byte
@@ -165,22 +167,30 @@ func TestReadArgFromBuff(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		decoder := New(tc.input)
-		_, actual, err := readArgFromBuff(0, decoder, tc.params)
+		tc := tc
 
-		if tc.expectedError != nil {
-			assert.ErrorContains(t, err, tc.expectedError.Error())
-		}
-		assert.Equal(t, tc.expectedArg, actual.Value)
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-		if tc.name == "unknown" {
-			continue
-		}
-		assert.Empty(t, decoder.BuffLen()-decoder.ReadAmountBytes(), tc.name) // passed in buffer should be emptied out
+			decoder := New(tc.input)
+			_, actual, err := readArgFromBuff(0, decoder, tc.params)
+
+			if tc.expectedError != nil {
+				assert.ErrorContains(t, err, tc.expectedError.Error())
+			}
+			assert.Equal(t, tc.expectedArg, actual.Value)
+
+			if tc.name == "unknown" {
+				return
+			}
+			assert.Empty(t, decoder.BuffLen()-decoder.ReadAmountBytes(), tc.name) // passed in buffer should be emptied out
+		})
 	}
 }
 
 func TestPrintUint32IP(t *testing.T) {
+	t.Parallel()
+
 	var input uint32 = 3232238339
 	ip := PrintUint32IP(input)
 
@@ -189,6 +199,8 @@ func TestPrintUint32IP(t *testing.T) {
 }
 
 func TestPrint16BytesSliceIP(t *testing.T) {
+	t.Parallel()
+
 	input := []byte{32, 1, 13, 184, 133, 163, 0, 0, 0, 0, 138, 46, 3, 112, 115, 52}
 	ip := Print16BytesSliceIP(input)
 

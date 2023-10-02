@@ -11,6 +11,8 @@ import (
 )
 
 func TestPolicyValidate(t *testing.T) {
+	t.Parallel()
+
 	fakeSigEventDefinition := events.NewDefinition(
 		0,
 		events.Sys32Undefined,
@@ -488,7 +490,11 @@ func TestPolicyValidate(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		test := test
+
 		t.Run(test.testName, func(t *testing.T) {
+			t.Parallel()
+
 			err := test.policy.Validate()
 			if test.expectedError != nil {
 				assert.ErrorContains(t, err, test.expectedError.Error())

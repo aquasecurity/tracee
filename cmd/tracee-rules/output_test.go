@@ -21,6 +21,8 @@ import (
 )
 
 func Test_setupOutput(t *testing.T) {
+	t.Parallel()
+
 	var testCases = []struct {
 		name           string
 		inputEvent     protocol.Event
@@ -125,6 +127,8 @@ func checkOutput(t *testing.T, testName string, actualOutput *SyncBuffer, expect
 }
 
 func Test_sendToWebhook(t *testing.T) {
+	t.Parallel()
+
 	var testCases = []struct {
 		name               string
 		inputTemplateFile  string
@@ -170,7 +174,11 @@ func Test_sendToWebhook(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 				got, err := io.ReadAll(request.Body)
 				require.NoError(t, err)
@@ -209,6 +217,8 @@ func Test_sendToWebhook(t *testing.T) {
 }
 
 func TestOutputTemplates(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		testName     string
 		finding      detect.Finding
@@ -272,7 +282,11 @@ func TestOutputTemplates(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.testName, func(t *testing.T) {
+			t.Parallel()
+
 			var buf bytes.Buffer
 			err := jsonTemplate.Execute(&buf, tc.finding)
 			require.NoError(t, err)

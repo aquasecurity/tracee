@@ -7,6 +7,8 @@ import (
 )
 
 func TestChangelog(t *testing.T) {
+	t.Parallel()
+
 	cl := NewChangelog[int]()
 
 	// Test GetCurrent on an empty changelog

@@ -10,6 +10,8 @@ import (
 )
 
 func TestPrepareOutput(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		testName       string
 		outputSlice    []string
@@ -402,7 +404,11 @@ func TestPrepareOutput(t *testing.T) {
 		},
 	}
 	for _, testcase := range testCases {
+		testcase := testcase
+
 		t.Run(testcase.testName, func(t *testing.T) {
+			t.Parallel()
+
 			output, err := PrepareOutput(testcase.outputSlice, false)
 			if err != nil {
 				assert.Contains(t, err.Error(), testcase.expectedError.Error())

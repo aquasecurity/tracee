@@ -19,6 +19,8 @@ import (
 )
 
 func TestEngine_ConsumeSources(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name              string
 		inputEvent        protocol.Event
@@ -386,6 +388,8 @@ func TestEngine_ConsumeSources(t *testing.T) {
 }
 
 func TestEngine_GetSelectedEvents(t *testing.T) {
+	t.Parallel()
+
 	sigs := []detect.Signature{
 		&signature.FakeSignature{
 			FakeGetSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
@@ -447,6 +451,8 @@ func TestEngine_GetSelectedEvents(t *testing.T) {
 }
 
 func TestEngine_LoadSignature(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name          string
 		signatures    []detect.Signature

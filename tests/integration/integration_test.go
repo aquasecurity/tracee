@@ -10,6 +10,8 @@ import (
 )
 
 func Test_InitNamespacesEvent(t *testing.T) {
+	t.Parallel()
+
 	assureIsRoot(t)
 
 	procNamespaces := [...]string{"mnt", "cgroup", "pid", "pid_for_children", "time", "time_for_children", "user", "ipc", "net", "uts"}

@@ -7,6 +7,8 @@ import (
 )
 
 func TestParseQueryResString(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		resultString   string
 		expectedResult float64

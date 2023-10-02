@@ -11,6 +11,8 @@ import (
 )
 
 func Test_convertEventWithProcessContext(t *testing.T) {
+	t.Parallel()
+
 	unixTime := int(time.Now().UnixNano())
 
 	traceEvent := trace.Event{
@@ -56,6 +58,8 @@ func Test_convertEventWithProcessContext(t *testing.T) {
 }
 
 func Test_convertEventWithStackaddresses(t *testing.T) {
+	t.Parallel()
+
 	traceEvent := trace.Event{
 		StackAddresses: []uint64{1, 2, 3},
 	}
@@ -75,6 +79,8 @@ func Test_convertEventWithStackaddresses(t *testing.T) {
 }
 
 func Test_convertEventWithContainerContext(t *testing.T) {
+	t.Parallel()
+
 	traceEvent := trace.Event{
 		Container: trace.Container{
 			ID:          "containerID",
@@ -94,6 +100,8 @@ func Test_convertEventWithContainerContext(t *testing.T) {
 }
 
 func Test_convertEventWithK8sContext(t *testing.T) {
+	t.Parallel()
+
 	traceEvent := trace.Event{
 		Kubernetes: trace.Kubernetes{
 			PodName:      "podName",
@@ -111,6 +119,8 @@ func Test_convertEventWithK8sContext(t *testing.T) {
 }
 
 func Test_convertEventWithThreat(t *testing.T) {
+	t.Parallel()
+
 	traceEvent := trace.Event{
 		Metadata: &trace.Metadata{
 			Description: "An attempt to abuse the Docker UNIX ..",

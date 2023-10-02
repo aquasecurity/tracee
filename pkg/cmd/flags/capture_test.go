@@ -13,6 +13,8 @@ import (
 )
 
 func TestPrepareCapture(t *testing.T) {
+	t.Parallel()
+
 	t.Run("various capture options", func(t *testing.T) {
 		testCases := []struct {
 			testName        string
@@ -225,7 +227,11 @@ func TestPrepareCapture(t *testing.T) {
 			},
 		}
 		for _, tc := range testCases {
+			tc := tc
+
 			t.Run(tc.testName, func(t *testing.T) {
+				t.Parallel()
+
 				capture, err := PrepareCapture(tc.captureSlice, false)
 				if tc.expectedError == nil {
 					require.NoError(t, err)

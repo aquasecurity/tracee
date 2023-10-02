@@ -24,6 +24,8 @@ var (
 )
 
 func TestStreamManager(t *testing.T) {
+	t.Parallel()
+
 	var (
 		stream1Count int
 		stream2Count int
@@ -103,6 +105,8 @@ func TestStreamManager(t *testing.T) {
 }
 
 func Test_shouldIgnorePolicy(t *testing.T) {
+	t.Parallel()
+
 	sm := NewStreamsManager()
 
 	tests := []struct {
@@ -150,7 +154,11 @@ func Test_shouldIgnorePolicy(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			stream := sm.Subscribe(tt.policyMask, 0)
 			assert.Equal(t, tt.expected, stream.shouldIgnorePolicy(tt.event))
 		})

@@ -19,6 +19,8 @@ import (
 )
 
 func TestRegoSignature_GetMetadata(t *testing.T) {
+	t.Parallel()
+
 	sig, err := regosig.NewRegoSignature(compile.TargetRego, false, testRegoCodeBoolean)
 	require.NoError(t, err)
 
@@ -42,6 +44,8 @@ func TestRegoSignature_GetMetadata(t *testing.T) {
 }
 
 func TestRegoSignature_GetSelectedEvents(t *testing.T) {
+	t.Parallel()
+
 	sig, err := regosig.NewRegoSignature(compile.TargetRego, false, testRegoCodeBoolean)
 	require.NoError(t, err)
 	events, err := sig.GetSelectedEvents()
@@ -55,6 +59,8 @@ func TestRegoSignature_GetSelectedEvents(t *testing.T) {
 }
 
 func TestRegoSignature_OnEvent(t *testing.T) {
+	t.Parallel()
+
 	options := []struct {
 		target  string
 		partial bool
@@ -78,7 +84,11 @@ func TestRegoSignature_OnEvent(t *testing.T) {
 	}
 
 	for _, tc := range options {
+		tc := tc
+
 		t.Run(fmt.Sprintf("target=%s,partial=%t", tc.target, tc.partial), func(t *testing.T) {
+			t.Parallel()
+
 			OnEventSpec(t, tc.target, tc.partial)
 		})
 	}
@@ -343,7 +353,11 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			sig, err := regosig.NewRegoSignature(target, partial, tc.regoCode)
 			require.NoError(t, err)
 
@@ -364,6 +378,8 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 }
 
 func TestRegoSignature_OnSignal(t *testing.T) {
+	t.Parallel()
+
 	sig, err := regosig.NewRegoSignature(compile.TargetRego, false, testRegoCodeBoolean)
 	require.NoError(t, err)
 	err = sig.OnSignal(os.Kill)

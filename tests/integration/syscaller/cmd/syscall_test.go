@@ -15,6 +15,8 @@ import (
 
 // Test_callsys tests the callsys function
 func Test_callsys(t *testing.T) {
+	t.Parallel()
+
 	// SYS_READ and SYS_CLOSE are syscalls that, considering this environment,
 	// should not return an error when called with zeroed arguments
 	syscalls := []events.ID{events.Read, events.Close}
@@ -32,6 +34,8 @@ func Test_callsys(t *testing.T) {
 
 // Test_changeOwnComm tests the changeOwnComm function
 func Test_changeOwnComm(t *testing.T) {
+	t.Parallel()
+
 	testutils.PinProccessToCPU()
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()

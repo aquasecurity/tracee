@@ -10,6 +10,8 @@ import (
 )
 
 func TestServer(t *testing.T) {
+	t.Parallel()
+
 	httpServer := New("")
 
 	httpServer.EnableMetricsEndpoint()

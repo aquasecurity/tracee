@@ -11,6 +11,8 @@ import (
 )
 
 func TestPrepareRego(t *testing.T) {
+	t.Parallel()
+
 	t.Run("various rego options", func(t *testing.T) {
 		testCases := []struct {
 			testName      string
@@ -51,7 +53,11 @@ func TestPrepareRego(t *testing.T) {
 		}
 
 		for _, tc := range testCases {
+			tc := tc
+
 			t.Run(tc.testName, func(t *testing.T) {
+				t.Parallel()
+
 				rego, err := PrepareRego(tc.regoSlice)
 				if tc.expectedError == nil {
 					require.NoError(t, err)

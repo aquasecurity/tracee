@@ -25,6 +25,8 @@ var readEvtFlag = eventFlag{
 }
 
 func TestPrepareFilterMapsFromPolicies(t *testing.T) {
+	t.Parallel()
+
 	description := map[string]string{"description": "this is a policy"}
 	tests := []struct {
 		testName           string
@@ -1783,7 +1785,11 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		test := test
+
 		t.Run(test.testName, func(t *testing.T) {
+			t.Parallel()
+
 			policyScopeMap, policyEventMap, err := PrepareFilterMapsFromPolicies([]v1beta1.PolicyFile{test.policy})
 			assert.NoError(t, err)
 
@@ -1818,6 +1824,8 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 }
 
 func TestCreatePolicies(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		testName        string
 		scopeFlags      []string
@@ -2048,7 +2056,11 @@ func TestCreatePolicies(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.testName, func(t *testing.T) {
+			t.Parallel()
+
 			policyEventsMap, err := PrepareEventMapFromFlags(tc.evtFlags)
 			if tc.expectEvtErr != nil {
 				assert.ErrorContains(t, err, tc.expectEvtErr.Error())

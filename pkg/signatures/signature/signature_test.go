@@ -20,6 +20,8 @@ const (
 )
 
 func TestFindByEventName(t *testing.T) {
+	t.Parallel()
+
 	sigs, err := Find(compile.TargetRego, false, []string{exampleRulesDir}, []string{"anti_debugging"}, false)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(sigs))
@@ -41,6 +43,8 @@ func TestFindByEventName(t *testing.T) {
 }
 
 func TestFindByRuleID(t *testing.T) {
+	t.Parallel()
+
 	sigs, err := Find(compile.TargetRego, false, []string{exampleRulesDir}, []string{"TRC-2"}, false)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(sigs))
@@ -62,6 +66,8 @@ func TestFindByRuleID(t *testing.T) {
 }
 
 func Test_isHelper(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		input    string
 		expected bool
@@ -79,7 +85,11 @@ func Test_isHelper(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.input, func(t *testing.T) {
+			t.Parallel()
+
 			actual := isHelper(tc.input)
 			assert.Equal(t, tc.expected, actual)
 		})
@@ -87,6 +97,8 @@ func Test_isHelper(t *testing.T) {
 }
 
 func Test_findRegoSigs(t *testing.T) {
+	t.Parallel()
+
 	tRoot, err := os.MkdirTemp(os.TempDir(), "sample-***")
 	require.NoError(t, err)
 	tDir, err := os.MkdirTemp(tRoot, "sample2-***")
@@ -150,6 +162,8 @@ func copyExampleSig(exampleName, destDir string) error {
 }
 
 func Test_isRegoFile(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		input    string
 		expected bool
@@ -163,7 +177,11 @@ func Test_isRegoFile(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.input, func(t *testing.T) {
+			t.Parallel()
+
 			actual := isHelper(tc.input)
 			assert.Equal(t, tc.expected, actual)
 		})

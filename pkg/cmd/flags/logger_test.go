@@ -11,6 +11,8 @@ import (
 )
 
 func TestPrepareLogger(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		testName       string
 		logOptions     []string
@@ -352,7 +354,11 @@ func TestPrepareLogger(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.testName, func(t *testing.T) {
+			t.Parallel()
+
 			logCfg, err := PrepareLogger(tc.logOptions, false)
 			if tc.expectedError != nil {
 				require.Equal(t, logger.LoggingConfig{}, logCfg)

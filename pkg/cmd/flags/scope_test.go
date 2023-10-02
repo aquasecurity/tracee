@@ -8,6 +8,8 @@ import (
 )
 
 func Test_parseScopeFlag(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		name           string
 		flag           string
@@ -318,7 +320,11 @@ func Test_parseScopeFlag(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
+		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			result, err := parseScopeFlag(tt.flag)
 			if err != nil {
 				require.Contains(t, err.Error(), tt.expectedError.Error())

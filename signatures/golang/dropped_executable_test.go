@@ -12,6 +12,8 @@ import (
 )
 
 func TestDroppedExecutable(t *testing.T) {
+	t.Parallel()
+
 	testCases := []struct {
 		Name     string
 		Events   []trace.Event
@@ -125,7 +127,11 @@ func TestDroppedExecutable(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+
 			holder := signaturestest.FindingsHolder{}
 			sig := DroppedExecutable{}
 			sig.Init(detect.SignatureContext{Callback: holder.OnFinding})

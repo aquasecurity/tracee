@@ -17,6 +17,8 @@ import (
 )
 
 func TestAio_GetMetadata(t *testing.T) {
+	t.Parallel()
+
 	sig, err := regosig.NewAIO(map[string]string{
 		"test_boolean.rego": testRegoCodeBoolean,
 		"test_object.rego":  testRegoCodeObject,
@@ -33,6 +35,8 @@ func TestAio_GetMetadata(t *testing.T) {
 }
 
 func TestAio_GetSelectedEvents(t *testing.T) {
+	t.Parallel()
+
 	sig, err := regosig.NewAIO(map[string]string{
 		"test_boolean.rego": testRegoCodeBoolean,
 		"test_object.rego":  testRegoCodeObject,
@@ -61,6 +65,8 @@ func TestAio_GetSelectedEvents(t *testing.T) {
 }
 
 func TestAio_OnEvent(t *testing.T) {
+	t.Parallel()
+
 	options := []struct {
 		target  string
 		partial bool
@@ -84,7 +90,11 @@ func TestAio_OnEvent(t *testing.T) {
 	}
 
 	for _, tc := range options {
+		tc := tc
+
 		t.Run(fmt.Sprintf("target=%s,partial=%t", tc.target, tc.partial), func(t *testing.T) {
+			t.Parallel()
+
 			AioOnEventSpec(t, tc.target, tc.partial)
 		})
 	}
@@ -265,7 +275,11 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			sig, err := regosig.NewAIO(tc.modules,
 				regosig.OPATarget(target),
 				regosig.OPAPartial(partial),
@@ -288,6 +302,8 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 }
 
 func TestAio_OnSignal(t *testing.T) {
+	t.Parallel()
+
 	sig, err := regosig.NewAIO(map[string]string{})
 	require.NoError(t, err)
 	err = sig.OnSignal(os.Kill)

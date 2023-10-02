@@ -10,6 +10,8 @@ import (
 
 // Test_ParseCmd tests the parseCmd function
 func Test_ParseCmd(t *testing.T) {
+	t.Parallel()
+
 	tt := []struct {
 		input          string
 		expectedCmd    string
@@ -55,14 +57,20 @@ func Test_ParseCmd(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		cmd, args, err := testutils.ParseCmd(tc.input)
+		tc := tc
 
-		if err == nil {
-			assert.Equal(t, tc.expectedCmd, cmd)
-			assert.Len(t, args, len(tc.expectedArgs))
-			assert.Equal(t, tc.expectedArgs, args)
-		} else if err.Error() != tc.expectedErrMsg {
-			t.Errorf("For input \"%s\", expected error message \"%s\", but got \"%s\"", tc.input, tc.expectedErrMsg, err)
-		}
+		t.Run(tc.input, func(t *testing.T) {
+			t.Parallel()
+
+			cmd, args, err := testutils.ParseCmd(tc.input)
+
+			if err == nil {
+				assert.Equal(t, tc.expectedCmd, cmd)
+				assert.Len(t, args, len(tc.expectedArgs))
+				assert.Equal(t, tc.expectedArgs, args)
+			} else if err.Error() != tc.expectedErrMsg {
+				t.Errorf("For input \"%s\", expected error message \"%s\", but got \"%s\"", tc.input, tc.expectedErrMsg, err)
+			}
+		})
 	}
 }
