@@ -1,47 +1,17 @@
 package grpc
 
 import (
+	"net"
+	"net/http"
 	"strconv"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	pb "github.com/aquasecurity/tracee/types/api/v1beta1"
 	"github.com/aquasecurity/tracee/types/trace"
-)
-
-// This was copied for this version, I didn't want to export the types yet,
-// because the code for creating a proto will all be removed from here after
-// we finish integrating the event structure
-const (
-	noneT bufferdecoder.ArgType = iota
-	intT
-	uintT
-	longT
-	ulongT
-	offT
-	modeT
-	devT
-	sizeT
-	pointerT
-	strT
-	strArrT
-	sockAddrT
-	bytesT
-	u16T
-	credT
-	intArr2T
-	uint64ArrT
-	u8T
-	timespecT
-)
-
-const (
-	argsArrT bufferdecoder.ArgType = iota + 0x80
-	boolT
 )
 
 func getEventData(e trace.Event) (map[string]*pb.EventValue, error) {
@@ -51,6 +21,20 @@ func getEventData(e trace.Event) (map[string]*pb.EventValue, error) {
 	args := make([]*pb.EventValue, 0)
 
 	for _, arg := range e.Args {
+		if arg.ArgMeta.Name == "triggeredBy" {
+			triggerEvent, err := getTriggerBy(arg)
+			if err != nil {
+				return nil, err
+			}
+			data["triggeredBy"] = &pb.EventValue{
+				Value: &pb.EventValue_TriggeredBy{
+					TriggeredBy: triggerEvent,
+				},
+			}
+
+			continue
+		}
+
 		eventValue, err := getEventValue(arg)
 		if err != nil {
 			return nil, err
@@ -84,195 +68,300 @@ func getEventData(e trace.Event) (map[string]*pb.EventValue, error) {
 }
 
 func getEventValue(arg trace.Argument) (*pb.EventValue, error) {
-
 	if arg.Value == nil {
 		return nil, nil
 	}
 
 	var eventValue *pb.EventValue
 
-	switch bufferdecoder.GetParamType(arg.Type) {
-	case intT:
-		if v, ok := arg.Value.(int32); ok {
-			eventValue = &pb.EventValue{
-				Value: &pb.EventValue_Int32{
-					Int32: wrapperspb.Int32(v),
-				},
-			}
-		}
-	case u8T:
-		if v, ok := arg.Value.(uint8); ok {
-			eventValue = &pb.EventValue{
-				Value: &pb.EventValue_UInt32{
-					UInt32: wrapperspb.UInt32(uint32(v)),
-				},
-			}
-		}
-	case u16T:
-		if v, ok := arg.Value.(uint16); ok {
-			eventValue = &pb.EventValue{
-				Value: &pb.EventValue_UInt32{
-					UInt32: wrapperspb.UInt32(uint32(v)),
-				},
-			}
-		}
-	case uintT, modeT, devT, sizeT:
-		if v, ok := arg.Value.(uint32); ok {
-			eventValue = &pb.EventValue{
-				Value: &pb.EventValue_UInt32{
-					UInt32: wrapperspb.UInt32(v),
-				},
-			}
-		}
-	case longT:
-		if v, ok := arg.Value.(int64); ok {
-			eventValue = &pb.EventValue{
-				Value: &pb.EventValue_Int64{
-					Int64: wrapperspb.Int64(v),
-				},
-			}
-		}
-	case ulongT, offT:
-		if v, ok := arg.Value.(uint64); ok {
-			eventValue = &pb.EventValue{
-				Value: &pb.EventValue_UInt64{
-					UInt64: wrapperspb.UInt64(v),
-				},
-			}
-		}
-	case boolT:
-		if v, ok := arg.Value.(bool); ok {
-			eventValue = &pb.EventValue{
-				Value: &pb.EventValue_Bool{
-					Bool: wrapperspb.Bool(v),
-				},
-			}
-		}
-	case strT:
-		if v, ok := arg.Value.(string); ok {
-			eventValue = &pb.EventValue{
-				Value: &pb.EventValue_Str{
-					Str: wrapperspb.String(v),
-				},
-			}
-		}
-	case strArrT, argsArrT:
-		if v, ok := arg.Value.([]string); ok {
-			strArray := make([]*wrappers.StringValue, 0, len(v))
-
-			for _, str := range v {
-				strArray = append(strArray, &wrappers.StringValue{Value: str})
-			}
-
-			eventValue = &pb.EventValue{
-				Value: &pb.EventValue_StrArray{
-					StrArray: &pb.StringArrayValue{
-						Value: strArray,
-					},
-				},
-			}
-		}
-	case sockAddrT:
-		if v, ok := arg.Value.(map[string]string); ok {
-			sockaddr, err := getSockaddr(v)
-			if err != nil {
-				return nil, err
-			}
-			eventValue = sockaddr
-		}
-	case bytesT:
-		if v, ok := arg.Value.([]byte); ok {
-			eventValue = &pb.EventValue{
-				Value: &pb.EventValue_Bytes{
-					Bytes: &wrappers.BytesValue{
-						Value: v,
-					},
-				},
-			}
-		}
-	case intArr2T:
-		if v, ok := arg.Value.([2]int32); ok {
-			intArray := make([]*wrappers.Int32Value, 0, len(v))
-
-			for _, i := range v {
-				intArray = append(intArray, &wrappers.Int32Value{Value: i})
-			}
-
-			eventValue = &pb.EventValue{
-				Value: &pb.EventValue_Int32Array{
-					Int32Array: &pb.Int32ArrayValue{
-						Value: intArray,
-					},
-				},
-			}
-		}
-	case credT:
-		if v, ok := arg.Value.(trace.SlimCred); ok {
-			eventValue = &pb.EventValue{
-				Value: &pb.EventValue_Cred{
-					Cred: &pb.CredValue{
-						Uid:            wrapperspb.UInt32(v.Uid),
-						Gid:            wrapperspb.UInt32(v.Gid),
-						Suid:           wrapperspb.UInt32(v.Suid),
-						Sgid:           wrapperspb.UInt32(v.Sgid),
-						Euid:           wrapperspb.UInt32(v.Euid),
-						Egid:           wrapperspb.UInt32(v.Egid),
-						Fsuid:          wrapperspb.UInt32(v.Fsuid),
-						Fsgid:          wrapperspb.UInt32(v.Fsgid),
-						UserNamespace:  wrapperspb.UInt32(v.UserNamespace),
-						SecureBits:     wrapperspb.UInt32(v.SecureBits),
-						CapInheritable: getCaps(v.CapInheritable),
-						CapPermitted:   getCaps(v.CapPermitted),
-						CapEffective:   getCaps(v.CapEffective),
-						CapBounding:    getCaps(v.CapBounding),
-						CapAmbient:     getCaps(v.CapAmbient),
-					},
-				},
-			}
-		}
-	case uint64ArrT:
-		if v, ok := arg.Value.([]uint64); ok {
-			uintArray := make([]*wrappers.UInt64Value, 0, len(v))
-
-			for _, i := range v {
-				uintArray = append(uintArray, &wrappers.UInt64Value{Value: i})
-			}
-
-			eventValue = &pb.EventValue{
-				Value: &pb.EventValue_UInt64Array{
-					UInt64Array: &pb.UInt64ArrayValue{
-						Value: uintArray,
-					},
-				},
-			}
-		}
-	case timespecT:
-		if v, ok := arg.Value.(float64); ok {
-			eventValue = &pb.EventValue{
-				Value: &pb.EventValue_Timespec{
-					Timespec: &pb.TimespecValue{
-						Value: wrapperspb.Double(v),
-					},
-				},
-			}
-		}
-	case pointerT:
-		if v, ok := arg.Value.(uintptr); ok {
-			eventValue = &pb.EventValue{
-				Value: &pb.EventValue_UInt64{
-					UInt64: wrapperspb.UInt64(uint64(v)),
-				},
-			}
-		}
-	default:
-		return nil, errfmt.Errorf("unknown arg type: %s - %v", arg.Name, arg.Type)
-	}
-
-	if eventValue == nil {
+	eventValue, err := parseArgument(arg)
+	if err != nil {
 		return nil, errfmt.Errorf("can't convert event data: %s - %v - %T", arg.Name, arg.Value, arg.Value)
 	}
 
 	return eventValue, nil
+}
+
+// parseArgument converts tracee argument to protobuf EventValue
+// based on the value type
+func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
+	switch v := arg.Value.(type) {
+	case int:
+		return &pb.EventValue{
+			Value: &pb.EventValue_Int64{
+				Int64: wrapperspb.Int64(int64(v)),
+			},
+		}, nil
+	case int32:
+		return &pb.EventValue{
+			Value: &pb.EventValue_Int32{
+				Int32: wrapperspb.Int32(v),
+			},
+		}, nil
+	case uint8:
+		return &pb.EventValue{
+			Value: &pb.EventValue_UInt32{
+				UInt32: wrapperspb.UInt32(uint32(v)),
+			},
+		}, nil
+	case uint16:
+		return &pb.EventValue{
+			Value: &pb.EventValue_UInt32{
+				UInt32: wrapperspb.UInt32(uint32(v)),
+			},
+		}, nil
+	case uint32:
+		return &pb.EventValue{
+			Value: &pb.EventValue_UInt32{
+				UInt32: wrapperspb.UInt32(v),
+			},
+		}, nil
+	case int64:
+		return &pb.EventValue{
+			Value: &pb.EventValue_Int64{
+				Int64: wrapperspb.Int64(v),
+			},
+		}, nil
+	case uint64:
+		return &pb.EventValue{
+			Value: &pb.EventValue_UInt64{
+				UInt64: wrapperspb.UInt64(v),
+			},
+		}, nil
+	case bool:
+		return &pb.EventValue{
+			Value: &pb.EventValue_Bool{
+				Bool: wrapperspb.Bool(v),
+			},
+		}, nil
+	case string:
+		return &pb.EventValue{
+			Value: &pb.EventValue_Str{
+				Str: wrapperspb.String(v),
+			},
+		}, nil
+	case []string:
+		strArray := make([]*wrappers.StringValue, 0, len(v))
+
+		for _, str := range v {
+			strArray = append(strArray, &wrappers.StringValue{Value: str})
+		}
+
+		return &pb.EventValue{
+			Value: &pb.EventValue_StrArray{
+				StrArray: &pb.StringArrayValue{
+					Value: strArray,
+				},
+			},
+		}, nil
+	case map[string]string:
+		sockaddr, err := getSockaddr(v)
+		if err != nil {
+			return nil, err
+		}
+		return sockaddr, nil
+	case []byte:
+		return &pb.EventValue{
+			Value: &pb.EventValue_Bytes{
+				Bytes: &wrappers.BytesValue{
+					Value: v,
+				},
+			},
+		}, nil
+	case [2]int32:
+		intArray := make([]*wrappers.Int32Value, 0, len(v))
+
+		for _, i := range v {
+			intArray = append(intArray, &wrappers.Int32Value{Value: i})
+		}
+
+		return &pb.EventValue{
+			Value: &pb.EventValue_Int32Array{
+				Int32Array: &pb.Int32ArrayValue{
+					Value: intArray,
+				},
+			},
+		}, nil
+	case trace.SlimCred:
+		return &pb.EventValue{
+			Value: &pb.EventValue_Cred{
+				Cred: &pb.CredValue{
+					Uid:            wrapperspb.UInt32(v.Uid),
+					Gid:            wrapperspb.UInt32(v.Gid),
+					Suid:           wrapperspb.UInt32(v.Suid),
+					Sgid:           wrapperspb.UInt32(v.Sgid),
+					Euid:           wrapperspb.UInt32(v.Euid),
+					Egid:           wrapperspb.UInt32(v.Egid),
+					Fsuid:          wrapperspb.UInt32(v.Fsuid),
+					Fsgid:          wrapperspb.UInt32(v.Fsgid),
+					UserNamespace:  wrapperspb.UInt32(v.UserNamespace),
+					SecureBits:     wrapperspb.UInt32(v.SecureBits),
+					CapInheritable: getCaps(v.CapInheritable),
+					CapPermitted:   getCaps(v.CapPermitted),
+					CapEffective:   getCaps(v.CapEffective),
+					CapBounding:    getCaps(v.CapBounding),
+					CapAmbient:     getCaps(v.CapAmbient),
+				},
+			}}, nil
+	case []uint64:
+		uintArray := make([]*wrappers.UInt64Value, 0, len(v))
+
+		for _, i := range v {
+			uintArray = append(uintArray, &wrappers.UInt64Value{Value: i})
+		}
+
+		return &pb.EventValue{
+			Value: &pb.EventValue_UInt64Array{
+				UInt64Array: &pb.UInt64ArrayValue{
+					Value: uintArray,
+				},
+			},
+		}, nil
+	case float64:
+		return &pb.EventValue{
+			Value: &pb.EventValue_Timespec{
+				Timespec: &pb.TimespecValue{
+					Value: wrapperspb.Double(v),
+				},
+			},
+		}, nil
+	case uintptr:
+		return &pb.EventValue{
+			Value: &pb.EventValue_UInt64{
+				UInt64: wrapperspb.UInt64(uint64(v)),
+			},
+		}, nil
+	case trace.ProtoIPv4:
+		return convertHttpIpv4(&v)
+	case *trace.ProtoIPv4:
+		return convertHttpIpv4(v)
+	case trace.ProtoIPv6:
+		return convertIpv6(&v)
+	case *trace.ProtoIPv6:
+		return convertIpv6(v)
+	case trace.ProtoTCP:
+		return convertTcp(&v)
+	case *trace.ProtoTCP:
+		return convertTcp(v)
+	case trace.ProtoUDP:
+		return convertUdp(&v)
+	case *trace.ProtoUDP:
+		return convertUdp(v)
+	case trace.ProtoICMP:
+		return convertIcmp(&v)
+	case *trace.ProtoICMP:
+		return convertIcmp(v)
+	case trace.ProtoICMPv6:
+		return convertIcmpv6(&v)
+	case *trace.ProtoICMPv6:
+		return convertIcmpv6(v)
+	case trace.ProtoDNS:
+		return convertDns(&v)
+	case *trace.ProtoDNS:
+		return convertDns(v)
+	case trace.PktMeta:
+		return convertPktMeta(&v)
+	case *trace.PktMeta:
+		return convertPktMeta(v)
+	case trace.ProtoHTTP:
+		return converProtoHttp(&v)
+	case *trace.ProtoHTTP:
+		return converProtoHttp(v)
+	case trace.ProtoHTTPRequest:
+		return converProtoHttpRequest(&v)
+	case *trace.ProtoHTTPRequest:
+		return converProtoHttpRequest(v)
+	case trace.ProtoHTTPResponse:
+		return converProtoHTTPResponse(&v)
+	case *trace.ProtoHTTPResponse:
+		return converProtoHTTPResponse(v)
+	case []trace.DnsQueryData:
+		questions := make([]*pb.DnsQueryData, len(v))
+		for i, q := range v {
+			questions[i] = &pb.DnsQueryData{
+				Query:      q.Query,
+				QueryType:  q.QueryType,
+				QueryClass: q.QueryClass,
+			}
+		}
+
+		return &pb.EventValue{
+			Value: &pb.EventValue_DnsQuestions{
+				DnsQuestions: &pb.DnsQuestions{
+					Questions: questions,
+				},
+			},
+		}, nil
+	case []trace.DnsResponseData:
+		responses := make([]*pb.DnsResponseData, len(v))
+		for i, r := range v {
+			answer := make([]*pb.DnsAnswer, len(r.DnsAnswer))
+			for j, a := range r.DnsAnswer {
+				answer[j] = &pb.DnsAnswer{
+					Type:   a.Type,
+					Ttl:    a.Ttl,
+					Answer: a.Answer,
+				}
+			}
+
+			responses[i] = &pb.DnsResponseData{
+				DnsQueryData: &pb.DnsQueryData{
+					Query:      r.QueryData.Query,
+					QueryType:  r.QueryData.QueryType,
+					QueryClass: r.QueryData.QueryClass,
+				},
+				DnsAnswer: answer,
+			}
+		}
+
+		return &pb.EventValue{
+			Value: &pb.EventValue_DnsResponses{
+				DnsResponses: &pb.DnsResponses{
+					Responses: responses,
+				},
+			},
+		}, nil
+	case []trace.HookedSymbolData:
+		syscalls := make([]*pb.HookedSymbolData, len(v))
+		for i, s := range v {
+			syscalls[i] = &pb.HookedSymbolData{
+				SymbolName:  s.SymbolName,
+				ModuleOwner: s.ModuleOwner,
+			}
+		}
+
+		return &pb.EventValue{
+			Value: &pb.EventValue_HookedSyscalls{
+				HookedSyscalls: &pb.HookedSyscalls{
+					Value: syscalls,
+				},
+			}}, nil
+	case map[string]trace.HookedSymbolData:
+		m := make(map[string]*pb.HookedSymbolData)
+
+		for k, v := range v {
+			m[k] = &pb.HookedSymbolData{
+				SymbolName:  v.SymbolName,
+				ModuleOwner: v.ModuleOwner,
+			}
+		}
+
+		return &pb.EventValue{
+			Value: &pb.EventValue_HookedSeqOps{
+				HookedSeqOps: &pb.HookedSeqOps{
+					Value: m,
+				},
+			},
+		}, nil
+	case net.IP: // dns events use net.IP on src/dst
+		return &pb.EventValue{
+			Value: &pb.EventValue_Str{
+				Str: wrapperspb.String(v.String()),
+			},
+		}, nil
+	}
+
+	return nil, errfmt.Errorf("unknown arg type: %s - %v", arg.Name, arg.Type)
 }
 
 func getCaps(c uint64) []pb.Capability {
@@ -341,4 +430,335 @@ func getSockaddr(v map[string]string) (*pb.EventValue, error) {
 			Sockaddr: sockaddr,
 		},
 	}, nil
+}
+
+func getTriggerBy(triggeredByArg trace.Argument) (*pb.TriggeredBy, error) {
+	var triggerEvent *pb.TriggeredBy
+
+	m, ok := triggeredByArg.Value.(map[string]interface{})
+	if !ok {
+		return nil, errfmt.Errorf("error getting triggering event: %v", triggeredByArg.Value)
+	}
+
+	triggerEvent = &pb.TriggeredBy{}
+
+	id, ok := m["id"].(int)
+	if !ok {
+		return nil, errfmt.Errorf("error getting id of triggering event: %v", m)
+	}
+	triggerEvent.Id = uint32(id)
+
+	name, ok := m["name"].(string)
+	if !ok {
+		return nil, errfmt.Errorf("error getting name of triggering event: %v", m)
+	}
+	triggerEvent.Name = name
+
+	triggerEventArgs, ok := m["args"].([]trace.Argument)
+	if !ok {
+		return nil, errfmt.Errorf("error getting args of triggering event: %v", m)
+	}
+
+	data := make(map[string]*pb.EventValue)
+
+	// for syscaslls
+	args := make([]*pb.EventValue, 0)
+
+	for _, arg := range triggerEventArgs {
+		eventValue, err := getEventValue(arg)
+		if err != nil {
+			return nil, err
+		}
+
+		if events.Core.GetDefinitionByID(events.ID(id)).IsSyscall() {
+			args = append(args, eventValue)
+			continue
+		}
+
+		data[arg.ArgMeta.Name] = eventValue
+	}
+
+	if len(args) > 0 {
+		data["args"] = &pb.EventValue{
+			Value: &pb.EventValue_Args{
+				Args: &pb.ArgsValue{
+					Value: args,
+				},
+			},
+		}
+
+		data["returnValue"] = &pb.EventValue{
+			Value: &pb.EventValue_Int64{
+				Int64: wrapperspb.Int64(int64(m["returnValue"].(int))),
+			},
+		}
+	}
+
+	triggerEvent.Data = data
+
+	return triggerEvent, nil
+}
+
+func getDNSResourceRecord(source trace.ProtoDNSResourceRecord) *pb.DNSResourceRecord {
+	opts := make([]*pb.DNSOPT, len(source.OPT))
+
+	for i, o := range source.OPT {
+		opts[i] = &pb.DNSOPT{
+			Code: o.Code,
+			Data: o.Data,
+		}
+	}
+
+	return &pb.DNSResourceRecord{
+		Name:  source.Name,
+		Type:  source.Type,
+		Class: source.Class,
+		Ttl:   uint32(source.TTL),
+		Ip:    source.IP,
+		Ns:    source.NS,
+		Cname: source.CNAME,
+		Ptr:   source.PTR,
+		Txts:  source.TXTs,
+		Soa: &pb.DNSSOA{
+			Mname:   source.SOA.MName,
+			Rname:   source.SOA.RName,
+			Serial:  source.SOA.Serial,
+			Refresh: source.SOA.Refresh,
+			Retry:   source.SOA.Retry,
+			Expire:  source.SOA.Expire,
+			Minimum: source.SOA.Minimum,
+		},
+		Srv: &pb.DNSSRV{
+			Priority: uint32(source.SRV.Priority),
+			Weight:   uint32(source.SRV.Weight),
+			Port:     uint32(source.SRV.Port),
+			Name:     source.SRV.Name,
+		},
+		Mx: &pb.DNSMX{
+			Preference: uint32(source.MX.Preference),
+			Name:       source.MX.Name,
+		},
+		Opt: []*pb.DNSOPT{},
+		Uri: &pb.DNSURI{
+			Priority: uint32(source.URI.Priority),
+			Weight:   uint32(source.URI.Weight),
+			Target:   source.URI.Target,
+		},
+		Txt: source.TXT,
+	}
+}
+
+func getHeaders(source http.Header) map[string]*pb.HttpHeader {
+	headers := make(map[string]*pb.HttpHeader)
+
+	for k, v := range source {
+		headers[k] = &pb.HttpHeader{
+			Header: v,
+		}
+	}
+
+	return headers
+}
+
+func converProtoHTTPResponse(v *trace.ProtoHTTPResponse) (*pb.EventValue, error) {
+	return &pb.EventValue{
+		Value: &pb.EventValue_HttpResponse{
+			HttpResponse: &pb.HTTPResponse{
+				Status:        v.Status,
+				StatusCode:    int32(v.StatusCode),
+				Protocol:      v.Protocol,
+				Headers:       getHeaders(v.Headers),
+				ContentLength: v.ContentLength,
+			},
+		}}, nil
+}
+
+func converProtoHttpRequest(v *trace.ProtoHTTPRequest) (*pb.EventValue, error) {
+	return &pb.EventValue{
+		Value: &pb.EventValue_HttpRequest{
+			HttpRequest: &pb.HTTPRequest{
+				Method:        v.Method,
+				Protocol:      v.Protocol,
+				Host:          v.Host,
+				UriPath:       v.URIPath,
+				Headers:       getHeaders(v.Headers),
+				ContentLength: v.ContentLength,
+			},
+		}}, nil
+}
+
+func converProtoHttp(v *trace.ProtoHTTP) (*pb.EventValue, error) {
+	return &pb.EventValue{
+		Value: &pb.EventValue_Http{
+			Http: &pb.HTTP{
+				Direction:     v.Direction,
+				Method:        v.Method,
+				Protocol:      v.Protocol,
+				Host:          v.Host,
+				UriPath:       v.URIPath,
+				Status:        v.Status,
+				StatusCode:    int32(v.StatusCode),
+				Headers:       getHeaders(v.Headers),
+				ContentLength: v.ContentLength,
+			},
+		}}, nil
+}
+
+func convertHttpIpv4(v *trace.ProtoIPv4) (*pb.EventValue, error) {
+	return &pb.EventValue{
+		Value: &pb.EventValue_Ipv4{
+			Ipv4: &pb.IPv4{
+				Version:    uint32(v.Version),
+				Ihl:        uint32(v.IHL),
+				Tos:        uint32(v.TOS),
+				Length:     uint32(v.Length),
+				Id:         uint32(v.Id),
+				Flags:      uint32(v.Flags),
+				FragOffset: uint32(v.FragOffset),
+				Ttl:        uint32(v.TTL),
+				Protocol:   v.Protocol,
+				Checksum:   uint32(v.Checksum),
+				SrcIp:      v.SrcIP,
+				DstIp:      v.DstIP,
+			},
+		}}, nil
+}
+
+func convertIpv6(v *trace.ProtoIPv6) (*pb.EventValue, error) {
+	return &pb.EventValue{
+		Value: &pb.EventValue_Ipv6{
+			Ipv6: &pb.IPv6{
+				Version:      uint32(v.Version),
+				TrafficClass: uint32(v.TrafficClass),
+				FlowLabel:    v.FlowLabel,
+				Length:       uint32(v.Length),
+				NextHeader:   v.NextHeader,
+				HopLimit:     uint32(v.HopLimit),
+				SrcIp:        v.SrcIP,
+				DstIp:        v.DstIP,
+			},
+		}}, nil
+}
+
+func convertTcp(v *trace.ProtoTCP) (*pb.EventValue, error) {
+	return &pb.EventValue{
+		Value: &pb.EventValue_Tcp{
+			Tcp: &pb.TCP{
+				SrcPort:    uint32(v.SrcPort),
+				DstPort:    uint32(v.DstPort),
+				Seq:        v.Seq,
+				Ack:        v.Ack,
+				DataOffset: uint32(v.DataOffset),
+				FinFlag:    uint32(v.FIN),
+				SynFlag:    uint32(v.SYN),
+				RstFlag:    uint32(v.RST),
+				PshFlag:    uint32(v.PSH),
+				AckFlag:    uint32(v.ACK),
+				UrgFlag:    uint32(v.URG),
+				EceFlag:    uint32(v.ECE),
+				CwrFlag:    uint32(v.CWR),
+				NsFlag:     uint32(v.NS),
+				Window:     uint32(v.Window),
+				Checksum:   uint32(v.Checksum),
+				Urgent:     uint32(v.Urgent),
+			},
+		}}, nil
+}
+
+func convertUdp(v *trace.ProtoUDP) (*pb.EventValue, error) {
+	return &pb.EventValue{
+		Value: &pb.EventValue_Udp{
+			Udp: &pb.UDP{
+				SrcPort:  uint32(v.SrcPort),
+				DstPort:  uint32(v.DstPort),
+				Length:   uint32(v.Length),
+				Checksum: uint32(v.Checksum),
+			},
+		}}, nil
+}
+
+func convertIcmp(v *trace.ProtoICMP) (*pb.EventValue, error) {
+	return &pb.EventValue{
+		Value: &pb.EventValue_Icmp{
+			Icmp: &pb.ICMP{
+				TypeCode: v.TypeCode,
+				Checksum: uint32(v.Checksum),
+				Id:       uint32(v.Id),
+				Seq:      uint32(v.Seq),
+			},
+		}}, nil
+}
+
+func convertIcmpv6(v *trace.ProtoICMPv6) (*pb.EventValue, error) {
+	return &pb.EventValue{
+		Value: &pb.EventValue_Icmpv6{
+			Icmpv6: &pb.ICMPv6{
+				TypeCode: v.TypeCode,
+				Checksum: uint32(v.Checksum),
+			},
+		}}, nil
+}
+
+func convertDns(v *trace.ProtoDNS) (*pb.EventValue, error) {
+	questions := make([]*pb.DNSQuestion, len(v.Questions))
+	for i, q := range v.Questions {
+		questions[i] = &pb.DNSQuestion{
+			Name:  q.Name,
+			Type:  q.Type,
+			Class: q.Class,
+		}
+	}
+
+	answers := make([]*pb.DNSResourceRecord, len(v.Answers))
+	for i, a := range v.Answers {
+		answers[i] = getDNSResourceRecord(a)
+	}
+
+	authorities := make([]*pb.DNSResourceRecord, len(v.Authorities))
+	for i, a := range v.Authorities {
+		authorities[i] = getDNSResourceRecord(a)
+	}
+
+	additionals := make([]*pb.DNSResourceRecord, len(v.Additionals))
+	for i, a := range v.Additionals {
+		additionals[i] = getDNSResourceRecord(a)
+	}
+
+	return &pb.EventValue{
+		Value: &pb.EventValue_Dns{
+			Dns: &pb.DNS{
+				Id:           uint32(v.ID),
+				Qr:           uint32(v.QR),
+				OpCode:       v.OpCode,
+				Aa:           uint32(v.AA),
+				Tc:           uint32(v.TC),
+				Rd:           uint32(v.RD),
+				Ra:           uint32(v.RA),
+				Z:            uint32(v.Z),
+				ResponseCode: v.ResponseCode,
+				QdCount:      uint32(v.QDCount),
+				AnCount:      uint32(v.ANCount),
+				NsCount:      uint32(v.NSCount),
+				ArCount:      uint32(v.ARCount),
+				Questions:    questions,
+				Answers:      answers,
+				Authorities:  authorities,
+				Additionals:  additionals,
+			},
+		}}, nil
+}
+
+func convertPktMeta(v *trace.PktMeta) (*pb.EventValue, error) {
+	return &pb.EventValue{
+		Value: &pb.EventValue_PacketMetadata{
+			PacketMetadata: &pb.PktMeta{
+				SrcIp:     v.SrcIP,
+				DstIp:     v.DstIP,
+				SrcPort:   uint32(v.SrcPort),
+				DstPort:   uint32(v.DstPort),
+				Protocol:  uint32(v.Protocol),
+				PacketLen: v.PacketLen,
+				Iface:     v.Iface,
+			},
+		}}, nil
 }
