@@ -3,6 +3,7 @@ package derive
 import (
 	"bufio"
 	"bytes"
+	"io"
 	"net/http"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -139,6 +140,9 @@ func eventToProtoHTTP(event *trace.Event) (*netPair, *trace.ProtoHTTP, error) {
 		} else if event.ReturnValue&protoHttpResponse == protoHttpResponse {
 			httpRes, err = http.ReadResponse(reader, nil)
 			if err != nil {
+				if err == io.ErrUnexpectedEOF {
+					return nil, nil, nil // 200 OK response without body, for example
+				}
 				return nil, nil, errfmt.WrapError(err)
 			}
 
@@ -210,6 +214,9 @@ func eventToProtoHTTPResponse(event *trace.Event) (*netPair, *trace.ProtoHTTPRes
 
 		httpRes, err := http.ReadResponse(reader, nil)
 		if err != nil {
+			if err == io.ErrUnexpectedEOF {
+				return nil, nil, nil // 200 OK response without body, for example
+			}
 			return nil, nil, errfmt.WrapError(err)
 		}
 
