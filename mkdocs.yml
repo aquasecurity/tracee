@@ -482,7 +482,20 @@ nav:
                     - waitpid: docs/events/builtin/syscalls/waitpid.md
                     - write: docs/events/builtin/syscalls/write.md
                     - writev: docs/events/builtin/syscalls/writev.md
-              - Network Events: docs/events/builtin/network.md
+              - Network Events:
+                    - Overview: docs/events/builtin/network/index.md
+                    - net_packet_ipv4: docs/events/builtin/network/net_packet_ipv4.md
+                    - net_packet_ipv6: docs/events/builtin/network/net_packet_ipv6.md
+                    - net_packet_tcp: docs/events/builtin/network/net_packet_tcp.md
+                    - net_packet_udp: docs/events/builtin/network/net_packet_udp.md
+                    - net_packet_icmp: docs/events/builtin/network/net_packet_icmp.md
+                    - net_packet_icmpv6: docs/events/builtin/network/net_packet_icmpv6.md
+                    - net_packet_dns: docs/events/builtin/network/net_packet_dns.md
+                    - net_packet_dns_request: docs/events/builtin/network/net_packet_dns_request.md
+                    - net_packet_dns_response: docs/events/builtin/network/net_packet_dns_response.md
+                    - net_packet_http: docs/events/builtin/network/net_packet_http.md
+                    - net_packet_http_request: docs/events/builtin/network/net_packet_http_request.md
+                    - net_packet_http_response: docs/events/builtin/network/net_packet_http_response.md
               - Behavioral Signatures: docs/events/builtin/signatures.md
               - Extra Events:
                 - do_sigaction: docs/events/builtin/extra/do_sigaction.md
