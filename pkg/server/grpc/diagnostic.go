@@ -4,9 +4,9 @@ import (
 	"context"
 	"runtime"
 
+	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	pb "github.com/aquasecurity/tracee/types/api/v1beta1"
 )
 
 type DiagnosticService struct {

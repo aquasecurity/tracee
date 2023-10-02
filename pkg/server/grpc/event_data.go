@@ -8,9 +8,9 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
-	pb "github.com/aquasecurity/tracee/types/api/v1beta1"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
