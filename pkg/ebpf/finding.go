@@ -24,42 +24,42 @@ func FindingToEvent(f detect.Finding) (*trace.Event, error) {
 	return newEvent(int(eventDefID), f, s), nil
 }
 
-func newEvent(id int, f detect.Finding, s trace.Event) *trace.Event {
-	arguments := getArguments(f)
+func newEvent(id int, f detect.Finding, e trace.Event) *trace.Event {
+	arguments := getArguments(f, e)
 	metadata := getMetadataFromSignatureMetadata(f.SigMetadata)
 
 	return &trace.Event{
 		EventID:               id,
 		EventName:             f.SigMetadata.EventName,
-		Timestamp:             s.Timestamp,
-		ThreadStartTime:       s.ThreadStartTime,
-		ProcessorID:           s.ProcessorID,
-		ProcessID:             s.ProcessID,
-		CgroupID:              s.CgroupID,
-		ThreadID:              s.ThreadID,
-		ParentProcessID:       s.ParentProcessID,
-		HostProcessID:         s.HostProcessID,
-		HostThreadID:          s.HostThreadID,
-		HostParentProcessID:   s.HostParentProcessID,
-		UserID:                s.UserID,
-		MountNS:               s.MountNS,
-		PIDNS:                 s.PIDNS,
-		ProcessName:           s.ProcessName,
-		HostName:              s.HostName,
-		Container:             s.Container,
-		Kubernetes:            s.Kubernetes,
-		ReturnValue:           s.ReturnValue,
-		StackAddresses:        s.StackAddresses,
-		ContextFlags:          s.ContextFlags,
-		MatchedPoliciesKernel: s.MatchedPoliciesKernel,
-		MatchedPoliciesUser:   s.MatchedPoliciesUser,
+		Timestamp:             e.Timestamp,
+		ThreadStartTime:       e.ThreadStartTime,
+		ProcessorID:           e.ProcessorID,
+		ProcessID:             e.ProcessID,
+		CgroupID:              e.CgroupID,
+		ThreadID:              e.ThreadID,
+		ParentProcessID:       e.ParentProcessID,
+		HostProcessID:         e.HostProcessID,
+		HostThreadID:          e.HostThreadID,
+		HostParentProcessID:   e.HostParentProcessID,
+		UserID:                e.UserID,
+		MountNS:               e.MountNS,
+		PIDNS:                 e.PIDNS,
+		ProcessName:           e.ProcessName,
+		HostName:              e.HostName,
+		Container:             e.Container,
+		Kubernetes:            e.Kubernetes,
+		ReturnValue:           e.ReturnValue,
+		StackAddresses:        e.StackAddresses,
+		ContextFlags:          e.ContextFlags,
+		MatchedPoliciesKernel: e.MatchedPoliciesKernel,
+		MatchedPoliciesUser:   e.MatchedPoliciesUser,
 		ArgsNum:               len(arguments),
 		Args:                  arguments,
 		Metadata:              metadata,
 	}
 }
 
-func getArguments(f detect.Finding) []trace.Argument {
+func getArguments(f detect.Finding, triggerEvent trace.Event) []trace.Argument {
 	arguments := make([]trace.Argument, 0, len(f.Data))
 
 	for k, v := range f.Data {
@@ -69,6 +69,23 @@ func getArguments(f detect.Finding) []trace.Argument {
 				Type: getCType(v),
 			},
 			Value: v,
+		}
+
+		arguments = append(arguments, arg)
+	}
+
+	if len(triggerEvent.Args) > 0 {
+		arg := trace.Argument{
+			ArgMeta: trace.ArgMeta{
+				Name: "triggeredBy",
+				Type: "unknown",
+			},
+			Value: map[string]interface{}{
+				"id":          triggerEvent.EventID,
+				"name":        triggerEvent.EventName,
+				"args":        triggerEvent.Args,
+				"returnValue": triggerEvent.ReturnValue,
+			},
 		}
 
 		arguments = append(arguments, arg)

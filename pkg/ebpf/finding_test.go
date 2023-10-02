@@ -41,10 +41,10 @@ func TestFindingToEvent(t *testing.T) {
 			PodNamespace: "namespace",
 			PodUID:       "uid",
 		},
-		ReturnValue:           0,
+		ReturnValue:           10,
 		MatchedPoliciesKernel: 1,
 		MatchedPoliciesUser:   1,
-		ArgsNum:               2,
+		ArgsNum:               3,
 		Args: []trace.Argument{
 			{
 				ArgMeta: trace.ArgMeta{
@@ -59,6 +59,26 @@ func TestFindingToEvent(t *testing.T) {
 					Type: "int",
 				},
 				Value: 1,
+			},
+			{
+				ArgMeta: trace.ArgMeta{
+					Name: "triggeredBy",
+					Type: "unknown",
+				},
+				Value: map[string]interface{}{
+					"id":   int(events.Ptrace),
+					"name": "ptrace",
+					"args": []trace.Argument{
+						{
+							ArgMeta: trace.ArgMeta{
+								Name: "arg1",
+								Type: "const char *",
+							},
+							Value: "arg value",
+						},
+					},
+					"returnValue": 10,
+				},
 			},
 		},
 		Metadata: &trace.Metadata{
@@ -166,10 +186,19 @@ func createFakeEventAndFinding() detect.Finding {
 					PodNamespace: "namespace",
 					PodUID:       "uid",
 				},
-				ReturnValue:           0,
+				ReturnValue:           10,
 				MatchedPoliciesKernel: 1,
 				MatchedPoliciesUser:   1,
-				ArgsNum:               0,
+				ArgsNum:               1,
+				Args: []trace.Argument{
+					{
+						ArgMeta: trace.ArgMeta{
+							Name: "arg1",
+							Type: "const char *",
+						},
+						Value: "arg value",
+					},
+				},
 			},
 		},
 	}

@@ -183,13 +183,13 @@ func Test_getEventData(t *testing.T) {
 						Name: "count",
 						Type: "size_t",
 					},
-					Value: uint32(8),
+					Value: uint64(8),
 				},
 			},
 			expected: map[string]*pb.EventValue{
 				"count": {
-					Value: &pb.EventValue_UInt32{
-						UInt32: wrapperspb.UInt32(8),
+					Value: &pb.EventValue_UInt64{
+						UInt64: wrapperspb.UInt64(8),
 					},
 				},
 			},
@@ -712,4 +712,92 @@ func Test_getEventData(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestEventTrigger(t *testing.T) {
+	event := trace.Event{
+		EventID: 6001,
+		Args: []trace.Argument{
+			{
+				ArgMeta: trace.ArgMeta{
+					Name: "arg1",
+					Type: "const char *",
+				},
+				Value: "value1",
+			},
+			{
+				ArgMeta: trace.ArgMeta{
+					Name: "triggeredBy",
+					Type: "unknown",
+				},
+				Value: map[string]interface{}{
+					"id":   int(events.Ptrace),
+					"name": "ptrace",
+					"args": []trace.Argument{
+						{
+							ArgMeta: trace.ArgMeta{
+								Name: "arg1",
+								Type: "const char *",
+							},
+							Value: "arg value",
+						},
+					},
+					"returnValue": 10,
+				},
+			},
+		},
+	}
+
+	eventData, err := getEventData(event)
+	assert.NoError(t, err)
+
+	expected := map[string]*pb.EventValue{
+		"arg1": {
+			Value: &pb.EventValue_Str{
+				Str: wrapperspb.String("value1"),
+			},
+		},
+		"triggeredBy": {
+			Value: &pb.EventValue_TriggeredBy{
+				TriggeredBy: &pb.TriggeredBy{
+					Id:   101,
+					Name: "ptrace",
+					Data: map[string]*pb.EventValue{
+						"args": {
+							Value: &pb.EventValue_Args{
+								Args: &pb.ArgsValue{
+									Value: []*pb.EventValue{
+										{
+											Value: &pb.EventValue_Str{
+												Str: wrapperspb.String("arg value"),
+											},
+										},
+									},
+								},
+							},
+						},
+						"returnValue": {
+							Value: &pb.EventValue_Int64{
+								Int64: wrapperspb.Int64(10),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	assert.Equal(t, len(expected), len(eventData))
+
+	expectedTriggerEvent := expected["triggeredBy"].GetTriggeredBy()
+	assert.NotNil(t, expectedTriggerEvent)
+
+	actualTriggerEvent := eventData["triggeredBy"].GetTriggeredBy()
+	assert.NotNil(t, actualTriggerEvent)
+
+	assert.Equal(t, expectedTriggerEvent.Id, actualTriggerEvent.Id)
+	assert.Equal(t, expectedTriggerEvent.Name, actualTriggerEvent.Name)
+
+	assert.Equal(t, len(expectedTriggerEvent.Data), len(actualTriggerEvent.Data))
+	assert.Equal(t, expectedTriggerEvent.Data, actualTriggerEvent.Data)
 }
