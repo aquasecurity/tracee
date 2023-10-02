@@ -84,7 +84,13 @@ func getEventData(e trace.Event) (map[string]*pb.EventValue, error) {
 }
 
 func getEventValue(arg trace.Argument) (*pb.EventValue, error) {
+
+	if arg.Value == nil {
+		return nil, nil
+	}
+
 	var eventValue *pb.EventValue
+
 	switch bufferdecoder.GetParamType(arg.Type) {
 	case intT:
 		if v, ok := arg.Value.(int32); ok {
@@ -259,11 +265,11 @@ func getEventValue(arg trace.Argument) (*pb.EventValue, error) {
 			}
 		}
 	default:
-		return nil, errfmt.Errorf("unknown arg type: %v", arg.Type)
+		return nil, errfmt.Errorf("unknown arg type: %s - %v", arg.Name, arg.Type)
 	}
 
 	if eventValue == nil {
-		return nil, errfmt.Errorf("can't convert event data: %v - %T", arg.Value, arg.Value)
+		return nil, errfmt.Errorf("can't convert event data: %s - %v - %T", arg.Name, arg.Value, arg.Value)
 	}
 
 	return eventValue, nil
