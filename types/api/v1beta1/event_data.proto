@@ -22,11 +22,26 @@ message EventValue {
         CredValue cred = 14; // credT
         TimespecValue timespec = 15; // timespecT
         ArgsValue args = 16;
-        TriggerEvent trigger_event = 17;
+        TriggeredBy triggered_by = 17;
+        HookedSyscalls hooked_syscalls = 18;
+        HookedSeqOps hooked_seq_ops = 19;
+        IPv4 ipv4 = 20;
+        IPv6 ipv6 = 21;
+        TCP tcp = 22;
+        UDP udp = 23;
+        ICMP icmp = 24;
+        ICMPv6 icmpv6 = 25;
+        DNS dns = 26;
+        DnsQuestions dns_questions = 27;
+        DnsResponses dns_responses = 28;
+        PktMeta packet_metadata = 29;
+        HTTP http = 30;
+        HTTPRequest http_request = 31;
+        HTTPResponse http_response = 32;        
     }
 }
 
-message TriggerEvent {
+message TriggeredBy {
     uint32 id = 1;
     string name = 2;
     map<string, EventValue> data = 3;
@@ -132,4 +147,229 @@ enum Capability {
     CAP_PERFMON = 38;
     CAP_BPF = 39;
     CAP_CHECKPOINT_RESTORE = 40;
+}
+
+message HookedSyscalls {
+    repeated HookedSymbolData value = 1;
+}
+
+message HookedSymbolData {
+    string symbol_name = 1;
+	string module_owner = 2;
+}
+
+message HookedSeqOps {
+    map<string,HookedSymbolData> value = 1;
+}
+
+// network types
+
+message IPv4 {
+	uint32 version = 1;
+	uint32 ihl = 2;
+	uint32 tos = 3;
+	uint32 length = 4;
+	uint32 id = 5;
+	uint32 flags = 6;
+	uint32 frag_offset = 7;
+	uint32 ttl = 8;
+	string protocol = 9;
+	uint32 checksum = 10;
+	string src_ip = 11;
+	string dst_ip = 12;
+}
+
+message IPv6 {
+	uint32 version = 1;
+	uint32 traffic_class = 2;
+	uint32 flow_label = 3;
+	uint32 length = 4;
+	string next_header = 5;
+	uint32 hop_limit = 6;
+	string src_ip = 7;
+	string dst_ip = 8;
+}
+
+message TCP {
+	uint32 src_port = 1;
+	uint32 dst_port = 2;
+	uint32 seq = 3;
+	uint32 ack = 4;
+	uint32 data_offset = 5;
+	uint32 fin_flag = 6;
+	uint32 syn_flag = 7;
+	uint32 rst_flag = 8;
+	uint32 psh_flag = 9;
+	uint32 ack_flag = 10;
+	uint32 urg_flag = 11;
+	uint32 ece_flag = 12;
+	uint32 cwr_flag = 13;
+	uint32 ns_flag = 14;
+	uint32 window = 15;
+	uint32 checksum = 16;
+	uint32 urgent = 17;
+}
+
+message UDP {
+	uint32 src_port = 1;
+	uint32 dst_port = 2;
+	uint32 length = 3; 
+	uint32 checksum = 4;
+}
+
+message ICMP {
+	string type_code = 1;
+	uint32 checksum = 2;
+	uint32 id = 3;
+	uint32 seq = 4;
+}
+
+message ICMPv6 {
+	string type_code = 1;
+	uint32 checksum = 2;
+}
+
+message DnsQuestions {
+    repeated DnsQueryData questions = 1;
+}
+
+message DnsResponses {
+    repeated DnsResponseData responses = 1;
+}
+
+message DNS {
+	uint32 id = 1;
+	uint32 qr = 2;
+	string op_code = 3;
+	uint32 aa = 4;
+	uint32 tc = 5;
+	uint32 rd = 6;
+	uint32 ra = 7;
+	uint32 z = 8;
+	string response_code = 9;
+	uint32 qd_count = 10;
+	uint32 an_count = 11;
+	uint32 ns_count = 12;
+	uint32 ar_count = 13;
+	repeated DNSQuestion questions = 14;
+	repeated DNSResourceRecord answers = 15;
+	repeated DNSResourceRecord authorities = 16;
+	repeated DNSResourceRecord additionals = 17;
+}
+
+message DNSQuestion {
+	string name = 1;
+	string type = 2;
+	string class = 3;
+}
+
+message DNSResourceRecord {
+	string name = 1;
+	string type = 2;
+	string class = 3;
+	uint32 ttl = 4;
+	string ip = 5;
+	string ns = 6;
+	string cname = 7;
+	string ptr = 8; 
+	repeated string txts = 9;
+	DNSSOA soa = 10;
+	DNSSRV srv = 11;
+	DNSMX mx = 12;
+	repeated DNSOPT opt = 13;
+	DNSURI uri = 14;
+	string txt = 15;
+}
+
+message DNSSOA {
+	string mname = 1;
+	string rname = 2;
+	uint32 serial = 3;
+	uint32 refresh = 4;
+	uint32 retry = 5;
+	uint32 expire = 6;
+	uint32 minimum = 7;
+}
+
+message DNSSRV {
+	uint32 priority = 1;
+	uint32 weight = 2;
+	uint32 port = 3;
+	string name = 4;
+}
+
+message DNSMX {
+	uint32 Preference = 1;
+	string name = 2;
+}
+
+message DNSURI {
+	uint32 priority = 1;
+	uint32 weight = 2;
+	string target = 3;
+}
+
+message DNSOPT {
+	string code = 1;
+	string data = 2;
+}
+
+message HTTP {
+	string direction = 1;
+	string method = 2;
+	string protocol = 3;
+	string host = 4;
+	string uri_path = 5;
+	string status = 6;
+	int32 status_code = 7;
+	map<string, HttpHeader> headers = 8;
+	int64 content_length = 9;
+}
+
+message HTTPRequest {
+	string method = 1;
+	string protocol = 3;
+	string host = 4; 
+	string uri_path = 5;
+	map<string, HttpHeader> headers = 6;
+	int64 content_length = 7;
+}
+
+message HTTPResponse {
+	string status = 1;
+	int32 status_code = 2;
+	string protocol = 3;
+	map<string, HttpHeader> headers = 4;
+	int64 content_length = 5;
+}
+
+message HttpHeader {
+    repeated string header = 1;
+}
+
+message PktMeta {
+	string src_ip = 1;
+	string dst_ip = 2;
+	uint32 src_port = 3;
+	uint32 dst_port = 4;
+	uint32 protocol = 5;
+	uint32 packet_len = 6;
+	string iface = 7;
+}
+
+message DnsQueryData {
+	string query = 1;
+	string query_type = 2;
+	string query_class = 3;
+}
+
+message DnsAnswer {
+	string type = 1;
+	uint32 ttl = 2;
+	string answer = 3;
+}
+
+message DnsResponseData {
+	DnsQueryData dns_query_data = 1;
+	repeated DnsAnswer dns_answer = 2;
 }
