@@ -173,5 +173,3 @@ require (
 )
 
 replace github.com/kubernetes/cri-api => k8s.io/cri-api v0.23.5-rc.0
-
-replace github.com/aquasecurity/tracee/types v0.0.0-20230929172705-29c9b630aeed => ./types
