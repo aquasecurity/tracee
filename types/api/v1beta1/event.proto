@@ -39,7 +39,7 @@ message Process  {
 }
 
 message Parent  {
-    Executable executable = 1;
+    optional Executable executable = 1;
     google.protobuf.UInt32Value entity_id = 2;
     google.protobuf.UInt32Value pid = 3;
     optional google.protobuf.UInt32Value namespaced_pid = 4;
@@ -50,6 +50,7 @@ message Parent  {
 
 message Executable {
     string name = 1;
+    string path = 2;
 }
 
 message User {
