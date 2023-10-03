@@ -180,8 +180,13 @@ func getProcess(e trace.Event) *pb.Process {
 		threadStartTime = timestamppb.New(time.Unix(int64(e.ThreadStartTime), 0))
 	}
 
+	var executable *pb.Executable
+	if e.Executable.Path != "" {
+		executable = &pb.Executable{Path: e.Executable.Path}
+	}
+
 	return &pb.Process{
-		// Executable
+		Executable:    executable,
 		EntityId:      wrapperspb.UInt32(e.ProcessEntityId),
 		Pid:           wrapperspb.UInt32(uint32(e.HostProcessID)),
 		NamespacedPid: wrapperspb.UInt32(uint32(e.ProcessID)),
