@@ -49,8 +49,7 @@ message Parent  {
 }
 
 message Executable {
-    string name = 1;
-    string path = 2;
+    string path = 1;
 }
 
 message User {
