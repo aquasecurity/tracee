@@ -35,7 +35,7 @@ func boolToUint8(b bool) uint8 {
 }
 
 func convertArrayOfBytes(given [][]byte) []string {
-	var res []string
+	res := make([]string, 0, len(given))
 
 	for _, i := range given {
 		res = append(res, string(i))
