@@ -70,12 +70,11 @@ func ParseArgs(event *trace.Event) error {
 				}
 			}
 		}
-		if ID(event.EventID) == CapCapable {
-			if capArg := GetArg(event, "cap"); capArg != nil {
-				if capability, isInt32 := capArg.Value.(int32); isInt32 {
-					capabilityFlagArgument, err := helpers.ParseCapability(uint64(capability))
-					parseOrEmptyString(capArg, capabilityFlagArgument, err)
-				}
+	case CapCapable:
+		if capArg := GetArg(event, "cap"); capArg != nil {
+			if capability, isInt32 := capArg.Value.(int32); isInt32 {
+				capabilityFlagArgument, err := helpers.ParseCapability(uint64(capability))
+				parseOrEmptyString(capArg, capabilityFlagArgument, err)
 			}
 		}
 	case SecurityMmapFile, DoMmap:
