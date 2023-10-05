@@ -547,11 +547,19 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     // Update the process tree map (filter related) if the parent has an entry.
 
     if (p.config->proc_tree_filter_enabled_scopes) {
-        u32 *tgid_filtered = bpf_map_lookup_elem(&process_tree_map, &parent_pid);
-        if (tgid_filtered) {
-            ret = bpf_map_update_elem(&process_tree_map, &child_pid, tgid_filtered, BPF_ANY);
-            if (ret < 0)
-                tracee_log(ctx, BPF_LOG_LVL_DEBUG, BPF_LOG_ID_MAP_UPDATE_ELEM, ret);
+        u16 pols_version = p.event->context.policies_version;
+        // Give the compiler a hint about the map type, otherwise libbpf will complain
+        // about missing type information. i.e.: "can't determine value size for type".
+        // TODO: remove map macros and use typedef for map structs #3508.
+        void *inner_proc_tree_map = &process_tree_map;
+        inner_proc_tree_map = bpf_map_lookup_elem(&process_tree_map_version, &pols_version);
+        if (inner_proc_tree_map != NULL) {
+            eq_t *tgid_filtered = bpf_map_lookup_elem(inner_proc_tree_map, &parent_pid);
+            if (tgid_filtered) {
+                ret = bpf_map_update_elem(inner_proc_tree_map, &child_pid, tgid_filtered, BPF_ANY);
+                if (ret < 0)
+                    tracee_log(ctx, BPF_LOG_LVL_DEBUG, BPF_LOG_ID_MAP_UPDATE_ELEM, ret);
+            }
         }
     }
 
@@ -989,6 +997,7 @@ int uprobe_lkm_seeker_submitter(struct pt_regs *ctx)
 
     // Uprobes are not triggered by syscalls, so we need to override the false value.
     p.event->context.syscall = NO_SYSCALL;
+    p.event->context.policies_version = p.config->policies_version;
     p.event->context.matched_policies = ULLONG_MAX;
 
     u32 trigger_pid = bpf_get_current_pid_tgid() >> 32;
@@ -1016,6 +1025,7 @@ int uprobe_lkm_seeker(struct pt_regs *ctx)
 
     // Uprobes are not triggered by syscalls, so we need to override the false value.
     p.event->context.syscall = NO_SYSCALL;
+    p.event->context.policies_version = p.config->policies_version;
     p.event->context.matched_policies = ULLONG_MAX;
 
     // uprobe was triggered from other tracee instance
@@ -1339,7 +1349,22 @@ int tracepoint__sched__sched_process_free(struct bpf_raw_tracepoint_args *ctx)
         // if tgid task is freed, we know for sure that the process exited
         // so we can safely remove it from the process map
         bpf_map_delete_elem(&proc_info_map, &tgid);
-        bpf_map_delete_elem(&process_tree_map, &tgid);
+
+        u32 zero = 0;
+        config_entry_t *cfg = bpf_map_lookup_elem(&config_map, &zero);
+        if (unlikely(cfg == NULL))
+            return 0;
+
+        // remove it only from the current policies version map
+        u16 pols_version = cfg->policies_version;
+
+        // Give the compiler a hint about the map type, otherwise libbpf will complain
+        // about missing type information. i.e.: "can't determine value size for type".
+        // TODO: remove map macros and use typedef for map structs #3508.
+        void *inner_proc_tree_map = &process_tree_map;
+        inner_proc_tree_map = bpf_map_lookup_elem(&process_tree_map_version, &pols_version);
+        if (inner_proc_tree_map != NULL)
+            bpf_map_delete_elem(inner_proc_tree_map, &tgid);
     }
 
     return 0;
@@ -1517,6 +1542,7 @@ int uprobe_syscall_table_check(struct pt_regs *ctx)
 
     // Uprobes are not triggered by syscalls, so we need to override the false value.
     p.event->context.syscall = NO_SYSCALL;
+    p.event->context.policies_version = p.config->policies_version;
     p.event->context.matched_policies = ULLONG_MAX;
 
     syscall_table_check(&p);
@@ -1553,6 +1579,7 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
 
     // Uprobes are not triggered by syscalls, so we need to override the false value.
     p.event->context.syscall = NO_SYSCALL;
+    p.event->context.policies_version = p.config->policies_version;
     p.event->context.matched_policies = ULLONG_MAX;
 
     // uprobe was triggered from other tracee instance
@@ -1634,6 +1661,7 @@ int uprobe_mem_dump_trigger(struct pt_regs *ctx)
 
     // Uprobes are not triggered by syscalls, so we need to override the false value.
     p.event->context.syscall = NO_SYSCALL;
+    p.event->context.policies_version = p.config->policies_version;
     p.event->context.matched_policies = ULLONG_MAX;
 
     // uprobe was triggered from other tracee instance
@@ -5069,6 +5097,7 @@ statfunc u64 sizeof_net_event_context_t(void)
 statfunc void set_net_task_context(event_data_t *event, net_task_context_t *netctx)
 {
     netctx->task = event->task;
+    netctx->policies_version = event->context.policies_version;
     netctx->matched_policies = event->context.matched_policies;
     netctx->syscall = event->context.syscall;
     __builtin_memset(&netctx->taskctx, 0, sizeof(task_context_t));
@@ -5114,7 +5143,12 @@ statfunc u64 should_submit_net_event(net_event_context_t *neteventctx,
 {
     enum event_id_e evt_id = net_packet_to_net_event(packet_type);
 
-    event_config_t *evt_config = bpf_map_lookup_elem(&events_map, &evt_id);
+    u16 pols_version = neteventctx->eventctx.policies_version;
+    void *inner_events_map = bpf_map_lookup_elem(&events_map_version, &pols_version);
+    if (inner_events_map == NULL)
+        return 0;
+
+    event_config_t *evt_config = bpf_map_lookup_elem(inner_events_map, &evt_id);
     if (evt_config == NULL)
         return 0;
 
@@ -5716,6 +5750,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     eventctx->eventid = NET_PACKET_IP;                      // will be changed in skb program
     eventctx->stack_id = 0;                                 // no stack trace
     eventctx->processor_id = p.event->context.processor_id; // copy from current ctx
+    eventctx->policies_version = netctx->policies_version;  // pick policies_version from net ctx
     eventctx->matched_policies = netctx->matched_policies;  // pick matched_policies from net ctx
     eventctx->syscall = NO_SYSCALL;                         // ingress has no orig syscall
     if (type == BPF_CGROUP_INET_EGRESS)
