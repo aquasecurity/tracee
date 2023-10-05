@@ -31,10 +31,11 @@ typedef struct event_context {
     task_context_t task;
     u32 eventid;
     s32 syscall; // syscall that triggered the event
-    u64 matched_policies;
     s64 retval;
     u32 stack_id;
     u16 processor_id; // ID of the processor that processed the event
+    u16 policies_version;
+    u64 matched_policies;
 } event_context_t;
 
 enum event_id_e
@@ -294,7 +295,8 @@ typedef struct config_entry {
     u32 tracee_pid;
     u32 options;
     u32 cgroup_v1_hid;
-    u32 padding; // free for further use
+    u16 policies_version;
+    u16 padding; // free for further use
     // enabled scopes bitmask per filter
     u64 uid_filter_enabled_scopes;
     u64 pid_filter_enabled_scopes;

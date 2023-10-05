@@ -25,8 +25,27 @@
         __type(value, _value_type);                                                                \
     } _name SEC(".maps");
 
+#define BPF_MAP_INNER(_name, _type, _key_type, _value_type, _max_entries)                          \
+    struct {                                                                                       \
+        __uint(type, _type);                                                                       \
+        __uint(max_entries, _max_entries);                                                         \
+        __type(key, _key_type);                                                                    \
+        __type(value, _value_type);                                                                \
+    } _name SEC(".maps");
+
+#define BPF_HASH_OUTER(_name, _inner_map, _max_entries)                                            \
+    struct {                                                                                       \
+        __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);                                                   \
+        __uint(max_entries, _max_entries);                                                         \
+        __type(key, u16);                                                                          \
+        __array(values, typeof(_inner_map));                                                       \
+    } _name SEC(".maps");
+
 #define BPF_HASH(_name, _key_type, _value_type, _max_entries)                                      \
     BPF_MAP(_name, BPF_MAP_TYPE_HASH, _key_type, _value_type, _max_entries)
+
+#define BPF_HASH_INNER(_name, _key_type, _value_type, _max_entries)                                \
+    BPF_MAP_INNER(_name, BPF_MAP_TYPE_HASH, _key_type, _value_type, _max_entries)
 
 #define BPF_LRU_HASH(_name, _key_type, _value_type, _max_entries)                                  \
     BPF_MAP(_name, BPF_MAP_TYPE_LRU_HASH, _key_type, _value_type, _max_entries)
@@ -78,17 +97,30 @@ enum tail_call_id_e
 BPF_HASH(kconfig_map, u32, u32, 10240);                            // kernel config variables
 BPF_HASH(containers_map, u32, u8, 10240);                          // map cgroup id to container status {EXISTED, CREATED, STARTED}
 BPF_HASH(args_map, u64, args_t, 1024);                             // persist args between function entry and return
-BPF_HASH(uid_filter, u32, eq_t, 256);                              // filter events by UID, for specific UIDs either by == or !=
-BPF_HASH(pid_filter, u32, eq_t, 256);                              // filter events by PID
-BPF_HASH(mnt_ns_filter, u64, eq_t, 256);                           // filter events by mount namespace id
-BPF_HASH(pid_ns_filter, u64, eq_t, 256);                           // filter events by pid namespace id
-BPF_HASH(uts_ns_filter, string_filter_t, eq_t, 256);               // filter events by uts namespace name
-BPF_HASH(comm_filter, string_filter_t, eq_t, 256);                 // filter events by command name
-BPF_HASH(cgroup_id_filter, u32, eq_t, 256);                        // filter events by cgroup id
-BPF_HASH(binary_filter, binary_t, eq_t, 256);                      // filter events by binary path and mount namespace
-BPF_HASH(events_map, u32, event_config_t, MAX_EVENT_ID);           // map to persist event configuration data
+
+// versioned maps
+BPF_HASH_INNER(uid_filter, u32, eq_t, 256);                        // filter events by UID prototype, for specific UIDs either by == or !=
+BPF_HASH_OUTER(uid_filter_version, uid_filter, 64);                // map of UID filters maps
+BPF_HASH_INNER(pid_filter, u32, eq_t, 256);                        // filter events by PID prototype
+BPF_HASH_OUTER(pid_filter_version, pid_filter, 64);                // map of PID filters maps
+BPF_HASH_INNER(mnt_ns_filter, u64, eq_t, 256);                     // filter events by mount namespace id prototype
+BPF_HASH_OUTER(mnt_ns_filter_version, mnt_ns_filter, 64);          // map of mount namespace filters maps
+BPF_HASH_INNER(pid_ns_filter, u64, eq_t, 256);                     // filter events by pid namespace id prototype
+BPF_HASH_OUTER(pid_ns_filter_version, pid_ns_filter, 64);          // map of pid namespace filters maps
+BPF_HASH_INNER(uts_ns_filter, string_filter_t, eq_t, 256);         // filter events by uts namespace name prototype
+BPF_HASH_OUTER(uts_ns_filter_version, uts_ns_filter, 64);          // map of uts namespace filters maps
+BPF_HASH_INNER(comm_filter, string_filter_t, eq_t, 256);           // filter events by command name prototype
+BPF_HASH_OUTER(comm_filter_version, comm_filter, 64);              // map of command name filters maps
+BPF_HASH_INNER(cgroup_id_filter, u32, eq_t, 256);                  // filter events by cgroup id prototype
+BPF_HASH_OUTER(cgroup_id_filter_version, cgroup_id_filter, 64);    // map of cgroup id filters maps
+BPF_HASH_INNER(binary_filter, binary_t, eq_t, 256);                // filter events by binary path and mount namespace prototype
+BPF_HASH_OUTER(binary_filter_version, binary_filter, 64);          // map of binary filters maps
+BPF_HASH_INNER(process_tree_map, u32, eq_t, 10240);                // filter events by the ancestry of the traced process
+BPF_HASH_OUTER(process_tree_map_version, process_tree_map, 64);    // map of process tree maps
+BPF_HASH_INNER(events_map, u32, event_config_t, MAX_EVENT_ID);     // map to persist event configuration data
+BPF_HASH_OUTER(events_map_version, events_map, 64);                // map of events maps
+
 BPF_HASH(sys_32_to_64_map, u32, u32, 1024);                        // map 32bit to 64bit syscalls
-BPF_HASH(process_tree_map, u32, eq_t, 10240);                      // filter events by the ancestry of the traced process
 BPF_LRU_HASH(proc_info_map, u32, proc_info_t, 10240);              // holds data for every process
 BPF_LRU_HASH(task_info_map, u32, task_info_t, 10240);              // holds data for every task
 BPF_HASH(ksymbols_map, ksym_name_t, u64, 1024);                    // holds the addresses of some kernel symbols
