@@ -82,22 +82,22 @@ func (ti *TaskInfo) setFeedAt(feed TaskInfoFeed, targetTime time.Time) {
 	if feed.Name != "" {
 		ti.name.Set(feed.Name, targetTime)
 	}
-	if feed.Tid > 0 {
+	if feed.Tid >= 0 {
 		ti.tid = feed.Tid
 	}
-	if feed.Pid > 0 {
+	if feed.Pid >= 0 {
 		ti.pid = feed.Pid
 	}
-	if feed.PPid > 0 {
+	if feed.PPid >= 0 {
 		ti.pPid.Set(feed.PPid, targetTime)
 	}
-	if feed.NsTid > 0 {
+	if feed.NsTid >= 0 {
 		ti.nsTid = feed.NsTid
 	}
-	if feed.NsPid > 0 {
+	if feed.NsPid >= 0 {
 		ti.nsPid = feed.NsPid
 	}
-	if feed.NsPid > 0 {
+	if feed.NsPid >= 0 {
 		ti.nsPPid.Set(feed.NsPid, targetTime)
 	}
 	if feed.Uid >= 0 {
