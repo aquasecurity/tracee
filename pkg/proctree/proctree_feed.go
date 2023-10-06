@@ -46,34 +46,43 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 
 	// Update the parent process (might already exist)
 
-	parent, ok := pt.GetProcessByHash(feed.ParentHash) // always a real process
-	if !ok {
-		parent = pt.GetOrCreateProcessByHash(feed.ParentHash)
+	setParentFeed := func(parent *Process) {
 		parent.GetInfo().SetFeedAt(
 			TaskInfoFeed{
+				Name:        "", // do not change the parent name
 				Tid:         int(feed.ParentTid),
 				Pid:         int(feed.ParentPid),
 				NsTid:       int(feed.ParentNsTid),
 				NsPid:       int(feed.ParentNsPid),
 				StartTimeNS: feed.ParentStartTime,
-				PPid:        -1, // do not change the parent PID
-				NsPPid:      -1, // do not change the ns parent PID
-				Uid:         -1, // do not change the parent UID
-				Gid:         -1, // do not change the parent GID
+				PPid:        -1, // do not change the parent ppid
+				NsPPid:      -1, // do not change the parent nsppid
+				Uid:         -1, // do not change the parent uid
+				Gid:         -1, // do not change the parent gid
 			},
 			utils.NsSinceBootTimeToTime(feed.TimeStamp),
 		)
-		// try to enrich from procfs asynchronously (instead of reading procfs continuously)
-		pt.FeedFromProcFSAsync(int(feed.ParentPid)) // TODO: only if not in analyze mode
+		pt.FeedFromProcFSAsync(int(feed.ParentPid)) // try to enrich ppid and name from procfs
+	}
+
+	parent, found := pt.GetProcessByHash(feed.ParentHash) // always a real process
+	if !found {
+		parent = pt.GetOrCreateProcessByHash(feed.ParentHash)
+	}
+
+	// No need to create more changelogs for the parent process if it already exists. Some nodes
+	// might have been created by execve() events, and those need to be updated (they're missing
+	// ppid, for example).
+
+	if !found || parent.GetInfo().GetPid() != int(feed.ParentPid) {
+		setParentFeed(parent)
 	}
 
 	parent.AddChild(feed.LeaderHash) // add the leader as a child of the parent
 
 	// Update the leader process (might exist, might be the same as child if child is a process)
 
-	leader, ok := pt.GetProcessByHash(feed.LeaderHash)
-	if !ok {
-		leader = pt.GetOrCreateProcessByHash(feed.LeaderHash)
+	setLeaderFeed := func(leader *Process) {
 		leader.GetInfo().SetFeedAt(
 			TaskInfoFeed{
 				Name:        parent.GetInfo().GetName(),
@@ -84,18 +93,29 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 				StartTimeNS: feed.LeaderStartTime,
 				PPid:        int(feed.ParentPid),
 				NsPPid:      int(feed.ParentNsPid),
-				Uid:         0, // TODO: implement
-				Gid:         0, // TODO: implement
+				Uid:         -1, // do not change the parent ui
+				Gid:         -1, // do not change the parent gid
 			},
 			utils.NsSinceBootTimeToTime(feed.TimeStamp),
 		)
-		// try to enrich from procfs asynchronously (instead of reading procfs continuously)
-		pt.FeedFromProcFSAsync(int(feed.LeaderPid)) // TODO: only if not in analyze mode
+		pt.FeedFromProcFSAsync(int(feed.LeaderPid)) // try to enrich name from procfs if needed
 	}
 
-	leader.SetParentHash(feed.ParentHash)
+	leader, found := pt.GetProcessByHash(feed.LeaderHash)
+	if !found {
+		leader = pt.GetOrCreateProcessByHash(feed.LeaderHash)
+	}
 
-	// If leader == child, then the child is a process and needs to be updated.
+	// Same case here (for events out of order created by execve first)
+
+	if !found || leader.GetInfo().GetPPid() != int(feed.ParentPid) {
+		setLeaderFeed(leader)
+	}
+
+	leader.SetParentHash(feed.ParentHash) // add the parent as the parent of the leader
+
+	// Check if the leader and child are the same (it means it is a real process, or a "thread group
+	// leader" of a single threaded process).
 
 	if feed.ChildHash == feed.LeaderHash {
 		leader.GetExecutable().SetFeedAt(
@@ -110,22 +130,34 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 
 	// In all cases (task is a process, or a thread) there is a thread entry.
 
-	thread := pt.GetOrCreateThreadByHash(feed.ChildHash)
-	thread.GetInfo().SetFeedAt(
-		TaskInfoFeed{
-			Name:        leader.GetInfo().GetName(),
-			Tid:         int(feed.ChildTid),
-			Pid:         int(feed.ChildPid),
-			NsTid:       int(feed.ChildNsTid),
-			NsPid:       int(feed.ChildNsPid),
-			StartTimeNS: feed.ChildStartTime,
-			PPid:        int(feed.ParentPid),
-			NsPPid:      int(feed.ParentNsPid),
-			Uid:         0, // TODO: implement
-			Gid:         0, // TODO: implement
-		},
-		utils.NsSinceBootTimeToTime(feed.TimeStamp),
-	)
+	setThreadFeed := func(thread *Thread) {
+		thread.GetInfo().SetFeedAt(
+			TaskInfoFeed{
+				Name:        leader.GetInfo().GetName(),
+				Tid:         int(feed.ChildTid),
+				Pid:         int(feed.ChildPid),
+				NsTid:       int(feed.ChildNsTid),
+				NsPid:       int(feed.ChildNsPid),
+				StartTimeNS: feed.ChildStartTime,
+				PPid:        int(feed.ParentPid),
+				NsPPid:      int(feed.ParentNsPid),
+				Uid:         -1, // do not change the thread uid
+				Gid:         -1, // do not change the thread gid
+			},
+			utils.NsSinceBootTimeToTime(feed.TimeStamp),
+		)
+	}
+
+	thread, found := pt.GetThreadByHash(feed.ChildHash)
+	if !found {
+		thread = pt.GetOrCreateThreadByHash(feed.ChildHash)
+	}
+
+	// Same case here (for events out of order created by execve first)
+
+	if !found || thread.GetInfo().GetPPid() != int(feed.ParentPid) {
+		setThreadFeed(thread)
+	}
 
 	thread.SetParentHash(feed.ParentHash) // all threads have the same parent as the thread group leader
 	thread.SetLeaderHash(feed.LeaderHash) // thread group leader is a "process" and a "thread"
@@ -177,7 +209,7 @@ func (pt *ProcessTree) FeedFromExec(feed ExecFeed) error {
 	// executable/interpreter will be updated. This way, when the fork event is received, the
 	// process will be updated with the correct information.
 
-	process := pt.GetOrCreateProcessByHash(feed.TaskHash) // create if not exists
+	process := pt.GetOrCreateProcessByHash(feed.TaskHash)
 
 	if feed.ParentHash != 0 {
 		process.SetParentHash(feed.ParentHash) // faster than checking if already set
@@ -231,14 +263,13 @@ type ExitFeed struct {
 
 // FeedFromExit feeds the process tree with an exit event.
 func (pt *ProcessTree) FeedFromExit(feed ExitFeed) error {
-	thread, threadOk := pt.GetThreadByHash(feed.TaskHash)
-	if threadOk {
-		thread.GetInfo().SetExitTime(feed.TimeStamp)
-	}
-	process, procOk := pt.GetProcessByHash(feed.TaskHash)
-	if procOk {
-		process.GetInfo().SetExitTime(feed.TimeStamp)
-	}
+	// Always create a tree node because the events might be received out of order.
+
+	thread := pt.GetOrCreateThreadByHash(feed.TaskHash)
+	thread.GetInfo().SetExitTime(feed.TimeStamp)
+
+	process := pt.GetOrCreateProcessByHash(feed.TaskHash)
+	process.GetInfo().SetExitTime(feed.TimeStamp)
 
 	return nil
 }
