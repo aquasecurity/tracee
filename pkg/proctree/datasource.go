@@ -118,7 +118,7 @@ func (ptds *DataSource) exportProcessInfo(
 		}
 		threadInfo := thread.GetInfo()
 		if threadInfo.IsAliveAt(queryTime) {
-			aliveThreads[threadInfo.GetPid()] = threadHash
+			aliveThreads[threadInfo.GetTid()] = threadHash
 		}
 	}
 
