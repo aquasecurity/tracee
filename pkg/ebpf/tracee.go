@@ -382,13 +382,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// Initialize Process Tree (if enabled)
 
 	if t.config.ProcTree.Source != proctree.SourceNone {
-		err = capabilities.GetInstance().Specific(
-			func() error {
-				t.processTree, err = proctree.NewProcessTree(ctx, t.config.ProcTree)
-				return err
-			},
-			cap.DAC_READ_SEARCH,
-		)
+		t.processTree, err = proctree.NewProcessTree(ctx, t.config.ProcTree)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
