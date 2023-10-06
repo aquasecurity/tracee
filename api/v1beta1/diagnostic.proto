@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+option go_package = "github.co/aquasecurity/tracee/api/v1beta1";
+
+package tracee.v1beta1;
+
+message GetMetricsRequest {
+}
+
+message GetMetricsResponse {
+	uint64 EventCount = 1;
+	uint64 EventsFiltered = 2;
+	uint64 NetCapCount = 3;
+	uint64 BPFLogsCount = 4;
+	uint64 ErrorCount = 5;
+	uint64 LostEvCount = 6; 
+	uint64 LostWrCount = 7; 
+	uint64 LostNtCapCount = 8; 
+	uint64 LostBPFLogsCount = 9;
+}
+
+enum LogLevel {
+	Debug = 0;
+	Info = 1;
+	Warn = 2;
+	Error = 3; 
+	DPanic = 4; 
+	Panic = 5;
+	Fatal = 6;
+}
+
+message ChangeLogLevelRequest {
+	LogLevel level = 1;
+}
+
+message ChangeLogLevelResponse {
+}
+
+message GetStacktraceRequest {
+}
+
+message GetStacktraceResponse {
+	bytes Stacktrace = 1;
+}
+
+service DiagnosticService {
+    rpc GetMetrics(GetMetricsRequest) returns (GetMetricsResponse);
+    rpc ChangeLogLevel(ChangeLogLevelRequest) returns (ChangeLogLevelResponse);
+    rpc GetStacktrace(GetStacktraceRequest) returns (GetStacktraceResponse);
+}
