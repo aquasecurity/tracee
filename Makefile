@@ -397,7 +397,7 @@ GO_ENV_EBPF += GOARCH=$(GO_ARCH)
 GO_ENV_EBPF += CGO_CFLAGS=$(CUSTOM_CGO_CFLAGS)
 GO_ENV_EBPF += CGO_LDFLAGS=$(CUSTOM_CGO_LDFLAGS)
 
-TRACEE_PROTOS = ./types/api/v1beta1/*.proto
+TRACEE_PROTOS = ./api/v1beta1/*.proto
 
 #
 # btfhub (expensive: only run if ebpf obj changed)

@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+option go_package = "github.co/aquasecurity/tracee/api/v1beta1";
+
+package tracee.v1beta1;
+
+import "google/protobuf/field_mask.proto";
+import "api/v1beta1/event.proto";
+import "api/v1beta1/definition.proto";
+
+message GetVersionRequest {
+}
+
+message GetVersionResponse {
+    string version = 1;
+}
+
+message GetEventDefinitionRequest {
+    string name = 1;
+    // TODO: tags
+}
+
+message GetEventDefinitionResponse {
+    repeated EventDefinition definitions = 1;
+}
+
+message EnableEventRequest {
+    string name = 1;
+}
+
+message EnableEventResponse {
+
+}
+
+message DisableEventRequest {
+    string name = 1;
+}
+
+message DisableEventResponse {
+
+}
+
+message StreamEventsRequest {
+    repeated string policies = 1;
+    google.protobuf.FieldMask mask = 2;
+}
+
+message StreamEventsResponse {
+    Event event = 1;
+}
+
+service TraceeService {
+    rpc GetEventDefinition(GetEventDefinitionRequest) returns (GetEventDefinitionResponse);
+    rpc StreamEvents(StreamEventsRequest) returns (stream StreamEventsResponse);
+
+    rpc EnableEvent(EnableEventRequest) returns (EnableEventResponse);
+    rpc DisableEvent(DisableEventRequest) returns (DisableEventResponse);
+
+    rpc GetVersion(GetVersionRequest) returns (GetVersionResponse);
+}
