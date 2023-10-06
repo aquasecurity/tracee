@@ -13,6 +13,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/policy"
 )
 
 func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
@@ -125,8 +126,8 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	if err != nil {
 		return runner, err
 	}
-
 	cfg.Policies = policies
+	policy.Snapshots().Store(cfg.Policies)
 
 	broadcast, err := printer.NewBroadcast(output.PrinterConfigs, cmd.GetContainerMode(cfg))
 	if err != nil {

@@ -66,6 +66,7 @@ type Tracee struct {
 	// Events
 	eventsSorter     *sorting.EventsChronologicalSorter
 	eventsPool       *sync.Pool
+	eventsParamTypes map[events.ID][]bufferdecoder.ArgType
 	eventProcessor   map[events.ID][]func(evt *trace.Event) error
 	eventDerivations derive.Table
 	eventSignatures  map[events.ID]bool
@@ -261,6 +262,8 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	// Events chosen by the user
 
+	// TODO: extract this to a function to be called from here and from
+	// policies changes.
 	for p := range t.config.Policies.Map() {
 		for e := range p.EventsToTrace {
 			var submit, emit uint64
@@ -278,12 +281,16 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	// Handle all essential events dependencies
 
+	// TODO: extract this to a function to be called from here and from
+	// policies changes.
 	for id, state := range t.eventsState {
 		t.handleEventsDependencies(id, state)
 	}
 
 	// Update capabilities rings with all events dependencies
 
+	// TODO: extract this to a function to be called from here and from
+	// policies changes.
 	for id := range t.eventsState {
 		if !events.Core.IsDefined(id) {
 			return t, errfmt.Errorf("event %d is not defined", id)
@@ -434,6 +441,16 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	err = t.initDerivationTable()
 	if err != nil {
 		return errfmt.Errorf("error initializing event derivation map: %v", err)
+	}
+
+	// Initialize events parameter types map
+	t.eventsParamTypes = make(map[events.ID][]bufferdecoder.ArgType)
+	for _, eventDefinition := range events.Core.GetDefinitions() {
+		id := eventDefinition.GetID()
+		params := eventDefinition.GetParams()
+		for _, param := range params {
+			t.eventsParamTypes[id] = append(t.eventsParamTypes[id], bufferdecoder.GetParamType(param.Type))
+		}
 	}
 
 	// Initialize eBPF programs and maps
@@ -815,7 +832,7 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	return cOptVal
 }
 
-func (t *Tracee) computeConfigValues() []byte {
+func (t *Tracee) computeConfigValues(newPolicies *policy.Policies) []byte {
 	// config_entry
 	configVal := make([]byte, 256)
 
@@ -825,10 +842,12 @@ func (t *Tracee) computeConfigValues() []byte {
 	binary.LittleEndian.PutUint32(configVal[4:8], t.getOptionsConfig())
 	// cgroup_v1_hid
 	binary.LittleEndian.PutUint32(configVal[8:12], uint32(t.cgroups.GetDefaultCgroupHierarchyID()))
-	// padding
-	binary.LittleEndian.PutUint32(configVal[12:16], 0)
+	// filters_version
+	binary.LittleEndian.PutUint16(configVal[12:14], newPolicies.Version())
+	// padding free for further use
+	binary.LittleEndian.PutUint16(configVal[14:16], 0)
 
-	for p := range t.config.Policies.Map() {
+	for p := range newPolicies.Map() {
 		byteIndex := p.ID / 8
 		bitOffset := p.ID % 8
 
@@ -940,17 +959,14 @@ func (t *Tracee) computeConfigValues() []byte {
 		configVal[216+byteIndex] |= 1 << bitOffset
 	}
 
-	// compute all policies internals
-	t.config.Policies.Compute()
-
 	// uid_max
-	binary.LittleEndian.PutUint64(configVal[224:232], t.config.Policies.UIDFilterMax())
+	binary.LittleEndian.PutUint64(configVal[224:232], newPolicies.UIDFilterMax())
 	// uid_min
-	binary.LittleEndian.PutUint64(configVal[232:240], t.config.Policies.UIDFilterMin())
+	binary.LittleEndian.PutUint64(configVal[232:240], newPolicies.UIDFilterMin())
 	// pid_max
-	binary.LittleEndian.PutUint64(configVal[240:248], t.config.Policies.PIDFilterMax())
+	binary.LittleEndian.PutUint64(configVal[240:248], newPolicies.PIDFilterMax())
 	// pid_min
-	binary.LittleEndian.PutUint64(configVal[248:256], t.config.Policies.PIDFilterMin())
+	binary.LittleEndian.PutUint64(configVal[248:256], newPolicies.PIDFilterMin())
 
 	return configVal
 }
@@ -1030,41 +1046,6 @@ func (t *Tracee) validateKallsymsDependencies() {
 }
 
 func (t *Tracee) populateBPFMaps() error {
-	// Initialize events parameter types map
-	eventsParams := make(map[events.ID][]bufferdecoder.ArgType)
-	for _, eventDefinition := range events.Core.GetDefinitions() {
-		id := eventDefinition.GetID()
-		params := eventDefinition.GetParams()
-		for _, param := range params {
-			eventsParams[id] = append(eventsParams[id], bufferdecoder.GetParamType(param.Type))
-		}
-	}
-
-	// Prepare events map
-	eventsMap, err := t.bpfModule.GetMap("events_map")
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-	for id, ecfg := range t.eventsState {
-		eventConfigVal := make([]byte, 16)
-
-		// bitmap of policies that require this event to be submitted
-		binary.LittleEndian.PutUint64(eventConfigVal[0:8], ecfg.Submit)
-
-		// encoded event's parameter types
-		var paramTypes uint64
-		params := eventsParams[id]
-		for n, paramType := range params {
-			paramTypes = paramTypes | (uint64(paramType) << (8 * n))
-		}
-		binary.LittleEndian.PutUint64(eventConfigVal[8:16], paramTypes)
-
-		err := eventsMap.Update(unsafe.Pointer(&id), unsafe.Pointer(&eventConfigVal[0]))
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
 	// Prepare 32bit to 64bit syscall number mapping
 	sys32to64BPFMap, err := t.bpfModule.GetMap("sys_32_to_64_map") // u32, u32
 	if err != nil {
@@ -1132,35 +1113,10 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	// Initialize config map
-	bpfConfigMap, err := t.bpfModule.GetMap("config_map")
+	// Initialize config and filter maps
+	err = t.populateFilterMaps(t.config.Policies, false)
 	if err != nil {
 		return errfmt.WrapError(err)
-	}
-
-	configVal := t.computeConfigValues()
-	if err = bpfConfigMap.Update(unsafe.Pointer(&cZero), unsafe.Pointer(&configVal[0])); err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	for p := range t.config.Policies.Map() {
-		policyID := uint(p.ID)
-		errMap := make(map[string]error, 0)
-
-		errMap[policy.UIDFilterMap] = p.UIDFilter.UpdateBPF(t.bpfModule, policyID)
-		errMap[policy.PIDFilterMap] = p.PIDFilter.UpdateBPF(t.bpfModule, policyID)
-		errMap[policy.MntNSFilterMap] = p.MntNSFilter.UpdateBPF(t.bpfModule, policyID)
-		errMap[policy.PidNSFilterMap] = p.PidNSFilter.UpdateBPF(t.bpfModule, policyID)
-		errMap[policy.UTSFilterMap] = p.UTSFilter.UpdateBPF(t.bpfModule, policyID)
-		errMap[policy.CommFilterMap] = p.CommFilter.UpdateBPF(t.bpfModule, policyID)
-		errMap[policy.ContIdFilter] = p.ContIDFilter.UpdateBPF(t.bpfModule, t.containers, policyID)
-		errMap[policy.BinaryFilterMap] = p.BinaryFilter.UpdateBPF(t.bpfModule, policyID)
-
-		for k, v := range errMap {
-			if v != nil {
-				return errfmt.Errorf("error setting %v filter: %v", k, v)
-			}
-		}
 	}
 
 	// Populate containers map with existing containers
@@ -1224,6 +1180,38 @@ func (t *Tracee) populateBPFMaps() error {
 		if err != nil {
 			return errfmt.Errorf("failed to initialize tail call: %v", err)
 		}
+	}
+
+	return nil
+}
+
+func (t *Tracee) populateFilterMaps(newPolicies *policy.Policies, updateProcTree bool) error {
+	cZero := uint32(0)
+
+	// Create new filter maps version
+
+	if err := newPolicies.UpdateBPF(
+		t.bpfModule,
+		t.containers,
+		t.eventsState,
+		t.eventsParamTypes,
+		true,
+		updateProcTree,
+	); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Compute config map values based on new policies
+
+	configVal := t.computeConfigValues(newPolicies)
+
+	bpfConfigMap, err := t.bpfModule.GetMap("config_map")
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+	// Update config map to make new policies effective
+	if err = bpfConfigMap.Update(unsafe.Pointer(&cZero), unsafe.Pointer(&configVal[0])); err != nil {
+		return errfmt.WrapError(err)
 	}
 
 	return nil
@@ -1341,11 +1329,9 @@ func (t *Tracee) initBPF() error {
 	// possible race window between the bpf programs updating the maps and
 	// userland reading procfs and also dealing with same maps.
 
-	for p := range t.config.Policies.Map() {
-		err = p.ProcessTreeFilter.UpdateBPF(t.bpfModule, uint(p.ID))
-		if err != nil {
-			return errfmt.Errorf("error building process tree: %v", err)
-		}
+	err = t.config.Policies.UpdateBPF(t.bpfModule, t.containers, t.eventsState, t.eventsParamTypes, false, true)
+	if err != nil {
+		return errfmt.WrapError(err)
 	}
 
 	// Initialize perf buffers and needed channels
@@ -1632,10 +1618,11 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	var emit uint64
 
-	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64) {
+	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64, pols *policy.Policies) {
+		event.PoliciesVersion = pols.Version()
 		event.MatchedPoliciesKernel = matchedPolicies
 		event.MatchedPoliciesUser = matchedPolicies
-		event.MatchedPolicies = t.config.Policies.MatchedNames(matchedPolicies)
+		event.MatchedPolicies = pols.MatchedNames(matchedPolicies)
 	}
 
 	// Initial namespace events
@@ -1643,7 +1630,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	emit = t.eventsState[events.InitNamespaces].Emit
 	if emit > 0 {
 		systemInfoEvent := events.InitNamespacesEvent()
-		setMatchedPolicies(&systemInfoEvent, emit)
+		setMatchedPolicies(&systemInfoEvent, emit, t.config.Policies)
 		out <- &systemInfoEvent
 		_ = t.stats.EventCount.Increment()
 	}
@@ -1653,7 +1640,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	emit = t.eventsState[events.ExistingContainer].Emit
 	if emit > 0 {
 		for _, e := range events.ExistingContainersEvents(t.containers, t.config.NoContainersEnrich) {
-			setMatchedPolicies(&e, emit)
+			setMatchedPolicies(&e, emit, t.config.Policies)
 			out <- &e
 			_ = t.stats.EventCount.Increment()
 		}
@@ -1664,7 +1651,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	emit = t.eventsState[events.FtraceHook].Emit
 	if emit > 0 {
 		ftraceBaseEvent := events.GetFtraceBaseEvent()
-		setMatchedPolicies(ftraceBaseEvent, emit)
+		setMatchedPolicies(ftraceBaseEvent, emit, t.config.Policies)
 		logger.Debugw("started ftraceHook goroutine")
 
 		// TODO: Ideally, this should be inside the goroutine and be computed before each run,
@@ -1733,6 +1720,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 
 	errs := []error{}
 
+	// TODO: consider to iterate over given policies when policies are changed
 	for p := range t.config.Policies.Map() {
 		printMemDumpFilters := p.ArgFilter.GetEventFilters(events.PrintMemDump)
 		if len(printMemDumpFilters) == 0 {

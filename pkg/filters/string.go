@@ -1,11 +1,9 @@
 package filters
 
 import (
-	"encoding/binary"
 	"strings"
-	"unsafe"
 
-	bpf "github.com/aquasecurity/libbpfgo"
+	"golang.org/x/exp/maps"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/filters/sets"
@@ -13,27 +11,27 @@ import (
 )
 
 type StringFilter struct {
-	equal       map[string]bool
-	notEqual    map[string]bool
+	equal       map[string]struct{}
+	notEqual    map[string]struct{}
 	prefixes    sets.PrefixSet
 	suffixes    sets.SuffixSet
-	contains    map[string]bool
+	contains    map[string]struct{}
 	notPrefixes sets.PrefixSet
 	notSuffixes sets.SuffixSet
-	notContains map[string]bool
+	notContains map[string]struct{}
 	enabled     bool
 }
 
 func NewStringFilter() *StringFilter {
 	return &StringFilter{
-		equal:       map[string]bool{},
-		notEqual:    map[string]bool{},
+		equal:       map[string]struct{}{},
+		notEqual:    map[string]struct{}{},
 		prefixes:    sets.NewPrefixSet(),
 		suffixes:    sets.NewSuffixSet(),
 		notPrefixes: sets.NewPrefixSet(),
 		notSuffixes: sets.NewSuffixSet(),
-		contains:    map[string]bool{},
-		notContains: map[string]bool{},
+		contains:    map[string]struct{}{},
+		notContains: map[string]struct{}{},
 	}
 }
 
@@ -51,8 +49,8 @@ func (f *StringFilter) Filter(val interface{}) bool {
 // This is done so if a conflicting "not" filter exists, we ignore it
 func (f *StringFilter) filter(val string) bool {
 	enabled := f.enabled
-	equals := f.equal[val]
-	notEquals := f.notEqual[val]
+	_, equals := f.equal[val]
+	_, notEquals := f.notEqual[val]
 	suffixes := f.suffixes
 	prefixes := f.prefixes
 	contains := f.contains
@@ -142,13 +140,13 @@ func (f *StringFilter) addEqual(val string) error {
 	prefixSet := val[len(val)-1] == '*'
 	suffixSet := val[0] == '*'
 	if prefixSet && suffixSet && len(val) > 1 {
-		f.contains[val[1:len(val)-1]] = true
+		f.contains[val[1:len(val)-1]] = struct{}{}
 	} else if prefixSet {
 		f.prefixes.Put(val[:len(val)-1])
 	} else if suffixSet && len(val) > 1 {
 		f.suffixes.Put(val[1:])
 	} else if !prefixSet && !suffixSet {
-		f.equal[val] = true
+		f.equal[val] = struct{}{}
 	}
 	return nil
 }
@@ -160,13 +158,13 @@ func (f *StringFilter) addNotEqual(val string) error {
 	prefixSet := val[len(val)-1] == '*'
 	suffixSet := val[0] == '*'
 	if prefixSet && suffixSet && len(val) > 1 {
-		f.notContains[val[1:len(val)-1]] = true
+		f.notContains[val[1:len(val)-1]] = struct{}{}
 	} else if prefixSet {
 		f.notPrefixes.Put(val[:len(val)-1])
 	} else if suffixSet {
 		f.notSuffixes.Put(val[1:])
 	} else if !prefixSet && !suffixSet {
-		f.notEqual[val] = true
+		f.notEqual[val] = struct{}{}
 	}
 	return nil
 }
@@ -220,78 +218,42 @@ func (f *StringFilter) FilterOut() bool {
 	return true
 }
 
-type BPFStringFilter struct {
-	StringFilter
-	mapName string
+type StringFilterEqualities struct {
+	Equal    map[string]struct{}
+	NotEqual map[string]struct{}
 }
 
-func NewBPFStringFilter(mapName string) *BPFStringFilter {
-	return &BPFStringFilter{
-		StringFilter: *NewStringFilter(),
-		mapName:      mapName,
+func (f *StringFilter) Equalities() StringFilterEqualities {
+	if !f.Enabled() {
+		return StringFilterEqualities{
+			Equal:    map[string]struct{}{},
+			NotEqual: map[string]struct{}{},
+		}
+	}
+
+	return StringFilterEqualities{
+		Equal:    maps.Clone(f.equal),
+		NotEqual: maps.Clone(f.notEqual),
 	}
 }
 
-func (filter *BPFStringFilter) UpdateBPF(bpfModule *bpf.Module, policyID uint) error {
-	// MaxBpfStrFilterSize value should be at least as big as the bpf map value size
-	const maxBpfStrFilterSize = 256
-
-	if !filter.Enabled() {
+func (f *StringFilter) Clone() utils.Cloner {
+	if f == nil {
 		return nil
 	}
 
-	bpfMap, err := bpfModule.GetMap(filter.mapName)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
+	n := NewStringFilter()
 
-	filterVal := make([]byte, 16)
+	maps.Copy(n.equal, f.equal)
+	maps.Copy(n.notEqual, f.notEqual)
+	f.prefixes.Clone()
+	n.prefixes = *f.prefixes.Clone()
+	n.suffixes = *f.suffixes.Clone()
+	maps.Copy(n.contains, f.contains)
+	n.notPrefixes = *f.notPrefixes.Clone()
+	n.notSuffixes = *f.notSuffixes.Clone()
+	maps.Copy(n.notContains, f.notContains)
+	n.enabled = f.enabled
 
-	// first initialize notEqual values since equality should take precedence
-	for str := range filter.notEqual {
-		byteStr := make([]byte, maxBpfStrFilterSize)
-		copy(byteStr, str)
-
-		var equalInPolicies, equalitySetInPolicies uint64
-		curVal, err := bpfMap.GetValue(unsafe.Pointer(&byteStr[0]))
-		if err == nil {
-			equalInPolicies = binary.LittleEndian.Uint64(curVal[0:8])
-			equalitySetInPolicies = binary.LittleEndian.Uint64(curVal[8:16])
-		}
-
-		// filterNotEqual == 0, so clear n bitmap bit
-		utils.ClearBit(&equalInPolicies, policyID)
-		utils.SetBit(&equalitySetInPolicies, policyID)
-
-		binary.LittleEndian.PutUint64(filterVal[0:8], equalInPolicies)
-		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInPolicies)
-		if err = bpfMap.Update(unsafe.Pointer(&byteStr[0]), unsafe.Pointer(&filterVal[0])); err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	// now - setup equality filters
-	for str := range filter.equal {
-		byteStr := make([]byte, maxBpfStrFilterSize)
-		copy(byteStr, str)
-
-		var equalInPolicies, equalitySetInPolicies uint64
-		curVal, err := bpfMap.GetValue(unsafe.Pointer(&byteStr[0]))
-		if err == nil {
-			equalInPolicies = binary.LittleEndian.Uint64(curVal[0:8])
-			equalitySetInPolicies = binary.LittleEndian.Uint64(curVal[8:16])
-		}
-
-		// filterEqual == 1, so set n bitmap bit
-		utils.SetBit(&equalInPolicies, policyID)
-		utils.SetBit(&equalitySetInPolicies, policyID)
-
-		binary.LittleEndian.PutUint64(filterVal[0:8], equalInPolicies)
-		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInPolicies)
-		if err = bpfMap.Update(unsafe.Pointer(&byteStr[0]), unsafe.Pointer(&filterVal[0])); err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	return nil
+	return n
 }

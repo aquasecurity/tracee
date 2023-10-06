@@ -377,7 +377,7 @@ func (c *Containers) CgroupMkdir(cgroupId uint64, subPath string, hierarchyID ui
 }
 
 // FindContainerCgroupID32LSB returns the 32 LSB of the Cgroup ID for a given container ID.
-func (c *Containers) FindContainerCgroupID32LSB(containerID string) []uint32 {
+func (c *Containers) FindContainerCgroupID32LSB(containerID string) ([]uint32, error) {
 	var cgroupIDs []uint32
 	c.cgroupsMutex.RLock()
 	defer c.cgroupsMutex.RUnlock()
@@ -386,7 +386,15 @@ func (c *Containers) FindContainerCgroupID32LSB(containerID string) []uint32 {
 			cgroupIDs = append(cgroupIDs, k)
 		}
 	}
-	return cgroupIDs
+
+	if cgroupIDs == nil {
+		return nil, errfmt.Errorf("container id not found: %s", containerID)
+	}
+	if len(cgroupIDs) > 1 {
+		return cgroupIDs, errfmt.Errorf("container id is ambiguous: %s", containerID)
+	}
+
+	return cgroupIDs, nil
 }
 
 // GetCgroupInfo returns the contents of the Containers struct cgroupInfo data of a given cgroupId.

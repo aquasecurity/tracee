@@ -6,6 +6,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -169,4 +170,23 @@ func (filter *ArgFilter) Disable() {
 
 func (filter *ArgFilter) Enabled() bool {
 	return filter.enabled
+}
+
+func (filter *ArgFilter) Clone() utils.Cloner {
+	if filter == nil {
+		return nil
+	}
+
+	n := NewArgFilter()
+
+	for eventID, filterMap := range filter.filters {
+		n.filters[eventID] = map[string]Filter{}
+		for argName, f := range filterMap {
+			n.filters[eventID][argName] = f.Clone().(Filter)
+		}
+	}
+
+	n.enabled = filter.enabled
+
+	return n
 }

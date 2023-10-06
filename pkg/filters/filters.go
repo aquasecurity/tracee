@@ -1,5 +1,7 @@
 package filters
 
+import "github.com/aquasecurity/tracee/pkg/utils"
+
 type Operator uint
 
 const (
@@ -51,6 +53,8 @@ func stringToOperator(op string) Operator {
 // With generics this may be a viable interface, with T replacing interface{}
 // Filters can be enabled or disabled - if a filter is enabled it will be skipped
 type Filter interface {
+	utils.Cloner
+
 	Filter(val interface{}) bool
 	Parse(string) error
 	Enable()

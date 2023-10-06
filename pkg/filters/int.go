@@ -7,8 +7,10 @@ import (
 	"strings"
 
 	"golang.org/x/exp/constraints"
+	"golang.org/x/exp/maps"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 const (
@@ -17,8 +19,8 @@ const (
 )
 
 type IntFilter[T constraints.Signed] struct {
-	equal    map[int64]bool
-	notEqual map[int64]bool
+	equal    map[int64]struct{}
+	notEqual map[int64]struct{}
 	min      int64
 	max      int64
 	is32Bit  bool
@@ -37,8 +39,8 @@ func NewInt32Filter() *IntFilter[int32] {
 
 func newIntFilter[T constraints.Signed](is32Bit bool) *IntFilter[T] {
 	filter := &IntFilter[T]{
-		equal:    map[int64]bool{},
-		notEqual: map[int64]bool{},
+		equal:    map[int64]struct{}{},
+		notEqual: map[int64]struct{}{},
 		min:      minNotSetInt,
 		max:      maxNotSetInt,
 		is32Bit:  is32Bit,
@@ -82,10 +84,14 @@ func (f *IntFilter[T]) Filter(val interface{}) bool {
 // 4. non equality
 func (f *IntFilter[T]) filter(val T) bool {
 	compVal := int64(val)
-	result := !f.enabled || f.equal[compVal] || compVal > f.min || compVal < f.max
-	if !result && f.notEqual[compVal] {
+	_, inEqual := f.equal[compVal]
+	_, inNotEqual := f.notEqual[compVal]
+
+	result := !f.enabled || inEqual || compVal > f.min || compVal < f.max
+	if !result && inNotEqual {
 		return false
 	}
+
 	return result
 }
 
@@ -97,11 +103,11 @@ func (f *IntFilter[T]) validate(val int64) bool {
 }
 
 func (f *IntFilter[T]) addEqual(val int64) {
-	f.equal[val] = true
+	f.equal[val] = struct{}{}
 }
 
 func (f *IntFilter[T]) addNotEqual(val int64) {
-	f.notEqual[val] = true
+	f.notEqual[val] = struct{}{}
 }
 
 func (f *IntFilter[T]) addLesserThan(val int64) {
@@ -183,4 +189,20 @@ func (f *IntFilter[T]) Parse(operatorAndValues string) error {
 	f.Enable()
 
 	return nil
+}
+
+func (f *IntFilter[T]) Clone() utils.Cloner {
+	if f == nil {
+		return nil
+	}
+
+	n := newIntFilter[T](f.is32Bit)
+
+	maps.Copy(n.equal, f.equal)
+	maps.Copy(n.notEqual, f.notEqual)
+	n.min = f.min
+	n.max = f.max
+	n.enabled = f.enabled
+
+	return n
 }

@@ -1,16 +1,13 @@
 package filters
 
 import (
-	"encoding/binary"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
-	"unsafe"
 
 	"golang.org/x/exp/constraints"
-
-	bpf "github.com/aquasecurity/libbpfgo"
+	"golang.org/x/exp/maps"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -22,8 +19,8 @@ const (
 )
 
 type UIntFilter[T constraints.Unsigned] struct {
-	equal    map[uint64]bool
-	notEqual map[uint64]bool
+	equal    map[uint64]struct{}
+	notEqual map[uint64]struct{}
 	min      uint64
 	max      uint64
 	is32Bit  bool
@@ -42,8 +39,8 @@ func NewUInt32Filter() *UIntFilter[uint32] {
 
 func newUIntFilter[T constraints.Unsigned](is32Bit bool) *UIntFilter[T] {
 	return &UIntFilter[T]{
-		equal:    map[uint64]bool{},
-		notEqual: map[uint64]bool{},
+		equal:    map[uint64]struct{}{},
+		notEqual: map[uint64]struct{}{},
 		min:      MinNotSetUInt,
 		max:      MaxNotSetUInt,
 		is32Bit:  is32Bit,
@@ -101,8 +98,11 @@ func (f UIntFilter[T]) InMinMaxRange(val T) bool {
 // 4. non equality
 func (f *UIntFilter[T]) filter(val T) bool {
 	compVal := uint64(val)
-	result := !f.Enabled() || f.equal[compVal] || compVal > f.min || compVal < f.max
-	if !result && f.notEqual[compVal] {
+	_, inEqual := f.equal[compVal]
+	_, inNotEqual := f.notEqual[compVal]
+
+	result := !f.enabled || inEqual || compVal > f.min || compVal < f.max
+	if !result && inNotEqual {
 		return false
 	}
 	return result
@@ -117,11 +117,11 @@ func (f *UIntFilter[T]) validate(val uint64) bool {
 }
 
 func (f *UIntFilter[T]) addEqual(val uint64) {
-	f.equal[val] = true
+	f.equal[val] = struct{}{}
 }
 
 func (f *UIntFilter[T]) addNotEqual(val uint64) {
-	f.notEqual[val] = true
+	f.notEqual[val] = struct{}{}
 }
 
 func (f *UIntFilter[T]) addLessThan(val uint64) {
@@ -209,105 +209,44 @@ func (f *UIntFilter[T]) Parse(operatorAndValues string) error {
 	return nil
 }
 
-type BPFUIntFilter[T constraints.Unsigned] struct {
-	UIntFilter[T]
-	mapName string
-}
-
-func NewBPFUIntFilter(mapName string) *BPFUIntFilter[uint64] {
-	return &BPFUIntFilter[uint64]{
-		UIntFilter: *NewUIntFilter(),
-		mapName:    mapName,
-	}
-}
-
-func NewBPFUInt32Filter(mapName string) *BPFUIntFilter[uint32] {
-	return &BPFUIntFilter[uint32]{
-		UIntFilter: *NewUInt32Filter(),
-		mapName:    mapName,
-	}
-}
-
-func (filter *BPFUIntFilter[T]) UpdateBPF(bpfModule *bpf.Module, policyID uint) error {
-	if !filter.Enabled() {
-		return nil
-	}
-
-	// equalityFilter filters events for given maps:
-	// 1. uid_filter        u32, eq_t
-	// 2. pid_filter        u32, eq_t
-	// 3. mnt_ns_filter     u64, eq_t
-	// 4. pid_ns_filter     u64, eq_t
-	equalityFilterMap, err := bpfModule.GetMap(filter.mapName)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	var keyPointer unsafe.Pointer
-	filterVal := make([]byte, 16)
-
-	// first initialize notEqual values since equality should take precedence
-	for notEqualFilter := range filter.notEqual {
-		notEqualU32 := uint32(notEqualFilter)
-		if filter.is32Bit {
-			keyPointer = unsafe.Pointer(&notEqualU32)
-		} else {
-			keyPointer = unsafe.Pointer(&notEqualFilter)
-		}
-
-		var equalInPolicies, equalitySetInPolicies uint64
-		curVal, err := equalityFilterMap.GetValue(keyPointer)
-		if err == nil {
-			equalInPolicies = binary.LittleEndian.Uint64(curVal[0:8])
-			equalitySetInPolicies = binary.LittleEndian.Uint64(curVal[8:16])
-		}
-
-		// filterNotEqual == 0, so clear n bitmap bit
-		utils.ClearBit(&equalInPolicies, policyID)
-		utils.SetBit(&equalitySetInPolicies, policyID)
-
-		binary.LittleEndian.PutUint64(filterVal[0:8], equalInPolicies)
-		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInPolicies)
-		err = equalityFilterMap.Update(unsafe.Pointer(keyPointer), unsafe.Pointer(&filterVal[0]))
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	// now - setup equality filters
-	for equalFilter := range filter.equal {
-		equalU32 := uint32(equalFilter)
-		if filter.is32Bit {
-			keyPointer = unsafe.Pointer(&equalU32)
-		} else {
-			keyPointer = unsafe.Pointer(&equalFilter)
-		}
-
-		var equalInPolicies, equalitySetInPolicies uint64
-		curVal, err := equalityFilterMap.GetValue(keyPointer)
-		if err == nil {
-			equalInPolicies = binary.LittleEndian.Uint64(curVal[0:8])
-			equalitySetInPolicies = binary.LittleEndian.Uint64(curVal[8:16])
-		}
-
-		// filterEqual == 1, so set n bitmap bit
-		utils.SetBit(&equalInPolicies, policyID)
-		utils.SetBit(&equalitySetInPolicies, policyID)
-
-		binary.LittleEndian.PutUint64(filterVal[0:8], equalInPolicies)
-		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInPolicies)
-		err = equalityFilterMap.Update(unsafe.Pointer(keyPointer), unsafe.Pointer(&filterVal[0]))
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	return nil
-}
-
 func (f *UIntFilter[T]) FilterOut() bool {
 	if len(f.equal) > 0 && len(f.notEqual) == 0 && f.min == MinNotSetUInt && f.max == MaxNotSetUInt {
 		return false
 	}
 	return true
+}
+
+type UIntFilterEqualities struct {
+	Equal    map[uint64]struct{}
+	NotEqual map[uint64]struct{}
+}
+
+func (f *UIntFilter[T]) Equalities() UIntFilterEqualities {
+	if !f.Enabled() {
+		return UIntFilterEqualities{
+			Equal:    map[uint64]struct{}{},
+			NotEqual: map[uint64]struct{}{},
+		}
+	}
+
+	return UIntFilterEqualities{
+		Equal:    maps.Clone(f.equal),
+		NotEqual: maps.Clone(f.notEqual),
+	}
+}
+
+func (f *UIntFilter[T]) Clone() utils.Cloner {
+	if f == nil {
+		return nil
+	}
+
+	n := newUIntFilter[T](f.is32Bit)
+
+	maps.Copy(n.equal, f.equal)
+	maps.Copy(n.notEqual, f.notEqual)
+	n.min = f.min
+	n.max = f.max
+	n.enabled = f.enabled
+
+	return n
 }

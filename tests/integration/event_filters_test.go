@@ -1712,11 +1712,12 @@ func Test_EventFilters(t *testing.T) {
 
 			// prepare tracee config
 			config := config.Config{
-				Policies: newPolicies(tc.policyFiles),
 				Capabilities: &config.CapabilitiesConfig{
 					BypassCaps: true,
 				},
 			}
+			config.Policies = newPolicies(tc.policyFiles)
+			policy.Snapshots().Store(config.Policies)
 
 			ctx, cancel := context.WithCancel(context.Background())
 

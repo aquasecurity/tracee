@@ -1,34 +1,24 @@
 package filters
 
 import (
-	"encoding/binary"
 	"strconv"
 	"strings"
-	"unsafe"
 
-	bpf "github.com/aquasecurity/libbpfgo"
+	"golang.org/x/exp/maps"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
 )
 
-type nsBinary struct {
-	mntNS uint32
-	path  string
-}
-
-type procInfo struct {
-	newProc        bool
-	followPolicies uint64
-	mntNS          uint32
-	binaryBytes    [maxBpfBinPathSize]byte
-	binNoMnt       uint32
+type NSBinary struct {
+	MntNS uint32
+	Path  string
 }
 
 type BinaryFilter struct {
-	equal    map[nsBinary]bool
-	notEqual map[nsBinary]bool
+	equal    map[NSBinary]struct{}
+	notEqual map[NSBinary]struct{}
 	enabled  bool
 }
 
@@ -46,8 +36,8 @@ func getHostMntNS() (uint32, error) {
 
 func NewBinaryFilter() *BinaryFilter {
 	return &BinaryFilter{
-		equal:    map[nsBinary]bool{},
-		notEqual: map[nsBinary]bool{},
+		equal:    map[NSBinary]struct{}{},
+		notEqual: map[NSBinary]struct{}{},
 	}
 }
 
@@ -73,11 +63,11 @@ func (f *BinaryFilter) Parse(operatorAndValues string) error {
 
 	for _, val := range values {
 		mntAndPath := strings.Split(val, ":")
-		var bin nsBinary
+		var bin NSBinary
 		if len(mntAndPath) == 1 {
-			bin.path = val
+			bin.Path = val
 		} else if len(mntAndPath) == 2 {
-			bin.path = mntAndPath[1]
+			bin.Path = mntAndPath[1]
 			if mntAndPath[0] == "host" {
 				if hostMntNS == 0 {
 					hostMntNS, err = getHostMntNS()
@@ -85,19 +75,19 @@ func (f *BinaryFilter) Parse(operatorAndValues string) error {
 						return FailedToRetreiveHostNS()
 					}
 				}
-				bin.mntNS = hostMntNS
+				bin.MntNS = hostMntNS
 			} else {
 				mntNS, err := strconv.Atoi(mntAndPath[0])
 				if err != nil {
 					return InvalidValue(val)
 				}
-				bin.mntNS = uint32(mntNS)
+				bin.MntNS = uint32(mntNS)
 			}
 		} else {
 			return InvalidValue(val)
 		}
 
-		if !strings.HasPrefix(bin.path, "/") {
+		if !strings.HasPrefix(bin.Path, "/") {
 			return InvalidValue(val)
 		}
 
@@ -112,13 +102,13 @@ func (f *BinaryFilter) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (f *BinaryFilter) add(bin nsBinary, operator Operator) error {
+func (f *BinaryFilter) add(bin NSBinary, operator Operator) error {
 	switch operator {
 	case Equal:
-		f.equal[bin] = true
+		f.equal[bin] = struct{}{}
 		return nil
 	case NotEqual:
-		f.notEqual[bin] = true
+		f.notEqual[bin] = struct{}{}
 		return nil
 	default:
 		return UnsupportedOperator(operator)
@@ -144,136 +134,35 @@ func (f *BinaryFilter) FilterOut() bool {
 	return true
 }
 
-type BPFBinaryFilter struct {
-	BinaryFilter
-	binaryMapName string
-	procInfoMap   string
+type BinaryFilterEqualities struct {
+	Equal    map[NSBinary]struct{}
+	NotEqual map[NSBinary]struct{}
 }
 
-const (
-	maxBpfBinPathSize = 256 // maximum binary path size supported by BPF (MAX_BIN_PATH_SIZE)
-	bpfBinFilterSize  = 264 // the key size of the BPF binary filter map entry
-)
+func (f *BinaryFilter) Equalities() BinaryFilterEqualities {
+	if !f.Enabled() {
+		return BinaryFilterEqualities{
+			Equal:    map[NSBinary]struct{}{},
+			NotEqual: map[NSBinary]struct{}{},
+		}
+	}
 
-func NewBPFBinaryFilter(binaryMapName, procInfoMap string) *BPFBinaryFilter {
-	return &BPFBinaryFilter{
-		BinaryFilter:  *NewBinaryFilter(),
-		binaryMapName: binaryMapName,
-		procInfoMap:   procInfoMap,
+	return BinaryFilterEqualities{
+		Equal:    maps.Clone(f.equal),
+		NotEqual: maps.Clone(f.notEqual),
 	}
 }
 
-func (f *BPFBinaryFilter) UpdateBPF(bpfModule *bpf.Module, policyID uint) error {
-	if !f.Enabled() {
+func (f *BinaryFilter) Clone() utils.Cloner {
+	if f == nil {
 		return nil
 	}
 
-	err := f.populateBinaryMap(bpfModule, policyID)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
+	n := NewBinaryFilter()
 
-	err = f.populateProcInfoMap(bpfModule)
+	maps.Copy(n.equal, f.equal)
+	maps.Copy(n.notEqual, f.notEqual)
+	n.enabled = f.enabled
 
-	return errfmt.WrapError(err)
-}
-
-func (f *BPFBinaryFilter) populateBinaryMap(bpfModule *bpf.Module, policyID uint) error {
-	binMap, err := bpfModule.GetMap(f.binaryMapName)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	fn := func(bin nsBinary, eqVal uint32) error {
-		if len(bin.path) > maxBpfBinPathSize {
-			return InvalidValue(bin.path)
-		}
-		binBytes := make([]byte, bpfBinFilterSize)
-		if bin.mntNS == 0 {
-			// If no mount namespace given, bpf map key is only the path
-			copy(binBytes, bin.path)
-		} else {
-			// otherwise, key is composed of the mount namespace and the path
-			binary.LittleEndian.PutUint32(binBytes, bin.mntNS)
-			copy(binBytes[4:], bin.path)
-		}
-
-		var equalInPolicies, equalitySetInPolicies uint64
-		curVal, err := binMap.GetValue(unsafe.Pointer(&binBytes[0]))
-		if err == nil {
-			equalInPolicies = binary.LittleEndian.Uint64(curVal[0:8])
-			equalitySetInPolicies = binary.LittleEndian.Uint64(curVal[8:16])
-		}
-
-		filterVal := make([]byte, 16)
-
-		if eqVal == filterNotEqual {
-			utils.ClearBit(&equalInPolicies, policyID)
-		} else {
-			utils.SetBit(&equalInPolicies, policyID)
-		}
-		utils.SetBit(&equalitySetInPolicies, policyID)
-		binary.LittleEndian.PutUint64(filterVal[0:8], equalInPolicies)
-		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInPolicies)
-
-		return binMap.Update(unsafe.Pointer(&binBytes[0]), unsafe.Pointer(&filterVal[0]))
-	}
-
-	// first initialize notEqual values since equality should take precedence
-	for bin := range f.notEqual {
-		if err = fn(bin, uint32(filterNotEqual)); err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	// now - setup equality filters
-	for bin := range f.equal {
-		if err = fn(bin, uint32(filterEqual)); err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	return nil
-}
-
-func (f *BPFBinaryFilter) populateProcInfoMap(bpfModule *bpf.Module) error {
-	procInfoMap, err := bpfModule.GetMap(f.procInfoMap)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	binsToTrack := []nsBinary{}
-	for bin := range f.equal {
-		binsToTrack = append(binsToTrack, bin)
-	}
-	for bin := range f.notEqual {
-		binsToTrack = append(binsToTrack, bin)
-	}
-
-	binsProcs, err := proc.GetAllBinaryProcs()
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	for _, bin := range binsToTrack {
-		procs := binsProcs[bin.path]
-		for _, p := range procs {
-			binBytes := make([]byte, maxBpfBinPathSize)
-			copy(binBytes, bin.path)
-			binBytesCopy := (*[maxBpfBinPathSize]byte)(binBytes)
-			procInfo := procInfo{
-				newProc:        false,
-				followPolicies: 0,
-				mntNS:          bin.mntNS,
-				binaryBytes:    *binBytesCopy,
-				binNoMnt:       0, // always 0, see bin_no_mnt in tracee.bpf.c
-			}
-			err := procInfoMap.Update(unsafe.Pointer(&p), unsafe.Pointer(&procInfo))
-			if err != nil {
-				return errfmt.WrapError(err)
-			}
-		}
-	}
-
-	return nil
+	return n
 }
