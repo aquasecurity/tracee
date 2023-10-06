@@ -12,6 +12,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -240,6 +241,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.Kubernetes = kubernetesData
 			evt.EventID = int(eCtx.EventID)
 			evt.EventName = eventDefinition.GetName()
+			evt.PoliciesVersion = eCtx.PoliciesVersion
 			evt.MatchedPoliciesKernel = eCtx.MatchedPolicies
 			evt.MatchedPoliciesUser = 0
 			evt.MatchedPolicies = []string{}
@@ -288,13 +290,19 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 	eventID := events.ID(event.EventID)
 	bitmap := event.MatchedPoliciesKernel
 
+	policies, err := policy.Snapshots().Get(event.PoliciesVersion)
+	if err != nil {
+		t.handleError(err)
+		return 0
+	}
+
 	// Short circuit if there are no policies in userland that need filtering.
-	if bitmap&t.config.Policies.FilterableInUserland() == 0 {
-		event.MatchedPoliciesUser = bitmap // store untoched bitmap to be used in sink stage
+	if bitmap&policies.FilterableInUserland() == 0 {
+		event.MatchedPoliciesUser = bitmap // store untouched bitmap to be used in sink stage
 		return bitmap
 	}
 
-	for p := range t.config.Policies.FilterableInUserlandMap() { // range through each userland filterable policy
+	for p := range policies.FilterableInUserlandMap() { // range through each userland filterable policy
 		// Policy ID is the bit offset in the bitmap.
 		bitOffset := uint(p.ID)
 
@@ -449,8 +457,14 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 				continue
 			}
 
+			policies, err := policy.Snapshots().Get(event.PoliciesVersion)
+			if err != nil {
+				t.handleError(err)
+				continue
+			}
+
 			// Get a bitmap with all policies containing container filters
-			policiesWithContainerFilter := t.config.Policies.ContainerFilterEnabled()
+			policiesWithContainerFilter := policies.ContainerFilterEnabled()
 
 			// Filter out events that don't have a container ID from all the policies that
 			// have container filters. This will guarantee that any of those policies
@@ -594,8 +608,13 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 				continue
 			}
 
+			policies, err := policy.Snapshots().Get(event.PoliciesVersion)
+			if err != nil {
+				t.handleError(err)
+				continue
+			}
 			// Populate the event with the names of the matched policies.
-			event.MatchedPolicies = t.config.Policies.MatchedNames(event.MatchedPoliciesUser)
+			event.MatchedPolicies = policies.MatchedNames(event.MatchedPoliciesUser)
 
 			// Parse args here if the rule engine is not enabled (parsed there if it is).
 			if !t.config.EngineConfig.Enabled {

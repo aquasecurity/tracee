@@ -487,6 +487,7 @@ func TestSymbolsCollision(t *testing.T) {
 			}
 
 			ps := policy.NewPolicies()
+			policy.Snapshots().Store(ps)
 			err := ps.Set(p)
 			require.NoError(t, err)
 

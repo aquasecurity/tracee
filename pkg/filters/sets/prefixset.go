@@ -3,10 +3,12 @@ package sets
 import (
 	"math"
 	"sort"
+
+	"golang.org/x/exp/maps"
 )
 
 type PrefixSet struct {
-	Set       map[string]bool
+	Set       map[string]struct{}
 	lengthSet map[int]struct{}
 	lengths   []int
 	minLen    int
@@ -14,7 +16,7 @@ type PrefixSet struct {
 
 func NewPrefixSet() PrefixSet {
 	return PrefixSet{
-		Set:       map[string]bool{},
+		Set:       map[string]struct{}{},
 		lengthSet: map[int]struct{}{},
 		lengths:   []int{},
 		minLen:    math.MaxInt,
@@ -26,7 +28,7 @@ func (set *PrefixSet) Put(prefix string) {
 		return
 	}
 
-	set.Set[prefix] = true
+	set.Set[prefix] = struct{}{}
 	prefixLen := len(prefix)
 	if _, ok := set.lengthSet[prefixLen]; !ok {
 		set.lengthSet[prefixLen] = struct{}{}
@@ -39,7 +41,8 @@ func (set *PrefixSet) Put(prefix string) {
 }
 
 func (set *PrefixSet) Exists(prefix string) bool {
-	return set.Set[prefix]
+	_, found := set.Set[prefix]
+	return found
 }
 
 func (set *PrefixSet) Filter(val string) bool {
@@ -54,7 +57,7 @@ func (set *PrefixSet) Filter(val string) bool {
 		}
 
 		check := val[0:prefixLen]
-		if set.Set[check] {
+		if _, found := set.Set[check]; found {
 			return true
 		}
 	}
@@ -63,4 +66,19 @@ func (set *PrefixSet) Filter(val string) bool {
 
 func (set *PrefixSet) Length() int {
 	return len(set.Set)
+}
+
+func (set *PrefixSet) Clone() *PrefixSet {
+	if set == nil {
+		return nil
+	}
+
+	n := NewPrefixSet()
+
+	maps.Copy(n.Set, set.Set)
+	maps.Copy(n.lengthSet, set.lengthSet)
+	n.lengths = append(n.lengths, set.lengths...)
+	n.minLen = set.minLen
+
+	return &n
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -71,30 +72,31 @@ func (filter *ContextFilter) Parse(filterName string, operatorAndValues string) 
 	eventFilter := filter.filters[eventDefID]
 	if eventFilter == nil {
 		eventFilter = &eventCtxFilter{
-			enabled:              filter.enabled,
-			timestampFilter:      NewIntFilter(),
-			processorIDFilter:    NewIntFilter(),
-			pidFilter:            NewIntFilter(),
-			tidFilter:            NewIntFilter(),
-			ppidFilter:           NewIntFilter(),
-			hostPidFilter:        NewIntFilter(),
-			hostTidFilter:        NewIntFilter(),
-			hostPpidFilter:       NewIntFilter(),
-			uidFilter:            NewIntFilter(),
-			mntNSFilter:          NewIntFilter(),
-			pidNSFilter:          NewIntFilter(),
-			processNameFilter:    NewStringFilter(),
-			hostNameFilter:       NewStringFilter(),
-			cgroupIDFilter:       NewUIntFilter(),
-			containerFilter:      NewBoolFilter(),
-			containerIDFilter:    NewStringFilter(),
-			containerImageFilter: NewStringFilter(),
-			containerNameFilter:  NewStringFilter(),
-			podNameFilter:        NewStringFilter(),
-			podNSFilter:          NewStringFilter(),
-			podUIDFilter:         NewStringFilter(),
-			podSandboxFilter:     NewBoolFilter(),
-			syscallFilter:        NewStringFilter(),
+			enabled:                    filter.enabled,
+			timestampFilter:            NewIntFilter(),
+			processorIDFilter:          NewIntFilter(),
+			pidFilter:                  NewIntFilter(),
+			tidFilter:                  NewIntFilter(),
+			ppidFilter:                 NewIntFilter(),
+			hostPidFilter:              NewIntFilter(),
+			hostTidFilter:              NewIntFilter(),
+			hostPpidFilter:             NewIntFilter(),
+			uidFilter:                  NewIntFilter(),
+			mntNSFilter:                NewIntFilter(),
+			pidNSFilter:                NewIntFilter(),
+			processNameFilter:          NewStringFilter(),
+			hostNameFilter:             NewStringFilter(),
+			cgroupIDFilter:             NewUIntFilter(),
+			containerFilter:            NewBoolFilter(),
+			containerIDFilter:          NewStringFilter(),
+			containerImageFilter:       NewStringFilter(),
+			containerImageDigestFilter: NewStringFilter(),
+			containerNameFilter:        NewStringFilter(),
+			podNameFilter:              NewStringFilter(),
+			podNSFilter:                NewStringFilter(),
+			podUIDFilter:               NewStringFilter(),
+			podSandboxFilter:           NewBoolFilter(),
+			syscallFilter:              NewStringFilter(),
 		}
 		filter.filters[eventDefID] = eventFilter
 	}
@@ -273,4 +275,56 @@ func (f *eventCtxFilter) addContainer(filter Filter, operatorAndValues string) e
 	}
 	f.containerFilter.Enable()
 	return nil
+}
+
+func (f *eventCtxFilter) Clone() utils.Cloner {
+	if f == nil {
+		return nil
+	}
+
+	n := &eventCtxFilter{}
+
+	n.enabled = f.enabled
+	n.timestampFilter = f.timestampFilter.Clone().(*IntFilter[int64])
+	n.processorIDFilter = f.processorIDFilter.Clone().(*IntFilter[int64])
+	n.pidFilter = f.pidFilter.Clone().(*IntFilter[int64])
+	n.tidFilter = f.tidFilter.Clone().(*IntFilter[int64])
+	n.ppidFilter = f.ppidFilter.Clone().(*IntFilter[int64])
+	n.hostPidFilter = f.hostPidFilter.Clone().(*IntFilter[int64])
+	n.hostTidFilter = f.hostTidFilter.Clone().(*IntFilter[int64])
+	n.hostPpidFilter = f.hostPpidFilter.Clone().(*IntFilter[int64])
+	n.uidFilter = f.uidFilter.Clone().(*IntFilter[int64])
+	n.mntNSFilter = f.mntNSFilter.Clone().(*IntFilter[int64])
+	n.pidNSFilter = f.pidNSFilter.Clone().(*IntFilter[int64])
+	n.processNameFilter = f.processNameFilter.Clone().(*StringFilter)
+	n.hostNameFilter = f.hostNameFilter.Clone().(*StringFilter)
+	n.cgroupIDFilter = f.cgroupIDFilter.Clone().(*UIntFilter[uint64])
+	n.containerFilter = f.containerFilter.Clone().(*BoolFilter)
+	n.containerIDFilter = f.containerIDFilter.Clone().(*StringFilter)
+	n.containerImageFilter = f.containerImageFilter.Clone().(*StringFilter)
+	n.containerImageDigestFilter = f.containerImageDigestFilter.Clone().(*StringFilter)
+	n.containerNameFilter = f.containerNameFilter.Clone().(*StringFilter)
+	n.podNameFilter = f.podNameFilter.Clone().(*StringFilter)
+	n.podNSFilter = f.podNSFilter.Clone().(*StringFilter)
+	n.podUIDFilter = f.podUIDFilter.Clone().(*StringFilter)
+	n.podSandboxFilter = f.podSandboxFilter.Clone().(*BoolFilter)
+	n.syscallFilter = f.syscallFilter.Clone().(*StringFilter)
+
+	return n
+}
+
+func (filter *ContextFilter) Clone() utils.Cloner {
+	if filter == nil {
+		return nil
+	}
+
+	n := NewContextFilter()
+
+	for k, v := range filter.filters {
+		n.filters[k] = v.Clone().(*eventCtxFilter)
+	}
+
+	n.enabled = filter.enabled
+
+	return n
 }

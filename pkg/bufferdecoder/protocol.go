@@ -45,11 +45,11 @@ type EventContext struct {
 
 	EventID         events.ID // int32
 	Syscall         int32
-	MatchedPolicies uint64
 	Retval          int64
 	StackID         uint32
 	ProcessorId     uint16
-	_               [2]byte // padding
+	PoliciesVersion uint16
+	MatchedPolicies uint64
 }
 
 func (EventContext) GetSizeBytes() int {

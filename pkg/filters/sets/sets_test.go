@@ -1,31 +1,16 @@
-package sets_test
+package sets
 
 import (
-	"math/rand"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/aquasecurity/tracee/pkg/filters/sets"
 )
 
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-func RandStringRunes(n int, prefixes []string) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-	if rand.Intn(10) > 5 {
-		return string(b)
-	}
-	return prefixes[rand.Intn(len(prefixes))] + string(b)
-}
-
-func Test_PrefixSet(t *testing.T) {
+func TestPrefixSet(t *testing.T) {
 	t.Parallel()
 
-	prefixes := sets.NewPrefixSet()
+	prefixes := NewPrefixSet()
 	put := []string{
 		"bruh",
 		"ahi",
@@ -53,10 +38,10 @@ func Test_PrefixSet(t *testing.T) {
 	assert.ElementsMatch(t, expected, res)
 }
 
-func Test_SuffixSet(t *testing.T) {
+func TestSuffixSet(t *testing.T) {
 	t.Parallel()
 
-	suffixes := sets.NewSuffixSet()
+	suffixes := NewSuffixSet()
 	put := []string{
 		"bruh",
 		"ahi",
@@ -78,4 +63,42 @@ func Test_SuffixSet(t *testing.T) {
 	}
 
 	assert.ElementsMatch(t, expected, res)
+}
+
+func TestPrefixSetClone(t *testing.T) {
+	t.Parallel()
+
+	set := NewPrefixSet()
+	set.Put("/tmp")
+
+	copy := set.Clone()
+
+	if !reflect.DeepEqual(&set, copy) {
+		t.Errorf("Clone did not produce an identical copy")
+	}
+
+	// ensure that changes to the copy do not affect the original
+	copy.Put("/home")
+	if reflect.DeepEqual(&set, copy) {
+		t.Errorf("Changes to copied filter affected the original")
+	}
+}
+
+func TestSuffixSetClone(t *testing.T) {
+	t.Parallel()
+
+	set := NewSuffixSet()
+	set.Put(".git")
+
+	copy := set.Clone()
+
+	if !reflect.DeepEqual(&set, copy) {
+		t.Errorf("Clone did not produce an identical copy")
+	}
+
+	// ensure that changes to the copy do not affect the original
+	copy.Put(".ssh")
+	if reflect.DeepEqual(&set, copy) {
+		t.Errorf("Changes to copied filter affected the original")
+	}
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 type RetFilter struct {
@@ -82,4 +83,19 @@ func (filter *RetFilter) Parse(filterName string, operatorAndValues string, even
 	filter.Enable()
 
 	return nil
+}
+
+func (filter *RetFilter) Clone() utils.Cloner {
+	if filter == nil {
+		return nil
+	}
+
+	n := NewRetFilter()
+
+	for k, v := range filter.filters {
+		n.filters[k] = v.Clone().(*IntFilter[int64])
+	}
+	n.enabled = filter.enabled
+
+	return n
 }

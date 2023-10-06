@@ -209,6 +209,7 @@ statfunc u64 compute_scopes(program_data_t *p)
     // unversioned filters
     //
 
+    // TODO: Create a filter map for each boolean filter (versioning it) #3805
     if (p->config->cont_filter_enabled_scopes) {
         bool is_container = false;
         u8 state = p->task_info->container_state;

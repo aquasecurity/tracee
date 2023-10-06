@@ -3,6 +3,8 @@ package filters
 import (
 	"strconv"
 	"strings"
+
+	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 type BoolFilter struct {
@@ -44,7 +46,7 @@ func (f *BoolFilter) filter(val bool) bool {
 // BoolFilter can support the following expressions
 // values in <> are ignored
 // field -> field=true
-// !field -> field=false
+// not-field -> field=false
 // field=true
 // field=false
 // field!=true
@@ -91,7 +93,7 @@ func (f *BoolFilter) Parse(operatorAndValues string) error {
 		return nil
 	}
 
-	// case of !field
+	// case of not-field
 	if strings.HasPrefix(operatorAndValues, "not-") {
 		f.falseEnabled = true
 		return nil
@@ -141,4 +143,16 @@ func (f *BoolFilter) Value() bool {
 
 func (f *BoolFilter) FilterOut() bool {
 	return !f.Value()
+}
+
+func (f *BoolFilter) Clone() utils.Cloner {
+	if f == nil {
+		return nil
+	}
+
+	return &BoolFilter{
+		trueEnabled:  f.trueEnabled,
+		falseEnabled: f.falseEnabled,
+		enabled:      f.enabled,
+	}
 }

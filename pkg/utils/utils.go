@@ -8,6 +8,11 @@ import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 )
 
+// Cloner is an interface for objects that can be cloned
+type Cloner interface {
+	Clone() Cloner
+}
+
 func ParseSymbol(address uint64, table helpers.KernelSymbolTable) *helpers.KernelSymbol {
 	hookingFunction, err := table.GetSymbolByAddr(address)
 	if err != nil {

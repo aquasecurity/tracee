@@ -1,32 +1,26 @@
 package filters
 
 import (
-	"bytes"
-	"encoding/binary"
-	"fmt"
-	"os"
 	"strconv"
 	"strings"
-	"unsafe"
 
-	bpf "github.com/aquasecurity/libbpfgo"
+	"golang.org/x/exp/maps"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 type ProcessTreeFilter struct {
-	PIDs    map[uint32]bool // PIDs is a map where k=pid and v represents whether it and its descendent should be traced or not
-	enabled bool
-	mapName string
+	equal    map[uint32]struct{} // k=pid states that pid and its descendent should be traced
+	notEqual map[uint32]struct{} // k=pid states that pid and its descendent should not be traced
+	enabled  bool
 }
 
-func NewProcessTreeFilter(mapName string) *ProcessTreeFilter {
+func NewProcessTreeFilter() *ProcessTreeFilter {
 	return &ProcessTreeFilter{
-		PIDs:    map[uint32]bool{},
-		enabled: false,
-		mapName: mapName,
+		equal:    map[uint32]struct{}{},
+		notEqual: map[uint32]struct{}{},
+		enabled:  false,
 	}
 }
 
@@ -71,7 +65,11 @@ func (f *ProcessTreeFilter) Parse(operatorAndValues string) error {
 		if err != nil {
 			return errfmt.Errorf("invalid PID given to filter: %s", valuesString)
 		}
-		f.PIDs[uint32(pid)] = equalityOperator
+		if equalityOperator {
+			f.equal[uint32(pid)] = struct{}{}
+		} else {
+			f.notEqual[uint32(pid)] = struct{}{}
+		}
 	}
 
 	f.Enable()
@@ -79,104 +77,43 @@ func (f *ProcessTreeFilter) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (f *ProcessTreeFilter) UpdateBPF(bpfModule *bpf.Module, policyID uint) error {
+func (f *ProcessTreeFilter) FilterOut() bool {
+	if len(f.equal) > 0 && len(f.notEqual) == 0 {
+		return false
+	}
+
+	return true
+}
+
+type ProcessTreeFilterEqualities struct {
+	Equal    map[uint32]struct{}
+	NotEqual map[uint32]struct{}
+}
+
+func (f *ProcessTreeFilter) Equalities() ProcessTreeFilterEqualities {
 	if !f.Enabled() {
+		return ProcessTreeFilterEqualities{
+			Equal:    map[uint32]struct{}{},
+			NotEqual: map[uint32]struct{}{},
+		}
+	}
+
+	return ProcessTreeFilterEqualities{
+		Equal:    maps.Clone(f.equal),
+		NotEqual: maps.Clone(f.notEqual),
+	}
+}
+
+func (f *ProcessTreeFilter) Clone() utils.Cloner {
+	if f == nil {
 		return nil
 	}
 
-	processTreeBPFMap, err := bpfModule.GetMap(f.mapName)
-	if err != nil {
-		return errfmt.Errorf("could not find bpf process_tree_map: %v", err)
-	}
+	n := NewProcessTreeFilter()
 
-	procDir, err := os.Open("/proc")
-	if err != nil {
-		return errfmt.Errorf("could not open proc dir: %v", err)
-	}
-	defer func() {
-		if err := procDir.Close(); err != nil {
-			logger.Errorw("Closing file", "error", err)
-		}
-	}()
+	maps.Copy(n.equal, f.equal)
+	maps.Copy(n.notEqual, f.notEqual)
+	n.enabled = f.enabled
 
-	entries, err := procDir.Readdirnames(-1)
-	if err != nil {
-		return errfmt.Errorf("could not read proc dir: %v", err)
-	}
-
-	updateBPF := func(shouldBeTraced bool, pid uint64) {
-		filterVal := make([]byte, 16)
-		var equalInPolicies, equalitySetInPolicies uint64
-		curVal, err := processTreeBPFMap.GetValue(unsafe.Pointer(&pid))
-		if err == nil {
-			equalInPolicies = binary.LittleEndian.Uint64(curVal[0:8])
-			equalitySetInPolicies = binary.LittleEndian.Uint64(curVal[8:16])
-		}
-
-		if shouldBeTraced {
-			utils.SetBit(&equalInPolicies, policyID)
-		} else {
-			utils.ClearBit(&equalInPolicies, policyID)
-		}
-		utils.SetBit(&equalitySetInPolicies, policyID)
-
-		binary.LittleEndian.PutUint64(filterVal[0:8], equalInPolicies)
-		binary.LittleEndian.PutUint64(filterVal[8:16], equalitySetInPolicies)
-		err = processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&filterVal[0]))
-		if err != nil {
-			logger.Errorw("Updating processTreeBPFMap", "error", err)
-		}
-	}
-
-	// Iterate over each pid
-	for _, entry := range entries {
-		pid, err := strconv.ParseUint(entry, 10, 32)
-		if err != nil {
-			continue
-		}
-		var fn func(uint32)
-		fn = func(curPid uint32) {
-			stat, err := os.ReadFile(fmt.Sprintf("/proc/%d/stat", curPid))
-			if err != nil {
-				return
-			}
-			// see https://man7.org/linux/man-pages/man5/proc.5.html for how to read /proc/pid/stat
-			splitStat := bytes.SplitN(stat, []byte{' '}, 5)
-			if len(splitStat) != 5 {
-				return
-			}
-			ppid, err := strconv.Atoi(string(splitStat[3]))
-			if err != nil {
-				return
-			}
-			if ppid == 1 {
-				return
-			}
-
-			if shouldBeTraced, ok := f.PIDs[uint32(ppid)]; ok {
-				updateBPF(shouldBeTraced, pid)
-				return
-			}
-			fn(uint32(ppid))
-		}
-		fn(uint32(pid))
-	}
-
-	for pid, shouldBeTraced := range f.PIDs {
-		updateBPF(shouldBeTraced, uint64(pid))
-	}
-
-	return nil
-}
-
-func (f *ProcessTreeFilter) FilterOut() bool {
-	// Determine the default filter for PIDs that aren't specified with a proc tree filter
-	// - If one or more '=' filters, default is '!='
-	// - If one or more '!=' filters, default is '='
-	// - If a mix of filters, the default is '='
-	var filterIn = true
-	for _, v := range f.PIDs {
-		filterIn = filterIn && v
-	}
-	return !filterIn
+	return n
 }

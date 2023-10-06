@@ -8,6 +8,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -92,6 +93,7 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 				evt.Kubernetes = kubernetesData
 				evt.EventID = int(ctx.EventID)
 				evt.EventName = eventDefinition.GetName()
+				evt.PoliciesVersion = ctx.PoliciesVersion
 				evt.MatchedPoliciesKernel = ctx.MatchedPolicies
 				evt.MatchedPoliciesUser = 0
 				evt.MatchedPolicies = []string{}
@@ -102,6 +104,9 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 				evt.ContextFlags = flags
 				evt.Syscall = syscall
 				evt.Metadata = nil
+				evt.ThreadEntityId = utils.HashTaskID(ctx.HostTid, ctx.StartTime)
+				evt.ProcessEntityId = utils.HashTaskID(ctx.HostPid, ctx.LeaderStartTime)
+				evt.ParentEntityId = utils.HashTaskID(ctx.HostPpid, ctx.ParentStartTime)
 
 				processChan <- evt
 			}
@@ -245,6 +250,7 @@ func BenchmarkNewEventObject(b *testing.B) {
 					Kubernetes:            kubernetesData,
 					EventID:               int(ctx.EventID),
 					EventName:             eventDefinition.GetName(),
+					PoliciesVersion:       ctx.PoliciesVersion,
 					MatchedPoliciesKernel: ctx.MatchedPolicies,
 					ArgsNum:               int(argnum),
 					ReturnValue:           int(ctx.Retval),
@@ -252,6 +258,9 @@ func BenchmarkNewEventObject(b *testing.B) {
 					StackAddresses:        stackAddresses,
 					ContextFlags:          flags,
 					Syscall:               syscall,
+					ThreadEntityId:        utils.HashTaskID(ctx.HostTid, ctx.StartTime),
+					ProcessEntityId:       utils.HashTaskID(ctx.HostPid, ctx.LeaderStartTime),
+					ParentEntityId:        utils.HashTaskID(ctx.HostPpid, ctx.ParentStartTime),
 				}
 
 				processChan <- &evt
