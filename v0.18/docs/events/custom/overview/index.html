@@ -1,0 +1,14982 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Runtime security and forensics using eBPF.">
+      
+      
+      
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/v0.18/docs/events/custom/overview/">
+      
+      
+        <link rel="prev" href="../../builtin/extra/security_bprm_check/">
+      
+      
+        <link rel="next" href="../golang/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.4+insiders-4.42.1">
+    
+    
+      
+        <title>Overview - Tracee</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.cbde490e.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#custom-events" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
+      
+  <img src="../../../../images/tracee_logo_only.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Tracee
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Overview
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/aquasecurity/tracee" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../.." class="md-tabs__link">
+          
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../tutorials/overview/" class="md-tabs__link">
+          
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../../overview/" class="md-tabs__link">
+          
+  
+  Docs
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../../contributing/overview/" class="md-tabs__link">
+          
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
+      
+  <img src="../../../../images/tracee_logo_only.png" alt="logo">
+
+    </a>
+    Tracee
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/aquasecurity/tracee" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+    
+    
+    
+    
+    
+      
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting-started/kubernetes-quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes - Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting-started/docker-quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker - Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    
+    
+      
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_4" id="__nav_1_4_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Installation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting-started/installing/getting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Tracee
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting-started/installing/prerequisites/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Prerequisites
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting-started/installing/docker/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting-started/installing/kubernetes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting-started/installing/override-os-files/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Override OS files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_4_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_1_4_6" id="__nav_1_4_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Packages
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_1_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1_4_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Packages
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting-started/installing/distros/ubuntu/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Ubuntu
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting-started/installing/distros/fedora/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Fedora
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting-started/installing/distros/nix-nixos/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    NixOS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    
+    
+    
+    
+    
+      
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../tutorials/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../tutorials/k8s-policies/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Working with Tracee's Policies on Kubernetes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../tutorials/verify-tracee-signature/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Cosign - verify tracee signature
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../tutorials/deploy-grafana-dashboard/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Deploy Tracee Grafana Dashboard
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../tutorials/promtail/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Accessing Tracee Logs through Promtail and Loki
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../tutorials/additional-resources/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Additional Resources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+    
+    
+    
+    
+    
+      
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Docs
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Docs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+    
+    
+    
+    
+    
+      
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Events
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Events
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_2" id="__nav_3_2_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Built-in Events
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Built-in Events
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_2_1" id="__nav_3_2_2_1_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Syscalls
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_2_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_2_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Syscalls
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2_1_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_2_1_2" id="__nav_3_2_2_1_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    syscalls
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_3_2_2_1_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_2_1_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    syscalls
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/accept/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    accept
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/accept4/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    accept4
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/access/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    access
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/acct/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    acct
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/add_key/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    add_key
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/adjtimex/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    adjtimex
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/afs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    afs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/afs_syscall/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    afs_syscall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/alarm/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    alarm
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/arch_prctl/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    arch_prctl
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/bdflush/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    bdflush
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/bind/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    bind
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/bpf/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    bpf
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/break/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    break
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/brk/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    brk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/capget/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    capget
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/capset/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    capset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/chdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    chdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/chmod/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    chmod
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/chown/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    chown
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/chown16/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    chown16
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/chroot/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    chroot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/clock_adjtime/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    clock_adjtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/clock_adjtime64/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    clock_adjtime64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/clock_getres/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    clock_getres
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/clock_getres_time32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    clock_getres_time32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/clock_gettime/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    clock_gettime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/clock_gettime32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    clock_gettime32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/clock_nanosleep/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    clock_nanosleep
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/clock_nanosleep_time32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    clock_nanosleep_time32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/clock_settime/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    clock_settime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/clock_settime32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    clock_settime32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/clone/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    clone
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/clone3/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    clone3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/close/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    close
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/close_range/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    close_range
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/connect/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    connect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/copy_file_range/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    copy_file_range
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/creat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    creat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/create_module/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    create_module
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/delete_module/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    delete_module
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/dup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    dup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/dup2/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    dup2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/dup3/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    dup3
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/epoll_create/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    epoll_create
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/epoll_create1/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    epoll_create1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/epoll_ctl/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    epoll_ctl
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/epoll_ctl_old/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    epoll_ctl_old
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/epoll_pwait/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    epoll_pwait
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/epoll_pwait2/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    epoll_pwait2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/epoll_wait/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    epoll_wait
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/epoll_wait_old/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    epoll_wait_old
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/eventfd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    eventfd
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/eventfd2/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    eventfd2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/execve/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    execve
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/execveat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    execveat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/exit/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    exit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/exit_group/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    exit_group
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/faccessat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    faccessat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/faccessat2/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    faccessat2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fadvise64/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fadvise64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fadvise64_64/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fadvise64_64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fallocate/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fallocate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fanotify_init/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fanotify_init
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fanotify_mark/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fanotify_mark
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fchdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fchdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fchmod/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fchmod
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fchmodat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fchmodat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fchown/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fchown
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fchown16/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fchown16
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fchownat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fchownat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fcntl/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fcntl
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fcntl64/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fcntl64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fdatasync/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fdatasync
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fgetxattr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fgetxattr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/finit_module/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    finit_module
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/flistxattr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    flistxattr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/flock/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    flock
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fork/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fork
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fremovexattr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fremovexattr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fsconfig/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fsconfig
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fsetxattr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fsetxattr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fsmount/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fsmount
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fsopen/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fsopen
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fspick/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fspick
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fstat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fstat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fstat64/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fstat64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fstatfs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fstatfs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fstatfs64/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fstatfs64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/fsync/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    fsync
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/ftime/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    ftime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/ftruncate/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    ftruncate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/ftruncate64/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    ftruncate64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/futex/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    futex
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/futex_time32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    futex_time32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/futimesat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    futimesat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/get_kernel_syms/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    get_kernel_syms
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/get_mempolicy/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    get_mempolicy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/get_robust_list/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    get_robust_list
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/get_thread_area/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    get_thread_area
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getcpu/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getcpu
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getcwd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getcwd
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getdents/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getdents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getdents64/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getdents64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getegid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getegid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getegid16/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getegid16
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/geteuid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    geteuid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/geteuid16/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    geteuid16
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getgid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getgid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getgid16/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getgid16
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getgroups/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getgroups
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getgroups16/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getgroups16
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getitimer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getitimer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getpeername/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getpeername
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getpgid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getpgid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getpgrp/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getpgrp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getpid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getpid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getpmsg/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getpmsg
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getppid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getppid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getpriority/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getpriority
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getrandom/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getrandom
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getresgid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getresgid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getresgid16/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getresgid16
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getresuid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getresuid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getresuid16/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getresuid16
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getrlimit/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getrlimit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getrusage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getrusage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getsid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getsid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getsockname/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getsockname
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getsockopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getsockopt
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/gettid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    gettid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/gettimeofday/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    gettimeofday
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getuid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getuid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getuid16/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getuid16
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/getxattr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    getxattr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/gtty/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    gtty
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/idle/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    idle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/init_module/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    init_module
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/inotify_add_watch/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    inotify_add_watch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/inotify_init/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    inotify_init
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/inotify_init1/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    inotify_init1
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/inotify_rm_watch/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    inotify_rm_watch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/io_cancel/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    io_cancel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/io_destroy/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    io_destroy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/io_getevents/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    io_getevents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/io_pgetevents/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    io_pgetevents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/io_pgetevents_time32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    io_pgetevents_time32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/io_setup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    io_setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/io_submit/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    io_submit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/io_uring_enter/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    io_uring_enter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/io_uring_register/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    io_uring_register
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/io_uring_setup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    io_uring_setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/ioctl/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    ioctl
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/ioperm/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    ioperm
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/iopl/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    iopl
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/ioprio_get/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    ioprio_get
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/ioprio_set/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    ioprio_set
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/ipc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    ipc
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/kcmp/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    kcmp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/kexec_file_load/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    kexec_file_load
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/kexec_load/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    kexec_load
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/keyctl/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    keyctl
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/kill/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    kill
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/landlock_add_rule/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    landlock_add_rule
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/landlock_create_ruleset/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    landlock_create_ruleset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/landlock_restrict_self/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    landlock_restrict_self
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/lchown/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    lchown
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/lchown16/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    lchown16
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/lgetxattr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    lgetxattr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/link/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    link
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/linkat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    linkat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/listen/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    listen
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/listxattr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    listxattr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/llistxattr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    llistxattr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/llseek/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    llseek
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/lock/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    lock
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/lookup_dcookie/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    lookup_dcookie
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/lremovexattr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    lremovexattr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/lseek/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    lseek
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/lsetxattr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    lsetxattr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/lstat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    lstat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/lstat64/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    lstat64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/madvise/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    madvise
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mbind/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mbind
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/membarrier/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    membarrier
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/memfd_create/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    memfd_create
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/memfd_secret/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    memfd_secret
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/migrate_pages/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    migrate_pages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mincore/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mincore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mkdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mkdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mkdirat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mkdirat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mknod/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mknod
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mknodat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mknodat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mlock/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mlock
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mlock2/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mlock2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mlockall/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mlockall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mmap/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mmap2/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mmap2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/modify_ldt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    modify_ldt
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mount/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mount
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mount_setattr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mount_setattr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/move_mount/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    move_mount
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/move_pages/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    move_pages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mprotect/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mprotect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mpx/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mpx
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mq_getsetattr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mq_getsetattr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mq_notify/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mq_notify
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mq_open/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mq_open
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mq_timedreceive/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mq_timedreceive
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mq_timedreceive_time32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mq_timedreceive_time32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mq_timedsend/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mq_timedsend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mq_timedsend_time32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mq_timedsend_time32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mq_unlink/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mq_unlink
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/mremap/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mremap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/msgctl/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    msgctl
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/msgget/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    msgget
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/msgrcv/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    msgrcv
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/msgsnd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    msgsnd
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/msync/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    msync
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/munlock/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    munlock
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/munlockall/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    munlockall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/munmap/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    munmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/name_to_handle_at/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    name_to_handle_at
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/nanosleep/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    nanosleep
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/newfstatat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    newfstatat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/nfsservctl/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    nfsservctl
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/nice/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    nice
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/old_getrlimit/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    old_getrlimit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/old_select/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    old_select
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/oldfstat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    oldfstat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/oldlstat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    oldlstat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/oldolduname/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    oldolduname
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/oldstat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    oldstat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/olduname/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    olduname
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/open/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    open
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/open_by_handle_at/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    open_by_handle_at
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/open_tree/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    open_tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/openat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    openat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/openat2/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    openat2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/pause/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    pause
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/perf_event_open/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    perf_event_open
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/personality/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    personality
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/pidfd_getfd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    pidfd_getfd
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/pidfd_open/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    pidfd_open
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/pidfd_send_signal/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    pidfd_send_signal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/pipe/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    pipe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/pipe2/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    pipe2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/pivot_root/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    pivot_root
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/pkey_alloc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    pkey_alloc
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/pkey_free/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    pkey_free
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/pkey_mprotect/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    pkey_mprotect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/poll/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    poll
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/ppoll/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    ppoll
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/ppoll_time32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    ppoll_time32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/prctl/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    prctl
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/pread64/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    pread64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/preadv/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    preadv
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/preadv2/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    preadv2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/prlimit64/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    prlimit64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/process_madvise/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    process_madvise
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/process_mrelease/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    process_mrelease
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/process_vm_readv/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    process_vm_readv
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/process_vm_writev/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    process_vm_writev
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/prof/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    prof
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/profil/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    profil
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/pselect6/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    pselect6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/pselect6_time32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    pselect6_time32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/ptrace/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    ptrace
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/putpmsg/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    putpmsg
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/pwrite64/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    pwrite64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/pwritev/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    pwritev
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/pwritev2/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    pwritev2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/query_module/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    query_module
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/quotactl/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    quotactl
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/quotactl_fd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    quotactl_fd
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/read/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    read
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/readahead/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    readahead
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/readdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    readdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/readlink/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    readlink
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/readlinkat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    readlinkat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/readv/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    readv
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/reboot/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    reboot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/recvfrom/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    recvfrom
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/recvmmsg/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    recvmmsg
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/recvmmsg_time32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    recvmmsg_time32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/recvmsg/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    recvmsg
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/remap_file_pages/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    remap_file_pages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/removexattr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    removexattr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/rename/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    rename
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/renameat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    renameat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/renameat2/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    renameat2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/request_key/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    request_key
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/restart_syscall/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    restart_syscall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/rmdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    rmdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/rseq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    rseq
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/rt_sigaction/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    rt_sigaction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/rt_sigpending/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    rt_sigpending
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/rt_sigprocmask/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    rt_sigprocmask
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/rt_sigqueueinfo/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    rt_sigqueueinfo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/rt_sigreturn/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    rt_sigreturn
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/rt_sigsuspend/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    rt_sigsuspend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/rt_sigtimedwait/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    rt_sigtimedwait
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/rt_sigtimedwait_time32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    rt_sigtimedwait_time32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/rt_tgsigqueueinfo/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    rt_tgsigqueueinfo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sched_get_priority_max/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_get_priority_max
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sched_get_priority_min/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_get_priority_min
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sched_getaffinity/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_getaffinity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sched_getattr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_getattr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sched_getparam/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_getparam
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sched_getscheduler/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_getscheduler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sched_rr_get_interval/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_rr_get_interval
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sched_rr_get_interval_time32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_rr_get_interval_time32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sched_setaffinity/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_setaffinity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sched_setattr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_setattr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sched_setparam/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_setparam
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sched_setscheduler/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_setscheduler
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sched_yield/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_yield
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/seccomp/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    seccomp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/security/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/select/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    select
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/semctl/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    semctl
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/semget/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    semget
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/semop/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    semop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/semtimedop/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    semtimedop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sendfile/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sendfile
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sendfile32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sendfile32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sendmmsg/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sendmmsg
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sendmsg/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sendmsg
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sendto/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sendto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/set_mempolicy/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    set_mempolicy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/set_robust_list/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    set_robust_list
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/set_thread_area/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    set_thread_area
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/set_tid_address/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    set_tid_address
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setdomainname/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setdomainname
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setfsgid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setfsgid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setfsgid16/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setfsgid16
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setfsuid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setfsuid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setfsuid16/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setfsuid16
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setgid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setgid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setgid16/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setgid16
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setgroups/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setgroups
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setgroups16/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setgroups16
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sethostname/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sethostname
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setitimer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setitimer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setns/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setpgid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setpgid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setpriority/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setpriority
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setregid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setregid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setregid16/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setregid16
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setresgid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setresgid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setresgid16/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setresgid16
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setresuid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setresuid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setresuid16/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setresuid16
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setreuid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setreuid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setreuid16/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setreuid16
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setrlimit/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setrlimit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setsid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setsid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setsockopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setsockopt
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/settimeofday/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    settimeofday
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setuid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setuid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setuid16/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setuid16
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/setxattr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    setxattr
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sgetmask/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sgetmask
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/shmat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    shmat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/shmctl/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    shmctl
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/shmdt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    shmdt
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/shmget/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    shmget
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/shutdown/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    shutdown
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sigaction/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sigaction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sigaltstack/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sigaltstack
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/signal/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    signal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/signalfd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    signalfd
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/signalfd4/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    signalfd4
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sigpending/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sigpending
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sigprocmask/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sigprocmask
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sigreturn/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sigreturn
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sigsuspend/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sigsuspend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/socket/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    socket
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/socketcall/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    socketcall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/socketpair/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    socketpair
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/splice/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    splice
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/ssetmask/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    ssetmask
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/stat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    stat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/stat64/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    stat64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/statfs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    statfs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/statfs64/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    statfs64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/statx/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    statx
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/stime/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    stime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/stty/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    stty
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/swapoff/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    swapoff
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/swapon/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    swapon
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/symlink/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    symlink
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/symlinkat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    symlinkat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sync/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sync
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sync_file_range/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sync_file_range
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/syncfs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    syncfs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sysctl/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sysctl
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sysfs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sysfs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/sysinfo/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sysinfo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/syslog/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    syslog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/tee/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    tee
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/tgkill/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    tgkill
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/time/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    time
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/timer_create/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    timer_create
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/timer_delete/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    timer_delete
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/timer_getoverrun/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    timer_getoverrun
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/timer_gettime/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    timer_gettime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/timer_gettime32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    timer_gettime32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/timer_settime/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    timer_settime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/timer_settime32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    timer_settime32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/timerfd_create/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    timerfd_create
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/timerfd_gettime/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    timerfd_gettime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/timerfd_gettime32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    timerfd_gettime32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/timerfd_settime/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    timerfd_settime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/timerfd_settime32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    timerfd_settime32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/times/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    times
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/tkill/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    tkill
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/truncate/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    truncate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/truncate64/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    truncate64
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/tuxcall/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    tuxcall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/ulimit/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    ulimit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/umask/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    umask
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/umount/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    umount
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/umount2/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    umount2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/uname/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    uname
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/unlink/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    unlink
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/unlinkat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    unlinkat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/unshare/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    unshare
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/uselib/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    uselib
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/userfaultfd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    userfaultfd
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/ustat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    ustat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/utime/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    utime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/utimensat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    utimensat
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/utimensat_time32/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    utimensat_time32
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/utimes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    utimes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/vfork/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    vfork
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/vhangup/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    vhangup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/vm86/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    vm86
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/vm86old/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    vm86old
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/vmsplice/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    vmsplice
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/vserver/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    vserver
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/wait4/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    wait4
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/waitid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    waitid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/waitpid/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    waitpid
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/write/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    write
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/syscalls/writev/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    writev
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/network/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Network Events
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/signatures/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Behavioral Signatures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_2_4" id="__nav_3_2_2_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Extra Events
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Extra Events
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/extra/do_sigaction/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    do_sigaction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/extra/kallsyms_lookup_name/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    kallsysm_lookup_name
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/extra/vfs_read/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    vfs_read
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/extra/vfs_readv/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    vfs_readv
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/extra/file_modification/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    file_modification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/extra/security_file_mprotect/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_file_mprotect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/extra/security_socket_setsockopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_setsockopt
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/extra/bpf_attach/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    bpf_attach
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/extra/magic_write/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    magic_write
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/extra/mem_prot_alert/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mem_prot_alert
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/extra/symbols_loaded/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    symbols_loaded
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/extra/symbols_collision/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    symbols_collision
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/extra/hidden_kernel_module/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    hidden_kernel_module
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/extra/process_execute_failed/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    process_execute_failed
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/extra/security_bpf_prog/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_bpf_prog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../builtin/extra/security_bprm_check/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_bprm_check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_3" id="__nav_3_2_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Events
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_2_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Custom Events
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../golang/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Go
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rego/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Rego
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../analyze/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Analyze
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    
+    
+      
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Policies
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Policies
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../policies/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../policies/scopes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Scopes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../policies/rules/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    
+    
+      
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Filters
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Filters
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../filters/filtering/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Filtering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    
+    
+      
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Outputs
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Outputs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../outputs/output-formats/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Output Formats
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../outputs/output-options/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Output Options
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../outputs/logging/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    
+    
+      
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_6" id="__nav_3_6_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Config
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Config
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../config/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../config/kubernetes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Kubernetes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    
+    
+      
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_7" id="__nav_3_7_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Forensics
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Forensics
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../forensics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    
+    
+      
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_8" id="__nav_3_8_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Integrations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Integrations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrating/container-engines/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Container Engines
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrating/prometheus/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Prometheus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../integrating/healthz/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Healthz
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    
+    
+      
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_9" id="__nav_3_9_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Sources
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Data Sources
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../data-sources/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    
+    
+      
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_10" id="__nav_3_10_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Deep Dive
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_10">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Deep Dive
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../deep-dive/caching-events/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Caching Events
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../deep-dive/ordering-events/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Ordering Events
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../deep-dive/dropping-capabilities/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Dropping Capabilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../deep-dive/secure-tracing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Secure Tracing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    
+    
+    
+    
+    
+      
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributing/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributing/documentation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributing/guidelines/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Source Code Guidelines
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributing/architecture/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributing/setup-development-machine-with-vagrant/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup Development Machine with Vagrant
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    
+    
+      
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Building
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributing/building/building/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Tracee
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributing/building/environment/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Environment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributing/building/containers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Building Containers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contributing/building/packaging/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    OS Packaging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="custom-events">Custom Events<a class="headerlink" href="#custom-events" title="Permanent link">&para;</a></h1>
+<p>Tracee comes with lots of events, but you can extend it with events specific to your use case. There are two ways to extend Tracee with your own events:</p>
+<ol>
+<li><a href="../golang/">Go</a></li>
+<li><a href="../rego/">Rego</a></li>
+</ol>
+<p>Once you created your own event, you can load it using the <code>signatures-dir</code> flag. For example, if you created your event in the path <code>/tmp/myevents</code> to use it you would start tracee with:</p>
+<div class="highlight"><pre><span></span><code>tracee --signatures-dir=/tmp/myevents
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Tracee also uses the custom events to add a few events, if you pass your own directory
+for <code>signatures-dir</code> you will not load the tracee <a href="../../builtin/signatures/">Behaviour events</a>, 
+to avoid such problems, you can either place your own events under the same directory of the tracee custom events,
+or pass multiple directories for example:
+<div class="highlight"><pre><span></span><code>tracee --signatures-dir=/tmp/myevents --signatures-dir=./dist/signatures
+</code></pre></div></p>
+</div>
+<p>👈 Please use the side-navigation on the left in order to browse the different topics.</p>
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../../assets/javascripts/workers/search.1e90e0fb.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.a961bebd.min.js"></script>
+      
+    
+  </body>
+</html>
