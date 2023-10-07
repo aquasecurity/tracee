@@ -4,26 +4,26 @@
 # This test is executed by github workflows inside the action runners
 #
 
-TRACEE_STARTUP_TIMEOUT=60
-TRACEE_SHUTDOWN_TIMEOUT=60
+TRACEE_STARTUP_TIMEOUT=15
+TRACEE_SHUTDOWN_TIMEOUT=10
 TRACEE_RUN_TIMEOUT=60
 SCRIPT_TMP_DIR=/tmp
 TRACEE_TMP_DIR=/tmp/tracee
 
 info_exit() {
     echo -n "INFO: "
-    echo $@
+    echo "$@"
     exit 0
 }
 
 info() {
     echo -n "INFO: "
-    echo $@
+    echo "$@"
 }
 
 error_exit() {
     echo -n "ERROR: "
-    echo $@
+    echo "$@"
     exit 1
 }
 
@@ -36,20 +36,21 @@ if [[ ! -d ./signatures ]]; then
 fi
 
 KERNEL=$(uname -r)
-KERNEL_MAJ=$(echo $KERNEL | cut -d'.' -f1)
+KERNEL_MAJ=$(echo "$KERNEL" | cut -d'.' -f1)
 
 if [[ $KERNEL_MAJ -lt 5 && "$KERNEL" != *"el8"* ]]; then
     info_exit "skip test in kernels < 5.0 (and not RHEL)"
 fi
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-SIG_DIR=$(realpath $SCRIPT_DIR/../dist/e2e-inst-signatures)
+SCRIPT_PATH="$(readlink -f "$0")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+SIG_DIR="$SCRIPT_DIR/../dist/e2e-inst-signatures"
 
 # run CO-RE VFS_WRITE test only by default
 TESTS=${INSTTESTS:=VFS_WRITE}
 
 # startup needs
-rm -rf $TRACEE_TMP_DIR/* || error_exit "could not delete $TRACEE_TMP_DIR"
+rm -rf ${TRACEE_TMP_DIR:?}/* || error_exit "could not delete $TRACEE_TMP_DIR"
 git config --global --add safe.directory "*"
 
 info
@@ -63,7 +64,7 @@ info "= COMPILING TRACEE ============================================"
 info
 # make clean # if you want to be extra cautious
 set -e
-make -j$(nproc) all
+make -j"$(nproc)" all
 make e2e-inst-signatures
 set +e
 if [[ ! -x ./dist/tracee ]]; then
@@ -90,7 +91,7 @@ for TEST in $TESTS; do
         --output json:$SCRIPT_TMP_DIR/build-$$ \
         --output option:parse-arguments \
         --log file:$SCRIPT_TMP_DIR/tracee-log-$$ \
-        --signatures-dir $SIG_DIR \
+        --signatures-dir "$SIG_DIR" \
         --scope comm=echo,mv,ls,tracee \
         --events signatures &
 
@@ -98,7 +99,7 @@ for TEST in $TESTS; do
     times=0
     timedout=0
     while true; do
-        times=$(($times + 1))
+        times=$((times + 1))
         sleep 1
         if [[ -f $TRACEE_TMP_DIR/out/tracee.pid ]]; then
             info
@@ -129,7 +130,7 @@ for TEST in $TESTS; do
 
     # run test scripts
     timeout --preserve-status $TRACEE_RUN_TIMEOUT \
-        ./tests/e2e-inst-signatures/scripts/${TEST,,}.sh
+        ./tests/e2e-inst-signatures/scripts/"${TEST,,}".sh
 
     # so event can be processed and detected
     sleep 3
@@ -137,7 +138,7 @@ for TEST in $TESTS; do
     ## cleanup at EXIT
 
     found=0
-    cat $SCRIPT_TMP_DIR/build-$$ | jq .eventName | grep -q $TEST && found=1
+    cat $SCRIPT_TMP_DIR/build-$$ | jq .eventName | grep -q "$TEST" && found=1
     info
     if [[ $found -eq 1 ]]; then
         info "$TEST: SUCCESS"
@@ -145,6 +146,8 @@ for TEST in $TESTS; do
         anyerror="${anyerror}$TEST,"
         info "$TEST: FAILED, stderr from tracee:"
         cat $SCRIPT_TMP_DIR/tracee-log-$$
+        info "$TEST: FAILED, events from tracee:"
+        cat $SCRIPT_TMP_DIR/build-$$
         info
     fi
     info
@@ -156,12 +159,12 @@ for TEST in $TESTS; do
 
     pid_tracee=$(pidof tracee)
 
-    kill -2 $pid_tracee
+    kill -2 "$pid_tracee"
 
     sleep $TRACEE_SHUTDOWN_TIMEOUT
 
     # make sure tracee is exited with SIGKILL
-    kill -9 $pid_tracee >/dev/null 2>&1
+    kill -9 "$pid_tracee" >/dev/null 2>&1
 
     # give a little break for OS noise to reduce
     sleep 3
