@@ -8,19 +8,13 @@ TRACEE_TMP_DIR=/tmp/tracee
 
 info_exit() {
     echo -n "INFO: "
-    echo $@
+    echo "$@"
     exit 0
 }
 
 info() {
     echo -n "INFO: "
-    echo $@
-}
-
-error_exit() {
-    echo -n "ERROR: "
-    echo $@
-    exit 1
+    echo "$@"
 }
 
 # run tracee with a single event (to trigger the other instance)
@@ -37,7 +31,7 @@ times=0
 timedout=0
 
 while true; do
-    times=$(($times + 1))
+    times=$((times + 1))
     sleep 1
 
     if [[ -f $TRACEE_TMP_DIR/out/tracee.pid ]]; then
@@ -58,12 +52,12 @@ fi
 sleep $TRACEE_RUN_TIMEOUT # stay alive for sometime (proforma)
 
 # try a clean exit
-kill -2 $pid
+kill -2 "$pid"
 
 # wait tracee to shutdown (might take sometime, detaching is slow >= v6.x)
 sleep $TRACEE_SHUTDOWN_TIMEOUT
 
 # make sure tracee is exited with SIGKILL
-kill -9 $pid_tracee >/dev/null 2>&1
+kill -9 "$pid" >/dev/null 2>&1
 
 exit 0
