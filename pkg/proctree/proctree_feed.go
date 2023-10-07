@@ -40,9 +40,10 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 	if feed.ChildTid == 0 || feed.ChildPid == 0 {
 		return errfmt.Errorf("invalid child task")
 	}
-	if feed.ParentTid == 0 || feed.ParentPid == 0 {
-		return errfmt.Errorf("invalid parent task")
-	}
+	// Parent PID or TID might be 0 for init (and docker containers)
+	// if feed.ParentTid == 0 || feed.ParentPid == 0 {
+	// 	return errfmt.Errorf("invalid parent task")
+	// }
 
 	// Update the parent process (might already exist)
 

@@ -4,8 +4,8 @@
 # This test is executed by github workflows inside the action runners
 #
 
-TRACEE_STARTUP_TIMEOUT=15
-TRACEE_SHUTDOWN_TIMEOUT=10
+TRACEE_STARTUP_TIMEOUT=30
+TRACEE_SHUTDOWN_TIMEOUT=30
 TRACEE_RUN_TIMEOUT=60
 SCRIPT_TMP_DIR=/tmp
 TRACEE_TMP_DIR=/tmp/tracee
@@ -88,12 +88,14 @@ for TEST in $TESTS; do
         --install-path $TRACEE_TMP_DIR \
         --cache cache-type=mem \
         --cache mem-cache-size=512 \
+        --proctree source=both \
+        --output option:sort-events \
         --output json:$SCRIPT_TMP_DIR/build-$$ \
         --output option:parse-arguments \
         --log file:$SCRIPT_TMP_DIR/tracee-log-$$ \
         --signatures-dir "$SIG_DIR" \
-        --scope comm=echo,mv,ls,tracee \
-        --events signatures &
+        --scope comm=echo,mv,ls,tracee,proctreetester \
+        --events "$TEST" &
 
     # wait tracee-ebpf to be started (30 sec most)
     times=0
@@ -137,10 +139,18 @@ for TEST in $TESTS; do
 
     ## cleanup at EXIT
 
+    logfile=$SCRIPT_TMP_DIR/tracee-log-$$
+
     found=0
     cat $SCRIPT_TMP_DIR/build-$$ | jq .eventName | grep -q "$TEST" && found=1
+    errors=$(cat $logfile | wc -l 2>/dev/null)
+
+    if [[ $TEST == "BPF_ATTACH" ]]; then
+        errors=0
+    fi
+
     info
-    if [[ $found -eq 1 ]]; then
+    if [[ $found -eq 1 && $errors -eq 0 ]]; then
         info "$TEST: SUCCESS"
     else
         anyerror="${anyerror}$TEST,"
@@ -157,7 +167,7 @@ for TEST in $TESTS; do
 
     # make sure we exit to start it again
 
-    pid_tracee=$(pidof tracee)
+    pid_tracee=$(pidof tracee | cut -d' ' -f1)
 
     kill -2 "$pid_tracee"
 
