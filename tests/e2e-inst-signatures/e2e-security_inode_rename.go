@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
@@ -53,8 +54,10 @@ func (sig *e2eSecurityInodeRename) OnEvent(event protocol.Event) error {
 			return err
 		}
 
-		// check expected values from test for detection
-		if oldPath != "/tmp/aaa.txt" || newPath != "/tmp/bb.txt" {
+		// ATTENTION: Both, oldPath and newPath are relative to the filesystem they're in:
+		// /tmp/aaa.txt comes as aaa.txt if /tmp is a tmpfs and not part of the root filesystem.
+
+		if !strings.HasSuffix(oldPath, "aaa.txt") || !strings.HasSuffix(newPath, "bbb.txt") {
 			return nil
 		}
 

@@ -2,10 +2,10 @@
 
 exit_err() {
     echo -n "ERROR: "
-    echo $@
+    echo "$@"
     exit 1
 }
 
-echo test >> /tmp/aaa.txt
-
-mv /tmp/aaa.txt /tmp/bb.txt || exit_err "failed renaming file"
+sleep 2
+echo test >> /tmp/aaa.txt || exit_err "failed writing file"
+mv /tmp/aaa.txt /tmp/bbb.txt || exit_err "failed renaming file"
