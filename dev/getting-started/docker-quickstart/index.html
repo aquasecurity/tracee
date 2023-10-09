@@ -487,6 +487,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Run the Tracee container images">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#on-x86-architecture-please-run-the-following-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        On x86 architecture, please run the following command:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#steps-to-run-the-tracee-container-image-on-arm64" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Steps to run the Tracee container image on arm64:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -15348,6 +15376,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Run the Tracee container images">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#on-x86-architecture-please-run-the-following-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        On x86 architecture, please run the following command:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#steps-to-run-the-tracee-container-image-on-arm64" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Steps to run the Tracee container image on arm64:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -15373,20 +15429,41 @@
 <h2 id="run-the-tracee-container-images">Run the Tracee container images<a class="headerlink" href="#run-the-tracee-container-images" title="Permanent link">&para;</a></h2>
 <p>All of the Tracee container images are stored in a public registry on <a href="https://hub.docker.com/r/aquasec/tracee">Docker Hub.</a>
 You can easily start experimenting with Tracee using the Docker image.</p>
-<p><strong>On x86 architecture, please run the following command:</strong></p>
+<h3 id="on-x86-architecture-please-run-the-following-command">On x86 architecture, please run the following command:<a class="headerlink" href="#on-x86-architecture-please-run-the-following-command" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
 <span class="go">  --name tracee --rm -it \</span>
 <span class="go">  --pid=host --cgroupns=host --privileged \</span>
 <span class="go">  -v /etc/os-release:/etc/os-release-host:ro \</span>
 <span class="go">  aquasec/tracee:latest</span>
 </code></pre></div>
-<p><strong>If you are on arm64 architecture, you will need to replace the container image tag to <code>aarch64</code>:</strong></p>
+<h3 id="steps-to-run-the-tracee-container-image-on-arm64">Steps to run the Tracee container image on arm64:<a class="headerlink" href="#steps-to-run-the-tracee-container-image-on-arm64" title="Permanent link">&para;</a></h3>
+<p>There are a few more steps involved in running Tracee through a container image on arm64 (M1).</p>
+<p>Prerequisites:</p>
+<ul>
+<li><a href="https://developer.hashicorp.com/vagrant/downloads">Vagrant CLI</a> installed</li>
+<li><a href="https://www.parallels.com/uk/products/desktop/pro/">Parallels Pro</a> installed </li>
+</ul>
+<p>First, clone the Tracee Git repository and move into the root directory:
+<div class="highlight"><pre><span></span><code><span class="go">git clone git@github.com:aquasecurity/tracee.git</span>
+
+<span class="go">cd tracee</span>
+</code></pre></div></p>
+<p>Next, use Vagrant to start a Parallels VM:
+<div class="highlight"><pre><span></span><code>vagrant up
+</code></pre></div></p>
+<p>This will use the <a href="https://github.com/aquasecurity/tracee/blob/main/Vagrantfile">Vagrantfile</a> in the root of the Tracee directory.</p>
+<p>Lastly, ssh into the created VM:
+<div class="highlight"><pre><span></span><code><span class="go">vagrant ssh</span>
+</code></pre></div></p>
+<p>Now, it is possible to run the Tracee Container image, using the <code>aarch64</code> tag:
 <div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
 <span class="go">  --name tracee --rm -it \</span>
 <span class="go">  --pid=host --cgroupns=host --privileged \</span>
 <span class="go">  -v /etc/os-release:/etc/os-release-host:ro \</span>
 <span class="go">  aquasec/tracee:aarch64</span>
-</code></pre></div>
+</code></pre></div></p>
+<p>The Tracee output should be similar to the following screenshot:</p>
+<p><img alt="Tracee Container Image output in Vragrant on arm64" src="../../images/docker-arm64.png" /></p>
 <p>To learn how to install Tracee in a production environment, <a href="./kubernetes-quickstart">check out the Kubernetes guide</a>.</p>
 
 
