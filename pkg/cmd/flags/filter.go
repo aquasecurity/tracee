@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 func filterHelp() string {
@@ -94,7 +95,14 @@ type eventFilter struct {
 	NotEqual []string
 }
 
-func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]events.ID) (map[events.ID]string, error) {
+// prepareEventsToTrace returns a map of event IDs to event names, based on the provided event filter,
+// which contains all events that should be traced. The eventsToDisable map contains all events that
+// must be disabled and is updated to only contain events that were not requested in the filter.
+func prepareEventsToTrace(
+	eventFilter eventFilter,
+	eventsNameToID map[string]events.ID,
+	eventsToDisable map[string]struct{},
+) (map[events.ID]string, error) {
 	eventsToTrace := eventFilter.Equal
 	excludeEvents := eventFilter.NotEqual
 	var setsToTrace []string
@@ -119,6 +127,7 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]eve
 				if strings.HasPrefix(event, prefix) {
 					isExcluded[id] = true
 					found = true
+					delete(eventsToDisable, event)
 				}
 			}
 			if !found {
@@ -130,6 +139,7 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]eve
 				return nil, InvalidEventExcludeError(name)
 			}
 			isExcluded[id] = true
+			delete(eventsToDisable, name)
 		}
 	}
 
@@ -148,6 +158,7 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]eve
 				if strings.HasPrefix(event, prefix) && !isExcluded[id] {
 					idToName[id] = event
 					found = true
+					delete(eventsToDisable, event)
 				}
 			}
 			if !found {
@@ -164,6 +175,7 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]eve
 				return nil, InvalidEventError(name)
 			}
 			idToName[id] = name
+			delete(eventsToDisable, name)
 		}
 	}
 
@@ -173,6 +185,34 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]eve
 		for _, id := range setEvents {
 			if !isExcluded[id] {
 				idToName[id] = events.Core.GetDefinitionByID(id).GetName()
+			}
+		}
+	}
+
+	// Disable the events that were set as and those that depend on them.
+	for disableName := range eventsToDisable {
+		disableId, ok := events.Core.GetDefinitionIDByName(disableName)
+		if !ok {
+			logger.Errorw("Event name to be removed for tracing not found", "event", disableName)
+		} else {
+			delete(idToName, disableId)
+		}
+
+		// Remove events that depend on the disabled event.
+		for _, def := range events.Core.GetDefinitions() {
+			defId := def.GetID()
+			defName := def.GetName()
+
+			if _, ok := idToName[defId]; !ok {
+				continue
+			}
+
+			depIds := def.GetDependencies().GetIDs()
+			for _, reqId := range depIds {
+				if reqId == disableId {
+					delete(idToName, defId)
+					logger.Warnw("Event removed from events to trace", "id", defId, "name", defName, "requires", disableName)
+				}
 			}
 		}
 	}

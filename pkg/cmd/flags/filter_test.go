@@ -87,7 +87,8 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			res, err := prepareEventsToTrace(tc.eventFilter, eventsNameToID)
+			evtsToDisable := map[string]struct{}{}
+			res, err := prepareEventsToTrace(tc.eventFilter, eventsNameToID, evtsToDisable)
 			if tc.expectedErr != nil {
 				assert.Equal(t, err.Error(), tc.expectedErr.Error())
 			} else {

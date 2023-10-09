@@ -101,7 +101,12 @@ func PrepareFilterMapsFromPolicies(policies []v1beta1.PolicyFile) (PolicyScopeMa
 }
 
 // CreatePolicies creates a Policies object from the scope and events maps.
-func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMap, newBinary bool) (*policy.Policies, error) {
+func CreatePolicies(
+	policyScopeMap PolicyScopeMap,
+	policyEventsMap PolicyEventMap,
+	evtsToDisable map[string]struct{},
+	newBinary bool,
+) (*policy.Policies, error) {
 	eventsNameToID := events.Core.NamesToIDs()
 	// remove internal events since they shouldn't be accessible by users
 	for event, id := range eventsNameToID {
@@ -309,7 +314,7 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 		}
 
 		var err error
-		p.EventsToTrace, err = prepareEventsToTrace(eventFilter, eventsNameToID)
+		p.EventsToTrace, err = prepareEventsToTrace(eventFilter, eventsNameToID, evtsToDisable)
 		if err != nil {
 			return nil, err
 		}
@@ -329,7 +334,7 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 
 		var err error
 		newPolicy := policy.NewPolicy()
-		newPolicy.EventsToTrace, err = prepareEventsToTrace(eventFilter, eventsNameToID)
+		newPolicy.EventsToTrace, err = prepareEventsToTrace(eventFilter, eventsNameToID, evtsToDisable)
 		if err != nil {
 			return nil, err
 		}

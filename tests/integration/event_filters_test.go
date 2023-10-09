@@ -1730,7 +1730,8 @@ func newPolicies(polsFilesID []policyFileWithID) *policy.Policies {
 		panic(err)
 	}
 
-	policies, err := flags.CreatePolicies(policyScopeMap, policyEventMap, true)
+	evtsToDisable := map[string]struct{}{}
+	policies, err := flags.CreatePolicies(policyScopeMap, policyEventMap, evtsToDisable, true)
 	if err != nil {
 		panic(err)
 	}

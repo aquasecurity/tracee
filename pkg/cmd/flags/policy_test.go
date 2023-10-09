@@ -2075,7 +2075,8 @@ func TestCreatePolicies(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			_, err = CreatePolicies(policyScopeMap, policyEventsMap, false)
+			evtsToDisable := map[string]struct{}{}
+			_, err = CreatePolicies(policyScopeMap, policyEventsMap, evtsToDisable, false)
 			if tc.expectPolicyErr != nil {
 				assert.ErrorContains(t, err, tc.expectPolicyErr.Error())
 			} else {

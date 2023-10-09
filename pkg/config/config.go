@@ -14,8 +14,13 @@ import (
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 )
 
+// Events to be disabled if not explicitly required in a policy.
+// This map is updated by Policies creation and used further to actually disable the events.
+var EvtsToDisable = map[string]struct{}{}
+
 // Config is a struct containing user defined configuration of tracee
 type Config struct {
+	EventsToDisable    map[string]struct{} // hard-coded events to disable when not required
 	Policies           *policy.Policies
 	Capture            *CaptureConfig
 	Capabilities       *CapabilitiesConfig

@@ -119,12 +119,13 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
-	policies, err := flags.CreatePolicies(policyScopeMap, policyEventsMap, false)
+	policies, err := flags.CreatePolicies(policyScopeMap, policyEventsMap, config.EvtsToDisable, false)
 	if err != nil {
 		return runner, err
 	}
 
 	cfg.Policies = policies
+	cfg.EventsToDisable = config.EvtsToDisable // updated by Policies creation
 
 	broadcast, err := printer.NewBroadcast(output.PrinterConfigs, cmd.GetContainerMode(cfg))
 	if err != nil {

@@ -6,7 +6,10 @@ import (
 	"github.com/aquasecurity/tracee/pkg/policy/v1beta1"
 )
 
-func createPoliciesFromPolicyFiles(policyFlags []string) (*policy.Policies, error) {
+func createPoliciesFromPolicyFiles(
+	policyFlags []string,
+	evtsToDisable map[string]struct{},
+) (*policy.Policies, error) {
 	policyFiles, err := v1beta1.PoliciesFromPaths(policyFlags)
 	if err != nil {
 		return nil, err
@@ -17,10 +20,13 @@ func createPoliciesFromPolicyFiles(policyFlags []string) (*policy.Policies, erro
 		return nil, err
 	}
 
-	return flags.CreatePolicies(policyScopeMap, policyEventsMap, true)
+	return flags.CreatePolicies(policyScopeMap, policyEventsMap, evtsToDisable, true)
 }
 
-func createPoliciesFromCLIFlags(scopeFlags, eventFlags []string) (*policy.Policies, error) {
+func createPoliciesFromCLIFlags(
+	scopeFlags, eventFlags []string,
+	evtsToDisable map[string]struct{},
+) (*policy.Policies, error) {
 	policyScopeMap, err := flags.PrepareScopeMapFromFlags(scopeFlags)
 	if err != nil {
 		return nil, err
@@ -31,5 +37,5 @@ func createPoliciesFromCLIFlags(scopeFlags, eventFlags []string) (*policy.Polici
 		return nil, err
 	}
 
-	return flags.CreatePolicies(policyScopeMap, policyEventsMap, true)
+	return flags.CreatePolicies(policyScopeMap, policyEventsMap, evtsToDisable, true)
 }

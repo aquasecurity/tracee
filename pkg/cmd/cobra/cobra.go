@@ -157,18 +157,19 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	var policies *policy.Policies
 
 	if len(policyFlags) > 0 {
-		policies, err = createPoliciesFromPolicyFiles(policyFlags)
+		policies, err = createPoliciesFromPolicyFiles(policyFlags, config.EvtsToDisable)
 		if err != nil {
 			return runner, err
 		}
 	} else {
-		policies, err = createPoliciesFromCLIFlags(scopeFlags, eventFlags)
+		policies, err = createPoliciesFromCLIFlags(scopeFlags, eventFlags, config.EvtsToDisable)
 		if err != nil {
 			return runner, err
 		}
 	}
 
 	cfg.Policies = policies
+	cfg.EventsToDisable = config.EvtsToDisable // updated by Policies creation
 
 	// Output command line flags
 	output, err := flags.PrepareOutput(viper.GetStringSlice("output"), true)
