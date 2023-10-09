@@ -182,14 +182,16 @@ func eventToProtoDNS(event *trace.Event) (*netPair, *trace.ProtoDNS, error) {
 func convertProtoDNSQuestionToDnsRequest(
 	questions []trace.ProtoDNSQuestion,
 ) []trace.DnsQueryData {
-	var requests []trace.DnsQueryData
+	requests := make([]trace.DnsQueryData, 0, len(questions))
 
 	for _, question := range questions {
-		requests = append(requests, trace.DnsQueryData{
-			Query:      question.Name,
-			QueryType:  question.Type,
-			QueryClass: question.Class,
-		})
+		requests = append(requests,
+			trace.DnsQueryData{
+				Query:      question.Name,
+				QueryType:  question.Type,
+				QueryClass: question.Class,
+			},
+		)
 	}
 
 	return requests
@@ -203,7 +205,7 @@ func convertProtoDNSResourceRecordToDnsResponse(
 	dnsQueryData trace.DnsQueryData,
 	dnsResourceRecord []trace.ProtoDNSResourceRecord,
 ) []trace.DnsResponseData {
-	var dnsAnswers []trace.DnsAnswer
+	dnsAnswers := make([]trace.DnsAnswer, 0, len(dnsResourceRecord))
 
 	for _, record := range dnsResourceRecord {
 		var dnsAnswer trace.DnsAnswer
@@ -229,6 +231,7 @@ func convertProtoDNSResourceRecordToDnsResponse(
 
 		dnsAnswer.Type = record.Type
 		dnsAnswer.Ttl = record.TTL
+
 		dnsAnswers = append(dnsAnswers, dnsAnswer)
 	}
 
@@ -262,31 +265,33 @@ func copyDNSToProtoDNS(l7 *layers.DNS, proto *trace.ProtoDNS) {
 	proto.ARCount = l7.ARCount
 
 	// process all existing questions (if any)
-	proto.Questions = make([]trace.ProtoDNSQuestion, len(l7.Questions))
-	for i, j := range l7.Questions {
-		proto.Questions[i] = trace.ProtoDNSQuestion{
-			Name:  string(j.Name),
-			Type:  j.Type.String(),
-			Class: j.Class.String(),
-		}
+	proto.Questions = make([]trace.ProtoDNSQuestion, 0, len(l7.Questions))
+	for _, j := range l7.Questions {
+		proto.Questions = append(proto.Questions,
+			trace.ProtoDNSQuestion{
+				Name:  string(j.Name),
+				Type:  j.Type.String(),
+				Class: j.Class.String(),
+			},
+		)
 	}
 
 	// process all existing answers (if any)
-	proto.Answers = make([]trace.ProtoDNSResourceRecord, len(l7.Answers))
-	for i, j := range l7.Answers {
-		proto.Answers[i] = newProtoDNSResourceRecord(j)
+	proto.Answers = make([]trace.ProtoDNSResourceRecord, 0, len(l7.Answers))
+	for _, j := range l7.Answers {
+		proto.Answers = append(proto.Answers, newProtoDNSResourceRecord(j))
 	}
 
 	// process all existing authorities (if any)
-	proto.Authorities = make([]trace.ProtoDNSResourceRecord, len(l7.Authorities))
-	for i, j := range l7.Authorities {
-		proto.Authorities[i] = newProtoDNSResourceRecord(j)
+	proto.Authorities = make([]trace.ProtoDNSResourceRecord, 0, len(l7.Authorities))
+	for _, j := range l7.Authorities {
+		proto.Authorities = append(proto.Authorities, newProtoDNSResourceRecord(j))
 	}
 
 	// process all existing additionals (if any)
-	proto.Additionals = make([]trace.ProtoDNSResourceRecord, len(l7.Additionals))
-	for i, j := range l7.Additionals {
-		proto.Additionals[i] = newProtoDNSResourceRecord(j)
+	proto.Additionals = make([]trace.ProtoDNSResourceRecord, 0, len(l7.Additionals))
+	for _, j := range l7.Additionals {
+		proto.Additionals = append(proto.Additionals, newProtoDNSResourceRecord(j))
 	}
 }
 
@@ -341,13 +346,15 @@ func newProtoDNSResourceRecord(j layers.DNSResourceRecord) trace.ProtoDNSResourc
 // helpers
 
 func convertArrayOfDNSOPT(given []layers.DNSOPT) []trace.ProtoDNSOPT {
-	res := make([]trace.ProtoDNSOPT, len(given))
+	res := make([]trace.ProtoDNSOPT, 0, len(given))
 
-	for i, j := range given {
-		res[i] = trace.ProtoDNSOPT{
-			Code: j.Code.String(),
-			Data: string(j.Data),
-		}
+	for _, j := range given {
+		res = append(res,
+			trace.ProtoDNSOPT{
+				Code: j.Code.String(),
+				Data: string(j.Data),
+			},
+		)
 	}
 
 	return res
