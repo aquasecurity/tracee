@@ -2,6 +2,12 @@
 
 This tutorial will showcase how to install and configure promtail, loki, grafana and prometheus to then access Tracee logs from the cluster in Grafana.
 
+If you prefer the video tutorial, check out the tutorial below on the Aqua Open Source YouTube channel:
+
+ Grafana Loki to access Tracee logs 
+  [![Watch the video](../images/lokitut.png)](https://youtu.be/mMC9-yzbgpE?si=6C0emOEJJ5K4ACqB)
+
+
 ## Prerequisites
 
 Please make sure to have 

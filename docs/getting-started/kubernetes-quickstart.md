@@ -197,3 +197,11 @@ Read other [tutorials](./../tutorials/overview.md).
 
 For help and support, feel free to use [GitHub Discussions](https://github.com/aquasecurity/tracee/discussions).
 
+
+## Video Content
+
+If you prefer a video version of the Kubernetes installation guide, have a look at the following video:
+
+ Getting started with eBPF in Kubernetes - Tracee Installation Guide 
+
+  [![Watch the video](../images/ebpftraceehelminstall.png)](https://youtu.be/YQdEvf2IS9k?si=LhQM0CI8_QKvOCeK)
