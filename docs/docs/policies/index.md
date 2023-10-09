@@ -46,3 +46,9 @@ While specifying event filters is optional, policies must have the `name`, `desc
     Note that currently only one rule can be defined per any event type in a policy
 
 More information about defining a scope and the available filters can be found in the next sections.
+
+## Video Content
+
+ Tracking Kubernetes activity with eBPF and Tracee Policies 
+
+ [![Watch the video](../../images/traceepolicies.png)](https://youtu.be/VneWxs9Jpu0?si=eAnRDJVZShhg_td0)

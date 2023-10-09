@@ -141,3 +141,10 @@ You can view the list of available events and their schema by running `tracee li
 
 [filters]: ../../filters/filtering
 [policies]: ../../policies
+
+## Video Content
+
+If you are curious to learn more about the Tracee Events architecture and related decision making, then have a look at the following video Q&A:
+
+Everything is an Event in Tracee 
+  [![Watch the video](../../images/liveqa.png)](https://www.youtube.com/live/keqVe4d71uk?si=OTbVxgWsFBtdqEMW)
