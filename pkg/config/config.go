@@ -16,7 +16,14 @@ import (
 
 // Events to be disabled if not explicitly required in a policy.
 // This map is updated by Policies creation and used further to actually disable the events.
-var EvtsToDisable = map[string]struct{}{}
+var EvtsToDisable = map[string]struct{}{
+	// Some GKE kernel lacks CONFIG_KALLSYMS_ALL enabled, so to silence the
+	// error of missing kernel symbols, events are being disabled when
+	// syscall_hooking is not required by the user.
+	// This is a workaround until the 'sys_call_table' address can be retrieved
+	// from the kernel in a different way than '/proc/kallsyms'. See #3397.
+	"syscall_hooking": {},
+}
 
 // Config is a struct containing user defined configuration of tracee
 type Config struct {

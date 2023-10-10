@@ -71,7 +71,7 @@ illegitimate_shell  | [signatures default] |
 kernel_module_loading | [signatures default] |
 k8s_cert_theft | [signatures default] |
 proc_fops_hooking | [signatures default] |
-syscall_hooking | [signatures default] |
+syscall_hooking | [signatures] |
 dropped_executable | [signatures default] |
 creat | [default syscalls fs fs_file_ops] |
 chmod | [default syscalls fs fs_file_attr] |

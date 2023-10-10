@@ -47,7 +47,7 @@ data:
         - event: kernel_module_loading
         - event: k8s_cert_theft
         - event: proc_fops_hooking
-        - event: syscall_hooking
+        # - event: syscall_hooking
         - event: dropped_executable
 ---
 apiVersion: v1
