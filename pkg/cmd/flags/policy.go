@@ -325,25 +325,5 @@ func CreatePolicies(
 		}
 	}
 
-	if len(policies.Map()) == 0 {
-		// if nothing was set, let us consider it as a single default policy
-		eventFilter := eventFilter{
-			Equal:    []string{},
-			NotEqual: []string{},
-		}
-
-		var err error
-		newPolicy := policy.NewPolicy()
-		newPolicy.EventsToTrace, err = prepareEventsToTrace(eventFilter, eventsNameToID, evtsToDisable)
-		if err != nil {
-			return nil, err
-		}
-
-		err = policies.Add(newPolicy)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return policies, nil
 }
