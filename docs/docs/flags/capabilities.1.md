@@ -1,14 +1,21 @@
+---
+title: TRACEE-CAPABILITIES
+section: 1
+header: Tracee Capabilities Flag Manual
+date: 2023/10
+...
+
 ## NAME
 
-tracee **--capabilities** - Opt out from dropping capabilities by default or set specific ones
+tracee **\-\-capabilities** - Opt out from dropping capabilities by default or set specific ones
 
 ## SYNOPSIS
 
-tracee **--capabilities** [\<bypass=[true|false]\> | \<add=cap1(,cap2...)\> | \<drop=cap1(,cap2...)\>] ... [**--capabilities** \[<add=cap1(,cap2...)\> | \<drop=cap1(,cap2...)\>] ...]
+tracee **\-\-capabilities** [<bypass=[true|false]\> | <add=cap1(,cap2...)\> | <drop=cap1(,cap2...)\>] ... [**\-\-capabilities** [<add=cap1(,cap2...)\> | <drop=cap1(,cap2...)\>] ...]
 
 ## DESCRIPTION
 
-The **--capabilities** flag allows you to control the dropping of capabilities during execution time or set specific capabilities.
+The **\-\-capabilities** flag allows you to control the dropping of capabilities during execution time or set specific capabilities.
 
 Possible options:
 

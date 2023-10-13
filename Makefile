@@ -37,6 +37,7 @@ CMD_STRIP ?= llvm-strip
 CMD_TOUCH ?= touch
 CMD_TR ?= tr
 CMD_PROTOC ?= protoc
+CMD_PANDOC ?= pandoc
 
 .check_%:
 #
@@ -902,18 +903,6 @@ check-pr: \
 	@echo
 
 #
-# clean
-#
-
-.PHONY: clean
-clean:
-#
-	$(CMD_RM) -rf $(OUTPUT_DIR)
-	$(CMD_RM) -f .*.md5
-	$(CMD_RM) -f .check*
-	$(CMD_RM) -f .*-pkgs*
-
-#
 # tracee.proto
 #
 
@@ -925,3 +914,41 @@ protoc:
 		--go_opt=paths=source_relative \
 		--go-grpc_out=. \
 		--go-grpc_opt=paths=source_relative $(TRACEE_PROTOS)
+
+#
+# man pages
+#
+
+MARKDOWN_DIR ?= ./docs/docs/flags
+MAN_DIR ?= ./docs/man
+MARKDOW_FILES := $(shell find $(MARKDOWN_DIR) \
+					-type f \
+					-name '*.md' \
+				)
+MAN_FILES := $(patsubst $(MARKDOWN_DIR)/%.md,$(MAN_DIR)/%,$(MARKDOW_FILES))
+
+$(MAN_DIR)/%: $(MARKDOWN_DIR)/%.md \
+	| .check_$(CMD_PANDOC) \
+#
+	@echo Generating $@
+	@$(CMD_PANDOC) \
+		--verbose \
+		--standalone \
+		--to man \
+		$< \
+		-o $@
+
+.PHONY: man
+man: $(MAN_FILES)
+
+#
+# clean
+#
+
+.PHONY: clean
+clean:
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)
+	$(CMD_RM) -f .*.md5
+	$(CMD_RM) -f .check*
+	$(CMD_RM) -f .*-pkgs*

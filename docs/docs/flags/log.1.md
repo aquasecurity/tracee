@@ -1,38 +1,45 @@
+---
+title: TRACEE-LOG
+section: 1
+header: Tracee Log Flag Manual
+date: 2023/10
+...
+
 ## NAME
 
-tracee **--log** - Control logger options - aggregation and level priority
+tracee **\-\-log** - Control logger options - aggregation and level priority
 
 ## SYNOPSIS
 
-tracee **--log** aggregate[:interval] | \<debug|info|warn|error|panic\> | file:/path/to/file | filter:[msg=\<value,...\>;regex=\<value,...\>;pkg=\<value,...\>;file=\<value,...\>;lvl=\<value,...\>;libbpf] | filter-out:[msg=\<value,...\>;regex=\<value,...\>;pkg=\<value,...\>;file=\<value,...\>;lvl=\<value,...\>;libbpf]
+tracee **\-\-log** aggregate[:interval] | <debug|info|warn|error|panic\> | file:/path/to/file | filter:[msg=<value,...\>;regex=<value,...\>;pkg=<value,...\>;file=<value,...\>;lvl=<value,...\>;libbpf] | filter-out:[msg=<value,...\>;regex=<value,...\>;pkg=<value,...\>;file=<value,...\>;lvl=<value,...\>;libbpf]
 
 ## DESCRIPTION
 
-The **--log** flag allows you to control logger options for the tool.
+The **\-\-log** flag allows you to control logger options for the tool.
 
 Possible log options:
 
 - **aggregate[:interval]**: Turns log aggregation on, delaying output with an optional interval. The default interval is off. The interval can be specified in seconds (s) or minutes (m).
 
-- **\<debug|info|warn|error|panic\>**: Sets the log level. The default log level is 'info'.
+- **<debug|info|warn|error|panic\>**: Sets the log level. The default log level is 'info'.
 
 - **file:/path/to/file**: Writes the logs to the specified file. If the file exists, it will be created or trimmed.
 
-- **filter:**\<option;...\>: Filters in logs that match the specified option values. Multiple filter options can be provided, separated by semicolons.
+- **filter:**<option;...\>: Filters in logs that match the specified option values. Multiple filter options can be provided, separated by semicolons.
 
-- **filter-out:**\<option;...\>: Filters out logs that match the specified option values. Multiple filter options can be provided, separated by semicolons.
+- **filter-out:**<option;...\>: Filters out logs that match the specified option values. Multiple filter options can be provided, separated by semicolons.
 
 Filter options:
 
-- **msg=\<value,...\>**: Filters logs that have the message containing any of the specified values.
+- **msg=<value,...\>**: Filters logs that have the message containing any of the specified values.
 
-- **regex=\<value,...\>**: Filters logs that match the specified regular expression in the message.
+- **regex=<value,...\>**: Filters logs that match the specified regular expression in the message.
 
-- **pkg=\<value,...\>**: Filters logs that originate from the specified package.
+- **pkg=<value,...\>**: Filters logs that originate from the specified package.
 
-- **file=\<value,...\>**: Filters logs that originate from the specified file.
+- **file=<value,...\>**: Filters logs that originate from the specified file.
 
-- **lvl=\<value,...\>**: Filters logs that are of the specified level.
+- **lvl=<value,...\>**: Filters logs that are of the specified level.
 
 - **libbpf**: Filters logs that originate from libbpf.
 

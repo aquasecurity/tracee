@@ -1,15 +1,22 @@
+---
+title: TRACEE-OUTPUT
+section: 1
+header: Tracee Output Flag Manual
+date: 2023/10
+...
+
 ## NAME
 
-tracee **--output** - Control how and where output is printed
+tracee **\-\-output** - Control how and where output is printed
 
 ## SYNOPSIS
 
-tracee **--output** \<format[:file,...]\> | gotemplate=template[:file,...] | forward:url | webhook:url | option:{stack-addresses,exec-env,relative-time,exec-hash,parse-arguments,parse-arguments-fds,sort-events} ...
+tracee **\-\-output** <format[:file,...]\> | gotemplate=template[:file,...] | forward:url | webhook:url | option:{stack-addresses,exec-env,relative-time,exec-hash,parse-arguments,parse-arguments-fds,sort-events} ...
 
 
 ## DESCRIPTION
 
-The **--output** flag allows you to control how and where the output is printed.
+The **\-\-output** flag allows you to control how and where the output is printed.
 
 Format options:
 
@@ -23,7 +30,7 @@ Format options:
 
 - **gotemplate=/path/to/template[:/path/to/file,...]**: Output events formatted using a given Go template file. The default path to the file is stdout. Multiple file paths can be specified, separated by commas.
 
-- **none**: Ignore the stream of events output. This is usually used with the **--capture** flag.
+- **none**: Ignore the stream of events output. This is usually used with the **\-\-capture** flag.
 
 Fluent Forward options:
 
