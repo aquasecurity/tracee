@@ -1,9 +1,9 @@
 # Tracing Event Filtering
 
 ```console
-sudo ./dist/tracee --scope help
-sudo ./dist/tracee --events help
-sudo ./dist/tracee --scope xxx --events xxx
+./dist/tracee man
+./dist/tracee man scope
+./dist/tracee man events
 ```
 
 Tracee output might become too hard to consume when tracing all the events from
