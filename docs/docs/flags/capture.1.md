@@ -1,16 +1,23 @@
+---
+title: TRACEE-CAPTURE
+section: 1
+header: Tracee Capture Flag Manual
+date: 2023/10
+...
+
 ## NAME
 
-tracee **--capture** - Capture artifacts that were written, executed, or found to be suspicious
+tracee **\-\-capture** - Capture artifacts that were written, executed, or found to be suspicious
 
 ## SYNOPSIS
 
-tracee **--capture** \<[artifact:]capture-option[=value]\> ...
+tracee **\-\-capture** <[artifact:]capture-option[=value]\> ...
 
-tracee **--capture** \<network\> [**--capture** [pcap:option1(,option2...)|pcap-options:option|pcap-snaplen:size]] ...
+tracee **\-\-capture** <network\> [**\-\-capture** [pcap:option1(,option2...)|pcap-options:option|pcap-snaplen:size]] ...
 
 ## DESCRIPTION
 
-The **--capture** flag allows you to capture artifacts that were written, executed, or found to be suspicious during the execution of Tracee. The captured artifacts will appear in the 'output-path' directory.
+The **\-\-capture** flag allows you to capture artifacts that were written, executed, or found to be suspicious during the execution of Tracee. The captured artifacts will appear in the 'output-path' directory.
 
 Possible capture options:
 
@@ -24,18 +31,18 @@ Possible capture options:
 
 ### File Capture Filters
 
-Files captured upon read/write can be filtered to catch only specific IO operations. The different filter types have a logical 'AND' between them but a logical 'OR' between filters of the same type. The filter format is as follows: \<read/write\>:\<filter-type\>=\<filter-value\>
+Files captured upon read/write can be filtered to catch only specific IO operations. The different filter types have a logical 'AND' between them but a logical 'OR' between filters of the same type. The filter format is as follows: <read/write\>:<filter-type\>=<filter-value\>
 
 Filter types:
 
-- **path**: A filter for the file path prefix (up to 50 characters). Up to 3 filters can be given. Identical to using '\<read/write\>=/path/prefix\*'.
+- **path**: A filter for the file path prefix (up to 50 characters). Up to 3 filters can be given. Identical to using '<read/write\>=/path/prefix\*'.
 - **type**: A file type from the following options: 'regular', 'pipe', and 'socket'.
 - **fd**: The file descriptor of the file. Can be one of the three standards: 'stdin', 'stdout', and 'stderr'.
 
 ### Network Capture Notes
 
 - Pcap Files:
-  - If you only specify **--capture network**, you will have a single file with all network traffic.
+  - If you only specify **\-\-capture network**, you will have a single file with all network traffic.
   - You can use **pcap:xxx,yyy** to have more than one pcap file, split by different means.
 
 - Pcap Options:

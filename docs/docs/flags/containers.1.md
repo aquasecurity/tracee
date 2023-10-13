@@ -1,10 +1,17 @@
+---
+title: TRACEE-CRS
+section: 1
+header: Tracee CRS Flag Manual
+date: 2023/10
+...
+
 ## NAME
 
-tracee **--crs** - Select container runtimes to connect to for container events enrichment
+tracee **\-\-crs** - Select container runtimes to connect to for container events enrichment
 
 ## SYNOPSIS
 
-tracee **--crs** \<[crio|containerd|docker|podman]:socket\> [**--crs** ...] ...
+tracee **\-\-crs** <[crio|containerd|docker|podman]:socket\> [**\-\-crs** ...] ...
 
 ## DESCRIPTION
 
@@ -15,7 +22,7 @@ By default, if no flag is passed, Tracee will automatically detect installed run
 3. **CRI-O**:      `/var/run/crio/crio.sock`
 4. **Podman**:     `/var/run/podman/podman.sock`
 
-If runtimes are specified using the **--crs** flag, only the ones passed through the flags will be connected to through the provided socket file path.
+If runtimes are specified using the **\-\-crs** flag, only the ones passed through the flags will be connected to through the provided socket file path.
 
 Supported runtimes are:
 

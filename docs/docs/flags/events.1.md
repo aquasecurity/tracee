@@ -1,14 +1,21 @@
+---
+title: TRACEE-EVENTS
+section: 1
+header: Tracee Events Flag Manual
+date: 2023/10
+...
+
 ## NAME
 
-tracee **--events** - Select which events to trace
+tracee **\-\-events** - Select which events to trace
 
 ## SYNOPSIS
 
-tracee **--events** [\<event-name1(,[-]event-name2...)\> | \<[-]event-name1(,set1...)\> | \<set1(,[-]event-name1,[-]event-name2...)\> | \<event1.args.arg-field[=|!=]value\> | \<event1.retval[=|!=|\<|\>|\<=|\>=]value\> | \<event1.context.context-field[=|!=|\<|\>|\<=|\>=]value\> | \<event.context.container\>] ...
+tracee **\-\-events** [<event-name1(,[-]event-name2...)\> | <[-]event-name1(,set1...)\> | <set1(,[-]event-name1,[-]event-name2...)\> | <event1.args.arg-field[=|!=]value\> | <event1.retval[=|!=|<|\>|<=|\>=]value\> | <event1.context.context-field[=|!=|<|\>|<=|\>=]value\> | <event.context.container\>] ...
 
 ## DESCRIPTION
 
-The **--events** flag allows you to select which events to trace by defining filters.
+The **\-\-events** flag allows you to select which events to trace by defining filters.
 
 ## FILTERS
 
@@ -28,14 +35,14 @@ Multiple flags are combined with AND logic, while multiple values within a singl
 
 ### NUMERICAL EXPRESSION OPERATORS
 
-'=', '!=', '\<', '\>', '\<=', '\>='
+'=', '!=', '<', '\>', '<=', '\>='
 
 Available for:
 
 - return value
 - context fields
 
-NOTE: Expressions containing '\<' or '\>' tokens must be escaped!
+NOTE: Expressions containing '<' or '\>' tokens must be escaped!
 
 ### STRING EXPRESSION OPERATORS
 

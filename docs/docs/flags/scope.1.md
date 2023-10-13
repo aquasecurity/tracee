@@ -1,15 +1,21 @@
+---
+title: TRACEE-SCOPE
+section: 1
+header: Tracee Scope Flag Manual
+date: 2023/10
+...
 
 ## NAME
 
-tracee **--scope** - Select the scope for tracing events
+tracee **\-\-scope** - Select the scope for tracing events
 
 ## SYNOPSIS
 
-tracee **--scope** [\<[uid|pid][=|!=|\<|\>|\<=|\>=]value1(,value2...)\> | \<[mntns|pidns|tree][=|!=]value1(,value2...)\> | \<[uts|comm|container|[executable|exec|binary|bin]][=|!=]value1(,value2...)\>] | \<not-container\> | \<container[=|!=]value\> | \<[container|pid]=new\> | \<follow\>]  ...
+tracee **\-\-scope** [<[uid|pid][=|!=|<|\>|<=|\>=]value1(,value2...)\> | <[mntns|pidns|tree][=|!=]value1(,value2...)\> | <[uts|comm|container|[executable|exec|binary|bin]][=|!=]value1(,value2...)\>] | <not-container\> | <container[=|!=]value\> | <[container|pid]=new\> | <follow\>]  ...
 
 ## DESCRIPTION
 
-The **--scope** flag allows you to select the scope for tracing events by defining filters.
+The **\-\-scope** flag allows you to select the scope for tracing events by defining filters.
 
 ## FILTER EXPRESSION
 
@@ -30,7 +36,7 @@ The following numerical fields only support the operators '=' and '!=':
 - pidns: Select events from specific process namespace IDs.
 - tree: Select events that descend from specific process IDs.
 
-NOTE: Expressions containing '\<' or '\>' tokens must be escaped!
+NOTE: Expressions containing '<' or '\>' tokens must be escaped!
 
 ### STRING EXPRESSION OPERATORS
 

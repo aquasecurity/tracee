@@ -1,0 +1,90 @@
+.PHONY: all
+all:
+	$(MAKE) man-build
+	$(MAKE) man-run
+
+#
+# make
+#
+
+.ONESHELL:
+SHELL = /bin/sh
+
+MAKE = make -f $(shell find . -name Makefile.man)
+MAKEFLAGS += --no-print-directory
+
+#
+# tools
+#
+
+CMD_DOCKER ?= docker
+
+.check_%:
+#
+	@command -v $* >/dev/null
+	if [ $$? -ne 0 ]; then
+		echo "missing required tool $*"
+		exit 1
+	else
+		touch $@ # avoid target rebuilds due to inexistent file
+	fi
+
+#
+# usage
+#
+
+.PHONY: help
+help:
+	@echo ""
+	@echo "To build the man docker container:"
+	@echo ""
+	@echo "    $$ make -f builder/Makefile.man man-build"
+	@echo ""
+	@echo "To run man the container:"
+	@echo ""
+	@echo "    $$ make -f builder/Makefile.man man-run"
+	@echo ""
+	@echo "Or simply:"
+	@echo ""
+	@echo "    $$ make -f builder/Makefile.man"
+	@echo ""
+
+#
+# requirements
+#
+
+.PHONY: .check_tree
+.check_tree:
+#
+	@if [ ! -d ./builder ]; then
+		echo "you must be in the root directory"
+		exit 1
+	fi
+
+MAN_CONTNAME = tracee-man:latest
+
+.PHONY: man-build
+man-build: \
+	.check_$(CMD_DOCKER) \
+	.check_tree
+#
+	$(CMD_DOCKER) build \
+		-f builder/Dockerfile.man \
+		-t $(MAN_CONTNAME) \
+		.
+
+.PHONY: man-run
+man-run: \
+	.check_$(CMD_DOCKER) \
+	.check_tree
+#
+	$(CMD_DOCKER) run --rm \
+		-v $(shell pwd):/tracee \
+		$(MAN_CONTNAME) make man
+
+#
+# clean
+#
+
+.PHONY: clean
+clean:

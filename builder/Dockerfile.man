@@ -1,0 +1,10 @@
+FROM ubuntu
+
+ARG DEBIAN_FRONTEND="noninteractive"
+ENV DEBCONF_NOWARNINGS="yes"
+
+RUN apt-get update -y && \
+    apt-get install -y make && \
+    apt-get install -y pandoc
+
+WORKDIR /tracee
