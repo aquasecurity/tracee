@@ -3,6 +3,7 @@
 
 #include <vmlinux.h>
 
+#include <common/logging.h>
 #include <common/task.h>
 #include <common/cgroups.h>
 
@@ -22,49 +23,61 @@ init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 
 {
     long ret = 0;
     u64 id = bpf_get_current_pid_tgid();
-    context->task.start_time = get_task_start_time(task);
+
+    // NOTE: parent is always a real process, not a potential thread group leader
+    struct task_struct *leader = get_leader_task(task);
+    struct task_struct *up_parent = get_leader_task(get_parent_task(leader));
+
+    // Task Info on Host
     context->task.host_tid = id;
     context->task.host_pid = id >> 32;
-    context->task.host_ppid = get_task_ppid(task);
+    context->task.host_ppid = get_task_pid(up_parent); // always a real process (not a lwp)
+    // Namespaces Info
     context->task.tid = get_task_ns_pid(task);
     context->task.pid = get_task_ns_tgid(task);
-    context->task.ppid = get_task_ns_ppid(task);
+    context->task.ppid = get_task_ns_pid(up_parent); // ns pid for up_parent
     context->task.mnt_id = get_task_mnt_ns_id(task);
     context->task.pid_id = get_task_pid_ns_id(task);
     context->task.uid = bpf_get_current_uid_gid();
-    struct task_struct *leader = get_leader_task(task);
+    // Times
+    context->task.start_time = get_task_start_time(task);
     context->task.leader_start_time = get_task_start_time(leader);
-    struct task_struct *parent = get_leader_task(get_parent_task(leader));
-    context->task.parent_start_time = get_task_start_time(parent);
+    context->task.parent_start_time = get_task_start_time(up_parent);
+
     context->task.flags = 0;
+
     if (is_compat(task))
         context->task.flags |= IS_COMPAT_FLAG;
+
+    // Program name
     __builtin_memset(context->task.comm, 0, sizeof(context->task.comm));
     ret = bpf_get_current_comm(&context->task.comm, sizeof(context->task.comm));
     if (unlikely(ret < 0)) {
-        // disable logging as a workaround for instruction limit verifier error on kernel 4.19
-        // tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_GET_CURRENT_COMM, ret);
+        tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_GET_CURRENT_COMM, ret);
         return -1;
     }
 
+    // UTS Name
     char *uts_name = get_task_uts_name(task);
     if (uts_name) {
         __builtin_memset(context->task.uts_name, 0, sizeof(context->task.uts_name));
         bpf_probe_read_str(&context->task.uts_name, TASK_COMM_LEN, uts_name);
     }
+
+    // Cgroup ID
     if (options & OPT_CGROUP_V1) {
         context->task.cgroup_id = get_cgroup_v1_subsys0_id(task);
     } else {
         context->task.cgroup_id = bpf_get_current_cgroup_id();
     }
 
+    // Context timestamp
     context->ts = bpf_ktime_get_ns();
-
     // Clean Stack Trace ID
     context->stack_id = 0;
-
+    // Processor ID
     context->processor_id = (u16) bpf_get_smp_processor_id();
-
+    // Syscall ID
     context->syscall = get_task_syscall_id(task);
 
     return 0;
