@@ -138,6 +138,11 @@ statfunc char *get_task_uts_name(struct task_struct *task)
     return BPF_CORE_READ(uts_ns, name.nodename);
 }
 
+statfunc u32 get_task_pid(struct task_struct *task)
+{
+    return BPF_CORE_READ(task, pid);
+}
+
 statfunc u32 get_task_ppid(struct task_struct *task)
 {
     struct task_struct *parent = BPF_CORE_READ(task, real_parent);
