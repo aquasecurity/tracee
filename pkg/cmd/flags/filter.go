@@ -193,7 +193,7 @@ func prepareEventsToTrace(
 	for disableName := range eventsToDisable {
 		disableId, ok := events.Core.GetDefinitionIDByName(disableName)
 		if !ok {
-			logger.Errorw("Event name to be removed for tracing not found", "event", disableName)
+			logger.Debugw("Event name to be removed for tracing not found", "event", disableName)
 		} else {
 			delete(idToName, disableId)
 		}
@@ -211,7 +211,7 @@ func prepareEventsToTrace(
 			for _, reqId := range depIds {
 				if reqId == disableId {
 					delete(idToName, defId)
-					logger.Warnw("Event removed from events to trace", "id", defId, "name", defName, "requires", disableName)
+					logger.Debugw("Event removed from events to trace", "id", defId, "name", defName, "requires", disableName)
 				}
 			}
 		}

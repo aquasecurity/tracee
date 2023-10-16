@@ -276,12 +276,12 @@ func New(cfg config.Config) (*Tracee, error) {
 	for evt := range t.config.EventsToDisable {
 		evtId, ok := events.Core.GetDefinitionIDByName(evt)
 		if !ok {
-			logger.Errorw("Event name to disable was not found", "name", evt)
+			logger.Debugw("Event name to disable was not found", "name", evt)
 			continue
 		}
 
 		delete(t.eventsState, evtId)
-		logger.Warnw("Event disabled", "id", evtId, "name", evt)
+		logger.Debugw("Event disabled", "id", evtId, "name", evt)
 	}
 
 	// Handle all essential events dependencies
