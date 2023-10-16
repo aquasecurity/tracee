@@ -35,9 +35,16 @@ init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 
     // Namespaces Info
     context->task.tid = get_task_ns_pid(task);
     context->task.pid = get_task_ns_tgid(task);
-    context->task.ppid = get_task_ns_pid(up_parent); // ns pid for up_parent
+
+    u32 task_pidns_id = get_task_pid_ns_id(task);
+    u32 up_parent_pidns_id = get_task_pid_ns_id(up_parent);
+
+    if (task_pidns_id == up_parent_pidns_id)
+        context->task.ppid = get_task_ns_pid(up_parent); // e.g: pid 1 will have nsppid 0
+
+    context->task.pid_id = task_pidns_id;
     context->task.mnt_id = get_task_mnt_ns_id(task);
-    context->task.pid_id = get_task_pid_ns_id(task);
+    // User Info
     context->task.uid = bpf_get_current_uid_gid();
     // Times
     context->task.start_time = get_task_start_time(task);
