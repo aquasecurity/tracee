@@ -966,6 +966,7 @@ func (t *Tracee) checkUnavailableKSymbols(eventsState map[events.ID]events.Event
 // missing, it will cancel their event with informative error message.
 func (t *Tracee) validateKallsymsDependencies() {
 	unavKSymbols := t.checkUnavailableKSymbols(t.eventsState)
+	depsToCancel := make(map[events.ID]string)
 
 	// Cancel events with unavailable symbols dependencies
 	for eventToCancel, missingDepSyms := range unavKSymbols {
@@ -976,6 +977,27 @@ func (t *Tracee) validateKallsymsDependencies() {
 		)
 
 		delete(t.eventsState, eventToCancel)
+
+		// Find all events that depend on eventToCancel
+		for eventID := range t.eventsState {
+			depsIDs := events.Core.GetDefinitionByID(eventID).GetDependencies().GetIDs()
+			for _, depID := range depsIDs {
+				if depID == eventToCancel {
+					depsToCancel[eventID] = eventNameToCancel
+				}
+			}
+		}
+
+		// Cancel all events that require eventToCancel
+		for eventID, depEventName := range depsToCancel {
+			logger.Errorw(
+				"Event canceled because it depends on an previously canceled event",
+				"event", events.Core.GetDefinitionByID(eventID).GetName(),
+				"dependency", depEventName,
+			)
+
+			delete(t.eventsState, eventID)
+		}
 	}
 }
 
