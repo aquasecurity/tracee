@@ -1,6 +1,8 @@
 package utils
 
-import "math"
+import (
+	"math"
+)
 
 // RoundToClosestN rounds a number to the closest multiple of n.
 func RoundToClosestN(val int, n int) int {

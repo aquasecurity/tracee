@@ -1,6 +1,8 @@
 package proctree
 
-import "sync"
+import (
+	"sync"
+)
 
 // Thread represents a thread.
 type Thread struct {

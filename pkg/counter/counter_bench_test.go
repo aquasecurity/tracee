@@ -1,6 +1,8 @@
 package counter
 
-import "testing"
+import (
+	"testing"
+)
 
 // Increment
 

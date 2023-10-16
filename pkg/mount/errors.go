@@ -1,6 +1,8 @@
 package mount
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func UnmountedDirNotEmpty(dir string) error {
 	return fmt.Errorf("unmounted directory %v isn't empty", dir)

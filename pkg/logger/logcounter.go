@@ -1,6 +1,8 @@
 package logger
 
-import "sync"
+import (
+	"sync"
+)
 
 type logOrigin struct {
 	File  string

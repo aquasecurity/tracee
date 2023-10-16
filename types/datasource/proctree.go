@@ -1,6 +1,8 @@
 package datasource
 
-import "time"
+import (
+	"time"
+)
 
 // ProcessInfo is the user facing representation of a process data at a specific time.
 type ProcessInfo struct {
