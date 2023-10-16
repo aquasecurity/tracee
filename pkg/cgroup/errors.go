@@ -1,6 +1,8 @@
 package cgroup
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type VersionNotSupported struct{}
 

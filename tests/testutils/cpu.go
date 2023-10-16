@@ -1,6 +1,8 @@
 package testutils
 
-import "golang.org/x/sys/unix"
+import (
+	"golang.org/x/sys/unix"
+)
 
 const CPUForTests = 0 // CPU to pin test processes to
 

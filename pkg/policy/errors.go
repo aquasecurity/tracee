@@ -1,6 +1,8 @@
 package policy
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func PolicyNilError() error {
 	return fmt.Errorf("policy cannot be nil")

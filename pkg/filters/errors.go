@@ -1,6 +1,8 @@
 package filters
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func UnsupportedOperator(op Operator) error {
 	return fmt.Errorf("failed to add filter: unsupported operator %s", op.String())
