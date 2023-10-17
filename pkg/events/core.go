@@ -9400,7 +9400,7 @@ var CoreEvents = map[ID]Definition{
 			},
 			capabilities: Capabilities{
 				base: []cap.Value{
-					// 1. set by processSchedProcessFork IF ExecHash enabled
+					// 1. set by processSchedProcessFork IF CalcHashes enabled
 					// 2. set by processSchedProcessExec by CaptureExec if needed
 					// cap.SYS_PTRACE,
 				},

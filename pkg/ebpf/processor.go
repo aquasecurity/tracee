@@ -14,7 +14,7 @@ import (
 
 var (
 	kernelReadFileTypes map[int32]trace.KernelReadType
-	onceExecHash        sync.Once // capabilities for exec hash enabled only once
+	onceHashCapsAdd     sync.Once // capabilities for exec hash enabled only once
 )
 
 func init() {
@@ -80,15 +80,6 @@ func (t *Tracee) RegisterEventProcessor(id events.ID, proc func(evt *trace.Event
 // registerEventProcessors registers all event processors, each to a specific event id.
 func (t *Tracee) registerEventProcessors() {
 	//
-	// Event Timestamps Normalization Processors
-	//
-
-	// Convert all time relate args to nanoseconds since epoch.
-	// NOTE: Make sure to convert time related args (of your event) in here.
-	t.RegisterEventProcessor(events.SchedProcessFork, t.processSchedProcessFork)
-	t.RegisterEventProcessor(events.All, t.normalizeEventCtxTimes)
-
-	//
 	// Process Tree Processors
 	//
 
@@ -130,6 +121,16 @@ func (t *Tracee) registerEventProcessors() {
 	t.RegisterEventProcessor(events.PrintNetSeqOps, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processPrintMemDump)
+	t.RegisterEventProcessor(events.SharedObjectLoaded, t.processSharedObjectLoaded)
+
+	//
+	// Event Timestamps Normalization Processors
+	//
+
+	// Convert all time relate args to nanoseconds since epoch.
+	// NOTE: Make sure to convert time related args (of your event) in here.
+	t.RegisterEventProcessor(events.SchedProcessFork, t.processSchedProcessFork)
+	t.RegisterEventProcessor(events.All, t.normalizeEventCtxTimes)
 }
 
 func initKernelReadFileTypes() {

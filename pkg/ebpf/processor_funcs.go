@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"golang.org/x/sys/unix"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -120,7 +119,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 		t.pidsInMntns.AddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
 	}
 	// capture executed files
-	if t.config.Capture.Exec || t.config.Output.ExecHash {
+	if t.config.Capture.Exec || t.config.Output.CalcHashes {
 		filePath, err := parse.ArgVal[string](event.Args, "pathname")
 		if err != nil {
 			return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
@@ -145,7 +144,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 			if containerId == "" {
 				containerId = "host"
 			}
-			capturedFileID := fmt.Sprintf("%s:%s", containerId, sourceFilePath)
+			capturedFileID := fmt.Sprintf("%s:%s", containerId, filePath)
 			// capture exec'ed files ?
 			if t.config.Capture.Exec {
 				destinationDirPath := containerId
@@ -175,35 +174,11 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 				}
 			}
 			// check exec'ed hash ?
-			if t.config.Output.ExecHash {
-				var hashInfoObj fileExecInfo
-				var currentHash string
-				hashInfoObj, ok := t.fileHashes.Get(capturedFileID)
-				// check if cache can be used
-				if ok && hashInfoObj.LastCtime == castedSourceFileCtime {
-					currentHash = hashInfoObj.Hash
-				} else {
-					// if ExecHash is enabled, we need to make sure base ring has the needed
-					// capabilities (cap.SYS_PTRACE), since it might not always have been enabled by
-					// event capabilities requirements (there is no "exec hash" event) from
-					// SchedProcessExec event.
-					onceExecHash.Do(func() {
-						err = capabilities.GetInstance().BaseRingAdd(cap.SYS_PTRACE)
-						if err != nil {
-							logger.Errorw("error adding cap.SYS_PTRACE to base ring", "error", err)
-						}
-					})
-					currentHash, err = computeFileHashAtPath(sourceFilePath)
-					if err == nil {
-						hashInfoObj = fileExecInfo{castedSourceFileCtime, currentHash}
-						t.fileHashes.Add(capturedFileID, hashInfoObj)
-					}
+			if t.config.Output.CalcHashes {
+				err := t.addHashArg(event, filePath, castedSourceFileCtime)
+				if err != nil {
+					return err
 				}
-				event.Args = append(event.Args, trace.Argument{
-					ArgMeta: trace.ArgMeta{Name: "sha256", Type: "const char*"},
-					Value:   currentHash,
-				})
-				event.ArgsNum++
 			}
 			if true { // so loop is conditionally terminated (#SA4044)
 				break
@@ -385,4 +360,37 @@ func (t *Tracee) normalizeEventArgTime(event *trace.Event, argName string) error
 		arg.Value = argTime + t.bootTime
 	}
 	return nil
+}
+
+// addHashArg calculate file hash (in a best-effort efficiency manner) and add it as an argument
+func (t *Tracee) addHashArg(event *trace.Event, fileName string, ctime int64) error {
+	if t.config.Output.CalcHashes {
+		hash, err := t.getFileHash(fileName, ctime, event.MountNS, event.ContainerID)
+
+		event.Args = append(
+			event.Args, trace.Argument{
+				ArgMeta: trace.ArgMeta{Name: "sha256", Type: "const char*"},
+				Value:   hash,
+			},
+		)
+		event.ArgsNum++
+
+		return err
+	}
+	return nil
+}
+
+func (t *Tracee) processSharedObjectLoaded(event *trace.Event) error {
+	filePath, err := parse.ArgVal[string](event.Args, "pathname")
+	if err != nil {
+		logger.Debugw("Error parsing argument", "error", err)
+		return nil
+	}
+	fileCtime, err := parse.ArgVal[uint64](event.Args, "ctime")
+	if err != nil {
+		logger.Debugw("Error parsing argument", "error", err)
+		return nil
+	}
+
+	return t.addHashArg(event, filePath, int64(fileCtime))
 }

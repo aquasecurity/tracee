@@ -108,7 +108,7 @@ func setOption(cfg *config.OutputConfig, option string, newBinary bool) error {
 	case "relative-time":
 		cfg.RelativeTime = true
 	case "exec-hash":
-		cfg.ExecHash = true
+		cfg.CalcHashes = true
 	case "parse-arguments":
 		cfg.ParseArguments = true
 	case "parse-arguments-fds":

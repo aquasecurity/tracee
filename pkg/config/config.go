@@ -157,7 +157,7 @@ type OutputConfig struct {
 	StackAddresses bool
 	ExecEnv        bool
 	RelativeTime   bool
-	ExecHash       bool
+	CalcHashes     bool
 
 	ParseArguments    bool
 	ParseArgumentsFDs bool
