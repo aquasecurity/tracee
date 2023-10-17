@@ -566,39 +566,39 @@ func Test_EventFilters(t *testing.T) {
 			useSyscaller: false,
 			test:         ExpectAnyOfEach,
 		},
-		// {
-		// 	name: "pid: trace events from pid 1",
-		// 	policyFiles: []policyFileWithID{
-		// 		{
-		// 			id: 1,
-		// 			policyFile: v1beta1.PolicyFile{
-		// 				Metadata: v1beta1.Metadata{
-		// 					Name: "pid-1",
-		// 				},
-		// 				Spec: v1beta1.PolicySpec{
-		// 					Scope: []string{
-		// 						"pid=1",
-		// 					},
-		// 					DefaultActions: []string{"log"},
-		// 					Rules:          []v1beta1.Rule{},
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// 	cmdEvents: []cmdEvents{
-		// 		newCmdEvents(
-		// 			"kill -SIGHUP 1", // reloads the complete daemon configuration
-		// 			1*time.Second,
-		// 			[]trace.Event{
-		// 				expectEvent(anyHost, "init", anyProcessorID, 1, 0, anyEventID, orPolNames("pid-1"), orPolIDs(1)),
-		// 				expectEvent(anyHost, "systemd", anyProcessorID, 1, 0, anyEventID, orPolNames("pid-1"), orPolIDs(1)),
-		// 			},
-		// 			[]string{},
-		// 		),
-		// 	},
-		// 	useSyscaller: false,
-		// 	test:         ExpectAnyOfEach,
-		// },
+		{
+			name: "pid: trace events from pid 1",
+			policyFiles: []policyFileWithID{
+				{
+					id: 1,
+					policyFile: v1beta1.PolicyFile{
+						Metadata: v1beta1.Metadata{
+							Name: "pid-1",
+						},
+						Spec: v1beta1.PolicySpec{
+							Scope: []string{
+								"pid=1",
+							},
+							DefaultActions: []string{"log"},
+							Rules:          []v1beta1.Rule{},
+						},
+					},
+				},
+			},
+			cmdEvents: []cmdEvents{
+				newCmdEvents(
+					"kill -SIGHUP 1", // reloads the complete daemon configuration
+					1*time.Second,
+					[]trace.Event{
+						expectEvent(anyHost, "init", anyProcessorID, 1, 0, anyEventID, orPolNames("pid-1"), orPolIDs(1)),
+						expectEvent(anyHost, "systemd", anyProcessorID, 1, 0, anyEventID, orPolNames("pid-1"), orPolIDs(1)),
+					},
+					[]string{},
+				),
+			},
+			useSyscaller: false,
+			test:         ExpectAnyOfEach,
+		},
 		{
 			name: "uid: comm: trace uid 0 from ls command",
 			policyFiles: []policyFileWithID{
@@ -1659,9 +1659,7 @@ func Test_EventFilters(t *testing.T) {
 					case <-ctx.Done():
 						return
 					case evt := <-stream.ReceiveEvents():
-						buf.mu.Lock()
-						buf.events = append(buf.events, evt)
-						buf.mu.Unlock()
+						buf.addEvent(evt)
 					}
 				}
 			}(ctx)
