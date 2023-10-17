@@ -1,10 +1,9 @@
 #
-# On cron schedule or on demand: Release snapshot (amd64 and arm64)
+# On cron schedule or on demand: Release snapshot
 #
 # This workflow ensures that the main branch is ready for release and that all
 # build configuration files are valid. Also scans tracee container images for
-# vulnerabilities, and publishes to DockerHub as aquasec/tracee:dev and
-# aquasec/tracee:dev-full.
+# vulnerabilities, and publishes to DockerHub as aquasec/tracee:dev.
 #
 name: Release Snapshot
 on:
@@ -13,29 +12,19 @@ on:
     # Daily at 05:00
     - cron: "0 5 * * *"
 jobs:
-  release-snapshot:
-    name: Release Snapshot X64 (Default)
-    runs-on:
-      [
-        "github-self-hosted_ami-0f4881c8d69684001_${{ github.event.number }}-${{ github.run_id }}",
-      ]
+  release-snapshot-x86_64:
+    name: Release Snapshot (x86_64)
+    runs-on: [ "github-self-hosted_ami-0f4881c8d69684001_${{ github.event.number }}-${{ github.run_id }}" ]
     permissions:
       contents: read
       packages: write
       id-token: write
     steps:
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@main
-        with:
-          cosign-release: 'v2.0.2'
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
           submodules: true
           fetch-depth: 0
-      - name: AWS Environment
-        run: |
-          dmidecode
       - name: Login to docker.io registry
         uses: docker/login-action@v2
         with:
@@ -52,33 +41,21 @@ jobs:
           exit-code: "1"
       - name: Publish to docker.io registry
         run: |
-          docker image tag tracee:latest aquasec/tracee:dev
           docker image tag tracee:latest aquasec/tracee:x86_64-dev
-          docker image push aquasec/tracee:dev
           docker image push aquasec/tracee:x86_64-dev
-  release-snapshot-arm64:
-    name: Release Snapshot ARM64
-    runs-on:
-      [
-        "github-self-hosted_ami-03217ce7c37572c4d_${{ github.event.number }}-${{ github.run_id }}",
-      ]
+  release-snapshot-aarch64:
+    name: Release Snapshot (aarch64)
+    runs-on: [ "github-self-hosted_ami-03217ce7c37572c4d_${{ github.event.number }}-${{ github.run_id }}" ]
     permissions:
       contents: read
       packages: write
       id-token: write
     steps:
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@main
-        with:
-          cosign-release: 'v2.0.2'
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
           submodules: true
           fetch-depth: 0
-      - name: AWS Environment
-        run: |
-          dmidecode
       - name: Login to docker.io registry
         uses: docker/login-action@v2
         with:
@@ -97,3 +74,30 @@ jobs:
         run: |
           docker image tag tracee:latest aquasec/tracee:aarch64-dev
           docker image push aquasec/tracee:aarch64-dev
+  release-snapshot:
+    name: Release Snapshot
+    needs: [release-snapshot-x86_64, release-snapshot-aarch64]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+          fetch-depth: 0
+      - name: Login to docker.io registry
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Publish to docker.io registry
+        run: |
+          export DOCKER_CLI_EXPERIMENTAL=enabled
+          docker manifest create aquasec/tracee:dev \
+            aquasec/tracee:x86_64-dev \
+            aquasec/tracee:aarch64-dev
+          docker manifest push aquasec/tracee:dev
+        shell: bash
