@@ -47,7 +47,8 @@ Other options:
   - **stack-addresses**: Include stack memory addresses for each event.
   - **exec-env**: When tracing execve/execveat, show the environment variables that were used for execution.
   - **relative-time**: Use relative timestamp instead of wall timestamp for events.
-  - **exec-hash**: When tracing sched_process_exec, show the file hash (sha256) and ctime.
+  - **exec-hash**: When tracing some file related events, show the file hash (sha256).
+    - Affected events: sched_process_exec, shared_object_loaded
   - **parse-arguments**: Do not show raw machine-readable values for event arguments. Instead, parse them into human-readable strings.
   - **parse-arguments-fds**: Enable parse-arguments and enrich file descriptors (fds) with their file path translation. This can cause pipeline slowdowns.
   - **sort-events**: Enable sorting events before passing them to the output. This may decrease the overall program efficiency.

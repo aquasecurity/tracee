@@ -332,7 +332,7 @@ func TestPrepareOutput(t *testing.T) {
 					{Kind: "table", OutPath: "stdout"},
 				},
 				TraceeConfig: &config.OutputConfig{
-					ExecHash:       true,
+					CalcHashes:     true,
 					ParseArguments: true,
 				},
 			},
@@ -395,7 +395,7 @@ func TestPrepareOutput(t *testing.T) {
 					StackAddresses:    true,
 					ExecEnv:           true,
 					RelativeTime:      true,
-					ExecHash:          true,
+					CalcHashes:        true,
 					ParseArguments:    true,
 					ParseArgumentsFDs: true,
 					EventsSorting:     true,

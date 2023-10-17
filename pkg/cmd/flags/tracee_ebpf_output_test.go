@@ -91,7 +91,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			outputSlice: []string{"option:exec-hash"},
 			expectedOutput: PrepareOutputResult{
 				TraceeConfig: &config.OutputConfig{
-					ExecHash:       true,
+					CalcHashes:     true,
 					ParseArguments: true,
 				},
 			},
@@ -142,7 +142,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 					StackAddresses:    true,
 					ExecEnv:           true,
 					RelativeTime:      true,
-					ExecHash:          true,
+					CalcHashes:        true,
 					ParseArguments:    true,
 					ParseArgumentsFDs: true,
 					EventsSorting:     true,

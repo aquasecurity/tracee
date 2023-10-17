@@ -1544,6 +1544,36 @@ func (t *Tracee) Running() bool {
 	return t.running.Load()
 }
 
+func (t *Tracee) getFileHash(filename string, ctime int64, mountNs int, containerId string) (string, error) {
+	onceHashCapsAdd.Do(
+		func() {
+			err := capabilities.GetInstance().BaseRingAdd(cap.SYS_PTRACE)
+			if err != nil {
+				logger.Errorw("error adding cap.SYS_PTRACE to base ring", "error", err)
+			}
+		},
+	)
+
+	fileId := fmt.Sprintf("%s:%s", containerId, filename)
+	var fileHash string
+	hashInfoObj, ok := t.fileHashes.Get(fileId)
+	if ok && hashInfoObj.LastCtime == ctime {
+		fileHash = hashInfoObj.Hash
+	} else {
+		sourceFilePath, err := t.contPathResolver.GetHostAbsPath(filename, mountNs)
+		if err != nil {
+			return "", err
+		}
+
+		hash, err := computeFileHashAtPath(sourceFilePath)
+		if err == nil {
+			hashInfoObj = fileExecInfo{ctime, hash}
+			t.fileHashes.Add(fileId, hashInfoObj)
+		}
+	}
+	return fileHash, nil
+}
+
 func (t *Tracee) computeOutFileHash(fileName string) (string, error) {
 	f, err := utils.OpenAt(t.OutDir, fileName, os.O_RDONLY, 0)
 	if err != nil {
