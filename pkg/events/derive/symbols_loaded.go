@@ -122,7 +122,8 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(
 	matchedSyms, ok := symbsLoadedGen.getSymbolsFromCache(loadingObjectInfo.Id)
 	if ok {
 		if len(matchedSyms) > 0 {
-			return []interface{}{loadingObjectInfo.Path, matchedSyms}, nil
+			hash, _ := parse.ArgVal[string](event.Args, "sha256")
+			return []interface{}{loadingObjectInfo.Path, matchedSyms, hash}, nil
 		}
 		return nil, nil
 	}
@@ -152,7 +153,8 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(
 
 	symbsLoadedGen.libsCache.Add(loadingObjectInfo.Id, exportedWatchSymbols)
 	if len(exportedWatchSymbols) > 0 {
-		return []interface{}{loadingObjectInfo.Path, exportedWatchSymbols}, nil
+		hash, _ := parse.ArgVal[string](event.Args, "sha256")
+		return []interface{}{loadingObjectInfo.Path, exportedWatchSymbols, hash}, nil
 	}
 
 	return nil, nil
