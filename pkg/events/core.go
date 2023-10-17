@@ -10478,6 +10478,7 @@ var CoreEvents = map[ID]Definition{
 		params: []trace.ArgMeta{
 			{Type: "const char*", Name: "library_path"},
 			{Type: "const char*const*", Name: "symbols"},
+			{Type: "const char *", Name: "sha256"},
 		},
 	},
 	SymbolsCollision: {

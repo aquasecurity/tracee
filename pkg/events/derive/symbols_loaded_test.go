@@ -179,7 +179,7 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 				assert.Empty(t, errChan)
 				require.NoError(t, err)
 				if len(testCase.expectedSymbols) > 0 {
-					require.Len(t, eventArgs, 2)
+					require.Len(t, eventArgs, 3)
 					path := eventArgs[0]
 					syms := eventArgs[1]
 					require.IsType(t, "", path)
