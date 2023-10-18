@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.5+insiders-4.42.1">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.6+insiders-4.42.2">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.13544b29.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.62ccb7e6.min.css">
       
       
 
@@ -494,7 +494,7 @@
   <a href="#on-x86-architecture-please-run-the-following-command" class="md-nav__link">
     <span class="md-ellipsis">
       
-        On x86 architecture, please run the following command:
+        On x86 architecture, please run the following command
       
     </span>
   </a>
@@ -505,7 +505,7 @@
   <a href="#steps-to-run-the-tracee-container-image-on-arm64" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Steps to run the Tracee container image on arm64:
+        Steps to run the Tracee container image on arm64
       
     </span>
   </a>
@@ -15487,7 +15487,7 @@
   <a href="#on-x86-architecture-please-run-the-following-command" class="md-nav__link">
     <span class="md-ellipsis">
       
-        On x86 architecture, please run the following command:
+        On x86 architecture, please run the following command
       
     </span>
   </a>
@@ -15498,7 +15498,7 @@
   <a href="#steps-to-run-the-tracee-container-image-on-arm64" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Steps to run the Tracee container image on arm64:
+        Steps to run the Tracee container image on arm64
       
     </span>
   </a>
@@ -15529,45 +15529,43 @@
 <h1 id="docker-quickstart">Docker Quickstart<a class="headerlink" href="#docker-quickstart" title="Permanent link">&para;</a></h1>
 <p>This section details how you can run Tracee through a container image.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
-<p>Please ensure that Docker or another container runtime is working on your machine. </p>
+<p>Please ensure that Docker or another container runtime is working on your machine.</p>
 <h2 id="run-the-tracee-container-images">Run the Tracee container images<a class="headerlink" href="#run-the-tracee-container-images" title="Permanent link">&para;</a></h2>
 <p>All of the Tracee container images are stored in a public registry on <a href="https://hub.docker.com/r/aquasec/tracee">Docker Hub.</a>
 You can easily start experimenting with Tracee using the Docker image.</p>
-<h3 id="on-x86-architecture-please-run-the-following-command">On x86 architecture, please run the following command:<a class="headerlink" href="#on-x86-architecture-please-run-the-following-command" title="Permanent link">&para;</a></h3>
+<h3 id="on-x86-architecture-please-run-the-following-command">On x86 architecture, please run the following command<a class="headerlink" href="#on-x86-architecture-please-run-the-following-command" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
 <span class="go">  --name tracee --rm -it \</span>
 <span class="go">  --pid=host --cgroupns=host --privileged \</span>
 <span class="go">  -v /etc/os-release:/etc/os-release-host:ro \</span>
 <span class="go">  aquasec/tracee:latest</span>
 </code></pre></div>
-<h3 id="steps-to-run-the-tracee-container-image-on-arm64">Steps to run the Tracee container image on arm64:<a class="headerlink" href="#steps-to-run-the-tracee-container-image-on-arm64" title="Permanent link">&para;</a></h3>
+<h3 id="steps-to-run-the-tracee-container-image-on-arm64">Steps to run the Tracee container image on arm64<a class="headerlink" href="#steps-to-run-the-tracee-container-image-on-arm64" title="Permanent link">&para;</a></h3>
 <p>There are a few more steps involved in running Tracee through a container image on arm64 (M1).</p>
 <p>Prerequisites:</p>
 <ul>
 <li><a href="https://developer.hashicorp.com/vagrant/downloads">Vagrant CLI</a> installed</li>
-<li><a href="https://www.parallels.com/uk/products/desktop/pro/">Parallels Pro</a> installed </li>
+<li><a href="https://www.parallels.com/uk/products/desktop/pro/">Parallels Pro</a> installed</li>
 </ul>
-<p>First, clone the Tracee Git repository and move into the root directory:
+<p>First, clone the Tracee Git repository and move into the root directory:</p>
 <div class="highlight"><pre><span></span><code><span class="go">git clone git@github.com:aquasecurity/tracee.git</span>
 
 <span class="go">cd tracee</span>
-</code></pre></div></p>
-<p>Next, use Vagrant to start a Parallels VM:
-<div class="highlight"><pre><span></span><code>vagrant up
-</code></pre></div></p>
+</code></pre></div>
+<p>Next, use Vagrant to start a Parallels VM:</p>
+<div class="highlight"><pre><span></span><code><span class="go">vagrant up</span>
+</code></pre></div>
 <p>This will use the <a href="https://github.com/aquasecurity/tracee/blob/main/Vagrantfile">Vagrantfile</a> in the root of the Tracee directory.</p>
-<p>Lastly, ssh into the created VM:
+<p>Lastly, ssh into the created VM:</p>
 <div class="highlight"><pre><span></span><code><span class="go">vagrant ssh</span>
-</code></pre></div></p>
-<p>Now, it is possible to run the Tracee Container image, using the <code>aarch64</code> tag:
+</code></pre></div>
+<p>Now, it is possible to run the Tracee Container image:</p>
 <div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
 <span class="go">  --name tracee --rm -it \</span>
 <span class="go">  --pid=host --cgroupns=host --privileged \</span>
 <span class="go">  -v /etc/os-release:/etc/os-release-host:ro \</span>
-<span class="go">  aquasec/tracee:aarch64</span>
-</code></pre></div></p>
-<p>The Tracee output should be similar to the following screenshot:</p>
-<p><img alt="Tracee Container Image output in Vragrant on arm64" src="../../images/docker-arm64.png" /></p>
+<span class="go">  aquasec/tracee:latest</span>
+</code></pre></div>
 <p>To learn how to install Tracee in a production environment, <a href="./kubernetes-quickstart">check out the Kubernetes guide</a>.</p>
 
 
