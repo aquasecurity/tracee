@@ -241,7 +241,8 @@ func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetada
 }
 
 var (
-	containerIdFromCgroupRegex = regexp.MustCompile(`^[A-Fa-f0-9]{64}$`)
+	containerIdFromCgroupRegex       = regexp.MustCompile(`^[A-Fa-f0-9]{64}$`)
+	gardenContainerIdFromCgroupRegex = regexp.MustCompile(`^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){4}$`)
 )
 
 // getContainerIdFromCgroup extracts container id and its runtime from path.
@@ -252,8 +253,8 @@ func getContainerIdFromCgroup(cgroupPath string) (string, cruntime.RuntimeId, bo
 	// search from the end to get the most inner container id
 	for i := len(cgroupParts) - 1; i >= 0; i = i - 1 {
 		pc := cgroupParts[i]
-		// container id is at least 64 characters long
-		if len(pc) < 64 {
+		// container id is at least 28 characters long
+		if len(pc) < 28 {
 			continue
 		}
 
@@ -292,6 +293,10 @@ func getContainerIdFromCgroup(cgroupPath string) (string, cruntime.RuntimeId, bo
 			// return first match: closest to root dir path component
 			// (to have container id of the outer container)
 			// container root determined by being matched on the last path part
+			return id, runtime, i == len(cgroupParts)-1
+		}
+		if matched := gardenContainerIdFromCgroupRegex.MatchString(id); matched {
+			runtime = cruntime.Garden
 			return id, runtime, i == len(cgroupParts)-1
 		}
 	}
