@@ -241,20 +241,21 @@ func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetada
 }
 
 var (
-	containerIdFromCgroupRegex = regexp.MustCompile(`^[A-Fa-f0-9]{64}$`)
+	containerIdFromCgroupRegex       = regexp.MustCompile(`^[A-Fa-f0-9]{64}$`)
+	gardenContainerIdFromCgroupRegex = regexp.MustCompile(`^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){4}$`)
 )
 
-// getContainerIdFromCgroup extracts container id and its runtime from path.
-// It returns (containerId, runtime string).
+// getContainerIdFromCgroup extracts container id and its runtime from path.  It returns
+// the container id, the runtime string and a bool telling if the container is the root of
+// its cgroupfs hierarchy.
 func getContainerIdFromCgroup(cgroupPath string) (string, cruntime.RuntimeId, bool) {
 	cgroupParts := strings.Split(cgroupPath, "/")
 
 	// search from the end to get the most inner container id
 	for i := len(cgroupParts) - 1; i >= 0; i = i - 1 {
 		pc := cgroupParts[i]
-		// container id is at least 64 characters long
-		if len(pc) < 64 {
-			continue
+		if len(pc) < 28 {
+			continue // container id is at least 28 characters long
 		}
 
 		runtime := cruntime.Unknown
@@ -283,18 +284,24 @@ func getContainerIdFromCgroup(cgroupPath string) (string, cruntime.RuntimeId, bo
 				// non-systemd docker with format: .../docker/01adbf...f26db7f/
 				runtime = cruntime.Docker
 			}
-
 			if runtime == cruntime.Unknown && i > 0 && cgroupParts[i-1] == "actions_job" {
 				// non-systemd docker with format in GitHub Actions: .../actions_job/01adbf...f26db7f/
 				runtime = cruntime.Docker
 			}
-
 			// return first match: closest to root dir path component
 			// (to have container id of the outer container)
 			// container root determined by being matched on the last path part
 			return id, runtime, i == len(cgroupParts)-1
 		}
+
+		// Special case: Garden. Garden doesn't have a container enricher implemented,
+		// but, still, tracee needs to identify garden containers ids in the events.
+		if matched := gardenContainerIdFromCgroupRegex.MatchString(id); matched {
+			runtime = cruntime.Garden
+			return id, runtime, i == len(cgroupParts)-1
+		}
 	}
+
 	// cgroup dirs unrelated to containers provides empty (containerId, runtime)
 	return "", cruntime.Unknown, false
 }

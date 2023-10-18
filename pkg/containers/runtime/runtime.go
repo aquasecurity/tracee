@@ -43,6 +43,7 @@ const (
 	Containerd
 	Crio
 	Podman
+	Garden
 )
 
 var runtimeStringMap = map[RuntimeId]string{
@@ -51,6 +52,7 @@ var runtimeStringMap = map[RuntimeId]string{
 	Containerd: "containerd",
 	Crio:       "crio",
 	Podman:     "podman",
+	Garden:     "garden", // there is no enricher (yet ?) for garden
 }
 
 func (runtime RuntimeId) String() string {
@@ -69,6 +71,9 @@ func FromString(str string) RuntimeId {
 		return Podman
 	case "containerd":
 		return Containerd
+	case "garden":
+		return Garden
+
 	default:
 		return Unknown
 	}
