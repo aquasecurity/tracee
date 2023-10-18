@@ -20,24 +20,17 @@ release):
      latest daily built container images (based on the version currently being
      developed).
 
-     - **aquasec/tracee:dev** (arch: amd64)
-
-     Multiple architecture tags:
-
-     - **aquasec/tracee:x86_64-dev**
-     - **aquasec/tracee:aarch64-dev**
+     - **aquasec/tracee:dev**
 
 2. **RELEASE (official versions) container images:**
 
-     Preferable aliases for latest released images (per arch)):
+     Preferable alias for latest released image:
 
-     - **aquasec/tracee:x86_64**
-     - **aquasec/tracee:aarch64**
+     - **aquasec/tracee:latest**
 
-     And the container images for each released version of Tracee (per arch):
+     And the container images for each released version of Tracee:
 
-     - **aquasec/tracee:x86_64-VERSION**
-     - **aquasec/tracee:aarch64-VERSION**
+     - **aquasec/tracee:VERSION**
 
 ## Generating Tracee Container Images
 
