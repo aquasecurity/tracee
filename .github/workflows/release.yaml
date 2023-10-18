@@ -97,7 +97,7 @@ jobs:
           cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${ARCH}-${TAG})
         shell: bash
   release:
-    name: Release Snapshot
+    name: Release
     needs: [release-x86_64, release-aarch64]
     runs-on: ubuntu-latest
     permissions:
