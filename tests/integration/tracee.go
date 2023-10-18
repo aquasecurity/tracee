@@ -27,7 +27,15 @@ type eventBuffer struct {
 	events []trace.Event
 }
 
-// clear clears the buffer
+// addEvent adds an event to the eventBuffer
+func (b *eventBuffer) addEvent(evt trace.Event) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.events = append(b.events, evt)
+}
+
+// clear clears the eventBuffer
 func (b *eventBuffer) clear() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -35,7 +43,7 @@ func (b *eventBuffer) clear() {
 	b.events = b.events[:0]
 }
 
-// len returns the number of events in the buffer
+// len returns the number of events in the eventBuffer
 func (b *eventBuffer) len() int {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
@@ -118,56 +126,6 @@ func prepareCapture() *config.CaptureConfig {
 			PathFilter: []string{},
 		},
 		OutputPath: filepath.Join("/tmp/tracee", "out"),
-	}
-}
-
-// eventOutput is a thread safe holder for trace events
-type eventOutput struct {
-	mu     sync.Mutex
-	events []trace.Event
-}
-
-// addEvent adds an event to the eventOutput
-func (e *eventOutput) addEvent(evt trace.Event) {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	e.events = append(e.events, evt)
-}
-
-// getEventsCopy returns a copy of the current events
-func (e *eventOutput) getEventsCopy() []trace.Event {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	events := make([]trace.Event, len(e.events))
-	copy(events, e.events)
-
-	return events
-}
-
-// len returns the number of the current events
-func (e *eventOutput) len() int {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	return len(e.events)
-}
-
-// wait for tracee buffer to fill or timeout to occur, whichever comes first
-func waitForTraceeOutput(t *testing.T, gotOutput *eventOutput, now time.Time, failOnTimeout bool) {
-	const checkTimeout = 5 * time.Second
-	for {
-		if gotOutput.len() > 0 {
-			break
-		}
-		if time.Since(now) > checkTimeout {
-			if failOnTimeout {
-				t.Logf("timed out on output\n")
-				t.FailNow()
-			}
-			break
-		}
 	}
 }
 
