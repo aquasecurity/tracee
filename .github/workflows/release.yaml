@@ -9,14 +9,11 @@ on:
         description: The tag to be released, e.g. v0.0.1
         required: true
 jobs:
-  release:
-    name: Release X64 (Default)
+  release-x86_64:
+    name: Release (x86_64)
     env:
       GH_TOKEN: ${{ github.token }}
-    runs-on:
-      [
-        "github-self-hosted_ami-0f4881c8d69684001_${{ github.event.number }}-${{ github.run_id }}",
-      ]
+    runs-on: [ "github-self-hosted_ami-0f4881c8d69684001_${{ github.event.number }}-${{ github.run_id }}" ]
     permissions:
       contents: write
       packages: write
@@ -32,9 +29,6 @@ jobs:
         uses: sigstore/cosign-installer@main
         with:
           cosign-release: 'v2.0.2'
-      - name: AWS Environment
-        run: |
-          dmidecode
       - name: Login to docker.io registry
         uses: docker/login-action@v2
         with:
@@ -43,40 +37,28 @@ jobs:
       - name: Build
         run: |
           make -f builder/Makefile.release
-        # tracee:latest for historical reasons
-        # use :x86_64 as tag for the latest image
-        # use :x86_64-v0.xx.0 for versioned image
+        shell: bash
       - name: Publish to docker.io registry
         run: |
           TAG=$(echo ${{ github.event.inputs.ref }} | sed -e "s/v//gI")
           ARCH=$(uname -m)
-          docker image tag tracee:latest aquasec/tracee:latest
-          docker image tag tracee:latest aquasec/tracee:${ARCH}
-          docker image tag tracee:latest aquasec/tracee:${TAG}
           docker image tag tracee:latest aquasec/tracee:${ARCH}-${TAG}
-          docker image push aquasec/tracee:latest
-          docker image push aquasec/tracee:${ARCH}
-          docker image push aquasec/tracee:${TAG}
           docker image push aquasec/tracee:${ARCH}-${TAG}
+        shell: bash
       - name: Sign Docker image
         run: |
           TAG=$(echo ${{ github.event.inputs.ref }} | sed -e "s/v//gI")
           ARCH=$(uname -m)
-          cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:latest)
-          cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${ARCH})
-          cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${TAG})
           cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${ARCH}-${TAG})
-  release-arm64:
-    name: Release ARM64
+        shell: bash
+  release-aarch64:
+    name: Release (aarch64)
     env:
       GH_TOKEN: ${{ github.token }}
-    # only runs after x64 released (x64 is still the "default" arch)
+    # only runs after x64 released
     needs:
-      - release
-    runs-on:
-      [
-        "github-self-hosted_ami-03217ce7c37572c4d_${{ github.event.number }}-${{ github.run_id }}",
-      ]
+      - release-x86_64
+    runs-on: [ "github-self-hosted_ami-03217ce7c37572c4d_${{ github.event.number }}-${{ github.run_id }}" ]
     permissions:
       contents: write
       packages: write
@@ -92,9 +74,6 @@ jobs:
         uses: sigstore/cosign-installer@main
         with:
           cosign-release: 'v2.0.2'
-      - name: AWS Environment
-        run: |
-          dmidecode
       - name: Login to docker.io registry
         uses: docker/login-action@v2
         with:
@@ -103,20 +82,54 @@ jobs:
       - name: Build
         run: |
           make -f builder/Makefile.release
-        # NO tracee:latest (historical reason: amd64 only)
-        # use :aarch64 as tag for the latest image
-        # use :aarch64-v0.xx.0 for versioned image
+        shell: bash
       - name: Publish to docker.io registry
         run: |
           TAG=$(echo ${{ github.event.inputs.ref }} | sed -e "s/v//gI")
           ARCH=$(uname -m)
-          docker image tag tracee:latest aquasec/tracee:${ARCH}
           docker image tag tracee:latest aquasec/tracee:${ARCH}-${TAG}
-          docker image push aquasec/tracee:${ARCH}
           docker image push aquasec/tracee:${ARCH}-${TAG}
+        shell: bash
       - name: Sign Docker image
         run: |
           TAG=$(echo ${{ github.event.inputs.ref }} | sed -e "s/v//gI")
           ARCH=$(uname -m)
-          cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${ARCH})
           cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${ARCH}-${TAG})
+        shell: bash
+  release:
+    name: Release Snapshot
+    needs: [release-x86_64, release-aarch64]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.ref }}
+          submodules: true
+          fetch-depth: 0
+      - name: Login to docker.io registry
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build
+        run: |
+          make -f builder/Makefile.release
+        shell: bash
+      - name: Publish to docker.io registry
+        run: |
+          TAG=$(echo ${{ github.event.inputs.ref }} | sed -e "s/v//gI")
+          export DOCKER_CLI_EXPERIMENTAL=enabled
+          docker manifest create aquasec/tracee:latest \
+            aquasec/tracee:x86_64-${TAG} \
+            aquasec/tracee:aarch64-${TAG}
+          docker manifest create aquasec/tracee:${TAG} \
+            aquasec/tracee:x86_64-${TAG} \
+            aquasec/tracee:aarch64-${TAG}
+          docker manifest push aquasec/tracee:latest
+          docker manifest push aquasec/tracee:${TAG}
+        shell: bash
