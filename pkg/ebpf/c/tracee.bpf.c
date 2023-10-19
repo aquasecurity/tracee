@@ -4300,8 +4300,13 @@ int BPF_KPROBE(trace_security_file_permission)
     if (fops == NULL)
         return 0;
 
+    unsigned long iterate_addr = 0;
     unsigned long iterate_shared_addr = (unsigned long) BPF_CORE_READ(fops, iterate_shared);
-    unsigned long iterate_addr = (unsigned long) BPF_CORE_READ(fops, iterate);
+
+    // iterate() removed by commit 3e3271549670 at v6.5-rc4
+    if (bpf_core_field_exists(fops->iterate))
+        iterate_addr = (unsigned long) BPF_CORE_READ(fops, iterate);
+
     if (iterate_addr == 0 && iterate_shared_addr == 0)
         return 0;
 
