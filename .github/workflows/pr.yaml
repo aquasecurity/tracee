@@ -293,6 +293,13 @@ jobs:
           - job_name: "Lunar 6.2"
             architecture: "aarch64"
             runner: "github-self-hosted_ami-0c0d64eea6367efd8_${{ github.event.number }}-${{ github.run_id }}_arm64c"
+          # MANTIC 6.5
+          - job_name: "Mantic 6.5"
+            architecture: "x86_64"
+            runner: "github-self-hosted_ami-0564e75d9605addaf_${{ github.event.number }}-${{ github.run_id }}_x64c"
+          - job_name: "Mantic 6.5"
+            architecture: "aarch64"
+            runner: "github-self-hosted_ami-028acebc5083c4840_${{ github.event.number }}-${{ github.run_id }}_arm64c"
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
