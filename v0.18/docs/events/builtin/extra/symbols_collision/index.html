@@ -13,17 +13,17 @@
         <link rel="canonical" href="https://aquasecurity.github.io/tracee/v0.18/docs/events/builtin/extra/symbols_collision/">
       
       
-        <link rel="prev" href="../symbols_loaded/">
+        <link rel="prev" href="../security_socket_setsockopt/">
       
       
-        <link rel="next" href="../hidden_kernel_module/">
+        <link rel="next" href="../symbols_loaded/">
       
       
         
       
       
       <link rel="icon" href="../../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.4+insiders-4.42.1">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.6+insiders-4.42.2">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../../assets/stylesheets/main.cbde490e.min.css">
+      <link rel="stylesheet" href="../../../../../assets/stylesheets/main.62ccb7e6.min.css">
       
       
 
@@ -12903,9 +12903,21 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../network/" class="md-nav__link">
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_2_2" id="__nav_3_2_2_2_label" tabindex="0">
+            
   
   <span class="md-ellipsis">
     
@@ -12918,7 +12930,361 @@
   
   
 
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Network Events
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../network/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../network/net_packet_ipv4/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_ipv4
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../network/net_packet_ipv6/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_ipv6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../network/net_packet_tcp/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_tcp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../network/net_packet_udp/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_udp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../network/net_packet_icmp/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_icmp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../network/net_packet_icmpv6/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_icmpv6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../network/net_packet_dns/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_dns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../network/net_packet_dns_request/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_dns_request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../network/net_packet_dns_response/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_dns_response
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../network/net_packet_http/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_http
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../network/net_packet_http_request/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_http_request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../network/net_packet_http_response/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_http_response
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -13004,6 +13370,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../bpf_attach/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    bpf_attach
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../do_sigaction/" class="md-nav__link">
         
   
@@ -13011,84 +13403,6 @@
     
   
     do_sigaction
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../kallsyms_lookup_name/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    kallsysm_lookup_name
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../vfs_read/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    vfs_read
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../vfs_readv/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    vfs_readv
   
 
     
@@ -13134,13 +13448,13 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_file_mprotect/" class="md-nav__link">
+      <a href="../ftrace_hook/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     
   
-    security_file_mprotect
+    ftrace_hook
   
 
     
@@ -13160,13 +13474,13 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_socket_setsockopt/" class="md-nav__link">
+      <a href="../hidden_kernel_module/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     
   
-    security_socket_setsockopt
+    hidden_kernel_module
   
 
     
@@ -13186,13 +13500,39 @@
   
   
     <li class="md-nav__item">
-      <a href="../bpf_attach/" class="md-nav__link">
+      <a href="../hooked_syscalls/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     
   
-    bpf_attach
+    hooked_syscalls
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kallsyms_lookup_name/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    kallsysm_lookup_name
   
 
     
@@ -13264,13 +13604,117 @@
   
   
     <li class="md-nav__item">
-      <a href="../symbols_loaded/" class="md-nav__link">
+      <a href="../process_execute_failed/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     
   
-    symbols_loaded
+    process_execute_failed
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security_bpf_prog/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_bpf_prog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security_bprm_check/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_bprm_check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security_file_mprotect/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_file_mprotect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security_socket_setsockopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_setsockopt
   
 
     
@@ -13540,13 +13984,13 @@
   
   
     <li class="md-nav__item">
-      <a href="../hidden_kernel_module/" class="md-nav__link">
+      <a href="../symbols_loaded/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     
   
-    hidden_kernel_module
+    symbols_loaded
   
 
     
@@ -13566,13 +14010,13 @@
   
   
     <li class="md-nav__item">
-      <a href="../process_execute_failed/" class="md-nav__link">
+      <a href="../vfs_read/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     
   
-    process_execute_failed
+    vfs_read
   
 
     
@@ -13592,39 +14036,13 @@
   
   
     <li class="md-nav__item">
-      <a href="../security_bpf_prog/" class="md-nav__link">
+      <a href="../vfs_readv/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     
   
-    security_bpf_prog
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../security_bprm_check/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    security_bprm_check
+    vfs_readv
   
 
     
@@ -14575,6 +14993,58 @@
 
               
             
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../data-sources/containers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Containers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../data-sources/process-tree/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Process Tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -15418,7 +15888,7 @@ The list might be very large, which will result large memory event resulting per
     <script id="__config" type="application/json">{"base": "../../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../../../assets/javascripts/workers/search.1e90e0fb.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../../../assets/javascripts/bundle.a961bebd.min.js"></script>
+      <script src="../../../../../assets/javascripts/bundle.59e7e423.min.js"></script>
       
     
   </body>
