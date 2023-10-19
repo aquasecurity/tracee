@@ -116,10 +116,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build
-        run: |
-          make -f builder/Makefile.release
-        shell: bash
       - name: Publish to docker.io registry
         run: |
           TAG=$(echo ${{ github.event.inputs.ref }} | sed -e "s/v//gI")
