@@ -165,7 +165,7 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool) (*ProbeGroup, err
 		LoadElfPhdrs:               NewTraceProbe(KProbe, "load_elf_phdrs", "trace_load_elf_phdrs"),
 		Filldir64:                  NewTraceProbe(KProbe, "filldir64", "trace_filldir64"),
 		TaskRename:                 NewTraceProbe(RawTracepoint, "task:task_rename", "tracepoint__task__task_rename"),
-		SyscallTableCheck:          NewUprobe("syscall_table_check", "uprobe_syscall_table_check", binaryPath, "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerSyscallTableIntegrityCheckCall"),
+		PrintSyscallTable:          NewUprobe("print_syscall_table", "uprobe_syscall_trigger", binaryPath, "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerSyscallsIntegrityCheckCall"),
 		HiddenKernelModuleSeeker:   NewUprobe("hidden_kernel_module", "uprobe_lkm_seeker", binaryPath, "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerKernelModuleSeeker"),
 		HiddenKernelModuleVerifier: NewUprobe("hidden_kernel_module", "uprobe_lkm_seeker_submitter", binaryPath, "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerKernelModuleSubmitter"),
 		PrintNetSeqOps:             NewUprobe("print_net_seq_ops", "uprobe_seq_ops_trigger", binaryPath, "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerSeqOpsIntegrityCheckCall"),

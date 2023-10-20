@@ -23,38 +23,40 @@ func TestSyscallTableHooking(t *testing.T) {
 			Name: "should trigger detection",
 			Events: []trace.Event{
 				{
-					EventName: "hooked_syscall",
+					EventName: "hooked_syscalls",
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
-								Name: "hooked_syscall",
+								Name: "hooked_syscalls",
 							},
-							Value: map[string]interface{}{
-								"syscall_name":         "kill",
-								"hooked.address":       "0xdeadbeef",
-								"hooked.function_name": "hooked_kill",
-								"hooked.owner":         "rootkit",
-							},
+							Value: interface{}([]trace.HookedSymbolData{
+								{SymbolName: "kill", ModuleOwner: "hidden"},
+								{SymbolName: "getdents", ModuleOwner: "hidden"},
+								{SymbolName: "getdents64", ModuleOwner: "hidden"},
+							}),
 						},
 					},
 				},
 			},
 			Findings: map[string]detect.Finding{
 				"TRC-1030": {
-					Data: nil,
+					Data: map[string]interface{}{"Hooked syscalls": []trace.HookedSymbolData{
+						{SymbolName: "kill", ModuleOwner: "hidden"},
+						{SymbolName: "getdents", ModuleOwner: "hidden"},
+						{SymbolName: "getdents64", ModuleOwner: "hidden"},
+					}},
 					Event: trace.Event{
-						EventName: "hooked_syscall",
+						EventName: "hooked_syscalls",
 						Args: []trace.Argument{
 							{
 								ArgMeta: trace.ArgMeta{
-									Name: "hooked_syscall",
+									Name: "hooked_syscalls",
 								},
-								Value: map[string]interface{}{
-									"syscall_name":         "kill",
-									"hooked.address":       "0xdeadbeef",
-									"hooked.function_name": "hooked_kill",
-									"hooked.owner":         "rootkit",
-								},
+								Value: interface{}([]trace.HookedSymbolData{
+									{SymbolName: "kill", ModuleOwner: "hidden"},
+									{SymbolName: "getdents", ModuleOwner: "hidden"},
+									{SymbolName: "getdents64", ModuleOwner: "hidden"},
+								}),
 							},
 						},
 					}.ToProtocol(),
@@ -75,6 +77,23 @@ func TestSyscallTableHooking(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			Name: "should not trigger detection - empty slice of symbols",
+			Events: []trace.Event{
+				{
+					EventName: "hooked_syscalls",
+					Args: []trace.Argument{
+						{
+							ArgMeta: trace.ArgMeta{
+								Name: "hooked_syscalls",
+							},
+							Value: interface{}([]trace.HookedSymbolData{}),
+						},
+					},
+				},
+			},
+			Findings: map[string]detect.Finding{},
 		},
 	}
 

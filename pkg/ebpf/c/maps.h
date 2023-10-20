@@ -97,7 +97,6 @@ BPF_ARRAY(file_write_path_filter, path_filter_t, 3);               // filter fil
 BPF_ARRAY(file_read_path_filter, path_filter_t, 3);                // filter file read captures
 BPF_ARRAY(file_type_filter, file_type_filter_t, 2);                // filter file types
 BPF_ARRAY(netconfig_map, netconfig_entry_t, 1);                    // network related configurations
-BPF_ARRAY(expected_sys_call_table, syscall_table_entry_t, MAX_SYS_CALL_TABLE_SIZE);    // expected addresses of sys call table
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);                        // percpu global buffer variables
 BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);                         // store programs for tail calls
 BPF_PROG_ARRAY(prog_array_tp, MAX_TAIL_CALL);                      // store programs for tail calls

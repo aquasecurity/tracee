@@ -82,7 +82,7 @@ const (
 	Filldir64
 	SecurityFilePermission
 	TaskRename
-	SyscallTableCheck
+	PrintSyscallTable
 	PrintNetSeqOps
 	SecurityInodeRename
 	DoSigaction

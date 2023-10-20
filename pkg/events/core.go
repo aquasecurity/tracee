@@ -78,7 +78,7 @@ const (
 	CallUsermodeHelper
 	DirtyPipeSplice
 	DebugfsCreateFile
-	SyscallTableCheck
+	PrintSyscallTable
 	DebugfsCreateDir
 	DeviceAdd
 	RegisterChrdev
@@ -126,7 +126,7 @@ const (
 	ContainerCreate
 	ContainerRemove
 	ExistingContainer
-	HookedSyscall
+	HookedSyscalls
 	HookedSeqOps
 	SymbolsLoaded
 	SymbolsCollision
@@ -7455,8 +7455,8 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 	},
-	MountSetattr: {
-		id:      MountSetattr,
+	MountSetatt: {
+		id:      MountSetatt,
 		id32Bit: Sys32mount_setattr,
 		name:    "mount_setattr",
 		version: NewVersion(1, 0, 0),
@@ -7471,10 +7471,10 @@ var CoreEvents = map[ID]Definition{
 		},
 		dependencies: Dependencies{
 			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MountSetattr)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MountSetattr)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MountSetattr)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MountSetattr)}},
+				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MountSetatt)}},
+				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MountSetatt)}},
+				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MountSetatt)}},
+				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MountSetatt)}},
 			},
 		},
 	},
@@ -7543,8 +7543,8 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 	},
-	LandlockRestrictSelf: {
-		id:      LandlockRestrictSelf,
+	LandloclRestrictSet: {
+		id:      LandloclRestrictSet,
 		id32Bit: Sys32landlock_restrict_self,
 		name:    "landlock_restrict_self",
 		version: NewVersion(1, 0, 0),
@@ -7556,10 +7556,10 @@ var CoreEvents = map[ID]Definition{
 		},
 		dependencies: Dependencies{
 			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LandlockRestrictSelf)}},
-				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LandlockRestrictSelf)}},
-				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LandlockRestrictSelf)}},
-				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(LandlockRestrictSelf)}},
+				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LandloclRestrictSet)}},
+				{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LandloclRestrictSet)}},
+				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LandloclRestrictSet)}},
+				{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(LandloclRestrictSet)}},
 			},
 		},
 	},
@@ -10296,15 +10296,15 @@ var CoreEvents = map[ID]Definition{
 			{Type: "void*", Name: "proc_ops_addr"},
 		},
 	},
-	SyscallTableCheck: {
-		id:       SyscallTableCheck,
+	PrintSyscallTable: {
+		id:       PrintSyscallTable,
 		id32Bit:  Sys32Undefined,
-		name:     "syscall_table_check",
+		name:     "print_syscall_table",
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		dependencies: Dependencies{
 			probes: []Probe{
-				{handle: probes.SyscallTableCheck, required: true},
+				{handle: probes.PrintSyscallTable, required: true},
 			},
 			kSymbols: []KSymbol{
 				{symbol: "sys_call_table", required: true},
@@ -10312,8 +10312,8 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{},
 		params: []trace.ArgMeta{
-			{Type: "int", Name: "syscall_id"},
-			{Type: "unsigned long", Name: "syscall_address"},
+			{Type: "unsigned long[]", Name: "syscalls_addresses"},
+			{Type: "unsigned long", Name: trigger.ContextArgName},
 		},
 	},
 	HiddenKernelModule: {
@@ -10369,22 +10369,30 @@ var CoreEvents = map[ID]Definition{
 			{Type: "bytes", Name: "srcversion"},
 		},
 	},
-	HookedSyscall: {
-		id:      HookedSyscall,
+	HookedSyscalls: {
+		id:      HookedSyscalls,
 		id32Bit: Sys32Undefined,
-		name:    "hooked_syscall",
+		name:    "hooked_syscalls",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
+			kSymbols: []KSymbol{
+				{symbol: "_stext", required: true},
+				{symbol: "_etext", required: true},
+			},
 			ids: []ID{
-				SyscallTableCheck,
+				DoInitModule,
+				PrintSyscallTable,
+			},
+			capabilities: Capabilities{
+				base: []cap.Value{
+					cap.SYSLOG, // read /proc/kallsyms
+				},
 			},
 		},
 		sets: []string{},
 		params: []trace.ArgMeta{
-			{Type: "const char*", Name: "syscall"},
-			{Type: "const char*", Name: "address"},
-			{Type: "const char*", Name: "function"},
-			{Type: "const char*", Name: "owner"},
+			{Type: "[]char*", Name: "check_syscalls"},
+			{Type: "[]trace.HookedSymbolData", Name: "hooked_syscalls"},
 		},
 	},
 	DebugfsCreateDir: {
