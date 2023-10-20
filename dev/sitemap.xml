@@ -141,7 +141,7 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/extra/hooked_syscall/</loc>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/events/builtin/extra/hooked_syscalls/</loc>
          <lastmod>2023-10-20</lastmod>
          <changefreq>daily</changefreq>
     </url>
