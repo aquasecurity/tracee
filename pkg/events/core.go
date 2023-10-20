@@ -10381,10 +10381,10 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{},
 		params: []trace.ArgMeta{
-			{Type: "const char*", Name: "syscall_name"},
-			{Type: "const char*", Name: "hooked.address"},
-			{Type: "const char*", Name: "hooked.function_name"},
-			{Type: "const char*", Name: "hooked.owner"},
+			{Type: "const char*", Name: "syscall"},
+			{Type: "const char*", Name: "address"},
+			{Type: "const char*", Name: "function"},
+			{Type: "const char*", Name: "owner"},
 		},
 	},
 	DebugfsCreateDir: {
