@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -37,7 +38,7 @@ func (sig *SyscallTableHooking) GetMetadata() (detect.SignatureMetadata, error) 
 
 func (sig *SyscallTableHooking) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
 	return []detect.SignatureEventSelector{
-		{Source: "tracee", Name: "hooked_syscall", Origin: "*"},
+		{Source: "tracee", Name: "hooked_syscalls", Origin: "*"},
 	}, nil
 }
 
@@ -48,15 +49,23 @@ func (sig *SyscallTableHooking) OnEvent(event protocol.Event) error {
 	}
 
 	switch eventObj.EventName {
-	case "hooked_syscall":
-		metadata, err := sig.GetMetadata()
+	case "hooked_syscalls":
+		hookedSymbolSlice, err := helpers.GetTraceeHookedSymbolDataArgumentByName(eventObj, "hooked_syscalls")
 		if err != nil {
 			return err
 		}
-		sig.cb(detect.Finding{
-			SigMetadata: metadata,
-			Event:       event,
-		})
+
+		if len(hookedSymbolSlice) > 0 {
+			metadata, err := sig.GetMetadata()
+			if err != nil {
+				return err
+			}
+			sig.cb(detect.Finding{
+				SigMetadata: metadata,
+				Event:       event,
+				Data:        map[string]interface{}{"Hooked syscalls": hookedSymbolSlice},
+			})
+		}
 	}
 
 	return nil

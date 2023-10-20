@@ -17,7 +17,6 @@
 #define ARGS_BUF_SIZE       32000
 #define SEND_META_SIZE      28
 
-#define MAX_SYS_CALL_TABLE_SIZE 500
 #define MAX_MEM_DUMP_SIZE   127
 
 

@@ -96,7 +96,7 @@ enum event_id_e
     CALL_USERMODE_HELPER,
     DIRTY_PIPE_SPLICE,
     DEBUGFS_CREATE_FILE,
-    SYSCALL_TABLE_CHECK,
+    PRINT_SYSCALL_TABLE,
     DEBUGFS_CREATE_DIR,
     DEVICE_ADD,
     REGISTER_CHRDEV,
@@ -350,10 +350,6 @@ typedef struct netconfig_entry {
     u32 capture_options; // bitmask of capture options (pcap)
     u32 capture_length;  // amount of network packet payload to capture (pcap)
 } netconfig_entry_t;
-
-typedef struct syscall_table_entry {
-    u64 address;
-} syscall_table_entry_t;
 
 typedef struct args_buffer {
     u8 argnum;

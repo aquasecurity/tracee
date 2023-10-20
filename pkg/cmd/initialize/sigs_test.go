@@ -27,7 +27,7 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 				newFakeSignature(
 					"fake_event_0",
 					[]string{
-						"hooked_syscall",
+						"hooked_syscalls",
 					},
 				),
 			},
@@ -43,7 +43,7 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					false,                             // syscall
 					[]string{"signatures", "default"}, // sets
 					events.NewDependencies(
-						[]events.ID{events.HookedSyscall},
+						[]events.ID{events.HookedSyscalls},
 						[]events.KSymbol{},
 						[]events.Probe{},
 						[]events.TailCall{},
