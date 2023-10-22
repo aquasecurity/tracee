@@ -20,6 +20,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cgroup"
 	cruntime "github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/k8s"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
@@ -210,7 +211,8 @@ func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetada
 		return metadata, errfmt.Errorf("no containerId")
 	}
 
-	if info.Dead {
+	isMikubeOrKind := k8s.IsMinkube() || k8s.IsKind()
+	if info.Dead && !isMikubeOrKind {
 		return metadata, errfmt.Errorf("container already deleted")
 	}
 

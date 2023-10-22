@@ -108,6 +108,10 @@ spec:
         env:
           - name: LIBBPFGO_OSRELEASE_FILE
             value: /etc/os-release-host
+          - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
         readinessProbe:
           httpGet:
             path: /healthz
