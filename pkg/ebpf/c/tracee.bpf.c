@@ -3002,7 +3002,7 @@ statfunc int capture_file_write(struct pt_regs *ctx, u32 event_id, bool is_buf)
     // otherwise the capture will overwrite itself.
     int pid = 0;
     void *path_buf = get_path_str_cached(file);
-    if (path_buf != NULL && !has_prefix("/dev/null", (char *) &path_buf, 10)) {
+    if (path_buf != NULL && has_prefix("/dev/null", (char *) path_buf, 10)) {
         pid = p.event->context.task.pid;
     }
 
