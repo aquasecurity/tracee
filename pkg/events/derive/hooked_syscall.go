@@ -3,68 +3,73 @@ package derive
 import (
 	"fmt"
 
+	lru "github.com/hashicorp/golang-lru/v2"
+
 	"github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
-	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-var SyscallsToCheck = make([]string, 0)
-var MaxSupportedSyscallID = events.IoPgetevents // Was the last syscall introduced in the minimum version supported 4.18
+const (
+	maxSysCallTableSize = 500
+)
+
+var (
+	reportedHookedSyscalls *lru.Cache[int32, uint64]
+)
+
+// InitHookedSyscall initialize lru
+func InitHookedSyscall() error {
+	var err error
+	reportedHookedSyscalls, err = lru.New[int32, uint64](maxSysCallTableSize)
+	return err
+}
 
 func DetectHookedSyscall(kernelSymbols helpers.KernelSymbolTable) DeriveFunction {
-	return deriveSingleEvent(events.HookedSyscalls, deriveDetectHookedSyscallArgs(kernelSymbols))
+	return deriveSingleEvent(events.HookedSyscall, deriveDetectHookedSyscallArgs(kernelSymbols))
 }
 
 func deriveDetectHookedSyscallArgs(kernelSymbols helpers.KernelSymbolTable) deriveArgsFunction {
 	return func(event trace.Event) ([]interface{}, error) {
-		syscallAddresses, err := parse.ArgVal[[]uint64](event.Args, "syscalls_addresses")
+		syscallId, err := parse.ArgVal[int32](event.Args, "syscall_id")
 		if err != nil {
-			return nil, errfmt.Errorf("error parsing syscalls_numbers arg: %v", err)
+			return nil, errfmt.Errorf("error parsing syscall_id arg: %v", err)
 		}
 
-		hookedSyscall, err := analyzeHookedAddresses(syscallAddresses, kernelSymbols)
+		address, err := parse.ArgVal[uint64](event.Args, "syscall_address")
 		if err != nil {
-			return nil, errfmt.Errorf("error parsing analyzing hooked syscalls addresses arg: %v", err)
+			return nil, errfmt.Errorf("error parsing syscall_address arg: %v", err)
 		}
 
-		return []interface{}{SyscallsToCheck, hookedSyscall}, nil
+		alreadyReportedAddress, found := reportedHookedSyscalls.Get(syscallId)
+		if found && alreadyReportedAddress == address {
+			return nil, nil
+		}
+
+		reportedHookedSyscalls.Add(syscallId, address) // Upsert
+
+		hookedFuncName := ""
+		hookedOwner := ""
+		hookedFuncSymbol, err := kernelSymbols.GetSymbolByAddr(address)
+		if err == nil {
+			hookedFuncName = hookedFuncSymbol.Name
+			hookedOwner = hookedFuncSymbol.Owner
+		}
+
+		syscallName := convertToSyscallName(syscallId)
+		hexAddress := fmt.Sprintf("%x", address)
+
+		return []interface{}{syscallName, hexAddress, hookedFuncName, hookedOwner}, nil
 	}
 }
 
-func analyzeHookedAddresses(addresses []uint64, kernelSymbols helpers.KernelSymbolTable) ([]trace.HookedSymbolData, error) {
-	hookedSyscalls := make([]trace.HookedSymbolData, 0)
-
-	for _, syscall := range SyscallsToCheck {
-		eventNamesToIDs := events.Core.NamesToIDs()
-		syscallID, ok := eventNamesToIDs[syscall]
-		if !ok {
-			return hookedSyscalls, errfmt.Errorf("%s - no such syscall", syscall)
-		}
-
-		syscallAddress := addresses[syscallID]
-		if syscallAddress == 0 { // syscall pointer is null or in kernel bounds
-			continue
-		}
-		if inText, err := kernelSymbols.TextSegmentContains(syscallAddress); err != nil || inText {
-			continue
-		}
-
-		hookingFunction := utils.ParseSymbol(syscallAddress, kernelSymbols)
-
-		var hookedSyscallName string
-
-		if events.Core.IsDefined(syscallID) {
-			hookedSyscallName = events.Core.GetDefinitionByID(syscallID).GetName()
-		} else {
-			hookedSyscallName = fmt.Sprint(syscallID)
-		}
-
-		hookedSyscalls = append(hookedSyscalls, trace.HookedSymbolData{SymbolName: hookedSyscallName, ModuleOwner: hookingFunction.Owner})
+func convertToSyscallName(syscallId int32) string {
+	definition, ok := events.CoreEvents[events.ID(syscallId)]
+	if !ok {
+		return ""
 	}
-
-	return hookedSyscalls, nil
+	return definition.GetName()
 }

@@ -108,7 +108,6 @@ func (t *Tracee) registerEventProcessors() {
 	t.RegisterEventProcessor(events.DoInitModule, t.processDoInitModule)
 	t.RegisterEventProcessor(events.HookedProcFops, t.processHookedProcFops)
 	t.RegisterEventProcessor(events.PrintNetSeqOps, t.processTriggeredEvent)
-	t.RegisterEventProcessor(events.PrintSyscallTable, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processPrintMemDump)
 
