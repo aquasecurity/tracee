@@ -4,11 +4,16 @@
 # This test is executed by github workflows inside the action runners
 #
 
+ARCH=$(uname -m)
+
 TRACEE_STARTUP_TIMEOUT=30
 TRACEE_SHUTDOWN_TIMEOUT=30
 TRACEE_RUN_TIMEOUT=60
 SCRIPT_TMP_DIR=/tmp
 TRACEE_TMP_DIR=/tmp/tracee
+
+# Default test to run if no other is given
+TESTS=${INSTTESTS:=VFS_WRITE}
 
 info_exit() {
     echo -n "INFO: "
@@ -31,9 +36,13 @@ if [[ $UID -ne 0 ]]; then
     error_exit "need root privileges"
 fi
 
+. /etc/os-release
+
 if [[ ! -d ./signatures ]]; then
     error_exit "need to be in tracee root directory"
 fi
+
+rm -rf ${TRACEE_TMP_DIR:?}/* || error_exit "could not delete $TRACEE_TMP_DIR"
 
 KERNEL=$(uname -r)
 KERNEL_MAJ=$(echo "$KERNEL" | cut -d'.' -f1)
@@ -44,19 +53,15 @@ fi
 
 SCRIPT_PATH="$(readlink -f "$0")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+TESTS_DIR="$SCRIPT_DIR/e2e-inst-signatures/scripts"
 SIG_DIR="$SCRIPT_DIR/../dist/e2e-inst-signatures"
 
-# run CO-RE VFS_WRITE test only by default
-TESTS=${INSTTESTS:=VFS_WRITE}
-
-# startup needs
-rm -rf ${TRACEE_TMP_DIR:?}/* || error_exit "could not delete $TRACEE_TMP_DIR"
 git config --global --add safe.directory "*"
 
 info
 info "= ENVIRONMENT ================================================="
 info
-info "KERNEL: $(uname -r)"
+info "KERNEL: ${KERNEL}"
 info "CLANG: $(clang --version)"
 info "GO: $(go version)"
 info
@@ -67,19 +72,57 @@ set -e
 make -j"$(nproc)" all
 make e2e-inst-signatures
 set +e
+
+# Check if tracee was built correctly
+
 if [[ ! -x ./dist/tracee ]]; then
     error_exit "could not find tracee executable"
 fi
 
-# if any test has failed
 anyerror=""
 
-# run tests
+# Run tests, one by one
+
 for TEST in $TESTS; do
 
     info
     info "= TEST: $TEST =============================================="
     info
+
+    # Some tests might need special setup (like running before tracee)
+
+    case $TEST in
+    HOOKED_SYSCALL)
+        if [[ ! -d /lib/modules/${KERNEL}/build ]]; then
+            info "skip hooked_syscall test, no kernel headers"
+            continue
+        fi
+        if [[ "$KERNEL" == *"amzn"* ]]; then
+            info "skip hooked_syscall test in amazon linux"
+            continue
+        fi
+        if [[ $ARCH == "aarch64" ]]; then
+            info "skip hooked_syscall test in aarch64"
+            continue
+        fi
+        if [[ "$VERSION_CODENAME" == "mantic" ]]; then
+            # https://github.com/aquasecurity/tracee/issues/3628
+            info "skip hooked_syscall in mantic 6.5 kernel, broken"
+            continue
+        fi
+        if [[ "$VERSION_CODENAME" == "jammy" ]]; then
+            if [[ "$KERNEL" == *"5.19"* ]]; then
+                kill -9 "$(pidof unattended-upgrade)"
+                export DEBIAN_FRONTEND=noninteractive
+                apt-get update
+                apt-get install -y gcc-11 gcc-12
+            fi
+        fi
+        "${TESTS_DIR}"/hooked_syscall.sh
+        ;;
+    esac
+
+    # Run tracee
 
     rm -f $SCRIPT_TMP_DIR/build-$$
     rm -f $SCRIPT_TMP_DIR/tracee-log-$$
@@ -97,7 +140,8 @@ for TEST in $TESTS; do
         --scope comm=echo,mv,ls,tracee,proctreetester \
         --events "$TEST" &
 
-    # wait tracee-ebpf to be started (30 sec most)
+    # Wait tracee to start
+
     times=0
     timedout=0
     while true; do
@@ -116,7 +160,8 @@ for TEST in $TESTS; do
         fi
     done
 
-    # tracee-ebpf could not start for some reason, check stderr
+    # Tracee failed to start
+
     if [[ $timedout -eq 1 ]]; then
         info
         info "$TEST: FAILED. ERRORS:"
@@ -127,19 +172,31 @@ for TEST in $TESTS; do
         continue
     fi
 
-    # give some time for tracee to settle
+    # Allow tracee to start processing events
+
     sleep 3
 
-    # run test scripts
-    timeout --preserve-status $TRACEE_RUN_TIMEOUT \
-        ./tests/e2e-inst-signatures/scripts/"${TEST,,}".sh
+    # Run tests
 
-    # so event can be processed and detected
+    case $TEST in
+    HOOKED_SYSCALL)
+        # wait for tracee hooked event to be processed
+        sleep 15
+        ;;
+    *)
+        timeout --preserve-status $TRACEE_RUN_TIMEOUT "${TESTS_DIR}"/"${TEST,,}".sh
+        ;;
+    esac
+
+    # So events can finish processing
+
     sleep 3
 
-    ## cleanup at EXIT
+    # The cleanup happens at EXIT
 
     logfile=$SCRIPT_TMP_DIR/tracee-log-$$
+
+    # Check if the test has failed or not
 
     found=0
     cat $SCRIPT_TMP_DIR/build-$$ | jq .eventName | grep -q "$TEST" && found=1
@@ -165,23 +222,19 @@ for TEST in $TESTS; do
     rm -f $SCRIPT_TMP_DIR/build-$$
     rm -f $SCRIPT_TMP_DIR/tracee-log-$$
 
-    # make sure we exit to start it again
+    # Make sure we exit tracee to start it again
 
     pid_tracee=$(pidof tracee | cut -d' ' -f1)
-
     kill -2 "$pid_tracee"
-
     sleep $TRACEE_SHUTDOWN_TIMEOUT
-
-    # make sure tracee is exited with SIGKILL
     kill -9 "$pid_tracee" >/dev/null 2>&1
-
-    # give a little break for OS noise to reduce
     sleep 3
 
-    # cleanup leftovers
+    # Cleanup leftovers
     rm -rf $TRACEE_TMP_DIR
 done
+
+# Print summary and exit with error if any test failed
 
 info
 if [[ $anyerror != "" ]]; then
