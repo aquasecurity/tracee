@@ -11,4 +11,6 @@ var ExportedSignatures = []detect.Signature{
 	&e2eBpfAttach{},
 	&e2eProcessTreeDataSource{},
 	&e2eHookedSyscall{},
+	&e2eIoIssueSqe{},
+	&e2eIoWrite{},
 }
