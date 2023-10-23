@@ -2,47 +2,63 @@
 # process_vm_writev
 
 ## Intro
-process_vm_writev - transfer data between address spaces of different processes
+
+process_vm_writev - transfer data between the address spaces of two processes.
 
 ## Description
-process_vm_writev() is a system call that allows for transfer of data between the address spaces of two different processes, the caller, and the target. The two processes are referred to as the "local" and the "remote" process. It does this by writing the contents of one or more iovec data structure entries from the local process to the same entries in a buffer belonging to the remote process. This transfer may either be a completely new set of data, or an update to previously written data. The general approach to using this system call is to use either the `vm_writev()` or the `process_vm_writev()`set the iovec data structures of the local process. Then, the contents of those iovec entries can be transfered to the target process by issuing the `process_vm_writev()` syscall, passing in its parameters the intended target process and the structures containing the data to be written.
 
-Are there any edge-cases, drawbacks or advantages of using it?
-
-A potential disadvantage is that the local process must have a full copy of the data ready to be written, which may involve a significant amount of time and effort for large amounts of data. Additionally, the remote process may not always have the relevant data to be updated or the memory protection for the target buffer may restrict a successful write.
+The `process_vm_writev()` system call facilitates a vectorized write to a
+specified process's address space from another process's address space, enabling
+direct memory-to-memory data transfers. Like its counterpart
+`process_vm_readv()`, this syscall provides a mechanism for direct inter-process
+memory access, which is particularly beneficial for debugging tools or certain
+specialized inter-process communication methods.
 
 ## Arguments
-* `pid`: `pid_t`[K] - pid of the target process
-* `local_iov`: `const struct iovec*`[K] - pointer to the iovec structure for the host process
-* `liovcnt`: `unsigned long`[K] - number of elements from the local iovec structure to be written
-* `remote_iov`: `const struct iovec*`[K] - pointer to the iovec structure for the target process
-* `riovcnt`: `unsigned long`[K] - number of elements from the remote iovec structure to be written
-* `flags`: `unsigned long`[K] - additional flags to be passed to the syscall
+
+* `pid`:`pid_t`[K] - Process ID of the target process to which data is to be written.
+* `local_iov`:`struct iovec *`[U] - Pointer to an array of `iovec` structures indicating the local memory segments.
+* `liovcnt`:`unsigned long`[K] - Number of elements in `local_iov`.
+* `remote_iov`:`struct iovec *`[U] - Pointer to an array of `iovec` structures pointing to the remote memory segments in the target process.
+* `riovcnt`:`unsigned long`[K] - Number of elements in `remote_iov`.
+* `flags`:`unsigned long`[K] - Flag bits to modify operation (typically set to 0).
 
 ### Available Tags
+
 * K - Originated from kernel-space.
-* U - Originated from user space (for example, pointer to user space memory used to get it)
-* TOCTOU - Vulnerable to TOCTOU (time of check, time of use)
-* OPT - Optional argument - might not always be available (passed with null value)
+* U - Originated from user space.
+* TOCTOU - Vulnerable to TOCTOU (time of check, time of use).
+* OPT - Optional argument - might not always be available (passed with null value).
 
 ## Hooks
-### process_vm_writev
+
+### sys_process_vm_writev
+
 #### Type
-Kprobe
+
+Tracepoint (through `sys_enter`).
+
 #### Purpose
-To record information about data written from the local process to the target process.
+
+To monitor and capture instances when the `process_vm_writev()` system call is
+invoked, detailing the source and destination memory regions and the processes
+involved.
 
 ## Example Use Case
-One example use case for this system call is when a search engine needs to quickly update thousands of webpages across many different machines simultaneously. Rather than updating each page one at a time, the process_vm_writev syscall can be used to transfer the same data set to multiple machines, significantly reducing the time needed to update all the pages.
+
+Crafting a tool or utility that necessitates direct writing to the memory of a
+target process, bypassing file-based methods or other indirect techniques. This
+is seen in some advanced debugging or monitoring tools.
 
 ## Issues
-No major issues have been found with this system call.
+
+The use of `process_vm_writev()` can introduce security risks, especially when
+not appropriately guarded. Unauthorized memory writes can compromise process
+integrity, and as such, proper permissions and checks must always be enforced to
+prevent malicious actions.
 
 ## Related Events
-* `readv`: The readv system call is similar to process_vm_writev in that it allows for data transfer between two process, however readv only allows for reading data from the remote process.
-* `mmap`: During a successful `process_vm_writev` call, the contents of the data structures from the remote process can be mapped into the address space of the local process. This allows for more efficient data transfer between the two processes.
 
-> This document was automatically generated by OpenAI and needs review. It might
-> not be accurate and might contain errors. The authors of Tracee recommend that
-> the user reads the "events.go" source file to understand the events and their
-> arguments better.
+* `process_vm_readv()` - Transfer data from the address space of another process.
+
+> This document was automatically generated by OpenAI and reviewed by a Human.

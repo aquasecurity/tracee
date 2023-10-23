@@ -499,6 +499,10 @@ nav:
               - Behavioral Signatures: docs/events/builtin/signatures.md
               - Extra Events:
                 - bpf_attach: docs/events/builtin/extra/bpf_attach.md
+                - cgroup_mkdir: docs/events/builtin/extra/cgroup_mkdir.md
+                - cgroup_rmdir: docs/events/builtin/extra/cgroup_rmdir.md
+                - container_create: docs/events/builtin/extra/container_create.md
+                - container_remove: docs/events/builtin/extra/container_remove.md
                 - do_sigaction: docs/events/builtin/extra/do_sigaction.md
                 - file_modification: docs/events/builtin/extra/file_modification.md
                 - ftrace_hook: docs/events/builtin/extra/ftrace_hook.md
@@ -508,9 +512,15 @@ nav:
                 - magic_write: docs/events/builtin/extra/magic_write.md
                 - mem_prot_alert: docs/events/builtin/extra/mem_prot_alert.md
                 - process_execute_failed: docs/events/builtin/extra/process_execute_failed.md
+                - sched_process_exec: docs/events/builtin/extra/sched_process_exec.md
                 - security_bpf_prog: docs/events/builtin/extra/security_bpf_prog.md
                 - security_bprm_check: docs/events/builtin/extra/security_bprm_check.md
                 - security_file_mprotect: docs/events/builtin/extra/security_file_mprotect.md
+                - security_inode_unlink: docs/events/builtin/extra/security_inode_unlink.md
+                - security_sb_mount: docs/events/builtin/extra/security_sb_mount.md
+                - security_socket_accept: docs/events/builtin/extra/security_socket_accept.md
+                - security_socket_bind: docs/events/builtin/extra/security_socket_bind.md
+                - security_socket_connect: docs/events/builtin/extra/security_socket_connect.md                
                 - security_socket_setsockopt: docs/events/builtin/extra/security_socket_setsockopt.md
                 - symbols_collision: docs/events/builtin/extra/symbols_collision.md
                 - symbols_loaded: docs/events/builtin/extra/symbols_loaded.md
