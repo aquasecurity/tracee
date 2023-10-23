@@ -70,6 +70,7 @@ enum tail_call_id_e
     TAIL_HIDDEN_KERNEL_MODULE_KSET,
     TAIL_HIDDEN_KERNEL_MODULE_MOD_TREE,
     TAIL_HIDDEN_KERNEL_MODULE_NEW_MOD_ONLY,
+    TAIL_IO_WRITE,
     MAX_TAIL_CALL
 };
 
@@ -119,6 +120,8 @@ BPF_PERCPU_ARRAY(scratch_map, scratch_t, 1);                       // scratch sp
 BPF_LRU_HASH(file_modification_map, file_mod_key_t, int, 10240);   // hold file data to decide if should submit file modification event
 BPF_LRU_HASH(io_file_path_cache_map, file_id_t, path_buf_t, 5);    // store cache for IO operations path
 BPF_LRU_HASH(elf_files_map, file_id_t, bool, 64);                  // store cache for file ELF type check
+BPF_LRU_HASH(uring_poll_ctx_map, u32, event_context_t, 1024);      // store real context of io_uring polling operations
+BPF_LRU_HASH(uring_worker_ctx_map, u64, event_context_t, 1024);    // store real context for io_uring worker operations
 
 // clang-format on
 

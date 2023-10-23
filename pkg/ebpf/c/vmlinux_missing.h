@@ -96,6 +96,8 @@ enum perf_type_id
     PERF_TYPE_MAX, /* non-ABI */
 };
 
+#define IORING_SETUP_SQPOLL (1U << 1) /* SQ poll thread */
+
 /*=============================== ARCH SPECIFIC ===========================*/
 #if defined(__TARGET_ARCH_x86)
 

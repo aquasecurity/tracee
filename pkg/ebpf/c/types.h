@@ -122,6 +122,9 @@ enum event_id_e
     HIDDEN_KERNEL_MODULE_SEEKER,
     MODULE_LOAD,
     MODULE_FREE,
+    IO_URING_CREATE,
+    IO_ISSUE_SQE,
+    IO_WRITE,
     MAX_EVENT_ID,
 };
 

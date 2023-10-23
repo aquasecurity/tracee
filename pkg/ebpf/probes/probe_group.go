@@ -215,6 +215,14 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool) (*ProbeGroup, err
 		SignalSchedProcessFork:     NewTraceProbe(RawTracepoint, "sched:sched_process_fork", "sched_process_fork_signal"),
 		SignalSchedProcessExec:     NewTraceProbe(RawTracepoint, "sched:sched_process_exec", "sched_process_exec_signal"),
 		SignalSchedProcessExit:     NewTraceProbe(RawTracepoint, "sched:sched_process_exit", "sched_process_exit_signal"),
+		IoUringCreate:              NewTraceProbe(RawTracepoint, "io_uring:io_uring_create", "tracepoint__io_uring__io_uring_create"),
+		IoSqOffloadStart:           NewTraceProbe(KProbe, "io_sq_offload_start", "trace_io_sq_offload_start"),
+		IoSqOffloadStartRet:        NewTraceProbe(KretProbe, "io_sq_offload_start", "trace_ret_io_sq_offload_start"),
+		IoSubmitSqe:                NewTraceProbe(KProbe, "__io_submit_sqe", "trace__io_submit_sqe"),
+		IoIssueSqe:                 NewTraceProbe(KProbe, "io_issue_sqe", "trace_io_issue_sqe"),
+		IoUringQueueAsyncWork:      NewTraceProbe(RawTracepoint, "io_uring:io_uring_queue_async_work", "tracepoint__io_uring__io_uring_queue_async_work"),
+		IoWrite:                    NewTraceProbe(KProbe, "io_write", "trace_io_write"),
+		IoWriteRet:                 NewTraceProbe(KretProbe, "io_write", "trace_ret_io_write"),
 	}
 
 	if !netEnabled {

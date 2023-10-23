@@ -276,6 +276,26 @@ func ParseArgs(event *trace.Event) error {
 				helpersArg.Value = parsedHelpersList
 			}
 		}
+	case IoUringCreate:
+		if flagsArg := GetArg(event, "flags"); flagsArg != nil {
+			if flags, isUint32 := flagsArg.Value.(uint32); isUint32 {
+				flagsParsed := helpers.ParseIoUringSetupFlags(uint64(flags))
+				parseOrEmptyString(flagsArg, flagsParsed, nil)
+			}
+		}
+	case IoIssueSqe:
+		if opcodeArg := GetArg(event, "opcode"); opcodeArg != nil {
+			if opcode, isUint8 := opcodeArg.Value.(uint8); isUint8 {
+				opcodeParsed, err := helpers.ParseIoUringOp(uint64(opcode))
+				parseOrEmptyString(opcodeArg, opcodeParsed, err)
+			}
+		}
+		if flagsArg := GetArg(event, "flags"); flagsArg != nil {
+			if flags, isUint32 := flagsArg.Value.(uint32); isUint32 {
+				flagsParsed := helpers.ParseIoUringRequestFlags(uint64(flags))
+				parseOrEmptyString(flagsArg, flagsParsed, nil)
+			}
+		}
 	}
 
 	return nil

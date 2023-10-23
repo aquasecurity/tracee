@@ -97,6 +97,70 @@ struct module___older_v64 {
 
 ///////////////////
 
+struct io_ring_ctx___older_v59 {
+    struct task_struct *sqo_thread;
+};
+
+struct io_connect {
+};
+
+struct io_kiocb___older_v6 {
+    union {
+        struct file *file;
+        struct io_rw rw;
+        struct io_connect connect;
+    };
+    u32 result;
+    u32 error;
+};
+
+struct io_uring_sqe {
+    __u64 addr;
+    __u32 len;
+};
+
+struct sqe_submit {
+    const struct io_uring_sqe *sqe;
+    u8 opcode;
+};
+
+struct io_kiocb___older_v55 {
+    union {
+        struct file *file;
+        struct kiocb rw;
+    };
+    struct sqe_submit submit;
+    unsigned int flags;
+    u64 user_data;
+};
+
+// this flavor is a combination of variants
+// of the io_kiocb struct, that will be
+// used in io_issue_sqe probe.
+struct io_kiocb___io_issue_sqe {
+    u8 opcode;
+    u64 user_data;
+    struct io_cqe cqe;
+    union {
+        u32 cflags;
+        int fd;
+    };
+};
+
+struct io_msg {
+};
+
+// this flavor is a combination of variants
+// of the io_kiocb struct, that will be
+// used in io_uring_queue_async_work probe.
+struct io_kiocb___io_uring_queue_async_work {
+    union {
+        struct file *file;
+        struct io_msg msg;
+        struct io_cmd_data cmd;
+    };
+};
+
 #pragma clang attribute pop
 
 #endif
