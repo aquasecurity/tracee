@@ -29,8 +29,14 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	// Log command line flags
 
 	// Logger initialization must be the first thing to be done,
-	// so all other packages can use it
-	logCfg, err := flags.PrepareLogger(viper.GetStringSlice("log"), true)
+	// so all other packages can use
+
+	logFlags, err := GetFlagsFromViper("log")
+	if err != nil {
+		return runner, err
+	}
+
+	logCfg, err := flags.PrepareLogger(logFlags, true)
 	if err != nil {
 		return runner, err
 	}
@@ -38,7 +44,12 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Rego command line flags
 
-	rego, err := flags.PrepareRego(viper.GetStringSlice("rego"))
+	regoFlags, err := GetFlagsFromViper("rego")
+	if err != nil {
+		return runner, err
+	}
+
+	rego, err := flags.PrepareRego(regoFlags)
 	if err != nil {
 		return runner, err
 	}
@@ -85,7 +96,12 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	// Container Runtime command line flags
 
 	if !cfg.NoContainersEnrich {
-		sockets, err := flags.PrepareContainers(viper.GetStringSlice("crs"))
+		crsFlags, err := GetFlagsFromViper("crs")
+		if err != nil {
+			return runner, err
+		}
+
+		sockets, err := flags.PrepareContainers(crsFlags)
 		if err != nil {
 			return runner, err
 		}
@@ -94,7 +110,12 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Cache command line flags
 
-	cache, err := flags.PrepareCache(viper.GetStringSlice("cache"))
+	cacheFlags, err := GetFlagsFromViper("cache")
+	if err != nil {
+		return runner, err
+	}
+
+	cache, err := flags.PrepareCache(cacheFlags)
 	if err != nil {
 		return runner, err
 	}
@@ -105,7 +126,12 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Process Tree command line flags
 
-	procTree, err := flags.PrepareProcTree(viper.GetStringSlice("proctree"))
+	procTreeFlags, err := GetFlagsFromViper("proctree")
+	if err != nil {
+		return runner, err
+	}
+
+	procTree, err := flags.PrepareProcTree(procTreeFlags)
 	if err != nil {
 		return runner, err
 	}
@@ -126,7 +152,12 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Capabilities command line flags
 
-	capsCfg, err := flags.PrepareCapabilities(viper.GetStringSlice("capabilities"))
+	capFlags, err := GetFlagsFromViper("capabilities")
+	if err != nil {
+		return runner, err
+	}
+
+	capsCfg, err := flags.PrepareCapabilities(capFlags)
 	if err != nil {
 		return runner, err
 	}
@@ -173,7 +204,13 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	cfg.Policies = policies
 
 	// Output command line flags
-	output, err := flags.PrepareOutput(viper.GetStringSlice("output"), true)
+
+	outputFlags, err := GetFlagsFromViper("output")
+	if err != nil {
+		return runner, err
+	}
+
+	output, err := flags.PrepareOutput(outputFlags, true)
 	if err != nil {
 		return runner, err
 	}
