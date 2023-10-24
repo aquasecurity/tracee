@@ -6,7 +6,7 @@ require (
 	github.com/IBM/fluent-forward-go v0.2.1
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/aquasecurity/libbpfgo v0.5.0-libbpf-1.2
-	github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230321190037-f591a2c5734f
+	github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20231023122045-7a58b8ec6cc3
 	github.com/aquasecurity/tracee/types v0.0.0-20230929172705-29c9b630aeed
 	github.com/containerd/containerd v1.7.0
 	github.com/docker/docker v23.0.5+incompatible
@@ -27,7 +27,7 @@ require (
 	github.com/urfave/cli/v2 v2.3.0
 	go.uber.org/goleak v1.1.12
 	go.uber.org/zap v1.24.0
-	golang.org/x/sys v0.8.0
+	golang.org/x/sys v0.13.0
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1
 	google.golang.org/grpc v1.56.2
 	google.golang.org/protobuf v1.30.0

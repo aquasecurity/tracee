@@ -69,6 +69,8 @@ github.com/aquasecurity/libbpfgo v0.5.0-libbpf-1.2 h1:Yywi9wC3GPDOgR8wr6P9geY2qv
 github.com/aquasecurity/libbpfgo v0.5.0-libbpf-1.2/go.mod h1:0rEApF1YBHGuZ4C8OYI9q5oDBVpgqtRqYATePl9mCDk=
 github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230321190037-f591a2c5734f h1:l127H3NqJBmw+XMt+haBOeZIrBppuw7TJz26cWMI9kY=
 github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20230321190037-f591a2c5734f/go.mod h1:j/TQLmsZpOIdF3CnJODzYngG4yu1YoDCoRMELxkQSSA=
+github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20231023122045-7a58b8ec6cc3 h1:Znl2aCgGDhJmsJTd5FG753cZpzyBZD6OU4CBE+yqTxs=
+github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20231023122045-7a58b8ec6cc3/go.mod h1:RKGRrng1b+79fklwa81IP98tt4S3ioCM/x6TFcnxbDU=
 github.com/aquasecurity/tracee/types v0.0.0-20230929172705-29c9b630aeed h1:d8ehyRJFP5qS0zfTss65UC2SoF7WX+/4+UcTL/73x9M=
 github.com/aquasecurity/tracee/types v0.0.0-20230929172705-29c9b630aeed/go.mod h1:sorAC3uGSNB/b8A9PjG1MSbENl81dR7azTSj+HclE+A=
 github.com/arbovm/levenshtein v0.0.0-20160628152529-48b4e1c0c4d0 h1:jfIu9sQUG6Ig+0+Ap1h4unLjW6YQJpKZVmUzxsD4E/Q=
@@ -650,6 +652,8 @@ golang.org/x/sys v0.2.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.3.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.8.0 h1:EBmGv8NaZBZTWvrbjNoL6HVt+IVy3QDQpJs7VRIw3tU=
 golang.org/x/sys v0.8.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+golang.org/x/sys v0.13.0 h1:Af8nKPmuFypiUBjVoU9V20FiaFXOcuZI21p0ycVYYGE=
+golang.org/x/sys v0.13.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=
 golang.org/x/term v0.0.0-20210927222741-03fcf44c2211/go.mod h1:jbD1KX2456YbFQfuXm/mYQcufACuNUgVhRMnK/tPxf8=
 golang.org/x/term v0.2.0/go.mod h1:TVmDHMZPmdnySmBfhjOoOdhjzdE1h4u1VwSiw2l1Nuc=

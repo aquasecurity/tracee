@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
+	"sync"
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -277,9 +279,50 @@ func ParseArgs(event *trace.Event) error {
 				helpersArg.Value = parsedHelpersList
 			}
 		}
+	case AccessRemoteVm:
+		if gupFlagsArg := GetArg(event, "gup_flags"); gupFlagsArg != nil {
+			if gupFlags, isUint := gupFlagsArg.Value.(uint32); isUint {
+				parsedGupFlags := parseGUPFlags(uint64(gupFlags))
+				parseOrEmptyString(gupFlagsArg, parsedGupFlags, nil)
+			}
+		}
+		if vmFlagsArg := GetArg(event, "vm_flags"); vmFlagsArg != nil {
+			if vmFlags, isUint64 := vmFlagsArg.Value.(uint64); isUint64 {
+				parsedVmFlags := helpers.ParseVmFlags(vmFlags)
+				parseOrEmptyString(vmFlagsArg, parsedVmFlags, nil)
+			}
+		}
 	}
 
 	return nil
+}
+
+var useLegacyGUPFlagsParse bool
+var determineGUPFlags sync.Once
+
+// Use the correct parsing function according to OS version to parse GUP flags
+func parseGUPFlags(gupFlagsVal uint64) helpers.SystemFunctionArgument {
+	determineGUPFlags.Do(func() {
+		osInfo, err := helpers.GetOSInfo()
+		if err != nil {
+			logger.Errorw("missing osinfo to determine how to parse GUP flags", "error", err)
+			return
+		}
+		compare, err := osInfo.CompareOSBaseKernelRelease("6.3.0")
+		if err != nil {
+			logger.Errorw("error comparing versions to determine how to parse GUP flags", "error", err)
+			return
+		}
+		if compare == helpers.KernelVersionOlder {
+			useLegacyGUPFlagsParse = true
+		}
+	})
+
+	if useLegacyGUPFlagsParse {
+		return helpers.ParseLegacyGUPFlags(gupFlagsVal)
+	} else {
+		return helpers.ParseGUPFlags(gupFlagsVal)
+	}
 }
 
 func ParseArgsFDs(event *trace.Event, fdArgPathMap *bpf.BPFMap) error {
