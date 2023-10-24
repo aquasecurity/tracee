@@ -525,6 +525,17 @@ nav:
           - Rules: docs/policies/rules.md
       - Filters:
           - Filtering: docs/filters/filtering.md
+          - Flags Manuals:
+            - scope: docs/flags/scope.1.md
+            - events: docs/flags/events.1.md
+            - output: docs/flags/output.1.md
+            - capture: docs/flags/capture.1.md
+            - config: docs/flags/config.1.md
+            - crs: docs/flags/containers.1.md
+            - rego: docs/flags/rego.1.md
+            - cache: docs/flags/cache.1.md
+            - capabilities: docs/flags/capabilities.1.md
+            - log: docs/flags/log.1.md
       - Outputs:
           - Output Formats: docs/outputs/output-formats.md
           - Output Options: docs/outputs/output-options.md
