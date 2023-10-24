@@ -137,7 +137,7 @@ for TEST in $TESTS; do
         --output option:parse-arguments \
         --log file:$SCRIPT_TMP_DIR/tracee-log-$$ \
         --signatures-dir "$SIG_DIR" \
-        --scope comm=echo,mv,ls,tracee,proctreetester \
+        --scope comm=echo,mv,ls,tracee,proctreetester,tail \
         --events "$TEST" &
 
     # Wait tracee to start

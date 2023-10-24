@@ -68,6 +68,7 @@ env:
     BPF_ATTACH
     CONTAINERS_DATA_SOURCE
     PROCTREE_DATA_SOURCE
+    ACCESS_REMOTE_VM
 jobs:
   #
   # DOC VERIFICATION
@@ -322,6 +323,7 @@ jobs:
       - generate-matrix
     runs-on: "github-self-hosted_ami-${{ matrix.ami }}_${{ github.event.number }}-${{ github.run_id }}_${{ matrix.sufix }}"
     strategy:
+      fail-fast: false
       matrix:
         include: ${{fromJson(needs.generate-matrix.outputs.matrix01)}}
     env:
