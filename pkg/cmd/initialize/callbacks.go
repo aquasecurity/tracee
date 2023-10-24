@@ -24,7 +24,7 @@ var (
 	// 3. %s = check_map_func_compatibility (function name)
 	// 4. %x = offset (ignored in this check)
 	// 5. %s = No such file or directory
-	libbpfgoKprobePerfEventRegexp = regexp.MustCompile(`libbpf:.*prog '(?:trace_check_map_func_compatibility|trace_utimes_common)'.*failed to create kprobe.*perf event: No such file or directory`)
+	libbpfgoKprobePerfEventRegexp = regexp.MustCompile(`libbpf:.*prog '(?:trace_check_map_func_compatibility|trace_utimes_common|trace_generic_access_phys)'.*failed to create kprobe.*perf event: No such file or directory`)
 
 	// triggered by: libbpf/src/libbpf.c->bpf_program__attach_fd()
 	// "libbpf: prog '%s': failed to attach to %s: %s\n"
