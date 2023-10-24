@@ -1,10 +1,37 @@
 blob-perf-buffer-size: 1024
 cache:
-    - none
+    # - none # cache-type={none,mem}
+    - cache-type=none
+    # - mem-cache-size=556
+# cache:
+    # type: mem
+    # size: 256
 proctree:
-    - none
-capabilities: []
-crs: []
+    # - source=events
+    source: events
+    cache:
+        process: 8192
+        thread: 4096
+capabilities:
+    # - bypass=false
+    # - add=cap_kill,cap_syslog
+    bypass: true
+    add:
+        - cap_sys_admin
+        - cap_syslog
+    drop:
+        - cap_chown
+crs:
+    - containerd:/var/run/containerd/containerd.sock
+    - docker:/var/run/docker.sock
+    - runtime:
+        name: containerd
+        socket: /var/run/containerd/containerd.sock
+    - runtime:
+        name: docker
+        socket: /var/run/docker.sock
+
+
 healthz: false
 install-path: /tmp/tracee
 listen-addr: :3366
@@ -13,8 +40,24 @@ log:
 metrics: false
 output:
     - json
+    # - webhook:HTTP://localhost:8080?timeout=5s
+# output-structured:
+#     - webhook:
+#         name: webhook1
+#         host: http://localhost
+#         port: 8000
+#         timeout: 5s
+#     - webhook:
+#         name: webhook2
+#         host: http://localhost
+#         port: 9000
+#         timeout: 5s
 perf-buffer-size: 1024
 pprof: false
 pyroscope: false
-rego: []
+rego:
+    # - partial-eval
+    - aio
+    # partial-eval: true
+    # aio: true
 signatures-dir: ""
