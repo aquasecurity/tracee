@@ -4,10 +4,6 @@ The [container enrichment](../integrating/container-engines.md) feature gives Tr
 
 The [data source](./overview.md) feature makes the information gathered from active containers accessible to signatures. When an event is captured and triggers a signature, that signature can retrieve information about the container using its container ID, which is bundled with the event being analyzed by the signature.
 
-## Enabling the Feature
-
-The data source does not need to be enabled, but requires that the `container enrichment` feature is. To enable the enrichment feature, execute trace with `--containers`. For more information you can read [container enrichment](../integrating/container-engines.md) page.
-
 ## Internal Data Organization
 
 From the [data-sources documentation](../data-sources/overview.md), you'll see that searches use keys. It's a bit like looking up information with a specific tag (or a key=value storage).

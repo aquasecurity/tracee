@@ -144,8 +144,8 @@ func main() {
 				Value: ":3366",
 			},
 			&cli.BoolFlag{
-				Name:  "containers",
-				Usage: "enable container info enrichment to events. this feature is experimental and may cause unexpected behavior in the pipeline",
+				Name:  "no-containers",
+				Usage: "disable container info enrichment to events. safeguard option.",
 			},
 			&cli.StringSliceFlag{
 				Name:  "log",

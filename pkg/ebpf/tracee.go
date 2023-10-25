@@ -398,6 +398,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// Initialize containers enrichment logic
 
 	t.containers, err = containers.New(
+		t.config.NoContainersEnrich,
 		t.cgroups,
 		t.config.Sockets,
 		"containers_map",
@@ -405,10 +406,11 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	if err != nil {
 		return errfmt.Errorf("error initializing containers: %v", err)
 	}
-
 	if err := t.containers.Populate(); err != nil {
-		return errfmt.Errorf("error initializing containers: %v", err)
+		return errfmt.Errorf("error populating containers: %v", err)
 	}
+
+	// Initialize containers related logic
 
 	t.contPathResolver = containers.InitContainerPathResolver(&t.pidsInMntns)
 	t.contSymbolsLoader = sharedobjs.InitContainersSymbolsLoader(t.contPathResolver, 1024)
@@ -783,7 +785,7 @@ func (t *Tracee) computeConfigValues() []byte {
 	// options
 	binary.LittleEndian.PutUint32(configVal[4:8], t.getOptionsConfig())
 	// cgroup_v1_hid
-	binary.LittleEndian.PutUint32(configVal[8:12], uint32(t.containers.GetDefaultCgroupHierarchyID()))
+	binary.LittleEndian.PutUint32(configVal[8:12], uint32(t.cgroups.GetDefaultCgroupHierarchyID()))
 	// padding
 	binary.LittleEndian.PutUint32(configVal[12:16], 0)
 
@@ -1260,7 +1262,7 @@ func (t *Tracee) initBPF() error {
 	t.controlPlane, err = controlplane.NewController(
 		t.bpfModule,
 		t.containers,
-		t.config.ContainersEnrich,
+		t.config.NoContainersEnrich,
 		t.processTree,
 	)
 	if err != nil {
@@ -1590,7 +1592,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 
 	emit = t.eventsState[events.ExistingContainer].Emit
 	if emit > 0 {
-		for _, e := range events.ExistingContainersEvents(t.containers, t.config.ContainersEnrich) {
+		for _, e := range events.ExistingContainersEvents(t.containers, t.config.NoContainersEnrich) {
 			setMatchedPolicies(&e, emit)
 			out <- &e
 			_ = t.stats.EventCount.Increment()

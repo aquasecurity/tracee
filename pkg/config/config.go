@@ -30,7 +30,7 @@ type Config struct {
 	KernelConfig       *helpers.KernelConfig
 	OSInfo             *helpers.OSInfo
 	Sockets            runtime.Sockets
-	ContainersEnrich   bool
+	NoContainersEnrich bool
 	EngineConfig       engine.Config
 	MetricsEnabled     bool
 }

@@ -12,8 +12,6 @@ TRACEE_EXE=${TRACEE_EXE:="/tracee/tracee"}
 
 LIBBPFGO_OSRELEASE_FILE=${LIBBPFGO_OSRELEASE_FILE:="/etc/os-release-host"}
 
-CONTAINERS_ENRICHMENT=${CONTAINERS_ENRICHMENT:="0"}
-
 CAPABILITIES_BYPASS=${CAPABILITIES_BYPASS:="0"}
 CAPABILITIES_ADD=${CAPABILITIES_ADD:=""}
 CAPABILITIES_DROP=${CAPABILITIES_DROP:=""}
@@ -35,7 +33,6 @@ run_tracee() {
             --output=option:parse-arguments \
             --cache cache-type=mem \
             --cache mem-cache-size=512 \
-            --containers=$CONTAINERS_ENRICHMENT \
             --capabilities bypass=$CAPABILITIES_BYPASS \
             --capabilities add=$CAPABILITIES_ADD \
             --capabilities drop=$CAPABILITIES_DROP

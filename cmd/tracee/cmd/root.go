@@ -148,11 +148,11 @@ func initCmd() error {
 	// Container flags
 
 	rootCmd.Flags().Bool(
-		"containers",
+		"no-containers",
 		false,
-		"\t\t\t\t\tEnable container info enrichment to events. This feature is experimental and may cause unexpected behavior in the pipeline",
+		"\t\t\t\t\tDisable container info enrichment to events. Safeguard option.",
 	)
-	err = viper.BindPFlag("containers", rootCmd.Flags().Lookup("containers"))
+	err = viper.BindPFlag("no-containers", rootCmd.Flags().Lookup("no-containers"))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

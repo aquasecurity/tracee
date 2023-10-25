@@ -111,11 +111,11 @@ func GetContainerMode(cfg config.Config) config.ContainerMode {
 
 	for p := range cfg.Policies.Map() {
 		if p.ContainerFilterEnabled() {
-			// enable printer container print mode if container filters are set
-			containerMode = config.ContainerModeEnabled
-			if cfg.ContainersEnrich {
-				// further enable container enrich print mode if container enrichment is enabled
-				containerMode = config.ContainerModeEnriched
+			// Container Enrichment is enabled by default ...
+			containerMode = config.ContainerModeEnriched
+			if cfg.NoContainersEnrich {
+				// ... but might be disabled as a safeguard measure.
+				containerMode = config.ContainerModeEnabled
 			}
 
 			break

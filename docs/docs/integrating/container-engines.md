@@ -4,16 +4,14 @@ Tracee is capable of **extracting information about running containers**. It
 does that by tracking container namespaces creation kernel events and enriching
 those events by communicating with the relevant container's runtime and SDK.
 
-!!! Experimental Warning
-    This feature is experimental and should be explicitly enabled in
-    **tracee**, by using the `--container` flag OR, if running tracee
-    container image, setting the `CONTAINERS_ENRICHMENT` environment flag (see
-    example bellow).
-
 1. Running **tracee** manually
 
     If running tracee directly (not in a container), it will automatically
     search for known supported runtimes in their socket's default locations.
+    You may track if tracee was able to find the container runtime socket by
+    running tracee with `--log debug` option. There will be a line to each known
+    runtime engine socket location and a message saying if tracee wass able to
+    find it or not.
 
 2. Running **tracee** using a docker container
 
@@ -22,32 +20,28 @@ those events by communicating with the relevant container's runtime and SDK.
 
     Using containerd as our runtime for example, this can be done by running
     tracee like:
-    
+
     ```console
     docker run \
         --name tracee --rm -it \
         --pid=host --cgroupns=host --privileged \
         -v /etc/os-release:/etc/os-release-host:ro \
         -v /var/run/containerd:/var/run/containerd \
-        -e CONTAINERS_ENRICHMENT=1 \
         aquasec/tracee:{{ git.tag }}
     ```
 
     Most container runtimes have their sockets installed by default in
     `/var/run`. If your system includes multiple container runtimes, tracee can
-    track them all, however one should mount either all their runtime sockets
-    or `/var/run` in it's entirety to do so.
+    track them all, however one should mount either all their runtime sockets or
+    `/var/run` in it's entirety to do so.
 
 ## Supported Container Runtime Engines
 
 Currently, tracee will look in the following paths for auto-discovering the listed runtimes:
 
 1. Docker:     `/var/run/docker.sock`
-
 2. Containerd: `/var/run/containerd/containerd.sock`
-
 3. CRI-O:      `/var/run/crio/crio.sock`
-
 4. Podman:     `/var/run/podman/podman.sock`
 
 !!! Tip
@@ -56,30 +50,6 @@ Currently, tracee will look in the following paths for auto-discovering the list
     nesting and so sockets must be appropriately mounted and set up for tracee
     to enrich all containers correctly.
 
-## Viewing enrichment output
+## Enrichment output
 
-As a user, when container enrichment is enabled the event output will include enriched fields in these cases:
-
-1. Running **tracee** with a json format will include all container enriched fields
-
-    ```console
-    docker run \
-        --name tracee --rm -it \
-        --pid=host --cgroupns=host --privileged \
-        -v /etc/os-release:/etc/os-release-host:ro \
-        -v /var/run/docker.sock:/var/run/docker.sock \
-        aquasec/tracee:{{ git.tag }} \
-        --output json --containers
-    ```
-
-2. Running in container filtering mode and with enrichment enabled will add the image name to the table printer
-
-    ```console
-    docker run \
-        --name tracee --rm -it \
-        --pid=host --cgroupns=host --privileged \
-        -v /etc/os-release:/etc/os-release-host:ro \
-        -v /var/run/containerd:/var/run/containerd \
-        aquasec/tracee:{{ git.tag }} \
-        --scope container --containers
-    ```
+Example of the output.

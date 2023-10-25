@@ -91,14 +91,14 @@ func fetchInitNamespaces() map[string]uint32 {
 }
 
 // ExistingContainersEvents returns a list of events for each existing container
-func ExistingContainersEvents(cts *containers.Containers, enrich bool) []trace.Event {
+func ExistingContainersEvents(cts *containers.Containers, enrichDisabled bool) []trace.Event {
 	var events []trace.Event
 
 	def := Core.GetDefinitionByID(ExistingContainer)
 
 	for id, info := range cts.GetContainers() {
 		container := runtime.ContainerMetadata{}
-		if enrich {
+		if !enrichDisabled {
 			container, _ = cts.EnrichCgroupInfo(uint64(id))
 		}
 		params := def.GetParams()
