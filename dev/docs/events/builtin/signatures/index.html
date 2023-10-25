@@ -13,10 +13,10 @@
         <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/events/builtin/signatures/">
       
       
-        <link rel="prev" href="../network/net_packet_http_response/">
+        <link rel="prev" href="../../overview/">
       
       
-        <link rel="next" href="../extra/bpf_attach/">
+        <link rel="next" href="anti_debugging/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Behavioral Signatures - Tracee</title>
+        <title>Overview - Tracee</title>
       
     
     
@@ -67,6 +67,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#security-events" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -102,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Behavioral Signatures
+              Overview
             
           </span>
         </div>
@@ -1167,6 +1172,969 @@
                 
   
   
+    
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2_1" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_2_1" id="__nav_3_2_2_1_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Events
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_2_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_2_2_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Security Events
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#understanding-signatures-in-tracee" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Understanding Signatures in Tracee
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#functionality-and-scope-of-signatures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Functionality and Scope of Signatures
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-role-of-security-events-in-tracee" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Role of Security Events in Tracee
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#be-prepared" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Be Prepared!
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-of-default-security-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        List of Default Security Events
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="anti_debugging/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Anti Debugging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="aslr_inspection/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    ASLR Inspection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cgroup_notify_on_release_modification/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Cgroup Notify-On-Release
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cgroup_release_agent_modification/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Cgroup Release-Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="core_pattern_modification/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Pattern Modification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="default_loader_modification/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Default Loader Modification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="disk_mount/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Disk Mount
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="docker_abuse/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker Abuse
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="dropped_executable/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Dropped Executable
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="dynamic_code_loading/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Dynamic Code Loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="fileless_execution/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Fileless Execution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="hidden_file_created/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Hidden File Created
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="illegitimate_shell/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Illegitimate Shell
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="kubernetes_api_connection/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    K8S API Connection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="kubernetes_certificate_theft_attempt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    K8S Certificate Theft
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="kernel_module_loading/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Kernel Module Loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ld_preload/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Loader Preload
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="process_vm_write_code_injection/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Process VM Write
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="proc_fops_hooking/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Procfs File Ops Hooking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="proc_kcore_read/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Procfs Kcore Read
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="proc_mem_access/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Procfs Mem Access
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="proc_mem_code_injection/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Procfs Mem Code Injection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="ptrace_code_injection/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Ptrace Code Injection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="rcd_modification/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    RCD Modification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="sched_debug_recon/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Sched Debug
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="scheduled_task_modification/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Scheduled Task Modification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="stdio_over_socket/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Standard I/O Over Socket
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="sudoers_modification/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Sudoers Modification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="syscall_table_hooking/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Syscall Table Hooking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="system_request_key_config_modification/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    SysRQ Modification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
   
     
     
@@ -1178,10 +2146,1184 @@
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2_2" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_2_1" id="__nav_3_2_2_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_2_2" id="__nav_3_2_2_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Network Events
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Network Events
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network/net_packet_ipv4/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_ipv4
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network/net_packet_ipv6/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_ipv6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network/net_packet_tcp/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_tcp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network/net_packet_udp/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_udp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network/net_packet_icmp/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_icmp
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network/net_packet_icmpv6/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_icmpv6
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network/net_packet_dns/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_dns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network/net_packet_dns_request/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_dns_request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network/net_packet_dns_response/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_dns_response
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network/net_packet_http/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_http
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network/net_packet_http_request/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_http_request
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../network/net_packet_http_response/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    net_packet_http_response
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_2_3" id="__nav_3_2_2_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Extra Events
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Extra Events
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/bpf_attach/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    bpf_attach
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/cgroup_mkdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_mkdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/cgroup_rmdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_rmdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/container_create/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_create
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/container_remove/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_remove
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/do_sigaction/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    do_sigaction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/file_modification/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    file_modification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/ftrace_hook/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    ftrace_hook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/hidden_kernel_module/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    hidden_kernel_module
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/hooked_syscalls/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    hooked_syscalls
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/kallsyms_lookup_name/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    kallsysm_lookup_name
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/magic_write/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    magic_write
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/mem_prot_alert/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    mem_prot_alert
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/process_execute_failed/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    process_execute_failed
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/sched_process_exec/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_process_exec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/security_bpf_prog/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_bpf_prog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/security_bprm_check/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_bprm_check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/security_file_mprotect/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_file_mprotect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/security_inode_unlink/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_inode_unlink
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/security_sb_mount/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_sb_mount
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/security_socket_accept/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_accept
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/security_socket_bind/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_bind
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/security_socket_connect/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_connect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/security_socket_setsockopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_setsockopt
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/symbols_collision/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    symbols_collision
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/symbols_loaded/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    symbols_loaded
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/vfs_read/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    vfs_read
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extra/vfs_readv/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    vfs_readv
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2_2_4" id="__nav_3_2_2_4_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -1198,8 +3340,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_2_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_2_1">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_2_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1250,10 +3392,10 @@
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2_1_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2_4_2" >
         
           
-          <label class="md-nav__link" for="__nav_3_2_2_1_2" id="__nav_3_2_2_1_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_2_2_4_2" id="__nav_3_2_2_4_2_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -1270,8 +3412,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_3_2_2_1_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_2_1_2">
+        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_3_2_2_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2_2_4_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -12893,1214 +15035,6 @@
 
               
             
-              
-                
-  
-  
-  
-    
-    
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_3_2_2_2" id="__nav_3_2_2_2_label" tabindex="0">
-            
-  
-  <span class="md-ellipsis">
-    
-  
-    Network Events
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_2_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_2_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Network Events
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../network/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    Overview
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../network/net_packet_ipv4/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    net_packet_ipv4
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../network/net_packet_ipv6/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    net_packet_ipv6
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../network/net_packet_tcp/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    net_packet_tcp
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../network/net_packet_udp/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    net_packet_udp
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../network/net_packet_icmp/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    net_packet_icmp
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../network/net_packet_icmpv6/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    net_packet_icmpv6
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../network/net_packet_dns/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    net_packet_dns
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../network/net_packet_dns_request/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    net_packet_dns_request
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../network/net_packet_dns_response/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    net_packet_dns_response
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../network/net_packet_http/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    net_packet_http
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../network/net_packet_http_request/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    net_packet_http_request
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../network/net_packet_http_response/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    net_packet_http_response
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    Behavioral Signatures
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    
-    
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2_2_4" >
-        
-          
-          <label class="md-nav__link" for="__nav_3_2_2_4" id="__nav_3_2_2_4_label" tabindex="0">
-            
-  
-  <span class="md-ellipsis">
-    
-  
-    Extra Events
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_2_2_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_2_2_4">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Extra Events
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/bpf_attach/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    bpf_attach
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/cgroup_mkdir/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    cgroup_mkdir
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/cgroup_rmdir/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    cgroup_rmdir
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/container_create/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    container_create
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/container_remove/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    container_remove
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/do_sigaction/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    do_sigaction
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/file_modification/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    file_modification
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/ftrace_hook/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    ftrace_hook
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/hidden_kernel_module/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    hidden_kernel_module
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/hooked_syscalls/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    hooked_syscalls
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/kallsyms_lookup_name/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    kallsysm_lookup_name
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/magic_write/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    magic_write
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/mem_prot_alert/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    mem_prot_alert
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/process_execute_failed/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    process_execute_failed
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/sched_process_exec/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    sched_process_exec
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/security_bpf_prog/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    security_bpf_prog
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/security_bprm_check/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    security_bprm_check
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/security_file_mprotect/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    security_file_mprotect
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/security_inode_unlink/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    security_inode_unlink
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/security_sb_mount/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    security_sb_mount
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/security_socket_accept/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    security_socket_accept
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/security_socket_bind/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    security_socket_bind
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/security_socket_connect/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    security_socket_connect
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/security_socket_setsockopt/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    security_socket_setsockopt
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/symbols_collision/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    symbols_collision
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/symbols_loaded/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    symbols_loaded
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/vfs_read/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    vfs_read
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../extra/vfs_readv/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    vfs_readv
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -15936,6 +16870,71 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#understanding-signatures-in-tracee" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Understanding Signatures in Tracee
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#functionality-and-scope-of-signatures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Functionality and Scope of Signatures
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-role-of-security-events-in-tracee" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Role of Security Events in Tracee
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#be-prepared" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Be Prepared!
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#list-of-default-security-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        List of Default Security Events
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -15951,172 +16950,165 @@
                   
 
 
-  <h1>Behavioral Signatures</h1>
-
-<p>Tracee has a library of behavioral patterns that might indicate suspicious malicious activity. These Tracee events, sometimes referred to as "signatures" help you detect more sophisticated security insights than basic observability events like syscalls. The following is a list of all available signatures:</p>
+<h1 id="security-events">Security Events<a class="headerlink" href="#security-events" title="Permanent link">&para;</a></h1>
+<h2 id="understanding-signatures-in-tracee">Understanding Signatures in Tracee<a class="headerlink" href="#understanding-signatures-in-tracee" title="Permanent link">&para;</a></h2>
+<p>In Tracee, a signature is a set of criteria designed to detect specific system
+activities based on events such as syscalls, network interactions, and LSM hook
+occurrences. When these foundational system events align with the conditions set
+by a signature, Tracee generates a corresponding "security event." This process
+enables Tracee to actively monitor and report potential security concerns
+arising from observed system interactions.</p>
+<h2 id="functionality-and-scope-of-signatures">Functionality and Scope of Signatures<a class="headerlink" href="#functionality-and-scope-of-signatures" title="Permanent link">&para;</a></h2>
+<p>The signatures documented herein focus on key system operations. For instance,
+one signature identifies attempts to manipulate the syscall tables or the
+<code>/proc</code> filesystem, operations that are indicative of rootkit behaviors. Another
+detects the dynamic introduction of new executables into the system, flagging
+potential security issues. Upon a match, these signatures prompt Tracee to
+produce a security event, capturing the specifics of the underlying event and
+any associated implications.</p>
+<h2 id="the-role-of-security-events-in-tracee">The Role of Security Events in Tracee<a class="headerlink" href="#the-role-of-security-events-in-tracee" title="Permanent link">&para;</a></h2>
+<p>Security events play a critical role in maintaining system integrity. They
+provide an analytical layer, translating raw events like syscalls into
+actionable insights about potential threats or anomalies. With the power of
+eBPF, Tracee efficiently monitors system activities in real-time, generating
+security events that equip users with the information they need to assess and
+respond to the state of their digital environments.</p>
+<h2 id="be-prepared">Be Prepared!<a class="headerlink" href="#be-prepared" title="Permanent link">&para;</a></h2>
+<p>For optimal utilization of Tracee and effective response to potential threats,
+we strongly recommend readers to meticulously review each security event
+documentation page.</p>
+<p>A good understanding of what each signature detects will empower users to make
+informed decisions and take appropriate actions when a security event arises.
+Being well-versed in the nuances of each signature ensures that you're not just
+alerted to risks, but also equipped to address them effectively.</p>
+<h2 id="list-of-default-security-events">List of Default Security Events<a class="headerlink" href="#list-of-default-security-events" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>Name</th>
+<th>Name of Signature</th>
 <th>Description</th>
-<th>Full Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>stdio_over_socket</td>
-<td>Process standard input/output over socket detected</td>
-<td>A process has its standard input/output redirected to a socket. This behaviour is the base of a  Reverse Shell attack, which is when an interactive shell being invoked from a target machine back to the attacker's machine, giving it interactive control over the target. Adversaries may use a Reverse Shell to retain control over a compromised target while bypassing security measures like network firewalls.</td>
+<td><a href="anti_debugging/">Anti-Debugging Technique</a></td>
+<td>Detects anti-debugging techniques.</td>
 </tr>
 <tr>
-<td>anti_debugging</td>
-<td>Anti-Debugging detected</td>
-<td>A process used anti-debugging techniques to block a debugger. Malware use anti-debugging to stay invisible and inhibit analysis of their behavior.</td>
+<td><a href="aslr_inspection/">ASLR Inspection</a></td>
+<td>Detects ASLR inspections.</td>
 </tr>
 <tr>
-<td>ptrace_code_injection</td>
-<td>Code injection detected using ptrace</td>
-<td>Possible code injection into another process was detected. Code injection is an exploitation technique used to run malicious code, adversaries may use it in order to execute their malware.</td>
+<td><a href="cgroup_notify_on_release_modification/">Cgroups notify_on_release File Modification</a></td>
+<td>Monitors <code>notify_on_release</code> file changes in cgroups.</td>
 </tr>
 <tr>
-<td>dynamic_code_loading</td>
-<td>Dynamic code loading detected</td>
-<td>Possible dynamic code loading was detected as the binary's memory is both writable and executable. Writing to an executable allocated memory region could be a technique used by adversaries to run code undetected and without dropping executables.</td>
+<td><a href="cgroup_release_agent_modification/">Cgroups Release Agent File Modification</a></td>
+<td>Detects changes to the cgroup release_agent.</td>
 </tr>
 <tr>
-<td>fileless_execution</td>
-<td>Fileless execution detected</td>
-<td>Fileless execution was detected. Executing a process from memory instead from a file in the filesystem may indicate that an adversary is trying to avoid execution detection.</td>
+<td><a href="core_pattern_modification/">Core Dumps Config File Modification</a></td>
+<td>Monitors core dump configuration alterations.</td>
 </tr>
 <tr>
-<td>cgroup_notify_on_release</td>
-<td>Cgroups notify_on_release file modification</td>
-<td>An attempt to modify Cgroup notify_on_release file was detected. Cgroups are a Linux kernel feature which limits the resource usage of a set of processes. Adversaries may use this feature for container escaping.</td>
+<td><a href="default_loader_modification/">Default Dynamic Loader Modification</a></td>
+<td>Tracks changes to the default binary loader.</td>
 </tr>
 <tr>
-<td>ld_preload</td>
-<td>LD_PRELOAD code injection detected</td>
-<td>LD_PRELOAD usage was detected. LD_PRELOAD lets you load your library before any other library, allowing you to hook functions in a process. Adversaries may use this technique to change your applications' behavior or load their own programs.</td>
+<td><a href="disk_mount/">Container Device Mount</a></td>
+<td>Detects unauthorized container device mounts.</td>
 </tr>
 <tr>
-<td>k8s_api_connection</td>
-<td>K8s service account token file read</td>
-<td>The Kubernetes service account token file was read on your container. This token is used to communicate with the Kubernetes API Server. Adversaries may try to communicate with the API Server to steal information and/or credentials, or even run more containers and laterally extend their grip on the systems.</td>
+<td><a href="docker_abuse/">Docker Socket Abuse</a></td>
+<td>Flags potential Docker socket misuse.</td>
 </tr>
 <tr>
-<td>aslr_inspection</td>
-<td>ASLR inspection detected</td>
-<td>The ASLR (address space layout randomization) configuration was inspected. ASLR is used by Linux to prevent memory vulnerabilities. An adversary may want to inspect and change the ASLR configuration in order to avoid detection.</td>
+<td><a href="dropped_executable/">Dropped Executables</a></td>
+<td>Detects runtime-dropped executables.</td>
 </tr>
 <tr>
-<td>cgroup_release_agent</td>
-<td>Cgroups release agent file modification</td>
-<td>An attempt to modify Cgroup release agent file was detected. Cgroups are a Linux kernel feature which limits the resource usage of a set of processes. Adversaries may use this feature for container escaping.</td>
+<td><a href="dynamic_code_loading/">Dynamic Code Loading</a></td>
+<td>Monitors dynamic code loading events.</td>
 </tr>
 <tr>
-<td>core_pattern_modification</td>
-<td>Core dumps configuration file modification detected</td>
-<td>Modification of the core dump configuration file (core_pattern) detected. Core dumps are usually written to disk when a program crashes. Certain modifications enable container escaping through the kernel core_pattern feature.</td>
+<td><a href="fileless_execution/">Fileless Execution</a></td>
+<td>Flags fileless execution techniques.</td>
 </tr>
 <tr>
-<td>default_loader_mod</td>
-<td>Default dynamic loader modification detected</td>
-<td>The default dynamic loader has been modified. The dynamic loader is an executable file loaded to process memory and run before the executable to load dynamic libraries to the process. An attacker might use this technique to hijack the execution context of each new process and bypass defenses.</td>
+<td><a href="hidden_file_created/">Hidden Executable File Creation</a></td>
+<td>Detects creation of hidden executable files.</td>
 </tr>
 <tr>
-<td>k8s_api_connection</td>
-<td>Kubernetes API server connection detected</td>
-<td>A connection to the kubernetes API server was detected. The K8S API server is the brain of your K8S cluster, adversaries may try and communicate with the K8S API server to gather information/credentials, or even run more containers and laterally expand their grip on your systems.</td>
+<td><a href="illegitimate_shell/">Illegitimate Shell</a></td>
+<td>Flags unauthorized or unexpected shell executions.</td>
 </tr>
 <tr>
-<td>disk_mount</td>
-<td>Container device mount detected</td>
-<td>Container device filesystem mount detected. A mount of a host device filesystem can be exploited by adversaries to perform container escape.</td>
+<td><a href="kernel_module_loading/">Kernel Module Loading</a></td>
+<td>Monitors kernel module load events.</td>
 </tr>
 <tr>
-<td>hidden_file_created</td>
-<td>Hidden executable creation detected</td>
-<td>A hidden executable (ELF file) was created on disk. This activity could be legitimate; however, it could indicate that an adversary is trying to avoid detection by hiding their programs.</td>
+<td><a href="kubernetes_api_connection/">Kubernetes API Server Connection</a></td>
+<td>Detects connections to the Kubernetes API server.</td>
 </tr>
 <tr>
-<td>illegitimate_shell</td>
-<td>Web server spawned a shell</td>
-<td>A web-server program on your server spawned a shell program. Shell is the linux command-line program, web servers usually don't run shell programs, so this alert might indicate an adversary is exploiting a web server program to gain command execution on the server.</td>
+<td><a href="kubernetes_certificate_theft_attempt/">Kubernetes TLS Certificate Theft</a></td>
+<td>Flags potential theft of Kubernetes certificates.</td>
 </tr>
 <tr>
-<td>kernel_module_loading</td>
-<td>Kernel module loading detected</td>
-<td>Loading of a kernel module was detected. Kernel modules are binaries meant to run in the kernel. Adversaries may try and load kernel modules to extend their capabilities and avoid detection by running in the kernel and not user space.</td>
+<td><a href="ld_preload/">LD_PRELOAD Code Injection</a></td>
+<td>Monitors LD_PRELOAD injection attempts.</td>
 </tr>
 <tr>
-<td>k8s_cert_theft</td>
-<td>K8s TLS certificate theft detected</td>
-<td>Theft of Kubernetes TLS certificates was detected. TLS certificates are used to establish trust between systems. The Kubernetes certificate is used to to enable secure communication between Kubernetes components, such as kubelet scheduler controller and API Server. An adversary may steal a Kubernetes certificate on a compromised system to impersonate Kubernetes components within the cluster.</td>
+<td><a href="proc_fops_hooking/">File Operations Hooking on Proc Filesystem</a></td>
+<td>Detects hooks on file operations in /proc.</td>
 </tr>
 <tr>
-<td>docker_abuse</td>
-<td>Docker socket abuse detected</td>
-<td>An attempt to abuse the Docker UNIX socket inside a container was detected. docker.sock is the UNIX socket that Docker uses as the entry point to the Docker API. Adversaries may attempt to abuse this socket to compromise the system.</td>
+<td><a href="proc_kcore_read/">Kcore Memory File Read</a></td>
+<td>Monitors reads of /proc/kcore.</td>
 </tr>
 <tr>
-<td>proc_fops_hooking</td>
-<td>File operations hooking on proc filesystem detected</td>
-<td>File operations hooking on proc filesystem detected. The proc filesystem is an interface for the running processes as files. This allows programs like <code>ps</code> and <code>top</code> to check what are the running processes. File operations are the functions defined on a file or directory. File operations hooking includes replacing the default function used to perform a basic task on files and directories like enumerating files. By hooking the file operations of /proc an adversary gains control on certain system function, such as file listing or other basic function performed by the operation system. The adversary may also hijack the execution flow and execute it's own code. File operation hooking is considered a malicious behavior that is performed by rootkits and may indicate that the host's kernel has been compromised. Hidden modules are marked as hidden symbol owners and indicate further malicious activity of an adversary.</td>
+<td><a href="proc_mem_access/">Process Memory Access</a></td>
+<td>Flags unauthorized /proc/mem access.</td>
 </tr>
 <tr>
-<td>proc_kcore_read</td>
-<td>Kcore memory file read</td>
-<td>An attempt to read /proc/kcore file was detected. KCore provides a full dump of the physical memory of the system in the core file format. Adversaries may read this file to get all of the host memory and use this information for container escape.</td>
+<td><a href="proc_mem_code_injection/">Procfs Mem Code Injection</a></td>
+<td>Detects code injections via /proc/mem.</td>
 </tr>
 <tr>
-<td>dropped_executable</td>
-<td>New executable dropped</td>
-<td>An Executable file was dropped in the system during runtime. Container images are usually built with all binaries needed inside. A dropped binary may indicate that an adversary infiltrated your container.</td>
+<td><a href="process_vm_write_code_injection/">Process VM Write Code Injection</a></td>
+<td>Monitors injections via process_vm_writev.</td>
 </tr>
 <tr>
-<td>proc_mem_access</td>
-<td>Process memory access detected</td>
-<td>Process memory access detected. Adversaries may access other processes memory to steal credentials and secrets.</td>
+<td><a href="ptrace_code_injection/">Ptrace Code Injection</a></td>
+<td>Detects ptrace-facilitated code injections.</td>
 </tr>
 <tr>
-<td>proc_mem_code_injection</td>
-<td>Code injection detected through /proc/<pid>/mem file</td>
-<td>Possible code injection into another process was detected. Code injection is an exploitation technique used to run malicious code, adversaries may use it in order to execute their malware.</td>
+<td><a href="rcd_modification/">RCD Modification</a></td>
+<td>Monitors changes to the remote control daemon.</td>
 </tr>
 <tr>
-<td>process_vm_write_inject</td>
-<td>Code injection detected using process_vm_writev syscall</td>
-<td>Possible code injection into another process was detected. Code injection is an exploitation technique used to run malicious code, adversaries may use it in order to execute their malware.</td>
+<td><a href="sched_debug_recon/">Sched Debug Reconnaissance</a></td>
+<td>Flags /proc/sched_debug reconnaissance.</td>
 </tr>
 <tr>
-<td>rcd_modification</td>
-<td>Rcd modification detected</td>
-<td>The rcd files were modified. rcd files are scripts executed on boot and runlevel switch. Those scripts are responsible for service control in runlevel switch. Adversaries may add or modify rcd files in order to persist a reboot, thus maintaining malicious execution on the affected host.</td>
+<td><a href="scheduled_task_modification/">Scheduled Tasks Modification</a></td>
+<td>Tracks modifications to scheduled tasks.</td>
 </tr>
 <tr>
-<td>scheduled_task_mod</td>
-<td>Scheduled tasks modification detected</td>
-<td>The task scheduling functionality or files were modified. Crontab schedules task execution or enables task execution at boot time. Adversaries may add or modify scheduled tasks in order to persist a reboot, thus maintaining malicious execution on the affected host.</td>
+<td><a href="stdio_over_socket/">Process Standard Input/Output over Socket</a></td>
+<td>Detects IO redirection over sockets.</td>
 </tr>
 <tr>
-<td>sudoers_modification</td>
-<td>Sudoers file modification detected</td>
-<td>The sudoers file was modified. The sudoers file is a configuration file which controls the permissions and options of the sudo feature. Adversaries may alter the sudoers file to elevate privileges, execute commands as other users or spawn processes with higher privileges.</td>
+<td><a href="sudoers_modification/">Sudoers File Modification</a></td>
+<td>Monitors alterations to the sudoers file.</td>
 </tr>
 <tr>
-<td>sched_debug_recon</td>
-<td>sched_debug CPU file was read</td>
-<td>The sched_debug file was read. This file contains information about your CPU and processes. Adversaries may read this file in order to gather that information for their use.</td>
+<td><a href="syscall_table_hooking/">Syscall Table Hooking</a></td>
+<td>Detects syscall table hook attempts.</td>
 </tr>
 <tr>
-<td>syscall_hooking</td>
-<td>Syscall table hooking detected</td>
-<td>Syscall table hooking detected. Syscalls (system calls) are the interface between user applications and the kernel. By hooking the syscall table an adversary gains control on certain system function, such as file writing and reading or other basic function performed by the operation system. The adversary may also hijack the execution flow and execute it's own code. Syscall table hooking is considered a malicious behavior that is performed by rootkits and may indicate that the host's kernel has been compromised. Hidden modules are marked as hidden symbol owners and indicate further malicious activity of an adversary.</td>
-</tr>
-<tr>
-<td>system_request_key_mod</td>
-<td>System request key configuration modification</td>
-<td>An attempt to modify and activate the System Request Key configuration file was detected. The system request key allows immediate input to the kernel through simple key combinations. Adversaries may use this feature to immediately shut down or restart a system. With read access to kernel logs, host related information such as listing tasks and CPU registers may be disclosed and could be used for container escape.</td>
+<td><a href="system_request_key_config_modification/">System Request Key Configuration Modification</a></td>
+<td>Monitors system request key configuration changes.</td>
 </tr>
 </tbody>
 </table>
