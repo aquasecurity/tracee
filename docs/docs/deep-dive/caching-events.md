@@ -35,14 +35,13 @@ The effects of this are the following:
 
 ## Use caching
 
-Example using **1GB cache**, container **enrichment** in the pipeline, argument
-**parsing** so arguments are formatted in a human consumable way:
+Example using **1GB cache**:
 
 ```console
 sudo ./dist/tracee \
     --cache cache-type=mem \
     --cache mem-cache-size=1024 \
-    --containers -o format:json \
+    -o format:json \
     -o option:parse-arguments \
     -trace container \
     --crs docker:/var/run/docker.sock
@@ -54,5 +53,5 @@ sudo ./dist/tracee \
     | jq -c '. | {cgroupid, processname, containername}'
     ```
     You may cause latencies in **tracee** pipeline because the event json
-    processing from `jq` might not be as fast as how **tracee** is capable
-    of writing events to it.
+    processing from `jq` might not be as fast as how **tracee** is capable of
+    writing events to it.

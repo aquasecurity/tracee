@@ -27,14 +27,14 @@ type Controller struct {
 	signalBuffer   *libbpfgo.PerfBuffer
 	cgroupManager  *containers.Containers
 	processTree    *proctree.ProcessTree
-	enrichEnabled  bool
+	enrichDisabled bool
 }
 
 // NewController creates a new controller.
 func NewController(
 	bpfModule *libbpfgo.Module,
 	cgroupManager *containers.Containers,
-	enrichEnabled bool,
+	enrichDisabled bool,
 	procTree *proctree.ProcessTree,
 ) (*Controller, error) {
 	var err error
@@ -45,7 +45,7 @@ func NewController(
 		bpfModule:      bpfModule,
 		cgroupManager:  cgroupManager,
 		processTree:    procTree,
-		enrichEnabled:  enrichEnabled,
+		enrichDisabled: enrichDisabled,
 	}
 
 	p.signalBuffer, err = bpfModule.InitPerfBuf("signals", p.signalChan, p.lostSignalChan, 1024)

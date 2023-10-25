@@ -47,7 +47,7 @@ func (ctrl *Controller) processCgroupMkdir(args []trace.Argument) error {
 		return errfmt.WrapError(err)
 	}
 
-	if ctrl.enrichEnabled {
+	if !ctrl.enrichDisabled {
 		// If cgroupId belongs to a container, enrich now (in a goroutine)
 		go func() {
 			_, err := ctrl.cgroupManager.EnrichCgroupInfo(cgroupId)
