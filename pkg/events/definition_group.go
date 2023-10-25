@@ -60,7 +60,11 @@ func (d *DefinitionGroup) GetDefinitions() []Definition {
 func (d *DefinitionGroup) GetDefinitionIDByName(givenName string) (ID, bool) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
-	return d.getDefinitionIDByName(givenName)
+	id, found := d.getDefinitionIDByName(givenName)
+	if !found {
+		logger.Debugw("definition name not found", "name", givenName)
+	}
+	return id, found
 }
 
 // getDefinitionIDByName returns a definition ID by its name (no locking).
@@ -70,7 +74,6 @@ func (d *DefinitionGroup) getDefinitionIDByName(givenName string) (ID, bool) {
 			return id, true
 		}
 	}
-	logger.Debugw("definition name not found", "name", givenName)
 
 	return Undefined, false
 }
