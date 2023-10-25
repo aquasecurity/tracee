@@ -17,20 +17,22 @@ metadata:
 data:
   config.yaml: |-
     cache:
-      - cache-type=mem
-      - mem-cache-size=512
+        type: mem
+        size: 512
     perf-buffer-size: 1024
-    containers: true
     healthz: false
     metrics: true
     pprof: false
     pyroscope: false
     listen-addr: :3366
     log:
-        - info
+        level: info
     output:
-        - json
-        - option:parse-arguments
+        options:
+            parse-arguments: true
+        json:
+            files:
+                - stdout
 ```
 
 ## Customizing
