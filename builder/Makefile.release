@@ -19,7 +19,6 @@ MAKEFLAGS += --no-print-directory
 #
 
 CMD_CHECKSUM ?= sha256sum
-CMD_COSIGN ?= cosign
 CMD_DOCKER ?= docker
 CMD_GIT ?= git
 CMD_GITHUB ?= gh
