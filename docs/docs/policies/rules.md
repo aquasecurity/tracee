@@ -39,7 +39,7 @@ spec:
 	    event: net_packet_ipv4
 ```
 
-**[A behavioural Signature](../events/builtin/signatures.md)**
+**[A behavioural Signature](../events/builtin/signatures/index.md)**
 
 To specify one of the behavioral signatures as an event, use the name of the signature from the table in the documentation as the event name:
 
