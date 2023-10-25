@@ -13583,6 +13583,110 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/cgroup_mkdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_mkdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/cgroup_rmdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_rmdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_create/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_create
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_remove/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_remove
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/do_sigaction/" class="md-nav__link">
         
   
@@ -13817,6 +13921,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/sched_process_exec/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_process_exec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/security_bpf_prog/" class="md-nav__link">
         
   
@@ -13876,6 +14006,136 @@
     
   
     security_file_mprotect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_inode_unlink/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_inode_unlink
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_sb_mount/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_sb_mount
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_accept/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_accept
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_bind/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_bind
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_connect/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_connect
   
 
     
@@ -16030,34 +16290,44 @@
 <h2 id="intro">Intro<a class="headerlink" href="#intro" title="Permanent link">&para;</a></h2>
 <p>creat - system call to create a new, or overwrite an existing, file with certain permissions</p>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>The creat() syscall creates a new file or overwrites an existing file, in the file system pointed to by the given pathname, with the given permissions. If the file does not exist, it will be created with the given permissions. If the file does exist, it will be overwritten, and set to the given permissions.</p>
-<p>It should be noted that the creat() syscall is essentially the same as using the open() syscall with the O_CREAT and O_WRONLY flags.</p>
+<p>The creat() syscall creates a new file or overwrites an existing file, in the
+file system pointed to by the given pathname, with the given permissions.</p>
+<p>If the file does not exist, it will be created with the given permissions. If
+the file does exist, it will be overwritten, and set to the given permissions.</p>
+<p>It should be noted that the creat() syscall is essentially the same as an open
+call to <code>pathname</code> with the following flags: <code>O_WRONLY|O_CREAT|O_TRUNC</code>.</p>
 <h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>pathname</code>:<code>const char*</code> - a pointer to a string containing the path to file being modified.</li>
-<li><code>mode</code>:<code>mode_t</code> - permissions to be applied to the file.</li>
+<li><code>pathname</code>:<code>const char*</code>[U,TOCTOU] - a pointer to a string containing the path to file being modified.</li>
+<li><code>mode</code>:<code>mode_t</code>[K] - permissions to be applied to the file.</li>
 </ul>
 <h3 id="available-tags">Available Tags<a class="headerlink" href="#available-tags" title="Permanent link">&para;</a></h3>
 <ul>
-<li>U - Originated from user space (for example, pointer to user space memory used to get it)</li>
+<li>K - Originated from kernel-space.</li>
+<li>U - Originated from user space.</li>
+<li>TOCTOU - Vulnerable to TOCTOU (time of check, time of use).</li>
+<li>OPT - Optional argument - might not always be available (passed with null value).</li>
 </ul>
 <h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
 <h3 id="sys_creat">sys_creat<a class="headerlink" href="#sys_creat" title="Permanent link">&para;</a></h3>
 <h4 id="type">Type<a class="headerlink" href="#type" title="Permanent link">&para;</a></h4>
-<p>Kprobe</p>
+<p>Tracepoint (through <code>sys_enter</code>).</p>
 <h4 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h4>
 <p>To observe and trace when the creat() system call is performed.</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
 <p>A logging system which keeps track of when files are created or modified.</p>
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
-<p>When creating a file, there is an atomic race condition which could lead to the file being left in an unexpected state if the creat() syscall fails and the file is overwritten.</p>
+<p>When creating a file, there is an atomic race condition which could lead to the
+file being left in an unexpected state if the creat() syscall fails and the file
+is overwritten.</p>
+<p>The <code>creat()</code> system call is also subjected to TOCTOU issues because it does not
+allow the <code>O_EXCL</code> flag to be set when creating a file. Anyone relying on it has
+to check if a file exists before calling <code>creat</code> system call. In between the
+check and the call the file could have been created, for example.</p>
 <h2 id="related-events">Related Events<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
 <p>open() - Creates or opens a file, modifier relating to the creat() syscall.</p>
 <blockquote>
-<p>This document was automatically generated by OpenAI and needs review. It might
-not be accurate and might contain errors. The authors of Tracee recommend that
-the user reads the "events.go" source file to understand the events and their
-arguments better.</p>
+<p>This document was automatically generated by OpenAI and reviewed by a Human.</p>
 </blockquote>
 
 

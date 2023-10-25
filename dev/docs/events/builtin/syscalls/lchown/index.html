@@ -13583,6 +13583,110 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/cgroup_mkdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_mkdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/cgroup_rmdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_rmdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_create/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_create
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_remove/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_remove
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/do_sigaction/" class="md-nav__link">
         
   
@@ -13817,6 +13921,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/sched_process_exec/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_process_exec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/security_bpf_prog/" class="md-nav__link">
         
   
@@ -13876,6 +14006,136 @@
     
   
     security_file_mprotect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_inode_unlink/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_inode_unlink
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_sb_mount/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_sb_mount
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_accept/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_accept
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_bind/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_bind
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_connect/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_connect
   
 
     
@@ -16028,41 +16288,40 @@
 
 <h1 id="lchown">lchown<a class="headerlink" href="#lchown" title="Permanent link">&para;</a></h1>
 <h2 id="intro">Intro<a class="headerlink" href="#intro" title="Permanent link">&para;</a></h2>
-<p>lchown - changing the ownership of a file or symlink</p>
+<p>lchown - change the owner and group of a symbolic link.</p>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>The lchown() system call changes the owner and the group of a given file or symlink. This syscall differs from the chown syscall in that it does not follow symlinks. This can be useful in certain scenarios, for example, when setting the owner of a mount point, or when changing the ownership of files in a readable directory that has been exposed on the target system. The lchown() system call may be vulnerable to a race condition known as TOCTOU (time of check, time of use), as this syscall does not provide atomic guarantee on the ownership change.</p>
+<p>The <code>lchown()</code> system call is used to change the owner and group of a specified symbolic link, without dereferencing it. The new owner and group are specified by the <code>owner</code> and <code>group</code> arguments respectively.</p>
 <h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>pathname</code>: <code>const char*</code>[KU] - Pathname of the file or symlink to be changed.</li>
-<li><code>owner</code>: <code>uid_t</code>[K] - User ID of the new owner.</li>
-<li><code>group</code>: <code>gid_t</code>[K] - Group ID of the new group.</li>
+<li><code>pathname</code>:<code>const char*</code>[U,TOCTOU] - Path to the symbolic link whose owner and group are to be changed.</li>
+<li><code>owner</code>:<code>uid_t</code>[K] - User identifier of the new owner.</li>
+<li><code>group</code>:<code>gid_t</code>[K] - Group identifier of the new group.</li>
 </ul>
 <h3 id="available-tags">Available Tags<a class="headerlink" href="#available-tags" title="Permanent link">&para;</a></h3>
 <ul>
 <li>K - Originated from kernel-space.</li>
-<li>U - Originated from user space (for example, pointer to user space memory used to get it)</li>
-<li>TOCTOU - Vulnerable to TOCTOU (time of check, time of use)</li>
-<li>OPT - Optional argument - might not always be available (passed with null value)</li>
+<li>U - Originated from user space.</li>
+<li>TOCTOU - Vulnerable to TOCTOU (time of check, time of use).</li>
+<li>OPT - Optional argument - might not always be available (passed with null value).</li>
 </ul>
 <h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
 <h3 id="sys_lchown">sys_lchown<a class="headerlink" href="#sys_lchown" title="Permanent link">&para;</a></h3>
 <h4 id="type">Type<a class="headerlink" href="#type" title="Permanent link">&para;</a></h4>
-<p>Kprobe + Kretprobe</p>
+<p>Tracepoint (through <code>sys_enter</code>).</p>
 <h4 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h4>
-<p>What the probes are designed to achieve. Instrumentation of the file or symlink ownership change operation.</p>
+<p>To observe and trace when the <code>lchown()</code> system call is performed, collecting information about the symbolic link, and the new owner and group.</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
-<p>A use case for this event could be creating an audit trail of ownership changes on sensitive files in the system, such as config files and binaries.</p>
+<p>Monitoring changes in symbolic link ownership in a system, especially in scenarios where the dereferencing of symbolic links needs to be avoided.</p>
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
-<p>If there is an issue with this event, this is the place to write it.</p>
+<p>The <code>lchown()</code> system call can be subjected to TOCTOU issues, where the symbolic link specified by <code>pathname</code> could be changed between the time of check and the time of use, leading to potential security risks.</p>
 <h2 id="related-events">Related Events<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>chown</code> - For changing ownership on a pathname, including symlinks</li>
+<li>chown()</li>
+<li>fchown()</li>
+<li>fchownat()</li>
 </ul>
 <blockquote>
-<p>This document was automatically generated by OpenAI and needs review. It might
-not be accurate and might contain errors. The authors of Tracee recommend that
-the user reads the "events.go" source file to understand the events and their
-arguments better.</p>
+<p>This document was automatically generated by OpenAI and reviewed by a Human.</p>
 </blockquote>
 
 

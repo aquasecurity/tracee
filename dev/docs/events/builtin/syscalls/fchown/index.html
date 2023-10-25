@@ -3184,15 +3184,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#sys_chown" class="md-nav__link">
+  <a href="#sys_fchown" class="md-nav__link">
     <span class="md-ellipsis">
       
-        sys_chown
+        sys_fchown
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="sys_chown">
+    <nav class="md-nav" aria-label="sys_fchown">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -13583,6 +13583,110 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/cgroup_mkdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_mkdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/cgroup_rmdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_rmdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_create/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_create
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_remove/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_remove
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/do_sigaction/" class="md-nav__link">
         
   
@@ -13817,6 +13921,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/sched_process_exec/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_process_exec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/security_bpf_prog/" class="md-nav__link">
         
   
@@ -13876,6 +14006,136 @@
     
   
     security_file_mprotect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_inode_unlink/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_inode_unlink
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_sb_mount/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_sb_mount
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_accept/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_accept
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_bind/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_bind
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_connect/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_connect
   
 
     
@@ -15934,15 +16194,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#sys_chown" class="md-nav__link">
+  <a href="#sys_fchown" class="md-nav__link">
     <span class="md-ellipsis">
       
-        sys_chown
+        sys_fchown
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="sys_chown">
+    <nav class="md-nav" aria-label="sys_fchown">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -16028,43 +16288,47 @@
 
 <h1 id="fchown">fchown<a class="headerlink" href="#fchown" title="Permanent link">&para;</a></h1>
 <h2 id="intro">Intro<a class="headerlink" href="#intro" title="Permanent link">&para;</a></h2>
-<p><code>fchown</code> - changes the owner and group of the specified file descriptor.</p>
+<p>fchown - change the owner and group of a file, using a file descriptor.</p>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p><code>fchown</code> changes the owner of the file referred to by the open file descriptor <code>fd</code> to <code>owner</code> and the group to <code>group</code>. The effective user ID of the calling process must match the owner of the file, or the caller must be privileged. Note that in order to change the owner of a file, the caller must have the <code>CAP_CHOWN</code> capability in the user namespace that governs its execution. </p>
-<p><code>fchown</code> can be used instead of <code>chown</code> if it is necessary to work with an existing open file descriptor instead of relying on a file path.</p>
+<p>The <code>fchown()</code> system call is used to change the owner and group of a specified
+file or directory, using a file descriptor to identify the file or directory.
+The new owner and group are specified by the <code>owner</code> and <code>group</code> arguments
+respectively.</p>
 <h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>fd</code>:<code>int</code> - file descriptor referring to the file to change ownership.</li>
-<li><code>owner</code>:<code>uid_t</code> - the user ID of the new owner. </li>
-<li><code>group</code>:<code>gid_t</code> - the group ID of the new group. </li>
+<li><code>fd</code>:<code>int</code>[K] - The file descriptor of the file or directory whose owner and group are to be changed.</li>
+<li><code>owner</code>:<code>uid_t</code>[K] - User identifier of the new owner.</li>
+<li><code>group</code>:<code>gid_t</code>[K] - Group identifier of the new group.</li>
 </ul>
 <h3 id="available-tags">Available Tags<a class="headerlink" href="#available-tags" title="Permanent link">&para;</a></h3>
 <ul>
 <li>K - Originated from kernel-space.</li>
-<li>U - Originated from user space (for example, pointer to user space memory used to get it)</li>
-<li>TOCTOU - Vulnerable to TOCTOU (time of check, time of use)</li>
-<li>OPT - Optional argument - might not always be available (passed with null value)</li>
+<li>U - Originated from user space.</li>
+<li>TOCTOU - Vulnerable to TOCTOU (time of check, time of use).</li>
+<li>OPT - Optional argument - might not always be available (passed with null value).</li>
 </ul>
 <h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
-<h3 id="sys_chown">sys_chown<a class="headerlink" href="#sys_chown" title="Permanent link">&para;</a></h3>
+<h3 id="sys_fchown">sys_fchown<a class="headerlink" href="#sys_fchown" title="Permanent link">&para;</a></h3>
 <h4 id="type">Type<a class="headerlink" href="#type" title="Permanent link">&para;</a></h4>
-<p>Kprobe</p>
+<p>Tracepoint (through <code>sys_enter</code>).</p>
 <h4 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h4>
-<p>To track changes of file ownership.</p>
+<p>To observe and trace when the <code>fchown()</code> system call is performed, collecting
+information about the file or directory, and the new owner and group.</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
-<p>An application that provides file access control has the need to track changes of the owner of files, in order to update the access control list accordingly. By hooking <code>fchown</code>, this application can capture this information with ease.</p>
+<p>Monitoring changes in file or directory ownership in a system, especially in
+scenarios where file descriptors are used instead of file pathnames.</p>
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
-<p>No known issues.</p>
+<p>Unlike <code>chown()</code>, the <code>fchown()</code> system call uses a file descriptor, which can
+provide a level of safety against TOCTOU (time of check, time of use) issues as
+the file descriptor references the actual object and not the pathname.</p>
 <h2 id="related-events">Related Events<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>chown</code>: Similar event, based on a file name instead of a file descriptor.</li>
-<li><code>fchmod</code>: Changes the mode of the file referred to by the open file descriptor <code>fd</code>. Might be related since permissions rely on owner and group of a file.</li>
+<li>chown()</li>
+<li>fchownat()</li>
+<li>lchown()</li>
 </ul>
 <blockquote>
-<p>This document was automatically generated by OpenAI and needs review. It might
-not be accurate and might contain errors. The authors of Tracee recommend that
-the user reads the "events.go" source file to understand the events and their
-arguments better.</p>
+<p>This document was automatically generated by OpenAI and reviewed by a Human.</p>
 </blockquote>
 
 

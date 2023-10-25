@@ -13583,6 +13583,110 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/cgroup_mkdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_mkdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/cgroup_rmdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_rmdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_create/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_create
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_remove/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_remove
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/do_sigaction/" class="md-nav__link">
         
   
@@ -13817,6 +13921,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/sched_process_exec/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_process_exec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/security_bpf_prog/" class="md-nav__link">
         
   
@@ -13876,6 +14006,136 @@
     
   
     security_file_mprotect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_inode_unlink/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_inode_unlink
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_sb_mount/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_sb_mount
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_accept/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_accept
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_bind/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_bind
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_connect/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_connect
   
 
     
@@ -16030,31 +16290,54 @@
 <h2 id="intro">Intro<a class="headerlink" href="#intro" title="Permanent link">&para;</a></h2>
 <p>chmod - change the permissions of a file</p>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>The chmod() system call is used to change the permission of a given file path, determined by the parameter <code>pathname</code>. The permission bits of a file are set using the second parameter of the call, <code>mode</code>, which is the third parameter of type <code>mode_t</code> and is expected as a bitmask of permission bits.</p>
-<p>The permission are set base on the user or group that own the file, setuid and setgid bit and marix of user, group and other. For more detail the man page of chmod should be consulted.</p>
-<p>There are some edge cases where the permission are not inhereted by the files that are created in a directory, for instance when creating a file with the O_TMPFILE flag. Also when using the flag chmod(), it will not delete the sticky bit information from the files.</p>
+<p>The chmod() system call is used to change the permission of a given file path,
+determined by the parameter <code>pathname</code>. The permission bits of a file are set
+using the second parameter of the call, <code>mode</code>.</p>
+<p>The permission are set base on the user or group that own the file, setuid and
+setgid bit and matrix of user, group and other. For more detail the man page of
+chmod should be consulted.</p>
 <h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>pathname</code>:<code>const char*</code>[K] - Path to the file whose permission bits are to be changed.</li>
-<li><code>mode</code>:<code>mode_t</code>[K] -  A bitmask of permission bits that will be used to set the new permission.</li>
+<li><code>pathname</code>:<code>const char*</code>[U,TOCTOU] - Path to the file whose permission bits are to be changed.</li>
+<li><code>mode</code>:<code>mode_t</code>[K] - A bitmask of permission bits that will be used to set the new permission.</li>
 </ul>
+<div class="highlight"><pre><span></span><code>* `S_ISUID (04000)`: Set-user-ID (sets process effective user ID on `execve(2)`)
+* `S_ISGID (02000)`: Set-group-ID (sets process effective group ID on `execve(2)`; mandatory locking as described in `fcntl(2)`; takes a new file&#39;s group from parent directory as described in `chown(2)` and `mkdir(2)`)
+* `S_ISVTX (01000)`: Sticky bit (restricted deletion flag as described in `unlink(2)`)
+* `S_IRUSR (00400)`: Read by owner
+* `S_IWUSR (00200)`: Write by owner
+* `S_IXUSR (00100)`: Execute/search by owner (&quot;search&quot; applies for directories, allowing access to entries within)
+* `S_IRGRP (00040)`: Read by group
+* `S_IWGRP (00020)`: Write by group
+* `S_IXGRP (00010)`: Execute/search by group
+* `S_IROTH (00004)`: Read by others
+* `S_IWOTH (00002)`: Write by others
+* `S_IXOTH (00001)`: Execute/search by others
+</code></pre></div>
 <h3 id="available-tags">Available Tags<a class="headerlink" href="#available-tags" title="Permanent link">&para;</a></h3>
 <ul>
 <li>K - Originated from kernel-space.</li>
-<li>U - Originated from user space (for example, pointer to user space memory used to get it)</li>
-<li>TOCTOU - Vulnerable to TOCTOU (time of check, time of use)</li>
-<li>OPT - Optional argument - might not always be available (passed with null value)</li>
+<li>U - Originated from user space.</li>
+<li>TOCTOU - Vulnerable to TOCTOU (time of check, time of use).</li>
+<li>OPT - Optional argument - might not always be available (passed with null value).</li>
 </ul>
 <h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
 <h3 id="sys_chmod">sys_chmod<a class="headerlink" href="#sys_chmod" title="Permanent link">&para;</a></h3>
 <h4 id="type">Type<a class="headerlink" href="#type" title="Permanent link">&para;</a></h4>
-<p>Kprobe.</p>
+<p>Tracepoint (through <code>sys_enter</code>).</p>
 <h4 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h4>
-<p>To get a context of the bits which are being used to change the mode and who initiated the call.</p>
+<p>To get a context of the bits which are being used to change the mode and who
+initiated the call.</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
-<p>In order to collect events about every time files permissions inside of a directory are modified, you can use this event.</p>
+<p>In order to collect events about every time files permissions inside of a
+directory are modified, you can use this event.</p>
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
-<p>The event is vulnerable to TOCTOU, use care when operating on it.</p>
+<p>The <code>chmod()</code> system call can be subjected to TOCTOU issues because because a
+program may check the permissions of a file using the <code>stat</code> system call and,
+before the program can call <code>chmod</code>, another process changes the permissions of
+the file OR replaces it with a symlink to a different file.</p>
+<p>Using <code>fchmodat()</code> deals with the symlink situation, removing the TOCTOU issue in
+that case.</p>
 <h2 id="related-events">Related Events<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
 <ul>
 <li>openat()</li>
@@ -16062,10 +16345,7 @@
 <li>chown()</li>
 </ul>
 <blockquote>
-<p>This document was automatically generated by OpenAI and needs review. It might
-not be accurate and might contain errors. The authors of Tracee recommend that
-the user reads the "events.go" source file to understand the events and their
-arguments better.</p>
+<p>This document was automatically generated by OpenAI and reviewed by a Human.</p>
 </blockquote>
 
 

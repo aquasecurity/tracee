@@ -13583,6 +13583,110 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/cgroup_mkdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_mkdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/cgroup_rmdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_rmdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_create/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_create
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_remove/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_remove
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/do_sigaction/" class="md-nav__link">
         
   
@@ -13817,6 +13921,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/sched_process_exec/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_process_exec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/security_bpf_prog/" class="md-nav__link">
         
   
@@ -13876,6 +14006,136 @@
     
   
     security_file_mprotect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_inode_unlink/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_inode_unlink
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_sb_mount/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_sb_mount
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_accept/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_accept
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_bind/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_bind
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_connect/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_connect
   
 
     
@@ -16028,38 +16288,57 @@
 
 <h1 id="memfd_create">memfd_create<a class="headerlink" href="#memfd_create" title="Permanent link">&para;</a></h1>
 <h2 id="intro">Intro<a class="headerlink" href="#intro" title="Permanent link">&para;</a></h2>
-<p>memfd_create - Creates an anonymous file and return a file descriptor associated with the file</p>
+<p>memfd_create - create an anonymous file.</p>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>The memfd_create system call creates an anonymous file and return a file descriptor associated with the file. The file behaves like any other file and can be mmap'ed or used with any of the other file operations. Despite being anonymous it can also have a name associated with it, as long as no other file with the same name already exists. The main use case of this syscall is to create an interface to memory that behaves like a file and is able to pass through a certain set of filters, such as virus scanners.</p>
+<p>The <code>memfd_create()</code> system call creates an anonymous file and returns a file
+descriptor that refers to it. The file behaves like a regular file and can be
+modified, mapped, and can also grow as required. This is typically used for
+in-memory storage without the need for a backing file on the filesystem, thus
+providing a mechanism for efficient inter-process communication and temporary
+storage.</p>
+<p>Files created using <code>memfd_create()</code> are automatically removed once the last
+reference to them is closed, ensuring they don't persist beyond their required
+lifespan.</p>
 <h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>name</code>:<code>const char*</code>[K] - The name of the file, can be null or a unique name. </li>
-<li><code>flags</code>:<code>unsigned int</code>[K] - Flags specifying the behaviour of the file, such as size, permissions, etc.</li>
+<li><code>name</code>:<code>const char *</code>[U] - An optional name for the file, mainly used for debugging purposes.</li>
+<li><code>flags</code>:<code>unsigned int</code>[K] - Flags to modify the behavior. Notable flags include:<ul>
+<li><code>MFD_CLOEXEC</code>: Set the close-on-exec flag for the new file descriptor.</li>
+<li><code>MFD_ALLOW_SEALING</code>: Allow the file to be sealed, preventing further modifications.</li>
+</ul>
+</li>
 </ul>
 <h3 id="available-tags">Available Tags<a class="headerlink" href="#available-tags" title="Permanent link">&para;</a></h3>
 <ul>
 <li>K - Originated from kernel-space.</li>
-<li>U - Originated from user space (for example, pointer to user space memory used to get it)</li>
-<li>TOCTOU - Vulnerable to TOCTOU (time of check, time of use)</li>
-<li>OPT - Optional argument - might not always be available (passed with null value)</li>
+<li>U - Originated from user space.</li>
+<li>TOCTOU - Vulnerable to TOCTOU (time of check, time of use).</li>
+<li>OPT - Optional argument - might not always be available (passed with null value).</li>
 </ul>
 <h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
 <h3 id="sys_memfd_create">sys_memfd_create<a class="headerlink" href="#sys_memfd_create" title="Permanent link">&para;</a></h3>
 <h4 id="type">Type<a class="headerlink" href="#type" title="Permanent link">&para;</a></h4>
-<p>Kprobes</p>
+<p>Tracepoint (through <code>sys_enter</code>).</p>
 <h4 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h4>
-<p>To trace the syscall to memfd_create</p>
+<p>To monitor and trace when the <code>memfd_create()</code> system call is invoked, capturing
+details about the file's creation, its name, and any flags set.</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
-<p>The memfd_create syscall can be used to create a lightweight anonymous file that can be passed through virus scanners, or other filters, to confirm the integrity of data that is to be passed through a certain system.</p>
+<p>Implementing a high-performance caching mechanism where data is stored in memory
+but accessed through a file descriptor. This can be used in scenarios where data
+needs to be shared between processes or stored temporarily without the overhead
+of disk I/O.</p>
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
-<p>None</p>
+<p>Since <code>memfd_create()</code> provides an in-memory file storage mechanism, overuse
+without proper monitoring could lead to excessive memory consumption. Moreover,
+if not appropriately managed, this could be exploited by malicious actors to
+create a denial-of-service condition.</p>
 <h2 id="related-events">Related Events<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
-<p>None</p>
+<ul>
+<li><code>ftruncate()</code> - To resize the in-memory file.</li>
+<li><code>mmap()</code> - To map the file into the process's address space.</li>
+</ul>
 <blockquote>
-<p>This document was automatically generated by OpenAI and needs review. It might
-not be accurate and might contain errors. The authors of Tracee recommend that
-the user reads the "events.go" source file to understand the events and their
-arguments better.</p>
+<p>This document was automatically generated by OpenAI and reviewed by a Human.</p>
 </blockquote>
 
 

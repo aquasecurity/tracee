@@ -13583,6 +13583,110 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/cgroup_mkdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_mkdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/cgroup_rmdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_rmdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_create/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_create
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_remove/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_remove
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/do_sigaction/" class="md-nav__link">
         
   
@@ -13817,6 +13921,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/sched_process_exec/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_process_exec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/security_bpf_prog/" class="md-nav__link">
         
   
@@ -13876,6 +14006,136 @@
     
   
     security_file_mprotect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_inode_unlink/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_inode_unlink
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_sb_mount/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_sb_mount
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_accept/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_accept
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_bind/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_bind
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_connect/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_connect
   
 
     
@@ -16028,44 +16288,50 @@
 
 <h1 id="setfsuid">setfsuid<a class="headerlink" href="#setfsuid" title="Permanent link">&para;</a></h1>
 <h2 id="intro">Intro<a class="headerlink" href="#intro" title="Permanent link">&para;</a></h2>
-<p>setfsuid - change the effective user id of the current process</p>
+<p>setfsuid - set the filesystem user ID.</p>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>setfsuid() changes the effective user ID of the calling process. If the effective
-ID of the caller is root, the real UID and saved set-user-ID are also set.</p>
-<p>In case the fsuid is set to a value not equal to the current real and effective
-UIDs, the permission check for system calls and certain library functions is done
-against the effective user ID. This can be used to implement (amongst other
-things) effective privilege separation in set-user-ID programs without
-requiring the set-user-ID bit to be set on the executable file.</p>
+<p>The <code>setfsuid()</code> system call permits a process to change its filesystem user ID,
+which is utilized primarily for determining file access permissions during the
+execution of a system call. The filesystem UID is typically equal to the
+effective UID of a process, but they can differ in certain contexts.</p>
+<p>The primary intent of <code>setfsuid()</code> is to allow a process to temporarily alter
+its identity when accessing filesystem resources without changing the effective
+UID. It offers a more granular level of access control to the filesystem,
+especially useful for programs that manage files on behalf of other users.</p>
 <h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>fsuid</code>:<code>uid_t</code> - The effective user id(UID) to set.</li>
+<li><code>fsuid</code>:<code>uid_t</code>[K] - The new filesystem user ID to be set.</li>
 </ul>
 <h3 id="available-tags">Available Tags<a class="headerlink" href="#available-tags" title="Permanent link">&para;</a></h3>
-<p>N/A</p>
+<ul>
+<li>K - Originated from kernel-space.</li>
+<li>U - Originated from user space.</li>
+<li>TOCTOU - Vulnerable to TOCTOU (time of check, time of use).</li>
+<li>OPT - Optional argument - might not always be available (passed with null value).</li>
+</ul>
 <h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
 <h3 id="sys_setfsuid">sys_setfsuid<a class="headerlink" href="#sys_setfsuid" title="Permanent link">&para;</a></h3>
 <h4 id="type">Type<a class="headerlink" href="#type" title="Permanent link">&para;</a></h4>
-<p>Kprobe</p>
+<p>Tracepoint (through <code>sys_enter</code>).</p>
 <h4 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h4>
-<p>To trace user calls to setfsuid() system call.</p>
+<p>To observe and trace occurrences of the <code>setfsuid()</code> system call, capturing
+details about the new filesystem user ID being set.</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
-<p>The setfsuid system call can be used in a set-user-ID program for privilege
-separation. By calling setfsuid() and setting it to a specific user, it can
-restrict the privileges available to the program and prevent unwanted
-privilege escalation.</p>
+<p>Tracking changes in filesystem UIDs provides a way to monitor and audit file
+access behaviors, ensuring that processes aren't manipulating file permissions
+inappropriately or accessing files they shouldn't.</p>
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
-<p>If a process' effective user id (UID) is not equal to that of the calling
-process, then the permission check for system calls and certain library
-functions will be done against the setfsuid value, which could create a
-security vulnerability.</p>
+<p>If not used with caution, <code>setfsuid()</code> can lead to incorrect file access
+permissions, possibly giving processes more permissions than intended or
+bypassing certain security mechanisms.</p>
 <h2 id="related-events">Related Events<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
-<p>setfsuid32, setresuid, setresuid32</p>
+<ul>
+<li><code>setfsgid()</code> - Set the filesystem group ID.</li>
+<li><code>setuid()</code> - Set the effective user ID.</li>
+<li><code>seteuid()</code> - Set effective user ID.</li>
+</ul>
 <blockquote>
-<p>This document was automatically generated by OpenAI and needs review. It might
-not be accurate and might contain errors. The authors of Tracee recommend that
-the user reads the "events.go" source file to understand the events and their
-arguments better.</p>
+<p>This document was automatically generated by OpenAI and reviewed by a Human.</p>
 </blockquote>
 
 

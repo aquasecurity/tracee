@@ -6642,15 +6642,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#move_mount_1" class="md-nav__link">
+  <a href="#sys_move_mount" class="md-nav__link">
     <span class="md-ellipsis">
       
-        move_mount
+        sys_move_mount
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="move_mount">
+    <nav class="md-nav" aria-label="sys_move_mount">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -13583,6 +13583,110 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/cgroup_mkdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_mkdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/cgroup_rmdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_rmdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_create/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_create
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_remove/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_remove
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/do_sigaction/" class="md-nav__link">
         
   
@@ -13817,6 +13921,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/sched_process_exec/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_process_exec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/security_bpf_prog/" class="md-nav__link">
         
   
@@ -13876,6 +14006,136 @@
     
   
     security_file_mprotect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_inode_unlink/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_inode_unlink
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_sb_mount/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_sb_mount
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_accept/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_accept
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_bind/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_bind
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_connect/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_connect
   
 
     
@@ -15934,15 +16194,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#move_mount_1" class="md-nav__link">
+  <a href="#sys_move_mount" class="md-nav__link">
     <span class="md-ellipsis">
       
-        move_mount
+        sys_move_mount
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="move_mount">
+    <nav class="md-nav" aria-label="sys_move_mount">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -16028,41 +16288,53 @@
 
 <h1 id="move_mount">move_mount<a class="headerlink" href="#move_mount" title="Permanent link">&para;</a></h1>
 <h2 id="intro">Intro<a class="headerlink" href="#intro" title="Permanent link">&para;</a></h2>
-<p>move_mount - move a mount point to a new location</p>
+<p>move_mount - reposition an existing mount in the file hierarchy.</p>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>This event is used for moving a mount point from one location to another in a file system. This syscall can be used to move mount points both on the same filesystem or on a different filesystem. When used on a different filesystem, the existing mount and its underlying data will be be preserved. The edge cases to be aware of when using this event are that it is not possible to move mount points across filesystems with different mount namespaces. Also, moving mount points within the same mount namespace may create conflicts, which can cause unexpected behaviour.</p>
+<p>The <code>move_mount()</code> system call is designed to allow the repositioning of an
+existing mount point to a new location within the file system hierarchy.</p>
+<p>This system call is a part of the revamped mount API introduced in Linux 5.2 and
+provides a more flexible and secure way to move mounts, particularly beneficial
+within user namespaces.</p>
+<p>Unlike the traditional <code>mount()</code> system call with the <code>MS_MOVE</code> flag,
+<code>move_mount()</code> offers a more granular approach to mount operations.</p>
 <h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>from_dfd</code>:<code>int</code>[K] - file descriptor of a directory, a relative pathname will be used.</li>
-<li><code>from_path</code>:<code>const char*</code>[K] - the directory pathname relative to from_dfd.</li>
-<li><code>to_dfd</code>:<code>int</code>[K] - file descriptor of a directory, a relative pathname will be used.</li>
-<li><code>to_path</code>:<code>const char*</code>[K] - the directory pathname relative to to_dfd.</li>
-<li><code>flags</code>:<code>unsigned int</code>[K] - flags that control the mount operation.</li>
+<li><code>from_dfd</code>:<code>int</code>[K] - File descriptor referring to the directory containing the mount point to be moved.</li>
+<li><code>from_pathname</code>:<code>const char *</code>[U] - Pathname relative to <code>from_dfd</code> indicating the mount to move.</li>
+<li><code>to_dfd</code>:<code>int</code>[K] - File descriptor referring to the directory where the mount point should be moved to.</li>
+<li><code>to_pathname</code>:<code>const char *</code>[U] - Pathname relative to <code>to_dfd</code> indicating the target location for the mount.</li>
+<li><code>flags</code>:<code>unsigned int</code>[K] - Flags to modify the behavior. As of now, the flag value is typically set to 0.</li>
 </ul>
 <h3 id="available-tags">Available Tags<a class="headerlink" href="#available-tags" title="Permanent link">&para;</a></h3>
 <ul>
 <li>K - Originated from kernel-space.</li>
+<li>U - Originated from user space.</li>
+<li>TOCTOU - Vulnerable to TOCTOU (time of check, time of use).</li>
+<li>OPT - Optional argument - might not always be available (passed with null value).</li>
 </ul>
 <h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
-<h3 id="move_mount_1">move_mount<a class="headerlink" href="#move_mount_1" title="Permanent link">&para;</a></h3>
+<h3 id="sys_move_mount">sys_move_mount<a class="headerlink" href="#sys_move_mount" title="Permanent link">&para;</a></h3>
 <h4 id="type">Type<a class="headerlink" href="#type" title="Permanent link">&para;</a></h4>
-<p>Kprobe + Kretprobe</p>
+<p>Tracepoint (through <code>sys_enter</code>).</p>
 <h4 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h4>
-<p>Used to capture the arguments of the move_mount system call</p>
+<p>To observe and trace when the <code>move_mount()</code> system call is invoked, capturing
+details about the source and target mount locations.</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
-<p>move_mount can be used to move an existing mount point to a new location in order to increase the space available for a particular file system or to avoid running out of space in a given files system.</p>
+<p>Enhancing containerization tools or sandboxing solutions by reorganizing the
+mount namespace for better isolation or to achieve specific filesystem layouts
+without resorting to the older, less granular <code>mount()</code> syscall.</p>
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
-<p>There is no way to separate a mount point and its underlying data when moving it across filesystems, meaning the mount and its underlying data will always be preserved. This could lead to unexpected behavior (i.e. data being accessed from unexpected file locations).</p>
+<p>Misuse of the <code>move_mount()</code> system call can lead to unintended changes in the
+file hierarchy, potentially affecting system stability or introducing security
+vulnerabilities. Proper validation and checks are essential when utilizing this
+syscall.</p>
 <h2 id="related-events">Related Events<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
 <ul>
-<li>mount: used to create a new mount point.</li>
-<li>pivot_root: used to change the root filesystem of a process and the rest of the system.</li>
+<li><code>open_tree()</code> - Open a reference to a mountpoint for use with the new mount API operations.</li>
+<li><code>mount_setattr()</code> - Adjust attributes of a mount.</li>
 </ul>
 <blockquote>
-<p>This document was automatically generated by OpenAI and needs review. It might
-not be accurate and might contain errors. The authors of Tracee recommend that
-the user reads the "events.go" source file to understand the events and their
-arguments better.</p>
+<p>This document was automatically generated by OpenAI and reviewed by a Human.</p>
 </blockquote>
 
 

@@ -13583,6 +13583,110 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/cgroup_mkdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_mkdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/cgroup_rmdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_rmdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_create/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_create
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_remove/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_remove
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/do_sigaction/" class="md-nav__link">
         
   
@@ -13817,6 +13921,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/sched_process_exec/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_process_exec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/security_bpf_prog/" class="md-nav__link">
         
   
@@ -13876,6 +14006,136 @@
     
   
     security_file_mprotect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_inode_unlink/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_inode_unlink
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_sb_mount/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_sb_mount
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_accept/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_accept
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_bind/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_bind
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_connect/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_connect
   
 
     
@@ -16028,38 +16288,50 @@
 
 <h1 id="setgid">setgid<a class="headerlink" href="#setgid" title="Permanent link">&para;</a></h1>
 <h2 id="intro">Intro<a class="headerlink" href="#intro" title="Permanent link">&para;</a></h2>
-<p>setgid - set group identity of the current process</p>
+<p>setgid - set the effective group ID of the calling process.</p>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>The <code>setgid</code> syscall is used to set the group identity of the current process. This syscall does not affect the supplemental group list (see <code>getgroups</code>/<code>setgroups</code>). On most implementations, only root is allowed to call this syscall.</p>
-<p>The primary advantage of using <code>setgid</code> is that it is a very simple, lightweight way to switch the group ID of the current process. However, there are some edge-cases to be aware of. Not all implementations will set the effective GID on all threads, which can lead to inconsistent behavior. Additionally, this syscall does not affect the supplemental groups list, so any groups set through <code>setgid</code> will not be applied to any child processes which are created.</p>
+<p>The <code>setgid()</code> system call enables a process to change its effective group ID.</p>
+<p>This is an essential mechanism in Unix-like operating systems, allowing
+processes to acquire or drop group-based permissions. Just as with <code>setuid()</code>,
+programs that run with set-group-ID-on-exec (the setgid bit) will operate with
+the file's group ID as its effective group ID.</p>
+<p><code>setgid()</code> is often used in conjunction with <code>setuid()</code> in programs that need to
+temporarily escalate or change privileges to perform specific tasks. By using
+<code>setgid()</code>, programs can ensure they operate with the least amount of
+group-based privilege necessary, enhancing system security.</p>
 <h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>gid</code>:<code>gid_t</code> - The GID to use as the effective GID of the calling process.</li>
+<li><code>gid</code>:<code>gid_t</code>[K] - The group ID which will be set as the effective group ID of the calling process.</li>
 </ul>
 <h3 id="available-tags">Available Tags<a class="headerlink" href="#available-tags" title="Permanent link">&para;</a></h3>
 <ul>
 <li>K - Originated from kernel-space.</li>
+<li>U - Originated from user space.</li>
+<li>TOCTOU - Vulnerable to TOCTOU (time of check, time of use).</li>
+<li>OPT - Optional argument - might not always be available (passed with null value).</li>
 </ul>
 <h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
 <h3 id="sys_setgid">sys_setgid<a class="headerlink" href="#sys_setgid" title="Permanent link">&para;</a></h3>
 <h4 id="type">Type<a class="headerlink" href="#type" title="Permanent link">&para;</a></h4>
-<p>kprobes + kretprobes</p>
+<p>Tracepoint (through <code>sys_enter</code>).</p>
 <h4 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h4>
-<p>To monitor the entry and return from setgid calls.</p>
+<p>To observe and trace when the <code>setgid()</code> system call is performed, capturing details about the group ID being set.</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
-<p>This could be used to monitor processes attempting to change their group ID, which may indicate an attack being launched or escalation of privileges.</p>
+<p>Monitoring changes in group privileges in a system, particularly in scenarios
+where group-based access control is crucial for security or resource sharing.</p>
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
-<p>This syscall does not affect the supplemental group list, so any groups set through <code>setgid</code> will not be applied to any child processes which are created.</p>
+<p>Similar to <code>setuid()</code>, if <code>setgid()</code> is misused or if programs leveraging it
+contain vulnerabilities, it can pave the way for privilege escalation attacks.
+Care must be taken to ensure that programs drop group-based privileges
+appropriately and securely.</p>
 <h2 id="related-events">Related Events<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>getgid</code> - get the group identity of the current process</li>
-<li><code>setgroups</code> - call to set the supplemental group list</li>
+<li><code>setuid()</code> - Set the effective user ID of the calling process.</li>
+<li><code>setegid()</code> - Set the effective group ID, but retain the original real group ID.</li>
+<li><code>setregid()</code> - Set real and/or effective group ID.</li>
 </ul>
 <blockquote>
-<p>This document was automatically generated by OpenAI and needs review. It might
-not be accurate and might contain errors. The authors of Tracee recommend that
-the user reads the "events.go" source file to understand the events and their
-arguments better.</p>
+<p>This document was automatically generated by OpenAI and reviewed by a Human.</p>
 </blockquote>
 
 

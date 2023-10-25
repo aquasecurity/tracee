@@ -10386,15 +10386,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#setpgid_1" class="md-nav__link">
+  <a href="#sys_setpgid" class="md-nav__link">
     <span class="md-ellipsis">
       
-        setpgid
+        sys_setpgid
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="setpgid">
+    <nav class="md-nav" aria-label="sys_setpgid">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -13583,6 +13583,110 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/cgroup_mkdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_mkdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/cgroup_rmdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_rmdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_create/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_create
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_remove/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_remove
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/do_sigaction/" class="md-nav__link">
         
   
@@ -13817,6 +13921,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/sched_process_exec/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_process_exec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/security_bpf_prog/" class="md-nav__link">
         
   
@@ -13876,6 +14006,136 @@
     
   
     security_file_mprotect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_inode_unlink/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_inode_unlink
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_sb_mount/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_sb_mount
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_accept/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_accept
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_bind/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_bind
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_connect/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_connect
   
 
     
@@ -15934,15 +16194,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#setpgid_1" class="md-nav__link">
+  <a href="#sys_setpgid" class="md-nav__link">
     <span class="md-ellipsis">
       
-        setpgid
+        sys_setpgid
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="setpgid">
+    <nav class="md-nav" aria-label="sys_setpgid">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -16028,39 +16288,47 @@
 
 <h1 id="setpgid">setpgid<a class="headerlink" href="#setpgid" title="Permanent link">&para;</a></h1>
 <h2 id="intro">Intro<a class="headerlink" href="#intro" title="Permanent link">&para;</a></h2>
-<p>setpgid - Set the process group ID of a process</p>
+<p>setpgid - set the process group ID for a process.</p>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>The setpgid() function sets the process group ID of the process specified by pid to pgid.  If pid is zero, the process ID of the current process is used.  If pgid is zero, the process ID of the process specified by pid is used.  The setpgid() system call is allowed only for a process with a single thread.</p>
-<p>Setpgid can be used to implement job control in a shell.  In a single-threaded program, setpgid() can be used to create a new process group within the same session.</p>
+<p>The <code>setpgid()</code> system call is used to set the process group ID of a specific
+process.</p>
+<p>This is particularly useful for creating or changing sessions, job control, and
+other process grouping related tasks in Unix-like operating systems. When a new
+process is created, it inherits the process group ID of its parent. Using
+<code>setpgid()</code>, processes can be re-assigned to different groups, facilitating
+group-based operations like signaling.</p>
 <h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>pid</code>:<code>pid_t</code> - The process ID of the process.</li>
-<li><code>pgid</code>:<code>pid_t</code> - The ID of the process group to which the process should be moved.</li>
+<li><code>pid</code>:<code>pid_t</code>[K] - Process ID of the target process. If <code>pid</code> is zero, the process ID of the calling process is used.</li>
+<li><code>pgid</code>:<code>pid_t</code>[K] - The process group ID to be set. If <code>pgid</code> is zero, the process ID of the process specified by <code>pid</code> is used.</li>
 </ul>
 <h3 id="available-tags">Available Tags<a class="headerlink" href="#available-tags" title="Permanent link">&para;</a></h3>
 <ul>
 <li>K - Originated from kernel-space.</li>
+<li>U - Originated from user space.</li>
+<li>TOCTOU - Vulnerable to TOCTOU (time of check, time of use).</li>
+<li>OPT - Optional argument - might not always be available (passed with null value).</li>
 </ul>
 <h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
-<h3 id="setpgid_1">setpgid<a class="headerlink" href="#setpgid_1" title="Permanent link">&para;</a></h3>
+<h3 id="sys_setpgid">sys_setpgid<a class="headerlink" href="#sys_setpgid" title="Permanent link">&para;</a></h3>
 <h4 id="type">Type<a class="headerlink" href="#type" title="Permanent link">&para;</a></h4>
-<p>Kprobe</p>
+<p>Tracepoint (through <code>sys_enter</code>).</p>
 <h4 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h4>
-<p>To instrument the process control system call to detect changes in the process group ID.</p>
+<p>To observe and trace the invocation of the <code>setpgid()</code> system call, capturing
+information about the process and the new process group ID.</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
-<p>Monitoring changes in process group IDs, particularly when using Job Control (e.g. with a shell).</p>
+<p>Monitoring process group changes, especially in scenarios where job control or
+session management is vital, such as in shell environments or process managers.</p>
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
-<p>None.</p>
+<p>Improper usage of <code>setpgid()</code> can lead to processes being unintentionally grouped together, potentially causing unintended signaling or termination of processes.</p>
 <h2 id="related-events">Related Events<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
 <ul>
-<li>execve() - Used to create a new process session and set the process group ID.</li>
-<li>setpgrp() - Used to set the process group ID of the current process and create a new process group.</li>
+<li><code>getpgid()</code> - Retrieve the process group ID of a process.</li>
+<li><code>setsid()</code> - Create a new session and set the process group ID.</li>
+<li><code>getpgrp()</code> - Get the process group ID of the calling process.</li>
 </ul>
 <blockquote>
-<p>This document was automatically generated by OpenAI and needs review. It might
-not be accurate and might contain errors. The authors of Tracee recommend that
-the user reads the "events.go" source file to understand the events and their
-arguments better.</p>
+<p>This document was automatically generated by OpenAI and reviewed by a Human.</p>
 </blockquote>
 
 

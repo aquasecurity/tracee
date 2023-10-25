@@ -10672,15 +10672,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#do_setsid" class="md-nav__link">
+  <a href="#sys_setsid" class="md-nav__link">
     <span class="md-ellipsis">
       
-        do_setsid
+        sys_setsid
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="do_setsid">
+    <nav class="md-nav" aria-label="sys_setsid">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -13583,6 +13583,110 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/cgroup_mkdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_mkdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/cgroup_rmdir/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    cgroup_rmdir
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_create/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_create
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/container_remove/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    container_remove
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/do_sigaction/" class="md-nav__link">
         
   
@@ -13817,6 +13921,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../../extra/sched_process_exec/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    sched_process_exec
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../extra/security_bpf_prog/" class="md-nav__link">
         
   
@@ -13876,6 +14006,136 @@
     
   
     security_file_mprotect
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_inode_unlink/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_inode_unlink
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_sb_mount/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_sb_mount
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_accept/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_accept
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_bind/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_bind
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extra/security_socket_connect/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    security_socket_connect
   
 
     
@@ -15934,15 +16194,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#do_setsid" class="md-nav__link">
+  <a href="#sys_setsid" class="md-nav__link">
     <span class="md-ellipsis">
       
-        do_setsid
+        sys_setsid
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="do_setsid">
+    <nav class="md-nav" aria-label="sys_setsid">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -16028,50 +16288,48 @@
 
 <h1 id="setsid">setsid<a class="headerlink" href="#setsid" title="Permanent link">&para;</a></h1>
 <h2 id="intro">Intro<a class="headerlink" href="#intro" title="Permanent link">&para;</a></h2>
-<p>setsid - create a session and set the process group ID</p>
+<p>setsid - create a new session and set the process group ID.</p>
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>setsid() creates a new session if the calling process is not a process group leader.
- The calling process is the leader of the new session (session leader) and the
-process group leader of the new process group (PGID).</p>
-<p>The process will become the only process in its session and the only process in
-its process group.</p>
-<p>The process will also be disassociated from its controlling terminal, if any.</p>
-<p>If the calling process is already a process group leader, setsid() will fail with
-EPERM.</p>
+<p>The <code>setsid()</code> system call is instrumental in creating a new session.</p>
+<p>A session is a collection of process groups, typically used in terminal job
+control. When a process calls <code>setsid()</code>, it becomes the leader of a new
+session, the leader of a new process group, and detaches from its controlling
+terminal.</p>
+<p>This mechanism is foundational for daemon processes in Unix-like systems,
+allowing them to dissociate from their parent shell and run in the background,
+independent of the user's session.</p>
 <h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
-<ul>
-<li><code>pid</code>:<code>pid_t</code>[U] - PID of the session/process group leader to be replaced if positive, 
-or to be created if 0 or negative.</li>
-</ul>
+<p>This system call doesn't take any arguments.</p>
 <h3 id="available-tags">Available Tags<a class="headerlink" href="#available-tags" title="Permanent link">&para;</a></h3>
 <ul>
 <li>K - Originated from kernel-space.</li>
-<li>U - Originated from user space (for example, pointer to user space memory used to get it)</li>
-<li>TOCTOU - Vulnerable to TOCTOU (time of check, time of use)</li>
-<li>OPT - Optional argument - might not always be available (passed with null value)</li>
+<li>U - Originated from user space.</li>
+<li>TOCTOU - Vulnerable to TOCTOU (time of check, time of use).</li>
+<li>OPT - Optional argument - might not always be available (passed with null value).</li>
 </ul>
 <h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
-<h3 id="do_setsid">do_setsid<a class="headerlink" href="#do_setsid" title="Permanent link">&para;</a></h3>
+<h3 id="sys_setsid">sys_setsid<a class="headerlink" href="#sys_setsid" title="Permanent link">&para;</a></h3>
 <h4 id="type">Type<a class="headerlink" href="#type" title="Permanent link">&para;</a></h4>
-<p>KProbes </p>
+<p>Tracepoint (through <code>sys_enter</code>).</p>
 <h4 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h4>
-<p>To monitor the creation of new sessions/process groups.</p>
+<p>To observe and trace when the <code>setsid()</code> system call is invoked, marking the
+creation of a new session and process group.</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
-<p>For example, setsid() could be used when a process is executed through a child 
-process, so that it also creates its own session.</p>
+<p>Monitoring the creation of new sessions is vital in scenarios where tracking
+background processes, daemonizing processes, or job control is essential, such
+as in system initialization or process supervision.</p>
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
-<p>Setsid() is not allowed if the calling process is already a process group leader,
-so other methods of creating independent process group should be used in that case.</p>
+<p>Misusing <code>setsid()</code> can cause processes to become orphaned unintentionally or
+detached from their expected sessions, leading to potential mismanagement of
+resources or processes running without supervision.</p>
 <h2 id="related-events">Related Events<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
 <ul>
-<li>fork - to create a new process </li>
-<li>setpgid - to set the process group ID of a process</li>
+<li><code>setpgid()</code> - Set the process group ID for a process.</li>
+<li><code>getpgid()</code> - Retrieve the process group ID of a process.</li>
+<li><code>getpgrp()</code> - Get the process group ID of the calling process.</li>
 </ul>
 <blockquote>
-<p>This document was automatically generated by OpenAI and needs review. It might
-not be accurate and might contain errors. The authors of Tracee recommend that
-the user reads the "events.go" source file to understand the events and their
-arguments better.</p>
+<p>This document was automatically generated by OpenAI and reviewed by a Human.</p>
 </blockquote>
 
 
