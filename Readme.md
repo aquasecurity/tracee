@@ -11,7 +11,7 @@ Before moving on, please consider giving us a GitHub star ⭐️. Thank you!
 
 Tracee is a runtime security and observability tool that helps you understand how your system and applications behave.  
 It is using [eBPF technology](https://ebpf.io/what-is-ebpf/) to tap into your system and expose that information as events that you can consume.  
-Events range from factual system activity events to sophisticated security events detect suspicious behavioral patterns.
+Events range from factual system activity events to sophisticated security events that detect suspicious behavioral patterns.
 
 To learn more about Tracee, check out the [documentation](https://aquasecurity.github.io/tracee/). 
 
@@ -29,10 +29,6 @@ docker run --name tracee \
   aquasec/tracee:latest
 ```
 
-```shell
-docker logs tracee
-```
-
 For a complete walkthrough please see the [Docker getting started guide][docker-guide].
 
 ### On Kubernetes
@@ -40,11 +36,11 @@ For a complete walkthrough please see the [Docker getting started guide][docker-
 ```shell
 helm repo add aqua https://aquasecurity.github.io/helm-charts/
 helm repo update
-helm install tracee aqua/tracee --namespace tracee-system --create-namespace
+helm install tracee aqua/tracee --namespace tracee --create-namespace
 ```
 
 ```shell
-kubectl logs tracee
+kubectl logs --follow --namespace tracee daemonset/tracee
 ```
 
 For a complete walkthrough please see the [Kubernetes getting started guide][kubernetes-guide].
