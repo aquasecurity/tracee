@@ -200,42 +200,38 @@ func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetada
 	defer c.cgroupsMutex.Unlock()
 
 	var metadata cruntime.ContainerMetadata
-	info, ok := c.cgroupsMap[uint32(cgroupId)]
 
-	// if there is no cgroup anymore for some reason, return early
+	info, ok := c.cgroupsMap[uint32(cgroupId)]
 	if !ok {
 		return metadata, errfmt.Errorf("no cgroup to enrich")
 	}
 
-	containerId := info.Container.ContainerId
-	runtime := info.Runtime
-
-	if containerId == "" {
+	if info.Container.ContainerId == "" {
 		return metadata, errfmt.Errorf("no containerId")
 	}
 
+	// If already enriched (from control plane)
+	if info.Container.Image != "" {
+		return info.Container, nil
+	}
+
+	// Short lived cgroups: no need to enrich
 	if info.Dead {
 		return metadata, errfmt.Errorf("container already deleted")
 	}
 
-	if info.Container.Image != "" {
-		// If already enriched (from control plane) - short circuit and return
-		return info.Container, nil
-	}
-
-	// There might be a performance overhead with the cancel
-	// But, I think it will be negligible since this code path shouldn't be reached too frequently
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	metadata, err := c.enricher.Get(ctx, containerId, runtime)
 	defer cancel()
-	// if enrichment fails, just return early
+
+	// Enrich container metadata
+	metadata, err := c.enricher.Get(ctx, info.Container.ContainerId, info.Runtime)
 	if err != nil {
 		return metadata, errfmt.WrapError(err)
 	}
 
 	info.Container = metadata
-	// we read the dictionary again to make sure the cgroup still exists
-	// otherwise we risk reintroducing it despite not existing
+
+	// Re-introduce the cgroupInfo to the map, with the new metadata
 	_, ok = c.cgroupsMap[uint32(cgroupId)]
 	if ok {
 		c.cgroupsMap[uint32(cgroupId)] = info
