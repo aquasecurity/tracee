@@ -30,8 +30,8 @@ data:
     capabilities:
       {{- toYaml . | nindent 8 }}
     {{- end }}
-    {{- with .Values.config.crs }}
-    crs:
+    {{- with .Values.config.cri }}
+    cri:
       {{- toYaml . | nindent 8 }}
     {{- end }}
     {{- with .Values.config.rego }}

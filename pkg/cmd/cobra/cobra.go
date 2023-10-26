@@ -96,12 +96,12 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	// Container Runtime command line flags
 
 	if !cfg.NoContainersEnrich {
-		crsFlags, err := GetFlagsFromViper("crs")
+		criFlags, err := GetFlagsFromViper("cri")
 		if err != nil {
 			return runner, err
 		}
 
-		sockets, err := flags.PrepareContainers(crsFlags)
+		sockets, err := flags.PrepareContainers(criFlags)
 		if err != nil {
 			return runner, err
 		}

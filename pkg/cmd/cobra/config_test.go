@@ -146,24 +146,24 @@ capabilities:
 			},
 		},
 		{
-			name: "Test crs configuration (cli flags)",
+			name: "Test cri configuration (cli flags)",
 			yamlContent: `
-crs:
+cri:
     - test1:/var/run/test1.sock
     - test2:/var/run/test2.sock
 `,
-			key: "crs",
+			key: "cri",
 			expectedFlags: []string{
 				"test1:/var/run/test1.sock",
 				"test2:/var/run/test2.sock",
 			},
 		},
 		{
-			name: "Test crs configuration (structured flags)",
+			name: "Test cri configuration (structured flags)",
 			// test1: /var/run/test1.sock
 			// test2: /var/run/test2.sock
 			yamlContent: `
-crs:
+cri:
     - runtime:
         name: test1
         socket: /var/run/test1.sock
@@ -171,7 +171,7 @@ crs:
         name: test2
         socket: /var/run/test2.sock
 `,
-			key: "crs",
+			key: "cri",
 			expectedFlags: []string{
 				"test1:/var/run/test1.sock",
 				"test2:/var/run/test2.sock",
@@ -737,20 +737,20 @@ func TestCapabilitiesConfigFlags(t *testing.T) {
 }
 
 //
-// crs
+// cri
 //
 
-func TestCRSConfigFlag(t *testing.T) {
+func TestCRIConfigFlag(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name     string
-		config   CRSConfig
+		config   CRIConfig
 		expected []string
 	}{
 		{
 			name: "empty config",
-			config: CRSConfig{
+			config: CRIConfig{
 				Name:   "",
 				Socket: "",
 			},
@@ -758,7 +758,7 @@ func TestCRSConfigFlag(t *testing.T) {
 		},
 		{
 			name: "valid config",
-			config: CRSConfig{
+			config: CRIConfig{
 				Name:   "testName",
 				Socket: "/var/run/socket.sock",
 			},

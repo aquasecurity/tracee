@@ -27,7 +27,7 @@ Supported runtimes are:
 4. Podman     (podman)
 
 Example:
-  --crs crio:/var/run/crio/crio.sock
+  --cri crio:/var/run/crio/crio.sock
 `
 }
 
@@ -63,7 +63,7 @@ func PrepareContainers(containerFlags []string) (runtime.Sockets, error) {
 		containerRuntime := parts[0]
 
 		if !contains(supportedRuntimes, containerRuntime) {
-			return sockets, errfmt.Errorf("provided unsupported container runtime (see --crs help for supported runtimes)")
+			return sockets, errfmt.Errorf("provided unsupported container runtime (see --cri help for supported runtimes)")
 		}
 
 		socket := parts[1]

@@ -17,7 +17,7 @@ capabilities:
     # drop:
     #     - cap_chown
 
-crs:
+cri:
     # - runtime:
     #     name: containerd
     #     socket: /var/run/containerd/containerd.sock
