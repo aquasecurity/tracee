@@ -10,9 +10,10 @@ nav:
     - Home: index.md
     - Tutorials:
           - Overview: tutorials/overview.md
+          - Cosign - verify Tracee signature: tutorials/verify-tracee-signature.md
+          - Access Tracee Metrics in Grafana and Prometheus: tutorials/deploy-grafana-dashboard.md
+          - Using Tracee Container Image with Vagrant on Mac: tutorials/tracee-vagrant.md
           - Working with Tracee's Policies on Kubernetes: tutorials/k8s-policies.md
-          - Cosign - verify tracee signature: tutorials/verify-tracee-signature.md
-          - Deploy Tracee Grafana Dashboard: tutorials/deploy-grafana-dashboard.md
           - Accessing Tracee Logs through Promtail and Loki: tutorials/promtail.md
           - Additional Resources: tutorials/additional-resources.md
     - Docs:

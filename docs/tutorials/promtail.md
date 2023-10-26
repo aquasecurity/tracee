@@ -10,6 +10,8 @@ If you prefer the video tutorial, check out the tutorial below on the Aqua Open 
 
 ## Prerequisites
 
+### CLI tools
+
 Please make sure to have 
 - Kubectl installed and connected to a Kubernetes cluster (any cluster will work for this purpose)
 - The Helm CLI installed
@@ -26,7 +28,64 @@ and
 helm version
 ```
 
-## Installation
+### Obserability Tools
+
+Lastly, please ensure that the following observability tools are already installed inside the Kubernetes cluster:
+
+* Prometheus
+* Loki and Promtail
+* Grafana
+
+Alternatively, this tutorial showcases after the Tracee Installation section how to get an observability stack running with the above tools.
+
+## Installing the Tracee Helm Chart and accessing logs
+
+Right now, we cannot access any logs from our cluster since we do not have any application that actively produces logs.
+Thus, we will install Tracee inside our cluster through the Tracee Helm Chart.
+
+Add the Tracee Helm Chart:
+
+```console
+helm repo add aqua https://aquasecurity.github.io/helm-charts/
+```
+
+Update the repository list on Helm:
+
+```console
+helm repo update
+```
+
+Install the Tracee Helm Chart inside your Kubernetes cluster:
+
+```console
+helm install tracee aqua/tracee \
+        --namespace tracee-system --create-namespace \
+        --set hostPID=true
+```
+
+Now, ensure that Tracee is running inside the `tracee-system` namespace:
+
+```console
+kubectl get all -n tracee-system
+```
+
+Similar to Promtail, also for Tracee one pod should run on each node of the Kubernetes cluster.
+
+### Accessing Tracee Logs
+
+Generally, it is possible to access logs from the Tracee pods directly through kubectl:
+
+```console
+kubectl logs -f daemonset/tracee -n tracee-system
+```
+
+Next, open the Grafana Dashboard, on the left, go to "Explore". There, you should be able to select Loki as a Datasource.
+
+Now, you can write log queries in LogQL to access the logs that are stored in the Tracee pods:
+
+![Screenshot from Grafana, accessing Tracee logs through Loki](../images/loki.png)
+
+## Installation of Observability Tools
 
 We need to install an observability stack to access the logs of the pods inside our cluster. This will consist of:
 - Grafana (for Dashboards and querying logs)
@@ -185,50 +244,3 @@ The password name is dependent on how you called the Helm Chart installation of 
 
 Now navigate on Grafana to: Explore 
 Here select Loki as a data source.
-
-### Tracee
-
-Right now, we cannot access any logs from our cluster since we do not have any application that actively produces logs.
-Thus, we will install Tracee inside our cluster through the Tracee Helm Chart.
-
-Add the Tracee Helm Chart:
-
-```console
-helm repo add aqua https://aquasecurity.github.io/helm-charts/
-```
-
-Update the repository list on Helm:
-
-```console
-helm repo update
-```
-
-Install the Tracee Helm Chart inside your Kubernetes cluster:
-
-```console
-helm install tracee aqua/tracee \
-        --namespace tracee-system --create-namespace \
-        --set hostPID=true
-```
-
-Now, ensure that Tracee is running inside the `tracee-system` namespace:
-
-```console
-kubectl get all -n tracee-system
-```
-
-Similar to Promtail, also for Tracee one pod should run on each node of the Kubernetes cluster.
-
-## Accessing Tracee Logs
-
-Generally, it is possible to access logs from the Tracee pods directly through kubectl:
-
-```console
-kubectl logs -f daemonset/tracee -n tracee-system
-```
-
-However, once you have all the above components installed, you can open the Grafana Dashboard, on the left, go to "Explore". There, you should be able to select Loki as a Datasource.
-
-Now, you can write log queries in LogQL to access the logs that are stored in the Tracee pods:
-
-![Screenshot from Grafana, accessing Tracee logs through Loki](../images/loki.png)
