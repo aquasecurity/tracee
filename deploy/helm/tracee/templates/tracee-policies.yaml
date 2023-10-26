@@ -6,6 +6,10 @@ metadata:
   labels:
     {{- include "tracee.labels" . | nindent 4 }}
 data:
+  {{- if .Values.defaultPolicy }}
+  default.yaml:
+    {{- toYaml .Values.defaultPolicy | nindent 4 }}
+  {{- else }}
   default.yaml: |-
     apiVersion: tracee.aquasec.com/v1beta1
     kind: Policy
@@ -87,3 +91,4 @@ data:
         - event: net_packet_dns_response
         - event: net_packet_http_request
         - event: net_packet_http_response
+  {{- end }}
