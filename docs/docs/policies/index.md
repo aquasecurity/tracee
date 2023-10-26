@@ -1,3 +1,5 @@
+# Overview 
+
 In this section you can find the reference documentation for Tracee's policies.
 
 Policies are YAML manifests that allow you to define how Tracee should respond to different events. This is done through rules in the policy. A rule takes in one or several events. Additionally, events can be filtered to specific resources. If Tracee detects the event, it will respond with an action. 
@@ -7,7 +9,7 @@ Lastly, policies require a scope. The scope details which resources the policy a
 
 You can load multiple (up to 64) policies into Tracee using the --policy flag providing a path to the policy file.
 
-Following is a sample policy:
+Following is a sample policy for the Tracee Kubernetes usage:
 
 ```yaml
 apiVersion: tracee.aquasec.com/v1beta1
@@ -46,6 +48,17 @@ While specifying event filters is optional, policies must have the `name`, `desc
     Note that currently only one rule can be defined per any event type in a policy
 
 More information about defining a scope and the available filters can be found in the next sections.
+
+## Tracee Kubernetes Policy configuration
+
+Through Querying the Tracee Configmap, users can access the default configuration and apply changes:
+```console
+kubectl edit ds/tracee -n tracee-system
+```
+
+## Tracee CLI Policy configuration
+
+Applying Tracee Policies in the CLI is further detailed within the [filtering section.](./filtering)
 
 ## Video Content
 

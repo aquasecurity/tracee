@@ -1,4 +1,6 @@
-# Tracing Event Filtering
+# Tracing Events through the Tracee CLI by applying filters
+
+This section showcases how to trace events through the Tracee CLI by applying filters.
 
 ```console
 ./dist/tracee man

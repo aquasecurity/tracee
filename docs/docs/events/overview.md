@@ -6,13 +6,15 @@ This section documents all of the different events that Tracee exposes.
 
 Tracee uses eBPF technology to tap into your system and give you access to hundreds of events that help you understand how your system behaves. The events can be specified either through CLI with [filters] or with [policies].
 
-eg:
+### Using the CLI
 
 Tracing `execve` events with [filters]:
 
 ```console
 tracee --events execve
 ```
+
+### Through the Tracee Helm Chart installation
 
 Tracing `execve` events with [policies]:
 
@@ -38,81 +40,6 @@ tracee --policies sample_policy.yaml
 
 If no event is passed with [filters] or [policies], tracee will start with a set of default events.
 Below a list of tracee default events.
-
-### Default events
-
-Name   | Sets                              |
--------|-----------------------------------|
-stdio_over_socket | [signatures default] |
-k8s_api_connection |[signatures default] |
-aslr_inspection | [signatures default] |
-proc_mem_code_injection | [signatures default] |
-docker_abuse | [signatures default] |
-scheduled_task_mod | [signatures default] |
-ld_preload | [signatures default] |
-cgroup_notify_on_release | [signatures default] |
-default_loader_mod | [signatures default] |
-sudoers_modification | [signatures default] |
-sched_debug_recon | [signatures default] |
-system_request_key_mod | [signatures default] |
-cgroup_release_agent | [signatures default] |
-rcd_modification | [signatures default] |
-core_pattern_modification | [signatures default] |
-proc_kcore_read | [signatures default] |
-proc_mem_access | [signatures default] |
-hidden_file_created | [signatures default] |
-anti_debugging | [signatures default] |
-ptrace_code_injection | [signatures default] |
-process_vm_write_inject | [signatures default] |
-disk_mount | [signatures default] |
-dynamic_code_loading | [signatures default] |
-fileless_execution | [signatures default] |
-illegitimate_shell  | [signatures default] |
-kernel_module_loading | [signatures default] |
-k8s_cert_theft | [signatures default] |
-proc_fops_hooking | [signatures default] |
-syscall_hooking | [signatures default] |
-dropped_executable | [signatures default] |
-creat | [default syscalls fs fs_file_ops] |
-chmod | [default syscalls fs fs_file_attr] |
-fchmod | [default syscalls fs fs_file_attr] |
-chown | [default syscalls fs fs_file_attr] |
-fchown | [default syscalls fs fs_file_attr] |
-lchown | [default syscalls fs fs_file_attr]|
-ptrace | [default syscalls proc] |
-setuid | [default syscalls proc proc_ids] |
-setgid | [default syscalls proc proc_ids] |
-setpgid | [default syscalls proc proc_ids] |
-setsid | [default syscalls proc proc_ids] |
-setreuid | [default syscalls proc proc_ids] |
-setregid | [default syscalls proc proc_ids] |
-setresuid | [default syscalls proc proc_ids] |
-setresgid | [default syscalls proc proc_ids] |
-setfsuid | [default syscalls proc proc_ids] |
-setfsgid | [default syscalls proc proc_ids] |
-init_module | [default syscalls system system_module] | 
-fchownat | [default syscalls fs fs_file_attr] |
-fchmodat | [default syscalls fs fs_file_attr] |
-setns | [default syscalls proc] |
-process_vm_readv | [default syscalls proc] |
-process_vm_writev | [default syscalls proc] |
-finit_module | [default syscalls system system_module] |
-memfd_create | [default syscalls fs fs_file_ops] |
-move_mount | [default syscalls fs] |
-sched_process_exec | [default proc] |
-security_inode_unlink | [default lsm_hooks fs fs_file_ops] |
-security_socket_connect | [default lsm_hooks net net_sock] |
-security_socket_accept | [default lsm_hooks net net_sock] |
-security_socket_bind | [default lsm_hooks net net_sock] |
-security_sb_mount | [default lsm_hooks fs] |
-container_create | [default containers] |
-container_remove | [default containers] |
-net_packet_icmp | [default network_events] |
-net_packet_icmpv6 | [default network_events] |
-net_packet_dns_request | [default network_events] |
-net_packet_dns_response | [default network_events] |
-net_packet_http_request | [default network_events] |
-net_packet_http_response | [default network_events] |
 
 ### Sets
 
