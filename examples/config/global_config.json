@@ -7,7 +7,6 @@
         "none"
     ],
     "capabilities": [],
-    "containers": false,
     "crs": [],
     "healthz": false,
     "install-path": "/tmp/tracee",

@@ -15,7 +15,6 @@ data:
     blob-perf-buffer-size: {{ .Values.config.blobPerfBufferSize}}
     {{- end }}
     perf-buffer-size: {{ .Values.config.perfBufferSize }}
-    containers: {{ .Values.config.containers }}
     healthz: {{ .Values.config.healthz }}
     metrics: {{ .Values.config.metrics }}
     pprof: {{ .Values.config.pprof }}

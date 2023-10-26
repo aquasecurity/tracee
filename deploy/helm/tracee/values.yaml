@@ -61,7 +61,6 @@ traceeConfig: {}
 config:
   blobPerfBufferSize: ""
   perfBufferSize: 1024
-  containers: true
   healthz: true
   metrics: true
   pprof: false
