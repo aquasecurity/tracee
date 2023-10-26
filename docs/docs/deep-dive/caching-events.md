@@ -44,7 +44,7 @@ sudo ./dist/tracee \
     -o format:json \
     -o option:parse-arguments \
     -trace container \
-    --crs docker:/var/run/docker.sock
+    --cri docker:/var/run/docker.sock
 ```
 
 !!! Attention

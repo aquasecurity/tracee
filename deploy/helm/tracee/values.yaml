@@ -71,7 +71,7 @@ config:
   installPath: ""
   signaturesDir: ""
   capabilities: []
-  crs: []
+  cri: []
   rego: []
   cache:
     - cache-type=mem

@@ -30,14 +30,14 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &ProcTreeConfig{}
 	case "capabilities":
 		flagger = &CapabilitiesConfig{}
-	case "crs":
+	case "cri":
 		switch v := rawValue.(type) {
 		case []string: // via cli
-			return getConfigFlags(rawValue, nil, "crs")
+			return getConfigFlags(rawValue, nil, "cri")
 		case []interface{}: // via config file
-			return getCRSConfigFlags(rawValue)
+			return getCRIConfigFlags(rawValue)
 		default:
-			return nil, errfmt.Errorf("unrecognized type %T for crs", v)
+			return nil, errfmt.Errorf("unrecognized type %T for cri", v)
 		}
 	case "log":
 		flagger = &LogConfig{}
@@ -76,29 +76,29 @@ func getConfigFlags(rawValue interface{}, flagger cliFlagger, key string) ([]str
 	}
 }
 
-// getCRSConfigFlags handles the crs config key, which is a special case.
+// getCRIConfigFlags handles the cri config key, which is a special case.
 // For structured flags, it uses mapstructure to decode the config into a
-// CRSConfig struct. For raw cli flags, it returns the raw values as strings.
-func getCRSConfigFlags(rawValue interface{}) ([]string, error) {
+// CRIConfig struct. For raw cli flags, it returns the raw values as strings.
+func getCRIConfigFlags(rawValue interface{}) ([]string, error) {
 	rawValues, ok := rawValue.([]interface{})
 	if !ok {
-		return nil, errfmt.Errorf("unrecognized type %T for crs", rawValue)
+		return nil, errfmt.Errorf("unrecognized type %T for cri", rawValue)
 	}
 
 	flags := make([]string, 0)
-	flagger := &CRSConfig{}
+	flagger := &CRIConfig{}
 	for _, raw := range rawValues {
 		switch v := raw.(type) {
 		// raw cli flags
 		case string:
-			// crs:
+			// cri:
 			//     - containerd:/var/run/containerd/containerd.sock
 			//     - docker:/var/run/docker.sock
 			flags = append(flags, v)
 
 		// structured flags
 		case map[string]interface{}:
-			// crs:
+			// cri:
 			//     - runtime:
 			//         name: containerd
 			//         socket: /var/run/containerd/containerd.sock
@@ -115,7 +115,7 @@ func getCRSConfigFlags(rawValue interface{}) ([]string, error) {
 			flags = append(flags, flagger.flags()...)
 
 		default:
-			return nil, errfmt.Errorf("unrecognized type %T for crs", v)
+			return nil, errfmt.Errorf("unrecognized type %T for cri", v)
 		}
 	}
 
@@ -225,15 +225,15 @@ func (c *CapabilitiesConfig) flags() []string {
 }
 
 //
-// crs flag
+// cri flag
 //
 
-type CRSConfig struct {
+type CRIConfig struct {
 	Name   string `mapstructure:"name"`
 	Socket string `mapstructure:"socket"`
 }
 
-func (c *CRSConfig) flags() []string {
+func (c *CRIConfig) flags() []string {
 	flags := make([]string, 0)
 
 	if c.Name != "" && c.Socket != "" {

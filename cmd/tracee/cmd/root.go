@@ -158,11 +158,11 @@ func initCmd() error {
 	}
 
 	rootCmd.Flags().StringArray(
-		"crs",
+		"cri",
 		[]string{},
 		"<runtime:socket>\t\t\tDefine connected container runtimes",
 	)
-	err = viper.BindPFlag("crs", rootCmd.Flags().Lookup("crs"))
+	err = viper.BindPFlag("cri", rootCmd.Flags().Lookup("cri"))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

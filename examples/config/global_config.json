@@ -7,7 +7,7 @@
         "none"
     ],
     "capabilities": [],
-    "crs": [],
+    "cri": [],
     "healthz": false,
     "install-path": "/tmp/tracee",
     "listen-addr": ":3366",

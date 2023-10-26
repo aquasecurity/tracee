@@ -571,7 +571,7 @@ nav:
                       - output: docs/flags/output.1.md
                       - capture: docs/flags/capture.1.md
                       - config: docs/flags/config.1.md
-                      - crs: docs/flags/containers.1.md
+                      - cri: docs/flags/containers.1.md
                       - rego: docs/flags/rego.1.md
                       - cache: docs/flags/cache.1.md
                       - capabilities: docs/flags/capabilities.1.md

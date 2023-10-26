@@ -64,7 +64,7 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	// Container Runtime command line flags
 
 	if !cfg.NoContainersEnrich {
-		sockets, err := flags.PrepareContainers(c.StringSlice("crs"))
+		sockets, err := flags.PrepareContainers(c.StringSlice("cri"))
 		if err != nil {
 			return runner, err
 		}

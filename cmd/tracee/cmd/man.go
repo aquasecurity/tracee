@@ -80,11 +80,11 @@ var configCmd = &cobra.Command{
 }
 
 var containersCmd = &cobra.Command{
-	Use:     "crs",
+	Use:     "cri",
 	Aliases: []string{},
 	Short:   "containers flag help",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runManForFlag("crs")
+		return runManForFlag("cri")
 	},
 }
 
