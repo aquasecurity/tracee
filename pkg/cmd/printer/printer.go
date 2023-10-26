@@ -619,9 +619,11 @@ func (p forwardEventPrinter) Close() {
 }
 
 type webhookEventPrinter struct {
-	outPath string
-	url     *url.URL
-	timeout time.Duration
+	outPath     string
+	url         *url.URL
+	timeout     time.Duration
+	templateObj *template.Template
+	contentType string
 }
 
 func (ws *webhookEventPrinter) Init() error {
@@ -640,16 +642,42 @@ func (ws *webhookEventPrinter) Init() error {
 	}
 	ws.timeout = t
 
+	gotemplate := getParameterValue(parameters, "gotemplate", "")
+	if gotemplate != "" {
+		tmpl, err := template.ParseFiles(gotemplate)
+		if err != nil {
+			return errfmt.WrapError(err)
+		}
+		ws.templateObj = tmpl
+	}
+
+	contentType := getParameterValue(parameters, "contentType", "application/json")
+	ws.contentType = contentType
+
 	return nil
 }
 
 func (ws *webhookEventPrinter) Preamble() {}
 
 func (ws *webhookEventPrinter) Print(event trace.Event) {
-	payload, err := json.Marshal(event)
-	if err != nil {
-		logger.Errorw("Error marshalling event", "error", err)
-		return
+	var (
+		payload []byte
+		err     error
+	)
+
+	if ws.templateObj != nil {
+		buf := bytes.Buffer{}
+		if err := ws.templateObj.Execute(&buf, event); err != nil {
+			logger.Errorw("error writing to the template", "error", err)
+			return
+		}
+		payload = buf.Bytes()
+	} else {
+		payload, err = json.Marshal(event)
+		if err != nil {
+			logger.Errorw("Error marshalling event", "error", err)
+			return
+		}
 	}
 
 	client := http.Client{Timeout: ws.timeout}
@@ -660,7 +688,7 @@ func (ws *webhookEventPrinter) Print(event trace.Event) {
 		return
 	}
 
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", ws.contentType)
 
 	resp, err := client.Do(req)
 	if err != nil {
