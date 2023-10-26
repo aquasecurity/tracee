@@ -960,7 +960,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 	// Cancel events with unavailable symbols dependencies
 	for eventToCancel, missingDepSyms := range unavKSymbols {
 		eventNameToCancel := events.Core.GetDefinitionByID(eventToCancel).GetName()
-		logger.Errorw(
+		logger.Debugw(
 			"Event canceled because of missing kernel symbol dependency",
 			"missing symbols", missingDepSyms, "event", eventNameToCancel,
 		)
@@ -979,7 +979,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 
 		// Cancel all events that require eventToCancel
 		for eventID, depEventName := range depsToCancel {
-			logger.Errorw(
+			logger.Debugw(
 				"Event canceled because it depends on an previously canceled event",
 				"event", events.Core.GetDefinitionByID(eventID).GetName(),
 				"dependency", depEventName,
