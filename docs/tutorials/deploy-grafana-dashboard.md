@@ -1,14 +1,22 @@
 # Access Tracee Metrics in Prometheus and Grafana
 
+Tracee exposes a metrics endpoint. 
+This makes it possible to monitor Tracee like other cloud native workloads.
+
+In this tutorial, we will showcase how to access Tracee metrics through Prometheus and Grafana running through docker containers.
+The tutorial can easily adapted to Kubernetes workloads with the configuration provided.
+
+## Tutorial Overview
+
 Grafana is a visualization tools for exported metrics and logs, most commonly
 used alongside Prometheus.
 
-Since version 0.7.0, tracee exports useful runtime metrics to prometheus.
+Since version 0.7.0, tracee exports useful runtime metrics to Prometheus.
 
 By using Grafana and the new metrics from tracee, we can deploy a simple
 dashboard which tracks the tracee instance performance and outputs.
 
-There are three options for accessing Tracee metrics:
+There are two options for accessing Tracee metrics:
 * Running the Tracee Docker Container Image -- Shown in this tutorial
 * Running the Tracee Helm Chart -- Detailed as part of the [Promtail-Tracee](./promtail.md) tutorial
 

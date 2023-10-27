@@ -1,6 +1,8 @@
 # Using Promtail, Loki and Grafana to access Tracee Logs
 
-This tutorial will showcase how to install and configure promtail, loki, grafana and prometheus to then access Tracee logs from the cluster in Grafana.
+By default, Tracee is emitting events to stdout. Users can then configure logging solutions to collect, store, and manage Tracee logs. 
+
+This tutorial will showcase how to install and configure Promtail, Loki, Grafana and Prometheus to then access Tracee logs from the cluster in Grafana.
 
 If you prefer the video tutorial, check out the tutorial below on the Aqua Open Source YouTube channel:
 
@@ -10,31 +12,16 @@ If you prefer the video tutorial, check out the tutorial below on the Aqua Open 
 
 ## Prerequisites
 
-### CLI tools
+Please make sure to have the following tools installed in your CLI:
 
-Please make sure to have 
-- Kubectl installed and connected to a Kubernetes cluster (any cluster will work for this purpose)
-- The Helm CLI installed
+* Kubectl installed and connected to a Kubernetes cluster (any cluster will work for this purpose)
+* The [Helm CLI](https://helm.sh/docs/) installed
 
-To ensure everything is installed properly, please run the following command:
+Additionally, you might have the following Obserability Stack already installed in your cluster, if not we will detailed how to set it up further below in this guide: 
 
-```console
-kubectl get nodes
-```
-
-and
-
-```console
-helm version
-```
-
-### Obserability Tools
-
-Lastly, please ensure that the following observability tools are already installed inside the Kubernetes cluster:
-
-* Prometheus
-* Loki and Promtail
-* Grafana
+* [Prometheus](https://prometheus.io/)
+* [Loki and Promtail](https://grafana.com/oss/loki/)
+* [Grafana](https://grafana.com/oss/)
 
 Alternatively, this tutorial showcases after the Tracee Installation section how to get an observability stack running with the above tools.
 
