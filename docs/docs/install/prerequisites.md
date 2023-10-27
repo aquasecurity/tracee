@@ -24,7 +24,7 @@ Alternatively you can disable the following events which depends on kallsyms:
 ## OS information
 
 In order to properly instrument the kernel, Tracee is probing the running OS and kernel to detect available capabilities.
-For Os information please make sure the file `/etc/os-release` is available.
+For OS information please make sure the file `/etc/os-release` is available.
 For Kernel information please make sure on of the files `/boot/config-$(uname-r)` OR `/proc/config.gz` is available.
 
 For more information and advanced configuration of OS info files please see [here](../deep-dive/os-info.md)
