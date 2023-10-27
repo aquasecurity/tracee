@@ -30,8 +30,12 @@ nav:
           - Additional Resources: tutorials/additional-resources.md
     - Docs:
           - Overview: docs/overview.md
+          - Policies:
+                - Overview: docs/policies/index.md
+                - Scopes: docs/policies/scopes.md
+                - Rules: docs/policies/rules.md
           - Events:
-                - Overview: docs/events/overview.md
+                - Overview: docs/events/p.md
                 - Built-in Events:
                       - Security Events:
                             - Overview: docs/events/builtin/signatures/index.md
@@ -562,10 +566,7 @@ nav:
                       - Go: docs/events/custom/golang.md
                       - Rego: docs/events/custom/rego.md
                       - Analyze: docs/events/custom/analyze.md
-          - Policies:
-                - Overview: docs/policies/index.md
-                - Scopes: docs/policies/scopes.md
-                - Rules: docs/policies/rules.md
+
           - Filters:
                 - Filtering: docs/filters/filtering.md
                 - Flags Manuals:
