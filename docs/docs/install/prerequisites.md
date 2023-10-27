@@ -1,22 +1,30 @@
 # Prerequisites for running Tracee
 
-A longterm supported kernel: 5.4, 5.10, 5.15, 5.18, 6.1, 6.2. Check
-[kernel.org](https://kernel.org) for current supported kernels.
+Tracee is heavily dependent on Linux and does not support any other operating system.
 
-!!! Note
-    Most distributions long-term supported kernels are supported as well,
-    including CentOS8 4.18 kernel.
+## Kernel version
 
-- For **tracee:{{ git.tag }}** docker image, you should have one of the two:
+A longterm supported kernel: 5.4, 5.10, 5.15, 5.18, 6.1, 6.2. Check [kernel.org](https://kernel.org) for current supported kernels.  
+In addition to upstream kernels, most distributions long-term supported kernels are supported as well, including CentOS8 4.18 kernel.
 
-    1. A kernel that has `/sys/kernel/btf/vmlinux` file available
-    2. A kernel supported through [BTFHUB]
-    > see [libbpf CO-RE documentation] for more info
+## BTF
 
-## Permissions
+In order to properly instrument the kernel, Tracee needs low-level type information about the running kernel. Most modern Linux distributions ship with the [BTF](https://www.kernel.org/doc/html/latest/bpf/btf.html) feature that exposes this information.  
+To test if your linux has BFT enabled, look for a file under `/sys/kernel/btf/vmlinux`. If you don't have BTF, you might need to upgrade to a newer OS version, or contact your OS provider.
 
-For using the eBPF Linux subsystem, Tracee needs to run with sufficient
-capabilities:
+# Kernel symbols
+
+Some Tracee events needs access to the Kernel Symbols Table. Most Linux distributions ship with this feature enabled.
+To test if your Linux supports it, look for a file under `/proc/kallsyms`. If your don't have it, you might contact your OS provider.
+
+Alternatively you can disable the following events which depends on kallsyms:
+
+- TODO
+
+## Process capabilities
+
+In order to properly instrument the kernel, Tracee needs sufficient capabilities. The easiest way is run Tracee as "privileged" or "root".  
+If you want to run Tracee with "least privileges", here are the required capabilities and justifications:
 
 * Manage eBPF maps limits (`CAP_SYS_RESOURCE`)
 * Load and Attach eBPF programs:
@@ -30,7 +38,6 @@ capabilities:
 * On cgroup v1 environments, `CAP_SYS_ADMIN` is recommended if running from a
   container in order to allow tracee to mount the cpuset cgroup controller.
 
-> Alternatively, you may [bypass the capabilities dropping feature](../../docs/deep-dive/dropping-capabilities.md) if facing any issue.
+## Processor architecture
 
-[libbpf CO-RE documentation]: https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere
-[BTFHUB]: https://github.com/aquasecurity/btfhub-archive
+Tracee supports x86 and arm64 processors.
