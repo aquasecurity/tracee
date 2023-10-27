@@ -6,9 +6,9 @@ This section documents all of the different events that Tracee exposes.
 
 Tracee uses eBPF technology to tap into your system and give you access to hundreds of events that help you understand how your system behaves. The events can be specified either through CLI with [filters] or with [policies].
 
-## Tracee Kubernetes Manifest
+## Tracee Kubernetes
 
-Events are specified in the Policy provided to the Tracee Kubernetes installation. The Policy can be edited as specified within the Policies section of the [documentation](../policies/index.md)
+Events are through the Tracee Policy in the Kubernetes installation. The Policy can be edited as specified within the `Policies` section of the [documentation](../policies/index.md)
 
 ## Tracee CLI Commands
 
