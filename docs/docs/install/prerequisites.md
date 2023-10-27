@@ -12,7 +12,7 @@ In addition to upstream kernels, most distributions long-term supported kernels 
 In order to properly instrument the kernel, Tracee needs low-level type information about the running kernel. Most modern Linux distributions ship with the [BTF](https://www.kernel.org/doc/html/latest/bpf/btf.html) feature that exposes this information.  
 To test if your linux has BFT enabled, look for a file under `/sys/kernel/btf/vmlinux`. If you don't have BTF, you might need to upgrade to a newer OS version, or contact your OS provider.
 
-# Kernel symbols
+## Kernel symbols
 
 Some Tracee events needs access to the Kernel Symbols Table. Most Linux distributions ship with this feature enabled.
 To test if your Linux supports it, look for a file under `/proc/kallsyms`. If your don't have it, you might contact your OS provider.
@@ -20,6 +20,14 @@ To test if your Linux supports it, look for a file under `/proc/kallsyms`. If yo
 Alternatively you can disable the following events which depends on kallsyms:
 
 - TODO
+
+## OS information
+
+In order to properly instrument the kernel, Tracee is probing the running OS and kernel to detect available capabilities.
+For Os information please make sure the file `/etc/os-release` is available.
+For Kernel information please make sure on of the files `/boot/config-$(uname-r)` OR `/proc/config.gz` is available.
+
+For more information and advanced configuration of OS info files please see [here](../deep-dive/os-info.md)
 
 ## Process capabilities
 
@@ -37,6 +45,8 @@ If you want to run Tracee with "least privileges", here are the required capabil
 * On some environments (e.g. Ubuntu) `CAP_IPC_LOCK` might be required as well.
 * On cgroup v1 environments, `CAP_SYS_ADMIN` is recommended if running from a
   container in order to allow tracee to mount the cpuset cgroup controller.
+
+For more information and advanced configuration of process capabilities please see [here](../deep-dive/dropping-capabilities.md)
 
 ## Processor architecture
 
