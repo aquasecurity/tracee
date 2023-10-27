@@ -9,7 +9,7 @@ Lastly, policies require a scope. The scope details which resources the policy a
 
 You can load multiple (up to 64) policies into Tracee using the --policy flag providing a path to the policy file.
 
-Following is a sample policy for the Tracee Kubernetes usage:
+Following is a sample policy:
 
 ```yaml
 apiVersion: tracee.aquasec.com/v1beta1
@@ -51,14 +51,22 @@ More information about defining a scope and the available filters can be found i
 
 ## Tracee Kubernetes Policy configuration
 
-Through Querying the Tracee Configmap, users can access the default configuration and apply changes:
+Through Querying the Tracee Configmap which is part of the Daemonset, users can access the default policy and apply changes:
 ```console
 kubectl edit ds/tracee -n tracee-system
 ```
 
 ## Tracee CLI Policy configuration
 
-Applying Tracee Policies in the CLI is further detailed within the [filtering section.](./filtering)
+There are multiple ways Tracee can be configured in the CLI. 
+
+### Tracee Config
+
+The first one is through providing the Tracee Policy as a Tracee Config File as detailed in the [`Config` section of the documentation.](../config/overview/)
+
+### Tracee CLI Flags
+
+Alternatively, Tracee can be configured by applying [filters.](./filtering)
 
 ## Video Content
 

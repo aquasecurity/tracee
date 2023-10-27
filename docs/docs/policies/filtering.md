@@ -1,4 +1,4 @@
-# Tracing Events through the Tracee CLI by applying filters
+# Applying filters with Tracee CLI
 
 This section showcases how to trace events through the Tracee CLI by applying filters.
 
