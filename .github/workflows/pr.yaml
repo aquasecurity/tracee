@@ -211,96 +211,74 @@ jobs:
         run: |
           sudo env "PATH=$PATH" make test-performance
   #
-  # KERNEL TESTS
+  # FUNCTIONAL TESTS AGAINST DIFFERENT KERNELS
   #
-  kernel-tests:
-    name: ${{ matrix.job_name }} ${{ matrix.architecture }}
+  generate-matrix:
+    name: Generate Test Matrix
     needs:
-      - unit-tests
       - verify-signatures
       - verify-tools
-    runs-on: ${{ matrix.runner }}
+    runs-on: ubuntu-latest
+    outputs:
+      matrix01: ${{ steps.set-matrix.outputs.matrix01 }}
+    steps:
+      - name: Set Matrix
+        id: set-matrix
+        run: |
+          declare -A job_names=(
+              ["GKE 5.4"]="07803dec079f9dab8 x86_64"
+              ["GKE 5.10"]="03ca8e4a64be4e6e2 x86_64"
+              ["GKE 5.15 x86_64"]="0e71c360809862bd7 x86_64"
+              ["GKE 5.15 aarch64"]="0b66222a60f8f97be aarch64"
+              ["AMZN2 5.10 x86_64"]="0b9c1568cd5551408 x86_64"
+              ["AMZN2 5.10 aarch64"]="071a53e3ad06e6a7e aarch64"
+              ["RHEL8 4.18 x86_64"]="0763bdb83bba5e638 x86_64"
+              ["RHEL8 4.18 aarch64"]="06152079b6b8d1f26 aarch64"
+              ["Focal 5.4 x86_64"]="0d9d35323406a6cad x86_64"
+              ["Focal 5.4 aarch64"]="0a241eeae02842052 aarch64"
+              ["Focal 5.13 x86_64"]="0c86a42b0f61bd86e x86_64"
+              ["Focal 5.13 aarch64"]="07de8512322c4a33a aarch64"
+              ["Jammy 5.15 x86_64"]="02f0ed24d636fa1a7 x86_64"
+              ["Jammy 5.15 aarch64"]="0b6d16ce9f5576b40 aarch64"
+              ["Jammy 5.19 x86_64"]="02ce72d6cd652cbbd x86_64"
+              ["Jammy 5.19 aarch64"]="07271263d87a0e883 aarch64"
+              ["Lunar 6.2 x86_64"]="0344a20747442e3c7 x86_64"
+              ["Lunar 6.2 aarch64"]="0c0d64eea6367efd8 aarch64"
+              ["Mantic 6.5 x86_64"]="0564e75d9605addaf x86_64"
+              ["Mantic 6.5 aarch64"]="028acebc5083c4840 aarch64"
+              # expand as needed
+          )
+          for num in 01; do
+              output="["
+              first=1
+              for job in "${!job_names[@]}"; do
+                  ami="${job_names[$job]%% *}"
+                  arch="${job_names[$job]##* }"
+                  if (( first )); then
+                      first=0
+                  else
+                      output+=","
+                  fi
+                  output+="{\"job_name\": \"$job\", \"arch\": \"$arch\", \"ami\": \"$ami\", \"sufix\": \"$num\"}"
+              done
+            output+="]"
+            echo "::set-output name=matrix$num::$output"
+            echo "matrix$num=$output"
+          done
+        shell: bash
+      - name: Show Matrix
+        id: show-matrix
+        run: |
+          echo ${{ steps.set-matrix.outputs.matrix01 }}
+        shell: bash
+  kernel-tests:
+    name: ${{ matrix.job_name }}
+    needs:
+      - generate-matrix
+    runs-on: "github-self-hosted_ami-${{ matrix.ami }}_${{ github.event.number }}-${{ github.run_id }}_${{ matrix.sufix }}"
     strategy:
       matrix:
-        include:
-          #
-          # Cloud Taylored Distributions
-          #
-          # GKE
-          - job_name: "GKE 5.4"
-            architecture: "x86_64"
-            runner: "github-self-hosted_ami-07803dec079f9dab8_${{ github.event.number }}-${{ github.run_id }}_x64c"
-          - job_name: "GKE 5.10"
-            architecture: "x86_64"
-            runner: "github-self-hosted_ami-03ca8e4a64be4e6e2_${{ github.event.number }}-${{ github.run_id }}_x64c"
-          - job_name: "GKE 5.15"
-            architecture: "x86_64"
-            runner: "github-self-hosted_ami-0e71c360809862bd7_${{ github.event.number }}-${{ github.run_id }}_x64c"
-          - job_name: "GKE 5.15"
-            architecture: "aarch64"
-            runner: "github-self-hosted_ami-0b66222a60f8f97be_${{ github.event.number }}-${{ github.run_id }}_arm64c"
-          #
-          # Specific Distributions
-          #
-          # AMZN 2
-          - job_name: "AMZN2 5.10"
-            architecture: "x86_64"
-            runner: "github-self-hosted_ami-0b9c1568cd5551408_${{ github.event.number }}-${{ github.run_id }}_x64c"
-          - job_name: "AMZN2 5.10"
-            architecture: "aarch64"
-            runner: "github-self-hosted_ami-071a53e3ad06e6a7e_${{ github.event.number }}-${{ github.run_id }}_arm64c"
-          #
-          # Regular Distributions
-          #
-          # RHEL 8
-          - job_name: "RHEL8 4.18"
-            architecture: "x86_64"
-            runner: "github-self-hosted_ami-0763bdb83bba5e638_${{ github.event.number }}-${{ github.run_id }}_x64c"
-          - job_name: "RHEL8 4.18"
-            architecture: "aarch64"
-            runner: "github-self-hosted_ami-06152079b6b8d1f26_${{ github.event.number }}-${{ github.run_id }}_arm64c"
-          # FOCAL 5.4
-          - job_name: "Focal 5.4"
-            architecture: "x86_64"
-            runner: "github-self-hosted_ami-0d9d35323406a6cad_${{ github.event.number }}-${{ github.run_id }}_x64c"
-          - job_name: "Focal 5.4"
-            architecture: "aarch64"
-            runner: "github-self-hosted_ami-0a241eeae02842052_${{ github.event.number }}-${{ github.run_id }}_arm64c"
-          # FOCAL 5.13
-          - job_name: "Focal 5.13"
-            architecture: "x86_64"
-            runner: "github-self-hosted_ami-0c86a42b0f61bd86e_${{ github.event.number }}-${{ github.run_id }}_x64c"
-          - job_name: "Focal 5.13"
-            architecture: "aarch64"
-            runner: "github-self-hosted_ami-07de8512322c4a33a_${{ github.event.number }}-${{ github.run_id }}_arm64c"
-          # JAMMY 5.15
-          - job_name: "Jammy 5.15"
-            architecture: "x86_64"
-            runner: "github-self-hosted_ami-02f0ed24d636fa1a7_${{ github.event.number }}-${{ github.run_id }}_x64c"
-          - job_name: "Jammy 5.15"
-            architecture: "aarch64"
-            runner: "github-self-hosted_ami-0b6d16ce9f5576b40_${{ github.event.number }}-${{ github.run_id }}_arm64c"
-          # JAMMY 5.19
-          - job_name: "Jammy 5.19"
-            architecture: "x86_64"
-            runner: "github-self-hosted_ami-02ce72d6cd652cbbd_${{ github.event.number }}-${{ github.run_id }}_x64c"
-          - job_name: "Jammy 5.19"
-            architecture: "aarch64"
-            runner: "github-self-hosted_ami-07271263d87a0e883_${{ github.event.number }}-${{ github.run_id }}_arm64c"
-          # LUNAR 6.2
-          - job_name: "Lunar 6.2"
-            architecture: "x86_64"
-            runner: "github-self-hosted_ami-0344a20747442e3c7_${{ github.event.number }}-${{ github.run_id }}_x64c"
-          - job_name: "Lunar 6.2"
-            architecture: "aarch64"
-            runner: "github-self-hosted_ami-0c0d64eea6367efd8_${{ github.event.number }}-${{ github.run_id }}_arm64c"
-          # MANTIC 6.5
-          - job_name: "Mantic 6.5"
-            architecture: "x86_64"
-            runner: "github-self-hosted_ami-0564e75d9605addaf_${{ github.event.number }}-${{ github.run_id }}_x64c"
-          - job_name: "Mantic 6.5"
-            architecture: "aarch64"
-            runner: "github-self-hosted_ami-028acebc5083c4840_${{ github.event.number }}-${{ github.run_id }}_arm64c"
+        include: ${{fromJson(needs.generate-matrix.outputs.matrix01)}}
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -313,15 +291,12 @@ jobs:
           submodules: true
       - name: "Environment Variables"
         run: |
-          if [[ "${{ matrix.architecture }}" == "aarch64" ]]; then
+          if [[ "${{ matrix.arch }}" == "aarch64" ]]; then
             echo "TESTS=${{ env.ARM64_TESTS }}" >> $GITHUB_ENV
           fi
-      - name: "Kernel"
-        run: |
-          ./tests/e2e-kernel-test.sh
-      - name: "Network"
-        run: |
-          ./tests/e2e-net-test.sh
-      - name: "Instrumentation"
-        run: |
-          ./tests/e2e-inst-test.sh
+      - name: "Kernel Test"
+        run: ./tests/e2e-kernel-test.sh
+      - name: "Network Test"
+        run: ./tests/e2e-net-test.sh
+      - name: "Instrumentation Test"
+        run: ./tests/e2e-inst-test.sh
