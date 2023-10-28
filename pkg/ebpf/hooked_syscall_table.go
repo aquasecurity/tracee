@@ -161,7 +161,13 @@ func (t *Tracee) populateExpectedSyscallTableArray(tableMap *bpf.BPFMap) error {
 	// Get address to the function that defines the not implemented sys call
 	niSyscallSymbol, err := t.kernelSymbols.GetSymbolByName("system", events.SyscallPrefix+"ni_syscall")
 	if err != nil {
-		return err
+		e := err
+		// RHEL 8.x uses sys_ni_syscall instead of __arch_ni_syscall
+		niSyscallSymbol, err = t.kernelSymbols.GetSymbolByName("system", "sys_ni_syscall")
+		if err != nil {
+			logger.Debugw("hooked_syscall: syscall symbol not found", "name", "sys_ni_syscall")
+			return e
+		}
 	}
 	niSyscallAddress := niSyscallSymbol.Address
 
