@@ -594,6 +594,7 @@ nav:
                 - Caching Events: docs/deep-dive/caching-events.md
                 - Ordering Events: docs/deep-dive/ordering-events.md
                 - Dropping Capabilities: docs/deep-dive/dropping-capabilities.md
+                - Kernel Symbols: docs/deep-dive/ksyms.md
                 - Secure Tracing: docs/deep-dive/secure-tracing.md
     - Contributing:
           - Overview: contributing/overview.md
