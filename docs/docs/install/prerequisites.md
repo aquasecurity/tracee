@@ -4,22 +4,48 @@ Tracee is heavily dependent on Linux and does not support any other operating sy
 
 ## Kernel version
 
-A longterm supported kernel: 5.4, 5.10, 5.15, 5.18, 6.1, 6.2. Check [kernel.org](https://kernel.org) for current supported kernels.  
+A longterm supported kernel: 5.4, 5.10, 5.15, 5.18, 6.1, 6.2. Check [kernel.org](https://kernel.org) for current supported kernels.
 In addition to upstream kernels, most distributions long-term supported kernels are supported as well, including CentOS8 4.18 kernel.
 
 ## BTF
 
-In order to properly instrument the kernel, Tracee needs low-level type information about the running kernel. Most modern Linux distributions ship with the [BTF](https://www.kernel.org/doc/html/latest/bpf/btf.html) feature that exposes this information.  
+In order to properly instrument the kernel, Tracee needs low-level type information about the running kernel. Most modern Linux distributions ship with the [BTF](https://www.kernel.org/doc/html/latest/bpf/btf.html) feature that exposes this information.
 To test if your linux has BFT enabled, look for a file under `/sys/kernel/btf/vmlinux`. If you don't have BTF, you might need to upgrade to a newer OS version, or contact your OS provider.
 
 ## Kernel symbols
 
-Some Tracee events needs access to the Kernel Symbols Table. Most Linux distributions ship with this feature enabled.
-To test if your Linux supports it, look for a file under `/proc/kallsyms`. If your don't have it, you might contact your OS provider.
+Certain Tracee events require access to the Kernel Symbols Table, a feature
+present in many Linux distributions.
 
-Alternatively you can disable the following events which depends on kallsyms:
+A running Linux kernel might lack the `/proc/kallsyms` file due to:
 
-- TODO
+**Kernel Configuration**: If compiled without `CONFIG_KALLSYMS`, the kernel
+won't have this file. This option enables the kernel symbol table, used mainly
+for debugging.
+
+**Security Protocols**: Some systems might hide kernel symbols to prevent
+potential exploits. The `/proc/kallsyms` file could appear incomplete or even
+empty to non-root users. The `CONFIG_KALLSYMS_ALL` option ensures all symbols
+are visible.
+
+The Linux kernel also offers a setting, `/proc/sys/kernel/kptr_restrict`, to
+control kernel symbol visibility:
+
+- **0**: No restrictions.
+- **1**: Hide from non-privileged users.
+- **2**: Hide from all users.
+
+To check support, see if `/proc/kallsyms` exists. If absent, contact your OS
+provider. Alternatively, you can disable the following events which depends on
+kallsyms:
+
+- dirty_pipe_splice (detects dirty pipe vulnerability - CVE-2022-0847)
+- hooked_syscall (detects system call interception technique)
+- hidden_kernel_module (detects hidden kernel modules technique)
+- hooked_proc_fops (detects procfs file operations interception technique)
+- print_net_seq_ops (related hooked_seq_ops event)
+- hooked_seq_ops (detects network packets interception technique)
+- print_mem_dump (allows memory dumping from symbols to signatures can use)
 
 ## OS information
 
