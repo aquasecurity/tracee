@@ -5,6 +5,7 @@
 [docker-guide]:https://aquasecurity.github.io/tracee/latest/docker.md
 [kubernetes-guide]:https://aquasecurity.github.io/tracee/latest/kubernetes.md
 [prereqs]:https://aquasecurity.github.io/tracee/latest/docs/install/prerequisites.md
+[macfaq]:https://aquasecurity.github.io/tracee/latest/docs/deep-dive/mac.md
 Before moving on, please consider giving us a GitHub star ⭐️. Thank you!
 
 ## About Tracee
@@ -18,7 +19,7 @@ To learn more about Tracee, check out the [documentation](https://aquasecurity.g
 ## Quickstart
 
 To quickly try Tracee use one of the following snippets. For a more complete installation guide, check out the [Installation section][installation].  
-Tracee should run on most common Linux distributions and kernels. For compatibility information see the [Prerequisites][prereqs] page. MacOS users, please read it too.
+Tracee should run on most common Linux distributions and kernels. For compatibility information see the [Prerequisites][prereqs] page.  Mac users, please read [this FAQ](macfaq).
 
 ### Using Docker
 
