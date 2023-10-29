@@ -19,15 +19,15 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.6+insiders-4.42.2">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.7+insiders-4.42.3">
     
     
       
-        <title>Getting Tracee - Tracee</title>
+        <title>Installing Tracee - Tracee</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.85193b59.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.382dd0b9.min.css">
       
       
 
@@ -64,7 +64,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#getting-tracee" class="md-skip">
+        <a href="#installing-tracee" class="md-skip">
           Skip to content
         </a>
       
@@ -103,7 +103,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Getting Tracee
+              Installing Tracee
             
           </span>
         </div>
@@ -765,7 +765,7 @@
   
   
     <li class="md-nav__item">
-      <a href="override-os-files/" class="md-nav__link">
+      <a href="override-os-files.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -837,7 +837,7 @@
   
   
     <li class="md-nav__item">
-      <a href="distros/ubuntu/" class="md-nav__link">
+      <a href="distros/ubuntu.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -863,7 +863,7 @@
   
   
     <li class="md-nav__item">
-      <a href="distros/fedora/" class="md-nav__link">
+      <a href="distros/fedora.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -889,7 +889,7 @@
   
   
     <li class="md-nav__item">
-      <a href="distros/nix-nixos/" class="md-nav__link">
+      <a href="distros/nix-nixos.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -16246,6 +16246,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../deep-dive/ksyms/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Kernel Symbols
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../deep-dive/secure-tracing/" class="md-nav__link">
         
   
@@ -16662,16 +16688,16 @@
                   
 
 
-<h1 id="getting-tracee">Getting Tracee<a class="headerlink" href="#getting-tracee" title="Permanent link">&para;</a></h1>
-<p>You're able to use tracee by any of these means:</p>
+<h1 id="installing-tracee">Installing Tracee<a class="headerlink" href="#installing-tracee" title="Permanent link">&para;</a></h1>
 <ol>
-<li><a href="https://hub.docker.com/r/aquasec/tracee">docker hub container image</a></li>
-<li><a href="https://github.com/aquasecurity/tracee/releases">distributed binaries</a> (<code>tracee.tar.gz</code>).</li>
-<li><a href="../../contributing/building/building/">building from the source</a></li>
-<li><a href="../../contributing/building/environment/">building environment</a></li>
-<li><a href="../../contributing/building/containers/">building container images</a></li>
-<li><a href="../../contributing/building/packaging/">building OS packages</a></li>
+<li>Tracee executable binary is available in under <a href="https://github.com/aquasecurity/tracee/releases">releases</a>.</li>
+<li>Tracee container image is available in Docker Hub as <a href="https://hub.docker.com/r/aquasec/tracee">aquasec/tracee</a>.</li>
+<li>Tracee Helm chart is available in Aqua Security's registry: <code>https://aquasecurity.github.io/helm-charts/</code> as <code>tracee</code>.</li>
 </ol>
+<p>It might also be available in various package managers managed by the community.</p>
+<p>Before continuing, please make sure Tracee is supported on your environment by reading the <a href="prerequisites/">Prerequisites</a>.</p>
+<p>To get started with Docker, please read the <a href="docker/">Docker guide</a>.
+To get started on Kubernetes, please read the <a href="kubernetes/">Kubernetes guide</a>.</p>
 
 
 

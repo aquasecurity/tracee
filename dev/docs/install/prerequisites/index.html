@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.6+insiders-4.42.2">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.7+insiders-4.42.3">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.85193b59.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.382dd0b9.min.css">
       
       
 
@@ -755,10 +755,65 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#permissions" class="md-nav__link">
+  <a href="#kernel-version" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Permissions
+        Kernel version
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#btf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BTF
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kernel-symbols" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kernel symbols
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#os-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OS information
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#process-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Process capabilities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#processor-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Processor architecture
       
     </span>
   </a>
@@ -832,7 +887,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../override-os-files/" class="md-nav__link">
+      <a href="../override-os-files.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -904,7 +959,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../distros/ubuntu/" class="md-nav__link">
+      <a href="../distros/ubuntu.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -930,7 +985,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../distros/fedora/" class="md-nav__link">
+      <a href="../distros/fedora.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -956,7 +1011,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../distros/nix-nixos/" class="md-nav__link">
+      <a href="../distros/nix-nixos.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -16313,6 +16368,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../../deep-dive/ksyms/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Kernel Symbols
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../deep-dive/secure-tracing/" class="md-nav__link">
         
   
@@ -16722,10 +16803,65 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#permissions" class="md-nav__link">
+  <a href="#kernel-version" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Permissions
+        Kernel version
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#btf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BTF
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kernel-symbols" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kernel symbols
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#os-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OS information
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#process-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Process capabilities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#processor-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Processor architecture
       
     </span>
   </a>
@@ -16749,46 +16885,63 @@
 
 
 <h1 id="prerequisites-for-running-tracee">Prerequisites for running Tracee<a class="headerlink" href="#prerequisites-for-running-tracee" title="Permanent link">&para;</a></h1>
-<p>A longterm supported kernel: 5.4, 5.10, 5.15, 5.18, 6.1, 6.2. Check
-<a href="https://kernel.org">kernel.org</a> for current supported kernels.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Most distributions long-term supported kernels are supported as well,
-including CentOS8 4.18 kernel.</p>
-</div>
+<p>Tracee is heavily dependent on Linux and does not support any other operating system.</p>
+<!--
+every section should roughly cover:
+1. what is this prereq
+2. why is it needed
+3. how to test if I'm compliant
+4. link for details and help
+-->
+
+<h2 id="kernel-version">Kernel version<a class="headerlink" href="#kernel-version" title="Permanent link">&para;</a></h2>
+<p>To run Tracee a modern longterm supported kernel is needed: 5.4, 5.10, 5.15, 5.18, 6.1, 6.2.</p>
+<p>You can check <a href="https://kernel.org">kernel.org</a> for current supported kernels.<br />
+In addition to upstream kernels, most distributions long-term supported kernels are supported as well, including CentOS8 4.18 kernel.</p>
+<h2 id="btf">BTF<a class="headerlink" href="#btf" title="Permanent link">&para;</a></h2>
+<p>Tracee needs low-level type information about the running kernel. Most modern Linux distributions ship with the <a href="https://www.kernel.org/doc/html/latest/bpf/btf.html">BTF</a> feature that exposes this information.  </p>
+<p>To test if this feature is enabled in your environment, check if <code>/sys/kernel/btf/vmlinux</code> exists. If absent, you might need to upgrade to a newer OS version, or contact your OS provider.</p>
+<h2 id="kernel-symbols">Kernel symbols<a class="headerlink" href="#kernel-symbols" title="Permanent link">&para;</a></h2>
+<p>Certain Tracee events require access to the Kernel Symbols Table, a feature present in many Linux distributions.</p>
+<p>To test if this feature is enabled in your environment, check if <code>/proc/kallsyms</code> exists. If absent, contact your OS provider. </p>
+<p>Alternatively, you can disable the following events which depends on kallsyms:</p>
 <ul>
-<li>
-<p>For <strong>tracee:v0.18.0-rc-74-gdfa1a5060</strong> docker image, you should have one of the two:</p>
-<ol>
-<li>A kernel that has <code>/sys/kernel/btf/vmlinux</code> file available</li>
-<li>A kernel supported through <a href="https://github.com/aquasecurity/btfhub-archive">BTFHUB</a><blockquote>
-<p>see <a href="https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere">libbpf CO-RE documentation</a> for more info</p>
-</blockquote>
-</li>
-</ol>
-</li>
+<li><code>dirty_pipe_splice</code> (detects dirty pipe vulnerability - CVE-2022-0847)</li>
+<li><code>hooked_syscall</code> (detects system call interception technique)</li>
+<li><code>hidden_kernel_module</code> (detects hidden kernel modules technique)</li>
+<li><code>hooked_proc_fops</code> (detects procfs file operations interception technique)</li>
+<li><code>print_net_seq_ops</code> (related hooked_seq_ops event)</li>
+<li><code>hooked_seq_ops</code> (detects network packets interception technique)</li>
+<li><code>print_mem_dump</code> (allows memory dumping from symbols to signatures can use)</li>
 </ul>
-<h2 id="permissions">Permissions<a class="headerlink" href="#permissions" title="Permanent link">&para;</a></h2>
-<p>For using the eBPF Linux subsystem, Tracee needs to run with sufficient
-capabilities:</p>
+<p>For more information and help about kernel symbols, please see <a href="../../deep-dive/ksyms/">here</a>.</p>
+<h2 id="os-information">OS information<a class="headerlink" href="#os-information" title="Permanent link">&para;</a></h2>
+<p>Tracee will try to probe the running OS and kernel to detect available capabilities. For this, it needs access to some standard informative files:</p>
+<ul>
+<li>For OS information please make sure the file <code>/etc/os-release</code> is available.</li>
+<li>For Kernel information please make sure on of the files <code>/boot/config-$(uname-r)</code> OR <code>/proc/config.gz</code> is available.</li>
+</ul>
+<p>For more information and help about OS info files, please see <a href="../../deep-dive/os-info/">here</a>.</p>
+<h2 id="process-capabilities">Process capabilities<a class="headerlink" href="#process-capabilities" title="Permanent link">&para;</a></h2>
+<p>Tracee needs non-trivial capabilities to instrument the kernel. The easiest way is run Tracee as "privileged" or "root".  </p>
+<p>If you want to run Tracee with "least privileges", here are the required capabilities and justifications:</p>
 <ul>
 <li>Manage eBPF maps limits (<code>CAP_SYS_RESOURCE</code>)</li>
-<li>Load and Attach eBPF programs:<ol>
+<li>Load and Attach eBPF programs:<ul>
 <li><code>CAP_BPF</code>+<code>CAP_PERFMON</code> for recent kernels (&gt;=5.8) where the kernel perf paranoid value in <code>/proc/sys/kernel/perf_event_paranoid</code> is equal to 2 or less</li>
 <li>or <code>CAP_SYS_ADMIN</code> otherwise</li>
-</ol>
+</ul>
 </li>
 <li><code>CAP_SYS_PTRACE</code> (to collect information about processes)</li>
 <li><code>CAP_NET_ADMIN</code> (to use tc for packets capture)</li>
 <li><code>CAP_SETPCAP</code> (if given - used to reduce bounding set capabilities)</li>
 <li><code>CAP_SYSLOG</code> (to access kernel symbols through /proc/kallsyms)</li>
 <li>On some environments (e.g. Ubuntu) <code>CAP_IPC_LOCK</code> might be required as well.</li>
-<li>On cgroup v1 environments, <code>CAP_SYS_ADMIN</code> is recommended if running from a
-  container in order to allow tracee to mount the cpuset cgroup controller.</li>
+<li>On cgroup v1 environments, <code>CAP_SYS_ADMIN</code> is recommended if running from a container in order to allow tracee to mount the cpuset cgroup controller.</li>
 </ul>
-<blockquote>
-<p>Alternatively, you may <a href="../../deep-dive/dropping-capabilities/">bypass the capabilities dropping feature</a> if facing any issue.</p>
-</blockquote>
+<p>For more information and help about process capabilities, please see <a href="../../deep-dive/dropping-capabilities/">here</a>.</p>
+<h2 id="processor-architecture">Processor architecture<a class="headerlink" href="#processor-architecture" title="Permanent link">&para;</a></h2>
+<p>Tracee supports x86 and arm64 processors.</p>
 
 
 

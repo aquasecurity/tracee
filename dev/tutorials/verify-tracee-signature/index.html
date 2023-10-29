@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.6+insiders-4.42.2">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.7+insiders-4.42.3">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.85193b59.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.382dd0b9.min.css">
       
       
 
@@ -841,7 +841,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../docs/install/override-os-files/" class="md-nav__link">
+      <a href="../../docs/install/override-os-files.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -913,7 +913,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../docs/install/distros/ubuntu/" class="md-nav__link">
+      <a href="../../docs/install/distros/ubuntu.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -939,7 +939,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../docs/install/distros/fedora/" class="md-nav__link">
+      <a href="../../docs/install/distros/fedora.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -965,7 +965,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../docs/install/distros/nix-nixos/" class="md-nav__link">
+      <a href="../../docs/install/distros/nix-nixos.md" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -16322,6 +16322,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../../docs/deep-dive/ksyms/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Kernel Symbols
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../docs/deep-dive/secure-tracing/" class="md-nav__link">
         
   
@@ -16776,7 +16802,7 @@
 </ul>
 <h2 id="verify-tracee-signature">Verify tracee signature<a class="headerlink" href="#verify-tracee-signature" title="Permanent link">&para;</a></h2>
 <p>Tracee images are signed with cosign keyless. To verify the signature we can run the command:</p>
-<div class="highlight"><pre><span></span><code><span class="go">cosign verify aquasec/tracee:v0.18.0-rc-74-gdfa1a5060  --certificate-oidc-issuer https://token.actions.githubusercontent.com --certificate-identity-regexp https://github.com/aquasecurity/tracee | jq</span>
+<div class="highlight"><pre><span></span><code><span class="go">cosign verify aquasec/tracee:v0.18.0-rc-83-g637d54670  --certificate-oidc-issuer https://token.actions.githubusercontent.com --certificate-identity-regexp https://github.com/aquasecurity/tracee | jq</span>
 </code></pre></div>
 
 
