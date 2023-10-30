@@ -572,7 +572,7 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 
 			// Is the event enabled for the policies or globally?
 			if !t.policyManager.IsEnabled(event.MatchedPoliciesUser, events.ID(event.EventID)) {
-				logger.Debugw("event dropped because it is not enabled", "event", event.EventName)
+				// TODO: create metrics from dropped events
 				t.eventsPool.Put(event)
 				continue
 			}
