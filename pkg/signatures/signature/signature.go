@@ -3,7 +3,6 @@ package signature
 import (
 	"bytes"
 	"debug/elf"
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -12,7 +11,6 @@ import (
 
 	embedded "github.com/aquasecurity/tracee"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/signatures/celsig"
 	"github.com/aquasecurity/tracee/pkg/signatures/regosig"
 	"github.com/aquasecurity/tracee/types/detect"
 )
@@ -44,12 +42,6 @@ func Find(target string, partialEval bool, signaturesDir []string, signatures []
 			return nil, err
 		}
 		sigs = append(sigs, opasigs...)
-
-		celsigs, err := celsig.NewSignaturesFromDir(dir)
-		if err != nil {
-			return nil, fmt.Errorf("failed loading CEL signatures: %w", err)
-		}
-		sigs = append(sigs, celsigs...)
 	}
 
 	var res []detect.Signature
