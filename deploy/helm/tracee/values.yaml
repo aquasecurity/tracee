@@ -81,3 +81,10 @@ config:
   output:
     - json
     - option:parse-arguments
+
+operator:
+  create: true
+  name: "tracee-operator"
+  serviceAccount:
+    name: "tracee-operator"
+  healthProbeBindAddress: :8081

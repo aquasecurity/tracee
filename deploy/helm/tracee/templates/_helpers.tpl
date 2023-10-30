@@ -60,3 +60,11 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{- define "tracee-operator.fullname" -}}
+{{- default .Values.operator.name }}
+{{- end }}
+
+{{- define "tracee-operator.serviceAccountName" -}}
+{{- default .Values.operator.serviceAccount.name }}
+{{- end }}
