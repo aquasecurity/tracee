@@ -10,7 +10,6 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/signatures/benchmark/signature/golang"
 	"github.com/aquasecurity/tracee/pkg/signatures/benchmark/signature/rego"
-	"github.com/aquasecurity/tracee/pkg/signatures/benchmark/signature/wasm"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -32,10 +31,6 @@ func BenchmarkOnEventWithCodeInjectionSignature(b *testing.B) {
 		{
 			name:    "golang",
 			sigFunc: golang.NewCodeInjectionSignature,
-		},
-		{
-			name:    "wasm",
-			sigFunc: wasm.NewCodeInjectionSignature,
 		},
 	}
 
@@ -76,15 +71,6 @@ func BenchmarkEngineWithCodeInjectionSignature(b *testing.B) {
 		{
 			name:           "golang + prepared events",
 			sigFunc:        golang.NewCodeInjectionSignature,
-			preparedEvents: true,
-		},
-		{
-			name:    "wasm",
-			sigFunc: wasm.NewCodeInjectionSignature,
-		},
-		{
-			name:           "wasm + prepared events",
-			sigFunc:        wasm.NewCodeInjectionSignature,
 			preparedEvents: true,
 		},
 	}
@@ -130,18 +116,6 @@ func BenchmarkEngineWithMultipleSignatures(b *testing.B) {
 			name:           "rego and golang, with prepared events",
 			sigFuncs:       []func() (detect.Signature, error){rego.NewCodeInjectionSignature, golang.NewCodeInjectionSignature},
 			preparedEvents: true,
-		},
-		{
-			name:     "wasm and golang",
-			sigFuncs: []func() (detect.Signature, error){wasm.NewCodeInjectionSignature, golang.NewCodeInjectionSignature},
-		},
-		{
-			name:     "rego and wasm",
-			sigFuncs: []func() (detect.Signature, error){rego.NewCodeInjectionSignature, wasm.NewCodeInjectionSignature},
-		},
-		{
-			name:     "rego and golang and wasm",
-			sigFuncs: []func() (detect.Signature, error){rego.NewCodeInjectionSignature, golang.NewCodeInjectionSignature, wasm.NewCodeInjectionSignature},
 		},
 	}
 
@@ -197,12 +171,6 @@ func BenchmarkEngineWithNSignatures(b *testing.B) {
 		{
 			name:     "golang",
 			sigFunc:  golang.NewCodeInjectionSignature,
-			sigCount: []int{2, 4, 8, 16, 32, 64, 128},
-		},
-		{
-			name:    "wasm",
-			sigFunc: wasm.NewCodeInjectionSignature,
-			// This takes time ...
 			sigCount: []int{2, 4, 8, 16, 32, 64, 128},
 		},
 	}

@@ -79,14 +79,6 @@ func TestAio_OnEvent(t *testing.T) {
 			target:  compile.TargetRego,
 			partial: true,
 		},
-		//{
-		//	target:  compile.TargetWasm,
-		//	partial: false,
-		//},
-		//{
-		//	target:  compile.TargetWasm,
-		//	partial: true,
-		//},
 	}
 
 	for _, tc := range options {
