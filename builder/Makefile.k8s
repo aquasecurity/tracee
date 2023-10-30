@@ -1,0 +1,105 @@
+.PHONY: all
+all:
+	$(MAKE) build
+	$(MAKE) manifests
+	$(MAKE) generate
+
+#
+# make
+#
+
+.ONESHELL:
+SHELL = /bin/sh
+
+MAKE = make -f $(shell find . -name Makefile.k8s)
+MAKEFLAGS += --no-print-directory
+
+#
+# tools
+#
+
+CMD_DOCKER ?= docker
+CONTROLLER_GEN ?= controller-gen
+
+.check_%:
+#
+	@command -v $* >/dev/null
+	if [ $$? -ne 0 ]; then
+		echo "missing required tool $*"
+		exit 1
+	else
+		touch $@ # avoid target rebuilds due to inexistent file
+	fi
+
+#
+# usage
+#
+
+.PHONY: help
+help:
+	@echo ""
+	@echo "To build the operator docker container:"
+	@echo ""
+	@echo "    $$ make -f builder/Makefile.k8s build"
+	@echo ""
+	@echo "To generate the kubernetes manifests:"
+	@echo ""
+	@echo "    $$ make -f builder/Makefile.k8s manifests"
+	@echo ""
+	@echo "To generate operator code:"
+	@echo ""
+	@echo "    $$ make -f builder/Makefile.k8s generate"
+	@echo ""
+	@echo "Or simply:"
+	@echo ""
+	@echo "    $$ make -f builder/Makefile.k8s"
+	@echo ""
+
+#
+# requirements
+#
+
+.PHONY: .check_tree
+.check_tree:
+#
+	@if [ ! -d ./builder ]; then
+		echo "you must be in the root directory"
+		exit 1
+	fi
+
+K8S_CONTNAME = tracee-k8s:latest
+
+.PHONY: build
+build: \
+	.check_$(CMD_DOCKER) \
+	.check_tree \
+#
+	$(CMD_DOCKER) build \
+		-f builder/Dockerfile.k8s \
+		-t $(K8S_CONTNAME) \
+		.
+
+.PHONY: manifests
+manifests:
+	.check_$(CMD_DOCKER) \
+	.check_tree \
+#
+	$(CMD_DOCKER) run --rm \
+		-v $(shell pwd):/tracee \
+		$(K8S_CONTNAME) make k8s-manifests
+
+.PHONY: generate
+generate:
+	.check_$(CMD_DOCKER) \
+	.check_tree \
+#
+	$(CMD_DOCKER) run --rm \
+		-v $(shell pwd):/tracee \
+		$(K8S_CONTNAME) make k8s-generate
+
+#
+# clean
+#
+
+.PHONY: clean
+clean:

@@ -38,6 +38,7 @@ CMD_TOUCH ?= touch
 CMD_TR ?= tr
 CMD_PROTOC ?= protoc
 CMD_PANDOC ?= pandoc
+CMD_CONTROLLER_GEN ?= controller-gen
 
 .check_%:
 #
@@ -952,3 +953,12 @@ clean:
 	$(CMD_RM) -f .*.md5
 	$(CMD_RM) -f .check*
 	$(CMD_RM) -f .*-pkgs*
+# kubernetes operator
+
+.PHONY: k8s-manifests
+k8s-manifests: ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
+	$(CMD_CONTROLLER_GEN) rbac:roleName=tracee crd webhook paths="./pkg/k8s/..." output:crd:artifacts:config=deploy/helm/tracee/crds output:rbac:artifacts:config=deploy/helm/tracee/templates/
+
+.PHONY: k8s-generate
+k8s-generate: ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+	$(CMD_CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./pkg/k8s/..."
