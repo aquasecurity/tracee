@@ -71,8 +71,11 @@ func ExecPinnedCmdWithTimeout(command string, timeout time.Duration) (int, error
 		cmdDone <- cmd.Wait() // wait for command to exit
 	}()
 
+	timeoutTicker := time.NewTicker(timeout)
+	defer timeoutTicker.Stop()
+
 	select {
-	case <-time.After(timeout):
+	case <-timeoutTicker.C:
 		err := cmd.Process.Kill()
 		if err != nil {
 			return pid, &failedToKillProcess{command: command, err: err}
@@ -117,7 +120,7 @@ func ExecCmdBgWithSudoAndCtx(ctx context.Context, command string) (int, chan err
 	wg.Add(1)
 	go func(pid *atomic.Int64) {
 		// Will make the command to inherit the current process' CPU affinity.
-		PinProccessToCPU()             // pin this goroutine to a specific CPU
+		_ = PinProccessToCPU()         // pin this goroutine to a specific CPU
 		runtime.LockOSThread()         // wire this goroutine to a specific OS thread
 		defer runtime.UnlockOSThread() // unlock the thread when we're done
 
