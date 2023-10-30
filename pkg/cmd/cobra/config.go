@@ -280,6 +280,7 @@ func (c *LogConfig) flags() []string {
 	if c.Filters.LibBPF {
 		flags = append(flags, "filter:libbpf")
 	}
+
 	flags = append(flags, getLogFilterAttrFlags(false, c.Filters.In)...)
 	flags = append(flags, getLogFilterAttrFlags(true, c.Filters.Out)...)
 
@@ -404,6 +405,7 @@ func (c *OutputConfig) flags() []string {
 		if len(c.GoTemplate.Files) > 0 {
 			templateFlag += ":" + strings.Join(c.GoTemplate.Files, ",")
 		}
+
 		flags = append(flags, templateFlag)
 	}
 
@@ -432,6 +434,13 @@ func (c *OutputConfig) flags() []string {
 		if webhook.Timeout != "" {
 			url += fmt.Sprintf("?timeout=%s", webhook.Timeout)
 		}
+		if webhook.GoTemplate != "" {
+			url += fmt.Sprintf("?gotemplate=%s", webhook.GoTemplate)
+		}
+		if webhook.ContentType != "" {
+			url += fmt.Sprintf("?contentType=%s", webhook.ContentType)
+		}
+
 		flags = append(flags, fmt.Sprintf("webhook:%s", url))
 	}
 
@@ -468,8 +477,10 @@ type OutputForwardConfig struct {
 }
 
 type OutputWebhookConfig struct {
-	Protocol string `mapstructure:"protocol"`
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	Timeout  string `mapstructure:"timeout"`
+	Protocol    string `mapstructure:"protocol"`
+	Host        string `mapstructure:"host"`
+	Port        int    `mapstructure:"port"`
+	Timeout     string `mapstructure:"timeout"`
+	GoTemplate  string `mapstructure:"gotemplate"`
+	ContentType string `mapstructure:"content-type"`
 }

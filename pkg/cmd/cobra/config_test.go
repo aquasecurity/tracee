@@ -354,11 +354,15 @@ output:
             host: localhost
             port: 8000
             timeout: 5s
+            gotemplate: /path/to/template1
+            content-type: application/json
         - webhook2:
             protocol: http
             host: localhost
             port: 9000
             timeout: 3s
+            gotemplate: /path/to/template2
+            content-type: application/ld+json
 `,
 			key: "output",
 			expectedFlags: []string{
@@ -376,8 +380,8 @@ output:
 				"gotemplate=template1:file3,file4",
 				"forward:tcp://user:pass@127.0.0.1:24224?tag=tracee1",
 				"forward:udp://user:pass@127.0.0.1:24225?tag=tracee2",
-				"webhook:http://localhost:8000?timeout=5s",
-				"webhook:http://localhost:9000?timeout=3s",
+				"webhook:http://localhost:8000?timeout=5s?gotemplate=/path/to/template1?contentType=application/json",
+				"webhook:http://localhost:9000?timeout=3s?gotemplate=/path/to/template2?contentType=application/ld+json",
 			},
 		},
 	}
@@ -1063,19 +1067,21 @@ func TestOutputConfigFlags(t *testing.T) {
 			},
 		},
 		{
-			name: "test webhook with timeout",
+			name: "test webhook with all fields",
 			config: OutputConfig{
 				Webhooks: map[string]OutputWebhookConfig{
 					"example3": {
-						Protocol: "http",
-						Host:     "webhook.com",
-						Port:     9090,
-						Timeout:  "5s",
+						Protocol:    "http",
+						Host:        "webhook.com",
+						Port:        9090,
+						Timeout:     "5s",
+						GoTemplate:  "/path/to/template1",
+						ContentType: "application/json",
 					},
 				},
 			},
 			expected: []string{
-				"webhook:http://webhook.com:9090?timeout=5s",
+				"webhook:http://webhook.com:9090?timeout=5s?gotemplate=/path/to/template1?contentType=application/json",
 			},
 		},
 		{
