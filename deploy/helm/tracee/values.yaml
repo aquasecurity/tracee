@@ -56,8 +56,6 @@ affinity: {}
 
 webhook: ""
 
-defaultPolicy: {}
-
 traceeConfig: {}
 
 config:
@@ -81,6 +79,8 @@ config:
   output:
     - json
     - option:parse-arguments
+
+defaultPolicy: true
 
 operator:
   create: true

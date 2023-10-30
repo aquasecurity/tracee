@@ -1,0 +1,83 @@
+{{- if .Values.defaultPolicy -}}
+---
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: default-policy
+  annotations:
+    description: traces default events
+spec:
+  scope:
+    - global
+  rules:
+    - event: stdio_over_socket
+    - event: k8s_api_connection
+    - event: aslr_inspection
+    - event: proc_mem_code_injection
+    - event: docker_abuse
+    - event: scheduled_task_mod
+    - event: ld_preload
+    - event: cgroup_notify_on_release
+    - event: default_loader_mod
+    - event: sudoers_modification
+    - event: sched_debug_recon
+    - event: system_request_key_mod
+    - event: cgroup_release_agent
+    - event: rcd_modification
+    - event: core_pattern_modification
+    - event: proc_kcore_read
+    - event: proc_mem_access
+    - event: hidden_file_created
+    - event: anti_debugging
+    - event: ptrace_code_injection
+    - event: process_vm_write_inject
+    - event: disk_mount
+    - event: dynamic_code_loading
+    - event: fileless_execution
+    - event: illegitimate_shell
+    - event: kernel_module_loading
+    - event: k8s_cert_theft
+    - event: proc_fops_hooking
+    - event: syscall_hooking
+    - event: dropped_executable
+    - event: creat
+    - event: chmod
+    - event: fchmod
+    - event: chown
+    - event: fchown
+    - event: lchown
+    - event: ptrace
+    - event: setuid
+    - event: setgid
+    - event: setpgid
+    - event: setsid
+    - event: setreuid
+    - event: setregid
+    - event: setresuid
+    - event: setresgid
+    - event: setfsuid
+    - event: setfsgid
+    - event: init_module
+    - event: fchownat
+    - event: fchmodat
+    - event: setns
+    - event: process_vm_readv
+    - event: process_vm_writev
+    - event: finit_module
+    - event: memfd_create
+    - event: move_mount
+    - event: sched_process_exec
+    - event: security_inode_unlink
+    - event: security_socket_connect
+    - event: security_socket_accept
+    - event: security_socket_bind
+    - event: security_sb_mount
+    - event: container_create
+    - event: container_remove
+    - event: net_packet_icmp
+    - event: net_packet_icmpv6
+    - event: net_packet_dns_request
+    - event: net_packet_dns_response
+    - event: net_packet_http_request
+    - event: net_packet_http_response
+{{- end }}
