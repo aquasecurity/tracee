@@ -16,6 +16,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/events"
+	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/policy/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -45,12 +46,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "container-event",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"container=new",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "-container_create",
 									Filters: []string{},
@@ -86,13 +87,13 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "mntns/pidns",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"mntns=0", // no events expected
 								"pidns=0", // no events expected
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []v1beta1.Rule{},
+							Rules:          []k8s.Rule{},
 						},
 					},
 				},
@@ -115,12 +116,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "mntns",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"mntns!=" + getProcNS("mnt"), // no events expected
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []v1beta1.Rule{},
+							Rules:          []k8s.Rule{},
 						},
 					},
 				},
@@ -142,12 +143,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "pidns",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"pidns!=" + getProcNS("pid"), // no events expected
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []v1beta1.Rule{},
+							Rules:          []k8s.Rule{},
 						},
 					},
 				},
@@ -169,14 +170,14 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm_mntns_pidns_event",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ping",
 								"mntns=" + getProcNS("mnt"),
 								"pidns=" + getProcNS("pid"),
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "sched_process_exec",
 									Filters: []string{},
@@ -213,12 +214,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ping",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "sched_process_exec",
 									Filters: []string{},
@@ -255,12 +256,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ping",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "net_packet_icmp",
 									Filters: []string{},
@@ -293,12 +294,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "event-args",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"global",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event: "execve",
 									Filters: []string{
@@ -333,12 +334,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "event-args",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"global",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event: "execve",
 									Filters: []string{
@@ -368,12 +369,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-args",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event: "security_file_open",
 									Filters: []string{
@@ -407,12 +408,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-4",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "sched_process_exit",
 									Filters: []string{},
@@ -427,12 +428,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-2",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=uname",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "sched_process_exit",
 									Filters: []string{},
@@ -470,12 +471,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "exec-event-1",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"exec=/usr/bin/who",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "sched_process_exec",
 									Filters: []string{},
@@ -490,12 +491,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "exec-event-2",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"exec=/usr/bin/uname",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "sched_process_exec",
 									Filters: []string{},
@@ -535,12 +536,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "pid-0-event-args",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"pid=0",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event: "sched_switch",
 									Filters: []string{
@@ -575,12 +576,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "pid-1",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"pid=1",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []v1beta1.Rule{},
+							Rules:          []k8s.Rule{},
 						},
 					},
 				},
@@ -608,13 +609,13 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "uid-0-comm",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"uid=0",
 								"comm=ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []v1beta1.Rule{},
+							Rules:          []k8s.Rule{},
 						},
 					},
 				},
@@ -641,13 +642,13 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "uid-0-comm",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"uid>0",
 								"comm=ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []v1beta1.Rule{},
+							Rules:          []k8s.Rule{},
 						},
 					},
 				},
@@ -672,12 +673,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "event-fs",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "fs", // fs set
 									Filters: []string{},
@@ -709,12 +710,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "exec-event",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"exec=/usr/bin/dockerd",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "setns",
 									Filters: []string{},
@@ -747,13 +748,13 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "pid-new",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"pid=new",
 								"pid=1",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []v1beta1.Rule{},
+							Rules:          []k8s.Rule{},
 						},
 					},
 				},
@@ -778,12 +779,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-64",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []v1beta1.Rule{},
+							Rules:          []k8s.Rule{},
 						},
 					},
 				},
@@ -810,12 +811,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-64",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []v1beta1.Rule{},
+							Rules:          []k8s.Rule{},
 						},
 					},
 				},
@@ -826,12 +827,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-42",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=who",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []v1beta1.Rule{},
+							Rules:          []k8s.Rule{},
 						},
 					},
 				},
@@ -858,12 +859,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-64",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []v1beta1.Rule{},
+							Rules:          []k8s.Rule{},
 						},
 					},
 				},
@@ -873,12 +874,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-42",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=who",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []v1beta1.Rule{},
+							Rules:          []k8s.Rule{},
 						},
 					},
 				},
@@ -913,12 +914,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "event-args-context",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"global",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event: "security_file_open",
 									Filters: []string{
@@ -954,12 +955,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=tee",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "magic_write",
 									Filters: []string{},
@@ -995,7 +996,7 @@ func Test_EventFilters(t *testing.T) {
 		// 				Name:          "comm-event",
 		// 				Scope:         []string{"comm=ping"},
 		// 				DefaultActions: []string{"log"},
-		// 				Rules: []v1beta1.Rule{
+		// 				Rules: []k8s.Rule{
 		// 					{
 		// 						Event:  "net_packet_icmp",
 		// 						Filters: []string{},
@@ -1009,7 +1010,7 @@ func Test_EventFilters(t *testing.T) {
 		// 				Name:          "event-args",
 		// 				Scope:         []string{},
 		// 				DefaultActions: []string{"log"},
-		// 				Rules: []v1beta1.Rule{
+		// 				Rules: []k8s.Rule{
 		// 					{
 		// 						Event:  "ptrace",
 		// 						Filters: []string{"args.pid=0"},
@@ -1023,7 +1024,7 @@ func Test_EventFilters(t *testing.T) {
 		// 				Name:          "signature",
 		// 				Scope:         []string{},
 		// 				DefaultActions: []string{"log"},
-		// 				Rules: []v1beta1.Rule{
+		// 				Rules: []k8s.Rule{
 		// 					{
 		// 						Event:  "anti_debugging",
 		// 						Filters: []string{},
@@ -1065,12 +1066,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-3",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ping",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "net_packet_icmp",
 									Filters: []string{},
@@ -1085,12 +1086,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-5",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ping",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "net_packet_icmp",
 									Filters: []string{},
@@ -1123,12 +1124,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-3",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ping",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "net_packet_icmp",
 									Filters: []string{},
@@ -1143,12 +1144,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-5",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ping",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "net_packet_icmp",
 									Filters: []string{},
@@ -1187,12 +1188,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-3",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ping",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "net_packet_icmp",
 									Filters: []string{},
@@ -1207,12 +1208,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-5",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ping",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "net_packet_icmp",
 									Filters: []string{},
@@ -1227,12 +1228,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-7",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ping",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "sched_process_exec",
 									Filters: []string{},
@@ -1247,12 +1248,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-9",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ping",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "sched_process_exec",
 									Filters: []string{},
@@ -1293,12 +1294,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-64",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []v1beta1.Rule{},
+							Rules:          []k8s.Rule{},
 						},
 					},
 				},
@@ -1308,13 +1309,13 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-42",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=who",
 								"comm=ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []v1beta1.Rule{},
+							Rules:          []k8s.Rule{},
 						},
 					},
 				},
@@ -1349,12 +1350,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-64",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []v1beta1.Rule{},
+							Rules:          []k8s.Rule{},
 						},
 					},
 				},
@@ -1364,12 +1365,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-42",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=who,ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []v1beta1.Rule{},
+							Rules:          []k8s.Rule{},
 						},
 					},
 				},
@@ -1410,12 +1411,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=fakeprog1",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "read",
 									Filters: []string{},
@@ -1452,10 +1453,10 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "event-pol-42",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope:          []string{"global"},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event:   "execve",
 									Filters: []string{},
@@ -1487,12 +1488,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-args-64",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=fakeprog1",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event: "openat",
 									Filters: []string{
@@ -1511,12 +1512,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-args-42",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=fakeprog2",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event: "open",
 									Filters: []string{
@@ -1566,12 +1567,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-retval-64",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=fakeprog1",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event: "openat",
 									Filters: []string{
@@ -1589,12 +1590,12 @@ func Test_EventFilters(t *testing.T) {
 						Metadata: v1beta1.Metadata{
 							Name: "comm-event-retval-42",
 						},
-						Spec: v1beta1.PolicySpec{
+						Spec: k8s.PolicySpec{
 							Scope: []string{
 								"comm=fakeprog2",
 							},
 							DefaultActions: []string{"log"},
-							Rules: []v1beta1.Rule{
+							Rules: []k8s.Rule{
 								{
 									Event: "open",
 									Filters: []string{
@@ -1717,7 +1718,7 @@ func newCmdEvents(runCmd string, timeout time.Duration, evts []trace.Event, sets
 
 // newPolicies creates a new policies object with the given policies files with IDs.
 func newPolicies(polsFilesID []policyFileWithID) *policy.Policies {
-	var polsFiles []v1beta1.PolicyFile
+	var polsFiles []k8s.PolicyInterface
 
 	for _, polFile := range polsFilesID {
 		polsFiles = append(polsFiles, polFile.policyFile)
