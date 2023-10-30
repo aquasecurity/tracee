@@ -111,11 +111,15 @@ output:
     #         host: localhost
     #         port: 8000
     #         timeout: 5s
+    #         gotemplate: /path/to/template/test.tmpl
+    #         content-type: application/json
     #     - webhook2:
     #         protocol: http
     #         host: localhost
     #         port: 9000
     #         timeout: 3s
+    #         gotemplate: /path/to/template/test.tmpl
+    #         content-type: application/json
 
     # options:
     #     none: false
