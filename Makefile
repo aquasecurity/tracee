@@ -257,6 +257,7 @@ help:
 	@echo "    $$ make e2e-net-signatures       # build ./dist/e2e-net-signatures"
 	@echo "    $$ make e2e-inst-signatures      # build ./dist/e2e-inst-signatures"
 	@echo "    $$ make tracee                   # build ./dist/tracee"
+	@echo "    $$ make tracee-operator			# build ./dist/tracee-operator"
 	@echo ""
 	@echo "# clean"
 	@echo ""
@@ -267,6 +268,7 @@ help:
 	@echo "    $$ make clean-tracee-bench       # wipe ./dist/tracee-bench"
 	@echo "    $$ make clean-signatures         # wipe ./dist/signatures"
 	@echo "    $$ make clean-tracee             # wipe ./dist/tracee"
+	@echo "    $$ make clean-tracee-operator    # wipe ./dist/tracee-operator"
 	@echo ""
 	@echo "# test"
 	@echo ""
@@ -953,6 +955,25 @@ clean:
 	$(CMD_RM) -f .*.md5
 	$(CMD_RM) -f .check*
 	$(CMD_RM) -f .*-pkgs*
+
+# tracee-operator
+
+.PHONY: tracee-operator
+tracee-operator: $(OUTPUT_DIR)/tracee-operator
+
+$(OUTPUT_DIR)/tracee-operator: \
+	.checkver_$(CMD_GO) \
+	| $(OUTPUT_DIR)
+#
+	$(CMD_GO) build \
+		-v -o $@ \
+		./cmd/tracee-operator
+
+.PHONY: clean-tracee-operator
+clean-tracee-operator:
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-operator
+
 # kubernetes operator
 
 .PHONY: k8s-manifests
