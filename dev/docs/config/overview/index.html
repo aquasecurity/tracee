@@ -15390,7 +15390,7 @@
   <span class="md-ellipsis">
     
   
-    crs
+    cri
   
 
     
@@ -16882,14 +16882,21 @@
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">debug</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aggregate</span>
 </code></pre></div>
+<p>Or in a structured format:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">log</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">debug</span>
+<span class="w">    </span><span class="nt">aggregate</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
 <h2 id="reserved-flags">Reserved Flags<a class="headerlink" href="#reserved-flags" title="Permanent link">&para;</a></h2>
 <p>There are a few flags that are reserved for the CLI and cannot be set through the configuration file. These include:
 <code>--config</code>, <code>--capture</code>, <code>--policy</code>, <code>--scope</code>, and <code>--events</code>.</p>
 <h2 id="example-configuration-files">Example Configuration Files<a class="headerlink" href="#example-configuration-files" title="Permanent link">&para;</a></h2>
 <p>To help you get started with configuring Tracee using the <code>--config</code> flag, we've provided two example configuration files in the <code>examples/config</code> directory of the Tracee repository:</p>
 <ul>
-<li><code>examples/config/global_config.json</code>: This file contains an example configuration in JSON format.</li>
-<li><code>examples/config/global_config.yaml</code>: This file contains the same example configuration as global_config.json, but in YAML format.</li>
+<li><code>examples/config/global_config.yaml</code>: This file contains an example configuration in YAML format.</li>
+<li><code>examples/config/global_config_cli.yaml</code>: This file contains the same example configuration as global_config.yaml, but using cli flags (not structured).</li>
+<li><code>examples/config/global_config.json</code>: This file contains the same example configuration as global_config_cli.yaml, but in JSON format.</li>
 </ul>
 <p>These example files demonstrate how you can set various configuration options using the <code>--config</code> flag. You can use these files as a starting point for your own configuration, or as a reference for the available configuration options.</p>
 <p>To use one of the example configuration files with Tracee, simply pass the path to the file as an argument to the -<code>-config</code> flag. For example, to use the YAML configuration file, you could run the following command:</p>

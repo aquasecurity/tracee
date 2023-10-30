@@ -14,16 +14,16 @@
 . ftr VB CB
 . ftr VBI CBI
 .\}
-.TH "TRACEE-CRS" "1" "2023/10" "" "Tracee CRS Flag Manual"
+.TH "TRACEE-CRI" "1" "2023/10" "" "Tracee CRI Flag Manual"
 .hy
 .SS NAME
 .PP
-tracee \f[B]--crs\f[R] - Select container runtimes to connect to for
+tracee \f[B]--cri\f[R] - Select container runtimes to connect to for
 container events enrichment
 .SS SYNOPSIS
 .PP
-tracee \f[B]--crs\f[R] <[crio|containerd|docker|podman]:socket>
-[\f[B]--crs\f[R] \&...]
+tracee \f[B]--cri\f[R] <[crio|containerd|docker|podman]:socket>
+[\f[B]--cri\f[R] \&...]
 \&...
 .SS DESCRIPTION
 .PP
@@ -39,7 +39,7 @@ for the following paths:
 .IP "4." 3
 \f[B]Podman\f[R]: \f[V]/var/run/podman/podman.sock\f[R]
 .PP
-If runtimes are specified using the \f[B]--crs\f[R] flag, only the ones
+If runtimes are specified using the \f[B]--cri\f[R] flag, only the ones
 passed through the flags will be connected to through the provided
 socket file path.
 .PP
@@ -60,7 +60,7 @@ To connect to CRI-O using the socket file path
 .IP
 .nf
 \f[C]
---crs crio:/var/run/crio/crio.sock
+--cri crio:/var/run/crio/crio.sock
 \f[R]
 .fi
 .RE

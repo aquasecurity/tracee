@@ -27,7 +27,7 @@
     
     
       
-        <title>TRACEE-CRS - Tracee</title>
+        <title>TRACEE-CRI - Tracee</title>
       
     
     
@@ -107,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              TRACEE-CRS
+              TRACEE-CRI
             
           </span>
         </div>
@@ -15401,7 +15401,7 @@
   <span class="md-ellipsis">
     
   
-    crs
+    cri
   
 
     
@@ -15418,7 +15418,7 @@
   <span class="md-ellipsis">
     
   
-    crs
+    cri
   
 
     
@@ -16836,12 +16836,12 @@
                   
 
 
-  <h1>crs</h1>
+  <h1>cri</h1>
 
 <h2 id="name">NAME<a class="headerlink" href="#name" title="Permanent link">&para;</a></h2>
-<p>tracee <strong>--crs</strong> - Select container runtimes to connect to for container events enrichment</p>
+<p>tracee <strong>--cri</strong> - Select container runtimes to connect to for container events enrichment</p>
 <h2 id="synopsis">SYNOPSIS<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
-<p>tracee <strong>--crs</strong> &lt;[crio|containerd|docker|podman]:socket&gt; [<strong>--crs</strong> ...] ...</p>
+<p>tracee <strong>--cri</strong> &lt;[crio|containerd|docker|podman]:socket&gt; [<strong>--cri</strong> ...] ...</p>
 <h2 id="description">DESCRIPTION<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
 <p>By default, if no flag is passed, Tracee will automatically detect installed runtimes by going through known runtime socket paths, looking for the following paths:</p>
 <ol>
@@ -16850,7 +16850,7 @@
 <li><strong>CRI-O</strong>:      <code>/var/run/crio/crio.sock</code></li>
 <li><strong>Podman</strong>:     <code>/var/run/podman/podman.sock</code></li>
 </ol>
-<p>If runtimes are specified using the <strong>--crs</strong> flag, only the ones passed through the flags will be connected to through the provided socket file path.</p>
+<p>If runtimes are specified using the <strong>--cri</strong> flag, only the ones passed through the flags will be connected to through the provided socket file path.</p>
 <p>Supported runtimes are:</p>
 <ol>
 <li><strong>CRI-O</strong> (crio, cri-o)</li>
@@ -16862,7 +16862,7 @@
 <ul>
 <li>To connect to CRI-O using the socket file path <code>/var/run/crio/crio.sock</code>, use the following flag:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="go">--crs crio:/var/run/crio/crio.sock</span>
+<div class="highlight"><pre><span></span><code><span class="go">--cri crio:/var/run/crio/crio.sock</span>
 </code></pre></div>
 <p>Please refer to the <a href="../../integrating/container-engines/">documentation</a> for more information on container events enrichment.</p>
 
