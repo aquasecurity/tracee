@@ -10,7 +10,7 @@ require (
 	github.com/aquasecurity/tracee/api v0.0.0-20231013014739-b32a168ee6a8
 	github.com/aquasecurity/tracee/types v0.0.0-20231013014739-b32a168ee6a8
 	github.com/containerd/containerd v1.7.0
-	github.com/docker/docker v23.0.5+incompatible
+	github.com/docker/docker v24.0.7+incompatible
 	github.com/golang/protobuf v1.5.3
 	github.com/google/cel-go v0.15.1
 	github.com/google/gopacket v1.1.19
