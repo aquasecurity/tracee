@@ -33,8 +33,6 @@ spec:
           command:
             - /tracee/tracee
           args:
-            - --policy
-            - /tracee/policies
             - --config
             - /tracee/config.yaml
           {{- if .Values.webhook }}
@@ -77,9 +75,18 @@ spec:
               readOnly: true
               mountPath: /tracee/config.yaml
               subPath: config.yaml
+<<<<<<< HEAD
             - name: tracee-policies
               readOnly: true
               mountPath: /tracee/policies
+=======
+            {{- if .Values.signatures.config }}
+            - name: tracee-signatures
+              mountPath: /tracee/signatures/signatures.yaml
+              subPath: signatures.yaml
+              readOnly: true
+            {{- end }}
+>>>>>>> 4432bdffb0 (feature: add CRD default policy)
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
@@ -116,6 +123,3 @@ spec:
         - name: tracee-config
           configMap:
             name: tracee-config
-        - name: tracee-policies
-          configMap:
-            name: tracee-policies
