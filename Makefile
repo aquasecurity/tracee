@@ -982,4 +982,4 @@ k8s-manifests: ## Generate WebhookConfiguration, ClusterRole and CustomResourceD
 
 .PHONY: k8s-generate
 k8s-generate: ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	$(CMD_CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./pkg/k8s/..."
+	$(CMD_CONTROLLER_GEN) object:headerFile="deploy/boilerplate.go.txt" paths="./pkg/k8s/..."
