@@ -1,228 +1,403 @@
 ---
-apiVersion: v1
-kind: ConfigMap
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
 metadata:
-  labels:
-    app.kubernetes.io/name: tracee
-    app.kubernetes.io/component: tracee
-    app.kubernetes.io/part-of: tracee
-  name: tracee-policies
-data:
-  default.yaml: |-
-    apiVersion: tracee.aquasec.com/v1beta1
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.13.0
+  name: policies.tracee.aquasec.com
+spec:
+  group: tracee.aquasec.com
+  names:
     kind: Policy
-    metadata:
-      name: default-policy
-      annotations:
-        description: traces default events
-    spec:
-      scope:
-        - global
-      rules:
-        - event: stdio_over_socket
-        - event: k8s_api_connection
-        - event: aslr_inspection
-        - event: proc_mem_code_injection
-        - event: docker_abuse
-        - event: scheduled_task_mod
-        - event: ld_preload
-        - event: cgroup_notify_on_release
-        - event: default_loader_mod
-        - event: sudoers_modification
-        - event: sched_debug_recon
-        - event: system_request_key_mod
-        - event: cgroup_release_agent
-        - event: rcd_modification
-        - event: core_pattern_modification
-        - event: proc_kcore_read
-        - event: proc_mem_access
-        - event: hidden_file_created
-        - event: anti_debugging
-        - event: ptrace_code_injection
-        - event: process_vm_write_inject
-        - event: disk_mount
-        - event: dynamic_code_loading
-        - event: fileless_execution
-        - event: illegitimate_shell
-        - event: kernel_module_loading
-        - event: k8s_cert_theft
-        - event: proc_fops_hooking
-        - event: syscall_hooking
-        - event: dropped_executable
-        - event: creat
-        - event: chmod
-        - event: fchmod
-        - event: chown
-        - event: fchown
-        - event: lchown
-        - event: ptrace
-        - event: setuid
-        - event: setgid
-        - event: setpgid
-        - event: setsid
-        - event: setreuid
-        - event: setregid
-        - event: setresuid
-        - event: setresgid
-        - event: setfsuid
-        - event: setfsgid
-        - event: init_module
-        - event: fchownat
-        - event: fchmodat
-        - event: setns
-        - event: process_vm_readv
-        - event: process_vm_writev
-        - event: finit_module
-        - event: memfd_create
-        - event: move_mount
-        - event: sched_process_exec
-        - event: security_inode_unlink
-        - event: security_socket_connect
-        - event: security_socket_accept
-        - event: security_socket_bind
-        - event: security_sb_mount
-        - event: container_create
-        - event: container_remove
-        - event: net_packet_icmp
-        - event: net_packet_icmpv6
-        - event: net_packet_dns_request
-        - event: net_packet_dns_response
-        - event: net_packet_http_request
-        - event: net_packet_http_response
+    listKind: PolicyList
+    plural: policies
+    singular: policy
+  scope: Cluster
+  versions:
+  - name: v1beta1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: tracee policy spec
+            properties:
+              defaultActions:
+                items:
+                  type: string
+                type: array
+              rules:
+                items:
+                  description: Rule is the structure of the rule in the policy file
+                  properties:
+                    actions:
+                      items:
+                        type: string
+                      type: array
+                    event:
+                      type: string
+                    filters:
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - event
+                  type: object
+                type: array
+              scope:
+                items:
+                  type: string
+                type: array
+            required:
+            - rules
+            - scope
+            type: object
+        required:
+        - metadata
+        - spec
+        type: object
+    served: true
+    storage: true
 ---
+# Source: tracee/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tracee
+  labels:
+    helm.sh/chart: tracee-0.18.1
+    app.kubernetes.io/name: tracee
+    app.kubernetes.io/instance: tracee
+    app.kubernetes.io/version: "0.18.1"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: tracee/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tracee-operator
+  labels:
+    helm.sh/chart: tracee-0.18.1
+    app.kubernetes.io/name: tracee
+    app.kubernetes.io/instance: tracee
+    app.kubernetes.io/version: "0.18.1"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: tracee/templates/tracee-config.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  labels:
-    app.kubernetes.io/name: tracee
-    app.kubernetes.io/component: tracee
-    app.kubernetes.io/part-of: tracee
   name: tracee-config
+  labels:
+    helm.sh/chart: tracee-0.18.1
+    app.kubernetes.io/name: tracee
+    app.kubernetes.io/instance: tracee
+    app.kubernetes.io/version: "0.18.1"
+    app.kubernetes.io/managed-by: Helm
 data:
   config.yaml: |-
-    cache:
-      - cache-type=mem
-      - mem-cache-size=512
     perf-buffer-size: 1024
     healthz: true
     metrics: true
     pprof: false
     pyroscope: false
     listen-addr: :3366
+    cache:
+        - cache-type=mem
+        - mem-cache-size=512
     log:
         - info
     output:
         - json
         - option:parse-arguments
 ---
+# Source: tracee/templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tracee
+rules:
+- apiGroups:
+  - apps
+  resources:
+  - daemonsets
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - tracee.aquasec.com
+  resources:
+  - policies
+  verbs:
+  - get
+  - list
+  - watch
+---
+# Source: tracee/templates/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tracee
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tracee
+subjects:
+  - kind: ServiceAccount
+    name: tracee
+    namespace: default
+---
+# Source: tracee/templates/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tracee-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tracee
+subjects:
+  - kind: ServiceAccount
+    name: tracee-operator
+    namespace: default
+---
+# Source: tracee/templates/daemonset.yaml
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  labels:
-    app.kubernetes.io/name: tracee
-    app.kubernetes.io/component: tracee
-    app.kubernetes.io/part-of: tracee
   name: tracee
+  labels:
+    helm.sh/chart: tracee-0.18.1
+    app.kubernetes.io/name: tracee
+    app.kubernetes.io/instance: tracee
+    app.kubernetes.io/version: "0.18.1"
+    app.kubernetes.io/managed-by: Helm
 spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: tracee
+      app.kubernetes.io/instance: tracee
   template:
     metadata:
       labels:
         app.kubernetes.io/name: tracee
-      name: tracee
+        app.kubernetes.io/instance: tracee
     spec:
+      serviceAccountName: tracee
+      hostPID: true
+      securityContext:
+        {}
       containers:
-      - name: tracee
-        image: docker.io/aquasec/tracee:0.18.1
-        imagePullPolicy: IfNotPresent
-        command: 
-          - /tracee/tracee
-        args:
-          - --policy
-          - /tracee/policies
-          - --config 
-          - /tracee/config.yaml
-        env:
-          - name: LIBBPFGO_OSRELEASE_FILE
-            value: /etc/os-release-host
-          - name: NODE_NAME
+        - name: tracee
+          image: "docker.io/aquasec/tracee:0.18.1"
+          imagePullPolicy: IfNotPresent
+          command:
+            - /tracee/tracee
+          args:
+            - --config
+            - /tracee/config.yaml
+          env:
+            - name: LIBBPFGO_OSRELEASE_FILE
+              value: /etc/os-release-host
+            - name: NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-        readinessProbe:
-          httpGet:
-            path: /healthz
-            port: 3366
-        securityContext:
-          privileged: true
-        volumeMounts:
-        - name: tmp-tracee
-          mountPath: /tmp/tracee
-        - name: etc-os-release
-          mountPath: /etc/os-release-host
-          readOnly: true
-        - mountPath: /var/run/containerd/containerd.sock
-          name: containerd-sock
-          readOnly: true
-        - mountPath: /var/run/crio/crio.sock
-          name: crio-sock
-          readOnly: true
-        - mountPath: /var/run/docker.sock
-          name: docker-sock
-          readOnly: true
-        - mountPath: /var/run/podman/podman.sock
-          name: podman-sock
-          readOnly: true
-        - name: tracee-config
-          readOnly: true
-          mountPath: /tracee/config.yaml
-          subPath: config.yaml
-        - name: tracee-policies
-          readOnly: true
-          mountPath: /tracee/policies
-        # NOTE: Resource consumption will vary between different use cases and
-        # workload characteristics. User should monitor tracee for resource
-        # consumption before enabling resource limits. Capping tracee
-        # resources may cause loss of events and miss detections. Golang
-        # signatures outperforms REGO signatures, use less HW resources,
-        # and are preferred if that is an option.
-        # resources:
-        # resources:
-        #   limits:
-        #     cpu: "1"
-        #     memory: 1Gi # tracee has a 512MB in-memory events cache enabled by default
-        #   requests:
-        #     cpu: "1"
-        #     memory: 1Gi
+          securityContext:
+            privileged: true
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3366
+          volumeMounts:
+            - name: tmp-tracee
+              mountPath: /tmp/tracee
+            - name: etc-os-release
+              mountPath: /etc/os-release-host
+              readOnly: true
+            - mountPath: /var/run/containerd/containerd.sock
+              name: containerd-sock
+              readOnly: true
+            - mountPath: /var/run/crio/crio.sock
+              name: crio-sock
+              readOnly: true
+            - mountPath: /var/run/docker.sock
+              name: docker-sock
+              readOnly: true
+            - mountPath: /var/run/podman/podman.sock
+              name: podman-sock
+              readOnly: true
+            - name: tracee-config
+              readOnly: true
+              mountPath: /tracee/config.yaml
+              subPath: config.yaml
+          resources:
+            {}
       tolerations:
         - effect: NoSchedule
           operator: Exists
         - effect: NoExecute
           operator: Exists
       volumes:
-      - hostPath:
-          path: /tmp/tracee
-        name: tmp-tracee
-      - hostPath:
-          path: /etc/os-release
-        name: etc-os-release
-      - hostPath:
-          path: /var/run/containerd/containerd.sock
-        name: containerd-sock
-      - hostPath:
-          path: /var/run/crio/crio.sock
-        name: crio-sock
-      - hostPath:
-          path: /var/run/podman/podman.sock
-        name: podman-sock
-      - hostPath:
-          path: /var/run/docker.sock
-        name: docker-sock
-      - name: tracee-config
-        configMap:
-          name: tracee-config
-      - name: tracee-policies
-        configMap:
-          name: tracee-policies
+        - name: tmp-tracee
+          hostPath:
+            path: /tmp/tracee
+        - name: etc-os-release
+          hostPath:
+            path: /etc/os-release
+        - name: containerd-sock
+          hostPath:
+            path: /var/run/containerd/containerd.sock
+        - name: crio-sock
+          hostPath:
+            path: /var/run/crio/crio.sock
+        - name: podman-sock
+          hostPath:
+            path: /var/run/podman/podman.sock
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+        - name: tracee-config
+          configMap:
+            name: tracee-config
+---
+# Source: tracee/templates/deploy.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tracee-operator
+  labels:
+    helm.sh/chart: tracee-0.18.1
+    app.kubernetes.io/name: tracee
+    app.kubernetes.io/instance: tracee
+    app.kubernetes.io/version: "0.18.1"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tracee-operator
+  template:
+    metadata:
+      labels:
+        app: tracee-operator
+    spec:
+      serviceAccountName: tracee-operator
+      securityContext:
+        {}
+      containers:
+      - name: tracee-operator
+        image: "docker.io/aquasec/tracee:0.18.1"
+        imagePullPolicy: IfNotPresent
+        command:
+          - /tracee/tracee-operator
+        args:
+          - --health-probe-bind-address
+          - :8081
+        env:
+          - name: TRACEE_NAME
+            value: tracee
+          - name: TRACEE_NAMESPACE
+            value: default
+        securityContext:
+            privileged: true
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+---
+# Source: tracee/templates/default-policy.yaml
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: default-policy
+  annotations:
+    description: traces default events
+spec:
+  scope:
+    - global
+  rules:
+    - event: stdio_over_socket
+    - event: k8s_api_connection
+    - event: aslr_inspection
+    - event: proc_mem_code_injection
+    - event: docker_abuse
+    - event: scheduled_task_mod
+    - event: ld_preload
+    - event: cgroup_notify_on_release
+    - event: default_loader_mod
+    - event: sudoers_modification
+    - event: sched_debug_recon
+    - event: system_request_key_mod
+    - event: cgroup_release_agent
+    - event: rcd_modification
+    - event: core_pattern_modification
+    - event: proc_kcore_read
+    - event: proc_mem_access
+    - event: hidden_file_created
+    - event: anti_debugging
+    - event: ptrace_code_injection
+    - event: process_vm_write_inject
+    - event: disk_mount
+    - event: dynamic_code_loading
+    - event: fileless_execution
+    - event: illegitimate_shell
+    - event: kernel_module_loading
+    - event: k8s_cert_theft
+    - event: proc_fops_hooking
+    - event: syscall_hooking
+    - event: dropped_executable
+    - event: creat
+    - event: chmod
+    - event: fchmod
+    - event: chown
+    - event: fchown
+    - event: lchown
+    - event: ptrace
+    - event: setuid
+    - event: setgid
+    - event: setpgid
+    - event: setsid
+    - event: setreuid
+    - event: setregid
+    - event: setresuid
+    - event: setresgid
+    - event: setfsuid
+    - event: setfsgid
+    - event: init_module
+    - event: fchownat
+    - event: fchmodat
+    - event: setns
+    - event: process_vm_readv
+    - event: process_vm_writev
+    - event: finit_module
+    - event: memfd_create
+    - event: move_mount
+    - event: sched_process_exec
+    - event: security_inode_unlink
+    - event: security_socket_connect
+    - event: security_socket_accept
+    - event: security_socket_bind
+    - event: security_sb_mount
+    - event: container_create
+    - event: container_remove
+    - event: net_packet_icmp
+    - event: net_packet_icmpv6
+    - event: net_packet_dns_request
+    - event: net_packet_dns_response
+    - event: net_packet_http_request
+    - event: net_packet_http_response
