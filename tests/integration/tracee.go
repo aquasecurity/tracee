@@ -27,6 +27,12 @@ type eventBuffer struct {
 	events []trace.Event
 }
 
+func newEventBuffer() *eventBuffer {
+	return &eventBuffer{
+		events: make([]trace.Event, 0),
+	}
+}
+
 // addEvent adds an event to the eventBuffer
 func (b *eventBuffer) addEvent(evt trace.Event) {
 	b.mu.Lock()
@@ -40,7 +46,7 @@ func (b *eventBuffer) clear() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	b.events = b.events[:0]
+	b.events = make([]trace.Event, 0)
 }
 
 // len returns the number of events in the eventBuffer
@@ -49,6 +55,17 @@ func (b *eventBuffer) len() int {
 	defer b.mu.RUnlock()
 
 	return len(b.events)
+}
+
+// getCopy returns a copy of the eventBuffer events
+func (b *eventBuffer) getCopy() []trace.Event {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+
+	evts := make([]trace.Event, len(b.events))
+	copy(evts, b.events)
+
+	return evts
 }
 
 // load tracee into memory with args

@@ -76,7 +76,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		{
 			name: "mntns/pidns: trace events only from mount/pid namespace 0",
@@ -105,7 +106,8 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents("who", 1*time.Second, []trace.Event{}, []string{}),
 			},
 			useSyscaller: false,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		{
 			name: "mntns: trace events from all mount namespaces but current",
@@ -132,7 +134,8 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents("who", 1*time.Second, []trace.Event{}, []string{}),
 			},
 			useSyscaller: false,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		{
 			name: "pidns: trace events from all pid namespaces but current",
@@ -159,7 +162,8 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents("who", 1*time.Second, []trace.Event{}, []string{}),
 			},
 			useSyscaller: false,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		{
 			name: "comm: mntns: pidns: event: trace events set in a single policy from current pid/mount namespaces",
@@ -203,7 +207,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		{
 			name: "comm: event: trace events set in a single policy from ping command",
@@ -245,7 +250,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		{
 			name: "comm: event: trace events set in a single policy from ping command",
@@ -283,7 +289,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		{
 			name: "event: args: trace event set in a specific policy with args pathname finishing with 'ls'",
@@ -323,7 +330,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		{
 			name: "event: args: trace event set in a specific policy with args pathname starting with * wildcard",
@@ -358,7 +366,8 @@ func Test_EventFilters(t *testing.T) {
 				newCmdEvents("who", 1*time.Second, []trace.Event{}, []string{}),
 			},
 			useSyscaller: false,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		{
 			name: "comm: event: args: trace event set in a specific policy with args from ls command",
@@ -397,7 +406,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		{
 			name: "comm: event: trace events set in two specific policies from ls and uname commands",
@@ -460,7 +470,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		{
 			name: "exec: event: trace events in separate policies from who and uname executable",
@@ -523,7 +534,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		// TODO: Add pid>0 pid<1000
 		// TODO: Add u>0 u!=1000
@@ -565,7 +577,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAnyOfEach,
+			coolDown:     2 * time.Second,
+			test:         ExpectAnyOfEvts,
 		},
 		{
 			name: "pid: trace events from pid 1",
@@ -598,7 +611,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAnyOfEach,
+			coolDown:     2 * time.Second,
+			test:         ExpectAnyOfEvts,
 		},
 		{
 			name: "uid: comm: trace uid 0 from ls command",
@@ -631,7 +645,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllEqualTo,
+			coolDown:     0,
+			test:         ExpectAllEvtsEqualToOne,
 		},
 		{
 			name: "uid: comm: trace only uid>0 from ls command (should be empty)",
@@ -662,7 +677,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		{
 			name: "comm: trace filesystem events from ls command",
@@ -699,7 +715,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllEqualTo,
+			coolDown:     0,
+			test:         ExpectAllEvtsEqualToOne,
 		},
 		{
 			name: "exec: event: trace only setns events from \"/usr/bin/dockerd\" executable",
@@ -737,7 +754,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		{
 			name: "trace new pids (should be empty)",
@@ -768,7 +786,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		{
 			name: "comm: trace events set in a specific policy from ls command",
@@ -800,7 +819,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllEqualTo,
+			coolDown:     0,
+			test:         ExpectAllEvtsEqualToOne,
 		},
 		{
 			name: "comm: trace events set in a specific policy from ls command",
@@ -848,7 +868,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllEqualTo,
+			coolDown:     0,
+			test:         ExpectAllEvtsEqualToOne,
 		},
 		{
 			name: "comm: trace events set in a specific policy from ls and who commands",
@@ -903,7 +924,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllEqualTo,
+			coolDown:     0,
+			test:         ExpectAllEvtsEqualToOne,
 		},
 		{
 			name: "event: args: context: only security_file_open from \"execve\" syscall",
@@ -944,7 +966,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllEqualTo,
+			coolDown:     0,
+			test:         ExpectAllEvtsEqualToOne,
 		},
 		{
 			name: "comm: event: do a file write",
@@ -981,7 +1004,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 
 		// // TODO: add tests using signature events
@@ -1053,7 +1077,8 @@ func Test_EventFilters(t *testing.T) {
 		// 		),
 		// 	},
 		// 	useSyscaller: false,
-		// 	test:         ExpectAtLeastOneOfEach,
+		// 	coolDown: 0,
+		//  test: ExpectAtLeastOneOfEach,
 		// },
 
 		// events matched in multiple policies - intertwined workloads
@@ -1113,7 +1138,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		{
 			name: "comm: event: trace events from ping command in multiple policies",
@@ -1177,7 +1203,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		{
 			name: "comm: event: trace events from ping command in multiple policies",
@@ -1283,7 +1310,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		{
 			name: "comm: trace only events from from ls and who commands in multiple policies",
@@ -1339,7 +1367,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAllEqualTo,
+			coolDown:     0,
+			test:         ExpectAllEvtsEqualToOne,
 		},
 		{
 			name: "comm: trace at least one event in multiple policies from ls and who commands",
@@ -1394,7 +1423,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: false,
-			test:         ExpectAtLeastOneOfEach,
+			coolDown:     0,
+			test:         ExpectAtLeastOneForEach,
 		},
 
 		// This uses the syscaller tool which emits the desired events from a desired comm,
@@ -1442,7 +1472,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: true,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		{
 			name: "event: trace execve event set in a specific policy from fakeprog1 command",
@@ -1477,7 +1508,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: true,
-			test:         ExpectAtLeastOneOfEach,
+			coolDown:     0,
+			test:         ExpectAtLeastOneForEach,
 		},
 		{
 			name: "comm: event: args: trace event set in a specific policy with args from fakeprog1 and fakeprog2 commands",
@@ -1556,7 +1588,8 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: true,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 		{
 			name: "comm: event: retval: trace event set in a specific policy with retval from fakeprog1 and fakeprog2 commands",
@@ -1628,13 +1661,17 @@ func Test_EventFilters(t *testing.T) {
 				),
 			},
 			useSyscaller: true,
-			test:         ExpectAllInOrder,
+			coolDown:     0,
+			test:         ExpectAllInOrderSequentially,
 		},
 	}
 
 	// run tests cases
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			// wait for the previous test to cool down
+			coolDown(t, tc.coolDown)
+
 			// prepare tracee config
 			config := config.Config{
 				Policies: newPolicies(tc.policyFiles),
@@ -1653,8 +1690,8 @@ func Test_EventFilters(t *testing.T) {
 			defer trc.Unsubscribe(stream)
 
 			// start a goroutine to read events from the channel into the buffer
-			buf := &eventBuffer{}
-			go func(ctx context.Context) {
+			buf := newEventBuffer()
+			go func(ctx context.Context, buf *eventBuffer) {
 				for {
 					select {
 					case <-ctx.Done():
@@ -1663,7 +1700,7 @@ func Test_EventFilters(t *testing.T) {
 						buf.addEvent(evt)
 					}
 				}
-			}(ctx)
+			}(ctx, buf)
 
 			// run a test case and validate the results against the expected events
 			tc.test(t, tc.cmdEvents, buf, tc.useSyscaller)
@@ -1696,6 +1733,7 @@ type testCase struct {
 	policyFiles  []policyFileWithID
 	cmdEvents    []cmdEvents
 	useSyscaller bool
+	coolDown     time.Duration // cool down before running the test case
 	test         func(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscaller bool)
 }
 
@@ -1793,6 +1831,13 @@ func expectEvent(
 	}
 }
 
+func coolDown(t *testing.T, duration time.Duration) {
+	if duration > 0 {
+		t.Logf("Cooling down for %v", duration)
+		time.Sleep(duration)
+	}
+}
+
 // proc represents a process, with its pid and the number of events it should generate
 type proc struct {
 	pid          int
@@ -1800,7 +1845,7 @@ type proc struct {
 }
 
 // runCmd runs a command and returns a process
-func runCmd(t *testing.T, cmd cmdEvents, actual *eventBuffer, useSyscaller, failOnTimeout bool) proc {
+func runCmd(t *testing.T, cmd cmdEvents, expectedEvts int, actual *eventBuffer, useSyscaller, failOnTimeout bool) proc {
 	var (
 		pid int
 		err error
@@ -1809,14 +1854,16 @@ func runCmd(t *testing.T, cmd cmdEvents, actual *eventBuffer, useSyscaller, fail
 	if useSyscaller {
 		formatCmdEvents(&cmd)
 	}
+
+	t.Logf("Running command: %s", cmd.runCmd)
 	pid, err = testutils.ExecPinnedCmdWithTimeout(cmd.runCmd, cmd.timeout)
 	require.NoError(t, err)
 
-	waitForTraceeOutputEvents(t, actual, time.Now(), len(cmd.evts), failOnTimeout)
+	waitForTraceeOutputEvents(t, actual, time.Now(), expectedEvts, failOnTimeout)
 
 	return proc{
 		pid:          pid,
-		expectedEvts: len(cmd.evts),
+		expectedEvts: expectedEvts,
 	}
 }
 
@@ -1837,6 +1884,8 @@ func runCmds(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscal
 		if useSyscaller {
 			formatCmdEvents(&cmd)
 		}
+
+		t.Logf("Running command: %s", cmd.runCmd)
 		pid, err = testutils.ExecPinnedCmdWithTimeout(cmd.runCmd, cmd.timeout)
 		require.NoError(t, err)
 
@@ -1917,18 +1966,6 @@ func pidToCheck(cmd string, actEvt trace.Event) int {
 	return actEvt.ProcessID
 }
 
-// copyActualEvents returns a copy of the actual events
-// This is to avoid holding the lock while comparing the events (in nested loops)
-func copyActualEvents(actual *eventBuffer) []trace.Event {
-	var evts []trace.Event
-
-	actual.mu.Lock()
-	evts = append(evts, actual.events...)
-	actual.mu.Unlock()
-
-	return evts
-}
-
 // assert that the given string slices are equal, ignoring order
 func assertUnorderedStringSlicesEqual(t *testing.T, expNames []string, actNames []string) {
 	assert.Equal(t, len(expNames), len(actNames))
@@ -1945,26 +1982,36 @@ func assertUnorderedStringSlicesEqual(t *testing.T, expNames []string, actNames 
 	}
 }
 
-// ExpectAtLeastOneOfEach validates that at least one event from each command was captured
-func ExpectAtLeastOneOfEach(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscaller bool) {
-	for _, exp := range cmdEvents {
+// ExpectAtLeastOneForEach validates that at least one event from each command
+// in 'cmdEvents' was captured in the actual events. It does not impose a minimum
+// expected event count and checks that at least one event from each command
+// (regardless of the number of expected events) is present in the actual events.
+// It continues searching for all expected events for each command and raises a
+// test failure only if none of the expected events for a command are found in
+// the actual events.
+//
+// This function is suitable when you want to ensure that each command has at
+// least one event in the actual events, regardless of the number of expected
+// events for each command.
+func ExpectAtLeastOneForEach(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscaller bool) {
+	for _, cmd := range cmdEvents {
 		syscallsInSets := []string{}
-		checkSets := len(exp.sets) > 0
+		checkSets := len(cmd.sets) > 0
 		if checkSets {
-			syscallsInSets = getAllSyscallsInSets(exp.sets)
+			syscallsInSets = getAllSyscallsInSets(cmd.sets)
 		}
 
 		actual.clear()
 		// first stage: run commands
-		proc := runCmd(t, exp, actual, useSyscaller, true)
-		if len(exp.evts) == 0 && proc.expectedEvts > 0 {
-			t.Fatalf("expected no events for command %s, but got %d", exp.runCmd, proc.expectedEvts)
+		proc := runCmd(t, cmd, len(cmd.evts), actual, useSyscaller, true)
+		if len(cmd.evts) == 0 && proc.expectedEvts > 0 {
+			t.Fatalf("expected no events for command %s, but got %d", cmd.runCmd, proc.expectedEvts)
 		}
 
-		actEvtsCopy := copyActualEvents(actual)
+		actEvtsCopy := actual.getCopy()
 
 		// second stage: validate events
-		for _, expEvt := range exp.evts {
+		for _, expEvt := range cmd.evts {
 			found := false
 			checkHost := expEvt.HostName != anyHost
 			checkComm := expEvt.ProcessName != anyComm
@@ -1975,8 +2022,8 @@ func ExpectAtLeastOneOfEach(t *testing.T, cmdEvents []cmdEvents, actual *eventBu
 			checkPolicy := expEvt.MatchedPoliciesUser != anyPolicy
 			checkPolicyName := len(expEvt.MatchedPolicies) > 0 && expEvt.MatchedPolicies[0] != anyPolicyName
 
-			if len(exp.evts) > 0 && proc.expectedEvts == 0 {
-				t.Fatalf("expected events for command %s, but got none", exp.runCmd)
+			if len(cmd.evts) > 0 && proc.expectedEvts == 0 {
+				t.Fatalf("expected events for command %s, but got none", cmd.runCmd)
 			}
 
 			for _, actEvt := range actEvtsCopy {
@@ -1993,7 +2040,7 @@ func ExpectAtLeastOneOfEach(t *testing.T, cmdEvents []cmdEvents, actual *eventBu
 				if checkProcessorID && actEvt.ProcessorID != expEvt.ProcessorID {
 					continue
 				}
-				if checkPID && pidToCheck(exp.runCmd, actEvt) != expEvt.ProcessID {
+				if checkPID && pidToCheck(cmd.runCmd, actEvt) != expEvt.ProcessID {
 					continue
 				}
 				if checkPID && actEvt.ProcessID != expEvt.ProcessID {
@@ -2061,27 +2108,35 @@ func ExpectAtLeastOneOfEach(t *testing.T, cmdEvents []cmdEvents, actual *eventBu
 	}
 }
 
-// ExpectAnyOfEach validates that at any event from each command was captured
-func ExpectAnyOfEach(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscaller bool) {
-	for _, exp := range cmdEvents {
+// ExpectAnyOfEvts validates that at least one event from each command in
+// 'cmdEvents' was captured in the actual events. It requires a minimum of two
+// expected events for each command and stops searching as soon as it finds a
+// matching event. If any command does not have at least one matching event in
+// the actual events, it raises a test failure.
+//
+// This function is suitable when you expect any of a set of events to occur
+// and want to confirm that at least one of them happened.
+func ExpectAnyOfEvts(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscaller bool) {
+	for _, cmd := range cmdEvents {
+		if len(cmd.evts) <= 1 {
+			t.Fatalf("ExpectAnyOfEvts test requires at least 2 expected events for command %s", cmd.runCmd)
+		}
+
 		syscallsInSets := []string{}
-		checkSets := len(exp.sets) > 0
+		checkSets := len(cmd.sets) > 0
 		if checkSets {
-			syscallsInSets = getAllSyscallsInSets(exp.sets)
+			syscallsInSets = getAllSyscallsInSets(cmd.sets)
 		}
 
 		actual.clear()
 		// first stage: run commands
-		proc := runCmd(t, exp, actual, useSyscaller, true)
-		if len(exp.evts) == 0 && proc.expectedEvts > 0 {
-			t.Fatalf("expected no events for command %s, but got %d", exp.runCmd, proc.expectedEvts)
-		}
+		proc := runCmd(t, cmd, 1, actual, useSyscaller, true)
 
-		actEvtsCopy := copyActualEvents(actual)
+		actEvtsCopy := actual.getCopy()
 
 		// second stage: validate events
 		found := false
-		for _, expEvt := range exp.evts {
+		for _, expEvt := range cmd.evts {
 			checkHost := expEvt.HostName != anyHost
 			checkComm := expEvt.ProcessName != anyComm
 			checkProcessorID := expEvt.ProcessorID != anyProcessorID
@@ -2091,8 +2146,8 @@ func ExpectAnyOfEach(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, u
 			checkPolicy := expEvt.MatchedPoliciesUser != anyPolicy
 			checkPolicyName := len(expEvt.MatchedPolicies) > 0 && expEvt.MatchedPolicies[0] != anyPolicyName
 
-			if len(exp.evts) > 0 && proc.expectedEvts == 0 {
-				t.Fatalf("expected events for command %s, but got none", exp.runCmd)
+			if len(cmd.evts) > 0 && proc.expectedEvts == 0 {
+				t.Fatalf("expected events for command %s, but got none", cmd.runCmd)
 			}
 
 			for _, actEvt := range actEvtsCopy {
@@ -2109,7 +2164,7 @@ func ExpectAnyOfEach(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, u
 				if checkProcessorID && actEvt.ProcessorID != expEvt.ProcessorID {
 					continue
 				}
-				if checkPID && pidToCheck(exp.runCmd, actEvt) != expEvt.ProcessID {
+				if checkPID && pidToCheck(cmd.runCmd, actEvt) != expEvt.ProcessID {
 					continue
 				}
 				if checkPID && actEvt.ProcessID != expEvt.ProcessID {
@@ -2178,33 +2233,39 @@ func ExpectAnyOfEach(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, u
 		}
 
 		// evaluate found
-		require.True(t, found, "None of the expected events\n%+v\nare in the actual output\n%+v\n", exp.evts, actEvtsCopy)
+		require.True(t, found, "None of the expected events\n%+v\nare in the actual output\n%+v\n", cmd.evts, actEvtsCopy)
 	}
 }
 
-// ExpectAllEqualTo expects all events to be equal to the expected events
-func ExpectAllEqualTo(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscaller bool) {
-	for _, exp := range cmdEvents {
-		if len(exp.evts) != 1 {
-			t.Fatalf("ExpectAllEqualTo test requires exactly one event per command")
+// ExpectAllEvtsEqualToOne validates that all events within a command match the
+// single expected event for each command. It enforces that each command's events
+// are exactly equal to the single expected event.
+//
+// This function is suitable for cases where each command should produce one
+// specific event, and all commands should match their respective events.
+func ExpectAllEvtsEqualToOne(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscaller bool) {
+	for _, cmd := range cmdEvents {
+		if len(cmd.evts) != 1 {
+			t.Fatalf("ExpectAllEvtsEqualToOne test requires exactly one event per command, but got %d events for command %s", len(cmd.evts), cmd.runCmd)
 		}
 
 		actual.clear()
 		// first stage: run commands
-		proc := runCmd(t, exp, actual, useSyscaller, true)
-		actEvtsCopy := copyActualEvents(actual)
+		proc := runCmd(t, cmd, len(cmd.evts), actual, useSyscaller, true)
+
+		actEvtsCopy := actual.getCopy()
 
 		if proc.expectedEvts == 0 {
-			t.Fatalf("expected one event for command %s, but got none", exp.runCmd)
+			t.Fatalf("expected one event for command %s, but got none", cmd.runCmd)
 		}
 		syscallsInSets := []string{}
-		checkSets := len(exp.sets) > 0
+		checkSets := len(cmd.sets) > 0
 		if checkSets {
-			syscallsInSets = getAllSyscallsInSets(exp.sets)
+			syscallsInSets = getAllSyscallsInSets(cmd.sets)
 		}
 
 		// second stage: validate events
-		for _, expEvt := range exp.evts {
+		for _, expEvt := range cmd.evts {
 			checkHost := expEvt.HostName != anyHost
 			checkComm := expEvt.ProcessName != anyComm
 			checkProcessorID := expEvt.ProcessorID != anyProcessorID
@@ -2229,7 +2290,7 @@ func ExpectAllEqualTo(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, 
 					assert.Equal(t, expEvt.ProcessorID, actEvt.ProcessorID, "processor id")
 				}
 				if checkPID {
-					assert.Equal(t, expEvt.ProcessID, pidToCheck(exp.runCmd, actEvt), "pid")
+					assert.Equal(t, expEvt.ProcessID, pidToCheck(cmd.runCmd, actEvt), "pid")
 				}
 				if checkUID {
 					assert.Equal(t, expEvt.UserID, actEvt.UserID, "user id")
@@ -2266,27 +2327,29 @@ func ExpectAllEqualTo(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, 
 	}
 }
 
-// ExpectAllInOrder expects all events to be equal to the expected events in the same order
-func ExpectAllInOrder(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscaller bool) {
+// ExpectAllInOrderSequentially validates that the actual events match the
+// expected events for each command, with events appearing in the same order.
+func ExpectAllInOrderSequentially(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscaller bool) {
 	// first stage: run commands
 	actual.clear()
 	procs, _ := runCmds(t, cmdEvents, actual, useSyscaller, true)
 	if len(procs) > len(cmdEvents) {
 		t.Fatalf("expected %d commands, but got %d", len(cmdEvents), len(procs))
 	}
-	actEvtsCopy := copyActualEvents(actual)
+
+	actEvtsCopy := actual.getCopy()
 
 	// second stage: check events
-	for cmdIdx, exp := range cmdEvents {
+	for cmdIdx, cmd := range cmdEvents {
 		syscallsInSets := []string{}
-		checkSets := len(exp.sets) > 0
+		checkSets := len(cmd.sets) > 0
 		if checkSets {
-			syscallsInSets = getAllSyscallsInSets(exp.sets)
+			syscallsInSets = getAllSyscallsInSets(cmd.sets)
 		}
 
 		// compare the expected events with the actual events in the same order
-		for evtIdx, expEvt := range exp.evts {
-			actEvt := actEvtsCopy[cmdIdx*len(exp.evts)+evtIdx]
+		for evtIdx, expEvt := range cmd.evts {
+			actEvt := actEvtsCopy[cmdIdx*len(cmd.evts)+evtIdx]
 
 			if checkSets {
 				assert.Contains(t, syscallsInSets, actEvt.EventName, "event name in set")
@@ -2310,7 +2373,7 @@ func ExpectAllInOrder(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, 
 				assert.Equal(t, expEvt.ProcessorID, actEvt.ProcessorID, "processor id")
 			}
 			if checkPID {
-				assert.Equal(t, expEvt.ProcessID, pidToCheck(exp.runCmd, actEvt), "pid")
+				assert.Equal(t, expEvt.ProcessID, pidToCheck(cmd.runCmd, actEvt), "pid")
 			}
 			if checkUID {
 				assert.Equal(t, expEvt.UserID, actEvt.UserID, "user id")
