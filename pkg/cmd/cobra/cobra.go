@@ -16,6 +16,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/k8s"
+	"github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
@@ -187,18 +189,40 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, errors.New("policy and event flags cannot be used together")
 	}
 
+	var k8sPolicies []v1beta1.PolicyInterface
+
+	k8sClient, err := k8s.New()
+	if err != nil {
+		logger.Debugw("kubernetes cluster", "error", err)
+	}
+
+	// if k8sClient is not nil, then we are running inside a k8s cluster
+	if k8sClient != nil {
+		k8sPolicies, err = k8sClient.GetPolicy(c.Context())
+		if err != nil {
+			logger.Debugw("kubernetes cluster", "error", err)
+		}
+	}
+
 	var policies *policy.Policies
 
-	if len(policyFlags) > 0 {
+	if len(k8sPolicies) > 0 {
+		logger.Debugw("using policies from kubernetes crd")
+
+		if len(k8sPolicies) > 0 {
+			policies, err = createPoliciesFromK8SPolicy(k8sPolicies)
+		}
+	} else if len(policyFlags) > 0 {
+		logger.Debugw("using policies from --policy flag")
 		policies, err = createPoliciesFromPolicyFiles(policyFlags)
-		if err != nil {
-			return runner, err
-		}
 	} else {
+		logger.Debugw("using policies from --scope and --events flag")
 		policies, err = createPoliciesFromCLIFlags(scopeFlags, eventFlags)
-		if err != nil {
-			return runner, err
-		}
+	}
+
+	// if any error returned while creating policies, return it
+	if err != nil {
+		return runner, err
 	}
 
 	cfg.Policies = policies

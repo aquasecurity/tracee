@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/aquasecurity/tracee/pkg/filters"
+	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/policy/v1beta1"
 )
 
@@ -45,10 +46,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 					Name:        "global-scope-single-event",
 					Annotations: description,
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{Event: "write"},
 					},
 				},
@@ -74,10 +75,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "global-scope-multiple-events",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{Event: "write"},
 						{Event: "read"},
 					},
@@ -105,10 +106,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "uid-scope",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"uid>=1000"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{Event: "write"},
 					},
 				},
@@ -142,10 +143,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "pid-scope",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"pid<=10"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{Event: "write"},
 					},
 				},
@@ -179,10 +180,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "mntns",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"mntns=4026531840"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{Event: "write"},
 					},
 				},
@@ -216,10 +217,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "pidns-scope",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"pidns!=4026531836"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{Event: "write"},
 					},
 				},
@@ -253,10 +254,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "uts-scope",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"uts!=ab356bc4dd554"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{Event: "write"},
 					},
 				},
@@ -290,10 +291,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "comm-scope",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"comm=bash"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{Event: "write"},
 					},
 				},
@@ -327,10 +328,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "container-scope",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"container=new"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{Event: "write"},
 					},
 				},
@@ -364,10 +365,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "not-container-scope",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"not-container"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{Event: "write"},
 					},
 				},
@@ -401,10 +402,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "container-scope",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"container"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{Event: "write"},
 					},
 				},
@@ -438,10 +439,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "tree-scope",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"tree=3213,5200"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{Event: "write"},
 					},
 				},
@@ -475,10 +476,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "scope-with-space",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"tree = 3213"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{Event: "write"},
 					},
 				},
@@ -512,10 +513,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "executable-scope",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"executable=host:/usr/bin/ls"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{Event: "write"},
 					},
 				},
@@ -550,10 +551,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "exec-scope",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"exec=4026532448:/usr/bin/ls"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{Event: "write"},
 					},
 				},
@@ -587,10 +588,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "exec-scope (bin alias)",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"bin=4026532448:/usr/bin/ls"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{Event: "write"},
 					},
 				},
@@ -624,10 +625,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "follow-scope",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"follow"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{Event: "write"},
 					},
 				},
@@ -661,10 +662,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "multiple-scope",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"comm=bash", "follow", "not-container", "uid=1000"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{Event: "write"},
 					},
 				},
@@ -725,10 +726,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "args-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "security_file_open",
 							Filters: []string{"args.pathname=/etc/passwd"},
@@ -763,10 +764,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "return-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "write",
 							Filters: []string{"retval=-1"},
@@ -797,10 +798,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "timestamp-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "write",
 							Filters: []string{"timestamp>1234567890"},
@@ -830,10 +831,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "processorId-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "write",
 							Filters: []string{"processorId>=1234567890"},
@@ -863,10 +864,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "p-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "write",
 							Filters: []string{"p<=10"},
@@ -896,10 +897,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "pid-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "write",
 							Filters: []string{"pid!=1"},
@@ -929,10 +930,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "processId-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "write",
 							Filters: []string{"processId=1387"},
@@ -962,10 +963,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "tid-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "write",
 							Filters: []string{"tid=1388"},
@@ -995,10 +996,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "threadId-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "write",
 							Filters: []string{"threadId!=1388"},
@@ -1028,10 +1029,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "ppid_filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "write",
 							Filters: []string{"ppid=1"},
@@ -1061,10 +1062,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "parentProcessId-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "write",
 							Filters: []string{"parentProcessId>1455"},
@@ -1094,10 +1095,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "hostTid-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"hostTid=2455"},
@@ -1127,10 +1128,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "hostThreadId-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"hostThreadId!=2455"},
@@ -1160,10 +1161,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "hostPid-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"hostPid=333"},
@@ -1193,10 +1194,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "hostParentProcessId-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"hostParentProcessId!=333"},
@@ -1226,10 +1227,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "userId-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"userId=1000"},
@@ -1259,10 +1260,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "mntns-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"mntns=4026531840"},
@@ -1292,10 +1293,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "mountNamespace-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"mountNamespace!=4026531840"},
@@ -1325,10 +1326,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "pidns-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"pidns=4026531836"},
@@ -1358,10 +1359,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "pidNamespace-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"pidNamespace!=4026531836"},
@@ -1391,10 +1392,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "processName-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"processName=uname"},
@@ -1424,10 +1425,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "comm-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"comm!=uname"},
@@ -1457,10 +1458,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "hostName-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"hostName=test"},
@@ -1490,10 +1491,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "cgroupId",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"cgroupId=test"},
@@ -1523,10 +1524,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "host",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"host=test"},
@@ -1556,10 +1557,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "container-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"container=c"},
@@ -1589,10 +1590,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "containerId-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"containerId=da91bf3df3dc"},
@@ -1622,10 +1623,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "containerImage-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"containerImage=tracee:latest"},
@@ -1655,10 +1656,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "containerName-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"containerName=tracee"},
@@ -1688,10 +1689,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "podName-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"podName=daemonset/tracee"},
@@ -1721,10 +1722,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "podNamespace-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"podNamespace=production"},
@@ -1754,10 +1755,10 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 				Metadata: v1beta1.Metadata{
 					Name: "podUid-filter",
 				},
-				Spec: v1beta1.PolicySpec{
+				Spec: k8s.PolicySpec{
 					Scope:          []string{"global"},
 					DefaultActions: []string{"log"},
-					Rules: []v1beta1.Rule{
+					Rules: []k8s.Rule{
 						{
 							Event:   "read",
 							Filters: []string{"podUid=poduid"},
@@ -1790,7 +1791,7 @@ func TestPrepareFilterMapsFromPolicies(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			t.Parallel()
 
-			policyScopeMap, policyEventMap, err := PrepareFilterMapsFromPolicies([]v1beta1.PolicyFile{test.policy})
+			policyScopeMap, policyEventMap, err := PrepareFilterMapsFromPolicies([]k8s.PolicyInterface{test.policy})
 			assert.NoError(t, err)
 
 			for k, v := range test.expPolicyScopeMap {

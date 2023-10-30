@@ -7,13 +7,13 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
+	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/policy"
-	"github.com/aquasecurity/tracee/pkg/policy/v1beta1"
 )
 
 // PrepareFilterMapsForPolicies prepares the scope and events PolicyFilterMap for the policies
-func PrepareFilterMapsFromPolicies(policies []v1beta1.PolicyFile) (PolicyScopeMap, PolicyEventMap, error) {
+func PrepareFilterMapsFromPolicies(policies []k8s.PolicyInterface) (PolicyScopeMap, PolicyEventMap, error) {
 	policyScopeMap := make(PolicyScopeMap)
 	policyEventsMap := make(PolicyEventMap)
 
@@ -28,19 +28,19 @@ func PrepareFilterMapsFromPolicies(policies []v1beta1.PolicyFile) (PolicyScopeMa
 	policyNames := make(map[string]bool)
 
 	for pIdx, p := range policies {
-		if _, ok := policyNames[p.Name()]; ok {
-			return nil, nil, errfmt.Errorf("policy %s already exist", p.Name())
+		if _, ok := policyNames[p.GetName()]; ok {
+			return nil, nil, errfmt.Errorf("policy %s already exist", p.GetName())
 		}
-		policyNames[p.Name()] = true
+		policyNames[p.GetName()] = true
 
 		scopeFlags := make([]scopeFlag, 0)
 
 		// scope
-		for _, s := range p.Scope() {
+		for _, s := range p.GetScope() {
 			s = strings.ReplaceAll(s, " ", "")
 
-			if s == "global" && len(p.Scope()) > 1 {
-				return nil, nil, errfmt.Errorf("policy %s, global scope must be unique", p.Name())
+			if s == "global" && len(p.GetScope()) > 1 {
+				return nil, nil, errfmt.Errorf("policy %s, global scope must be unique", p.GetName())
 			}
 
 			if s == "global" {
@@ -56,13 +56,13 @@ func PrepareFilterMapsFromPolicies(policies []v1beta1.PolicyFile) (PolicyScopeMa
 		}
 
 		policyScopeMap[pIdx] = policyScopes{
-			policyName: p.Name(),
+			policyName: p.GetName(),
 			scopeFlags: scopeFlags,
 		}
 
 		eventFlags := make([]eventFlag, 0)
 
-		for _, r := range p.Rules() {
+		for _, r := range p.GetRules() {
 			evtFlags, err := parseEventFlag(r.Event)
 			if err != nil {
 				return nil, nil, errfmt.WrapError(err)
@@ -92,7 +92,7 @@ func PrepareFilterMapsFromPolicies(policies []v1beta1.PolicyFile) (PolicyScopeMa
 		}
 
 		policyEventsMap[pIdx] = policyEvents{
-			policyName: p.Name(),
+			policyName: p.GetName(),
 			eventFlags: eventFlags,
 		}
 	}

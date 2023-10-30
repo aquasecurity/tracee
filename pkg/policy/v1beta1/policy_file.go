@@ -11,27 +11,15 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 )
 
 // PolicyFile is the structure of the policy file
 type PolicyFile struct {
-	APIVersion string     `yaml:"apiVersion"`
-	Kind       string     `yaml:"kind"`
-	Metadata   Metadata   `yaml:"metadata"`
-	Spec       PolicySpec `yaml:"spec"`
-}
-
-type PolicySpec struct {
-	Scope          []string `yaml:"scope"`
-	DefaultActions []string `yaml:"defaultActions"`
-	Rules          []Rule   `yaml:"rules"`
-}
-
-// Rule is the structure of the rule in the policy file
-type Rule struct {
-	Event   string   `yaml:"event"`
-	Filters []string `yaml:"filters"`
-	Actions []string `yaml:"actions"`
+	APIVersion string         `yaml:"apiVersion"`
+	Kind       string         `yaml:"kind"`
+	Metadata   Metadata       `yaml:"metadata"`
+	Spec       k8s.PolicySpec `yaml:"spec"`
 }
 
 type Metadata struct {
@@ -39,11 +27,11 @@ type Metadata struct {
 	Annotations map[string]string `yaml:"annotations"`
 }
 
-func (p PolicyFile) Name() string {
+func (p PolicyFile) GetName() string {
 	return p.Metadata.Name
 }
 
-func (p PolicyFile) Description() string {
+func (p PolicyFile) GetDescription() string {
 	if p.Metadata.Annotations == nil {
 		return ""
 	}
@@ -55,37 +43,37 @@ func (p PolicyFile) Description() string {
 	return d
 }
 
-func (p PolicyFile) Scope() []string {
+func (p PolicyFile) GetScope() []string {
 	return p.Spec.Scope
 }
 
-func (p PolicyFile) DefaultActions() []string {
+func (p PolicyFile) GetDefaultActions() []string {
 	return p.Spec.DefaultActions
 }
 
-func (p PolicyFile) Rules() []Rule {
+func (p PolicyFile) GetRules() []k8s.Rule {
 	return p.Spec.Rules
 }
 
 func (p PolicyFile) Validate() error {
-	if err := validation.IsDNS1123Subdomain(p.Name()); err != nil {
-		return errfmt.Errorf("policy name %s is invalid: %s", p.Name(), err)
+	if err := validation.IsDNS1123Subdomain(p.GetName()); err != nil {
+		return errfmt.Errorf("policy name %s is invalid: %s", p.GetName(), err)
 	}
 
 	if p.APIVersion != "tracee.aquasec.com/v1beta1" {
-		return errfmt.Errorf("policy %s, apiVersion not supported", p.Name())
+		return errfmt.Errorf("policy %s, apiVersion not supported", p.GetName())
 	}
 
 	if p.Kind != "Policy" {
-		return errfmt.Errorf("policy %s, kind not supported", p.Name())
+		return errfmt.Errorf("policy %s, kind not supported", p.GetName())
 	}
 
-	if p.Scope() == nil || len(p.Scope()) == 0 {
-		return errfmt.Errorf("policy %s, scope cannot be empty", p.Name())
+	if p.GetScope() == nil || len(p.GetScope()) == 0 {
+		return errfmt.Errorf("policy %s, scope cannot be empty", p.GetName())
 	}
 
-	if p.Rules() == nil || len(p.Rules()) == 0 {
-		return errfmt.Errorf("policy %s, rules cannot be empty", p.Name())
+	if p.GetRules() == nil || len(p.GetRules()) == 0 {
+		return errfmt.Errorf("policy %s, rules cannot be empty", p.GetName())
 	}
 
 	if err := p.validateDefaultActions(); err != nil {
@@ -100,11 +88,11 @@ func (p PolicyFile) Validate() error {
 }
 
 func (p PolicyFile) validateDefaultActions() error {
-	if p.DefaultActions() == nil || len(p.DefaultActions()) == 0 {
+	if p.GetDefaultActions() == nil || len(p.GetDefaultActions()) == 0 {
 		return nil
 	}
 
-	return validateActions(p.Name(), p.DefaultActions())
+	return validateActions(p.GetName(), p.GetDefaultActions())
 }
 
 func validateActions(policyName string, actions []string) error {
@@ -135,18 +123,18 @@ func (p PolicyFile) validateScope() error {
 		"follow",
 	}
 
-	for _, scope := range p.Scope() {
+	for _, scope := range p.GetScope() {
 		scope = strings.ReplaceAll(scope, " ", "")
 
-		if scope == "global" && len(p.Scope()) > 1 {
-			return errfmt.Errorf("policy %s, global scope must be unique", p.Name())
+		if scope == "global" && len(p.GetScope()) > 1 {
+			return errfmt.Errorf("policy %s, global scope must be unique", p.GetName())
 		}
 
 		if scope == "global" {
 			return nil
 		}
 
-		scope, err := parseScope(p.Name(), scope)
+		scope, err := parseScope(p.GetName(), scope)
 		if err != nil {
 			return err
 		}
@@ -159,7 +147,7 @@ func (p PolicyFile) validateScope() error {
 		}
 
 		if !found {
-			return errfmt.Errorf("policy %s, scope %s is not valid", p.Name(), scope)
+			return errfmt.Errorf("policy %s, scope %s is not valid", p.GetName(), scope)
 		}
 	}
 	return nil
@@ -186,21 +174,21 @@ func parseScope(policyName, scope string) (string, error) {
 func (p PolicyFile) validateRules() error {
 	evts := make(map[string]bool)
 
-	for _, r := range p.Rules() {
+	for _, r := range p.GetRules() {
 		// Currently, an event can only be used once in the policy. Support for using the same
 		// event, multiple times, with different filters, shall be implemented in the future.
 		if _, ok := evts[r.Event]; ok {
-			return errfmt.Errorf("policy %s, event %s is duplicated", p.Name(), r.Event)
+			return errfmt.Errorf("policy %s, event %s is duplicated", p.GetName(), r.Event)
 		}
 
 		evts[r.Event] = true
 
-		err := validateEvent(p.Name(), r.Event)
+		err := validateEvent(p.GetName(), r.Event)
 		if err != nil {
 			return err
 		}
 
-		err = validateActions(p.Name(), r.Actions)
+		err = validateActions(p.GetName(), r.Actions)
 		if err != nil {
 			return err
 		}
@@ -209,17 +197,17 @@ func (p PolicyFile) validateRules() error {
 			operatorIdx := strings.IndexAny(f, "=!<>")
 
 			if operatorIdx == -1 {
-				return errfmt.Errorf("policy %s, invalid filter operator: %s", p.Name(), f)
+				return errfmt.Errorf("policy %s, invalid filter operator: %s", p.GetName(), f)
 			}
 
 			// args
 			if strings.HasPrefix(f, "args") {
 				s := strings.Split(f, ".")
 				if len(s) == 1 {
-					return errfmt.Errorf("policy %s, arg name can't be empty", p.Name())
+					return errfmt.Errorf("policy %s, arg name can't be empty", p.GetName())
 				}
 
-				err := validateEventArg(p.Name(), r.Event, s[1])
+				err := validateEventArg(p.GetName(), r.Event, s[1])
 				if err != nil {
 					return err
 				}
@@ -231,16 +219,16 @@ func (p PolicyFile) validateRules() error {
 			if strings.HasPrefix(f, "retval") {
 				s := strings.Split(f, "=")
 				if len(s) == 1 {
-					return errfmt.Errorf("policy %s, retval must have value: %s", p.Name(), f)
+					return errfmt.Errorf("policy %s, retval must have value: %s", p.GetName(), f)
 				}
 
 				if s[1] == "" {
-					return errfmt.Errorf("policy %s, retval cannot be empty", p.Name())
+					return errfmt.Errorf("policy %s, retval cannot be empty", p.GetName())
 				}
 
 				_, err := strconv.Atoi(s[1])
 				if err != nil {
-					return errfmt.Errorf("policy %s, retval must be an integer: %s", p.Name(), s[1])
+					return errfmt.Errorf("policy %s, retval must be an integer: %s", p.GetName(), s[1])
 				}
 
 				continue
@@ -302,8 +290,8 @@ func validateEventArg(policyName, eventName, argName string) error {
 }
 
 // PoliciesFromPaths returns a slice of policies from the given paths
-func PoliciesFromPaths(paths []string) ([]PolicyFile, error) {
-	policies := make([]PolicyFile, 0)
+func PoliciesFromPaths(paths []string) ([]k8s.PolicyInterface, error) {
+	policies := make([]k8s.PolicyInterface, 0)
 
 	for _, path := range paths {
 		if path == "" {
@@ -351,11 +339,11 @@ func PoliciesFromPaths(paths []string) ([]PolicyFile, error) {
 				}
 
 				// validate policy name is unique
-				if _, ok := policyNames[policy.Name()]; ok {
-					return nil, errfmt.Errorf("policy %s already exist", policy.Name())
+				if _, ok := policyNames[policy.GetName()]; ok {
+					return nil, errfmt.Errorf("policy %s already exist", policy.GetName())
 				}
 
-				policyNames[policy.Name()] = true
+				policyNames[policy.GetName()] = true
 
 				policies = append(policies, policy)
 			}
