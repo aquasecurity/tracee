@@ -1,0 +1,4 @@
+# TODO: move this to k8s docker and makefile
+helm template tracee ./helm/tracee/ > /tmp/tracee.yaml
+
+cat ./helm/tracee/crds/tracee.aquasec.com_policies.yaml /tmp/tracee.yaml > kubernetes/tracee/tracee.yaml
