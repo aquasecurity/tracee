@@ -1859,7 +1859,7 @@ func runCmd(t *testing.T, cmd cmdEvents, expectedEvts int, actual *eventBuffer, 
 	pid, err = testutils.ExecPinnedCmdWithTimeout(cmd.runCmd, cmd.timeout)
 	require.NoError(t, err)
 
-	waitForTraceeOutputEvents(t, actual, time.Now(), expectedEvts, failOnTimeout)
+	waitForTraceeOutputEvents(t, actual, expectedEvts, failOnTimeout)
 
 	return proc{
 		pid:          pid,
@@ -1893,7 +1893,7 @@ func runCmds(t *testing.T, cmdEvents []cmdEvents, actual *eventBuffer, useSyscal
 		expectedEvts += len(cmd.evts)
 	}
 
-	waitForTraceeOutputEvents(t, actual, time.Now(), expectedEvts, failOnTimeout)
+	waitForTraceeOutputEvents(t, actual, expectedEvts, failOnTimeout)
 
 	return procs, expectedEvts
 }

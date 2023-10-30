@@ -126,7 +126,6 @@ func startTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 	err = trc.Init(ctx)
 	require.NoError(t, err)
 
-	t.Logf("started tracee...\n")
 	go func() {
 		err := trc.Run(ctx)
 		require.NoError(t, err, "tracee run failed")
@@ -150,17 +149,22 @@ func prepareCapture() *config.CaptureConfig {
 // wait for tracee to start (or timeout)
 // in case of timeout, the test will fail
 func waitForTraceeStart(t *testing.T, trc *tracee.Tracee) {
-	const checkTimeout = 10 * time.Second
-	ticker := time.NewTicker(100 * time.Millisecond)
+	const timeout = 10 * time.Second
+
+	statusCheckTicker := time.NewTicker(100 * time.Millisecond)
+	defer statusCheckTicker.Stop()
+	timeoutTicker := time.NewTicker(timeout)
+	defer timeoutTicker.Stop()
 
 	for {
 		select {
-		case <-ticker.C:
+		case <-statusCheckTicker.C:
 			if trc.Running() {
+				t.Logf(">>> started tracee ...")
 				return
 			}
-		case <-time.After(checkTimeout):
-			t.Logf("timed out on running tracee\n")
+		case <-timeoutTicker.C:
+			t.Logf("timed out on waiting for tracee to start")
 			t.FailNow()
 		}
 	}
@@ -169,18 +173,22 @@ func waitForTraceeStart(t *testing.T, trc *tracee.Tracee) {
 // wait for tracee to stop (or timeout)
 // in case of timeout, the test will continue since all tests already passed
 func waitForTraceeStop(t *testing.T, trc *tracee.Tracee) {
-	const checkTimeout = 10 * time.Second
-	ticker := time.NewTicker(100 * time.Millisecond)
+	const timeout = 10 * time.Second
+
+	statusCheckTicker := time.NewTicker(100 * time.Millisecond)
+	defer statusCheckTicker.Stop()
+	timeoutTicker := time.NewTicker(timeout)
+	defer timeoutTicker.Stop()
 
 	for {
 		select {
-		case <-ticker.C:
+		case <-statusCheckTicker.C:
 			if !trc.Running() {
-				t.Logf("stopped tracee\n")
+				t.Logf("<<< stopped tracee")
 				return
 			}
-		case <-time.After(checkTimeout):
-			t.Logf("timed out on stopping tracee\n")
+		case <-timeoutTicker.C:
+			t.Logf("timed out on stopping tracee")
 			return
 		}
 	}
@@ -188,19 +196,28 @@ func waitForTraceeStop(t *testing.T, trc *tracee.Tracee) {
 
 // wait for tracee buffer to fill up with expected number of events (or timeout)
 // in case of timeout, the test will fail
-func waitForTraceeOutputEvents(t *testing.T, actual *eventBuffer, now time.Time, expectedEvts int, failOnTimeout bool) {
-	const checkTimeout = 5 * time.Second
-	ticker := time.NewTicker(100 * time.Millisecond)
+func waitForTraceeOutputEvents(t *testing.T, actual *eventBuffer, expectedEvts int, failOnTimeout bool) {
+	const timeout = 5 * time.Second
+
+	statusCheckTicker := time.NewTicker(100 * time.Millisecond)
+	defer statusCheckTicker.Stop()
+	timeoutTicker := time.NewTicker(timeout)
+	defer timeoutTicker.Stop()
+
+	t.Logf("waiting for at least %d event(s) for %s", expectedEvts, timeout.String())
+	defer t.Logf("done waiting for %d event(s)", expectedEvts)
 
 	for {
 		select {
-		case <-ticker.C:
-			if actual.len() >= expectedEvts {
+		case <-statusCheckTicker.C:
+			len := actual.len()
+			t.Logf("got %d event(s) so far", len)
+			if len >= expectedEvts {
 				return
 			}
-		case <-time.After(checkTimeout):
+		case <-timeoutTicker.C:
 			if failOnTimeout {
-				t.Logf("timed out on output\n")
+				t.Logf("timed out on waiting for %d event(s)", expectedEvts)
 				t.FailNow()
 			}
 			return
