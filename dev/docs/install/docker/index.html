@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#docker-quickstart" class="md-skip">
+        <a href="#running-tracee-with-docker" class="md-skip">
           Skip to content
         </a>
       
@@ -792,41 +792,35 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#run-the-tracee-container-images" class="md-nav__link">
+  <a href="#tracee-container-image" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Run the Tracee container images
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Run the Tracee container images">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#on-x86-architecture-please-run-the-following-command" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        On x86 architecture, please run the following command
+        Tracee container image
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#steps-to-run-the-tracee-container-image-on-arm64" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#running-tracee-container" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Steps to run the Tracee container image on arm64
+        Running Tracee container
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#installing-tracee" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installing Tracee
+      
+    </span>
+  </a>
   
 </li>
       
@@ -16798,41 +16792,35 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#run-the-tracee-container-images" class="md-nav__link">
+  <a href="#tracee-container-image" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Run the Tracee container images
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Run the Tracee container images">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#on-x86-architecture-please-run-the-following-command" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        On x86 architecture, please run the following command
+        Tracee container image
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#steps-to-run-the-tracee-container-image-on-arm64" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#running-tracee-container" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Steps to run the Tracee container image on arm64
+        Running Tracee container
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#installing-tracee" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installing Tracee
+      
+    </span>
+  </a>
   
 </li>
       
@@ -16852,47 +16840,50 @@
                   
 
 
-<h1 id="docker-quickstart">Docker Quickstart<a class="headerlink" href="#docker-quickstart" title="Permanent link">&para;</a></h1>
-<p>This section details how you can run Tracee through a container image.</p>
+<h1 id="running-tracee-with-docker">Running Tracee with Docker<a class="headerlink" href="#running-tracee-with-docker" title="Permanent link">&para;</a></h1>
+<p>This guide will help you get started with running Tracee as a container.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
-<p>Please ensure that Docker or another container runtime is working on your machine.</p>
-<h2 id="run-the-tracee-container-images">Run the Tracee container images<a class="headerlink" href="#run-the-tracee-container-images" title="Permanent link">&para;</a></h2>
-<p>All of the Tracee container images are stored in a public registry on <a href="https://hub.docker.com/r/aquasec/tracee">Docker Hub.</a>
-You can easily start experimenting with Tracee using the Docker image.</p>
-<h3 id="on-x86-architecture-please-run-the-following-command">On x86 architecture, please run the following command<a class="headerlink" href="#on-x86-architecture-please-run-the-following-command" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
-<span class="go">  --name tracee --rm -it \</span>
-<span class="go">  --pid=host --cgroupns=host --privileged \</span>
-<span class="go">  -v /etc/os-release:/etc/os-release-host:ro \</span>
-<span class="go">  aquasec/tracee:latest</span>
-</code></pre></div>
-<h3 id="steps-to-run-the-tracee-container-image-on-arm64">Steps to run the Tracee container image on arm64<a class="headerlink" href="#steps-to-run-the-tracee-container-image-on-arm64" title="Permanent link">&para;</a></h3>
-<p>There are a few more steps involved in running Tracee through a container image on arm64 (M1).</p>
-<p>Prerequisites:</p>
 <ul>
-<li><a href="https://developer.hashicorp.com/vagrant/downloads">Vagrant CLI</a> installed</li>
-<li><a href="https://www.parallels.com/uk/products/desktop/pro/">Parallels Pro</a> installed</li>
+<li>Review the <a href="../prerequisites/">prerequisites for running Tracee</a></li>
+<li>If you are an Apple Mac user, please read <a href="../deep-dive/apple.md">the Mac FAQ</a></li>
+<li>Ensure that you have Docker or a compatible container runtime</li>
 </ul>
-<p>First, clone the Tracee Git repository and move into the root directory:</p>
-<div class="highlight"><pre><span></span><code><span class="go">git clone git@github.com:aquasecurity/tracee.git</span>
-
-<span class="go">cd tracee</span>
+<h2 id="tracee-container-image">Tracee container image<a class="headerlink" href="#tracee-container-image" title="Permanent link">&para;</a></h2>
+<p>Tracee container image is available in Docker Hub as <a href="https://hub.docker.com/r/aquasec/tracee">aquasec/tracee</a>.</p>
+<ul>
+<li>You can use the <code>latest</code> tag or a named version version e.g <code>aquasec/tracee:v0.18.0-rc-99-g18d2ffc24</code>.</li>
+<li>If you are trying the most cutting edge features, there is also a <code>dev</code> tag which is built nightly from source.</li>
+<li>The Tracee image is a <a href="https://docs.docker.com/build/building/multi-platform/">Multi-platform</a> image that includes a x86 and arm64 flavors. You can also access the platform-specific images directly with the <code>aarch64</code> and <code>x86_64</code> tags for the latest version or <code>aarch64-&lt;version&gt;</code> and <code>x86_64-&lt;version&gt;</code> for a specific version.  </li>
+<li>For most first time users, just use <code>aquasec/tracee</code>!</li>
+</ul>
+<h2 id="running-tracee-container">Running Tracee container<a class="headerlink" href="#running-tracee-container" title="Permanent link">&para;</a></h2>
+<p>Here is the docker run command, we will analyze it next:</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--name<span class="w"> </span>tracee<span class="w"> </span>--rm<span class="w"> </span>-it<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--pid<span class="o">=</span>host<span class="w"> </span>--cgroupns<span class="o">=</span>host<span class="w"> </span>--privileged<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-v<span class="w"> </span>/etc/os-release:/etc/os-release-host:ro<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>aquasec/tracee:latest
 </code></pre></div>
-<p>Next, use Vagrant to start a Parallels VM:</p>
-<div class="highlight"><pre><span></span><code><span class="go">vagrant up</span>
-</code></pre></div>
-<p>This will use the <a href="https://github.com/aquasecurity/tracee/blob/main/Vagrantfile">Vagrantfile</a> in the root of the Tracee directory.</p>
-<p>Lastly, ssh into the created VM:</p>
-<div class="highlight"><pre><span></span><code><span class="go">vagrant ssh</span>
-</code></pre></div>
-<p>Now, it is possible to run the Tracee Container image:</p>
-<div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
-<span class="go">  --name tracee --rm -it \</span>
-<span class="go">  --pid=host --cgroupns=host --privileged \</span>
-<span class="go">  -v /etc/os-release:/etc/os-release-host:ro \</span>
-<span class="go">  aquasec/tracee:latest</span>
-</code></pre></div>
-<p>To learn how to install Tracee in a production environment, <a href="./kubernetes-quickstart">check out the Kubernetes guide</a>.</p>
+<ol>
+<li>Docker general flags:
+    1.1 <code>--name</code> - name our container so that we can interact with it easily.
+    1.2. <code>--rm</code> - remove the container one it exits, assuming this is an interactive trial of Tracee.
+    1.3. <code>-it</code> - allow the container to interact with your terminal.</li>
+<li>Since Tracee runs in a container but is instrumenting the host, it will need access to some resources from the host:
+    2.2 <code>--pid=host</code> - share the host's <a href="">process namespace</a> with Tracee's container.
+    2.3 <code>--cgroupns-host</code> - share the host's <a href="">cgroup namespace</a> with Tracee's container.
+    2.4 <code>--privileged</code> - run the Tracee container as root so it has all the <a href="../prerequisites/#process-capabilities">required capabilities</a>.
+    2.5 <code>-v /etc/os-release:/etc/os-release-host:ro</code> - share the host's <a href="../prerequisites/#os-information">OS information file</a> with the Tracee container.</li>
+</ol>
+<p>After running this command, you should start seeing a stream of events that Tracee is emitting.</p>
+<p>For next steps, please read about Tracee <a href="../../policies/">Policies</a></p>
+<h2 id="installing-tracee">Installing Tracee<a class="headerlink" href="#installing-tracee" title="Permanent link">&para;</a></h2>
+<p>If you are looking to permanently install Tracee, you would probably do the following:</p>
+<ol>
+<li>Remove interactive flags <code>-it</code> and replace with daemon flag <code>-d</code></li>
+<li>Consider how to collect events from the container.</li>
+</ol>
+<p>Or you can follow the <a href="../kubernetes/">Kubernetes guide</a> which addresses these concerns.</p>
 
 
 
