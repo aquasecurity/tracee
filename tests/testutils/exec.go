@@ -49,7 +49,10 @@ func ParseCmd(fullCmd string) (string, []string, error) {
 
 // ExecPinnedCmdWithTimeout executes a cmd with a timeout and returns the PID of the process.
 func ExecPinnedCmdWithTimeout(command string, timeout time.Duration) (int, error) {
-	PinProccessToCPU()             // pin this goroutine to a specific CPU
+	err := PinProccessToCPU() // pin this goroutine to a specific CPU
+	if err != nil {
+		return 0, &failedToPinProcessToCPU{command: command, err: err}
+	}
 	runtime.LockOSThread()         // wire this goroutine to a specific OS thread
 	defer runtime.UnlockOSThread() // unlock the thread when we're done
 
