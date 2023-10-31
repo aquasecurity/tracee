@@ -3,7 +3,6 @@ package initialize
 import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
@@ -20,9 +19,11 @@ func KernelConfig() (*helpers.KernelConfig, error) {
 	kernelConfig.AddNeeded(helpers.CONFIG_BPF_SYSCALL, helpers.BUILTIN)
 	kernelConfig.AddNeeded(helpers.CONFIG_KPROBE_EVENTS, helpers.BUILTIN)
 	kernelConfig.AddNeeded(helpers.CONFIG_BPF_EVENTS, helpers.BUILTIN)
-	missing := kernelConfig.CheckMissing() // do fail if we found os-release file and it is not enough
+	missing := kernelConfig.CheckMissing()
 	if len(missing) > 0 {
-		return nil, errfmt.Errorf("missing kernel configuration options: %s", missing)
+		// do not fail if there are missing options, let it fail later by trying
+		logger.Warnw("KConfig: could not detect kconfig options", "options", missing)
 	}
+
 	return kernelConfig, nil
 }
