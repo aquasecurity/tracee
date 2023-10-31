@@ -47,8 +47,8 @@ helm install tracee aqua/tracee \
 # setting a different output
 helm install tracee aqua/tracee \
         --namespace tracee-system --create-namespace \
-				--set config.output[0]=table
-				--set config.output[1]=option:parse-arguments
+        --set config.output[0]=table \
+        --set config.output[1]=option:parse-arguments
 ```
 
 Or you can pass a config file directly:
@@ -56,5 +56,5 @@ Or you can pass a config file directly:
 ```
  helm install tracee aqua/tracee \
         --namespace tracee-system --create-namespace \
-				--set-file traceeConfig=<path/to/config/file>
+        --set-file traceeConfig=<path/to/config/file>
 ```

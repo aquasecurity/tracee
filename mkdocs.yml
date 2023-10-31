@@ -18,17 +18,19 @@ nav:
     - Docs:
           - Overview: docs/overview.md
           - Installation:
-                - Overview: docs/install/overview.md
+                - Overview: docs/install/index.md
                 - Prerequisites: docs/install/prerequisites.md
                 - Docker: docs/install/docker.md
                 - Kubernetes: docs/install/kubernetes.md
-                - Override OS files: docs/install/override-os-files.md
-                - Packages:
-                      - Ubuntu: docs/install/distros/ubuntu.md
-                      - Fedora: docs/install/distros/fedora.md
-                      - NixOS: docs/install/distros/nix-nixos.md
+                - Container Engines: docs/install/container-engines.md
+                - Prometheus: docs/install/prometheus.md
+                - Healthz: docs/install/healthz.md
+          - Usage:
+                - Overview: docs/usage/index.md
+                - CLI: docs/usage/cli.md
+                - Kubernetes: docs/usage/kubernetes.md
           - Events:
-                - Overview: docs/events/p.md
+                - Overview: docs/events/index.md
                 - Built-in Events:
                       - Security Events:
                             - Overview: docs/events/builtin/signatures/index.md
@@ -43,6 +45,7 @@ nav:
                             - Dropped Executable: docs/events/builtin/signatures/dropped_executable.md
                             - Dynamic Code Loading: docs/events/builtin/signatures/dynamic_code_loading.md
                             - Fileless Execution: docs/events/builtin/signatures/fileless_execution.md
+                            - Format: docs/events/builtin/signatures/format.md
                             - Hidden File Created: docs/events/builtin/signatures/hidden_file_created.md
                             - Illegitimate Shell: docs/events/builtin/signatures/illegitimate_shell.md
                             - K8S API Connection: docs/events/builtin/signatures/kubernetes_api_connection.md
@@ -84,9 +87,10 @@ nav:
                             - container_remove: docs/events/builtin/extra/container_remove.md
                             - do_sigaction: docs/events/builtin/extra/do_sigaction.md
                             - file_modification: docs/events/builtin/extra/file_modification.md
+                            - format: docs/events/builtin/extra/format.md
                             - ftrace_hook: docs/events/builtin/extra/ftrace_hook.md
                             - hidden_kernel_module: docs/events/builtin/extra/hidden_kernel_module.md
-                            - hooked_syscalls: docs/events/builtin/extra/hooked_syscalls.md
+                            - hooked_syscall: docs/events/builtin/extra/hooked_syscall.md
                             - kallsysm_lookup_name: docs/events/builtin/extra/kallsyms_lookup_name.md
                             - magic_write: docs/events/builtin/extra/magic_write.md
                             - mem_prot_alert: docs/events/builtin/extra/mem_prot_alert.md
@@ -558,10 +562,13 @@ nav:
                       - Overview: docs/events/custom/overview.md
                       - Go: docs/events/custom/golang.md
                       - Rego: docs/events/custom/rego.md
-                      - Analyze: docs/events/custom/analyze.md
-
+          - Policies:
+                - Overview: docs/policies/index.md
+                - Scopes: docs/policies/scopes.md
+                - Rules: docs/policies/rules.md
           - Filters:
-                - Filtering: docs/filters/filtering.md
+                - Overview: docs/filters/index.md
+                - CLI Filtering: docs/filters/filtering.md
                 - Flags Manuals:
                       - scope: docs/flags/scope.1.md
                       - events: docs/flags/events.1.md
@@ -574,18 +581,16 @@ nav:
                       - capabilities: docs/flags/capabilities.1.md
                       - log: docs/flags/log.1.md
           - Outputs:
+                - Overview: docs/outputs/index.md
                 - Output Formats: docs/outputs/output-formats.md
                 - Output Options: docs/outputs/output-options.md
                 - Logging: docs/outputs/logging.md
-          - Config:
-                - Overview: docs/config/overview.md
+          - Configure Tracee:
+                - Overview: docs/config/index.md
+                - CLI: docs/config/cli.md
                 - Kubernetes: docs/config/kubernetes.md
           - Forensics:
-                - Getting Started: docs/forensics/index.md
-          - Integrations:
-                - Container Engines: docs/integrating/container-engines.md
-                - Prometheus: docs/integrating/prometheus.md
-                - Healthz: docs/integrating/healthz.md
+                - Overview: docs/forensics/index.md
           - Data Sources:
                 - Overview: docs/data-sources/overview.md
                 - Containers: docs/data-sources/containers.md
@@ -596,6 +601,7 @@ nav:
                 - Dropping Capabilities: docs/deep-dive/dropping-capabilities.md
                 - Kernel Symbols: docs/deep-dive/ksyms.md
                 - Secure Tracing: docs/deep-dive/secure-tracing.md
+                - OS Info: docs/deep-dive/os-info.md
     - Contributing:
           - Overview: contributing/overview.md
           - Documentation: contributing/documentation.md

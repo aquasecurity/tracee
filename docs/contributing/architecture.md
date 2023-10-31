@@ -64,7 +64,7 @@
            allows. They might connect (or have cached) external data sources to
            evaluate events, for example.
     
-    1. Detections are [spit out] from **tracee-rules** if evaluations are
+    1. Detections are spit out from **tracee-rules** if evaluations are
        positive.
     
     > This mechanism is what we call the **tracee pipeline**: to receive events
@@ -73,8 +73,7 @@
     > them looking for detection patterns described as **signatures**.
 
 [parse events for argument type]: ./../docs/outputs/output-options.md
-[enriches the events]: ./../docs/integrating/container-engines.md
+[enriches the events]: ./../docs/install/container-engines.md
 [golang]: ./../docs/events/custom/golang.md
 [rego]: ./../docs/events/custom/rego.md
-[spit out]: ./../docs/integrating/webhook.md
  

@@ -4,12 +4,9 @@ Rules determine which events a policy should trace.
 
 ## Events
 
-An event can match all occurrences of events for a specific scope, or specific events depending on its filters.
 Events support three types of filters: `context`, `arguments` and `return value`. 
 
 ### Type of Events
-
-You can add events as either of the following:
 
 **[A syscall](../events/builtin/syscalls/index.md)**
 
@@ -25,7 +22,7 @@ spec:
 
 The name of the syscall is going to be the name of the event.
 
-**[Network Events](../events/builtin/network.md)**
+**[Network Events](../events/builtin/network/index.md)**
 
 Network Events can be specified from the list of `Available network events`.
 

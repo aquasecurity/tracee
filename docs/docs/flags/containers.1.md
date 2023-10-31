@@ -39,4 +39,4 @@ Supported runtimes are:
   --crs crio:/var/run/crio/crio.sock
   ```
 
-Please refer to the [documentation](../integrating/container-engines.md) for more information on container events enrichment.
+Please refer to the [documentation](../install/container-engines.md) for more information on container events enrichment.

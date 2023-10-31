@@ -1,4 +1,4 @@
-# Config
+# CLI Config
 
 ## Configuring Tracee with the `--config` Flag
 
