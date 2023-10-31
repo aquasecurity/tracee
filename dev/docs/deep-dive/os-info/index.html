@@ -16782,19 +16782,27 @@ LIBBPFGO's environment variable <code>LIBBPFGO_OSRELEASE_FILE</code>:</p>
 </ol>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>Tracee <strong>should NOT fail</strong> when it cannot find a kconfig file:</p>
+<p>Tracee <strong>should NOT fail</strong> when it cannot find a kconfig file or needed options:</p>
+<ul>
+<li><strong>missing kconfig file</strong></li>
+</ul>
 <div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --log debug --scope uid=1000 --scope pid=new --events execve</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670976875.7735798,&quot;msg&quot;:&quot;osinfo&quot;,&quot;VERSION&quot;:&quot;\&quot;20.04.5 LTS (Focal Fossa)\&quot;&quot;,&quot;ID&quot;:&quot;ubuntu&quot;,&quot;ID_LIKE&quot;:&quot;debian&quot;,&quot;PRETTY_NAME&quot;:&quot;\&quot;Ubuntu 20.04.5 LTS\&quot;&quot;,&quot;VERSION_ID&quot;:&quot;\&quot;20.04\&quot;&quot;,&quot;VERSION_CODENAME&quot;:&quot;focal&quot;,&quot;KERNEL_RELEASE&quot;:&quot;5.4.0-91-generic&quot;,&quot;ARCH&quot;:&quot;x86_64&quot;,&quot;pkg&quot;:&quot;urfave&quot;,&quot;file&quot;:&quot;urfave.go&quot;,&quot;line&quot;:53}
-...
-{&quot;level&quot;:&quot;warn&quot;,&quot;ts&quot;:1670976875.7762284,&quot;msg&quot;:&quot;KConfig: could not check enabled kconfig features&quot;,&quot;error&quot;:&quot;could not read /boot/config-5.4.0-91-generic: stat /boot/config-5.4.0-91-generic: no such file or directory&quot;}
-{&quot;level&quot;:&quot;warn&quot;,&quot;ts&quot;:1670976875.7762842,&quot;msg&quot;:&quot;KConfig: assuming kconfig values, might have unexpected behavior&quot;}
-...
-{&quot;level&quot;:&quot;debug&quot;,&quot;ts&quot;:1670976876.0801573,&quot;msg&quot;:&quot;KConfig: warning: assuming kconfig values, might have unexpected behavior&quot;,&quot;pkg&quot;:&quot;initialization&quot;,&quot;file&quot;:&quot;kconfig.go&quot;,&quot;line&quot;:30}
-TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
-...
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="s2">&quot;debug&quot;</span><span class="p">,</span><span class="nt">&quot;ts&quot;</span><span class="p">:</span><span class="mf">1670976875.7735798</span><span class="p">,</span><span class="nt">&quot;msg&quot;</span><span class="p">:</span><span class="s2">&quot;osinfo&quot;</span><span class="p">,</span><span class="nt">&quot;VERSION&quot;</span><span class="p">:</span><span class="s2">&quot;\&quot;20.04.5 LTS (Focal Fossa)\&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;ID&quot;</span><span class="p">:</span><span class="s2">&quot;ubuntu&quot;</span><span class="p">,</span><span class="nt">&quot;ID_LIKE&quot;</span><span class="p">:</span><span class="s2">&quot;debian&quot;</span><span class="p">,</span><span class="nt">&quot;PRETTY_NAME&quot;</span><span class="p">:</span><span class="s2">&quot;\&quot;Ubuntu 20.04.5 LTS\&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;VERSION_ID&quot;</span><span class="p">:</span><span class="s2">&quot;\&quot;20.04\&quot;&quot;</span><span class="p">,</span><span class="nt">&quot;VERSION_CODENAME&quot;</span><span class="p">:</span><span class="s2">&quot;focal&quot;</span><span class="p">,</span><span class="nt">&quot;KERNEL_RELEASE&quot;</span><span class="p">:</span><span class="s2">&quot;5.4.0-91-generic&quot;</span><span class="p">,</span><span class="nt">&quot;ARCH&quot;</span><span class="p">:</span><span class="s2">&quot;x86_64&quot;</span><span class="p">,</span><span class="nt">&quot;pkg&quot;</span><span class="p">:</span><span class="s2">&quot;urfave&quot;</span><span class="p">,</span><span class="nt">&quot;file&quot;</span><span class="p">:</span><span class="s2">&quot;urfave.go&quot;</span><span class="p">,</span><span class="nt">&quot;line&quot;</span><span class="p">:</span><span class="mi">53</span><span class="p">}</span>
+<span class="err">...</span>
+<span class="p">{</span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="s2">&quot;warn&quot;</span><span class="p">,</span><span class="nt">&quot;ts&quot;</span><span class="p">:</span><span class="mf">1670976875.7762284</span><span class="p">,</span><span class="nt">&quot;msg&quot;</span><span class="p">:</span><span class="s2">&quot;KConfig: could not check enabled kconfig features&quot;</span><span class="p">,</span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="s2">&quot;could not read /boot/config-5.4.0-91-generic: stat /boot/config-5.4.0-91-generic: no such file or directory&quot;</span><span class="p">}</span>
+<span class="p">{</span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="s2">&quot;warn&quot;</span><span class="p">,</span><span class="nt">&quot;ts&quot;</span><span class="p">:</span><span class="mf">1670976875.7762842</span><span class="p">,</span><span class="nt">&quot;msg&quot;</span><span class="p">:</span><span class="s2">&quot;KConfig: assuming kconfig values, might have unexpected behavior&quot;</span><span class="p">}</span>
+<span class="err">...</span>
+<span class="p">{</span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="s2">&quot;debug&quot;</span><span class="p">,</span><span class="nt">&quot;ts&quot;</span><span class="p">:</span><span class="mf">1670976876.0801573</span><span class="p">,</span><span class="nt">&quot;msg&quot;</span><span class="p">:</span><span class="s2">&quot;KConfig: warning: assuming kconfig values, might have unexpected behavior&quot;</span><span class="p">,</span><span class="nt">&quot;pkg&quot;</span><span class="p">:</span><span class="s2">&quot;initialization&quot;</span><span class="p">,</span><span class="nt">&quot;file&quot;</span><span class="p">:</span><span class="s2">&quot;kconfig.go&quot;</span><span class="p">,</span><span class="nt">&quot;line&quot;</span><span class="p">:</span><span class="mi">30</span><span class="p">}</span>
+<span class="err">TIME</span><span class="w">             </span><span class="err">UID</span><span class="w">    </span><span class="err">COMM</span><span class="w">             </span><span class="err">PID</span><span class="w">     </span><span class="err">TID</span><span class="w">     </span><span class="err">RET</span><span class="w">              </span><span class="err">EVENT</span><span class="w">                </span><span class="err">ARGS</span>
+<span class="err">...</span>
 </code></pre></div>
-<p>but do have in mind it is assuming some things from the host environment and
+<ul>
+<li><strong>missing kconfig options</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="s2">&quot;warn&quot;</span><span class="p">,</span><span class="nt">&quot;ts&quot;</span><span class="p">:</span><span class="mf">1698759121.4432194</span><span class="p">,</span><span class="nt">&quot;msg&quot;</span><span class="p">:</span><span class="s2">&quot;KConfig: could not detect kconfig options&quot;</span><span class="p">,</span><span class="nt">&quot;options&quot;</span><span class="p">:[</span><span class="err">...</span><span class="p">]}</span>
+</code></pre></div>
+<p>But do have in mind it is assuming some things from the host environment and
 its behavior might have inconsistencies.</p>
 <p>If you are running tracee in an environment that does not have a kconfig file
 (nor /proc/config.gz support), it is recommended that you provide the host
@@ -16827,7 +16835,7 @@ variable.</p>
 <div class="admonition attention">
 <p class="admonition-title">Attention</p>
 <p>In case no kconfig file is found, tracee takes some decisions blindly and
-it may give you unexpected errors. Example:</p>
+it may give you unexpected errors.</p>
 </div>
 
 
