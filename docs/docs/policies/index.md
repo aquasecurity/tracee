@@ -29,8 +29,7 @@ There are many ways to fine tune the scope and filters. For further information 
 * [rules](./rules.md)
 
 While specifying event filters is optional, policies must have the `name`, `description`, `scope` and `rules` fields.
+It is possible to load up to 64 policies into Tracee.
 
 !!! Note TODO
     Note that currently each event type can only be defined once in a policy
-
-It is possible to load up to 64 policies into Tracee.
