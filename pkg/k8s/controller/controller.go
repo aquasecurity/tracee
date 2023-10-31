@@ -13,7 +13,9 @@ import (
 	"github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 )
 
-// PolicyReconciler reconciles a CronJob object
+// PolicyReconciler is the main controller for the Tracee Policy CRD. It is responsible
+// for updating the Tracee DaemonSet whenever a change is detected in a TraceePolicy
+// object.
 type PolicyReconciler struct {
 	client.Client
 	Scheme          *runtime.Scheme
@@ -24,10 +26,11 @@ type PolicyReconciler struct {
 // +kubebuilder:rbac:groups=tracee.aquasec.com,resources=policies,verbs=get;list;watch;
 // +kubebuilder:rbac:groups=apps,resources=daemonsets,verbs=get;list;watch;patch;update;
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.0/pkg/reconcile
+// Reconcile is where the reconciliation logic resides. Every time a change is detected in
+// a v1beta1.Policy object, this function will be called. It will update the Tracee
+// DaemonSet, so that the Tracee pods will be restarted with the new policy. It does this
+// by adding a timestamp annotation to the pod template, so that the daemonset controller
+// will rollout a new daemonset ("restarting" the daemonset).
 func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
@@ -59,7 +62,9 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	return ctrl.Result{}, nil
 }
 
-// SetupWithManager sets up the controller with the Manager.
+// SetupWithManager is responsible for connecting the PolicyReconciler to the main
+// controller manager. It tells the manager that for changes in v1beta1Policy objects, the
+// PolicyReconciler should be invoked.
 func (r *PolicyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta1.Policy{}).

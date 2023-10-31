@@ -172,46 +172,41 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
+	// Scope command line flags - via cobra flag
+
 	scopeFlags, err := c.Flags().GetStringArray("scope")
 	if err != nil {
 		return runner, err
 	}
+	if len(policyFlags) > 0 && len(scopeFlags) > 0 {
+		return runner, errors.New("policy and scope flags cannot be used together")
+	}
+
+	// Events command line flags - via cobra flag
 
 	eventFlags, err := c.Flags().GetStringArray("events")
 	if err != nil {
 		return runner, err
 	}
-
-	if len(policyFlags) > 0 && len(scopeFlags) > 0 {
-		return runner, errors.New("policy and scope flags cannot be used together")
-	}
 	if len(policyFlags) > 0 && len(eventFlags) > 0 {
 		return runner, errors.New("policy and event flags cannot be used together")
 	}
 
+	// Try to get policies from kubernetes CRD, policy files and CLI in that order
+
 	var k8sPolicies []v1beta1.PolicyInterface
+	var policies *policy.Policies
 
 	k8sClient, err := k8s.New()
+	if err == nil {
+		k8sPolicies, err = k8sClient.GetPolicy(c.Context())
+	}
 	if err != nil {
 		logger.Debugw("kubernetes cluster", "error", err)
 	}
-
-	// if k8sClient is not nil, then we are running inside a k8s cluster
-	if k8sClient != nil {
-		k8sPolicies, err = k8sClient.GetPolicy(c.Context())
-		if err != nil {
-			logger.Debugw("kubernetes cluster", "error", err)
-		}
-	}
-
-	var policies *policy.Policies
-
 	if len(k8sPolicies) > 0 {
 		logger.Debugw("using policies from kubernetes crd")
-
-		if len(k8sPolicies) > 0 {
-			policies, err = createPoliciesFromK8SPolicy(k8sPolicies)
-		}
+		policies, err = createPoliciesFromK8SPolicy(k8sPolicies)
 	} else if len(policyFlags) > 0 {
 		logger.Debugw("using policies from --policy flag")
 		policies, err = createPoliciesFromPolicyFiles(policyFlags)
@@ -219,8 +214,6 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		logger.Debugw("using policies from --scope and --events flag")
 		policies, err = createPoliciesFromCLIFlags(scopeFlags, eventFlags)
 	}
-
-	// if any error returned while creating policies, return it
 	if err != nil {
 		return runner, err
 	}
@@ -240,7 +233,13 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	}
 	cfg.Output = output.TraceeConfig
 
+	if err != nil {
+		return runner, err
+	}
+	cfg.Output = output.TraceeConfig
+
 	// Create printer
+
 	p, err := printer.NewBroadcast(output.PrinterConfigs, cmd.GetContainerMode(cfg))
 	if err != nil {
 		return runner, err
