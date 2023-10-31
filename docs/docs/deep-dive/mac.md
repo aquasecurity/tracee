@@ -4,9 +4,9 @@
 
 No. Tracee runs only on Linux operating system. But you can run a Linux VM on your Mac, and then run Tracee in it. Please note though, that with this setup Tracee will only have visibility to the Linux VM it is running in, and not the host Mac machine.
 
-## Does Tracee run on Apple Silicone?
+## Does Tracee run on Apple Silicon?
 
-Apple Silicone (a.k.a `M#` CPUs) are based on the ARM64 CPU architecture. Tracee does support ARM64 and therefore should run on Apple Silicone.
+Apple Silicon (a.k.a `M#` CPUs) utilizes the ARM64 CPU architecture. Given that [Tracee is compatible with ARM64](../install/prerequisites.md#processor-architecture), it should run on Apple Silicon as well.
 
 ## Does Tracee run in a Linux container on MacOS?
 
