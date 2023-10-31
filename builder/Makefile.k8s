@@ -72,7 +72,7 @@ K8S_CONTNAME = tracee-k8s:latest
 .PHONY: build
 build: \
 	.check_$(CMD_DOCKER) \
-	.check_tree \
+	.check_tree
 #
 	$(CMD_DOCKER) build \
 		-f builder/Dockerfile.k8s \
@@ -80,18 +80,18 @@ build: \
 		.
 
 .PHONY: manifests
-manifests:
+manifests: \
 	.check_$(CMD_DOCKER) \
-	.check_tree \
+	.check_tree
 #
 	$(CMD_DOCKER) run --rm \
 		-v $(shell pwd):/tracee \
 		$(K8S_CONTNAME) make k8s-manifests
 
 .PHONY: generate
-generate:
+generate: \
 	.check_$(CMD_DOCKER) \
-	.check_tree \
+	.check_tree
 #
 	$(CMD_DOCKER) run --rm \
 		-v $(shell pwd):/tracee \
