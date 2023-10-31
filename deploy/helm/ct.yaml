@@ -3,4 +3,3 @@ charts:
 remote: origin
 target-branch: main
 validate-maintainers: false
-helm-extra-args: "--timeout 1000s"
