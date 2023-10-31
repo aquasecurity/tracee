@@ -76,13 +76,15 @@ Tracee needs access to kconfig file (/proc/config.gz OR /boot/config-$(uname -r)
 2. Provide kconfig variables to its eBPF counter-part (so eBPF program take decisions)
 
 !!! Warning
-    Tracee **should NOT fail** when it cannot find a kconfig file:
+    Tracee **should NOT fail** when it cannot find a kconfig file or needed options:
     
+    - **missing kconfig file**
+
     ```console
     sudo ./dist/tracee --log debug --scope uid=1000 --scope pid=new --events execve
     ```
 
-    ```text
+    ```json
     {"level":"debug","ts":1670976875.7735798,"msg":"osinfo","VERSION":"\"20.04.5 LTS (Focal Fossa)\"","ID":"ubuntu","ID_LIKE":"debian","PRETTY_NAME":"\"Ubuntu 20.04.5 LTS\"","VERSION_ID":"\"20.04\"","VERSION_CODENAME":"focal","KERNEL_RELEASE":"5.4.0-91-generic","ARCH":"x86_64","pkg":"urfave","file":"urfave.go","line":53}
     ...
     {"level":"warn","ts":1670976875.7762284,"msg":"KConfig: could not check enabled kconfig features","error":"could not read /boot/config-5.4.0-91-generic: stat /boot/config-5.4.0-91-generic: no such file or directory"}
@@ -92,8 +94,14 @@ Tracee needs access to kconfig file (/proc/config.gz OR /boot/config-$(uname -r)
     TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
     ...
     ```
+
+    - **missing kconfig options**
+
+    ```json
+    {"level":"warn","ts":1698759121.4432194,"msg":"KConfig: could not detect kconfig options","options":[...]}
+    ```
     
-    but do have in mind it is assuming some things from the host environment and
+    But do have in mind it is assuming some things from the host environment and
     its behavior might have inconsistencies.
     
     If you are running tracee in an environment that does not have a kconfig file
@@ -129,4 +137,4 @@ TIME             UID    COMM             PID     TID     RET              EVENT 
 
 !!! Attention
     In case no kconfig file is found, tracee takes some decisions blindly and
-    it may give you unexpected errors. Example:
+    it may give you unexpected errors.
