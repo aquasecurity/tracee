@@ -1,6 +1,6 @@
 # Rules
 
-Rules determine which events a policy should trace. 
+Rules determine which events a policy should trace and make it possible to narrow down when and event should be recorded.
 
 ## Events
 

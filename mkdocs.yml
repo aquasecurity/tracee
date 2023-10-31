@@ -26,13 +26,8 @@ nav:
                 - Prometheus: docs/install/prometheus.md
                 - Healthz: docs/install/healthz.md
                 - Configure Tracee:
-                      - Overview: docs/config/index.md
-                      - CLI: docs/config/cli.md
-                      - Kubernetes: docs/config/kubernetes.md
-          - Usage:
-                - Overview: docs/usage/index.md
-                - CLI: docs/usage/cli.md
-                - Kubernetes: docs/usage/kubernetes.md
+                      - CLI: docs/install/config/cli.md
+                      - Kubernetes: docs/install/config/kubernetes.md
           - Events:
                 - Overview: docs/events/index.md
                 - Built-in Events:
@@ -571,6 +566,9 @@ nav:
                 - Scopes: docs/policies/scopes.md
                 - Rules: docs/policies/rules.md
                 - CLI Filtering: docs/policies/filtering.md
+                - Usage:
+                      - CLI: docs/policies/usage/cli.md
+                      - Kubernetes: docs/policies/usage/kubernetes.md
           - Outputs:
                 - Overview: docs/outputs/index.md
                 - Output Formats: docs/outputs/output-formats.md
@@ -589,17 +587,17 @@ nav:
                 - Kernel Symbols: docs/deep-dive/ksyms.md
                 - Secure Tracing: docs/deep-dive/secure-tracing.md
                 - OS Info: docs/deep-dive/os-info.md
-                - Flags Manuals:
-                      - scope: docs/flags/scope.1.md
-                      - events: docs/flags/events.1.md
-                      - output: docs/flags/output.1.md
-                      - capture: docs/flags/capture.1.md
-                      - config: docs/flags/config.1.md
-                      - crs: docs/flags/containers.1.md
-                      - rego: docs/flags/rego.1.md
-                      - cache: docs/flags/cache.1.md
-                      - capabilities: docs/flags/capabilities.1.md
-                      - log: docs/flags/log.1.md
+          - CLI Flags:
+                - scope: docs/flags/scope.1.md
+                - events: docs/flags/events.1.md
+                - output: docs/flags/output.1.md
+                - capture: docs/flags/capture.1.md
+                - config: docs/flags/config.1.md
+                - crs: docs/flags/containers.1.md
+                - rego: docs/flags/rego.1.md
+                - cache: docs/flags/cache.1.md
+                - capabilities: docs/flags/capabilities.1.md
+                - log: docs/flags/log.1.md
     - Contributing:
           - Overview: contributing/overview.md
           - Documentation: contributing/documentation.md
@@ -610,7 +608,6 @@ nav:
                 - Building Tracee: contributing/building/building.md
                 - Building Environment: contributing/building/environment.md
                 - Building Containers: contributing/building/containers.md
-                - OS Packaging: contributing/building/packaging.md
 theme:
     name: material
     language: "en"

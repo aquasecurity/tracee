@@ -35,6 +35,25 @@ If no event is passed with [filters] or [policies], tracee will start with a set
 
 Please head over to the [Tracee usage](../usage/index.md) documentation for more information on configuring events.
 
+### Event Sets QUESTION
+
+Events can be part of a set. For example, `default`, `network_events`, `syscalls`. 
+We can ask Tracee to trace a full set, or sets, instead of passing event by event, for example:
+
+```
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+	name: sample-policy
+	annotations:
+		description: traces execve events
+spec:
+	scope:
+	  - global
+	rules:
+	  - event: syscalls
+```
+
 ## Read in AVD
 
 [Aqua Vulnerability Database (AVD)](https://avd.aquasec.com) is a public index of all security information that can be reported across all of Aqua's products and tools. As such, it also contains entries about Tracee security events. The AVD entries on runtime security are generated from the [detection signatures](https://github.com/aquasecurity/tracee/tree/main/signatures) and are organized by MITRE ATT&CK categorization. Browse at [avd.aquasec.com/tracee](https://avd.aquasec.com/tracee/).
