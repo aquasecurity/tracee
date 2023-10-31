@@ -52,6 +52,16 @@ func (e *commandFailed) Error() string {
 	return fmt.Sprintf("command '%s' failed with error: %s", e.command, e.err)
 }
 
+// failedToPinProcessToCPU is returned when a command fails to pin to a CPU.
+type failedToPinProcessToCPU struct {
+	command string
+	err     error
+}
+
+func (e *failedToPinProcessToCPU) Error() string {
+	return fmt.Sprintf("failed to pin command '%s' to CPU: %s", e.command, e.err)
+}
+
 // failedToParseCmd is returned when a command fails to parse.
 type failedToParseCmd struct {
 	command string
