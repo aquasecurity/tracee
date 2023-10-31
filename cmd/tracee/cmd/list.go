@@ -24,7 +24,7 @@ func init() {
 	listCmd.Flags().StringArray(
 		"signatures-dir",
 		[]string{},
-		"Directories where to search for signatures in CEL (.yaml), OPA (.rego), and Go plugin (.so) formats",
+		"Directories where to search for signatures in OPA (.rego) and Go plugin (.so) formats",
 	)
 }
 

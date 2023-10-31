@@ -183,7 +183,7 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:  "rules-dir",
-				Usage: "directory where to search for rules in CEL (.yaml), OPA (.rego), and Go plugin (.so) formats",
+				Usage: "directory where to search for rules in OPA (.rego) and Go plugin (.so) formats",
 			},
 			&cli.BoolFlag{
 				Name:  "rego-partial-eval",

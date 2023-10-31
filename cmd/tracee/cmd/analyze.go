@@ -51,7 +51,7 @@ func init() {
 	analyze.Flags().StringArray(
 		"signatures-dir",
 		[]string{},
-		"Directory where to search for signatures in CEL (.yaml), OPA (.rego), and Go plugin (.so) formats",
+		"Directory where to search for signatures in OPA (.rego) and Go plugin (.so) formats",
 	)
 	// err = viper.BindPFlag("signatures-dir", analyze.Flags().Lookup("signatures-dir"))
 	// if err != nil {
