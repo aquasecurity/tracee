@@ -1,19 +1,27 @@
-# Docker Quickstart
+# Running Tracee with Docker
 
-This section details how you can run Tracee through a container image.
+This guide will help you get started with running Tracee as a container.
 
 ## Prerequisites
 
-Please ensure that Docker or another container runtime is working on your machine.
+- Review the [prerequisites for running Tracee](./prerequisites.md)
+- If you are an Apple Mac user, please read [the Mac FAQ](../deep-dive/apple.md)
+- Ensure that you have Docker or a compatible container runtime
 
-## Run the Tracee container images
+## Tracee container image
 
-All of the Tracee container images are stored in a public registry on [Docker Hub.](https://hub.docker.com/r/aquasec/tracee)
-You can easily start experimenting with Tracee using the Docker image.
+Tracee container image is available in Docker Hub as [aquasec/tracee](https://hub.docker.com/r/aquasec/tracee).
 
-### On x86 architecture, please run the following command
+- You can use the `latest` tag or a named version version e.g `aquasec/tracee:{{ git.tag }}`.
+- If you are trying the most cutting edge features, there is also a `dev` tag which is built nightly from source.
+- The Tracee image is a [Multi-platform](https://docs.docker.com/build/building/multi-platform/) image that includes a x86 and arm64 flavors. You can also access the platform-specific images directly with the `aarch64` and `x86_64` tags for the latest version or `aarch64-<version>` and `x86_64-<version>` for a specific version.  
+- For most first time users, just use `aquasec/tracee`!
 
-```console
+## Running Tracee container
+
+Here is the docker run command, we will analyze it next:
+
+```shell
 docker run \
   --name tracee --rm -it \
   --pid=host --cgroupns=host --privileged \
@@ -21,45 +29,25 @@ docker run \
   aquasec/tracee:latest
 ```
 
-### Steps to run the Tracee container image on arm64
+1. Docker general flags:
+    1.1 `--name` - name our container so that we can interact with it easily.
+    1.2. `--rm` - remove the container one it exits, assuming this is an interactive trial of Tracee.
+    1.3. `-it` - allow the container to interact with your terminal.
+2. Since Tracee runs in a container but is instrumenting the host, it will need access to some resources from the host:
+    2.2 `--pid=host` - share the host's [process namespace]() with Tracee's container.
+    2.3 `--cgroupns-host` - share the host's [cgroup namespace]() with Tracee's container.
+    2.4 `--privileged` - run the Tracee container as root so it has all the [required capabilities](./prerequisites.md#process-capabilities).
+    2.5 `-v /etc/os-release:/etc/os-release-host:ro` - share the host's [OS information file](./prerequisites.md#os-information) with the Tracee container.
 
-There are a few more steps involved in running Tracee through a container image on arm64 (M1).
+After running this command, you should start seeing a stream of events that Tracee is emitting.
 
-Prerequisites:
+For next steps, please read about Tracee [Policies](../policies/index.md)
 
-* [Vagrant CLI](https://developer.hashicorp.com/vagrant/downloads) installed
-* [Parallels Pro](https://www.parallels.com/uk/products/desktop/pro/) installed
+## Installing Tracee
 
-First, clone the Tracee Git repository and move into the root directory:
+If you are looking to permanently install Tracee, you would probably do the following:
 
-```console
-git clone git@github.com:aquasecurity/tracee.git
+1. Remove interactive flags `-it` and replace with daemon flag `-d`
+2. Consider how to collect events from the container.
 
-cd tracee
-```
-
-Next, use Vagrant to start a Parallels VM:
-
-```console
-vagrant up
-```
-
-This will use the [Vagrantfile](https://github.com/aquasecurity/tracee/blob/main/Vagrantfile) in the root of the Tracee directory.
-
-Lastly, ssh into the created VM:
-
-```console
-vagrant ssh
-```
-
-Now, it is possible to run the Tracee Container image:
-
-```console
-docker run \
-  --name tracee --rm -it \
-  --pid=host --cgroupns=host --privileged \
-  -v /etc/os-release:/etc/os-release-host:ro \
-  aquasec/tracee:latest
-```
-
-To learn how to install Tracee in a production environment, [check out the Kubernetes guide](./kubernetes-quickstart).
+Or you can follow the [Kubernetes guide](./kubernetes.md) which addresses these concerns.
