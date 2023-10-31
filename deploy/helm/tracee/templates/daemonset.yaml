@@ -80,12 +80,6 @@ spec:
             - name: tracee-policies
               readOnly: true
               mountPath: /tracee/policies
-            {{- if .Values.signatures.config }}
-            - name: tracee-signatures
-              mountPath: /tracee/signatures/signatures.yaml
-              subPath: signatures.yaml
-              readOnly: true
-            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
@@ -125,23 +119,3 @@ spec:
         - name: tracee-policies
           configMap:
             name: tracee-policies
-        {{- if .Values.signatures.config }}
-        - name: tracee-signatures
-          configMap:
-            name: tracee-signatures
-            items:
-              - key: signatures.yaml
-                path: signatures.yaml
-        {{- end }}
-{{- if .Values.signatures.config }}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: tracee-signatures
-  labels:
-    {{- include "tracee.labels" . | nindent 4 }}
-data:
-  signatures.yaml: |-
-    {{- toYaml .Values.signatures.config | nindent 4 }}
-{{- end }}
