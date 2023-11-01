@@ -68,17 +68,20 @@ config:
   listenAddr: :3366
   installPath: ""
   signaturesDir: ""
-  capabilities: []
-  cri: []
-  rego: []
   cache:
-    - cache-type=mem
-    - mem-cache-size=512
+    type: mem
+    size: 512
   log:
-    - info
+    level: info
   output:
-    - json
-    - option:parse-arguments
+    format: json
+    options:
+      parseArguments: true
+      stackAddresses: false
+      execEnv: false
+      relativeTime: true
+      execHash: false
+      sortEvents: false
 
 defaultPolicy: true
 
