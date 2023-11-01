@@ -1,10 +1,12 @@
 # Rules
 
-Rules determine which events a policy should trace and make it possible to narrow down when and event should be recorded.
+Rules are part of the Tracee Policy, which defines which events to trace. The events that are part of a specific policy are recorded in the `rules` section of the Tracee Policy. It is possible to define multiple events within each policy. The [events](../events/index.md) section provides further information on the type of events that Tracee can track.
+
+Below are several examples on configuring events in the Tracee Policy.
 
 ## Events
 
-Events support three types of filters: `context`, `arguments` and `return value`. 
+Every event that is specified within the `rules` section supports three types of filters: `context`, `arguments` and `return value`. 
 
 ### Type of Events
 

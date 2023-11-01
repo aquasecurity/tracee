@@ -8,13 +8,8 @@ caching options you may execute:
 man tracee-cache
 ``` -->
 
-!!! Read Important
-    Before continuing, please read the [architecture page], in order to
-    understand the [tracee pipeline] concept, AND the [performance page], to
-    understand possible pain points.
 
-[architecture page]: ../../contributing/architecture.md
-[tracee pipeline]: ../../contributing/architecture.md#tracee-pipeline-concept
+<!-- TODO: reference the architecture page again-->
 
 ![Tracee Cache](../../images/tracee-cache.png)
 

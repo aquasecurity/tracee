@@ -1,7 +1,7 @@
 ---
-title: TRACEE-CRS
+title: TRACEE-CRI
 section: 1
-header: Tracee CRS Flag Manual
+header: Tracee CRI Flag Manual
 date: 2023/10
 ...
 

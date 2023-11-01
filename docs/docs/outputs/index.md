@@ -2,7 +2,7 @@
 
 It is possible to manage the events gathered in Tracee logs through the CLI using the `--output` and `--log` flag. Users can control where and how to output events by specifying `--output <format>:<destination>`.  The `--output` flag can be used multiple times to output events.
 
-Furthermore, the `--log` flag can be used to define what components of the gathered events should be appended to the Tracee output. However, for more fine-grained filters, please take a look at the [filtering section](../filters/index.md)
+Furthermore, the `--log` flag can be used to define what components of the gathered events should be appended to the Tracee output. However, for more fine-grained filters, please take a look at the [scope section](../policies/scopes.md)
 
 **The following output formats are supported:**
 

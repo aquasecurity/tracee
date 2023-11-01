@@ -565,7 +565,6 @@ nav:
                 - Overview: docs/policies/index.md
                 - Scopes: docs/policies/scopes.md
                 - Rules: docs/policies/rules.md
-                - CLI Filtering: docs/policies/filtering.md
                 - Usage:
                       - CLI: docs/policies/usage/cli.md
                       - Kubernetes: docs/policies/usage/kubernetes.md
@@ -602,7 +601,6 @@ nav:
           - Overview: contributing/overview.md
           - Documentation: contributing/documentation.md
           - Source Code Guidelines: contributing/guidelines.md
-          - Architecture: contributing/architecture.md
           - Setup Development Machine with Vagrant: contributing/setup-development-machine-with-vagrant.md
           - Building:
                 - Building Tracee: contributing/building/building.md
