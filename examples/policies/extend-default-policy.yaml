@@ -1,0 +1,49 @@
+---
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: extend-default-policy
+  annotations:
+    description: this policy can be used to extend traces default events
+spec:
+  scope:
+    - global
+  rules:
+    - event: creat
+    - event: chmod
+    - event: fchmod
+    - event: chown
+    - event: fchown
+    - event: lchown
+    - event: ptrace
+    - event: setuid
+    - event: setgid
+    - event: setpgid
+    - event: setsid
+    - event: setreuid
+    - event: setregid
+    - event: setresuid
+    - event: setresgid
+    - event: setfsuid
+    - event: setfsgid
+    - event: init_module
+    - event: fchownat
+    - event: fchmodat
+    - event: setns
+    - event: process_vm_readv
+    - event: process_vm_writev
+    - event: finit_module
+    - event: memfd_create
+    - event: move_mount
+    - event: sched_process_exec
+    - event: security_inode_unlink
+    - event: security_socket_connect
+    - event: security_socket_accept
+    - event: security_socket_bind
+    - event: security_sb_mount
+    - event: net_packet_icmp
+    - event: net_packet_icmpv6
+    - event: net_packet_dns_request
+    - event: net_packet_dns_response
+    - event: net_packet_http_request
+    - event: net_packet_http_response
