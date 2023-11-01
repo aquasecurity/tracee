@@ -1,3 +1,5 @@
+# Tracee Logging Examples
+
 Configure log severity:
 
 ```console

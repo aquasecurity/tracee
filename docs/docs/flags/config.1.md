@@ -15,7 +15,7 @@ tracee **\-\-config** <file\>
 
 ## DESCRIPTION
 
-The **\-\-config** flag allows you to define global configuration options (flags) for tracee. It expects a file in YAML or JSON format, among others (see [documentation](../config/overview.md)).
+The **\-\-config** flag allows you to define global configuration options (flags) for tracee. It expects a file in YAML or JSON format, among others (see [documentation](../config/index.md)).
 
 All flags can be set in the config file, except for the following, which are reserved only for the CLI:
 
@@ -25,4 +25,4 @@ All flags can be set in the config file, except for the following, which are res
 - **\-\-scope**
 - **\-\-event**
 
-Please refer to the [documentation](../config/overview.md) for more information on the file format and available configuration options.
+Please refer to the [documentation](../config/index.md) for more information on the file format and available configuration options.

@@ -1,4 +1,4 @@
-# Tracing Output Options
+# Output Options
 
 <!-- TODO: build man page -->
 Tracee supports different output options for customizing the way events are printed. For a complete list of available options. <!--, see `man tracee-output`. -->

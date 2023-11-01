@@ -191,9 +191,9 @@ kubectl -n tracee-system logs -f ds/tracee | grep fileless_execution
 
 ## Next steps
 
-Familiarize with the different events, filters, and configuration options in the [documentation](./../docs/overview.md).
+Familiarize with the different events, filters, and configuration options in the [documentation](../overview.md).
 
-Read other [tutorials](./../tutorials/overview.md).
+Read other [tutorials](../../tutorials/overview.md).
 
 For help and support, feel free to use [GitHub Discussions](https://github.com/aquasecurity/tracee/discussions).
 
@@ -204,4 +204,4 @@ If you prefer a video version of the Kubernetes installation guide, have a look 
 
  Getting started with eBPF in Kubernetes - Tracee Installation Guide 
 
-  [![Watch the video](../images/ebpftraceehelminstall.png)](https://youtu.be/YQdEvf2IS9k?si=LhQM0CI8_QKvOCeK)
+  [![Watch the video](../../images/ebpftraceehelminstall.png)](https://youtu.be/YQdEvf2IS9k?si=LhQM0CI8_QKvOCeK)

@@ -1,4 +1,4 @@
-# Config
+# CLI Config
 
 ## Configuring Tracee with the `--config` Flag
 
@@ -31,15 +31,6 @@ log:
     - aggregate
 ```
 
-Or in a structured format:
-
-```yaml
-log:
-    level: debug
-    aggregate:
-        enabled: true
-```
-
 ## Reserved Flags
 
 There are a few flags that are reserved for the CLI and cannot be set through the configuration file. These include:
@@ -49,9 +40,8 @@ There are a few flags that are reserved for the CLI and cannot be set through th
 
 To help you get started with configuring Tracee using the `--config` flag, we've provided two example configuration files in the `examples/config` directory of the Tracee repository:
 
-- `examples/config/global_config.yaml`: This file contains an example configuration in YAML format.
-- `examples/config/global_config_cli.yaml`: This file contains the same example configuration as global_config.yaml, but using cli flags (not structured).
-- `examples/config/global_config.json`: This file contains the same example configuration as global_config_cli.yaml, but in JSON format.
+- `examples/config/global_config.json`: This file contains an example configuration in JSON format.
+- `examples/config/global_config.yaml`: This file contains the same example configuration as global_config.json, but in YAML format.
 
 These example files demonstrate how you can set various configuration options using the `--config` flag. You can use these files as a starting point for your own configuration, or as a reference for the available configuration options.
 

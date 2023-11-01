@@ -1,13 +1,8 @@
-In this section you can find the reference documentation for Tracee's policies.
+# Policies
 
-Policies are YAML manifests that allow you to define how Tracee should respond to different events. This is done through rules in the policy. A rule takes in one or several events. Additionally, events can be filtered to specific resources. If Tracee detects the event, it will respond with an action. 
-The default action for Tracee is to log the detected events.
+Policies allow users to specify which [events](../events/index.md) to trace in which workloads. The policy `scope` defines which workloads this policy is limited to. The policy can define multiple `rules` that specify the events to trace. 
 
-Lastly, policies require a scope. The scope details which resources the policy applies to. 
-
-You can load multiple (up to 64) policies into Tracee using the --policy flag providing a path to the policy file.
-
-Following is a sample policy:
+Here is an example policy:
 
 ```yaml
 apiVersion: tracee.aquasec.com/v1beta1
@@ -24,31 +19,18 @@ spec:
 	  - event: security_file_open
 	    filters:
 		- args.pathname=/tmp/*
-	  - event: sched_process_exec
-	    filters: 
-		- uid=0
-	  - event: close
-	    filters:
-		- retval!=0
 ```
 
-This policy applies to any workload (global) and will log the dropped_executable, security_file_open, sched_process_exec and close events. Several filters are set to log only specific events:
+This policy applies to any workload (`global`) and will log the `dropped_executable`, and `security_file_open` events. An argument filter (`args.pathname`) is set on the `security_file_open` event to log only files which were opened from the `/tmp` directory.
 
-1. An argument filter (args.pathname) is set on the security_file_open event to log only files which were opened from the /tmp directory
+There are many ways to fine tune the scope and filters. For further information on the details, have a look at the respective sections: 
 
-2. A context filter (uid) is set on the sched_process_exec event to log only processes executed by the root user (uid 0)
-
-3. A return value filter (retval) is set on the close event to log only failed close syscalls
+* [scopes](./scopes.md)
+* [rules](./rules.md)
 
 While specifying event filters is optional, policies must have the `name`, `description`, `scope` and `rules` fields.
 
-!!! Note
-    Note that currently only one rule can be defined per any event type in a policy
+!!! Note TODO
+    Note that currently each event type can only be defined once in a policy
 
-More information about defining a scope and the available filters can be found in the next sections.
-
-## Video Content
-
- Tracking Kubernetes activity with eBPF and Tracee Policies 
-
- [![Watch the video](../../images/traceepolicies.png)](https://youtu.be/VneWxs9Jpu0?si=eAnRDJVZShhg_td0)
+It is possible to load up to 64 policies into Tracee.

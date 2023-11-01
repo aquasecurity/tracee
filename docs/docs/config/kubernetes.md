@@ -17,22 +17,20 @@ metadata:
 data:
   config.yaml: |-
     cache:
-        type: mem
-        size: 512
+      - cache-type=mem
+      - mem-cache-size=512
     perf-buffer-size: 1024
+    containers: true
     healthz: false
     metrics: true
     pprof: false
     pyroscope: false
     listen-addr: :3366
     log:
-        level: info
+        - info
     output:
-        options:
-            parse-arguments: true
-        json:
-            files:
-                - stdout
+        - json
+        - option:parse-arguments
 ```
 
 ## Customizing
@@ -49,8 +47,8 @@ helm install tracee aqua/tracee \
 # setting a different output
 helm install tracee aqua/tracee \
         --namespace tracee-system --create-namespace \
-				--set config.output[0]=table
-				--set config.output[1]=option:parse-arguments
+        --set config.output[0]=table \
+        --set config.output[1]=option:parse-arguments
 ```
 
 Or you can pass a config file directly:
@@ -58,5 +56,5 @@ Or you can pass a config file directly:
 ```
  helm install tracee aqua/tracee \
         --namespace tracee-system --create-namespace \
-				--set-file traceeConfig=<path/to/config/file>
+        --set-file traceeConfig=<path/to/config/file>
 ```
