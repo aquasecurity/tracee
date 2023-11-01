@@ -36,20 +36,28 @@ metadata:
     app.kubernetes.io/managed-by: Helm
 data:
   config.yaml: |-
+    cache:
+        type: mem
+        size: 512
     perf-buffer-size: 1024
     healthz: true
     metrics: true
     pprof: false
     pyroscope: false
     listen-addr: :3366
-    cache:
-        - cache-type=mem
-        - mem-cache-size=512
     log:
-        - info
+        level: info
     output:
-        - json
-        - option:parse-arguments
+        json:
+          files:
+            - stdout
+        options:
+            parse-arguments: true
+            stack-addresses: false
+            exec-env: false
+            relative-time: true
+            exec-hash: false
+            sort-events: false
 ---
 # Source: tracee/templates/role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -290,43 +298,5 @@ spec:
     - event: proc_fops_hooking
     - event: syscall_hooking
     - event: dropped_executable
-    - event: creat
-    - event: chmod
-    - event: fchmod
-    - event: chown
-    - event: fchown
-    - event: lchown
-    - event: ptrace
-    - event: setuid
-    - event: setgid
-    - event: setpgid
-    - event: setsid
-    - event: setreuid
-    - event: setregid
-    - event: setresuid
-    - event: setresgid
-    - event: setfsuid
-    - event: setfsgid
-    - event: init_module
-    - event: fchownat
-    - event: fchmodat
-    - event: setns
-    - event: process_vm_readv
-    - event: process_vm_writev
-    - event: finit_module
-    - event: memfd_create
-    - event: move_mount
-    - event: sched_process_exec
-    - event: security_inode_unlink
-    - event: security_socket_connect
-    - event: security_socket_accept
-    - event: security_socket_bind
-    - event: security_sb_mount
     - event: container_create
     - event: container_remove
-    - event: net_packet_icmp
-    - event: net_packet_icmpv6
-    - event: net_packet_dns_request
-    - event: net_packet_dns_response
-    - event: net_packet_http_request
-    - event: net_packet_http_response
