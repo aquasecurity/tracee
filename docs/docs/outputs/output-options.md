@@ -52,7 +52,7 @@ Available options:
     ```
 5. **option:relative-time**
 
-    This makes it possible to sort the events as they happened. Especially in systems where Tracee tracks lots of events, it can happen that they are received unordered. By setting the `relative-time` to true, it is possible to order events:
+    The `relative-time` output option filters all the events since the boot time of the system.
 
     ```
     output:
@@ -62,7 +62,7 @@ Available options:
 
 6. **option:sort-events**
 
-    DESCRIPTION -- TODO
+    This makes it possible to sort the events as they happened. Especially in systems where Tracee tracks lots of events, it can happen that they are received unordered. More information is provided in the [deep-dive](../deep-dive/ordering-events.md) section of the documentation.
 
     ```
     output:
