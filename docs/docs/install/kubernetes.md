@@ -5,6 +5,7 @@ This guide will help you get started with Tracee by installing it in a Kubernete
 
 ## Prerequisites
 
+- Supported environment - please refer to the [Prerequisites](../install/prerequisites.md)
 - Kubernetes - this was tested on [minikube](https://github.com/kubernetes/minikube), but should work the same with most other Kubernetes distributions
 - [Helm](https://helm.sh/docs/intro/install/)
 
