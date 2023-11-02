@@ -6,7 +6,7 @@ The [data source](./overview.md) feature makes the information gathered from act
 
 ## Internal Data Organization
 
-From the [data-sources documentation](../data-sources/overview.md), you'll see that searches use keys. It's a bit like looking up information with a specific tag (or a key=value storage).
+From the [data-sources documentation](./overview.md), you'll see that searches use keys. It's a bit like looking up information with a specific tag (or a key=value storage).
 
 The `containers data source` operates straightforwardly. Using `string` keys, which represent the container IDs, you can fetch `map[string]string` values as shown below:
 

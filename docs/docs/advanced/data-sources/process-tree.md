@@ -197,7 +197,7 @@ func (sig *e2eProcessTreeDataSource) checkProcess(eventObj *trace.Event) error {
     }
 ```
 
-From the [data-sources documentation](../data-sources/overview.md), you'll see that searches use keys. It's a bit like looking up information with a specific tag (or a key=value storage).
+From the [data-sources documentation](./overview.md), you'll see that searches use keys. It's a bit like looking up information with a specific tag (or a key=value storage).
 
 In the provided example, the `eventObj.ProcessEntityId` key (which is the process hash accompanying the event being handled) is utilized alongside the `datasource.ProcKey{}` argument to search for a process in the process tree. The resulting process is the one associated with the event under consideration.
 

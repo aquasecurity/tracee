@@ -573,10 +573,6 @@ nav:
                 - Output Formats: docs/outputs/output-formats.md
                 - Output Options: docs/outputs/output-options.md
                 - Logging: docs/outputs/logging.md
-          - Data Sources:
-                - Overview: docs/data-sources/overview.md
-                - Containers: docs/data-sources/containers.md
-                - Process Tree: docs/data-sources/process-tree.md
           - Advanced:
                 - Caching Events: docs/advanced/caching-events.md
                 - Ordering Events: docs/advanced/ordering-events.md
@@ -585,6 +581,10 @@ nav:
                 - Secure Tracing: docs/advanced/secure-tracing.md
                 - OS Info: docs/advanced/os-info.md
                 - Forensics: docs/advanced/forensics.md
+                - Data Sources:
+                    - Overview: docs/advanced/data-sources/overview.md
+                    - Containers: docs/advanced/data-sources/containers.md
+                    - Process Tree: docs/advanced/data-sources/process-tree.md
           - CLI Flags:
                 - scope: docs/flags/scope.1.md
                 - events: docs/flags/events.1.md
