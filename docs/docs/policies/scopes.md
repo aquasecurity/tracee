@@ -1,6 +1,8 @@
 # Scopes
 
-Scope defines the workload a policy will be observing. The supported scopes are:
+Scope defines the workload a policy will be observing. 
+
+The supported scopes are listed below.
 
 ### global
 

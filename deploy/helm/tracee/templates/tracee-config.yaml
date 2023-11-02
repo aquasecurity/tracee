@@ -11,9 +11,9 @@ data:
     {{- toYaml .Values.traceeConfig | nindent 4 }}
   {{- else }}
   config.yaml: |-
-    {{- if .Values.config.blobPerfBufferSize }}
-    blob-perf-buffer-size: {{ .Values.config.blobPerfBufferSize}}
-    {{- end }}
+    cache:
+        type: {{ .Values.config.cache.type }}
+        size: {{ .Values.config.cache.size }}
     perf-buffer-size: {{ .Values.config.perfBufferSize }}
     healthz: {{ .Values.config.healthz }}
     metrics: {{ .Values.config.metrics }}
@@ -21,33 +21,25 @@ data:
     pyroscope: {{ .Values.config.pyroscope }}
     listen-addr: {{ .Values.config.listenAddr }}
     {{- if .Values.config.installPath }}
-    install-path:  {{ .Values.config.installPath }}
+    install-path: {{ .Values.config.installPath }}
     {{- end }}
     {{- if .Values.config.signaturesDir }}
     signatures-dir: {{ .Values.config.signaturesDir }}
     {{- end }}
-    {{- with .Values.config.capabilities }}
-    capabilities:
-      {{- toYaml . | nindent 8 }}
-    {{- end }}
-    {{- with .Values.config.cri }}
-    cri:
-      {{- toYaml . | nindent 8 }}
-    {{- end }}
-    {{- with .Values.config.rego }}
-    rego:
-      {{- toYaml . | nindent 8 }}
-    {{- end }}
-    {{- with .Values.config.cache }}
-    cache:
-      {{- toYaml . | nindent 8 }}
-    {{- end }}
-    {{- with .Values.config.log }}
     log:
-      {{- toYaml . | nindent 8 }}
-    {{- end }}
-    {{- with .Values.config.output }}
+        level: {{ .Values.config.log.level }}
     output:
-      {{- toYaml . | nindent 8 }}
+        {{ .Values.config.output.format }}:
+          files:
+            - stdout
+        options:
+            parse-arguments: {{ .Values.config.output.options.parseArguments }}
+            stack-addresses: {{ .Values.config.output.options.stackAddresses }}
+            exec-env: {{ .Values.config.output.options.execEnv }}
+            relative-time: {{ .Values.config.output.options.relativeTime }}
+            exec-hash: {{ .Values.config.output.options.execHash }}
+            sort-events: {{ .Values.config.output.options.sortEvents }}
+    {{- if .Values.config.blobPerfBufferSize }}
+    blob-perf-buffer-size: {{ .Values.config.blobPerfBufferSize}}
     {{- end }}
   {{- end }}
