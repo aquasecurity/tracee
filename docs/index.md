@@ -12,9 +12,9 @@ hide:
 - In the [Contributing](./contributing/overview) section you can find technical developer documentation and contribution guidelines.
 
 <!-- links that differ between docs and readme -->
-[installation]:./docs/install/
-[docker-guide]:./docker.md
-[kubernetes-guide]:./kubernetes.md
+[installation]:./docs/install/index.md
+[docker-guide]:./docs/install/docker.md
+[kubernetes-guide]:./docs/install/kubernetes.md
 [prereqs]:./docs/install/prerequisites.md
 [macfaq]:./docs/deep-dive/mac.md
 <!-- everything below is copied from readme -->

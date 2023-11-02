@@ -1,20 +1,4 @@
-# Tracing Output Formats
-
-<!-- TODO: build man page -->
-The `--output` flag controls where and how Tracee will output events, by specifying `--output <format>:<destination>`.  You can use the `--output` flag multiple times to output events in multiple ways.<!-- To see all output options you can run `man tracee-output`. -->
-
-The following output formats are supported:
-
-- `table[:/path/to/file]` - output events in table format (default). The default path to file is stdout.
-- `table-verbose[:/path/to/file]` - output events in table format with extra fields per event. The default path to file is stdout.
-- `json[:/path/to/file]` - output events in json format. The default path to file is stdout.
-- `gob[:/path/to/file]` - output events in gob format. The default path to file is stdout.
-- `gotemplate=/path/to/template[:/path/to/file]` - output events formatted using a given gotemplate file. The default path to file is stdout.
-- `forward:http://url/fluent` - send events in json format using the Forward protocol to a Fluent receiver
-- `webhook:http://url/webhook` - send events in json format to the webhook url
-- `none` - ignore stream of events output, usually used with --capture
-
-## Examples
+# Output Formats
 
 ### Table
 

@@ -1,15 +1,14 @@
 # Rules
 
-Rules determine which events a policy should trace. 
+Rules are part of the Tracee Policy, which defines which events to trace. The events that are part of a specific policy are recorded in the `rules` section of the Tracee Policy. It is possible to define multiple events within each policy. The [events](../events/index.md) section provides further information on the type of events that Tracee can track.
+
+Below are several examples on configuring events in the Tracee Policy.
 
 ## Events
 
-An event can match all occurrences of events for a specific scope, or specific events depending on its filters.
-Events support three types of filters: `context`, `arguments` and `return value`. 
+Every event that is specified within the `rules` section supports three types of filters: `context`, `arguments` and `return value`. 
 
 ### Type of Events
-
-You can add events as either of the following:
 
 **[A syscall](../events/builtin/syscalls/index.md)**
 
@@ -25,7 +24,7 @@ spec:
 
 The name of the syscall is going to be the name of the event.
 
-**[Network Events](../events/builtin/network.md)**
+**[Network Events](../events/builtin/network/index.md)**
 
 Network Events can be specified from the list of `Available network events`.
 
