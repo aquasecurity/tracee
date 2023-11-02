@@ -1,57 +1,92 @@
-# Tracee Logging Examples
+# Defining Tracee Logs
 
-Configure log severity:
+This section showcases how to configure diagnostics log. The information provided can then be used to troubleshoot Tracee. This is done through the Tracee configuration file. For more information, have a look at the respective section in the [installation guide.](../install/index.md)
+
+## Log options
+
+**Configure the log severity:**
 
 ```console
-sudo ./dist/tracee --log debug
+log:
+    level: debug
+    aggregate:
+        enabled: true
 ```
 
-Redirect logs to a file if needed:
+Note that the other log level is `info`.
+
+**Redirect logs to a file if needed:**
 
 ```console
-sudo ./dist/tracee --scope comm=bash --scope follow --events openat --output json:/tmp/tracee.events --log file:/tmp/tracee.log
+log:
+    level: debug
+    aggregate:
+        enabled: true
+    file: "/tmp/tracee.log"
 ```
 
-Logs can be aggregated for a given interval to delay its output:
+**Logs can be aggregated for a given interval to delay its output:**
 
 ```console
-sudo ./dist/tracee --log debug --log aggregate:5s
+log:
+    level: debug
+    aggregate:
+        flush-interval: "5s"
+        
 ```
 
-Filter logs which message contains specified words:
+**Filter logs which message contains specified words:**
 
 ```console
-sudo ./dist/tracee --log filter:msg=foo,bar
+log:
+    filters: 
+        msg: 
+            - foo
+            - bar
 ```
 
-Filter logs using regular expressions against messages:
+**Filter logs using regular expressions against messages:**
 
 ```console
-sudo ./dist/tracee --log filter:regex='^foo'
+log:
+    filters: 
+        regex: 
+            - ^pattern-one
 ```
 
-Filter logs originating from a specific package:
+**Filter logs originating from a specific package:**
 
 ```console
-sudo ./dist/tracee --log filter:pkg=core
+log:
+    filters: 
+        pkg:
+            - core
 ```
 
-Filter logs originating from a specific file:
+**Filter logs originating from a specific file:**
 
 ```console
-sudo ./dist/tracee --log filter:file=/pkg/cmd/flags/logger.go
+log:
+    filter: 
+        file: 
+            - /pkg/cmd/flags/logger.go
 ```
 
-Filter logs based on their severity level:
+**Filter logs based on their severity level:**
 
 ```console
-sudo ./dist/tracee --log filter:lvl=error
+log:
+    filters: 
+        level: 
+            - error
 ```
 
-Filter logs originating from libbpf:
+**Filter logs originating from libbpf**:
 
 ```console
-sudo ./dist/tracee --log filter:libbpf
+log:
+    filters: 
+        libbpf: true
 ```
 
 All `--log filter` options can also be used with `--log filter-out` for the opposite behavior. For more information, please refer to the `--log` help in the CLI.
