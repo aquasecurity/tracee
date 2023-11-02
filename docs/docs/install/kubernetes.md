@@ -1,16 +1,18 @@
-# Getting started with tracee in Kubernetes 
+# Installing Tracee in Kubernetes 
 
-This guide was tested using [minikube](https://github.com/kubernetes/minikube), an easy way to run Kubernetes on your development machine, but should work the same with most other Kubernetes clusters.
+This guide will help you get started with Tracee by installing it in a Kubernetes cluster.  
+
 
 ## Prerequisites
 
-- minikube - see installation instructions [here](https://minikube.sigs.k8s.io/docs/start/). Note that Tracee doesn't support ARM/Apple silicon yet.
-- Helm - see installation instructions and dependencies [here](https://helm.sh/docs/intro/install/).
+- Supported environment - please refer to the [Prerequisites](../install/prerequisites.md)
+- Kubernetes - this was tested on [minikube](https://github.com/kubernetes/minikube), but should work the same with most other Kubernetes distributions
+- [Helm](https://helm.sh/docs/intro/install/)
 
 <details>
   <summary>Verify step</summary>
 ```console
-minikube start && kubectl get po -A
+kubectl get po -A
 ```
 
 ```text
@@ -22,7 +24,7 @@ kube-system   kube-controller-manager-minikube   1/1     Running   0          26
 kube-system   kube-proxy-cvqjm                   1/1     Running   0          15s 
 kube-system   kube-scheduler-minikube            1/1     Running   0          26s 
 kube-system   storage-provisioner                1/1     Running   0          15s 
-``` 
+```
 </details>
 
 ## Install Tracee
@@ -32,13 +34,13 @@ The provided Helm chart will install Tracee as a DaemonSet so that it's tracing 
 ```console
 helm repo add aqua https://aquasecurity.github.io/helm-charts/
 helm repo update
-helm install tracee aqua/tracee --namespace tracee-system --create-namespace
+helm install tracee aqua/tracee --namespace tracee --create-namespace
 ```
 
 <details>
   <summary>Verify step</summary>
 ```console
-kubectl get pods
+kubectl get pods -n tracee
 ```
 
 ```text
@@ -47,17 +49,35 @@ tracee-fcjmp   1/1     Running   0          4m11s
 ```
 </details>
 
-## Interacting with Tracee
+Once installed, Tracee immediately starts producing events. Since Tracee is deployed as a DaemonSet, a Tracee Pod is running on every node in the cluster. Every Tracee Pod is monitoring the node it is running on.
 
-Once installed, Tracee immediately starts producing system activity events, such as processes and containers activity, network activity, and more. To see the events that Tracee produces, use can use the `kubectl logs` command.
+## Viewing Events
+
+The easiest way to tap into the log stream of all Tracee Pods is with the `kubectl logs` command:
 
 ```console
-kubectl logs -f daemonset/tracee -n tracee-system
+kubectl logs -f daemonset/tracee -n tracee
 ```
 
-In production scenario you would want to collect and ship the events to a persistent storage.
+!!! Note
+    Tracee can produce a very high volume of events which could overwhelm kubectl's log collection command. If run in a busy cluster or with a verbose policy, this command might be slow or unresponsive.
 
-## Exercising a security event
+In production scenario you would probably want to collect and ship events logs into a persistent storage that you can query.   
+You can use any log collection solution of your choosing. We have a tutorial on how to do this using the open source Graphana Stack [here](../../tutorials/deploy-grafana-dashboard.md).
+
+## Applying Policies
+
+By default, Tracee collects a basic set of events that gives you a general overview of the cluster. If you're looking to do more with Tracee, You might want to create a new [Policy](../policies/index.md). A policy lets you capture specific set of events from a specific set of workloads. For example, if you have an application that you want to monitor more closely, or in a specialized way, you can create a policy scoped to that application, with a different set of events and filters applied. To learn more, please refer to the [Events](../events/index.md) and [Policies](../policies/index.md) sections.
+
+When you are ready to apply a policy, it's as easy as `kubectl apply -f your-policy.yaml`. More details [here](../policies/usage/kubernetes.md).
+
+## Configuring Tracee
+
+In some cases you will need to configure Tracee to your preferences. For example, to change the output event format, or to set a different log level. To learn more about available configuration options please see the [configuration](../install/config/index.md) section.
+
+Tracee's configuration is accessible as a ConfigMap in Kubernetes. Since we installed Tracee with Helm, you can also configure Tracee with it, for example: `helm upgrade tracee --set config.cache.size=1024`. More details [here](../install/config/kubernetes.md).
+
+## Optional: Exercising a security event
 
 To see Tracee in action, let's simulate a security event. We'll do a "file-less" execution, which is a common evasion technique used by some malware, and is flagged by Tracee as suspicious activity. To simulate this, we'll use the [tracee-tester](https://registry.hub.docker.com/r/aquasec/tracee-tester) example image it will simulate the suspicious activity without harming your environment.
 
@@ -68,126 +88,8 @@ kubectl run tracee-tester --image=aquasec/tracee-tester -- TRC-105
 You can see the event in the logs:
 
 ```console
-kubectl -n tracee-system logs -f ds/tracee | grep fileless_execution 
+kubectl logs -f ds/tracee -n tracee | grep fileless_execution 
 ```
-
-<details>
-  <summary>Result</summary>
-```json
-{
-  "timestamp": 1671119128028881186,
-  "threadStartTime": 883410317491,
-  "processorId": 1,
-  "processId": 9,
-  "cgroupId": 8972,
-  "threadId": 9,
-  "parentProcessId": 8,
-  "hostProcessId": 6136,
-  "hostThreadId": 6136,
-  "hostParentProcessId": 6135,
-  "userId": 0,
-  "mountNamespace": 4026532816,
-  "pidNamespace": 4026532817,
-  "processName": "3",
-  "hostName": "tracee-tester",
-  "containerId": "c7e3c75bf167348bf79262bf6e688088f9b4d54ebcc79464f40b52b80c73ff55",
-  "containerImage": "docker.io/aquasec/tracee:latest",
-  "containerName": "tracee",
-  "podName": "tracee-wk8wh",
-  "podNamespace": "tracee-system",
-  "podUID": "5cb83966-e274-48f1-89fb-25bd748d2773",
-  "eventId": "6023",
-  "eventName": "fileless_execution",
-  "argsNum": 15,
-  "returnValue": 0,
-  "stackAddresses": null,
-  "syscall": "execve",
-  "contextFlags": {
-    "containerStarted": true,
-    "isCompat": false
-  },
-  "args": [
-    {
-      "name": "cmdpath",
-      "type": "const char*",
-      "value": "/dev/fd/3"
-    },
-    {
-      "name": "pathname",
-      "type": "const char*",
-      "value": "memfd: "
-    },
-    {
-      "name": "dev",
-      "type": "dev_t",
-      "value": 1
-    },
-    {
-      "name": "inode",
-      "type": "unsigned long",
-      "value": 1033
-    },
-    {
-      "name": "ctime",
-      "type": "unsigned long",
-      "value": 1671119128024105994
-    },
-    {
-      "name": "inode_mode",
-      "type": "umode_t",
-      "value": 33279
-    },
-    {
-      "name": "interpreter_pathname",
-      "type": "const char*",
-      "value": "/lib/x86_64-linux-gnu/ld-2.28.so"
-    },
-    {
-      "name": "interpreter_dev",
-      "type": "dev_t",
-      "value": 234
-    },
-    {
-      "name": "interpreter_inode",
-      "type": "unsigned long",
-      "value": 1704546
-    },
-    {
-      "name": "interpreter_ctime",
-      "type": "unsigned long",
-      "value": 1671118551446622730
-    },
-    {
-      "name": "argv",
-      "type": "const char**",
-      "value": [
-        ""
-      ]
-    },
-    {
-      "name": "interp",
-      "type": "const char*",
-      "value": "/dev/fd/3"
-    },
-    {
-      "name": "stdin_type",
-      "type": "string",
-      "value": "S_IFCHR"
-    },
-    {
-      "name": "stdin_path",
-      "type": "char*",
-      "value": "/dev/null"
-    },
-    {
-      "name": "invoked_from_kernel",
-      "type": "int",
-      "value": 0
-    }
-  ]
-}
-```
-</details>
 
 ## Next steps
 
@@ -202,6 +104,6 @@ For help and support, feel free to use [GitHub Discussions](https://github.com/a
 
 If you prefer a video version of the Kubernetes installation guide, have a look at the following video:
 
- Getting started with eBPF in Kubernetes - Tracee Installation Guide 
+Getting started with eBPF in Kubernetes - Tracee Installation Guide 
 
-  [![Watch the video](../../images/ebpftraceehelminstall.png)](https://youtu.be/YQdEvf2IS9k?si=LhQM0CI8_QKvOCeK)
+[![Watch the video](../../images/ebpftraceehelminstall.png)](https://youtu.be/YQdEvf2IS9k?si=LhQM0CI8_QKvOCeK)
