@@ -9,8 +9,6 @@ This section showcases how to configure diagnostics log. The information provide
 ```console
 log:
     level: debug
-    aggregate:
-        enabled: true
 ```
 
 Note that the other log level are `info`, `warn`, `error` and `panic`.
