@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/deep-dive/caching-events/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/advanced/ksyms/">
       
       
-        <link rel="prev" href="../../data-sources/process-tree/">
+        <link rel="prev" href="../dropping-capabilities/">
       
       
-        <link rel="next" href="../ordering-events/">
+        <link rel="next" href="../secure-tracing/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Caching Events - Tracee</title>
+        <title>Kernel Symbols - Tracee</title>
       
     
     
@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#special-caching-events" class="md-skip">
+        <a href="#about-kernel-symbols" class="md-skip">
           Skip to content
         </a>
       
@@ -107,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Caching Events
+              Kernel Symbols
             
           </span>
         </div>
@@ -916,6 +916,32 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../install/config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -15476,224 +15502,6 @@
                 
   
   
-  
-    
-    
-    
-    
-    
-      
-      
-    
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6" >
-        
-          
-          <label class="md-nav__link" for="__nav_3_6" id="__nav_3_6_label" tabindex="">
-            
-  
-  <span class="md-ellipsis">
-    
-  
-    Forensics
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_6">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Forensics
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../forensics/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    Overview
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    
-    
-    
-    
-    
-      
-      
-    
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_7" >
-        
-          
-          <label class="md-nav__link" for="__nav_3_7" id="__nav_3_7_label" tabindex="">
-            
-  
-  <span class="md-ellipsis">
-    
-  
-    Data Sources
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_7">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Data Sources
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../data-sources/overview/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    Overview
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../data-sources/containers/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    Containers
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../data-sources/process-tree/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    Process Tree
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -15710,16 +15518,16 @@
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_8" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6" checked>
         
           
-          <label class="md-nav__link" for="__nav_3_8" id="__nav_3_8_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3_6" id="__nav_3_6_label" tabindex="">
             
   
   <span class="md-ellipsis">
     
   
-    Deep Dive
+    Advanced
   
 
     
@@ -15730,12 +15538,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_8_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_3_8">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_6">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Deep Dive
+    Advanced
   
 
           </label>
@@ -15745,35 +15553,9 @@
                 
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    
-  
-    Caching Events
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../caching-events/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -15788,37 +15570,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#use-caching" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use caching
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -15880,9 +15631,18 @@
                 
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../ksyms/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -15897,6 +15657,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -15954,6 +15715,164 @@
 
               
             
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../forensics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Forensics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_6_8" id="__nav_3_6_8_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Sources
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_6_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_6_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Data Sources
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-sources/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-sources/containers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Containers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-sources/process-tree/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Process Tree
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -15980,10 +15899,10 @@
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_9" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_7" >
         
           
-          <label class="md-nav__link" for="__nav_3_9" id="__nav_3_9_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3_7" id="__nav_3_7_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -16000,8 +15919,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_9_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_9">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -16601,25 +16520,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#use-caching" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use caching
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -16634,54 +16534,24 @@
                   
 
 
-<h1 id="special-caching-events">Special: Caching Events<a class="headerlink" href="#special-caching-events" title="Permanent link">&para;</a></h1>
-<p>Tracee has an events caching (in-memory) mechanism. In order to check latest
-caching options you may execute:</p>
-<!-- TODO: build man page -->
-<!-- ```console
-man tracee-cache
-``` -->
-
-<!-- TODO: reference the architecture page again-->
-
-<p><img alt="Tracee Cache" src="../../../images/tracee-cache.png" /></p>
-<p>The caching happens in userland, it is an in-memory caching, and it helps with
-workload bursts: if kernel produces more events than userland is capable of
-processing then the events are kept in a sizeable cache (defined by user) so
-they're not lost (if cache isn't full).</p>
-<p>The effects of this are the following:</p>
-<ol>
-<li>
-<p>Detections <strong>might be delayed</strong> because of workload bursts, but not lost (if
-   cache isn't full).</p>
-</li>
-<li>
-<p>Event losses from the kernel perf/ring buffer will only happen when
-   <strong>cache is full</strong>.</p>
-</li>
-<li>
-<p>Any difference in ratio production:consumption can be mitigated temporarily.</p>
-</li>
-</ol>
-<h2 id="use-caching">Use caching<a class="headerlink" href="#use-caching" title="Permanent link">&para;</a></h2>
-<p>Example using <strong>1GB cache</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee \</span>
-<span class="go">    --cache cache-type=mem \</span>
-<span class="go">    --cache mem-cache-size=1024 \</span>
-<span class="go">    -o format:json \</span>
-<span class="go">    -o option:parse-arguments \</span>
-<span class="go">    -trace container \</span>
-<span class="go">    --cri docker:/var/run/docker.sock</span>
-</code></pre></div>
-<div class="admonition attention">
-<p class="admonition-title">Attention</p>
-<p>If you pipe <strong>tracee</strong> output to another tool, like <code>jq</code>:
-<div class="highlight"><pre><span></span><code><span class="go">| jq -c &#39;. | {cgroupid, processname, containername}&#39;</span>
-</code></pre></div>
-You may cause latencies in <strong>tracee</strong> pipeline because the event json
-processing from <code>jq</code> might not be as fast as how <strong>tracee</strong> is capable of
-writing events to it.</p>
-</div>
+<h1 id="about-kernel-symbols">About Kernel symbols<a class="headerlink" href="#about-kernel-symbols" title="Permanent link">&para;</a></h1>
+<p>As explained in the <a href="../../install/prerequisites/">prerequisites</a> doc, Tracee 
+needs the kernel symbol table for some operations.</p>
+<p>A Linux kernel might lack the <code>/proc/kallsyms</code> file due to:</p>
+<p><strong>Kernel Configuration</strong>: If compiled without <code>CONFIG_KALLSYMS</code>, the kernel
+won't have this file. This option enables the kernel symbol table, used mainly
+for debugging.</p>
+<p><strong>Security Protocols</strong>: Some systems might hide kernel symbols to prevent
+potential exploits. The <code>/proc/kallsyms</code> file could appear incomplete or even
+empty to non-root users. The <code>CONFIG_KALLSYMS_ALL</code> option ensures all symbols
+are visible.</p>
+<p>The Linux kernel also offers a setting, <code>/proc/sys/kernel/kptr_restrict</code>, to
+control kernel symbol visibility:</p>
+<ul>
+<li><strong>0</strong>: No restrictions.</li>
+<li><strong>1</strong>: Hide from non-privileged users.</li>
+<li><strong>2</strong>: Hide from all users.</li>
+</ul>
 
 
 

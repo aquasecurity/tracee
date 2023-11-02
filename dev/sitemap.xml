@@ -46,52 +46,57 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/data-sources/containers/</loc>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/caching-events/</loc>
          <lastmod>2023-11-02</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/data-sources/overview/</loc>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/dropping-capabilities/</loc>
          <lastmod>2023-11-02</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/data-sources/process-tree/</loc>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/forensics/</loc>
          <lastmod>2023-11-02</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/deep-dive/caching-events/</loc>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/ksyms/</loc>
          <lastmod>2023-11-02</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/deep-dive/dropping-capabilities/</loc>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/mac/</loc>
          <lastmod>2023-11-02</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/deep-dive/ksyms/</loc>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/ordering-events/</loc>
          <lastmod>2023-11-02</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/deep-dive/mac/</loc>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/os-info/</loc>
          <lastmod>2023-11-02</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/deep-dive/ordering-events/</loc>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/secure-tracing/</loc>
          <lastmod>2023-11-02</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/deep-dive/os-info/</loc>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/data-sources/containers/</loc>
          <lastmod>2023-11-02</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/deep-dive/secure-tracing/</loc>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/data-sources/overview/</loc>
+         <lastmod>2023-11-02</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/advanced/data-sources/process-tree/</loc>
          <lastmod>2023-11-02</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -2771,11 +2776,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/forensics/</loc>
-         <lastmod>2023-11-02</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/install/</loc>
          <lastmod>2023-11-02</lastmod>
          <changefreq>daily</changefreq>
@@ -2807,6 +2807,11 @@
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/install/prometheus/</loc>
+         <lastmod>2023-11-02</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/docs/install/config/</loc>
          <lastmod>2023-11-02</lastmod>
          <changefreq>daily</changefreq>
     </url>
