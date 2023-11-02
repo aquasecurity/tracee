@@ -4,9 +4,9 @@ Tracee supports different output options for customizing the way events are prin
 
 Available options:
 
-1. **option:stack-addresses**  
+1. **stack-addresses**  
 
-    Makes it possible to pick stack memory address from each event.
+    Makes it possible to pick stack memory addresses from each event.
 
     ```
     output:
@@ -14,7 +14,7 @@ Available options:
             stack-addresses: true
     ```
 
-2. **option:parse-arguments**
+2. **parse-arguments**
 
     In order to have a better experience with the output provided by
     **tracee**, you may opt to parse event arguments to a **human
@@ -26,7 +26,7 @@ Available options:
             parse-arguments: true
     ```
 
-3. **option:exec-env**
+3. **exec-env**
 
     Sometimes it is also important to know the execution environment variables
     whenever an event is detected, specially when detecting **execve** event.
@@ -38,7 +38,7 @@ Available options:
 
     ```
 
-4. **option:exec-hash**
+4. **exec-hash**
 
     This is a special output option for **sched_process_exec** so user can get
     the **file hash** and **process ctime** (particularly interesting if you
@@ -50,7 +50,7 @@ Available options:
         options:
             exec-hash: true
     ```
-5. **option:relative-time**
+5. **relative-time**
 
     The `relative-time` output option enables relative timestamp instead of wall timestamp for events.
 
@@ -60,7 +60,7 @@ Available options:
             relative-time: true
     ```
 
-6. **option:sort-events**
+6. **sort-events**
 
     This makes it possible to sort the events as they happened. Especially in systems where Tracee tracks lots of events, it can happen that they are received unordered. More information is provided in the [deep-dive](../deep-dive/ordering-events.md) section of the documentation.
 

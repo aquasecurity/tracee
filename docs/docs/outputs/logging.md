@@ -86,4 +86,15 @@ log:
         libbpf: true
 ```
 
-All `--log filter` options can also be used with `--log filter-out` for the opposite behavior. For more information, please refer to the `--log` help in the CLI.
+## Additional Configuration
+
+All `filters` options can also be used with `filter-out` to achieve the opposite behavior. 
+
+For instance, the following configuration would exclude all logs with the severity level `error`:
+
+```console
+log:
+    filter-out: 
+        level: 
+            - error
+```
