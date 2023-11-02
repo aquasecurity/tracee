@@ -21,7 +21,7 @@ log:
     file: "/tmp/tracee.log"
 ```
 
-**Logs can be aggregated for a given interval to delay its output:**
+**Logs can be aggregated for a given interval (default: 3s) to delay its output:**
 
 ```console
 log:
