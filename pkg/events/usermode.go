@@ -16,6 +16,7 @@
 package events
 
 import (
+	"github.com/aquasecurity/tracee/pkg/utils"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -38,12 +39,13 @@ func InitNamespacesEvent() trace.Event {
 	initNamespacesArgs := getInitNamespaceArguments()
 
 	initNamespacesEvent := trace.Event{
-		Timestamp:   int(time.Now().UnixNano()),
-		ProcessName: "tracee-ebpf",
-		EventID:     int(InitNamespaces),
-		EventName:   initNamespacesDef.GetName(),
-		ArgsNum:     len(initNamespacesArgs),
-		Args:        initNamespacesArgs,
+		Timestamp:       int(time.Now().UnixNano()),
+		ThreadStartTime: int(utils.GetBootTimeNS()),
+		ProcessName:     "tracee-ebpf",
+		EventID:         int(InitNamespaces),
+		EventName:       initNamespacesDef.GetName(),
+		ArgsNum:         len(initNamespacesArgs),
+		Args:            initNamespacesArgs,
 	}
 
 	return initNamespacesEvent

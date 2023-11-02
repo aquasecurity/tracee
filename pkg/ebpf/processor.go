@@ -112,10 +112,14 @@ func (t *Tracee) registerEventProcessors() {
 	t.RegisterEventProcessor(events.PrintMemDump, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processPrintMemDump)
 
-	// Convert all time relate args to nanoseconds since epoch.
-	// NOTE: Make sure to convert time related args (of your event) in here.
-	t.RegisterEventProcessor(events.SchedProcessFork, t.processSchedProcessFork)
-	t.RegisterEventProcessor(events.All, t.normalizeEventCtxTimes)
+	if t.config.Analyze {
+		t.RegisterEventProcessor(events.InitNamespaces, t.processInitNamespacesEvent)
+	} else {
+		// Convert all time relate args to nanoseconds since epoch.
+		// NOTE: Make sure to convert time related args (of your event) in here.
+		t.RegisterEventProcessor(events.SchedProcessFork, t.processSchedProcessFork)
+		t.RegisterEventProcessor(events.All, t.normalizeEventCtxTimes)
+	}
 }
 
 func initKernelReadFileTypes() {

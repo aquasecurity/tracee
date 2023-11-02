@@ -66,6 +66,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 
 				// if the event is marked as submit, we pass it to the engine
 				if t.eventsState[id].Submit > 0 {
+
 					err := t.parseArguments(event)
 					if err != nil {
 						t.handleError(err)

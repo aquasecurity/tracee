@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"github.com/aquasecurity/tracee/pkg/producer"
 	"io"
 	"os"
 	"strconv"
@@ -122,6 +123,8 @@ type Tracee struct {
 	streamsManager *streams.StreamsManager
 	// policyManager manages policy state
 	policyManager *policyManager
+	// producer produce events in analyze mode instead of eBPF programs
+	producer producer.EventsProducer
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -277,20 +280,22 @@ func New(cfg config.Config) (*Tracee, error) {
 		t.handleEventsDependencies(id, state)
 	}
 
-	// Update capabilities rings with all events dependencies
+	if !t.config.Analyze {
+		// Update capabilities rings with all events dependencies
 
-	for id := range t.eventsState {
-		if !events.Core.IsDefined(id) {
-			return t, errfmt.Errorf("event %d is not defined", id)
-		}
-		evtCaps := events.Core.GetDefinitionByID(id).GetDependencies().GetCapabilities()
-		err = caps.BaseRingAdd(evtCaps.GetBase()...)
-		if err != nil {
-			return t, errfmt.WrapError(err)
-		}
-		err = caps.BaseRingAdd(evtCaps.GetEBPF()...)
-		if err != nil {
-			return t, errfmt.WrapError(err)
+		for id := range t.eventsState {
+			if !events.Core.IsDefined(id) {
+				return t, errfmt.Errorf("event %d is not defined", id)
+			}
+			evtCaps := events.Core.GetDefinitionByID(id).GetDependencies().GetCapabilities()
+			err = caps.BaseRingAdd(evtCaps.GetBase()...)
+			if err != nil {
+				return t, errfmt.WrapError(err)
+			}
+			err = caps.BaseRingAdd(evtCaps.GetEBPF()...)
+			if err != nil {
+				return t, errfmt.WrapError(err)
+			}
 		}
 	}
 
@@ -321,6 +326,29 @@ func New(cfg config.Config) (*Tracee, error) {
 	// Start event triggering logic context
 
 	t.triggerContexts = trigger.NewContext()
+
+	if t.config.MaxPidsCache == 0 {
+		t.config.MaxPidsCache = 5 // TODO: configure this ? never set, default = 5
+	}
+
+	t.pidsInMntns.Init(t.config.MaxPidsCache)
+
+	// Initialize events pool
+
+	t.eventsPool = &sync.Pool{
+		New: func() interface{} {
+			return &trace.Event{}
+		},
+	}
+
+	// Initialize events sorting (pipeline step)
+
+	if t.config.Output.EventsSorting {
+		t.eventsSorter, err = sorting.InitEventSorter()
+		if err != nil {
+			return t, errfmt.WrapError(err)
+		}
+	}
 
 	return t, nil
 }
@@ -356,12 +384,6 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// Initialize buckets cache
 
 	var mntNSProcs map[int]int
-
-	if t.config.MaxPidsCache == 0 {
-		t.config.MaxPidsCache = 5 // TODO: configure this ? never set, default = 5
-	}
-
-	t.pidsInMntns.Init(t.config.MaxPidsCache)
 
 	err = capabilities.GetInstance().Specific(
 		func() error {
@@ -480,23 +502,6 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.Errorf("error getting access to 'fd_arg_path_map' eBPF Map %v", err)
 	}
 	t.FDArgPathMap = fdArgPathMap
-
-	// Initialize events sorting (pipeline step)
-
-	if t.config.Output.EventsSorting {
-		t.eventsSorter, err = sorting.InitEventSorter()
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	// Initialize events pool
-
-	t.eventsPool = &sync.Pool{
-		New: func() interface{} {
-			return &trace.Event{}
-		},
-	}
 
 	// Initialize times
 
@@ -1351,6 +1356,10 @@ const pollTimeout int = 300
 
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
+	if t.config.Analyze {
+		return t.runAnalyze(ctx)
+	}
+
 	// Some events need initialization before the perf buffers are polled
 
 	err := t.triggerSyscallsIntegrityCheck(trace.Event{})
@@ -1429,6 +1438,19 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 			return err
 		}
 	}
+
+	t.Close() // close Tracee
+
+	return nil
+}
+
+// runAnalyze is the version of the Run method for the Analyze mode
+func (t *Tracee) runAnalyze(ctx gocontext.Context) error {
+	go t.handleEvents(ctx)
+
+	t.running.Store(true) // set running state after writing pid file
+	t.ready(ctx)          // executes ready callback, non blocking
+	<-ctx.Done()          // block until ctx is cancelled elsewhere
 
 	t.Close() // close Tracee
 
@@ -1871,6 +1893,10 @@ func (t *Tracee) subscribe(policyMask uint64) *streams.Stream {
 // Unsubscribe unsubscribes stream
 func (t *Tracee) Unsubscribe(s *streams.Stream) {
 	t.streamsManager.Unsubscribe(s)
+}
+
+func (t *Tracee) SetProducer(eventsProducer producer.EventsProducer) {
+	t.producer = eventsProducer
 }
 
 func (t *Tracee) EnableEvent(eventName string) error {
