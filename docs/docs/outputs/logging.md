@@ -1,4 +1,4 @@
-# Defining Tracee Logs
+# Tracee Logs
 
 This section showcases how to configure diagnostics log. The information provided can then be used to troubleshoot Tracee. This is done through the Tracee configuration file. For more information, have a look at the respective section in the [installation guide.](../install/index.md)
 
@@ -29,8 +29,9 @@ log:
     aggregate:
         enabled: true
         flush-interval: "10s"
-        
 ```
+
+The flush-interval defines how often the Tracee logs will be forwarded.
 
 **Filter logs which message contains specified words:**
 
