@@ -75,7 +75,7 @@ When you are ready to apply a policy, it's as easy as `kubectl apply -f your-pol
 
 In some cases you will need to configure Tracee to your preferences. For example, to change the output event format, or to set a different log level. To learn more about available configuration options please see the [configuration](../install/config/index.md) section.
 
-When you are ready to make a configuration change, it's as easy as `kubectl edit cm -n tracee tracee`. More details [here](../install/config/kubernetes.md).
+Tracee's configuration is accessible as a ConfigMap in Kubernetes. Since we installed Tracee with Helm, you can also configure Tracee with it, for example: `helm upgrade tracee --set config.cache.size=1024`. More details [here](../install/config/kubernetes.md).
 
 ## Optional: Exercising a security event
 
