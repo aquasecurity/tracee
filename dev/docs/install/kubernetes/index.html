@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#getting-started-with-tracee-in-kubernetes" class="md-skip">
+        <a href="#installing-tracee-in-kubernetes" class="md-skip">
           Skip to content
         </a>
       
@@ -829,10 +829,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#interacting-with-tracee" class="md-nav__link">
+  <a href="#viewing-events" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Interacting with Tracee
+        Viewing Events
       
     </span>
   </a>
@@ -840,10 +840,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#exercising-a-security-event" class="md-nav__link">
+  <a href="#applying-policies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Exercising a security event
+        Applying Policies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuring-tracee" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring Tracee
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#optional-exercising-a-security-event" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional: Exercising a security event
       
     </span>
   </a>
@@ -16659,10 +16681,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#interacting-with-tracee" class="md-nav__link">
+  <a href="#viewing-events" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Interacting with Tracee
+        Viewing Events
       
     </span>
   </a>
@@ -16670,10 +16692,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#exercising-a-security-event" class="md-nav__link">
+  <a href="#applying-policies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Exercising a security event
+        Applying Policies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuring-tracee" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring Tracee
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#optional-exercising-a-security-event" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional: Exercising a security event
       
     </span>
   </a>
@@ -16718,16 +16762,17 @@
                   
 
 
-<h1 id="getting-started-with-tracee-in-kubernetes">Getting started with tracee in Kubernetes<a class="headerlink" href="#getting-started-with-tracee-in-kubernetes" title="Permanent link">&para;</a></h1>
-<p>This guide was tested using <a href="https://github.com/kubernetes/minikube">minikube</a>, an easy way to run Kubernetes on your development machine, but should work the same with most other Kubernetes clusters.</p>
+<h1 id="installing-tracee-in-kubernetes">Installing Tracee in Kubernetes<a class="headerlink" href="#installing-tracee-in-kubernetes" title="Permanent link">&para;</a></h1>
+<p>This guide will help you get started with Tracee by installing it in a Kubernetes cluster.  </p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
 <ul>
-<li>minikube - see installation instructions <a href="https://minikube.sigs.k8s.io/docs/start/">here</a>. Note that Tracee doesn't support ARM/Apple silicon yet.</li>
-<li>Helm - see installation instructions and dependencies <a href="https://helm.sh/docs/intro/install/">here</a>.</li>
+<li>Supported environment - please refer to the <a href="../prerequisites/">Prerequisites</a></li>
+<li>Kubernetes - this was tested on <a href="https://github.com/kubernetes/minikube">minikube</a>, but should work the same with most other Kubernetes distributions</li>
+<li><a href="https://helm.sh/docs/intro/install/">Helm</a></li>
 </ul>
 <details>
   <summary>Verify step</summary>
-<div class="highlight"><pre><span></span><code><span class="go">minikube start &amp;&amp; kubectl get po -A</span>
+<div class="highlight"><pre><span></span><code><span class="go">kubectl get po -A</span>
 </code></pre></div>
 
 <div class="highlight"><pre><span></span><code>NAMESPACE     NAME                               READY   STATUS    RESTARTS   AGE 
@@ -16745,11 +16790,11 @@ kube-system   storage-provisioner                1/1     Running   0          15
 <p>The provided Helm chart will install Tracee as a DaemonSet so that it's tracing all the nodes in the cluster.</p>
 <div class="highlight"><pre><span></span><code><span class="go">helm repo add aqua https://aquasecurity.github.io/helm-charts/</span>
 <span class="go">helm repo update</span>
-<span class="go">helm install tracee aqua/tracee --namespace tracee-system --create-namespace</span>
+<span class="go">helm install tracee aqua/tracee --namespace tracee --create-namespace</span>
 </code></pre></div>
 <details>
   <summary>Verify step</summary>
-<div class="highlight"><pre><span></span><code><span class="go">kubectl get pods</span>
+<div class="highlight"><pre><span></span><code><span class="go">kubectl get pods -n tracee</span>
 </code></pre></div>
 
 <div class="highlight"><pre><span></span><code>NAME           READY   STATUS    RESTARTS   AGE 
@@ -16757,135 +16802,30 @@ tracee-fcjmp   1/1     Running   0          4m11s
 </code></pre></div>
 </details>
 
-<h2 id="interacting-with-tracee">Interacting with Tracee<a class="headerlink" href="#interacting-with-tracee" title="Permanent link">&para;</a></h2>
-<p>Once installed, Tracee immediately starts producing system activity events, such as processes and containers activity, network activity, and more. To see the events that Tracee produces, use can use the <code>kubectl logs</code> command.</p>
-<div class="highlight"><pre><span></span><code><span class="go">kubectl logs -f daemonset/tracee -n tracee-system</span>
+<p>Once installed, Tracee immediately starts producing events. Since Tracee is deployed as a DaemonSet, a Tracee Pod is running on every node in the cluster. Every Tracee Pod is monitoring the node it is running on.</p>
+<h2 id="viewing-events">Viewing Events<a class="headerlink" href="#viewing-events" title="Permanent link">&para;</a></h2>
+<p>The easiest way to tap into the log stream of all Tracee Pods is with the <code>kubectl logs</code> command:</p>
+<div class="highlight"><pre><span></span><code><span class="go">kubectl logs -f daemonset/tracee -n tracee</span>
 </code></pre></div>
-<p>In production scenario you would want to collect and ship the events to a persistent storage.</p>
-<h2 id="exercising-a-security-event">Exercising a security event<a class="headerlink" href="#exercising-a-security-event" title="Permanent link">&para;</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Tracee can produce a very high volume of events which could overwhelm kubectl's log collection command. If run in a busy cluster or with a verbose policy, this command might be slow or unresponsive.</p>
+</div>
+<p>In production scenario you would probably want to collect and ship events logs into a persistent storage that you can query. <br />
+You can use any log collection solution of your choosing. We have a tutorial on how to do this using the open source Graphana Stack <a href="../../../tutorials/deploy-grafana-dashboard/">here</a>.</p>
+<h2 id="applying-policies">Applying Policies<a class="headerlink" href="#applying-policies" title="Permanent link">&para;</a></h2>
+<p>By default, Tracee collects a basic set of events that gives you a general overview of the cluster. If you're looking to do more with Tracee, You might want to create a new <a href="../../policies/">Policy</a>. A policy lets you capture specific set of events from a specific set of workloads. For example, if you have an application that you want to monitor more closely, or in a specialized way, you can create a policy scoped to that application, with a different set of events and filters applied. To learn more, please refer to the <a href="../../events/">Events</a> and <a href="../../policies/">Policies</a> sections.</p>
+<p>When you are ready to apply a policy, it's as easy as <code>kubectl apply -f your-policy.yaml</code>. More details <a href="../../policies/usage/kubernetes/">here</a>.</p>
+<h2 id="configuring-tracee">Configuring Tracee<a class="headerlink" href="#configuring-tracee" title="Permanent link">&para;</a></h2>
+<p>In some cases you will need to configure Tracee to your preferences. For example, to change the output event format, or to set a different log level. To learn more about available configuration options please see the <a href="../install/config/index.md">configuration</a> section.</p>
+<p>Tracee's configuration is accessible as a ConfigMap in Kubernetes. Since we installed Tracee with Helm, you can also configure Tracee with it, for example: <code>helm upgrade tracee --set config.cache.size=1024</code>. More details <a href="../config/kubernetes/">here</a>.</p>
+<h2 id="optional-exercising-a-security-event">Optional: Exercising a security event<a class="headerlink" href="#optional-exercising-a-security-event" title="Permanent link">&para;</a></h2>
 <p>To see Tracee in action, let's simulate a security event. We'll do a "file-less" execution, which is a common evasion technique used by some malware, and is flagged by Tracee as suspicious activity. To simulate this, we'll use the <a href="https://registry.hub.docker.com/r/aquasec/tracee-tester">tracee-tester</a> example image it will simulate the suspicious activity without harming your environment.</p>
 <div class="highlight"><pre><span></span><code><span class="go">kubectl run tracee-tester --image=aquasec/tracee-tester -- TRC-105</span>
 </code></pre></div>
 <p>You can see the event in the logs:</p>
-<div class="highlight"><pre><span></span><code><span class="go">kubectl -n tracee-system logs -f ds/tracee | grep fileless_execution </span>
+<div class="highlight"><pre><span></span><code><span class="go">kubectl logs -f ds/tracee -n tracee | grep fileless_execution </span>
 </code></pre></div>
-<details>
-  <summary>Result</summary>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1671119128028881186</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;threadStartTime&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">883410317491</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;processorId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;processId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">9</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;cgroupId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8972</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;threadId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">9</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;parentProcessId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;hostProcessId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">6136</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;hostThreadId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">6136</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;hostParentProcessId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">6135</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;userId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;mountNamespace&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4026532816</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;pidNamespace&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4026532817</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;processName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;3&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;hostName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tracee-tester&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;containerId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c7e3c75bf167348bf79262bf6e688088f9b4d54ebcc79464f40b52b80c73ff55&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;containerImage&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;docker.io/aquasec/tracee:latest&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;containerName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tracee&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;podName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tracee-wk8wh&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;podNamespace&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tracee-system&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;podUID&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;5cb83966-e274-48f1-89fb-25bd748d2773&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;eventId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;6023&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;eventName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fileless_execution&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;argsNum&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">15</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;returnValue&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;stackAddresses&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;syscall&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;execve&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;contextFlags&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;containerStarted&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;isCompat&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
-<span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cmdpath&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;const char*&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/dev/fd/3&quot;</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;pathname&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;const char*&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;memfd: &quot;</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;dev&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;dev_t&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;inode&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;unsigned long&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1033</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ctime&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;unsigned long&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1671119128024105994</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;inode_mode&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;umode_t&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">33279</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;interpreter_pathname&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;const char*&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/lib/x86_64-linux-gnu/ld-2.28.so&quot;</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;interpreter_dev&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;dev_t&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">234</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;interpreter_inode&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;unsigned long&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1704546</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;interpreter_ctime&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;unsigned long&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1671118551446622730</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;argv&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;const char**&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="s2">&quot;&quot;</span>
-<span class="w">      </span><span class="p">]</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;interp&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;const char*&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/dev/fd/3&quot;</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;stdin_type&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;S_IFCHR&quot;</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;stdin_path&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;char*&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/dev/null&quot;</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;invoked_from_kernel&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;int&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="w">  </span><span class="p">]</span>
-<span class="p">}</span>
-</code></pre></div>
-</details>
-
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <p>Familiarize with the different events, filters, and configuration options in the <a href="../../overview/">documentation</a>.</p>
 <p>Read other <a href="../../../tutorials/overview/">tutorials</a>.</p>
