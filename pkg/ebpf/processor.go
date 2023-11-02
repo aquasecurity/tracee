@@ -79,26 +79,28 @@ func (t *Tracee) RegisterEventProcessor(id events.ID, proc func(evt *trace.Event
 
 // registerEventProcessors registers all event processors, each to a specific event id.
 func (t *Tracee) registerEventProcessors() {
-	// Process events for the process tree before the regular event processing.
-	// NOTE: Use the switch case below to register your processor.
+	//
+	// Process Tree Processors
+	//
+
+	// Processors registered when proctree source "events" is enabled.
 	switch t.config.ProcTree.Source {
-	case proctree.SourceNone: // break (proctree is disabled)
-	case proctree.SourceSignals: // break (processors registered in control plane)
-	case proctree.SourceBoth:
-		fallthrough
-	case proctree.SourceEvents: // Register processors for when proctree source is "events"
+	case proctree.SourceEvents, proctree.SourceBoth:
 		t.RegisterEventProcessor(events.SchedProcessFork, t.procTreeForkProcessor)
 		t.RegisterEventProcessor(events.SchedProcessExec, t.procTreeExecProcessor)
 		t.RegisterEventProcessor(events.SchedProcessExit, t.procTreeExitProcessor)
-		fallthrough
-	default: // Register processors for whenever proc tree is enabled
+	}
+	// Processors enriching process tree with regular pipeline events.
+	if t.config.ProcTree.Source != proctree.SourceNone {
 		t.RegisterEventProcessor(events.All, t.procTreeAddBinInfo)
 	}
-	// Processors related to proctree that runs even when proctree is disabled
+	// Processors regitered even if process tree source is disabled.
 	t.RegisterEventProcessor(events.SchedProcessFork, t.procTreeForkRemoveArgs)
 
-	// Process events from the regular pipeline.
-	// NOTE: Your processor goes very likely here.
+	//
+	// Regular Pipeline Processors
+	//
+
 	t.RegisterEventProcessor(events.VfsWrite, t.processWriteEvent)
 	t.RegisterEventProcessor(events.VfsWritev, t.processWriteEvent)
 	t.RegisterEventProcessor(events.KernelWrite, t.processWriteEvent)
@@ -110,6 +112,10 @@ func (t *Tracee) registerEventProcessors() {
 	t.RegisterEventProcessor(events.PrintNetSeqOps, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processPrintMemDump)
+
+	//
+	// Event Timestamps Normalization Processors
+	//
 
 	// Convert all time relate args to nanoseconds since epoch.
 	// NOTE: Make sure to convert time related args (of your event) in here.
