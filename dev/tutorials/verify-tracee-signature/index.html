@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/tutorials/verify-tracee-signature/">
       
       
-        <link rel="prev" href="../k8s-policies/">
+        <link rel="prev" href="../overview/">
       
       
         <link rel="next" href="../deploy-grafana-dashboard/">
@@ -27,7 +27,7 @@
     
     
       
-        <title>Cosign - verify tracee signature - Tracee</title>
+        <title>Cosign - verify Tracee signature - Tracee</title>
       
     
     
@@ -107,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Cosign - verify tracee signature
+              Cosign - verify Tracee signature
             
           </span>
         </div>
@@ -406,32 +406,6 @@
                 
   
   
-  
-    <li class="md-nav__item">
-      <a href="../k8s-policies/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    Working with Tracee's Policies on Kubernetes
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -449,7 +423,7 @@
   <span class="md-ellipsis">
     
   
-    Cosign - verify tracee signature
+    Cosign - verify Tracee signature
   
 
     
@@ -466,7 +440,7 @@
   <span class="md-ellipsis">
     
   
-    Cosign - verify tracee signature
+    Cosign - verify Tracee signature
   
 
     
@@ -534,7 +508,59 @@
   <span class="md-ellipsis">
     
   
-    Deploy Tracee Grafana Dashboard
+    Access Tracee Metrics in Grafana and Prometheus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tracee-vagrant/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Using Tracee Container Image with Vagrant on Mac
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../k8s-policies/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Working with Tracee's Policies on Kubernetes
   
 
     
@@ -16630,14 +16656,17 @@
 
 <h1 id="cosign-verify-tracee-signature">Cosign: verify tracee signature<a class="headerlink" href="#cosign-verify-tracee-signature" title="Permanent link">&para;</a></h1>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
-<p>Before you begin, ensure that you have the following:</p>
+<p>Before you begin, ensure that you have the following installed:</p>
 <ul>
 <li><a href="https://docs.sigstore.dev/cosign/installation/">cosign</a></li>
 </ul>
 <h2 id="verify-tracee-signature">Verify tracee signature<a class="headerlink" href="#verify-tracee-signature" title="Permanent link">&para;</a></h2>
 <p>Tracee images are signed with cosign keyless. To verify the signature we can run the command:</p>
-<div class="highlight"><pre><span></span><code><span class="go">cosign verify aquasec/tracee:v0.18.0-rc-119-gf1be8a250  --certificate-oidc-issuer https://token.actions.githubusercontent.com --certificate-identity-regexp https://github.com/aquasecurity/tracee | jq</span>
+<div class="highlight"><pre><span></span><code><span class="go">cosign verify aquasec/tracee:tag-name  --certificate-oidc-issuer https://token.actions.githubusercontent.com --certificate-identity-regexp https://github.com/aquasecurity/tracee | jq</span>
 </code></pre></div>
+<p>Note that all of the tag-names can be found on the <a href="https://hub.docker.com/r/aquasec/tracee/tags">Tracee Docker Hub Registry</a>.</p>
+<p>The output should look similar to the following:
+<img alt="Tracee Signature Scanning" src="../../images/signatures.png" /></p>
 
 
 

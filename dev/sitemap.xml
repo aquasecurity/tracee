@@ -2896,6 +2896,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/tutorials/tracee-vagrant/</loc>
+         <lastmod>2023-11-02</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/tutorials/verify-tracee-signature/</loc>
          <lastmod>2023-11-02</lastmod>
          <changefreq>daily</changefreq>

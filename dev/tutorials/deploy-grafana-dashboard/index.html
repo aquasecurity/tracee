@@ -16,7 +16,7 @@
         <link rel="prev" href="../verify-tracee-signature/">
       
       
-        <link rel="next" href="../promtail/">
+        <link rel="next" href="../tracee-vagrant/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Deploy Tracee Grafana Dashboard - Tracee</title>
+        <title>Access Tracee Metrics in Grafana and Prometheus - Tracee</title>
       
     
     
@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#deploy-grafana-dashboard" class="md-skip">
+        <a href="#access-tracee-metrics-in-prometheus-and-grafana" class="md-skip">
           Skip to content
         </a>
       
@@ -107,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Deploy Tracee Grafana Dashboard
+              Access Tracee Metrics in Grafana and Prometheus
             
           </span>
         </div>
@@ -408,39 +408,13 @@
   
   
     <li class="md-nav__item">
-      <a href="../k8s-policies/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    Working with Tracee's Policies on Kubernetes
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../verify-tracee-signature/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     
   
-    Cosign - verify tracee signature
+    Cosign - verify Tracee signature
   
 
     
@@ -475,7 +449,7 @@
   <span class="md-ellipsis">
     
   
-    Deploy Tracee Grafana Dashboard
+    Access Tracee Metrics in Grafana and Prometheus
   
 
     
@@ -492,7 +466,7 @@
   <span class="md-ellipsis">
     
   
-    Deploy Tracee Grafana Dashboard
+    Access Tracee Metrics in Grafana and Prometheus
   
 
     
@@ -518,10 +492,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#pre-requisites" class="md-nav__link">
+  <a href="#tutorial-overview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pre-requisites
+        Tutorial Overview
       
     </span>
   </a>
@@ -529,17 +503,40 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#run-tracee-with-metrics-enabled" class="md-nav__link">
+  <a href="#tracee-docker-container-image" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Run Tracee with Metrics Enabled
+        Tracee Docker Container Image
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tracee Docker Container Image">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
       
     </span>
   </a>
   
 </li>
+        
+          <li class="md-nav__item">
+  <a href="#run-tracee-with-metrics-enabled-the-docker-command" class="md-nav__link">
+    <span class="md-ellipsis">
       
-        <li class="md-nav__item">
+        Run Tracee with Metrics Enabled -- The Docker Command
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#run-prometheus-and-configure-it-to-scrape-tracee" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -547,6 +544,11 @@
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -559,9 +561,10 @@
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
+    <nav class="md-nav" aria-label="Run Grafana to display Tracee's Prometheus Metrics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#import-tracees-default-dashboard" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -571,11 +574,68 @@
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
     </ul>
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tracee-vagrant/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Using Tracee Container Image with Vagrant on Mac
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../k8s-policies/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Working with Tracee's Policies on Kubernetes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -16624,10 +16684,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#pre-requisites" class="md-nav__link">
+  <a href="#tutorial-overview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pre-requisites
+        Tutorial Overview
       
     </span>
   </a>
@@ -16635,17 +16695,40 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#run-tracee-with-metrics-enabled" class="md-nav__link">
+  <a href="#tracee-docker-container-image" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Run Tracee with Metrics Enabled
+        Tracee Docker Container Image
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tracee Docker Container Image">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
       
     </span>
   </a>
   
 </li>
+        
+          <li class="md-nav__item">
+  <a href="#run-tracee-with-metrics-enabled-the-docker-command" class="md-nav__link">
+    <span class="md-ellipsis">
       
-        <li class="md-nav__item">
+        Run Tracee with Metrics Enabled -- The Docker Command
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#run-prometheus-and-configure-it-to-scrape-tracee" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -16653,6 +16736,11 @@
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -16665,9 +16753,10 @@
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
+    <nav class="md-nav" aria-label="Run Grafana to display Tracee's Prometheus Metrics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#import-tracees-default-dashboard" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -16675,6 +16764,11 @@
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -16694,23 +16788,37 @@
                   
 
 
-<h1 id="deploy-grafana-dashboard">Deploy Grafana Dashboard<a class="headerlink" href="#deploy-grafana-dashboard" title="Permanent link">&para;</a></h1>
+<h1 id="access-tracee-metrics-in-prometheus-and-grafana">Access Tracee Metrics in Prometheus and Grafana<a class="headerlink" href="#access-tracee-metrics-in-prometheus-and-grafana" title="Permanent link">&para;</a></h1>
+<p>Tracee exposes a metrics endpoint. 
+This makes it possible to monitor Tracee like other cloud native workloads.</p>
+<p>In this tutorial, we will showcase how to access Tracee metrics through Prometheus and Grafana running through docker containers.
+The tutorial can easily adapted to Kubernetes workloads with the configuration provided.</p>
+<h2 id="tutorial-overview">Tutorial Overview<a class="headerlink" href="#tutorial-overview" title="Permanent link">&para;</a></h2>
 <p>Grafana is a visualization tools for exported metrics and logs, most commonly
-used alongside prometheus.</p>
-<p>Since version 0.7.0, tracee exports useful runtime metrics to prometheus.</p>
+used alongside Prometheus.</p>
+<p>Since version 0.7.0, tracee exports useful runtime metrics to Prometheus.</p>
+<p>By using Grafana and the new metrics from tracee, we can deploy a simple
+dashboard which tracks the tracee instance performance and outputs.</p>
+<p>There are two options for accessing Tracee metrics:</p>
+<ul>
+<li>Running the Tracee Docker Container Image -- Shown in this tutorial</li>
+<li>Running the Tracee Helm Chart -- Detailed as part of the <a href="../promtail/">Promtail-Tracee</a> tutorial</li>
+</ul>
+<p><img alt="Dashboard Image" src="../../images/tracee-grafana-dashboard.png" /></p>
+<h2 id="tracee-docker-container-image">Tracee Docker Container Image<a class="headerlink" href="#tracee-docker-container-image" title="Permanent link">&para;</a></h2>
 <p>These metrics exports are enabled by default in all docker images and can be
-enabled using the <code>--metrics</code>.</p>
-<p>By using grafana and the new metrics from tracee, we can deploy a simple
-dashboard which tracks your tracee's instance performance and outputs.</p>
-<h2 id="pre-requisites">Pre-requisites<a class="headerlink" href="#pre-requisites" title="Permanent link">&para;</a></h2>
+enabled using the <code>--metrics</code> flag.</p>
+<h3 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h3>
 <p>The following tools must be available for use, they can all be installed either
-through docker or installed/built on your machine.</p>
+through docker or installed/built on your machine. Note that you need to be on a Linux machine to follow the Docker tutorial.
+Alternative, on a MacBook it is possible to use Vagrant with Parallels as detailed in the following tutorial:
+<a href="../tracee-vagrant/">Running Tracee on Mac with Parallels and Vagrant</a></p>
 <ul>
 <li><a href="https://github.com/aquasecurity/tracee/">Tracee</a></li>
 <li><a href="https://prometheus.io/download/">Prometheus</a></li>
 <li><a href="https://grafana.com/docs/grafana/latest/getting-started/getting-started">Grafana</a></li>
 </ul>
-<h2 id="run-tracee-with-metrics-enabled">Run Tracee with Metrics Enabled<a class="headerlink" href="#run-tracee-with-metrics-enabled" title="Permanent link">&para;</a></h2>
+<h3 id="run-tracee-with-metrics-enabled-the-docker-command">Run Tracee with Metrics Enabled -- The Docker Command<a class="headerlink" href="#run-tracee-with-metrics-enabled-the-docker-command" title="Permanent link">&para;</a></h3>
 <p>Tracee can be most easily deployed with metrics enabled by default and port
 forwarded through the following commands:</p>
 <div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
@@ -16718,42 +16826,52 @@ forwarded through the following commands:</p>
 <span class="go">    --cgroupns=host --privileged \</span>
 <span class="go">    -v /tmp/tracee:/tmp/tracee  \</span>
 <span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
-<span class="go">    -it -p 3366:3366 aquasec/tracee:v0.18.0-rc-119-gf1be8a250</span>
+<span class="go">    -it -p 3366:3366 aquasec/tracee:latest</span>
 </code></pre></div>
 <p>Of course, the forwarded metrics ports can be changed, but you should note that
 some of the later instructions depend on these ports.</p>
 <p>If running Tracee locally through built binaries, the metrics address may be
 overrides with the <code>--listen-addr</code> flag.</p>
-<h2 id="run-prometheus-and-configure-it-to-scrape-tracee">Run Prometheus and Configure it to Scrape Tracee<a class="headerlink" href="#run-prometheus-and-configure-it-to-scrape-tracee" title="Permanent link">&para;</a></h2>
-<p>Install prometheus or pull it's docker image. Then create the following
+<h3 id="run-prometheus-and-configure-it-to-scrape-tracee">Run Prometheus and Configure it to Scrape Tracee<a class="headerlink" href="#run-prometheus-and-configure-it-to-scrape-tracee" title="Permanent link">&para;</a></h3>
+<p>Install Prometheus or pull it's Docker image. Then create the following
 configuration file, call it <code>prometheus.yml</code> to scrape Tracee:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># A scrape configuration containing exactly one endpoint to scrape:</span>
 <span class="c1"># Here it&#39;s Tracee.</span>
 <span class="nt">scrape_configs</span><span class="p">:</span>
 <span class="w">  </span><span class="c1"># The job name is added as a label `job=&lt;job_name&gt;` to any timeseries scraped from this config.</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;prometheus&#39;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;tracee&#39;</span>
 
 <span class="w">    </span><span class="c1"># Override the global default and scrape targets from this job every 5 seconds.</span>
 <span class="w">    </span><span class="nt">scrape_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5s</span>
+<span class="w">    </span><span class="nt">metrics_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/metrics</span>
 
 <span class="w">    </span><span class="c1">#Scrape tracee&#39;s default metrics hosts.</span>
 <span class="w">    </span><span class="c1">#If forwarding different ports make sure to change these addresses.</span>
 <span class="w">    </span><span class="nt">static_configs</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;localhost:3366&#39;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
-<p>We must then start prometheus with the following command:</p>
+<p>Note that the localhost:3366 might have to be replaced with your IP address. The IP address can be found with the following command:
+<div class="highlight"><pre><span></span><code>/sbin/ifconfig
+</code></pre></div></p>
+<p>We can then start Prometheus with the following command:</p>
 <div class="highlight"><pre><span></span><code><span class="go">prometheus --config.file=/path/to/prometheus.yml</span>
 </code></pre></div>
 <p>Or alternatively with docker:</p>
-<div class="highlight"><pre><span></span><code><span class="go">docker run -p 9090:9090 -v /path/to/config:/etc/prometheus prom/prometheus</span>
+<div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
+<span class="go">    -p 9090:9090 \</span>
+<span class="go">    -v ./prometheus.yml:/etc/prometheus/prometheus.yml \</span>
+<span class="go">    prom/prometheus</span>
 </code></pre></div>
-<p>Then, try to access prometheus through <code>http://localhost:9090</code>. If successful,
-move to the next step, otherwise consult with prometheus documentation.</p>
+<p>Ensure that prometheus can scrape the Tracee target: Open the Prometheus UI at <code>http://localhost:9090</code>
+Under Status &lt; Targets will be the scrape targets listed.</p>
+<p>If successful, move to the next step, otherwise consult with the Prometheus documentation.</p>
 <h2 id="run-grafana-to-display-tracees-prometheus-metrics">Run Grafana to display Tracee's Prometheus Metrics<a class="headerlink" href="#run-grafana-to-display-tracees-prometheus-metrics" title="Permanent link">&para;</a></h2>
 <p>After successfully deploying Tracee and Prometheus we may now run Grafana to
 visualize it's metrics.</p>
-<p>Install grafana using their instructions and enter the now available grafana
-website (by default it's usually through http://localhost:3000).</p>
+<p>Install Grafana using the Grafana container image:</p>
+<div class="highlight"><pre><span></span><code><span class="go">docker run -d -p 3000:3000 --name=grafana grafana/grafana-enterprise</span>
+</code></pre></div>
+<p>Next, you should be able to access the Grafana UI throug: <code>http://localhost:3000</code>.</p>
 <p>After entering the website, logging in with username and password <code>admin</code> (and
 changing your password if you wish), you should see the homepage:</p>
 <p><img alt="image" src="https://user-images.githubusercontent.com/22661609/160572543-771d4a0e-d7d8-46d2-bf51-7c9f64487bf8.png" /></p>
@@ -16761,8 +16879,9 @@ changing your password if you wish), you should see the homepage:</p>
 selecting "Data Sources" and pressing "Add Data Source" at the top left. Create
 a Prometheus Data Source and point it's URL to the relevant location (usually
 http://localhost:9090)</p>
+<p>Note that you might have to use your local IP address again instead of <code>localhost</code>.</p>
 <p>You may now either create your own Dashboard or import our default dashboard.</p>
-<h2 id="import-tracees-default-dashboard">Import Tracee's Default Dashboard<a class="headerlink" href="#import-tracees-default-dashboard" title="Permanent link">&para;</a></h2>
+<h3 id="import-tracees-default-dashboard">Import Tracee's Default Dashboard<a class="headerlink" href="#import-tracees-default-dashboard" title="Permanent link">&para;</a></h3>
 <p>First download our Grafana Dashboard's json <a href="https://github.com/aquasecurity/tracee/tree/main/deploy/grafana/tracee.json">here</a>.</p>
 <p>After adding the data source hover on the plus icon in the sidebar and select
 "Import". Press "Upload JSON File" at the top of the page and select the

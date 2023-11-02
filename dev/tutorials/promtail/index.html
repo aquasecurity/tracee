@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/tutorials/promtail/">
       
       
-        <link rel="prev" href="../deploy-grafana-dashboard/">
+        <link rel="prev" href="../k8s-policies/">
       
       
         <link rel="next" href="../additional-resources/">
@@ -408,39 +408,13 @@
   
   
     <li class="md-nav__item">
-      <a href="../k8s-policies/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    
-  
-    Working with Tracee's Policies on Kubernetes
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../verify-tracee-signature/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     
   
-    Cosign - verify tracee signature
+    Cosign - verify Tracee signature
   
 
     
@@ -466,7 +440,59 @@
   <span class="md-ellipsis">
     
   
-    Deploy Tracee Grafana Dashboard
+    Access Tracee Metrics in Grafana and Prometheus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tracee-vagrant/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Using Tracee Container Image with Vagrant on Mac
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../k8s-policies/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Working with Tracee's Policies on Kubernetes
   
 
     
@@ -555,15 +581,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
+  <a href="#installing-the-tracee-helm-chart-and-accessing-logs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Installation
+        Installing the Tracee Helm Chart and accessing logs
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Installation">
+    <nav class="md-nav" aria-label="Installing the Tracee Helm Chart and accessing logs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#accessing-tracee-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accessing Tracee Logs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation-of-observability-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation of Observability Tools
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation of Observability Tools">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -588,30 +642,8 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#tracee" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tracee
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#accessing-tracee-logs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Accessing Tracee Logs
-      
-    </span>
-  </a>
   
 </li>
       
@@ -16652,15 +16684,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
+  <a href="#installing-the-tracee-helm-chart-and-accessing-logs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Installation
+        Installing the Tracee Helm Chart and accessing logs
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Installation">
+    <nav class="md-nav" aria-label="Installing the Tracee Helm Chart and accessing logs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#accessing-tracee-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accessing Tracee Logs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation-of-observability-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation of Observability Tools
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation of Observability Tools">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -16685,30 +16745,8 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#tracee" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tracee
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#accessing-tracee-logs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Accessing Tracee Logs
-      
-    </span>
-  </a>
   
 </li>
       
@@ -16729,21 +16767,50 @@
 
 
 <h1 id="using-promtail-loki-and-grafana-to-access-tracee-logs">Using Promtail, Loki and Grafana to access Tracee Logs<a class="headerlink" href="#using-promtail-loki-and-grafana-to-access-tracee-logs" title="Permanent link">&para;</a></h1>
-<p>This tutorial will showcase how to install and configure promtail, loki, grafana and prometheus to then access Tracee logs from the cluster in Grafana.</p>
+<p>By default, Tracee is emitting events to stdout. Users can then configure logging solutions to collect, store, and manage Tracee logs. </p>
+<p>This tutorial will showcase how to install and configure Promtail, Loki, Grafana and Prometheus to then access Tracee logs from the cluster in Grafana.</p>
 <p>If you prefer the video tutorial, check out the tutorial below on the Aqua Open Source YouTube channel:</p>
 <p>Grafana Loki to access Tracee logs 
   <a href="https://youtu.be/mMC9-yzbgpE?si=6C0emOEJJ5K4ACqB"><img alt="Watch the video" src="../../images/lokitut.png" /></a></p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
-<p>Please make sure to have 
-- Kubectl installed and connected to a Kubernetes cluster (any cluster will work for this purpose)
-- The Helm CLI installed</p>
-<p>To ensure everything is installed properly, please run the following command:</p>
-<div class="highlight"><pre><span></span><code><span class="go">kubectl get nodes</span>
+<p>Please make sure to have the following tools installed in your CLI:</p>
+<ul>
+<li>Kubectl installed and connected to a Kubernetes cluster (any cluster will work for this purpose)</li>
+<li>The <a href="https://helm.sh/docs/">Helm CLI</a> installed</li>
+</ul>
+<p>Additionally, you might have the following Obserability Stack already installed in your cluster, if not we will detailed how to set it up further below in this guide: </p>
+<ul>
+<li><a href="https://prometheus.io/">Prometheus</a></li>
+<li><a href="https://grafana.com/oss/loki/">Loki and Promtail</a></li>
+<li><a href="https://grafana.com/oss/">Grafana</a></li>
+</ul>
+<p>Alternatively, this tutorial showcases after the Tracee Installation section how to get an observability stack running with the above tools.</p>
+<h2 id="installing-the-tracee-helm-chart-and-accessing-logs">Installing the Tracee Helm Chart and accessing logs<a class="headerlink" href="#installing-the-tracee-helm-chart-and-accessing-logs" title="Permanent link">&para;</a></h2>
+<p>Right now, we cannot access any logs from our cluster since we do not have any application that actively produces logs.
+Thus, we will install Tracee inside our cluster through the Tracee Helm Chart.</p>
+<p>Add the Tracee Helm Chart:</p>
+<div class="highlight"><pre><span></span><code><span class="go">helm repo add aqua https://aquasecurity.github.io/helm-charts/</span>
 </code></pre></div>
-<p>and</p>
-<div class="highlight"><pre><span></span><code><span class="go">helm version</span>
+<p>Update the repository list on Helm:</p>
+<div class="highlight"><pre><span></span><code><span class="go">helm repo update</span>
 </code></pre></div>
-<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
+<p>Install the Tracee Helm Chart inside your Kubernetes cluster:</p>
+<div class="highlight"><pre><span></span><code><span class="go">helm install tracee aqua/tracee \</span>
+<span class="go">        --namespace tracee-system --create-namespace \</span>
+<span class="go">        --set hostPID=true</span>
+</code></pre></div>
+<p>Now, ensure that Tracee is running inside the <code>tracee-system</code> namespace:</p>
+<div class="highlight"><pre><span></span><code><span class="go">kubectl get all -n tracee-system</span>
+</code></pre></div>
+<p>Similar to Promtail, also for Tracee one pod should run on each node of the Kubernetes cluster.</p>
+<h3 id="accessing-tracee-logs">Accessing Tracee Logs<a class="headerlink" href="#accessing-tracee-logs" title="Permanent link">&para;</a></h3>
+<p>Generally, it is possible to access logs from the Tracee pods directly through kubectl:</p>
+<div class="highlight"><pre><span></span><code><span class="go">kubectl logs -f daemonset/tracee -n tracee-system</span>
+</code></pre></div>
+<p>Next, open the Grafana Dashboard, on the left, go to "Explore". There, you should be able to select Loki as a Datasource.</p>
+<p>Now, you can write log queries in LogQL to access the logs that are stored in the Tracee pods:</p>
+<p><img alt="Screenshot from Grafana, accessing Tracee logs through Loki" src="../../images/loki.png" /></p>
+<h2 id="installation-of-observability-tools">Installation of Observability Tools<a class="headerlink" href="#installation-of-observability-tools" title="Permanent link">&para;</a></h2>
 <p>We need to install an observability stack to access the logs of the pods inside our cluster. This will consist of:
 - Grafana (for Dashboards and querying logs)
 - Promtail for collecting logs from the pods on each node
@@ -16842,31 +16909,6 @@ password: prom-operator</p>
 <p>The password name is dependent on how you called the Helm Chart installation of the kube-prometheus-stack chart e.g. in our case, it was "prom".</p>
 <p>Now navigate on Grafana to: Explore 
 Here select Loki as a data source.</p>
-<h3 id="tracee">Tracee<a class="headerlink" href="#tracee" title="Permanent link">&para;</a></h3>
-<p>Right now, we cannot access any logs from our cluster since we do not have any application that actively produces logs.
-Thus, we will install Tracee inside our cluster through the Tracee Helm Chart.</p>
-<p>Add the Tracee Helm Chart:</p>
-<div class="highlight"><pre><span></span><code><span class="go">helm repo add aqua https://aquasecurity.github.io/helm-charts/</span>
-</code></pre></div>
-<p>Update the repository list on Helm:</p>
-<div class="highlight"><pre><span></span><code><span class="go">helm repo update</span>
-</code></pre></div>
-<p>Install the Tracee Helm Chart inside your Kubernetes cluster:</p>
-<div class="highlight"><pre><span></span><code><span class="go">helm install tracee aqua/tracee \</span>
-<span class="go">        --namespace tracee-system --create-namespace \</span>
-<span class="go">        --set hostPID=true</span>
-</code></pre></div>
-<p>Now, ensure that Tracee is running inside the <code>tracee-system</code> namespace:</p>
-<div class="highlight"><pre><span></span><code><span class="go">kubectl get all -n tracee-system</span>
-</code></pre></div>
-<p>Similar to Promtail, also for Tracee one pod should run on each node of the Kubernetes cluster.</p>
-<h2 id="accessing-tracee-logs">Accessing Tracee Logs<a class="headerlink" href="#accessing-tracee-logs" title="Permanent link">&para;</a></h2>
-<p>Generally, it is possible to access logs from the Tracee pods directly through kubectl:</p>
-<div class="highlight"><pre><span></span><code><span class="go">kubectl logs -f daemonset/tracee -n tracee-system</span>
-</code></pre></div>
-<p>However, once you have all the above components installed, you can open the Grafana Dashboard, on the left, go to "Explore". There, you should be able to select Loki as a Datasource.</p>
-<p>Now, you can write log queries in LogQL to access the logs that are stored in the Tracee pods:</p>
-<p><img alt="Screenshot from Grafana, accessing Tracee logs through Loki" src="../../images/loki.png" /></p>
 
 
 
