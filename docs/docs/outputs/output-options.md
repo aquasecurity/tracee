@@ -52,7 +52,7 @@ Available options:
     ```
 5. **option:relative-time**
 
-    The `relative-time` output option filters all the events since the boot time of the system.
+    The `relative-time` output option enables relative timestamp instead of wall timestamp for events.
 
     ```
     output:
@@ -67,5 +67,5 @@ Available options:
     ```
     output:
         options:
-                sort-events: false
+                sort-events: true
     ```

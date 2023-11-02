@@ -5,17 +5,6 @@
 
 It is possible to define how the events that Tracee collects should be displayed. This is done through the Tracee configuration. You can read more on configuration in the [Tracee installation guide.](../install/index.md)
 
-The following output formats are supported:
-
-- `table[:/path/to/file]` - output events in table format (default). The default path to file is stdout.
-- `table-verbose[:/path/to/file]` - output events in table format with extra fields per event. The default path to file is stdout.
-- `json[:/path/to/file]` - output events in json format. The default path to file is stdout.
-- `gob[:/path/to/file]` - output events in gob format. The default path to file is stdout.
-- `gotemplate=/path/to/template[:/path/to/file]` - output events formatted using a given gotemplate file. The default path to file is stdout.
-- `forward:http://url/fluent` - send events in json format using the Forward protocol to a Fluent receiver
-- `webhook:http://url/webhook` - send events in json format to the webhook url
-- `none` - ignore stream of events output, usually used with --capture
-
 Note that only one output format can be used in the Tracee configuration.
 
 ## Examples
@@ -24,6 +13,8 @@ Note that only one output format can be used in the Tracee configuration.
 The following examples will have to be added into a Tracee configuration file.
 
 ### Table
+
+Displays output events in table format, which is the default. The default path to a file is stdout.
 
 In the CLI:
 
@@ -37,6 +28,8 @@ output:
 
 ### Table (Verbose)
 
+Displays the output events in table format with extra fields per event. The default path to a file is stdout.
+
 In the CLI:
 
 ```yaml
@@ -47,6 +40,8 @@ output:
 ```
 
 ### JSON
+
+Displays output events in json format. The default path to a file is stdout.
 
 ```yaml
 output:
@@ -86,6 +81,8 @@ output:
 
 ### Webhook
 
+This sends events in json format to the webhook url
+
 Below is an example for configuring webhooks in the Tracee output section:
 
 ```
@@ -111,6 +108,8 @@ Note: Please ensure that the respective fields will have to be uncommented.
 
 ### Forward
 
+This sends events in json format using the Forward protocol to a Fluent receiver.
+
 Below is an example for forwarding Tracee logs: 
 
 ```
@@ -133,3 +132,14 @@ output:
 ```
 
 Note: Please ensure that the respective fields will have to be uncommented.
+
+### GOB
+
+This outputs events in gob format. The default path to file is stdout.
+
+```
+output:
+    gob:
+        files:
+            - /path/to/gob1.out
+```

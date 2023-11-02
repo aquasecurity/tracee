@@ -27,7 +27,8 @@ log:
 log:
     level: debug
     aggregate:
-        flush-interval: "5s"
+        enabled: true
+        flush-interval: "10s"
         
 ```
 
