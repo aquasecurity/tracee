@@ -45,4 +45,4 @@ Please note that the available capabilities will depend on the running system. F
   --capabilities drop=cap_chown
   ```
 
-Please refer to the [documentation](../deep-dive/dropping-capabilities.md) for more information on environment capabilities.
+Please refer to the [documentation](../advanced/dropping-capabilities.md) for more information on environment capabilities.

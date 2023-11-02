@@ -16,7 +16,7 @@ hide:
 [docker-guide]:./docs/install/docker.md
 [kubernetes-guide]:./docs/install/kubernetes.md
 [prereqs]:./docs/install/prerequisites.md
-[macfaq]:./docs/deep-dive/mac.md
+[macfaq]:./docs/advanced/mac.md
 <!-- everything below is copied from readme -->
 
 Before moving on, please consider giving us a GitHub star ⭐️. Thank you!

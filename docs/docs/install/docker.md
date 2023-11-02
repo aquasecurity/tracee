@@ -5,7 +5,7 @@ This guide will help you get started with running Tracee as a container.
 ## Prerequisites
 
 - Review the [prerequisites for running Tracee](./prerequisites.md)
-- If you are an Apple Mac user, please read [the Mac FAQ](../deep-dive/apple.md)
+- If you are an Apple Mac user, please read [the Mac FAQ](../advanced/apple.md)
 - Ensure that you have Docker or a compatible container runtime
 
 ## Run the Tracee container images

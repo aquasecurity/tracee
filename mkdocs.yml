@@ -579,13 +579,13 @@ nav:
                 - Overview: docs/data-sources/overview.md
                 - Containers: docs/data-sources/containers.md
                 - Process Tree: docs/data-sources/process-tree.md
-          - Deep Dive:
-                - Caching Events: docs/deep-dive/caching-events.md
-                - Ordering Events: docs/deep-dive/ordering-events.md
-                - Dropping Capabilities: docs/deep-dive/dropping-capabilities.md
-                - Kernel Symbols: docs/deep-dive/ksyms.md
-                - Secure Tracing: docs/deep-dive/secure-tracing.md
-                - OS Info: docs/deep-dive/os-info.md
+          - Advanced:
+                - Caching Events: docs/advanced/caching-events.md
+                - Ordering Events: docs/advanced/ordering-events.md
+                - Dropping Capabilities: docs/advanced/dropping-capabilities.md
+                - Kernel Symbols: docs/advanced/ksyms.md
+                - Secure Tracing: docs/advanced/secure-tracing.md
+                - OS Info: docs/advanced/os-info.md
           - CLI Flags:
                 - scope: docs/flags/scope.1.md
                 - events: docs/flags/events.1.md
