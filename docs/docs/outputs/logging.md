@@ -13,7 +13,7 @@ log:
         enabled: true
 ```
 
-Note that the other log level is `info`.
+Note that the other log level are `info`, `warn`, `error` and `panic`.
 
 **Redirect logs to a file if needed:**
 
