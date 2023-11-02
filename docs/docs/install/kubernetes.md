@@ -40,7 +40,7 @@ helm install tracee aqua/tracee --namespace tracee --create-namespace
 <details>
   <summary>Verify step</summary>
 ```console
-kubectl get pods
+kubectl get pods --n tracee
 ```
 
 ```text
@@ -56,7 +56,7 @@ Once installed, Tracee immediately starts producing events. Since Tracee is depl
 The easiest way to tap into the log stream of all Tracee Pods is with the `kubectl logs` command:
 
 ```console
-kubectl logs -f daemonset/tracee
+kubectl logs -f daemonset/tracee -n tracee
 ```
 
 !!! Note
@@ -88,7 +88,7 @@ kubectl run tracee-tester --image=aquasec/tracee-tester -- TRC-105
 You can see the event in the logs:
 
 ```console
-kubectl logs -f ds/tracee | grep fileless_execution 
+kubectl logs -f ds/tracee -n tracee | grep fileless_execution 
 ```
 
 ## Next steps
