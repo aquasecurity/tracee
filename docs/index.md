@@ -16,7 +16,7 @@ hide:
 [docker-guide]:./docs/install/docker.md
 [kubernetes-guide]:./docs/install/kubernetes.md
 [prereqs]:./docs/install/prerequisites.md
-[macfaq]:./docs/deep-dive/mac.md
+[macfaq]:./docs/advanced/mac.md
 <!-- everything below is copied from readme -->
 
 Before moving on, please consider giving us a GitHub star ⭐️. Thank you!
@@ -40,6 +40,7 @@ Tracee should run on most common Linux distributions and kernels. For compatibil
 docker run --name tracee \
   --pid=host --cgroupns=host --privileged \
   -v /etc/os-release:/etc/os-release-host:ro \
+  -v /var/run:/var/run \
   aquasec/tracee:latest
 ```
 

@@ -1,30 +1,15 @@
-# Special: Healthz Endpoint
+# Health Monitoring
 
-**tracee** supports a flag `--healthz` which enable a
-`/healthz` endpoint that returns if `OK` if the process are healthy.
+Tracee can expose a `/healthz` endpoint that returns `OK` if the everything is healthy. This is a [common pattern](https://kubernetes.io/docs/reference/using-api/health-checks/) in Cloud Native and Kubernetes applications.  
 
-Example:
+Health monitoring endpoint is disabled by default, and can be enabled with the configuration:
 
-```console
-tracee --healthz
-curl http://localhost:3366/healthz
+```yaml
+healthz: true
 ```
 
-```text
-OK
+By default port `3366` is used. It can be customized with the configuration:
+
+```yaml
+listen-addr: 1234
 ```
-
-The port used is the default port `3366` for `tracee`.
-It can be customized with the flag `--listen-addr`. 
-
-Example:
-
-```console
-tracee --healthz --listen-addr=:8080
-curl http://localhost:8080/healthz
-```
-
-```text
-OK
-```
-

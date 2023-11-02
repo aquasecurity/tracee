@@ -5,7 +5,7 @@
 [docker-guide]:https://aquasecurity.github.io/tracee/latest/docker.md
 [kubernetes-guide]:https://aquasecurity.github.io/tracee/latest/kubernetes.md
 [prereqs]:https://aquasecurity.github.io/tracee/latest/docs/install/prerequisites.md
-[macfaq]:https://aquasecurity.github.io/tracee/latest/docs/deep-dive/mac.md
+[macfaq]:https://aquasecurity.github.io/tracee/latest/docs/advanced/mac.md
 Before moving on, please consider giving us a GitHub star ⭐️. Thank you!
 
 ## About Tracee
@@ -27,6 +27,7 @@ Tracee should run on most common Linux distributions and kernels. For compatibil
 docker run --name tracee \
   --pid=host --cgroupns=host --privileged \
   -v /etc/os-release:/etc/os-release-host:ro \
+  -v /var/run:/var/run \
   aquasec/tracee:latest
 ```
 

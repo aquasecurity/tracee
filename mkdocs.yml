@@ -27,6 +27,7 @@ nav:
                 - Prometheus: docs/install/prometheus.md
                 - Healthz: docs/install/healthz.md
                 - Configure Tracee:
+                      - Overview: docs/install/config/index.md
                       - CLI: docs/install/config/cli.md
                       - Kubernetes: docs/install/config/kubernetes.md
           - Events:
@@ -574,19 +575,18 @@ nav:
                 - Output Formats: docs/outputs/output-formats.md
                 - Output Options: docs/outputs/output-options.md
                 - Logging: docs/outputs/logging.md
-          - Forensics:
-                - Overview: docs/forensics/index.md
-          - Data Sources:
-                - Overview: docs/data-sources/overview.md
-                - Containers: docs/data-sources/containers.md
-                - Process Tree: docs/data-sources/process-tree.md
-          - Deep Dive:
-                - Caching Events: docs/deep-dive/caching-events.md
-                - Ordering Events: docs/deep-dive/ordering-events.md
-                - Dropping Capabilities: docs/deep-dive/dropping-capabilities.md
-                - Kernel Symbols: docs/deep-dive/ksyms.md
-                - Secure Tracing: docs/deep-dive/secure-tracing.md
-                - OS Info: docs/deep-dive/os-info.md
+          - Advanced:
+                - Caching Events: docs/advanced/caching-events.md
+                - Ordering Events: docs/advanced/ordering-events.md
+                - Dropping Capabilities: docs/advanced/dropping-capabilities.md
+                - Kernel Symbols: docs/advanced/ksyms.md
+                - Secure Tracing: docs/advanced/secure-tracing.md
+                - OS Info: docs/advanced/os-info.md
+                - Forensics: docs/advanced/forensics.md
+                - Data Sources:
+                    - Overview: docs/advanced/data-sources/overview.md
+                    - Containers: docs/advanced/data-sources/containers.md
+                    - Process Tree: docs/advanced/data-sources/process-tree.md
           - CLI Flags:
                 - scope: docs/flags/scope.1.md
                 - events: docs/flags/events.1.md
