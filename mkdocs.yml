@@ -573,8 +573,6 @@ nav:
                 - Output Formats: docs/outputs/output-formats.md
                 - Output Options: docs/outputs/output-options.md
                 - Logging: docs/outputs/logging.md
-          - Forensics:
-                - Overview: docs/forensics/index.md
           - Data Sources:
                 - Overview: docs/data-sources/overview.md
                 - Containers: docs/data-sources/containers.md
@@ -586,6 +584,7 @@ nav:
                 - Kernel Symbols: docs/advanced/ksyms.md
                 - Secure Tracing: docs/advanced/secure-tracing.md
                 - OS Info: docs/advanced/os-info.md
+                - Forensics: docs/advanced/forensics.md
           - CLI Flags:
                 - scope: docs/flags/scope.1.md
                 - events: docs/flags/events.1.md
