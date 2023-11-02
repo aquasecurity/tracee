@@ -40,7 +40,7 @@ helm install tracee aqua/tracee --namespace tracee --create-namespace
 <details>
   <summary>Verify step</summary>
 ```console
-kubectl get pods --n tracee
+kubectl get pods -n tracee
 ```
 
 ```text
