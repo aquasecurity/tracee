@@ -17,6 +17,7 @@ By using Grafana and the new metrics from tracee, we can deploy a simple
 dashboard which tracks the tracee instance performance and outputs.
 
 There are two options for accessing Tracee metrics:
+
 * Running the Tracee Docker Container Image -- Shown in this tutorial
 * Running the Tracee Helm Chart -- Detailed as part of the [Promtail-Tracee](./promtail.md) tutorial
 

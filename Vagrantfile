@@ -24,7 +24,6 @@ end
 vm_name = "tracee-#{arch}-vm"
 
 Vagrant.configure("2") do |config|
-  # need to make sure the Prometheus tutorials are working on Mac
   config.vm.network "forwarded_port", guest: 9090, host: 9090
   config.vm.network "forwarded_port", guest: 3366, host: 3366
   config.vm.network "forwarded_port", guest: 3000, host: 3000
