@@ -18,8 +18,6 @@ Note that the other log level are `info`, `warn`, `error` and `panic`.
 ```console
 log:
     level: debug
-    aggregate:
-        enabled: true
     file: "/tmp/tracee.log"
 ```
 
