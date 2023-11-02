@@ -1,55 +1,32 @@
 # Tracee Events Container Enrichment
 
-Tracee is capable of **extracting information about running containers**. It
-does that by tracking container namespaces creation kernel events and enriching
-those events by communicating with the relevant container's runtime and SDK.
+Tracee events contain context about where they originated from. This context include information about the originating container if available. To do this, Tracee needs to communicate with the relevant container runtime.  
+This document shares useful information for using and troubleshooting this feature.
 
-1. Running **tracee** manually
+## Detecting container runtime
 
-    If running tracee directly (not in a container), it will automatically
-    search for known supported runtimes in their socket's default locations.
-    You may track if tracee was able to find the container runtime socket by
-    running tracee with `--log debug` option. There will be a line to each known
-    runtime engine socket location and a message saying if tracee wass able to
-    find it or not.
+Tracee will automatically search for known supported runtimes by looking for their socket files in known locations.  
+You may track if Tracee was able to find the container runtime socket by running Tracee with `debug` log level. There will be a line to each known runtime engine socket and a message sharing it's status.
 
-2. Running **tracee** using a docker container
+When running Tracee in a container, the runtime sockets must be mounted in order to be available for Tracee.
 
-    When running tracee from a container, the runtime sockets must be manually
-    mounted in order for the enrichment features to work.
+For example, if running Tracee using Docker, and ContainerD runtime:
 
-    Using containerd as our runtime for example, this can be done by running
-    tracee like:
+```console
+docker run \
+    --pid=host --cgroupns=host --privileged \
+    -v /etc/os-release:/etc/os-release-host:ro \
+    -v /var/run/containerd:/var/run/containerd \
+    aquasec/tracee
+```
 
-    ```console
-    docker run \
-        --name tracee --rm -it \
-        --pid=host --cgroupns=host --privileged \
-        -v /etc/os-release:/etc/os-release-host:ro \
-        -v /var/run/containerd:/var/run/containerd \
-        aquasec/tracee:{{ git.tag }}
-    ```
-
-    Most container runtimes have their sockets installed by default in
-    `/var/run`. If your system includes multiple container runtimes, tracee can
-    track them all, however one should mount either all their runtime sockets or
-    `/var/run` in it's entirety to do so.
+Most container runtimes have their sockets installed by default in `/var/run`, so mounting this path can also be a good option.
 
 ## Supported Container Runtime Engines
 
-Currently, tracee will look in the following paths for auto-discovering the listed runtimes:
+Tracee supports the following conatiner runtimes and will look in the following paths for their socket files:
 
-1. Docker:     `/var/run/docker.sock`
+1. Docker: `/var/run/docker.sock`
 2. Containerd: `/var/run/containerd/containerd.sock`
-3. CRI-O:      `/var/run/crio/crio.sock`
-4. Podman:     `/var/run/podman/podman.sock`
-
-!!! Tip
-    **Nested environments** are somewhat tricky with this feature as evidenced
-    by the docker mounting instructions. Tracee does not auto-discover this
-    nesting and so sockets must be appropriately mounted and set up for tracee
-    to enrich all containers correctly.
-
-## Enrichment output
-
-Example of the output.
+3. CRI-O: `/var/run/crio/crio.sock`
+4. Podman: `/var/run/podman/podman.sock`

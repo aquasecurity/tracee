@@ -27,6 +27,7 @@ Tracee should run on most common Linux distributions and kernels. For compatibil
 docker run --name tracee \
   --pid=host --cgroupns=host --privileged \
   -v /etc/os-release:/etc/os-release-host:ro \
+  -v /var/run:/var/run \
   aquasec/tracee:latest
 ```
 
