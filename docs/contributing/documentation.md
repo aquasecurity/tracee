@@ -25,12 +25,12 @@ Prerequisites: Docker installed and running locally.
 
 Build the container image:
 ```bash
-docker build -f builder/Dockerfile.mkdocs -t tracee:docs .
+make -f ./builder/Makefile.mkdocs mkdocs-build
 ```
 
 Serve the container image:
 ```bash
-docker run --rm -v $(pwd):/docs -p 8000:8000 tracee:docs
+make -f ./builder/Makefile.mkdocs mkdocs-serve
 ```
 
 Open `localhost:8000/tracee`
