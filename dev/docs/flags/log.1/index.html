@@ -16691,13 +16691,13 @@
 <h2 id="name">NAME<a class="headerlink" href="#name" title="Permanent link">&para;</a></h2>
 <p>tracee <strong>--log</strong> - Control logger options - aggregation and level priority</p>
 <h2 id="synopsis">SYNOPSIS<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
-<p>tracee <strong>--log</strong> aggregate[:interval] | &lt;debug|info|warn|error|panic&gt; | file:/path/to/file | filter:[msg=&lt;value,...&gt;;regex=&lt;value,...&gt;;pkg=&lt;value,...&gt;;file=&lt;value,...&gt;;lvl=&lt;value,...&gt;;libbpf] | filter-out:[msg=&lt;value,...&gt;;regex=&lt;value,...&gt;;pkg=&lt;value,...&gt;;file=&lt;value,...&gt;;lvl=&lt;value,...&gt;;libbpf]</p>
+<p>tracee <strong>--log</strong> aggregate[:flush-interval] | &lt;debug|info|warn|error|panic&gt; | file:/path/to/file | filter:[msg=&lt;value,...&gt;;regex=&lt;value,...&gt;;pkg=&lt;value,...&gt;;file=&lt;value,...&gt;;lvl=&lt;value,...&gt;;libbpf] | filter-out:[msg=&lt;value,...&gt;;regex=&lt;value,...&gt;;pkg=&lt;value,...&gt;;file=&lt;value,...&gt;;lvl=&lt;value,...&gt;;libbpf]</p>
 <h2 id="description">DESCRIPTION<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
 <p>The <strong>--log</strong> flag allows you to control logger options for the tool.</p>
 <p>Possible log options:</p>
 <ul>
 <li>
-<p><strong>aggregate[:interval]</strong>: Turns log aggregation on, delaying output with an optional interval. The default interval is off. The interval can be specified in seconds (s) or minutes (m).</p>
+<p><strong>aggregate[:flush-interval]</strong>: Turns log aggregation on, delaying output with an optional interval (default: 3s). The flush-interval can be specified in seconds (s) or minutes (m).</p>
 </li>
 <li>
 <p><strong>&lt;debug|info|warn|error|panic&gt;</strong>: Sets the log level. The default log level is 'info'.</p>
