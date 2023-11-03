@@ -962,6 +962,23 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -977,6 +994,36 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -15723,6 +15770,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../advanced/mac/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Mac FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../advanced/forensics/" class="md-nav__link">
         
   
@@ -15758,10 +15831,10 @@
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6_9" >
         
           
-          <label class="md-nav__link" for="__nav_3_6_8" id="__nav_3_6_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_6_9" id="__nav_3_6_9_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -15778,8 +15851,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_6_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_6_8">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_6_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_6_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -16522,6 +16595,25 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -16537,7 +16629,9 @@
 
 
 <h1 id="configuring-tracee-with-cli">Configuring Tracee with CLI<a class="headerlink" href="#configuring-tracee-with-cli" title="Permanent link">&para;</a></h1>
-<p>To use the <code>--config</code> flag, specifying the path to the configuration file:</p>
+<p>The <code>--config</code> flag allows you to specify global configuration options for Tracee by providing a configuration file in YAML or JSON format, among other supported formats. The <code>--config</code> flag can be used to set any flag that is available through the command line interface (CLI), except for a few reserved flags.</p>
+<h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
+<p>To use the <code>--config</code> flag, you need to provide the path to the configuration file. For example, if you have a YAML configuration file located at /path/to/tracee-config.yaml, you can load it with the following command:</p>
 <div class="highlight"><pre><span></span><code><span class="go">tracee --config /path/to/tracee-config.yaml</span>
 </code></pre></div>
 

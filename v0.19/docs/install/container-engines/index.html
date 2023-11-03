@@ -15779,6 +15779,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../../advanced/mac/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Mac FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../advanced/forensics/" class="md-nav__link">
         
   
@@ -15814,10 +15840,10 @@
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6_9" >
         
           
-          <label class="md-nav__link" for="__nav_3_6_8" id="__nav_3_6_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_6_9" id="__nav_3_6_9_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -15834,8 +15860,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_6_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_6_8">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_6_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_6_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -16629,11 +16655,11 @@
 You may track if Tracee was able to find the container runtime socket by running Tracee with <code>debug</code> log level. There will be a line to each known runtime engine socket and a message sharing it's status.</p>
 <p>When running Tracee in a container, the runtime sockets must be mounted to be available for Tracee.</p>
 <p>For example, if running Tracee using Docker, and ContainerD runtime:</p>
-<div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
-<span class="go">    --pid=host --cgroupns=host --privileged \</span>
-<span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
-<span class="go">    -v /var/run/containerd:/var/run/containerd \</span>
-<span class="go">    aquasec/tracee</span>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>--name<span class="w"> </span>tracee<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--pid<span class="o">=</span>host<span class="w"> </span>--cgroupns<span class="o">=</span>host<span class="w"> </span>--privileged<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-v<span class="w"> </span>/etc/os-release:/etc/os-release-host:ro<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-v<span class="w"> </span>/var/run/containerd:/var/run/containerd:ro<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>aquasec/tracee:latest
 </code></pre></div>
 <p>Most container runtimes have their sockets installed by default in <code>/var/run</code>, so mounting this path can also be a good option.</p>
 <h2 id="supported-container-runtime-engines">Supported Container Runtime Engines<a class="headerlink" href="#supported-container-runtime-engines" title="Permanent link">&para;</a></h2>

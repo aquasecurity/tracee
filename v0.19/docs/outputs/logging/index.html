@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#tracee-logging-examples" class="md-skip">
+        <a href="#tracee-logs" class="md-skip">
           Skip to content
         </a>
       
@@ -15481,6 +15481,23 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -15496,6 +15513,47 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#log-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Log options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Additional Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -15721,6 +15779,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../../advanced/mac/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Mac FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../advanced/forensics/" class="md-nav__link">
         
   
@@ -15756,10 +15840,10 @@
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6_9" >
         
           
-          <label class="md-nav__link" for="__nav_3_6_8" id="__nav_3_6_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_6_9" id="__nav_3_6_9_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -15776,8 +15860,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_6_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_6_8">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_6_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_6_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -16520,6 +16604,36 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#log-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Log options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Additional Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -16534,35 +16648,71 @@
                   
 
 
-<h1 id="tracee-logging-examples">Tracee Logging Examples<a class="headerlink" href="#tracee-logging-examples" title="Permanent link">&para;</a></h1>
-<p>Configure log severity:</p>
-<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --log debug</span>
+<h1 id="tracee-logs">Tracee Logs<a class="headerlink" href="#tracee-logs" title="Permanent link">&para;</a></h1>
+<p>This section showcases how to configure diagnostics log. The information provided can then be used to troubleshoot Tracee. This is done through the Tracee configuration file. For more information, have a look at the respective section in the <a href="../../install/">installation guide.</a></p>
+<h2 id="log-options">Log options<a class="headerlink" href="#log-options" title="Permanent link">&para;</a></h2>
+<p><strong>Configure the log severity:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="go">log:</span>
+<span class="go">    level: debug</span>
 </code></pre></div>
-<p>Redirect logs to a file if needed:</p>
-<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --scope comm=bash --scope follow --events openat --output json:/tmp/tracee.events --log file:/tmp/tracee.log</span>
+<p>Note that the other log level are <code>info</code>, <code>warn</code>, <code>error</code> and <code>panic</code>.</p>
+<p><strong>Redirect logs to a file if needed:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="go">log:</span>
+<span class="go">    level: debug</span>
+<span class="go">    file: &quot;/tmp/tracee.log&quot;</span>
 </code></pre></div>
-<p>Logs can be aggregated for a given interval to delay its output:</p>
-<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --log debug --log aggregate:5s</span>
+<p><strong>Logs can be aggregated for a given interval (default: 3s) to delay its output:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="go">log:</span>
+<span class="go">    level: debug</span>
+<span class="go">    aggregate:</span>
+<span class="go">        enabled: true</span>
+<span class="go">        flush-interval: &quot;10s&quot;</span>
 </code></pre></div>
-<p>Filter logs which message contains specified words:</p>
-<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --log filter:msg=foo,bar</span>
+<p>The flush-interval defines how often the Tracee logs will be forwarded.</p>
+<p><strong>Filter logs which message contains specified words:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="go">log:</span>
+<span class="go">    filters: </span>
+<span class="go">        msg: </span>
+<span class="go">            - foo</span>
+<span class="go">            - bar</span>
 </code></pre></div>
-<p>Filter logs using regular expressions against messages:</p>
-<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --log filter:regex=&#39;^foo&#39;</span>
+<p><strong>Filter logs using regular expressions against messages:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="go">log:</span>
+<span class="go">    filters: </span>
+<span class="go">        regex: </span>
+<span class="go">            - ^pattern-one</span>
 </code></pre></div>
-<p>Filter logs originating from a specific package:</p>
-<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --log filter:pkg=core</span>
+<p><strong>Filter logs originating from a specific package:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="go">log:</span>
+<span class="go">    filters: </span>
+<span class="go">        pkg:</span>
+<span class="go">            - core</span>
 </code></pre></div>
-<p>Filter logs originating from a specific file:</p>
-<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --log filter:file=/pkg/cmd/flags/logger.go</span>
+<p><strong>Filter logs originating from a specific file:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="go">log:</span>
+<span class="go">    filter: </span>
+<span class="go">        file: </span>
+<span class="go">            - /pkg/cmd/flags/logger.go</span>
 </code></pre></div>
-<p>Filter logs based on their severity level:</p>
-<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --log filter:lvl=error</span>
+<p><strong>Filter logs based on their severity level:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="go">log:</span>
+<span class="go">    filters: </span>
+<span class="go">        level: </span>
+<span class="go">            - error</span>
 </code></pre></div>
-<p>Filter logs originating from libbpf:</p>
-<div class="highlight"><pre><span></span><code><span class="go">sudo ./dist/tracee --log filter:libbpf</span>
+<p><strong>Filter logs originating from libbpf</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="go">log:</span>
+<span class="go">    filters: </span>
+<span class="go">        libbpf: true</span>
 </code></pre></div>
-<p>All <code>--log filter</code> options can also be used with <code>--log filter-out</code> for the opposite behavior. For more information, please refer to the <code>--log</code> help in the CLI.</p>
+<h2 id="additional-configuration">Additional Configuration<a class="headerlink" href="#additional-configuration" title="Permanent link">&para;</a></h2>
+<p>All <code>filters</code> options can also be used with <code>filter-out</code> to achieve the opposite behavior. </p>
+<p>For instance, the following configuration would exclude all logs with the severity level <code>error</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="go">log:</span>
+<span class="go">    filter-out: </span>
+<span class="go">        level: </span>
+<span class="go">            - error</span>
+</code></pre></div>
 
 
 

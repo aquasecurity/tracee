@@ -22,7 +22,7 @@ tracee \f[B]--log\f[R] - Control logger options - aggregation and level
 priority
 .SS SYNOPSIS
 .PP
-tracee \f[B]--log\f[R] aggregate[:interval] |
+tracee \f[B]--log\f[R] aggregate[:flush-interval] |
 <debug|info|warn|error|panic> | file:/path/to/file |
 filter:[msg=<value,\&...>;regex=<value,\&...>;pkg=<value,\&...>;file=<value,\&...>;lvl=<value,\&...>;libbpf]
 |
@@ -34,10 +34,9 @@ tool.
 .PP
 Possible log options:
 .IP \[bu] 2
-\f[B]aggregate[:interval]\f[R]: Turns log aggregation on, delaying
-output with an optional interval.
-The default interval is off.
-The interval can be specified in seconds (s) or minutes (m).
+\f[B]aggregate[:flush-interval]\f[R]: Turns log aggregation on, delaying
+output with an optional interval (default: 3s).
+The flush-interval can be specified in seconds (s) or minutes (m).
 .IP \[bu] 2
 \f[B]<debug|info|warn|error|panic>\f[R]: Sets the log level.
 The default log level is `info'.

@@ -15821,6 +15821,32 @@
   
   
     <li class="md-nav__item">
+      <a href="docs/advanced/mac/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Mac FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="docs/advanced/forensics/" class="md-nav__link">
         
   
@@ -15856,10 +15882,10 @@
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6_9" >
         
           
-          <label class="md-nav__link" for="__nav_3_6_8" id="__nav_3_6_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_6_9" id="__nav_3_6_9_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -15876,8 +15902,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_6_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_6_8">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_6_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_6_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -16737,10 +16763,10 @@ Events range from factual system activity events to sophisticated security event
 <p>To quickly try Tracee use one of the following snippets. For a more complete installation guide, check out the <a href="docs/install/">Installation section</a>.<br />
 Tracee should run on most common Linux distributions and kernels. For compatibility information see the <a href="docs/install/prerequisites/">Prerequisites</a> page. Mac users, please read <a href="macfaq">this FAQ</a>.</p>
 <h3 id="using-docker">Using Docker<a class="headerlink" href="#using-docker" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>--name<span class="w"> </span>tracee<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>--name<span class="w"> </span>tracee<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--pid<span class="o">=</span>host<span class="w"> </span>--cgroupns<span class="o">=</span>host<span class="w"> </span>--privileged<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-v<span class="w"> </span>/etc/os-release:/etc/os-release-host:ro<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-v<span class="w"> </span>/var/run:/var/run<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-v<span class="w"> </span>/var/run:/var/run:ro<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>aquasec/tracee:latest
 </code></pre></div>
 <p>For a complete walkthrough please see the <a href="docs/install/docker/">Docker getting started guide</a>.</p>

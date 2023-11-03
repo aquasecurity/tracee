@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#kubernetes-tracee-usage" class="md-skip">
+        <a href="#kubernetes-policy-usage" class="md-skip">
           Skip to content
         </a>
       
@@ -15363,6 +15363,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#custom-resource-definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Resource Definition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operator
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#video-content" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -15770,6 +15792,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../advanced/mac/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Mac FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../advanced/forensics/" class="md-nav__link">
         
   
@@ -15805,10 +15853,10 @@
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6_9" >
         
           
-          <label class="md-nav__link" for="__nav_3_6_8" id="__nav_3_6_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_6_9" id="__nav_3_6_9_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -15825,8 +15873,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_6_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_6_8">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_6_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_6_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -16576,6 +16624,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#custom-resource-definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Resource Definition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operator
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#video-content" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -16602,9 +16672,24 @@
                   
 
 
-<h1 id="kubernetes-tracee-usage">Kubernetes Tracee Usage<a class="headerlink" href="#kubernetes-tracee-usage" title="Permanent link">&para;</a></h1>
-<!-- TODO for Jose on the Operator Docs -->
-
+<h1 id="kubernetes-policy-usage">Kubernetes Policy Usage<a class="headerlink" href="#kubernetes-policy-usage" title="Permanent link">&para;</a></h1>
+<h2 id="custom-resource-definition">Custom Resource Definition<a class="headerlink" href="#custom-resource-definition" title="Permanent link">&para;</a></h2>
+<p>Tracee policies can be seamlessly integrated into Kubernetes using Custom Resource Definitions (CRDs). When Tracee is installed, the CRD is automatically applied, including a default policy. One can interact with Tracee policies as follows:</p>
+<p>To view existing Tracee policies, use the following command:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>policies.tracee.aquasec.com
+</code></pre></div>
+<p>One can manage policies using standard kubectl commands. For example, to create, update, or delete a policy:</p>
+<p>Create: Apply a new policy using the kubectl apply command.</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>your-policy.yaml
+</code></pre></div>
+<p>Update: Modify an existing policy using the kubectl edit command.</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>edit<span class="w"> </span>policies.tracee.aquasec.com<span class="w"> </span>&lt;policy-name&gt;
+</code></pre></div>
+<p>Delete: Remove a policy using the kubectl delete command.</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>delete<span class="w"> </span>policies.tracee.aquasec.com<span class="w"> </span>&lt;policy-name&gt;
+</code></pre></div>
+<h2 id="operator">Operator<a class="headerlink" href="#operator" title="Permanent link">&para;</a></h2>
+<p>The Tracee Kubernetes Operator is a custom controller designed to manage Tracee policies as Custom Resource Definitions (CRDs) within a Kubernetes cluster. The Tracee Kubernetes Operator continually monitors changes to Tracee policies within the cluster. When a new policy is created, modified, or deleted, the operator automatically triggers a rolling restart of the Tracee DaemonSet. This ensures that Tracee is always running with the most up-to-date policies, providing enhanced security and compliance for your applications.</p>
 <h2 id="video-content">Video Content<a class="headerlink" href="#video-content" title="Permanent link">&para;</a></h2>
 <p>Tracking Kubernetes activity with eBPF and Tracee Policies </p>
 <p><a href="https://youtu.be/VneWxs9Jpu0?si=eAnRDJVZShhg_td0"><img alt="Watch the video" src="../../../../images/traceepolicies.png" /></a></p>

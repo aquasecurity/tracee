@@ -15719,6 +15719,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../../docs/advanced/mac/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Mac FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../docs/advanced/forensics/" class="md-nav__link">
         
   
@@ -15754,10 +15780,10 @@
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6_9" >
         
           
-          <label class="md-nav__link" for="__nav_3_6_8" id="__nav_3_6_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_6_9" id="__nav_3_6_9_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -15774,8 +15800,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_6_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_6_8">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_6_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_6_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -16552,11 +16578,11 @@
 <div class="highlight"><pre><span></span><code><span class="go">vagrant ssh</span>
 </code></pre></div>
 <p>Now, it is possible to run the Tracee Container image:</p>
-<div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
-<span class="go">  --name tracee --rm -it \</span>
-<span class="go">  --pid=host --cgroupns=host --privileged \</span>
-<span class="go">  -v /etc/os-release:/etc/os-release-host:ro \</span>
-<span class="go">  aquasec/tracee:latest</span>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>--name<span class="w"> </span>tracee<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--pid<span class="o">=</span>host<span class="w"> </span>--cgroupns<span class="o">=</span>host<span class="w"> </span>--privileged<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-v<span class="w"> </span>/etc/os-release:/etc/os-release-host:ro<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-v<span class="w"> </span>/var/run:/var/run:ro<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>aquasec/tracee:latest
 </code></pre></div>
 <p>To learn how to install Tracee in a production environment, <a href="./kubernetes-quickstart">check out the Kubernetes guide</a>.</p>
 
