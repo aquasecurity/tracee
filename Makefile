@@ -941,8 +941,14 @@ $(MAN_DIR)/%: $(MARKDOWN_DIR)/%.md \
 		$< \
 		-o $@
 
+.PHONY: clean-man
+clean-man:
+	@echo Cleaning $(MAN_DIR)
+	@rm -f $(MAN_DIR)/*
+
 .PHONY: man
-man: $(MAN_FILES)
+man: clean-man $(MAN_FILES)
+
 
 #
 # clean
