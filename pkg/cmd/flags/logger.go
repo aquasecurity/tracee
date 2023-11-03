@@ -15,7 +15,7 @@ func logHelp() string {
 	return `Control logger options - aggregation and level priority.
 
 Possible options:
-  --log aggregate[:interval]          | turns log aggregation on, delaying output optional interval (s, m) (default is off)
+  --log aggregate[:flush-interval]    | turns log aggregation on, delaying output with an optional interval (s, m) (default: 3s)
   --log <debug|info|warn|error|panic> | set log level, info is the default
   --log file:/path/to/file            | write the logs to a specified file. create/trim the file if exists (default: stderr)
   --log filter:<option;...>           | Filters in logs that match the specified option values.
@@ -112,12 +112,12 @@ func validateLogOption(opt string) error {
 
 func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, error) {
 	var (
-		agg      bool
-		filter   = logger.NewLoggerFilter()
-		interval = logger.DefaultFlushInterval
-		lvl      = logger.DefaultLevel
-		err      error
-		w        = os.Stderr
+		agg           bool
+		filter        = logger.NewLoggerFilter()
+		flushInterval = logger.DefaultFlushInterval
+		lvl           = logger.DefaultLevel
+		err           error
+		w             = os.Stderr
 	)
 
 	for _, opt := range logOptions {
@@ -159,7 +159,7 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 					return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt, newBinary)
 				}
 
-				interval, err = time.ParseDuration(vals[1])
+				flushInterval, err = time.ParseDuration(vals[1])
 				if err != nil {
 					return logger.LoggingConfig{}, invalidLogOptionValue(nil, opt, newBinary)
 				}
@@ -294,6 +294,6 @@ func PrepareLogger(logOptions []string, newBinary bool) (logger.LoggingConfig, e
 		LoggerConfig:  loggerCfg,
 		Filter:        filter,
 		Aggregate:     agg,
-		FlushInterval: interval,
+		FlushInterval: flushInterval,
 	}, nil
 }

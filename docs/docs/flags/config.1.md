@@ -25,4 +25,4 @@ All flags can be set in the config file, except for the following, which are res
 - **\-\-scope**
 - **\-\-event**
 
-Please refer to the [documentation](../install/config/kubernetes.md)) for more information on the file format and available configuration options.
+Please refer to the [documentation](../install/config/kubernetes.md) for more information on the file format and available configuration options.
