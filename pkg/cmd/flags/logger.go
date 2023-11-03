@@ -15,7 +15,7 @@ func logHelp() string {
 	return `Control logger options - aggregation and level priority.
 
 Possible options:
-  --log aggregate[:interval]          | turns log aggregation on, delaying output optional interval (s, m) (default is off)
+  --log aggregate[:flush-interval]    | turns log aggregation on, delaying output with an optional interval (s, m) (default: 3s)
   --log <debug|info|warn|error|panic> | set log level, info is the default
   --log file:/path/to/file            | write the logs to a specified file. create/trim the file if exists (default: stderr)
   --log filter:<option;...>           | Filters in logs that match the specified option values.

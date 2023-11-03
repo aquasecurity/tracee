@@ -11,7 +11,7 @@ tracee **\-\-log** - Control logger options - aggregation and level priority
 
 ## SYNOPSIS
 
-tracee **\-\-log** aggregate[:interval] | <debug|info|warn|error|panic\> | file:/path/to/file | filter:[msg=<value,...\>;regex=<value,...\>;pkg=<value,...\>;file=<value,...\>;lvl=<value,...\>;libbpf] | filter-out:[msg=<value,...\>;regex=<value,...\>;pkg=<value,...\>;file=<value,...\>;lvl=<value,...\>;libbpf]
+tracee **\-\-log** aggregate[:flush-interval] | <debug|info|warn|error|panic\> | file:/path/to/file | filter:[msg=<value,...\>;regex=<value,...\>;pkg=<value,...\>;file=<value,...\>;lvl=<value,...\>;libbpf] | filter-out:[msg=<value,...\>;regex=<value,...\>;pkg=<value,...\>;file=<value,...\>;lvl=<value,...\>;libbpf]
 
 ## DESCRIPTION
 
@@ -19,7 +19,7 @@ The **\-\-log** flag allows you to control logger options for the tool.
 
 Possible log options:
 
-- **aggregate[:interval]**: Turns log aggregation on, delaying output with an optional interval. The default interval is off. The interval can be specified in seconds (s) or minutes (m).
+- **aggregate[:flush-interval]**: Turns log aggregation on, delaying output with an optional interval (default: 3s). The flush-interval can be specified in seconds (s) or minutes (m).
 
 - **<debug|info|warn|error|panic\>**: Sets the log level. The default log level is 'info'.
 
