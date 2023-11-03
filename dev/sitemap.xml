@@ -2851,11 +2851,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/docs/policies/kubernetes/</loc>
-         <lastmod>2023-11-03</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/docs/policies/rules/</loc>
          <lastmod>2023-11-03</lastmod>
          <changefreq>daily</changefreq>
