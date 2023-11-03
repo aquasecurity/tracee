@@ -704,6 +704,31 @@ clean-e2e-inst-signatures:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/e2e-inst-signatures
 
+
+AWK_CMD_TEST_COLOR = '{ \
+    if (/^===/) { \
+        match($$0, /^=== [^ ]+/); \
+        printf "\033[34m%s\033[0m", substr($$0, 1, RLENGTH); \
+        printf "\033[38;5;208m%s\033[0m\n", substr($$0, RLENGTH + 1); \
+    } else if (/^--- PASS:/) { \
+        printf "\033[32m%s\033[0m", substr($$0, 1, 4); \
+        match($$0, /PASS/); \
+        printf "\033[42;30m%s\033[0m", substr($$0, RSTART, RLENGTH); \
+        printf "\033[32m%s\033[0m\n", substr($$0, RSTART + RLENGTH); \
+    } else if (/^PASS$$/) { \
+        printf "\033[42;30m%s\033[0m\n", $$0; \
+    } else if (/^--- FAIL:/) { \
+		printf "\033[91m%s\033[0m", substr($$0, 1, 4); \
+        match($$0, /FAIL/); \
+        printf "\033[41;37m%s\033[0m", substr($$0, RSTART, RLENGTH); \
+        printf "\033[91m%s\033[0m\n", substr($$0, RSTART + RLENGTH); \
+    } else if (/^FAIL$$/) { \
+        printf "\033[41m\033[97m%s\033[0m\n", $$0; \
+    } else { \
+        print \
+    } \
+}'
+
 #
 # unit tests
 #
@@ -712,7 +737,8 @@ clean-e2e-inst-signatures:
 test-unit: \
 	.checkver_$(CMD_GO) \
 	tracee-ebpf \
-	test-types
+	test-types \
+	| .check_$(CMD_AWK)
 #
 	@$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
@@ -725,10 +751,12 @@ test-unit: \
 		./cmd/... \
 		./pkg/... \
 		./signatures/... \
+		| awk $(AWK_CMD_TEST_COLOR)
 
 .PHONY: test-types
 test-types: \
-	.checkver_$(CMD_GO)
+	.checkver_$(CMD_GO) \
+	| .check_$(CMD_AWK)
 #
 	# Note that we must changed the directory here because types is a standalone Go module.
 	@cd ./types && $(CMD_GO) test \
@@ -737,7 +765,8 @@ test-types: \
 		-shuffle on \
 		-v \
 		-coverprofile=coverage.txt \
-		./...
+		./... \
+		| awk $(AWK_CMD_TEST_COLOR)
 
 #
 # integration tests
@@ -755,7 +784,8 @@ $(OUTPUT_DIR)/syscaller: \
 test-integration: \
 	.checkver_$(CMD_GO) \
 	$(OUTPUT_DIR)/syscaller \
-	tracee-ebpf
+	tracee-ebpf \
+	| .check_$(CMD_AWK)
 #
 	@$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
@@ -770,6 +800,7 @@ test-integration: \
 		-p 1 \
 		-count=1 \
 		./tests/integration/... \
+		| awk $(AWK_CMD_TEST_COLOR)
 
 .PHONY: test-signatures
 test-signatures: \
@@ -791,7 +822,8 @@ test-upstream-libbpfgo: \
 .PHONY: test-performance
 test-performance: \
 	.checkver_$(CMD_GO) \
-	tracee
+	tracee \
+	| .check_$(CMD_AWK)
 #
 	@$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
@@ -806,6 +838,7 @@ test-performance: \
 		-p 1 \
 		-count=1 \
 		./tests/perftests/... \
+		| awk $(AWK_CMD_TEST_COLOR)
 
 #
 # code checkers (hidden from help on purpose)
