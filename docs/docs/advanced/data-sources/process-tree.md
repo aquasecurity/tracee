@@ -83,7 +83,7 @@ The process tree is only available internally, to tracee's components, but, thro
 
 ### Accessing the Process Tree Data Source
 
-> Make sure to read [Golang Signatures](../events/custom/golang.md) first.
+> Make sure to read [Golang Signatures](../../events/custom/golang.md) first.
 
 During the signature initialization, get the process tree data source instance:
 
