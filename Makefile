@@ -257,7 +257,7 @@ help:
 	@echo "    $$ make e2e-net-signatures       # build ./dist/e2e-net-signatures"
 	@echo "    $$ make e2e-inst-signatures      # build ./dist/e2e-inst-signatures"
 	@echo "    $$ make tracee                   # build ./dist/tracee"
-	@echo "    $$ make tracee-operator			# build ./dist/tracee-operator"
+	@echo "    $$ make tracee-operator          # build ./dist/tracee-operator"
 	@echo ""
 	@echo "# clean"
 	@echo ""
