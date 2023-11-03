@@ -11,12 +11,12 @@ When running Tracee in a container, the runtime sockets must be mounted to be av
 
 For example, if running Tracee using Docker, and ContainerD runtime:
 
-```console
-docker run \
-    --pid=host --cgroupns=host --privileged \
-    -v /etc/os-release:/etc/os-release-host:ro \
-    -v /var/run/containerd:/var/run/containerd \
-    aquasec/tracee
+```shell
+docker run --name tracee -it --rm \
+  --pid=host --cgroupns=host --privileged \
+  -v /etc/os-release:/etc/os-release-host:ro \
+  -v /var/run/containerd:/var/run/containerd:ro \
+  aquasec/tracee:latest
 ```
 
 Most container runtimes have their sockets installed by default in `/var/run`, so mounting this path can also be a good option.

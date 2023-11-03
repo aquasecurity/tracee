@@ -18,14 +18,13 @@ This guide will help you get started with running Tracee as a container.
 
  Here is the docker run command, we will analyze it next:
 
- ```shell
- docker run \
-   --name tracee --rm -it \
-   --pid=host --cgroupns=host --privileged \
-   -v /etc/os-release:/etc/os-release-host:ro \
-   -v /var/run:/var/run \
-   aquasec/tracee:latest
- ```
+```shell
+docker run --name tracee -it --rm \
+  --pid=host --cgroupns=host --privileged \
+  -v /etc/os-release:/etc/os-release-host:ro \
+  -v /var/run:/var/run:ro \
+  aquasec/tracee:latest
+```
 
  1. Docker general flags:
      1.1 `--name` - name our container so that we can interact with it easily.

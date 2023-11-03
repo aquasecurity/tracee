@@ -46,13 +46,14 @@ Alternative, on a MacBook it is possible to use Vagrant with Parallels as detail
 Tracee can be most easily deployed with metrics enabled by default and port
 forwarded through the following commands:
 
-```console
-docker run \
-    --name tracee --rm --pid=host \
-    --cgroupns=host --privileged \
-    -v /tmp/tracee:/tmp/tracee  \
-    -v /etc/os-release:/etc/os-release-host:ro \
-    -it -p 3366:3366 aquasec/tracee:latest
+```shell
+docker run --name tracee -it --rm \
+  --pid=host --cgroupns=host --privileged \
+  -v /etc/os-release:/etc/os-release-host:ro \
+  -v /var/run:/var/run:ro \
+  -p 3366:3366 \
+  aquasec/tracee:latest \
+  --metrics 
 ```
 
 Of course, the forwarded metrics ports can be changed, but you should note that
