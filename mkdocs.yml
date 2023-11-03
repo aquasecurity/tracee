@@ -582,6 +582,7 @@ nav:
                 - Kernel Symbols: docs/advanced/ksyms.md
                 - Secure Tracing: docs/advanced/secure-tracing.md
                 - OS Info: docs/advanced/os-info.md
+                - Mac FAQ: docs/advanced/mac.md
                 - Forensics: docs/advanced/forensics.md
                 - Data Sources:
                     - Overview: docs/advanced/data-sources/overview.md

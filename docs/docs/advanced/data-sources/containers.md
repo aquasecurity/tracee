@@ -1,6 +1,6 @@
 # Containers Data Source
 
-The [container enrichment](../install/container-engines.md) feature gives Tracee the ability to extract details about active containers and link this information to the events it captures.
+The [container enrichment](../../install/container-engines.md) feature gives Tracee the ability to extract details about active containers and link this information to the events it captures.
 
 The [data source](./overview.md) feature makes the information gathered from active containers accessible to signatures. When an event is captured and triggers a signature, that signature can retrieve information about the container using its container ID, which is bundled with the event being analyzed by the signature.
 
@@ -26,7 +26,7 @@ From the structure above, using the container ID lets you access details like th
 
 ## Using the Containers Data Source
 
-> Make sure to read [Golang Signatures](../events/custom/golang.md) first.
+> Make sure to read [Golang Signatures](../../events/custom/golang.md) first.
 
 ### Signature Initialization
 
