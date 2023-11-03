@@ -59,9 +59,9 @@ env:
     DNS
     HTTP
   INSTTESTS: >
-    HOOKED_SYSCALL
     VFS_WRITE
     FILE_MODIFICATION
+    HOOKED_SYSCALL
     SECURITY_INODE_RENAME
     BPF_ATTACH
     CONTAINERS_DATA_SOURCE
@@ -294,9 +294,9 @@ jobs:
           if [[ "${{ matrix.arch }}" == "aarch64" ]]; then
             echo "TESTS=${{ env.ARM64_TESTS }}" >> $GITHUB_ENV
           fi
-      - name: "Kernel Test"
-        run: ./tests/e2e-kernel-test.sh
-      - name: "Network Test"
-        run: ./tests/e2e-net-test.sh
       - name: "Instrumentation Test"
         run: ./tests/e2e-inst-test.sh
+      - name: "Network Test"
+        run: ./tests/e2e-net-test.sh
+      - name: "Kernel Test"
+        run: ./tests/e2e-kernel-test.sh
