@@ -16,6 +16,8 @@ on:
       - "!**.txt"
       - "!**.conf"
       # override previous rules:
+      - "docs/docs/flags/**"
+      - "docs/man/**"
       - "go.mod"
       - "go.sum"
       - "**.c"
@@ -67,6 +69,49 @@ env:
     CONTAINERS_DATA_SOURCE
     PROCTREE_DATA_SOURCE
 jobs:
+  #
+  # DOC VERIFICATION
+  #
+  verify-docs:
+    name: Verify Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Check if flags flags man/markdown docs were changed
+        id: changed-files
+        uses: tj-actions/changed-files@v40
+        with:
+          files_yaml: |
+            md_files:
+              - "docs/docs/flags/**/*.1.md"
+            man_files:
+              - "docs/man/**/*.1"
+      - name: Ensure updates of *.1.md and *.1 pairs
+        if: ${{ steps.changed-files.outputs.md_files_any_modified == 'true' || steps.changed-files.outputs.man_files_any_modified == 'true' }}
+        run: |
+          md_files=$(echo "${{ steps.changed-files.outputs.md_files_all_modified_files }}" | xargs -n 1 basename | sed 's/\.1.md$//')
+          man_files=$(echo "${{ steps.changed-files.outputs.man_files_all_modified_files }}" | xargs -n 1 basename | sed 's/\.1$//')
+
+          missing_updates=()
+          for base_name in $md_files; do
+            if ! grep -Fxq "$base_name" <<< "$man_files"; then
+              missing_updates+=("$base_name.1.md change requires corresponding $base_name.1 change")
+            fi
+          done
+
+          for base_name in $man_files; do
+            if ! grep -Fxq "$base_name" <<< "$md_files"; then
+              missing_updates+=("$base_name.1 change requires corresponding $base_name.1.md change")
+            fi
+          done
+
+          if [ ${#missing_updates[@]} -ne 0 ]; then
+            printf "%s\n" "${missing_updates[@]}"
+            echo "--- change only '.1.md' files and run 'make man' to update the respective '.1' ones"
+            exit 1
+          fi
+
   #
   # CODE VERIFICATION
   #
