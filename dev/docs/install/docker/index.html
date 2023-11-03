@@ -16637,18 +16637,17 @@
 <p>## Tracee container image</p>
 <p>Tracee container image is available in Docker Hub as <a href="https://hub.docker.com/r/aquasec/tracee">aquasec/tracee</a>.</p>
 <ul>
-<li>You can use the <code>latest</code> tag or a named version version e.g <code>aquasec/tracee:v0.19.0-4-g71bb82639</code>.</li>
+<li>You can use the <code>latest</code> tag or a named version version e.g <code>aquasec/tracee:v0.19.0-6-g40cac0a81</code>.</li>
 <li>If you are trying the most cutting edge features, there is also a <code>dev</code> tag which is built nightly from source.</li>
 <li>The Tracee image is a <a href="https://docs.docker.com/build/building/multi-platform/">Multi-platform</a> image that includes a x86 and arm64 flavors. You can also access the platform-specific images directly with the <code>aarch64</code> and <code>x86_64</code> tags for the latest version or <code>aarch64-&lt;version&gt;</code> and <code>x86_64-&lt;version&gt;</code> for a specific version.  </li>
 <li>For most first time users, just use <code>aquasec/tracee</code>!</li>
 </ul>
 <p>## Running Tracee container</p>
 <p>Here is the docker run command, we will analyze it next:</p>
-<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--name<span class="w"> </span>tracee<span class="w"> </span>--rm<span class="w"> </span>-it<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>--name<span class="w"> </span>tracee<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--pid<span class="o">=</span>host<span class="w"> </span>--cgroupns<span class="o">=</span>host<span class="w"> </span>--privileged<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-v<span class="w"> </span>/etc/os-release:/etc/os-release-host:ro<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-v<span class="w"> </span>/var/run:/var/run<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-v<span class="w"> </span>/var/run:/var/run:ro<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>aquasec/tracee:latest
 </code></pre></div>
 <ol>

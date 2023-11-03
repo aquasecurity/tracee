@@ -16813,12 +16813,13 @@ Alternative, on a MacBook it is possible to use Vagrant with Parallels as detail
 <h3 id="run-tracee-with-metrics-enabled-the-docker-command">Run Tracee with Metrics Enabled -- The Docker Command<a class="headerlink" href="#run-tracee-with-metrics-enabled-the-docker-command" title="Permanent link">&para;</a></h3>
 <p>Tracee can be most easily deployed with metrics enabled by default and port
 forwarded through the following commands:</p>
-<div class="highlight"><pre><span></span><code><span class="go">docker run \</span>
-<span class="go">    --name tracee --rm --pid=host \</span>
-<span class="go">    --cgroupns=host --privileged \</span>
-<span class="go">    -v /tmp/tracee:/tmp/tracee  \</span>
-<span class="go">    -v /etc/os-release:/etc/os-release-host:ro \</span>
-<span class="go">    -it -p 3366:3366 aquasec/tracee:latest</span>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>--name<span class="w"> </span>tracee<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--pid<span class="o">=</span>host<span class="w"> </span>--cgroupns<span class="o">=</span>host<span class="w"> </span>--privileged<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-v<span class="w"> </span>/etc/os-release:/etc/os-release-host:ro<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-v<span class="w"> </span>/var/run:/var/run:ro<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span><span class="m">3366</span>:3366<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>aquasec/tracee:latest<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--metrics<span class="w"> </span>
 </code></pre></div>
 <p>Of course, the forwarded metrics ports can be changed, but you should note that
 some of the later instructions depend on these ports.</p>

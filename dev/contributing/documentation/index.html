@@ -16645,10 +16645,10 @@
 <p>You can test your changes to the documentation by building and running a docker container.</p>
 <p>Prerequisites: Docker installed and running locally.</p>
 <p>Build the container image:
-<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>builder/Dockerfile.mkdocs<span class="w"> </span>-t<span class="w"> </span>tracee:docs<span class="w"> </span>.
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>./builder/Makefile.mkdocs<span class="w"> </span>mkdocs-build
 </code></pre></div></p>
 <p>Serve the container image:
-<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>-v<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>:/docs<span class="w"> </span>-p<span class="w"> </span><span class="m">8000</span>:8000<span class="w"> </span>tracee:docs
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>-f<span class="w"> </span>./builder/Makefile.mkdocs<span class="w"> </span>mkdocs-serve
 </code></pre></div></p>
 <p>Open <code>localhost:8000/tracee</code></p>
 <p>Now you should see the documentation.</p>
