@@ -1,4 +1,4 @@
-# CLI Usage
+# CLI Policy Usage
 
 This section details how to use the flags in the Tracee CLI.
 
