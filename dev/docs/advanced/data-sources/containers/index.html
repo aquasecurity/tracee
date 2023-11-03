@@ -15711,6 +15711,32 @@
   
   
     <li class="md-nav__item">
+      <a href="../../mac/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Mac FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../forensics/" class="md-nav__link">
         
   
@@ -15748,10 +15774,10 @@
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6_8" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6_9" checked>
         
           
-          <label class="md-nav__link" for="__nav_3_6_8" id="__nav_3_6_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_6_9" id="__nav_3_6_9_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -15768,8 +15794,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_6_8_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_3_6_8">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_6_9_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_6_9">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -16681,7 +16707,7 @@
 
 
 <h1 id="containers-data-source">Containers Data Source<a class="headerlink" href="#containers-data-source" title="Permanent link">&para;</a></h1>
-<p>The <a href="../install/container-engines.md">container enrichment</a> feature gives Tracee the ability to extract details about active containers and link this information to the events it captures.</p>
+<p>The <a href="../../../install/container-engines/">container enrichment</a> feature gives Tracee the ability to extract details about active containers and link this information to the events it captures.</p>
 <p>The <a href="../overview/">data source</a> feature makes the information gathered from active containers accessible to signatures. When an event is captured and triggers a signature, that signature can retrieve information about the container using its container ID, which is bundled with the event being analyzed by the signature.</p>
 <h2 id="internal-data-organization">Internal Data Organization<a class="headerlink" href="#internal-data-organization" title="Permanent link">&para;</a></h2>
 <p>From the <a href="../overview/">data-sources documentation</a>, you'll see that searches use keys. It's a bit like looking up information with a specific tag (or a key=value storage).</p>
@@ -16699,7 +16725,7 @@
 <p>From the structure above, using the container ID lets you access details like the originating Kubernetes pod name or the image utilized by the container.</p>
 <h2 id="using-the-containers-data-source">Using the Containers Data Source<a class="headerlink" href="#using-the-containers-data-source" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p>Make sure to read <a href="../events/custom/golang.md">Golang Signatures</a> first.</p>
+<p>Make sure to read <a href="../../../events/custom/golang/">Golang Signatures</a> first.</p>
 </blockquote>
 <h3 id="signature-initialization">Signature Initialization<a class="headerlink" href="#signature-initialization" title="Permanent link">&para;</a></h3>
 <p>During the signature initialization, get the containers data source instance:</p>
