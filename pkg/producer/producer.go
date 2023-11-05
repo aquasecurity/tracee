@@ -12,6 +12,7 @@ type EventsProducer interface {
 	// Produce produces a single event.
 	// Return io.EOF for end of events stream.
 	Produce() (trace.Event, error)
+	Done() <-chan struct{}
 }
 
 func New(cfg *config.ProducerConfig) (EventsProducer, error) {

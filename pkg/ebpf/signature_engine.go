@@ -2,6 +2,7 @@ package ebpf
 
 import (
 	"context"
+	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -45,19 +46,25 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 
 	go t.sigEngine.Start(ctx)
 
+	// Use wait group to close output channels only upon the end of both internal goroutines
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
 	// TODO: in the upcoming releases, the rule engine should be changed to receive trace.Event,
 	// and return a trace.Event, which should remove the necessity of converting trace.Event to protocol.Event,
 	// and converting detect.Finding into trace.Event
 
 	go func() {
-		defer close(out)
-		defer close(errc)
 		defer close(engineInput)
 		defer close(engineOutput)
+		defer wg.Done()
 
 		for {
 			select {
-			case event := <-in:
+			case event, ok := <-in:
+				if !ok {
+					return
+				}
 				if event == nil {
 					continue // might happen during initialization (ctrl+c seg faults)
 				}
@@ -91,9 +98,13 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 	}()
 
 	go func() {
+		defer wg.Done()
 		for {
 			select {
-			case finding := <-engineOutput:
+			case finding, ok := <-engineOutput:
+				if !ok {
+					return
+				}
 				if finding.Event.Payload == nil {
 					continue // might happen during initialization (ctrl+c seg faults)
 				}
@@ -114,6 +125,12 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 				return
 			}
 		}
+	}()
+
+	go func() {
+		wg.Wait()
+		close(out)
+		close(errc)
 	}()
 
 	return out, errc

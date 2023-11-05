@@ -1446,11 +1446,19 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 // runAnalyze is the version of the Run method for the Analyze mode
 func (t *Tracee) runAnalyze(ctx gocontext.Context) error {
-	go t.handleEvents(ctx)
+	pipelineDone := make(chan struct{})
+	go func() {
+		t.handleEvents(ctx)
+		close(pipelineDone)
+	}()
 
 	t.running.Store(true) // set running state after writing pid file
 	t.ready(ctx)          // executes ready callback, non blocking
-	<-ctx.Done()          // block until ctx is cancelled elsewhere
+	select {
+	case <-ctx.Done(): // block until ctx is cancelled elsewhere
+	case <-pipelineDone:
+		break
+	}
 
 	t.Close() // close Tracee
 
@@ -1514,8 +1522,10 @@ func (t *Tracee) Close() {
 			logger.Errorw("failed to clean containers module when closing tracee", "err", err)
 		}
 	}
-	if err := t.cgroups.Destroy(); err != nil {
-		logger.Errorw("Cgroups destroy", "error", err)
+	if t.cgroups != nil {
+		if err := t.cgroups.Destroy(); err != nil {
+			logger.Errorw("Cgroups destroy", "error", err)
+		}
 	}
 
 	// set 'running' to false and close 'done' channel only after attempting to close all resources
