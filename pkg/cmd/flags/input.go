@@ -33,7 +33,7 @@ func PrepareInput(inputOption string) (*config.ProducerConfig, error) {
 				inputOption,
 			)
 		}
-		err = parseTraceeInputFile(&inputSourceOptions, fileOpt)
+		err = parseTraceeInputSource(&inputSourceOptions, fileOpt)
 		if err != nil {
 			return &inputSourceOptions, err
 		}
@@ -46,7 +46,7 @@ func PrepareInput(inputOption string) (*config.ProducerConfig, error) {
 	return &inputSourceOptions, nil
 }
 
-func parseTraceeInputFile(option *config.ProducerConfig, fileOpt string) error {
+func parseTraceeInputSource(option *config.ProducerConfig, fileOpt string) error {
 	var f *os.File
 
 	if fileOpt == "stdin" {
