@@ -55,8 +55,8 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 	// and converting detect.Finding into trace.Event
 
 	go func() {
+		// engineOutput will be closed by the engine upon ending
 		defer close(engineInput)
-		defer close(engineOutput)
 		defer wg.Done()
 
 		for {
