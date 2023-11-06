@@ -349,6 +349,18 @@ func (t *Tracee) normalizeEventCtxTimes(event *trace.Event) error {
 	return nil
 }
 
+// getOrigEvtTimestamp returns the original timestamp of the event.
+// To be used only when the event timestamp was normalized via normalizeEventCtxTimes.
+func (t *Tracee) getOrigEvtTimestamp(event *trace.Event) int {
+	if t.config.Output.RelativeTime {
+		// if the time was normalized relative to tracee start time, add the start time back
+		return event.Timestamp + int(t.startTime)
+	}
+
+	// if the time was normalized to "wall" time, subtract the boot time
+	return event.Timestamp - int(t.bootTime)
+}
+
 // processSchedProcessFork processes a sched_process_fork event by normalizing the start time.
 func (t *Tracee) processSchedProcessFork(event *trace.Event) error {
 	return t.normalizeEventArgTime(event, "start_time")

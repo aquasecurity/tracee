@@ -694,8 +694,9 @@ func (t *Tracee) parseArguments(e *trace.Event) error {
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
+
 		if t.config.Output.ParseArgumentsFDs {
-			return events.ParseArgsFDs(e, t.FDArgPathMap)
+			return events.ParseArgsFDs(e, uint64(t.getOrigEvtTimestamp(e)), t.FDArgPathMap)
 		}
 	}
 
