@@ -54,14 +54,14 @@ func (r Runner) Run(ctx context.Context) error {
 		},
 	)
 
+	// Initialize tracee
+
+	err = t.Init(ctx)
+	if err != nil {
+		return errfmt.Errorf("error initializing Tracee: %v", err)
+	}
+
 	if !r.TraceeConfig.Analyze {
-		// Initialize tracee
-
-		err = t.Init(ctx)
-		if err != nil {
-			return errfmt.Errorf("error initializing Tracee: %v", err)
-		}
-
 		// Manage PID file
 
 		if err := writePidFile(t.OutDir); err != nil {

@@ -66,16 +66,18 @@ type ProcTreeConfig struct {
 	Source           SourceType
 	ProcessCacheSize int
 	ThreadCacheSize  int
+	ProcfsQuery      bool
 }
 
 // ProcessTree is a tree of processes and threads.
 type ProcessTree struct {
-	processes  *lru.Cache[uint32, *Process] // hash -> process
-	threads    *lru.Cache[uint32, *Thread]  // hash -> threads
-	procfsChan chan int                     // channel of pids to read from procfs
-	procfsOnce *sync.Once                   // busy loop debug message throttling
-	ctx        context.Context              // context for the process tree
-	mutex      *sync.RWMutex                // mutex for the process tree
+	processes   *lru.Cache[uint32, *Process] // hash -> process
+	threads     *lru.Cache[uint32, *Thread]  // hash -> threads
+	procfsChan  chan int                     // channel of pids to read from procfs
+	procfsOnce  *sync.Once                   // busy loop debug message throttling
+	ctx         context.Context              // context for the process tree
+	mutex       *sync.RWMutex                // mutex for the process tree
+	procfsQuery bool                         // should use procfs queries
 }
 
 // NewProcessTree creates a new process tree.
@@ -133,14 +135,17 @@ func NewProcessTree(ctx context.Context, config ProcTreeConfig) (*ProcessTree, e
 	}()
 
 	procTree := &ProcessTree{
-		processes: processes,
-		threads:   threads,
-		ctx:       ctx,
-		mutex:     &sync.RWMutex{},
+		processes:   processes,
+		threads:     threads,
+		ctx:         ctx,
+		mutex:       &sync.RWMutex{},
+		procfsQuery: config.ProcfsQuery,
 	}
 
-	// Walk procfs and feed the process tree with data.
-	procTree.FeedFromProcFSAsync(AllPIDs)
+	if config.ProcfsQuery {
+		// Walk procfs and feed the process tree with data.
+		procTree.FeedFromProcFSAsync(AllPIDs)
+	}
 
 	return procTree, nil
 }

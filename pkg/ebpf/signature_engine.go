@@ -74,16 +74,17 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 				// if the event is marked as submit, we pass it to the engine
 				if t.eventsState[id].Submit > 0 {
 
-					err := t.parseArguments(event)
+					// Get a copy of our event before sending it down the pipeline.
+					// This is needed because a later modification of the event (in
+					// particular of the matched policies) can affect engine stage.
+					eventCopy := *event
+
+					err := t.parseArguments(&eventCopy)
 					if err != nil {
 						t.handleError(err)
 						continue
 					}
 
-					// Get a copy of our event before sending it down the pipeline.
-					// This is needed because a later modification of the event (in
-					// particular of the matched policies) can affect engine stage.
-					eventCopy := *event
 					// pass the event to the sink stage, if the event is also marked as emit
 					// it will be sent to print by the sink stage
 					out <- event
@@ -140,8 +141,10 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 func (t *Tracee) PrepareBuiltinDataSources() []detect.DataSource {
 	datasources := []detect.DataSource{}
 
-	// Containers Data Source
-	datasources = append(datasources, containers.NewDataSource(t.containers))
+	if t.config.Analyze {
+		// Containers Data Source
+		datasources = append(datasources, containers.NewDataSource(t.containers))
+	}
 
 	// Process Tree Data Source
 	switch t.config.ProcTree.Source {

@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/aquasecurity/tracee/types/datasource"
 	"strings"
+	"time"
 
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
@@ -11,15 +13,30 @@ import (
 )
 
 type LdPreload struct {
-	cb          detect.SignatureHandler
-	preloadEnvs []string
-	preloadPath string
+	cb            detect.SignatureHandler
+	preloadEnvs   []string
+	preloadPath   string
+	processTreeDS detect.DataSource
 }
 
 func (sig *LdPreload) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 	sig.preloadEnvs = []string{"LD_PRELOAD", "LD_LIBRARY_PATH"}
 	sig.preloadPath = "/etc/ld.so.preload"
+
+	processTreeDataSource, ok := ctx.GetDataSource("tracee", "process_tree")
+	if !ok {
+		return fmt.Errorf("data source tracee/process_tree is not registered")
+	}
+
+	if processTreeDataSource.Version() > 1 {
+		return fmt.Errorf(
+			"data source tracee/process_tree version %d is not supported",
+			processTreeDataSource.Version(),
+		)
+	}
+
+	sig.processTreeDS = processTreeDataSource
 	return nil
 }
 
@@ -65,6 +82,10 @@ func (sig *LdPreload) OnEvent(event protocol.Event) error {
 		for _, envVar := range envVars {
 			for _, preloadEnv := range sig.preloadEnvs {
 				if strings.HasPrefix(envVar, preloadEnv+"=") {
+					lineage, err := sig.getLineage(&eventObj)
+					if err != nil {
+						return err
+					}
 					metadata, err := sig.GetMetadata()
 					if err != nil {
 						return err
@@ -72,7 +93,7 @@ func (sig *LdPreload) OnEvent(event protocol.Event) error {
 					sig.cb(detect.Finding{
 						SigMetadata: metadata,
 						Event:       event,
-						Data:        map[string]interface{}{preloadEnv: envVar},
+						Data:        map[string]interface{}{preloadEnv: envVar, "lineage": lineage},
 					})
 
 					return nil
@@ -127,3 +148,22 @@ func (sig *LdPreload) OnSignal(s detect.Signal) error {
 	return nil
 }
 func (sig *LdPreload) Close() {}
+
+func (sig *LdPreload) getLineage(eventObj *trace.Event) (datasource.ProcessLineage, error) {
+	// Pick the lineage info from the data source.
+	lineageQueryAnswer, err := sig.processTreeDS.Get(
+		datasource.LineageKey{
+			EntityId: eventObj.ProcessEntityId,
+			Time:     time.Unix(0, int64(eventObj.Timestamp)), // at the time event was emitted
+			MaxDepth: 5,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("could not find lineage")
+	}
+	lineageInfo, ok := lineageQueryAnswer["process_lineage"].(datasource.ProcessLineage)
+	if !ok {
+		return nil, fmt.Errorf("failed to extract ProcessLineage from data")
+	}
+	return lineageInfo, nil
+}

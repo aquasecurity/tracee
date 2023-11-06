@@ -331,25 +331,6 @@ func New(cfg config.Config) (*Tracee, error) {
 		t.config.MaxPidsCache = 5 // TODO: configure this ? never set, default = 5
 	}
 
-	t.pidsInMntns.Init(t.config.MaxPidsCache)
-
-	// Initialize events pool
-
-	t.eventsPool = &sync.Pool{
-		New: func() interface{} {
-			return &trace.Event{}
-		},
-	}
-
-	// Initialize events sorting (pipeline step)
-
-	if t.config.Output.EventsSorting {
-		t.eventsSorter, err = sorting.InitEventSorter()
-		if err != nil {
-			return t, errfmt.WrapError(err)
-		}
-	}
-
 	return t, nil
 }
 
@@ -359,6 +340,10 @@ func New(cfg config.Config) (*Tracee, error) {
 // here and not New().
 func (t *Tracee) Init(ctx gocontext.Context) error {
 	// Initialize needed values
+
+	if t.config.Analyze {
+		return t.analyzeInit(ctx)
+	}
 
 	initReq, err := t.generateInitValues()
 	if err != nil {
@@ -382,6 +367,8 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	t.validateKallsymsDependencies() // Canceling events missing kernel symbols
 
 	// Initialize buckets cache
+
+	t.pidsInMntns.Init(t.config.MaxPidsCache)
 
 	var mntNSProcs map[int]int
 
@@ -503,10 +490,65 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	}
 	t.FDArgPathMap = fdArgPathMap
 
+	// Initialize events sorting (pipeline step)
+
+	if t.config.Output.EventsSorting {
+		t.eventsSorter, err = sorting.InitEventSorter()
+		if err != nil {
+			return errfmt.WrapError(err)
+		}
+	}
+
+	// Initialize events pool
+
+	t.eventsPool = &sync.Pool{
+		New: func() interface{} {
+			return &trace.Event{}
+		},
+	}
+
 	// Initialize times
 
 	t.startTime = uint64(utils.GetStartTimeNS())
 	t.bootTime = uint64(utils.GetBootTimeNS())
+
+	return nil
+}
+
+// analyzeInit is a reduced version of the Init method.
+// The difference between the two is that it contains only non-runtime objects initialization.
+// All initializations which don't depend on runtime environment should be added here in addition
+// to the Init method.
+func (t *Tracee) analyzeInit(ctx gocontext.Context) error {
+	var err error
+
+	t.pidsInMntns.Init(t.config.MaxPidsCache)
+
+	// Initialize events pool
+
+	t.eventsPool = &sync.Pool{
+		New: func() interface{} {
+			return &trace.Event{}
+		},
+	}
+
+	// Initialize events sorting (pipeline step)
+
+	if t.config.Output.EventsSorting {
+		t.eventsSorter, err = sorting.InitEventSorter()
+		if err != nil {
+			return errfmt.WrapError(err)
+		}
+	}
+
+	// Initialize Process Tree (if enabled)
+
+	if t.config.ProcTree.Source != proctree.SourceNone {
+		t.processTree, err = proctree.NewProcessTree(ctx, t.config.ProcTree)
+		if err != nil {
+			return errfmt.WrapError(err)
+		}
+	}
 
 	return nil
 }

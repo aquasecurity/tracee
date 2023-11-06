@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	cmdcobra "github.com/aquasecurity/tracee/pkg/cmd/cobra"
+	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/version"
-	"github.com/spf13/viper"
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,8 +16,6 @@ import (
 
 func init() {
 	rootCmd.AddCommand(analyze)
-
-	var err error
 
 	// flags
 
@@ -37,11 +35,6 @@ func init() {
 		[]string{},
 		"Directory where to search for signatures in CEL (.yaml), OPA (.rego), and Go plugin (.so) formats",
 	)
-	err = viper.BindPFlag("signatures-dir", analyze.Flags().Lookup("signatures-dir"))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-		os.Exit(1)
-	}
 
 	// rego
 	analyze.Flags().StringArray(
@@ -49,11 +42,6 @@ func init() {
 		[]string{},
 		"Control event rego settings",
 	)
-	err = viper.BindPFlag("rego", analyze.Flags().Lookup("rego"))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-		os.Exit(1)
-	}
 
 	analyze.Flags().StringArrayP(
 		"output",
@@ -61,11 +49,6 @@ func init() {
 		[]string{"table"},
 		"[json|none|webhook...]\t\tControl how and where output is printed",
 	)
-	err = viper.BindPFlag("output", analyze.Flags().Lookup("output"))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
 
 	// config is not bound to viper
 	analyze.Flags().StringVar(
@@ -81,11 +64,6 @@ func init() {
 		[]string{"none"},
 		"[process|thread]\t\t\tControl process tree options",
 	)
-	err = viper.BindPFlag("proctree", analyze.Flags().Lookup("proctree"))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
 
 	analyze.Flags().StringP(
 		"input",
@@ -93,11 +71,6 @@ func init() {
 		"json",
 		"[json|rego]\t\tControl how and where input events stream is received",
 	)
-	err = viper.BindPFlag("input", analyze.Flags().Lookup("input"))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
 
 	// Scope/Event/Policy flags
 
@@ -131,11 +104,44 @@ func init() {
 		[]string{"info"},
 		"[debug|info|warn...]\t\tLogger options",
 	)
-	err = viper.BindPFlag("log", analyze.Flags().Lookup("log"))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
+
+	// Server flags
+
+	analyze.Flags().Bool(
+		server.MetricsEndpointFlag,
+		false,
+		"\t\t\t\t\tEnable metrics endpoint",
+	)
+
+	analyze.Flags().Bool(
+		server.HealthzEndpointFlag,
+		false,
+		"\t\t\t\t\tEnable healthz endpoint",
+	)
+
+	analyze.Flags().Bool(
+		server.PProfEndpointFlag,
+		false,
+		"\t\t\t\t\tEnable pprof endpoints",
+	)
+
+	analyze.Flags().Bool(
+		server.PyroscopeAgentFlag,
+		false,
+		"\t\t\t\t\tEnable pyroscope agent",
+	)
+
+	analyze.Flags().String(
+		server.HTTPListenEndpointFlag,
+		":3366",
+		"<url:port>\t\t\t\tListening address of the metrics endpoint server",
+	)
+
+	analyze.Flags().String(
+		server.GRPCListenEndpointFlag,
+		"", // disabled by default
+		"<protocol:addr>\t\t\tListening address of the grpc server eg: tcp:4466, unix:/tmp/tracee.sock (default: disabled)",
+	)
 }
 
 var analyze = &cobra.Command{
@@ -166,6 +172,19 @@ tracee analyze --events anti_debugging events.json`,
 			}
 			checkConfigFlag()
 		}
+
+		bindViperFlag(cmd, "signatures-dir")
+		bindViperFlag(cmd, "rego")
+		bindViperFlag(cmd, "output")
+		bindViperFlag(cmd, "proctree")
+		bindViperFlag(cmd, "input")
+		bindViperFlag(cmd, "log")
+		bindViperFlag(cmd, server.HealthzEndpointFlag)
+		bindViperFlag(cmd, server.PProfEndpointFlag)
+		bindViperFlag(cmd, server.PyroscopeAgentFlag)
+		bindViperFlag(cmd, server.HTTPListenEndpointFlag)
+		bindViperFlag(cmd, server.GRPCListenEndpointFlag)
+		bindViperFlag(cmd, server.MetricsEndpointFlag)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		logger.Init(logger.NewDefaultLoggingConfig())
@@ -177,6 +196,12 @@ tracee analyze --events anti_debugging events.json`,
 		}
 
 		ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+		// go func() {
+		// 	select {
+		// 	case <-runner.Producer.Done():
+		// 		stop()
+		// 	}
+		// }()
 		defer stop()
 
 		err = runner.Run(ctx)
