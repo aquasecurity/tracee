@@ -142,11 +142,9 @@ func (l *Logger) updateCounter(file string, line int, lvl Level, msg string) {
 
 // aggregateLog will update the log counter if aggregation is enabled.
 // It returns true if the aggregation was done.
-func aggregateLog(skip int, l *Logger, lvl Level, msg string) bool {
+func aggregateLog(l *Logger, lvl Level, msg string, ci *callerInfo) bool {
 	if l.cfg.Aggregate {
-		callerInfo := getCallerInfo(skip + 1)
-		l.updateCounter(callerInfo.file, callerInfo.line, lvl, msg)
-
+		l.updateCounter(ci.file, ci.line, lvl, msg)
 		return true
 	}
 
@@ -204,17 +202,17 @@ func formatCallFlow(funcNames []string) string {
 
 // Debug
 func debugw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	callerInfo := getCallerInfo(skip + 1)
-	if !shouldOutput(msg, DebugLevel, callerInfo) {
+	ci := getCallerInfo(skip + 1)
+	if !shouldOutput(msg, DebugLevel, ci) {
 		return
 	}
 
-	if aggregateLog(skip+1, l, DebugLevel, msg) {
+	if aggregateLog(l, DebugLevel, msg, ci) {
 		return
 	}
 
-	origin := strings.Join([]string{callerInfo.pkg, callerInfo.file, strconv.Itoa(callerInfo.line)}, ":")
-	calls := formatCallFlow(callerInfo.functions)
+	origin := strings.Join([]string{ci.pkg, ci.file, strconv.Itoa(ci.line)}, ":")
+	calls := formatCallFlow(ci.functions)
 	keysAndValues = append(keysAndValues, "origin", origin, "calls", calls)
 
 	l.l.Debugw(msg, keysAndValues...)
@@ -230,12 +228,12 @@ func (l *Logger) Debugw(msg string, keysAndValues ...interface{}) {
 
 // Info
 func infow(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	callerInfo := getCallerInfo(skip + 1)
-	if !shouldOutput(msg, InfoLevel, callerInfo) {
+	ci := getCallerInfo(skip + 1)
+	if !shouldOutput(msg, InfoLevel, ci) {
 		return
 	}
 
-	if aggregateLog(skip+1, l, InfoLevel, msg) {
+	if aggregateLog(l, InfoLevel, msg, ci) {
 		return
 	}
 
@@ -252,12 +250,12 @@ func (l *Logger) Infow(msg string, keysAndValues ...interface{}) {
 
 // Warn
 func warnw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	callerInfo := getCallerInfo(skip + 1)
-	if !shouldOutput(msg, WarnLevel, callerInfo) {
+	ci := getCallerInfo(skip + 1)
+	if !shouldOutput(msg, WarnLevel, ci) {
 		return
 	}
 
-	if aggregateLog(skip+1, l, WarnLevel, msg) {
+	if aggregateLog(l, WarnLevel, msg, ci) {
 		return
 	}
 
@@ -274,12 +272,12 @@ func (l *Logger) Warnw(msg string, keysAndValues ...interface{}) {
 
 // Error
 func errorw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	callerInfo := getCallerInfo(skip + 1)
-	if !shouldOutput(msg, ErrorLevel, callerInfo) {
+	ci := getCallerInfo(skip + 1)
+	if !shouldOutput(msg, ErrorLevel, ci) {
 		return
 	}
 
-	if aggregateLog(skip+1, l, ErrorLevel, msg) {
+	if aggregateLog(l, ErrorLevel, msg, ci) {
 		return
 	}
 
@@ -296,12 +294,12 @@ func (l *Logger) Errorw(msg string, keysAndValues ...interface{}) {
 
 // Fatal
 func fatalw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	callerInfo := getCallerInfo(skip + 1)
-	if !shouldOutput(msg, FatalLevel, callerInfo) {
+	ci := getCallerInfo(skip + 1)
+	if !shouldOutput(msg, FatalLevel, ci) {
 		return
 	}
 
-	if aggregateLog(skip+1, l, FatalLevel, msg) {
+	if aggregateLog(l, FatalLevel, msg, ci) {
 		return
 	}
 
