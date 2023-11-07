@@ -153,8 +153,8 @@ var analyze = &cobra.Command{
 Tracee can be used to collect events and store it in a file. This file can be used as input to analyze.
 
 eg:
-tracee --events ptrace --output=json:events.json
-tracee analyze --events anti_debugging events.json`,
+tracee --events ptrace --output json:events.json --output option:export-analyze 
+tracee analyze --events anti_debugging --input json:events.json`,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		if len(args) > 0 {
 			// parse all flags
