@@ -204,12 +204,12 @@ func formatCallFlow(funcNames []string) string {
 
 // Debug
 func debugw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	if aggregateLog(skip+1, l, DebugLevel, msg) {
+	callerInfo := getCallerInfo(skip + 1)
+	if !shouldOutput(msg, DebugLevel, callerInfo) {
 		return
 	}
 
-	callerInfo := getCallerInfo(skip + 1)
-	if !shouldOutput(msg, DebugLevel, callerInfo) {
+	if aggregateLog(skip+1, l, DebugLevel, msg) {
 		return
 	}
 
@@ -230,12 +230,12 @@ func (l *Logger) Debugw(msg string, keysAndValues ...interface{}) {
 
 // Info
 func infow(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	if aggregateLog(skip+1, l, InfoLevel, msg) {
+	callerInfo := getCallerInfo(skip + 1)
+	if !shouldOutput(msg, InfoLevel, callerInfo) {
 		return
 	}
 
-	callerInfo := getCallerInfo(skip + 1)
-	if !shouldOutput(msg, InfoLevel, callerInfo) {
+	if aggregateLog(skip+1, l, InfoLevel, msg) {
 		return
 	}
 
@@ -252,12 +252,12 @@ func (l *Logger) Infow(msg string, keysAndValues ...interface{}) {
 
 // Warn
 func warnw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	if aggregateLog(skip+1, l, WarnLevel, msg) {
+	callerInfo := getCallerInfo(skip + 1)
+	if !shouldOutput(msg, WarnLevel, callerInfo) {
 		return
 	}
 
-	callerInfo := getCallerInfo(skip + 1)
-	if !shouldOutput(msg, WarnLevel, callerInfo) {
+	if aggregateLog(skip+1, l, WarnLevel, msg) {
 		return
 	}
 
@@ -274,12 +274,12 @@ func (l *Logger) Warnw(msg string, keysAndValues ...interface{}) {
 
 // Error
 func errorw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	if aggregateLog(skip+1, l, ErrorLevel, msg) {
+	callerInfo := getCallerInfo(skip + 1)
+	if !shouldOutput(msg, ErrorLevel, callerInfo) {
 		return
 	}
 
-	callerInfo := getCallerInfo(skip + 1)
-	if !shouldOutput(msg, ErrorLevel, callerInfo) {
+	if aggregateLog(skip+1, l, ErrorLevel, msg) {
 		return
 	}
 
@@ -296,12 +296,12 @@ func (l *Logger) Errorw(msg string, keysAndValues ...interface{}) {
 
 // Fatal
 func fatalw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	if aggregateLog(skip+1, l, FatalLevel, msg) {
+	callerInfo := getCallerInfo(skip + 1)
+	if !shouldOutput(msg, FatalLevel, callerInfo) {
 		return
 	}
 
-	callerInfo := getCallerInfo(skip + 1)
-	if !shouldOutput(msg, FatalLevel, callerInfo) {
+	if aggregateLog(skip+1, l, FatalLevel, msg) {
 		return
 	}
 
