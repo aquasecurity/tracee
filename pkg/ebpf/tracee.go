@@ -230,10 +230,11 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	// Control Plane Process Tree Events
 
+	processTreeEvents := []events.ID{events.SchedProcessFork, events.SchedProcessExec, events.SchedProcessExit}
 	pipeEvts := func() {
-		t.eventsState[events.SchedProcessFork] = policy.AlwaysSubmit
-		t.eventsState[events.SchedProcessExec] = policy.AlwaysSubmit
-		t.eventsState[events.SchedProcessExit] = policy.AlwaysSubmit
+		for _, id := range processTreeEvents {
+			t.eventsState[id] = policy.AlwaysSubmit
+		}
 	}
 	signalEvts := func() {
 		t.eventsState[events.SignalSchedProcessFork] = policy.AlwaysSubmit
@@ -249,6 +250,19 @@ func New(cfg config.Config) (*Tracee, error) {
 		signalEvts()
 	case proctree.SourceEvents:
 		pipeEvts()
+	}
+
+	if t.config.Output.ExportAnalyze {
+		exportPolicy := policy.NewPolicy()
+		exportPolicy.Name = "Analyze Export Policy"
+		for _, id := range processTreeEvents {
+			exportPolicy.EventsToTrace[id] = ""
+		}
+		exportPolicy.EventsToTrace[events.InitNamespaces] = ""
+		err := t.config.Policies.Add(exportPolicy)
+		if err != nil {
+			logger.Errorw("Failed to create analyze export policy", "err", err)
+		}
 	}
 
 	// Pseudo events added by capture (if enabled by the user)
@@ -818,6 +832,10 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	switch t.config.ProcTree.Source {
 	case proctree.SourceBoth, proctree.SourceEvents:
 		cOptVal = cOptVal | optForkProcTree // tell sched_process_fork to be prolix
+	}
+
+	if t.config.Output.ExportAnalyze {
+		cOptVal = cOptVal | optForkProcTree // need full event for building proctree in analyze
 	}
 
 	return cOptVal

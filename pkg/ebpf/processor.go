@@ -94,8 +94,10 @@ func (t *Tracee) registerEventProcessors() {
 	default: // Register processors for whenever proc tree is enabled
 		t.RegisterEventProcessor(events.All, t.procTreeAddBinInfo)
 	}
-	// Processors related to proctree that runs even when proctree is disabled
-	t.RegisterEventProcessor(events.SchedProcessFork, t.procTreeForkRemoveArgs)
+	if !t.config.Output.ExportAnalyze {
+		// Processors related to proctree that runs even when proctree is disabled
+		t.RegisterEventProcessor(events.SchedProcessFork, t.procTreeForkRemoveArgs)
+	}
 
 	// Process events from the regular pipeline.
 	// NOTE: Your processor goes very likely here.
@@ -118,6 +120,8 @@ func (t *Tracee) registerEventProcessors() {
 		// Convert all time relate args to nanoseconds since epoch.
 		// NOTE: Make sure to convert time related args (of your event) in here.
 		t.RegisterEventProcessor(events.SchedProcessFork, t.processSchedProcessFork)
+	}
+	if !t.config.Output.ExportAnalyze {
 		t.RegisterEventProcessor(events.All, t.normalizeEventCtxTimes)
 	}
 }

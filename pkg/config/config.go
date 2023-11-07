@@ -169,6 +169,7 @@ type OutputConfig struct {
 	ParseArguments    bool
 	ParseArgumentsFDs bool
 	EventsSorting     bool
+	ExportAnalyze     bool
 }
 
 type ContainerMode int

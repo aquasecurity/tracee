@@ -8,9 +8,11 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
-var AlwaysSubmit = events.EventState{
-	Submit: AllPoliciesOn,
-}
+var (
+	AlwaysSubmit        = events.EventState{Submit: AllPoliciesOn}
+	AlwaysEmit          = events.EventState{Emit: AllPoliciesOn}
+	AlwaysSubmitAndEmit = events.EventState{Submit: AllPoliciesOn, Emit: AllPoliciesOn}
+)
 
 // TODO: add locking mechanism as policies will change at runtime
 type Policies struct {

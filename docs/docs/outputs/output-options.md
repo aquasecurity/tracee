@@ -99,3 +99,11 @@ Available options:
     ```
 
     At the end of the event, you will also get information about the loader 
+
+
+6. **option:export-anaylyze**
+
+    Export events compatible to the `analyze` command, and add data to output
+    to enable all the command's options (e.g. proctree).
+    
+    Notice that this option increases load both in runtime and in output events.
