@@ -1,11 +1,12 @@
 ![Tracee Logo](docs/images/tracee.png)
 
 <!-- links that differ between docs and readme -->
-[installation]:https://aquasecurity.github.io/tracee/latest/docs/install
-[docker-guide]:https://aquasecurity.github.io/tracee/latest/docker.md
-[kubernetes-guide]:https://aquasecurity.github.io/tracee/latest/kubernetes.md
-[prereqs]:https://aquasecurity.github.io/tracee/latest/docs/install/prerequisites.md
-[macfaq]:https://aquasecurity.github.io/tracee/latest/docs/advanced/mac.md
+[installation]:https://aquasecurity.github.io/tracee/latest/docs/install/
+[docker-guide]:https://aquasecurity.github.io/tracee/latest/docs/install/docker/
+[kubernetes-guide]:https://aquasecurity.github.io/tracee/latest/docs/install/kubernetes/
+[prereqs]:https://aquasecurity.github.io/tracee/latest/docs/install/prerequisites/
+[macfaq]:https://aquasecurity.github.io/tracee/latest/docs/advanced/mac/
+
 Before moving on, please consider giving us a GitHub star ⭐️. Thank you!
 
 ## About Tracee
@@ -14,12 +15,12 @@ Tracee is a runtime security and observability tool that helps you understand ho
 It is using [eBPF technology](https://ebpf.io/what-is-ebpf/) to tap into your system and expose that information as events that you can consume.  
 Events range from factual system activity events to sophisticated security events that detect suspicious behavioral patterns.
 
-To learn more about Tracee, check out the [documentation](https://aquasecurity.github.io/tracee/). 
+To learn more about Tracee, check out the [documentation](https://aquasecurity.github.io/tracee/).
 
 ## Quickstart
 
 To quickly try Tracee use one of the following snippets. For a more complete installation guide, check out the [Installation section][installation].  
-Tracee should run on most common Linux distributions and kernels. For compatibility information see the [Prerequisites][prereqs] page.  Mac users, please read [this FAQ](macfaq).
+Tracee should run on most common Linux distributions and kernels. For compatibility information see the [Prerequisites][prereqs] page.  Mac users, please read [this FAQ][macfaq].
 
 ### Using Docker
 
@@ -58,4 +59,3 @@ Find more information on [contribution documentation](./contributing/overview/).
 
 Tracee is an [Aqua Security](https://aquasec.com) open source project.  
 Learn about our open source work and portfolio [here](https://www.aquasec.com/products/open-source-projects/).
-
