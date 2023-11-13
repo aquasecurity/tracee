@@ -352,6 +352,7 @@ type OutputConfig struct {
 	TableVerbose OutputFormatConfig             `mapstructure:"table-verbose"`
 	JSON         OutputFormatConfig             `mapstructure:"json"`
 	Gob          OutputFormatConfig             `mapstructure:"gob"`
+	Parquet      OutputFormatConfig             `mapstructure:"parquet"`
 	GoTemplate   OutputGoTemplateConfig         `mapstructure:"gotemplate"`
 	Forwards     map[string]OutputForwardConfig `mapstructure:"forward"`
 	Webhooks     map[string]OutputWebhookConfig `mapstructure:"webhook"`
@@ -392,6 +393,7 @@ func (c *OutputConfig) flags() []string {
 		"table-verbose": c.TableVerbose.Files,
 		"json":          c.JSON.Files,
 		"gob":           c.Gob.Files,
+		"parquet":       c.Parquet.Files,
 	}
 	for format, files := range formatFilesMap {
 		for _, file := range files {
