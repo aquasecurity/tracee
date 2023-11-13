@@ -21,21 +21,22 @@ CAPABILITIES_DROP=${CAPABILITIES_DROP:=""}
 run_tracee() {
     mkdir -p $TRACEE_OUT
 
-    echo "INFO: starting tracee..."
-
-    if [[ $# -ne 0 ]]; then
+    if [ $# -ne 0 ]; then
         # no default arguments, just given ones
-        $TRACEE_EXE $@
+        $TRACEE_EXE "$@"
     else
         # default arguments
         $TRACEE_EXE \
-            --metrics \
-            --output=option:parse-arguments \
-            --cache cache-type=mem \
-            --cache mem-cache-size=512 \
-            --capabilities bypass=$CAPABILITIES_BYPASS \
-            --capabilities add=$CAPABILITIES_ADD \
-            --capabilities drop=$CAPABILITIES_DROP
+        --metrics \
+        --cache cache-type=mem \
+        --cache mem-cache-size=512 \
+        --capabilities bypass=$CAPABILITIES_BYPASS \
+        --capabilities add=$CAPABILITIES_ADD \
+        --capabilities drop=$CAPABILITIES_DROP \
+        --output=json \
+        --output=option:parse-arguments \
+        --output=option:relative-time \
+        --events signatures,container_create,container_remove
     fi
 
     tracee_ret=$?
