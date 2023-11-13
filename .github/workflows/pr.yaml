@@ -325,6 +325,7 @@ jobs:
     strategy:
       matrix:
         include: ${{fromJson(needs.generate-matrix.outputs.matrix01)}}
+      fail-fast: false
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
