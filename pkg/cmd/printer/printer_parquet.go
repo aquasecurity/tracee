@@ -129,7 +129,6 @@ func toInt64Slice(uint64Slice []uint64) []int64 {
 }
 
 func toJsonStr(toJson interface{}) string {
-
 	argsJsonByte, err := json.Marshal(toJson)
 	if err != nil {
 		fmt.Println("Error marshaling to JSON:", err)
@@ -139,7 +138,6 @@ func toJsonStr(toJson interface{}) string {
 }
 
 func ToParquetEvent(event trace.Event) ParquetEvent {
-
 	pqEvent := ParquetEvent{
 		Timestamp:           event.Timestamp,
 		ThreadStartTime:     event.ThreadStartTime,
