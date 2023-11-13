@@ -297,7 +297,10 @@ struct vm_area_struct {
         };
     };
     struct mm_struct *vm_mm;
-    const vm_flags_t vm_flags;
+    union {
+        const vm_flags_t vm_flags;
+        vm_flags_t __vm_flags;
+    };
     struct file *vm_file;
     void *vm_private_data;
     const struct vm_operations_struct *vm_ops;
@@ -656,9 +659,9 @@ struct mm_struct {
     struct {
         long unsigned int arg_start;
         long unsigned int arg_end;
-        unsigned long start_brk;
-        unsigned long brk;
-        unsigned long start_stack;
+        long unsigned int start_brk;
+        long unsigned int brk;
+        long unsigned int start_stack;
         long unsigned int env_start;
         long unsigned int env_end;
     };

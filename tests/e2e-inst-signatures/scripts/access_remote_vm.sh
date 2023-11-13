@@ -2,7 +2,7 @@
 
 info_exit() {
     echo -n "INFO: "
-    echo $@
+    echo "$@"
     exit 0
 }
 
@@ -17,8 +17,10 @@ error_exit() {
     exit 1
 }
 
+this=$$
+
 # Get the stack address from /proc/self/maps
-stack_address="0x"$(grep 'stack' /proc/$$/maps | awk '{split($1, range, "-"); print range[1]}')
+stack_address="0x"$(grep 'stack' /proc/$this/maps | awk '{split($1, range, "-"); print range[1]}')
 
 if [ -z "$stack_address" ]; then
   error_exit "Failed to find the stack address in /proc/self/maps"
@@ -28,7 +30,7 @@ info "Stack address: $stack_address"
 
 # Read from /proc/self/mem in given address
 read_mem_file() {
-  tail /proc/$$/mem -c +$1 > /dev/null
+  tail /proc/$$/mem -c +"$1" > /dev/null
 }
 
 # Call the function to read from the stack

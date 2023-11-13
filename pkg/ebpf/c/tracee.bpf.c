@@ -4875,10 +4875,10 @@ statfunc int submit_access_remote_vm(program_data_t *p,
     // Get mapped memory information
     struct file *file = get_mapped_file_from_vma(vma);
     file_info = get_file_info(file);
+
     // If there is no file that is mapped to the vma, try to get memory location name instead.
-    if (!file_info.pathname_p) {
+    if (!file_info.pathname_p)
         get_vma_location(vma, sizeof(location), location);
-    }
 
     struct task_struct *task = get_owner_task_from_mm(mm);
     u32 pid = get_task_host_tgid(task);
@@ -4912,6 +4912,7 @@ int BPF_KPROBE(trace_generic_access_phys)
     struct vm_area_struct *vma = (struct vm_area_struct *) PT_REGS_PARM1(ctx);
     unsigned long addr = (unsigned long) PT_REGS_PARM2(ctx);
     int write = (int) PT_REGS_PARM5(ctx);
+
     return submit_access_remote_vm(&p, vma, (void *) addr, write);
 }
 
@@ -4936,11 +4937,11 @@ int BPF_KPROBE(trace_ret_get_user_pages_remote)
         return 0;
 
     int ret_val = PT_REGS_RC(ctx);
-    // if the page cannot be pinned the return code would be <= 0.
-    // This could mean that the page is a memory mapped page, for example.
-    // In this case, the access to that page has to be done through vma->vm_ops->access which we
-    // trace for most cases (all normal cases) using generic_access_phys.
-    // So, we let the flow continue so it would be traced there.
+    // If the page cannot be pinned the return code would be <= 0, this could mean that
+    // the page is a memory mapped page, for example. In this case, the access to that
+    // page has to be done through "vma->vm_ops->access", which we trace for most cases
+    // (all normal cases) using generic_access_phys. Let the flow continue so it would be
+    // traced there.
     if (ret_val <= 0)
         return 0;
 
@@ -4950,14 +4951,15 @@ int BPF_KPROBE(trace_ret_get_user_pages_remote)
     struct vm_area_struct *vma = NULL;
     unsigned long vm_flags = 0;
     file_info_t file_info = {};
-    // Without a vma we can't get enough information for the event.
-    // Moreover, this will filter out the calls for it from the execve flow.
+
+    // Without a vma we can't get enough information for the event. Moreover, this will
+    // filter out the calls for it from the execve flow.
     if (!vmas)
         return 0;
 
-    // In the flow of interest, via the access_remote_vm function, the logic iterate over the
-    // pages 1 by 1. This means that 1 and only 1 vma would be resolved here if the function
-    // succeed.
+    // In the flow of interest, via the access_remote_vm function, the logic iterate over
+    // the pages 1 by 1. This means that 1 and only 1 vma would be resolved here if the
+    // function succeed.
     bpf_core_read(&vma, sizeof(void *), vmas);
     if (!vma)
         return 0;
