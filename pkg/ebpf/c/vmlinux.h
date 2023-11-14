@@ -425,7 +425,10 @@ struct dir_context {
 };
 struct iov_iter {
 };
+
 struct kiocb {
+    struct file *ki_filp;
+    loff_t ki_pos;
 };
 
 struct file_operations {
@@ -1115,6 +1118,56 @@ struct bpf_insn {
 
 const int TRACE_EVENT_FL_TRACEPOINT_BIT = 4;
 const int TRACE_EVENT_FL_TRACEPOINT = (1 << TRACE_EVENT_FL_TRACEPOINT_BIT);
+
+struct io_uring_params {
+    __u32 sq_entries;
+    __u32 cq_entries;
+};
+
+struct io_sq_data {
+    struct task_struct *thread;
+};
+
+struct io_ring_ctx {
+    unsigned int flags;
+    struct io_sq_data *sq_data;
+};
+
+struct io_cmd_data {
+    struct file *file;
+    /* each command gets 56 bytes of data */
+    __u8 data[56];
+};
+
+struct io_cqe {
+    __u64 user_data;
+    __s32 res;
+};
+
+struct io_kiocb {
+    union {
+        /*
+         * NOTE! Each of the io_kiocb union members has the file pointer
+         * as the first entry in their struct definition. So you can
+         * access the file pointer through any of the sub-structs,
+         * or directly as just 'file' in this struct.
+         */
+        struct file *file;
+        struct io_cmd_data cmd;
+    };
+    u8 opcode;
+    unsigned int flags;
+    struct io_cqe cqe;
+    struct io_ring_ctx *ctx;
+    void *async_data;
+};
+
+struct io_rw {
+    /* NOTE: kiocb has the file as the first member, so don't do it here */
+    struct kiocb kiocb;
+    u64 addr;
+    u32 len;
+};
 
 //
 // COMPLETE NETWORK TYPES

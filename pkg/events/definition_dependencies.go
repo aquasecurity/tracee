@@ -131,6 +131,7 @@ const (
 	TailHiddenKernelModuleKset
 	TailHiddenKernelModuleModTree
 	TailHiddenKernelModuleNewModOnly
+	TailIoWrite
 	MaxTail
 )
 
