@@ -183,12 +183,6 @@ typedef struct syscall_data {
     unsigned long ret; // Syscall ret val. May be used by syscall exit tail calls.
 } syscall_data_t;
 
-typedef struct fd_arg_task {
-    u32 pid;
-    u32 tid;
-    int fd;
-} fd_arg_task_t;
-
 #define MAX_CACHED_PATH_SIZE 64
 
 typedef struct fd_arg_path {

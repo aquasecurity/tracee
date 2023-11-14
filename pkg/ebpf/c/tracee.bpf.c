@@ -152,22 +152,18 @@ int sys_enter_submit(struct bpf_raw_tracepoint_args *ctx)
     if (p.config->options & OPT_TRANSLATE_FD_FILEPATH && has_syscall_fd_arg(sys->id)) {
         // Process filepath related to fd argument
         uint fd_num = get_syscall_fd_num_from_arg(sys->id, &sys->args);
-        struct file *file = get_struct_file_from_fd(fd_num);
+        struct file *f = get_struct_file_from_fd(fd_num);
 
-        if (file) {
-            fd_arg_task_t fd_arg_task = {
-                .pid = p.event->context.task.pid,
-                .tid = p.event->context.task.tid,
-                .fd = fd_num,
-            };
-
+        if (f) {
+            u64 ts = sys->ts;
             fd_arg_path_t fd_arg_path = {};
-            void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
+            void *file_path = get_path_str(__builtin_preserve_access_index(&f->f_path));
 
             bpf_probe_read_str(&fd_arg_path.path, sizeof(fd_arg_path.path), file_path);
-            bpf_map_update_elem(&fd_arg_path_map, &fd_arg_task, &fd_arg_path, BPF_ANY);
+            bpf_map_update_elem(&fd_arg_path_map, &ts, &fd_arg_path, BPF_ANY);
         }
     }
+
     if (sys->id != SYSCALL_RT_SIGRETURN && !p.task_info->syscall_traced) {
         save_to_submit_buf(&p.event->args_buf, (void *) &(sys->args.args[0]), sizeof(int), 0);
         events_perf_submit(&p, sys->id, 0);
