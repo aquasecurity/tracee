@@ -25,9 +25,9 @@ func (ptds *DataSource) Keys() []string {
 // Schema returns the schema of the DataSource.
 func (ptds *DataSource) Schema() string {
 	schemaMap := map[string]string{
-		"process_info":    "datasource.ProcessInfo",
-		"thread_info":     "datasource.ThreadInfo",
-		"process_lineage": "datasource.ProcessLineage",
+		"process_info":    "datasource.TimeRelevantInfo[datasource.ProcessInfo]",
+		"thread_info":     "datasource.TimeRelevantInfo[datasource.ThreadInfo]",
+		"process_lineage": "datasource.TimeRelevantInfo[datasource.ProcessLineage]",
 	}
 	schema, _ := json.Marshal(schemaMap)
 	return string(schema)
@@ -89,7 +89,7 @@ func (ptds *DataSource) Get(key interface{}) (map[string]interface{}, error) {
 // exportProcessInfo returns information of the given Process at the given query time.
 func (ptds *DataSource) exportProcessInfo(
 	process *Process, queryTime time.Time,
-) datasource.ProcessInfo {
+) datasource.TimeRelevantInfo[datasource.ProcessInfo] {
 	// Pick the objects related to the process from the process tree.
 	info := process.GetInfo()
 	executable := process.GetExecutable()
@@ -126,46 +126,52 @@ func (ptds *DataSource) exportProcessInfo(
 	infoFeed := info.GetFeedAt(queryTime)
 
 	// Export the information as the expected datasource process structure.
-	return datasource.ProcessInfo{
-		EntityId:          process.GetHash(),
-		Pid:               infoFeed.Pid,
-		NsPid:             infoFeed.NsPid,
-		Ppid:              infoFeed.PPid,
-		ContainerId:       "",         // TODO: Add
-		Cmd:               []string{}, // TODO: Add
-		ExecutionBinary:   exportFileInfo(executable, queryTime),
-		Interpreter:       exportFileInfo(interpreter, queryTime),
-		Interp:            exportFileInfo(interp, queryTime),
-		StartTime:         info.GetStartTime(),
-		ExecTime:          time.Unix(0, 0), // TODO: Add
-		ExitTime:          info.GetExitTime(),
-		ParentEntityId:    process.GetParentHash(),
-		ThreadsIds:        aliveThreads,
-		ChildProcessesIds: aliveChildren,
-		IsAlive:           info.IsAliveAt(queryTime),
+	return datasource.TimeRelevantInfo[datasource.ProcessInfo]{
+		Info: datasource.ProcessInfo{
+			EntityId:          process.GetHash(),
+			Pid:               infoFeed.Pid,
+			NsPid:             infoFeed.NsPid,
+			Ppid:              infoFeed.PPid,
+			ContainerId:       "",         // TODO: Add
+			Cmd:               []string{}, // TODO: Add
+			ExecutionBinary:   exportFileInfo(executable, queryTime),
+			Interpreter:       exportFileInfo(interpreter, queryTime),
+			Interp:            exportFileInfo(interp, queryTime),
+			StartTime:         info.GetStartTime(),
+			ExecTime:          time.Unix(0, 0), // TODO: Add
+			ExitTime:          info.GetExitTime(),
+			ParentEntityId:    process.GetParentHash(),
+			ThreadsIds:        aliveThreads,
+			ChildProcessesIds: aliveChildren,
+			IsAlive:           info.IsAliveAt(queryTime),
+		},
+		Timestamp: queryTime,
 	}
 }
 
 // exportThreadInfo returns information of the given Thread at the given query time.
 func (ptds *DataSource) exportThreadInfo(
 	thread *Thread, queryTime time.Time,
-) datasource.ThreadInfo {
+) datasource.TimeRelevantInfo[datasource.ThreadInfo] {
 	// Pick the objects related to the thread from the process tree.
 	info := thread.GetInfo()
 	infoFeed := info.GetFeedAt(queryTime)
 
 	// Export the information as the expected datasource thread structure.
-	return datasource.ThreadInfo{
-		EntityId:  thread.GetHash(),
-		Tid:       infoFeed.Tid,
-		NsTid:     infoFeed.NsTid,
-		Pid:       infoFeed.Pid,
-		UserId:    infoFeed.Uid,
-		GroupId:   infoFeed.Gid,
-		StartTime: info.GetStartTime(),
-		ExitTime:  info.GetExitTime(),
-		Name:      infoFeed.Name,
-		IsAlive:   info.IsAliveAt(queryTime),
+	return datasource.TimeRelevantInfo[datasource.ThreadInfo]{
+		Info: datasource.ThreadInfo{
+			EntityId:  thread.GetHash(),
+			Tid:       infoFeed.Tid,
+			NsTid:     infoFeed.NsTid,
+			Pid:       infoFeed.Pid,
+			UserId:    infoFeed.Uid,
+			GroupId:   infoFeed.Gid,
+			StartTime: info.GetStartTime(),
+			ExitTime:  info.GetExitTime(),
+			Name:      infoFeed.Name,
+			IsAlive:   info.IsAliveAt(queryTime),
+		},
+		Timestamp: queryTime,
 	}
 }
 

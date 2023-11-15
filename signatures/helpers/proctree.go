@@ -41,13 +41,13 @@ func GetProcessTreeDataSource(ctx detect.SignatureContext) (*ProcessTreeDS, erro
 
 // GetThreadInfo query the datasource for the information of a specific thread.
 func (ptds *ProcessTreeDS) GetThreadInfo(threadKey datasource.ThreadKey) (
-	*datasource.ThreadInfo, error,
+	*datasource.TimeRelevantInfo[datasource.ThreadInfo], error,
 ) {
 	threadQueryAnswer, err := ptds.ds.Get(threadKey)
 	if err != nil {
 		return nil, fmt.Errorf("could not find thread for thread %d", threadKey.EntityId)
 	}
-	threadInfo, ok := threadQueryAnswer["thread_info"].(datasource.ThreadInfo)
+	threadInfo, ok := threadQueryAnswer["thread_info"].(datasource.TimeRelevantInfo[datasource.ThreadInfo])
 	if !ok {
 		return nil, fmt.Errorf("could not extract info of thread %d", threadKey.EntityId)
 	}
@@ -55,8 +55,8 @@ func (ptds *ProcessTreeDS) GetThreadInfo(threadKey datasource.ThreadKey) (
 }
 
 // GetEventThreadInfo get the information of the thread emitting the current event
-func (ptds *ProcessTreeDS) GetEventThreadInfo(eventObj trace.Event) (
-	*datasource.ThreadInfo, error,
+func (ptds *ProcessTreeDS) GetEventThreadInfo(eventObj *trace.Event) (
+	*datasource.TimeRelevantInfo[datasource.ThreadInfo], error,
 ) {
 	queryKey := datasource.ThreadKey{
 		EntityId: eventObj.ThreadEntityId,
@@ -67,14 +67,14 @@ func (ptds *ProcessTreeDS) GetEventThreadInfo(eventObj trace.Event) (
 
 // GetProcessInfo query the datasource for the information of a specific process.
 func (ptds *ProcessTreeDS) GetProcessInfo(processKey datasource.ProcKey) (
-	*datasource.ProcessInfo, error,
+	*datasource.TimeRelevantInfo[datasource.ProcessInfo], error,
 ) {
 	// Pick the process info from the data source
 	procQueryAnswer, err := ptds.ds.Get(processKey)
 	if err != nil {
 		return nil, fmt.Errorf("could not find process for process %d", processKey.EntityId)
 	}
-	procInfo, ok := procQueryAnswer["process_info"].(datasource.ProcessInfo)
+	procInfo, ok := procQueryAnswer["process_info"].(datasource.TimeRelevantInfo[datasource.ProcessInfo])
 	if !ok {
 		return nil, fmt.Errorf("could not extract info of process %d", processKey.EntityId)
 	}
@@ -82,8 +82,8 @@ func (ptds *ProcessTreeDS) GetProcessInfo(processKey datasource.ProcKey) (
 }
 
 // GetEventProcessInfo get the information of the process emitting the current event
-func (ptds *ProcessTreeDS) GetEventProcessInfo(eventObj trace.Event) (
-	*datasource.ProcessInfo, error,
+func (ptds *ProcessTreeDS) GetEventProcessInfo(eventObj *trace.Event) (
+	*datasource.TimeRelevantInfo[datasource.ProcessInfo], error,
 ) {
 	queryKey := datasource.ProcKey{
 		EntityId: eventObj.ProcessEntityId,
@@ -112,7 +112,7 @@ func (ptds *ProcessTreeDS) GetProcessLineage(lineageKey datasource.LineageKey) (
 // GetEventProcessLineage get the process lineage information of the process emitting the
 // current event.
 func (ptds *ProcessTreeDS) GetEventProcessLineage(
-	eventObj trace.Event,
+	eventObj *trace.Event,
 	maxDepth int,
 ) (*datasource.ProcessLineage, error) {
 	queryKey := datasource.LineageKey{
