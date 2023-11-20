@@ -14,6 +14,8 @@ import (
 	"time"
 
 	forward "github.com/IBM/fluent-forward-go/fluent/client"
+	"github.com/xitongsys/parquet-go/parquet"
+	pqwriter "github.com/xitongsys/parquet-go/writer"
 
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -66,6 +68,10 @@ func New(cfg config.PrinterConfig) (EventPrinter, error) {
 		}
 	case kind == "gob":
 		res = &gobEventPrinter{
+			out: cfg.OutFile,
+		}
+	case kind == "parquet":
+		res = &parquetEventPrinter{
 			out: cfg.OutFile,
 		}
 	case kind == "forward":
@@ -464,6 +470,42 @@ func (p *gobEventPrinter) Print(event trace.Event) {
 func (p *gobEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p gobEventPrinter) Close() {
+}
+
+type parquetEventPrinter struct {
+	out         io.WriteCloser
+	pqOutWriter *pqwriter.ParquetWriter
+}
+
+func (p *parquetEventPrinter) Init() error {
+	// Create a new Parquet writer.
+	pqOutWriter, err := pqwriter.NewParquetWriterFromWriter(p.out, new(ParquetEvent), 4)
+	if err != nil {
+		logger.Errorw("Error creating Parquet writer: ", err)
+		return err
+	}
+
+	// I chose to use gzip because its output is smaller.
+	pqOutWriter.CompressionType = parquet.CompressionCodec_GZIP
+	p.pqOutWriter = pqOutWriter
+
+	return nil
+}
+
+func (p *parquetEventPrinter) Preamble() {}
+
+func (p *parquetEventPrinter) Print(event trace.Event) {
+	if err := p.pqOutWriter.Write(ToParquetEvent(event)); err != nil {
+		logger.Errorw("Error encoding event to parquet", "error", err, "event", event)
+	}
+}
+
+func (p *parquetEventPrinter) Epilogue(stats metrics.Stats) {}
+
+func (p parquetEventPrinter) Close() {
+	if err := p.pqOutWriter.WriteStop(); err != nil {
+		logger.Errorw("WriteStop error", "error", err)
+	}
 }
 
 // ignoreEventPrinter ignores events
