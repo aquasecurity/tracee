@@ -125,6 +125,8 @@ enum event_id_e
     HIDDEN_KERNEL_MODULE_SEEKER,
     MODULE_LOAD,
     MODULE_FREE,
+    EXECUTE_FINISHED,
+    SECURITY_BPRM_CREDS_FOR_EXEC,
     MAX_EVENT_ID,
     NO_EVENT_SUBMIT,
 };
@@ -545,5 +547,11 @@ enum file_modification_op
 
 typedef __u64 stack_trace_t[MAX_STACK_DEPTH];
 typedef u32 file_type_t;
+
+struct sys_exit_tracepoint_args {
+    u64 __pad;
+    int __syscall_nr;
+    long ret;
+};
 
 #endif
