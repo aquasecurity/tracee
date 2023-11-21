@@ -16,24 +16,18 @@ func NetPacketTCP() DeriveFunction {
 
 func deriveNetPacketTCPArgs() deriveArgsFunction {
 	return func(event trace.Event) ([]interface{}, error) {
-		var ok bool
-		var payload []byte
 		var layerType gopacket.LayerType
 		var srcIP net.IP
 		var dstIP net.IP
 
-		// sanity checks
+		payload, err := parsePayloadArg(&event)
+		if err != nil {
+			return nil, err
+		}
 
-		payloadArg := events.GetArg(&event, "payload")
-		if payloadArg == nil {
-			return nil, noPayloadError()
-		}
-		if payload, ok = payloadArg.Value.([]byte); !ok {
-			return nil, nonByteArgError()
-		}
-		payloadSize := len(payload)
-		if payloadSize < 1 {
-			return nil, emptyPayloadError()
+		// event retval encodes ingress/egress
+		if event.ReturnValue&packetIngress == packetIngress {
+
 		}
 
 		// event retval encodes layer 3 protocol type

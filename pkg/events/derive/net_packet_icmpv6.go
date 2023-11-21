@@ -16,23 +16,12 @@ func NetPacketICMPv6() DeriveFunction {
 
 func deriveNetPacketICMPv6Args() deriveArgsFunction {
 	return func(event trace.Event) ([]interface{}, error) {
-		var ok bool
-		var payload []byte
 		var srcIP net.IP
 		var dstIP net.IP
 
-		// sanity checks
-
-		payloadArg := events.GetArg(&event, "payload")
-		if payloadArg == nil {
-			return nil, noPayloadError()
-		}
-		if payload, ok = payloadArg.Value.([]byte); !ok {
-			return nil, nonByteArgError()
-		}
-		payloadSize := len(payload)
-		if payloadSize < 1 {
-			return nil, emptyPayloadError()
+		payload, err := parsePayloadArg(&event)
+		if err != nil {
+			return nil, err
 		}
 
 		// event retval encodes layer 3 protocol type
