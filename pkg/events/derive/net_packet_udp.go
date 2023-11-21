@@ -16,26 +16,15 @@ func NetPacketUDP() DeriveFunction {
 
 func deriveNetPacketUDPArgs() deriveArgsFunction {
 	return func(event trace.Event) ([]interface{}, error) {
-		var ok bool
-		var payload []byte
 		var layerType gopacket.LayerType
 		var srcIP net.IP
 		var dstIP net.IP
 
-		// sanity checks
-
-		payloadArg := events.GetArg(&event, "payload")
-		if payloadArg == nil {
-			return nil, noPayloadError()
+		payload, err := parsePayloadArg(&event)
+		if err != nil {
+			return nil, err
 		}
-		if payload, ok = payloadArg.Value.([]byte); !ok {
-			return nil, nonByteArgError()
-		}
-		payloadSize := len(payload)
-		if payloadSize < 1 {
-			return nil, emptyPayloadError()
-		}
-
+		
 		// event retval encodes layer 3 protocol type
 
 		if event.ReturnValue&familyIpv4 == familyIpv4 {
