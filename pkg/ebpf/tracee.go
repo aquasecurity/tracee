@@ -1232,7 +1232,11 @@ func (t *Tracee) populateBPFMaps() error {
 // attachProbes attaches selected events probes to their respective eBPF progs
 func (t *Tracee) attachProbes() error {
 	var err error
-	probesToEvents := make(map[events.Probe][]events.ID)
+	type eventProbe struct {
+		event events.ID
+		probe events.Probe
+	}
+	probesToEvents := make(map[probes.Handle][]eventProbe)
 
 	// attach all probes for the events being filtered
 	for id := range t.eventsState {
@@ -1256,23 +1260,36 @@ func (t *Tracee) attachProbes() error {
 
 		// save required probes for later attachment
 		for _, probeDep := range eventDefinition.GetDependencies().GetProbes() {
-			probesToEvents[probeDep] = append(probesToEvents[probeDep], id)
+			relevant, err := probeDep.IsRelevant(t.config.OSInfo)
+			if err != nil {
+				logger.Errorw("Event's probe relevance check failed, assuming not relevant",
+					"event", eventDefinition.GetName(), "probe", probeDep.GetHandle(),
+					"error", err)
+				continue
+			}
+			if relevant {
+				handle := probeDep.GetHandle()
+				eprobe := eventProbe{probe: probeDep, event: id}
+				probesToEvents[handle] = append(probesToEvents[handle], eprobe)
+			}
 		}
 	}
 
-	for probe, evtsIDs := range probesToEvents {
+	for handle, eventsProbes := range probesToEvents {
 		// attach probes for selected events
-		err = t.probes.Attach(probe.GetHandle(), t.cgroups)
-		if err != nil && probe.IsRequired() {
-			// if a required probe fails to attach, cancel all events that depend on it
-			for _, evtID := range evtsIDs {
-				evtName := events.Core.GetDefinitionByID(evtID).GetName()
-				logger.Errorw(
-					"Event canceled because of missing probe dependency",
-					"missing probe", probe.GetHandle(), "event", evtName,
-				)
+		err = t.probes.Attach(handle, t.cgroups)
+		if err != nil {
+			// if the probe was required by the event, cancel the event
+			for _, eprobe := range eventsProbes {
+				if eprobe.probe.IsRequired() {
+					evtName := events.Core.GetDefinitionByID(eprobe.event).GetName()
+					logger.Errorw(
+						"Event canceled because of missing probe dependency",
+						"missing probe", handle, "event", evtName,
+					)
 
-				delete(t.eventsState, evtID)
+					delete(t.eventsState, eprobe.event)
+				}
 			}
 		}
 	}

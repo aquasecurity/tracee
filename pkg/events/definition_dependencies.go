@@ -3,6 +3,8 @@ package events
 import (
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
+	"github.com/aquasecurity/libbpfgo/helpers"
+
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 )
 
@@ -65,17 +67,61 @@ func (d Dependencies) GetCapabilities() Capabilities {
 
 // Probe
 
+type KernelVersionComparison int
+
+const (
+	Older KernelVersionComparison = iota
+	OlderEquals
+	Equals
+	NewerEquals
+	Newer
+)
+
+type KernelDependency struct {
+	version    string
+	comparison KernelVersionComparison
+}
+
 type Probe struct {
-	handle   probes.Handle
-	required bool // tracee fails if probe can't be attached
+	handle          probes.Handle
+	required        bool               // the event is cancelled if probe can't be attached
+	relevantKernels []KernelDependency // set of comparisons to determine kernel versions for which to attach the probe
 }
 
 func (p Probe) GetHandle() probes.Handle {
 	return p.handle
 }
 
+// IsRequired determine if the probe is required for the event to work properly
 func (p Probe) IsRequired() bool {
 	return p.required
+}
+
+// IsRelevant determine if the probe should be attached in current environment
+// If a required probe is not relevant in the environment, then the event won't be cancelled as an
+// attempt to attach it won't be initiated in the first place.
+func (p Probe) IsRelevant(osInfo *helpers.OSInfo) (bool, error) {
+	for _, kernelDep := range p.relevantKernels {
+		comp, err := osInfo.CompareOSBaseKernelRelease(kernelDep.version)
+		if err != nil {
+			return false, err
+		}
+		switch comp {
+		case helpers.KernelVersionEqual:
+			if kernelDep.comparison != Equals && kernelDep.comparison != OlderEquals && kernelDep.comparison != NewerEquals {
+				return false, nil
+			}
+		case helpers.KernelVersionOlder:
+			if kernelDep.comparison != Newer && kernelDep.comparison != NewerEquals {
+				return false, nil
+			}
+		case helpers.KernelVersionNewer:
+			if kernelDep.comparison != Older && kernelDep.comparison != OlderEquals {
+				return false, nil
+			}
+		}
+	}
+	return true, nil
 }
 
 // KSymbol
