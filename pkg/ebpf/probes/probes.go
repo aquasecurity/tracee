@@ -128,6 +128,7 @@ const (
 	ExecBinprm
 	ExecBinprmRet
 	SecurityPathNotify
+	SecurityBprmCredsForExec
 	HiddenKernelModuleSeeker
 	TpProbeRegPrioMayExist
 	HiddenKernelModuleVerifier
@@ -138,4 +139,6 @@ const (
 	SignalSchedProcessFork
 	SignalSchedProcessExec
 	SignalSchedProcessExit
+	ExecuteFinished
+	ExecuteAtFinished
 )

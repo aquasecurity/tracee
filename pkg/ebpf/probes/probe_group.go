@@ -221,6 +221,7 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, kSyms *helpers.Ke
 		ExecBinprm:                 NewTraceProbe(KProbe, "exec_binprm", "trace_exec_binprm"),
 		ExecBinprmRet:              NewTraceProbe(KretProbe, "exec_binprm", "trace_ret_exec_binprm"),
 		SecurityPathNotify:         NewTraceProbe(KProbe, "security_path_notify", "trace_security_path_notify"),
+		SecurityBprmCredsForExec:   NewTraceProbe(KProbe, "security_bprm_creds_for_exec", "trace_security_bprm_creds_for_exec"),
 		TpProbeRegPrioMayExist:     NewTraceProbe(KProbe, "tracepoint_probe_register_prio_may_exist", "trace_tracepoint_probe_register_prio_may_exist"),
 		ModuleLoad:                 NewTraceProbe(RawTracepoint, "module:module_load", "tracepoint__module__module_load"),
 		ModuleFree:                 NewTraceProbe(RawTracepoint, "module:module_free", "tracepoint__module__module_free"),
@@ -229,6 +230,8 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, kSyms *helpers.Ke
 		SignalSchedProcessFork:     NewTraceProbe(RawTracepoint, "sched:sched_process_fork", "sched_process_fork_signal"),
 		SignalSchedProcessExec:     NewTraceProbe(RawTracepoint, "sched:sched_process_exec", "sched_process_exec_signal"),
 		SignalSchedProcessExit:     NewTraceProbe(RawTracepoint, "sched:sched_process_exit", "sched_process_exit_signal"),
+		ExecuteFinished:            NewTraceProbe(Tracepoint, "syscalls:sys_exit_execve", "execute_finished"),
+		ExecuteAtFinished:          NewTraceProbe(Tracepoint, "syscalls:sys_exit_execveat", "execute_finished"),
 	}
 
 	if !netEnabled {
