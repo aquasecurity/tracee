@@ -4890,31 +4890,12 @@ int BPF_KPROBE(trace_ret_inotify_find_inode)
     return events_perf_submit(&p, 0);
 }
 
-SEC("kprobe/exec_binprm")
-TRACE_ENT_FUNC(exec_binprm, EXEC_BINPRM);
-
-SEC("kretprobe/exec_binprm")
-int BPF_KPROBE(trace_ret_exec_binprm)
+statfunc int execute_failed_tail0(struct pt_regs *ctx, program_data_t *p, u32 tail_call_id)
 {
-    args_t saved_args;
-    if (load_args(&saved_args, EXEC_BINPRM) != 0) {
-        // missed entry or not traced
-        return 0;
-    }
-    del_args(EXEC_BINPRM);
-
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx, PROCESS_EXECUTION_FAILED))
+    if (!evaluate_scope_filters(p))
         return 0;
 
-    if (!evaluate_scope_filters(&p))
-        return 0;
-
-    int ret_val = PT_REGS_RC(ctx);
-    if (ret_val == 0)
-        return 0; // not interested of successful execution - for that we have sched_process_exec
-
-    struct linux_binprm *bprm = (struct linux_binprm *) saved_args.args[0];
+    struct linux_binprm *bprm = (struct linux_binprm *) PT_REGS_PARM1(ctx);
     if (bprm == NULL) {
         return -1;
     }
@@ -4922,32 +4903,31 @@ int BPF_KPROBE(trace_ret_exec_binprm)
     struct file *file = get_file_ptr_from_bprm(bprm);
 
     const char *path = get_binprm_filename(bprm);
-    save_str_to_buf(&p.event->args_buf, (void *) path, 0);
+    save_str_to_buf(&p->event->args_buf, (void *) path, 0);
 
     void *binary_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
-    save_str_to_buf(&p.event->args_buf, binary_path, 1);
+    save_str_to_buf(&p->event->args_buf, binary_path, 1);
 
     dev_t binary_device_id = get_dev_from_file(file);
-    save_to_submit_buf(&p.event->args_buf, &binary_device_id, sizeof(dev_t), 2);
+    save_to_submit_buf(&p->event->args_buf, &binary_device_id, sizeof(dev_t), 2);
 
     unsigned long binary_inode_number = get_inode_nr_from_file(file);
-    save_to_submit_buf(&p.event->args_buf, &binary_inode_number, sizeof(unsigned long), 3);
+    save_to_submit_buf(&p->event->args_buf, &binary_inode_number, sizeof(unsigned long), 3);
 
     u64 binary_ctime = get_ctime_nanosec_from_file(file);
-    save_to_submit_buf(&p.event->args_buf, &binary_ctime, sizeof(u64), 4);
+    save_to_submit_buf(&p->event->args_buf, &binary_ctime, sizeof(u64), 4);
 
     umode_t binary_inode_mode = get_inode_mode_from_file(file);
-    save_to_submit_buf(&p.event->args_buf, &binary_inode_mode, sizeof(umode_t), 5);
+    save_to_submit_buf(&p->event->args_buf, &binary_inode_mode, sizeof(umode_t), 5);
 
     const char *interpreter_path = get_binprm_interp(bprm);
-    save_str_to_buf(&p.event->args_buf, (void *) interpreter_path, 6);
+    save_str_to_buf(&p->event->args_buf, (void *) interpreter_path, 6);
 
-    bpf_tail_call(ctx, &prog_array, TAIL_EXEC_BINPRM1);
+    bpf_tail_call(ctx, &prog_array, tail_call_id);
     return -1;
 }
 
-SEC("kretprobe/trace_ret_exec_binprm1")
-int BPF_KPROBE(trace_ret_exec_binprm1)
+statfunc int execute_failed_tail1(struct pt_regs *ctx, u32 tail_call_id)
 {
     program_data_t p = {};
     if (!init_tailcall_program_data(&p, ctx))
@@ -4965,12 +4945,11 @@ int BPF_KPROBE(trace_ret_exec_binprm1)
     int kernel_invoked = (get_task_parent_flags(task) & PF_KTHREAD) ? 1 : 0;
     save_to_submit_buf(&p.event->args_buf, &kernel_invoked, sizeof(int), 9);
 
-    bpf_tail_call(ctx, &prog_array, TAIL_EXEC_BINPRM2);
+    bpf_tail_call(ctx, &prog_array, tail_call_id);
     return -1;
 }
 
-SEC("kretprobe/trace_ret_exec_binprm2")
-int BPF_KPROBE(trace_ret_exec_binprm2)
+statfunc int execute_failed_tail2(struct pt_regs *ctx)
 {
     program_data_t p = {};
     if (!init_tailcall_program_data(&p, ctx))
@@ -4986,8 +4965,83 @@ int BPF_KPROBE(trace_ret_exec_binprm2)
     }
 
     int ret = PT_REGS_RC(ctx); // needs to be int
-
     return events_perf_submit(&p, ret);
+}
+
+bool use_security_bprm_creds_for_exec = false;
+
+SEC("kprobe/exec_binprm")
+TRACE_ENT_FUNC(exec_binprm, EXEC_BINPRM);
+
+SEC("kretprobe/exec_binprm")
+int BPF_KPROBE(trace_ret_exec_binprm)
+{
+    if (use_security_bprm_creds_for_exec) {
+        return 0;
+    }
+    args_t saved_args;
+    if (load_args(&saved_args, EXEC_BINPRM) != 0) {
+        // missed entry or not traced
+        return 0;
+    }
+    del_args(EXEC_BINPRM);
+
+    int ret_val = PT_REGS_RC(ctx);
+    if (ret_val == 0)
+        return 0; // not interested of successful execution - for that we have sched_process_exec
+
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, PROCESS_EXECUTION_FAILED))
+        return 0;
+    return execute_failed_tail0(ctx, &p, TAIL_EXEC_BINPRM1);
+}
+
+SEC("kretprobe/trace_execute_failed1")
+int BPF_KPROBE(trace_execute_failed1)
+{
+    return execute_failed_tail1(ctx, TAIL_EXEC_BINPRM2);
+}
+
+SEC("kretprobe/trace_execute_failed2")
+int BPF_KPROBE(trace_execute_failed2)
+{
+    return execute_failed_tail2(ctx);
+}
+
+SEC("kprobe/security_bprm_creds_for_exec")
+int BPF_KPROBE(trace_security_bprm_creds_for_exec)
+{
+    use_security_bprm_creds_for_exec = true;
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, SECURITY_BPRM_CREDS_FOR_EXEC))
+        return 0;
+    return execute_failed_tail0(ctx, &p, TAIL_SECURITY_BPRM_CREDS_FOR_EXEC1);
+}
+
+SEC("kretprobe/trace_security_bprm_creds_for_exec1")
+int BPF_KPROBE(trace_security_bprm_creds_for_exec1)
+{
+    return execute_failed_tail1(ctx, TAIL_SECURITY_BPRM_CREDS_FOR_EXEC2);
+}
+
+SEC("kretprobe/trace_security_bprm_creds_for_exec2")
+int BPF_KPROBE(trace_security_bprm_creds_for_exec2)
+{
+    return execute_failed_tail2(ctx);
+}
+
+SEC("tracepoint/execute_finished")
+int execute_finished(struct sys_exit_tracepoint_args *args)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, args, EXECUTE_FINISHED))
+        return -1;
+
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+    long exec_ret = args->ret;
+    return events_perf_submit(&p, exec_ret);
 }
 
 SEC("kprobe/security_path_notify")

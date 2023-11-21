@@ -141,6 +141,8 @@ const (
 	TailHiddenKernelModuleKset
 	TailHiddenKernelModuleModTree
 	TailHiddenKernelModuleNewModOnly
+	TailSecurityBprmCredsForExec1
+	TailSecurityBprmCredsForExec2
 	MaxTail
 )
 
