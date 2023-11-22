@@ -24,7 +24,7 @@ func deriveNetPacketUDPArgs() deriveArgsFunction {
 		if err != nil {
 			return nil, err
 		}
-		
+
 		// event retval encodes layer 3 protocol type
 
 		if event.ReturnValue&familyIpv4 == familyIpv4 {
@@ -65,12 +65,16 @@ func deriveNetPacketUDPArgs() deriveArgsFunction {
 		case (*layers.UDP):
 			var udp trace.ProtoUDP
 			copyUDPToProtoUDP(l4, &udp)
+			md := trace.PacketMetadata{
+				Direction: getPacketDirection(&event),
+			}
 
 			return []interface{}{
 				srcIP,
 				dstIP,
 				udp.SrcPort,
 				udp.DstPort,
+				md,
 				udp,
 			}, nil
 		}

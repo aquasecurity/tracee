@@ -157,6 +157,8 @@ struct {
 #define family_ipv6     (1 << 1)
 #define proto_http_req  (1 << 2)
 #define proto_http_resp (1 << 3)
+#define packet_ingress  (1 << 4)
+#define packet_egress   (1 << 5)
 
 // payload size: full packets, only headers
 #define FULL    65536       // 1 << 16

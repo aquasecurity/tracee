@@ -25,11 +25,6 @@ func deriveNetPacketTCPArgs() deriveArgsFunction {
 			return nil, err
 		}
 
-		// event retval encodes ingress/egress
-		if event.ReturnValue&packetIngress == packetIngress {
-
-		}
-
 		// event retval encodes layer 3 protocol type
 
 		if event.ReturnValue&familyIpv4 == familyIpv4 {
@@ -70,12 +65,16 @@ func deriveNetPacketTCPArgs() deriveArgsFunction {
 		case (*layers.TCP):
 			var tcp trace.ProtoTCP
 			copyTCPToProtoTCP(l4, &tcp)
+			md := trace.PacketMetadata{
+				Direction: getPacketDirection(&event),
+			}
 
 			return []interface{}{
 				srcIP,
 				dstIP,
 				tcp.SrcPort,
 				tcp.DstPort,
+				md,
 				tcp,
 			}, nil
 		}

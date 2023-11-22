@@ -11300,7 +11300,7 @@ var CoreEvents = map[ID]Definition{
 		id:      NetPacketIPv4,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_ipv4",
-		version: NewVersion(1, 0, 0),
+		version: NewVersion(1, 1, 0),
 		dependencies: Dependencies{
 			ids: []ID{
 				NetPacketIPBase,
@@ -11308,8 +11308,9 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{"network_events"},
 		params: []trace.ArgMeta{
-			{Type: "const char*", Name: "src"}, // TODO: remove after filter supports ProtoIPv4
-			{Type: "const char*", Name: "dst"}, // TODO: remove after filter supports ProtoIPv4
+			{Type: "const char*", Name: "src"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "const char*", Name: "dst"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "trace.PacketMetadata", Name: "metadata"},
 			{Type: "trace.ProtoIPv4", Name: "proto_ipv4"},
 		},
 	},
@@ -11317,7 +11318,7 @@ var CoreEvents = map[ID]Definition{
 		id:      NetPacketIPv6,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_ipv6",
-		version: NewVersion(1, 0, 0),
+		version: NewVersion(1, 1, 0),
 		dependencies: Dependencies{
 			ids: []ID{
 				NetPacketIPBase,
@@ -11325,8 +11326,9 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{"network_events"},
 		params: []trace.ArgMeta{
-			{Type: "const char*", Name: "src"}, // TODO: remove after filter supports ProtoIPv6
-			{Type: "const char*", Name: "dst"}, // TODO: remove after filter supports ProtoIPv6
+			{Type: "const char*", Name: "src"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "const char*", Name: "dst"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "trace.PacketMetadata", Name: "metadata"},
 			{Type: "trace.ProtoIPv6", Name: "proto_ipv6"},
 		},
 	},
@@ -11350,7 +11352,7 @@ var CoreEvents = map[ID]Definition{
 		id:      NetPacketTCP,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_tcp",
-		version: NewVersion(1, 0, 0),
+		version: NewVersion(1, 1, 0),
 		dependencies: Dependencies{
 			ids: []ID{
 				NetPacketTCPBase,
@@ -11358,10 +11360,11 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{"network_events"},
 		params: []trace.ArgMeta{
-			{Type: "const char*", Name: "src"},
-			{Type: "const char*", Name: "dst"},
-			{Type: "u16", Name: "src_port"}, // TODO: remove after filter supports ProtoTCP
-			{Type: "u16", Name: "dst_port"}, // TODO: remove after filter supports ProtoTCP
+			{Type: "const char*", Name: "src"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "const char*", Name: "dst"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "u16", Name: "src_port"},    // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "u16", Name: "dst_port"},    // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "trace.PacketMetadata", Name: "metadata"},
 			{Type: "trace.ProtoTCP", Name: "proto_tcp"},
 		},
 	},
@@ -11385,7 +11388,7 @@ var CoreEvents = map[ID]Definition{
 		id:      NetPacketUDP,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_udp",
-		version: NewVersion(1, 0, 0),
+		version: NewVersion(1, 1, 0),
 		dependencies: Dependencies{
 			ids: []ID{
 				NetPacketUDPBase,
@@ -11393,10 +11396,11 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{"network_events"},
 		params: []trace.ArgMeta{
-			{Type: "const char*", Name: "src"},
-			{Type: "const char*", Name: "dst"},
-			{Type: "u16", Name: "src_port"}, // TODO: remove after filter supports ProtoUDP
-			{Type: "u16", Name: "dst_port"}, // TODO: remove after filter supports ProtoUDP
+			{Type: "const char*", Name: "src"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "const char*", Name: "dst"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "u16", Name: "src_port"},    // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "u16", Name: "dst_port"},    // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "trace.PacketMetadata", Name: "metadata"},
 			{Type: "trace.ProtoUDP", Name: "proto_udp"},
 		},
 	},
@@ -11420,7 +11424,7 @@ var CoreEvents = map[ID]Definition{
 		id:      NetPacketICMP,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_icmp",
-		version: NewVersion(1, 0, 0),
+		version: NewVersion(1, 1, 0),
 		dependencies: Dependencies{
 			ids: []ID{
 				NetPacketICMPBase,
@@ -11428,8 +11432,9 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{"default", "network_events"},
 		params: []trace.ArgMeta{
-			{Type: "const char*", Name: "src"},
-			{Type: "const char*", Name: "dst"},
+			{Type: "const char*", Name: "src"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "const char*", Name: "dst"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "trace.PacketMetadata", Name: "metadata"},
 			{Type: "trace.ProtoICMP", Name: "proto_icmp"},
 		},
 	},
@@ -11453,7 +11458,7 @@ var CoreEvents = map[ID]Definition{
 		id:      NetPacketICMPv6,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_icmpv6",
-		version: NewVersion(1, 0, 0),
+		version: NewVersion(1, 1, 0),
 		dependencies: Dependencies{
 			ids: []ID{
 				NetPacketICMPv6Base,
@@ -11461,8 +11466,9 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{"default", "network_events"},
 		params: []trace.ArgMeta{
-			{Type: "const char*", Name: "src"},
-			{Type: "const char*", Name: "dst"},
+			{Type: "const char*", Name: "src"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "const char*", Name: "dst"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "trace.PacketMetadata", Name: "metadata"},
 			{Type: "trace.ProtoICMPv6", Name: "proto_icmpv6"},
 		},
 	},
@@ -11486,7 +11492,7 @@ var CoreEvents = map[ID]Definition{
 		id:      NetPacketDNS,
 		id32Bit: Sys32Undefined,
 		name:    "net_packet_dns", // preferred event to write signatures
-		version: NewVersion(1, 0, 0),
+		version: NewVersion(1, 1, 0),
 		dependencies: Dependencies{
 			ids: []ID{
 				NetPacketDNSBase,
@@ -11494,10 +11500,11 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{"network_events"},
 		params: []trace.ArgMeta{
-			{Type: "const char*", Name: "src"},
-			{Type: "const char*", Name: "dst"},
-			{Type: "u16", Name: "src_port"},
-			{Type: "u16", Name: "dst_port"},
+			{Type: "const char*", Name: "src"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "const char*", Name: "dst"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "u16", Name: "src_port"},    // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "u16", Name: "dst_port"},    // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "trace.PacketMetadata", Name: "metadata"},
 			{Type: "trace.ProtoDNS", Name: "proto_dns"},
 		},
 	},
@@ -11561,10 +11568,11 @@ var CoreEvents = map[ID]Definition{
 		},
 		sets: []string{"network_events"},
 		params: []trace.ArgMeta{
-			{Type: "const char*", Name: "src"},
-			{Type: "const char*", Name: "dst"},
-			{Type: "u16", Name: "src_port"},
-			{Type: "u16", Name: "dst_port"},
+			{Type: "const char*", Name: "src"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "const char*", Name: "dst"}, // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "u16", Name: "src_port"},    // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "u16", Name: "dst_port"},    // TODO: pack and remove into trace.PacketMetadata after it supports filtering
+			{Type: "trace.PacketMetadata", Name: "metadata"},
 			{Type: "trace.ProtoHTTP", Name: "proto_http"},
 		},
 	},
