@@ -48,6 +48,10 @@ func (sig *e2eHTTP) OnEvent(event protocol.Event) error {
 		return fmt.Errorf("failed to cast event's payload")
 	}
 
+	if eventObj.ProcessName != "curl" {
+		return nil
+	}
+
 	if eventObj.EventName == "net_packet_http" {
 		http, err := helpers.GetProtoHTTPByName(eventObj, "proto_http")
 		if err != nil {
@@ -55,6 +59,15 @@ func (sig *e2eHTTP) OnEvent(event protocol.Event) error {
 		}
 
 		if http.Direction != "request" && http.Direction != "response" {
+			return nil
+		}
+
+		md, err := helpers.GetPacketMetadata(eventObj, "metadata")
+		if err != nil {
+			return err
+		}
+
+		if !testHttpDirectionAndPacketDirection(&md, &http) {
 			return nil
 		}
 
@@ -78,3 +91,10 @@ func (sig *e2eHTTP) OnSignal(s detect.Signal) error {
 }
 
 func (sig *e2eHTTP) Close() {}
+
+func testHttpDirectionAndPacketDirection(md *trace.PacketMetadata, http *trace.ProtoHTTP) bool {
+	// This test is done in the context of a curl request, but if it was in the context
+	// of a server then the direction of the packet would be opposite to the http direction
+	return (http.Direction == "request" && md.Direction == trace.PacketEgress) ||
+		(http.Direction == "response" && md.Direction == trace.PacketIngress)
+}
