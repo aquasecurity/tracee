@@ -57,7 +57,7 @@ and congested network environments.
 The `net_packet_tcp` event provides one event for each existing TCP packet that
 reaches or leaves one of the processes being traced (or even "all OS processes
 for the default run"). As arguments for this event you will find: `src`, `dst`,
-`src_port`, `dst_port` arguments and all `TCP header fields`.
+`src_port`, `dst_port`, `metadata` arguments and all `TCP header fields`.
 
 Example:
 

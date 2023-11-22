@@ -30,7 +30,7 @@ Here's a description of the main UDP header fields:
 The `net_packet_udp` event provides one event for each existing UDP packet that
 reaches or leaves one of the processes being traced (or even "all OS processes
 for the default run"). As arguments for this event you will find: `src`, `dst`,
-`src_port`, `dst_port` arguments and all `UDP header fields`.
+`src_port`, `dst_port`, `metadata` arguments and all `UDP header fields`.
 
 Example:
 
