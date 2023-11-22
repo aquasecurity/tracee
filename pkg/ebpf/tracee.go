@@ -1031,9 +1031,9 @@ func (t *Tracee) populateBPFMaps() error {
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-	for eventDefID, eventDefinition := range events.Core.GetDefinitions() {
+	for _, eventDefinition := range events.Core.GetDefinitions() {
 		id32BitU32 := uint32(eventDefinition.GetID32Bit()) // ID32Bit is int32
-		idU32 := uint32(eventDefID)                        // ID is int32
+		idU32 := uint32(eventDefinition.GetID())           // ID is int32
 		err := sys32to64BPFMap.Update(unsafe.Pointer(&id32BitU32), unsafe.Pointer(&idU32))
 		if err != nil {
 			return errfmt.WrapError(err)
