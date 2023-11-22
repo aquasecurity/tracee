@@ -36,6 +36,35 @@ type DnsResponseData struct {
 // Network Protocol Event Types
 //
 
+// Metadata
+
+type PacketDirection uint8
+
+const (
+	InvalidPacketDirection PacketDirection = iota
+	PacketIngress
+	PacketEgress
+)
+
+func (dir *PacketDirection) String() string {
+	switch *dir {
+	case PacketEgress:
+		return "egress"
+	case PacketIngress:
+		return "ingress"
+	default:
+		return "invalid"
+	}
+}
+
+// TODO: move all ip and port arguments from packet events here
+// This can be done once this struct is filterable. In  order to filter structs
+// the move to the new event structure (from protobuf) will need to be done (see issue #2870).
+// Once it is done, cel-go filtering can be added for struct fields.
+type PacketMetadata struct {
+	Direction PacketDirection `json:"direction"`
+}
+
 // IPv4
 
 type ProtoIPv4 struct {
