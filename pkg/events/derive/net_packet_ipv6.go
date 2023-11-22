@@ -42,10 +42,14 @@ func deriveNetPacketIPv6Args() deriveArgsFunction {
 		case (*layers.IPv6):
 			var ipv6 trace.ProtoIPv6
 			copyIPv6ToProtoIPv6(l3, &ipv6)
+			md := trace.PacketMetadata{
+				Direction: getPacketDirection(&event),
+			}
 
 			return []interface{}{
 				l3.SrcIP.String(),
 				l3.DstIP.String(),
+				md,
 				ipv6,
 			}, nil
 		}

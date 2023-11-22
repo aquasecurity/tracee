@@ -25,6 +25,8 @@ const (
 	familyIpv6
 	protoHttpRequest
 	protoHttpResponse
+	packetIngress
+	packetEgress
 )
 
 func boolToUint8(b bool) uint8 {
@@ -174,4 +176,14 @@ func parseUntilLayer7(event *trace.Event, pair *netPair) (gopacket.ApplicationLa
 	layer7 := packet.ApplicationLayer()
 
 	return layer7, nil
+}
+
+func getPacketDirection(event *trace.Event) trace.PacketDirection {
+	if event.ReturnValue&packetIngress == packetIngress {
+		return trace.PacketIngress
+	}
+	if event.ReturnValue&packetEgress == packetEgress {
+		return trace.PacketEgress
+	}
+	return trace.InvalidPacketDirection
 }

@@ -60,12 +60,16 @@ func deriveNetPacketICMPArgs() deriveArgsFunction {
 			var icmp trace.ProtoICMP
 
 			copyICMPToProtoICMP(l4, &icmp)
+			md := trace.PacketMetadata{
+				Direction: getPacketDirection(&event),
+			}
 
 			// TODO: parse subsequent ICMP type layers
 
 			return []interface{}{
 				srcIP,
 				dstIP,
+				md,
 				icmp,
 			}, nil
 		}

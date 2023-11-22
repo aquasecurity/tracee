@@ -5335,12 +5335,15 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     if (!sk || !skb)
         return 0;
 
+    s64 packet_dir_flag; // used later to set packet direction flag
     switch (type) {
         case BPF_CGROUP_INET_INGRESS:
             cgrpctxmap = &cgrpctxmap_in;
+            packet_dir_flag = packet_ingress;
             break;
         case BPF_CGROUP_INET_EGRESS:
             cgrpctxmap = &cgrpctxmap_eg;
+            packet_dir_flag = packet_egress;
             break;
         default:
             return 0; // other attachment type, return fast
@@ -5469,6 +5472,10 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
         default:
             return 1;
     }
+
+    // ... and packet direction(ingress/egress) ...
+    eventctx->retval |= packet_dir_flag; // set to packet_ingress/egress beforehand
+
     // ... through event ctx ret val
 
     // read IP/IPv6 headers

@@ -41,10 +41,14 @@ func deriveNetPacketIPv4Args() deriveArgsFunction {
 		case (*layers.IPv4):
 			var ipv4 trace.ProtoIPv4
 			copyIPv4ToProtoIPv4(l3, &ipv4)
+			md := trace.PacketMetadata{
+				Direction: getPacketDirection(&event),
+			}
 
 			return []interface{}{
 				l3.SrcIP.String(),
 				l3.DstIP.String(),
+				md,
 				ipv4,
 			}, nil
 		}
