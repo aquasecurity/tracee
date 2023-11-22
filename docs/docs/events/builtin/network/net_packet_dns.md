@@ -80,7 +80,7 @@ services using user-friendly domain names rather than raw IP addresses.
 The `net_packet_dns` event provides one event for each existing DNS packet that
 reaches or leaves one of the processes being traced (or even "all OS processes
 for the default run"). As arguments for this event you will find: `src`, `dst`,
-`src_port`, `dst_port` arguments and all `DNS header fields`.
+`src_port`, `dst_port`, `metadata` arguments and all `DNS header fields`.
 
 Example:
 

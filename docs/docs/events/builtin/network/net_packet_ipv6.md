@@ -54,7 +54,7 @@ network services.
 The `net_packet_ipv6` event provides one event for each existing IPv6 packet
 that reaches or leaves one of the processes being traced (or even "all OS
 processes for the default run"). As arguments for this event you will find:
-`src`, `dst` arguments (common to all networking events) and all `IPv6 header
+`src`, `dst`, `metadata` arguments (common to all networking events) and all `IPv6 header
 fields`.
 
 Example:

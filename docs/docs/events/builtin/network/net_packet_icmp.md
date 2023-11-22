@@ -66,7 +66,7 @@ These are some of the most commonly used ICMP message types. Each type serves a 
 The `net_packet_icmp` event provides one event for each existing ICMP packet
 that reaches or leaves one of the processes being traced (or even "all OS
 processes for the default run"). As arguments for this event you will find:
-`src`, `dst` arguments (common to all networking events) and all `ICMP header
+`src`, `dst`, `metadata` arguments (common to all networking events) and all `ICMP header
 fields`.
 
 Example:

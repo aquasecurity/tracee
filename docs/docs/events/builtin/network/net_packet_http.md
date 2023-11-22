@@ -71,7 +71,7 @@ headers enable session management.
 The `net_packet_http` event provides one event for each existing HTTP packet
 that reaches or leaves one of the processes being traced (or even "all OS
 processes for the default run"). As arguments for this event you will find:
-`src`, `dst`, `src_port`, `dst_port` arguments, the full HTTP Header, its
+`src`, `dst`, `src_port`, `dst_port`, `metadata` arguments, the full HTTP Header, its
 contents and more related information.
 
 Example:
