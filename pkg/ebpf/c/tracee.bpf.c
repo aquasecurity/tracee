@@ -2455,10 +2455,22 @@ int BPF_KPROBE(trace_security_socket_listen)
 
     // Load the arguments given to the listen syscall (which eventually invokes this function)
     syscall_data_t *sys = &p.task_info->syscall_data;
-    if (!p.task_info->syscall_traced || sys->id != SYSCALL_LISTEN)
+    if (!p.task_info->syscall_traced)
         return 0;
 
-    save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0], sizeof(u32), 0);
+    switch (sys->id) {
+        case SYSCALL_LISTEN:
+            save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0], sizeof(u32), 0);
+            break;
+#if defined(bpf_target_x86) // armhf makes use of SYSCALL_LISTEN
+        case SYSCALL_SOCKETCALL:
+            save_to_submit_buf(&p.event->args_buf, (void *) sys->args.args[1], sizeof(u32), 0);
+            break;
+#endif
+        default:
+            return 0;
+    }
+
     save_sockaddr_to_buf(&p.event->args_buf, sock, 1);
     save_to_submit_buf(&p.event->args_buf, (void *) &backlog, sizeof(int), 2);
 
@@ -2490,10 +2502,21 @@ int BPF_KPROBE(trace_security_socket_connect)
 
     // Load the arguments given to the connect syscall (which eventually invokes this function)
     syscall_data_t *sys = &p.task_info->syscall_data;
-    if (!p.task_info->syscall_traced || sys->id != SYSCALL_CONNECT)
+    if (!p.task_info->syscall_traced)
         return 0;
 
-    save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0], sizeof(u32), 0);
+    switch (sys->id) {
+        case SYSCALL_CONNECT:
+            save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0], sizeof(u32), 0);
+            break;
+#if defined(bpf_target_x86) // armhf makes use of SYSCALL_CONNECT
+        case SYSCALL_SOCKETCALL:
+            save_to_submit_buf(&p.event->args_buf, (void *) sys->args.args[1], sizeof(u32), 0);
+            break;
+#endif
+        default:
+            return 0;
+    }
 
     if (sa_fam == AF_INET) {
         save_to_submit_buf(&p.event->args_buf, (void *) address, sizeof(struct sockaddr_in), 1);
@@ -2541,10 +2564,23 @@ int BPF_KPROBE(trace_security_socket_accept)
         return 0;
 
     // Load the arguments given to the accept syscall (which eventually invokes this function)
-    if (!p.task_info->syscall_traced || (sys->id != SYSCALL_ACCEPT && sys->id != SYSCALL_ACCEPT4))
+    if (!p.task_info->syscall_traced)
         return 0;
 
-    save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0], sizeof(u32), 0);
+    switch (sys->id) {
+        case SYSCALL_ACCEPT:
+        case SYSCALL_ACCEPT4:
+            save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0], sizeof(u32), 0);
+            break;
+#if defined(bpf_target_x86) // armhf makes use of SYSCALL_ACCEPT/4
+        case SYSCALL_SOCKETCALL:
+            save_to_submit_buf(&p.event->args_buf, (void *) sys->args.args[1], sizeof(u32), 0);
+            break;
+#endif
+        default:
+            return 0;
+    }
+
     save_sockaddr_to_buf(&p.event->args_buf, sock, 1);
 
     return events_perf_submit(&p, SECURITY_SOCKET_ACCEPT, 0);
@@ -2578,10 +2614,21 @@ int BPF_KPROBE(trace_security_socket_bind)
 
     // Load the arguments given to the bind syscall (which eventually invokes this function)
     syscall_data_t *sys = &p.task_info->syscall_data;
-    if (!p.task_info->syscall_traced || sys->id != SYSCALL_BIND)
+    if (!p.task_info->syscall_traced)
         return 0;
 
-    save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0], sizeof(u32), 0);
+    switch (sys->id) {
+        case SYSCALL_BIND:
+            save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0], sizeof(u32), 0);
+            break;
+#if defined(bpf_target_x86) // armhf makes use of SYSCALL_BIND
+        case SYSCALL_SOCKETCALL:
+            save_to_submit_buf(&p.event->args_buf, (void *) sys->args.args[1], sizeof(u32), 0);
+            break;
+#endif
+        default:
+            return 0;
+    }
 
     u16 protocol = get_sock_protocol(sk);
     net_id_t connect_id = {0};
@@ -2644,10 +2691,22 @@ int BPF_KPROBE(trace_security_socket_setsockopt)
         return -1;
     }
 
-    if (!p.task_info->syscall_traced || sys->id != SYSCALL_SETSOCKOPT)
+    if (!p.task_info->syscall_traced)
         return 0;
 
-    save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0], sizeof(u32), 0);
+    switch (sys->id) {
+        case SYSCALL_SETSOCKOPT:
+            save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0], sizeof(u32), 0);
+            break;
+#if defined(bpf_target_x86) // armhf makes use of SYSCALL_SETSOCKOPT
+        case SYSCALL_SOCKETCALL:
+            save_to_submit_buf(&p.event->args_buf, (void *) sys->args.args[1], sizeof(u32), 0);
+            break;
+#endif
+        default:
+            return 0;
+    }
+
     save_to_submit_buf(&p.event->args_buf, (void *) &level, sizeof(int), 1);
     save_to_submit_buf(&p.event->args_buf, (void *) &optname, sizeof(int), 2);
     save_sockaddr_to_buf(&p.event->args_buf, sock, 3);
