@@ -112,6 +112,13 @@ func ParseArgs(event *trace.Event) error {
 				parseOrEmptyString(optArg, prctlOptionArgument, err)
 			}
 		}
+	case Socketcall:
+		if callArg := GetArg(event, "call"); callArg != nil {
+			if call, isInt32 := callArg.Value.(int32); isInt32 {
+				socketcallArgument, err := helpers.ParseSocketcallCall(uint64(call))
+				parseOrEmptyString(callArg, socketcallArgument, err)
+			}
+		}
 	case Socket:
 		if domArg := GetArg(event, "domain"); domArg != nil {
 			if dom, isInt32 := domArg.Value.(int32); isInt32 {
