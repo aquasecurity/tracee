@@ -181,6 +181,8 @@ statfunc struct pt_regs *get_task_pt_regs(struct task_struct *task)
     #define SYSCALL_LANDLOCK_RESTRICT_SELF 446
     #define SYSCALL_PROCESS_MRELEASE       448
 
+    #define SYSCALL_SOCKETCALL 473 // x86 only
+
 #elif defined(bpf_target_arm64)
     #define SYSCALL_READ                   63
     #define SYSCALL_WRITE                  64
