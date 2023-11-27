@@ -43,7 +43,7 @@ func deriveDNSEvents(event trace.Event) ([]interface{}, error) {
 		net.srcPort,
 		net.dstPort,
 		md,
-		dns,
+		*dns,
 	}, nil
 }
 
