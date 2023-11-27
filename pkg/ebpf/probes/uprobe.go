@@ -31,6 +31,22 @@ func NewUprobe(evtName string, progName string, binPath string, symName string) 
 	}
 }
 
+func (p *Uprobe) GetEventName() string {
+	return p.eventName
+}
+
+func (p *Uprobe) GetProgramName() string {
+	return p.programName
+}
+
+func (p *Uprobe) GetBinaryPath() string {
+	return p.binaryPath
+}
+
+func (p *Uprobe) GetSymbolName() string {
+	return p.symbolName
+}
+
 func (p *Uprobe) attach(module *bpf.Module, args ...interface{}) error {
 	var link *bpf.BPFLink
 
