@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/dnscache"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/proctree"
@@ -132,6 +133,11 @@ func (t *Tracee) PrepareBuiltinDataSources() []detect.DataSource {
 
 	// Containers Data Source
 	datasources = append(datasources, containers.NewDataSource(t.containers))
+
+	// DNS Data Source
+	if t.config.DNSCacheConfig.Enable {
+		datasources = append(datasources, dnscache.NewDataSource(t.dnsCache))
+	}
 
 	// Process Tree Data Source
 	switch t.config.ProcTree.Source {

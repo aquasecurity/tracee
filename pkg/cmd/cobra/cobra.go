@@ -139,6 +139,20 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	}
 	cfg.ProcTree = procTree
 
+	// DNS Cache command line flags
+
+	dnsCacheFlags, err := GetFlagsFromViper("dnscache")
+	if err != nil {
+		return runner, err
+	}
+
+	dnsCache, err := flags.PrepareDnsCache(dnsCacheFlags)
+	if err != nil {
+		return runner, err
+	}
+
+	cfg.DNSCacheConfig = dnsCache
+
 	// Capture command line flags - via cobra flag
 
 	captureFlags, err := c.Flags().GetStringArray("capture")

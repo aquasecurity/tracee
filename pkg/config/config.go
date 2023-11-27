@@ -6,6 +6,7 @@ import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
+	"github.com/aquasecurity/tracee/pkg/dnscache"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
@@ -33,6 +34,7 @@ type Config struct {
 	NoContainersEnrich bool
 	EngineConfig       engine.Config
 	MetricsEnabled     bool
+	DNSCacheConfig     dnscache.Config
 }
 
 // Validate does static validation of the configuration

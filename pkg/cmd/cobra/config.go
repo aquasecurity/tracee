@@ -43,6 +43,8 @@ func GetFlagsFromViper(key string) ([]string, error) {
 		flagger = &LogConfig{}
 	case "output":
 		flagger = &OutputConfig{}
+	case "dnscache":
+		flagger = &DnsCacheConfig{}
 	default:
 		return nil, errfmt.Errorf("unrecognized key: %s", key)
 	}
@@ -195,6 +197,30 @@ func (c *ProcTreeConfig) flags() []string {
 	}
 	if c.Cache.Thread != 0 {
 		flags = append(flags, fmt.Sprintf("thread-cache=%d", c.Cache.Thread))
+	}
+
+	return flags
+}
+
+//
+// dnscache flag
+//
+
+type DnsCacheConfig struct {
+	Enable bool `mapstructure:"enable"`
+	Size   int  `mapstructure:"size"`
+}
+
+func (c *DnsCacheConfig) flags() []string {
+	flags := make([]string, 0)
+
+	if !c.Enable {
+		flags = append(flags, "none")
+		return flags
+	}
+
+	if c.Size != 0 {
+		flags = append(flags, fmt.Sprintf("size=%d", c.Size))
 	}
 
 	return flags

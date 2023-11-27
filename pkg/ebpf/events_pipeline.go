@@ -527,6 +527,15 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 				}
 
 				for i := range derivatives {
+					// Passing "derivative" variable here will make the ptr address always
+					// be the same as the last item. This makes the printer to print 2 or
+					// 3 times the last event, instead of printing all derived events
+					// (when there are more than one).
+					//
+					// Nadav: Likely related to https://github.com/golang/go/issues/57969 (GOEXPERIMENT=loopvar).
+					//        Let's keep an eye on that moving from experimental for these and similar cases in tracee.
+					event := &derivatives[i]
+
 					// Skip events that dont work with filtering due to missing types
 					// being handled (https://github.com/aquasecurity/tracee/issues/2486)
 					switch events.ID(derivatives[i].EventID) {
@@ -535,17 +544,15 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					case events.PrintMemDump:
 					default:
 						// Derived events might need filtering as well
-						if t.matchPolicies(&derivatives[i]) == 0 {
+						if t.matchPolicies(event) == 0 {
 							_ = t.stats.EventsFiltered.Increment()
 							continue
 						}
 					}
 
-					// Passing "derivative" variable here will make the ptr address always
-					// be the same as the last item. This makes the printer to print 2 or
-					// 3 times the last event, instead of printing all derived events
-					// (when there are more than one).
-					out <- &derivatives[i]
+					// Process derived events
+					t.processEvent(event)
+					out <- event
 				}
 			case <-ctx.Done():
 				return

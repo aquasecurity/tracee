@@ -80,6 +80,15 @@ func (t *Tracee) RegisterEventProcessor(id events.ID, proc func(evt *trace.Event
 // registerEventProcessors registers all event processors, each to a specific event id.
 func (t *Tracee) registerEventProcessors() {
 	//
+	// Event Timestamps Normalization Processors
+	//
+
+	// Convert all time relate args to nanoseconds since epoch.
+	// NOTE: Make sure to convert time related args (of your event) in here.
+	t.RegisterEventProcessor(events.SchedProcessFork, t.processSchedProcessFork)
+	t.RegisterEventProcessor(events.All, t.normalizeEventCtxTimes)
+
+	//
 	// Process Tree Processors
 	//
 
@@ -98,6 +107,15 @@ func (t *Tracee) registerEventProcessors() {
 	t.RegisterEventProcessor(events.SchedProcessFork, t.procTreeForkRemoveArgs)
 
 	//
+	// DNS Cache Processors
+	//
+
+	if t.config.DNSCacheConfig.Enable {
+		// TODO(nadav): Migrate to control plane signals?
+		t.RegisterEventProcessor(events.NetPacketDNS, t.populateDnsCache)
+	}
+
+	//
 	// Regular Pipeline Processors
 	//
 
@@ -112,15 +130,6 @@ func (t *Tracee) registerEventProcessors() {
 	t.RegisterEventProcessor(events.PrintNetSeqOps, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processPrintMemDump)
-
-	//
-	// Event Timestamps Normalization Processors
-	//
-
-	// Convert all time relate args to nanoseconds since epoch.
-	// NOTE: Make sure to convert time related args (of your event) in here.
-	t.RegisterEventProcessor(events.SchedProcessFork, t.processSchedProcessFork)
-	t.RegisterEventProcessor(events.All, t.normalizeEventCtxTimes)
 }
 
 func initKernelReadFileTypes() {
