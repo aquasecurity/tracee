@@ -26,6 +26,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cgroup"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/dnscache"
 	"github.com/aquasecurity/tracee/pkg/ebpf/controlplane"
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
@@ -115,6 +116,8 @@ type Tracee struct {
 	controlPlane *controlplane.Controller
 	// Process Tree
 	processTree *proctree.ProcessTree
+	// DNS Cache
+	dnsCache *dnscache.DNSCache
 	// Specific Events Needs
 	triggerContexts trigger.Context
 	readyCallback   func(gocontext.Context)
@@ -236,6 +239,12 @@ func New(cfg config.Config) (*Tracee, error) {
 		t.eventsState[events.SignalSchedProcessFork] = policy.AlwaysSubmit
 		t.eventsState[events.SignalSchedProcessExec] = policy.AlwaysSubmit
 		t.eventsState[events.SignalSchedProcessExit] = policy.AlwaysSubmit
+	}
+
+	// DNS Cache events
+
+	if t.config.DNSCacheConfig.Enable {
+		t.eventsState[events.NetPacketDNS] = policy.AlwaysSubmit
 	}
 
 	switch t.config.ProcTree.Source {
@@ -408,6 +417,15 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	}
 	if err := t.containers.Populate(); err != nil {
 		return errfmt.Errorf("error populating containers: %v", err)
+	}
+
+	// Initialize DNS Cache
+
+	if t.config.DNSCacheConfig.Enable {
+		t.dnsCache, err = dnscache.New(t.config.DNSCacheConfig)
+		if err != nil {
+			return errfmt.Errorf("error initializing dns cache: %v", err)
+		}
 	}
 
 	// Initialize containers related logic
