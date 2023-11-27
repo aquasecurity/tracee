@@ -1561,29 +1561,46 @@ func computeFileHash(file *os.File) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
+// getSelfLoadedPrograms returns a map of all programs loaded by tracee.
 func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
-	selfLoadedPrograms := map[string]int{} // Symbol to number of hooks of this symbol (kprobe and kretprobe will yield 2)
+	selfLoadedPrograms := map[string]int{} // map k: symbol name, v: number of hooks
+
+	log := func(event string, program string) {
+		logger.Debugw("self loaded program", "event", event, "program", program)
+	}
 
 	for tr := range t.eventsState {
 		if !events.Core.IsDefined(tr) {
 			continue
 		}
 
-		givenEventDefinition := events.Core.GetDefinitionByID(tr)
-		for _, eventsProbe := range givenEventDefinition.GetDependencies().GetProbes() {
-			probe, ok := t.probes.GetProbeByHandle(eventsProbe.GetHandle()).(*probes.TraceProbe)
-			if !ok {
+		definition := events.Core.GetDefinitionByID(tr)
+
+		for _, depProbes := range definition.GetDependencies().GetProbes() {
+			currProbe := t.probes.GetProbeByHandle(depProbes.GetHandle())
+
+			name := ""
+			switch p := currProbe.(type) {
+			case *probes.TraceProbe:
+				// Only k[ret]probes may use ftrace
+				if kprobesOnly {
+					switch p.GetProbeType() {
+					case probes.KProbe, probes.KretProbe:
+					default:
+						continue
+					}
+				}
+				log(definition.GetName(), p.GetProgramName())
+				name = p.GetEventName()
+			case *probes.Uprobe:
+				log(definition.GetName(), p.GetProgramName())
+				continue
+			case *probes.CgroupProbe:
+				log(definition.GetName(), p.GetProgramName())
 				continue
 			}
 
-			if kprobesOnly {
-				// Currently, of the program types that tracee uses, only k[ret]probe may use ftrace behind the scenes
-				if probType := probe.GetProbeType(); probType != probes.KProbe && probType != probes.KretProbe {
-					continue
-				}
-			}
-
-			selfLoadedPrograms[probe.GetEventName()]++
+			selfLoadedPrograms[name]++
 		}
 	}
 
@@ -1602,6 +1619,8 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		event.MatchedPolicies = t.config.Policies.MatchedNames(matchedPolicies)
 	}
 
+	// Initial namespace events
+
 	emit = t.eventsState[events.InitNamespaces].Emit
 	if emit > 0 {
 		systemInfoEvent := events.InitNamespacesEvent()
@@ -1609,6 +1628,8 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		out <- &systemInfoEvent
 		_ = t.stats.EventCount.Increment()
 	}
+
+	// Initial existing containers events (1 event per container)
 
 	emit = t.eventsState[events.ExistingContainer].Emit
 	if emit > 0 {
@@ -1618,6 +1639,8 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 			_ = t.stats.EventCount.Increment()
 		}
 	}
+
+	// Ftrace hook event
 
 	emit = t.eventsState[events.FtraceHook].Emit
 	if emit > 0 {

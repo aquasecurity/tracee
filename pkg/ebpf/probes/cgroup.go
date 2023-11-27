@@ -39,6 +39,10 @@ func NewCgroupProbe(a bpf.BPFAttachType, progName string) *CgroupProbe {
 	}
 }
 
+func (p *CgroupProbe) GetProgramName() string {
+	return p.programName
+}
+
 func (p *CgroupProbe) attach(module *bpf.Module, args ...interface{}) error {
 	var cgroups *cgroup.Cgroups
 
