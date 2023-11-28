@@ -63,8 +63,8 @@ github.com/OneOfOne/xxhash v1.2.8/go.mod h1:eZbhyaAYD41SGSSsnmcpxVoRiQ/MPUTjUdII
 github.com/agnivade/levenshtein v1.1.1 h1:QY8M92nrzkmr798gCo3kmMyqXFzdQVpxLlGPRBij0P8=
 github.com/agnivade/levenshtein v1.1.1/go.mod h1:veldBMzWxcCG2ZvUTKD2kJNRdCk5hVbJomOvKkmgYbo=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
-github.com/aquasecurity/libbpfgo v0.5.0-libbpf-1.2 h1:Yywi9wC3GPDOgR8wr6P9geY2qvFqKxH5sctMOssw+MQ=
-github.com/aquasecurity/libbpfgo v0.5.0-libbpf-1.2/go.mod h1:0rEApF1YBHGuZ4C8OYI9q5oDBVpgqtRqYATePl9mCDk=
+github.com/aquasecurity/libbpfgo v0.6.0-libbpf-1.3 h1:mhDe1mAZR80LjnsCnteS+R2/EeBFi9qFjKslsIJwVSo=
+github.com/aquasecurity/libbpfgo v0.6.0-libbpf-1.3/go.mod h1:0rEApF1YBHGuZ4C8OYI9q5oDBVpgqtRqYATePl9mCDk=
 github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20231123142329-37c4b843a539 h1:axIHZ3la2/wcqMYO9TUyKO/lMGYizEKyNIodbwQBOkE=
 github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20231123142329-37c4b843a539/go.mod h1:1fGKke5pgH4xYvZ7HqDbLSi/R5zfRFH2K+c9kLp9L34=
 github.com/aquasecurity/tracee/api v0.0.0-20231013014739-b32a168ee6a8 h1:NGzPDvQofEG04CoPZjSSRoFMxnSd3Brh39BY1dmdyZM=
