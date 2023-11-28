@@ -5,7 +5,7 @@ import (
 )
 
 // TimeRelevantInfo is the returned value of all the time specific process tree queries.
-// It envelope the information from the tree with the time it is relevant for.
+// It envelopes the information from the tree with the time it is relevant for.
 type TimeRelevantInfo[T any] struct {
 	Timestamp time.Time
 	Info      T
