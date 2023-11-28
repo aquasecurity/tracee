@@ -4,6 +4,13 @@ import (
 	"time"
 )
 
+// TimeRelevantInfo is the returned value of all the time specific process tree queries.
+// It envelope the information from the tree with the time it is relevant for.
+type TimeRelevantInfo[T any] struct {
+	Timestamp time.Time
+	Info      T
+}
+
 // ProcessInfo is the user facing representation of a process data at a specific time.
 type ProcessInfo struct {
 	EntityId          uint32
@@ -51,7 +58,7 @@ type FileInfo struct {
 // ProcessLineage is a representation of a process and its ancestors until the oldest ancestor
 // known in the tree.
 // The lineage is only relevant for the container the process resides in.
-type ProcessLineage []ProcessInfo
+type ProcessLineage []TimeRelevantInfo[ProcessInfo]
 
 // ProcKey is a key to the process tree data source, which will result receiving ProcessInfo in the
 // response for the matching process in the given time.
