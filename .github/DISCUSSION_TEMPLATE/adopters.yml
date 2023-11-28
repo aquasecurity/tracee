@@ -1,0 +1,36 @@
+title: "<company name>"
+labels: ["adopters"]
+body:
+  - type: textarea
+    id: info
+    attributes:
+      label: "[Optional] How do you use Tracee?"
+    validations:
+      required: false
+  - type: textarea
+    id: info
+    attributes:
+      label: "[Optional] Can you provide us with a quote on your favourite part of Tracee? This may be used in marketing material."
+    validations:
+      required: false
+  - type: checkboxes
+    attributes:
+      label: "[Optional] What type of events are you monitoring (see https://aquasecurity.github.io/tracee/latest/docs/events/)?"
+      options:
+        - label: "security"
+        - label: "network"
+        - label: "lsm"
+        - label: "containers"
+        - label: "misc"
+        - label: "syscalls"
+        - label: "custom"
+  - type: markdown
+    attributes:
+      value: |
+        ## Get in touch
+        We are always looking for 
+        * User feedback
+        * Collaboration with other companies and organisations
+        * Or just to have a chat with you about Tracee. 
+        If any of this interests you or your marketing team, please reach out at: oss@aquasec.com
+        We would love to hear from you!
