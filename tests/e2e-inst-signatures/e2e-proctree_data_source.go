@@ -23,26 +23,18 @@ const (
 
 type e2eProcessTreeDataSource struct {
 	cb            detect.SignatureHandler
-	processTreeDS detect.DataSource
+	processTreeDS *helpers.ProcessTreeDS
 }
 
 // Init is called once when the signature is loaded.
 func (sig *e2eProcessTreeDataSource) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
 
-	processTreeDataSource, ok := ctx.GetDataSource("tracee", "process_tree")
-	if !ok {
-		return fmt.Errorf("data source tracee/process_tree is not registered")
+	var err error
+	sig.processTreeDS, err = helpers.GetProcessTreeDataSource(ctx)
+	if err != nil {
+		return err
 	}
-
-	if processTreeDataSource.Version() > 1 {
-		return fmt.Errorf(
-			"data source tracee/process_tree version %d is not supported",
-			processTreeDataSource.Version(),
-		)
-	}
-
-	sig.processTreeDS = processTreeDataSource
 
 	return nil
 }
@@ -136,20 +128,12 @@ func (sig *e2eProcessTreeDataSource) checkThread(eventObj *trace.Event) error {
 		)
 	}
 
-	// Pick the thread info from the data source
-	threadQueryAnswer, err := sig.processTreeDS.Get(
-		datasource.ThreadKey{
-			EntityId: eventObj.ThreadEntityId,
-			Time:     time.Unix(0, int64(eventObj.Timestamp)), // at the time event was emitted
-		},
-	)
+	threadTimeInfo, err := sig.processTreeDS.GetEventThreadInfo(eventObj)
 	if err != nil {
-		return fmt.Errorf(debug("could not find thread"))
+		return err
 	}
-	threadInfo, ok := threadQueryAnswer["thread_info"].(datasource.ThreadInfo)
-	if !ok {
-		return fmt.Errorf(debug("could not extract info"))
-	}
+	queryTime := time.Unix(0, int64(eventObj.Timestamp))
+	threadInfo := threadTimeInfo.Info
 
 	// Compare TID, NS TID and PID
 	if threadInfo.Tid != eventObj.HostThreadID {
@@ -160,6 +144,9 @@ func (sig *e2eProcessTreeDataSource) checkThread(eventObj *trace.Event) error {
 	}
 	if threadInfo.Pid != eventObj.HostProcessID {
 		return fmt.Errorf(debug("no match for pid"))
+	}
+	if threadTimeInfo.Timestamp != queryTime {
+		return fmt.Errorf(debug("no match for info timestamp"))
 	}
 
 	return nil
@@ -175,19 +162,12 @@ func (sig *e2eProcessTreeDataSource) checkProcess(eventObj *trace.Event) error {
 		)
 	}
 
-	// Pick the process info from the data source
-	procQueryAnswer, err := sig.processTreeDS.Get(
-		datasource.ProcKey{
-			EntityId: eventObj.ProcessEntityId,
-			Time:     time.Unix(0, int64(eventObj.Timestamp)),
-		})
+	processTimeInfo, err := sig.processTreeDS.GetEventProcessInfo(eventObj)
 	if err != nil {
-		return fmt.Errorf(debug("could not find process"))
+		return err
 	}
-	processInfo, ok := procQueryAnswer["process_info"].(datasource.ProcessInfo)
-	if !ok {
-		return fmt.Errorf(debug("could not extract info"))
-	}
+	queryTime := time.Unix(0, int64(eventObj.Timestamp))
+	processInfo := processTimeInfo.Info
 
 	// Compare PID, NS PID and PPID
 	if processInfo.Pid != eventObj.HostProcessID {
@@ -198,6 +178,9 @@ func (sig *e2eProcessTreeDataSource) checkProcess(eventObj *trace.Event) error {
 	}
 	if processInfo.Ppid != eventObj.HostParentProcessID {
 		return fmt.Errorf(debug("no match for ppid"))
+	}
+	if processTimeInfo.Timestamp != queryTime {
+		return fmt.Errorf(debug("no match for timestamp"))
 	}
 
 	// Check if the process lists itself in the list of its threads (case #1)
@@ -242,22 +225,10 @@ func (sig *e2eProcessTreeDataSource) checkLineage(eventObj *trace.Event) error {
 
 	maxDepth := 5 // up to 5 ancestors + process itself
 
-	// Pick the lineage info from the data source.
-	lineageQueryAnswer, err := sig.processTreeDS.Get(
-		datasource.LineageKey{
-			EntityId: eventObj.ProcessEntityId,
-			Time:     time.Unix(0, int64(eventObj.Timestamp)), // at the time event was emitted
-			MaxDepth: maxDepth,
-		},
-	)
+	lineageInfo, err := sig.processTreeDS.GetEventProcessLineage(eventObj, maxDepth)
 	if err != nil {
-		return fmt.Errorf(debug("could not find lineage"))
+		return err
 	}
-	lineageInfo, ok := lineageQueryAnswer["process_lineage"].(datasource.ProcessLineage)
-	if !ok {
-		return fmt.Errorf("failed to extract ProcessLineage from data")
-	}
-
 	// compareMaps compares two maps and returns true if they are equal
 	compareMaps := func(map1, map2 map[int]uint32) bool {
 		// Compare maps using smaller as reference. This is because the process entry might have
@@ -277,36 +248,12 @@ func (sig *e2eProcessTreeDataSource) checkLineage(eventObj *trace.Event) error {
 		return true
 	}
 
-	// pickProcessFromDS picks a process from the data source.
-	pickProcessFromDS := func(id uint32) (datasource.ProcessInfo, error) {
-		processQueryAnswer, err := sig.processTreeDS.Get(
-			datasource.ProcKey{
-				EntityId: id,
-				Time:     time.Unix(0, int64(eventObj.Timestamp)), // at the time event was emitted
-			},
-		)
-		if err != nil {
-			return datasource.ProcessInfo{}, fmt.Errorf(debug("could not find process"))
-		}
-		given, ok := processQueryAnswer["process_info"].(datasource.ProcessInfo)
-		if !ok {
-			return datasource.ProcessInfo{}, fmt.Errorf(debug("could not extract info"))
-		}
-		return given, nil
-	}
-
 	// doesItMatch checks if a process in the lineage matches the process in the event.
-	doesItMatch := func(compareBase datasource.ProcessInfo, id uint32) error {
-		_, err = sig.processTreeDS.Get(
-			datasource.ProcKey{
-				EntityId: compareBase.EntityId,
-				Time:     time.Unix(0, int64(eventObj.Timestamp)), // at the time event was emitted
-			},
-		)
-		if err != nil {
-			return fmt.Errorf(debug("could not find process"))
-		}
-		given, err := pickProcessFromDS(id)
+	doesItMatch := func(compareBase datasource.TimeRelevantInfo[datasource.ProcessInfo], id uint32) error {
+		given, err := sig.processTreeDS.GetProcessInfo(datasource.ProcKey{
+			EntityId: id,
+			Time:     compareBase.Timestamp,
+		})
 		if err != nil {
 			return err
 		}
@@ -314,37 +261,37 @@ func (sig *e2eProcessTreeDataSource) checkLineage(eventObj *trace.Event) error {
 		// Debug (TODO: remove this after proctree is stable)
 		//
 		// fmt.Printf("=> base (pid: %v, ppid: %v, time: %v, hash: %v) (%v) %v\n",
-		// 	compareBase.Pid, compareBase.Ppid, compareBase.ExecTime, compareBase.EntityId,
-		// 	compareBase.Cmd, compareBase.ExecutionBinary.Path,
+		// 	compareBase.Info.Pid, compareBase.Info.Ppid, compareBase.Info.ExecTime, compareBase.Info.EntityId,
+		// 	compareBase.Info.Cmd, compareBase.Info.ExecutionBinary.Path,
 		// )
 		// fmt.Printf("=> given (pid: %v, ppid: %v, time: %v, hash: %v) (%v) %v\n",
-		// 	given.Pid, given.Ppid, given.ExecTime, given.EntityId,
-		// 	given.Cmd, given.ExecutionBinary.Path,
+		// 	given.Info.Pid, given.Info.Ppid, given.Info.ExecTime, given.Info.EntityId,
+		// 	given.Info.Cmd, given.Info.ExecutionBinary.Path,
 		// )
 
 		// Compare
-		if !compareMaps(compareBase.ThreadsIds, given.ThreadsIds) {
+		if !compareMaps(compareBase.Info.ThreadsIds, given.Info.ThreadsIds) {
 			return fmt.Errorf(debug("threads do not match"))
 		}
-		if !compareMaps(compareBase.ChildProcessesIds, given.ChildProcessesIds) {
+		if !compareMaps(compareBase.Info.ChildProcessesIds, given.Info.ChildProcessesIds) {
 			return fmt.Errorf(debug("children do not match"))
 		}
 
 		// Zero fields that can't be compared (timing, maps, etc)
-		zeroSomeStuff(&compareBase)
-		zeroSomeStuff(&given)
+		zeroSomeProcStuff(&compareBase.Info)
+		zeroSomeProcStuff(&given.Info)
 
 		// Compare the rest
-		if !reflect.DeepEqual(compareBase, given) {
-			fmt.Printf("%+v\n", compareBase)
-			fmt.Printf("%+v\n", given)
+		if !reflect.DeepEqual(compareBase.Info, given.Info) {
+			fmt.Printf("%+v\n", compareBase.Info)
+			fmt.Printf("%+v\n", given.Info)
 			// fmt.Printf("=> base (pid: %v, ppid: %v, time: %v, hash: %v) (%v) %v\n",
-			// compareBase.Pid, compareBase.Ppid, compareBase.ExecTime, compareBase.EntityId,
-			// compareBase.Cmd, compareBase.ExecutionBinary.Path,
+			// compareBase.Info.Pid, compareBase.Info.Ppid, compareBase.Info.ExecTime, compareBase.Info.EntityId,
+			// compareBase.Info.Cmd, compareBase.Info.ExecutionBinary.Path,
 			// )
 			// fmt.Printf("=> given (pid: %v, ppid: %v, time: %v, hash: %v) (%v) %v\n",
-			// given.Pid, given.Ppid, given.ExecTime, given.EntityId,
-			// given.Cmd, given.ExecutionBinary.Path,
+			// given.Info.Pid, given.Info.Ppid, given.Info.ExecTime, given.Info.EntityId,
+			// given.Info.Cmd, given.Info.ExecutionBinary.Path,
 			// )
 			return fmt.Errorf(debug("process in lineage does not match"))
 		}
@@ -353,14 +300,14 @@ func (sig *e2eProcessTreeDataSource) checkLineage(eventObj *trace.Event) error {
 	}
 
 	// First ancestor is the process itself, compare object from the Lineage and Object queries
-	err = doesItMatch(lineageInfo[0], eventObj.ProcessEntityId)
+	err = doesItMatch((*lineageInfo)[0], eventObj.ProcessEntityId)
 	if err != nil {
 		return err
 	}
 
 	// Check all ancestors in the data source up to maxDepth
-	for _, ancestor := range lineageInfo[1:] {
-		err = doesItMatch(ancestor, ancestor.EntityId) // compare lineage with proc from datasource
+	for _, ancestor := range (*lineageInfo)[1:] {
+		err = doesItMatch(ancestor, ancestor.Info.EntityId) // compare lineage with proc from datasource
 		if err != nil {
 			return err
 		}
@@ -375,7 +322,7 @@ func (sig *e2eProcessTreeDataSource) OnSignal(s detect.Signal) error {
 
 func (sig *e2eProcessTreeDataSource) Close() {}
 
-func zeroSomeStuff(process *datasource.ProcessInfo) {
+func zeroSomeProcStuff(process *datasource.ProcessInfo) {
 	// processes die during the test
 	process.IsAlive = false
 
