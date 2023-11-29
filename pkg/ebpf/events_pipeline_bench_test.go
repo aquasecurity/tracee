@@ -32,7 +32,7 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 		evtPool.Put(evtPool.New())
 	}
 
-	ctx := bufferdecoder.Context{}
+	eCtx := bufferdecoder.EventContext{}
 	containerData := trace.Container{}
 	kubernetesData := trace.Kubernetes{}
 	eventDefinition := events.Definition{}
@@ -42,7 +42,7 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 	syscall := ""
 	argnum := uint8(0)
 
-	decodeChan := make(chan *bufferdecoder.Context, 10000)
+	decodeChan := make(chan *bufferdecoder.EventContext, 10000)
 	processChan := make(chan *trace.Event, 10000)
 	deriveChan := make(chan *trace.Event)
 	engineChan := make(chan *trace.Event)
@@ -58,7 +58,7 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 		defer wg.Done()
 		for i := 0; i < b.N; i++ {
 			for j := 0; j < decodeEvts; j++ {
-				decodeChan <- &ctx
+				decodeChan <- &eCtx
 			}
 		}
 	}()
@@ -185,7 +185,7 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 // BenchmarkNewEventObject is a benchmark of using a new Event object for each event,
 // which simulates, with caveats, the way the pipeline works.
 func BenchmarkNewEventObject(b *testing.B) {
-	ctx := bufferdecoder.Context{}
+	eCtx := bufferdecoder.EventContext{}
 	containerData := trace.Container{}
 	kubernetesData := trace.Kubernetes{}
 	eventDefinition := events.Definition{}
@@ -195,7 +195,7 @@ func BenchmarkNewEventObject(b *testing.B) {
 	syscall := ""
 	argnum := uint8(0)
 
-	decodeChan := make(chan *bufferdecoder.Context, 10000)
+	decodeChan := make(chan *bufferdecoder.EventContext, 10000)
 	processChan := make(chan *trace.Event, 10000)
 	deriveChan := make(chan *trace.Event)
 	engineChan := make(chan *trace.Event)
@@ -211,7 +211,7 @@ func BenchmarkNewEventObject(b *testing.B) {
 		defer wg.Done()
 		for i := 0; i < b.N; i++ {
 			for j := 0; j < decodeEvts; j++ {
-				decodeChan <- &ctx
+				decodeChan <- &eCtx
 			}
 		}
 	}()

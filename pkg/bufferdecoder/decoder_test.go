@@ -14,7 +14,7 @@ func TestDecodeContext(t *testing.T) {
 	t.Parallel()
 
 	buf := new(bytes.Buffer)
-	ctxExpected := Context{
+	eCtxExpected := EventContext{
 		Ts:          11,
 		CgroupID:    22,
 		ProcessorId: 5,
@@ -33,21 +33,21 @@ func TestDecodeContext(t *testing.T) {
 		Retval:      0,
 		StackID:     0,
 	}
-	err := binary.Write(buf, binary.LittleEndian, ctxExpected)
+	err := binary.Write(buf, binary.LittleEndian, eCtxExpected)
 	assert.Equal(t, nil, err)
-	var ctxObtained Context
+	var eCtxObtained EventContext
 	rawData := buf.Bytes()
 	d := New(rawData)
 	cursorBefore := d.cursor
-	err = d.DecodeContext(&ctxObtained)
+	err = d.DecodeContext(&eCtxObtained)
 	cursorAfter := d.cursor
 
 	// checking no error
 	assert.Equal(t, nil, err)
 	// checking decoding succeeded correctly
-	assert.Equal(t, ctxExpected, ctxObtained)
+	assert.Equal(t, eCtxExpected, eCtxObtained)
 	// checking decoder cursor on buffer moved appropriately
-	assert.Equal(t, int(ctxExpected.GetSizeBytes()), cursorAfter-cursorBefore)
+	assert.Equal(t, int(eCtxExpected.GetSizeBytes()), cursorAfter-cursorBefore)
 }
 
 func TestDecodeUint8(t *testing.T) {
@@ -489,9 +489,9 @@ func TestDecodeMprotectWriteMeta(t *testing.T) {
 }
 
 func BenchmarkDecodeContext(*testing.B) {
-	var ctx Context
+	var eCtx EventContext
 	/*
-		s := Context{
+		eCtx := EventContext{
 			Ts:          11,
 			ProcessorId: 32,
 			CgroupID:    22,
@@ -521,13 +521,13 @@ func BenchmarkDecodeContext(*testing.B) {
 		0, 0, 0}
 	for i := 0; i < 100; i++ {
 		decoder := New(buffer)
-		decoder.DecodeContext(&ctx)
+		decoder.DecodeContext(&eCtx)
 	}
 }
 func BenchmarkBinaryContext(*testing.B) {
-	var ctx Context
+	var eCtx EventContext
 	/*
-		s := Context{
+		eCtx := EventContext{
 			Ts:       11,
 			CgroupID: 22,
 			ProcessorId: 432,
@@ -558,7 +558,7 @@ func BenchmarkBinaryContext(*testing.B) {
 		0, 0, 0}
 	for i := 0; i < 100; i++ {
 		binBuf := bytes.NewBuffer(buffer)
-		binary.Read(binBuf, binary.LittleEndian, &ctx)
+		binary.Read(binBuf, binary.LittleEndian, &eCtx)
 	}
 }
 
