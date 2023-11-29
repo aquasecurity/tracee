@@ -152,7 +152,7 @@ func (t *Tracee) queueEvents(ctx context.Context, in <-chan *trace.Event) (chan 
 // decodeEvents is the event decoding pipeline stage. For each received event, it goes
 // through a decoding function that will decode the event from its raw format into a
 // trace.Event type.
-func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) (<-chan *trace.Event, <-chan error) {
+func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-chan *trace.Event, <-chan error) {
 	out := make(chan *trace.Event, 10000)
 	errc := make(chan error, 1)
 	sysCompatTranslation := events.Core.IDs32ToIDs()
@@ -161,8 +161,8 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 		defer close(errc)
 		for dataRaw := range sourceChan {
 			ebpfMsgDecoder := bufferdecoder.New(dataRaw)
-			var ctx bufferdecoder.Context
-			if err := ebpfMsgDecoder.DecodeContext(&ctx); err != nil {
+			var eCtx bufferdecoder.EventContext
+			if err := ebpfMsgDecoder.DecodeContext(&eCtx); err != nil {
 				t.handleError(err)
 				continue
 			}
@@ -171,7 +171,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				t.handleError(err)
 				continue
 			}
-			eventId := events.ID(ctx.EventID)
+			eventId := events.ID(eCtx.EventID)
 			if !events.Core.IsDefined(eventId) {
 				t.handleError(errfmt.Errorf("failed to get configuration of event %d", eventId))
 				continue
@@ -187,10 +187,10 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 			// Add stack trace if needed
 			var stackAddresses []uint64
 			if t.config.Output.StackAddresses {
-				stackAddresses = t.getStackAddresses(ctx.StackID)
+				stackAddresses = t.getStackAddresses(eCtx.StackID)
 			}
 
-			containerInfo := t.containers.GetCgroupInfo(ctx.CgroupID).Container
+			containerInfo := t.containers.GetCgroupInfo(eCtx.CgroupID).Container
 			containerData := trace.Container{
 				ID:          containerInfo.ContainerId,
 				ImageName:   containerInfo.Image,
@@ -203,11 +203,11 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 				PodUID:       containerInfo.Pod.UID,
 			}
 
-			flags := parseContextFlags(containerData.ID, ctx.Flags)
+			flags := parseContextFlags(containerData.ID, eCtx.Flags)
 			syscall := ""
-			if ctx.Syscall != noSyscall {
+			if eCtx.Syscall != noSyscall {
 				var err error
-				syscall, err = parseSyscallID(int(ctx.Syscall), flags.IsCompat, sysCompatTranslation)
+				syscall, err = parseSyscallID(int(eCtx.Syscall), flags.IsCompat, sysCompatTranslation)
 				if err != nil {
 					logger.Debugw("Originated syscall parsing", "error", err)
 				}
@@ -218,39 +218,39 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 
 			// populate all the fields of the event used in this stage, and reset the rest
 
-			evt.Timestamp = int(ctx.Ts)
-			evt.ThreadStartTime = int(ctx.StartTime)
-			evt.ProcessorID = int(ctx.ProcessorId)
-			evt.ProcessID = int(ctx.Pid)
-			evt.ThreadID = int(ctx.Tid)
-			evt.ParentProcessID = int(ctx.Ppid)
-			evt.HostProcessID = int(ctx.HostPid)
-			evt.HostThreadID = int(ctx.HostTid)
-			evt.HostParentProcessID = int(ctx.HostPpid)
-			evt.UserID = int(ctx.Uid)
-			evt.MountNS = int(ctx.MntID)
-			evt.PIDNS = int(ctx.PidID)
-			evt.ProcessName = string(bytes.TrimRight(ctx.Comm[:], "\x00"))
-			evt.HostName = string(bytes.TrimRight(ctx.UtsName[:], "\x00"))
-			evt.CgroupID = uint(ctx.CgroupID)
+			evt.Timestamp = int(eCtx.Ts)
+			evt.ThreadStartTime = int(eCtx.StartTime)
+			evt.ProcessorID = int(eCtx.ProcessorId)
+			evt.ProcessID = int(eCtx.Pid)
+			evt.ThreadID = int(eCtx.Tid)
+			evt.ParentProcessID = int(eCtx.Ppid)
+			evt.HostProcessID = int(eCtx.HostPid)
+			evt.HostThreadID = int(eCtx.HostTid)
+			evt.HostParentProcessID = int(eCtx.HostPpid)
+			evt.UserID = int(eCtx.Uid)
+			evt.MountNS = int(eCtx.MntID)
+			evt.PIDNS = int(eCtx.PidID)
+			evt.ProcessName = string(bytes.TrimRight(eCtx.Comm[:], "\x00"))
+			evt.HostName = string(bytes.TrimRight(eCtx.UtsName[:], "\x00"))
+			evt.CgroupID = uint(eCtx.CgroupID)
 			evt.ContainerID = containerData.ID
 			evt.Container = containerData
 			evt.Kubernetes = kubernetesData
-			evt.EventID = int(ctx.EventID)
+			evt.EventID = int(eCtx.EventID)
 			evt.EventName = eventDefinition.GetName()
-			evt.MatchedPoliciesKernel = ctx.MatchedPolicies
+			evt.MatchedPoliciesKernel = eCtx.MatchedPolicies
 			evt.MatchedPoliciesUser = 0
 			evt.MatchedPolicies = []string{}
 			evt.ArgsNum = int(argnum)
-			evt.ReturnValue = int(ctx.Retval)
+			evt.ReturnValue = int(eCtx.Retval)
 			evt.Args = args
 			evt.StackAddresses = stackAddresses
 			evt.ContextFlags = flags
 			evt.Syscall = syscall
 			evt.Metadata = nil
-			evt.ThreadEntityId = utils.HashTaskID(ctx.HostTid, ctx.StartTime)
-			evt.ProcessEntityId = utils.HashTaskID(ctx.HostPid, ctx.LeaderStartTime)
-			evt.ParentEntityId = utils.HashTaskID(ctx.HostPpid, ctx.ParentStartTime)
+			evt.ThreadEntityId = utils.HashTaskID(eCtx.HostTid, eCtx.StartTime)
+			evt.ProcessEntityId = utils.HashTaskID(eCtx.HostPid, eCtx.LeaderStartTime)
+			evt.ParentEntityId = utils.HashTaskID(eCtx.HostPpid, eCtx.ParentStartTime)
 
 			// If there aren't any policies that need filtering in userland, tracee **may** skip
 			// this event, as long as there aren't any derivatives or signatures that depend on it.
@@ -269,7 +269,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context, sourceChan chan []byte) 
 
 			select {
 			case out <- evt:
-			case <-outerCtx.Done():
+			case <-ctx.Done():
 				return
 			}
 		}

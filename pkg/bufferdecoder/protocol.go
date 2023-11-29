@@ -18,12 +18,13 @@ const (
 
 // PLEASE NOTE, YOU MUST UPDATE THE DECODER IF ANY CHANGE TO THIS STRUCT IS DONE.
 
-// Context struct contains common metadata that is collected for all types of events
-// it is used to unmarshal binary data and therefore should match (bit by bit) to the `context_t` struct in the ebpf code.
-// NOTE: Integers want to be aligned in memory, so if changing the format of this struct
-// keep the 1-byte 'Argnum' as the final parameter before the padding (if padding is needed).
-type Context struct {
-	Ts              uint64
+// EventContext contains common metadata that is collected for all types of events.
+//
+// NOTE: Use pahole to ensure this struct reflects the `event_context“ struct in the eBPF code.
+type EventContext struct {
+	Ts uint64
+
+	// task_context start
 	StartTime       uint64
 	CgroupID        uint64
 	Pid             uint32
@@ -40,6 +41,8 @@ type Context struct {
 	Flags           uint32
 	LeaderStartTime uint64
 	ParentStartTime uint64
+	// task_context end
+
 	EventID         events.ID // int32
 	Syscall         int32
 	MatchedPolicies uint64
@@ -49,7 +52,7 @@ type Context struct {
 	_               [2]byte // padding
 }
 
-func (Context) GetSizeBytes() int {
+func (EventContext) GetSizeBytes() int {
 	return 144
 }
 
