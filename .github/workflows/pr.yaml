@@ -109,7 +109,9 @@ jobs:
 
           if [ ${#missing_updates[@]} -ne 0 ]; then
             printf "%s\n" "${missing_updates[@]}"
-            echo "--- change only '.1.md' files and run 'make man' to update the respective '.1' ones"
+            echo "--- How to Fix it ---"
+            echo " 1. Modify only '.1.md' files, updating the date in '.1.md' files if needed."
+            echo " 2. Run 'make -f builder/Makefile.man man-run' to update '.1' files."
             exit 1
           fi
 
