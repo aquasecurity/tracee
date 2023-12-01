@@ -8,12 +8,14 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"text/template"
 	"time"
 
 	forward "github.com/IBM/fluent-forward-go/fluent/client"
+	"github.com/Masterminds/sprig/v3"
 
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -644,7 +646,10 @@ func (ws *webhookEventPrinter) Init() error {
 
 	gotemplate := getParameterValue(parameters, "gotemplate", "")
 	if gotemplate != "" {
-		tmpl, err := template.ParseFiles(gotemplate)
+		tmpl, err := template.New(filepath.Base(gotemplate)).
+			Funcs(sprig.TxtFuncMap()).
+			ParseFiles(gotemplate)
+
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
