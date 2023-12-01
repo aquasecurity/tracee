@@ -17334,7 +17334,10 @@
 </li>
 <li><strong>exec-env</strong>: When tracing execve/execveat, show the environment variables that were used for execution.</li>
 <li><strong>relative-time</strong>: Use relative timestamp instead of wall timestamp for events.</li>
-<li><strong>exec-hash</strong>: When tracing sched_process_exec, show the file hash (sha256) and ctime.</li>
+<li><strong>exec-hash</strong>: When tracing some file related events, show the file hash (sha256).<ul>
+<li>Affected events: sched_process_exec, shared_object_loaded</li>
+</ul>
+</li>
 <li><strong>parse-arguments</strong>: Do not show raw machine-readable values for event arguments. Instead, parse them into human-readable strings.</li>
 <li><strong>parse-arguments-fds</strong>: Enable parse-arguments and enrich file descriptors (fds) with their file path translation. This can cause pipeline slowdowns.</li>
 <li><strong>sort-events</strong>: Enable sorting events before passing them to the output. This may decrease the overall program efficiency.</li>

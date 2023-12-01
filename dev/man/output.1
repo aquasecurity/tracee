@@ -86,8 +86,12 @@ variables that were used for execution.
 \f[B]relative-time\f[R]: Use relative timestamp instead of wall
 timestamp for events.
 .IP \[bu] 2
-\f[B]exec-hash\f[R]: When tracing sched_process_exec, show the file hash
-(sha256) and ctime.
+\f[B]exec-hash\f[R]: When tracing some file related events, show the
+file hash (sha256).
+.RS 2
+.IP \[bu] 2
+Affected events: sched_process_exec, shared_object_loaded
+.RE
 .IP \[bu] 2
 \f[B]parse-arguments\f[R]: Do not show raw machine-readable values for
 event arguments.
