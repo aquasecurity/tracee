@@ -94,3 +94,20 @@ type DataSource interface {
 
 var ErrDataNotFound = errors.New("requested data was not found")
 var ErrKeyNotSupported = errors.New("queried key is not supported")
+var ErrFailedToUnmarshal = errors.New("given value could not be unmarshaled")
+
+type WriteableDataSource interface {
+	DataSource
+	// Write a value to a key in the data source. The value can not strictly match the schema defined
+	// in the data source, however the implementation must be able to unmarshal it successfully to some form
+	// where it can be eventually represented by the schema.
+	//
+	// The following errors should be returned for the appropriate cases:
+	//
+	// - ErrKeyNotSupported - When the key used does not match to a support key
+	// - ErrFailedToUnmarshal - When the value given could not be unmarshalled to an expected type
+	// - Otherwise errors may vary.
+	Write(key interface{}, value interface{}) error
+	// The types of values the data source supports writing.
+	Values() []string
+}
