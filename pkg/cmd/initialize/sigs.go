@@ -28,6 +28,13 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 		evtDependency := make([]events.ID, 0)
 
 		for _, s := range selectedEvents {
+			if s.Source != "tracee" {
+				// A legacy solution we supported was for external sources to push events
+				// into signatures. They would declare their source to be a different name instead
+				// of  "tracee".
+				// As such, actual event dependencies should only be sourced from "tracee" selectors.
+				continue
+			}
 			eventDefID, found := events.Core.GetDefinitionIDByName(s.Name)
 			if !found {
 				logger.Errorw("Failed to load event dependency", "event", s.Name)
