@@ -2,13 +2,16 @@ package ebpf
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"golang.org/x/sys/unix"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
@@ -365,6 +368,10 @@ func (t *Tracee) normalizeEventArgTime(event *trace.Event, argName string) error
 // addHashArg calculate file hash (in a best-effort efficiency manner) and add it as an argument
 func (t *Tracee) addHashArg(event *trace.Event, fileName string, ctime int64) error {
 	if t.config.Output.CalcHashes {
+		// Currently Tracee does not support hash calculation of memfd files
+		if strings.HasPrefix(fileName, "memfd") {
+			return nil
+		}
 		hash, err := t.getFileHash(fileName, ctime, event.MountNS, event.ContainerID)
 
 		event.Args = append(
@@ -374,6 +381,13 @@ func (t *Tracee) addHashArg(event *trace.Event, fileName string, ctime int64) er
 			},
 		)
 		event.ArgsNum++
+
+		// Container FS unreachable can happen because of race condition on any system,
+		// so there is no reason to return an error on it
+		if errors.Is(err, containers.ErrContainerFSUnreachable) {
+			logger.Debugw("failed to calculate hash", "error", err, "mount NS", event.MountNS)
+			err = nil
+		}
 
 		return err
 	}
