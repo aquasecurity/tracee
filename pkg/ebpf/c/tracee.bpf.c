@@ -5308,9 +5308,8 @@ int BPF_KPROBE(trace_security_sk_clone)
     // socket won't need to be linked as well: return in that case
 
     net_task_context_t *netctx = bpf_map_lookup_elem(&inodemap, &inode);
-    if (!netctx) {
+    if (!netctx)
         return 0; // e.g. task isn't being traced
-    }
 
     u64 nsockptr = (u64)(void *) nsock;
 
@@ -5462,12 +5461,11 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     // the "sock" pointer from sockmap (this sock struct might be new, just
     // cloned, and a socket might not exist yet, but the sockmap is likely to
     // have the entry). Check trace_security_sk_clone() for more details.
-    //
 
     if (mightbecloned) {
         // pick network context from the sockmap (new sockptr <=> old inode <=> task)
         u64 skptr = (u64) (void *) sk;
-        u64 *o= bpf_map_lookup_elem(&sockmap, &skptr);
+        u64 *o = bpf_map_lookup_elem(&sockmap, &skptr);
         if (o == 0)
             return 0;
         u64 oinode = *o;
@@ -5539,15 +5537,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
 
     // read IP/IPv6 headers
 
-    void *data_ptr = NULL;
-    u16 mac_len = BPF_CORE_READ(skb, mac_len);
-    if (!mac_len) {
-        data_ptr = BPF_CORE_READ(skb, data); // no L2 header present in skb
-    } else {
-        data_ptr = BPF_CORE_READ(skb, head);
-        u16 nethead = BPF_CORE_READ(skb, network_header);
-        data_ptr += nethead;
-    }
+    void *data_ptr = BPF_CORE_READ(skb, head) + BPF_CORE_READ(skb, network_header);
     bpf_core_read(nethdrs, l3_size, data_ptr);
 
     // prepare the indexer with IP/IPv6 headers
@@ -5669,9 +5659,8 @@ statfunc u32 cgroup_skb_generic(struct __sk_buff *ctx, void *cgrpctxmap)
 
     // load layer 3 headers (for cgrpctxmap key/indexer)
 
-    if (bpf_skb_load_bytes_relative(ctx, 0, dest, size, 1)) {
+    if (bpf_skb_load_bytes_relative(ctx, 0, dest, size, 1))
         return 1;
-    }
 
     //
     // IGNORE UNSUPPORTED PROTOCOLS, CREATE INDEXER TO OBTAIN EVENT
@@ -5702,7 +5691,7 @@ statfunc u32 cgroup_skb_generic(struct __sk_buff *ctx, void *cgrpctxmap)
                     return 1; // unsupported proto
             }
 
-            // add IPv6 header items to indexer
+            // add IPv4 header items to indexer
             indexer.ip_csum = nethdrs->iphdrs.iphdr.check;
             indexer.ip_saddr.in6_u.u6_addr32[0] = nethdrs->iphdrs.iphdr.saddr;
             indexer.ip_daddr.in6_u.u6_addr32[0] = nethdrs->iphdrs.iphdr.daddr;
