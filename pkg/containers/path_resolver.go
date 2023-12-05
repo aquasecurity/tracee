@@ -1,6 +1,7 @@
 package containers
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -36,7 +37,7 @@ func (cPathRes *ContainerPathResolver) GetHostAbsPath(mountNSAbsolutePath string
 ) {
 	// path should be absolute, except, for example, memfd_create files
 	if mountNSAbsolutePath == "" || mountNSAbsolutePath[0] != '/' {
-		return "", errfmt.Errorf("file path is not absolute in its container mount point")
+		return "", ErrNonAbsolutePath
 	}
 
 	// Current process has already died, try to access the root fs from another
@@ -73,8 +74,10 @@ func (cPathRes *ContainerPathResolver) GetHostAbsPath(mountNSAbsolutePath string
 		}
 	}
 
-	return "", errfmt.Errorf(
-		"has no access to container fs - no living task of mountns %d",
-		mountNS,
-	)
+	return "", ErrContainerFSUnreachable
 }
+
+var (
+	ErrContainerFSUnreachable = errors.New("container file system is unreachable in mount namespace because there are not living children")
+	ErrNonAbsolutePath        = errors.New("file path is not absolute in its container mount point")
+)
