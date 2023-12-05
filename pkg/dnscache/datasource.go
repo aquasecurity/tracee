@@ -7,17 +7,17 @@ import (
 	"github.com/aquasecurity/tracee/types/detect"
 )
 
-type DNSDatsource struct {
+type DNSDatasource struct {
 	dns *DNSCache
 }
 
-func NewDataSource(d *DNSCache) *DNSDatsource {
-	return &DNSDatsource{
+func NewDataSource(d *DNSCache) *DNSDatasource {
+	return &DNSDatasource{
 		dns: d,
 	}
 }
 
-func (ctx DNSDatsource) Get(key interface{}) (map[string]interface{}, error) {
+func (ctx DNSDatasource) Get(key interface{}) (map[string]interface{}, error) {
 	keyString, ok := key.(string)
 	if !ok {
 		return nil, detect.ErrKeyNotSupported
@@ -52,11 +52,11 @@ func (ctx DNSDatsource) Get(key interface{}) (map[string]interface{}, error) {
 	return result, nil
 }
 
-func (ctx DNSDatsource) Keys() []string {
+func (ctx DNSDatasource) Keys() []string {
 	return []string{"string"}
 }
 
-func (ctx DNSDatsource) Schema() string {
+func (ctx DNSDatasource) Schema() string {
 	schemaMap := map[string]string{
 		"ip_addresses": "[]string",
 		"dns_queries":  "[]string",
@@ -66,14 +66,14 @@ func (ctx DNSDatsource) Schema() string {
 	return string(schema)
 }
 
-func (ctx DNSDatsource) Version() uint {
+func (ctx DNSDatasource) Version() uint {
 	return 1
 }
 
-func (ctx DNSDatsource) Namespace() string {
+func (ctx DNSDatasource) Namespace() string {
 	return "tracee"
 }
 
-func (ctx DNSDatsource) ID() string {
+func (ctx DNSDatasource) ID() string {
 	return "dns"
 }
