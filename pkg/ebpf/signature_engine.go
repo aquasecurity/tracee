@@ -25,7 +25,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 	source := engine.EventSources{Tracee: engineInput}
 
 	// Prepare built in data sources
-	t.config.EngineConfig.DataSources = t.PrepareBuiltinDataSources()
+	t.config.EngineConfig.DataSources = append(t.config.EngineConfig.DataSources, t.PrepareBuiltinDataSources()...)
 
 	sigEngine, err := engine.NewEngine(t.config.EngineConfig, source, engineOutput)
 	if err != nil {

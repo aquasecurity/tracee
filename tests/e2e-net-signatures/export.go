@@ -13,3 +13,7 @@ var ExportedSignatures = []detect.Signature{
 	&e2eDNS{},
 	&e2eHTTP{},
 }
+
+var ExportedDataSources = []detect.DataSource{
+	// add data-sources here
+}
