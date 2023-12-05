@@ -36,3 +36,9 @@ var ExportedSignatures = []detect.Signature{
 	&SyscallTableHooking{},
 	&DroppedExecutable{},
 }
+
+// ExportedDataSources fulfills the goplugins contract required by the rule-engine
+// this is a list of data-sources that this plugin exports
+var ExportedDataSources = []detect.DataSource{
+	// add data-sources here
+}

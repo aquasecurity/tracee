@@ -15,7 +15,7 @@ import (
 	"github.com/aquasecurity/tracee/types/detect"
 )
 
-func Find(target string, partialEval bool, signaturesDir []string, signatures []string, aioEnabled bool) ([]detect.Signature, error) {
+func Find(target string, partialEval bool, signaturesDir []string, signatures []string, aioEnabled bool) ([]detect.Signature, []detect.DataSource, error) {
 	if len(signaturesDir) == 0 {
 		exePath, err := os.Executable()
 		if err != nil {
@@ -24,22 +24,24 @@ func Find(target string, partialEval bool, signaturesDir []string, signatures []
 		signaturesDir = []string{filepath.Join(filepath.Dir(exePath), "signatures")}
 	}
 	var sigs []detect.Signature
+	var datasources []detect.DataSource
 
 	for _, dir := range signaturesDir {
 		if strings.TrimSpace(dir) == "" {
 			continue
 		}
 
-		gosigs, err := findGoSigs(dir)
+		gosigs, ds, err := findGoSigs(dir)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		sigs = append(sigs, gosigs...)
+		datasources = append(datasources, ds...)
 
 		opasigs, err := findRegoSigs(target, partialEval, dir, aioEnabled)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		sigs = append(sigs, opasigs...)
 	}
@@ -57,15 +59,16 @@ func Find(target string, partialEval bool, signaturesDir []string, signatures []
 			}
 		}
 	}
-	return res, nil
+	return res, datasources, nil
 }
 
-func findGoSigs(dir string) ([]detect.Signature, error) {
-	var res []detect.Signature
+func findGoSigs(dir string) ([]detect.Signature, []detect.DataSource, error) {
+	var signatures []detect.Signature
+	var datasources []detect.DataSource
 
 	if isBinaryStatic() {
 		logger.Warnw("The tracee static can't load golang signatures. Skipping ...")
-		return res, nil
+		return signatures, datasources, nil
 	}
 
 	errWD := filepath.WalkDir(dir,
@@ -84,13 +87,26 @@ func findGoSigs(dir string) ([]detect.Signature, error) {
 				logger.Errorw("Opening plugin " + path + ": " + err.Error())
 				return err
 			}
-			export, err := p.Lookup("ExportedSignatures")
+			exportSigs, err := p.Lookup("ExportedSignatures")
 			if err != nil {
 				logger.Errorw("Missing Export symbol in plugin " + d.Name())
 				return err
 			}
-			sigs := *export.(*[]detect.Signature)
-			res = append(res, sigs...)
+			sigs := *exportSigs.(*[]detect.Signature)
+
+			exportDS, err := p.Lookup("ExportedDataSources")
+			if err != nil {
+				logger.Debugw("Missing Export symbol in plugin " + d.Name())
+				// we don't return here because some plugins might not have datasources
+			}
+
+			var ds []detect.DataSource
+			if exportDS != nil {
+				ds = *exportDS.(*[]detect.DataSource)
+			}
+
+			signatures = append(signatures, sigs...)
+			datasources = append(datasources, ds...)
 			return nil
 		},
 	)
@@ -98,7 +114,7 @@ func findGoSigs(dir string) ([]detect.Signature, error) {
 		logger.Errorw("Walking dir", "error", errWD)
 	}
 
-	return res, nil
+	return signatures, datasources, nil
 }
 
 func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) ([]detect.Signature, error) {

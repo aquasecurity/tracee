@@ -22,7 +22,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
-	"github.com/aquasecurity/tracee/types/detect"
 )
 
 func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
@@ -58,7 +57,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Signature directory command line flags
 
-	sigs, err := signature.Find(
+	sigs, dataSources, err := signature.Find(
 		rego.RuntimeTarget,
 		rego.PartialEval,
 		viper.GetStringSlice("signatures-dir"),
@@ -327,7 +326,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		// This used to be a flag, we have removed the flag from this binary to test
 		// if users do use it or not.
 		SignatureBufferSize: 1000,
-		DataSources:         []detect.DataSource{},
+		DataSources:         dataSources,
 	}
 
 	return runner, nil

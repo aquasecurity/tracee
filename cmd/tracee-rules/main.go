@@ -59,7 +59,7 @@ func main() {
 				rulesDir = []string{c.String("rules-dir")}
 			}
 
-			sigs, err := signature.Find(
+			sigs, _, err := signature.Find(
 				target,
 				c.Bool("rego-partial-eval"),
 				rulesDir,

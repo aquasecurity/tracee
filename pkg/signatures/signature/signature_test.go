@@ -22,7 +22,7 @@ const (
 func TestFindByEventName(t *testing.T) {
 	t.Parallel()
 
-	sigs, err := Find(compile.TargetRego, false, []string{exampleRulesDir}, []string{"anti_debugging"}, false)
+	sigs, _, err := Find(compile.TargetRego, false, []string{exampleRulesDir}, []string{"anti_debugging"}, false)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(sigs))
 
@@ -45,7 +45,7 @@ func TestFindByEventName(t *testing.T) {
 func TestFindByRuleID(t *testing.T) {
 	t.Parallel()
 
-	sigs, err := Find(compile.TargetRego, false, []string{exampleRulesDir}, []string{"TRC-2"}, false)
+	sigs, _, err := Find(compile.TargetRego, false, []string{exampleRulesDir}, []string{"TRC-2"}, false)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(sigs))
 

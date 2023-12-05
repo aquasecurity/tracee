@@ -105,7 +105,7 @@ tracee analyze --events anti_debugging events.json`,
 			signatureEvents = nil
 		}
 
-		sigs, err := signature.Find(
+		sigs, _, err := signature.Find(
 			rego.RuntimeTarget,
 			rego.PartialEval,
 			viper.GetStringSlice("signatures-dir"),

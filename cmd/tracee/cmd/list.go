@@ -41,7 +41,7 @@ var listCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		sigs, err := signature.Find(
+		sigs, _, err := signature.Find(
 			compile.TargetRego,
 			false,
 			sigsDir,
