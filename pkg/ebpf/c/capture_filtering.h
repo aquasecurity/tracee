@@ -80,40 +80,40 @@ statfunc bool filter_file_type(void *ctx,
                                io_data_t io_data,
                                off_t start_pos)
 {
-    bool has_type_filter = false;
+    bool has_file_type = false;
     bool type_filter_match = false;
 
-    file_type_filter_t *type_filter = bpf_map_lookup_elem(filter_map, &map_idx);
+    file_type_t *ftype = bpf_map_lookup_elem(filter_map, &map_idx);
     // Filter should be always initialized
-    if (unlikely(type_filter == NULL)) {
+    if (unlikely(ftype == NULL)) {
         tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
         return false;
     }
 
     // Do check only if there is a filter
-    if (*type_filter != 0 && *type_filter & FILTER_FILE_TYPE_MASK) {
-        has_type_filter = true;
+    if (*ftype != 0 && *ftype & FILTER_FILE_TYPE_MASK) {
+        has_file_type = true;
         int imode_mode = get_inode_mode_from_file(file);
-        if (*type_filter & FILTER_PIPE_FILES) {
+        if (*ftype & FILTER_PIPE_FILES) {
             struct pipe_inode_info *pipe = get_file_pipe_info(file);
             if (pipe != NULL) {
                 type_filter_match = true;
                 goto exit;
             }
         }
-        if (*type_filter & FILTER_SOCKET_FILES) {
+        if (*ftype & FILTER_SOCKET_FILES) {
             if (imode_mode & S_IFSOCK) {
                 type_filter_match = true;
                 goto exit;
             }
         }
-        if (*type_filter & FILTER_NORMAL_FILES) {
+        if (*ftype & FILTER_NORMAL_FILES) {
             if (imode_mode & S_IFREG) {
                 type_filter_match = true;
                 goto exit;
             }
         }
-        if (*type_filter & FILTER_ELF_FILES) {
+        if (*ftype & FILTER_ELF_FILES) {
             file_id_t file_id = get_file_id(file);
             file_id.ctime = 0;
             if (start_pos == 0) {
@@ -140,7 +140,7 @@ statfunc bool filter_file_type(void *ctx,
     }
 
 exit:
-    return (has_type_filter && !type_filter_match);
+    return (has_file_type && !type_filter_match);
 }
 
 // Return if the file does not match any given file FD filters in the filter map (so it should be
@@ -150,7 +150,7 @@ statfunc bool filter_file_fd(void *ctx, void *filter_map, size_t map_idx, struct
     bool has_fds_filter = false;
     bool fds_filter_match = false;
 
-    file_type_filter_t *fds_filter = bpf_map_lookup_elem(filter_map, &map_idx);
+    file_type_t *fds_filter = bpf_map_lookup_elem(filter_map, &map_idx);
     // Filter should be always initialized
     if (unlikely(fds_filter == NULL)) {
         tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);

@@ -52,9 +52,9 @@ statfunc u64 should_submit(u32, event_data_t *);
 // FUNCTIONS
 
 // get_filter_map returns the filter map for the given version and outer map
-statfunc void *get_filter_map(void *outer_map, u16 pols_version)
+statfunc void *get_filter_map(void *outer_map, u16 version)
 {
-    return bpf_map_lookup_elem(outer_map, &pols_version);
+    return bpf_map_lookup_elem(outer_map, &version);
 }
 
 statfunc u64
@@ -206,7 +206,7 @@ statfunc u64 compute_scopes(program_data_t *p)
     }
 
     //
-    // unversioned filters
+    // boolean filters (not using versioned maps)
     //
 
     // TODO: Create a filter map for each boolean filter (versioning it) #3805
@@ -237,14 +237,14 @@ statfunc u64 compute_scopes(program_data_t *p)
     }
 
     //
-    // versioned filters
+    // equality filters (using versioned maps)
     //
 
-    u16 pols_version = p->event->context.policies_version;
+    u16 version = p->event->context.policies_version;
     void *filter_map = NULL;
 
     if (p->config->pid_filter_enabled_scopes) {
-        filter_map = get_filter_map(&pid_filter_version, pols_version);
+        filter_map = get_filter_map(&pid_filter_version, version);
         u64 filter_out_scopes = p->config->pid_filter_out_scopes;
         u64 mask = ~p->config->pid_filter_enabled_scopes;
         u64 max = p->config->pid_max;
@@ -258,7 +258,7 @@ statfunc u64 compute_scopes(program_data_t *p)
     }
 
     if (p->config->uid_filter_enabled_scopes) {
-        filter_map = get_filter_map(&uid_filter_version, pols_version);
+        filter_map = get_filter_map(&uid_filter_version, version);
         u64 filter_out_scopes = p->config->uid_filter_out_scopes;
         u64 mask = ~p->config->uid_filter_enabled_scopes;
         u64 max = p->config->uid_max;
@@ -268,7 +268,7 @@ statfunc u64 compute_scopes(program_data_t *p)
     }
 
     if (p->config->mnt_ns_filter_enabled_scopes) {
-        filter_map = get_filter_map(&mnt_ns_filter_version, pols_version);
+        filter_map = get_filter_map(&mnt_ns_filter_version, version);
         u64 filter_out_scopes = p->config->mnt_ns_filter_out_scopes;
         u64 mask = ~p->config->mnt_ns_filter_enabled_scopes;
         u64 mnt_id = context->mnt_id;
@@ -276,7 +276,7 @@ statfunc u64 compute_scopes(program_data_t *p)
     }
 
     if (p->config->pid_ns_filter_enabled_scopes) {
-        filter_map = get_filter_map(&pid_ns_filter_version, pols_version);
+        filter_map = get_filter_map(&pid_ns_filter_version, version);
         u64 filter_out_scopes = p->config->pid_ns_filter_out_scopes;
         u64 mask = ~p->config->pid_ns_filter_enabled_scopes;
         u64 pid_id = context->pid_id;
@@ -284,21 +284,21 @@ statfunc u64 compute_scopes(program_data_t *p)
     }
 
     if (p->config->uts_ns_filter_enabled_scopes) {
-        filter_map = get_filter_map(&uts_ns_filter_version, pols_version);
+        filter_map = get_filter_map(&uts_ns_filter_version, version);
         u64 filter_out_scopes = p->config->uts_ns_filter_out_scopes;
         u64 mask = ~p->config->uts_ns_filter_enabled_scopes;
         res &= equality_filter_matches(filter_out_scopes, filter_map, &context->uts_name) | mask;
     }
 
     if (p->config->comm_filter_enabled_scopes) {
-        filter_map = get_filter_map(&comm_filter_version, pols_version);
+        filter_map = get_filter_map(&comm_filter_version, version);
         u64 filter_out_scopes = p->config->comm_filter_out_scopes;
         u64 mask = ~p->config->comm_filter_enabled_scopes;
         res &= equality_filter_matches(filter_out_scopes, filter_map, &context->comm) | mask;
     }
 
     if (p->config->cgroup_id_filter_enabled_scopes) {
-        filter_map = get_filter_map(&cgroup_id_filter_version, pols_version);
+        filter_map = get_filter_map(&cgroup_id_filter_version, version);
         u64 filter_out_scopes = p->config->cgroup_id_filter_out_scopes;
         u64 mask = ~p->config->cgroup_id_filter_enabled_scopes;
         u32 cgroup_id_lsb = context->cgroup_id;
@@ -306,7 +306,7 @@ statfunc u64 compute_scopes(program_data_t *p)
     }
 
     if (p->config->proc_tree_filter_enabled_scopes) {
-        filter_map = get_filter_map(&process_tree_map_version, pols_version);
+        filter_map = get_filter_map(&process_tree_map_version, version);
         u64 filter_out_scopes = p->config->proc_tree_filter_out_scopes;
         u64 mask = ~p->config->proc_tree_filter_enabled_scopes;
         u32 host_pid = context->host_pid;
@@ -314,7 +314,7 @@ statfunc u64 compute_scopes(program_data_t *p)
     }
 
     if (p->config->bin_path_filter_enabled_scopes) {
-        filter_map = get_filter_map(&binary_filter_version, pols_version);
+        filter_map = get_filter_map(&binary_filter_version, version);
         u64 filter_out_scopes = p->config->bin_path_filter_out_scopes;
         u64 mask = ~p->config->bin_path_filter_enabled_scopes;
         res &= binary_filter_matches(filter_out_scopes, filter_map, proc_info) | mask;
@@ -348,8 +348,8 @@ statfunc u64 should_trace(program_data_t *p)
 
 statfunc u64 should_submit(u32 event_id, event_data_t *event)
 {
-    u16 pols_version = event->context.policies_version;
-    void *inner_events_map = bpf_map_lookup_elem(&events_map_version, &pols_version);
+    u16 version = event->context.policies_version;
+    void *inner_events_map = bpf_map_lookup_elem(&events_map_version, &version);
     if (inner_events_map == NULL)
         return 0;
 
