@@ -41,6 +41,7 @@ func TestNewDefinition(t *testing.T) {
 			Capabilities{},
 		),
 		[]trace.ArgMeta{},
+		nil,
 	)
 
 	assert.Equal(t, expectedDefinition.GetName(), eventDefinition.GetName())

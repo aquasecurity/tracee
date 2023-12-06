@@ -32,6 +32,7 @@ func TestPolicyValidate(t *testing.T) {
 			events.Capabilities{},
 		),
 		[]trace.ArgMeta{},
+		nil,
 	)
 
 	err := events.Core.Add(9000, fakeSigEventDefinition)

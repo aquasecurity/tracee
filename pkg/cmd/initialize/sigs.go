@@ -5,6 +5,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/utils/set"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -44,6 +45,8 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) map[
 			evtDependency = append(evtDependency, eventDefID)
 		}
 
+		tags := set.New[string](append([]string{"signatures", "default"}, m.Tags...)...)
+
 		version, err := events.NewVersionFromString(m.Version)
 		// if the version is not valid semver, set it to 1.0.X,
 		// where X is either 0 or the version number from the signature
@@ -59,16 +62,25 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) map[
 			version = events.NewVersion(1, 0, x)
 		}
 
+		properties := map[string]interface{}{
+			"signatureName": m.Name,
+			"signatureID":   m.ID,
+		}
+
+		for k, v := range m.Properties {
+			properties[k] = v
+		}
+
 		newEventDef := events.NewDefinition(
-			newEventDefID,                     // id,
-			events.Sys32Undefined,             // id32
-			m.EventName,                       // eventName
-			version,                           // version
-			m.Description,                     // description
-			"",                                // docPath
-			false,                             // internal
-			false,                             // syscall
-			[]string{"signatures", "default"}, // sets
+			newEventDefID,         // id,
+			events.Sys32Undefined, // id32
+			m.EventName,           // eventName
+			version,               // version
+			m.Description,         // description
+			"",                    // docPath
+			false,                 // internal
+			false,                 // syscall
+			tags.Items(),          // tags
 			events.NewDependencies(
 				evtDependency,
 				[]events.KSymbol{},
@@ -77,6 +89,7 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) map[
 				events.Capabilities{},
 			),
 			[]trace.ArgMeta{},
+			properties,
 		)
 
 		err = events.Core.Add(newEventDefID, newEventDef)

@@ -132,6 +132,7 @@ func createFakeEventAndFinding() detect.Finding {
 			events.Capabilities{},
 		),
 		[]trace.ArgMeta{},
+		nil,
 	)
 
 	events.Core.Add(events.StartSignatureID, eventDefinition)

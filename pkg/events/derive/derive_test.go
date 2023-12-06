@@ -105,6 +105,7 @@ func Test_DeriveSingleEvent(t *testing.T) {
 				Type: "int",
 			},
 		},
+		nil,
 	)
 
 	// store the original getEventDefinition function
@@ -203,6 +204,7 @@ func TestDeriveMultipleEvents(t *testing.T) {
 				Type: "int",
 			},
 		},
+		nil,
 	)
 
 	savedEventDefFunc := getEventDefinition
