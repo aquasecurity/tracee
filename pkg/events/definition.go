@@ -16,6 +16,7 @@ type Definition struct {
 	dependencies Dependencies
 	sets         []string
 	params       []trace.ArgMeta
+	properties   map[string]interface{}
 }
 
 func NewDefinition(
@@ -30,6 +31,7 @@ func NewDefinition(
 	sets []string,
 	deps Dependencies,
 	params []trace.ArgMeta,
+	properties map[string]interface{},
 ) Definition {
 	return Definition{
 		id:           id,
@@ -43,6 +45,7 @@ func NewDefinition(
 		dependencies: deps,
 		sets:         sets,
 		params:       params,
+		properties:   properties,
 	}
 }
 
@@ -106,4 +109,8 @@ func (d Definition) IsNetwork() bool {
 	}
 
 	return false
+}
+
+func (d Definition) GetProperties() map[string]interface{} {
+	return d.properties
 }

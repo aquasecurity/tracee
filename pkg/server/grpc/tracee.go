@@ -126,6 +126,8 @@ func convertDefinitionToProto(d events.Definition) *pb.EventDefinition {
 		Version:     v,
 		Description: d.GetDescription(),
 		Tags:        d.GetSets(),
+		// threat description is empty because it is the same as the event definition description
+		Threat: getThreat("", d.GetProperties()),
 	}
 }
 
@@ -148,6 +150,11 @@ func convertTraceeEventToProto(e trace.Event) (*pb.Event, error) {
 		return nil, err
 	}
 
+	var threat *pb.Threat
+	if e.Metadata != nil {
+		threat = getThreat(e.Metadata.Description, e.Metadata.Properties)
+	}
+
 	event := &pb.Event{
 		Id:   uint32(e.EventID),
 		Name: e.EventName,
@@ -155,7 +162,7 @@ func convertTraceeEventToProto(e trace.Event) (*pb.Event, error) {
 			Matched: e.MatchedPolicies,
 		},
 		Context:   eventContext,
-		Threat:    getThreat(e),
+		Threat:    threat,
 		EventData: eventData,
 	}
 
@@ -254,14 +261,15 @@ func getK8s(e trace.Event) *pb.K8S {
 	}
 }
 
-func getThreat(e trace.Event) *pb.Threat {
-	if e.Metadata == nil || e.Metadata.Properties == nil {
+func getThreat(description string, metadata map[string]interface{}) *pb.Threat {
+	if metadata == nil {
 		return nil
 	}
 	// if metadata doesn't contain severity, it's not a threat,
-	// severity is set when we have a finding from the signature engine
+	// severity is set when we have an event created from a signature
 	// pkg/ebpf/fiding.go
-	_, ok := e.Metadata.Properties["Severity"]
+	// pkg/cmd/initialize/sigs.go
+	_, ok := metadata["Severity"]
 	if !ok {
 		return nil
 	}
@@ -270,28 +278,49 @@ func getThreat(e trace.Event) *pb.Threat {
 		mitreTactic        string
 		mitreTechniqueId   string
 		mitreTechniqueName string
+		name               string
 	)
 
-	if _, ok := e.Metadata.Properties["Category"]; ok {
-		if val, ok := e.Metadata.Properties["Category"].(string); ok {
+	if _, ok := metadata["Category"]; ok {
+		if val, ok := metadata["Category"].(string); ok {
 			mitreTactic = val
 		}
 	}
 
-	if _, ok := e.Metadata.Properties["external_id"]; ok {
-		if val, ok := e.Metadata.Properties["external_id"].(string); ok {
+	if _, ok := metadata["external_id"]; ok {
+		if val, ok := metadata["external_id"].(string); ok {
 			mitreTechniqueId = val
 		}
 	}
 
-	if _, ok := e.Metadata.Properties["Technique"]; ok {
-		if val, ok := e.Metadata.Properties["Technique"].(string); ok {
+	if _, ok := metadata["Technique"]; ok {
+		if val, ok := metadata["Technique"].(string); ok {
 			mitreTechniqueName = val
 		}
 	}
 
+	if _, ok := metadata["signatureName"]; ok {
+		if val, ok := metadata["signatureName"].(string); ok {
+			name = val
+		}
+	}
+
+	properties := make(map[string]string)
+
+	for k, v := range metadata {
+		if k == "Category" ||
+			k == "external_id" ||
+			k == "Technique" ||
+			k == "Severity" ||
+			k == "signatureName" {
+			continue
+		}
+
+		properties[k] = fmt.Sprint(v)
+	}
+
 	return &pb.Threat{
-		Description: e.Metadata.Description,
+		Description: description,
 		Mitre: &pb.Mitre{
 			Tactic: &pb.MitreTactic{
 				Name: mitreTactic,
@@ -301,12 +330,14 @@ func getThreat(e trace.Event) *pb.Threat {
 				Name: mitreTechniqueName,
 			},
 		},
-		Severity: getSeverity(e),
+		Severity:   getSeverity(metadata),
+		Name:       name,
+		Properties: properties,
 	}
 }
 
-func getSeverity(e trace.Event) pb.Severity {
-	switch e.Metadata.Properties["Severity"].(int) {
+func getSeverity(metadata map[string]interface{}) pb.Severity {
+	switch metadata["Severity"].(int) {
 	case 0:
 		return pb.Severity_INFO
 	case 1:
