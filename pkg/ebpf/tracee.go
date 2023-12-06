@@ -1600,6 +1600,7 @@ func (t *Tracee) getFileHash(filename string, ctime int64, mountNs int, containe
 		if err == nil {
 			hashInfoObj = fileExecInfo{ctime, hash}
 			t.fileHashes.Add(fileId, hashInfoObj)
+			fileHash = hash
 		}
 	}
 	return fileHash, nil
