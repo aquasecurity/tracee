@@ -588,8 +588,6 @@ struct msghdr {
 
 typedef s64 ktime_t;
 
-typedef unsigned int sk_buff_data_t;
-
 struct sk_buff {
     __u16 network_header;
     union {

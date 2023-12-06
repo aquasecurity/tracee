@@ -122,6 +122,7 @@ const (
 	NetPacketHTTPRequest
 	NetPacketHTTPResponse
 	MaxUserNetID
+	NetTCPConnect
 	InitNamespaces
 	ContainerCreate
 	ContainerRemove
@@ -9813,6 +9814,23 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct sockaddr*", Name: "remote_addr"},
 		},
 	},
+	NetTCPConnect: {
+		id:      NetTCPConnect,
+		id32Bit: Sys32Undefined,
+		name:    "net_tcp_connect",
+		version: NewVersion(1, 0, 0),
+		dependencies: Dependencies{
+			ids: []ID{
+				SecuritySocketConnect,
+			},
+		},
+		sets: []string{"default", "flows"},
+		params: []trace.ArgMeta{
+			{Type: "const char*", Name: "dst"},
+			{Type: "int", Name: "dst_port"},
+			{Type: "const char **", Name: "dst_dns"},
+		},
+	},
 	SecuritySocketAccept: {
 		id:      SecuritySocketAccept,
 		id32Bit: Sys32Undefined,
@@ -9833,6 +9851,7 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct sockaddr*", Name: "local_addr"},
 		},
 	},
+	// TODO: NetTCPAccept ? Problem: we don't have the remote address in current security_socket_accept
 	SecuritySocketBind: {
 		id:      SecuritySocketBind,
 		id32Bit: Sys32Undefined,

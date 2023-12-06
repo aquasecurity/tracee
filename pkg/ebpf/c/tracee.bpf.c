@@ -2490,9 +2490,7 @@ int BPF_KPROBE(trace_security_socket_connect)
     if (!should_submit(SECURITY_SOCKET_CONNECT, p.event))
         return 0;
 
-#if defined(bpf_target_x86) // issue #1129
     uint addr_len = (uint) PT_REGS_PARM3(ctx) & 0x7FFFFFFF; // verifier overflow checks
-#endif
 
     struct sockaddr *address = (struct sockaddr *) PT_REGS_PARM2(ctx);
     if (!address)
@@ -2515,7 +2513,7 @@ int BPF_KPROBE(trace_security_socket_connect)
         return 0;
 
     // Reduce line cols by having a few temp pointers.
-    int (* stsb)(args_buffer_t *, void *, u32, u8) = save_to_submit_buf;
+    int (*stsb)(args_buffer_t *, void *, u32, u8) = save_to_submit_buf;
     void *args_buf = &p.event->args_buf;
     void *to = (void *) &sys->args.args[0];
 
@@ -2530,7 +2528,7 @@ int BPF_KPROBE(trace_security_socket_connect)
     switch (sys->id) {
         case SYSCALL_CONNECT:
         case SYSCALL_SOCKETCALL:
-        break;
+            break;
         default:
             return 0;
     }
@@ -2554,9 +2552,9 @@ int BPF_KPROBE(trace_security_socket_connect)
             break;
     }
 
-    // Workaround for sockaddr_un struct length (issue: #1129).
 #if defined(bpf_target_x86)
     if (need_workaround) {
+        // Workaround for sockaddr_un struct length (issue: #1129).
         struct sockaddr_un sockaddr = {0};
         bpf_probe_read(&sockaddr, (uint) addr_len, (void *) address);
         stsb(args_buf, (void *) &sockaddr, sizeof(struct sockaddr_un), 1);
