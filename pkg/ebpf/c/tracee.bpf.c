@@ -2490,50 +2490,84 @@ int BPF_KPROBE(trace_security_socket_connect)
     if (!should_submit(SECURITY_SOCKET_CONNECT, p.event))
         return 0;
 
+#if defined(bpf_target_x86) // issue #1129
+    uint addr_len = (uint) PT_REGS_PARM3(ctx) & 0x7FFFFFFF; // verifier overflow checks
+#endif
+
     struct sockaddr *address = (struct sockaddr *) PT_REGS_PARM2(ctx);
-#if defined(__TARGET_ARCH_x86) // TODO: issue: #1129
-    uint addr_len = (uint) PT_REGS_PARM3(ctx);
-#endif
+    if (!address)
+        return 0;
 
+    // Check if the socket family is supported.
     sa_family_t sa_fam = get_sockaddr_family(address);
-    if ((sa_fam != AF_INET) && (sa_fam != AF_INET6) && (sa_fam != AF_UNIX)) {
-        return 0;
-    }
-
-    // Load the arguments given to the connect syscall (which eventually invokes this function)
-    syscall_data_t *sys = &p.task_info->syscall_data;
-    if (!p.task_info->syscall_traced)
-        return 0;
-
-    switch (sys->id) {
-        case SYSCALL_CONNECT:
-            save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0], sizeof(u32), 0);
+    switch (sa_fam) {
+        case AF_INET:
+        case AF_INET6:
+        case AF_UNIX:
             break;
-#if defined(bpf_target_x86) // armhf makes use of SYSCALL_CONNECT
-        case SYSCALL_SOCKETCALL:
-            save_to_submit_buf(&p.event->args_buf, (void *) sys->args.args[1], sizeof(u32), 0);
-            break;
-#endif
         default:
             return 0;
     }
 
-    if (sa_fam == AF_INET) {
-        save_to_submit_buf(&p.event->args_buf, (void *) address, sizeof(struct sockaddr_in), 1);
-    } else if (sa_fam == AF_INET6) {
-        save_to_submit_buf(&p.event->args_buf, (void *) address, sizeof(struct sockaddr_in6), 1);
-    } else if (sa_fam == AF_UNIX) {
-#if defined(__TARGET_ARCH_x86) // TODO: this is broken in arm64 (issue: #1129)
-        if (addr_len <= sizeof(struct sockaddr_un)) {
-            struct sockaddr_un sockaddr = {};
-            bpf_probe_read(&sockaddr, addr_len, (void *) address);
-            save_to_submit_buf(
-                &p.event->args_buf, (void *) &sockaddr, sizeof(struct sockaddr_un), 1);
-        } else
+    // Load args given to the syscall that invoked this function.
+    syscall_data_t *sys = &p.task_info->syscall_data;
+    if (!p.task_info->syscall_traced)
+        return 0;
+
+    // Reduce line cols by having a few temp pointers.
+    int (* stsb)(args_buffer_t *, void *, u32, u8) = save_to_submit_buf;
+    void *args_buf = &p.event->args_buf;
+    void *to = (void *) &sys->args.args[0];
+
+#if defined(bpf_target_x86) // only i386 binaries uses socketcall
+    to = (void *) sys->args.args[1];
 #endif
-            save_to_submit_buf(&p.event->args_buf, (void *) address, sizeof(struct sockaddr_un), 1);
+
+    // Save the socket fd argument to the event.
+    stsb(args_buf, to, sizeof(u32), 0);
+
+    // Save the socket fd, depending on the syscall.
+    switch (sys->id) {
+        case SYSCALL_CONNECT:
+        case SYSCALL_SOCKETCALL:
+        break;
+        default:
+            return 0;
     }
 
+    bool need_workaround = false;
+
+    // Save the sockaddr struct, depending on the family.
+    size_t sockaddr_len = 0;
+    switch (sa_fam) {
+        case AF_INET:
+            sockaddr_len = sizeof(struct sockaddr_in);
+            break;
+        case AF_INET6:
+            sockaddr_len = sizeof(struct sockaddr_in6);
+            break;
+        case AF_UNIX:
+            sockaddr_len = sizeof(struct sockaddr_un);
+            if (addr_len < sockaddr_len)
+                need_workaround = true;
+
+            break;
+    }
+
+    // Workaround for sockaddr_un struct length (issue: #1129).
+#if defined(bpf_target_x86)
+    if (need_workaround) {
+        struct sockaddr_un sockaddr = {0};
+        bpf_probe_read(&sockaddr, (uint) addr_len, (void *) address);
+        stsb(args_buf, (void *) &sockaddr, sizeof(struct sockaddr_un), 1);
+    }
+#endif
+
+    // Save the sockaddr struct argument to the event.
+    if (!need_workaround)
+        stsb(args_buf, (void *) address, sockaddr_len, 1);
+
+    // Submit the event.
     return events_perf_submit(&p, SECURITY_SOCKET_CONNECT, 0);
 }
 
