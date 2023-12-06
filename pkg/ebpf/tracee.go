@@ -661,8 +661,16 @@ func (t *Tracee) initDerivationTable() error {
 				),
 			},
 		},
+		events.SecuritySocketConnect: {
+			events.NetTCPConnect: {
+				Enabled: shouldSubmit(events.NetTCPConnect),
+				DeriveFunction: derive.NetTCPConnect(
+					t.dnsCache,
+				),
+			},
+		},
 		//
-		// Network Derivations
+		// Network Packet Derivations
 		//
 		events.NetPacketIPBase: {
 			events.NetPacketIPv4: {
