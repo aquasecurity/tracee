@@ -69,7 +69,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
-	initialize.CreateEventsFromSignatures(events.StartSignatureID, sigs)
+	sigNameToEventId := initialize.CreateEventsFromSignatures(events.StartSignatureID, sigs)
 
 	// Initialize a tracee config structure
 
@@ -322,8 +322,9 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	runner.TraceeConfig.Output.ParseArguments = true
 
 	runner.TraceeConfig.EngineConfig = engine.Config{
-		Enabled:    true,
-		Signatures: sigs,
+		Enabled:          true,
+		SigNameToEventID: sigNameToEventId,
+		Signatures:       sigs,
 		// This used to be a flag, we have removed the flag from this binary to test
 		// if users do use it or not.
 		SignatureBufferSize: 1000,

@@ -123,7 +123,7 @@ tracee analyze --events anti_debugging events.json`,
 
 		fmt.Printf("Loading %d signature events\n", len(sigs))
 
-		initialize.CreateEventsFromSignatures(events.StartSignatureID, sigs)
+		_ = initialize.CreateEventsFromSignatures(events.StartSignatureID, sigs)
 
 		engineConfig := engine.Config{
 			Signatures:          sigs,

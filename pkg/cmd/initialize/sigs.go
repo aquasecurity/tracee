@@ -9,9 +9,9 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
+func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) map[string]int32 {
 	newEventDefID := startId
-
+	res := make(map[string]int32)
 	for _, s := range sigs {
 		m, err := s.GetMetadata()
 		if err != nil {
@@ -85,6 +85,8 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) {
 			continue
 		}
 
+		res[m.EventName] = int32(newEventDefID)
 		newEventDefID++
 	}
+	return res
 }
