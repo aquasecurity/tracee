@@ -19,7 +19,38 @@ RUN apk --no-cache update && \
     apk --no-cache add elfutils-dev && \
     apk --no-cache add libelf-static && \
     apk --no-cache add zlib-static && \
-    ln -s /usr/bin/llc14 /usr/bin/llc
+    rm -f /usr/bin/cc && \
+    rm -f /usr/bin/clang && \
+    rm -f /usr/bin/clang++ && \
+    rm -f /usr/bin/llc && \
+    rm -f /usr/bin/lld && \
+    rm -f /usr/bin/clangd && \
+    rm -f /usr/bin/clang-format && \
+    rm -f /usr/bin/llvm-strip && \
+    rm -f /usr/bin/llvm-config && \
+    rm -f /usr/bin/ld.lld && \
+    rm -f /usr/bin/llvm-ar && \
+    rm -f /usr/bin/llvm-nm && \
+    rm -f /usr/bin/llvm-objcopy && \
+    rm -f /usr/bin/llvm-objdump && \
+    rm -f /usr/bin/llvm-readelf && \
+    rm -f /usr/bin/opt && \
+    ln -s /usr/lib/llvm14/bin/clang /usr/bin/cc && \
+    ln -s /usr/lib/llvm14/bin/clang /usr/bin/clang && \
+    ln -s /usr/lib/llvm14/bin/clang++ /usr/bin/clang++ && \
+    ln -s /usr/lib/llvm14/bin/clangd /usr/bin/clangd && \
+    ln -s /usr/lib/llvm14/bin/clang-format /usr/bin/clang-format && \
+    ln -s /usr/lib/llvm14/bin/lld /usr/bin/lld && \
+    ln -s /usr/lib/llvm14/bin/llc /usr/bin/llc && \
+    ln -s /usr/lib/llvm14/bin/llvm-strip /usr/bin/llvm-strip && \
+    ln -s /usr/lib/llvm14/bin/llvm-config /usr/bin/llvm-config && \
+    ln -s /usr/lib/llvm14/bin/ld.lld /usr/bin/ld.lld && \
+    ln -s /usr/lib/llvm14/bin/llvm-ar /usr/bin/llvm-ar && \
+    ln -s /usr/lib/llvm14/bin/llvm-nm /usr/bin/llvm-nm && \
+    ln -s /usr/lib/llvm14/bin/llvm-objcopy /usr/bin/llvm-objcopy && \
+    ln -s /usr/lib/llvm14/bin/llvm-objdump /usr/bin/llvm-objdump && \
+    ln -s /usr/lib/llvm14/bin/llvm-readelf /usr/bin/llvm-readelf && \
+    ln -s /usr/lib/llvm14/bin/opt /usr/bin/opt
 
 # install OPA
 
