@@ -9811,6 +9811,7 @@ var CoreEvents = map[ID]Definition{
 		sets: []string{"default", "lsm_hooks", "net", "net_sock"},
 		params: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
+			{Type: "int", Name: "type"},
 			{Type: "struct sockaddr*", Name: "remote_addr"},
 		},
 	},
