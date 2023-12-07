@@ -2,7 +2,6 @@ package ebpf
 
 import (
 	gocontext "context"
-	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -15,6 +14,7 @@ import (
 	"unsafe"
 
 	lru "github.com/hashicorp/golang-lru/v2"
+	miniosha "github.com/minio/sha256-simd"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	bpf "github.com/aquasecurity/libbpfgo"
@@ -1629,11 +1629,12 @@ func computeFileHashAtPath(fileName string) (string, error) {
 }
 
 func computeFileHash(file *os.File) (string, error) {
-	h := sha256.New()
+	h := miniosha.New()
 	_, err := io.Copy(h, file)
 	if err != nil {
 		return "", errfmt.WrapError(err)
 	}
+
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
