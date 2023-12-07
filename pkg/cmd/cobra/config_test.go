@@ -282,7 +282,7 @@ output:
     - option:stack-addresses
     - option:exec-env
     - option:relative-time
-    - option:exec-hash
+    - option:exec-hash=dev-inode
     - option:parse-arguments
     - option:parse-arguments-fds
     - option:sort-events
@@ -296,7 +296,7 @@ output:
 				"option:stack-addresses",
 				"option:exec-env",
 				"option:relative-time",
-				"option:exec-hash",
+				"option:exec-hash=dev-inode",
 				"option:parse-arguments",
 				"option:parse-arguments-fds",
 				"option:sort-events",
@@ -314,7 +314,7 @@ output:
         stack-addresses: true
         exec-env: true
         relative-time: true
-        exec-hash: true
+        exec-hash: dev-inode
         parse-arguments: true
         parse-arguments-fds: true
         sort-events: true
@@ -369,7 +369,7 @@ output:
 				"option:stack-addresses",
 				"option:exec-env",
 				"option:relative-time",
-				"option:exec-hash",
+				"option:exec-hash=dev-inode",
 				"option:parse-arguments",
 				"option:parse-arguments-fds",
 				"option:sort-events",
@@ -986,7 +986,7 @@ func TestOutputConfigFlags(t *testing.T) {
 					StackAddresses:    true,
 					ExecEnv:           true,
 					RelativeTime:      true,
-					ExecHash:          true,
+					ExecHash:          "dev-inode",
 					ParseArguments:    true,
 					ParseArgumentsFDs: true,
 					SortEvents:        true,
@@ -997,7 +997,7 @@ func TestOutputConfigFlags(t *testing.T) {
 				"option:stack-addresses",
 				"option:exec-env",
 				"option:relative-time",
-				"option:exec-hash",
+				"option:exec-hash=dev-inode",
 				"option:parse-arguments",
 				"option:parse-arguments-fds",
 				"option:sort-events",

@@ -11,7 +11,7 @@ tracee **\-\-output** - Control how and where output is printed
 
 ## SYNOPSIS
 
-tracee **\-\-output** <format[:file,...]\> | gotemplate=template[:file,...] | forward:url | webhook:url | option:{stack-addresses,exec-env,relative-time,exec-hash,parse-arguments,parse-arguments-fds,sort-events} ...
+tracee **\-\-output** <format[:file,...]\> | gotemplate=template[:file,...] | forward:url | webhook:url | option:{stack-addresses,exec-env,relative-time,exec-hash={pathname,dev-inode,digest-inode},parse-arguments,parse-arguments-fds,sort-events} ...
 
 
 ## DESCRIPTION
@@ -48,7 +48,10 @@ Other options:
   - **exec-env**: When tracing execve/execveat, show the environment variables that were used for execution.
   - **relative-time**: Use relative timestamp instead of wall timestamp for events.
   - **exec-hash**: When tracing some file related events, show the file hash (sha256).
-    - Affected events: sched_process_exec, shared_object_loaded
+    - Affected events: *sched_process_exec*, *shared_object_loaded*
+    - **pathname** option recalculates the file hash if the inode's creation time (ctime) differs, which can occur in different namespaces even for identical pathnames.
+    - **dev-inode** option generally offers better performance compared to the **pathname** option, as it bypasses the need for recalculation by associating the creation time (ctime) with the device (dev) and inode pair.
+    - **digest-inode**" option is the most efficient, as it keys the hash to a pair consisting of the container image digest and inode. This approach, however, necessitates container enrichment.
   - **parse-arguments**: Do not show raw machine-readable values for event arguments. Instead, parse them into human-readable strings.
   - **parse-arguments-fds**: Enable parse-arguments and enrich file descriptors (fds) with their file path translation. This can cause pipeline slowdowns.
   - **sort-events**: Enable sorting events before passing them to the output. This may decrease the overall program efficiency.

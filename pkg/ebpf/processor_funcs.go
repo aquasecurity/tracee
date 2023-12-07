@@ -2,7 +2,6 @@ package ebpf
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -11,7 +10,7 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
@@ -121,8 +120,9 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 	} else {
 		t.pidsInMntns.AddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
 	}
+
 	// capture executed files
-	if t.config.Capture.Exec || t.config.Output.CalcHashes {
+	if t.config.Capture.Exec || t.config.Output.CalcHashes != config.CalcHashesNone {
 		filePath, err := parse.ArgVal[string](event.Args, "pathname")
 		if err != nil {
 			return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
@@ -147,6 +147,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 			if containerId == "" {
 				containerId = "host"
 			}
+
 			capturedFileID := fmt.Sprintf("%s:%s", containerId, filePath)
 			// capture exec'ed files ?
 			if t.config.Capture.Exec {
@@ -177,8 +178,27 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 				}
 			}
 			// check exec'ed hash ?
-			if t.config.Output.CalcHashes {
-				err := t.addHashArg(event, filePath, castedSourceFileCtime)
+			if t.config.Output.CalcHashes != config.CalcHashesNone {
+				dev, err := parse.ArgVal[uint32](event.Args, "dev")
+				if err != nil {
+					return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
+				}
+				ino, err := parse.ArgVal[uint64](event.Args, "inode")
+				if err != nil {
+					return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
+				}
+
+				fid := &fileId{
+					dev:             dev,
+					ino:             ino,
+					ctime:           castedSourceFileCtime,
+					pathname:        filePath,
+					mountNS:         event.MountNS,
+					contId:          containerId,
+					contImageDigest: event.Container.ImageDigest,
+				}
+
+				err = t.addHashArg(event, fid)
 				if err != nil {
 					return err
 				}
@@ -366,32 +386,27 @@ func (t *Tracee) normalizeEventArgTime(event *trace.Event, argName string) error
 }
 
 // addHashArg calculate file hash (in a best-effort efficiency manner) and add it as an argument
-func (t *Tracee) addHashArg(event *trace.Event, fileName string, ctime int64) error {
-	if t.config.Output.CalcHashes {
-		// Currently Tracee does not support hash calculation of memfd files
-		if strings.HasPrefix(fileName, "memfd") {
-			return nil
-		}
-		hash, err := t.getFileHash(fileName, ctime, event.MountNS, event.ContainerID)
-
-		event.Args = append(
-			event.Args, trace.Argument{
-				ArgMeta: trace.ArgMeta{Name: "sha256", Type: "const char*"},
-				Value:   hash,
-			},
-		)
-		event.ArgsNum++
-
-		// Container FS unreachable can happen because of race condition on any system,
-		// so there is no reason to return an error on it
-		if errors.Is(err, containers.ErrContainerFSUnreachable) {
-			logger.Debugw("failed to calculate hash", "error", err, "mount NS", event.MountNS)
-			err = nil
-		}
-
-		return err
+func (t *Tracee) addHashArg(event *trace.Event, fid *fileId) error {
+	// Currently Tracee does not support hash calculation of memfd files
+	if strings.HasPrefix(fid.pathname, "memfd") {
+		return nil
 	}
-	return nil
+
+	hashArg := trace.Argument{
+		ArgMeta: trace.ArgMeta{Name: "sha256", Type: "const char*"},
+	}
+
+	hash, err := t.getFileHash(fid)
+	if hash == "" {
+		hashArg.Value = nil
+	} else {
+		hashArg.Value = hash
+	}
+
+	event.Args = append(event.Args, hashArg)
+	event.ArgsNum++
+
+	return err
 }
 
 func (t *Tracee) processSharedObjectLoaded(event *trace.Event) error {
@@ -405,6 +420,32 @@ func (t *Tracee) processSharedObjectLoaded(event *trace.Event) error {
 		logger.Debugw("Error parsing argument", "error", err)
 		return nil
 	}
+	dev, err := parse.ArgVal[uint32](event.Args, "dev")
+	if err != nil {
+		return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
+	}
+	ino, err := parse.ArgVal[uint64](event.Args, "inode")
+	if err != nil {
+		return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
+	}
 
-	return t.addHashArg(event, filePath, int64(fileCtime))
+	containerId := event.Container.ID
+	if containerId == "" {
+		containerId = "host"
+	}
+	if t.config.Output.CalcHashes != config.CalcHashesNone {
+		fid := &fileId{
+			dev:             dev,
+			ino:             ino,
+			ctime:           int64(fileCtime),
+			pathname:        filePath,
+			mountNS:         event.MountNS,
+			contId:          containerId,
+			contImageDigest: event.Container.ImageDigest,
+		}
+
+		return t.addHashArg(event, fid)
+	}
+
+	return nil
 }

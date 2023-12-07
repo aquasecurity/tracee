@@ -107,8 +107,6 @@ func setOption(cfg *config.OutputConfig, option string, newBinary bool) error {
 		cfg.ExecEnv = true
 	case "relative-time":
 		cfg.RelativeTime = true
-	case "exec-hash":
-		cfg.CalcHashes = true
 	case "parse-arguments":
 		cfg.ParseArguments = true
 	case "parse-arguments-fds":
@@ -117,6 +115,29 @@ func setOption(cfg *config.OutputConfig, option string, newBinary bool) error {
 	case "sort-events":
 		cfg.EventsSorting = true
 	default:
+		if strings.HasPrefix(option, "exec-hash") {
+			hashExecParts := strings.Split(option, "=")
+
+			if len(hashExecParts) == 2 {
+				hashExecOpt := hashExecParts[1]
+				switch hashExecOpt {
+				case "none":
+					cfg.CalcHashes = config.CalcHashesNone
+				case "pathname":
+					cfg.CalcHashes = config.CalcHashesPathname
+				case "dev-inode":
+					cfg.CalcHashes = config.CalcHashesDevInode
+				case "digest-inode":
+					cfg.CalcHashes = config.CalcHashesDigestInode
+				default:
+					goto invalidOption
+				}
+			}
+
+			return nil
+		}
+
+	invalidOption:
 		if newBinary {
 			// TODO: build man page
 			// return errfmt.Errorf("invalid output option: %s, see 'tracee-output' man page for more info", option)

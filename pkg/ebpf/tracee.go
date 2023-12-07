@@ -59,6 +59,44 @@ type fileExecInfo struct {
 	Hash      string
 }
 
+type fileId struct {
+	dev   uint32
+	ino   uint64
+	ctime int64
+
+	pathname        string
+	mountNS         int
+	contId          string // either "host" or container id
+	contImageDigest string
+}
+
+// devInodeKey returns a string key for the file's device and inode.
+// Format is "dev,ino".
+func (f *fileId) devInodeKey() string {
+	return fmt.Sprintf("%d,%d", f.dev, f.ino)
+}
+
+// digestInodeKey returns a string key for the origin, either host or container
+// image digest, and inode.
+// Format is "digest,ino".
+func (f *fileId) digestInodeKey() string {
+	if f.contId == "host" {
+		return fmt.Sprintf("host,%d", f.ino)
+	}
+
+	if f.contImageDigest == "" {
+		return ""
+	}
+
+	return fmt.Sprintf("%s,%d", f.contImageDigest, f.ino)
+}
+
+// pathnameKey returns a string key for the file's pathname
+// Format is "pathname"
+func (f *fileId) pathnameKey() string {
+	return f.pathname
+}
+
 // Tracee traces system calls and system events using eBPF
 type Tracee struct {
 	config    config.Config
@@ -1544,7 +1582,7 @@ func (t *Tracee) Running() bool {
 	return t.running.Load()
 }
 
-func (t *Tracee) getFileHash(filename string, ctime int64, mountNs int, containerId string) (string, error) {
+func (t *Tracee) getFileHash(fid *fileId) (string, error) {
 	onceHashCapsAdd.Do(
 		func() {
 			err := capabilities.GetInstance().BaseRingAdd(cap.SYS_PTRACE)
@@ -1554,24 +1592,41 @@ func (t *Tracee) getFileHash(filename string, ctime int64, mountNs int, containe
 		},
 	)
 
-	fileId := fmt.Sprintf("%s:%s", containerId, filename)
+	key := ""
+	switch t.config.Output.CalcHashes {
+	case config.CalcHashesPathname:
+		key = fid.pathnameKey()
+	case config.CalcHashesDevInode:
+		key = fid.devInodeKey()
+	case config.CalcHashesDigestInode:
+		key = fid.digestInodeKey() // can be empty if container digest is not available
+	default:
+		return "", errfmt.Errorf("unknown calc hash option type")
+	}
+
+	if key == "" {
+		logger.Debugw("skipping hash calculation for file since key is empty", "file", fid.pathname)
+		return "", nil
+	}
+
 	var fileHash string
-	hashInfoObj, ok := t.fileHashes.Get(fileId)
-	if ok && hashInfoObj.LastCtime == ctime {
+	hashInfoObj, ok := t.fileHashes.Get(key)
+	if ok && hashInfoObj.LastCtime == fid.ctime {
 		fileHash = hashInfoObj.Hash
 	} else {
-		sourceFilePath, err := t.contPathResolver.GetHostAbsPath(filename, mountNs)
+		sourceFilePath, err := t.contPathResolver.GetHostAbsPath(fid.pathname, fid.mountNS)
 		if err != nil {
 			return "", err
 		}
 
 		hash, err := computeFileHashAtPath(sourceFilePath)
 		if err == nil {
-			hashInfoObj = fileExecInfo{ctime, hash}
-			t.fileHashes.Add(fileId, hashInfoObj)
+			hashInfoObj = fileExecInfo{fid.ctime, hash}
+			t.fileHashes.Add(key, hashInfoObj)
 			fileHash = hash
 		}
 	}
+
 	return fileHash, nil
 }
 
