@@ -21,7 +21,14 @@ func (c *BucketsCache) Init(bucketLimit int) {
 func (c *BucketsCache) GetBucket(key uint32) []uint32 {
 	c.bucketsMutex.RLock()
 	defer c.bucketsMutex.RUnlock()
-	return c.buckets[key]
+
+	if orig, ok := c.buckets[key]; ok {
+		b := make([]uint32, len(orig))
+		copy(b, orig)
+		return b
+	}
+
+	return nil
 }
 
 func (c *BucketsCache) GetBucketItem(key uint32, index int) (uint32, error) {
