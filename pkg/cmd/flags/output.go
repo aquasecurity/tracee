@@ -39,9 +39,7 @@ func PrepareOutput(outputSlice []string, newBinary bool) (PrepareOutputResult, e
 		case "none":
 			if len(outputParts) > 1 {
 				if newBinary {
-					// TODO: build man page
-					// return outConfig, errors.New("none output does not support path. See 'tracee-output' man page for more info")
-					return outConfig, errors.New("none output does not support path. Use '--help' for more info")
+					return outConfig, errors.New("none output does not support path. Run 'man output' for more info")
 				}
 
 				return outConfig, errors.New("none output does not support path. Use '--output help' for more info")
@@ -73,9 +71,7 @@ func PrepareOutput(outputSlice []string, newBinary bool) (PrepareOutputResult, e
 			}
 		default:
 			if newBinary {
-				// TODO: build man page
-				// return outConfig, fmt.Errorf("invalid output flag: %s, see 'tracee-output' man page for more info", outputParts[0])
-				return outConfig, fmt.Errorf("invalid output flag: %s, use '--help' for more info", outputParts[0])
+				return outConfig, fmt.Errorf("invalid output flag: %s, run 'man output' for more info", outputParts[0])
 			}
 
 			return outConfig, fmt.Errorf("invalid output flag: %s, use '--output help' for more info", outputParts[0])
@@ -118,9 +114,7 @@ func setOption(cfg *config.OutputConfig, option string, newBinary bool) error {
 		cfg.EventsSorting = true
 	default:
 		if newBinary {
-			// TODO: build man page
-			// return errfmt.Errorf("invalid output option: %s, see 'tracee-output' man page for more info", option)
-			return errfmt.Errorf("invalid output option: %s, use '--help' for more info", option)
+			return errfmt.Errorf("invalid output option: %s, run 'man output' for more info", option)
 		}
 
 		return errfmt.Errorf("invalid output option: %s, use '--output help' for more info", option)
@@ -171,9 +165,7 @@ func parseFormat(outputParts []string, printerMap map[string]string, newBinary b
 	for _, outPath := range strings.Split(outputParts[1], ",") {
 		if outPath == "" {
 			if newBinary {
-				// TODO: build man page
-				// return errfmt.Errorf("format flag can't be empty, see 'tracee-output' man page for more info")
-				return errfmt.Errorf("format flag can't be empty, use '--help' for more info")
+				return errfmt.Errorf("format flag can't be empty, run 'man output' for more info")
 			}
 
 			return errfmt.Errorf("format flag can't be empty, use '--output help' for more info")
@@ -181,9 +173,7 @@ func parseFormat(outputParts []string, printerMap map[string]string, newBinary b
 
 		if _, ok := printerMap[outPath]; ok {
 			if newBinary {
-				// TODO: build man page
-				// return errfmt.Errorf("cannot use the same path for multiple outputs: %s, see 'tracee-output' man page for more info", outPath)
-				return errfmt.Errorf("cannot use the same path for multiple outputs: %s, use '--help' for more info", outPath)
+				return errfmt.Errorf("cannot use the same path for multiple outputs: %s, run  'man output' for more info", outPath)
 			}
 
 			return errfmt.Errorf("cannot use the same path for multiple outputs: %s, use '--output help' for more info", outPath)
@@ -198,9 +188,7 @@ func parseFormat(outputParts []string, printerMap map[string]string, newBinary b
 func parseOption(outputParts []string, traceeConfig *config.OutputConfig, newBinary bool) error {
 	if len(outputParts) == 1 || outputParts[1] == "" {
 		if newBinary {
-			// TODO: build man page
-			// return errfmt.Errorf("option flag can't be empty, see 'tracee-output' man page for more info")
-			return errfmt.Errorf("option flag can't be empty, use '--help' for more info")
+			return errfmt.Errorf("option flag can't be empty, run 'man output' for more info")
 		}
 
 		return errfmt.Errorf("option flag can't be empty, use '--output help' for more info")
@@ -240,9 +228,7 @@ func createFile(path string) (*os.File, error) {
 func validateURL(outputParts []string, flag string, newBinary bool) error {
 	if len(outputParts) == 1 || outputParts[1] == "" {
 		if newBinary {
-			// TODO: build man page
-			// return errfmt.Errorf("%s flag can't be empty, see 'tracee-output' man page for more info", flag)
-			return errfmt.Errorf("%s flag can't be empty, use '--help' for more info", flag)
+			return errfmt.Errorf("%s flag can't be empty, run 'man output' for more info", flag)
 		}
 
 		return errfmt.Errorf("%s flag can't be empty, use '--output help' for more info", flag)
@@ -252,9 +238,7 @@ func validateURL(outputParts []string, flag string, newBinary bool) error {
 
 	if err != nil {
 		if newBinary {
-			// TODO: build man page
-			// return errfmt.Errorf("invalid uri for %s output %q. Use 'tracee-output' man page for more info", flag, outputParts[1])
-			return errfmt.Errorf("invalid uri for %s output %q. Use '--help' for more info", flag, outputParts[1])
+			return errfmt.Errorf("invalid uri for %s output %q. Run 'man output' for more info", flag, outputParts[1])
 		}
 
 		return errfmt.Errorf("invalid uri for %s output %q. Use '--output help' for more info", flag, outputParts[1])

@@ -49,12 +49,9 @@ does is through different "execution protection rings":
 
 You may see all available capabilities in the running environment by running:
 
-<!-- TODO: build man page -->
-<!-- ```console
-man tracee-capabilities
-``` -->
-
-command line flag.
+```console
+capsh --print
+```
 
 ## Bypass capabilities dropping feature
 

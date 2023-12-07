@@ -3,11 +3,9 @@
 Tracee has an events caching (in-memory) mechanism. In order to check latest
 caching options you may execute:
 
-<!-- TODO: build man page -->
-<!-- ```console
-man tracee-cache
-``` -->
-
+```console
+./dist/tracee man cache
+```
 
 <!-- TODO: reference the architecture page again-->
 

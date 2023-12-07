@@ -3,12 +3,9 @@
 Tracee has a unique feature that lets you capture interesting artifacts from
 running applications, using the `--capture` flag.
 
-
-
-<!-- TODO: build man page -->
-<!-- ```console
-man tracee-capture
-``` -->
+```console
+./dist/tracee man capture
+```
 
 ```console
 sudo ./dist/tracee --capture xxx

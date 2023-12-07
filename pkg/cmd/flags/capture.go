@@ -190,9 +190,7 @@ func PrepareCapture(captureSlice []string, newBinary bool) (config.CaptureConfig
 			}
 		} else {
 			if newBinary {
-				// TODO: build man page
-				// return config.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, see 'tracee-capture' man page for more info")
-				return config.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, use '--help' for more info")
+				return config.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, run 'man capture' for more info")
 			}
 
 			return config.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, use '--capture help' for more info")

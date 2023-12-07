@@ -50,9 +50,7 @@ func invalidLogOption(err error, opt string, newBinary bool) error {
 	}
 
 	if newBinary {
-		// TODO: build man page
-		// return errfmt.Errorf("invalid log option: %s, %s, see 'tracee-log' man page for more info", opt, err)
-		return errfmt.Errorf("invalid log option: %s, %s, use '--help' for more info", opt, err)
+		return errfmt.Errorf("invalid log option: %s, %s, run 'man log' for more info", opt, err)
 	}
 
 	return errfmt.Errorf("invalid log option: %s, %s, use '--log help' for more info", opt, err)
@@ -65,8 +63,6 @@ func invalidLogOptionValue(err error, opt string, newBinary bool) error {
 	}
 
 	if newBinary {
-		// TODO: build man page
-		// return errfmt.Errorf("invalid log option value: %s, %s, see 'tracee-log' man page for more info", opt, err)
 		return errfmt.Errorf("invalid log option value: %s, %s, use '--help' for more info", opt, err)
 	}
 
