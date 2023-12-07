@@ -57,6 +57,16 @@ func pickIpAndPort(event trace.Event, fieldName string) (string, int, error) {
 	var err error
 	// e.g: sockaddr: map[sa_family:AF_INET sin_addr:10.10.11.2 sin_port:1234]
 
+	// Check if socket is a TCP socket.
+	sType, err := parse.ArgVal[string](event.Args, "type")
+	if err != nil {
+		return "", 0, errfmt.WrapError(err)
+	}
+	if sType != "SOCK_STREAM" {
+		return "", 0, nil
+	}
+
+	// Get sockaddr field.
 	sockaddr, err := parse.ArgVal[map[string]string](event.Args, fieldName)
 	if err != nil {
 		return "", 0, errfmt.WrapError(err)

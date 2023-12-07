@@ -132,7 +132,7 @@ func ParseArgs(event *trace.Event) error {
 				parseOrEmptyString(typeArg, socketTypeArgument, err)
 			}
 		}
-	case SecuritySocketCreate:
+	case SecuritySocketCreate, SecuritySocketConnect:
 		if domArg := GetArg(event, "family"); domArg != nil {
 			if dom, isInt32 := domArg.Value.(int32); isInt32 {
 				socketDomainArgument, err := helpers.ParseSocketDomainArgument(uint64(dom))

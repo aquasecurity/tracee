@@ -478,8 +478,9 @@ struct alloc_context {
 };
 
 struct socket {
-    struct sock *sk;
+    short type;
     struct file *file;
+    struct sock *sk;
 };
 
 typedef struct {

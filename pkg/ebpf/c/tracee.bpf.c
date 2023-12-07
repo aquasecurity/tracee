@@ -2490,11 +2490,27 @@ int BPF_KPROBE(trace_security_socket_connect)
     if (!should_submit(SECURITY_SOCKET_CONNECT, p.event))
         return 0;
 
-    uint addr_len = (uint) PT_REGS_PARM3(ctx) & 0x7FFFFFFF; // verifier overflow checks
+    u64 addr_len = PT_REGS_PARM3(ctx);
+
+    struct socket *sock = (struct socket *) PT_REGS_PARM1(ctx);
+    if (!sock)
+        return 0;
 
     struct sockaddr *address = (struct sockaddr *) PT_REGS_PARM2(ctx);
     if (!address)
         return 0;
+
+    // Check if the socket type is supported.
+    u32 type = BPF_CORE_READ(sock, type);
+    switch (type) {
+        // TODO: case SOCK_DCCP:
+        case SOCK_DGRAM:
+        case SOCK_SEQPACKET:
+        case SOCK_STREAM:
+            break;
+        default:
+            return 0;
+    }
 
     // Check if the socket family is supported.
     sa_family_t sa_fam = get_sockaddr_family(address);
@@ -2521,9 +2537,6 @@ int BPF_KPROBE(trace_security_socket_connect)
     to = (void *) sys->args.args[1];
 #endif
 
-    // Save the socket fd argument to the event.
-    stsb(args_buf, to, sizeof(u32), 0);
-
     // Save the socket fd, depending on the syscall.
     switch (sys->id) {
         case SYSCALL_CONNECT:
@@ -2532,6 +2545,12 @@ int BPF_KPROBE(trace_security_socket_connect)
         default:
             return 0;
     }
+
+    // Save the socket fd argument to the event.
+    stsb(args_buf, to, sizeof(u32), 0);
+
+    // Save the socket type argument to the event.
+    stsb(args_buf, &type, sizeof(u32), 1);
 
     bool need_workaround = false;
 
@@ -2556,14 +2575,14 @@ int BPF_KPROBE(trace_security_socket_connect)
     if (need_workaround) {
         // Workaround for sockaddr_un struct length (issue: #1129).
         struct sockaddr_un sockaddr = {0};
-        bpf_probe_read(&sockaddr, (uint) addr_len, (void *) address);
-        stsb(args_buf, (void *) &sockaddr, sizeof(struct sockaddr_un), 1);
+        bpf_probe_read(&sockaddr, (u32) addr_len, (void *) address);
+        stsb(args_buf, (void *) &sockaddr, sizeof(struct sockaddr_un), 2);
     }
 #endif
 
     // Save the sockaddr struct argument to the event.
     if (!need_workaround)
-        stsb(args_buf, (void *) address, sockaddr_len, 1);
+        stsb(args_buf, (void *) address, sockaddr_len, 2);
 
     // Submit the event.
     return events_perf_submit(&p, SECURITY_SOCKET_CONNECT, 0);
