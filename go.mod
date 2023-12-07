@@ -17,6 +17,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.2
 	github.com/kubernetes/cri-api v0.27.1
 	github.com/mennanov/fmutils v0.2.0
+	github.com/minio/sha256-simd v1.0.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/open-policy-agent/opa v0.52.0
 	github.com/prometheus/client_golang v1.16.0
@@ -64,6 +65,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.3 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-runewidth v0.0.10 // indirect
