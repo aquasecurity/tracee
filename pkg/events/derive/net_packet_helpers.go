@@ -27,6 +27,8 @@ const (
 	protoHttpResponse
 	packetIngress
 	packetEgress
+	flowTCPBegin
+	flowTCPEnd // TODO: will be implemented soon
 )
 
 func boolToUint8(b bool) uint8 {

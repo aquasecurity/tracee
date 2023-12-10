@@ -26,6 +26,7 @@ const (
 	NetPacketBase ID = iota + 700
 	NetPacketIPBase
 	NetPacketTCPBase
+	NetPacketTCPFlowBase
 	NetPacketUDPBase
 	NetPacketICMPBase
 	NetPacketICMPv6Base
@@ -121,6 +122,7 @@ const (
 	NetPacketHTTP
 	NetPacketHTTPRequest
 	NetPacketHTTPResponse
+	NetFlowTCPBegin
 	MaxUserNetID
 	NetTCPConnect
 	InitNamespaces
@@ -11369,6 +11371,22 @@ var CoreEvents = map[ID]Definition{
 			{Type: "bytes", Name: "payload"},
 		},
 	},
+	NetPacketTCPFlowBase: {
+		id:       NetPacketTCPFlowBase,
+		id32Bit:  Sys32Undefined,
+		name:     "net_packet_tcp_flow_base",
+		version:  NewVersion(1, 0, 0),
+		internal: true,
+		dependencies: Dependencies{
+			ids: []ID{
+				NetPacketBase,
+			},
+		},
+		sets: []string{"network_events"},
+		params: []trace.ArgMeta{
+			{Type: "bytes", Name: "payload"},
+		},
+	},
 	NetPacketTCP: {
 		id:      NetPacketTCP,
 		id32Bit: Sys32Undefined,
@@ -11654,6 +11672,27 @@ var CoreEvents = map[ID]Definition{
 			ids: []ID{
 				NetPacketCapture,
 			},
+		},
+	},
+	NetFlowTCPBegin: {
+		id:      NetFlowTCPBegin,
+		id32Bit: Sys32Undefined,
+		name:    "net_flow_tcp_begin",
+		version: NewVersion(1, 0, 0),
+		dependencies: Dependencies{
+			ids: []ID{
+				NetPacketTCPFlowBase,
+			},
+		},
+		sets: []string{"network_events", "flows", "egress"},
+		params: []trace.ArgMeta{
+			{Type: "const char*", Name: "direction"},
+			{Type: "const char*", Name: "src"},
+			{Type: "const char*", Name: "dst"},
+			{Type: "u16", Name: "src_port"},
+			{Type: "u16", Name: "dst_port"},
+			{Type: "const char **", Name: "src_dns"},
+			{Type: "const char **", Name: "dst_dns"},
 		},
 	},
 	//

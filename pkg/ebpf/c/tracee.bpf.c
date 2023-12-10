@@ -5086,6 +5086,8 @@ statfunc enum event_id_e net_packet_to_net_event(net_packet_t packet_type)
             return NET_PACKET_DNS;
         case SUB_NET_PACKET_HTTP:
             return NET_PACKET_HTTP;
+        case SUB_NET_PACKET_TCP_FLOW:
+            return NET_PACKET_TCP_FLOW;
     };
     return MAX_EVENT_ID;
 }
@@ -5098,17 +5100,12 @@ statfunc enum event_id_e net_packet_to_net_event(net_packet_t packet_type)
 statfunc int should_submit_net_event(net_event_context_t *neteventctx,
                                      net_packet_t packet_type)
 {
-    // TODO after v0.15.0: After some testing, the caching is never used, as the net context is
-    // always a new one (created by the cgroup/skb program caller, AND there is a single map check
-    // for each protocol, each protocol check for submission. Go back to changes made by commit
-    // #4e9bb610049 ("network: ebpf: lazy submit checks for net events"), but still using enum and
-    // better code (will improve the callers syntax as well).
-
     enum event_id_e evt_id = net_packet_to_net_event(packet_type);
 
-    // Check if event has to be sumitted: if any of the policies matched, submit. All network events
-    // are base events (to be derived in userland). This means that if any of the policies need a
-    // network event, kernel can submit and let userland deal with it.
+    // Check if event has to be sumitted: if any of the policies matched,
+    // submit. All network events are base events (to be derived in userland).
+    // This means that if any of the policies need a network event, kernel can
+    // submit and let userland deal with it.
 
     event_config_t *evt_config = bpf_map_lookup_elem(&events_map, &evt_id);
     if (evt_config == NULL)
@@ -5121,7 +5118,7 @@ statfunc int should_submit_net_event(net_event_context_t *neteventctx,
 #pragma clang diagnostic pop
 
 statfunc int should_capture_net_event(net_event_context_t *neteventctx,
-                                                    net_packet_t packet_type)
+                                      net_packet_t packet_type)
 {
     if (neteventctx->md.captured) // already captured
         return 0;
@@ -5134,7 +5131,7 @@ statfunc int should_capture_net_event(net_event_context_t *neteventctx,
 //
 
 #define CGROUP_SKB_HANDLE_FUNCTION(name)                                       \
-statfunc u32 cgroup_skb_handle_##name(                           \
+statfunc u32 cgroup_skb_handle_##name(                                         \
     struct __sk_buff *ctx,                                                     \
     net_event_context_t *neteventctx,                                          \
     nethdrs *nethdrs                                                           \
@@ -5159,10 +5156,10 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6);
 // TODO: check if TCP needs a LRU map of sent events by pkt ID (avoid dups)
 
 statfunc u32 cgroup_skb_submit(void *map,
-                                             struct __sk_buff *ctx,
-                                             net_event_context_t *neteventctx,
-                                             u32 event_type,
-                                             u32 size)
+                               struct __sk_buff *ctx,
+                               net_event_context_t *neteventctx,
+                               u32 event_type,
+                               u32 size)
 {
     u64 flags = BPF_F_CURRENT_CPU;
 
@@ -5198,8 +5195,8 @@ statfunc u32 cgroup_skb_submit(void *map,
 // TODO: check if TCP needs a LRU map of sent events by pkt ID (avoid dups)
 
 statfunc u32 cgroup_skb_capture_event(struct __sk_buff *ctx,
-                                                    net_event_context_t *neteventctx,
-                                                    u32 event_type)
+                                      net_event_context_t *neteventctx,
+                                      u32 event_type)
 {
     int zero = 0;
 
@@ -5229,6 +5226,12 @@ statfunc u32 cgroup_skb_capture_event(struct __sk_buff *ctx,
 // Socket creation and socket <=> task context updates
 //
 
+// Used to create a file descriptor for a socket. After a file descriptor is
+// created, it can be associated with the file operations of the socket, this
+// allows a socket to be used with the standard file operations (read, write,
+// etc). By having a file descriptor, kernel can keep track of the socket state,
+// and also the inode associated to the socket (which is used to link the socket
+// to a task).
 SEC("kprobe/sock_alloc_file")
 int BPF_KPROBE(trace_sock_alloc_file)
 {
@@ -5266,6 +5269,7 @@ int BPF_KPROBE(trace_sock_alloc_file)
     return 0;
 }
 
+// Ditto.
 SEC("kretprobe/sock_alloc_file")
 int BPF_KRETPROBE(trace_ret_sock_alloc_file)
 {
@@ -5371,6 +5375,10 @@ int BPF_KPROBE(trace_security_sk_clone)
     return 0;
 }
 
+// Associate a socket to a task. This is done by linking the socket inode to the
+// task context (inside netctx). This is done when a socket is created, and also
+// when a socket is cloned (e.g. when a SYN packet is received and a new socket
+// is created).
 statfunc u32 update_net_inodemap(struct socket *sock, event_data_t *event)
 {
     struct file *sock_file = BPF_CORE_READ(sock, file);
@@ -5390,6 +5398,10 @@ statfunc u32 update_net_inodemap(struct socket *sock, event_data_t *event)
     return 0;
 }
 
+// Called by recv system calls (e.g. recvmsg, recvfrom, recv, ...), or when data
+// arrives at the network stack and is destined for a socket, or during socket
+// buffer management when kernel is copying data from the network buffer to the
+// socket buffer.
 SEC("kprobe/security_socket_recvmsg")
 int BPF_KPROBE(trace_security_socket_recvmsg)
 {
@@ -5411,6 +5423,10 @@ int BPF_KPROBE(trace_security_socket_recvmsg)
     return update_net_inodemap(sock, p.event);
 }
 
+// Called by send system calls (e.g. sendmsg, sendto, send, ...), or when data
+// is queued for transmission by the network stack, or during socket buffer
+// management when kernel is copying data from the socket buffer to the network
+// buffer.
 SEC("kprobe/security_socket_sendmsg")
 int BPF_KPROBE(trace_security_socket_sendmsg)
 {
@@ -5986,6 +6002,18 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp)
         neteventctx->md.header_size += doff;
     }
 
+    // Check if TCP flow started or ended and submit appropriate event if needed.
+
+#define is_syn_ack nethdrs->protohdrs.tcphdr.syn && nethdrs->protohdrs.tcphdr.ack
+#define is_fin nethdrs->protohdrs.tcphdr.fin
+#define flow_sub should_submit_net_event(neteventctx, SUB_NET_PACKET_TCP_FLOW)
+
+    if (is_syn_ack && flow_sub) {
+        // neteventctx->eventctx.retval |= is_syn_ack ? flow_tcp_begin : flow_tcp_end;
+        neteventctx->eventctx.retval |= flow_tcp_begin;
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_TCP_FLOW, HEADERS);
+    }
+
     // submit TCP base event if needed (only headers)
 
     if (should_submit_net_event(neteventctx, SUB_NET_PACKET_TCP))
@@ -6404,7 +6432,7 @@ int sched_process_exec_signal(struct bpf_raw_tracepoint_args *ctx)
     save_to_submit_buf(&signal->args_buf, &inode_nr, sizeof(unsigned long), 7); // inode number
     save_to_submit_buf(&signal->args_buf, &ctime, sizeof(u64), 8);              // creation time
     save_to_submit_buf(&signal->args_buf, &inode_mode, sizeof(umode_t), 9);     // inode mode
-    
+
     // The proc_info interpreter field is set by "load_elf_phdrs" kprobe program.
     save_str_to_buf(&signal->args_buf, &proc_info->interpreter.pathname, 10);                    // interpreter path
     save_to_submit_buf(&signal->args_buf, &proc_info->interpreter.id.device, sizeof(dev_t), 11); // interpreter device number
