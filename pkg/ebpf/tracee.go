@@ -688,6 +688,14 @@ func (t *Tracee) initDerivationTable() error {
 				DeriveFunction: derive.NetPacketTCP(),
 			},
 		},
+		events.NetPacketTCPFlowBase: {
+			events.NetFlowTCPBegin: {
+				Enabled: shouldSubmit(events.NetFlowTCPBegin),
+				DeriveFunction: derive.NetFlowTCPBegin(
+					t.dnsCache,
+				),
+			},
+		},
 		events.NetPacketUDPBase: {
 			events.NetPacketUDP: {
 				Enabled:        shouldSubmit(events.NetPacketUDP),

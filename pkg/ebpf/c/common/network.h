@@ -1,6 +1,7 @@
 #ifndef __COMMON_NETWORK_H__
 #define __COMMON_NETWORK_H__
 
+#include "types.h"
 #include <vmlinux.h>
 #include <vmlinux_flavors.h>
 
@@ -42,12 +43,14 @@ typedef enum net_packet {
     SUB_NET_PACKET_IP = 1 << 1,
     // Layer 4
     SUB_NET_PACKET_TCP = 1 << 2,
-    SUB_NET_PACKET_UDP = 1<<3,
-    SUB_NET_PACKET_ICMP = 1 <<4,
-    SUB_NET_PACKET_ICMPV6 = 1<<5,
+    SUB_NET_PACKET_UDP = 1 << 3,
+    SUB_NET_PACKET_ICMP = 1 << 4,
+    SUB_NET_PACKET_ICMPV6 = 1 << 5,
     // Layer 7
-    SUB_NET_PACKET_DNS = 1<< 6,
-    SUB_NET_PACKET_HTTP = 1<<7,
+    SUB_NET_PACKET_DNS = 1 << 6,
+    SUB_NET_PACKET_HTTP = 1 << 7,
+    // Flow Events
+    SUB_NET_PACKET_TCP_FLOW = 1 << 8,
 } net_packet_t;
 
 typedef struct net_event_contextmd {
@@ -159,6 +162,8 @@ struct {
 #define proto_http_resp (1 << 3)
 #define packet_ingress  (1 << 4)
 #define packet_egress   (1 << 5)
+#define flow_tcp_begin  (1 << 6) // syn+ack flag or first flow packet
+#define flow_tcp_end    (1 << 7) // fin flag or last flow packet
 
 // payload size: full packets, only headers
 #define FULL    65536       // 1 << 16
