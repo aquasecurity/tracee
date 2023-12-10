@@ -68,6 +68,7 @@ nav:
                             - SysRQ Modification: docs/events/builtin/signatures/system_request_key_config_modification.md
                       - Network Events:
                             - Overview: docs/events/builtin/network/index.md
+                            - net_flow_tcp_begin: docs/events/builtin/network/net_flow_tcp_begin.md
                             - net_packet_ipv4: docs/events/builtin/network/net_packet_ipv4.md
                             - net_packet_ipv6: docs/events/builtin/network/net_packet_ipv6.md
                             - net_packet_tcp: docs/events/builtin/network/net_packet_tcp.md
@@ -95,6 +96,7 @@ nav:
                             - kallsysm_lookup_name: docs/events/builtin/extra/kallsyms_lookup_name.md
                             - magic_write: docs/events/builtin/extra/magic_write.md
                             - mem_prot_alert: docs/events/builtin/extra/mem_prot_alert.md
+                            - net_tcp_connect: docs/events/builtin/extra/net_tcp_connect.md
                             - process_execute_failed: docs/events/builtin/extra/process_execute_failed.md
                             - sched_process_exec: docs/events/builtin/extra/sched_process_exec.md
                             - security_bpf_prog: docs/events/builtin/extra/security_bpf_prog.md
