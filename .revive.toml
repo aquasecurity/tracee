@@ -69,8 +69,7 @@ enableAllRules = true
 [rule.flag-parameter]
     Disabled = true
 [rule.function-result-limit]
-    Disabled = false
-    Arguments = [3]
+    Disabled = true
 [rule.function-length]
     Disabled = true
 [rule.get-return]
