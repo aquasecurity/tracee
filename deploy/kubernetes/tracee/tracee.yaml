@@ -56,7 +56,7 @@ data:
             stack-addresses: false
             exec-env: false
             relative-time: true
-            exec-hash: false
+            exec-hash: dev-inode
             sort-events: false
 ---
 # Source: tracee/templates/role.yaml

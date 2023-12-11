@@ -48,8 +48,9 @@ Available options:
     ```
     output:
         options:
-            exec-hash: true
+            exec-hash: dev-inode
     ```
+
 5. **relative-time**
 
     The `relative-time` output option enables relative timestamp instead of wall timestamp for events.

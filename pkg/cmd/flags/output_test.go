@@ -325,17 +325,22 @@ func TestPrepareOutput(t *testing.T) {
 			},
 		},
 		{
-			testName:    "option exec-hash",
-			outputSlice: []string{"option:exec-hash"},
+			testName:    "option exec-hash=inode",
+			outputSlice: []string{"option:exec-hash=inode"},
 			expectedOutput: PrepareOutputResult{
 				PrinterConfigs: []config.PrinterConfig{
 					{Kind: "table", OutPath: "stdout"},
 				},
 				TraceeConfig: &config.OutputConfig{
-					CalcHashes:     true,
+					CalcHashes:     config.CalcHashesInode,
 					ParseArguments: true,
 				},
 			},
+		},
+		{
+			testName:      "option exec-hash invalid",
+			outputSlice:   []string{"option:exec-hash=notvalid"},
+			expectedError: errors.New("invalid output option: exec-hash=notvalid, use '--output help' for more info"),
 		},
 		{
 			testName:    "option parse-arguments",
@@ -382,7 +387,7 @@ func TestPrepareOutput(t *testing.T) {
 				"option:stack-addresses",
 				"option:exec-env",
 				"option:relative-time",
-				"option:exec-hash",
+				"option:exec-hash=dev-inode",
 				"option:parse-arguments",
 				"option:parse-arguments-fds",
 				"option:sort-events",
@@ -395,7 +400,7 @@ func TestPrepareOutput(t *testing.T) {
 					StackAddresses:    true,
 					ExecEnv:           true,
 					RelativeTime:      true,
-					CalcHashes:        true,
+					CalcHashes:        config.CalcHashesDevInode,
 					ParseArguments:    true,
 					ParseArgumentsFDs: true,
 					EventsSorting:     true,
@@ -404,10 +409,10 @@ func TestPrepareOutput(t *testing.T) {
 		},
 	}
 	for _, testcase := range testCases {
-		testcase := testcase
+		// testcase := testcase
 
 		t.Run(testcase.testName, func(t *testing.T) {
-			t.Parallel()
+			// t.Parallel()
 
 			output, err := PrepareOutput(testcase.outputSlice, false)
 			if err != nil {

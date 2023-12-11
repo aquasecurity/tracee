@@ -153,11 +153,35 @@ type CapabilitiesConfig struct {
 // Output
 //
 
+type CalcHashesOption int
+
+const (
+	CalcHashesNone CalcHashesOption = iota
+	CalcHashesInode
+	CalcHashesDevInode
+	CalcHashesDigestInode
+)
+
+func (c CalcHashesOption) String() string {
+	switch c {
+	case CalcHashesNone:
+		return "none"
+	case CalcHashesInode:
+		return "pathname"
+	case CalcHashesDevInode:
+		return "dev-inode"
+	case CalcHashesDigestInode:
+		return "digest-inode"
+	default:
+		return "unknown"
+	}
+}
+
 type OutputConfig struct {
 	StackAddresses bool
 	ExecEnv        bool
 	RelativeTime   bool
-	CalcHashes     bool
+	CalcHashes     CalcHashesOption
 
 	ParseArguments    bool
 	ParseArgumentsFDs bool

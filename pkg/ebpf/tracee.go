@@ -3,9 +3,7 @@ package ebpf
 import (
 	gocontext "context"
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -13,8 +11,6 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	lru "github.com/hashicorp/golang-lru/v2"
-	miniosha "github.com/minio/sha256-simd"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	bpf "github.com/aquasecurity/libbpfgo"
@@ -35,6 +31,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/derive"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
+	"github.com/aquasecurity/tracee/pkg/filehash"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
@@ -53,11 +50,6 @@ const (
 	pkgName          = "tracee"
 	maxMemDumpLength = 127
 )
-
-type fileExecInfo struct {
-	LastCtime int64
-	Hash      string
-}
 
 // Tracee traces system calls and system events using eBPF
 type Tracee struct {
@@ -78,7 +70,7 @@ type Tracee struct {
 	eventDerivations derive.Table
 	eventSignatures  map[events.ID]bool
 	// Artifacts
-	fileHashes     *lru.Cache[string, fileExecInfo]
+	fileHashes     *filehash.Cache
 	capturedFiles  map[string]int64
 	writtenFiles   map[string]string
 	netCapturePcap *pcaps.Pcaps
@@ -454,7 +446,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize hashes for files
 
-	t.fileHashes, err = lru.New[string, fileExecInfo](1024)
+	t.fileHashes, err = filehash.NewCache(t.config.Output.CalcHashes, t.contPathResolver)
 	if err != nil {
 		t.Close()
 		return errfmt.WrapError(err)
@@ -1571,37 +1563,6 @@ func (t *Tracee) Running() bool {
 	return t.running.Load()
 }
 
-func (t *Tracee) getFileHash(filename string, ctime int64, mountNs int, containerId string) (string, error) {
-	onceHashCapsAdd.Do(
-		func() {
-			err := capabilities.GetInstance().BaseRingAdd(cap.SYS_PTRACE)
-			if err != nil {
-				logger.Errorw("error adding cap.SYS_PTRACE to base ring", "error", err)
-			}
-		},
-	)
-
-	fileId := fmt.Sprintf("%s:%s", containerId, filename)
-	var fileHash string
-	hashInfoObj, ok := t.fileHashes.Get(fileId)
-	if ok && hashInfoObj.LastCtime == ctime {
-		fileHash = hashInfoObj.Hash
-	} else {
-		sourceFilePath, err := t.contPathResolver.GetHostAbsPath(filename, mountNs)
-		if err != nil {
-			return "", err
-		}
-
-		hash, err := computeFileHashAtPath(sourceFilePath)
-		if err == nil {
-			hashInfoObj = fileExecInfo{ctime, hash}
-			t.fileHashes.Add(fileId, hashInfoObj)
-			fileHash = hash
-		}
-	}
-	return fileHash, nil
-}
-
 func (t *Tracee) computeOutFileHash(fileName string) (string, error) {
 	f, err := utils.OpenAt(t.OutDir, fileName, os.O_RDONLY, 0)
 	if err != nil {
@@ -1612,30 +1573,7 @@ func (t *Tracee) computeOutFileHash(fileName string) (string, error) {
 			logger.Errorw("Closing file", "error", err)
 		}
 	}()
-	return computeFileHash(f)
-}
-
-func computeFileHashAtPath(fileName string) (string, error) {
-	f, err := os.Open(fileName)
-	if err != nil {
-		return "", errfmt.WrapError(err)
-	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			logger.Errorw("Closing file", "error", err)
-		}
-	}()
-	return computeFileHash(f)
-}
-
-func computeFileHash(file *os.File) (string, error) {
-	h := miniosha.New()
-	_, err := io.Copy(h, file)
-	if err != nil {
-		return "", errfmt.WrapError(err)
-	}
-
-	return hex.EncodeToString(h.Sum(nil)), nil
+	return filehash.ComputeFileHash(f)
 }
 
 // getSelfLoadedPrograms returns a map of all programs loaded by tracee.

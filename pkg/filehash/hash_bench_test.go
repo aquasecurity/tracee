@@ -1,25 +1,11 @@
-package ebpf
+package filehash_test
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-	"io"
 	"os"
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/filehash"
 )
-
-func computeFileHashOld(file *os.File) (string, error) {
-	h := sha256.New()
-
-	_, err := io.Copy(h, file)
-	if err != nil {
-		return "", errfmt.WrapError(err)
-	}
-
-	return hex.EncodeToString(h.Sum(nil)), nil
-}
 
 func BenchmarkComputeFileHashOld(b *testing.B) {
 	file, err := os.Open("/usr/bin/uname")
@@ -50,7 +36,7 @@ func BenchmarkComputeFileHashCurrent(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := computeFileHash(file)
+		_, err := filehash.ComputeFileHash(file)
 		if err != nil {
 			b.Fatalf("Error computing file hash: %v", err)
 		}
