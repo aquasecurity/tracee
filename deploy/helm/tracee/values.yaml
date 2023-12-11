@@ -80,7 +80,7 @@ config:
       stackAddresses: false
       execEnv: false
       relativeTime: true
-      execHash: false
+      execHash: dev-inode
       sortEvents: false
 
 defaultPolicy: true

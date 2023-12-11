@@ -92,7 +92,7 @@ output:
         stack-addresses: false
         exec-env: true
         relative-time: true
-        exec-hash: true
+        exec-hash: dev-inode
         parse-arguments: true
         parse-arguments-fds: true
         sort-events: true

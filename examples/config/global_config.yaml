@@ -126,7 +126,7 @@ output:
     #     stack-addresses: true
     #     exec-env: false
     #     relative-time: true
-    #     exec-hash: false
+    #     exec-hash: dev-inode
     #     parse-arguments: true
     #     sort-events: false
 

@@ -399,8 +399,8 @@ func (c *OutputConfig) flags() []string {
 	if c.Options.RelativeTime {
 		flags = append(flags, "option:relative-time")
 	}
-	if c.Options.ExecHash {
-		flags = append(flags, "option:exec-hash")
+	if c.Options.ExecHash != "" {
+		flags = append(flags, fmt.Sprintf("option:exec-hash=%s", c.Options.ExecHash))
 	}
 	if c.Options.ParseArguments {
 		flags = append(flags, "option:parse-arguments")
@@ -474,14 +474,14 @@ func (c *OutputConfig) flags() []string {
 }
 
 type OutputOptsConfig struct {
-	None              bool `mapstructure:"none"`
-	StackAddresses    bool `mapstructure:"stack-addresses"`
-	ExecEnv           bool `mapstructure:"exec-env"`
-	RelativeTime      bool `mapstructure:"relative-time"`
-	ExecHash          bool `mapstructure:"exec-hash"`
-	ParseArguments    bool `mapstructure:"parse-arguments"`
-	ParseArgumentsFDs bool `mapstructure:"parse-arguments-fds"`
-	SortEvents        bool `mapstructure:"sort-events"`
+	None              bool   `mapstructure:"none"`
+	StackAddresses    bool   `mapstructure:"stack-addresses"`
+	ExecEnv           bool   `mapstructure:"exec-env"`
+	RelativeTime      bool   `mapstructure:"relative-time"`
+	ExecHash          string `mapstructure:"exec-hash"`
+	ParseArguments    bool   `mapstructure:"parse-arguments"`
+	ParseArgumentsFDs bool   `mapstructure:"parse-arguments-fds"`
+	SortEvents        bool   `mapstructure:"sort-events"`
 }
 
 type OutputFormatConfig struct {
