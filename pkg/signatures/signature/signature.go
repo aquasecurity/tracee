@@ -96,7 +96,7 @@ func findGoSigs(dir string) ([]detect.Signature, []detect.DataSource, error) {
 
 			exportDS, err := p.Lookup("ExportedDataSources")
 			if err != nil {
-				logger.Debugw("Missing Export symbol in plugin " + d.Name())
+				logger.Debugw("No ExportedDataSources symbol in plugin " + d.Name())
 				// we don't return here because some plugins might not have datasources
 			}
 
