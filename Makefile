@@ -682,6 +682,8 @@ E2E_INST_SRC := $(shell find $(E2E_INST_DIR) \
 		-type f \
 		-name '*.go' \
 		! -name '*_test.go' \
+		! -path '$(E2E_INST_DIR)/scripts/*' \
+		! -path '$(E2E_INST_DIR)/datasourcetest/*' \
 		)
 
 .PHONY: e2e-inst-signatures

@@ -13,7 +13,7 @@ SCRIPT_TMP_DIR=/tmp
 TRACEE_TMP_DIR=/tmp/tracee
 
 # Default test to run if no other is given
-TESTS=${INSTTESTS:=VFS_WRITE}
+TESTS=${INSTTESTS:=WRITABLE_DATA_SOURCE}
 
 info_exit() {
     echo -n "INFO: "
@@ -137,8 +137,9 @@ for TEST in $TESTS; do
         --output option:parse-arguments \
         --log file:$SCRIPT_TMP_DIR/tracee-log-$$ \
         --signatures-dir "$SIG_DIR" \
-        --scope comm=echo,mv,ls,tracee,proctreetester,ping \
+        --scope comm=echo,mv,ls,tracee,proctreetester,ping,ds_writer \
         --dnscache enable \
+        --grpc-listen-addr unix:/tmp/tracee.sock \
         --events "$TEST" &
 
     # Wait tracee to start
