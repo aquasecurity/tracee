@@ -17,6 +17,7 @@ type Server struct {
 	listener   net.Listener
 	protocol   string
 	listenAddr string
+	server     *grpc.Server
 }
 
 func New(protocol, listenAddr string) (*Server, error) {
@@ -43,6 +44,7 @@ func (s *Server) Start(ctx context.Context, t *tracee.Tracee) {
 	}
 
 	grpcServer := grpc.NewServer(grpc.KeepaliveParams(keepaliveParams))
+	s.server = grpcServer
 	pb.RegisterTraceeServiceServer(grpcServer, &TraceeService{tracee: t})
 	pb.RegisterDiagnosticServiceServer(grpcServer, &DiagnosticService{tracee: t})
 
@@ -57,8 +59,13 @@ func (s *Server) Start(ctx context.Context, t *tracee.Tracee) {
 	select {
 	case <-ctx.Done():
 		logger.Debugw("Context cancelled, shutting down grpc server")
-		grpcServer.GracefulStop()
+		s.cleanup()
 	// if server error occurred while base ctx is not done, we should exit via this case
 	case <-srvCtx.Done():
+		s.cleanup()
 	}
+}
+
+func (s *Server) cleanup() {
+	s.server.GracefulStop()
 }
