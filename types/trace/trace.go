@@ -141,6 +141,7 @@ type ArgMeta struct {
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
+// All the values in this function should be supported in finding.go in the `getCType` function and vice versa.
 func (arg *Argument) UnmarshalJSON(b []byte) error {
 	type argument Argument // alias Argument so we can unmarshal it within the unmarshaler implementation
 	d := json.NewDecoder(bytes.NewReader(b))
@@ -191,7 +192,7 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 				return err
 			}
 			arg.Value = float32(tmp)
-		case "float64":
+		case "float64", "double":
 			tmp, err := num.Float64()
 			if err != nil {
 				return err
@@ -203,6 +204,12 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 				return err
 			}
 			arg.Value = uint16(tmp)
+		case "int8":
+			tmp, err := strconv.ParseInt(num.String(), 10, 8)
+			if err != nil {
+				return err
+			}
+			arg.Value = int8(tmp)
 		case "u8", "uint8":
 			tmp, err := strconv.ParseUint(num.String(), 10, 8)
 			if err != nil {
