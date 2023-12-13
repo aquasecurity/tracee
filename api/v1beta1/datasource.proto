@@ -16,5 +16,5 @@ message WriteDataSourceResponse{}
 
 service DataSourceService {
     rpc Write(WriteDataSourceRequest) returns (WriteDataSourceResponse);
-    rpc WriteStream(stream WriteDataSourceRequest) returns (WriteDataSourceRequest);
+    rpc WriteStream(stream WriteDataSourceRequest) returns (WriteDataSourceResponse);
 }
