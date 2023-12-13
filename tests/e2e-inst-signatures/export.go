@@ -1,6 +1,9 @@
 package main
 
-import "github.com/aquasecurity/tracee/types/detect"
+import (
+	"github.com/aquasecurity/tracee/tests/e2e-inst-signatures/datasourcetest"
+	"github.com/aquasecurity/tracee/types/detect"
+)
 
 var ExportedSignatures = []detect.Signature{
 	// Instrumentation e2e signatures
@@ -13,8 +16,9 @@ var ExportedSignatures = []detect.Signature{
 	&e2eHookedSyscall{},
 	&e2eSignatureDerivation{},
 	&e2eDnsDataSource{},
+	&e2eWritableDatasourceSig{},
 }
 
 var ExportedDataSources = []detect.DataSource{
-	// add data-sources here
+	datasourcetest.New(),
 }
