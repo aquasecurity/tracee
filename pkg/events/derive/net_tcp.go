@@ -12,44 +12,44 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
+// NOTE: Derived from security_socket_XXX events, not from net_packet_XXX ones.
+
 func NetTCPConnect(cache *dnscache.DNSCache) DeriveFunction {
-	return deriveSingleEvent(events.NetTCPConnect, deriveNetTCPConnectArgs(cache))
-}
-
-func deriveNetTCPConnectArgs(cache *dnscache.DNSCache) deriveArgsFunction {
-	return func(event trace.Event) ([]interface{}, error) {
-		dstIP, dstPort, err := pickIpAndPort(event, "remote_addr")
-		if err != nil {
-			logger.Debugw("error picking address", "error", err)
-			return nil, nil
-		}
-		if dstIP == "" {
-			return nil, nil
-		}
-
-		// Check if DNS cache is enabled
-		results := []string{}
-		if cache != nil {
-			query, err := cache.Get(dstIP)
+	return deriveSingleEvent(events.NetTCPConnect,
+		func(event trace.Event) ([]interface{}, error) {
+			dstIP, dstPort, err := pickIpAndPort(event, "remote_addr")
 			if err != nil {
-				switch err {
-				case dnscache.ErrDNSRecordNotFound, dnscache.ErrDNSRecordExpired:
-					results = []string{}
-					goto allGood
-				}
-				logger.Debugw("ip lookup error", "ip", dstIP, "error", err)
+				logger.Debugw("error picking address", "error", err)
 				return nil, nil
 			}
-			results = query.DNSResults()
-		}
+			if dstIP == "" {
+				return nil, nil
+			}
 
-	allGood:
-		return []interface{}{
-			dstIP,
-			dstPort,
-			results,
-		}, nil
-	}
+			// Check if DNS cache is enabled
+			results := []string{}
+			if cache != nil {
+				query, err := cache.Get(dstIP)
+				if err != nil {
+					switch err {
+					case dnscache.ErrDNSRecordNotFound, dnscache.ErrDNSRecordExpired:
+						results = []string{}
+						goto allGood
+					}
+					logger.Debugw("ip lookup error", "ip", dstIP, "error", err)
+					return nil, nil
+				}
+				results = query.DNSResults()
+			}
+
+		allGood:
+			return []interface{}{
+				dstIP,
+				dstPort,
+				results,
+			}, nil
+		},
+	)
 }
 
 // pickIpAndPort returns the IP address and port from the event's sockaddr field.

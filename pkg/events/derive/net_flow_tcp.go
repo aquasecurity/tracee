@@ -27,8 +27,8 @@ func deriveNetFlowTCPBeginArgs(cache *dnscache.DNSCache) deriveArgsFunction {
 		begin := ret&flowTCPBegin == flowTCPBegin
 		end := ret&flowTCPEnd == flowTCPEnd
 
-		ipv4 := ret&familyIpv4 == familyIpv4
-		ipv6 := ret&familyIpv6 == familyIpv6
+		ipv4 := ret&familyIPv4 == familyIPv4
+		ipv6 := ret&familyIPv6 == familyIPv6
 
 		// Return fast if not the proper event (egress/ingress, begin/end).
 
