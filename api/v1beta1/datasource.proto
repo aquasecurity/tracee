@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option go_package = "github.co/aquasecurity/tracee/api/v1beta1";
+
+package tracee.v1beta1;
+import "google/protobuf/struct.proto";
+
+message WriteDataSourceRequest {
+    string id = 1;
+    string namespace = 2;
+    google.protobuf.Value key = 3;
+    google.protobuf.Value value = 4;
+}
+
+message WriteDataSourceResponse{}
+
+service DataSourceService {
+    rpc Write(WriteDataSourceRequest) returns (WriteDataSourceResponse);
+    rpc WriteStream(stream WriteDataSourceRequest) returns (WriteDataSourceRequest);
+}
