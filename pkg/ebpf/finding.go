@@ -101,6 +101,7 @@ func getArguments(f detect.Finding, triggerEvent trace.Event) []trace.Argument {
 }
 
 // TODO: we probably should have internal types instead of using kernel, or golang types
+// All the value here should match the strings expected in trace.UnmarshalJSON and vice versa
 func getCType(t interface{}) string {
 	switch t.(type) {
 	case int16:
@@ -110,13 +111,13 @@ func getCType(t interface{}) string {
 	case int:
 		return "int"
 	case int64:
-		return "long long"
+		return "long"
 	case uint16:
 		return "unsigned short"
 	case uint32:
 		return "unsigned int"
 	case uint64:
-		return "unsigned long long"
+		return "unsigned long"
 	case string:
 		return "const char *"
 	case bool:
@@ -124,8 +125,40 @@ func getCType(t interface{}) string {
 	case float32:
 		return "float"
 	case float64:
-		return "long double"
-	default: // TODO: how to implement int8, uint8, pointers, slices, and maps
+		return "float64"
+	case int8:
+		return "int8"
+	case uint8:
+		return "uint8"
+	case []string:
+		return "const char**"
+	case trace.ProtoIPv4:
+		return "trace.ProtoIPv4"
+	case trace.ProtoIPv6:
+		return "trace.ProtoIPv6"
+	case trace.ProtoTCP:
+		return "trace.ProtoTCP"
+	case trace.ProtoUDP:
+		return "trace.ProtoUDP"
+	case trace.ProtoICMP:
+		return "trace.ProtoICMP"
+	case trace.ProtoICMPv6:
+		return "trace.ProtoICMPv6"
+	case trace.PktMeta:
+		return "trace.PktMeta"
+	case trace.ProtoDNS:
+		return "trace.ProtoDNS"
+	case []trace.DnsQueryData:
+		return "[]trace.DnsQueryData"
+	case trace.ProtoHTTP:
+		return "trace.ProtoHTTP"
+	case trace.ProtoHTTPRequest:
+		return "trace.ProtoHTTPRequest"
+	case trace.ProtoHTTPResponse:
+		return "trace.ProtoHTTPResponse"
+	case trace.PacketMetadata:
+		return "trace.PacketMetadata"
+	default: // TODO: how to implement pointers and maps
 		return "unknown"
 	}
 }
