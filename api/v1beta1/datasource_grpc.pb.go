@@ -54,7 +54,7 @@ func (c *dataSourceServiceClient) WriteStream(ctx context.Context, opts ...grpc.
 
 type DataSourceService_WriteStreamClient interface {
 	Send(*WriteDataSourceRequest) error
-	CloseAndRecv() (*WriteDataSourceRequest, error)
+	CloseAndRecv() (*WriteDataSourceResponse, error)
 	grpc.ClientStream
 }
 
@@ -66,11 +66,11 @@ func (x *dataSourceServiceWriteStreamClient) Send(m *WriteDataSourceRequest) err
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *dataSourceServiceWriteStreamClient) CloseAndRecv() (*WriteDataSourceRequest, error) {
+func (x *dataSourceServiceWriteStreamClient) CloseAndRecv() (*WriteDataSourceResponse, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
-	m := new(WriteDataSourceRequest)
+	m := new(WriteDataSourceResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func _DataSourceService_WriteStream_Handler(srv interface{}, stream grpc.ServerS
 }
 
 type DataSourceService_WriteStreamServer interface {
-	SendAndClose(*WriteDataSourceRequest) error
+	SendAndClose(*WriteDataSourceResponse) error
 	Recv() (*WriteDataSourceRequest, error)
 	grpc.ServerStream
 }
@@ -141,7 +141,7 @@ type dataSourceServiceWriteStreamServer struct {
 	grpc.ServerStream
 }
 
-func (x *dataSourceServiceWriteStreamServer) SendAndClose(m *WriteDataSourceRequest) error {
+func (x *dataSourceServiceWriteStreamServer) SendAndClose(m *WriteDataSourceResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
