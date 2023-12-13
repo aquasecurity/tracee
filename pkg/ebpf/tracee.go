@@ -688,14 +688,6 @@ func (t *Tracee) initDerivationTable() error {
 				DeriveFunction: derive.NetPacketTCP(),
 			},
 		},
-		events.NetPacketTCPFlowBase: {
-			events.NetFlowTCPBegin: {
-				Enabled: shouldSubmit(events.NetFlowTCPBegin),
-				DeriveFunction: derive.NetFlowTCPBegin(
-					t.dnsCache,
-				),
-			},
-		},
 		events.NetPacketUDPBase: {
 			events.NetPacketUDP: {
 				Enabled:        shouldSubmit(events.NetPacketUDP),
@@ -740,6 +732,23 @@ func (t *Tracee) initDerivationTable() error {
 			events.NetPacketHTTPResponse: {
 				Enabled:        shouldSubmit(events.NetPacketHTTPResponse),
 				DeriveFunction: derive.NetPacketHTTPResponse(),
+			},
+		},
+		//
+		// Network Flow Derivations
+		//
+		events.NetPacketFlow: {
+			events.NetFlowTCPBegin: {
+				Enabled: shouldSubmit(events.NetFlowTCPBegin),
+				DeriveFunction: derive.NetFlowTCPBegin(
+					t.dnsCache,
+				),
+			},
+			events.NetFlowTCPEnd: {
+				Enabled: shouldSubmit(events.NetFlowTCPEnd),
+				DeriveFunction: derive.NetFlowTCPEnd(
+					t.dnsCache,
+				),
 			},
 		},
 	}

@@ -5071,7 +5071,8 @@ statfunc enum event_id_e net_packet_to_net_event(net_packet_t packet_type)
 {
     switch (packet_type) {
         case CAP_NET_PACKET:
-            return NET_PACKET_CAP_BASE;
+            return NET_CAPTURE_BASE;
+        // Packets
         case SUB_NET_PACKET_IP:
             return NET_PACKET_IP;
         case SUB_NET_PACKET_TCP:
@@ -5086,39 +5087,67 @@ statfunc enum event_id_e net_packet_to_net_event(net_packet_t packet_type)
             return NET_PACKET_DNS;
         case SUB_NET_PACKET_HTTP:
             return NET_PACKET_HTTP;
-        case SUB_NET_PACKET_TCP_FLOW:
-            return NET_PACKET_TCP_FLOW;
     };
     return MAX_EVENT_ID;
 }
 
-// The address of &neteventctx->eventctx will be aligned as eventctx is the first member of that
-// packed struct. This is a false positive as we do need the neteventctx struct to be all packed.
+// The address of &neteventctx->eventctx will be aligned as eventctx is the
+// first member of that packed struct. This is a false positive as we do need
+// the neteventctx struct to be all packed.
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Waddress-of-packed-member"
 
-statfunc int should_submit_net_event(net_event_context_t *neteventctx,
+// Return if a network event should to be sumitted: if any of the policies
+// matched, submit the network event. This means that if any of the policies
+// need a network event, kernel can submit the network base event and let
+// userland deal with it (derived events will match the appropriate policies).
+statfunc u64 should_submit_net_event(net_event_context_t *neteventctx,
                                      net_packet_t packet_type)
 {
     enum event_id_e evt_id = net_packet_to_net_event(packet_type);
-
-    // Check if event has to be sumitted: if any of the policies matched,
-    // submit. All network events are base events (to be derived in userland).
-    // This means that if any of the policies need a network event, kernel can
-    // submit and let userland deal with it.
 
     event_config_t *evt_config = bpf_map_lookup_elem(&events_map, &evt_id);
     if (evt_config == NULL)
         return 0;
 
-    // Any policy matched is enough to submit the net event
     return evt_config->submit_for_policies & neteventctx->eventctx.matched_policies;
 }
 
-#pragma clang diagnostic pop
+#pragma clang diagnostic pop // -Waddress-of-packed-member
 
-statfunc int should_capture_net_event(net_event_context_t *neteventctx,
-                                      net_packet_t packet_type)
+// Return if a network flow event should be submitted.
+statfunc bool should_submit_flow_event(net_event_context_t *neteventctx)
+{
+    switch (neteventctx->md.should_flow) {
+        case 0:
+            break;
+        case 1:
+            return true;
+        case 2:
+            return false;
+    }
+
+    u32 evt_id = NET_FLOW_BASE;
+
+    // Again, if any policy matched, submit the flow base event so other flow
+    // events can be derived in userland and their policies matched in userland.
+    event_config_t *evt_config = bpf_map_lookup_elem(&events_map, &evt_id);
+    if (evt_config == NULL)
+        return 0;
+
+    u64 should = evt_config->submit_for_policies & neteventctx->eventctx.matched_policies;
+
+    // Cache the result so next time we don't need to check again.
+    if (should)
+        neteventctx->md.should_flow = 1; // cache result: submit flow events
+    else
+        neteventctx->md.should_flow = 2; // cache result: don't submit flow events
+
+    return should ? true : false;
+}
+
+// Return if a network capture event should be submitted.
+statfunc u64 should_capture_net_event(net_event_context_t *neteventctx, net_packet_t packet_type)
 {
     if (neteventctx->md.captured) // already captured
         return 0;
@@ -5153,73 +5182,175 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6);
 // Network submission functions
 //
 
-// TODO: check if TCP needs a LRU map of sent events by pkt ID (avoid dups)
-
-statfunc u32 cgroup_skb_submit(void *map,
-                               struct __sk_buff *ctx,
+// Submit a network event (packet, capture, flow) to userland.
+statfunc u32 cgroup_skb_submit(void *map, struct __sk_buff *ctx,
                                net_event_context_t *neteventctx,
-                               u32 event_type,
-                               u32 size)
+                               u32 event_type, u32 size)
 {
-    u64 flags = BPF_F_CURRENT_CPU;
-
     size = size > FULL ? FULL : size;
     switch (size) {
-        case HEADERS:
+        case HEADERS: // submit only headers
             size = neteventctx->md.header_size;
             break;
-        case FULL:
+        case FULL: // submit full packet
             size = ctx->len;
             break;
-        default:
-            size += neteventctx->md.header_size;       // add headers size
-            size = size > ctx->len ? ctx->len : size;  // check limits
+        default: // submit size bytes
+            size += neteventctx->md.header_size;
+            size = size > ctx->len ? ctx->len : size;
             break;
     }
 
-    flags |= (u64) size << 32;
+    // Flag eBPF subsystem to use current CPU and copy size bytes of payload.
+    u64 flags = BPF_F_CURRENT_CPU | (u64) size << 32;
     neteventctx->bytes = size;
 
-    // set the event type before submitting event
+    // Set the event type before submitting event.
     neteventctx->eventctx.eventid = event_type;
 
-    return bpf_perf_event_output(ctx,
-                                 map,
-                                 flags,
-                                 neteventctx,
-                                 sizeof_net_event_context_t());
+    // Submit the event.
+    return bpf_perf_event_output(ctx, map, flags, neteventctx, sizeof_net_event_context_t());
 }
 
-#define cgroup_skb_submit_event(a,b,c,d) cgroup_skb_submit(&events,a,b,c,d)
+// Submit a network event.
+#define cgroup_skb_submit_event(a, b, c, d) cgroup_skb_submit(&events, a, b, c, d)
 
-// TODO: check if TCP needs a LRU map of sent events by pkt ID (avoid dups)
+// Check if a flag is set in the retval.
+#define retval_hasflag(flag) (neteventctx->eventctx.retval & flag) == flag
 
+// Keep track of a flow event if they are enabled and if any policy matched.
+// Submit the flow base event so userland can derive the flow events.
+statfunc u32 cgroup_skb_submit_flow(struct __sk_buff *ctx,
+                                    net_event_context_t *neteventctx,
+                                    u32 event_type, u32 size, u32 flow)
+{
+    netflowvalue_t *netflowvalptr, netflowvalue = {
+                                       .last_update = bpf_ktime_get_ns(),
+                                       .direction = flow_unknown,
+                                   };
+
+    // Set the current netctx task as the flow task.
+    neteventctx->md.flow.host_pid = neteventctx->eventctx.task.host_pid;
+
+    // Set the flow event type in retval.
+    neteventctx->eventctx.retval |= flow;
+
+    // Check if the current packet source is the flow initiator.
+    bool is_initiator = 0;
+
+    switch (flow) {
+        // 1) TCP connection is being established.
+        case flow_tcp_begin:
+            // Ingress: Remote (src) is sending SYN+ACK: this host (dst) is the initiator.
+            if (retval_hasflag(packet_ingress))
+                netflowvalue.direction = flow_outgoing;
+
+            // Egress: Host (src) is sending SYN+ACK: remote (dst) host is the initiator.
+            if (retval_hasflag(packet_egress))
+                netflowvalue.direction = flow_incoming;
+
+            // Invert src/dst: The flowmap src should always be set to flow initiator.
+            neteventctx->md.flow = invert_netflow(neteventctx->md.flow);
+
+            // Update the flow map.
+            bpf_map_update_elem(&netflowmap, &neteventctx->md.flow, &netflowvalue, BPF_NOEXIST);
+
+            break;
+
+        // 2) TCP connection is being closed/terminated.
+        case flow_tcp_end:
+            // Any side can close the connection (FIN, RST, etc). Need heuristics.
+
+            // Attempt 01: Try to find the flow using current src/dst.
+
+            for (int n = 0; n < 3; n++) {
+                netflowvalptr = bpf_map_lookup_elem(&netflowmap, &neteventctx->md.flow);
+                if (!netflowvalptr)
+                    continue;
+            }
+
+            // FIN could be sent by either side, by both, or by none (RST). Need heuristics.
+
+            if (!netflowvalptr) {
+                // Attempt 02: Maybe this packet src wasn't the flow initiator, invert src/dst.
+                neteventctx->md.flow = invert_netflow(neteventctx->md.flow);
+
+                for (int n = 0; n < 3; n++) {
+                    netflowvalptr = bpf_map_lookup_elem(&netflowmap, &neteventctx->md.flow);
+                    if (!netflowvalptr)
+                        continue;
+                }
+
+                // After first FIN packet is processed the flow is deleted, so the second
+                // FIN packet, if ever processed, will not find the flow in the map, and
+                // that is ok.
+                if (!netflowvalptr)
+                    return 0;
+
+                // Flow was found using inverted src/dst: current pkt dst was the flow initiator.
+                is_initiator = 0;
+
+            } else {
+                // Flow was found using current src/dst: current pkt src was the flow initiator.
+                is_initiator = 1;
+            }
+
+            // Pick direction from existing flow.
+            netflowvalue.direction = netflowvalptr->direction;
+
+            // Inform userland the flow being terminated started by current packet src.
+            // This is important so userland knows how to report flow termination correctly.
+            if (is_initiator)
+                neteventctx->eventctx.retval |= flow_src_initiator;
+
+            // Delete the flow from the map (make sure to delete both sides).
+            bpf_map_delete_elem(&netflowmap, &neteventctx->md.flow);
+            neteventctx->md.flow = invert_netflow(neteventctx->md.flow);
+            bpf_map_delete_elem(&netflowmap, &neteventctx->md.flow);
+
+            break;
+
+        // 3) TODO: UDP flow is considered started when the first packet is sent.
+        // case flow_udp_begin:
+        //
+        // 4) TODO: UDP flow is considered terminated when socket is closed.
+        // case flow_udp_end:
+        //
+        default:
+            return 0;
+    };
+
+    // Submit the flow base event so userland can derive the flow events.
+    cgroup_skb_submit(&events, ctx, neteventctx, event_type, size);
+
+    return 0;
+};
+
+// Check if capture event should be submitted, cache the result and submit.
+#define cgroup_skb_capture()                                                                       \
+    {                                                                                              \
+        if (should_submit_net_event(neteventctx, CAP_NET_PACKET)) {                                \
+            if (neteventctx->md.captured == 0) {                                                   \
+                cgroup_skb_capture_event(ctx, neteventctx, NET_CAPTURE_BASE);                      \
+                neteventctx->md.captured = 1;                                                      \
+            }                                                                                      \
+        }                                                                                          \
+    }
+
+// Check if packet should be captured and submit the capture base event.
 statfunc u32 cgroup_skb_capture_event(struct __sk_buff *ctx,
                                       net_event_context_t *neteventctx,
                                       u32 event_type)
 {
     int zero = 0;
 
-    // pick network config map to know requested capture length
+    // Pick the network config map to know the requested capture length.
     netconfig_entry_t *nc = bpf_map_lookup_elem(&netconfig_map, &zero);
     if (nc == NULL)
         return 0;
 
-    return cgroup_skb_submit(&net_cap_events,
-                             ctx,
-                             neteventctx,
-                             event_type,
-                             nc->capture_length);
-}
-
-// capture packet a single time (if passing through multiple protocols being submitted to userland)
-#define cgroup_skb_capture() {                                                                     \
-    if (should_submit_net_event(neteventctx, CAP_NET_PACKET)) {                                    \
-        if (neteventctx->md.captured == 0) { /* do not capture the same packet twice */            \
-            cgroup_skb_capture_event(ctx, neteventctx, NET_PACKET_CAP_BASE);                       \
-            neteventctx->md.captured = 1;                                                          \
-        }                                                                                          \
-    }                                                                                              \
+    // Submit the capture base event.
+    return cgroup_skb_submit(&net_cap_events, ctx, neteventctx, event_type, nc->capture_length);
 }
 
 //
@@ -5366,7 +5497,7 @@ int BPF_KPROBE(trace_security_sk_clone)
     if (!netctx)
         return 0; // e.g. task isn't being traced
 
-    u64 nsockptr = (u64)(void *) nsock;
+    u64 nsockptr = (u64) (void *) nsock;
 
     // link the new "sock" to the old inode, so it can be linked to a task later
 
@@ -5604,28 +5735,26 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     }
 
     // ... and packet direction(ingress/egress) ...
-    eventctx->retval |= packet_dir_flag; // set to packet_ingress/egress beforehand
+    eventctx->retval |= packet_dir_flag;
+    // ... through event ctx ret val.
 
-    // ... through event ctx ret val
-
-    // read IP/IPv6 headers
-
+    // Read packet headers from the skb.
     void *data_ptr = BPF_CORE_READ(skb, head) + BPF_CORE_READ(skb, network_header);
     bpf_core_read(nethdrs, l3_size, data_ptr);
 
-    // prepare the indexer with IP/IPv6 headers
-
-    u8 proto = 0;
-
+    // Prepare the inter-eBPF-program indexer.
     indexer_t indexer = {0};
     indexer.ts = BPF_CORE_READ(skb, tstamp);
 
+    u8 proto = 0;
+
+    // Parse the packet layer 3 headers.
     switch (family) {
         case PF_INET:
             if (nethdrs->iphdrs.iphdr.version != 4) // IPv4
                 return 1;
 
-           if (nethdrs->iphdrs.iphdr.ihl > 5) { // re-read IP header if needed
+            if (nethdrs->iphdrs.iphdr.ihl > 5) { // re-read IP header if needed
                 l3_size -= get_type_size(struct iphdr);
                 l3_size += nethdrs->iphdrs.iphdr.ihl * 4;
                 bpf_core_read(nethdrs, l3_size, data_ptr);
@@ -5641,10 +5770,10 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
                     return 1; // ignore other protocols
             }
 
-            // add IPv4 header items to indexer
+            // Update inter-eBPF-program indexer with IPv4 header items.
             indexer.ip_csum = nethdrs->iphdrs.iphdr.check;
-            indexer.ip_saddr.in6_u.u6_addr32[0] = nethdrs->iphdrs.iphdr.saddr;
-            indexer.ip_daddr.in6_u.u6_addr32[0] = nethdrs->iphdrs.iphdr.daddr;
+            indexer.src.in6_u.u6_addr32[0] = nethdrs->iphdrs.iphdr.saddr;
+            indexer.dst.in6_u.u6_addr32[0] = nethdrs->iphdrs.iphdr.daddr;
             break;
 
         case PF_INET6:
@@ -5663,9 +5792,9 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
                     return 1; // ignore other protocols
             }
 
-            // add IPv6 header items to indexer
-            __builtin_memcpy(&indexer.ip_saddr.in6_u, &nethdrs->iphdrs.ipv6hdr.saddr.in6_u, 4 * sizeof(u32));
-            __builtin_memcpy(&indexer.ip_daddr.in6_u, &nethdrs->iphdrs.ipv6hdr.daddr.in6_u, 4 * sizeof(u32));
+            // Update inter-eBPF-program indexer with IPv6 header items.
+            __builtin_memcpy(&indexer.src.in6_u, &nethdrs->iphdrs.ipv6hdr.saddr.in6_u, 4 * sizeof(u32));
+            __builtin_memcpy(&indexer.dst.in6_u, &nethdrs->iphdrs.ipv6hdr.daddr.in6_u, 4 * sizeof(u32));
             break;
 
         default:
@@ -5766,8 +5895,8 @@ statfunc u32 cgroup_skb_generic(struct __sk_buff *ctx, void *cgrpctxmap)
 
             // add IPv4 header items to indexer
             indexer.ip_csum = nethdrs->iphdrs.iphdr.check;
-            indexer.ip_saddr.in6_u.u6_addr32[0] = nethdrs->iphdrs.iphdr.saddr;
-            indexer.ip_daddr.in6_u.u6_addr32[0] = nethdrs->iphdrs.iphdr.daddr;
+            indexer.src.in6_u.u6_addr32[0] = nethdrs->iphdrs.iphdr.saddr;
+            indexer.dst.in6_u.u6_addr32[0] = nethdrs->iphdrs.iphdr.daddr;
             break;
 
         case PF_INET6:
@@ -5786,8 +5915,8 @@ statfunc u32 cgroup_skb_generic(struct __sk_buff *ctx, void *cgrpctxmap)
             }
 
             // add IPv6 header items to indexer
-            __builtin_memcpy(&indexer.ip_saddr.in6_u, &nethdrs->iphdrs.ipv6hdr.saddr.in6_u, 4 * sizeof(u32));
-            __builtin_memcpy(&indexer.ip_daddr.in6_u, &nethdrs->iphdrs.ipv6hdr.daddr.in6_u, 4 * sizeof(u32));
+            __builtin_memcpy(&indexer.src.in6_u, &nethdrs->iphdrs.ipv6hdr.saddr.in6_u, 4 * sizeof(u32));
+            __builtin_memcpy(&indexer.dst.in6_u, &nethdrs->iphdrs.ipv6hdr.daddr.in6_u, 4 * sizeof(u32));
             break;
 
         default:
@@ -5843,7 +5972,6 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
     // NOTE: might block IP and IPv6 here if needed (return 0)
 
     switch (ctx->family) {
-
         case PF_INET:
             if (nethdrs->iphdrs.iphdr.version != 4) // IPv4
                 return 1;
@@ -5865,6 +5993,10 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
                 default:
                     return 1; // other protocols are not an error
             }
+
+            // Update the network flow map indexer with the packet headers.
+            neteventctx->md.flow.src.u6_addr32[0] = nethdrs->iphdrs.iphdr.saddr;
+            neteventctx->md.flow.dst.u6_addr32[0] = nethdrs->iphdrs.iphdr.daddr;
             break;
 
         case PF_INET6:
@@ -5890,11 +6022,18 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
                 default:
                     return 1; // other protocols are not an error
             }
+
+            // Update the network flow map indexer with the packet headers.
+            __builtin_memcpy(&neteventctx->md.flow.src, &nethdrs->iphdrs.ipv6hdr.saddr.in6_u, 4 * sizeof(u32));
+            __builtin_memcpy(&neteventctx->md.flow.dst, &nethdrs->iphdrs.ipv6hdr.daddr.in6_u, 4 * sizeof(u32));
             break;
 
         default:
-            return 1; // verifier needs
+            return 1; // verifier needs as this was already checked
     }
+
+    // Update the network flow map indexer with the packet headers.
+    neteventctx->md.flow.proto = next_proto;
 
     if (!dest)
         return 1; // satisfy verifier for clang-12 generated binaries
@@ -5914,20 +6053,16 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
     if (!(nc->capture_options & NET_CAP_OPT_FILTERED))
         cgroup_skb_capture(); // will avoid extra lookups further if not needed
 
-    neteventctx->md.header_size += size; // add header size to offset
+    // Update the network event context with payload size.
+    neteventctx->md.header_size += size;
 
-    // load layer 4 protocol headers
-
+    // Load the next protocol header.
     if (size) {
-        if (bpf_skb_load_bytes_relative(ctx,
-                                        prev_hdr_size,
-                                        dest, size,
-                                        BPF_HDR_START_NET))
+        if (bpf_skb_load_bytes_relative(ctx, prev_hdr_size, dest, size, BPF_HDR_START_NET))
             return 1;
     }
 
-   // call protocol handlers (for more base events to be sent)
-
+    // Call the next protocol handler.
     switch (next_proto) {
         case IPPROTO_TCP:
             return CGROUP_SKB_HANDLE(proto_tcp);
@@ -5946,7 +6081,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
     //       applied to the capture pipeline to obey derived events only
     //       filters + capture.
 
-    // capture IPv4/IPv6 packets (filtered)
+    // Capture IPv4/IPv6 packets (filtered).
     if (should_capture_net_event(neteventctx, SUB_NET_PACKET_IP))
         cgroup_skb_capture();
 
@@ -5977,9 +6112,9 @@ statfunc int net_l7_is_http(struct __sk_buff *skb, u32 l7_off)
     }
 
     // check if HTTP request
-    if (has_prefix("GET ", http_min_str, 5)    ||
-        has_prefix("POST ", http_min_str, 6)   ||
-        has_prefix("PUT ", http_min_str, 5)    ||
+    if (has_prefix("GET ", http_min_str, 5) ||
+        has_prefix("POST ", http_min_str, 6) ||
+        has_prefix("PUT ", http_min_str, 5) ||
         has_prefix("DELETE ", http_min_str, 8) ||
         has_prefix("HEAD ", http_min_str, 6)) {
         return proto_http_req;
@@ -5994,7 +6129,7 @@ statfunc int net_l7_is_http(struct __sk_buff *skb, u32 l7_off)
 
 CGROUP_SKB_HANDLE_FUNCTION(proto_tcp)
 {
-    // check flag for dynamic header size (TCP: data offset flag)
+    // Check TCP header flag for dynamic header size (TCP: data offset flag).
 
     if (nethdrs->protohdrs.tcphdr.doff > 5) { // offset flag set
         u32 doff = nethdrs->protohdrs.tcphdr.doff * (32 / 8);
@@ -6002,42 +6137,49 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp)
         neteventctx->md.header_size += doff;
     }
 
-    // Check if TCP flow started or ended and submit appropriate event if needed.
+    // Pick src/dst ports.
 
-#define is_syn_ack nethdrs->protohdrs.tcphdr.syn && nethdrs->protohdrs.tcphdr.ack
-#define is_fin nethdrs->protohdrs.tcphdr.fin
-#define flow_sub should_submit_net_event(neteventctx, SUB_NET_PACKET_TCP_FLOW)
+    u16 srcport = bpf_ntohs(nethdrs->protohdrs.tcphdr.source);
+    u16 dstport = bpf_ntohs(nethdrs->protohdrs.tcphdr.dest);
 
-    if (is_syn_ack && flow_sub) {
-        // neteventctx->eventctx.retval |= is_syn_ack ? flow_tcp_begin : flow_tcp_end;
-        neteventctx->eventctx.retval |= flow_tcp_begin;
-        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_TCP_FLOW, HEADERS);
-    }
+    // Update the network flow map indexer with the packet headers.
+    neteventctx->md.flow.srcport = srcport;
+    neteventctx->md.flow.dstport = dstport;
 
-    // submit TCP base event if needed (only headers)
+    // Check if TCP flow needs to be submitted (only headers).
+
+    bool is_rst = nethdrs->protohdrs.tcphdr.rst;
+    bool is_syn = nethdrs->protohdrs.tcphdr.syn;
+    bool is_ack = nethdrs->protohdrs.tcphdr.ack;
+    bool is_fin = nethdrs->protohdrs.tcphdr.fin;
+
+    // Has TCP flow started ?
+    if ((is_syn & is_ack) && should_submit_flow_event(neteventctx))
+        cgroup_skb_submit_flow(ctx, neteventctx, NET_FLOW_BASE, HEADERS, flow_tcp_begin);
+
+    // Has TCP flow ended ?
+    if ((is_fin || is_rst) && should_submit_flow_event(neteventctx))
+        cgroup_skb_submit_flow(ctx, neteventctx, NET_FLOW_BASE, HEADERS, flow_tcp_end);
+
+    // Submit TCP base event if needed (only headers)
 
     if (should_submit_net_event(neteventctx, SUB_NET_PACKET_TCP))
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_TCP, HEADERS);
 
-    // fastpath: return if no other L7 network events
+    // Fastpath: return if no other L7 network events.
 
     if (!should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS) &&
         !should_submit_net_event(neteventctx, SUB_NET_PACKET_HTTP))
         goto capture;
 
-    // guess layer 7 protocols
+    // Guess layer 7 protocols by src/dst ports ...
 
-    u16 source = bpf_ntohs(nethdrs->protohdrs.tcphdr.source);
-    u16 dest = bpf_ntohs(nethdrs->protohdrs.tcphdr.dest);
-
-    // guess by src/dst ports
-
-    switch (source < dest ? source : dest) {
+    switch (srcport < dstport ? srcport : dstport) {
         case TCP_PORT_DNS:
             return CGROUP_SKB_HANDLE(proto_tcp_dns);
     }
 
-    // guess by analyzing payload
+    // ... and by analyzing payload.
 
     int http_proto = net_l7_is_http(ctx, neteventctx->md.header_size);
     if (http_proto) {
@@ -6045,11 +6187,10 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp)
         return CGROUP_SKB_HANDLE(proto_tcp_http);
     }
 
-    // continue with net_l7_is_protocol_xxx
-    // ...
+    // ... continue with net_l7_is_protocol_xxx
 
 capture:
-    // capture IP or TCP packets (filtered)
+    // Capture IP or TCP packets (filtered)
     if (should_capture_net_event(neteventctx, SUB_NET_PACKET_IP) ||
         should_capture_net_event(neteventctx, SUB_NET_PACKET_TCP)) {
         cgroup_skb_capture();
@@ -6060,37 +6201,36 @@ capture:
 
 CGROUP_SKB_HANDLE_FUNCTION(proto_udp)
 {
-    // submit UDP base event if needed (only headers)
+    // Submit UDP base event if needed (only headers).
 
     if (should_submit_net_event(neteventctx, SUB_NET_PACKET_UDP))
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_UDP, HEADERS);
 
-    // fastpath: return if no other L7 network events
+    // Fastpath: return if no other L7 network events.
 
     if (!should_submit_net_event(neteventctx, SUB_NET_PACKET_DNS) &&
         !should_submit_net_event(neteventctx, SUB_NET_PACKET_HTTP))
         goto capture;
 
-    // guess layer 7 protocols
+    // Guess layer 7 protocols ...
 
     u16 source = bpf_ntohs(nethdrs->protohdrs.udphdr.source);
     u16 dest = bpf_ntohs(nethdrs->protohdrs.udphdr.dest);
 
-    // guess by src/dst ports
+    // ... by src/dst ports
 
     switch (source < dest ? source : dest) {
         case UDP_PORT_DNS:
             return CGROUP_SKB_HANDLE(proto_udp_dns);
     }
 
-    // guess by analyzing payload
+    // ... by analyzing payload
     // ...
 
-    // continue with net_l7_is_protocol_xxx
-    // ...
+    // ... continue with net_l7_is_protocol_xxx
 
 capture:
-    // capture IP or UDP packets (filtered)
+    // Capture IP or UDP packets (filtered).
     if (should_capture_net_event(neteventctx, SUB_NET_PACKET_IP) ||
         should_capture_net_event(neteventctx, SUB_NET_PACKET_UDP)) {
         cgroup_skb_capture();
@@ -6121,7 +6261,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6)
     if (should_submit_net_event(neteventctx, SUB_NET_PACKET_ICMPV6))
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_ICMPV6, FULL);
 
-     // capture ip or icmpv6 packets (filtered)
+    // capture ip or icmpv6 packets (filtered)
     if (should_capture_net_event(neteventctx, SUB_NET_PACKET_IP) ||
         should_capture_net_event(neteventctx, SUB_NET_PACKET_ICMPV6)) {
         neteventctx->md.header_size = ctx->len; // full ICMPv6 header

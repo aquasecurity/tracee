@@ -69,6 +69,7 @@ nav:
                       - Network Events:
                             - Overview: docs/events/builtin/network/index.md
                             - net_flow_tcp_begin: docs/events/builtin/network/net_flow_tcp_begin.md
+                            - net_flow_tcp_end: docs/events/builtin/network/net_flow_tcp_end.md
                             - net_packet_ipv4: docs/events/builtin/network/net_packet_ipv4.md
                             - net_packet_ipv6: docs/events/builtin/network/net_packet_ipv6.md
                             - net_packet_tcp: docs/events/builtin/network/net_packet_tcp.md

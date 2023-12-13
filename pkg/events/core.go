@@ -26,13 +26,13 @@ const (
 	NetPacketBase ID = iota + 700
 	NetPacketIPBase
 	NetPacketTCPBase
-	NetPacketTCPFlowBase
 	NetPacketUDPBase
 	NetPacketICMPBase
 	NetPacketICMPv6Base
 	NetPacketDNSBase
 	NetPacketHTTPBase
 	NetPacketCapture
+	NetPacketFlow
 	MaxNetID // network base events go ABOVE this item
 	SysEnter
 	SysExit
@@ -122,7 +122,9 @@ const (
 	NetPacketHTTP
 	NetPacketHTTPRequest
 	NetPacketHTTPResponse
+	NetFlowEnd
 	NetFlowTCPBegin
+	NetFlowTCPEnd
 	MaxUserNetID
 	NetTCPConnect
 	InitNamespaces
@@ -11371,22 +11373,6 @@ var CoreEvents = map[ID]Definition{
 			{Type: "bytes", Name: "payload"},
 		},
 	},
-	NetPacketTCPFlowBase: {
-		id:       NetPacketTCPFlowBase,
-		id32Bit:  Sys32Undefined,
-		name:     "net_packet_tcp_flow_base",
-		version:  NewVersion(1, 0, 0),
-		internal: true,
-		dependencies: Dependencies{
-			ids: []ID{
-				NetPacketBase,
-			},
-		},
-		sets: []string{"network_events"},
-		params: []trace.ArgMeta{
-			{Type: "bytes", Name: "payload"},
-		},
-	},
 	NetPacketTCP: {
 		id:      NetPacketTCP,
 		id32Bit: Sys32Undefined,
@@ -11648,7 +11634,7 @@ var CoreEvents = map[ID]Definition{
 		},
 	},
 	NetPacketCapture: {
-		id:       NetPacketCapture, // all packets have full payload (sent in a dedicated perfbuffer)
+		id:       NetPacketCapture, // Packets with full payload (sent in a dedicated perfbuffer)
 		id32Bit:  Sys32Undefined,
 		name:     "net_packet_capture",
 		version:  NewVersion(1, 0, 0),
@@ -11663,7 +11649,7 @@ var CoreEvents = map[ID]Definition{
 		},
 	},
 	CaptureNetPacket: {
-		id:       CaptureNetPacket, // network packet capture pseudo event
+		id:       CaptureNetPacket, // Pseudo Event: used to capture packets
 		id32Bit:  Sys32Undefined,
 		name:     "capture_net_packet",
 		version:  NewVersion(1, 0, 0),
@@ -11674,6 +11660,22 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 	},
+	NetPacketFlow: {
+		id:       NetPacketFlow,
+		id32Bit:  Sys32Undefined,
+		name:     "net_packet_flow_base",
+		version:  NewVersion(1, 0, 0),
+		internal: true,
+		dependencies: Dependencies{
+			ids: []ID{
+				NetPacketBase,
+			},
+		},
+		sets: []string{"network_events"},
+		params: []trace.ArgMeta{
+			{Type: "bytes", Name: "payload"},
+		},
+	},
 	NetFlowTCPBegin: {
 		id:      NetFlowTCPBegin,
 		id32Bit: Sys32Undefined,
@@ -11681,12 +11683,12 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
 			ids: []ID{
-				NetPacketTCPFlowBase,
+				NetPacketFlow,
 			},
 		},
-		sets: []string{"network_events", "flows", "egress"},
+		sets: []string{"network_events", "flows"},
 		params: []trace.ArgMeta{
-			{Type: "const char*", Name: "direction"},
+			{Type: "const char*", Name: "conn_direction"},
 			{Type: "const char*", Name: "src"},
 			{Type: "const char*", Name: "dst"},
 			{Type: "u16", Name: "src_port"},
@@ -11695,7 +11697,25 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char **", Name: "dst_dns"},
 		},
 	},
-	//
-	// End of Network Protocol Event Types (keep them at the end)
-	//
+	NetFlowTCPEnd: {
+		id:      NetFlowTCPEnd,
+		id32Bit: Sys32Undefined,
+		name:    "net_flow_tcp_end",
+		version: NewVersion(1, 0, 0),
+		dependencies: Dependencies{
+			ids: []ID{
+				NetPacketFlow,
+			},
+		},
+		sets: []string{"network_events", "flows"},
+		params: []trace.ArgMeta{
+			{Type: "const char*", Name: "conn_direction"},
+			{Type: "const char*", Name: "src"},
+			{Type: "const char*", Name: "dst"},
+			{Type: "u16", Name: "src_port"},
+			{Type: "u16", Name: "dst_port"},
+			{Type: "const char **", Name: "src_dns"},
+			{Type: "const char **", Name: "dst_dns"},
+		},
+	},
 }
