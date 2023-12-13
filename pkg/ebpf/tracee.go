@@ -1419,8 +1419,9 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 	t.eventsPerfMap.Poll(pollTimeout)
 
+	pipelineReady := make(chan struct{}, 1)
 	go t.processLostEvents() // termination signaled by closing t.done
-	go t.handleEvents(ctx)
+	go t.handleEvents(ctx, pipelineReady)
 
 	// Parallel perf buffer with file writes events
 
@@ -1443,6 +1444,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 	// Management
 
+	<-pipelineReady
 	t.running.Store(true) // set running state after writing pid file
 	t.ready(ctx)          // executes ready callback, non blocking
 	<-ctx.Done()          // block until ctx is cancelled elsewhere
