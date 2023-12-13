@@ -131,6 +131,10 @@ func (t *Tracee) Stats() *metrics.Stats {
 	return &t.stats
 }
 
+func (t *Tracee) Engine() *engine.Engine {
+	return t.sigEngine
+}
+
 // GetCaptureEventsList sets events used to capture data.
 func GetCaptureEventsList(cfg config.Config) map[events.ID]events.EventState {
 	captureEvents := make(map[events.ID]events.EventState)

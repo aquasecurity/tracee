@@ -11,6 +11,7 @@ import (
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 )
 
 type Server struct {
@@ -33,7 +34,7 @@ func New(protocol, listenAddr string) (*Server, error) {
 	return &Server{listener: lis, protocol: protocol, listenAddr: listenAddr}, nil
 }
 
-func (s *Server) Start(ctx context.Context, t *tracee.Tracee) {
+func (s *Server) Start(ctx context.Context, t *tracee.Tracee, e *engine.Engine) {
 	srvCtx, srvCancel := context.WithCancel(ctx)
 	defer srvCancel()
 
@@ -47,6 +48,7 @@ func (s *Server) Start(ctx context.Context, t *tracee.Tracee) {
 	s.server = grpcServer
 	pb.RegisterTraceeServiceServer(grpcServer, &TraceeService{tracee: t})
 	pb.RegisterDiagnosticServiceServer(grpcServer, &DiagnosticService{tracee: t})
+	pb.RegisterDataSourceServiceServer(grpcServer, &DataSourceService{sigEngine: e})
 
 	go func() {
 		logger.Debugw("Starting grpc server", "protocol", s.protocol, "address", s.listenAddr)
