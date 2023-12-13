@@ -25,7 +25,7 @@ const noSyscall int32 = -1
 // handleEvents is the main pipeline of tracee. It receives events from the perf buffer
 // and passes them through a series of stages, each stage is a goroutine that performs a
 // specific task on the event. The pipeline is started in a separate goroutine.
-func (t *Tracee) handleEvents(ctx context.Context) {
+func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}) {
 	logger.Debugw("Starting handleEvents goroutine")
 	defer logger.Debugw("Stopped handleEvents goroutine")
 
@@ -78,6 +78,8 @@ func (t *Tracee) handleEvents(ctx context.Context) {
 
 	errc = t.sinkEvents(ctx, eventsChan)
 	errcList = append(errcList, errc)
+
+	initialized <- struct{}{}
 
 	// Pipeline started. Waiting for pipeline to complete
 
