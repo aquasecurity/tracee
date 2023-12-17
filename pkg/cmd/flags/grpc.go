@@ -23,11 +23,13 @@ func PrepareGRPCServer(listenAddr string) (*grpc.Server, error) {
 		return nil, errfmt.Errorf("grpc address cannot be empty")
 	}
 
-	// cleanup listen address if needed, for example if a panic happened
-	if _, err := os.Stat(addr[1]); err == nil {
-		err := os.Remove(addr[1])
-		if err != nil {
-			return nil, errfmt.Errorf("failed to cleanup gRPC listening address (%s): %v", addr[1], err)
+	// cleanup listen address if needed (unix socket), for example if a panic happened
+	if addr[0] == "unix" {
+		if _, err := os.Stat(addr[1]); err == nil {
+			err := os.Remove(addr[1])
+			if err != nil {
+				return nil, errfmt.Errorf("failed to cleanup gRPC listening address (%s): %v", addr[1], err)
+			}
 		}
 	}
 
