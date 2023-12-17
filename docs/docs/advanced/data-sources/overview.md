@@ -18,14 +18,17 @@ container lifecycle events.
 
 ## What data sources can I use
 
-For now, only the built-in data sources from Tracee are at your disposal.
-Looking ahead, there are plans to enable integration of data sources into Tracee
-either as plugins or extensions.
+Tracee offer three built-in data sources out of the box.
+There is also support for plugging in external data sources through the golang 
+plugin mechanism, similar to how signatures are currently supplied (see [here](../../events/custom/golang.md)). 
+However, there are known technical limitation to this approach, and the aim is to replace it
+in the future.
 
-Currently, two primary data source exist:
+Currently, the following data source are provided out of the box:
 
 1. Containers: Provides metadata about containers given a container id.
 1. Process Tree: Provides access to a tree of ever existing processes and threads.
+1. DNS Cache: Provides access to relaated DNS queries of a given address (IP or domain).
 
 This list will be expanded as other features are developed.
 

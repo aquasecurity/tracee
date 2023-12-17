@@ -11,7 +11,7 @@ To switch on the `DNS Cache` feature, run the command:
 sudo tracee --output option:sort-events --output json --output option:parse-arguments --dnscache enable --events <event_type>
 ```
 
-The underlying structure is populated using the core [net_packet_dns](../../events/builtin/network/net_packet_dns.md) event and its payload.
+The underlying structure is populated using the core [net_packet_dns](../../../events/builtin/network/net_packet_dns.md) event and its payload.
 
 ## Command Line Option
 
@@ -32,7 +32,7 @@ Consider for your usecase, how many query trees would you like to store? If you 
 
 ## Internal Data Organization
 
-From the [data-sources documentation](./overview.md), you'll see that searches use keys. It's a bit like looking up information with a specific tag (or a key=value storage).
+From the [data-sources documentation](../overview.md), you'll see that searches use keys. It's a bit like looking up information with a specific tag (or a key=value storage).
 
 The `dns data source` operates straightforwardly. Using `string` keys, which represent some network address (a domain or IP), you can fetch `map[string]string` values as shown below:
 
@@ -48,7 +48,7 @@ Any address found in the cache, and other related addresses, will be returned in
 
 ## Using the Containers Data Source
 
-> Make sure to read [Golang Signatures](../../events/custom/golang.md) first.
+> Make sure to read [Golang Signatures](../../../events/custom/golang.md) first.
 
 ### Signature Initialization
 

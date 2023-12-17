@@ -79,11 +79,11 @@ This enhancement aims to offer developers and sysadmins a more detailed and gran
 
 ## Using the Process Tree
 
-The process tree is only available internally, to tracee's components, but, through the [datasource](./overview.md) mechanism, signatures are able to query the tree data using the data source process tree API.
+The process tree is only available internally, to tracee's components, but, through the [datasource](../overview.md) mechanism, signatures are able to query the tree data using the data source process tree API.
 
 ### Accessing the Process Tree Data Source
 
-> Make sure to read [Golang Signatures](../../events/custom/golang.md) first.
+> Make sure to read [Golang Signatures](../../../events/custom/golang.md) first.
 
 During the signature initialization, get the process tree data source instance:
 
@@ -197,7 +197,7 @@ func (sig *e2eProcessTreeDataSource) checkProcess(eventObj *trace.Event) error {
     }
 ```
 
-From the [data-sources documentation](./overview.md), you'll see that searches use keys. It's a bit like looking up information with a specific tag (or a key=value storage).
+From the [data-sources documentation](../overview.md), you'll see that searches use keys. It's a bit like looking up information with a specific tag (or a key=value storage).
 
 In the provided example, the `eventObj.ProcessEntityId` key (which is the process hash accompanying the event being handled) is utilized alongside the `datasource.ProcKey{}` argument to search for a process in the process tree. The resulting process is the one associated with the event under consideration.
 

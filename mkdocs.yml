@@ -589,8 +589,12 @@ nav:
                 - Forensics: docs/advanced/forensics.md
                 - Data Sources:
                     - Overview: docs/advanced/data-sources/overview.md
-                    - Containers: docs/advanced/data-sources/containers.md
-                    - Process Tree: docs/advanced/data-sources/process-tree.md
+                    - Custom: docs/advanced/data-sources/custom.md
+                    - Write to a Data Source: docs/advanced/data-sources/write.md
+                    - Builtin: 
+                        - Containers: docs/advanced/data-sources/builtin/containers.md
+                        - Process Tree: docs/advanced/data-sources/builtin/process-tree.md
+                        - DNS Cache: docs/advanced/data-sources/builtin/dns.md
           - CLI Flags:
                 - scope: docs/flags/scope.1.md
                 - events: docs/flags/events.1.md
