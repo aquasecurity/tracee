@@ -5373,12 +5373,6 @@ int BPF_KPROBE(trace_security_sk_clone)
 
 statfunc u32 update_net_inodemap(struct socket *sock, event_data_t *event)
 {
-    if (!is_family_supported(sock))
-        return 0;
-
-    if (!is_socket_supported(sock))
-        return 0;
-
     struct file *sock_file = BPF_CORE_READ(sock, file);
     if (!sock_file)
         return 0;
@@ -5399,14 +5393,20 @@ statfunc u32 update_net_inodemap(struct socket *sock, event_data_t *event)
 SEC("kprobe/security_socket_recvmsg")
 int BPF_KPROBE(trace_security_socket_recvmsg)
 {
+    struct socket *sock = (void *) PT_REGS_PARM1(ctx);
+    if (sock == NULL)
+        return 0;
+    if (!is_family_supported(sock))
+        return 0;
+    if (!is_socket_supported(sock))
+        return 0;
+
     program_data_t p = {};
     if (!init_program_data(&p, ctx))
         return 0;
 
     if (!should_trace(&p))
         return 0;
-
-    struct socket *sock = (void *) PT_REGS_PARM1(ctx);
 
     return update_net_inodemap(sock, p.event);
 }
@@ -5414,14 +5414,20 @@ int BPF_KPROBE(trace_security_socket_recvmsg)
 SEC("kprobe/security_socket_sendmsg")
 int BPF_KPROBE(trace_security_socket_sendmsg)
 {
+    struct socket *sock = (void *) PT_REGS_PARM1(ctx);
+    if (sock == NULL)
+        return 0;
+    if (!is_family_supported(sock))
+        return 0;
+    if (!is_socket_supported(sock))
+        return 0;
+
     program_data_t p = {};
     if (!init_program_data(&p, ctx))
         return 0;
 
     if (!should_trace(&p))
         return 0;
-
-    struct socket *sock = (void *) PT_REGS_PARM1(ctx);
 
     return update_net_inodemap(sock, p.event);
 }
