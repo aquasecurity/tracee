@@ -16,6 +16,7 @@ message Threat {
     string description = 1;
     Mitre mitre = 2;
     Severity severity = 3;
+    string name = 4;
 }
 
 message Mitre {
