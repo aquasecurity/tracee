@@ -4,12 +4,15 @@ option go_package = "github.co/aquasecurity/tracee/api/v1beta1";
 
 package tracee.v1beta1;
 
+import "api/v1beta1/threat.proto";
+
 message EventDefinition {
 	int32 id = 1;
 	string name = 2;
 	Version version= 3;
 	string description = 4 ;
 	repeated string tags = 5;
+	optional Threat threat = 6;
 }
 
 message Version {
