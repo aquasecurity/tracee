@@ -17,6 +17,7 @@ message Threat {
     Mitre mitre = 2;
     Severity severity = 3;
     string name = 4;
+    map<string,string> properties = 5;
 }
 
 message Mitre {
