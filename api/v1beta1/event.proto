@@ -7,6 +7,7 @@ package tracee.v1beta1;
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 import "api/v1beta1/event_data.proto";
+import "api/v1beta1/threat.proto";
 
 message Event {
     google.protobuf.Timestamp timestamp = 1;
@@ -92,32 +93,4 @@ message Pod {
 
 message K8sNamespace {
     string name = 1;
-}
-
-enum Severity {
-    INFO = 0;
-    LOW = 1;
-    MEDIUM = 2;
-    HIGH = 3;
-    CRITICAL = 4;
-}
-
-message Threat {
-    string description = 1;
-    Mitre mitre = 2;
-    Severity severity = 3;
-}
-
-message Mitre {
-    MitreTactic tactic = 1;
-    MitreTechnique technique = 2;
-}
-
-message MitreTactic {
-    string name = 1;
-}
-
-message MitreTechnique {
-    string id = 1;
-    string name = 2;
 }
