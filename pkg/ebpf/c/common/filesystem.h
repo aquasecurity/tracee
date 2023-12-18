@@ -2,6 +2,7 @@
 #define __COMMON_FILESYSTEM_H__
 
 #include <vmlinux.h>
+#include <vmlinux_flavors.h>
 
 #include <common/buffer.h>
 #include <common/memory.h>
@@ -56,7 +57,13 @@ statfunc u64 get_time_nanosec_timespec(struct timespec64 *ts)
 
 statfunc u64 get_ctime_nanosec_from_inode(struct inode *inode)
 {
-    struct timespec64 ts = BPF_CORE_READ(inode, i_ctime);
+    struct timespec64 ts;
+    if (bpf_core_field_exists(inode->__i_ctime)) { // Version >= 6.6
+        ts = BPF_CORE_READ(inode, __i_ctime);
+    } else {
+        struct inode___older_v66 *old_inode = (void *) inode;
+        ts = BPF_CORE_READ(old_inode, i_ctime);
+    }
     return get_time_nanosec_timespec(&ts);
 }
 

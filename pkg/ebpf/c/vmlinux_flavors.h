@@ -95,6 +95,11 @@ struct module___older_v64 {
     struct module_layout core_layout;
 };
 
+// kernel >= v6.6 inode i_ctime field change
+struct inode___older_v66 {
+    struct timespec64 i_ctime;
+};
+
 ///////////////////
 
 #pragma clang attribute pop
