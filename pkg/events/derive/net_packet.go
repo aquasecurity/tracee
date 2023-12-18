@@ -394,7 +394,7 @@ func NetPacketHTTPRequest() DeriveFunction {
 				return nil, err
 			}
 			if getPacketHTTPDirection(&event) != protoHTTPRequest {
-				return nil, errfmt.Errorf("unspecified HTTP packet direction")
+				return nil, nil
 			}
 			protoHTTP, err := getProtoHTTPFromRequestPacket(packet)
 			if err != nil {
@@ -439,7 +439,7 @@ func NetPacketHTTPResponse() DeriveFunction {
 				return nil, err
 			}
 			if getPacketHTTPDirection(&event) != protoHTTPResponse {
-				return nil, errfmt.Errorf("unspecified HTTP packet direction")
+				return nil, nil
 			}
 			protoHTTP, err := getProtoHTTPFromResponsePacket(packet)
 			if err != nil {
