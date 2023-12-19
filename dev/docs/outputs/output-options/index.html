@@ -17415,11 +17415,13 @@ whenever an event is detected, specially when detecting <strong>execve</strong> 
 the <strong>file hash</strong> and <strong>process ctime</strong> (particularly interesting if you
 would like to compare executed binaries from a list of known hashes, for
 example).</p>
-<p><div class="highlight"><pre><span></span><code>output:
+<div class="highlight"><pre><span></span><code>output:
     options:
-        exec-hash: true
+        exec-hash: dev-inode
 </code></pre></div>
-5. <strong>relative-time</strong></p>
+</li>
+<li>
+<p><strong>relative-time</strong></p>
 <p>The <code>relative-time</code> output option enables relative timestamp instead of wall timestamp for events.</p>
 <div class="highlight"><pre><span></span><code>output:
     options:

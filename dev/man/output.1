@@ -24,7 +24,7 @@ tracee \f[B]--output\f[R] - Control how and where output is printed
 tracee \f[B]--output\f[R] <format[:file,\&...]> |
 gotemplate=template[:file,\&...]
 | forward:url | webhook:url |
-option:{stack-addresses,exec-env,relative-time,exec-hash,parse-arguments,parse-arguments-fds,sort-events}
+option:{stack-addresses,exec-env,relative-time,exec-hash={inode,dev-inode,digest-inode},parse-arguments,parse-arguments-fds,sort-events}
 \&...
 .SS DESCRIPTION
 .PP
@@ -90,7 +90,24 @@ timestamp for events.
 file hash (sha256).
 .RS 2
 .IP \[bu] 2
-Affected events: sched_process_exec, shared_object_loaded
+Affected events: \f[I]sched_process_exec\f[R],
+\f[I]shared_object_loaded\f[R]
+.IP \[bu] 2
+\f[B]inode\f[R] option recalculates the file hash if the inode\[cq]s
+creation time (ctime) differs, which can occur in different namespaces
+even for identical inodes. This option is performant, but not recommended
+and should only be used if container enrichment can't be enabled for digest-inode,
+and if performance is preffered over correctness.
+.IP \[bu] 2
+\f[B]dev-inode\f[R] option generally offers better performance compared
+to the \f[B]inode\f[R] option, as it bypasses the need for
+recalculation by associating the creation time (ctime) with the device
+(dev) and inode pair. It's recommended if correctness is preffered over
+performance without container enrichment enabled.
+.IP \[bu] 2
+\f[B]digest-inode\f[R]\[rq] option is the most efficient, as it keys the
+hash to a pair consisting of the container image digest and inode.
+This approach, however, necessitates container enrichment.
 .RE
 .IP \[bu] 2
 \f[B]parse-arguments\f[R]: Do not show raw machine-readable values for

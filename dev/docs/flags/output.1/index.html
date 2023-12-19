@@ -17509,7 +17509,7 @@
 <h2 id="name">NAME<a class="headerlink" href="#name" title="Permanent link">&para;</a></h2>
 <p>tracee <strong>--output</strong> - Control how and where output is printed</p>
 <h2 id="synopsis">SYNOPSIS<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
-<p>tracee <strong>--output</strong> &lt;format[:file,...]&gt; | gotemplate=template[:file,...] | forward:url | webhook:url | option:{stack-addresses,exec-env,relative-time,exec-hash,parse-arguments,parse-arguments-fds,sort-events} ...</p>
+<p>tracee <strong>--output</strong> &lt;format[:file,...]&gt; | gotemplate=template[:file,...] | forward:url | webhook:url | option:{stack-addresses,exec-env,relative-time,exec-hash={inode,dev-inode,digest-inode},parse-arguments,parse-arguments-fds,sort-events} ...</p>
 <h2 id="description">DESCRIPTION<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
 <p>The <strong>--output</strong> flag allows you to control how and where the output is printed.</p>
 <p>Format options:</p>
@@ -17552,7 +17552,10 @@
 <li><strong>exec-env</strong>: When tracing execve/execveat, show the environment variables that were used for execution.</li>
 <li><strong>relative-time</strong>: Use relative timestamp instead of wall timestamp for events.</li>
 <li><strong>exec-hash</strong>: When tracing some file related events, show the file hash (sha256).<ul>
-<li>Affected events: sched_process_exec, shared_object_loaded</li>
+<li>Affected events: <em>sched_process_exec</em>, <em>shared_object_loaded</em></li>
+<li><strong>inode</strong> option recalculates the file hash if the inode's creation time (ctime) differs, which can occur in different namespaces even for identical inode. This option is performant, but not recommended and should only be used if container enrichment can't be enabled for digest-inode, and if performance is preffered over correctness.</li>
+<li><strong>dev-inode</strong> option generally offers better performance compared to the <strong>inode</strong> option, as it bypasses the need for recalculation by associating the creation time (ctime) with the device (dev) and inode pair. It's recommended if correctness is preffered over performance without container enrichment.</li>
+<li><strong>digest-inode</strong>" option is the most efficient, as it keys the hash to a pair consisting of the container image digest and inode. This approach, however, necessitates container enrichment.</li>
 </ul>
 </li>
 <li><strong>parse-arguments</strong>: Do not show raw machine-readable values for event arguments. Instead, parse them into human-readable strings.</li>
