@@ -16,7 +16,7 @@
         <link rel="prev" href="../../forensics/">
       
       
-        <link rel="next" href="../containers/">
+        <link rel="next" href="../custom/">
       
       
         
@@ -16577,7 +16577,108 @@
   
   
     <li class="md-nav__item">
-      <a href="../containers/" class="md-nav__link">
+      <a href="../custom/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../write/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Write to a Data Source
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6_9_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_6_9_4" id="__nav_3_6_9_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Builtin
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_6_9_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_6_9_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Builtin
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../builtin/containers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -16604,7 +16705,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../process-tree/" class="md-nav__link">
+      <a href="../builtin/process-tree/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -16619,6 +16720,41 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../builtin/dns/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    DNS Cache
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -17369,13 +17505,16 @@ event being processed was generated. With Tracee's integrated container data
 source, this can be achieved without the signature having to separately monitor
 container lifecycle events.</p>
 <h2 id="what-data-sources-can-i-use">What data sources can I use<a class="headerlink" href="#what-data-sources-can-i-use" title="Permanent link">&para;</a></h2>
-<p>For now, only the built-in data sources from Tracee are at your disposal.
-Looking ahead, there are plans to enable integration of data sources into Tracee
-either as plugins or extensions.</p>
-<p>Currently, two primary data source exist:</p>
+<p>Tracee offer three built-in data sources out of the box.
+There is also support for plugging in external data sources through the golang 
+plugin mechanism, similar to how signatures are currently supplied (see <a href="../../../events/custom/golang/">here</a>). 
+However, there are known technical limitation to this approach, and the aim is to replace it
+in the future.</p>
+<p>Currently, the following data source are provided out of the box:</p>
 <ol>
 <li>Containers: Provides metadata about containers given a container id.</li>
 <li>Process Tree: Provides access to a tree of ever existing processes and threads.</li>
+<li>DNS Cache: Provides access to relaated DNS queries of a given address (IP or domain).</li>
 </ol>
 <p>This list will be expanded as other features are developed.</p>
 <h2 id="how-to-use-data-sources">How to use data sources<a class="headerlink" href="#how-to-use-data-sources" title="Permanent link">&para;</a></h2>

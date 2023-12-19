@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/advanced/data-sources/containers/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/advanced/data-sources/write/">
       
       
-        <link rel="prev" href="../overview/">
+        <link rel="prev" href="../custom/">
       
       
-        <link rel="next" href="../process-tree/">
+        <link rel="next" href="../builtin/containers/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Containers - Tracee</title>
+        <title>Write to a Data Source - Tracee</title>
       
     
     
@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#containers-data-source" class="md-skip">
+        <a href="#writable-data-sources" class="md-skip">
           Skip to content
         </a>
       
@@ -107,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Containers
+              Write to a Data Source
             
           </span>
         </div>
@@ -16495,6 +16495,33 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../custom/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -16513,7 +16540,7 @@
   <span class="md-ellipsis">
     
   
-    Containers
+    Write to a Data Source
   
 
     
@@ -16530,7 +16557,7 @@
   <span class="md-ellipsis">
     
   
-    Containers
+    Write to a Data Source
   
 
     
@@ -16556,33 +16583,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#internal-data-organization" class="md-nav__link">
+  <a href="#how-to-use" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Internal Data Organization
+        How to use
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#using-the-containers-data-source" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Using the Containers Data Source
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Using the Containers Data Source">
+    <nav class="md-nav" aria-label="How to use">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#signature-initialization" class="md-nav__link">
+  <a href="#implementing-a-writable-data-source" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Signature Initialization
+        Implementing a writable data source
       
     </span>
   </a>
@@ -16590,10 +16606,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#on-events" class="md-nav__link">
+  <a href="#using-in-a-signature" class="md-nav__link">
     <span class="md-ellipsis">
       
-        On Events
+        Using in a signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#writing-to-the-data-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Writing to the data source
       
     </span>
   </a>
@@ -16620,8 +16647,82 @@
   
   
   
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6_9_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_6_9_4" id="__nav_3_6_9_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    
+  
+    Builtin
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_6_9_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_6_9_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Builtin
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
-      <a href="../process-tree/" class="md-nav__link">
+      <a href="../builtin/containers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    Containers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../builtin/process-tree/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -16636,6 +16737,41 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../builtin/dns/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    
+  
+    DNS Cache
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -17323,33 +17459,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#internal-data-organization" class="md-nav__link">
+  <a href="#how-to-use" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Internal Data Organization
+        How to use
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#using-the-containers-data-source" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Using the Containers Data Source
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Using the Containers Data Source">
+    <nav class="md-nav" aria-label="How to use">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#signature-initialization" class="md-nav__link">
+  <a href="#implementing-a-writable-data-source" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Signature Initialization
+        Implementing a writable data source
       
     </span>
   </a>
@@ -17357,10 +17482,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#on-events" class="md-nav__link">
+  <a href="#using-in-a-signature" class="md-nav__link">
     <span class="md-ellipsis">
       
-        On Events
+        Using in a signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#writing-to-the-data-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Writing to the data source
       
     </span>
   </a>
@@ -17388,83 +17524,169 @@
                   
 
 
-<h1 id="containers-data-source">Containers Data Source<a class="headerlink" href="#containers-data-source" title="Permanent link">&para;</a></h1>
-<p>The <a href="../../../install/container-engines/">container enrichment</a> feature gives Tracee the ability to extract details about active containers and link this information to the events it captures.</p>
-<p>The <a href="../overview/">data source</a> feature makes the information gathered from active containers accessible to signatures. When an event is captured and triggers a signature, that signature can retrieve information about the container using its container ID, which is bundled with the event being analyzed by the signature.</p>
-<h2 id="internal-data-organization">Internal Data Organization<a class="headerlink" href="#internal-data-organization" title="Permanent link">&para;</a></h2>
-<p>From the <a href="../overview/">data-sources documentation</a>, you'll see that searches use keys. It's a bit like looking up information with a specific tag (or a key=value storage).</p>
-<p>The <code>containers data source</code> operates straightforwardly. Using <code>string</code> keys, which represent the container IDs, you can fetch <code>map[string]string</code> values as shown below:</p>
-<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nx">schemaMap</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">{</span>
-<span class="w">        </span><span class="s">&quot;container_id&quot;</span><span class="p">:</span><span class="w">      </span><span class="s">&quot;string&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="s">&quot;container_name&quot;</span><span class="p">:</span><span class="w">    </span><span class="s">&quot;string&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="s">&quot;container_image&quot;</span><span class="p">:</span><span class="w">   </span><span class="s">&quot;string&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="s">&quot;k8s_pod_id&quot;</span><span class="p">:</span><span class="w">        </span><span class="s">&quot;string&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="s">&quot;k8s_pod_name&quot;</span><span class="p">:</span><span class="w">      </span><span class="s">&quot;string&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="s">&quot;k8s_pod_namespace&quot;</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="s">&quot;k8s_pod_sandbox&quot;</span><span class="p">:</span><span class="w">   </span><span class="s">&quot;bool&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="p">}</span>
-</code></pre></div>
-<p>From the structure above, using the container ID lets you access details like the originating Kubernetes pod name or the image utilized by the container.</p>
-<h2 id="using-the-containers-data-source">Using the Containers Data Source<a class="headerlink" href="#using-the-containers-data-source" title="Permanent link">&para;</a></h2>
-<blockquote>
-<p>Make sure to read <a href="../../../events/custom/golang/">Golang Signatures</a> first.</p>
-</blockquote>
-<h3 id="signature-initialization">Signature Initialization<a class="headerlink" href="#signature-initialization" title="Permanent link">&para;</a></h3>
-<p>During the signature initialization, get the containers data source instance:</p>
-<div class="highlight"><pre><span></span><code><span class="kd">type</span><span class="w"> </span><span class="nx">e2eContainersDataSource</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">cb</span><span class="w">             </span><span class="nx">detect</span><span class="p">.</span><span class="nx">SignatureHandler</span>
-<span class="w">    </span><span class="nx">containersData</span><span class="w"> </span><span class="nx">detect</span><span class="p">.</span><span class="nx">DataSource</span>
-<span class="p">}</span>
+<h1 id="writable-data-sources">Writable Data Sources<a class="headerlink" href="#writable-data-sources" title="Permanent link">&para;</a></h1>
+<p>Since v0.20.0 tracee includes a new <code>DataSourceService</code> in its gRPC server. This service includes the ability
+to write generic data into a specified data source, both through streaming and unary methods. 
+However, in order to utilize this feature, a speciailized <code>WritableDataSource</code> must be specified in the RPC arguments.
+These data sources are currently only available through custom data sources, meaning that no built-in data sources support this feature.</p>
+<h2 id="how-to-use">How to use<a class="headerlink" href="#how-to-use" title="Permanent link">&para;</a></h2>
+<h3 id="implementing-a-writable-data-source">Implementing a writable data source<a class="headerlink" href="#implementing-a-writable-data-source" title="Permanent link">&para;</a></h3>
+<p>Let us implement an example data source which will give us a configurable threshold for reporting some finding.</p>
+<p>Start by adding a file <code>threshold_datasource.go</code>:
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="kn">package</span><span class="w"> </span><span class="nx">datasourcetest</span>
 
-<span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">sig</span><span class="w"> </span><span class="o">*</span><span class="nx">e2eContainersDataSource</span><span class="p">)</span><span class="w"> </span><span class="nx">Init</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">detect</span><span class="p">.</span><span class="nx">SignatureContext</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">sig</span><span class="p">.</span><span class="nx">cb</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Callback</span>
-<span class="w">    </span><span class="nx">containersData</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">GetDataSource</span><span class="p">(</span><span class="s">&quot;tracee&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;containers&quot;</span><span class="p">)</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;containers data source not registered&quot;</span><span class="p">)</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="w">    </span><span class="nx">sig</span><span class="p">.</span><span class="nx">containersData</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">containersData</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span>
-<span class="p">}</span>
-</code></pre></div>
-<p>Then, to each event being handled, you will <code>Get()</code>, from the data source, the information needed.</p>
-<h3 id="on-events">On Events<a class="headerlink" href="#on-events" title="Permanent link">&para;</a></h3>
-<p>Given the following example:</p>
-<div class="highlight"><pre><span></span><code><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">sig</span><span class="w"> </span><span class="o">*</span><span class="nx">e2eContainersDataSource</span><span class="p">)</span><span class="w"> </span><span class="nx">OnEvent</span><span class="p">(</span><span class="nx">event</span><span class="w"> </span><span class="nx">protocol</span><span class="p">.</span><span class="nx">Event</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">eventObj</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">event</span><span class="p">.</span><span class="nx">Payload</span><span class="p">.(</span><span class="nx">trace</span><span class="p">.</span><span class="nx">Event</span><span class="p">)</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;failed to cast event&#39;s payload&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="s">&quot;encoding/json&quot;</span>
+
+<span class="w">        </span><span class="s">&quot;github.com/aquasecurity/tracee/types/detect&quot;</span>
+<span class="w">    </span><span class="p">)</span>
+
+<span class="w">    </span><span class="kd">type</span><span class="w"> </span><span class="nx">thresholdDataSource</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">threshold</span><span class="w"> </span><span class="kt">int</span>
 <span class="w">    </span><span class="p">}</span>
 
-<span class="w">    </span><span class="k">switch</span><span class="w"> </span><span class="nx">eventObj</span><span class="p">.</span><span class="nx">EventName</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="s">&quot;sched_process_exec&quot;</span><span class="p">:</span>
-<span class="w">        </span><span class="nx">containerId</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">eventObj</span><span class="p">.</span><span class="nx">Container</span><span class="p">.</span><span class="nx">ID</span>
-<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="nx">containerId</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;received non container event&quot;</span><span class="p">)</span>
-<span class="w">        </span><span class="p">}</span>
-
-<span class="w">        </span><span class="nx">container</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">sig</span><span class="p">.</span><span class="nx">containersData</span><span class="p">.</span><span class="nx">Get</span><span class="p">(</span><span class="nx">containerId</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="o">*</span><span class="nx">e2eWritable</span><span class="p">)</span><span class="w"> </span><span class="nx">Get</span><span class="p">(</span><span class="nx">key</span><span class="w"> </span><span class="kd">interface</span><span class="p">{})</span><span class="w"> </span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{},</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">keyVal</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">key</span><span class="p">.(</span><span class="kt">string</span><span class="p">)</span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;failed to find container in data source: %v&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">)</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="nx">detect</span><span class="p">.</span><span class="nx">ErrKeyNotSupported</span>
 <span class="w">        </span><span class="p">}</span>
 
-<span class="w">        </span><span class="nx">containerImage</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">container</span><span class="p">[</span><span class="s">&quot;container_image&quot;</span><span class="p">].(</span><span class="kt">string</span><span class="p">)</span>
-<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;failed to obtain the container image name&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="nx">keyVal</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s">&quot;threshold&quot;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="nx">detect</span><span class="p">.</span><span class="nx">ErrKeyNotSupported</span>
 <span class="w">        </span><span class="p">}</span>
 
-<span class="w">        </span><span class="nx">m</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">sig</span><span class="p">.</span><span class="nx">GetMetadata</span><span class="p">()</span>
-
-<span class="w">        </span><span class="nx">sig</span><span class="p">.</span><span class="nx">cb</span><span class="p">(</span><span class="nx">detect</span><span class="p">.</span><span class="nx">Finding</span><span class="p">{</span>
-<span class="w">            </span><span class="nx">SigMetadata</span><span class="p">:</span><span class="w"> </span><span class="nx">m</span><span class="p">,</span>
-<span class="w">            </span><span class="nx">Event</span><span class="p">:</span><span class="w">       </span><span class="nx">event</span><span class="p">,</span>
-<span class="w">            </span><span class="nx">Data</span><span class="p">:</span><span class="w">        </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{}{},</span>
-<span class="w">        </span><span class="p">})</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{}{</span>
+<span class="w">            </span><span class="s">&quot;threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">threshold</span><span class="p">,</span>
+<span class="w">        </span><span class="p">},</span><span class="w"> </span><span class="kc">nil</span>
 <span class="w">    </span><span class="p">}</span>
 
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span>
+<span class="w">    </span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="o">*</span><span class="nx">e2eWritable</span><span class="p">)</span><span class="w"> </span><span class="nx">Version</span><span class="p">()</span><span class="w"> </span><span class="kt">uint</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="o">*</span><span class="nx">e2eWritable</span><span class="p">)</span><span class="w"> </span><span class="nx">Keys</span><span class="p">()</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;string:\&quot;threshold\&quot;&quot;</span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="o">*</span><span class="nx">e2eWritable</span><span class="p">)</span><span class="w"> </span><span class="nx">Schema</span><span class="p">()</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">schema</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{}{</span>
+<span class="w">            </span><span class="s">&quot;threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;int&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="nx">s</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">json</span><span class="p">.</span><span class="nx">Marshal</span><span class="p">(</span><span class="nx">schema</span><span class="p">)</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">string</span><span class="p">(</span><span class="nx">s</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="o">*</span><span class="nx">e2eWritable</span><span class="p">)</span><span class="w"> </span><span class="nx">Namespace</span><span class="p">()</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;my_namespace&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="o">*</span><span class="nx">e2eWritable</span><span class="p">)</span><span class="w"> </span><span class="nx">ID</span><span class="p">()</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;threshold_datasource&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="o">*</span><span class="nx">e2eWritable</span><span class="p">)</span><span class="w"> </span><span class="nx">Write</span><span class="p">(</span><span class="nx">data</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kd">interface</span><span class="p">{}]</span><span class="kd">interface</span><span class="p">{})</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">threshold</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">data</span><span class="p">[</span><span class="s">&quot;threshold&quot;</span><span class="p">]</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nx">detect</span><span class="p">.</span><span class="nx">ErrFailedToUnmarshal</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="c1">// Currently we pass the gRPC values directly, so numbers are sent as float64</span>
+<span class="w">        </span><span class="nx">thresholdFloat</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">threshold</span><span class="p">.(</span><span class="kt">float64</span><span class="p">)</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nx">detect</span><span class="p">.</span><span class="nx">ErrFailedToUnmarshal</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">threshold</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="nx">thresholdFloat</span><span class="p">)</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="o">*</span><span class="nx">e2eWritable</span><span class="p">)</span><span class="w"> </span><span class="nx">Values</span><span class="p">()</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&quot;string&quot;</span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Unpacking values from the given data dictionary has a specific quirk about value unwrapping.<br />
+Currently only the gRPC API is given for writing to data sources, which uses the struct.proto package for passing generic values. 
+There is currently no abstraction layer over it, which is why we unpacked the threshold value as float64 in the example, despite wanting 
+it as an int in the end.</p>
+</div>
+<h3 id="using-in-a-signature">Using in a signature<a class="headerlink" href="#using-in-a-signature" title="Permanent link">&para;</a></h3>
+<p>Now we can use this data source just like we would any other in a signature through the following code:
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">sig</span><span class="w"> </span><span class="o">*</span><span class="nx">mySig</span><span class="p">)</span><span class="w"> </span><span class="nx">Init</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">detect</span><span class="p">.</span><span class="nx">SignatureContext</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="o">...</span>
+<span class="w">    </span><span class="nx">thresholdDataSource</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">GetDataSource</span><span class="p">(</span><span class="s">&quot;my_namespace&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;threshold_datasource&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;threshold data source not registered&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">thresholdDataSource</span><span class="p">.</span><span class="nx">Version</span><span class="p">()</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Errorf</span><span class="p">(</span><span class="s">&quot;threshold data source version not supported, please update this signature&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="nx">sig</span><span class="p">.</span><span class="nx">thresholdData</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">thresholdDataSource</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div></p>
+<h3 id="writing-to-the-data-source">Writing to the data source<a class="headerlink" href="#writing-to-the-data-source" title="Permanent link">&para;</a></h3>
+<p>The following is a short example for a go program which will implement a client for out threshold data source. Note that this is a minimal outline, and you should modify it based on your specific usecase:
+<div class="highlight"><pre><span></span><code><span class="kn">package</span><span class="w"> </span><span class="nx">main</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="s">&quot;context&quot;</span>
+<span class="w">    </span><span class="s">&quot;flag&quot;</span>
+<span class="w">    </span><span class="s">&quot;fmt&quot;</span>
+<span class="w">    </span><span class="s">&quot;os&quot;</span>
+
+<span class="w">    </span><span class="s">&quot;google.golang.org/grpc&quot;</span>
+<span class="w">    </span><span class="s">&quot;google.golang.org/grpc/credentials/insecure&quot;</span>
+<span class="w">    </span><span class="s">&quot;google.golang.org/protobuf/types/known/structpb&quot;</span>
+
+<span class="w">    </span><span class="s">&quot;github.com/aquasecurity/tracee/api/v1beta1&quot;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">printAndExit</span><span class="p">(</span><span class="nx">msg</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">args</span><span class="w"> </span><span class="o">...</span><span class="kt">any</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="nx">msg</span><span class="p">,</span><span class="w"> </span><span class="nx">args</span><span class="o">...</span><span class="p">)</span>
+<span class="w">    </span><span class="nx">os</span><span class="p">.</span><span class="nx">Exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 <span class="p">}</span>
-</code></pre></div>
-<p>You may see that, through the <code>event object container ID</code> information, you may query the data source and obtain the <code>container name</code> or any other information listed before.</p>
+
+<span class="kd">func</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">traceeAddressPtr</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">flag</span><span class="p">.</span><span class="nx">String</span><span class="p">(</span><span class="s">&quot;key&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;key to set in the data source&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nx">thresholdPtr</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">flag</span><span class="p">.</span><span class="nx">Int</span><span class="p">(</span><span class="s">&quot;value&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;key to set in the data source&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nx">flag</span><span class="p">.</span><span class="nx">Parse</span><span class="p">()</span>
+
+<span class="w">    </span><span class="nx">traceeAddress</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="o">*</span><span class="nx">traceeAddressPtr</span>
+<span class="w">    </span><span class="nx">threshold</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="o">*</span><span class="nx">thresholdPtr</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">traceeAddress</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">printAndExit</span><span class="p">(</span><span class="s">&quot;empty address given\n&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">threshold</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">printAndExit</span><span class="p">(</span><span class="s">&quot;empty threshold given\n&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">threshold</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">printAndExit</span><span class="p">(</span><span class="s">&quot;negative threshold given\n&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nx">conn</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">grpc</span><span class="p">.</span><span class="nx">Dial</span><span class="p">(</span>
+<span class="w">        </span><span class="nx">traceeAddress</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">grpc</span><span class="p">.</span><span class="nx">WithTransportCredentials</span><span class="p">(</span><span class="nx">insecure</span><span class="p">.</span><span class="nx">NewCredentials</span><span class="p">()),</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">printAndExit</span><span class="p">(</span><span class="s">&quot;failed to dial tracee grpc server: %v\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="nx">client</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">NewDataSourceServiceClient</span><span class="p">(</span><span class="nx">conn</span><span class="p">)</span>
+<span class="w">    </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">Write</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nx">Background</span><span class="p">(),</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">v1beta1</span><span class="p">.</span><span class="nx">WriteDataSourceRequest</span><span class="p">{</span>
+<span class="w">        </span><span class="nx">Id</span><span class="p">:</span><span class="w">        </span><span class="s">&quot;my_namespace&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">Namespace</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;threshold_datasource&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">Key</span><span class="p">:</span><span class="w">       </span><span class="nx">structpb</span><span class="p">.</span><span class="nx">NewStringValue</span><span class="p">(</span><span class="s">&quot;threshold&quot;</span><span class="p">),</span>
+<span class="w">        </span><span class="nx">Value</span><span class="p">:</span><span class="w">     </span><span class="nx">structpb</span><span class="p">.</span><span class="nx">NewNumberValue</span><span class="p">(</span><span class="nb">float64</span><span class="p">(</span><span class="nx">threshold</span><span class="p">)),</span>
+<span class="w">    </span><span class="p">})</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">printAndExit</span><span class="p">(</span><span class="s">&quot;failed to write to data source: %v\n&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<p>With all these steps completed, you are ready to impelement and use your own writable data source!</p>
 
 
 
