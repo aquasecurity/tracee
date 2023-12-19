@@ -98,16 +98,16 @@ var ErrFailedToUnmarshal = errors.New("given value could not be unmarshaled")
 
 type WriteableDataSource interface {
 	DataSource
-	// Write a value to a key in the data source. The value can not strictly match the schema defined
+	// Write values to keys in the data source. The values may not strictly match the schema defined
 	// in the data source, however the implementation must be able to unmarshal it successfully to some form
 	// where it can be eventually represented by the schema.
 	//
 	// The following errors should be returned for the appropriate cases:
 	//
-	// - ErrKeyNotSupported - When the key used does not match to a support key
-	// - ErrFailedToUnmarshal - When the value given could not be unmarshalled to an expected type
+	// - ErrKeyNotSupported - When a given key does not match to supported key type
+	// - ErrFailedToUnmarshal - When a value given could not be unmarshalled to an expected type
 	// - Otherwise errors may vary.
-	Write(key interface{}, value interface{}) error
+	Write(data map[interface{}]interface{}) error
 	// The types of values the data source supports writing.
 	Values() []string
 }
