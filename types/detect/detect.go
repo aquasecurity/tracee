@@ -111,3 +111,10 @@ type WriteableDataSource interface {
 	// The types of values the data source supports writing.
 	Values() []string
 }
+
+// FindingData is the interface that types returned by signatures Data should implement to be
+// serialized to protobuf when using GRPC
+type FindingData interface {
+	// ToMap converts the data to a map[string]interface{} for serialization
+	ToMap() map[string]interface{}
+}
