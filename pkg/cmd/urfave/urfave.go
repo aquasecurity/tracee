@@ -185,6 +185,7 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	runner.HTTPServer = httpServer
 	runner.TraceeConfig = cfg
 	runner.Printer = broadcast
+	runner.InstallPath = traceeInstallPath
 
 	return runner, nil
 }
