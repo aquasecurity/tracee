@@ -1,16 +1,20 @@
 package grpc
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"strconv"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -361,7 +365,7 @@ func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
 		}, nil
 	}
 
-	return nil, errfmt.Errorf("unknown arg type: %s - %v", arg.Name, arg.Type)
+	return convertToStruct(arg)
 }
 
 func getCaps(c uint64) []pb.Capability {
@@ -761,4 +765,35 @@ func convertPktMeta(v *trace.PktMeta) (*pb.EventValue, error) {
 				Iface:     v.Iface,
 			},
 		}}, nil
+}
+
+func convertToStruct(arg trace.Argument) (*pb.EventValue, error) {
+	i, ok := arg.Value.(detect.FindingData)
+	if !ok {
+		logger.Errorw(
+			"Can't convert event argument. Please add it as a GRPC event data type or implement detect.FindingData interface.",
+			"name",
+			arg.Name,
+			"type",
+			fmt.Sprintf("%T", arg.Value),
+		)
+
+		return nil, nil
+	}
+
+	if m := i.ToMap(); m != nil {
+		structValue, err := structpb.NewStruct(m)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &pb.EventValue{
+			Value: &pb.EventValue_Struct{
+				Struct: structValue,
+			},
+		}, nil
+	}
+
+	return nil, nil
 }
