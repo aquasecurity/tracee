@@ -5,6 +5,7 @@ option go_package = "github.co/aquasecurity/tracee/api/v1beta1";
 package tracee.v1beta1;
 
 import "google/protobuf/wrappers.proto";
+import "google/protobuf/struct.proto";
 
 message EventValue {
     oneof value {
@@ -37,7 +38,8 @@ message EventValue {
         PktMeta packet_metadata = 29;
         HTTP http = 30;
         HTTPRequest http_request = 31;
-        HTTPResponse http_response = 32;        
+        HTTPResponse http_response = 32;
+        google.protobuf.Struct struct = 33;
     }
 }
 
