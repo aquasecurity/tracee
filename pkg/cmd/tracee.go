@@ -19,6 +19,7 @@ import (
 type Runner struct {
 	TraceeConfig config.Config
 	Printer      printer.EventPrinter
+	InstallPath  string
 	HTTPServer   *http.Server
 	GRPCServer   *grpc.Server
 }
@@ -61,11 +62,24 @@ func (r Runner) Run(ctx context.Context) error {
 
 	// Manage PID file
 
-	if err := writePidFile(t.OutDir); err != nil {
+	if err := os.MkdirAll(r.InstallPath, 0755); err != nil {
+		return errfmt.Errorf("could not create install path dir: %v", err)
+	}
+	installPathDir, err := utils.OpenExistingDir(r.InstallPath)
+	if err != nil {
+		return errfmt.Errorf("error initializing Tracee: error opening installation path: %v", err)
+	}
+	defer func() {
+		err := installPathDir.Close()
+		if err != nil {
+			logger.Warnw("error closing install path dir", "error", err)
+		}
+	}()
+	if err := writePidFile(installPathDir); err != nil {
 		return errfmt.WrapError(err)
 	}
 	defer func() {
-		if err := removePidFile(t.OutDir); err != nil {
+		if err := removePidFile(installPathDir); err != nil {
 			logger.Warnw("error removing pid file", "error", err)
 		}
 	}()

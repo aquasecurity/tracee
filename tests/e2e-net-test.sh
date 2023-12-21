@@ -113,7 +113,7 @@ for TEST in $TESTS; do
     while true; do
         times=$(($times + 1))
         sleep 1
-        if [[ -f $TRACEE_TMP_DIR/out/tracee.pid ]]; then
+        if [[ -f $TRACEE_TMP_DIR/tracee.pid ]]; then
             info
             info "UP AND RUNNING"
             info
