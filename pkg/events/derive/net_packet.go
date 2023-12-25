@@ -351,12 +351,14 @@ func NetPacketHTTP() DeriveFunction {
 			case protoHTTPRequest:
 				proto, err = getProtoHTTPFromRequestPacket(packet)
 				if err != nil {
-					return nil, err
+					logger.Warnw("attempted to derive net_packet_http event from malformed request packet, event will be skipped", "error", err)
+					return nil, nil
 				}
 			case protoHTTPResponse:
 				proto, err = getProtoHTTPFromResponsePacket(packet)
 				if err != nil {
-					return nil, err
+					logger.Warnw("attempted to derive net_packet_http event from malformed response packet, event will be skipped", "error", err)
+					return nil, nil
 				}
 			default:
 				return nil, errfmt.Errorf("unspecified HTTP packet direction")
@@ -398,7 +400,8 @@ func NetPacketHTTPRequest() DeriveFunction {
 			}
 			protoHTTP, err := getProtoHTTPFromRequestPacket(packet)
 			if err != nil {
-				return nil, err
+				logger.Warnw("attempted to derive net_packet_http_request event from malformed packet, event will be skipped", "error", err)
+				return nil, nil
 			}
 			if protoHTTP == nil {
 				return nil, nil // regular tcp/ip packet without HTTP payload
@@ -443,7 +446,8 @@ func NetPacketHTTPResponse() DeriveFunction {
 			}
 			protoHTTP, err := getProtoHTTPFromResponsePacket(packet)
 			if err != nil {
-				return nil, err
+				logger.Warnw("attempted to derive net_packet_http_response event from malformed packet, event will be skipped", "error", err)
+				return nil, nil // malformed packets shouldn't return an error
 			}
 			if protoHTTP == nil {
 				return nil, nil // regular tcp/ip packet without HTTP payload
