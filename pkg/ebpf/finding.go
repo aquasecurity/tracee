@@ -66,9 +66,10 @@ func newEvent(id int, f *detect.Finding, e trace.Event) *trace.Event {
 }
 
 func getArguments(f *detect.Finding, triggerEvent trace.Event) []trace.Argument {
-	arguments := make([]trace.Argument, 0, len(f.Data))
+	findingData := f.GetData()
+	arguments := make([]trace.Argument, 0, len(findingData))
 
-	for k, v := range f.Data {
+	for k, v := range findingData {
 		arg := trace.Argument{
 			ArgMeta: trace.ArgMeta{
 				Name: k,
