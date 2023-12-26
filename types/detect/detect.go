@@ -48,20 +48,13 @@ type SignatureEventSelector struct {
 }
 
 // SignatureHandler is a callback function that reports a finding
-type SignatureHandler func(found Finding)
+type SignatureHandler func(found *Finding)
 
 // Signal is a generic lifecycle event for a signature
 type Signal interface{}
 
 // SignalSourceComplete signals that an input source the signature was subscribed to had ended
 type SignalSourceComplete string
-
-// Finding is the main output of a signature. It represents a match result for the signature business logic
-type Finding struct {
-	Data        map[string]interface{}
-	Event       protocol.Event // Event is the causal event of the Finding
-	SigMetadata SignatureMetadata
-}
 
 // Logger interface to inject in signatures
 type Logger interface {
@@ -110,11 +103,4 @@ type WriteableDataSource interface {
 	Write(data map[interface{}]interface{}) error
 	// The types of values the data source supports writing.
 	Values() []string
-}
-
-// FindingData is the interface that types returned by signatures Data should implement to be
-// serialized to protobuf when using GRPC
-type FindingData interface {
-	// ToMap converts the data to a map[string]interface{} for serialization
-	ToMap() map[string]interface{}
 }
