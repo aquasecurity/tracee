@@ -17,7 +17,7 @@ func TestDockerAbuse(t *testing.T) {
 	testCases := []struct {
 		Name     string
 		Events   []trace.Event
-		Findings map[string]detect.Finding
+		Findings map[string]*detect.Finding
 	}{
 		{
 			Name: "should trigger detection - security_file_open",
@@ -41,7 +41,7 @@ func TestDockerAbuse(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-1019": {
 					Data: nil,
 					Event: trace.Event{
@@ -96,7 +96,7 @@ func TestDockerAbuse(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-1019": {
 					Data: nil,
 					Event: trace.Event{
@@ -151,7 +151,7 @@ func TestDockerAbuse(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 		{
 			Name: "should not trigger detection - security_file_open wrong open flags",
@@ -175,7 +175,7 @@ func TestDockerAbuse(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 		{
 			Name: "should not trigger detection - security_socket_connect wrong addr",
@@ -193,7 +193,7 @@ func TestDockerAbuse(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 	}
 

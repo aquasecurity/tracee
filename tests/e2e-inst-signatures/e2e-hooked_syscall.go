@@ -54,13 +54,11 @@ func (sig *e2eHookedSyscall) OnEvent(event protocol.Event) error {
 
 		if syscall == "uname" && owner == "hijack" {
 			m, _ := sig.GetMetadata()
-			sig.cb(
-				detect.Finding{
-					SigMetadata: m,
-					Event:       event,
-					Data:        map[string]interface{}{},
-				},
-			)
+			sig.cb(&detect.Finding{
+				SigMetadata: m,
+				Event:       event,
+				Data:        map[string]interface{}{},
+			})
 		}
 	}
 

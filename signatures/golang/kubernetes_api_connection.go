@@ -92,7 +92,7 @@ func (sig *K8sApiConnection) OnEvent(event protocol.Event) error {
 
 		if ip == apiAddress {
 			m, _ := sig.GetMetadata()
-			sig.cb(detect.Finding{
+			sig.cb(&detect.Finding{
 				SigMetadata: m,
 				Event:       event,
 				Data: map[string]interface{}{

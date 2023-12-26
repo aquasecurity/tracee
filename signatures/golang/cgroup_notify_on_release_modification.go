@@ -69,7 +69,7 @@ func (sig *CgroupNotifyOnReleaseModification) OnEvent(event protocol.Event) erro
 			if err != nil {
 				return err
 			}
-			sig.cb(detect.Finding{
+			sig.cb(&detect.Finding{
 				SigMetadata: metadata,
 				Event:       event,
 				Data:        nil,

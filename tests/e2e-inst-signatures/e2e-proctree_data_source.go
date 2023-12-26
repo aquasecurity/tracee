@@ -108,7 +108,7 @@ func (sig *e2eProcessTreeDataSource) OnEvent(event protocol.Event) error {
 		}
 		// If all checks passed, send a finding
 		m, _ := sig.GetMetadata()
-		sig.cb(detect.Finding{
+		sig.cb(&detect.Finding{
 			SigMetadata: m,
 			Event:       event,
 			Data:        map[string]interface{}{},

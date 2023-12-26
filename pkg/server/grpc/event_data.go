@@ -768,10 +768,10 @@ func convertPktMeta(v *trace.PktMeta) (*pb.EventValue, error) {
 }
 
 func convertToStruct(arg trace.Argument) (*pb.EventValue, error) {
-	i, ok := arg.Value.(detect.FindingData)
+	i, ok := arg.Value.(detect.FindingDataStruct)
 	if !ok {
 		logger.Errorw(
-			"Can't convert event argument. Please add it as a GRPC event data type or implement detect.FindingData interface.",
+			"Can't convert event argument. Please add it as a GRPC event data type or implement detect.FindingDataStruct interface.",
 			"name",
 			arg.Name,
 			"type",

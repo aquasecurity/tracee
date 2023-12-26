@@ -69,7 +69,7 @@ func (sig *e2eUDP) OnEvent(event protocol.Event) error {
 
 		m, _ := sig.GetMetadata()
 
-		sig.cb(detect.Finding{
+		sig.cb(&detect.Finding{
 			SigMetadata: m,
 			Event:       event,
 			Data:        map[string]interface{}{},

@@ -75,7 +75,7 @@ func (sig *codeInjection) OnEvent(event protocol.Event) error {
 				return err
 			}
 			if sig.processMemFileRegexp.MatchString(pathname.Value.(string)) {
-				sig.cb(detect.Finding{
+				sig.cb(&detect.Finding{
 					// Signature: sig,
 					SigMetadata: sig.metadata,
 					Event:       event,
@@ -93,7 +93,7 @@ func (sig *codeInjection) OnEvent(event protocol.Event) error {
 		}
 		requestString := request.Value.(string)
 		if requestString == "PTRACE_POKETEXT" || requestString == "PTRACE_POKEDATA" {
-			sig.cb(detect.Finding{
+			sig.cb(&detect.Finding{
 				// Signature: sig,
 				SigMetadata: sig.metadata,
 				Event:       event,
@@ -116,7 +116,7 @@ func (sig *codeInjection) OnEvent(event protocol.Event) error {
 		//			if err != nil {
 		//				return err
 		//			}
-		//			sig.cb(detect.Finding{
+		//			sig.cb(&detect.Finding{
 		// Signature: sig,
 		//				SigMetadata: sig.metadata,
 		//				Payload:     ee,

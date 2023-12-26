@@ -168,14 +168,14 @@ func (sig *RegoSignature) OnEvent(event protocol.Event) error {
 		switch v := results[0].Expressions[0].Value.(type) {
 		case bool:
 			if v {
-				sig.cb(detect.Finding{
+				sig.cb(&detect.Finding{
 					Data:        nil,
 					Event:       event,
 					SigMetadata: sig.metadata,
 				})
 			}
 		case map[string]interface{}:
-			sig.cb(detect.Finding{
+			sig.cb(&detect.Finding{
 				Data:        v,
 				Event:       event,
 				SigMetadata: sig.metadata,

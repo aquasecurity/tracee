@@ -17,7 +17,7 @@ func TestIllegitimateShell(t *testing.T) {
 	testCases := []struct {
 		Name     string
 		Events   []trace.Event
-		Findings map[string]detect.Finding
+		Findings map[string]*detect.Finding
 	}{
 		{
 			Name: "should trigger detection",
@@ -35,7 +35,7 @@ func TestIllegitimateShell(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-1016": {
 					Data: nil,
 					Event: trace.Event{
@@ -84,7 +84,7 @@ func TestIllegitimateShell(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 		{
 			Name: "should not trigger detection - wrong process name",
@@ -102,7 +102,7 @@ func TestIllegitimateShell(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 	}
 

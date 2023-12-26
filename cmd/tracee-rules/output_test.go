@@ -91,7 +91,7 @@ HostName: foobar.local
 			sm, err := signature.FakeSignature{}.GetMetadata()
 			require.NoError(t, err)
 
-			findingCh <- detect.Finding{
+			findingCh <- &detect.Finding{
 				Data: map[string]interface{}{
 					"foo1": "bar1, baz1",
 					"foo2": []string{"bar2", "baz2"},
@@ -165,7 +165,7 @@ func Test_sendToWebhook(t *testing.T) {
 			name:              "sad path, with an invalid template",
 			contentType:       "application/foo",
 			inputTemplateFile: "testdata/goldens/broken.tmpl",
-			expectedError:     `error writing to the template: template: broken.tmpl:1:3: executing "broken.tmpl" at <.InvalidField>: can't evaluate field InvalidField in type detect.Finding`,
+			expectedError:     `error writing to the template: template: broken.tmpl:1:3: executing "broken.tmpl" at <.InvalidField>: can't evaluate field InvalidField in type *detect.Finding`,
 		},
 		{
 			name:          "sad path, no --webhook-template flag specified",
@@ -194,7 +194,7 @@ func Test_sendToWebhook(t *testing.T) {
 			inputTemplate, _ := setupTemplate(tc.inputTemplateFile)
 
 			m, _ := tc.inputSignature.GetMetadata()
-			actualError := sendToWebhook(inputTemplate, detect.Finding{
+			actualError := sendToWebhook(inputTemplate, &detect.Finding{
 				Data: map[string]interface{}{
 					"foo1": "bar1, baz1",
 					"foo2": []string{"bar2", "baz2"},
@@ -221,12 +221,12 @@ func TestOutputTemplates(t *testing.T) {
 
 	testCases := []struct {
 		testName     string
-		finding      detect.Finding
+		finding      *detect.Finding
 		expectedJson string
 	}{
 		{
 			testName: "Should output finding as raw JSON",
-			finding: detect.Finding{
+			finding: &detect.Finding{
 				Data: map[string]interface{}{
 					"a": 123,
 					"b": "c",

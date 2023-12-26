@@ -17,7 +17,7 @@ func TestSyscallTableHooking(t *testing.T) {
 	testCases := []struct {
 		Name     string
 		Events   []trace.Event
-		Findings map[string]detect.Finding
+		Findings map[string]*detect.Finding
 	}{
 		{
 			Name: "should trigger detection",
@@ -39,7 +39,7 @@ func TestSyscallTableHooking(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-1030": {
 					Data: nil,
 					Event: trace.Event{

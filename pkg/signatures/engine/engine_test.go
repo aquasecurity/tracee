@@ -313,7 +313,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			inputs := EventSources{}
 			inputs.Tracee = make(chan protocol.Event, 1)
-			outputChan := make(chan detect.Finding, 1)
+			outputChan := make(chan *detect.Finding, 1)
 
 			defer func() {
 				// signal the end
@@ -423,7 +423,7 @@ func TestEngine_GetSelectedEvents(t *testing.T) {
 	}
 
 	config := Config{Signatures: sigs}
-	e, err := NewEngine(config, EventSources{Tracee: make(chan protocol.Event)}, make(chan detect.Finding))
+	e, err := NewEngine(config, EventSources{Tracee: make(chan protocol.Event)}, make(chan *detect.Finding))
 	require.NoError(t, err, "constructing engine")
 
 	err = e.Init()
@@ -476,7 +476,7 @@ func TestEngine_LoadSignature(t *testing.T) {
 			source := EventSources{
 				Tracee: input,
 			}
-			output := make(chan detect.Finding)
+			output := make(chan *detect.Finding)
 			engine, err := NewEngine(Config{}, source, output)
 			require.NoError(t, err)
 
