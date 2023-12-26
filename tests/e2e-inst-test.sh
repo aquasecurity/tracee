@@ -13,7 +13,7 @@ SCRIPT_TMP_DIR=/tmp
 TRACEE_TMP_DIR=/tmp/tracee
 
 # Default test to run if no other is given
-TESTS=${INSTTESTS:=WRITABLE_DATA_SOURCE}
+TESTS=${INSTTESTS:=VFS_WRITE}
 
 info_exit() {
     echo -n "INFO: "
