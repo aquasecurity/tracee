@@ -82,7 +82,7 @@ func BenchmarkEngineWithCodeInjectionSignature(b *testing.B) {
 				// Produce events without timing it
 				b.StopTimer()
 				inputs := ProduceEventsInMemory(inputEventsCount)
-				output := make(chan detect.Finding, inputEventsCount)
+				output := make(chan *detect.Finding, inputEventsCount)
 
 				s, err := bc.sigFunc()
 				require.NoError(b, err, bc.name)
@@ -132,7 +132,7 @@ func BenchmarkEngineWithMultipleSignatures(b *testing.B) {
 				// Produce events without timing it
 				b.StopTimer()
 				inputs := ProduceEventsInMemory(inputEventsCount)
-				output := make(chan detect.Finding, inputEventsCount*len(sigs))
+				output := make(chan *detect.Finding, inputEventsCount*len(sigs))
 
 				config := engine.Config{
 					Signatures: sigs,
@@ -190,7 +190,7 @@ func BenchmarkEngineWithNSignatures(b *testing.B) {
 					// Produce events without timing it
 					b.StopTimer()
 					inputs := ProduceEventsInMemory(inputEventsCount)
-					output := make(chan detect.Finding, inputEventsCount*len(sigs))
+					output := make(chan *detect.Finding, inputEventsCount*len(sigs))
 
 					config := engine.Config{
 						Signatures: sigs,
@@ -222,6 +222,6 @@ func waitForEventsProcessed(eventsCh chan protocol.Event) context.Context {
 	return ctx
 }
 
-func ignoreFinding(_ detect.Finding) {
+func ignoreFinding(_ *detect.Finding) {
 	// noop
 }

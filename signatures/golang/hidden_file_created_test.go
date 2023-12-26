@@ -15,7 +15,7 @@ func TestHiddenFileCreated(t *testing.T) {
 	testCases := []struct {
 		Name     string
 		Events   []trace.Event
-		Findings map[string]detect.Finding
+		Findings map[string]*detect.Finding
 	}{
 		{
 			Name: "should trigger detection",
@@ -38,7 +38,7 @@ func TestHiddenFileCreated(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-1015": {
 					Data: nil,
 					Event: trace.Event{
@@ -97,7 +97,7 @@ func TestHiddenFileCreated(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 		{
 			Name: "should not trigger detection - not hidden path",
@@ -120,7 +120,7 @@ func TestHiddenFileCreated(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 	}
 

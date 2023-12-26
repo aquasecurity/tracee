@@ -67,7 +67,7 @@ func (sig *DiskMount) OnEvent(event protocol.Event) error {
 			if err != nil {
 				return err
 			}
-			sig.cb(detect.Finding{
+			sig.cb(&detect.Finding{
 				SigMetadata: metadata,
 				Event:       event,
 				Data:        nil,

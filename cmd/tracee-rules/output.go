@@ -39,8 +39,8 @@ func setupTemplate(inputTemplateFile string) (*template.Template, error) {
 	}
 }
 
-func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentType string, outputTemplate string) (chan detect.Finding, error) {
-	out := make(chan detect.Finding)
+func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentType string, outputTemplate string) (chan *detect.Finding, error) {
+	out := make(chan *detect.Finding)
 	var err error
 
 	var tWebhook *template.Template
@@ -77,7 +77,7 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 	return out, nil
 }
 
-func sendToWebhook(t *template.Template, res detect.Finding, webhook string, webhookTemplate string, contentType string) error {
+func sendToWebhook(t *template.Template, res *detect.Finding, webhook string, webhookTemplate string, contentType string) error {
 	var payload string
 
 	switch {

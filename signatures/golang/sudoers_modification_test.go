@@ -17,7 +17,7 @@ func TestSudoersModification(t *testing.T) {
 	testCases := []struct {
 		Name     string
 		Events   []trace.Event
-		Findings map[string]detect.Finding
+		Findings map[string]*detect.Finding
 	}{
 		{
 			Name: "should trigger detection - security_file_open file",
@@ -40,7 +40,7 @@ func TestSudoersModification(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-1028": {
 					Data: nil,
 					Event: trace.Event{
@@ -99,7 +99,7 @@ func TestSudoersModification(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-1028": {
 					Data: nil,
 					Event: trace.Event{
@@ -152,7 +152,7 @@ func TestSudoersModification(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-1028": {
 					Data: nil,
 					Event: trace.Event{
@@ -199,7 +199,7 @@ func TestSudoersModification(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-1028": {
 					Data: nil,
 					Event: trace.Event{
@@ -252,7 +252,7 @@ func TestSudoersModification(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 		{
 			Name: "should not trigger detection - security_file_open wrong path",
@@ -275,7 +275,7 @@ func TestSudoersModification(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 		{
 			Name: "should not trigger detection - security_inode_rename wrong path",
@@ -292,7 +292,7 @@ func TestSudoersModification(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 	}
 

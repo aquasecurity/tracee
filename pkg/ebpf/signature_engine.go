@@ -19,7 +19,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 	out := make(chan *trace.Event)
 	errc := make(chan error, 1)
 
-	engineOutput := make(chan detect.Finding, 10000)
+	engineOutput := make(chan *detect.Finding, 10000)
 	engineInput := make(chan protocol.Event, 10000)
 	engineOutputEvents := make(chan *trace.Event, 10000)
 	source := engine.EventSources{Tracee: engineInput}

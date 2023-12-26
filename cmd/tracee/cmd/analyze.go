@@ -133,7 +133,7 @@ tracee analyze --events anti_debugging events.json`,
 		ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 		defer stop()
 
-		engineOutput := make(chan detect.Finding)
+		engineOutput := make(chan *detect.Finding)
 		engineInput := make(chan protocol.Event)
 		producerFinished := make(chan interface{})
 
@@ -196,7 +196,7 @@ func produce(ctx context.Context, done chan interface{}, inputFile *os.File, eng
 	}
 }
 
-func process(finding detect.Finding) {
+func process(finding *detect.Finding) {
 	event, err := tracee.FindingToEvent(finding)
 	if err != nil {
 		logger.Fatalw("Failed to convert finding to event", "err", err)

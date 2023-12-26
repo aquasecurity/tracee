@@ -55,7 +55,7 @@ func (sig *counter) OnEvent(event protocol.Event) error {
 	}
 	if sig.count == sig.target {
 		m, _ := sig.GetMetadata()
-		sig.cb(detect.Finding{
+		sig.cb(&detect.Finding{
 			Data: map[string]interface{}{
 				"count":    sig.count,
 				"severity": "HIGH",
@@ -72,7 +72,7 @@ func (sig *counter) OnEvent(event protocol.Event) error {
 func (sig *counter) OnSignal(signal detect.Signal) error {
 	source, sigcomplete := signal.(detect.SignalSourceComplete)
 	if sigcomplete && source == "tracee" {
-		sig.cb(detect.Finding{
+		sig.cb(&detect.Finding{
 			Data: map[string]interface{}{
 				"message": "done",
 			},

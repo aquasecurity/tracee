@@ -60,7 +60,7 @@ func (sig *antiDebugging) OnEvent(event protocol.Event) error {
 	if requestString != "PTRACE_TRACEME" {
 		return nil
 	}
-	sig.cb(detect.Finding{
+	sig.cb(&detect.Finding{
 		SigMetadata: sig.metadata,
 		Event:       event,
 		Data: map[string]interface{}{

@@ -17,7 +17,7 @@ func TestKernelModuleLoading(t *testing.T) {
 	testCases := []struct {
 		Name     string
 		Events   []trace.Event
-		Findings map[string]detect.Finding
+		Findings map[string]*detect.Finding
 	}{
 		{
 			Name: "should trigger detection - init_module",
@@ -26,7 +26,7 @@ func TestKernelModuleLoading(t *testing.T) {
 					EventName: "init_module",
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-1017": {
 					Data: nil,
 					Event: trace.Event{
@@ -65,7 +65,7 @@ func TestKernelModuleLoading(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-1017": {
 					Data: nil,
 					Event: trace.Event{
@@ -112,7 +112,7 @@ func TestKernelModuleLoading(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 	}
 

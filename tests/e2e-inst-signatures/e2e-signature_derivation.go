@@ -44,7 +44,7 @@ func (sig *e2eSignatureDerivation) OnEvent(event protocol.Event) error {
 	case "FILE_MODIFICATION":
 		m, _ := sig.GetMetadata()
 
-		sig.cb(detect.Finding{
+		sig.cb(&detect.Finding{
 			SigMetadata: m,
 			Event:       event,
 			Data:        map[string]interface{}{},

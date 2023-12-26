@@ -17,7 +17,7 @@ func TestPtraceCodeInjection(t *testing.T) {
 	testCases := []struct {
 		Name     string
 		Events   []trace.Event
-		Findings map[string]detect.Finding
+		Findings map[string]*detect.Finding
 	}{
 		{
 			Name: "should trigger detection - PTRACE_POKETEXT",
@@ -34,7 +34,7 @@ func TestPtraceCodeInjection(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-103": {
 					Data: nil,
 					Event: trace.Event{
@@ -81,7 +81,7 @@ func TestPtraceCodeInjection(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-103": {
 					Data: nil,
 					Event: trace.Event{
@@ -128,7 +128,7 @@ func TestPtraceCodeInjection(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 	}
 

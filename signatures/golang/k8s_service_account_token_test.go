@@ -17,7 +17,7 @@ func TestK8SServiceAccountToken(t *testing.T) {
 	testCases := []struct {
 		Name     string
 		Events   []trace.Event
-		Findings map[string]detect.Finding
+		Findings map[string]*detect.Finding
 	}{
 		{
 			Name: "should trigger detection",
@@ -41,7 +41,7 @@ func TestK8SServiceAccountToken(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-108": {
 					Data: nil,
 					Event: trace.Event{
@@ -102,7 +102,7 @@ func TestK8SServiceAccountToken(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 		{
 			Name: "should not trigger detection - wrong path",
@@ -126,7 +126,7 @@ func TestK8SServiceAccountToken(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 		{
 			Name: "should not trigger detection - legit proc",
@@ -150,7 +150,7 @@ func TestK8SServiceAccountToken(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 	}
 

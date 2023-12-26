@@ -17,7 +17,7 @@ func TestK8sApiConnection(t *testing.T) {
 	testCases := []struct {
 		Name     string
 		Events   []trace.Event
-		Findings map[string]detect.Finding
+		Findings map[string]*detect.Finding
 	}{
 		{
 			Name: "should trigger detection",
@@ -57,7 +57,7 @@ func TestK8sApiConnection(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-1013": {
 					Data: map[string]interface{}{
 						"ip": "1.1.1.1",
@@ -127,7 +127,7 @@ func TestK8sApiConnection(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 	}
 

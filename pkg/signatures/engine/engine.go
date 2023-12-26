@@ -41,7 +41,7 @@ type Engine struct {
 	signaturesIndex  map[detect.SignatureEventSelector][]detect.Signature
 	signaturesMutex  sync.RWMutex
 	inputs           EventSources
-	output           chan detect.Finding
+	output           chan *detect.Finding
 	waitGroup        sync.WaitGroup
 	config           Config
 	stats            metrics.Stats
@@ -61,7 +61,7 @@ func (engine *Engine) Stats() *metrics.Stats {
 // NewEngine creates a new signatures-engine with the given arguments
 // inputs and outputs are given as channels created by the consumer
 // Signatures are not loaded at this point, Init must be called to perform config side effects.
-func NewEngine(config Config, sources EventSources, output chan detect.Finding) (*Engine, error) {
+func NewEngine(config Config, sources EventSources, output chan *detect.Finding) (*Engine, error) {
 	if sources.Tracee == nil || output == nil {
 		return nil, fmt.Errorf("nil input received")
 	}
@@ -143,7 +143,7 @@ func (engine *Engine) unloadAllSignatures() {
 }
 
 // matchHandler is a function that runs when a signature is matched
-func (engine *Engine) matchHandler(res detect.Finding) {
+func (engine *Engine) matchHandler(res *detect.Finding) {
 	_ = engine.stats.Detections.Increment()
 	engine.output <- res
 }

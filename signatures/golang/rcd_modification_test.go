@@ -17,7 +17,7 @@ func TestRcdModification(t *testing.T) {
 	testCases := []struct {
 		Name     string
 		Events   []trace.Event
-		Findings map[string]detect.Finding
+		Findings map[string]*detect.Finding
 	}{
 		{
 			Name: "should trigger detection - security_file_open file",
@@ -40,7 +40,7 @@ func TestRcdModification(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-1026": {
 					Data: nil,
 					Event: trace.Event{
@@ -99,7 +99,7 @@ func TestRcdModification(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-1026": {
 					Data: nil,
 					Event: trace.Event{
@@ -152,7 +152,7 @@ func TestRcdModification(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-1026": {
 					Data: nil,
 					Event: trace.Event{
@@ -199,7 +199,7 @@ func TestRcdModification(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-1026": {
 					Data: nil,
 					Event: trace.Event{
@@ -246,7 +246,7 @@ func TestRcdModification(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-1026": {
 					Data: nil,
 					Event: trace.Event{
@@ -299,7 +299,7 @@ func TestRcdModification(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 		{
 			Name: "should not trigger detection - security_file_open wrong open flags",
@@ -322,7 +322,7 @@ func TestRcdModification(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 		{
 			Name: "should not trigger detection - security_inode_rename wrong path",
@@ -339,7 +339,7 @@ func TestRcdModification(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 		{
 			Name: "should not trigger detection - sched_process_exec",
@@ -356,7 +356,7 @@ func TestRcdModification(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 	}
 

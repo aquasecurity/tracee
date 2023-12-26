@@ -9,7 +9,7 @@ import (
 
 // FindingToEvent converts a detect.Finding into a trace.Event
 // This is used because the pipeline expects trace.Event, but the rule engine returns detect.Finding
-func FindingToEvent(f detect.Finding) (*trace.Event, error) {
+func FindingToEvent(f *detect.Finding) (*trace.Event, error) {
 	s, ok := f.Event.Payload.(trace.Event)
 
 	if !ok {
@@ -24,7 +24,7 @@ func FindingToEvent(f detect.Finding) (*trace.Event, error) {
 	return newEvent(int(eventDefID), f, s), nil
 }
 
-func newEvent(id int, f detect.Finding, e trace.Event) *trace.Event {
+func newEvent(id int, f *detect.Finding, e trace.Event) *trace.Event {
 	arguments := getArguments(f, e)
 	metadata := getMetadataFromSignatureMetadata(f.SigMetadata)
 
@@ -65,7 +65,7 @@ func newEvent(id int, f detect.Finding, e trace.Event) *trace.Event {
 	}
 }
 
-func getArguments(f detect.Finding, triggerEvent trace.Event) []trace.Argument {
+func getArguments(f *detect.Finding, triggerEvent trace.Event) []trace.Argument {
 	arguments := make([]trace.Argument, 0, len(f.Data))
 
 	for k, v := range f.Data {

@@ -17,7 +17,7 @@ func TestStdioOverSocket(t *testing.T) {
 	testCases := []struct {
 		Name     string
 		Events   []trace.Event
-		Findings map[string]detect.Finding
+		Findings map[string]*detect.Finding
 	}{
 		{
 			Name: "should trigger detection - security_socket_connect",
@@ -40,7 +40,7 @@ func TestStdioOverSocket(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-101": {
 					Data: map[string]interface{}{
 						"File descriptor": 0,
@@ -103,7 +103,7 @@ func TestStdioOverSocket(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
+			Findings: map[string]*detect.Finding{
 				"TRC-101": {
 					Data: map[string]interface{}{
 						"File descriptor": 0,
@@ -166,7 +166,7 @@ func TestStdioOverSocket(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 		{
 			Name: "should not trigger detection - security_socket_connect legit port",
@@ -189,7 +189,7 @@ func TestStdioOverSocket(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 		{
 			Name: "should not trigger detection - socket_dup wrong FD",
@@ -212,7 +212,7 @@ func TestStdioOverSocket(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 		{
 			Name: "should not trigger detection - socket_dup legit port",
@@ -235,7 +235,7 @@ func TestStdioOverSocket(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{},
+			Findings: map[string]*detect.Finding{},
 		},
 	}
 

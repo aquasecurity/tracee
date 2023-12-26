@@ -209,14 +209,14 @@ func (a *aio) OnEvent(event protocol.Event) error {
 		switch v := value.(type) {
 		case bool:
 			if v {
-				a.cb(detect.Finding{
+				a.cb(&detect.Finding{
 					Data:        nil,
 					Event:       event,
 					SigMetadata: a.sigIDToMetadata[sigID],
 				})
 			}
 		case map[string]interface{}:
-			a.cb(detect.Finding{
+			a.cb(&detect.Finding{
 				Data:        v,
 				Event:       event,
 				SigMetadata: a.sigIDToMetadata[sigID],

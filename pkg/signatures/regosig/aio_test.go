@@ -100,7 +100,7 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 		modules map[string]string
 		event   trace.Event
 		// findings are grouped by signature identifier for comparison
-		findings  map[string]detect.Finding
+		findings  map[string]*detect.Finding
 		wantError string
 	}{
 		{
@@ -119,7 +119,7 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 					},
 				},
 			},
-			findings: map[string]detect.Finding{
+			findings: map[string]*detect.Finding{
 				"TRC-BOOL": {
 					Data: nil,
 					Event: trace.Event{
@@ -172,7 +172,7 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 					},
 				},
 			},
-			findings: map[string]detect.Finding{
+			findings: map[string]*detect.Finding{
 				"TRC-OBJECT": {
 					Data: map[string]interface{}{
 						"p1": "test",
