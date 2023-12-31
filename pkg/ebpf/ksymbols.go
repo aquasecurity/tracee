@@ -8,6 +8,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/utils/ksyms"
 )
 
 var maxKsymNameLen = 64 // Most match the constant in the bpf code
@@ -39,7 +40,7 @@ func SendKsymbolsToMap(bpfKsymsMap *libbpfgo.BPFMap, ksymbols map[string]*helper
 
 func (t *Tracee) NewKernelSymbols() error {
 	// reading kallsyms needs CAP_SYSLOG
-	kernelSymbols, err := helpers.NewLazyKernelSymbolsMap()
+	kernelSymbols, err := ksyms.NewSafeKsymbolTable()
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
