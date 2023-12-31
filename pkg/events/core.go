@@ -10401,6 +10401,7 @@ var CoreEvents = map[ID]Definition{
 		dependencies: Dependencies{
 			ids: []ID{
 				SyscallTableCheck,
+				DoInitModule,
 			},
 		},
 		sets: []string{},
