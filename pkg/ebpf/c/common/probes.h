@@ -21,12 +21,14 @@
             return 0;                                                                              \
                                                                                                    \
         args_t args = {};                                                                          \
+        unsigned long *sp = (unsigned long *) PT_REGS_SP(ctx);                                     \
         args.args[0] = PT_REGS_PARM1(ctx);                                                         \
         args.args[1] = PT_REGS_PARM2(ctx);                                                         \
         args.args[2] = PT_REGS_PARM3(ctx);                                                         \
         args.args[3] = PT_REGS_PARM4(ctx);                                                         \
         args.args[4] = PT_REGS_PARM5(ctx);                                                         \
         args.args[5] = PT_REGS_PARM6(ctx);                                                         \
+        bpf_core_read(&args.args[6], sizeof(unsigned long), sp + 1);                               \
                                                                                                    \
         return save_args(&args, id);                                                               \
     }

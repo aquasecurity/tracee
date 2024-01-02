@@ -42,6 +42,7 @@ statfunc int load_args(args_t *args, u32 event_id)
     args->args[3] = saved_args->args[3];
     args->args[4] = saved_args->args[4];
     args->args[5] = saved_args->args[5];
+    args->args[6] = saved_args->args[6];
 
     return 0;
 }
