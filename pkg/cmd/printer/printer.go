@@ -326,10 +326,19 @@ func (p tableEventPrinter) Print(event trace.Event) {
 		}
 	}
 	for i, arg := range event.Args {
+		name := arg.Name
+		value := arg.Value
+
+		// triggeredBy from pkg/ebpf/finding.go breaks the table output,
+		// so we simplify it
+		if name == "triggeredBy" {
+			value = fmt.Sprintf("%s", value.(map[string]interface{})["name"])
+		}
+
 		if i == 0 {
-			fmt.Fprintf(p.out, "%s: %v", arg.Name, arg.Value)
+			fmt.Fprintf(p.out, "%s: %v", name, value)
 		} else {
-			fmt.Fprintf(p.out, ", %s: %v", arg.Name, arg.Value)
+			fmt.Fprintf(p.out, ", %s: %v", name, value)
 		}
 	}
 	fmt.Fprintln(p.out)
