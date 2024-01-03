@@ -140,7 +140,8 @@ for TEST in $TESTS; do
         --scope comm=echo,mv,ls,tracee,proctreetester,ping,ds_writer,tail \
         --dnscache enable \
         --grpc-listen-addr unix:/tmp/tracee.sock \
-        --events "$TEST" &
+        --events "$TEST" \
+        --events access_remote_vm,security_file_open &
 
     # Wait tracee to start
 
