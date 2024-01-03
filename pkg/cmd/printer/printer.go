@@ -325,9 +325,15 @@ func (p tableEventPrinter) Print(event trace.Event) {
 			)
 		}
 	}
-	for i, arg := range event.Args {
-		if i == 0 {
+	firstPrinted := false
+	for _, arg := range event.Args {
+		// The triggeredBy argument of signatures is spamming in the table view, so omit it
+		if arg.Name == "triggeredBy" {
+			continue
+		}
+		if !firstPrinted {
 			fmt.Fprintf(p.out, "%s: %v", arg.Name, arg.Value)
+			firstPrinted = true
 		} else {
 			fmt.Fprintf(p.out, ", %s: %v", arg.Name, arg.Value)
 		}
