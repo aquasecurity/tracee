@@ -81,7 +81,7 @@ RUN GOROOT=/usr/lib/go GOPATH=$HOME/go \
 # install revive
 
 RUN GOROOT=/usr/lib/go GOPATH=$HOME/go \
-    go install github.com/mgechev/revive@latest && \
+    go install github.com/mgechev/revive@e33fb87 && \
     cp $HOME/go/bin/revive /usr/bin/
 
 # install errcheck
