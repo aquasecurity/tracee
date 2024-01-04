@@ -53,7 +53,7 @@ For a complete walkthrough please see the [Kubernetes getting started guide][kub
 Join the community, and talk to us about any matter in the [GitHub Discussions](https://github.com/aquasecurity/tracee/discussions) or [Slack](https://slack.aquasec.com).  
 If you run into any trouble using Tracee or you would like to give use user feedback, please [create an issue.](https://github.com/aquasecurity/tracee/issues)
 
-Find more information on [contribution documentation](./contributing/overview/).
+Find more information on [contribution documentation](https://aquasecurity.github.io/tracee/latest/contributing/overview/).
 
 ## More about Aqua Security
 
