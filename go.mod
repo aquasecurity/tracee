@@ -15,7 +15,6 @@ require (
 	github.com/google/gopacket v1.1.19
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/hashicorp/golang-lru/v2 v2.0.2
-	github.com/kubernetes/cri-api v0.27.1
 	github.com/mennanov/fmutils v0.2.0
 	github.com/minio/sha256-simd v1.0.1
 	github.com/mitchellh/mapstructure v1.5.0
@@ -37,6 +36,7 @@ require (
 	k8s.io/api v0.28.3
 	k8s.io/apimachinery v0.28.3
 	k8s.io/client-go v0.28.3
+	k8s.io/cri-api v0.29.0
 	k8s.io/kubectl v0.27.7
 	kernel.org/pub/linux/libs/security/libcap/cap v1.2.68
 	sigs.k8s.io/controller-runtime v0.16.3
@@ -134,7 +134,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/google/go-cmp v0.5.9 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/huandu/xstrings v1.4.0 // indirect
 	github.com/imdario/mergo v0.3.15 // indirect
@@ -178,5 +178,3 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	kernel.org/pub/linux/libs/security/libcap/psx v1.2.68 // indirect
 )
-
-replace github.com/kubernetes/cri-api => k8s.io/cri-api v0.23.5-rc.0
