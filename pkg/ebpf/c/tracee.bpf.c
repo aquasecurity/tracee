@@ -749,6 +749,7 @@ statfunc bool is_hidden(u64 mod)
 statfunc bool find_modules_from_module_kset_list(program_data_t *p)
 {
     char module_kset_sym[12] = "module_kset";
+    struct module *first_mod = NULL;
     struct kset *mod_kset = (struct kset *) get_symbol_addr(module_kset_sym);
     struct list_head *head = &(mod_kset->list);
     struct kobject *pos = list_first_entry_ebpf(head, typeof(*pos), entry);
@@ -770,6 +771,13 @@ statfunc bool find_modules_from_module_kset_list(program_data_t *p)
         if (mod_kobj) {
             struct module *mod = BPF_CORE_READ(mod_kobj, mod);
             if (mod) {
+                if (first_mod == NULL) {
+                    first_mod = mod;
+                } else if (first_mod == mod) { // Iterated over all modules - stop.
+                    finished_iterating = true;
+                    break;
+                }
+
                 if (is_hidden((u64) mod)) {
                     lkm_seeker_send_to_userspace(mod, &flags, p);
                 }
