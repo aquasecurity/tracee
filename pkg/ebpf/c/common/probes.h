@@ -10,6 +10,17 @@
 #include <common/context.h>
 #include <common/filtering.h>
 
+#if defined(bpf_target_x86)
+#define PT_REGS_PARM7(ctx) \
+      ({ \
+          unsigned long reg; \
+          unsigned long *sp = (unsigned long *) PT_REGS_SP(ctx); \
+          bpf_core_read(&reg, sizeof(unsigned long), sp + 1); \
+          reg; \
+      })
+
+#endif // bpf_target_x86
+
 #define TRACE_ENT_FUNC(name, id)                                                                   \
     int trace_##name(struct pt_regs *ctx)                                                          \
     {                                                                                              \
@@ -21,14 +32,13 @@
             return 0;                                                                              \
                                                                                                    \
         args_t args = {};                                                                          \
-        unsigned long *sp = (unsigned long *) PT_REGS_SP(ctx);                                     \
         args.args[0] = PT_REGS_PARM1(ctx);                                                         \
         args.args[1] = PT_REGS_PARM2(ctx);                                                         \
         args.args[2] = PT_REGS_PARM3(ctx);                                                         \
         args.args[3] = PT_REGS_PARM4(ctx);                                                         \
         args.args[4] = PT_REGS_PARM5(ctx);                                                         \
         args.args[5] = PT_REGS_PARM6(ctx);                                                         \
-        bpf_core_read(&args.args[6], sizeof(unsigned long), sp + 1);                               \
+        args.args[6] = PT_REGS_PARM7(ctx);                                                         \
                                                                                                    \
         return save_args(&args, id);                                                               \
     }
