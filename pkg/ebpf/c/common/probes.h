@@ -11,13 +11,13 @@
 #include <common/filtering.h>
 
 #if defined(bpf_target_x86)
-#define PT_REGS_PARM7(ctx) \
-      ({ \
-          unsigned long reg; \
-          unsigned long *sp = (unsigned long *) PT_REGS_SP(ctx); \
-          bpf_core_read(&reg, sizeof(unsigned long), sp + 1); \
-          reg; \
-      })
+    #define PT_REGS_PARM7(ctx)                                                                     \
+        ({                                                                                         \
+            unsigned long reg;                                                                     \
+            unsigned long *sp = (unsigned long *) PT_REGS_SP(ctx);                                 \
+            bpf_core_read(&reg, sizeof(unsigned long), sp + 1);                                    \
+            reg;                                                                                   \
+        })
 
 #endif // bpf_target_x86
 
