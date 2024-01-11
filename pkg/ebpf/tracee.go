@@ -78,7 +78,7 @@ type Tracee struct {
 	// Internal Data
 	readFiles     map[string]string
 	pidsInMntns   bucketscache.BucketsCache // first n PIDs in each mountns
-	kernelSymbols helpers.KernelSymbolTable
+	kernelSymbols *helpers.KernelSymbolTable
 	// eBPF
 	bpfModule *bpf.Module
 	probes    *probes.ProbeGroup
@@ -342,28 +342,22 @@ func New(cfg config.Config) (*Tracee, error) {
 // initialization logic, especially one that causes side effects, should go
 // here and not New().
 func (t *Tracee) Init(ctx gocontext.Context) error {
-	// Initialize needed values
-
-	initReq, err := t.generateInitValues()
-	if err != nil {
-		return errfmt.Errorf("failed to generate required init values: %s", err)
-	}
+	var err error
 
 	// Init kernel symbols map
 
-	if initReq.Kallsyms {
-		err = capabilities.GetInstance().Specific(
-			func() error {
-				return t.NewKernelSymbols()
-			},
-			cap.SYSLOG,
-		)
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
+	err = capabilities.GetInstance().Specific(
+		func() error {
+			t.kernelSymbols, err = helpers.NewKernelSymbolTable()
+			return err
+		},
+		cap.SYSLOG,
+	)
+	if err != nil {
+		return errfmt.WrapError(err)
 	}
 
-	t.validateKallsymsDependencies() // Canceling events missing kernel symbols
+	t.validateKallsymsDependencies() // disable events w/ missing ksyms dependencies
 
 	// Initialize buckets cache
 
@@ -537,7 +531,6 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	return nil
 }
 
-// InitValues determines if to initialize values that might be needed by eBPF programs
 type InitValues struct {
 	Kallsyms bool
 }
@@ -1691,11 +1684,11 @@ func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
 	}
 	var seqOpsPointers [len(derive.NetSeqOps)]uint64
 	for i, seqName := range derive.NetSeqOps {
-		seqOpsStruct, err := t.kernelSymbols.GetSymbolByName("system", seqName)
+		seqOpsStruct, err := t.kernelSymbols.GetSymbolByOwnerAndName("system", seqName)
 		if err != nil {
 			continue
 		}
-		seqOpsPointers[i] = seqOpsStruct.Address
+		seqOpsPointers[i] = seqOpsStruct[0].Address
 	}
 	eventHandle := t.triggerContexts.Store(event)
 	_ = t.triggerSeqOpsIntegrityCheckCall(
@@ -1780,7 +1773,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 
 					continue
 				}
-				symbol, err := t.kernelSymbols.GetSymbolByName(owner, name)
+				symbol, err := t.kernelSymbols.GetSymbolByOwnerAndName(owner, name)
 				if err != nil {
 					if owner != "system" {
 						errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s - %v", p.ID, field, err))
@@ -1792,7 +1785,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 					prefixes := []string{"sys_", "__x64_sys_", "__arm64_sys_"}
 					var errSyscall error
 					for _, prefix := range prefixes {
-						symbol, errSyscall = t.kernelSymbols.GetSymbolByName(owner, prefix+name)
+						symbol, errSyscall = t.kernelSymbols.GetSymbolByOwnerAndName(owner, prefix+name)
 						if errSyscall == nil {
 							err = nil
 							break
@@ -1816,7 +1809,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 					}
 				}
 				eventHandle := t.triggerContexts.Store(event)
-				_ = t.triggerMemDumpCall(symbol.Address, length, uint64(eventHandle))
+				_ = t.triggerMemDumpCall(symbol[0].Address, length, uint64(eventHandle))
 			}
 		}
 	}

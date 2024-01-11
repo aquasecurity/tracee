@@ -8,24 +8,23 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/utils/ksyms"
 )
 
 var maxKsymNameLen = 64 // Most match the constant in the bpf code
 var globalSymbolOwner = "system"
 
-func LoadKallsymsValues(ksymsTable helpers.KernelSymbolTable, ksymbols []string) map[string]*helpers.KernelSymbol {
-	kallsymsMap := make(map[string]*helpers.KernelSymbol)
+func LoadKallsymsValues(ksymsTable *helpers.KernelSymbolTable, ksymbols []string) map[string]helpers.KernelSymbol {
+	kallsymsMap := make(map[string]helpers.KernelSymbol)
 	for _, name := range ksymbols {
-		symbol, err := ksymsTable.GetSymbolByName(globalSymbolOwner, name)
+		symbol, err := ksymsTable.GetSymbolByOwnerAndName(globalSymbolOwner, name)
 		if err == nil {
-			kallsymsMap[name] = symbol
+			kallsymsMap[name] = symbol[0]
 		}
 	}
 	return kallsymsMap
 }
 
-func SendKsymbolsToMap(bpfKsymsMap *libbpfgo.BPFMap, ksymbols map[string]*helpers.KernelSymbol) error {
+func SendKsymbolsToMap(bpfKsymsMap *libbpfgo.BPFMap, ksymbols map[string]helpers.KernelSymbol) error {
 	for ksymName, value := range ksymbols {
 		key := make([]byte, maxKsymNameLen)
 		copy(key, ksymName)
@@ -35,18 +34,6 @@ func SendKsymbolsToMap(bpfKsymsMap *libbpfgo.BPFMap, ksymbols map[string]*helper
 			return errfmt.WrapError(err)
 		}
 	}
-	return nil
-}
-
-func (t *Tracee) NewKernelSymbols() error {
-	// reading kallsyms needs CAP_SYSLOG
-	kernelSymbols, err := ksyms.NewSafeKsymbolTable()
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	t.kernelSymbols = kernelSymbols
-
 	return nil
 }
 
