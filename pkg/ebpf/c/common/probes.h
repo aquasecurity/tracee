@@ -11,13 +11,17 @@
 #include <common/filtering.h>
 
 #if defined(bpf_target_x86)
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wmacro-redefined"
+    // Redefine the PT_REGS_PARM7 from __unsupported__ to use the stack to get the argument
     #define PT_REGS_PARM7(ctx)                                                                     \
         ({                                                                                         \
-            unsigned long reg;                                                                     \
-            unsigned long *sp = (unsigned long *) PT_REGS_SP(ctx);                                 \
-            bpf_core_read(&reg, sizeof(unsigned long), sp + 1);                                    \
+            unsigned long __reg;                                                                   \
+            unsigned long *__sp = (unsigned long *) PT_REGS_SP(ctx);                               \
+            bpf_core_read(&__reg, sizeof(unsigned long), __sp + 1);                                \
             reg;                                                                                   \
         })
+    #pragma GCC diagnostic pop
 
 #endif // bpf_target_x86
 
