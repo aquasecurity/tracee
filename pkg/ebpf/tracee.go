@@ -1407,14 +1407,14 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 	if t.config.BlobPerfBufferSize > 0 {
 		t.fileWrPerfMap.Poll(pollTimeout)
-		go t.processFileCaptures(ctx)
+		go t.handleFileCaptures(ctx)
 	}
 
 	// Network capture perf buffer (similar to regular pipeline)
 
 	if pcaps.PcapsEnabled(t.config.Capture.Net) {
 		t.netCapPerfMap.Poll(pollTimeout)
-		go t.processNetCaptureEvents(ctx)
+		go t.handleNetCaptureEvents(ctx)
 	}
 
 	// Logging perf buffer
