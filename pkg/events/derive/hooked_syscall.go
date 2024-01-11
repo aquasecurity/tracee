@@ -28,11 +28,11 @@ func InitHookedSyscall() error {
 	return err
 }
 
-func DetectHookedSyscall(kernelSymbols helpers.KernelSymbolTable) DeriveFunction {
+func DetectHookedSyscall(kernelSymbols *helpers.KernelSymbolTable) DeriveFunction {
 	return deriveSingleEvent(events.HookedSyscall, deriveDetectHookedSyscallArgs(kernelSymbols))
 }
 
-func deriveDetectHookedSyscallArgs(kernelSymbols helpers.KernelSymbolTable) deriveArgsFunction {
+func deriveDetectHookedSyscallArgs(kernelSymbols *helpers.KernelSymbolTable) deriveArgsFunction {
 	return func(event trace.Event) ([]interface{}, error) {
 		syscallId, err := parse.ArgVal[int32](event.Args, "syscall_id")
 		if err != nil {
@@ -55,8 +55,8 @@ func deriveDetectHookedSyscallArgs(kernelSymbols helpers.KernelSymbolTable) deri
 		hookedOwner := ""
 		hookedFuncSymbol, err := kernelSymbols.GetSymbolByAddr(address)
 		if err == nil {
-			hookedFuncName = hookedFuncSymbol.Name
-			hookedOwner = hookedFuncSymbol.Owner
+			hookedFuncName = hookedFuncSymbol[0].Name
+			hookedOwner = hookedFuncSymbol[0].Owner
 		}
 
 		syscallName := convertToSyscallName(syscallId)

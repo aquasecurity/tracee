@@ -13,14 +13,20 @@ type Cloner interface {
 	Clone() Cloner
 }
 
-func ParseSymbol(address uint64, table helpers.KernelSymbolTable) *helpers.KernelSymbol {
-	hookingFunction, err := table.GetSymbolByAddr(address)
+func ParseSymbol(address uint64, table *helpers.KernelSymbolTable) helpers.KernelSymbol {
+	var hookingFunction helpers.KernelSymbol
+
+	symbols, err := table.GetSymbolByAddr(address)
 	if err != nil {
-		hookingFunction = &helpers.KernelSymbol{}
+		hookingFunction = helpers.KernelSymbol{}
 		hookingFunction.Owner = "hidden"
+	} else {
+		hookingFunction = symbols[0]
 	}
+
 	hookingFunction.Owner = strings.TrimPrefix(hookingFunction.Owner, "[")
 	hookingFunction.Owner = strings.TrimSuffix(hookingFunction.Owner, "]")
+
 	return hookingFunction
 }
 
