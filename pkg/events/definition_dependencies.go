@@ -45,6 +45,16 @@ func (d Dependencies) GetKSymbols() []KSymbol {
 	return d.kSymbols
 }
 
+func (d Dependencies) GetRequiredKSymbols() []KSymbol {
+	var requiredKSymbols []KSymbol
+	for _, kSymbol := range d.kSymbols {
+		if kSymbol.required {
+			requiredKSymbols = append(requiredKSymbols, kSymbol)
+		}
+	}
+	return requiredKSymbols
+}
+
 func (d Dependencies) GetProbes() []Probe {
 	if d.probes == nil {
 		return []Probe{}
@@ -85,7 +95,7 @@ type KSymbol struct {
 	required bool // tracee fails if symbol is not found
 }
 
-func (ks KSymbol) GetSymbol() string {
+func (ks KSymbol) GetSymbolName() string {
 	return ks.symbol
 }
 

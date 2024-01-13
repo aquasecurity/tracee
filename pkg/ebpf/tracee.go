@@ -964,41 +964,33 @@ func (t *Tracee) computeConfigValues(newPolicies *policy.Policies) []byte {
 	return configVal
 }
 
-// TODO: move this to Event Definition type, so can be reused by other components
-// checkUnavailableKSymbols checks if all kernel symbols required by events are available.
-func (t *Tracee) checkUnavailableKSymbols() map[events.ID][]string {
-	reqKSyms := []string{}
+// getUnavKsymsPerEvtID returns event IDs and symbols that are unavailable to them.
+func (t *Tracee) getUnavKsymsPerEvtID() map[events.ID][]string {
+	unavSymsPerEvtID := map[events.ID][]string{}
 
-	kSymbolsToEvents := make(map[string][]events.ID)
+	evtDefSymDeps := func(id events.ID) []events.KSymbol {
+		return events.Core.GetDefinitionByID(id).GetDependencies().GetKSymbols()
+	}
 
-	// Build a map of kernel symbols to events that require them
-	for id := range t.eventsState {
-		evtDefinition := events.Core.GetDefinitionByID(id)
-		for _, symDep := range evtDefinition.GetDependencies().GetKSymbols() {
-			if !symDep.IsRequired() {
+	for evtID := range t.eventsState {
+		for _, symDep := range evtDefSymDeps(evtID) {
+			sym, err := t.kernelSymbols.GetSymbolByName(symDep.GetSymbolName())
+			symName := symDep.GetSymbolName()
+			if err != nil {
+				// If the symbol is not found, it means it's unavailable.
+				unavSymsPerEvtID[evtID] = append(unavSymsPerEvtID[evtID], symName)
 				continue
 			}
-			symbol := symDep.GetSymbol()
-			reqKSyms = append(reqKSyms, symbol)
-			kSymbolsToEvents[symbol] = append(kSymbolsToEvents[symbol], id)
+			for _, s := range sym {
+				if s.Address == 0 {
+					// Same if the symbol is found but its address is 0.
+					unavSymsPerEvtID[evtID] = append(unavSymsPerEvtID[evtID], symName)
+				}
+			}
 		}
 	}
 
-	kallsymsValues := LoadKallsymsValues(t.kernelSymbols, reqKSyms)
-	unavailableKSymsForEventID := make(map[events.ID][]string)
-
-	// Build a map of events that require unavailable kernel symbols
-	for symName, evtsIDs := range kSymbolsToEvents {
-		ksym, ok := kallsymsValues[symName]
-		if ok && ksym.Address != 0 {
-			continue
-		}
-		for _, evtID := range evtsIDs {
-			unavailableKSymsForEventID[evtID] = append(unavailableKSymsForEventID[evtID], symName)
-		}
-	}
-
-	return unavailableKSymsForEventID
+	return unavSymsPerEvtID
 }
 
 // validateKallsymsDependencies load all symbols required by events dependencies
@@ -1008,7 +1000,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 	depsToCancel := make(map[events.ID]string)
 
 	// Cancel events with unavailable symbols dependencies
-	for eventToCancel, missingDepSyms := range t.checkUnavailableKSymbols() {
+	for eventToCancel, missingDepSyms := range t.getUnavKsymsPerEvtID() {
 		eventNameToCancel := events.Core.GetDefinitionByID(eventToCancel).GetName()
 		logger.Debugw(
 			"Event canceled because of missing kernel symbol dependency",
@@ -1053,11 +1045,10 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	if t.kernelSymbols != nil {
-		err = t.UpdateBPFKsymbolsMap()
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
+	// Update the kallsyms eBPF map with all symbols from the kallsyms file.
+	err = t.UpdateKallsyms()
+	if err != nil {
+		return errfmt.WrapError(err)
 	}
 
 	// Initialize kconfig variables (map used instead of relying in libbpf's .kconfig automated maps)
@@ -1301,6 +1292,7 @@ func (t *Tracee) initBPF() error {
 	}
 
 	// Initialize Control Plane
+
 	t.controlPlane, err = controlplane.NewController(
 		t.bpfModule,
 		t.containers,

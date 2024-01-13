@@ -213,35 +213,40 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 
 // processDoFinitModule handles a do_finit_module event and triggers other hooking detection logic.
 func (t *Tracee) processDoInitModule(event *trace.Event) error {
+	// Check if related events are being traced.
 	_, okSyscalls := t.eventsState[events.HookedSyscall]
 	_, okSeqOps := t.eventsState[events.HookedSeqOps]
 	_, okProcFops := t.eventsState[events.HookedProcFops]
 	_, okMemDump := t.eventsState[events.PrintMemDump]
 
-	if okSyscalls || okSeqOps || okProcFops || okMemDump {
-		err := capabilities.GetInstance().EBPF(
-			func() error {
-				return t.UpdateKallsyms()
-			},
-		)
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-		if okSyscalls && expectedSyscallTableInit {
-			t.triggerSyscallTableIntegrityCheckCall()
-		}
-		if okSeqOps {
-			// Trigger seq_ops hooking detection
-			t.triggerSeqOpsIntegrityCheck(*event)
-		}
-		if okMemDump {
-			errs := t.triggerMemDump(*event)
-			for _, err := range errs {
-				logger.Warnw("Memory dump", "error", err)
+	if !okSyscalls && !okSeqOps && !okProcFops && !okMemDump {
+		return nil
+	}
+
+	err := capabilities.GetInstance().EBPF(
+		func() error {
+			err := t.kernelSymbols.Refresh()
+			if err != nil {
+				return errfmt.WrapError(err)
 			}
+			return t.UpdateKallsyms()
+		},
+	)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+	if okSyscalls && expectedSyscallTableInit {
+		// Trigger syscall table hooking detection.
+		t.triggerSyscallTableIntegrityCheckCall()
+	}
+	if okSeqOps {
+		// Trigger seq_ops hooking detection
+		t.triggerSeqOpsIntegrityCheck(*event)
+	}
+	if okMemDump {
+		errs := t.triggerMemDump(*event)
+		for _, err := range errs {
+			logger.Warnw("Memory dump", "error", err)
 		}
 	}
 
