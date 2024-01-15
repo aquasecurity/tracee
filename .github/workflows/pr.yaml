@@ -115,7 +115,6 @@ jobs:
             echo " 2. Run 'make -f builder/Makefile.man man-run' to update '.1' files."
             exit 1
           fi
-
   #
   # CODE VERIFICATION
   #
@@ -264,9 +263,9 @@ jobs:
   #
   generate-matrix:
     name: Generate Test Matrix
-    needs:
-      - verify-signatures
-      - verify-tools
+    #needs:
+    #  - verify-signatures
+    #  - verify-tools
     runs-on: ubuntu-latest
     outputs:
       matrix01: ${{ steps.set-matrix.outputs.matrix01 }}
@@ -329,15 +328,17 @@ jobs:
       matrix:
         include: ${{fromJson(needs.generate-matrix.outputs.matrix01)}}
     env:
-      HOME: "/tmp/root"
-      GOPATH: "/tmp/go"
-      GOCACHE: "/tmp/go-cache"
-      GOROOT: "/usr/local/go"
+        HOME: "/tmp/root"
+        GOPATH: "/tmp/go"
+        GOCACHE: "/tmp/go-cache"
+        GOROOT: "/usr/local/go"
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: "Prepare Image (Fix AMIs)"
+        run: ./tests/e2e-install-deps.sh
       - name: "Environment Variables"
         run: |
           if [[ "${{ matrix.arch }}" == "aarch64" ]]; then

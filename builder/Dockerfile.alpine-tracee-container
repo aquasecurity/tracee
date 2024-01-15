@@ -9,7 +9,7 @@ ARG FLAVOR=tracee-ebpf-core
 # tracee-base
 #
 
-FROM alpine:3.18 as tracee-base
+FROM alpine:3.19 as tracee-base
 LABEL AS=tracee-base
 USER root
 
