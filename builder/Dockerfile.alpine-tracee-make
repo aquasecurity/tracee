@@ -2,7 +2,7 @@
 # Creates a local docker building environment (alpine).
 #
 
-FROM alpine:3.18
+FROM alpine:3.19
 
 ARG uid=1000
 ARG gid=1000

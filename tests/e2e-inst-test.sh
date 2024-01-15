@@ -110,14 +110,6 @@ for TEST in $TESTS; do
             info "skip hooked_syscall in mantic 6.5 kernel, broken"
             continue
         fi
-        if [[ "$VERSION_CODENAME" == "jammy" ]]; then
-            if [[ "$KERNEL" == *"5.19"* ]]; then
-                kill -9 "$(pidof unattended-upgrade)"
-                export DEBIAN_FRONTEND=noninteractive
-                apt-get update
-                apt-get install -y gcc-11 gcc-12
-            fi
-        fi
         "${TESTS_DIR}"/hooked_syscall.sh
         ;;
     esac
