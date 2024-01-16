@@ -795,6 +795,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#distributions-and-linux-flavors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Distributions and Linux Flavors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#kernel-version" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -17473,6 +17484,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#distributions-and-linux-flavors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Distributions and Linux Flavors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#kernel-version" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -17565,16 +17587,58 @@ every section should roughly cover:
 4. link for details and help
 -->
 
+<h2 id="distributions-and-linux-flavors">Distributions and Linux Flavors<a class="headerlink" href="#distributions-and-linux-flavors" title="Permanent link">&para;</a></h2>
+<ul>
+<li>List of supported environments:</li>
+<li>With BTFHUB (check BTF session below):<ul>
+<li>Centos 8 (kernel &lt; 4.18.0-193.el8)</li>
+<li>Debian 10 (buster) with v5.10 kernels</li>
+<li>Oracle Linux 7 and 8 with v5.4 kernels</li>
+<li>Red Hat 8 (kernel &lt;= 4.18.0-147.57.1)</li>
+<li>SuSe 15.3 (kernel &lt; 5.3.18-150300.59.90)</li>
+</ul>
+</li>
+<li>Regular Build:<ul>
+<li>Amazon Linux 2</li>
+<li>Centos 8 and newer</li>
+<li>Debian 11 (bullseye) and newer</li>
+<li>Fedora 38 and newer</li>
+<li>Oracle Linux 7, 8 (v5.4 kernels, some might need btfhub) and newer</li>
+<li>Red Hat 8 (newer v4.18 kernels) and newer</li>
+<li>SuSe 15.3 (newer kernels) and newer</li>
+<li>Possibly other distributions with recent kernels.</li>
+</ul>
+</li>
+<li>Cloud Environments:<ul>
+<li>Amazon EKS</li>
+<li>Azure AKS</li>
+<li>GKE (Google Kubernetes Engine): 5.4, 5.10, 5.15 and newer</li>
+<li>Minikube, Microk8s and other development environments</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>This list is based on capabilities those versions provide and not necessarily
+in tracee having all its features tested on each of them. Please provide
+feedback if you face any issues in one of those environments.</p>
+</blockquote>
 <h2 id="kernel-version">Kernel version<a class="headerlink" href="#kernel-version" title="Permanent link">&para;</a></h2>
-<p>To run Tracee a modern longterm supported kernel is needed: 5.4, 5.10, 5.15, 5.18, 6.1, 6.2.</p>
-<p>You can check <a href="https://kernel.org">kernel.org</a> for current supported kernels.<br />
-In addition to upstream kernels, most distributions long-term supported kernels are supported as well, including CentOS8 4.18 kernel.</p>
+<p>To run Tracee a modern longterm supported kernel is needed: 5.4, 5.10, 5.15, 6.2, 6.5  </p>
+<p>You can check <a href="https://kernel.org">kernel.org</a> for current supported kernels. In
+addition to upstream kernels, most distributions long-term supported kernels are
+supported as well, including CentOS8 4.18 kernel.</p>
 <h2 id="btf">BTF<a class="headerlink" href="#btf" title="Permanent link">&para;</a></h2>
-<p>Tracee needs low-level type information about the running kernel. Most modern Linux distributions ship with the <a href="https://www.kernel.org/doc/html/latest/bpf/btf.html">BTF</a> feature that exposes this information.  </p>
-<p>To test if this feature is enabled in your environment, check if <code>/sys/kernel/btf/vmlinux</code> exists. If absent, you might need to upgrade to a newer OS version, or contact your OS provider.</p>
+<p>Tracee needs low-level type information about the running kernel. Most modern
+Linux distributions ship with the <a href="https://www.kernel.org/doc/html/latest/bpf/btf.html">BTF</a>
+feature that exposes this information.  </p>
+<p>To test if this feature is enabled in your environment, check if
+<code>/sys/kernel/btf/vmlinux</code> exists. If absent, you might need to upgrade to a
+newer OS version, or contact your OS provider.</p>
 <h2 id="kernel-symbols">Kernel symbols<a class="headerlink" href="#kernel-symbols" title="Permanent link">&para;</a></h2>
-<p>Certain Tracee events require access to the Kernel Symbols Table, a feature present in many Linux distributions.</p>
-<p>To test if this feature is enabled in your environment, check if <code>/proc/kallsyms</code> exists. If absent, contact your OS provider. </p>
+<p>Certain Tracee events require access to the Kernel Symbols Table, a feature
+present in many Linux distributions.</p>
+<p>To test if this feature is enabled in your environment, check if
+<code>/proc/kallsyms</code> exists. If absent, contact your OS provider.</p>
 <p>Alternatively, you can disable the following events which depends on kallsyms:</p>
 <ul>
 <li><code>dirty_pipe_splice</code> (detects dirty pipe vulnerability - CVE-2022-0847)</li>
@@ -17587,15 +17651,18 @@ In addition to upstream kernels, most distributions long-term supported kernels 
 </ul>
 <p>For more information and help about kernel symbols, please see <a href="../../advanced/ksyms/">here</a>.</p>
 <h2 id="os-information">OS information<a class="headerlink" href="#os-information" title="Permanent link">&para;</a></h2>
-<p>Tracee will try to probe the running OS and kernel to detect available capabilities. For this, it needs access to some standard informative files:</p>
+<p>Tracee will try to probe the running OS and kernel to detect available
+capabilities. For this, it needs access to some standard informative files:</p>
 <ul>
 <li>For OS information please make sure the file <code>/etc/os-release</code> is available.</li>
 <li>For Kernel information please make sure on of the files <code>/boot/config-$(uname-r)</code> OR <code>/proc/config.gz</code> is available.</li>
 </ul>
 <p>For more information and help about OS info files, please see <a href="../../advanced/os-info/">here</a>.</p>
 <h2 id="process-capabilities">Process capabilities<a class="headerlink" href="#process-capabilities" title="Permanent link">&para;</a></h2>
-<p>Tracee needs non-trivial capabilities to instrument the kernel. The easiest way is run Tracee as "privileged" or "root".  </p>
-<p>If you want to run Tracee with "least privileges", here are the required capabilities and justifications:</p>
+<p>Tracee needs non-trivial capabilities to instrument the kernel. The easiest way
+is run Tracee as "privileged" or "root".  </p>
+<p>If you want to run Tracee with "least privileges", here are the required
+capabilities and justifications:</p>
 <ul>
 <li>Manage eBPF maps limits (<code>CAP_SYS_RESOURCE</code>)</li>
 <li>Load and Attach eBPF programs:<ul>
@@ -17610,7 +17677,8 @@ In addition to upstream kernels, most distributions long-term supported kernels 
 <li>On some environments (e.g. Ubuntu) <code>CAP_IPC_LOCK</code> might be required as well.</li>
 <li>On cgroup v1 environments, <code>CAP_SYS_ADMIN</code> is recommended if running from a container in order to allow tracee to mount the cpuset cgroup controller.</li>
 </ul>
-<p>For more information and help about process capabilities, please see <a href="../../advanced/dropping-capabilities/">here</a>.</p>
+<p>For more information and help about process capabilities, please see
+<a href="../../advanced/dropping-capabilities/">here</a>.</p>
 <h2 id="processor-architecture">Processor architecture<a class="headerlink" href="#processor-architecture" title="Permanent link">&para;</a></h2>
 <p>Tracee supports x86 and arm64 processors.</p>
 
