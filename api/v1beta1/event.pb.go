@@ -7,10 +7,10 @@
 package v1beta1
 
 import (
-	timestamp "github.com/golang/protobuf/ptypes/timestamp"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -27,7 +27,7 @@ type Event struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Timestamp *timestamp.Timestamp   `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Timestamp *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	Id        uint32                 `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
 	Name      string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	Policies  *Policies              `protobuf:"bytes,4,opt,name=policies,proto3,oneof" json:"policies,omitempty"`
@@ -68,7 +68,7 @@ func (*Event) Descriptor() ([]byte, []int) {
 	return file_api_v1beta1_event_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Event) GetTimestamp() *timestamp.Timestamp {
+func (x *Event) GetTimestamp() *timestamppb.Timestamp {
 	if x != nil {
 		return x.Timestamp
 	}
@@ -232,13 +232,13 @@ type Process struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Executable    *Executable           `protobuf:"bytes,1,opt,name=executable,proto3,oneof" json:"executable,omitempty"`
-	EntityId      *wrappers.UInt32Value `protobuf:"bytes,2,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
-	Pid           *wrappers.UInt32Value `protobuf:"bytes,3,opt,name=pid,proto3" json:"pid,omitempty"`
-	NamespacedPid *wrappers.UInt32Value `protobuf:"bytes,4,opt,name=namespaced_pid,json=namespacedPid,proto3" json:"namespaced_pid,omitempty"`
-	RealUser      *User                 `protobuf:"bytes,5,opt,name=real_user,json=realUser,proto3,oneof" json:"real_user,omitempty"`
-	Thread        *Thread               `protobuf:"bytes,6,opt,name=thread,proto3,oneof" json:"thread,omitempty"`
-	Parent        *Process              `protobuf:"bytes,7,opt,name=parent,proto3,oneof" json:"parent,omitempty"`
+	Executable    *Executable             `protobuf:"bytes,1,opt,name=executable,proto3,oneof" json:"executable,omitempty"`
+	EntityId      *wrapperspb.UInt32Value `protobuf:"bytes,2,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
+	Pid           *wrapperspb.UInt32Value `protobuf:"bytes,3,opt,name=pid,proto3" json:"pid,omitempty"`
+	NamespacedPid *wrapperspb.UInt32Value `protobuf:"bytes,4,opt,name=namespaced_pid,json=namespacedPid,proto3" json:"namespaced_pid,omitempty"`
+	RealUser      *User                   `protobuf:"bytes,5,opt,name=real_user,json=realUser,proto3,oneof" json:"real_user,omitempty"`
+	Thread        *Thread                 `protobuf:"bytes,6,opt,name=thread,proto3,oneof" json:"thread,omitempty"`
+	Parent        *Process                `protobuf:"bytes,7,opt,name=parent,proto3,oneof" json:"parent,omitempty"`
 }
 
 func (x *Process) Reset() {
@@ -280,21 +280,21 @@ func (x *Process) GetExecutable() *Executable {
 	return nil
 }
 
-func (x *Process) GetEntityId() *wrappers.UInt32Value {
+func (x *Process) GetEntityId() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.EntityId
 	}
 	return nil
 }
 
-func (x *Process) GetPid() *wrappers.UInt32Value {
+func (x *Process) GetPid() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.Pid
 	}
 	return nil
 }
 
-func (x *Process) GetNamespacedPid() *wrappers.UInt32Value {
+func (x *Process) GetNamespacedPid() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.NamespacedPid
 	}
@@ -374,7 +374,7 @@ type User struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Id *wrapperspb.UInt32Value `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
 func (x *User) Reset() {
@@ -409,7 +409,7 @@ func (*User) Descriptor() ([]byte, []int) {
 	return file_api_v1beta1_event_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *User) GetId() *wrappers.UInt32Value {
+func (x *User) GetId() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.Id
 	}
@@ -421,14 +421,14 @@ type Thread struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Start          *timestamp.Timestamp  `protobuf:"bytes,1,opt,name=start,proto3" json:"start,omitempty"`
-	Name           string                `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	EntityId       *wrappers.UInt32Value `protobuf:"bytes,3,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
-	Tid            *wrappers.UInt32Value `protobuf:"bytes,4,opt,name=tid,proto3" json:"tid,omitempty"`
-	NamespacedTid  *wrappers.UInt32Value `protobuf:"bytes,5,opt,name=namespaced_tid,json=namespacedTid,proto3" json:"namespaced_tid,omitempty"`
-	Syscall        string                `protobuf:"bytes,6,opt,name=syscall,proto3" json:"syscall,omitempty"`
-	Compat         bool                  `protobuf:"varint,7,opt,name=compat,proto3" json:"compat,omitempty"`
-	UserStackTrace *UserStackTrace       `protobuf:"bytes,8,opt,name=user_stack_trace,json=userStackTrace,proto3,oneof" json:"user_stack_trace,omitempty"`
+	Start          *timestamppb.Timestamp  `protobuf:"bytes,1,opt,name=start,proto3" json:"start,omitempty"`
+	Name           string                  `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	EntityId       *wrapperspb.UInt32Value `protobuf:"bytes,3,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
+	Tid            *wrapperspb.UInt32Value `protobuf:"bytes,4,opt,name=tid,proto3" json:"tid,omitempty"`
+	NamespacedTid  *wrapperspb.UInt32Value `protobuf:"bytes,5,opt,name=namespaced_tid,json=namespacedTid,proto3" json:"namespaced_tid,omitempty"`
+	Syscall        string                  `protobuf:"bytes,6,opt,name=syscall,proto3" json:"syscall,omitempty"`
+	Compat         bool                    `protobuf:"varint,7,opt,name=compat,proto3" json:"compat,omitempty"`
+	UserStackTrace *UserStackTrace         `protobuf:"bytes,8,opt,name=user_stack_trace,json=userStackTrace,proto3,oneof" json:"user_stack_trace,omitempty"`
 }
 
 func (x *Thread) Reset() {
@@ -463,7 +463,7 @@ func (*Thread) Descriptor() ([]byte, []int) {
 	return file_api_v1beta1_event_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *Thread) GetStart() *timestamp.Timestamp {
+func (x *Thread) GetStart() *timestamppb.Timestamp {
 	if x != nil {
 		return x.Start
 	}
@@ -477,21 +477,21 @@ func (x *Thread) GetName() string {
 	return ""
 }
 
-func (x *Thread) GetEntityId() *wrappers.UInt32Value {
+func (x *Thread) GetEntityId() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.EntityId
 	}
 	return nil
 }
 
-func (x *Thread) GetTid() *wrappers.UInt32Value {
+func (x *Thread) GetTid() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.Tid
 	}
 	return nil
 }
 
-func (x *Thread) GetNamespacedTid() *wrappers.UInt32Value {
+func (x *Thread) GetNamespacedTid() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.NamespacedTid
 	}
@@ -1098,26 +1098,26 @@ func file_api_v1beta1_event_proto_rawDescGZIP() []byte {
 
 var file_api_v1beta1_event_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_api_v1beta1_event_proto_goTypes = []interface{}{
-	(*Event)(nil),                // 0: tracee.v1beta1.Event
-	(*Policies)(nil),             // 1: tracee.v1beta1.Policies
-	(*Context)(nil),              // 2: tracee.v1beta1.Context
-	(*Process)(nil),              // 3: tracee.v1beta1.Process
-	(*Executable)(nil),           // 4: tracee.v1beta1.Executable
-	(*User)(nil),                 // 5: tracee.v1beta1.User
-	(*Thread)(nil),               // 6: tracee.v1beta1.Thread
-	(*UserStackTrace)(nil),       // 7: tracee.v1beta1.UserStackTrace
-	(*StackAddress)(nil),         // 8: tracee.v1beta1.StackAddress
-	(*Container)(nil),            // 9: tracee.v1beta1.Container
-	(*ContainerImage)(nil),       // 10: tracee.v1beta1.ContainerImage
-	(*K8S)(nil),                  // 11: tracee.v1beta1.K8s
-	(*Pod)(nil),                  // 12: tracee.v1beta1.Pod
-	(*K8SNamespace)(nil),         // 13: tracee.v1beta1.K8sNamespace
-	nil,                          // 14: tracee.v1beta1.Event.EventDataEntry
-	nil,                          // 15: tracee.v1beta1.Pod.LabelsEntry
-	(*timestamp.Timestamp)(nil),  // 16: google.protobuf.Timestamp
-	(*Threat)(nil),               // 17: tracee.v1beta1.Threat
-	(*wrappers.UInt32Value)(nil), // 18: google.protobuf.UInt32Value
-	(*EventValue)(nil),           // 19: tracee.v1beta1.EventValue
+	(*Event)(nil),                  // 0: tracee.v1beta1.Event
+	(*Policies)(nil),               // 1: tracee.v1beta1.Policies
+	(*Context)(nil),                // 2: tracee.v1beta1.Context
+	(*Process)(nil),                // 3: tracee.v1beta1.Process
+	(*Executable)(nil),             // 4: tracee.v1beta1.Executable
+	(*User)(nil),                   // 5: tracee.v1beta1.User
+	(*Thread)(nil),                 // 6: tracee.v1beta1.Thread
+	(*UserStackTrace)(nil),         // 7: tracee.v1beta1.UserStackTrace
+	(*StackAddress)(nil),           // 8: tracee.v1beta1.StackAddress
+	(*Container)(nil),              // 9: tracee.v1beta1.Container
+	(*ContainerImage)(nil),         // 10: tracee.v1beta1.ContainerImage
+	(*K8S)(nil),                    // 11: tracee.v1beta1.K8s
+	(*Pod)(nil),                    // 12: tracee.v1beta1.Pod
+	(*K8SNamespace)(nil),           // 13: tracee.v1beta1.K8sNamespace
+	nil,                            // 14: tracee.v1beta1.Event.EventDataEntry
+	nil,                            // 15: tracee.v1beta1.Pod.LabelsEntry
+	(*timestamppb.Timestamp)(nil),  // 16: google.protobuf.Timestamp
+	(*Threat)(nil),                 // 17: tracee.v1beta1.Threat
+	(*wrapperspb.UInt32Value)(nil), // 18: google.protobuf.UInt32Value
+	(*EventValue)(nil),             // 19: tracee.v1beta1.EventValue
 }
 var file_api_v1beta1_event_proto_depIdxs = []int32{
 	16, // 0: tracee.v1beta1.Event.timestamp:type_name -> google.protobuf.Timestamp

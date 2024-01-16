@@ -7,9 +7,9 @@
 package v1beta1
 
 import (
-	_struct "github.com/golang/protobuf/ptypes/struct"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -26,10 +26,10 @@ type WriteDataSourceRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id        string         `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Namespace string         `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Key       *_struct.Value `protobuf:"bytes,3,opt,name=key,proto3" json:"key,omitempty"`
-	Value     *_struct.Value `protobuf:"bytes,4,opt,name=value,proto3" json:"value,omitempty"`
+	Id        string          `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Namespace string          `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Key       *structpb.Value `protobuf:"bytes,3,opt,name=key,proto3" json:"key,omitempty"`
+	Value     *structpb.Value `protobuf:"bytes,4,opt,name=value,proto3" json:"value,omitempty"`
 }
 
 func (x *WriteDataSourceRequest) Reset() {
@@ -78,14 +78,14 @@ func (x *WriteDataSourceRequest) GetNamespace() string {
 	return ""
 }
 
-func (x *WriteDataSourceRequest) GetKey() *_struct.Value {
+func (x *WriteDataSourceRequest) GetKey() *structpb.Value {
 	if x != nil {
 		return x.Key
 	}
 	return nil
 }
 
-func (x *WriteDataSourceRequest) GetValue() *_struct.Value {
+func (x *WriteDataSourceRequest) GetValue() *structpb.Value {
 	if x != nil {
 		return x.Value
 	}
@@ -184,7 +184,7 @@ var file_api_v1beta1_datasource_proto_msgTypes = make([]protoimpl.MessageInfo, 2
 var file_api_v1beta1_datasource_proto_goTypes = []interface{}{
 	(*WriteDataSourceRequest)(nil),  // 0: tracee.v1beta1.WriteDataSourceRequest
 	(*WriteDataSourceResponse)(nil), // 1: tracee.v1beta1.WriteDataSourceResponse
-	(*_struct.Value)(nil),           // 2: google.protobuf.Value
+	(*structpb.Value)(nil),          // 2: google.protobuf.Value
 }
 var file_api_v1beta1_datasource_proto_depIdxs = []int32{
 	2, // 0: tracee.v1beta1.WriteDataSourceRequest.key:type_name -> google.protobuf.Value
