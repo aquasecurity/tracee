@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -12,6 +13,8 @@ import (
 //
 // ProbeGroup
 //
+
+var kernelSymbolTable *helpers.KernelSymbolTable
 
 // ProbeGroup is a collection of probes.
 type ProbeGroup struct {
@@ -103,7 +106,12 @@ func (p *ProbeGroup) GetProbeByHandle(handle Handle) Probe {
 }
 
 // NewDefaultProbeGroup initializes the default ProbeGroup (TODO: extensions will use probe groups)
-func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool) (*ProbeGroup, error) {
+func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, kSyms *helpers.KernelSymbolTable) (*ProbeGroup, error) {
+	if kSyms == nil {
+		return nil, errfmt.Errorf("kernel symbol table is nil")
+	}
+	kernelSymbolTable = kSyms // keep a reference to the kernel symbol table instead of creating a new one
+
 	binaryPath := "/proc/self/exe"
 
 	allProbes := map[Handle]Probe{
