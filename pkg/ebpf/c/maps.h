@@ -7,72 +7,6 @@
 
 #include <types.h>
 
-#define MAX_STACK_ADDRESSES 1024 // max amount of diff stack trace addrs to buffer
-#define MAX_STACK_DEPTH     20   // max depth of each stack trace to track
-
-#define BPF_MAP(_name, _type, _key_type, _value_type, _max_entries)                                \
-    struct {                                                                                       \
-        __uint(type, _type);                                                                       \
-        __uint(max_entries, _max_entries);                                                         \
-        __type(key, _key_type);                                                                    \
-        __type(value, _value_type);                                                                \
-    } _name SEC(".maps");
-
-#define BPF_MAP_NO_KEY(_name, _type, _value_type, _max_entries)                                    \
-    struct {                                                                                       \
-        __uint(type, _type);                                                                       \
-        __uint(max_entries, _max_entries);                                                         \
-        __type(value, _value_type);                                                                \
-    } _name SEC(".maps");
-
-#define BPF_MAP_INNER(_name, _type, _key_type, _value_type, _max_entries)                          \
-    struct {                                                                                       \
-        __uint(type, _type);                                                                       \
-        __uint(max_entries, _max_entries);                                                         \
-        __type(key, _key_type);                                                                    \
-        __type(value, _value_type);                                                                \
-    } _name SEC(".maps");
-
-#define BPF_HASH_OUTER(_name, _inner_map, _max_entries)                                            \
-    struct {                                                                                       \
-        __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);                                                   \
-        __uint(max_entries, _max_entries);                                                         \
-        __type(key, u16);                                                                          \
-        __array(values, typeof(_inner_map));                                                       \
-    } _name SEC(".maps");
-
-#define BPF_HASH(_name, _key_type, _value_type, _max_entries)                                      \
-    BPF_MAP(_name, BPF_MAP_TYPE_HASH, _key_type, _value_type, _max_entries)
-
-#define BPF_HASH_INNER(_name, _key_type, _value_type, _max_entries)                                \
-    BPF_MAP_INNER(_name, BPF_MAP_TYPE_HASH, _key_type, _value_type, _max_entries)
-
-#define BPF_LRU_HASH(_name, _key_type, _value_type, _max_entries)                                  \
-    BPF_MAP(_name, BPF_MAP_TYPE_LRU_HASH, _key_type, _value_type, _max_entries)
-
-#define BPF_ARRAY(_name, _value_type, _max_entries)                                                \
-    BPF_MAP(_name, BPF_MAP_TYPE_ARRAY, u32, _value_type, _max_entries)
-
-#define BPF_PERCPU_ARRAY(_name, _value_type, _max_entries)                                         \
-    BPF_MAP(_name, BPF_MAP_TYPE_PERCPU_ARRAY, u32, _value_type, _max_entries)
-
-#define BPF_PROG_ARRAY(_name, _max_entries)                                                        \
-    BPF_MAP(_name, BPF_MAP_TYPE_PROG_ARRAY, u32, u32, _max_entries)
-
-#define BPF_PERF_OUTPUT(_name, _max_entries)                                                       \
-    BPF_MAP(_name, BPF_MAP_TYPE_PERF_EVENT_ARRAY, int, __u32, _max_entries)
-
-#define BPF_QUEUE(_name, _value_type, _max_entries)                                                \
-    BPF_MAP_NO_KEY(_name, BPF_MAP_TYPE_QUEUE, _value_type, _max_entries)
-
-#define BPF_STACK(_name, _value_type, _max_entries)                                                \
-    BPF_MAP_NO_KEY(_name, BPF_MAP_TYPE_STACK, _value_type, _max_entries)
-
-// stack traces: the value is 1 big byte array of the stack addresses
-typedef __u64 stack_trace_t[MAX_STACK_DEPTH];
-#define BPF_STACK_TRACE(_name, _max_entries)                                                       \
-    BPF_MAP(_name, BPF_MAP_TYPE_STACK_TRACE, u32, stack_trace_t, _max_entries)
-
 enum tail_call_id_e
 {
     TAIL_VFS_WRITE,
@@ -92,71 +26,596 @@ enum tail_call_id_e
     MAX_TAIL_CALL
 };
 
-// clang-format off
+// kernel config variables
+struct kconfig_map {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 10240);
+    __type(key, u32);
+    __type(value, u32);
+} kconfig_map SEC(".maps");
 
-BPF_HASH(kconfig_map, u32, u32, 10240);                            // kernel config variables
-BPF_HASH(containers_map, u32, u8, 10240);                          // map cgroup id to container status {EXISTED, CREATED, STARTED}
-BPF_HASH(args_map, u64, args_t, 1024);                             // persist args between function entry and return
+typedef struct kconfig_map kconfig_map_t;
 
-// versioned maps
-BPF_HASH_INNER(uid_filter, u32, eq_t, 256);                        // filter events by UID prototype, for specific UIDs either by == or !=
-BPF_HASH_OUTER(uid_filter_version, uid_filter, 64);                // map of UID filters maps
-BPF_HASH_INNER(pid_filter, u32, eq_t, 256);                        // filter events by PID prototype
-BPF_HASH_OUTER(pid_filter_version, pid_filter, 64);                // map of PID filters maps
-BPF_HASH_INNER(mnt_ns_filter, u64, eq_t, 256);                     // filter events by mount namespace id prototype
-BPF_HASH_OUTER(mnt_ns_filter_version, mnt_ns_filter, 64);          // map of mount namespace filters maps
-BPF_HASH_INNER(pid_ns_filter, u64, eq_t, 256);                     // filter events by pid namespace id prototype
-BPF_HASH_OUTER(pid_ns_filter_version, pid_ns_filter, 64);          // map of pid namespace filters maps
-BPF_HASH_INNER(uts_ns_filter, string_filter_t, eq_t, 256);         // filter events by uts namespace name prototype
-BPF_HASH_OUTER(uts_ns_filter_version, uts_ns_filter, 64);          // map of uts namespace filters maps
-BPF_HASH_INNER(comm_filter, string_filter_t, eq_t, 256);           // filter events by command name prototype
-BPF_HASH_OUTER(comm_filter_version, comm_filter, 64);              // map of command name filters maps
-BPF_HASH_INNER(cgroup_id_filter, u32, eq_t, 256);                  // filter events by cgroup id prototype
-BPF_HASH_OUTER(cgroup_id_filter_version, cgroup_id_filter, 64);    // map of cgroup id filters maps
-BPF_HASH_INNER(binary_filter, binary_t, eq_t, 256);                // filter events by binary path and mount namespace prototype
-BPF_HASH_OUTER(binary_filter_version, binary_filter, 64);          // map of binary filters maps
-BPF_HASH_INNER(process_tree_map, u32, eq_t, 10240);                // filter events by the ancestry of the traced process
-BPF_HASH_OUTER(process_tree_map_version, process_tree_map, 64);    // map of process tree maps
-BPF_HASH_INNER(events_map, u32, event_config_t, MAX_EVENT_ID);     // map to persist event configuration data
-BPF_HASH_OUTER(events_map_version, events_map, 64);                // map of events maps
+// map cgroup id to container status {EXISTED, CREATED, STARTED}
+struct containers_map {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 10240);
+    __type(key, u32);
+    __type(value, u8);
+} containers_map SEC(".maps");
 
-BPF_HASH(sys_32_to_64_map, u32, u32, 1024);                        // map 32bit to 64bit syscalls
-BPF_LRU_HASH(proc_info_map, u32, proc_info_t, 10240);              // holds data for every process
-BPF_LRU_HASH(task_info_map, u32, task_info_t, 10240);              // holds data for every task
-BPF_HASH(ksymbols_map, ksym_name_t, u64, 1024);                    // holds the addresses of some kernel symbols
-BPF_ARRAY(config_map, config_entry_t, 1);                          // various configurations
-BPF_ARRAY(file_write_path_filter, path_filter_t, 3);               // filter file write captures
-BPF_ARRAY(file_read_path_filter, path_filter_t, 3);                // filter file read captures
-BPF_ARRAY(file_type_filter, file_type_filter_t, 2);                // filter file types
-BPF_ARRAY(netconfig_map, netconfig_entry_t, 1);                    // network related configurations
-BPF_ARRAY(expected_sys_call_table, syscall_table_entry_t, MAX_SYS_CALL_TABLE_SIZE);    // expected addresses of sys call table
-BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);                        // percpu global buffer variables
-BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);                         // store programs for tail calls
-BPF_PROG_ARRAY(prog_array_tp, MAX_TAIL_CALL);                      // store programs for tail calls
-BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);                     // store syscall specific programs for tail calls from sys_enter
-BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);                      // store syscall specific programs for tail calls from sys_exit
-BPF_PROG_ARRAY(sys_enter_submit_tail, MAX_EVENT_ID);               // store program for submitting syscalls from sys_enter
-BPF_PROG_ARRAY(sys_exit_submit_tail, MAX_EVENT_ID);                // store program for submitting syscalls from sys_exit
-BPF_PROG_ARRAY(sys_enter_init_tail, MAX_EVENT_ID);                 // store program for performing syscall tracking logic in sys_enter
-BPF_PROG_ARRAY(sys_exit_init_tail, MAX_EVENT_ID);                  // store program for performing syscall tracking logic in sys_exits
-BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);             // store stack traces
-BPF_LRU_HASH(fd_arg_path_map, u64, fd_arg_path_t, 1024);           // store fds paths by timestamp
-BPF_LRU_HASH(bpf_attach_map, u32, bpf_used_helpers_t, 1024);       // holds bpf prog info
-BPF_LRU_HASH(bpf_attach_tmp_map, u32, bpf_used_helpers_t, 1024);   // temporarily hold bpf_used_helpers_t
-BPF_LRU_HASH(bpf_prog_load_map, u32, void *, 1024);                // store bpf prog aux pointer between bpf_check and security_bpf_prog
-BPF_PERCPU_ARRAY(event_data_map, event_data_t, 1);                 // persist event related data
-BPF_PERCPU_ARRAY(signal_data_map, controlplane_signal_t, 1);       // signal scratch map
-BPF_HASH(logs_count, bpf_log_t, bpf_log_count_t, 4096);            // logs count
-BPF_PERCPU_ARRAY(scratch_map, scratch_t, 1);                       // scratch space to avoid allocating stuff on the stack
-BPF_LRU_HASH(file_modification_map, file_mod_key_t, int, 10240);   // hold file data to decide if should submit file modification event
-BPF_LRU_HASH(io_file_path_cache_map, file_id_t, path_buf_t, 5);    // store cache for IO operations path
-BPF_LRU_HASH(elf_files_map, file_id_t, bool, 64);                  // store cache for file ELF type check
+typedef struct containers_map containers_map_t;
 
-// clang-format on
+// persist args between function entry and return
+struct args_map {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 1024);
+    __type(key, u64);
+    __type(value, args_t);
+} args_map SEC(".maps");
 
-BPF_PERF_OUTPUT(logs, 1024);        // logs submission
-BPF_PERF_OUTPUT(events, 1024);      // events submission
-BPF_PERF_OUTPUT(file_writes, 1024); // file writes events submission
-BPF_PERF_OUTPUT(signals, 1024);     // control plane signals submissions
+typedef struct args_map args_map_t;
+
+// map 32bit to 64bit syscalls
+struct sys_32_to_64_map {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 1024);
+    __type(key, u32);
+    __type(value, u32);
+} sys_32_to_64_map SEC(".maps");
+
+typedef struct sys_32_to_64_map sys_32_to_64_map_t;
+
+// holds data for every process
+struct proc_info_map {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 10240);
+    __type(key, u32);
+    __type(value, proc_info_t);
+} proc_info_map SEC(".maps");
+
+typedef struct proc_info_map proc_info_map_t;
+
+// holds data for every task
+struct task_info_map {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 10240);
+    __type(key, u32);
+    __type(value, task_info_t);
+} task_info_map SEC(".maps");
+
+typedef struct task_info_map task_info_map_t;
+
+// holds the addresses of some kernel symbols
+struct ksymbols_map {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 1024);
+    __type(key, ksym_name_t);
+    __type(value, u64);
+} ksymbols_map SEC(".maps");
+
+typedef struct ksymbols_map ksymbols_map_t;
+
+// various configurations
+struct config_map {
+    __uint(type, BPF_MAP_TYPE_ARRAY);
+    __uint(max_entries, 1);
+    __type(key, u32);
+    __type(value, config_entry_t);
+} config_map SEC(".maps");
+
+typedef struct config_map config_map_t;
+
+// filter file write captures
+struct file_write_path_filter {
+    __uint(type, BPF_MAP_TYPE_ARRAY);
+    __uint(max_entries, 3);
+    __type(key, u32);
+    __type(value, path_filter_t);
+} file_write_path_filter SEC(".maps");
+
+typedef struct file_write_path_filter file_write_path_filter_t;
+
+// filter file read captures
+struct file_read_path_filter {
+    __uint(type, BPF_MAP_TYPE_ARRAY);
+    __uint(max_entries, 3);
+    __type(key, u32);
+    __type(value, path_filter_t);
+} file_read_path_filter SEC(".maps");
+
+typedef struct file_read_path_filter file_read_path_filter_t;
+
+// filter file types
+struct file_type_filter {
+    __uint(type, BPF_MAP_TYPE_ARRAY);
+    __uint(max_entries, 2);
+    __type(key, u32);
+    __type(value, file_type_t);
+} file_type_filter SEC(".maps");
+
+typedef struct file_type_filter file_type_filter_t;
+
+// network related configurations
+struct netconfig_map {
+    __uint(type, BPF_MAP_TYPE_ARRAY);
+    __uint(max_entries, 1);
+    __type(key, u32);
+    __type(value, netconfig_entry_t);
+} netconfig_map SEC(".maps");
+
+typedef struct netconfig_map netconfig_map_t;
+
+// expected addresses of sys call table
+struct expected_sys_call_table {
+    __uint(type, BPF_MAP_TYPE_ARRAY);
+    __uint(max_entries, MAX_SYS_CALL_TABLE_SIZE);
+    __type(key, u32);
+    __type(value, syscall_table_entry_t);
+} expected_sys_call_table SEC(".maps");
+
+typedef struct expected_sys_call_table expected_sys_call_table_t;
+
+// percpu global buffer variables
+struct bufs {
+    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
+    __uint(max_entries, MAX_BUFFERS);
+    __type(key, u32);
+    __type(value, buf_t);
+} bufs SEC(".maps");
+
+typedef struct bufs bufs_t;
+
+// store programs for tail calls
+struct prog_array {
+    __uint(type, BPF_MAP_TYPE_PROG_ARRAY);
+    __uint(max_entries, MAX_TAIL_CALL);
+    __type(key, u32);
+    __type(value, u32);
+} prog_array SEC(".maps");
+
+typedef struct prog_array prog_array_t;
+
+// store programs for tail calls
+struct prog_array_tp {
+    __uint(type, BPF_MAP_TYPE_PROG_ARRAY);
+    __uint(max_entries, MAX_TAIL_CALL);
+    __type(key, u32);
+    __type(value, u32);
+} prog_array_tp SEC(".maps");
+
+typedef struct prog_array_tp prog_array_tp_t;
+
+// store syscall specific programs for tail calls from sys_enter
+struct sys_enter_tails {
+    __uint(type, BPF_MAP_TYPE_PROG_ARRAY);
+    __uint(max_entries, MAX_EVENT_ID);
+    __type(key, u32);
+    __type(value, u32);
+} sys_enter_tails SEC(".maps");
+
+typedef struct sys_enter_tails sys_enter_tails_t;
+
+// store syscall specific programs for tail calls from sys_exit
+struct sys_exit_tails {
+    __uint(type, BPF_MAP_TYPE_PROG_ARRAY);
+    __uint(max_entries, MAX_EVENT_ID);
+    __type(key, u32);
+    __type(value, u32);
+} sys_exit_tails SEC(".maps");
+
+typedef struct sys_exit_tails sys_exit_tails_t;
+
+// store program for submitting syscalls from sys_enter
+struct sys_enter_submit_tail {
+    __uint(type, BPF_MAP_TYPE_PROG_ARRAY);
+    __uint(max_entries, MAX_EVENT_ID);
+    __type(key, u32);
+    __type(value, u32);
+} sys_enter_submit_tail SEC(".maps");
+
+typedef struct sys_enter_submit_tail sys_enter_submit_tail_t;
+
+// store program for submitting syscalls from sys_exit
+struct sys_exit_submit_tail {
+    __uint(type, BPF_MAP_TYPE_PROG_ARRAY);
+    __uint(max_entries, MAX_EVENT_ID);
+    __type(key, u32);
+    __type(value, u32);
+} sys_exit_submit_tail SEC(".maps");
+
+typedef struct sys_exit_submit_tail sys_exit_submit_tail_t;
+
+// store program for performing syscall tracking logic in sys_enter
+struct sys_enter_init_tail {
+    __uint(type, BPF_MAP_TYPE_PROG_ARRAY);
+    __uint(max_entries, MAX_EVENT_ID);
+    __type(key, u32);
+    __type(value, u32);
+} sys_enter_init_tail SEC(".maps");
+
+typedef struct sys_enter_init_tail sys_enter_init_tail_t;
+
+// store program for performing syscall tracking logic in sys_exits
+struct sys_exit_init_tail {
+    __uint(type, BPF_MAP_TYPE_PROG_ARRAY);
+    __uint(max_entries, MAX_EVENT_ID);
+    __type(key, u32);
+    __type(value, u32);
+} sys_exit_init_tail SEC(".maps");
+
+typedef struct sys_exit_init_tail sys_exit_init_tail_t;
+
+// store stack traces
+#define MAX_STACK_ADDRESSES 1024 // max amount of diff stack trace addrs to buffer
+
+struct stack_addresses {
+    __uint(type, BPF_MAP_TYPE_STACK_TRACE);
+    __uint(max_entries, MAX_STACK_ADDRESSES);
+    __type(key, u32);
+    __type(value, stack_trace_t); // 1 big byte array of the stack addresses
+} stack_addresses SEC(".maps");
+
+typedef struct stack_addresses stack_addresses_t;
+
+// store fds paths by timestamp
+struct fd_arg_path_map {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 1024);
+    __type(key, u64);
+    __type(value, fd_arg_path_t);
+} fd_arg_path_map SEC(".maps");
+
+typedef struct fd_arg_path_map fd_arg_path_map_t;
+
+// holds bpf prog info
+struct bpf_attach_map {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 1024);
+    __type(key, u32);
+    __type(value, bpf_used_helpers_t);
+} bpf_attach_map SEC(".maps");
+
+typedef struct bpf_attach_map bpf_attach_map_t;
+
+// temporarily hold bpf_used_helpers_t
+struct bpf_attach_tmp_map {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 1024);
+    __type(key, u32);
+    __type(value, bpf_used_helpers_t);
+} bpf_attach_tmp_map SEC(".maps");
+
+typedef struct bpf_attach_tmp_map bpf_attach_tmp_map_t;
+
+// store bpf prog aux pointer between bpf_check and security_bpf_prog
+struct bpf_prog_load_map {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 1024);
+    __type(key, u32);
+    __type(value, void *);
+} bpf_prog_load_map SEC(".maps");
+
+typedef struct bpf_prog_load_map bpf_prog_load_map_t;
+
+// persist event related data
+struct event_data_map {
+    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
+    __uint(max_entries, 1);
+    __type(key, u32);
+    __type(value, event_data_t);
+} event_data_map SEC(".maps");
+
+typedef struct event_data_map event_data_map_t;
+
+// signal scratch map
+struct signal_data_map {
+    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
+    __uint(max_entries, 1);
+    __type(key, u32);
+    __type(value, controlplane_signal_t);
+} signal_data_map SEC(".maps");
+
+typedef struct signal_data_map signal_data_map_t;
+
+// logs count
+struct logs_count {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 4096);
+    __type(key, bpf_log_t);
+    __type(value, bpf_log_count_t);
+} logs_count SEC(".maps");
+
+typedef struct logs_count logs_count_t;
+
+// scratch space to avoid allocating stuff on the stack
+struct scratch_map {
+    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
+    __uint(max_entries, 1);
+    __type(key, u32);
+    __type(value, scratch_t);
+} scratch_map SEC(".maps");
+
+typedef struct scratch_map scratch_map_t;
+
+// hold file data to decide if should submit file modification event
+struct file_modification_map {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 10240);
+    __type(key, file_mod_key_t);
+    __type(value, s32);
+} file_modification_map SEC(".maps");
+
+typedef struct file_modification_map file_modification_map_t;
+
+// store cache for IO operations path
+struct io_file_path_cache_map {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 5);
+    __type(key, file_id_t);
+    __type(value, path_buf_t);
+} io_file_path_cache_map SEC(".maps");
+
+typedef struct io_file_path_cache_map io_file_path_cache_map_t;
+
+// store cache for file ELF type check
+struct elf_files_map {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 64);
+    __type(key, file_id_t);
+    __type(value, bool);
+} elf_files_map SEC(".maps");
+
+typedef struct elf_files_map elf_files_map_t;
+
+//
+// versioned maps (map of maps)
+//
+
+#define MAX_FILTER_VERSION 64 // max amount of filter versions to track
+
+// filter events by UID prototype, for specific UIDs either by == or !=
+struct uid_filter {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 256);
+    __type(key, u32);
+    __type(value, eq_t);
+} uid_filter SEC(".maps");
+
+typedef struct uid_filter uid_filter_t;
+
+// map of UID filters maps
+struct uid_filter_version {
+    __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
+    __uint(max_entries, MAX_FILTER_VERSION);
+    __type(key, u16);
+    __array(values, uid_filter_t);
+} uid_filter_version SEC(".maps");
+
+typedef struct uid_filter_version uid_filter_version_t;
+
+// filter events by PID
+struct pid_filter {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 256);
+    __type(key, u32);
+    __type(value, eq_t);
+} pid_filter SEC(".maps");
+
+typedef struct pid_filter pid_filter_t;
+
+// map of PID filters maps
+struct pid_filter_version {
+    __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
+    __uint(max_entries, MAX_FILTER_VERSION);
+    __type(key, u16);
+    __array(values, pid_filter_t);
+} pid_filter_version SEC(".maps");
+
+typedef struct pid_filter_version pid_filter_version_t;
+
+// filter events by mount namespace id
+struct mnt_ns_filter {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 256);
+    __type(key, u64);
+    __type(value, eq_t);
+} mnt_ns_filter SEC(".maps");
+
+typedef struct mnt_ns_filter mnt_ns_filter_t;
+
+// map of mount namespace filters maps
+struct mnt_ns_filter_version {
+    __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
+    __uint(max_entries, MAX_FILTER_VERSION);
+    __type(key, u16);
+    __array(values, mnt_ns_filter_t);
+} mnt_ns_filter_version SEC(".maps");
+
+typedef struct mnt_ns_filter_version mnt_ns_filter_version_t;
+
+// filter events by pid namespace id
+struct pid_ns_filter {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 256);
+    __type(key, u64);
+    __type(value, eq_t);
+} pid_ns_filter SEC(".maps");
+
+typedef struct pid_ns_filter pid_ns_filter_t;
+
+// map of pid namespace filters maps
+struct pid_ns_filter_version {
+    __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
+    __uint(max_entries, MAX_FILTER_VERSION);
+    __type(key, u16);
+    __array(values, pid_ns_filter_t);
+} pid_ns_filter_version SEC(".maps");
+
+typedef struct pid_ns_filter_version pid_ns_filter_version_t;
+
+// filter events by uts namespace name
+struct uts_ns_filter {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 256);
+    __type(key, string_filter_t);
+    __type(value, eq_t);
+} uts_ns_filter SEC(".maps");
+
+typedef struct uts_ns_filter uts_ns_filter_t;
+
+// map of uts namespace filters maps
+struct uts_ns_filter_version {
+    __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
+    __uint(max_entries, MAX_FILTER_VERSION);
+    __type(key, u16);
+    __array(values, uts_ns_filter_t);
+} uts_ns_filter_version SEC(".maps");
+
+typedef struct uts_ns_filter_version uts_ns_filter_version_t;
+
+// filter events by command name
+struct comm_filter {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 256);
+    __type(key, string_filter_t);
+    __type(value, eq_t);
+} comm_filter SEC(".maps");
+
+typedef struct comm_filter comm_filter_t;
+
+// map of command name filters maps
+struct comm_filter_version {
+    __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
+    __uint(max_entries, MAX_FILTER_VERSION);
+    __type(key, u16);
+    __array(values, comm_filter_t);
+} comm_filter_version SEC(".maps");
+
+typedef struct comm_filter_version comm_filter_version_t;
+
+// filter events by cgroup id
+struct cgroup_id_filter {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 256);
+    __type(key, u32);
+    __type(value, eq_t);
+} cgroup_id_filter SEC(".maps");
+
+typedef struct cgroup_id_filter cgroup_id_filter_t;
+
+// map of cgroup id filters maps
+struct cgroup_id_filter_version {
+    __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
+    __uint(max_entries, MAX_FILTER_VERSION);
+    __type(key, u16);
+    __array(values, cgroup_id_filter_t);
+} cgroup_id_filter_version SEC(".maps");
+
+typedef struct cgroup_id_filter_version cgroup_id_filter_version_t;
+
+// filter events by binary path and mount namespace
+struct binary_filter {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 256);
+    __type(key, binary_t);
+    __type(value, eq_t);
+} binary_filter SEC(".maps");
+
+typedef struct binary_filter binary_filter_t;
+
+// map of binary filters maps
+struct binary_filter_version {
+    __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
+    __uint(max_entries, MAX_FILTER_VERSION);
+    __type(key, u16);
+    __array(values, binary_filter_t);
+} binary_filter_version SEC(".maps");
+
+typedef struct binary_filter_version binary_filter_version_t;
+
+// filter events by the ancestry of the traced process
+struct process_tree_map {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 10240);
+    __type(key, u32);
+    __type(value, eq_t);
+} process_tree_map SEC(".maps");
+
+typedef struct process_tree_map process_tree_map_t;
+
+// map of process tree maps
+struct process_tree_map_version {
+    __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
+    __uint(max_entries, MAX_FILTER_VERSION);
+    __type(key, u16);
+    __array(values, process_tree_map_t);
+} process_tree_map_version SEC(".maps");
+
+typedef struct process_tree_map_version process_tree_map_version_t;
+
+// map to persist event configuration data
+struct events_map {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, MAX_EVENT_ID);
+    __type(key, u32);
+    __type(value, event_config_t);
+} events_map SEC(".maps");
+
+typedef struct events_map events_map_t;
+
+// map of events maps
+struct events_map_version {
+    __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
+    __uint(max_entries, MAX_FILTER_VERSION);
+    __type(key, u16);
+    __array(values, events_map_t);
+} events_map_version SEC(".maps");
+
+typedef struct events_map_version events_map_version_t;
+
+//
+// perf event maps
+//
+
+// logs submission
+struct logs {
+    __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
+    __uint(max_entries, 1024);
+    __type(key, s32);
+    __type(value, u32);
+} logs SEC(".maps");
+
+typedef struct logs logs_t;
+
+// events submission
+struct events {
+    __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
+    __uint(max_entries, 1024);
+    __type(key, s32);
+    __type(value, u32);
+} events SEC(".maps");
+
+typedef struct events events_t;
+
+// file writes events submission
+struct file_writes {
+    __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
+    __uint(max_entries, 1024);
+    __type(key, s32);
+    __type(value, u32);
+} file_writes SEC(".maps");
+
+typedef struct file_writes file_writes_t;
+
+// control plane signals submissions
+struct signals {
+    __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
+    __uint(max_entries, 1024);
+    __type(key, s32);
+    __type(value, u32);
+} signals SEC(".maps");
+
+typedef struct signals signals_t;
 
 #endif /* __MAPS_H__ */

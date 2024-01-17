@@ -547,12 +547,12 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     // Update the process tree map (filter related) if the parent has an entry.
 
     if (p.config->proc_tree_filter_enabled_scopes) {
-        u16 pols_version = p.event->context.policies_version;
+        u16 version = p.event->context.policies_version;
         // Give the compiler a hint about the map type, otherwise libbpf will complain
         // about missing type information. i.e.: "can't determine value size for type".
-        // TODO: remove map macros and use typedef for map structs #3508.
-        void *inner_proc_tree_map = &process_tree_map;
-        inner_proc_tree_map = bpf_map_lookup_elem(&process_tree_map_version, &pols_version);
+        process_tree_map_t *inner_proc_tree_map = &process_tree_map;
+
+        inner_proc_tree_map = bpf_map_lookup_elem(&process_tree_map_version, &version);
         if (inner_proc_tree_map != NULL) {
             eq_t *tgid_filtered = bpf_map_lookup_elem(inner_proc_tree_map, &parent_pid);
             if (tgid_filtered) {
@@ -652,8 +652,23 @@ enum
 // Forcibly create the map in all kernels, even when not needed, due to lack of
 // support for kernel version awareness about map loading errors.
 
-BPF_HASH(modules_map, u64, kernel_module_t, MAX_NUM_MODULES);
-BPF_HASH(new_module_map, u64, kernel_new_mod_t, MAX_NUM_MODULES);
+struct modules_map {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, MAX_NUM_MODULES);
+    __type(key, u64);
+    __type(value, kernel_module_t);
+} modules_map SEC(".maps");
+
+typedef struct modules_map modules_map_t;
+
+struct new_module_map {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, MAX_NUM_MODULES);
+    __type(key, u64);
+    __type(value, kernel_new_mod_t);
+} new_module_map SEC(".maps");
+
+typedef struct new_module_map new_module_map_t;
 
 // We only care for modules that got deleted or inserted between our scan and if
 // we detected something suspicious. Since it's a very small time frame, it's
@@ -664,11 +679,23 @@ BPF_HASH(new_module_map, u64, kernel_new_mod_t, MAX_NUM_MODULES);
 // a map), but an attacker might start unloading modules in the background and
 // race with the check in order to abort reporting for hidden modules.
 
-BPF_LRU_HASH(recent_deleted_module_map, u64, kernel_deleted_mod_t, 50);
-BPF_LRU_HASH(recent_inserted_module_map,
-             u64,
-             kernel_new_mod_t,
-             50); // Likewise for module insertion
+struct recent_deleted_module_map {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 50);
+    __type(key, u64);
+    __type(value, kernel_deleted_mod_t);
+} recent_deleted_module_map SEC(".maps");
+
+typedef struct recent_deleted_module_map recent_deleted_module_map_t;
+
+struct recent_inserted_module_map {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 50); // likewise for module insertion
+    __type(key, u64);
+    __type(value, kernel_new_mod_t);
+} recent_inserted_module_map SEC(".maps");
+
+typedef struct recent_inserted_module_map recent_inserted_module_map_t;
 
 void __always_inline lkm_seeker_send_to_userspace(struct module *mod, u32 *flags, program_data_t *p)
 {
@@ -799,7 +826,13 @@ statfunc bool find_modules_from_module_kset_list(program_data_t *p)
     return !finished_iterating;
 }
 
-BPF_QUEUE(walk_mod_tree_queue, rb_node_t, MAX_NUM_MODULES); // used to walk a rb tree
+struct walk_mod_tree_queue {
+    __uint(max_entries, MAX_NUM_MODULES);
+    __uint(type, BPF_MAP_TYPE_QUEUE);
+    __type(value, rb_node_t);
+} walk_mod_tree_queue SEC(".maps");
+
+typedef struct walk_mod_tree_queue walk_mod_tree_queue_t;
 
 statfunc struct latch_tree_node *__lt_from_rb(struct rb_node *node, int idx)
 {
@@ -1356,13 +1389,13 @@ int tracepoint__sched__sched_process_free(struct bpf_raw_tracepoint_args *ctx)
             return 0;
 
         // remove it only from the current policies version map
-        u16 pols_version = cfg->policies_version;
+        u16 version = cfg->policies_version;
 
         // Give the compiler a hint about the map type, otherwise libbpf will complain
         // about missing type information. i.e.: "can't determine value size for type".
-        // TODO: remove map macros and use typedef for map structs #3508.
-        void *inner_proc_tree_map = &process_tree_map;
-        inner_proc_tree_map = bpf_map_lookup_elem(&process_tree_map_version, &pols_version);
+        process_tree_map_t *inner_proc_tree_map = &process_tree_map;
+
+        inner_proc_tree_map = bpf_map_lookup_elem(&process_tree_map_version, &version);
         if (inner_proc_tree_map != NULL)
             bpf_map_delete_elem(inner_proc_tree_map, &tgid);
     }
@@ -5143,8 +5176,8 @@ statfunc u64 should_submit_net_event(net_event_context_t *neteventctx,
 {
     enum event_id_e evt_id = net_packet_to_net_event(packet_type);
 
-    u16 pols_version = neteventctx->eventctx.policies_version;
-    void *inner_events_map = bpf_map_lookup_elem(&events_map_version, &pols_version);
+    u16 version = neteventctx->eventctx.policies_version;
+    void *inner_events_map = bpf_map_lookup_elem(&events_map_version, &version);
     if (inner_events_map == NULL)
         return 0;
 

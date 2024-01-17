@@ -275,10 +275,6 @@ typedef struct string_filter {
     char str[MAX_STR_FILTER_SIZE];
 } string_filter_t;
 
-typedef struct binary_filter {
-    char str[MAX_BIN_PATH_SIZE];
-} binary_filter_t;
-
 typedef struct ksym_name {
     char str[MAX_KSYM_NAME_SIZE];
 } ksym_name_t;
@@ -536,7 +532,9 @@ enum file_modification_op
     FILE_MODIFICATION_DONE,
 };
 
-// Type for values representing file types filters
-typedef u32 file_type_filter_t;
+#define MAX_STACK_DEPTH 20 // max depth of each stack trace to track
+
+typedef __u64 stack_trace_t[MAX_STACK_DEPTH];
+typedef u32 file_type_t;
 
 #endif
