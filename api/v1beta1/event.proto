@@ -15,7 +15,7 @@ message Event {
     string name = 3;
     optional Policies policies = 4;
     Context context = 5;
-    map<string, EventValue> event_data = 6;
+    repeated EventValue data = 6;
     optional Threat threat = 7;
 }
 

@@ -8,60 +8,60 @@ import "google/protobuf/wrappers.proto";
 import "google/protobuf/struct.proto";
 
 message EventValue {
+    string name = 1;
     oneof value {
-        google.protobuf.Int32Value int32 = 1; // intT
-        google.protobuf.Int64Value int64 = 2; // longT
-        google.protobuf.UInt32Value u_int32 = 3; // uintT, modeT, devT, u8T, u16T
-        google.protobuf.UInt64Value u_int64 = 4; // ulongT, offT, sizeT, pointerT
-        google.protobuf.StringValue str = 5; // strT
-        google.protobuf.BytesValue bytes = 6; // bytesT
-        google.protobuf.BoolValue bool = 7; // boolT
-        StringArrayValue str_array = 10; // strArrT, argsArrT
-        Int32ArrayValue int32_array = 11; // intArr2T
-        UInt64ArrayValue u_int64_array = 12; // uint64ArrT
-        SockAddrValue sockaddr = 13; // sockaddrT
-        CredValue cred = 14; // credT
-        TimespecValue timespec = 15; // timespecT
-        ArgsValue args = 16;
-        TriggeredBy triggered_by = 17;
-        HookedSyscalls hooked_syscalls = 18;
-        HookedSeqOps hooked_seq_ops = 19;
-        IPv4 ipv4 = 20;
-        IPv6 ipv6 = 21;
-        TCP tcp = 22;
-        UDP udp = 23;
-        ICMP icmp = 24;
-        ICMPv6 icmpv6 = 25;
-        DNS dns = 26;
-        DnsQuestions dns_questions = 27;
-        DnsResponses dns_responses = 28;
-        PktMeta packet_metadata = 29;
-        HTTP http = 30;
-        HTTPRequest http_request = 31;
-        HTTPResponse http_response = 32;
-        google.protobuf.Struct struct = 33;
+        int32 int32 = 2; // intT
+        int64 int64 = 3; // longT
+        uint32 u_int32 = 4; // uintT, modeT, devT, u8T, u16T
+        uint64 u_int64 = 5; // ulongT, offT, sizeT, pointerT
+        string str = 6; // strT
+        bytes bytes = 7; // bytesT
+        bool bool = 8; // boolT
+        StringArray str_array = 9; // strArrT, argsArrT
+        Int32Array int32_array = 10; // intArr2T
+        UInt64Array u_int64_array = 11; // uint64ArrT
+        SockAddr sockaddr = 12; // sockaddrT
+        Credentials credentials = 13; // credT
+        Timespec timespec = 14; // timespecT
+        TriggeredBy triggered_by = 15;
+        HookedSyscalls hooked_syscalls = 16;
+        HookedSeqOps hooked_seq_ops = 17;
+        IPv4 ipv4 = 18;
+        IPv6 ipv6 = 19;
+        TCP tcp = 20;
+        UDP udp = 21;
+        ICMP icmp = 22;
+        ICMPv6 icmpv6 = 23;
+        DNS dns = 24;
+        DnsQuestions dns_questions = 25;
+        DnsResponses dns_responses = 26;
+        PktMeta packet_metadata = 27;
+        HTTP http = 28;
+        HTTPRequest http_request = 29;
+        HTTPResponse http_response = 30;
+        google.protobuf.Struct struct = 31;
     }
 }
 
 message TriggeredBy {
     uint32 id = 1;
     string name = 2;
-    map<string, EventValue> data = 3;
+    repeated EventValue data = 3;
 }
 
-message StringArrayValue {
-    repeated google.protobuf.StringValue value = 1;
+message StringArray {
+    repeated string value = 1;
 }
 
-message Int32ArrayValue {
-    repeated google.protobuf.Int32Value value = 1;
+message Int32Array {
+    repeated int32 value = 1;
 }
 
-message UInt64ArrayValue {
-    repeated google.protobuf.UInt64Value value = 1;
+message UInt64Array {
+    repeated uint64 value = 1;
 }
 
-message CredValue {
+message Credentials {
     google.protobuf.UInt32Value uid = 1;
     google.protobuf.UInt32Value gid = 2;
     google.protobuf.UInt32Value suid = 3;
@@ -79,15 +79,11 @@ message CredValue {
     repeated Capability cap_ambient = 15;
 }
 
-message TimespecValue {
+message Timespec {
     google.protobuf.DoubleValue value = 1;
 }
 
-message ArgsValue {
-    repeated EventValue value = 1;
-}
-
-message SockAddrValue {
+message SockAddr {
     sa_family_t sa_family = 1;
     string sun_path = 2;
     string sin_addr = 3;
