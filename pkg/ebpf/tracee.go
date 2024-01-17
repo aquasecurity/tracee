@@ -1268,7 +1268,7 @@ func (t *Tracee) initBPF() error {
 
 	// Initialize probes
 
-	t.probes, err = probes.NewDefaultProbeGroup(t.bpfModule, t.netEnabled())
+	t.probes, err = probes.NewDefaultProbeGroup(t.bpfModule, t.netEnabled(), t.kernelSymbols)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
