@@ -17,8 +17,12 @@
 ARCH=$(uname -m)
 
 disable_unattended_upgrades() {
-    systemctl disable --now unattended-upgrade || true
-    sleep 3
+    # This is a pain point. Make sure to always disable anything touching the
+    # dpkg database, otherwise it will fail with locking errors.
+    systemctl disable --now unattended-upgrades || true
+    apt-get remove -y --purge unattended-upgrades || true
+    apt-get remove -y --purge ubuntu-advantage-tools || true
+    sleep 5 # wait for dpkg lock to be released
 }
 
 remove_llvm_alternatives() {
@@ -70,6 +74,7 @@ remove_llvm_usr_bin_files() {
     rm -f /usr/bin/clang++*
     rm -f /usr/bin/clangd*
     rm -f /usr/bin/clang-format*
+
     rm -f /usr/bin/lld*
     rm -f /usr/bin/llc*
     rm -f /usr/bin/llvm-strip*
