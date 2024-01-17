@@ -1193,50 +1193,54 @@ func (t *Tracee) populateFilterMaps(newPolicies *policy.Policies, updateProcTree
 	return nil
 }
 
+// cancelEventFromEventState cancels an event and all its dependencies from the eventsState map.
+func (t *Tracee) cancelEventFromEventState(evtID events.ID) {
+	delete(t.eventsState, evtID)
+	evtDef := events.Core.GetDefinitionByID(evtID)
+	for _, evtDeps := range evtDef.GetDependencies().GetIDs() {
+		t.cancelEventFromEventState(evtDeps)
+	}
+}
+
 // attachProbes attaches selected events probes to their respective eBPF progs
 func (t *Tracee) attachProbes() error {
 	var err error
-	probesToEvents := make(map[events.Probe][]events.ID)
 
-	// attach all probes for the events being filtered
+	// Get probe dependencies for a given event ID
+	getProbeDeps := func(id events.ID) []events.Probe {
+		return events.Core.GetDefinitionByID(id).GetDependencies().GetProbes()
+	}
+
+	// Get the list of probes to attach for each event being traced.
+	probesToEvents := make(map[events.Probe][]events.ID)
 	for id := range t.eventsState {
 		if !events.Core.IsDefined(id) {
 			continue
 		}
-
-		eventDefinition := events.Core.GetDefinitionByID(id)
-
-		// attach internal syscall probes for selected syscall events, if any
-		if eventDefinition.IsSyscall() {
-			err := t.probes.Attach(probes.SyscallEnter__Internal)
-			if err != nil {
-				return errfmt.WrapError(err)
-			}
-			err = t.probes.Attach(probes.SyscallExit__Internal)
-			if err != nil {
-				return errfmt.WrapError(err)
-			}
-		}
-
-		// save required probes for later attachment
-		for _, probeDep := range eventDefinition.GetDependencies().GetProbes() {
+		for _, probeDep := range getProbeDeps(id) {
 			probesToEvents[probeDep] = append(probesToEvents[probeDep], id)
 		}
 	}
 
-	for probe, evtsIDs := range probesToEvents {
-		// attach probes for selected events
-		err = t.probes.Attach(probe.GetHandle(), t.cgroups)
-		if err != nil && probe.IsRequired() {
-			// if a required probe fails to attach, cancel all events that depend on it
-			for _, evtID := range evtsIDs {
+	// Attach probes to their respective eBPF programs or cancel events if a required probe is missing.
+	for probe, evtID := range probesToEvents {
+		err = t.probes.Attach(probe.GetHandle(), t.cgroups) // attach bpf program to probe
+		if err != nil {
+			for _, evtID := range evtID {
 				evtName := events.Core.GetDefinitionByID(evtID).GetName()
-				logger.Errorw(
-					"Event canceled because of missing probe dependency",
-					"missing probe", probe.GetHandle(), "event", evtName,
-				)
-
-				delete(t.eventsState, evtID)
+				if probe.IsRequired() {
+					logger.Errorw(
+						"Cancelling event and its dependencies because of missing probe",
+						"missing probe", probe.GetHandle(), "event", evtName,
+					)
+					t.cancelEventFromEventState(evtID) // cancel event recursively
+				} else {
+					logger.Debugw(
+						"Failed to attach non-required probe for event",
+						"event", evtName,
+						"probe", probe.GetHandle(), "error", err,
+					)
+				}
 			}
 		}
 	}
