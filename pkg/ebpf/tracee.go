@@ -1051,19 +1051,16 @@ func (t *Tracee) populateBPFMaps() error {
 		return errfmt.WrapError(err)
 	}
 
-	// Initialize kconfig variables (map used instead of relying in libbpf's .kconfig automated maps)
-	// Note: this allows libbpf not to rely on the system kconfig file, tracee does the kconfig var identification job
-
+	// Initialize kconfig ebpf map with values from the kernel config file.
+	// TODO: remove this from libbpf and try to rely in libbpf only for kconfig vars.
 	bpfKConfigMap, err := t.bpfModule.GetMap("kconfig_map") // u32, u32
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-
 	kconfigValues, err := initialization.LoadKconfigValues(t.config.KernelConfig)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-
 	for key, value := range kconfigValues {
 		keyU32 := uint32(key)
 		valueU32 := uint32(value)
@@ -1073,26 +1070,21 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	cZero := uint32(0)
-
-	// net_packet configuration map
+	// Initialize the net_packet configuration eBPF map.
 	if pcaps.PcapsEnabled(t.config.Capture.Net) {
 		bpfNetConfigMap, err := t.bpfModule.GetMap("netconfig_map")
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
 
-		netConfigVal := make([]byte, 8) // u32 capture_options, u32 capture_length
-
+		netConfigVal := make([]byte, 8) // u32 capture_options + u32 capture_length
 		options := pcaps.GetPcapOptions(t.config.Capture.Net)
-
 		binary.LittleEndian.PutUint32(netConfigVal[0:4], uint32(options))
 		binary.LittleEndian.PutUint32(netConfigVal[4:8], t.config.Capture.Net.CaptureLength)
 
-		if err = bpfNetConfigMap.Update(
-			unsafe.Pointer(&cZero),
-			unsafe.Pointer(&netConfigVal[0]),
-		); err != nil {
+		cZero := uint32(0)
+		err = bpfNetConfigMap.Update(unsafe.Pointer(&cZero), unsafe.Pointer(&netConfigVal[0]))
+		if err != nil {
 			return errfmt.Errorf("error updating net config eBPF map: %v", err)
 		}
 	}
