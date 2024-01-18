@@ -31,6 +31,7 @@ const (
 	CgroupIdFilterVersion       = "cgroup_id_filter_version"
 	ProcessTreeFilterMapVersion = "process_tree_map_version"
 	BinaryFilterMapVersion      = "binary_filter_version"
+	PoliciesConfigVersion       = "policies_config_version"
 
 	// inner maps
 	UIDFilterMap         = "uid_filter"
@@ -42,11 +43,12 @@ const (
 	CgroupIdFilterMap    = "cgroup_id_filter"
 	ProcessTreeFilterMap = "process_tree_map"
 	BinaryFilterMap      = "binary_filter"
+	PoliciesConfigMap    = "policies_config_map"
 
 	ProcInfoMap = "proc_info_map"
 )
 
-// equality mirrors the C equality struct (eq_t).
+// equality mirrors the C struct equality (eq_t).
 // Check it for more info.
 type equality struct {
 	equalInPolicies       uint64
@@ -333,15 +335,15 @@ func (ps *Policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
 		}
 
 		// outerMap maps:
-		// 1. uid_filter_version           u32, uid_filter
-		// 2. pid_filter_version           u32, pid_filter
-		// 3. mnt_ns_filter_version        u32, mnt_ns_filter
-		// 4. pid_ns_filter_version        u32, pid_ns_filter
-		// 5. cgroup_id_filter_version     u32, cgroup_id_filter
-		// 6. uts_ns_filter_version        u32, uts_ns_filter
-		// 7. comm_filter_version          u32, comm_filter
-		// 8. process_tree_filter_version  u32, process_tree_filter
-		// 9. binary_filter_version        u32, binary_filter
+		// 1. uid_filter_version           u16, uid_filter
+		// 2. pid_filter_version           u16, pid_filter
+		// 3. mnt_ns_filter_version        u16, mnt_ns_filter
+		// 4. pid_ns_filter_version        u16, pid_ns_filter
+		// 5. cgroup_id_filter_version     u16, cgroup_id_filter
+		// 6. uts_ns_filter_version        u16, uts_ns_filter
+		// 7. comm_filter_version          u16, comm_filter
+		// 8. process_tree_filter_version  u16, process_tree_filter
+		// 9. binary_filter_version        u16, binary_filter
 		if err := updateOuterMap(bpfModule, outerMapName, polsVersion, newInnerMap); err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -661,14 +663,14 @@ func (ps *Policies) UpdateBPF(
 	eventsParams map[events.ID][]bufferdecoder.ArgType,
 	createNewMaps bool,
 	updateProcTree bool,
-) error {
+) (*PoliciesConfig, error) {
 	ps.rwmu.Lock()
 	defer ps.rwmu.Unlock()
 
 	if createNewMaps {
 		// Create new events map version
 		if err := ps.createNewEventsMapVersion(bpfModule, eventsState, eventsParams); err != nil {
-			return errfmt.WrapError(err)
+			return nil, errfmt.WrapError(err)
 		}
 	}
 
@@ -685,56 +687,240 @@ func (ps *Policies) UpdateBPF(
 	}
 
 	if err := ps.computeFilterEqualities(fEqs, cts); err != nil {
-		return errfmt.WrapError(err)
+		return nil, errfmt.WrapError(err)
 	}
 
 	if createNewMaps {
 		// Create new filter maps version
 		if err := ps.createNewFilterMapsVersion(bpfModule); err != nil {
-			return errfmt.WrapError(err)
+			return nil, errfmt.WrapError(err)
 		}
 	}
 
 	// Update UInt equalities filter maps
 	if err := ps.updateUIntFilterBPF(fEqs.uidEqualities, UIDFilterMap); err != nil {
-		return errfmt.WrapError(err)
+		return nil, errfmt.WrapError(err)
 	}
 	if err := ps.updateUIntFilterBPF(fEqs.pidEqualities, PIDFilterMap); err != nil {
-		return errfmt.WrapError(err)
+		return nil, errfmt.WrapError(err)
 	}
 	if err := ps.updateUIntFilterBPF(fEqs.mntNSEqualities, MntNSFilterMap); err != nil {
-		return errfmt.WrapError(err)
+		return nil, errfmt.WrapError(err)
 	}
 	if err := ps.updateUIntFilterBPF(fEqs.pidNSEqualities, PidNSFilterMap); err != nil {
-		return errfmt.WrapError(err)
+		return nil, errfmt.WrapError(err)
 	}
 	if err := ps.updateUIntFilterBPF(fEqs.cgroupIdEqualities, CgroupIdFilterMap); err != nil {
-		return errfmt.WrapError(err)
+		return nil, errfmt.WrapError(err)
 	}
 
 	// Update String equalities filter maps
 	if err := ps.updateStringFilterBPF(fEqs.utsEqualities, UTSFilterMap); err != nil {
-		return errfmt.WrapError(err)
+		return nil, errfmt.WrapError(err)
 	}
 	if err := ps.updateStringFilterBPF(fEqs.commEqualities, CommFilterMap); err != nil {
-		return errfmt.WrapError(err)
+		return nil, errfmt.WrapError(err)
 	}
 
 	if updateProcTree {
 		// Update ProcessTree equalities filter map
 		if err := ps.updateProcTreeFilterBPF(fEqs.procTreeEqualities, ProcessTreeFilterMap); err != nil {
-			return errfmt.WrapError(err)
+			return nil, errfmt.WrapError(err)
 		}
 	}
 
 	// Update Binary equalities filter map
 	if err := ps.updateBinaryFilterBPF(fEqs.binaryEqualities, BinaryFilterMap); err != nil {
-		return errfmt.WrapError(err)
+		return nil, errfmt.WrapError(err)
 	}
 	// Update ProcInfo map (required for binary filters)
 	if err := populateProcInfoMap(bpfModule, fEqs.binaryEqualities); err != nil {
+		return nil, errfmt.WrapError(err)
+	}
+
+	if createNewMaps {
+		// Create the policies config map version
+		//
+		// This must be done after the filter maps have been updated, as the
+		// policies config map contains the filter config computed from the
+		// policies filters.
+		if err := ps.createNewPoliciesConfigMap(bpfModule); err != nil {
+			return nil, errfmt.WrapError(err)
+		}
+	}
+
+	// Update policies config map version
+	pCfg := ps.computePoliciesConfig()
+	if err := pCfg.UpdateBPF(ps.bpfInnerMaps[PoliciesConfigMap]); err != nil {
+		return nil, errfmt.WrapError(err)
+	}
+
+	return pCfg, nil
+}
+
+// createNewPoliciesConfigMap creates a new version of the policies config map
+func (ps *Policies) createNewPoliciesConfigMap(bpfModule *bpf.Module) error {
+	version := ps.Version()
+	newInnerMap, err := createNewInnerMap(bpfModule, PoliciesConfigMap, version)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// policies_config_version  u16, policies_config_map
+	if err := updateOuterMap(bpfModule, PoliciesConfigVersion, version, newInnerMap); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	ps.bpfInnerMaps[PoliciesConfigMap] = newInnerMap
+
+	return nil
+}
+
+// PoliciesConfig mirrors the C struct policies_config (policies_config_t).
+// Order of fields is important, as it is used as a value for
+// the PoliciesConfigMap BPF map.
+type PoliciesConfig struct {
+	UIDFilterEnabledScopes      uint64
+	PIDFilterEnabledScopes      uint64
+	MntNsFilterEnabledScopes    uint64
+	PidNsFilterEnabledScopes    uint64
+	UtsNsFilterEnabledScopes    uint64
+	CommFilterEnabledScopes     uint64
+	CgroupIdFilterEnabledScopes uint64
+	ContFilterEnabledScopes     uint64
+	NewContFilterEnabledScopes  uint64
+	NewPidFilterEnabledScopes   uint64
+	ProcTreeFilterEnabledScopes uint64
+	BinPathFilterEnabledScopes  uint64
+	FollowFilterEnabledScopes   uint64
+
+	UIDFilterOutScopes      uint64
+	PIDFilterOutScopes      uint64
+	MntNsFilterOutScopes    uint64
+	PidNsFilterOutScopes    uint64
+	UtsNsFilterOutScopes    uint64
+	CommFilterOutScopes     uint64
+	CgroupIdFilterOutScopes uint64
+	ContFilterOutScopes     uint64
+	NewContFilterOutScopes  uint64
+	NewPidFilterOutScopes   uint64
+	ProcTreeFilterOutScopes uint64
+	BinPathFilterOutScopes  uint64
+
+	EnabledScopes uint64
+
+	UidMax uint64
+	UidMin uint64
+	PidMax uint64
+	PidMin uint64
+}
+
+func (pc *PoliciesConfig) UpdateBPF(bpfConfigMap *bpf.BPFMapLow) error {
+	if bpfConfigMap == nil {
+		return errfmt.Errorf("bpfConfigMap is nil")
+	}
+
+	cZero := 0
+	if err := bpfConfigMap.Update(unsafe.Pointer(&cZero), unsafe.Pointer(pc)); err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	return nil
+}
+
+// computePoliciesConfig computes the policies config from the policies.
+func (ps *Policies) computePoliciesConfig() *PoliciesConfig {
+	cfg := &PoliciesConfig{}
+
+	for p := range ps.Map() {
+		offset := p.ID
+
+		// filter enabled policies bitmap
+		if p.UIDFilter.Enabled() {
+			cfg.UIDFilterEnabledScopes |= 1 << offset
+		}
+		if p.PIDFilter.Enabled() {
+			cfg.PIDFilterEnabledScopes |= 1 << offset
+		}
+		if p.MntNSFilter.Enabled() {
+			cfg.MntNsFilterEnabledScopes |= 1 << offset
+		}
+		if p.PidNSFilter.Enabled() {
+			cfg.PidNsFilterEnabledScopes |= 1 << offset
+		}
+		if p.UTSFilter.Enabled() {
+			cfg.UtsNsFilterEnabledScopes |= 1 << offset
+		}
+		if p.CommFilter.Enabled() {
+			cfg.CommFilterEnabledScopes |= 1 << offset
+		}
+		if p.ContIDFilter.Enabled() {
+			cfg.CgroupIdFilterEnabledScopes |= 1 << offset
+		}
+		if p.ContFilter.Enabled() {
+			cfg.ContFilterEnabledScopes |= 1 << offset
+		}
+		if p.NewContFilter.Enabled() {
+			cfg.NewContFilterEnabledScopes |= 1 << offset
+		}
+		if p.NewPidFilter.Enabled() {
+			cfg.NewPidFilterEnabledScopes |= 1 << offset
+		}
+		if p.ProcessTreeFilter.Enabled() {
+			cfg.ProcTreeFilterEnabledScopes |= 1 << offset
+		}
+		if p.BinaryFilter.Enabled() {
+			cfg.BinPathFilterEnabledScopes |= 1 << offset
+		}
+		if p.Follow {
+			cfg.FollowFilterEnabledScopes |= 1 << offset
+		}
+
+		// filter out scopes bitmap
+		if p.UIDFilter.FilterOut() {
+			cfg.UIDFilterOutScopes |= 1 << offset
+		}
+		if p.PIDFilter.FilterOut() {
+			cfg.PIDFilterOutScopes |= 1 << offset
+		}
+		if p.MntNSFilter.FilterOut() {
+			cfg.MntNsFilterOutScopes |= 1 << offset
+		}
+		if p.PidNSFilter.FilterOut() {
+			cfg.PidNsFilterOutScopes |= 1 << offset
+		}
+		if p.UTSFilter.FilterOut() {
+			cfg.UtsNsFilterOutScopes |= 1 << offset
+		}
+		if p.CommFilter.FilterOut() {
+			cfg.CommFilterOutScopes |= 1 << offset
+		}
+		if p.ContIDFilter.FilterOut() {
+			cfg.CgroupIdFilterOutScopes |= 1 << offset
+		}
+		if p.ContFilter.FilterOut() {
+			cfg.ContFilterOutScopes |= 1 << offset
+		}
+		if p.NewContFilter.FilterOut() {
+			cfg.NewContFilterOutScopes |= 1 << offset
+		}
+		if p.NewPidFilter.FilterOut() {
+			cfg.NewPidFilterOutScopes |= 1 << offset
+		}
+		if p.ProcessTreeFilter.FilterOut() {
+			cfg.ProcTreeFilterOutScopes |= 1 << offset
+		}
+		if p.BinaryFilter.FilterOut() {
+			cfg.BinPathFilterOutScopes |= 1 << offset
+		}
+
+		cfg.EnabledScopes |= 1 << offset
+	}
+
+	cfg.UidMax = ps.UIDFilterMax()
+	cfg.UidMin = ps.UIDFilterMin()
+	cfg.PidMax = ps.PIDFilterMax()
+	cfg.PidMin = ps.PIDFilterMin()
+
+	return cfg
 }

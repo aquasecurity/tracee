@@ -373,6 +373,24 @@ typedef struct elf_files_map elf_files_map_t;
 //
 
 #define MAX_FILTER_VERSION 64 // max amount of filter versions to track
+struct policies_config_map {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 1);
+    __type(key, u32);
+    __type(value, policies_config_t);
+} policies_config_map SEC(".maps");
+
+typedef struct policies_config_map policies_config_map_t;
+
+// map of policies config maps
+struct policies_config_version {
+    __uint(type, BPF_MAP_TYPE_HASH_OF_MAPS);
+    __uint(max_entries, MAX_FILTER_VERSION);
+    __type(key, u16);
+    __array(values, policies_config_map_t);
+} policies_config_version SEC(".maps");
+
+typedef struct policies_config_version policies_config_version_t;
 
 // filter events by UID prototype, for specific UIDs either by == or !=
 struct uid_filter {
