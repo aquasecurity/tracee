@@ -81,10 +81,9 @@ func (p *TraceProbe) attach(module *bpf.Module, args ...interface{}) error {
 
 	switch p.probeType {
 	case KProbe, KretProbe:
-		attachFunc := prog.AttachKprobeOffset
-		if p.probeType == KretProbe {
-			attachFunc = prog.AttachKretprobeOnOffset
-		}
+		var err error
+		var link *bpf.BPFLink
+		var attachFunc func(uint64) (*bpf.BPFLink, error)
 		// https://github.com/aquasecurity/tracee/issues/3653#issuecomment-1832642225
 		//
 		// After commit b022f0c7e404 ('tracing/kprobes: Return EADDRNOTAVAIL
@@ -99,16 +98,35 @@ func (p *TraceProbe) attach(module *bpf.Module, args ...interface{}) error {
 		if err != nil {
 			goto rollback
 		}
-		if len(syms) == 0 {
+		switch len(syms) {
+		case 0:
 			err = errfmt.Errorf("failed to get symbol address: %s (%v)", p.eventName, err)
 			goto rollback
-		}
-		for _, sym := range syms {
-			link, err := attachFunc(sym.Address)
+		case 1: // single address, attach kprobe using symbol name
+			switch p.probeType {
+			case KProbe:
+				link, err = prog.AttachKprobe(syms[0].Name)
+			case KretProbe:
+				link, err = prog.AttachKretprobe(syms[0].Name)
+			}
 			if err != nil {
 				goto rollback
 			}
 			p.bpfLink = append(p.bpfLink, link)
+		default: // multiple addresses, attach kprobe using symbol addresses
+			switch p.probeType {
+			case KProbe:
+				attachFunc = prog.AttachKprobeOffset
+			case KretProbe:
+				attachFunc = prog.AttachKretprobeOnOffset
+			}
+			for _, sym := range syms {
+				link, err := attachFunc(sym.Address)
+				if err != nil {
+					goto rollback
+				}
+				p.bpfLink = append(p.bpfLink, link)
+			}
 		}
 		goto success
 
