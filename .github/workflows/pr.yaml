@@ -294,6 +294,8 @@ jobs:
               ["Lunar 6.2 aarch64"]="0c0d64eea6367efd8 aarch64"
               ["Mantic 6.5 x86_64"]="0564e75d9605addaf x86_64"
               ["Mantic 6.5 aarch64"]="028acebc5083c4840 aarch64"
+              ["Mantic 6.6 x86_64"]="040d4dc2758203717 x86_64"
+              ["Mantic 6.6 aarch64"]="03f75150a60f7edf7 aarch64"
               # expand as needed
           )
           for num in 01; do
