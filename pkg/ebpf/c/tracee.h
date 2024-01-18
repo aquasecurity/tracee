@@ -62,5 +62,7 @@ statfunc int capture_file_write(struct pt_regs *, u32, bool);
 statfunc bool filter_file_read_capture(program_data_t *, struct file *, io_data_t, off_t);
 statfunc int capture_file_read(struct pt_regs *, u32, bool);
 statfunc struct pipe_buffer *get_last_write_pipe_buffer(struct pipe_inode_info *);
+statfunc int
+submit_access_remote_vm(program_data_t *, struct vm_area_struct *, void *, unsigned int);
 
 #endif

@@ -10,6 +10,17 @@
 #include <common/context.h>
 #include <common/filtering.h>
 
+#if defined(bpf_target_x86)
+    #define PT_REGS_PARM7(ctx)                                                                     \
+        ({                                                                                         \
+            unsigned long reg;                                                                     \
+            unsigned long *sp = (unsigned long *) PT_REGS_SP(ctx);                                 \
+            bpf_core_read(&reg, sizeof(unsigned long), sp + 1);                                    \
+            reg;                                                                                   \
+        })
+
+#endif // bpf_target_x86
+
 #define TRACE_ENT_FUNC(name, id)                                                                   \
     int trace_##name(struct pt_regs *ctx)                                                          \
     {                                                                                              \
@@ -27,6 +38,7 @@
         args.args[3] = PT_REGS_PARM4(ctx);                                                         \
         args.args[4] = PT_REGS_PARM5(ctx);                                                         \
         args.args[5] = PT_REGS_PARM6(ctx);                                                         \
+        args.args[6] = PT_REGS_PARM7(ctx);                                                         \
                                                                                                    \
         return save_args(&args, id);                                                               \
     }

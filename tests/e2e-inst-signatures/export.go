@@ -17,6 +17,7 @@ var ExportedSignatures = []detect.Signature{
 	&e2eSignatureDerivation{},
 	&e2eDnsDataSource{},
 	&e2eWritableDatasourceSig{},
+	&e2eAccessRemoteVm{},
 }
 
 var ExportedDataSources = []detect.DataSource{

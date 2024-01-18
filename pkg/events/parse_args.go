@@ -277,6 +277,22 @@ func ParseArgs(event *trace.Event) error {
 				helpersArg.Value = parsedHelpersList
 			}
 		}
+	case AccessRemoteVm:
+		if gupFlagsArg := GetArg(event, "gup_flags"); gupFlagsArg != nil {
+			if gupFlags, isUint := gupFlagsArg.Value.(uint32); isUint {
+				parsedGupFlags, err := helpers.ParseGUPFlagsCurrentOS(uint64(gupFlags))
+				if err != nil {
+					return err
+				}
+				parseOrEmptyString(gupFlagsArg, parsedGupFlags, nil)
+			}
+		}
+		if vmFlagsArg := GetArg(event, "vm_flags"); vmFlagsArg != nil {
+			if vmFlags, isUint64 := vmFlagsArg.Value.(uint64); isUint64 {
+				parsedVmFlags := helpers.ParseVmFlags(vmFlags)
+				parseOrEmptyString(vmFlagsArg, parsedVmFlags, nil)
+			}
+		}
 	}
 
 	return nil

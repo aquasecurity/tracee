@@ -132,4 +132,7 @@ const (
 	SignalSchedProcessFork
 	SignalSchedProcessExec
 	SignalSchedProcessExit
+	GetUserPagesRemote
+	GetUserPagesRemoteRet
+	GenericAccessPhys
 )
