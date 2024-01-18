@@ -161,9 +161,10 @@ func convertTraceeEventToProto(e trace.Event) (*pb.Event, error) {
 		Policies: &pb.Policies{
 			Matched: e.MatchedPolicies,
 		},
-		Context:   eventContext,
-		Threat:    threat,
-		EventData: eventData,
+		Context: eventContext,
+		Threat:  threat,
+
+		Data: eventData,
 	}
 
 	if e.Timestamp != 0 {
