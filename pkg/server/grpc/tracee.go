@@ -168,7 +168,7 @@ func convertTraceeEventToProto(e trace.Event) (*pb.Event, error) {
 	}
 
 	if e.Timestamp != 0 {
-		event.Timestamp = timestamppb.New(time.Unix(int64(e.Timestamp), 0))
+		event.Timestamp = timestamppb.New(time.Unix(0, int64(e.Timestamp)))
 	}
 
 	return event, nil
@@ -185,7 +185,7 @@ func getProcess(e trace.Event) *pb.Process {
 
 	var threadStartTime *timestamp.Timestamp
 	if e.ThreadStartTime != 0 {
-		threadStartTime = timestamppb.New(time.Unix(int64(e.ThreadStartTime), 0))
+		threadStartTime = timestamppb.New(time.Unix(0, int64(e.ThreadStartTime)))
 	}
 
 	var executable *pb.Executable
