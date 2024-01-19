@@ -2,26 +2,12 @@ package probes
 
 import (
 	"strings"
+	"sync"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
-)
-
-// NOTE: thread-safety guaranteed by the ProbeGroup big lock.
-
-//
-// traceProbe
-//
-
-type ProbeType uint8
-
-const (
-	KProbe        = iota // github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-kp
-	KretProbe            // github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-kp
-	Tracepoint           // github.com/iovisor/bcc/blob/master/docs/reference_guide.md#3-tracep
-	RawTracepoint        // github.com/iovisor/bcc/blob/master/docs/reference_guide.md#7-raw-tracep
 )
 
 // When attaching a traceProbe, by handle, to its eBPF program:
@@ -35,36 +21,70 @@ const (
 //
 //     DetachAll()
 
+type ProbeType uint8
+
+const (
+	KProbe        = iota // github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-kp
+	KretProbe            // github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-kp
+	Tracepoint           // github.com/iovisor/bcc/blob/master/docs/reference_guide.md#3-tracep
+	RawTracepoint        // github.com/iovisor/bcc/blob/master/docs/reference_guide.md#7-raw-tracep
+)
+
+func (p ProbeType) String() string {
+	switch p {
+	case KProbe:
+		return "kprobe"
+	case KretProbe:
+		return "kretprobe"
+	case Tracepoint:
+		return "tracepoint"
+	case RawTracepoint:
+		return "raw_tracepoint"
+	default:
+		return "unknown"
+	}
+}
+
 type TraceProbe struct {
 	eventName   string
 	programName string
 	probeType   ProbeType
 	bpfLink     []*bpf.BPFLink // same symbol might have multiple addresses
 	attached    bool
+	mutex       *sync.RWMutex
 }
 
-// NewTraceProbe creates a new tracing probe (kprobe, kretprobe, tracepoint, raw_tracepoint).
 func NewTraceProbe(t ProbeType, evtName string, progName string) *TraceProbe {
 	return &TraceProbe{
 		programName: progName,
 		eventName:   evtName,
 		probeType:   t,
+		mutex:       &sync.RWMutex{},
 	}
 }
 
 func (p *TraceProbe) GetEventName() string {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
 	return p.eventName
 }
 
 func (p *TraceProbe) GetProgramName() string {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
 	return p.programName
 }
 
 func (p *TraceProbe) GetProbeType() ProbeType {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
 	return p.probeType
 }
 
-func (p *TraceProbe) attach(module *bpf.Module, args ...interface{}) error {
+func (p *TraceProbe) Attach(module *bpf.Module, args ...interface{}) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	if p.attached {
 		return nil // already attached, it is ok to call attach again
 	}
@@ -167,7 +187,10 @@ func (p *TraceProbe) attach(module *bpf.Module, args ...interface{}) error {
 	return nil
 }
 
-func (p *TraceProbe) detach(args ...interface{}) error {
+func (p *TraceProbe) Detach(args ...interface{}) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	if !p.attached {
 		return nil
 	}
@@ -181,6 +204,8 @@ func (p *TraceProbe) detach(args ...interface{}) error {
 	return nil
 }
 
-func (p *TraceProbe) autoload(module *bpf.Module, autoload bool) error {
+func (p *TraceProbe) SetAutoload(module *bpf.Module, autoload bool) error {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
 	return enableDisableAutoload(module, p.programName, autoload)
 }

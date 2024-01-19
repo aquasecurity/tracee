@@ -579,11 +579,11 @@ func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 		if events.Core.GetDefinitionByID(events.ID(index)).IsSyscall() {
 			// Optimization: enable enter/exit probes only if at least one syscall is enabled.
 			once.Do(func() {
-				err := t.probes.Attach(probes.SyscallEnter__Internal)
+				err := t.probes.AttachProbeByHandle(probes.SyscallEnter__Internal)
 				if err != nil {
 					logger.Errorw("error attaching to syscall enter", "error", err)
 				}
-				err = t.probes.Attach(probes.SyscallExit__Internal)
+				err = t.probes.AttachProbeByHandle(probes.SyscallExit__Internal)
 				if err != nil {
 					logger.Errorw("error attaching to syscall enter", "error", err)
 				}
@@ -1089,7 +1089,7 @@ func (t *Tracee) attachProbes() error {
 
 	// Attach probes to their respective eBPF programs or cancel events if a required probe is missing.
 	for probe, evtID := range probesToEvents {
-		err = t.probes.Attach(probe.GetHandle(), t.cgroups) // attach bpf program to probe
+		err = t.probes.AttachProbeByHandle(probe.GetHandle(), t.cgroups) // attach bpf program to probe
 		if err != nil {
 			for _, evtID := range evtID {
 				evtName := events.Core.GetDefinitionByID(evtID).GetName()

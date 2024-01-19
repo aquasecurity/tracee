@@ -1,18 +1,14 @@
 package probes
 
 import (
+	"sync"
+
 	bpf "github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/cgroup"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
-
-// NOTE: thread-safety guaranteed by the ProbeGroup big lock.
-
-//
-// Cgroup
-//
 
 // When attaching a cgroupProbe, by handle, to its eBPF program:
 //
@@ -29,21 +25,33 @@ type CgroupProbe struct {
 	programName string
 	attachType  bpf.BPFAttachType
 	bpfLink     *bpf.BPFLink
+	mutex       *sync.RWMutex
 }
 
-// NewCgroupProbe creates a new cgroup probe.
 func NewCgroupProbe(a bpf.BPFAttachType, progName string) *CgroupProbe {
 	return &CgroupProbe{
 		programName: progName,
 		attachType:  a,
+		mutex:       &sync.RWMutex{},
 	}
 }
 
 func (p *CgroupProbe) GetProgramName() string {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
 	return p.programName
 }
 
-func (p *CgroupProbe) attach(module *bpf.Module, args ...interface{}) error {
+func (p *CgroupProbe) GetAttachType() bpf.BPFAttachType {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+	return p.attachType
+}
+
+func (p *CgroupProbe) Attach(module *bpf.Module, args ...interface{}) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	var cgroups *cgroup.Cgroups
 
 	for _, arg := range args {
@@ -91,7 +99,10 @@ func (p *CgroupProbe) attach(module *bpf.Module, args ...interface{}) error {
 	return nil
 }
 
-func (p *CgroupProbe) detach(args ...interface{}) error {
+func (p *CgroupProbe) Detach(args ...interface{}) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	var err error
 
 	if p.bpfLink == nil {
@@ -116,6 +127,8 @@ func (p *CgroupProbe) detach(args ...interface{}) error {
 	return nil
 }
 
-func (p *CgroupProbe) autoload(module *bpf.Module, autoload bool) error {
+func (p *CgroupProbe) SetAutoload(module *bpf.Module, autoload bool) error {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
 	return enableDisableAutoload(module, p.programName, autoload)
 }

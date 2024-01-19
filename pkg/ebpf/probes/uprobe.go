@@ -1,17 +1,13 @@
 package probes
 
 import (
+	"sync"
+
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
-
-// NOTE: thread-safety guaranteed by the ProbeGroup big lock.
-
-//
-// uProbe
-//
 
 type Uprobe struct {
 	eventName   string
@@ -19,35 +15,47 @@ type Uprobe struct {
 	binaryPath  string // ELF file path to attach uprobe to
 	symbolName  string // ELF binary symbol to attach uprobe to
 	bpfLink     *bpf.BPFLink
+	mutex       *sync.RWMutex
 }
 
-// NewUprobe creates a new uprobe.
 func NewUprobe(evtName string, progName string, binPath string, symName string) *Uprobe {
 	return &Uprobe{
 		programName: progName,
 		eventName:   evtName,
 		binaryPath:  binPath,
 		symbolName:  symName,
+		mutex:       &sync.RWMutex{},
 	}
 }
 
 func (p *Uprobe) GetEventName() string {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
 	return p.eventName
 }
 
 func (p *Uprobe) GetProgramName() string {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
 	return p.programName
 }
 
 func (p *Uprobe) GetBinaryPath() string {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
 	return p.binaryPath
 }
 
 func (p *Uprobe) GetSymbolName() string {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
 	return p.symbolName
 }
 
-func (p *Uprobe) attach(module *bpf.Module, args ...interface{}) error {
+func (p *Uprobe) Attach(module *bpf.Module, args ...interface{}) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	var link *bpf.BPFLink
 
 	if p.bpfLink != nil {
@@ -78,7 +86,10 @@ func (p *Uprobe) attach(module *bpf.Module, args ...interface{}) error {
 	return nil
 }
 
-func (p *Uprobe) detach(args ...interface{}) error {
+func (p *Uprobe) Detach(args ...interface{}) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	var err error
 
 	if p.bpfLink == nil {
@@ -95,6 +106,8 @@ func (p *Uprobe) detach(args ...interface{}) error {
 	return nil
 }
 
-func (p *Uprobe) autoload(module *bpf.Module, autoload bool) error {
+func (p *Uprobe) SetAutoload(module *bpf.Module, autoload bool) error {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
 	return enableDisableAutoload(module, p.programName, autoload)
 }

@@ -14,10 +14,11 @@ var kernelSymbolTable *helpers.KernelSymbolTable
 type Probes struct {
 	mutex  *sync.RWMutex
 	module *bpf.Module
-	probes map[Handle]Probe
+	probes map[ProbeHandle]Probe // Probe is an interface, thus a reference type
 }
 
-func NewProbes(m *bpf.Module, p map[Handle]Probe) *Probes {
+// NewProbes creates a new Probes object.
+func NewProbes(m *bpf.Module, p map[ProbeHandle]Probe) *Probes {
 	return &Probes{
 		mutex:  &sync.RWMutex{},
 		probes: p,
@@ -25,29 +26,40 @@ func NewProbes(m *bpf.Module, p map[Handle]Probe) *Probes {
 	}
 }
 
-func (p *Probes) GetProbeType(handle Handle) string {
-	p.mutex.RLock()
-	defer p.mutex.RUnlock()
-
-	if r, ok := p.probes[handle]; ok {
-		if probe, ok := r.(*TraceProbe); ok {
-			switch probe.probeType {
-			case KProbe:
-				return "kprobe"
-			case KretProbe:
-				return "kretprobe"
-			case Tracepoint:
-				return "tracepoint"
-			case RawTracepoint:
-				return "raw_tracepoint"
-			}
-		}
-	}
-
-	return ""
+// AddProbe adds a probe to the Probes object.
+func (p *Probes) AddProbe(handle ProbeHandle, probe Probe) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	p.probes[handle] = probe
 }
 
-func (p *Probes) Attach(handle Handle, args ...interface{}) error {
+// RemoveProbe removes a probe from the Probes object.
+func (p *Probes) RemoveProbe(handle ProbeHandle) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	delete(p.probes, handle)
+}
+
+// GetProbeByHandle returns a probe by its handle.
+func (p *Probes) GetProbeByHandle(handle ProbeHandle) Probe {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+	return p.probes[handle]
+}
+
+// GetProbes returns a map of all probes.
+func (p *Probes) GetProbes() map[ProbeHandle]Probe {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+	newMap := make(map[ProbeHandle]Probe)
+	for k, v := range p.probes {
+		newMap[k] = v
+	}
+	return newMap
+}
+
+// AttachProbeByHandle attaches a probe by its handle.
+func (p *Probes) AttachProbeByHandle(handle ProbeHandle, args ...interface{}) error {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 
@@ -55,10 +67,11 @@ func (p *Probes) Attach(handle Handle, args ...interface{}) error {
 		return errfmt.Errorf("probe handle (%d) does not exist", handle)
 	}
 
-	return p.probes[handle].attach(p.module, args...)
+	return p.probes[handle].Attach(p.module, args...)
 }
 
-func (p *Probes) Detach(handle Handle, args ...interface{}) error {
+// DetachProbeByHandle detaches a probe by its handle.
+func (p *Probes) DetachProbeByHandle(handle ProbeHandle, args ...interface{}) error {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 
@@ -66,15 +79,16 @@ func (p *Probes) Detach(handle Handle, args ...interface{}) error {
 		return errfmt.Errorf("probe handle (%d) does not exist", handle)
 	}
 
-	return p.probes[handle].detach(args...)
+	return p.probes[handle].Detach(args...)
 }
 
-func (p *Probes) DetachAll() error {
+// AttachAll attaches all probes.
+func (p *Probes) AttachAll() error {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 
 	for _, pr := range p.probes {
-		err := pr.detach()
+		err := pr.Attach(p.module)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -83,16 +97,24 @@ func (p *Probes) DetachAll() error {
 	return nil
 }
 
-func (p *Probes) Autoload(handle Handle, autoload bool) error {
+// DetachAll detaches all probes.
+func (p *Probes) DetachAll() error {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 
-	return p.probes[handle].autoload(p.module, autoload)
+	for _, pr := range p.probes {
+		err := pr.Detach()
+		if err != nil {
+			return errfmt.WrapError(err)
+		}
+	}
+
+	return nil
 }
 
-func (p *Probes) GetProbeByHandle(handle Handle) Probe {
+// SetAutoloadByHandle sets the autoload flag of a probe by its handle.
+func (p *Probes) SetAutoloadByHandle(handle ProbeHandle, autoload bool) error {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
-
-	return p.probes[handle]
+	return p.probes[handle].SetAutoload(p.module, autoload)
 }

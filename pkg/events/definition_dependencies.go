@@ -76,11 +76,11 @@ func (d Dependencies) GetCapabilities() Capabilities {
 // Probe
 
 type Probe struct {
-	handle   probes.Handle
+	handle   probes.ProbeHandle
 	required bool // tracee fails if probe can't be attached
 }
 
-func (p Probe) GetHandle() probes.Handle {
+func (p Probe) GetHandle() probes.ProbeHandle {
 	return p.handle
 }
 

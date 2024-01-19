@@ -5,20 +5,20 @@ import (
 )
 
 type Probe interface {
-	// attach attaches the probe's program to its hook.
-	attach(module *bpf.Module, args ...interface{}) error
-	// detach detaches the probe's program from its hook.
-	detach(...interface{}) error
-	// autoload sets the probe's ebpf program automatic attaching to its hook.
-	autoload(module *bpf.Module, autoload bool) error
+	// Attach attaches the probe's program to its hook.
+	Attach(module *bpf.Module, args ...interface{}) error
+	// Detach detaches the probe's program from its hook.
+	Detach(...interface{}) error
+	// SetAutoload sets the probe's ebpf program automatic attaching to its hook.
+	SetAutoload(module *bpf.Module, autoload bool) error
 }
 
 // Event Probe Handles
 
-type Handle int32
+type ProbeHandle int32
 
 const (
-	SysEnter Handle = iota
+	SysEnter ProbeHandle = iota
 	SysExit
 	SyscallEnter__Internal
 	SyscallExit__Internal

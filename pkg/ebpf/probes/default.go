@@ -3,6 +3,7 @@ package probes
 import (
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
+
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
@@ -15,7 +16,7 @@ func DefaultProbes(module *bpf.Module, netEnabled bool, kSyms *helpers.KernelSym
 
 	binaryPath := "/proc/self/exe"
 
-	allProbes := map[Handle]Probe{
+	allProbes := map[ProbeHandle]Probe{
 		SysEnter:                   NewTraceProbe(RawTracepoint, "raw_syscalls:sys_enter", "trace_sys_enter"),
 		SyscallEnter__Internal:     NewTraceProbe(RawTracepoint, "raw_syscalls:sys_enter", "tracepoint__raw_syscalls__sys_enter"),
 		SysExit:                    NewTraceProbe(RawTracepoint, "raw_syscalls:sys_exit", "trace_sys_exit"),
@@ -128,10 +129,10 @@ func DefaultProbes(module *bpf.Module, netEnabled bool, kSyms *helpers.KernelSym
 
 	if !netEnabled {
 		// disable network cgroup probes (avoid effective CAP_NET_ADMIN if not needed)
-		if err := allProbes[CgroupSKBIngress].autoload(module, false); err != nil {
+		if err := allProbes[CgroupSKBIngress].SetAutoload(module, false); err != nil {
 			logger.Errorw("CgroupSKBIngress probe autoload", "error", err)
 		}
-		if err := allProbes[CgroupSKBEgress].autoload(module, false); err != nil {
+		if err := allProbes[CgroupSKBEgress].SetAutoload(module, false); err != nil {
 			logger.Errorw("CgroupSKBEgress probe autoload", "error", err)
 		}
 	}
