@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -19,7 +18,7 @@ func Test_getEventData(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        []trace.Argument
-		expected    map[string]*pb.EventValue
+		expected    []*pb.EventValue
 		syscall     bool
 		returnValue int
 	}{
@@ -34,10 +33,11 @@ func Test_getEventData(t *testing.T) {
 					Value: "docker",
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"runtime": {
+			expected: []*pb.EventValue{
+				{
+					Name: "runtime",
 					Value: &pb.EventValue_Str{
-						Str: wrapperspb.String("docker"),
+						Str: "docker",
 					},
 				},
 			},
@@ -53,10 +53,11 @@ func Test_getEventData(t *testing.T) {
 					Value: int32(31),
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"sockfd": {
+			expected: []*pb.EventValue{
+				{
+					Name: "sockfd",
 					Value: &pb.EventValue_Int32{
-						Int32: wrapperspb.Int32(31),
+						Int32: 31,
 					},
 				},
 			},
@@ -72,10 +73,11 @@ func Test_getEventData(t *testing.T) {
 					Value: uint32(4026531839),
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"ipc": {
+			expected: []*pb.EventValue{
+				{
+					Name: "ipc",
 					Value: &pb.EventValue_UInt32{
-						UInt32: wrapperspb.UInt32(4026531839),
+						UInt32: 4026531839,
 					},
 				},
 			},
@@ -91,10 +93,11 @@ func Test_getEventData(t *testing.T) {
 					Value: int64(1000),
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"exit_code": {
+			expected: []*pb.EventValue{
+				{
+					Name: "exit_code",
 					Value: &pb.EventValue_Int64{
-						Int64: wrapperspb.Int64(1000),
+						Int64: 1000,
 					},
 				},
 			},
@@ -110,10 +113,11 @@ func Test_getEventData(t *testing.T) {
 					Value: uint64(55577157),
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"inode": {
+			expected: []*pb.EventValue{
+				{
+					Name: "inode",
 					Value: &pb.EventValue_UInt64{
-						UInt64: wrapperspb.UInt64(55577157),
+						UInt64: 55577157,
 					},
 				},
 			},
@@ -129,10 +133,11 @@ func Test_getEventData(t *testing.T) {
 					Value: uint64(2),
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"pos": {
+			expected: []*pb.EventValue{
+				{
+					Name: "pos",
 					Value: &pb.EventValue_UInt64{
-						UInt64: wrapperspb.UInt64(2),
+						UInt64: 2,
 					},
 				},
 			},
@@ -148,10 +153,11 @@ func Test_getEventData(t *testing.T) {
 					Value: uint32(1),
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"mode": {
+			expected: []*pb.EventValue{
+				{
+					Name: "mode",
 					Value: &pb.EventValue_UInt32{
-						UInt32: wrapperspb.UInt32(1),
+						UInt32: 1,
 					},
 				},
 			},
@@ -167,10 +173,11 @@ func Test_getEventData(t *testing.T) {
 					Value: uint32(59),
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"dev": {
+			expected: []*pb.EventValue{
+				{
+					Name: "dev",
 					Value: &pb.EventValue_UInt32{
-						UInt32: wrapperspb.UInt32(59),
+						UInt32: 59,
 					},
 				},
 			},
@@ -186,10 +193,11 @@ func Test_getEventData(t *testing.T) {
 					Value: uint64(8),
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"count": {
+			expected: []*pb.EventValue{
+				{
+					Name: "count",
 					Value: &pb.EventValue_UInt64{
-						UInt64: wrapperspb.UInt64(8),
+						UInt64: 8,
 					},
 				},
 			},
@@ -205,13 +213,14 @@ func Test_getEventData(t *testing.T) {
 					Value: []string{"runc", "init"},
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"argv": {
+			expected: []*pb.EventValue{
+				{
+					Name: "argv",
 					Value: &pb.EventValue_StrArray{
-						StrArray: &pb.StringArrayValue{
-							Value: []*wrappers.StringValue{
-								{Value: "runc"},
-								{Value: "init"},
+						StrArray: &pb.StringArray{
+							Value: []string{
+								"runc",
+								"init",
 							},
 						},
 					},
@@ -229,10 +238,11 @@ func Test_getEventData(t *testing.T) {
 					Value: []byte{49},
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"bytes": {
+			expected: []*pb.EventValue{
+				{
+					Name: "bytes",
 					Value: &pb.EventValue_Bytes{
-						Bytes: wrapperspb.Bytes([]byte{49}),
+						Bytes: []byte{49},
 					},
 				},
 			},
@@ -248,13 +258,14 @@ func Test_getEventData(t *testing.T) {
 					Value: []string{"map_delete_elem", "probe_read_kernel"},
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"prog_helpers": {
+			expected: []*pb.EventValue{
+				{
+					Name: "prog_helpers",
 					Value: &pb.EventValue_StrArray{
-						StrArray: &pb.StringArrayValue{
-							Value: []*wrappers.StringValue{
-								{Value: "map_delete_elem"},
-								{Value: "probe_read_kernel"},
+						StrArray: &pb.StringArray{
+							Value: []string{
+								"map_delete_elem",
+								"probe_read_kernel",
 							},
 						},
 					},
@@ -272,10 +283,11 @@ func Test_getEventData(t *testing.T) {
 					Value: uint8(8),
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"sa_handle_method": {
+			expected: []*pb.EventValue{
+				{
+					Name: "sa_handle_method",
 					Value: &pb.EventValue_UInt32{
-						UInt32: wrapperspb.UInt32(8),
+						UInt32: 8,
 					},
 				},
 			},
@@ -291,10 +303,11 @@ func Test_getEventData(t *testing.T) {
 					Value: uint16(1818),
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"inode_mode": {
+			expected: []*pb.EventValue{
+				{
+					Name: "inode_mode",
 					Value: &pb.EventValue_UInt32{
-						UInt32: wrapperspb.UInt32(1818),
+						UInt32: 1818,
 					},
 				},
 			},
@@ -310,10 +323,11 @@ func Test_getEventData(t *testing.T) {
 					Value: true,
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"process_group_exit": {
+			expected: []*pb.EventValue{
+				{
+					Name: "process_group_exit",
 					Value: &pb.EventValue_Bool{
-						Bool: wrapperspb.Bool(true),
+						Bool: true,
 					},
 				},
 			},
@@ -329,10 +343,11 @@ func Test_getEventData(t *testing.T) {
 					Value: uintptr(0xFFFFFFFFFFFFFFFF),
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"sa_handler": {
+			expected: []*pb.EventValue{
+				{
+					Name: "sa_handler",
 					Value: &pb.EventValue_UInt64{
-						UInt64: wrapperspb.UInt64(18446744073709551615),
+						UInt64: 18446744073709551615,
 					},
 				},
 			},
@@ -348,13 +363,14 @@ func Test_getEventData(t *testing.T) {
 					Value: [2]int32{3, 4},
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"pipefd": {
+			expected: []*pb.EventValue{
+				{
+					Name: "pipefd",
 					Value: &pb.EventValue_Int32Array{
-						Int32Array: &pb.Int32ArrayValue{
-							Value: []*wrappers.Int32Value{
-								wrapperspb.Int32(3),
-								wrapperspb.Int32(4),
+						Int32Array: &pb.Int32Array{
+							Value: []int32{
+								3,
+								4,
 							},
 						},
 					},
@@ -372,13 +388,14 @@ func Test_getEventData(t *testing.T) {
 					Value: []uint64{18446744073709551615, 18446744073709551615},
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"syscalls_addresses": {
+			expected: []*pb.EventValue{
+				{
+					Name: "syscalls_addresses",
 					Value: &pb.EventValue_UInt64Array{
-						UInt64Array: &pb.UInt64ArrayValue{
-							Value: []*wrappers.UInt64Value{
-								wrapperspb.UInt64(18446744073709551615),
-								wrapperspb.UInt64(18446744073709551615),
+						UInt64Array: &pb.UInt64Array{
+							Value: []uint64{
+								18446744073709551615,
+								18446744073709551615,
 							},
 						},
 					},
@@ -396,10 +413,11 @@ func Test_getEventData(t *testing.T) {
 					Value: float64(2e-05),
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"req": {
+			expected: []*pb.EventValue{
+				{
+					Name: "req",
 					Value: &pb.EventValue_Timespec{
-						Timespec: &pb.TimespecValue{
+						Timespec: &pb.Timespec{
 							Value: wrapperspb.Double(2e-05),
 						},
 					},
@@ -417,10 +435,11 @@ func Test_getEventData(t *testing.T) {
 					Value: map[string]string(map[string]string{"sa_family": "AF_INET", "sin_addr": "255.255.255.255", "sin_port": "65535"}),
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"sockAddr0": {
+			expected: []*pb.EventValue{
+				{
+					Name: "sockAddr0",
 					Value: &pb.EventValue_Sockaddr{
-						Sockaddr: &pb.SockAddrValue{
+						Sockaddr: &pb.SockAddr{
 							SaFamily: pb.SaFamilyT_AF_INET,
 							SinAddr:  "255.255.255.255",
 							SinPort:  uint32(65535),
@@ -440,10 +459,11 @@ func Test_getEventData(t *testing.T) {
 					Value: map[string]string{"sa_family": "AF_UNIX", "sun_path": "/tmp/socket"},
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"sockAddr0": {
+			expected: []*pb.EventValue{
+				{
+					Name: "sockAddr0",
 					Value: &pb.EventValue_Sockaddr{
-						Sockaddr: &pb.SockAddrValue{
+						Sockaddr: &pb.SockAddr{
 							SaFamily: pb.SaFamilyT_AF_UNIX,
 							SunPath:  "/tmp/socket",
 						},
@@ -478,10 +498,11 @@ func Test_getEventData(t *testing.T) {
 					},
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"new_cred": {
-					Value: &pb.EventValue_Cred{
-						Cred: &pb.CredValue{
+			expected: []*pb.EventValue{
+				{
+					Name: "new_cred",
+					Value: &pb.EventValue_Credentials{
+						Credentials: &pb.Credentials{
 							Uid:            wrapperspb.UInt32(1),
 							Gid:            wrapperspb.UInt32(2),
 							Suid:           wrapperspb.UInt32(3),
@@ -530,20 +551,23 @@ func Test_getEventData(t *testing.T) {
 					Value: uintptr(0xFFFFFFFFFFFFFFFF),
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"inode_mode": {
+			expected: []*pb.EventValue{
+				{
+					Name: "inode_mode",
 					Value: &pb.EventValue_UInt32{
-						UInt32: wrapperspb.UInt32(1818),
+						UInt32: 1818,
 					},
 				},
-				"process_group_exit": {
+				{
+					Name: "process_group_exit",
 					Value: &pb.EventValue_Bool{
-						Bool: wrapperspb.Bool(true),
+						Bool: true,
 					},
 				},
-				"sa_handler": {
+				{
+					Name: "sa_handler",
 					Value: &pb.EventValue_UInt64{
-						UInt64: wrapperspb.UInt64(18446744073709551615),
+						UInt64: 18446744073709551615,
 					},
 				},
 			},
@@ -561,23 +585,17 @@ func Test_getEventData(t *testing.T) {
 					Value: uint16(1818),
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"args": {
-					Value: &pb.EventValue_Args{
-						Args: &pb.ArgsValue{
-							Value: []*pb.EventValue{
-								{
-									Value: &pb.EventValue_UInt32{
-										UInt32: wrapperspb.UInt32(1818),
-									},
-								},
-							},
-						},
+			expected: []*pb.EventValue{
+				{
+					Name: "inode_mode",
+					Value: &pb.EventValue_UInt32{
+						UInt32: 1818,
 					},
 				},
-				"returnValue": {
+				{
+					Name: "returnValue",
 					Value: &pb.EventValue_Int64{
-						Int64: wrapperspb.Int64(-1),
+						Int64: -1,
 					},
 				},
 			},
@@ -602,28 +620,23 @@ func Test_getEventData(t *testing.T) {
 					Value: uint32(4026531839),
 				},
 			},
-			expected: map[string]*pb.EventValue{
-				"args": {
-					Value: &pb.EventValue_Args{
-						Args: &pb.ArgsValue{
-							Value: []*pb.EventValue{
-								{
-									Value: &pb.EventValue_UInt32{
-										UInt32: wrapperspb.UInt32(1818),
-									},
-								},
-								{
-									Value: &pb.EventValue_UInt32{
-										UInt32: wrapperspb.UInt32(4026531839),
-									},
-								},
-							},
-						},
+			expected: []*pb.EventValue{
+				{
+					Name: "inode_mode",
+					Value: &pb.EventValue_UInt32{
+						UInt32: 1818,
 					},
 				},
-				"returnValue": {
+				{
+					Name: "ipc",
+					Value: &pb.EventValue_UInt32{
+						UInt32: 4026531839,
+					},
+				},
+				{
+					Name: "returnValue",
 					Value: &pb.EventValue_Int64{
-						Int64: wrapperspb.Int64(1),
+						Int64: 1,
 					},
 				},
 			},
@@ -646,34 +659,29 @@ func Test_getEventData(t *testing.T) {
 
 			assert.Equal(t, len(tt.expected), len(eventData))
 
-			for name, expected := range tt.expected {
-				actual, ok := eventData[name]
-				assert.True(t, ok)
+			for index, expected := range tt.expected {
+				actual := eventData[index]
 				assert.NotNil(t, actual)
-
-				if !ok || actual == nil {
-					continue
-				}
 
 				assert.Equal(t, reflect.TypeOf(expected.Value), reflect.TypeOf(actual.Value))
 
 				switch actual.Value.(type) {
 				case *pb.EventValue_Int32:
-					assert.Equal(t, expected.GetInt32().GetValue(), actual.GetInt32().GetValue())
+					assert.Equal(t, expected.GetInt32(), actual.GetInt32())
 				case *pb.EventValue_Str:
-					assert.Equal(t, expected.GetStr().GetValue(), actual.GetStr().GetValue())
+					assert.Equal(t, expected.GetStr(), actual.GetStr())
 				case *pb.EventValue_UInt32:
-					assert.Equal(t, expected.GetUInt32().GetValue(), actual.GetUInt32().GetValue())
+					assert.Equal(t, expected.GetUInt32(), actual.GetUInt32())
 				case *pb.EventValue_Int64:
-					assert.Equal(t, expected.GetInt64().GetValue(), actual.GetInt64().GetValue())
+					assert.Equal(t, expected.GetInt64(), actual.GetInt64())
 				case *pb.EventValue_UInt64:
-					assert.Equal(t, expected.GetUInt64().GetValue(), actual.GetUInt64().GetValue())
+					assert.Equal(t, expected.GetUInt64(), actual.GetUInt64())
 				case *pb.EventValue_StrArray:
-					assert.Equal(t, expected.GetStrArray().GetValue(), actual.GetStrArray().GetValue())
+					assert.Equal(t, expected.GetStrArray(), actual.GetStrArray())
 				case *pb.EventValue_Bytes:
-					assert.Equal(t, expected.GetBytes().GetValue(), actual.GetBytes().GetValue())
+					assert.Equal(t, expected.GetBytes(), actual.GetBytes())
 				case *pb.EventValue_Bool:
-					assert.Equal(t, expected.GetBool().GetValue(), actual.GetBool().GetValue())
+					assert.Equal(t, expected.GetBool(), actual.GetBool())
 				case *pb.EventValue_Int32Array:
 					assert.Equal(t, expected.GetInt32Array().GetValue(), actual.GetInt32Array().GetValue())
 				case *pb.EventValue_UInt64Array:
@@ -685,27 +693,21 @@ func Test_getEventData(t *testing.T) {
 					assert.Equal(t, expected.GetSockaddr().GetSunPath(), actual.GetSockaddr().GetSunPath())
 					assert.Equal(t, expected.GetSockaddr().GetSinAddr(), actual.GetSockaddr().GetSinAddr())
 					assert.Equal(t, expected.GetSockaddr().GetSinPort(), actual.GetSockaddr().GetSinPort())
-				case *pb.EventValue_Cred:
-					assert.Equal(t, expected.GetCred().GetUid().GetValue(), actual.GetCred().GetUid().GetValue())
-					assert.Equal(t, expected.GetCred().GetGid().GetValue(), actual.GetCred().GetGid().GetValue())
-					assert.Equal(t, expected.GetCred().GetSuid().GetValue(), actual.GetCred().GetSuid().GetValue())
-					assert.Equal(t, expected.GetCred().GetEuid().GetValue(), actual.GetCred().GetEuid().GetValue())
-					assert.Equal(t, expected.GetCred().GetEgid().GetValue(), actual.GetCred().GetEgid().GetValue())
-					assert.Equal(t, expected.GetCred().GetFsuid().GetValue(), actual.GetCred().GetFsuid().GetValue())
-					assert.Equal(t, expected.GetCred().GetFsgid().GetValue(), actual.GetCred().GetFsgid().GetValue())
-					assert.Equal(t, expected.GetCred().GetUserNamespace().GetValue(), actual.GetCred().GetUserNamespace().GetValue())
-					assert.Equal(t, expected.GetCred().GetSecureBits().GetValue(), actual.GetCred().GetSecureBits().GetValue())
-					assert.Equal(t, expected.GetCred().GetCapInheritable(), actual.GetCred().GetCapInheritable())
-					assert.Equal(t, expected.GetCred().GetCapPermitted(), actual.GetCred().GetCapPermitted())
-					assert.Equal(t, expected.GetCred().GetCapEffective(), actual.GetCred().GetCapEffective())
-					assert.Equal(t, expected.GetCred().GetCapBounding(), actual.GetCred().GetCapBounding())
-					assert.Equal(t, expected.GetCred().GetCapAmbient(), actual.GetCred().GetCapAmbient())
-				case *pb.EventValue_Args:
-					for i, arg := range expected.GetArgs().GetValue() {
-						value1 := arg.GetValue().(*pb.EventValue_UInt32)
-						value2 := actual.GetArgs().GetValue()[i].GetValue().(*pb.EventValue_UInt32)
-						assert.Equal(t, value1.UInt32.GetValue(), value2.UInt32.GetValue())
-					}
+				case *pb.EventValue_Credentials:
+					assert.Equal(t, expected.GetCredentials().GetUid().GetValue(), actual.GetCredentials().GetUid().GetValue())
+					assert.Equal(t, expected.GetCredentials().GetGid().GetValue(), actual.GetCredentials().GetGid().GetValue())
+					assert.Equal(t, expected.GetCredentials().GetSuid().GetValue(), actual.GetCredentials().GetSuid().GetValue())
+					assert.Equal(t, expected.GetCredentials().GetEuid().GetValue(), actual.GetCredentials().GetEuid().GetValue())
+					assert.Equal(t, expected.GetCredentials().GetEgid().GetValue(), actual.GetCredentials().GetEgid().GetValue())
+					assert.Equal(t, expected.GetCredentials().GetFsuid().GetValue(), actual.GetCredentials().GetFsuid().GetValue())
+					assert.Equal(t, expected.GetCredentials().GetFsgid().GetValue(), actual.GetCredentials().GetFsgid().GetValue())
+					assert.Equal(t, expected.GetCredentials().GetUserNamespace().GetValue(), actual.GetCredentials().GetUserNamespace().GetValue())
+					assert.Equal(t, expected.GetCredentials().GetSecureBits().GetValue(), actual.GetCredentials().GetSecureBits().GetValue())
+					assert.Equal(t, expected.GetCredentials().GetCapInheritable(), actual.GetCredentials().GetCapInheritable())
+					assert.Equal(t, expected.GetCredentials().GetCapPermitted(), actual.GetCredentials().GetCapPermitted())
+					assert.Equal(t, expected.GetCredentials().GetCapEffective(), actual.GetCredentials().GetCapEffective())
+					assert.Equal(t, expected.GetCredentials().GetCapBounding(), actual.GetCredentials().GetCapBounding())
+					assert.Equal(t, expected.GetCredentials().GetCapAmbient(), actual.GetCredentials().GetCapAmbient())
 				default:
 					t.Errorf("unexpected type %T", actual.Value)
 				}
@@ -751,34 +753,30 @@ func TestEventTrigger(t *testing.T) {
 	eventData, err := getEventData(event)
 	assert.NoError(t, err)
 
-	expected := map[string]*pb.EventValue{
-		"arg1": {
+	expected := []*pb.EventValue{
+		{
+			Name: "arg1",
 			Value: &pb.EventValue_Str{
-				Str: wrapperspb.String("value1"),
+				Str: "value1",
 			},
 		},
-		"triggeredBy": {
+		{
+			Name: "triggeredBy",
 			Value: &pb.EventValue_TriggeredBy{
 				TriggeredBy: &pb.TriggeredBy{
 					Id:   101,
 					Name: "ptrace",
-					Data: map[string]*pb.EventValue{
-						"args": {
-							Value: &pb.EventValue_Args{
-								Args: &pb.ArgsValue{
-									Value: []*pb.EventValue{
-										{
-											Value: &pb.EventValue_Str{
-												Str: wrapperspb.String("arg value"),
-											},
-										},
-									},
-								},
+					Data: []*pb.EventValue{
+						{
+							Name: "arg1",
+							Value: &pb.EventValue_Str{
+								Str: "arg value",
 							},
 						},
-						"returnValue": {
+						{
+							Name: "returnValue",
 							Value: &pb.EventValue_Int64{
-								Int64: wrapperspb.Int64(10),
+								Int64: 10,
 							},
 						},
 					},
@@ -789,10 +787,10 @@ func TestEventTrigger(t *testing.T) {
 
 	assert.Equal(t, len(expected), len(eventData))
 
-	expectedTriggerEvent := expected["triggeredBy"].GetTriggeredBy()
+	expectedTriggerEvent := expected[1].GetTriggeredBy()
 	assert.NotNil(t, expectedTriggerEvent)
 
-	actualTriggerEvent := eventData["triggeredBy"].GetTriggeredBy()
+	actualTriggerEvent := eventData[1].GetTriggeredBy()
 	assert.NotNil(t, actualTriggerEvent)
 
 	assert.Equal(t, expectedTriggerEvent.Id, actualTriggerEvent.Id)
