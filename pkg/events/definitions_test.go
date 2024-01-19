@@ -22,11 +22,11 @@ var getNames = func() map[string]ID {
 	return names
 }
 
-// TestDefinitionGroup_Add tests that Add adds a definition to the definition group.
-func TestDefinitionGroup_Add(t *testing.T) {
+// TestDefinitions_Add tests that Add adds a definition to the definition group.
+func TestDefinitions_Add(t *testing.T) {
 	t.Parallel()
 
-	defGroup := NewDefinitionGroup()
+	defGroup := NewDefinitions()
 
 	id := ID(1)
 
@@ -39,11 +39,11 @@ func TestDefinitionGroup_Add(t *testing.T) {
 	require.True(t, ok, true)
 }
 
-// TestDefinitionGroup_AddBatch tests that AddBatch adds multiple definitions to the definition group.
-func TestDefinitionGroup_AddBatch(t *testing.T) {
+// TestDefinitions_AddBatch tests that AddBatch adds multiple definitions to the definition group.
+func TestDefinitions_AddBatch(t *testing.T) {
 	t.Parallel()
 
-	defGroup := NewDefinitionGroup()
+	defGroup := NewDefinitions()
 
 	id1 := ID(1)
 	id2 := ID(2)
@@ -61,11 +61,11 @@ func TestDefinitionGroup_AddBatch(t *testing.T) {
 	require.True(t, ok, true)
 }
 
-// TestDefinitionGroup_GetDefinitionIDByName tests that GetDefinitionIDByName returns a definition ID by its name.
-func TestDefinitionGroup_GetDefinitionIDByName(t *testing.T) {
+// TestDefinitions_GetDefinitionIDByName tests that GetDefinitionIDByName returns a definition ID by its name.
+func TestDefinitions_GetDefinitionIDByName(t *testing.T) {
 	t.Parallel()
 
-	defGroup := NewDefinitionGroup()
+	defGroup := NewDefinitions()
 
 	id1 := ID(1)
 	id2 := ID(2)
@@ -84,11 +84,11 @@ func TestDefinitionGroup_GetDefinitionIDByName(t *testing.T) {
 	require.Equal(t, id, id2)
 }
 
-// TestDefinitionGroup_GetDefinitionByID tests that GetDefinitionByID returns a definition by its ID.
-func TestDefinitionGroup_GetDefinitionByID(t *testing.T) {
+// TestDefinitions_GetDefinitionByID tests that GetDefinitionByID returns a definition by its ID.
+func TestDefinitions_GetDefinitionByID(t *testing.T) {
 	t.Parallel()
 
-	defGroup := NewDefinitionGroup()
+	defGroup := NewDefinitions()
 
 	id1 := ID(1)
 	id2 := ID(2)
@@ -111,11 +111,11 @@ func TestDefinitionGroup_GetDefinitionByID(t *testing.T) {
 	require.Equal(t, def.GetID(), Undefined)
 }
 
-// TestDefinitionGroup_Length tests that Length returns the number of definitions in the definition group.
-func TestDefinitionGroup_Length(t *testing.T) {
+// TestDefinitions_Length tests that Length returns the number of definitions in the definition group.
+func TestDefinitions_Length(t *testing.T) {
 	t.Parallel()
 
-	defGroup := NewDefinitionGroup()
+	defGroup := NewDefinitions()
 
 	require.Equal(t, defGroup.Length(), 0) // empty definition group
 
@@ -133,11 +133,11 @@ func TestDefinitionGroup_Length(t *testing.T) {
 	require.Equal(t, defGroup.Length(), 2) // definition group with two definitions
 }
 
-// TestDefinitionGroup_GetDefinitions tests that GetDefinitions returns a map of definition IDs to their definitions.
-func TestDefinitionGroup_GetDefinitions(t *testing.T) {
+// TestDefinitions_GetDefinitions tests that GetDefinitions returns a map of definition IDs to their definitions.
+func TestDefinitions_GetDefinitions(t *testing.T) {
 	t.Parallel()
 
-	defGroup := NewDefinitionGroup()
+	defGroup := NewDefinitions()
 
 	id1 := ID(1)
 	id2 := ID(2)
@@ -154,11 +154,11 @@ func TestDefinitionGroup_GetDefinitions(t *testing.T) {
 	require.Contains(t, defs, def2)                        // same definition
 }
 
-// TestDefinitionGroup_NamesToIDs tests that NamesToIDs returns a map of definition names to their IDs.
-func TestDefinitionGroup_NamesToIDs(t *testing.T) {
+// TestDefinitions_NamesToIDs tests that NamesToIDs returns a map of definition names to their IDs.
+func TestDefinitions_NamesToIDs(t *testing.T) {
 	t.Parallel()
 
-	defGroup := NewDefinitionGroup()
+	defGroup := NewDefinitions()
 
 	id1 := ID(1)
 	id2 := ID(2)
@@ -175,11 +175,11 @@ func TestDefinitionGroup_NamesToIDs(t *testing.T) {
 	require.Equal(t, namesToIds["def2"], id2)                    // same definition ID
 }
 
-// TestDefinitionGroup_IDs32ToIDs tests that IDs32ToIDs returns a map of definition IDs to their 32-bit IDs.
-func TestDefinitionGroup_IDs32ToIDs(t *testing.T) {
+// TestDefinitions_IDs32ToIDs tests that IDs32ToIDs returns a map of definition IDs to their 32-bit IDs.
+func TestDefinitions_IDs32ToIDs(t *testing.T) {
 	t.Parallel()
 
-	defGroup := NewDefinitionGroup()
+	defGroup := NewDefinitions()
 
 	id1 := ID(1)
 	id2 := ID(2)
@@ -200,11 +200,11 @@ func TestDefinitionGroup_IDs32ToIDs(t *testing.T) {
 // Thread Safety
 //
 
-// TestDefinitionGroup_AddBatchAndGetDefinitions_MultipleThreads tests Add and Get functions for thread-safety.
-func TestDefinitionGroup_AddBatch_MultipleThreads(t *testing.T) {
+// TestDefinitions_AddBatchAndGetDefinitions_MultipleThreads tests Add and Get functions for thread-safety.
+func TestDefinitions_AddBatch_MultipleThreads(t *testing.T) {
 	t.Parallel()
 
-	defGroup := NewDefinitionGroup()
+	defGroup := NewDefinitions()
 
 	names := getNames()
 
@@ -232,11 +232,11 @@ func TestDefinitionGroup_AddBatch_MultipleThreads(t *testing.T) {
 	wg.Wait()
 }
 
-// TestDefinitionGroup_Length_MultipleThreads tests that Length is thread-safe.
-func TestDefinitionGroup_Length_MultipleThreads(t *testing.T) {
+// TestDefinitions_Length_MultipleThreads tests that Length is thread-safe.
+func TestDefinitions_Length_MultipleThreads(t *testing.T) {
 	t.Parallel()
 
-	defGroup := NewDefinitionGroup()
+	defGroup := NewDefinitions()
 
 	names := getNames()
 
@@ -258,11 +258,11 @@ func TestDefinitionGroup_Length_MultipleThreads(t *testing.T) {
 	require.Equal(t, amountOfTestThreads, defGroup.Length()) // definition group with 20 definitions
 }
 
-// TestDefinitionGroup_GetDefinitions_MultipleThread tests that GetDefinitions is thread-safe.
-func TestDefinitionGroup_GetDefinitions_MultipleThread(t *testing.T) {
+// TestDefinitions_GetDefinitions_MultipleThread tests that GetDefinitions is thread-safe.
+func TestDefinitions_GetDefinitions_MultipleThread(t *testing.T) {
 	t.Parallel()
 
-	defGroup := NewDefinitionGroup()
+	defGroup := NewDefinitions()
 
 	names := getNames()
 
@@ -284,11 +284,11 @@ func TestDefinitionGroup_GetDefinitions_MultipleThread(t *testing.T) {
 	require.Equal(t, amountOfTestThreads, defGroup.Length()) // definition group with 20 definitions
 }
 
-// TestDefinitionGroup_NamesToIDs_MultipleThreads tests that NamesToIDs is thread-safe.
-func TestDefinitionGroup_NamesToIDs_MultipleThreads(t *testing.T) {
+// TestDefinitions_NamesToIDs_MultipleThreads tests that NamesToIDs is thread-safe.
+func TestDefinitions_NamesToIDs_MultipleThreads(t *testing.T) {
 	t.Parallel()
 
-	defGroup := NewDefinitionGroup()
+	defGroup := NewDefinitions()
 
 	wg := &sync.WaitGroup{}
 
@@ -313,11 +313,11 @@ func TestDefinitionGroup_NamesToIDs_MultipleThreads(t *testing.T) {
 	wg.Wait()
 }
 
-// TestDefinitionGroup_IDs32ToIDs_MultipleThreads tests that IDs32ToIDs is thread-safe.
-func TestDefinitionGroup_IDs32ToIDs_MultipleThreads(t *testing.T) {
+// TestDefinitions_IDs32ToIDs_MultipleThreads tests that IDs32ToIDs is thread-safe.
+func TestDefinitions_IDs32ToIDs_MultipleThreads(t *testing.T) {
 	t.Parallel()
 
-	defGroup := NewDefinitionGroup()
+	defGroup := NewDefinitions()
 
 	wg := &sync.WaitGroup{}
 

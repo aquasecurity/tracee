@@ -172,10 +172,10 @@ const (
 // All Events
 //
 
-var Core *DefinitionGroup
+var Core *Definitions
 
 func init() {
-	Core = NewDefinitionGroup()
+	Core = NewDefinitions()
 	err := Core.AddBatch(CoreEvents)
 	if err != nil {
 		logger.Errorw("failed to initialize event definitions", "err", err)
