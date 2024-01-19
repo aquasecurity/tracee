@@ -1,112 +1,13 @@
 package probes
 
 import (
-	"sync"
-
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
-
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
-//
-// ProbeGroup
-//
-
-var kernelSymbolTable *helpers.KernelSymbolTable
-
-// ProbeGroup is a collection of probes.
-type ProbeGroup struct {
-	probesLock *sync.Mutex // disallow concurrent access to the probe group
-	module     *bpf.Module
-	probes     map[Handle]Probe
-}
-
-// NewProbeGroup creates a new ProbeGroup.
-func NewProbeGroup(m *bpf.Module, p map[Handle]Probe) *ProbeGroup {
-	return &ProbeGroup{
-		probesLock: &sync.Mutex{}, // no parallel attaching/detaching of probes
-		probes:     p,
-		module:     m,
-	}
-}
-
-// GetProbe returns a probe type by its handle.
-func (p *ProbeGroup) GetProbeType(handle Handle) string {
-	p.probesLock.Lock()
-	defer p.probesLock.Unlock()
-
-	if r, ok := p.probes[handle]; ok {
-		if probe, ok := r.(*TraceProbe); ok {
-			switch probe.probeType {
-			case KProbe:
-				return "kprobe"
-			case KretProbe:
-				return "kretprobe"
-			case Tracepoint:
-				return "tracepoint"
-			case RawTracepoint:
-				return "raw_tracepoint"
-			}
-		}
-	}
-
-	return ""
-}
-
-// Attach attaches a probe's program to its hook, by given handle.
-func (p *ProbeGroup) Attach(handle Handle, args ...interface{}) error {
-	p.probesLock.Lock()
-	defer p.probesLock.Unlock()
-
-	if _, ok := p.probes[handle]; !ok {
-		return errfmt.Errorf("probe handle (%d) does not exist", handle)
-	}
-
-	return p.probes[handle].attach(p.module, args...)
-}
-
-// Detach detaches a probe's program from its hook, by given handle.
-func (p *ProbeGroup) Detach(handle Handle, args ...interface{}) error {
-	p.probesLock.Lock()
-	defer p.probesLock.Unlock()
-
-	if _, ok := p.probes[handle]; !ok {
-		return errfmt.Errorf("probe handle (%d) does not exist", handle)
-	}
-
-	return p.probes[handle].detach(args...)
-}
-
-// DetachAll detaches all existing probes programs from their hooks.
-func (p *ProbeGroup) DetachAll() error {
-	p.probesLock.Lock()
-	defer p.probesLock.Unlock()
-
-	for _, pr := range p.probes {
-		err := pr.detach()
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	return nil
-}
-
-// Autoload disables autoload feature for a given handle's program.
-func (p *ProbeGroup) Autoload(handle Handle, autoload bool) error {
-	p.probesLock.Lock()
-	defer p.probesLock.Unlock()
-	return p.probes[handle].autoload(p.module, autoload)
-}
-
-func (p *ProbeGroup) GetProbeByHandle(handle Handle) Probe {
-	return p.probes[handle]
-}
-
-// NewDefaultProbeGroup initializes the default ProbeGroup (TODO: extensions will use probe groups)
-func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, kSyms *helpers.KernelSymbolTable) (*ProbeGroup, error) {
+func DefaultProbes(module *bpf.Module, netEnabled bool, kSyms *helpers.KernelSymbolTable) (*Probes, error) {
 	if kSyms == nil {
 		return nil, errfmt.Errorf("kernel symbol table is nil")
 	}
@@ -235,5 +136,5 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, kSyms *helpers.Ke
 		}
 	}
 
-	return NewProbeGroup(module, allProbes), nil
+	return NewProbes(module, allProbes), nil
 }

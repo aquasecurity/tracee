@@ -1,135 +1,98 @@
 package probes
 
 import (
+	"sync"
+
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/helpers"
+
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 )
 
-//
-// Probe
-//
+var kernelSymbolTable *helpers.KernelSymbolTable
 
-type Probe interface {
-	// attach attaches the probe's program to its hook.
-	attach(module *bpf.Module, args ...interface{}) error
-	// detach detaches the probe's program from its hook.
-	detach(...interface{}) error
-	// autoload sets the probe's ebpf program automatic attaching to its hook.
-	autoload(module *bpf.Module, autoload bool) error
+type Probes struct {
+	mutex  *sync.RWMutex
+	module *bpf.Module
+	probes map[Handle]Probe
 }
 
-//
-// Event Probe Handles
-//
+func NewProbes(m *bpf.Module, p map[Handle]Probe) *Probes {
+	return &Probes{
+		mutex:  &sync.RWMutex{},
+		probes: p,
+		module: m,
+	}
+}
 
-type Handle int32
+func (p *Probes) GetProbeType(handle Handle) string {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
 
-const (
-	SysEnter Handle = iota
-	SysExit
-	SyscallEnter__Internal
-	SyscallExit__Internal
-	SchedProcessFork
-	SchedProcessExec
-	SchedProcessExit
-	SchedProcessFree
-	SchedSwitch
-	DoExit
-	CapCapable
-	VfsWrite
-	VfsWriteRet
-	VfsWriteV
-	VfsWriteVRet
-	SecurityMmapAddr
-	SecurityMmapFile
-	SecurityFileMProtect
-	CommitCreds
-	SwitchTaskNS
-	KernelWrite
-	KernelWriteRet
-	CgroupAttachTask
-	CgroupMkdir
-	CgroupRmdir
-	SecurityBPRMCheck
-	SecurityFileOpen
-	SecurityInodeUnlink
-	SecurityInodeMknod
-	SecurityInodeSymlink
-	SecuritySocketCreate
-	SecuritySocketListen
-	SecuritySocketConnect
-	SecuritySocketAccept
-	SecuritySocketBind
-	SecuritySocketSetsockopt
-	SecuritySbMount
-	SecurityBPF
-	SecurityBPFMap
-	SecurityKernelReadFile
-	SecurityKernelPostReadFile
-	DoSplice
-	DoSpliceRet
-	ProcCreate
-	RegisterKprobe
-	RegisterKprobeRet
-	CallUsermodeHelper
-	DebugfsCreateFile
-	DebugfsCreateDir
-	DeviceAdd
-	RegisterChrdev
-	RegisterChrdevRet
-	DoInitModule
-	DoInitModuleRet
-	LoadElfPhdrs
-	Filldir64
-	SecurityFilePermission
-	TaskRename
-	SyscallTableCheck
-	PrintNetSeqOps
-	SecurityInodeRename
-	DoSigaction
-	SecurityBpfProg
-	SecurityFileIoctl
-	CheckHelperCall
-	CheckMapFuncCompatibility
-	KallsymsLookupName
-	KallsymsLookupNameRet
-	SockAllocFile
-	SockAllocFileRet
-	SecuritySkClone
-	SecuritySocketRecvmsg
-	SecuritySocketSendmsg
-	CgroupBPFRunFilterSKB
-	CgroupSKBIngress
-	CgroupSKBEgress
-	DoMmap
-	DoMmapRet
-	PrintMemDump
-	VfsRead
-	VfsReadRet
-	VfsReadV
-	VfsReadVRet
-	VfsUtimes
-	UtimesCommon
-	DoTruncate
-	FileUpdateTime
-	FileUpdateTimeRet
-	FileModified
-	FileModifiedRet
-	FdInstall
-	FilpClose
-	InotifyFindInode
-	InotifyFindInodeRet
-	BpfCheck
-	ExecBinprm
-	ExecBinprmRet
-	HiddenKernelModuleSeeker
-	TpProbeRegPrioMayExist
-	HiddenKernelModuleVerifier
-	ModuleLoad
-	ModuleFree
-	LayoutAndAllocate
-	SignalCgroupMkdir
-	SignalCgroupRmdir
-	SignalSchedProcessFork
-	SignalSchedProcessExec
-	SignalSchedProcessExit
-)
+	if r, ok := p.probes[handle]; ok {
+		if probe, ok := r.(*TraceProbe); ok {
+			switch probe.probeType {
+			case KProbe:
+				return "kprobe"
+			case KretProbe:
+				return "kretprobe"
+			case Tracepoint:
+				return "tracepoint"
+			case RawTracepoint:
+				return "raw_tracepoint"
+			}
+		}
+	}
+
+	return ""
+}
+
+func (p *Probes) Attach(handle Handle, args ...interface{}) error {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+
+	if _, ok := p.probes[handle]; !ok {
+		return errfmt.Errorf("probe handle (%d) does not exist", handle)
+	}
+
+	return p.probes[handle].attach(p.module, args...)
+}
+
+func (p *Probes) Detach(handle Handle, args ...interface{}) error {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+
+	if _, ok := p.probes[handle]; !ok {
+		return errfmt.Errorf("probe handle (%d) does not exist", handle)
+	}
+
+	return p.probes[handle].detach(args...)
+}
+
+func (p *Probes) DetachAll() error {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+
+	for _, pr := range p.probes {
+		err := pr.detach()
+		if err != nil {
+			return errfmt.WrapError(err)
+		}
+	}
+
+	return nil
+}
+
+func (p *Probes) Autoload(handle Handle, autoload bool) error {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+
+	return p.probes[handle].autoload(p.module, autoload)
+}
+
+func (p *Probes) GetProbeByHandle(handle Handle) Probe {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+
+	return p.probes[handle]
+}

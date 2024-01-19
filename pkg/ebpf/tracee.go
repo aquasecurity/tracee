@@ -81,7 +81,7 @@ type Tracee struct {
 	kernelSymbols *helpers.KernelSymbolTable
 	// eBPF
 	bpfModule *bpf.Module
-	probes    *probes.ProbeGroup
+	probes    *probes.Probes
 	// BPF Maps
 	StackAddressesMap *bpf.BPFMap
 	FDArgPathMap      *bpf.BPFMap
@@ -1133,7 +1133,7 @@ func (t *Tracee) initBPF() error {
 
 	// Initialize probes
 
-	t.probes, err = probes.NewDefaultProbeGroup(t.bpfModule, t.netEnabled(), t.kernelSymbols)
+	t.probes, err = probes.DefaultProbes(t.bpfModule, t.netEnabled(), t.kernelSymbols)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
