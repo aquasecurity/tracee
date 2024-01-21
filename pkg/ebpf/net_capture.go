@@ -58,12 +58,10 @@ func (t *Tracee) processNetCapEvents(ctx context.Context, in <-chan *trace.Event
 		for {
 			select {
 			case event := <-in:
-				// Go through event processors if needed
-				errs := t.processEvent(event)
-				if len(errs) > 0 {
-					for _, err := range errs {
-						t.handleError(err)
-					}
+				// TODO: Support captures pipeline in t.processEvent
+				err := t.normalizeEventCtxTimes(event)
+				if err != nil {
+					t.handleError(err)
 					t.eventsPool.Put(event)
 					continue
 				}
