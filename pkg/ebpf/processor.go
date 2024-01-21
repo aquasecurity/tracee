@@ -23,7 +23,7 @@ func init() {
 
 // processEvent processes an event by passing it through all registered event processors.
 func (t *Tracee) processEvent(event *trace.Event) []error {
-	errs := []error{}
+	var errs []error
 
 	processors := t.eventProcessor[events.ID(event.EventID)]         // this event processors
 	processors = append(processors, t.eventProcessor[events.All]...) // all events processors
