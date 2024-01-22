@@ -10,7 +10,7 @@ require (
 	github.com/aquasecurity/libbpfgo v0.6.0-libbpf-1.3.0.20240111220235-90dbffffbdab
 	github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20240111220235-90dbffffbdab
 	github.com/aquasecurity/tracee/api v0.0.0-20240118133111-07e087b036d4
-	github.com/aquasecurity/tracee/signatures/helpers v0.0.0-00010101000000-000000000000
+	github.com/aquasecurity/tracee/signatures/helpers v0.0.0-20240122160245-67dec940088c
 	github.com/aquasecurity/tracee/types v0.0.0-20240122122429-7f84f526758d
 	github.com/containerd/containerd v1.7.0
 	github.com/docker/docker v24.0.7+incompatible
@@ -181,5 +181,3 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	kernel.org/pub/linux/libs/security/libcap/psx v1.2.68 // indirect
 )
-
-replace github.com/aquasecurity/tracee/signatures/helpers => ./signatures/helpers
