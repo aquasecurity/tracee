@@ -287,12 +287,7 @@ typedef struct equality {
     u64 equality_set_in_scopes;
 } eq_t;
 
-typedef struct config_entry {
-    u32 tracee_pid;
-    u32 options;
-    u32 cgroup_v1_hid;
-    u16 policies_version;
-    u16 padding; // free for further use
+typedef struct policies_config {
     // enabled scopes bitmask per filter
     u64 uid_filter_enabled_scopes;
     u64 pid_filter_enabled_scopes;
@@ -327,6 +322,15 @@ typedef struct config_entry {
     u64 uid_min;
     u64 pid_max;
     u64 pid_min;
+} policies_config_t;
+
+typedef struct config_entry {
+    u32 tracee_pid;
+    u32 options;
+    u32 cgroup_v1_hid;
+    u16 padding; // free for further use
+    u16 policies_version;
+    policies_config_t policies_config;
 } config_entry_t;
 
 typedef struct event_config {

@@ -825,143 +825,16 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	return cOptVal
 }
 
-func (t *Tracee) computeConfigValues(newPolicies *policy.Policies) []byte {
-	// config_entry
-	configVal := make([]byte, 256)
-
-	// tracee_pid
-	binary.LittleEndian.PutUint32(configVal[0:4], uint32(os.Getpid()))
-	// options
-	binary.LittleEndian.PutUint32(configVal[4:8], t.getOptionsConfig())
-	// cgroup_v1_hid
-	binary.LittleEndian.PutUint32(configVal[8:12], uint32(t.cgroups.GetDefaultCgroupHierarchyID()))
-	// filters_version
-	binary.LittleEndian.PutUint16(configVal[12:14], newPolicies.Version())
-	// padding free for further use
-	binary.LittleEndian.PutUint16(configVal[14:16], 0)
-
-	for p := range newPolicies.Map() {
-		byteIndex := p.ID / 8
-		bitOffset := p.ID % 8
-
-		// filter enabled policies bitmap
-		if p.UIDFilter.Enabled() {
-			// uid_filter_enabled_scopes
-			configVal[16+byteIndex] |= 1 << bitOffset
-		}
-		if p.PIDFilter.Enabled() {
-			// pid_filter_enabled_scopes
-			configVal[24+byteIndex] |= 1 << bitOffset
-		}
-		if p.MntNSFilter.Enabled() {
-			// mnt_ns_filter_enabled_scopes
-			configVal[32+byteIndex] |= 1 << bitOffset
-		}
-		if p.PidNSFilter.Enabled() {
-			// pid_ns_filter_enabled_scopes
-			configVal[40+byteIndex] |= 1 << bitOffset
-		}
-		if p.UTSFilter.Enabled() {
-			// uts_ns_filter_enabled_scopes
-			configVal[48+byteIndex] |= 1 << bitOffset
-		}
-		if p.CommFilter.Enabled() {
-			// comm_filter_enabled_scopes
-			configVal[56+byteIndex] |= 1 << bitOffset
-		}
-		if p.ContIDFilter.Enabled() {
-			// cgroup_id_filter_enabled_scopes
-			configVal[64+byteIndex] |= 1 << bitOffset
-		}
-		if p.ContFilter.Enabled() {
-			// cont_filter_enabled_scopes
-			configVal[72+byteIndex] |= 1 << bitOffset
-		}
-		if p.NewContFilter.Enabled() {
-			// new_cont_filter_enabled_scopes
-			configVal[80+byteIndex] |= 1 << bitOffset
-		}
-		if p.NewPidFilter.Enabled() {
-			// new_pid_filter_enabled_scopes
-			configVal[88+byteIndex] |= 1 << bitOffset
-		}
-		if p.ProcessTreeFilter.Enabled() {
-			// proc_tree_filter_enabled_scopes
-			configVal[96+byteIndex] |= 1 << bitOffset
-		}
-		if p.BinaryFilter.Enabled() {
-			// bin_path_filter_enabled_scopes
-			configVal[104+byteIndex] |= 1 << bitOffset
-		}
-		if p.Follow {
-			// follow_filter_enabled_scopes
-			configVal[112+byteIndex] |= 1 << bitOffset
-		}
-
-		// filter out scopes bitmap
-		if p.UIDFilter.FilterOut() {
-			// uid_filter_out_scopes
-			configVal[120+byteIndex] |= 1 << bitOffset
-		}
-		if p.PIDFilter.FilterOut() {
-			// pid_filter_out_scopes
-			configVal[128+byteIndex] |= 1 << bitOffset
-		}
-		if p.MntNSFilter.FilterOut() {
-			// mnt_ns_filter_out_scopes
-			configVal[136+byteIndex] |= 1 << bitOffset
-		}
-		if p.PidNSFilter.FilterOut() {
-			// pid_ns_filter_out_scopes
-			configVal[144+byteIndex] |= 1 << bitOffset
-		}
-		if p.UTSFilter.FilterOut() {
-			// uts_ns_filter_out_scopes
-			configVal[152+byteIndex] |= 1 << bitOffset
-		}
-		if p.CommFilter.FilterOut() {
-			// comm_filter_out_scopes
-			configVal[160+byteIndex] |= 1 << bitOffset
-		}
-		if p.ContIDFilter.FilterOut() {
-			// cgroup_id_filter_out_scopes
-			configVal[168+byteIndex] |= 1 << bitOffset
-		}
-		if p.ContFilter.FilterOut() {
-			// cont_filter_out_scopes
-			configVal[176+byteIndex] |= 1 << bitOffset
-		}
-		if p.NewContFilter.FilterOut() {
-			// new_cont_filter_out_scopes
-			configVal[184+byteIndex] |= 1 << bitOffset
-		}
-		if p.NewPidFilter.FilterOut() {
-			// new_pid_filter_out_scopes
-			configVal[192+byteIndex] |= 1 << bitOffset
-		}
-		if p.ProcessTreeFilter.FilterOut() {
-			// proc_tree_filter_out_scopes
-			configVal[200+byteIndex] |= 1 << bitOffset
-		}
-		if p.BinaryFilter.FilterOut() {
-			// bin_path_filter_out_scopes
-			configVal[208+byteIndex] |= 1 << bitOffset
-		}
-
-		// enabled_scopes
-		configVal[216+byteIndex] |= 1 << bitOffset
+// newConfig returns a new Config instance based on the current Tracee state and
+// the given policies config and version.
+func (t *Tracee) newConfig(cfg *policy.PoliciesConfig, version uint16) *Config {
+	return &Config{
+		TraceePid:       uint32(os.Getpid()),
+		Options:         t.getOptionsConfig(),
+		CgroupV1Hid:     uint32(t.cgroups.GetDefaultCgroupHierarchyID()),
+		PoliciesVersion: version,
+		PoliciesConfig:  *cfg,
 	}
-
-	// uid_max
-	binary.LittleEndian.PutUint64(configVal[224:232], newPolicies.UIDFilterMax())
-	// uid_min
-	binary.LittleEndian.PutUint64(configVal[232:240], newPolicies.UIDFilterMin())
-	// pid_max
-	binary.LittleEndian.PutUint64(configVal[240:248], newPolicies.PIDFilterMax())
-	// pid_min
-	binary.LittleEndian.PutUint64(configVal[248:256], newPolicies.PIDFilterMin())
-
-	return configVal
 }
 
 // getUnavKsymsPerEvtID returns event IDs and symbols that are unavailable to them.
@@ -1161,32 +1034,24 @@ func (t *Tracee) populateBPFMaps() error {
 	return nil
 }
 
+// populateFilterMaps populates the eBPF maps with the given policies
 func (t *Tracee) populateFilterMaps(newPolicies *policy.Policies, updateProcTree bool) error {
-	cZero := uint32(0)
-
-	// Create new filter maps version
-
-	if err := newPolicies.UpdateBPF(
+	polCfg, err := newPolicies.UpdateBPF(
 		t.bpfModule,
 		t.containers,
 		t.eventsState,
 		t.eventsParamTypes,
 		true,
 		updateProcTree,
-	); err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	// Compute config map values based on new policies
-
-	configVal := t.computeConfigValues(newPolicies)
-
-	bpfConfigMap, err := t.bpfModule.GetMap("config_map")
+	)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-	// Update config map to make new policies effective
-	if err = bpfConfigMap.Update(unsafe.Pointer(&cZero), unsafe.Pointer(&configVal[0])); err != nil {
+
+	// Create new config with updated policies and update eBPF map
+
+	cfg := t.newConfig(polCfg, newPolicies.Version())
+	if err := cfg.UpdateBPF(t.bpfModule); err != nil {
 		return errfmt.WrapError(err)
 	}
 
@@ -1310,7 +1175,8 @@ func (t *Tracee) initBPF() error {
 	// possible race window between the bpf programs updating the maps and
 	// userland reading procfs and also dealing with same maps.
 
-	err = t.config.Policies.UpdateBPF(t.bpfModule, t.containers, t.eventsState, t.eventsParamTypes, false, true)
+	// returned PoliciesConfig is not used here, therefore it's discarded
+	_, err = t.config.Policies.UpdateBPF(t.bpfModule, t.containers, t.eventsState, t.eventsParamTypes, false, true)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

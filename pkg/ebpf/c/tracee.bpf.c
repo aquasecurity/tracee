@@ -546,7 +546,11 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 
     // Update the process tree map (filter related) if the parent has an entry.
 
-    if (p.config->proc_tree_filter_enabled_scopes) {
+    policies_config_t *policies_cfg = get_policies_config(&p);
+    if (unlikely(policies_cfg == NULL))
+        return 0;
+
+    if (policies_cfg->proc_tree_filter_enabled_scopes) {
         u16 version = p.event->context.policies_version;
         // Give the compiler a hint about the map type, otherwise libbpf will complain
         // about missing type information. i.e.: "can't determine value size for type".
