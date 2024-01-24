@@ -42,6 +42,19 @@ func getEventData(e trace.Event) ([]*pb.EventValue, error) {
 			return nil, err
 		}
 
+		// if convertStruct was not able to convert an argument is because we don't support the conversion
+		if eventValue == nil {
+			logger.Errorw(
+				"Can't convert event argument. Please add it as a GRPC event data type or implement detect.FindingDataStruct interface.",
+				"name",
+				arg.Name,
+				"type",
+				fmt.Sprintf("%T", arg.Value),
+			)
+
+			continue
+		}
+
 		eventValue.Name = arg.ArgMeta.Name
 		data = append(data, eventValue)
 	}
@@ -59,10 +72,6 @@ func getEventData(e trace.Event) ([]*pb.EventValue, error) {
 }
 
 func getEventValue(arg trace.Argument) (*pb.EventValue, error) {
-	if arg.Value == nil {
-		return nil, nil
-	}
-
 	var eventValue *pb.EventValue
 
 	eventValue, err := parseArgument(arg)
@@ -77,6 +86,10 @@ func getEventValue(arg trace.Argument) (*pb.EventValue, error) {
 // based on the value type
 func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
 	switch v := arg.Value.(type) {
+	case nil:
+		return &pb.EventValue{
+			Value: nil,
+		}, nil
 	case int:
 		return &pb.EventValue{
 			Value: &pb.EventValue_Int64{
@@ -729,14 +742,6 @@ func convertPktMeta(v *trace.PktMeta) (*pb.EventValue, error) {
 func convertToStruct(arg trace.Argument) (*pb.EventValue, error) {
 	i, ok := arg.Value.(detect.FindingDataStruct)
 	if !ok {
-		logger.Errorw(
-			"Can't convert event argument. Please add it as a GRPC event data type or implement detect.FindingDataStruct interface.",
-			"name",
-			arg.Name,
-			"type",
-			fmt.Sprintf("%T", arg.Value),
-		)
-
 		return nil, nil
 	}
 
