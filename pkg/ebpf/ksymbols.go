@@ -5,6 +5,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
@@ -19,7 +20,7 @@ func (t *Tracee) UpdateKallsyms() error {
 	// NOTE: Make sure to refresh the kernel symbols table before updating the eBPF map.
 
 	// Find the eBPF map.
-	bpfKsymsMap, err := t.bpfModule.GetMap("ksymbols_map")
+	bpfKsymsMap, err := extensions.Modules.Get("core").GetMap("ksymbols_map")
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

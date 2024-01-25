@@ -31,6 +31,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/derive"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/filehash"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -80,8 +81,7 @@ type Tracee struct {
 	pidsInMntns   bucketscache.BucketsCache // first n PIDs in each mountns
 	kernelSymbols *helpers.KernelSymbolTable
 	// eBPF
-	bpfModule *bpf.Module
-	probes    *probes.Probes
+	probes *probes.Probes
 	// BPF Maps
 	StackAddressesMap *bpf.BPFMap
 	FDArgPathMap      *bpf.BPFMap
@@ -490,7 +490,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Get reference to stack trace addresses map
 
-	stackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")
+	stackAddressesMap, err := extensions.Modules.Get("core").GetMap("stack_addresses")
 	if err != nil {
 		t.Close()
 		return errfmt.Errorf("error getting access to 'stack_addresses' eBPF Map %v", err)
@@ -498,8 +498,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	t.StackAddressesMap = stackAddressesMap
 
 	// Get reference to fd arg path map
-
-	fdArgPathMap, err := t.bpfModule.GetMap("fd_arg_path_map")
+	fdArgPathMap, err := extensions.Modules.Get("core").GetMap("fd_arg_path_map")
 	if err != nil {
 		t.Close()
 		return errfmt.Errorf("error getting access to 'fd_arg_path_map' eBPF Map %v", err)
@@ -556,12 +555,12 @@ func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 	tailCallIndexes := tailCall.GetIndexes()
 
 	// Pick eBPF map by name.
-	bpfMap, err := t.bpfModule.GetMap(tailCallMapName)
+	bpfMap, err := extensions.Modules.Get("core").GetMap(tailCallMapName)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 	// Pick eBPF program by name.
-	bpfProg, err := t.bpfModule.GetProgram(tailCallProgName)
+	bpfProg, err := extensions.Modules.Get("core").GetProgram(tailCallProgName)
 	if err != nil {
 		return errfmt.Errorf("could not get BPF program %s: %v", tailCallProgName, err)
 	}
@@ -905,7 +904,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 
 func (t *Tracee) populateBPFMaps() error {
 	// Prepare 32bit to 64bit syscall number mapping
-	sys32to64BPFMap, err := t.bpfModule.GetMap("sys_32_to_64_map") // u32, u32
+	sys32to64BPFMap, err := extensions.Modules.Get("core").GetMap("sys_32_to_64_map")
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -926,7 +925,7 @@ func (t *Tracee) populateBPFMaps() error {
 
 	// Initialize kconfig ebpf map with values from the kernel config file.
 	// TODO: remove this from libbpf and try to rely in libbpf only for kconfig vars.
-	bpfKConfigMap, err := t.bpfModule.GetMap("kconfig_map") // u32, u32
+	bpfKConfigMap, err := extensions.Modules.Get("core").GetMap("kconfig_map")
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -945,7 +944,7 @@ func (t *Tracee) populateBPFMaps() error {
 
 	// Initialize the net_packet configuration eBPF map.
 	if pcaps.PcapsEnabled(t.config.Capture.Net) {
-		bpfNetConfigMap, err := t.bpfModule.GetMap("netconfig_map")
+		bpfNetConfigMap, err := extensions.Modules.Get("core").GetMap("netconfig_map")
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -969,13 +968,13 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Populate containers map with existing containers
-	err = t.containers.PopulateBpfMap(t.bpfModule)
+	err = t.containers.PopulateBpfMap(extensions.Modules.Get("core"))
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	// Set filters given by the user to filter file write events
-	fileWritePathFilterMap, err := t.bpfModule.GetMap("file_write_path_filter") // u32, u32
+	fileWritePathFilterMap, err := extensions.Modules.Get("core").GetMap("file_write_path_filter") // u32, u32
 	if err != nil {
 		return err
 	}
@@ -988,7 +987,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Set filters given by the user to filter file read events
-	fileReadPathFilterMap, err := t.bpfModule.GetMap("file_read_path_filter") // u32, u32
+	fileReadPathFilterMap, err := extensions.Modules.Get("core").GetMap("file_read_path_filter") // u32, u32
 	if err != nil {
 		return err
 	}
@@ -1001,7 +1000,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Set filters given by the user to filter file read and write type and fds
-	fileTypeFilterMap, err := t.bpfModule.GetMap("file_type_filter") // u32, u32
+	fileTypeFilterMap, err := extensions.Modules.Get("core").GetMap("file_type_filter") // u32, u32
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1037,7 +1036,7 @@ func (t *Tracee) populateBPFMaps() error {
 // populateFilterMaps populates the eBPF maps with the given policies
 func (t *Tracee) populateFilterMaps(newPolicies *policy.Policies, updateProcTree bool) error {
 	polCfg, err := newPolicies.UpdateBPF(
-		t.bpfModule,
+		extensions.Modules.Get("core"),
 		t.containers,
 		t.eventsState,
 		t.eventsParamTypes,
@@ -1051,7 +1050,7 @@ func (t *Tracee) populateFilterMaps(newPolicies *policy.Policies, updateProcTree
 	// Create new config with updated policies and update eBPF map
 
 	cfg := t.newConfig(polCfg, newPolicies.Version())
-	if err := cfg.UpdateBPF(t.bpfModule); err != nil {
+	if err := cfg.UpdateBPF(extensions.Modules.Get("core")); err != nil {
 		return errfmt.WrapError(err)
 	}
 
@@ -1114,8 +1113,6 @@ func (t *Tracee) attachProbes() error {
 }
 
 func (t *Tracee) initBPF() error {
-	var err error
-
 	// Execute code with higher privileges: ring1 (required)
 
 	newModuleArgs := bpf.NewModuleArgs{
@@ -1126,21 +1123,22 @@ func (t *Tracee) initBPF() error {
 
 	// Open the eBPF object file (create a new module)
 
-	t.bpfModule, err = bpf.NewModuleFromBufferArgs(newModuleArgs)
+	bpfModule, err := bpf.NewModuleFromBufferArgs(newModuleArgs)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
+	extensions.Modules.Set("core", bpfModule)
 
 	// Initialize probes
 
-	t.probes, err = probes.DefaultProbes(t.bpfModule, t.netEnabled(), t.kernelSymbols)
+	t.probes, err = probes.DefaultProbes(bpfModule, t.netEnabled(), t.kernelSymbols)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	// Load the eBPF object into kernel
 
-	err = t.bpfModule.BPFLoadObject()
+	err = bpfModule.BPFLoadObject()
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1155,7 +1153,6 @@ func (t *Tracee) initBPF() error {
 	// Initialize Control Plane
 
 	t.controlPlane, err = controlplane.NewController(
-		t.bpfModule,
 		t.containers,
 		t.config.NoContainersEnrich,
 		t.processTree,
@@ -1176,7 +1173,14 @@ func (t *Tracee) initBPF() error {
 	// userland reading procfs and also dealing with same maps.
 
 	// returned PoliciesConfig is not used here, therefore it's discarded
-	_, err = t.config.Policies.UpdateBPF(t.bpfModule, t.containers, t.eventsState, t.eventsParamTypes, false, true)
+	_, err = t.config.Policies.UpdateBPF(
+		extensions.Modules.Get("core"),
+		t.containers,
+		t.eventsState,
+		t.eventsParamTypes,
+		false,
+		true,
+	)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1188,7 +1192,7 @@ func (t *Tracee) initBPF() error {
 	if t.config.PerfBufferSize < 1 {
 		return errfmt.Errorf("invalid perf buffer size: %d", t.config.PerfBufferSize)
 	}
-	t.eventsPerfMap, err = t.bpfModule.InitPerfBuf(
+	t.eventsPerfMap, err = extensions.Modules.Get("core").InitPerfBuf(
 		"events",
 		t.eventsChannel,
 		t.lostEvChannel,
@@ -1201,7 +1205,7 @@ func (t *Tracee) initBPF() error {
 	if t.config.BlobPerfBufferSize > 0 {
 		t.fileCapturesChannel = make(chan []byte, 1000)
 		t.lostCapturesChannel = make(chan uint64)
-		t.fileWrPerfMap, err = t.bpfModule.InitPerfBuf(
+		t.fileWrPerfMap, err = extensions.Modules.Get("core").InitPerfBuf(
 			"file_writes",
 			t.fileCapturesChannel,
 			t.lostCapturesChannel,
@@ -1215,7 +1219,7 @@ func (t *Tracee) initBPF() error {
 	if pcaps.PcapsEnabled(t.config.Capture.Net) {
 		t.netCapChannel = make(chan []byte, 1000)
 		t.lostNetCapChannel = make(chan uint64)
-		t.netCapPerfMap, err = t.bpfModule.InitPerfBuf(
+		t.netCapPerfMap, err = extensions.Modules.Get("core").InitPerfBuf(
 			"net_cap_events",
 			t.netCapChannel,
 			t.lostNetCapChannel,
@@ -1228,7 +1232,7 @@ func (t *Tracee) initBPF() error {
 
 	t.bpfLogsChannel = make(chan []byte, 1000)
 	t.lostBPFLogChannel = make(chan uint64)
-	t.bpfLogsPerfMap, err = t.bpfModule.InitPerfBuf(
+	t.bpfLogsPerfMap, err = extensions.Modules.Get("core").InitPerfBuf(
 		"logs",
 		t.bpfLogsChannel,
 		t.lostBPFLogChannel,
@@ -1361,36 +1365,38 @@ func updateCaptureMapFile(fileDir *os.File, filePath string, capturedFiles map[s
 
 // Close cleans up created resources
 func (t *Tracee) Close() {
-	// clean up (unsubscribe) all streams connected if tracee is done
+	// Unsubscribe all streams connected if tracee is done.
 	if t.streamsManager != nil {
 		t.streamsManager.Close()
 	}
+	// Close the control plane.
 	if t.controlPlane != nil {
 		err := t.controlPlane.Stop()
 		if err != nil {
 			logger.Errorw("failed to stop control plane when closing tracee", "err", err)
 		}
 	}
+	// Close all probes..
 	if t.probes != nil {
 		err := t.probes.DetachAll()
 		if err != nil {
 			logger.Errorw("failed to detach probes when closing tracee", "err", err)
 		}
 	}
-	if t.bpfModule != nil {
-		t.bpfModule.Close()
-	}
+	// Close all modules for the core extension.
+	extensions.Modules.Get("core").Close()
+	// Close container module.
 	if t.containers != nil {
 		err := t.containers.Close()
 		if err != nil {
 			logger.Errorw("failed to clean containers module when closing tracee", "err", err)
 		}
 	}
+	// Close the cgroups module.
 	if err := t.cgroups.Destroy(); err != nil {
 		logger.Errorw("Cgroups destroy", "error", err)
 	}
-
-	// set 'running' to false and close 'done' channel only after attempting to close all resources
+	// Set 'running' to false and close 'done' channel.
 	t.running.Store(false)
 	close(t.done)
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
@@ -40,7 +41,7 @@ func (t *Tracee) hookedSyscallTableRoutine(ctx gocontext.Context) {
 		return
 	}
 
-	expectedSyscallTableMap, err := t.bpfModule.GetMap("expected_sys_call_table")
+	expectedSyscallTableMap, err := extensions.Modules.Get("core").GetMap("expected_sys_call_table")
 	if err != nil {
 		logger.Errorw("Error occurred GetMap: " + err.Error())
 		return

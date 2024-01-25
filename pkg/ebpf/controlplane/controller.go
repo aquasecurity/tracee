@@ -9,6 +9,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 )
@@ -32,7 +33,6 @@ type Controller struct {
 
 // NewController creates a new controller.
 func NewController(
-	bpfModule *libbpfgo.Module,
 	cgroupManager *containers.Containers,
 	enrichDisabled bool,
 	procTree *proctree.ProcessTree,
@@ -42,11 +42,12 @@ func NewController(
 	p := &Controller{
 		signalChan:     make(chan []byte, 100),
 		lostSignalChan: make(chan uint64),
-		bpfModule:      bpfModule,
 		cgroupManager:  cgroupManager,
 		processTree:    procTree,
 		enrichDisabled: enrichDisabled,
 	}
+
+	bpfModule := extensions.Modules.Get("core")
 
 	p.signalBuffer, err = bpfModule.InitPerfBuf("signals", p.signalChan, p.lostSignalChan, 1024)
 	if err != nil {

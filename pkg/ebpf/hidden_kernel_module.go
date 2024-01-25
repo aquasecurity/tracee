@@ -6,6 +6,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
@@ -37,25 +38,24 @@ func (t *Tracee) lkmSeekerRoutine(ctx gocontext.Context) {
 		return
 	}
 
-	modsMap, err := t.bpfModule.GetMap("modules_map")
+	coreModule := extensions.Modules.Get("core")
+
+	modsMap, err := coreModule.GetMap("modules_map")
 	if err != nil {
 		logger.Errorw("Error occurred GetMap: " + err.Error())
 		return
 	}
-
-	newModMap, err := t.bpfModule.GetMap("new_module_map")
+	newModMap, err := coreModule.GetMap("new_module_map")
 	if err != nil {
 		logger.Errorw("Error occurred GetMap: " + err.Error())
 		return
 	}
-
-	deletedModMap, err := t.bpfModule.GetMap("recent_deleted_module_map")
+	deletedModMap, err := coreModule.GetMap("recent_deleted_module_map")
 	if err != nil {
 		logger.Errorw("Error occurred GetMap: " + err.Error())
 		return
 	}
-
-	insertedModMap, err := t.bpfModule.GetMap("recent_inserted_module_map")
+	insertedModMap, err := coreModule.GetMap("recent_inserted_module_map")
 	if err != nil {
 		logger.Errorw("Error occurred GetMap: " + err.Error())
 		return
