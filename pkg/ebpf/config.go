@@ -3,9 +3,8 @@ package ebpf
 import (
 	"unsafe"
 
-	bpf "github.com/aquasecurity/libbpfgo"
-
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/policy"
 )
 
@@ -27,8 +26,8 @@ type Config struct {
 }
 
 // UpdateBPF updates the ConfigMap BPF map with the current config.
-func (c *Config) UpdateBPF(bpfModule *bpf.Module) error {
-	bpfConfigMap, err := bpfModule.GetMap(ConfigMap)
+func (c *Config) UpdateBPF() error {
+	bpfConfigMap, err := extensions.Modules.Get("core").GetMap(ConfigMap)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

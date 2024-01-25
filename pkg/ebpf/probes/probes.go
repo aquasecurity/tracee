@@ -3,7 +3,6 @@ package probes
 import (
 	"sync"
 
-	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
@@ -13,16 +12,14 @@ var kernelSymbolTable *helpers.KernelSymbolTable
 
 type Probes struct {
 	mutex  *sync.RWMutex
-	module *bpf.Module
 	probes map[ProbeHandle]Probe // Probe is an interface, thus a reference type
 }
 
 // NewProbes creates a new Probes object.
-func NewProbes(m *bpf.Module, p map[ProbeHandle]Probe) *Probes {
+func NewProbes(p map[ProbeHandle]Probe) *Probes {
 	return &Probes{
 		mutex:  &sync.RWMutex{},
 		probes: p,
-		module: m,
 	}
 }
 
@@ -67,7 +64,7 @@ func (p *Probes) AttachProbeByHandle(handle ProbeHandle, args ...interface{}) er
 		return errfmt.Errorf("probe handle (%d) does not exist", handle)
 	}
 
-	return p.probes[handle].Attach(p.module, args...)
+	return p.probes[handle].Attach(args...)
 }
 
 // DetachProbeByHandle detaches a probe by its handle.
@@ -88,7 +85,7 @@ func (p *Probes) AttachAll() error {
 	defer p.mutex.RUnlock()
 
 	for _, pr := range p.probes {
-		err := pr.Attach(p.module)
+		err := pr.Attach()
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -116,5 +113,5 @@ func (p *Probes) DetachAll() error {
 func (p *Probes) SetAutoloadByHandle(handle ProbeHandle, autoload bool) error {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
-	return p.probes[handle].SetAutoload(p.module, autoload)
+	return p.probes[handle].SetAutoload(autoload)
 }

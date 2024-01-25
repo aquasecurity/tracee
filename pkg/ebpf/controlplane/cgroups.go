@@ -35,7 +35,7 @@ func (ctrl *Controller) processCgroupMkdir(args []trace.Argument) error {
 		// (from known runtimes), it should be removed from the containers bpf map.
 		err := capabilities.GetInstance().EBPF(
 			func() error {
-				return ctrl.cgroupManager.RemoveFromBPFMap(ctrl.bpfModule, cgroupId, hId)
+				return ctrl.cgroupManager.RemoveFromBPFMap(cgroupId, hId)
 			},
 		)
 		if err != nil {

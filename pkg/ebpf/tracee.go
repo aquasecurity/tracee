@@ -968,7 +968,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Populate containers map with existing containers
-	err = t.containers.PopulateBpfMap(extensions.Modules.Get("core"))
+	err = t.containers.PopulateBpfMap()
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1036,7 +1036,6 @@ func (t *Tracee) populateBPFMaps() error {
 // populateFilterMaps populates the eBPF maps with the given policies
 func (t *Tracee) populateFilterMaps(newPolicies *policy.Policies, updateProcTree bool) error {
 	polCfg, err := newPolicies.UpdateBPF(
-		extensions.Modules.Get("core"),
 		t.containers,
 		t.eventsState,
 		t.eventsParamTypes,
@@ -1050,7 +1049,7 @@ func (t *Tracee) populateFilterMaps(newPolicies *policy.Policies, updateProcTree
 	// Create new config with updated policies and update eBPF map
 
 	cfg := t.newConfig(polCfg, newPolicies.Version())
-	if err := cfg.UpdateBPF(extensions.Modules.Get("core")); err != nil {
+	if err := cfg.UpdateBPF(); err != nil {
 		return errfmt.WrapError(err)
 	}
 
@@ -1131,7 +1130,7 @@ func (t *Tracee) initBPF() error {
 
 	// Initialize probes
 
-	t.probes, err = probes.DefaultProbes(bpfModule, t.netEnabled(), t.kernelSymbols)
+	t.probes, err = probes.DefaultProbes(t.netEnabled(), t.kernelSymbols)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1174,7 +1173,6 @@ func (t *Tracee) initBPF() error {
 
 	// returned PoliciesConfig is not used here, therefore it's discarded
 	_, err = t.config.Policies.UpdateBPF(
-		extensions.Modules.Get("core"),
 		t.containers,
 		t.eventsState,
 		t.eventsParamTypes,

@@ -8,6 +8,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/cgroup"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 )
 
 // When attaching a cgroupProbe, by handle, to its eBPF program:
@@ -48,7 +49,7 @@ func (p *CgroupProbe) GetAttachType() bpf.BPFAttachType {
 	return p.attachType
 }
 
-func (p *CgroupProbe) Attach(module *bpf.Module, args ...interface{}) error {
+func (p *CgroupProbe) Attach(args ...interface{}) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
@@ -76,15 +77,9 @@ func (p *CgroupProbe) Attach(module *bpf.Module, args ...interface{}) error {
 		return nil // already attached, it is ok to call attach again
 	}
 
-	// sanity checks
-
-	if module == nil {
-		return errfmt.Errorf("incorrect arguments for program: %s", p.programName)
-	}
-
 	// attach
 
-	prog, err := module.GetProgram(p.programName)
+	prog, err := extensions.Modules.Get("core").GetProgram(p.programName)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -127,8 +122,8 @@ func (p *CgroupProbe) Detach(args ...interface{}) error {
 	return nil
 }
 
-func (p *CgroupProbe) SetAutoload(module *bpf.Module, autoload bool) error {
+func (p *CgroupProbe) SetAutoload(autoload bool) error {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
-	return enableDisableAutoload(module, p.programName, autoload)
+	return enableDisableAutoload(p.programName, autoload)
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -248,9 +249,9 @@ func (ps *Policies) computeFilterEqualities(fEqs *filtersEqualities, cts *contai
 }
 
 // createNewInnerMap creates a new map for the given map name and version.
-func createNewInnerMap(m *bpf.Module, mapName string, mapVersion uint16) (*bpf.BPFMapLow, error) {
+func createNewInnerMap(mapName string, mapVersion uint16) (*bpf.BPFMapLow, error) {
 	// use the map prototype to create a new map with the same properties
-	prototypeMap, err := m.GetMap(mapName)
+	prototypeMap, err := extensions.Modules.Get("core").GetMap(mapName)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
@@ -290,8 +291,8 @@ func createNewInnerMap(m *bpf.Module, mapName string, mapVersion uint16) (*bpf.B
 }
 
 // updateOuterMap updates the outer map with the given map name and version.
-func updateOuterMap(m *bpf.Module, mapName string, mapVersion uint16, innerMap *bpf.BPFMapLow) error {
-	outerMap, err := m.GetMap(mapName)
+func updateOuterMap(mapName string, mapVersion uint16, innerMap *bpf.BPFMapLow) error {
+	outerMap, err := extensions.Modules.Get("core").GetMap(mapName)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -312,7 +313,7 @@ func updateOuterMap(m *bpf.Module, mapName string, mapVersion uint16, innerMap *
 }
 
 // createNewFilterMapsVersion creates a new version of the filter maps.
-func (ps *Policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
+func (ps *Policies) createNewFilterMapsVersion() error {
 	mapsNames := map[string]string{ // inner map name: outer map name
 		UIDFilterMap:         UIDFilterMapVersion,
 		PIDFilterMap:         PIDFilterMapVersion,
@@ -329,7 +330,7 @@ func (ps *Policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
 	for innerMapName, outerMapName := range mapsNames {
 		// TODO: This only spawns new inner filter maps. Their termination must
 		// be tackled by the versioning mechanism.
-		newInnerMap, err := createNewInnerMap(bpfModule, innerMapName, polsVersion)
+		newInnerMap, err := createNewInnerMap(innerMapName, polsVersion)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -344,7 +345,7 @@ func (ps *Policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
 		// 7. comm_filter_version          u16, comm_filter
 		// 8. process_tree_filter_version  u16, process_tree_filter
 		// 9. binary_filter_version        u16, binary_filter
-		if err := updateOuterMap(bpfModule, outerMapName, polsVersion, newInnerMap); err != nil {
+		if err := updateOuterMap(outerMapName, polsVersion, newInnerMap); err != nil {
 			return errfmt.WrapError(err)
 		}
 
@@ -357,7 +358,6 @@ func (ps *Policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
 
 // createNewEventsMapVersion creates a new version of the events map.
 func (ps *Policies) createNewEventsMapVersion(
-	bpfModule *bpf.Module,
 	eventsState map[events.ID]events.EventState,
 	eventsParams map[events.ID][]bufferdecoder.ArgType,
 ) error {
@@ -367,12 +367,12 @@ func (ps *Policies) createNewEventsMapVersion(
 
 	// TODO: This only spawns a new inner event map. Their termination must
 	// be tackled by the versioning mechanism.
-	newInnerMap, err := createNewInnerMap(bpfModule, innerMapName, polsVersion)
+	newInnerMap, err := createNewInnerMap(innerMapName, polsVersion)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
-	if err := updateOuterMap(bpfModule, outerMapName, polsVersion, newInnerMap); err != nil {
+	if err := updateOuterMap(outerMapName, polsVersion, newInnerMap); err != nil {
 		return errfmt.WrapError(err)
 	}
 
@@ -618,8 +618,8 @@ type procInfo struct {
 // populateProcInfoMap populates the ProcInfoMap with the binaries to track.
 // TODO: Should ProcInfoMap be cleared when a Policies new version is created?
 // Or should it be versioned too?
-func populateProcInfoMap(bpfModule *bpf.Module, binEqualities map[filters.NSBinary]equality) error {
-	procInfoMap, err := bpfModule.GetMap(ProcInfoMap)
+func populateProcInfoMap(binEqualities map[filters.NSBinary]equality) error {
+	procInfoMap, err := extensions.Modules.Get("core").GetMap(ProcInfoMap)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -657,7 +657,6 @@ func populateProcInfoMap(bpfModule *bpf.Module, binEqualities map[filters.NSBina
 // createNewMaps indicates whether new maps should be created or not.
 // updateProcTree indicates whether the process tree map should be updated or not.
 func (ps *Policies) UpdateBPF(
-	bpfModule *bpf.Module,
 	cts *containers.Containers,
 	eventsState map[events.ID]events.EventState,
 	eventsParams map[events.ID][]bufferdecoder.ArgType,
@@ -669,7 +668,7 @@ func (ps *Policies) UpdateBPF(
 
 	if createNewMaps {
 		// Create new events map version
-		if err := ps.createNewEventsMapVersion(bpfModule, eventsState, eventsParams); err != nil {
+		if err := ps.createNewEventsMapVersion(eventsState, eventsParams); err != nil {
 			return nil, errfmt.WrapError(err)
 		}
 	}
@@ -692,7 +691,7 @@ func (ps *Policies) UpdateBPF(
 
 	if createNewMaps {
 		// Create new filter maps version
-		if err := ps.createNewFilterMapsVersion(bpfModule); err != nil {
+		if err := ps.createNewFilterMapsVersion(); err != nil {
 			return nil, errfmt.WrapError(err)
 		}
 	}
@@ -734,7 +733,7 @@ func (ps *Policies) UpdateBPF(
 		return nil, errfmt.WrapError(err)
 	}
 	// Update ProcInfo map (required for binary filters)
-	if err := populateProcInfoMap(bpfModule, fEqs.binaryEqualities); err != nil {
+	if err := populateProcInfoMap(fEqs.binaryEqualities); err != nil {
 		return nil, errfmt.WrapError(err)
 	}
 
@@ -744,7 +743,7 @@ func (ps *Policies) UpdateBPF(
 		// This must be done after the filter maps have been updated, as the
 		// policies config map contains the filter config computed from the
 		// policies filters.
-		if err := ps.createNewPoliciesConfigMap(bpfModule); err != nil {
+		if err := ps.createNewPoliciesConfigMap(); err != nil {
 			return nil, errfmt.WrapError(err)
 		}
 	}
@@ -759,15 +758,15 @@ func (ps *Policies) UpdateBPF(
 }
 
 // createNewPoliciesConfigMap creates a new version of the policies config map
-func (ps *Policies) createNewPoliciesConfigMap(bpfModule *bpf.Module) error {
+func (ps *Policies) createNewPoliciesConfigMap() error {
 	version := ps.Version()
-	newInnerMap, err := createNewInnerMap(bpfModule, PoliciesConfigMap, version)
+	newInnerMap, err := createNewInnerMap(PoliciesConfigMap, version)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	// policies_config_version  u16, policies_config_map
-	if err := updateOuterMap(bpfModule, PoliciesConfigVersion, version, newInnerMap); err != nil {
+	if err := updateOuterMap(PoliciesConfigVersion, version, newInnerMap); err != nil {
 		return errfmt.WrapError(err)
 	}
 

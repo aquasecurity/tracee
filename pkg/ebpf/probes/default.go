@@ -8,7 +8,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
-func DefaultProbes(module *bpf.Module, netEnabled bool, kSyms *helpers.KernelSymbolTable) (*Probes, error) {
+func DefaultProbes(netEnabled bool, kSyms *helpers.KernelSymbolTable) (*Probes, error) {
 	if kSyms == nil {
 		return nil, errfmt.Errorf("kernel symbol table is nil")
 	}
@@ -129,13 +129,13 @@ func DefaultProbes(module *bpf.Module, netEnabled bool, kSyms *helpers.KernelSym
 
 	if !netEnabled {
 		// disable network cgroup probes (avoid effective CAP_NET_ADMIN if not needed)
-		if err := allProbes[CgroupSKBIngress].SetAutoload(module, false); err != nil {
+		if err := allProbes[CgroupSKBIngress].SetAutoload(false); err != nil {
 			logger.Errorw("CgroupSKBIngress probe autoload", "error", err)
 		}
-		if err := allProbes[CgroupSKBEgress].SetAutoload(module, false); err != nil {
+		if err := allProbes[CgroupSKBEgress].SetAutoload(false); err != nil {
 			logger.Errorw("CgroupSKBEgress probe autoload", "error", err)
 		}
 	}
 
-	return NewProbes(module, allProbes), nil
+	return NewProbes(allProbes), nil
 }

@@ -7,6 +7,7 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
@@ -81,18 +82,15 @@ func (p *TraceProbe) GetProbeType() ProbeType {
 	return p.probeType
 }
 
-func (p *TraceProbe) Attach(module *bpf.Module, args ...interface{}) error {
+func (p *TraceProbe) Attach(args ...interface{}) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
 	if p.attached {
 		return nil // already attached, it is ok to call attach again
 	}
-	if module == nil {
-		return errfmt.Errorf("incorrect arguments for event: %s", p.eventName)
-	}
 
-	prog, err := module.GetProgram(p.programName)
+	prog, err := extensions.Modules.Get("core").GetProgram(p.programName)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -204,8 +202,8 @@ func (p *TraceProbe) Detach(args ...interface{}) error {
 	return nil
 }
 
-func (p *TraceProbe) SetAutoload(module *bpf.Module, autoload bool) error {
+func (p *TraceProbe) SetAutoload(autoload bool) error {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
-	return enableDisableAutoload(module, p.programName, autoload)
+	return enableDisableAutoload(p.programName, autoload)
 }

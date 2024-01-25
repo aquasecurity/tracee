@@ -15,11 +15,10 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/aquasecurity/libbpfgo"
-
 	"github.com/aquasecurity/tracee/pkg/cgroup"
 	cruntime "github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/k8s"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
@@ -469,8 +468,8 @@ const (
 
 // PopulateBpfMap populates the map with all the existing containers so eBPF programs can
 // orchestrate new ones with the correct state.
-func (c *Containers) PopulateBpfMap(bpfModule *libbpfgo.Module) error {
-	containersMap, err := bpfModule.GetMap(c.bpfMapName)
+func (c *Containers) PopulateBpfMap() error {
+	containersMap, err := extensions.Modules.Get("core").GetMap(c.bpfMapName)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -488,7 +487,7 @@ func (c *Containers) PopulateBpfMap(bpfModule *libbpfgo.Module) error {
 }
 
 // RemoveFromBPFMap removes a container from the map so eBPF programs can stop tracking it.
-func (c *Containers) RemoveFromBPFMap(bpfModule *libbpfgo.Module, cgroupId uint64, hierarchyID uint32) error {
+func (c *Containers) RemoveFromBPFMap(cgroupId uint64, hierarchyID uint32) error {
 	// cgroupv1: no need to check other controllers than the default
 	switch c.cgroups.GetDefaultCgroup().(type) {
 	case *cgroup.CgroupV1:
@@ -497,7 +496,7 @@ func (c *Containers) RemoveFromBPFMap(bpfModule *libbpfgo.Module, cgroupId uint6
 		}
 	}
 
-	containersMap, err := bpfModule.GetMap(c.bpfMapName)
+	containersMap, err := extensions.Modules.Get("core").GetMap(c.bpfMapName)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

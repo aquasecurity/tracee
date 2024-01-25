@@ -7,6 +7,7 @@ import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 )
 
 type Uprobe struct {
@@ -52,7 +53,7 @@ func (p *Uprobe) GetSymbolName() string {
 	return p.symbolName
 }
 
-func (p *Uprobe) Attach(module *bpf.Module, args ...interface{}) error {
+func (p *Uprobe) Attach(args ...interface{}) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
@@ -62,11 +63,7 @@ func (p *Uprobe) Attach(module *bpf.Module, args ...interface{}) error {
 		return nil // already attached, it is ok to call attach again
 	}
 
-	if module == nil {
-		return errfmt.Errorf("incorrect arguments for event: %s", p.eventName)
-	}
-
-	prog, err := module.GetProgram(p.programName)
+	prog, err := extensions.Modules.Get("core").GetProgram(p.programName)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -106,8 +103,8 @@ func (p *Uprobe) Detach(args ...interface{}) error {
 	return nil
 }
 
-func (p *Uprobe) SetAutoload(module *bpf.Module, autoload bool) error {
+func (p *Uprobe) SetAutoload(autoload bool) error {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
-	return enableDisableAutoload(module, p.programName, autoload)
+	return enableDisableAutoload(p.programName, autoload)
 }

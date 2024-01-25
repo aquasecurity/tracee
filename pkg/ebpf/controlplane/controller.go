@@ -24,7 +24,6 @@ type Controller struct {
 	ctx            context.Context
 	signalChan     chan []byte
 	lostSignalChan chan uint64
-	bpfModule      *libbpfgo.Module
 	signalBuffer   *libbpfgo.PerfBuffer
 	cgroupManager  *containers.Containers
 	processTree    *proctree.ProcessTree
@@ -46,10 +45,9 @@ func NewController(
 		processTree:    procTree,
 		enrichDisabled: enrichDisabled,
 	}
-
-	bpfModule := extensions.Modules.Get("core")
-
-	p.signalBuffer, err = bpfModule.InitPerfBuf("signals", p.signalChan, p.lostSignalChan, 1024)
+	p.signalBuffer, err = extensions.Modules.Get("core").InitPerfBuf(
+		"signals", p.signalChan, p.lostSignalChan, 1024,
+	)
 	if err != nil {
 		return nil, err
 	}
