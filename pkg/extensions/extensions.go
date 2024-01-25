@@ -7,10 +7,15 @@ import (
 )
 
 var Modules *ModulesPerExtension
+var States *StatesPerExtension
 
 func init() {
 	Modules = &ModulesPerExtension{
-		mod:   map[string]*bpf.Module{},
-		mutex: &sync.Mutex{},
+		modules: map[string]*bpf.Module{},
+		mutex:   &sync.Mutex{},
+	}
+	States = &StatesPerExtension{
+		states: map[string]map[int]*EventState{},
+		mutex:  &sync.RWMutex{},
 	}
 }
