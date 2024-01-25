@@ -202,12 +202,14 @@ func SearchMountpoint(fstype string, search string) (string, error) {
 		}
 	}()
 
+	maxLen := 0
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := strings.Split(scanner.Text(), " ")
 		mountpoint := line[1]
 		currFstype := line[2]
-		if fstype == currFstype && strings.Contains(mountpoint, search) {
+		if fstype == currFstype && strings.Contains(mountpoint, search) && len(mountpoint) > maxLen {
+			maxLen = len(mountpoint)
 			mp = mountpoint
 		}
 	}
