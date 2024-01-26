@@ -5,7 +5,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/dnscache"
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
@@ -29,7 +29,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 
 	// Share event states (by reference)
 	t.config.EngineConfig.ShouldDispatchEvent = func(eventIdInt32 int32) bool {
-		_, ok := t.eventsState[events.ID(eventIdInt32)]
+		_, ok := extensions.States.GetOk("core", int(eventIdInt32))
 		return ok
 	}
 
@@ -59,10 +59,8 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 			return // might happen during initialization (ctrl+c seg faults)
 		}
 
-		id := events.ID(event.EventID)
-
 		// if the event is marked as submit, we pass it to the engine
-		if t.eventsState[id].Submit > 0 {
+		if extensions.States.Get("core", event.EventID).AnySubmitEnabled() {
 			err := t.parseArguments(event)
 			if err != nil {
 				t.handleError(err)

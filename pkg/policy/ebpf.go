@@ -358,15 +358,14 @@ func (ps *Policies) createNewFilterMapsVersion() error {
 
 // createNewEventsMapVersion creates a new version of the events map.
 func (ps *Policies) createNewEventsMapVersion(
-	eventsState map[events.ID]events.EventState,
 	eventsParams map[events.ID][]bufferdecoder.ArgType,
 ) error {
 	polsVersion := ps.Version()
 	innerMapName := "events_map"
 	outerMapName := "events_map_version"
 
-	// TODO: This only spawns a new inner event map. Their termination must
-	// be tackled by the versioning mechanism.
+	// TODO: This only spawns a new inner event map. Their termination must be tackled by
+	// the versioning mechanism.
 	newInnerMap, err := createNewInnerMap(innerMapName, polsVersion)
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -379,21 +378,32 @@ func (ps *Policies) createNewEventsMapVersion(
 	// store pointer to the new inner map version
 	ps.bpfInnerMaps[innerMapName] = newInnerMap
 
-	for id, ecfg := range eventsState {
+	// Loop over all events being traced and update the new events map version.
+	for _, id := range extensions.States.GetEventIDs("core") {
+		var evtStateSubmit, paramTypes uint64
 		eventConfigVal := make([]byte, 16)
 
-		// bitmap of policies that require this event to be submitted
-		binary.LittleEndian.PutUint64(eventConfigVal[0:8], ecfg.Submit)
+		evtIDU32 := uint32(id)
+		evtID := events.ID(id)
+		evtState := extensions.States.Get("core", id)
+		evtStateSubmit = evtState.GetSubmitCopy()
 
-		// encoded event's parameter types
-		var paramTypes uint64
-		params := eventsParams[id]
+		params := eventsParams[evtID]
 		for n, paramType := range params {
 			paramTypes = paramTypes | (uint64(paramType) << (8 * n))
 		}
+
+		// The bitmap of policies that submit the event.
+		binary.LittleEndian.PutUint64(eventConfigVal[0:8], evtStateSubmit)
+
+		// Describe the event parameter types using a bitmap.
 		binary.LittleEndian.PutUint64(eventConfigVal[8:16], paramTypes)
 
-		err := newInnerMap.Update(unsafe.Pointer(&id), unsafe.Pointer(&eventConfigVal[0]))
+		// Update the new events map version with the event config.
+		err := newInnerMap.Update(
+			unsafe.Pointer(&evtIDU32),
+			unsafe.Pointer(&eventConfigVal[0]),
+		)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -658,7 +668,6 @@ func populateProcInfoMap(binEqualities map[filters.NSBinary]equality) error {
 // updateProcTree indicates whether the process tree map should be updated or not.
 func (ps *Policies) UpdateBPF(
 	cts *containers.Containers,
-	eventsState map[events.ID]events.EventState,
 	eventsParams map[events.ID][]bufferdecoder.ArgType,
 	createNewMaps bool,
 	updateProcTree bool,
@@ -668,7 +677,7 @@ func (ps *Policies) UpdateBPF(
 
 	if createNewMaps {
 		// Create new events map version
-		if err := ps.createNewEventsMapVersion(eventsState, eventsParams); err != nil {
+		if err := ps.createNewEventsMapVersion(eventsParams); err != nil {
 			return nil, errfmt.WrapError(err)
 		}
 	}

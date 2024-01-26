@@ -16,6 +16,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/filehash"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -214,10 +215,11 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 // processDoFinitModule handles a do_finit_module event and triggers other hooking detection logic.
 func (t *Tracee) processDoInitModule(event *trace.Event) error {
 	// Check if related events are being traced.
-	_, okSyscalls := t.eventsState[events.HookedSyscall]
-	_, okSeqOps := t.eventsState[events.HookedSeqOps]
-	_, okProcFops := t.eventsState[events.HookedProcFops]
-	_, okMemDump := t.eventsState[events.PrintMemDump]
+
+	_, okSyscalls := extensions.States.GetOk("core", int(events.HookedSyscall))
+	_, okSeqOps := extensions.States.GetOk("core", int(events.HookedSeqOps))
+	_, okProcFops := extensions.States.GetOk("core", int(events.HookedProcFops))
+	_, okMemDump := extensions.States.GetOk("core", int(events.PrintMemDump))
 
 	if !okSyscalls && !okSeqOps && !okProcFops && !okMemDump {
 		return nil

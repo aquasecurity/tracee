@@ -31,12 +31,13 @@ const throttleSecs = 2 // Seconds
 // techniques is used to find hidden modules - each of them is triggered by
 // using a tailcall.
 func (t *Tracee) lkmSeekerRoutine(ctx gocontext.Context) {
-	logger.Debugw("Starting lkmSeekerRoutine goroutine")
-	defer logger.Debugw("Stopped lkmSeekerRoutine goroutine")
-
-	if t.eventsState[events.HiddenKernelModule].Emit == 0 {
+	state, ok := extensions.States.GetOk("core", int(events.HiddenKernelModule))
+	if !ok || !state.AnyEmitEnabled() {
 		return
 	}
+
+	logger.Debugw("Starting lkmSeekerRoutine goroutine")
+	defer logger.Debugw("Stopped lkmSeekerRoutine goroutine")
 
 	coreModule := extensions.Modules.Get("core")
 

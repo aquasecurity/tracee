@@ -5,13 +5,9 @@ import (
 	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
-
-type EventState struct {
-	Submit uint64 // should be submitted to user space (by policies bitmap)
-	Emit   uint64 // should be emitted to the user (by policies bitmap)
-}
 
 // Make it sortable by ID
 
@@ -175,14 +171,20 @@ func (d *Definitions) IDs32ToIDs() map[ID]ID {
 }
 
 // GetTailCalls returns a list of all tailcalls of all traced events.
-func (d *Definitions) GetTailCalls(state map[ID]EventState) []TailCall {
+func (d *Definitions) GetTailCalls() []TailCall {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
 	tailCalls := make([]TailCall, 0, len(d.definitions))
 
 	for evtDefID, evtDef := range d.definitions {
-		if state[evtDefID].Submit > 0 { // only traced events to provide their tailcalls
+		state, ok := extensions.States.GetOk("core", int(evtDefID))
+		if !ok {
+			logger.Debugw("state not found", "id", evtDefID)
+			continue
+		}
+		// Only events bring traced will provide their tailcalls.
+		if state.AnySubmitEnabled() {
 			tailCalls = append(tailCalls, evtDef.GetDependencies().GetTailCalls()...)
 		}
 	}

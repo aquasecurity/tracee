@@ -11,6 +11,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -601,8 +602,13 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 			}
 
 			// Only emit events requested by the user and matched by at least one policy.
-			id := events.ID(event.EventID)
-			event.MatchedPoliciesUser &= t.eventsState[id].Emit
+			state, ok := extensions.States.GetOk("core", event.EventID)
+			if !ok {
+				t.eventsPool.Put(event)
+				continue
+			}
+
+			event.MatchedPoliciesUser &= state.GetEmitCopy()
 			if event.MatchedPoliciesUser == 0 {
 				t.eventsPool.Put(event)
 				continue

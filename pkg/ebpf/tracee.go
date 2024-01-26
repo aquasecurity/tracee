@@ -62,8 +62,6 @@ type Tracee struct {
 	OutDir    *os.File      // use utils.XXX functions to create or write to this file
 	stats     metrics.Stats
 	sigEngine *engine.Engine
-	// Events States
-	eventsState map[events.ID]events.EventState
 	// Events
 	eventsSorter     *sorting.EventsChronologicalSorter
 	eventsPool       *sync.Pool
@@ -128,56 +126,25 @@ func (t *Tracee) Engine() *engine.Engine {
 	return t.sigEngine
 }
 
-// GetCaptureEventsList sets events used to capture data.
-func GetCaptureEventsList(cfg config.Config) map[events.ID]events.EventState {
-	captureEvents := make(map[events.ID]events.EventState)
-
-	// INFO: All capture events should be placed, at least for now, to all matched policies, or else
-	// the event won't be set to matched policy in eBPF and should_submit() won't submit the capture
-	// event to userland.
-
-	if cfg.Capture.Exec {
-		captureEvents[events.CaptureExec] = policy.AlwaysSubmit
-	}
-	if cfg.Capture.FileWrite.Capture {
-		captureEvents[events.CaptureFileWrite] = policy.AlwaysSubmit
-	}
-	if cfg.Capture.FileRead.Capture {
-		captureEvents[events.CaptureFileRead] = policy.AlwaysSubmit
-	}
-	if cfg.Capture.Module {
-		captureEvents[events.CaptureModule] = policy.AlwaysSubmit
-	}
-	if cfg.Capture.Mem {
-		captureEvents[events.CaptureMem] = policy.AlwaysSubmit
-	}
-	if cfg.Capture.Bpf {
-		captureEvents[events.CaptureBpf] = policy.AlwaysSubmit
-	}
-	if pcaps.PcapsEnabled(cfg.Capture.Net) {
-		captureEvents[events.CaptureNetPacket] = policy.AlwaysSubmit
-	}
-
-	return captureEvents
-}
-
 // handleEventsDependencies handles all events dependencies recursively.
-func (t *Tracee) handleEventsDependencies(givenEvtId events.ID, givenEvtState events.EventState) {
-	givenEventDefinition := events.Core.GetDefinitionByID(givenEvtId)
-	for _, depEventId := range givenEventDefinition.GetDependencies().GetIDs() {
-		depEventState, ok := t.eventsState[depEventId]
+func (t *Tracee) handleEventsDependencies(givenEvtId events.ID) {
+	giventEvtDef := events.Core.GetDefinitionByID(givenEvtId)
+	givenEvtDeps := giventEvtDef.GetDependencies().GetIDs()
+	givenEvtState := extensions.States.GetOrCreate("core", int(givenEvtId))
+
+	for _, depEvtID := range givenEvtDeps {
+		depEvtState, ok := extensions.States.GetOk("core", int(depEvtID))
 		if !ok {
-			depEventState = events.EventState{}
-			t.handleEventsDependencies(depEventId, givenEvtState)
+			depEvtState = extensions.States.Create("core", int(depEvtID))
+			t.handleEventsDependencies(depEvtID)
 		}
 
 		// Make sure dependencies are submitted if the given event is submitted.
-		depEventState.Submit |= givenEvtState.Submit
-		t.eventsState[depEventId] = depEventState
+		depEvtState.OrSubmitFrom(givenEvtState)
 
 		// If the given event is a signature, mark all dependencies as signatures.
 		if events.Core.GetDefinitionByID(givenEvtId).IsSignature() {
-			t.eventSignatures[depEventId] = true
+			t.eventSignatures[depEvtID] = true
 		}
 	}
 }
@@ -200,7 +167,6 @@ func New(cfg config.Config) (*Tracee, error) {
 		writtenFiles:    make(map[string]string),
 		readFiles:       make(map[string]string),
 		capturedFiles:   make(map[string]int64),
-		eventsState:     make(map[events.ID]events.EventState),
 		eventSignatures: make(map[events.ID]bool),
 		streamsManager:  streams.NewStreamsManager(),
 		policyManager:   policyManager,
@@ -214,34 +180,34 @@ func New(cfg config.Config) (*Tracee, error) {
 	}
 	caps := capabilities.GetInstance()
 
-	// Initialize events state with mandatory events (TODO: review this need for sched exec)
+	// Initialize events state with mandatory events
 
-	t.eventsState[events.SchedProcessFork] = events.EventState{}
-	t.eventsState[events.SchedProcessExec] = events.EventState{}
-	t.eventsState[events.SchedProcessExit] = events.EventState{}
+	extensions.States.GetOrCreate("core", int(events.SchedProcessFork))
+	extensions.States.GetOrCreate("core", int(events.SchedProcessExec))
+	extensions.States.GetOrCreate("core", int(events.SchedProcessExit))
 
 	// Control Plane Events
 
-	t.eventsState[events.SignalCgroupMkdir] = policy.AlwaysSubmit
-	t.eventsState[events.SignalCgroupRmdir] = policy.AlwaysSubmit
+	extensions.States.GetOrCreate("core", int(events.SignalCgroupMkdir)).SetSubmitAll()
+	extensions.States.GetOrCreate("core", int(events.SignalCgroupRmdir)).SetSubmitAll()
 
 	// Control Plane Process Tree Events
 
 	pipeEvts := func() {
-		t.eventsState[events.SchedProcessFork] = policy.AlwaysSubmit
-		t.eventsState[events.SchedProcessExec] = policy.AlwaysSubmit
-		t.eventsState[events.SchedProcessExit] = policy.AlwaysSubmit
+		extensions.States.GetOrCreate("core", int(events.SchedProcessFork)).SetSubmitAll()
+		extensions.States.GetOrCreate("core", int(events.SchedProcessExec)).SetSubmitAll()
+		extensions.States.GetOrCreate("core", int(events.SchedProcessExit)).SetSubmitAll()
 	}
 	signalEvts := func() {
-		t.eventsState[events.SignalSchedProcessFork] = policy.AlwaysSubmit
-		t.eventsState[events.SignalSchedProcessExec] = policy.AlwaysSubmit
-		t.eventsState[events.SignalSchedProcessExit] = policy.AlwaysSubmit
+		extensions.States.GetOrCreate("core", int(events.SignalSchedProcessFork)).SetSubmitAll()
+		extensions.States.GetOrCreate("core", int(events.SignalSchedProcessExec)).SetSubmitAll()
+		extensions.States.GetOrCreate("core", int(events.SignalSchedProcessExit)).SetSubmitAll()
 	}
 
 	// DNS Cache events
 
 	if t.config.DNSCacheConfig.Enable {
-		t.eventsState[events.NetPacketDNS] = policy.AlwaysSubmit
+		extensions.States.GetOrCreate("core", int(events.NetPacketDNS)).SetSubmitAll()
 	}
 
 	switch t.config.ProcTree.Source {
@@ -256,46 +222,48 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	// Pseudo events added by capture (if enabled by the user)
 
-	for eventID, eCfg := range GetCaptureEventsList(cfg) {
-		t.eventsState[eventID] = eCfg
+	switch {
+	case cfg.Capture.Exec:
+		extensions.States.GetOrCreate("core", int(events.CaptureExec)).SetSubmitAll()
+	case cfg.Capture.FileWrite.Capture:
+		extensions.States.GetOrCreate("core", int(events.CaptureFileWrite)).SetSubmitAll()
+	case cfg.Capture.FileRead.Capture:
+		extensions.States.GetOrCreate("core", int(events.CaptureFileRead)).SetSubmitAll()
+	case cfg.Capture.Module:
+		extensions.States.GetOrCreate("core", int(events.CaptureModule)).SetSubmitAll()
+	case cfg.Capture.Mem:
+		extensions.States.GetOrCreate("core", int(events.CaptureMem)).SetSubmitAll()
+	case cfg.Capture.Bpf:
+		extensions.States.GetOrCreate("core", int(events.CaptureBpf)).SetSubmitAll()
+	case pcaps.PcapsEnabled(cfg.Capture.Net):
+		extensions.States.GetOrCreate("core", int(events.CaptureNetPacket)).SetSubmitAll()
 	}
 
 	// Events chosen by the user
 
-	// TODO: extract this to a function to be called from here and from
-	// policies changes.
-	for p := range t.config.Policies.Map() {
-		for e := range p.EventsToTrace {
-			var submit, emit uint64
-			if _, ok := t.eventsState[e]; ok {
-				submit = t.eventsState[e].Submit
-				emit = t.eventsState[e].Emit
-			}
-			utils.SetBit(&submit, uint(p.ID))
-			utils.SetBit(&emit, uint(p.ID))
-			t.eventsState[e] = events.EventState{Submit: submit, Emit: emit}
-
-			policyManager.EnableRule(p.ID, e)
+	for pol := range t.config.Policies.Map() {
+		for evtID := range pol.EventsToTrace {
+			state := extensions.States.GetOrCreate("core", int(evtID))
+			state.SetEmitForPolicy(pol.ID)
+			state.SetSubmitForPolicy(pol.ID)
+			policyManager.EnableRule(pol.ID, evtID)
 		}
 	}
 
 	// Handle all essential events dependencies
 
-	// TODO: extract this to a function to be called from here and from
-	// policies changes.
-	for id, state := range t.eventsState {
-		t.handleEventsDependencies(id, state)
+	for _, evtID := range extensions.States.GetEventIDs("core") {
+		t.handleEventsDependencies(events.ID(evtID))
 	}
 
 	// Update capabilities rings with all events dependencies
 
-	// TODO: extract this to a function to be called from here and from
-	// policies changes.
-	for id := range t.eventsState {
-		if !events.Core.IsDefined(id) {
-			return t, errfmt.Errorf("event %d is not defined", id)
+	for _, evtID := range extensions.States.GetEventIDs("core") {
+		eID := events.ID(evtID)
+		if !events.Core.IsDefined(eID) {
+			return t, errfmt.Errorf("event %d is not defined", eID)
 		}
-		evtCaps := events.Core.GetDefinitionByID(id).GetDependencies().GetCapabilities()
+		evtCaps := events.Core.GetDefinitionByID(eID).GetDependencies().GetCapabilities()
 		err = caps.BaseRingAdd(evtCaps.GetBase()...)
 		if err != nil {
 			return t, errfmt.WrapError(err)
@@ -530,24 +498,6 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	return nil
 }
 
-type InitValues struct {
-	Kallsyms bool
-}
-
-func (t *Tracee) generateInitValues() (InitValues, error) {
-	initVals := InitValues{}
-	for evt := range t.eventsState {
-		if !events.Core.IsDefined(evt) {
-			return initVals, errfmt.Errorf("event %d is undefined", evt)
-		}
-		for range events.Core.GetDefinitionByID(evt).GetDependencies().GetKSymbols() {
-			initVals.Kallsyms = true // only if length > 0
-		}
-	}
-
-	return initVals, nil
-}
-
 // initTailCall initializes a given tailcall.
 func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 	tailCallMapName := tailCall.GetMapName()
@@ -607,7 +557,13 @@ func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 // derived and the corresponding function to derive into that Event.
 func (t *Tracee) initDerivationTable() error {
 	shouldSubmit := func(id events.ID) func() bool {
-		return func() bool { return t.eventsState[id].Submit > 0 }
+		return func() bool {
+			state, ok := extensions.States.GetOk("core", int(id))
+			if !ok {
+				return false
+			}
+			return state.AnySubmitEnabled()
+		}
 	}
 
 	t.eventDerivations = derive.Table{
@@ -844,7 +800,8 @@ func (t *Tracee) getUnavKsymsPerEvtID() map[events.ID][]string {
 		return events.Core.GetDefinitionByID(id).GetDependencies().GetKSymbols()
 	}
 
-	for evtID := range t.eventsState {
+	for _, id := range extensions.States.GetEventIDs("core") {
+		evtID := events.ID(id)
 		for _, symDep := range evtDefSymDeps(evtID) {
 			sym, err := t.kernelSymbols.GetSymbolByName(symDep.GetSymbolName())
 			symName := symDep.GetSymbolName()
@@ -878,26 +835,27 @@ func (t *Tracee) validateKallsymsDependencies() {
 			"Event canceled because of missing kernel symbol dependency",
 			"missing symbols", missingDepSyms, "event", eventNameToCancel,
 		)
-		delete(t.eventsState, eventToCancel)
+		extensions.States.Delete("core", int(eventToCancel))
 
 		// Find all events that depend on eventToCancel
-		for eventID := range t.eventsState {
-			depsIDs := events.Core.GetDefinitionByID(eventID).GetDependencies().GetIDs()
+		for _, id := range extensions.States.GetEventIDs("core") {
+			evtID := events.ID(id)
+			depsIDs := events.Core.GetDefinitionByID(evtID).GetDependencies().GetIDs()
 			for _, depID := range depsIDs {
 				if depID == eventToCancel {
-					depsToCancel[eventID] = eventNameToCancel
+					depsToCancel[evtID] = eventNameToCancel
 				}
 			}
 		}
 
 		// Cancel all events that require eventToCancel
-		for eventID, depEventName := range depsToCancel {
+		for evtID, depEventName := range depsToCancel {
 			logger.Debugw(
 				"Event canceled because it depends on an previously canceled event",
-				"event", events.Core.GetDefinitionByID(eventID).GetName(),
+				"event", events.Core.GetDefinitionByID(evtID).GetName(),
 				"dependency", depEventName,
 			)
-			delete(t.eventsState, eventID)
+			extensions.States.Delete("core", int(evtID))
 		}
 	}
 }
@@ -1022,7 +980,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Initialize tail call dependencies
-	tailCalls := events.Core.GetTailCalls(t.eventsState)
+	tailCalls := events.Core.GetTailCalls()
 	for _, tailCall := range tailCalls {
 		err := t.initTailCall(tailCall)
 		if err != nil {
@@ -1037,7 +995,6 @@ func (t *Tracee) populateBPFMaps() error {
 func (t *Tracee) populateFilterMaps(newPolicies *policy.Policies, updateProcTree bool) error {
 	polCfg, err := newPolicies.UpdateBPF(
 		t.containers,
-		t.eventsState,
 		t.eventsParamTypes,
 		true,
 		updateProcTree,
@@ -1056,18 +1013,20 @@ func (t *Tracee) populateFilterMaps(newPolicies *policy.Policies, updateProcTree
 	return nil
 }
 
-// cancelEventFromEventState cancels an event and all its dependencies from the eventsState map.
-func (t *Tracee) cancelEventFromEventState(evtID events.ID) {
-	delete(t.eventsState, evtID)
-	evtDef := events.Core.GetDefinitionByID(evtID)
-	for _, evtDeps := range evtDef.GetDependencies().GetIDs() {
-		t.cancelEventFromEventState(evtDeps)
-	}
-}
-
 // attachProbes attaches selected events probes to their respective eBPF progs
 func (t *Tracee) attachProbes() error {
 	var err error
+
+	// Cancel event and its dependencies recursively.
+	var cancelEventFromEventStateRecursively func(evtID events.ID)
+
+	cancelEventFromEventStateRecursively = func(evtID events.ID) {
+		extensions.States.Delete("core", int(evtID))
+		evtDef := events.Core.GetDefinitionByID(evtID)
+		for _, evtDeps := range evtDef.GetDependencies().GetIDs() {
+			cancelEventFromEventStateRecursively(evtDeps)
+		}
+	}
 
 	// Get probe dependencies for a given event ID
 	getProbeDeps := func(id events.ID) []events.Probe {
@@ -1076,18 +1035,19 @@ func (t *Tracee) attachProbes() error {
 
 	// Get the list of probes to attach for each event being traced.
 	probesToEvents := make(map[events.Probe][]events.ID)
-	for id := range t.eventsState {
-		if !events.Core.IsDefined(id) {
+	for _, id := range extensions.States.GetEventIDs("core") {
+		evtID := events.ID(id)
+		if !events.Core.IsDefined(evtID) {
 			continue
 		}
-		for _, probeDep := range getProbeDeps(id) {
-			probesToEvents[probeDep] = append(probesToEvents[probeDep], id)
+		for _, probeDep := range getProbeDeps(evtID) {
+			probesToEvents[probeDep] = append(probesToEvents[probeDep], evtID)
 		}
 	}
 
-	// Attach probes to their respective eBPF programs or cancel events if a required probe is missing.
+	// Attach probes to their eBPF programs.
 	for probe, evtID := range probesToEvents {
-		err = t.probes.AttachProbeByHandle(probe.GetHandle(), t.cgroups) // attach bpf program to probe
+		err = t.probes.AttachProbeByHandle(probe.GetHandle(), t.cgroups)
 		if err != nil {
 			for _, evtID := range evtID {
 				evtName := events.Core.GetDefinitionByID(evtID).GetName()
@@ -1096,7 +1056,8 @@ func (t *Tracee) attachProbes() error {
 						"Cancelling event and its dependencies because of missing probe",
 						"missing probe", probe.GetHandle(), "event", evtName,
 					)
-					t.cancelEventFromEventState(evtID) // cancel event recursively
+					// Cancel events if a required probe is missing.
+					cancelEventFromEventStateRecursively(evtID)
 				} else {
 					logger.Debugw(
 						"Failed to attach non-required probe for event",
@@ -1174,7 +1135,6 @@ func (t *Tracee) initBPF() error {
 	// returned PoliciesConfig is not used here, therefore it's discarded
 	_, err = t.config.Policies.UpdateBPF(
 		t.containers,
-		t.eventsState,
 		t.eventsParamTypes,
 		false,
 		true,
@@ -1425,12 +1385,13 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 		logger.Debugw("self loaded program", "event", event, "program", program)
 	}
 
-	for tr := range t.eventsState {
-		if !events.Core.IsDefined(tr) {
+	for _, id := range extensions.States.GetEventIDs("core") {
+		evtID := events.ID(id)
+		if !events.Core.IsDefined(evtID) {
 			continue
 		}
 
-		definition := events.Core.GetDefinitionByID(tr)
+		definition := events.Core.GetDefinitionByID(evtID)
 
 		for _, depProbes := range definition.GetDependencies().GetProbes() {
 			currProbe := t.probes.GetProbeByHandle(depProbes.GetHandle())
@@ -1478,8 +1439,8 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 
 	// Initial namespace events
 
-	emit = t.eventsState[events.InitNamespaces].Emit
-	if emit > 0 {
+	state, ok := extensions.States.GetOk("core", int(events.InitNamespaces))
+	if ok && state.AnyEmitEnabled() {
 		systemInfoEvent := events.InitNamespacesEvent()
 		setMatchedPolicies(&systemInfoEvent, emit, t.config.Policies)
 		out <- &systemInfoEvent
@@ -1488,8 +1449,8 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 
 	// Initial existing containers events (1 event per container)
 
-	emit = t.eventsState[events.ExistingContainer].Emit
-	if emit > 0 {
+	state, ok = extensions.States.GetOk("core", int(events.ExistingContainer))
+	if ok && state.AnyEmitEnabled() {
 		for _, e := range events.ExistingContainersEvents(t.containers, t.config.NoContainersEnrich) {
 			setMatchedPolicies(&e, emit, t.config.Policies)
 			out <- &e
@@ -1499,8 +1460,8 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 
 	// Ftrace hook event
 
-	emit = t.eventsState[events.FtraceHook].Emit
-	if emit > 0 {
+	state, ok = extensions.States.GetOk("core", int(events.FtraceHook))
+	if ok && state.AnyEmitEnabled() {
 		ftraceBaseEvent := events.GetFtraceBaseEvent()
 		setMatchedPolicies(ftraceBaseEvent, emit, t.config.Policies)
 		logger.Debugw("started ftraceHook goroutine")
@@ -1519,8 +1480,9 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 
 // netEnabled returns true if any base network event is to be traced
 func (t *Tracee) netEnabled() bool {
-	for k := range t.eventsState {
-		if k >= events.NetPacketBase && k <= events.MaxNetID {
+	for _, id := range extensions.States.GetEventIDs("core") {
+		evtID := events.ID(id)
+		if evtID >= events.NetPacketBase && evtID <= events.MaxNetID {
 			return true
 		}
 	}
@@ -1536,7 +1498,7 @@ func (t *Tracee) netEnabled() bool {
 // triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program
 // that prints the seq ops pointers
 func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
-	_, ok := t.eventsState[events.HookedSeqOps]
+	_, ok := extensions.States.GetOk("core", int(events.HookedSeqOps))
 	if !ok {
 		return
 	}
@@ -1565,7 +1527,8 @@ func (t *Tracee) triggerSeqOpsIntegrityCheckCall(
 // triggerMemDump is used by a Uprobe to trigger an eBPF program
 // that prints the first bytes of requested symbols or addresses
 func (t *Tracee) triggerMemDump(event trace.Event) []error {
-	if _, ok := t.eventsState[events.PrintMemDump]; !ok {
+	_, ok := extensions.States.GetOk("core", int(events.PrintMemDump))
+	if !ok {
 		return nil
 	}
 

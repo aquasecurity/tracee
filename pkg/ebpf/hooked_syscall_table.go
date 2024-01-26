@@ -20,15 +20,16 @@ import (
 
 var expectedSyscallTableInit = false
 
-// hookedSyscallTableRoutine the main routine that checks if there's a hooked syscall in the syscall table.
-// It runs on tracee's startup and from time to time.
+// hookedSyscallTableRoutine the main routine that checks if there's a hooked syscall in
+// the syscall table. It runs on tracee's startup and from time to time.
 func (t *Tracee) hookedSyscallTableRoutine(ctx gocontext.Context) {
-	logger.Debugw("Starting hookedSyscallTable goroutine")
-	defer logger.Debugw("Stopped hookedSyscallTable goroutine")
-
-	if t.eventsState[events.HookedSyscall].Submit == 0 {
+	state, ok := extensions.States.GetOk("core", int(events.HookedSyscall))
+	if !ok || !state.AnyEmitEnabled() {
 		return
 	}
+
+	logger.Debugw("Starting hookedSyscallTable goroutine")
+	defer logger.Debugw("Stopped hookedSyscallTable goroutine")
 
 	if runtime.GOARCH != "amd64" && runtime.GOARCH != "arm64" {
 		logger.Debugw("hooked syscall table: unsupported architecture")

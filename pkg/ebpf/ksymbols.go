@@ -35,7 +35,8 @@ func (t *Tracee) UpdateKallsyms() error {
 
 	var allReqSymbols []string
 
-	for evtID := range t.eventsState {
+	for _, id := range extensions.States.GetEventIDs("core") {
+		evtID := events.ID(id)
 		for _, symDep := range evtDefSymDeps(evtID) {
 			allReqSymbols = append(allReqSymbols, symDep.GetSymbolName())
 		}
