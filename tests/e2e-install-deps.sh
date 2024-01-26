@@ -23,6 +23,10 @@ disable_unattended_upgrades() {
     apt-get remove -y --purge unattended-upgrades || true
     apt-get remove -y --purge ubuntu-advantage-tools || true
     sleep 5 # wait for dpkg lock to be released
+    pkill -SIGQUIT unattended-upgrades || true
+    pkill -SIGKILL unattended-upgrades || true
+    pkill -SIGQUIT dpkg || true
+    pkill -SIGKILL dpkg || true
 }
 
 remove_llvm_alternatives() {
