@@ -180,7 +180,6 @@ func (d *Definitions) GetTailCalls() []TailCall {
 	for evtDefID, evtDef := range d.definitions {
 		state, ok := extensions.States.GetOk("core", int(evtDefID))
 		if !ok {
-			logger.Debugw("state not found", "id", evtDefID)
 			continue
 		}
 		// Only events bring traced will provide their tailcalls.

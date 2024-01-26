@@ -174,6 +174,12 @@ func (es *EventState) AnyEmitEnabled() bool {
 	return es.emit != 0
 }
 
+func (es *EventState) AnyEnabled() bool {
+	es.mutex.RLock()
+	defer es.mutex.RUnlock()
+	return es.submit != 0 || es.emit != 0
+}
+
 func (es *EventState) IsSubmitEnabledForPolicy(id int) bool {
 	es.mutex.RLock()
 	defer es.mutex.RUnlock()
@@ -189,76 +195,58 @@ func (es *EventState) IsEmitEnabledForPolicy(id int) bool {
 func (es *EventState) CloneSubmitFrom(givenState *EventState) {
 	es.mutex.Lock()
 	defer es.mutex.Unlock()
-	givenState.mutex.RLock()
-	defer givenState.mutex.RUnlock()
-	es.submit = givenState.submit
+	es.submit = givenState.GetSubmitCopy()
 }
 
 func (es *EventState) CloneEmitFrom(givenState *EventState) {
 	es.mutex.Lock()
 	defer es.mutex.Unlock()
-	givenState.mutex.RLock()
-	defer givenState.mutex.RUnlock()
-	es.emit = givenState.emit
+	es.emit = givenState.GetEmitCopy()
 }
 
 func (es *EventState) CloneFrom(givenState *EventState) {
 	es.mutex.Lock()
 	defer es.mutex.Unlock()
-	givenState.mutex.RLock()
-	defer givenState.mutex.RUnlock()
-	es.submit = givenState.submit
-	es.emit = givenState.emit
+	es.submit = givenState.GetSubmitCopy()
+	es.emit = givenState.GetEmitCopy()
 }
 
 func (es *EventState) OrSubmitFrom(givenState *EventState) {
 	es.mutex.Lock()
 	defer es.mutex.Unlock()
-	givenState.mutex.RLock()
-	defer givenState.mutex.RUnlock()
-	es.submit |= givenState.submit
+	es.submit |= givenState.GetSubmitCopy()
 }
 
 func (es *EventState) OrEmitFrom(givenState *EventState) {
 	es.mutex.Lock()
 	defer es.mutex.Unlock()
-	givenState.mutex.RLock()
-	defer givenState.mutex.RUnlock()
-	es.emit |= givenState.emit
+	es.emit |= givenState.GetEmitCopy()
 }
 
 func (es *EventState) OrFrom(givenState *EventState) {
 	es.mutex.Lock()
 	defer es.mutex.Unlock()
-	givenState.mutex.RLock()
-	defer givenState.mutex.RUnlock()
-	es.submit |= givenState.submit
-	es.emit |= givenState.emit
+	es.submit |= givenState.GetSubmitCopy()
+	es.emit |= givenState.GetEmitCopy()
 }
 
 func (es *EventState) AndSubmitFrom(givenState *EventState) {
 	es.mutex.Lock()
 	defer es.mutex.Unlock()
-	givenState.mutex.RLock()
-	defer givenState.mutex.RUnlock()
-	es.submit &= givenState.submit
+	es.submit &= givenState.GetSubmitCopy()
 }
 
 func (es *EventState) AndEmitFrom(givenState *EventState) {
 	es.mutex.Lock()
 	defer es.mutex.Unlock()
-	givenState.mutex.RLock()
-	defer givenState.mutex.RUnlock()
-	es.emit &= givenState.emit
+	es.emit &= givenState.GetEmitCopy()
 }
 
 func (es *EventState) AndFrom(givenState *EventState) {
 	es.mutex.Lock()
 	defer es.mutex.Unlock()
-	givenState.mutex.RLock()
-	defer givenState.mutex.RUnlock()
-	es.submit &= givenState.submit
-	es.emit &= givenState.emit
+	es.submit &= givenState.GetSubmitCopy()
+	es.emit &= givenState.GetEmitCopy()
 }
 
 func (es *EventState) GetSubmitCopy() uint64 {

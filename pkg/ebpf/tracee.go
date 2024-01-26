@@ -133,19 +133,18 @@ func (t *Tracee) handleEventsDependencies(givenEvtId events.ID) {
 	givenEvtState := extensions.States.GetOrCreate("core", int(givenEvtId))
 
 	for _, depEvtID := range givenEvtDeps {
-		depEvtState, ok := extensions.States.GetOk("core", int(depEvtID))
-		if !ok {
-			depEvtState = extensions.States.Create("core", int(depEvtID))
-			t.handleEventsDependencies(depEvtID)
-		}
+		depEvtState := extensions.States.GetOrCreate("core", int(depEvtID))
 
-		// Make sure dependencies are submitted if the given event is submitted.
+		// Submit all dependencies of a given event.
 		depEvtState.OrSubmitFrom(givenEvtState)
 
-		// If the given event is a signature, mark all dependencies as signatures.
+		// Mark all signature event dependencies as signature events.
 		if events.Core.GetDefinitionByID(givenEvtId).IsSignature() {
 			t.eventSignatures[depEvtID] = true
 		}
+
+		// Handle dependencies recursively.
+		t.handleEventsDependencies(depEvtID)
 	}
 }
 
@@ -406,6 +405,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	}
 
 	// Initialize events parameter types map
+
 	t.eventsParamTypes = make(map[events.ID][]bufferdecoder.ArgType)
 	for _, eventDefinition := range events.Core.GetDefinitions() {
 		id := eventDefinition.GetID()
@@ -546,7 +546,7 @@ func (t *Tracee) initDerivationTable() error {
 			if !ok {
 				return false
 			}
-			return state.AnySubmitEnabled()
+			return state.AnyEnabled()
 		}
 	}
 
@@ -710,7 +710,8 @@ func (t *Tracee) RegisterEventDerivation(deriveFrom events.ID, deriveTo events.I
 	return t.eventDerivations.Register(deriveFrom, deriveTo, deriveCondition, deriveLogic)
 }
 
-// options config should match defined values in ebpf code
+// Config options should match eBPF code:
+
 const (
 	optExecEnv uint32 = 1 << iota
 	optCaptureFilesWrite
@@ -725,40 +726,37 @@ const (
 	optForkProcTree
 )
 
+// getOptionsConfig returns a uint32 representing the current Tracee config.
 func (t *Tracee) getOptionsConfig() uint32 {
 	var cOptVal uint32
 
-	if t.config.Output.ExecEnv {
+	switch {
+	case t.config.Output.ExecEnv:
 		cOptVal = cOptVal | optExecEnv
-	}
-	if t.config.Output.StackAddresses {
+	case t.config.Output.StackAddresses:
 		cOptVal = cOptVal | optStackAddresses
-	}
-	if t.config.Capture.FileWrite.Capture {
+	case t.config.Capture.FileWrite.Capture:
 		cOptVal = cOptVal | optCaptureFilesWrite
-	}
-	if t.config.Capture.FileRead.Capture {
+	case t.config.Capture.FileRead.Capture:
 		cOptVal = cOptVal | optCaptureFileRead
-	}
-	if t.config.Capture.Module {
+	case t.config.Capture.Module:
 		cOptVal = cOptVal | optCaptureModules
-	}
-	if t.config.Capture.Bpf {
+	case t.config.Capture.Bpf:
 		cOptVal = cOptVal | optCaptureBpf
-	}
-	if t.config.Capture.Mem {
+	case t.config.Capture.Mem:
 		cOptVal = cOptVal | optExtractDynCode
+	case t.config.Output.ParseArgumentsFDs:
+		cOptVal = cOptVal | optTranslateFDFilePath
 	}
+
 	switch t.cgroups.GetDefaultCgroup().(type) {
 	case *cgroup.CgroupV1:
 		cOptVal = cOptVal | optCgroupV1
 	}
-	if t.config.Output.ParseArgumentsFDs {
-		cOptVal = cOptVal | optTranslateFDFilePath
-	}
+
 	switch t.config.ProcTree.Source {
 	case proctree.SourceBoth, proctree.SourceEvents:
-		cOptVal = cOptVal | optForkProcTree // tell sched_process_fork to be prolix
+		cOptVal = cOptVal | optForkProcTree
 	}
 
 	return cOptVal
@@ -915,8 +913,10 @@ func (t *Tracee) populateBPFMaps() error {
 		return errfmt.WrapError(err)
 	}
 
+	coreBPFModule := extensions.Modules.Get("core")
+
 	// Set filters given by the user to filter file write events
-	fileWritePathFilterMap, err := extensions.Modules.Get("core").GetMap("file_write_path_filter") // u32, u32
+	fileWritePathFilterMap, err := coreBPFModule.GetMap("file_write_path_filter")
 	if err != nil {
 		return err
 	}
@@ -929,7 +929,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Set filters given by the user to filter file read events
-	fileReadPathFilterMap, err := extensions.Modules.Get("core").GetMap("file_read_path_filter") // u32, u32
+	fileReadPathFilterMap, err := coreBPFModule.GetMap("file_read_path_filter")
 	if err != nil {
 		return err
 	}
@@ -942,7 +942,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Set filters given by the user to filter file read and write type and fds
-	fileTypeFilterMap, err := extensions.Modules.Get("core").GetMap("file_type_filter") // u32, u32
+	fileTypeFilterMap, err := coreBPFModule.GetMap("file_type_filter")
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1129,12 +1129,14 @@ func (t *Tracee) initBPF() error {
 
 	// Initialize perf buffers and needed channels
 
+	coreBPFModule := extensions.Modules.Get("core")
+
 	t.eventsChannel = make(chan []byte, 1000)
 	t.lostEvChannel = make(chan uint64)
 	if t.config.PerfBufferSize < 1 {
 		return errfmt.Errorf("invalid perf buffer size: %d", t.config.PerfBufferSize)
 	}
-	t.eventsPerfMap, err = extensions.Modules.Get("core").InitPerfBuf(
+	t.eventsPerfMap, err = coreBPFModule.InitPerfBuf(
 		"events",
 		t.eventsChannel,
 		t.lostEvChannel,
@@ -1147,7 +1149,7 @@ func (t *Tracee) initBPF() error {
 	if t.config.BlobPerfBufferSize > 0 {
 		t.fileCapturesChannel = make(chan []byte, 1000)
 		t.lostCapturesChannel = make(chan uint64)
-		t.fileWrPerfMap, err = extensions.Modules.Get("core").InitPerfBuf(
+		t.fileWrPerfMap, err = coreBPFModule.InitPerfBuf(
 			"file_writes",
 			t.fileCapturesChannel,
 			t.lostCapturesChannel,
@@ -1161,7 +1163,7 @@ func (t *Tracee) initBPF() error {
 	if pcaps.PcapsEnabled(t.config.Capture.Net) {
 		t.netCapChannel = make(chan []byte, 1000)
 		t.lostNetCapChannel = make(chan uint64)
-		t.netCapPerfMap, err = extensions.Modules.Get("core").InitPerfBuf(
+		t.netCapPerfMap, err = coreBPFModule.InitPerfBuf(
 			"net_cap_events",
 			t.netCapChannel,
 			t.lostNetCapChannel,
@@ -1174,7 +1176,7 @@ func (t *Tracee) initBPF() error {
 
 	t.bpfLogsChannel = make(chan []byte, 1000)
 	t.lostBPFLogChannel = make(chan uint64)
-	t.bpfLogsPerfMap, err = extensions.Modules.Get("core").InitPerfBuf(
+	t.bpfLogsPerfMap, err = coreBPFModule.InitPerfBuf(
 		"logs",
 		t.bpfLogsChannel,
 		t.lostBPFLogChannel,
@@ -1204,6 +1206,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	go t.lkmSeekerRoutine(ctx)
 
 	// Start control plane
+
 	t.controlPlane.Start()
 	go t.controlPlane.Run(ctx)
 

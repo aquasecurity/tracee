@@ -32,7 +32,10 @@ const throttleSecs = 2 // Seconds
 // using a tailcall.
 func (t *Tracee) lkmSeekerRoutine(ctx gocontext.Context) {
 	state, ok := extensions.States.GetOk("core", int(events.HiddenKernelModule))
-	if !ok || !state.AnyEmitEnabled() {
+	if !ok {
+		return
+	}
+	if !ok || !state.AnyEnabled() {
 		return
 	}
 

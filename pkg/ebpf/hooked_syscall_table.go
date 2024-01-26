@@ -24,7 +24,10 @@ var expectedSyscallTableInit = false
 // the syscall table. It runs on tracee's startup and from time to time.
 func (t *Tracee) hookedSyscallTableRoutine(ctx gocontext.Context) {
 	state, ok := extensions.States.GetOk("core", int(events.HookedSyscall))
-	if !ok || !state.AnyEmitEnabled() {
+	if !ok {
+		return
+	}
+	if !ok || !state.AnyEnabled() {
 		return
 	}
 
