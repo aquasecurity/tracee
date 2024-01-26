@@ -520,27 +520,11 @@ func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 		return errfmt.Errorf("could not get BPF program FD for %s: %v", tailCallProgName, err)
 	}
 
-	once := &sync.Once{}
-
 	// Pick all indexes (event, or syscall, IDs) the BPF program should be related to.
 	for _, index := range tailCallIndexes {
-		// Special treatment for indexes of syscall events.
-		if events.Core.GetDefinitionByID(events.ID(index)).IsSyscall() {
-			// Optimization: enable enter/exit probes only if at least one syscall is enabled.
-			once.Do(func() {
-				err := t.probes.AttachProbeByHandle(probes.SyscallEnter__Internal)
-				if err != nil {
-					logger.Errorw("error attaching to syscall enter", "error", err)
-				}
-				err = t.probes.AttachProbeByHandle(probes.SyscallExit__Internal)
-				if err != nil {
-					logger.Errorw("error attaching to syscall enter", "error", err)
-				}
-			})
-			// Workaround: Do not map eBPF program to unsupported syscalls (arm64, e.g.)
-			if index >= uint32(events.Unsupported) {
-				continue
-			}
+		// Workaround: Do not map eBPF program to unsupported syscalls (arm64, e.g.)
+		if index >= uint32(events.Unsupported) {
+			continue
 		}
 		// Update given eBPF map with the eBPF program file descriptor at given index.
 		err := bpfMap.Update(unsafe.Pointer(&index), unsafe.Pointer(&bpfProgFD))
