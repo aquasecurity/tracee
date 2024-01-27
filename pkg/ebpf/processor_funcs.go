@@ -18,6 +18,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/filehash"
+	"github.com/aquasecurity/tracee/pkg/global"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -227,11 +228,11 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 
 	err := capabilities.GetInstance().EBPF(
 		func() error {
-			err := t.kernelSymbols.Refresh()
+			err := global.KSymbols.Refresh()
 			if err != nil {
 				return errfmt.WrapError(err)
 			}
-			return t.UpdateKallsyms()
+			return global.UpdateKallsyms()
 		},
 	)
 	if err != nil {
@@ -271,7 +272,7 @@ func (t *Tracee) processHookedProcFops(event *trace.Event) error {
 		if addr == 0 { // address is in text segment, marked as 0
 			continue
 		}
-		hookingFunction := utils.ParseSymbol(addr, t.kernelSymbols)
+		hookingFunction := global.ParseKSymbol(addr)
 		if hookingFunction.Owner == "system" {
 			continue
 		}
@@ -313,7 +314,7 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 	}
 
 	addressUint64 := uint64(address)
-	symbol := utils.ParseSymbol(addressUint64, t.kernelSymbols)
+	symbol := global.ParseKSymbol(addressUint64)
 	var utsName unix.Utsname
 	arch := ""
 	if err := unix.Uname(&utsName); err != nil {

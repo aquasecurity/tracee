@@ -2,32 +2,12 @@ package utils
 
 import (
 	"math/rand"
-	"strings"
 	"time"
-
-	"github.com/aquasecurity/libbpfgo/helpers"
 )
 
 // Cloner is an interface for objects that can be cloned
 type Cloner interface {
 	Clone() Cloner
-}
-
-func ParseSymbol(address uint64, table *helpers.KernelSymbolTable) helpers.KernelSymbol {
-	var hookingFunction helpers.KernelSymbol
-
-	symbols, err := table.GetSymbolByAddr(address)
-	if err != nil {
-		hookingFunction = helpers.KernelSymbol{}
-		hookingFunction.Owner = "hidden"
-	} else {
-		hookingFunction = symbols[0]
-	}
-
-	hookingFunction.Owner = strings.TrimPrefix(hookingFunction.Owner, "[")
-	hookingFunction.Owner = strings.TrimSuffix(hookingFunction.Owner, "]")
-
-	return hookingFunction
 }
 
 func HasBit(n uint64, offset uint) bool {

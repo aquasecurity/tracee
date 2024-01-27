@@ -4,16 +4,10 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
 
-	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 func DefaultProbes(netEnabled bool, kSyms *helpers.KernelSymbolTable) (*Probes, error) {
-	if kSyms == nil {
-		return nil, errfmt.Errorf("kernel symbol table is nil")
-	}
-	kernelSymbolTable = kSyms // keep a reference to the kernel symbol table instead of creating a new one
-
 	binaryPath := "/proc/self/exe"
 
 	allProbes := map[ProbeHandle]Probe{
@@ -136,6 +130,8 @@ func DefaultProbes(netEnabled bool, kSyms *helpers.KernelSymbolTable) (*Probes, 
 			logger.Errorw("CgroupSKBEgress probe autoload", "error", err)
 		}
 	}
+
+	kernelSymbolTable = kSyms
 
 	return NewProbes(allProbes), nil
 }

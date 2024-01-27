@@ -14,7 +14,6 @@ import (
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	bpf "github.com/aquasecurity/libbpfgo"
-	"github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/pkg/bucketscache"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
@@ -34,6 +33,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/filehash"
 	"github.com/aquasecurity/tracee/pkg/filters"
+	"github.com/aquasecurity/tracee/pkg/global"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
@@ -75,9 +75,8 @@ type Tracee struct {
 	writtenFiles   map[string]string
 	netCapturePcap *pcaps.Pcaps
 	// Internal Data
-	readFiles     map[string]string
-	pidsInMntns   bucketscache.BucketsCache // first n PIDs in each mountns
-	kernelSymbols *helpers.KernelSymbolTable
+	readFiles   map[string]string
+	pidsInMntns bucketscache.BucketsCache // first n PIDs in each mountns
 	// eBPF
 	probes *probes.Probes
 	// BPF Maps
@@ -311,20 +310,9 @@ func New(cfg config.Config) (*Tracee, error) {
 func (t *Tracee) Init(ctx gocontext.Context) error {
 	var err error
 
-	// Init kernel symbols map
-
-	err = capabilities.GetInstance().Specific(
-		func() error {
-			t.kernelSymbols, err = helpers.NewKernelSymbolTable()
-			return err
-		},
-		cap.SYSLOG,
-	)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	t.validateKallsymsDependencies() // disable events w/ missing ksyms dependencies
+	// Init kernel symbols map (done by global initialization)
+	// Disable events with missing ksyms dependencies
+	global.ValidateKsymsDepsAndCancelUnavailable()
 
 	// Initialize buckets cache
 
@@ -566,13 +554,13 @@ func (t *Tracee) initDerivationTable() error {
 		events.SyscallTableCheck: {
 			events.HookedSyscall: {
 				Enabled:        shouldSubmit(events.SyscallTableCheck),
-				DeriveFunction: derive.DetectHookedSyscall(t.kernelSymbols),
+				DeriveFunction: derive.DetectHookedSyscall(),
 			},
 		},
 		events.PrintNetSeqOps: {
 			events.HookedSeqOps: {
 				Enabled:        shouldSubmit(events.HookedSeqOps),
-				DeriveFunction: derive.HookedSeqOps(t.kernelSymbols),
+				DeriveFunction: derive.HookedSeqOps(),
 			},
 		},
 		events.HiddenKernelModuleSeeker: {
@@ -774,74 +762,6 @@ func (t *Tracee) newConfig(cfg *policy.PoliciesConfig, version uint16) *Config {
 	}
 }
 
-// getUnavKsymsPerEvtID returns event IDs and symbols that are unavailable to them.
-func (t *Tracee) getUnavKsymsPerEvtID() map[events.ID][]string {
-	unavSymsPerEvtID := map[events.ID][]string{}
-
-	evtDefSymDeps := func(id events.ID) []events.KSymbol {
-		return events.Core.GetDefinitionByID(id).GetDependencies().GetKSymbols()
-	}
-
-	for _, id := range extensions.States.GetEventIDs("core") {
-		evtID := events.ID(id)
-		for _, symDep := range evtDefSymDeps(evtID) {
-			sym, err := t.kernelSymbols.GetSymbolByName(symDep.GetSymbolName())
-			symName := symDep.GetSymbolName()
-			if err != nil {
-				// If the symbol is not found, it means it's unavailable.
-				unavSymsPerEvtID[evtID] = append(unavSymsPerEvtID[evtID], symName)
-				continue
-			}
-			for _, s := range sym {
-				if s.Address == 0 {
-					// Same if the symbol is found but its address is 0.
-					unavSymsPerEvtID[evtID] = append(unavSymsPerEvtID[evtID], symName)
-				}
-			}
-		}
-	}
-
-	return unavSymsPerEvtID
-}
-
-// validateKallsymsDependencies load all symbols required by events dependencies
-// from the kallsyms file to check for missing symbols. If some symbols are
-// missing, it will cancel their event with informative error message.
-func (t *Tracee) validateKallsymsDependencies() {
-	depsToCancel := make(map[events.ID]string)
-
-	// Cancel events with unavailable symbols dependencies
-	for eventToCancel, missingDepSyms := range t.getUnavKsymsPerEvtID() {
-		eventNameToCancel := events.Core.GetDefinitionByID(eventToCancel).GetName()
-		logger.Debugw(
-			"Event canceled because of missing kernel symbol dependency",
-			"missing symbols", missingDepSyms, "event", eventNameToCancel,
-		)
-		extensions.States.Delete("core", int(eventToCancel))
-
-		// Find all events that depend on eventToCancel
-		for _, id := range extensions.States.GetEventIDs("core") {
-			evtID := events.ID(id)
-			depsIDs := events.Core.GetDefinitionByID(evtID).GetDependencies().GetIDs()
-			for _, depID := range depsIDs {
-				if depID == eventToCancel {
-					depsToCancel[evtID] = eventNameToCancel
-				}
-			}
-		}
-
-		// Cancel all events that require eventToCancel
-		for evtID, depEventName := range depsToCancel {
-			logger.Debugw(
-				"Event canceled because it depends on an previously canceled event",
-				"event", events.Core.GetDefinitionByID(evtID).GetName(),
-				"dependency", depEventName,
-			)
-			extensions.States.Delete("core", int(evtID))
-		}
-	}
-}
-
 func (t *Tracee) populateBPFMaps() error {
 	// Prepare 32bit to 64bit syscall number mapping
 	sys32to64BPFMap, err := extensions.Modules.Get("core").GetMap("sys_32_to_64_map")
@@ -858,7 +778,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Update the kallsyms eBPF map with all symbols from the kallsyms file.
-	err = t.UpdateKallsyms()
+	err = global.UpdateKallsyms()
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1075,7 +995,7 @@ func (t *Tracee) initBPF() error {
 
 	// Initialize probes
 
-	t.probes, err = probes.DefaultProbes(t.netEnabled(), t.kernelSymbols)
+	t.probes, err = probes.DefaultProbes(t.netEnabled(), global.KSymbols)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1491,7 +1411,7 @@ func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
 	}
 	var seqOpsPointers [len(derive.NetSeqOps)]uint64
 	for i, seqName := range derive.NetSeqOps {
-		seqOpsStruct, err := t.kernelSymbols.GetSymbolByOwnerAndName("system", seqName)
+		seqOpsStruct, err := global.KSymbols.GetSymbolByOwnerAndName("system", seqName)
 		if err != nil {
 			continue
 		}
@@ -1581,7 +1501,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 
 					continue
 				}
-				symbol, err := t.kernelSymbols.GetSymbolByOwnerAndName(owner, name)
+				symbol, err := global.KSymbols.GetSymbolByOwnerAndName(owner, name)
 				if err != nil {
 					if owner != "system" {
 						errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s - %v", p.ID, field, err))
@@ -1593,7 +1513,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 					prefixes := []string{"sys_", "__x64_sys_", "__arm64_sys_"}
 					var errSyscall error
 					for _, prefix := range prefixes {
-						symbol, errSyscall = t.kernelSymbols.GetSymbolByOwnerAndName(owner, prefix+name)
+						symbol, errSyscall = global.KSymbols.GetSymbolByOwnerAndName(owner, prefix+name)
 						if errSyscall == nil {
 							err = nil
 							break
