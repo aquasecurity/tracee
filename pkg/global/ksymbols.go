@@ -111,10 +111,10 @@ func ParseKSymbol(address uint64) helpers.KernelSymbol {
 
 var validateKsymsLock *sync.Mutex
 
-// ValidateKsymsDepsAndCancelUnavailable checks if all kernel symbols required by the
+// ValidateKsymsDepsAndCancelUnavailableStates checks if all kernel symbols required by the
 // events being traced are available in the kernel symbols table. If not, it cancels the
 // events that have missing kernel symbol dependencies.
-func ValidateKsymsDepsAndCancelUnavailable() {
+func ValidateKsymsDepsAndCancelUnavailableStates() {
 	// Single goroutine at a time.
 	if validateKsymsLock == nil {
 		validateKsymsLock = &sync.Mutex{}

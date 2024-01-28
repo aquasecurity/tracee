@@ -312,7 +312,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Init kernel symbols map (done by global initialization)
 	// Disable events with missing ksyms dependencies
-	global.ValidateKsymsDepsAndCancelUnavailable()
+	global.ValidateKsymsDepsAndCancelUnavailableStates()
 
 	// Initialize buckets cache
 
@@ -482,44 +482,6 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	t.startTime = uint64(utils.GetStartTimeNS())
 	t.bootTime = uint64(utils.GetBootTimeNS())
-
-	return nil
-}
-
-// initTailCall initializes a given tailcall.
-func (t *Tracee) initTailCall(tailCall events.TailCall) error {
-	tailCallMapName := tailCall.GetMapName()
-	tailCallProgName := tailCall.GetProgName()
-	tailCallIndexes := tailCall.GetIndexes()
-
-	// Pick eBPF map by name.
-	bpfMap, err := extensions.Modules.Get("core").GetMap(tailCallMapName)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-	// Pick eBPF program by name.
-	bpfProg, err := extensions.Modules.Get("core").GetProgram(tailCallProgName)
-	if err != nil {
-		return errfmt.Errorf("could not get BPF program %s: %v", tailCallProgName, err)
-	}
-	// Pick eBPF program file descriptor.
-	bpfProgFD := bpfProg.FileDescriptor()
-	if bpfProgFD < 0 {
-		return errfmt.Errorf("could not get BPF program FD for %s: %v", tailCallProgName, err)
-	}
-
-	// Pick all indexes (event, or syscall, IDs) the BPF program should be related to.
-	for _, index := range tailCallIndexes {
-		// Workaround: Do not map eBPF program to unsupported syscalls (arm64, e.g.)
-		if index >= uint32(events.Unsupported) {
-			continue
-		}
-		// Update given eBPF map with the eBPF program file descriptor at given index.
-		err := bpfMap.Update(unsafe.Pointer(&index), unsafe.Pointer(&bpfProgFD))
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
 
 	return nil
 }
@@ -886,7 +848,7 @@ func (t *Tracee) populateBPFMaps() error {
 	// Initialize tail call dependencies
 	tailCalls := events.Core.GetTailCalls()
 	for _, tailCall := range tailCalls {
-		err := t.initTailCall(tailCall)
+		err := tailCall.Init()
 		if err != nil {
 			return errfmt.Errorf("failed to initialize tail call: %v", err)
 		}
