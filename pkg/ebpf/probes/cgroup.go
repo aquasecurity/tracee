@@ -53,11 +53,11 @@ func (p *CgroupProbe) Attach(args ...interface{}) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
-	var cgroups *cgroup.Cgroups
+	var cgroups *cgroup.AllCGroups
 
 	for _, arg := range args {
 		switch a := arg.(type) {
-		case *cgroup.Cgroups:
+		case *cgroup.AllCGroups:
 			cgroups = a
 		}
 	}

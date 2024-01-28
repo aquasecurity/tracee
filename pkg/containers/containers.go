@@ -25,7 +25,6 @@ import (
 
 // Containers contains information about running containers in the host.
 type Containers struct {
-	cgroups      *cgroup.Cgroups
 	cgroupsMap   map[uint32]CgroupInfo
 	deleted      []uint64
 	cgroupsMutex sync.RWMutex // protecting both cgroups and deleted fields
@@ -48,7 +47,6 @@ type CgroupInfo struct {
 // call "Populate" and iterate with Containers data.
 func New(
 	noContainersEnrich bool,
-	cgroups *cgroup.Cgroups,
 	sockets cruntime.Sockets,
 	mapName string,
 ) (
@@ -56,7 +54,6 @@ func New(
 	error,
 ) {
 	containers := &Containers{
-		cgroups:      cgroups,
 		cgroupsMap:   make(map[uint32]CgroupInfo),
 		cgroupsMutex: sync.RWMutex{},
 		bpfMapName:   mapName,
@@ -97,11 +94,11 @@ func (c *Containers) Close() error {
 }
 
 func (c *Containers) GetDefaultCgroupHierarchyID() int {
-	return c.cgroups.GetDefaultCgroupHierarchyID()
+	return cgroup.CGroups.GetDefaultCgroupHierarchyID()
 }
 
 func (c *Containers) GetCgroupVersion() cgroup.CgroupVersion {
-	return c.cgroups.GetDefaultCgroup().GetVersion()
+	return cgroup.CGroups.GetDefaultCgroup().GetVersion()
 }
 
 // Populate populates Containers struct by reading mounted proc and cgroups fs.
@@ -159,7 +156,7 @@ func (c *Containers) populate() error {
 		return errfmt.WrapError(err)
 	}
 
-	return filepath.WalkDir(c.cgroups.GetDefaultCgroup().GetMountPoint(), fn)
+	return filepath.WalkDir(cgroup.CGroups.GetDefaultCgroup().GetMountPoint(), fn)
 }
 
 // cgroupUpdate checks if given path belongs to a known container runtime, saving
@@ -171,7 +168,7 @@ func (c *Containers) cgroupUpdate(
 	// NOTE: not thread-safe, lock handled by external calling function
 
 	// Cgroup paths should be stored and evaluated relative to the mountpoint.
-	path = strings.TrimPrefix(path, c.cgroups.GetDefaultCgroup().GetMountPoint())
+	path = strings.TrimPrefix(path, cgroup.CGroups.GetDefaultCgroup().GetMountPoint())
 	containerId, containerRuntime, isRoot := getContainerIdFromCgroup(path)
 	container := cruntime.ContainerMetadata{
 		ContainerId: containerId,
@@ -318,9 +315,9 @@ func getContainerIdFromCgroup(cgroupPath string) (string, cruntime.RuntimeId, bo
 func (c *Containers) CgroupRemove(cgroupId uint64, hierarchyID uint32) {
 	const expiryTime = 30 * time.Second
 	// cgroupv1: no need to check other controllers than the default
-	switch c.cgroups.GetDefaultCgroup().(type) {
+	switch cgroup.CGroups.GetDefaultCgroup().(type) {
 	case *cgroup.CgroupV1:
-		if c.cgroups.GetDefaultCgroupHierarchyID() != int(hierarchyID) {
+		if cgroup.CGroups.GetDefaultCgroupHierarchyID() != int(hierarchyID) {
 			return
 		}
 	}
@@ -352,9 +349,9 @@ func (c *Containers) CgroupRemove(cgroupId uint64, hierarchyID uint32) {
 // CgroupMkdir adds cgroupInfo of a created cgroup dir to Containers struct.
 func (c *Containers) CgroupMkdir(cgroupId uint64, subPath string, hierarchyID uint32) (CgroupInfo, error) {
 	// cgroupv1: no need to check other controllers than the default
-	switch c.cgroups.GetDefaultCgroup().(type) {
+	switch cgroup.CGroups.GetDefaultCgroup().(type) {
 	case *cgroup.CgroupV1:
-		if c.cgroups.GetDefaultCgroupHierarchyID() != int(hierarchyID) {
+		if cgroup.CGroups.GetDefaultCgroupHierarchyID() != int(hierarchyID) {
 			return CgroupInfo{}, nil
 		}
 	}
@@ -363,7 +360,7 @@ func (c *Containers) CgroupMkdir(cgroupId uint64, subPath string, hierarchyID ui
 	c.cgroupsMutex.Lock()
 	defer c.cgroupsMutex.Unlock()
 	curTime := time.Now()
-	path, ctime, err := cgroup.GetCgroupPath(c.cgroups.GetDefaultCgroup().GetMountPoint(), cgroupId, subPath)
+	path, ctime, err := cgroup.GetCgroupPath(cgroup.CGroups.GetDefaultCgroup().GetMountPoint(), cgroupId, subPath)
 	if err == nil {
 		// Add cgroupInfo to Containers struct w/ found path (and its last modification time)
 		return c.cgroupUpdate(cgroupId, path, ctime, false)
@@ -411,7 +408,7 @@ func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
 		c.cgroupsMutex.Lock()
 		defer c.cgroupsMutex.Unlock()
 
-		path, ctime, err := cgroup.GetCgroupPath(c.cgroups.GetDefaultCgroup().GetMountPoint(), cgroupId, "")
+		path, ctime, err := cgroup.GetCgroupPath(cgroup.CGroups.GetDefaultCgroup().GetMountPoint(), cgroupId, "")
 		if err == nil {
 			cgroupInfo, err = c.cgroupUpdate(cgroupId, path, ctime, false)
 			if err != nil {
@@ -489,9 +486,9 @@ func (c *Containers) PopulateBpfMap() error {
 // RemoveFromBPFMap removes a container from the map so eBPF programs can stop tracking it.
 func (c *Containers) RemoveFromBPFMap(cgroupId uint64, hierarchyID uint32) error {
 	// cgroupv1: no need to check other controllers than the default
-	switch c.cgroups.GetDefaultCgroup().(type) {
+	switch cgroup.CGroups.GetDefaultCgroup().(type) {
 	case *cgroup.CgroupV1:
-		if c.cgroups.GetDefaultCgroupHierarchyID() != int(hierarchyID) {
+		if cgroup.CGroups.GetDefaultCgroupHierarchyID() != int(hierarchyID) {
 			return nil
 		}
 	}

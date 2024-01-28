@@ -2,6 +2,7 @@ package cgroup
 
 import (
 	"bufio"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -15,6 +16,12 @@ import (
 	"github.com/aquasecurity/tracee/pkg/mount"
 )
 
+var CGroups *AllCGroups
+
+func init() {
+	CGroups = &AllCGroups{}
+}
+
 // Constants
 
 const (
@@ -27,6 +34,12 @@ const (
 )
 
 // Versions
+
+type VersionNotSupported struct{}
+
+func (e *VersionNotSupported) Error() string {
+	return "version not supported"
+}
 
 type CgroupVersion int
 
@@ -50,14 +63,20 @@ const (
 // Cgroups
 //
 
-type Cgroups struct {
-	cgroupv1 Cgroup
-	cgroupv2 Cgroup
-	cgroup   *Cgroup // pointer to default cgroup version
-	hid      int     // default cgroup controller hierarchy ID
+type AllCGroups struct {
+	cgroupv1    Cgroup
+	cgroupv2    Cgroup
+	cgroup      *Cgroup // pointer to default cgroup version
+	hid         int     // default cgroup controller hierarchy ID
+	initialized bool
 }
 
-func NewCgroups() (*Cgroups, error) {
+func (cs *AllCGroups) Init() error {
+	if cs.initialized {
+		logger.Debugw("Cgroups already initialized")
+		return nil
+	}
+
 	var err error
 	var cgrp *Cgroup
 	var cgroupv1, cgroupv2 Cgroup
@@ -65,7 +84,7 @@ func NewCgroups() (*Cgroups, error) {
 	// discover the default cgroup being used
 	defaultVersion, err := GetCgroupDefaultVersion()
 	if err != nil {
-		return nil, errfmt.WrapError(err)
+		return errfmt.WrapError(err)
 	}
 
 	// only start cgroupv1 if it is the OS default (or else it isn't needed)
@@ -73,7 +92,7 @@ func NewCgroups() (*Cgroups, error) {
 		cgroupv1, err = NewCgroup(CgroupVersion1)
 		if err != nil {
 			if _, ok := err.(*VersionNotSupported); !ok {
-				return nil, errfmt.WrapError(err)
+				return errfmt.WrapError(err)
 			}
 		}
 	}
@@ -82,13 +101,13 @@ func NewCgroups() (*Cgroups, error) {
 	cgroupv2, err = NewCgroup(CgroupVersion2)
 	if err != nil {
 		if _, ok := err.(*VersionNotSupported); !ok {
-			return nil, errfmt.WrapError(err)
+			return errfmt.WrapError(err)
 		}
 	}
 
 	// at least one (or both) has to be supported
 	if cgroupv1 == nil && cgroupv2 == nil {
-		return nil, NoCgroupSupport()
+		return fmt.Errorf("could not find cgroup support")
 	}
 
 	hid := 0
@@ -97,34 +116,38 @@ func NewCgroups() (*Cgroups, error) {
 	switch defaultVersion {
 	case CgroupVersion1:
 		if cgroupv1 == nil {
-			return nil, CouldNotFindOrMountDefaultCgroup(CgroupVersion1)
+			return fmt.Errorf("could not find/mount default %v support", CgroupVersion1)
 		}
 		cgrp = &cgroupv1
 
 		// discover default cgroup controller hierarchy id for cgroupv1
 		hid, err = GetCgroupControllerHierarchy(CgroupDefaultController)
 		if err != nil {
-			return nil, errfmt.WrapError(err)
+			return errfmt.WrapError(err)
 		}
 
 	case CgroupVersion2:
 		if cgroupv2 == nil {
-			return nil, CouldNotFindOrMountDefaultCgroup(CgroupVersion2)
+			return fmt.Errorf("could not find/mount default %v support", CgroupVersion2)
 		}
 		cgrp = &cgroupv2
 	}
 
-	cs := &Cgroups{
-		cgroupv1: cgroupv1,
-		cgroupv2: cgroupv2,
-		cgroup:   cgrp,
-		hid:      hid,
-	}
+	cs.cgroupv1 = cgroupv1
+	cs.cgroupv2 = cgroupv2
+	cs.cgroup = cgrp
+	cs.hid = hid
 
-	return cs, nil
+	cs.initialized = true
+
+	return nil
 }
 
-func (cs *Cgroups) Destroy() error {
+func (cs *AllCGroups) Destroy() error {
+	if !cs.initialized {
+		logger.Debugw("Cgroups already destroyed")
+		return nil
+	}
 	if cs.cgroupv1 != nil {
 		err := cs.cgroupv1.destroy()
 		if err != nil {
@@ -135,18 +158,32 @@ func (cs *Cgroups) Destroy() error {
 		return cs.cgroupv2.destroy()
 	}
 
+	cs.initialized = false
+
 	return nil
 }
 
-func (cs *Cgroups) GetDefaultCgroupHierarchyID() int {
+func (cs *AllCGroups) GetDefaultCgroupHierarchyID() int {
+	if !cs.initialized {
+		logger.Debugw("Cgroups not initialized")
+		return -1
+	}
 	return cs.hid
 }
 
-func (cs *Cgroups) GetDefaultCgroup() Cgroup {
+func (cs *AllCGroups) GetDefaultCgroup() Cgroup {
+	if !cs.initialized {
+		logger.Debugw("Cgroups not initialized")
+		return nil
+	}
 	return *cs.cgroup
 }
 
-func (cs *Cgroups) GetCgroup(ver CgroupVersion) Cgroup {
+func (cs *AllCGroups) GetCgroup(ver CgroupVersion) Cgroup {
+	if !cs.initialized {
+		logger.Debugw("Cgroups not initialized")
+		return nil
+	}
 	switch ver {
 	case CgroupVersion1:
 		return cs.cgroupv1
@@ -315,7 +352,7 @@ func GetCgroupDefaultVersion() (CgroupVersion, error) {
 
 	file, err := os.Open(procCgroups)
 	if err != nil {
-		return -1, CouldNotOpenFile(procCgroups, err)
+		return -1, fmt.Errorf("could not open %s: %w", procCgroups, err)
 	}
 	defer func() {
 		if err := file.Close(); err != nil {
@@ -331,7 +368,7 @@ func GetCgroupDefaultVersion() (CgroupVersion, error) {
 		}
 		value, err = strconv.Atoi(line[1])
 		if err != nil || value < 0 {
-			return -1, ErrorParsingFile(procCgroups, err)
+			return -1, fmt.Errorf("could not open %s: %w", procCgroups, err)
 		}
 	}
 
@@ -351,7 +388,7 @@ func IsCgroupV2MountedAndDefault() (bool, error) {
 		return false, nil
 	}
 	if err != nil {
-		return false, CouldNotOpenFile(CgroupControllersFile, err)
+		return false, fmt.Errorf("could not open %s: %w", CgroupControllersFile, err)
 	}
 
 	return true, nil
@@ -363,7 +400,7 @@ func GetCgroupControllerHierarchy(subsys string) (int, error) {
 
 	file, err := os.Open(procCgroups)
 	if err != nil {
-		return -1, CouldNotOpenFile(procCgroups, err)
+		return -1, fmt.Errorf("could not open %s: %w", procCgroups, err)
 	}
 	defer func() {
 		if err := file.Close(); err != nil {
@@ -379,7 +416,7 @@ func GetCgroupControllerHierarchy(subsys string) (int, error) {
 		}
 		value, err = strconv.Atoi(line[1])
 		if err != nil || value < 0 {
-			return -1, ErrorParsingFile(procCgroups, err)
+			return -1, fmt.Errorf("could not open %s: %w", procCgroups, err)
 		}
 	}
 

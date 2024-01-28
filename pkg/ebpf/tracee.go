@@ -96,7 +96,6 @@ type Tracee struct {
 	lostNetCapChannel   chan uint64 // channel for lost network captures
 	lostBPFLogChannel   chan uint64 // channel for lost bpf logs
 	// Containers
-	cgroups           *cgroup.Cgroups
 	containers        *containers.Containers
 	contPathResolver  *containers.ContainerPathResolver
 	contSymbolsLoader *sharedobjs.ContainersSymbolsLoader
@@ -349,16 +348,15 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize cgroups filesystems
 
-	t.cgroups, err = cgroup.NewCgroups()
+	err = cgroup.CGroups.Init()
 	if err != nil {
-		return errfmt.WrapError(err)
+		logger.Errorw("Initializing cgroups", "error", err)
 	}
 
 	// Initialize containers enrichment logic
 
 	t.containers, err = containers.New(
 		t.config.NoContainersEnrich,
-		t.cgroups,
 		t.config.Sockets,
 		"containers_map",
 	)
@@ -697,7 +695,7 @@ func (t *Tracee) getOptionsConfig() uint32 {
 		cOptVal = cOptVal | optTranslateFDFilePath
 	}
 
-	switch t.cgroups.GetDefaultCgroup().(type) {
+	switch cgroup.CGroups.GetDefaultCgroup().(type) {
 	case *cgroup.CgroupV1:
 		cOptVal = cOptVal | optCgroupV1
 	}
@@ -716,7 +714,7 @@ func (t *Tracee) newConfig(cfg *policy.PoliciesConfig, version uint16) *Config {
 	return &Config{
 		TraceePid:       uint32(os.Getpid()),
 		Options:         t.getOptionsConfig(),
-		CgroupV1Hid:     uint32(t.cgroups.GetDefaultCgroupHierarchyID()),
+		CgroupV1Hid:     uint32(cgroup.CGroups.GetDefaultCgroupHierarchyID()),
 		PoliciesVersion: version,
 		PoliciesConfig:  *cfg,
 	}
@@ -911,7 +909,7 @@ func (t *Tracee) attachProbes() error {
 
 	// Attach probes to their eBPF programs.
 	for probe, evtID := range probesToEvents {
-		err = t.probes.AttachProbeByHandle(probe.GetHandle(), t.cgroups)
+		err = t.probes.AttachProbeByHandle(probe.GetHandle(), cgroup.CGroups)
 		if err != nil {
 			for _, evtID := range evtID {
 				evtName := events.Core.GetDefinitionByID(evtID).GetName()
@@ -1218,7 +1216,7 @@ func (t *Tracee) Close() {
 		}
 	}
 	// Close the cgroups module.
-	if err := t.cgroups.Destroy(); err != nil {
+	if err := cgroup.CGroups.Destroy(); err != nil {
 		logger.Errorw("Cgroups destroy", "error", err)
 	}
 	// Set 'running' to false and close 'done' channel.
