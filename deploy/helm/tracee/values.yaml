@@ -82,6 +82,16 @@ config:
       relativeTime: true
       execHash: dev-inode
       sortEvents: false
+    # uncomment config.output.webhook to enable a single webhook
+    # to configure multiple webhooks, use the traceeConfig field
+    # webhook:
+    #   name: "webhook1"
+    #   contentType: "application/json"
+    #   goTemplate: ""
+    #   host: ""
+    #   port: "8080"
+    #   protocol: http
+    #   timeout: 3s
 
 defaultPolicy: true
 
