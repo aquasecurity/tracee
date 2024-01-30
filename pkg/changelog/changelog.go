@@ -84,8 +84,8 @@ func (clv *Changelog[T]) Get(targetTime time.Time) T {
 // GetAll returns all the values of the changelog.
 func (clv *Changelog[T]) GetAll() []T {
 	values := make([]T, len(clv.changes))
-	for i, entry := range clv.changes {
-		values[i] = entry.value
+	for i := range clv.changes {
+		values[i] = clv.changes[i].value
 	}
 	return values
 }

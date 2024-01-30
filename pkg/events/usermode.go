@@ -95,24 +95,28 @@ func ExistingContainersEvents(cts *containers.Containers, enrichDisabled bool) [
 	var events []trace.Event
 
 	def := Core.GetDefinitionByID(ExistingContainer)
-
-	for id, info := range cts.GetContainers() {
+	existingContainers := cts.GetContainers()
+	for id, info := range existingContainers {
+		cgroupId := uint64(id)
+		cRuntime := info.Runtime.String()
+		containerId := info.Container.ContainerId
+		ctime := info.Ctime.UnixNano()
 		container := runtime.ContainerMetadata{}
 		if !enrichDisabled {
-			container, _ = cts.EnrichCgroupInfo(uint64(id))
+			container, _ = cts.EnrichCgroupInfo(cgroupId)
 		}
 		params := def.GetParams()
 		args := []trace.Argument{
-			{ArgMeta: params[0], Value: info.Runtime.String()},
-			{ArgMeta: params[1], Value: info.Container.ContainerId},
-			{ArgMeta: params[2], Value: info.Ctime.UnixNano()},
+			{ArgMeta: params[0], Value: cRuntime},
+			{ArgMeta: params[1], Value: containerId},
+			{ArgMeta: params[2], Value: ctime},
 			{ArgMeta: params[3], Value: container.Image},
-			{ArgMeta: params[3], Value: container.ImageDigest},
-			{ArgMeta: params[4], Value: container.Name},
-			{ArgMeta: params[5], Value: container.Pod.Name},
-			{ArgMeta: params[6], Value: container.Pod.Namespace},
-			{ArgMeta: params[7], Value: container.Pod.UID},
-			{ArgMeta: params[8], Value: container.Pod.Sandbox},
+			{ArgMeta: params[4], Value: container.ImageDigest},
+			{ArgMeta: params[5], Value: container.Name},
+			{ArgMeta: params[6], Value: container.Pod.Name},
+			{ArgMeta: params[7], Value: container.Pod.Namespace},
+			{ArgMeta: params[8], Value: container.Pod.UID},
+			{ArgMeta: params[9], Value: container.Pod.Sandbox},
 		}
 		existingContainerEvent := trace.Event{
 			Timestamp:   int(time.Now().UnixNano()),
