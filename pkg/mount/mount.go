@@ -7,6 +7,7 @@ import (
 	"strings"
 	"syscall"
 
+	"golang.org/x/exp/slices"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
@@ -18,21 +19,21 @@ import (
 // Constants
 
 const (
-	procMounts      = "/proc/mounts"
+	procMounts      = "/proc/self/mountinfo"
 	procFilesystems = "/proc/filesystems"
 	tmpPathPrefix   = "tracee"
 )
 
 //
-// MountOnce
+// MountHostOnce
 //
 
-// MountOnce will make sure a given source and filesystem type are mounted just
-// once: it will check if given source and fs type are already mounted and, if
-// not, it will mount it (in a temporary directory) and manage it (umounting at
-// its destruction). If already mounted, the filesystem is left untouched at
-// object's destruction.
-type MountOnce struct {
+// MountHostOnce will make sure a given source and filesystem type are mounted just
+// once: it will check if given source and fs type are already mounted, and given
+// from the host filesystem, and if not, it will mount it (in a temporary directory)
+// and manage it (umounting at its destruction). If already mounted, the filesystem
+// is left untouched at object's destruction.
+type MountHostOnce struct {
 	source  string
 	target  string
 	fsType  string
@@ -41,8 +42,8 @@ type MountOnce struct {
 	mounted bool
 }
 
-func NewMountOnce(source, fstype, data, where string) (*MountOnce, error) {
-	m := &MountOnce{
+func NewMountHostOnce(source, fstype, data, where string) (*MountHostOnce, error) {
+	m := &MountHostOnce{
 		source: source, // device and/or pseudo-filesystem to mount
 		fsType: fstype, // fs type
 		data:   data,   // extra data
@@ -62,11 +63,12 @@ func NewMountOnce(source, fstype, data, where string) (*MountOnce, error) {
 	}
 
 	m.mounted = true
+	logger.Debugw("created mount object", "managed", m.managed, "source", m.source, "target", m.target, "fsType", m.fsType, "data", m.data)
 
 	return m, nil
 }
 
-func (m *MountOnce) Mount() error {
+func (m *MountHostOnce) Mount() error {
 	path, err := os.MkdirTemp(os.TempDir(), tmpPathPrefix) // create temp dir
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -100,7 +102,7 @@ func (m *MountOnce) Mount() error {
 	return errfmt.WrapError(err)
 }
 
-func (m *MountOnce) Umount() error {
+func (m *MountHostOnce) Umount() error {
 	if m.managed && m.mounted {
 		// umount the filesystem from the target dir
 
@@ -133,18 +135,18 @@ func (m *MountOnce) Umount() error {
 	return nil
 }
 
-func (m *MountOnce) IsMounted() bool {
+func (m *MountHostOnce) IsMounted() bool {
 	return m.mounted
 }
 
-func (m *MountOnce) GetMountpoint() string {
+func (m *MountHostOnce) GetMountpoint() string {
 	return m.target
 }
 
 // private
 
-func (m *MountOnce) isMountedByOS(where string) (bool, error) {
-	mp, err := SearchMountpoint(m.fsType, m.data)
+func (m *MountHostOnce) isMountedByOS(where string) (bool, error) {
+	mp, err := SearchMountpointFromHost(m.fsType, m.data)
 	if err != nil || mp == "" {
 		return false, errfmt.WrapError(err)
 	}
@@ -187,9 +189,10 @@ func IsFileSystemSupported(fsType string) (bool, error) {
 	return false, nil
 }
 
-// SearchMountpoint returns the last mountpoint for a given filesystem type
-// containing a searchable string.
-func SearchMountpoint(fstype string, search string) (string, error) {
+// SearchMountpointFromHost returns the last mountpoint for a given filesystem type
+// containing a searchable string. It confirms the mount originates from the root file
+// system.
+func SearchMountpointFromHost(fstype string, search string) (string, error) {
 	mp := ""
 
 	file, err := os.Open(procMounts)
@@ -205,10 +208,22 @@ func SearchMountpoint(fstype string, search string) (string, error) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := strings.Split(scanner.Text(), " ")
-		mountpoint := line[1]
-		currFstype := line[2]
-		if fstype == currFstype && strings.Contains(mountpoint, search) {
+		mountRoot := line[3]
+		mountpoint := line[4]
+		sepIndex := slices.Index(line, "-")
+		fsTypeIndex := sepIndex + 1
+		currFstype := line[fsTypeIndex]
+		// Check for the following 3 conditions:
+		// 1. The fs type is the one we search for
+		// 2. The mountpoint contains the path we are searching
+		// 3. The root path in the mounted filesystem is that of the host.
+		//	  This means, that the root of the mounted filesystem is /.
+		//    For example, if we are searching for /sys/fs/cgroup, we want to
+		//    be sure that it is not actually .../sys/fs/cgroup, but strictly
+		//    the searched path.
+		if fstype == currFstype && strings.Contains(mountpoint, search) && mountRoot == "/" {
 			mp = mountpoint
+			break
 		}
 	}
 

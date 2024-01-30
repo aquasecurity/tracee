@@ -185,7 +185,7 @@ func NewCgroup(ver CgroupVersion) (Cgroup, error) {
 // cgroupv1
 
 type CgroupV1 struct {
-	mounted    *mount.MountOnce
+	mounted    *mount.MountHostOnce
 	mountpoint string
 	hid        int
 }
@@ -201,7 +201,7 @@ func (c *CgroupV1) init() error {
 	}
 
 	// 1. mount cgroup (if needed)
-	c.mounted, err = mount.NewMountOnce(
+	c.mounted, err = mount.NewMountHostOnce(
 		CgroupV1FsType,
 		CgroupV1FsType,
 		CgroupDefaultController,
@@ -236,7 +236,7 @@ func (c *CgroupV1) GetVersion() CgroupVersion {
 // cgroupv2
 
 type CgroupV2 struct {
-	mounted    *mount.MountOnce
+	mounted    *mount.MountHostOnce
 	mountpoint string
 	hid        int
 }
@@ -252,7 +252,7 @@ func (c *CgroupV2) init() error {
 	}
 
 	// 1. mount cgroup (if needed)
-	c.mounted, err = mount.NewMountOnce(
+	c.mounted, err = mount.NewMountHostOnce(
 		CgroupV2FsType,
 		CgroupV2FsType,
 		"",          // cgroupv2 has no default controller
