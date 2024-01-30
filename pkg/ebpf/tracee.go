@@ -1487,9 +1487,11 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 
 	emit = t.eventsState[events.ExistingContainer].Emit
 	if emit > 0 {
-		for _, e := range events.ExistingContainersEvents(t.containers, t.config.NoContainersEnrich) {
-			setMatchedPolicies(&e, emit, t.config.Policies)
-			out <- &e
+		existingContainerEvents := events.ExistingContainersEvents(t.containers, t.config.NoContainersEnrich)
+		for i := range existingContainerEvents {
+			event := &(existingContainerEvents[i])
+			setMatchedPolicies(event, emit, t.config.Policies)
+			out <- event
 			_ = t.stats.EventCount.Increment()
 		}
 	}
