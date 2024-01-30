@@ -35,7 +35,7 @@ const InitProcNsDir = "/proc/1/ns"
 // InitNamespacesEvent collect the init process namespaces and create event from
 // them.
 func InitNamespacesEvent() trace.Event {
-	initNamespacesDef := extensions.Definitions.GetDefinitionByID("core", extensions.InitNamespaces)
+	initNamespacesDef := extensions.Definitions.GetByIDFromAny(extensions.InitNamespaces)
 	initNamespacesArgs := getInitNamespaceArguments()
 
 	initNamespacesEvent := trace.Event{
@@ -54,7 +54,7 @@ func InitNamespacesEvent() trace.Event {
 // parse them into event arguments.
 func getInitNamespaceArguments() []trace.Argument {
 	initNamespaces := fetchInitNamespaces()
-	eventDefinition := extensions.Definitions.GetDefinitionByID("core", extensions.InitNamespaces)
+	eventDefinition := extensions.Definitions.GetByIDFromAny(extensions.InitNamespaces)
 	initNamespacesArgs := make([]trace.Argument, len(eventDefinition.GetParams()))
 
 	params := eventDefinition.GetParams()
@@ -95,7 +95,7 @@ func fetchInitNamespaces() map[string]uint32 {
 func ExistingContainersEvents(cts *containers.Containers, enrichDisabled bool) []trace.Event {
 	var events []trace.Event
 
-	def := extensions.Definitions.GetDefinitionByID("core", extensions.ExistingContainer)
+	def := extensions.Definitions.GetByIDFromAny(extensions.ExistingContainer)
 
 	for id, info := range cts.GetContainers() {
 		container := runtime.ContainerMetadata{}

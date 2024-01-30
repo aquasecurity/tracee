@@ -49,7 +49,7 @@ func (c Config) Validate() error {
 		}
 
 		for e := range p.EventsToTrace {
-			if !extensions.Definitions.IsDefined("core", e) {
+			if !extensions.Definitions.IsDefinedInAny(e) {
 				return errfmt.Errorf("invalid event [%d] to trace in policy [%d]", e, p.ID)
 			}
 		}

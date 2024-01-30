@@ -41,6 +41,30 @@ func (s *StatesPerExtension) GetOk(ext string, id int) (*EventState, bool) {
 	return state, ok
 }
 
+// GetAll returns the EventState for the given event ID from any extension.
+func (s *StatesPerExtension) GetFromAny(id int) *EventState {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+	for _, states := range s.states {
+		if state, ok := states[id]; ok {
+			return state
+		}
+	}
+	return nil
+}
+
+// GetAllOk returns the EventState for the given event ID from any extension.
+func (s *StatesPerExtension) GetFromAnyOk(id int) (*EventState, bool) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+	for _, states := range s.states {
+		if state, ok := states[id]; ok {
+			return state, true
+		}
+	}
+	return nil, false
+}
+
 func (s *StatesPerExtension) Create(ext string, id int) *EventState {
 	return s.GetOrCreate(ext, id)
 }
@@ -76,6 +100,19 @@ func (s *StatesPerExtension) GetEventIDs(ext string) []int {
 	return ids
 }
 
+// GetAllEventIDs returns all event IDs from all extensions.
+func (s *StatesPerExtension) GetAllEventIDs() []int {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+	ids := []int{}
+	for _, states := range s.states {
+		for id := range states {
+			ids = append(ids, id)
+		}
+	}
+	return ids
+}
+
 // HasEventID returns true if the given extension has the given event ID.
 func (s *StatesPerExtension) HasEventID(ext string, id int) bool {
 	s.mutex.RLock()
@@ -87,6 +124,18 @@ func (s *StatesPerExtension) HasEventID(ext string, id int) bool {
 	return ok
 }
 
+// HasEventIDInAny returns true if any extension has the given event ID.
+func (s *StatesPerExtension) HasEventIDInAny(id int) bool {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+	for _, states := range s.states {
+		if _, ok := states[id]; ok {
+			return true
+		}
+	}
+	return false
+}
+
 // Delete deletes the EventState for the given extension and event ID.
 func (s *StatesPerExtension) Delete(ext string, id int) {
 	s.mutex.Lock()
@@ -95,6 +144,15 @@ func (s *StatesPerExtension) Delete(ext string, id int) {
 		return
 	}
 	delete(s.states[ext], id)
+}
+
+// DeleteFromAny deletes the EventState for the given event ID from any extension.
+func (s *StatesPerExtension) DeleteFromAny(id int) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	for ext := range s.states {
+		delete(s.states[ext], id)
+	}
 }
 
 // DeleteAll deletes all EventStates for the given extension.

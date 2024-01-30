@@ -159,7 +159,7 @@ func (t *Tracee) queueEvents(ctx context.Context, in <-chan *trace.Event) (chan 
 func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-chan *trace.Event, <-chan error) {
 	out := make(chan *trace.Event, 10000)
 	errc := make(chan error, 1)
-	sysCompatTranslation := extensions.Definitions.IDs32ToIDs("core")
+	sysCompatTranslation := extensions.Definitions.IDs32ToIDsFromAllExts()
 	go func() {
 		defer close(out)
 		defer close(errc)
@@ -176,11 +176,11 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				continue
 			}
 			eventId := int(eCtx.EventID)
-			if !extensions.Definitions.IsDefined("core", eventId) {
+			if !extensions.Definitions.IsDefinedInAny(eventId) {
 				t.handleError(errfmt.Errorf("failed to get configuration of event %d", eventId))
 				continue
 			}
-			eventDefinition := extensions.Definitions.GetDefinitionByID("core", eventId)
+			eventDefinition := extensions.Definitions.GetByIDFromAny(eventId)
 			args := make([]trace.Argument, len(eventDefinition.GetParams()))
 			err := ebpfMsgDecoder.DecodeArguments(args, int(argnum), eventDefinition, eventId)
 			if err != nil {
@@ -408,19 +408,19 @@ func parseContextFlags(containerId string, flags uint32) trace.ContextFlags {
 func parseSyscallID(syscallID int, isCompat bool, compatTranslationMap map[int]int) (string, error) {
 	id := int(syscallID)
 	if !isCompat {
-		if !extensions.Definitions.IsDefined("core", id) {
+		if !extensions.Definitions.IsDefinedInAny(id) {
 			return "", errfmt.Errorf("no syscall event with syscall id %d", syscallID)
 		}
-		return extensions.Definitions.GetDefinitionByID("core", id).GetName(), nil
+		return extensions.Definitions.GetByIDFromAny(id).GetName(), nil
 	}
 	if id, ok := compatTranslationMap[int(syscallID)]; ok {
 		// should never happen (map should be initialized from events definition)
-		if !extensions.Definitions.IsDefined("core", id) {
+		if !extensions.Definitions.IsDefinedInAny(id) {
 			return "", errfmt.Errorf(
 				"no syscall event with compat syscall id %d, translated to ID %d", syscallID, id,
 			)
 		}
-		return extensions.Definitions.GetDefinitionByID("core", id).GetName(), nil
+		return extensions.Definitions.GetByIDFromAny(id).GetName(), nil
 	}
 	return "", errfmt.Errorf("no syscall event with compat syscall id %d", syscallID)
 }
@@ -602,7 +602,7 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 			}
 
 			// Only emit events requested by the user and matched by at least one policy.
-			state, ok := extensions.States.GetOk("core", event.EventID)
+			state, ok := extensions.States.GetFromAnyOk(event.EventID)
 			if !ok {
 				t.eventsPool.Put(event)
 				continue

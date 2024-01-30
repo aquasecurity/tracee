@@ -116,7 +116,7 @@ func Test_DeriveSingleEvent(t *testing.T) {
 	}()
 
 	// mock the getEventDefinition function
-	getEventDefinition = func(ext string, id int) extensions.Definition {
+	getEventDefinition = func(id int) extensions.Definition {
 		return eventDefinition
 	}
 
@@ -211,7 +211,7 @@ func TestDeriveMultipleEvents(t *testing.T) {
 	defer func() {
 		getEventDefinition = savedEventDefFunc
 	}()
-	getEventDefinition = func(ext string, id int) extensions.Definition {
+	getEventDefinition = func(id int) extensions.Definition {
 		return eventDefinition
 	}
 

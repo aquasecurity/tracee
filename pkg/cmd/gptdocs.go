@@ -108,12 +108,12 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 
 	var evt extensions.Definition
 
-	eventDefinitions := extensions.Definitions.GetDefinitions("core")
+	eventDefinitions := extensions.Definitions.GetAllFromAllExts()
 
 	// Check if the given events exist
 
 	for _, given := range r.GivenEvents {
-		_, ok := extensions.Definitions.GetDefinitionIDByName("core", given)
+		_, ok := extensions.Definitions.GetIDByNameFromAny(given)
 		if !ok {
 			logger.Errorw("Event definition not found", "event", given)
 		}

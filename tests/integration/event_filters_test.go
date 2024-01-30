@@ -2003,7 +2003,7 @@ func isInSets(syscallName string, sets []string) bool {
 func getAllSyscallsInSet(set string) []string {
 	var syscallsInSet []string
 
-	for _, eventDefinition := range extensions.Definitions.GetDefinitions("core") {
+	for _, eventDefinition := range extensions.Definitions.GetAllFromAllExts() {
 		for _, c := range eventDefinition.GetSets() {
 			if c == set {
 				syscallsInSet = append(syscallsInSet, eventDefinition.GetName())

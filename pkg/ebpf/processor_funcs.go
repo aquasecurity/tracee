@@ -217,10 +217,10 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 func (t *Tracee) processDoInitModule(event *trace.Event) error {
 	// Check if related events are being traced.
 
-	_, okSyscalls := extensions.States.GetOk("core", int(extensions.HookedSyscall))
-	_, okSeqOps := extensions.States.GetOk("core", int(extensions.HookedSeqOps))
-	_, okProcFops := extensions.States.GetOk("core", int(extensions.HookedProcFops))
-	_, okMemDump := extensions.States.GetOk("core", int(extensions.PrintMemDump))
+	_, okSyscalls := extensions.States.GetFromAnyOk(int(extensions.HookedSyscall))
+	_, okSeqOps := extensions.States.GetFromAnyOk(int(extensions.HookedSeqOps))
+	_, okProcFops := extensions.States.GetFromAnyOk(int(extensions.HookedProcFops))
+	_, okMemDump := extensions.States.GetFromAnyOk(int(extensions.PrintMemDump))
 
 	if !okSyscalls && !okSeqOps && !okProcFops && !okMemDump {
 		return nil

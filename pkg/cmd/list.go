@@ -21,7 +21,7 @@ func PrintEventList(includeSigs bool, wideOutput bool) {
 		return strings.Join(strSlice, ", ")
 	}
 
-	allDefinitions := extensions.Definitions.GetDefinitions("core")
+	allDefinitions := extensions.Definitions.GetAllFromAllExts()
 
 	// Use tablewriter to print events in a table
 	newTable := func() *tablewriter.Table {

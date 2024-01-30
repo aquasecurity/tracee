@@ -378,13 +378,13 @@ func (ps *Policies) createNewEventsMapVersion(
 	ps.bpfInnerMaps[innerMapName] = newInnerMap
 
 	// Loop over all events being traced and update the new events map version.
-	for _, id := range extensions.States.GetEventIDs("core") {
+	for _, id := range extensions.States.GetAllEventIDs() {
 		var evtStateSubmit, paramTypes uint64
 		eventConfigVal := make([]byte, 16)
 
 		evtIDU32 := uint32(id)
 		evtID := int(id)
-		evtState := extensions.States.Get("core", id)
+		evtState := extensions.States.GetFromAny(id)
 		evtStateSubmit = evtState.GetSubmitCopy()
 
 		params := eventsParams[evtID]

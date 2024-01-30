@@ -45,7 +45,7 @@ func UpdateKallsyms() error {
 
 	// Wrap long method names.
 	evtDefSymDeps := func(id int) []KSymDep {
-		return Definitions.GetDefinitionByID("core", id).GetDependencies().GetKSymbols()
+		return Definitions.GetByIDFromAny(id).GetDependencies().GetKSymbols()
 	}
 
 	// Get the symbols all events being traced require (t.eventsState already
@@ -124,7 +124,7 @@ func ValidateKsymsDepsAndCancelUnavailableStates() {
 	for eventIDToCancel, missingDepSyms := range GetUnavailableSymbolPerEventID() {
 		// Cancel the event.
 
-		eventNameToCancel := Definitions.GetDefinitionByID("core", eventIDToCancel).GetName()
+		eventNameToCancel := Definitions.GetByIDFromAny(eventIDToCancel).GetName()
 		logger.Debugw(
 			"Event canceled because of missing kernel symbol dependency",
 			"missing symbols", missingDepSyms, "event", eventNameToCancel,
@@ -137,7 +137,7 @@ func ValidateKsymsDepsAndCancelUnavailableStates() {
 
 		for _, id := range States.GetEventIDs("core") {
 			evtID := int(id)
-			depsIDs := Definitions.GetDefinitionByID("core", evtID).GetDependencies().GetIDs()
+			depsIDs := Definitions.GetByIDFromAny(evtID).GetDependencies().GetIDs()
 			for _, depID := range depsIDs {
 				if depID == eventIDToCancel {
 					depsToCancel[evtID] = eventNameToCancel
@@ -147,7 +147,7 @@ func ValidateKsymsDepsAndCancelUnavailableStates() {
 		for eventID, depEventName := range depsToCancel {
 			logger.Debugw(
 				"Event canceled because it depends on an previously canceled event",
-				"event", Definitions.GetDefinitionByID("core", eventID).GetName(),
+				"event", Definitions.GetByIDFromAny(eventID).GetName(),
 				"dependency", depEventName,
 			)
 			States.Delete("core", int(eventID))
@@ -161,7 +161,7 @@ func GetUnavailableSymbolPerEventID() map[int][]string {
 	unSymbols := map[int][]string{}
 
 	evtDefSymDeps := func(id int) []KSymDep {
-		return Definitions.GetDefinitionByID("core", id).GetDependencies().GetKSymbols()
+		return Definitions.GetByIDFromAny(id).GetDependencies().GetKSymbols()
 	}
 
 	// For all events being traced and for each symbol dependency of the event ...

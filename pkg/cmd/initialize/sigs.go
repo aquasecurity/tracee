@@ -36,7 +36,7 @@ func CreateEventsFromSignatures(startId int, sigs []detect.Signature) map[string
 				// As such, actual event dependencies should only be sourced from "tracee" selectors.
 				continue
 			}
-			eventDefID, found := extensions.Definitions.GetDefinitionIDByName("core", s.Name)
+			eventDefID, found := extensions.Definitions.GetIDByNameFromAny(s.Name)
 			if !found {
 				logger.Errorw("Failed to load event dependency", "event", s.Name)
 				continue

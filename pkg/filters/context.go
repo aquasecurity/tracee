@@ -64,12 +64,12 @@ func (filter *ContextFilter) Parse(filterName string, operatorAndValues string) 
 	eventName := parts[0]
 	eventField := parts[2]
 
-	eventDefID, ok := extensions.Definitions.GetDefinitionIDByName("core", eventName)
+	id, ok := extensions.Definitions.GetIDByNameFromAny(eventName)
 	if !ok {
 		return InvalidEventName(eventName)
 	}
 
-	eventFilter := filter.filters[eventDefID]
+	eventFilter := filter.filters[id]
 	if eventFilter == nil {
 		eventFilter = &eventCtxFilter{
 			enabled:                    filter.enabled,
@@ -98,7 +98,7 @@ func (filter *ContextFilter) Parse(filterName string, operatorAndValues string) 
 			podSandboxFilter:           NewBoolFilter(),
 			syscallFilter:              NewStringFilter(),
 		}
-		filter.filters[eventDefID] = eventFilter
+		filter.filters[id] = eventFilter
 	}
 
 	err := eventFilter.Parse(eventField, operatorAndValues)

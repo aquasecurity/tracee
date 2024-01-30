@@ -29,7 +29,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 
 	// Share event states (by reference)
 	t.config.EngineConfig.ShouldDispatchEvent = func(eventIdInt32 int32) bool {
-		_, ok := extensions.States.GetOk("core", int(eventIdInt32))
+		_, ok := extensions.States.GetFromAnyOk(int(eventIdInt32))
 		return ok
 	}
 
@@ -60,7 +60,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 		}
 
 		// if the event is marked as submit, we pass it to the engine
-		if extensions.States.Get("core", event.EventID).AnySubmitEnabled() {
+		if extensions.States.GetFromAny(event.EventID).AnySubmitEnabled() {
 			err := t.parseArguments(event)
 			if err != nil {
 				t.handleError(err)

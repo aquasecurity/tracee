@@ -50,7 +50,7 @@ func GetFtraceBaseEvent() *trace.Event {
 	ftraceHookBaseEvent := &trace.Event{
 		ProcessName: "tracee",
 		EventID:     int(extensions.FtraceHook),
-		EventName:   extensions.Definitions.GetDefinitionByID("core", extensions.FtraceHook).GetName(),
+		EventName:   extensions.Definitions.GetByIDFromAny(extensions.FtraceHook).GetName(),
 	}
 
 	return ftraceHookBaseEvent
@@ -63,7 +63,7 @@ func FtraceHookEvent(eventsCounter counter.Counter, out chan *trace.Event, baseE
 		return
 	}
 
-	def := extensions.Definitions.GetDefinitionByID("core", extensions.FtraceHook)
+	def := extensions.Definitions.GetByIDFromAny(extensions.FtraceHook)
 
 	for {
 		err := checkFtraceHooks(eventsCounter, out, baseEvent, &def, selfLoadedProgs)

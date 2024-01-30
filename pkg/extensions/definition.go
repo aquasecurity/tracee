@@ -31,7 +31,7 @@ func (a ByID) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByID) Less(i, j int) bool { return a[i].id < a[j].id }
 
 //
-// DefinitionsPerExtension
+// DefinitionsPerExtension (IDs are unique across extensions and synced with eBPF)
 //
 
 type DefinitionsPerExtension struct {
@@ -39,7 +39,22 @@ type DefinitionsPerExtension struct {
 	mutex       *sync.RWMutex
 }
 
-func (d *DefinitionsPerExtension) GetDefinitions(ext string) []Definition {
+// GetExtensions returns all extensions names that have definitions.
+func (d *DefinitionsPerExtension) GetExtensions() []string {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
+	keys := make([]string, 0, len(d.definitions))
+
+	for k := range d.definitions {
+		keys = append(keys, k)
+	}
+
+	return keys
+}
+
+// GetAll returns all definitions for the given extension.
+func (d *DefinitionsPerExtension) GetAll(ext string) []Definition {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
@@ -53,13 +68,45 @@ func (d *DefinitionsPerExtension) GetDefinitions(ext string) []Definition {
 	return definitions
 }
 
-func (d *DefinitionsPerExtension) GetDefinitionIDByName(ext, name string) (int, bool) {
+// GetAllFromAllExts returns all definitions from all extensions.
+func (d *DefinitionsPerExtension) GetAllFromAllExts() []Definition {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
-	return d.getDefinitionIDByName(ext, name)
+
+	definitions := make([]Definition, 0, len(d.definitions))
+
+	for _, ext := range d.definitions {
+		for _, def := range ext {
+			definitions = append(definitions, def)
+		}
+	}
+	sort.Sort(ByID(definitions))
+
+	return definitions
 }
 
-func (d *DefinitionsPerExtension) getDefinitionIDByName(ext, name string) (int, bool) {
+// GetIDs returns the event IDs for the given extension and definition name.
+func (d *DefinitionsPerExtension) GetIDByName(ext, name string) (int, bool) {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	return d.getIDByNameFromAny(ext, name)
+}
+
+// GetIDsFromAny returns the event IDs for the given definition name from any extension.
+func (d *DefinitionsPerExtension) GetIDByNameFromAny(name string) (int, bool) {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
+	for ext := range d.definitions {
+		if id, ok := d.getIDByNameFromAny(ext, name); ok {
+			return id, true
+		}
+	}
+
+	return Undefined, false
+}
+
+func (d *DefinitionsPerExtension) getIDByNameFromAny(ext, name string) (int, bool) {
 	for id, def := range d.definitions[ext] {
 		if def.GetName() == name {
 			return id, true
@@ -68,13 +115,21 @@ func (d *DefinitionsPerExtension) getDefinitionIDByName(ext, name string) (int, 
 	return Undefined, false
 }
 
-func (d *DefinitionsPerExtension) GetDefinitionByID(ext string, id int) Definition {
+// GetByID returns the definition for the given extension and event ID.
+func (d *DefinitionsPerExtension) GetByID(ext string, id int) Definition {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
-	return d.getDefinitionByID(ext, id)
+	return d.getByID(ext, id)
 }
 
-func (d *DefinitionsPerExtension) getDefinitionByID(ext string, id int) Definition {
+// GetByIDOk returns the definition for the given extension and event ID.
+func (d *DefinitionsPerExtension) GetByIDOk(ext string, id int) (Definition, bool) {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	return d.getByIDOk(ext, id)
+}
+
+func (d *DefinitionsPerExtension) getByID(ext string, id int) Definition {
 	def, ok := d.definitions[ext][id]
 	if !ok {
 		logger.Debugw("definition id not found", "id", id)
@@ -83,6 +138,29 @@ func (d *DefinitionsPerExtension) getDefinitionByID(ext string, id int) Definiti
 	return def
 }
 
+func (d *DefinitionsPerExtension) getByIDOk(ext string, id int) (Definition, bool) {
+	def, ok := d.definitions[ext][id]
+	if !ok {
+		return Definition{id: Undefined}, false
+	}
+	return def, true
+}
+
+// GetByIDFromAny returns the definition for the given event ID from any extension.
+func (d *DefinitionsPerExtension) GetByIDFromAny(id int) Definition {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
+	for ext := range d.definitions {
+		if def, ok := d.getByIDOk(ext, id); ok {
+			return def
+		}
+	}
+
+	return Definition{id: Undefined}
+}
+
+// IsDefined returns true if the given extension has the given event ID.
 func (d *DefinitionsPerExtension) IsDefined(ext string, id int) bool {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
@@ -90,18 +168,44 @@ func (d *DefinitionsPerExtension) IsDefined(ext string, id int) bool {
 	return ok
 }
 
+// IsDefinedInAny returns true if any extension has the given event ID.
+func (d *DefinitionsPerExtension) IsDefinedInAny(id int) bool {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	for _, ext := range d.definitions {
+		if _, ok := ext[id]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+// Length returns the number of definitions for the given extension.
 func (d *DefinitionsPerExtension) Length(ext string) int {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 	return len(d.definitions[ext])
 }
 
+// LengthAllExts returns the number of definitions from all extensions.
+func (d *DefinitionsPerExtension) LengthAllExts() int {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	total := 0
+	for _, ext := range d.definitions {
+		total += len(ext)
+	}
+	return total
+}
+
+// Add adds the given definition to the given extension.
 func (d *DefinitionsPerExtension) Add(ext string, id int, def Definition) error {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 	return d.add(ext, id, def)
 }
 
+// AddBatch adds the given definitions to the given extension.
 func (d *DefinitionsPerExtension) AddBatch(ext string, given map[int]Definition) error {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
@@ -124,7 +228,7 @@ func (d *DefinitionsPerExtension) add(ext string, givenId int, givenDef Definiti
 		return errfmt.Errorf("definition id already exists: %v", givenId)
 	}
 	n := givenDef.GetName()
-	if _, ok := d.getDefinitionIDByName(ext, n); ok {
+	if _, ok := d.getIDByNameFromAny(ext, n); ok {
 		return errfmt.Errorf("definition name already exists: %v", n)
 	}
 
@@ -133,6 +237,7 @@ func (d *DefinitionsPerExtension) add(ext string, givenId int, givenDef Definiti
 	return nil
 }
 
+// NamesToIDs returns a map of event names to event IDs for the given extension.
 func (d *DefinitionsPerExtension) NamesToIDs(ext string) map[string]int {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
@@ -146,10 +251,26 @@ func (d *DefinitionsPerExtension) NamesToIDs(ext string) map[string]int {
 	return namesToIds
 }
 
-func (d *DefinitionsPerExtension) IDs32ToIDs(ext string) map[int]int {
+// NamesToIDsFromAllExts returns a map of event names to event IDs from all extensions.
+func (d *DefinitionsPerExtension) NamesToIDsFromAllExts() map[string]int {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
+	namesToIds := make(map[string]int)
+
+	for ext := range d.definitions {
+		for id, def := range d.definitions[ext] {
+			namesToIds[def.GetName()] = id
+		}
+	}
+
+	return namesToIds
+}
+
+// IDs32ToIDs returns a map of 32-bit event IDs to event IDs for the given extension.
+func (d *DefinitionsPerExtension) IDs32ToIDs(ext string) map[int]int {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
 	idS32ToIDs := make(map[int]int, len(d.definitions[ext]))
 
 	for id, def := range d.definitions[ext] {
@@ -162,10 +283,47 @@ func (d *DefinitionsPerExtension) IDs32ToIDs(ext string) map[int]int {
 	return idS32ToIDs
 }
 
-func (d *DefinitionsPerExtension) GetTailCalls(ext string) []TailCall {
+// IDs32ToIDsFromAllExts returns a map of 32-bit event IDs to event IDs from all extensions.
+func (d *DefinitionsPerExtension) IDs32ToIDsFromAllExts() map[int]int {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
+	idS32ToIDs := make(map[int]int)
+
+	for ext := range d.definitions {
+		for id, def := range d.definitions[ext] {
+			id32 := def.GetID32Bit()
+			if id32 != Sys32Undefined {
+				idS32ToIDs[id32] = id
+			}
+		}
+	}
+
+	return idS32ToIDs
+}
+
+// GetTailCalls returns the tailcalls for the given extension.
+func (d *DefinitionsPerExtension) GetTailCalls(ext string) []TailCall {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	return d.getTailCalls(ext)
+}
+
+// GetTailCallsFromAllExts returns the tailcalls from all extensions.
+func (d *DefinitionsPerExtension) GetTailCallsFromAllExts() []TailCall {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
+	calls := make([]TailCall, 0, len(d.definitions))
+
+	for ext := range d.definitions {
+		calls = append(calls, d.getTailCalls(ext)...)
+	}
+
+	return calls
+}
+
+func (d *DefinitionsPerExtension) getTailCalls(ext string) []TailCall {
 	calls := make([]TailCall, 0, len(d.definitions[ext]))
 
 	for id, def := range d.definitions[ext] {

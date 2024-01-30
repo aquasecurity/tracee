@@ -121,25 +121,47 @@ func (t *Tracee) Engine() *engine.Engine {
 }
 
 // handleEventsDependencies handles all events dependencies recursively.
-func (t *Tracee) handleEventsDependencies(givenEvtId int) {
-	giventEvtDef := extensions.Definitions.GetDefinitionByID("core", givenEvtId)
-	givenEvtDeps := giventEvtDef.GetDependencies().GetIDs()
-	givenEvtState := extensions.States.GetOrCreate("core", int(givenEvtId))
+func (t *Tracee) handleEventsDependencies(ext string, givenID int) {
+	givenState := extensions.States.GetOrCreate(ext, givenID)
+	givenDef := extensions.Definitions.GetByID(ext, givenID)
 
-	for _, depEvtID := range givenEvtDeps {
-		depEvtState := extensions.States.GetOrCreate("core", int(depEvtID))
+	// Iterate over all dependencies of a given event.
+	for _, depID := range givenDef.GetDependencies().GetIDs() {
+		// Get or create the state of the dependency event (within same extension).
+		depEvtState := extensions.States.GetOrCreate(ext, depID)
 
 		// Submit all dependencies of a given event.
-		depEvtState.OrSubmitFrom(givenEvtState)
+		depEvtState.OrSubmitFrom(givenState)
 
-		// Mark all signature event dependencies as signature events.
-		if extensions.Definitions.GetDefinitionByID("core", givenEvtId).IsSignature() {
-			t.eventSignatures[depEvtID] = true
+		// Signature events should be marked as such.
+		if extensions.Definitions.GetByID(ext, givenID).IsSignature() {
+			t.eventSignatures[depID] = true
 		}
 
 		// Handle dependencies recursively.
-		t.handleEventsDependencies(depEvtID)
+		t.handleEventsDependencies(ext, depID)
 	}
+}
+
+func (t *Tracee) handleEventsCapabilities(ext string, givenID int) error {
+	var err error
+	caps := capabilities.GetInstance()
+
+	for _, id := range extensions.States.GetEventIDs(ext) {
+		def := extensions.Definitions.GetByIDFromAny(id)
+		capsDep := def.GetDependencies().GetCapabilities()
+
+		err = caps.BaseRingAdd(capsDep.GetBase()...)
+		if err != nil {
+			return err
+		}
+		err = caps.BaseRingAdd(capsDep.GetEBPF()...)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // New creates a new Tracee instance based on a given valid Config. It is expected that it won't
@@ -171,7 +193,6 @@ func New(cfg config.Config) (*Tracee, error) {
 	if err != nil {
 		return t, errfmt.WrapError(err)
 	}
-	caps := capabilities.GetInstance()
 
 	// Initialize events state with mandatory events
 
@@ -235,36 +256,40 @@ func New(cfg config.Config) (*Tracee, error) {
 	// Events chosen by the user
 
 	for pol := range t.config.Policies.Map() {
-		for evtID := range pol.EventsToTrace {
-			state := extensions.States.GetOrCreate("core", int(evtID))
-			state.SetEmitForPolicy(pol.ID)
-			state.SetSubmitForPolicy(pol.ID)
-			policyManager.EnableRule(pol.ID, evtID)
+		for id := range pol.EventsToTrace {
+			found := false
+			for _, ext := range extensions.Definitions.GetExtensions() {
+				// Walk all extensions and find the event ID requested by the user.
+				if extensions.Definitions.IsDefined(ext, id) {
+					state := extensions.States.GetOrCreate(ext, id)
+					state.SetEmitForPolicy(pol.ID)
+					state.SetSubmitForPolicy(pol.ID)
+					policyManager.EnableRule(pol.ID, id)
+					found = true
+				}
+			}
+			if !found {
+				return t, errfmt.Errorf("event %d is not defined in any extension", id)
+			}
 		}
 	}
 
-	// Handle all essential events dependencies
+	// Handle all essential events dependencies (no cross extension dependencies).
 
-	for _, evtID := range extensions.States.GetEventIDs("core") {
-		t.handleEventsDependencies(int(evtID))
+	for _, ext := range extensions.Definitions.GetExtensions() {
+		for _, id := range extensions.States.GetEventIDs(ext) {
+			t.handleEventsDependencies(ext, id)
+		}
 	}
 
-	// Update capabilities rings with all events dependencies
+	// Update capabilities rings with all events dependencies from all extensions.
 
-	for _, id := range extensions.States.GetEventIDs("core") {
-		evtID := int(id)
-		if !extensions.Definitions.IsDefined("core", evtID) {
-			return t, errfmt.Errorf("event %d is not defined", evtID)
-		}
-		def := extensions.Definitions.GetDefinitionByID("core", evtID)
-		capsDep := def.GetDependencies().GetCapabilities()
-		err = caps.BaseRingAdd(capsDep.GetBase()...)
-		if err != nil {
-			return t, errfmt.WrapError(err)
-		}
-		err = caps.BaseRingAdd(capsDep.GetEBPF()...)
-		if err != nil {
-			return t, errfmt.WrapError(err)
+	for _, ext := range extensions.Definitions.GetExtensions() {
+		for _, id := range extensions.States.GetEventIDs(ext) {
+			err = t.handleEventsCapabilities(ext, id)
+			if err != nil {
+				return t, errfmt.WrapError(err)
+			}
 		}
 	}
 
@@ -274,7 +299,7 @@ func New(cfg config.Config) (*Tracee, error) {
 	if err != nil {
 		return t, errfmt.WrapError(err)
 	}
-	err = caps.BaseRingAdd(capsToAdd...)
+	err = capabilities.GetInstance().BaseRingAdd(capsToAdd...)
 	if err != nil {
 		return t, errfmt.WrapError(err)
 	}
@@ -283,7 +308,7 @@ func New(cfg config.Config) (*Tracee, error) {
 	if err != nil {
 		return t, errfmt.WrapError(err)
 	}
-	err = caps.BaseRingRemove(capsToDrop...)
+	err = capabilities.GetInstance().BaseRingRemove(capsToDrop...)
 	if err != nil {
 		return t, errfmt.WrapError(err)
 	}
@@ -390,7 +415,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// Initialize events parameter types map
 
 	t.eventsParamTypes = make(map[int][]bufferdecoder.ArgType)
-	for _, definition := range extensions.Definitions.GetDefinitions("core") {
+	for _, definition := range extensions.Definitions.GetAllFromAllExts() {
 		id := definition.GetID()
 		params := definition.GetParams()
 		for _, param := range params {
@@ -487,7 +512,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 func (t *Tracee) initDerivationTable() error {
 	shouldSubmit := func(id int) func() bool {
 		return func() bool {
-			state, ok := extensions.States.GetOk("core", int(id))
+			state, ok := extensions.States.GetFromAnyOk(int(id))
 			if !ok {
 				return false
 			}
@@ -725,9 +750,9 @@ func (t *Tracee) populateBPFMaps() error {
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-	for _, eventDefinition := range extensions.Definitions.GetDefinitions("core") {
-		id32BitU32 := uint32(eventDefinition.GetID32Bit()) // ID32Bit is int32
-		idU32 := uint32(eventDefinition.GetID())           // ID is int32
+	for _, definition := range extensions.Definitions.GetAllFromAllExts() {
+		id32BitU32 := uint32(definition.GetID32Bit()) // ID32Bit is int32
+		idU32 := uint32(definition.GetID())           // ID is int32
 		err := sys32to64BPFMap.Update(unsafe.Pointer(&id32BitU32), unsafe.Pointer(&idU32))
 		if err != nil {
 			return errfmt.WrapError(err)
@@ -841,7 +866,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Initialize tail call dependencies
-	tailCalls := extensions.Definitions.GetTailCalls("core")
+	tailCalls := extensions.Definitions.GetTailCallsFromAllExts()
 	for _, tailCall := range tailCalls {
 		err := tailCall.Init()
 		if err != nil {
@@ -879,57 +904,50 @@ func (t *Tracee) attachProbes() error {
 	var err error
 
 	// Cancel event and its dependencies recursively.
-	var cancelEventFromEventStateRecursively func(evtID int)
+	var cancelEventFromEventStateRecursively func(ext string, id int)
 
-	cancelEventFromEventStateRecursively = func(evtID int) {
-		extensions.States.Delete("core", int(evtID))
-		evtDef := extensions.Definitions.GetDefinitionByID("core", evtID)
-		for _, evtDeps := range evtDef.GetDependencies().GetIDs() {
-			cancelEventFromEventStateRecursively(evtDeps)
+	cancelEventFromEventStateRecursively = func(ext string, id int) {
+		extensions.States.Delete(ext, id)
+		def := extensions.Definitions.GetByIDFromAny(id)
+		for _, deps := range def.GetDependencies().GetIDs() {
+			cancelEventFromEventStateRecursively(ext, deps)
 		}
 	}
 
 	// Get probe dependencies for a given event ID
-	getProbeDeps := func(id int) []extensions.ProbeDep {
-		def := extensions.Definitions.GetDefinitionByID("core", id)
+	getProbeDeps := func(ext string, id int) []extensions.ProbeDep {
+		def := extensions.Definitions.GetByID(ext, id)
 		return def.GetDependencies().GetProbes()
 	}
 
-	// Get the list of probes to attach for each event being traced.
-	probesToEvents := make(map[extensions.ProbeDep][]int)
-	for _, id := range extensions.States.GetEventIDs("core") {
-		evtID := int(id)
-		if !extensions.Definitions.IsDefined("core", evtID) {
-			continue
-		}
-		for _, probeDep := range getProbeDeps(evtID) {
-			probesToEvents[probeDep] = append(probesToEvents[probeDep], evtID)
-		}
-	}
+	for _, ext := range extensions.Definitions.GetExtensions() {
+		// Create a list of needed probes per extension.
+		probesToEvents := make(map[extensions.ProbeDep][]int)
 
-	// Attach probes to their eBPF programs.
-	for probeDependency, evtID := range probesToEvents {
-		pr, ok := extensions.Probes.GetOk("core", probeDependency.GetHandle())
-		if !ok {
-			return errfmt.Errorf("probe %v is not defined", probeDependency.GetHandle())
+		for _, id := range extensions.States.GetEventIDs(ext) {
+			if !extensions.Definitions.IsDefined(ext, id) {
+				continue
+			}
+			for _, probeDep := range getProbeDeps(ext, id) {
+				if !extensions.Probes.IsDefined(ext, probeDep.GetHandle()) {
+					return errfmt.Errorf("probe %v is not defined", probeDep.GetHandle())
+				}
+				probesToEvents[probeDep] = append(probesToEvents[probeDep], id)
+			}
 		}
-		err = pr.Attach(cgroup.CGroups)
-		if err != nil {
-			for _, evtID := range evtID {
-				evtName := extensions.Definitions.GetDefinitionByID("core", evtID).GetName()
-				if probeDependency.IsRequired() {
-					logger.Errorw(
-						"Cancelling event and its dependencies because of missing probe",
-						"missing probe", probeDependency.GetHandle(), "event", evtName,
-					)
-					// Cancel events if a required probe is missing.
-					cancelEventFromEventStateRecursively(evtID)
-				} else {
-					logger.Debugw(
-						"Failed to attach non-required probe for event",
-						"event", evtName, "probe", probeDependency.GetHandle(),
-						"error", err,
-					)
+
+		// Use created list to attach probes.
+		for probeDep, id := range probesToEvents {
+			err = extensions.Probes.Get(ext, probeDep.GetHandle()).Attach(cgroup.CGroups)
+			if err != nil {
+				for _, evtID := range id {
+					evtName := extensions.Definitions.GetByID(ext, evtID).GetName()
+					if probeDep.IsRequired() {
+						logger.Errorw("Cancelling event and its dependencies because of missing probe", "missing probe", probeDep.GetHandle(), "event", evtName)
+						cancelEventFromEventStateRecursively(ext, evtID)
+					} else {
+						logger.Debugw("Failed to attach non-required probe for event", "event", evtName, "probe", probeDep.GetHandle(), "error", err)
+					}
 				}
 			}
 		}
@@ -1196,14 +1214,19 @@ func (t *Tracee) Close() {
 			logger.Errorw("failed to stop control plane when closing tracee", "err", err)
 		}
 	}
-	// Close all probes..
+	// Walk all extensions and detach all probes.
 	if t.probes != nil {
-		err := extensions.Probes.DetachAll("core")
-		if err != nil {
-			logger.Errorw("failed to detach probes when closing tracee", "err", err)
+		for _, ext := range extensions.Definitions.GetExtensions() {
+			err := extensions.Probes.DetachAll(ext)
+			if err != nil {
+				logger.Errorw("failed to detach probes from extension", "ext", ext, "err", err)
+			}
 		}
 	}
-	// Close all modules for the core extension.
+	// TODO: Close all modules for all extensions (for now only core extension has a module)
+	// for _, ext := range extensions.Definitions.GetExtensions() {
+	// 	extensions.Modules.Get(ext).Close()
+	// }
 	extensions.Modules.Get("core").Close()
 	// Close container module.
 	if t.containers != nil {
@@ -1247,41 +1270,45 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 		logger.Debugw("self loaded program", "event", event, "program", program)
 	}
 
-	for _, id := range extensions.States.GetEventIDs("core") {
-		evtID := int(id)
-		if !extensions.Definitions.IsDefined("core", evtID) {
-			continue
-		}
-
-		definition := extensions.Definitions.GetDefinitionByID("core", evtID)
-
-		for _, depProbes := range definition.GetDependencies().GetProbes() {
-			currProbe, ok := extensions.Probes.GetOk("core", depProbes.GetHandle())
+	for _, extension := range extensions.Definitions.GetExtensions() {
+		// For each registered extension...
+		for _, id := range extensions.States.GetEventIDs(extension) {
+			// For each event ID that is being traced...
+			evtID := int(id)
+			definition, ok := extensions.Definitions.GetByIDOk(extension, evtID)
 			if !ok {
+				logger.Debugw("event id in states map but not in definitions map", "event id", evtID)
 				continue
 			}
-			name := ""
-			switch p := currProbe.(type) {
-			case *extensions.TraceProbe:
-				// Only k[ret]probes may use ftrace
-				if kprobesOnly {
-					switch p.GetProbeType() {
-					case extensions.KProbe, extensions.KretProbe:
-					default:
-						continue
-					}
+			// For each probe dependency of the event...
+			for _, depProbes := range definition.GetDependencies().GetProbes() {
+				currProbe, ok := extensions.Probes.GetOk(extension, depProbes.GetHandle())
+				if !ok {
+					continue
 				}
-				log(definition.GetName(), p.GetProgramName())
-				name = p.GetEventName()
-			case *extensions.Uprobe:
-				log(definition.GetName(), p.GetProgramName())
-				continue
-			case *extensions.CgroupProbe:
-				log(definition.GetName(), p.GetProgramName())
-				continue
-			}
+				name := ""
+				switch p := currProbe.(type) {
+				case *extensions.TraceProbe:
+					// Only k[ret]probes may use ftrace
+					if kprobesOnly {
+						switch p.GetProbeType() {
+						case extensions.KProbe, extensions.KretProbe:
+						default:
+							continue
+						}
+					}
+					log(definition.GetName(), p.GetProgramName())
+					name = p.GetEventName()
+				case *extensions.Uprobe:
+					log(definition.GetName(), p.GetProgramName())
+					continue
+				case *extensions.CgroupProbe:
+					log(definition.GetName(), p.GetProgramName())
+					continue
+				}
 
-			selfLoadedPrograms[name]++
+				selfLoadedPrograms[name]++
+			}
 		}
 	}
 
@@ -1303,7 +1330,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 
 	// Initial namespace events
 
-	state, ok := extensions.States.GetOk("core", int(extensions.InitNamespaces))
+	state, ok := extensions.States.GetFromAnyOk(int(extensions.InitNamespaces))
 	if ok && state.AnyEmitEnabled() {
 		systemInfoEvent := events.InitNamespacesEvent()
 		setMatchedPolicies(&systemInfoEvent, emit, t.config.Policies)
@@ -1313,7 +1340,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 
 	// Initial existing containers events (1 event per container)
 
-	state, ok = extensions.States.GetOk("core", int(extensions.ExistingContainer))
+	state, ok = extensions.States.GetFromAnyOk(int(extensions.ExistingContainer))
 	if ok && state.AnyEmitEnabled() {
 		for _, e := range events.ExistingContainersEvents(t.containers, t.config.NoContainersEnrich) {
 			setMatchedPolicies(&e, emit, t.config.Policies)
@@ -1324,7 +1351,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 
 	// Ftrace hook event
 
-	state, ok = extensions.States.GetOk("core", int(extensions.FtraceHook))
+	state, ok = extensions.States.GetFromAnyOk(int(extensions.FtraceHook))
 	if ok && state.AnyEmitEnabled() {
 		ftraceBaseEvent := events.GetFtraceBaseEvent()
 		setMatchedPolicies(ftraceBaseEvent, emit, t.config.Policies)
@@ -1344,7 +1371,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 
 // netEnabled returns true if any base network event is to be traced
 func (t *Tracee) netEnabled() bool {
-	for _, id := range extensions.States.GetEventIDs("core") {
+	for _, id := range extensions.States.GetAllEventIDs() {
 		evtID := int(id)
 		if evtID >= extensions.NetPacketBase && evtID <= extensions.MaxNetID {
 			return true
@@ -1401,7 +1428,7 @@ func (t *Tracee) Unsubscribe(s *streams.Stream) {
 }
 
 func (t *Tracee) EnableEvent(eventName string) error {
-	id, found := extensions.Definitions.GetDefinitionIDByName("core", eventName)
+	id, found := extensions.Definitions.GetIDByNameFromAny(eventName)
 	if !found {
 		return errfmt.Errorf("error event not found: %s", eventName)
 	}
@@ -1412,7 +1439,7 @@ func (t *Tracee) EnableEvent(eventName string) error {
 }
 
 func (t *Tracee) DisableEvent(eventName string) error {
-	id, found := extensions.Definitions.GetDefinitionIDByName("core", eventName)
+	id, found := extensions.Definitions.GetIDByNameFromAny(eventName)
 	if !found {
 		return errfmt.Errorf("error event not found: %s", eventName)
 	}
@@ -1424,7 +1451,7 @@ func (t *Tracee) DisableEvent(eventName string) error {
 
 // EnableRule enables a rule in the specified policies
 func (t *Tracee) EnableRule(policyNames []string, ruleId string) error {
-	eventID, found := extensions.Definitions.GetDefinitionIDByName("core", ruleId)
+	eventID, found := extensions.Definitions.GetIDByNameFromAny(ruleId)
 	if !found {
 		return errfmt.Errorf("error rule not found: %s", ruleId)
 	}
@@ -1443,7 +1470,7 @@ func (t *Tracee) EnableRule(policyNames []string, ruleId string) error {
 
 // DisableRule disables a rule in the specified policies
 func (t *Tracee) DisableRule(policyNames []string, ruleId string) error {
-	eventID, found := extensions.Definitions.GetDefinitionIDByName("core", ruleId)
+	eventID, found := extensions.Definitions.GetIDByNameFromAny(ruleId)
 	if !found {
 		return errfmt.Errorf("error rule not found: %s", ruleId)
 	}

@@ -20,7 +20,7 @@ import (
 // triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program that prints
 // the seq ops pointers.
 func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
-	_, ok := extensions.States.GetOk("core", extensions.HookedSeqOps)
+	_, ok := extensions.States.GetFromAnyOk(extensions.HookedSeqOps)
 	if !ok {
 		return
 	}
@@ -43,7 +43,7 @@ func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
 // triggerMemDump is used by a Uprobe to trigger an eBPF program that prints the first
 // bytes of requested symbols or addresses.
 func (t *Tracee) triggerMemDump(event trace.Event) []error {
-	_, ok := extensions.States.GetOk("core", extensions.PrintMemDump)
+	_, ok := extensions.States.GetFromAnyOk(extensions.PrintMemDump)
 	if !ok {
 		return nil
 	}

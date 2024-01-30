@@ -12,6 +12,9 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
+// TODO: All global instances can be put in a "extension" global instance instead of using
+// internal maps and keeping the instance name by themselves.
+
 // Global
 var KSymbols *helpers.KernelSymbolTable // global kernel symbol table
 
@@ -55,7 +58,7 @@ func init() {
 	}
 	Modules = &ModulesPerExtension{
 		modules: map[string]*bpf.Module{},
-		mutex:   &sync.Mutex{},
+		mutex:   &sync.RWMutex{},
 	}
 }
 
@@ -64,5 +67,6 @@ func init() {
 func init() {
 	// Core Extension
 	initCore()
-	//  Add more extension initializations here...
+	// Network Packet Extension (uses ingress/egress logic)
+	initNetPacket()
 }

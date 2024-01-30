@@ -102,15 +102,15 @@ func (s *TraceeService) GetVersion(ctx context.Context, in *pb.GetVersionRequest
 
 func getDefinitions(in *pb.GetEventDefinitionRequest) ([]extensions.Definition, error) {
 	if in.Name == "" {
-		return extensions.Definitions.GetDefinitions("core"), nil
+		return extensions.Definitions.GetAllFromAllExts(), nil
 	}
 
-	id, ok := extensions.Definitions.GetDefinitionIDByName("core", in.Name)
+	id, ok := extensions.Definitions.GetIDByNameFromAny(in.Name)
 	if !ok {
 		return nil, fmt.Errorf("event %s not found", in.Name)
 	}
 
-	return []extensions.Definition{extensions.Definitions.GetDefinitionByID("core", id)}, nil
+	return []extensions.Definition{extensions.Definitions.GetByIDFromAny(id)}, nil
 }
 
 func convertDefinitionToProto(d extensions.Definition) *pb.EventDefinition {

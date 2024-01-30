@@ -15,7 +15,7 @@ import (
 )
 
 //
-// Probes
+// Probes (IDs aren't unique across extensions)
 //
 
 type ProbesPerExtension struct {
@@ -32,6 +32,18 @@ func (p *ProbesPerExtension) Get(ext string, id int) Probe {
 	return p.probes[ext][id]
 }
 
+func (p *ProbesPerExtension) GetAll() []Probe {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+	var probes []Probe
+	for _, extProbes := range p.probes {
+		for _, probe := range extProbes {
+			probes = append(probes, probe)
+		}
+	}
+	return probes
+}
+
 func (p *ProbesPerExtension) GetOk(ext string, id int) (Probe, bool) {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -40,6 +52,16 @@ func (p *ProbesPerExtension) GetOk(ext string, id int) (Probe, bool) {
 	}
 	probe, ok := p.probes[ext][id]
 	return probe, ok
+}
+
+func (p *ProbesPerExtension) IsDefined(ext string, id int) bool {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+	if _, ok := p.probes[ext]; !ok {
+		return false
+	}
+	_, ok := p.probes[ext][id]
+	return ok
 }
 
 func (p *ProbesPerExtension) Add(ext string, id int, probe Probe) {

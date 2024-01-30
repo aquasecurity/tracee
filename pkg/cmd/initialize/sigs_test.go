@@ -162,9 +162,9 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 			CreateEventsFromSignatures(test.startId, test.signatures)
 
 			for _, expected := range test.expected {
-				eventDefID, ok := extensions.Definitions.GetDefinitionIDByName("core", expected.GetName())
+				eventDefID, ok := extensions.Definitions.GetIDByNameFromAny(expected.GetName())
 				assert.True(t, ok)
-				eventDefinition := extensions.Definitions.GetDefinitionByID("core", eventDefID)
+				eventDefinition := extensions.Definitions.GetByIDFromAny(eventDefID)
 
 				assert.Equal(t, expected.GetID(), eventDefinition.GetID())
 				assert.Equal(t, expected.GetID32Bit(), eventDefinition.GetID32Bit())

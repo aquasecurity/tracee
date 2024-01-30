@@ -91,10 +91,10 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 		return InvalidEventName(eventName)
 	}
 
-	if !extensions.Definitions.IsDefined("core", id) {
+	if !extensions.Definitions.IsDefinedInAny(id) {
 		return InvalidEventName(eventName)
 	}
-	eventDefinition := extensions.Definitions.GetDefinitionByID("core", id)
+	eventDefinition := extensions.Definitions.GetByIDFromAny(id)
 	eventParams := eventDefinition.GetParams()
 
 	// check if argument name exists for this event

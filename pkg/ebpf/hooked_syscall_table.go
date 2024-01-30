@@ -23,7 +23,7 @@ var expectedSyscallTableInit = false
 // hookedSyscallTableRoutine the main routine that checks if there's a hooked syscall in
 // the syscall table. It runs on tracee's startup and from time to time.
 func (t *Tracee) hookedSyscallTableRoutine(ctx gocontext.Context) {
-	state, ok := extensions.States.GetOk("core", int(extensions.HookedSyscall))
+	state, ok := extensions.States.GetFromAnyOk(int(extensions.HookedSyscall))
 	if !ok {
 		return
 	}

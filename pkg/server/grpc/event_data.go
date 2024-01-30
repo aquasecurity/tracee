@@ -59,7 +59,7 @@ func getEventData(e trace.Event) ([]*pb.EventValue, error) {
 		data = append(data, eventValue)
 	}
 
-	if extensions.Definitions.GetDefinitionByID("core", e.EventID).IsSyscall() {
+	if extensions.Definitions.GetByIDFromAny(e.EventID).IsSyscall() {
 		data = append(data, &pb.EventValue{
 			Name: "returnValue",
 			Value: &pb.EventValue_Int64{
@@ -461,7 +461,7 @@ func getTriggerBy(triggeredByArg trace.Argument) (*pb.TriggeredBy, error) {
 		data = append(data, eventValue)
 	}
 
-	if extensions.Definitions.GetDefinitionByID("core", id).IsSyscall() {
+	if extensions.Definitions.GetByIDFromAny(id).IsSyscall() {
 		data = append(data, &pb.EventValue{
 			Name: "returnValue",
 			Value: &pb.EventValue_Int64{

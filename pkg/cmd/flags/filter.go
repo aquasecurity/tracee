@@ -104,7 +104,7 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]int
 	isExcluded := make(map[int]bool)
 
 	// build a map: k:set, v:eventID
-	for _, eventDefinition := range extensions.Definitions.GetDefinitions("core") {
+	for _, eventDefinition := range extensions.Definitions.GetAllFromAllExts() {
 		for _, set := range eventDefinition.GetSets() {
 			setsToEvents[set] = append(setsToEvents[set], eventDefinition.GetID())
 		}
@@ -139,7 +139,7 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]int
 	}
 
 	// build a map: k:eventID, v:eventName with all events to trace
-	idToName = make(map[int]string, extensions.Definitions.Length("core"))
+	idToName = make(map[int]string, extensions.Definitions.LengthAllExts())
 	for _, name := range eventsToTrace {
 		if strings.HasSuffix(name, "*") { // handle event prefixes with wildcards
 			found := false
@@ -172,7 +172,7 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]int
 		setEvents := setsToEvents[set]
 		for _, id := range setEvents {
 			if !isExcluded[id] {
-				idToName[id] = extensions.Definitions.GetDefinitionByID("core", id).GetName()
+				idToName[id] = extensions.Definitions.GetByIDFromAny(id).GetName()
 			}
 		}
 	}
