@@ -1,4 +1,4 @@
-package global
+package extensions
 
 import (
 	"strings"
@@ -8,8 +8,6 @@ import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
@@ -40,14 +38,14 @@ func UpdateKallsyms() error {
 	defer updateKallsymsLock.Unlock()
 
 	// Find the eBPF map.
-	bpfKsymsMap, err := extensions.Modules.Get("core").GetMap("ksymbols_map")
+	bpfKsymsMap, err := Modules.Get("core").GetMap("ksymbols_map")
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
 	// Wrap long method names.
-	evtDefSymDeps := func(id events.ID) []events.KSymbol {
-		return events.Core.GetDefinitionByID(id).GetDependencies().GetKSymbols()
+	evtDefSymDeps := func(id int) []KSymDep {
+		return Definitions.GetDefinitionByID("core", id).GetDependencies().GetKSymbols()
 	}
 
 	// Get the symbols all events being traced require (t.eventsState already
@@ -55,8 +53,8 @@ func UpdateKallsyms() error {
 
 	var allReqSymbols []string
 
-	for _, id := range extensions.States.GetEventIDs("core") {
-		evtID := events.ID(id)
+	for _, id := range States.GetEventIDs("core") {
+		evtID := int(id)
 		for _, symDep := range evtDefSymDeps(evtID) {
 			allReqSymbols = append(allReqSymbols, symDep.GetSymbolName())
 		}
@@ -126,20 +124,20 @@ func ValidateKsymsDepsAndCancelUnavailableStates() {
 	for eventIDToCancel, missingDepSyms := range GetUnavailableSymbolPerEventID() {
 		// Cancel the event.
 
-		eventNameToCancel := events.Core.GetDefinitionByID(eventIDToCancel).GetName()
+		eventNameToCancel := Definitions.GetDefinitionByID("core", eventIDToCancel).GetName()
 		logger.Debugw(
 			"Event canceled because of missing kernel symbol dependency",
 			"missing symbols", missingDepSyms, "event", eventNameToCancel,
 		)
-		extensions.States.Delete("core", int(eventIDToCancel))
+		States.Delete("core", int(eventIDToCancel))
 
 		// Cancel its dependent events.
 
-		depsToCancel := make(map[events.ID]string)
+		depsToCancel := make(map[int]string)
 
-		for _, id := range extensions.States.GetEventIDs("core") {
-			evtID := events.ID(id)
-			depsIDs := events.Core.GetDefinitionByID(evtID).GetDependencies().GetIDs()
+		for _, id := range States.GetEventIDs("core") {
+			evtID := int(id)
+			depsIDs := Definitions.GetDefinitionByID("core", evtID).GetDependencies().GetIDs()
 			for _, depID := range depsIDs {
 				if depID == eventIDToCancel {
 					depsToCancel[evtID] = eventNameToCancel
@@ -149,26 +147,26 @@ func ValidateKsymsDepsAndCancelUnavailableStates() {
 		for eventID, depEventName := range depsToCancel {
 			logger.Debugw(
 				"Event canceled because it depends on an previously canceled event",
-				"event", events.Core.GetDefinitionByID(eventID).GetName(),
+				"event", Definitions.GetDefinitionByID("core", eventID).GetName(),
 				"dependency", depEventName,
 			)
-			extensions.States.Delete("core", int(eventID))
+			States.Delete("core", int(eventID))
 		}
 	}
 }
 
 // GetUnavailableSymbolPerEventID returns a map of event IDs to the list of kernel symbols
 // that are required by the event but are not available in the kernel symbols table.
-func GetUnavailableSymbolPerEventID() map[events.ID][]string {
-	unSymbols := map[events.ID][]string{}
+func GetUnavailableSymbolPerEventID() map[int][]string {
+	unSymbols := map[int][]string{}
 
-	evtDefSymDeps := func(id events.ID) []events.KSymbol {
-		return events.Core.GetDefinitionByID(id).GetDependencies().GetKSymbols()
+	evtDefSymDeps := func(id int) []KSymDep {
+		return Definitions.GetDefinitionByID("core", id).GetDependencies().GetKSymbols()
 	}
 
 	// For all events being traced and for each symbol dependency of the event ...
-	for _, id := range extensions.States.GetEventIDs("core") {
-		evtID := events.ID(id)
+	for _, id := range States.GetEventIDs("core") {
+		evtID := int(id)
 		for _, symDep := range evtDefSymDeps(evtID) {
 			symbols, err := KSymbols.GetSymbolByName(symDep.GetSymbolName())
 			if err != nil {

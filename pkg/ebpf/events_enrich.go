@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -87,19 +87,19 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 				if event == nil {
 					continue // might happen during initialization (ctrl+c seg faults)
 				}
-				eventID := events.ID(event.EventID)
+				eventID := int(event.EventID)
 				// send out irrelevant events (non container or already enriched), don't skip the cgroup lifecycle events
-				if (event.Container.ID == "" || event.Container.Name != "") && eventID != events.CgroupMkdir && eventID != events.CgroupRmdir {
+				if (event.Container.ID == "" || event.Container.Name != "") && eventID != extensions.CgroupMkdir && eventID != extensions.CgroupRmdir {
 					out <- event
 					continue
 				}
 				cgroupId := uint64(event.CgroupID)
 				// CgroupMkdir: pick EventID from the event itself
-				if eventID == events.CgroupMkdir {
+				if eventID == extensions.CgroupMkdir {
 					cgroupId, _ = parse.ArgVal[uint64](event.Args, "cgroup_id")
 				}
 				// CgroupRmdir: clean up remaining events and maps
-				if eventID == events.CgroupRmdir {
+				if eventID == extensions.CgroupRmdir {
 					queueClean <- event
 					continue
 				}
@@ -144,9 +144,9 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 						if event == nil {
 							continue // might happen during initialization (ctrl+c seg faults)
 						}
-						eventID := events.ID(event.EventID)
+						eventID := int(event.EventID)
 						// check if not enriched, and only enrich regular non cgroup related events
-						if event.Container.Name == "" && eventID != events.CgroupMkdir && eventID != events.CgroupRmdir {
+						if event.Container.Name == "" && eventID != extensions.CgroupMkdir && eventID != extensions.CgroupRmdir {
 							// event is not enriched: enrich if enrichment worked
 							i := enrichInfo[cgroupId]
 							if i.err == nil {

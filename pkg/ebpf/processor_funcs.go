@@ -217,10 +217,10 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 func (t *Tracee) processDoInitModule(event *trace.Event) error {
 	// Check if related events are being traced.
 
-	_, okSyscalls := extensions.States.GetOk("core", int(events.HookedSyscall))
-	_, okSeqOps := extensions.States.GetOk("core", int(events.HookedSeqOps))
-	_, okProcFops := extensions.States.GetOk("core", int(events.HookedProcFops))
-	_, okMemDump := extensions.States.GetOk("core", int(events.PrintMemDump))
+	_, okSyscalls := extensions.States.GetOk("core", int(extensions.HookedSyscall))
+	_, okSeqOps := extensions.States.GetOk("core", int(extensions.HookedSeqOps))
+	_, okProcFops := extensions.States.GetOk("core", int(extensions.HookedProcFops))
+	_, okMemDump := extensions.States.GetOk("core", int(extensions.PrintMemDump))
 
 	if !okSyscalls && !okSeqOps && !okProcFops && !okMemDump {
 		return nil
@@ -232,7 +232,7 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 			if err != nil {
 				return errfmt.WrapError(err)
 			}
-			return global.UpdateKallsyms()
+			return extensions.UpdateKallsyms()
 		},
 	)
 	if err != nil {
@@ -272,7 +272,7 @@ func (t *Tracee) processHookedProcFops(event *trace.Event) error {
 		if addr == 0 { // address is in text segment, marked as 0
 			continue
 		}
-		hookingFunction := global.ParseKSymbol(addr)
+		hookingFunction := extensions.ParseKSymbol(addr)
 		if hookingFunction.Owner == "system" {
 			continue
 		}
@@ -314,7 +314,7 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 	}
 
 	addressUint64 := uint64(address)
-	symbol := global.ParseKSymbol(addressUint64)
+	symbol := extensions.ParseKSymbol(addressUint64)
 	var utsName unix.Utsname
 	arch := ""
 	if err := unix.Uname(&utsName); err != nil {

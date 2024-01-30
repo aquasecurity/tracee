@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
 	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/filters"
@@ -21,7 +20,7 @@ import (
 // triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program that prints
 // the seq ops pointers.
 func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
-	_, ok := extensions.States.GetOk("core", int(events.HookedSeqOps))
+	_, ok := extensions.States.GetOk("core", extensions.HookedSeqOps)
 	if !ok {
 		return
 	}
@@ -44,7 +43,7 @@ func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
 // triggerMemDump is used by a Uprobe to trigger an eBPF program that prints the first
 // bytes of requested symbols or addresses.
 func (t *Tracee) triggerMemDump(event trace.Event) []error {
-	_, ok := extensions.States.GetOk("core", int(events.PrintMemDump))
+	_, ok := extensions.States.GetOk("core", extensions.PrintMemDump)
 	if !ok {
 		return nil
 	}
@@ -53,7 +52,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 
 	// TODO: consider to iterate over given policies when policies are changed
 	for p := range t.config.Policies.Map() {
-		printMemDumpFilters := p.ArgFilter.GetEventFilters(events.PrintMemDump)
+		printMemDumpFilters := p.ArgFilter.GetEventFilters(extensions.PrintMemDump)
 		if len(printMemDumpFilters) == 0 {
 			errs = append(errs, errfmt.Errorf("policy %d: no address or symbols were provided to print_mem_dump event. "+
 				"please provide it via -e print_mem_dump.args.address=<hex address>"+

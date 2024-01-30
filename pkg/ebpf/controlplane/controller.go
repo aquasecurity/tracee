@@ -8,15 +8,14 @@ import (
 	"github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 )
 
-// TODO: With the introduction of signal events, the control plane can now have a generic argument
-// parsing, just like the regular pipeline. So all arguments can be parsed before the handlers are
-// called.
+// TODO: With the introduction of signal events, the control plane can now have a generic
+// argument parsing, just like the regular pipeline. So all arguments can be parsed before
+// the handlers are called.
 
 const pollTimeout int = 300 // from tracee.go (move to a consts package?)
 
@@ -95,15 +94,15 @@ func (ctrl *Controller) Stop() error {
 // processSignal processes a signal from the control plane.
 func (ctrl *Controller) processSignal(signal signal) error {
 	switch signal.id {
-	case events.SignalCgroupMkdir:
+	case extensions.SignalCgroupMkdir:
 		return ctrl.processCgroupMkdir(signal.args)
-	case events.SignalCgroupRmdir:
+	case extensions.SignalCgroupRmdir:
 		return ctrl.processCgroupRmdir(signal.args)
-	case events.SignalSchedProcessFork:
+	case extensions.SignalSchedProcessFork:
 		return ctrl.procTreeForkProcessor(signal.args)
-	case events.SignalSchedProcessExec:
+	case extensions.SignalSchedProcessExec:
 		return ctrl.procTreeExecProcessor(signal.args)
-	case events.SignalSchedProcessExit:
+	case extensions.SignalSchedProcessExit:
 		return ctrl.procTreeExitProcessor(signal.args)
 	}
 

@@ -8,8 +8,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/dnscache"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
@@ -49,7 +49,7 @@ func (c Config) Validate() error {
 		}
 
 		for e := range p.EventsToTrace {
-			if !events.Core.IsDefined(e) {
+			if !extensions.Definitions.IsDefined("core", e) {
 				return errfmt.Errorf("invalid event [%d] to trace in policy [%d]", e, p.ID)
 			}
 		}

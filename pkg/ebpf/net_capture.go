@@ -9,6 +9,7 @@ import (
 	"github.com/google/gopacket/layers"
 
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -90,10 +91,10 @@ func (t *Tracee) processNetCapEvents(ctx context.Context, in <-chan *trace.Event
 // some refactoring to make it smaller (code reuse might not be a key for the
 // refactor).
 func (t *Tracee) processNetCapEvent(event *trace.Event) {
-	eventId := events.ID(event.EventID)
+	eventId := int(event.EventID)
 
 	switch eventId {
-	case events.NetPacketCapture:
+	case extensions.NetPacketCapture:
 		var (
 			ok            bool
 			payloadLayer3 []byte

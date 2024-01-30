@@ -1,29 +1,33 @@
-package events
+package extensions
 
 import (
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
-	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
+	bpf "github.com/aquasecurity/libbpfgo"
+
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 const (
-	// use (0xfffffff - x) as most overflows behavior is undefined
-	All            ID = 0xfffffff - 1
-	Undefined      ID = 0xfffffff - 2
-	Sys32Undefined ID = 0xfffffff - 3
-	Unsupported    ID = 10000
+	binaryPath string = "/proc/self/exe"
 )
 
-type ID int32
-
 // NOTE: Events should match defined values in ebpf code.
+// TODO: Extension should have ranges of event IDs.
+// TODO: Extensions should look like this file, but with their own events.
 
-// Common events (used by all architectures).
+func initCore() {
+	err := Definitions.AddBatch("core", CoreEvents)
+	if err != nil {
+		logger.Errorw("failed to initialize event definitions", "err", err)
+	}
+	coreProbes()
+}
+
 const (
-	NetPacketBase ID = iota + 700
+	NetPacketBase int = iota + 700
 	NetPacketIPBase
 	NetPacketTCPBase
 	NetPacketUDPBase
@@ -110,7 +114,7 @@ const (
 
 // Events originated from user-space
 const (
-	NetPacketIPv4 ID = iota + 2000
+	NetPacketIPv4 int = iota + 2000
 	NetPacketIPv6
 	NetPacketTCP
 	NetPacketUDP
@@ -142,7 +146,7 @@ const (
 
 // Capture meta-events
 const (
-	CaptureFileWrite ID = iota + 4000
+	CaptureFileWrite int = iota + 4000
 	CaptureExec
 	CaptureModule
 	CaptureMem
@@ -155,7 +159,7 @@ const (
 // Signal meta-events
 
 const (
-	SignalCgroupMkdir ID = iota + 5000
+	SignalCgroupMkdir int = iota + 5000
 	SignalCgroupRmdir
 	SignalSchedProcessFork
 	SignalSchedProcessExec
@@ -164,25 +168,234 @@ const (
 
 // Signature events
 const (
-	StartSignatureID ID = 6000
-	MaxSignatureID   ID = 6999
+	StartSignatureID int = 6000
+	MaxSignatureID   int = 6999
 )
 
-//
-// All Events
-//
+// Event Probe Handles
+const (
+	ProbeSysEnter int = iota
+	ProbeSysExit
+	ProbeSyscallEnter__Internal
+	ProbeSyscallExit__Internal
+	ProbeSchedProcessFork
+	ProbeSchedProcessExec
+	ProbeSchedProcessExit
+	ProbeSchedProcessFree
+	ProbeSchedSwitch
+	ProbeDoExit
+	ProbeCapCapable
+	ProbeVfsWrite
+	ProbeVfsWriteRet
+	ProbeVfsWriteV
+	ProbeVfsWriteVRet
+	ProbeSecurityMmapAddr
+	ProbeSecurityMmapFile
+	ProbeSecurityFileMProtect
+	ProbeCommitCreds
+	ProbeSwitchTaskNS
+	ProbeKernelWrite
+	ProbeKernelWriteRet
+	ProbeCgroupAttachTask
+	ProbeCgroupMkdir
+	ProbeCgroupRmdir
+	ProbeSecurityBPRMCheck
+	ProbeSecurityFileOpen
+	ProbeSecurityInodeUnlink
+	ProbeSecurityInodeMknod
+	ProbeSecurityInodeSymlink
+	ProbeSecuritySocketCreate
+	ProbeSecuritySocketListen
+	ProbeSecuritySocketConnect
+	ProbeSecuritySocketAccept
+	ProbeSecuritySocketBind
+	ProbeSecuritySocketSetsockopt
+	ProbeSecuritySbMount
+	ProbeSecurityBPF
+	ProbeSecurityBPFMap
+	ProbeSecurityKernelReadFile
+	ProbeSecurityKernelPostReadFile
+	ProbeDoSplice
+	ProbeDoSpliceRet
+	ProbeProcCreate
+	ProbeRegisterKprobe
+	ProbeRegisterKprobeRet
+	ProbeCallUsermodeHelper
+	ProbeDebugfsCreateFile
+	ProbeDebugfsCreateDir
+	ProbeDeviceAdd
+	ProbeRegisterChrdev
+	ProbeRegisterChrdevRet
+	ProbeDoInitModule
+	ProbeDoInitModuleRet
+	ProbeLoadElfPhdrs
+	ProbeFilldir64
+	ProbeSecurityFilePermission
+	ProbeTaskRename
+	ProbeSyscallTableCheck
+	ProbePrintNetSeqOps
+	ProbeSecurityInodeRename
+	ProbeDoSigaction
+	ProbeSecurityBpfProg
+	ProbeSecurityFileIoctl
+	ProbeCheckHelperCall
+	ProbeCheckMapFuncCompatibility
+	ProbeKallsymsLookupName
+	ProbeKallsymsLookupNameRet
+	ProbeSockAllocFile
+	ProbeSockAllocFileRet
+	ProbeSecuritySkClone
+	ProbeSecuritySocketRecvmsg
+	ProbeSecuritySocketSendmsg
+	ProbeCgroupBPFRunFilterSKB
+	ProbeCgroupSKBIngress
+	ProbeCgroupSKBEgress
+	ProbeDoMmap
+	ProbeDoMmapRet
+	ProbePrintMemDump
+	ProbeVfsRead
+	ProbeVfsReadRet
+	ProbeVfsReadV
+	ProbeVfsReadVRet
+	ProbeVfsUtimes
+	ProbeUtimesCommon
+	ProbeDoTruncate
+	ProbeFileUpdateTime
+	ProbeFileUpdateTimeRet
+	ProbeFileModified
+	ProbeFileModifiedRet
+	ProbeFdInstall
+	ProbeFilpClose
+	ProbeInotifyFindInode
+	ProbeInotifyFindInodeRet
+	ProbeBpfCheck
+	ProbeExecBinprm
+	ProbeExecBinprmRet
+	ProbeHiddenKernelModuleSeeker
+	ProbeTpProbeRegPrioMayExist
+	ProbeHiddenKernelModuleVerifier
+	ProbeModuleLoad
+	ProbeModuleFree
+	ProbeLayoutAndAllocate
+	ProbeSignalCgroupMkdir
+	ProbeSignalCgroupRmdir
+	ProbeSignalSchedProcessFork
+	ProbeSignalSchedProcessExec
+	ProbeSignalSchedProcessExit
+)
 
-var Core *Definitions
-
-func init() {
-	Core = NewDefinitions()
-	err := Core.AddBatch(CoreEvents)
-	if err != nil {
-		logger.Errorw("failed to initialize event definitions", "err", err)
-	}
+func coreProbes() {
+	Probes.Add("core", ProbeSysEnter, NewTraceProbe(RawTracepoint, "raw_syscalls:sys_enter", "trace_sys_enter"))
+	Probes.Add("core", ProbeSyscallEnter__Internal, NewTraceProbe(RawTracepoint, "raw_syscalls:sys_enter", "tracepoint__raw_syscalls__sys_enter"))
+	Probes.Add("core", ProbeSysExit, NewTraceProbe(RawTracepoint, "raw_syscalls:sys_exit", "trace_sys_exit"))
+	Probes.Add("core", ProbeSyscallExit__Internal, NewTraceProbe(RawTracepoint, "raw_syscalls:sys_exit", "tracepoint__raw_syscalls__sys_exit"))
+	Probes.Add("core", ProbeSchedProcessFork, NewTraceProbe(RawTracepoint, "sched:sched_process_fork", "tracepoint__sched__sched_process_fork"))
+	Probes.Add("core", ProbeSchedProcessExec, NewTraceProbe(RawTracepoint, "sched:sched_process_exec", "tracepoint__sched__sched_process_exec"))
+	Probes.Add("core", ProbeSchedProcessExit, NewTraceProbe(RawTracepoint, "sched:sched_process_exit", "tracepoint__sched__sched_process_exit"))
+	Probes.Add("core", ProbeSchedProcessFree, NewTraceProbe(RawTracepoint, "sched:sched_process_free", "tracepoint__sched__sched_process_free"))
+	Probes.Add("core", ProbeSchedSwitch, NewTraceProbe(RawTracepoint, "sched:sched_switch", "tracepoint__sched__sched_switch"))
+	Probes.Add("core", ProbeDoExit, NewTraceProbe(KProbe, "do_exit", "trace_do_exit"))
+	Probes.Add("core", ProbeCapCapable, NewTraceProbe(KProbe, "cap_capable", "trace_cap_capable"))
+	Probes.Add("core", ProbeVfsWrite, NewTraceProbe(KProbe, "vfs_write", "trace_vfs_write"))
+	Probes.Add("core", ProbeVfsWriteRet, NewTraceProbe(KretProbe, "vfs_write", "trace_ret_vfs_write"))
+	Probes.Add("core", ProbeVfsWriteV, NewTraceProbe(KProbe, "vfs_writev", "trace_vfs_writev"))
+	Probes.Add("core", ProbeVfsWriteVRet, NewTraceProbe(KretProbe, "vfs_writev", "trace_ret_vfs_writev"))
+	Probes.Add("core", ProbeKernelWrite, NewTraceProbe(KProbe, "__kernel_write", "trace_kernel_write"))
+	Probes.Add("core", ProbeKernelWriteRet, NewTraceProbe(KretProbe, "__kernel_write", "trace_ret_kernel_write"))
+	Probes.Add("core", ProbeCgroupAttachTask, NewTraceProbe(RawTracepoint, "cgroup:cgroup_attach_task", "tracepoint__cgroup__cgroup_attach_task"))
+	Probes.Add("core", ProbeCgroupMkdir, NewTraceProbe(RawTracepoint, "cgroup:cgroup_mkdir", "tracepoint__cgroup__cgroup_mkdir"))
+	Probes.Add("core", ProbeCgroupRmdir, NewTraceProbe(RawTracepoint, "cgroup:cgroup_rmdir", "tracepoint__cgroup__cgroup_rmdir"))
+	Probes.Add("core", ProbeSecurityBPRMCheck, NewTraceProbe(KProbe, "security_bprm_check", "trace_security_bprm_check"))
+	Probes.Add("core", ProbeSecurityFileOpen, NewTraceProbe(KProbe, "security_file_open", "trace_security_file_open"))
+	Probes.Add("core", ProbeSecurityFilePermission, NewTraceProbe(KProbe, "security_file_permission", "trace_security_file_permission"))
+	Probes.Add("core", ProbeSecuritySocketCreate, NewTraceProbe(KProbe, "security_socket_create", "trace_security_socket_create"))
+	Probes.Add("core", ProbeSecuritySocketListen, NewTraceProbe(KProbe, "security_socket_listen", "trace_security_socket_listen"))
+	Probes.Add("core", ProbeSecuritySocketConnect, NewTraceProbe(KProbe, "security_socket_connect", "trace_security_socket_connect"))
+	Probes.Add("core", ProbeSecuritySocketAccept, NewTraceProbe(KProbe, "security_socket_accept", "trace_security_socket_accept"))
+	Probes.Add("core", ProbeSecuritySocketBind, NewTraceProbe(KProbe, "security_socket_bind", "trace_security_socket_bind"))
+	Probes.Add("core", ProbeSecuritySocketSetsockopt, NewTraceProbe(KProbe, "security_socket_setsockopt", "trace_security_socket_setsockopt"))
+	Probes.Add("core", ProbeSecuritySbMount, NewTraceProbe(KProbe, "security_sb_mount", "trace_security_sb_mount"))
+	Probes.Add("core", ProbeSecurityBPF, NewTraceProbe(KProbe, "security_bpf", "trace_security_bpf"))
+	Probes.Add("core", ProbeSecurityBPFMap, NewTraceProbe(KProbe, "security_bpf_map", "trace_security_bpf_map"))
+	Probes.Add("core", ProbeSecurityKernelReadFile, NewTraceProbe(KProbe, "security_kernel_read_file", "trace_security_kernel_read_file"))
+	Probes.Add("core", ProbeSecurityKernelPostReadFile, NewTraceProbe(KProbe, "security_kernel_post_read_file", "trace_security_kernel_post_read_file"))
+	Probes.Add("core", ProbeSecurityInodeMknod, NewTraceProbe(KProbe, "security_inode_mknod", "trace_security_inode_mknod"))
+	Probes.Add("core", ProbeSecurityInodeSymlink, NewTraceProbe(KProbe, "security_inode_symlink", "trace_security_inode_symlink"))
+	Probes.Add("core", ProbeSecurityInodeUnlink, NewTraceProbe(KProbe, "security_inode_unlink", "trace_security_inode_unlink"))
+	Probes.Add("core", ProbeSecurityMmapAddr, NewTraceProbe(KProbe, "security_mmap_addr", "trace_mmap_alert"))
+	Probes.Add("core", ProbeSecurityMmapFile, NewTraceProbe(KProbe, "security_mmap_file", "trace_security_mmap_file"))
+	Probes.Add("core", ProbeDoSplice, NewTraceProbe(KProbe, "do_splice", "trace_do_splice"))
+	Probes.Add("core", ProbeDoSpliceRet, NewTraceProbe(KretProbe, "do_splice", "trace_ret_do_splice"))
+	Probes.Add("core", ProbeProcCreate, NewTraceProbe(KProbe, "proc_create", "trace_proc_create"))
+	Probes.Add("core", ProbeSecurityFileMProtect, NewTraceProbe(KProbe, "security_file_mprotect", "trace_security_file_mprotect"))
+	Probes.Add("core", ProbeCommitCreds, NewTraceProbe(KProbe, "commit_creds", "trace_commit_creds"))
+	Probes.Add("core", ProbeSwitchTaskNS, NewTraceProbe(KProbe, "switch_task_namespaces", "trace_switch_task_namespaces"))
+	Probes.Add("core", ProbeRegisterKprobe, NewTraceProbe(KProbe, "register_kprobe", "trace_register_kprobe"))
+	Probes.Add("core", ProbeRegisterKprobeRet, NewTraceProbe(KretProbe, "register_kprobe", "trace_ret_register_kprobe"))
+	Probes.Add("core", ProbeCallUsermodeHelper, NewTraceProbe(KProbe, "call_usermodehelper", "trace_call_usermodehelper"))
+	Probes.Add("core", ProbeDebugfsCreateFile, NewTraceProbe(KProbe, "debugfs_create_file", "trace_debugfs_create_file"))
+	Probes.Add("core", ProbeDebugfsCreateDir, NewTraceProbe(KProbe, "debugfs_create_dir", "trace_debugfs_create_dir"))
+	Probes.Add("core", ProbeDeviceAdd, NewTraceProbe(KProbe, "device_add", "trace_device_add"))
+	Probes.Add("core", ProbeRegisterChrdev, NewTraceProbe(KProbe, "__register_chrdev", "trace___register_chrdev"))
+	Probes.Add("core", ProbeRegisterChrdevRet, NewTraceProbe(KretProbe, "__register_chrdev", "trace_ret__register_chrdev"))
+	Probes.Add("core", ProbeDoInitModule, NewTraceProbe(KProbe, "do_init_module", "trace_do_init_module"))
+	Probes.Add("core", ProbeDoInitModuleRet, NewTraceProbe(KretProbe, "do_init_module", "trace_ret_do_init_module"))
+	Probes.Add("core", ProbeLoadElfPhdrs, NewTraceProbe(KProbe, "load_elf_phdrs", "trace_load_elf_phdrs"))
+	Probes.Add("core", ProbeFilldir64, NewTraceProbe(KProbe, "filldir64", "trace_filldir64"))
+	Probes.Add("core", ProbeTaskRename, NewTraceProbe(RawTracepoint, "task:task_rename", "tracepoint__task__task_rename"))
+	Probes.Add("core", ProbeSyscallTableCheck, NewUprobe("syscall_table_check", "uprobe_syscall_table_check", binaryPath, "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerSyscallTableIntegrityCheckCall"))
+	Probes.Add("core", ProbeHiddenKernelModuleSeeker, NewUprobe("hidden_kernel_module", "uprobe_lkm_seeker", binaryPath, "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerKernelModuleSeeker"))
+	Probes.Add("core", ProbeHiddenKernelModuleVerifier, NewUprobe("hidden_kernel_module", "uprobe_lkm_seeker_submitter", binaryPath, "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerKernelModuleSubmitter"))
+	Probes.Add("core", ProbePrintNetSeqOps, NewUprobe("print_net_seq_ops", "uprobe_seq_ops_trigger", binaryPath, "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerSeqOpsIntegrityCheckCall"))
+	Probes.Add("core", ProbePrintMemDump, NewUprobe("print_mem_dump", "uprobe_mem_dump_trigger", binaryPath, "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerMemDumpCall"))
+	Probes.Add("core", ProbeSecurityInodeRename, NewTraceProbe(KProbe, "security_inode_rename", "trace_security_inode_rename"))
+	Probes.Add("core", ProbeDoSigaction, NewTraceProbe(KProbe, "do_sigaction", "trace_do_sigaction"))
+	Probes.Add("core", ProbeSecurityBpfProg, NewTraceProbe(KProbe, "security_bpf_prog", "trace_security_bpf_prog"))
+	Probes.Add("core", ProbeSecurityFileIoctl, NewTraceProbe(KProbe, "security_file_ioctl", "trace_security_file_ioctl"))
+	Probes.Add("core", ProbeCheckHelperCall, NewTraceProbe(KProbe, "check_helper_call", "trace_check_helper_call"))
+	Probes.Add("core", ProbeCheckMapFuncCompatibility, NewTraceProbe(KProbe, "check_map_func_compatibility", "trace_check_map_func_compatibility"))
+	Probes.Add("core", ProbeKallsymsLookupName, NewTraceProbe(KProbe, "kallsyms_lookup_name", "trace_kallsyms_lookup_name"))
+	Probes.Add("core", ProbeKallsymsLookupNameRet, NewTraceProbe(KretProbe, "kallsyms_lookup_name", "trace_ret_kallsyms_lookup_name"))
+	Probes.Add("core", ProbeSockAllocFile, NewTraceProbe(KProbe, "sock_alloc_file", "trace_sock_alloc_file"))
+	Probes.Add("core", ProbeSockAllocFileRet, NewTraceProbe(KretProbe, "sock_alloc_file", "trace_ret_sock_alloc_file"))
+	Probes.Add("core", ProbeSecuritySkClone, NewTraceProbe(KProbe, "security_sk_clone", "trace_security_sk_clone"))
+	Probes.Add("core", ProbeSecuritySocketSendmsg, NewTraceProbe(KProbe, "security_socket_sendmsg", "trace_security_socket_sendmsg"))
+	Probes.Add("core", ProbeSecuritySocketRecvmsg, NewTraceProbe(KProbe, "security_socket_recvmsg", "trace_security_socket_recvmsg"))
+	Probes.Add("core", ProbeCgroupBPFRunFilterSKB, NewTraceProbe(KProbe, "__cgroup_bpf_run_filter_skb", "cgroup_bpf_run_filter_skb"))
+	Probes.Add("core", ProbeCgroupSKBIngress, NewCgroupProbe(bpf.BPFAttachTypeCgroupInetIngress, "cgroup_skb_ingress"))
+	Probes.Add("core", ProbeCgroupSKBEgress, NewCgroupProbe(bpf.BPFAttachTypeCgroupInetEgress, "cgroup_skb_egress"))
+	Probes.Add("core", ProbeDoMmap, NewTraceProbe(KProbe, "do_mmap", "trace_do_mmap"))
+	Probes.Add("core", ProbeDoMmapRet, NewTraceProbe(KretProbe, "do_mmap", "trace_ret_do_mmap"))
+	Probes.Add("core", ProbeVfsRead, NewTraceProbe(KProbe, "vfs_read", "trace_vfs_read"))
+	Probes.Add("core", ProbeVfsReadRet, NewTraceProbe(KretProbe, "vfs_read", "trace_ret_vfs_read"))
+	Probes.Add("core", ProbeVfsReadV, NewTraceProbe(KProbe, "vfs_readv", "trace_vfs_readv"))
+	Probes.Add("core", ProbeVfsReadVRet, NewTraceProbe(KretProbe, "vfs_readv", "trace_ret_vfs_readv"))
+	Probes.Add("core", ProbeVfsUtimes, NewTraceProbe(KProbe, "vfs_utimes", "trace_vfs_utimes"))
+	Probes.Add("core", ProbeUtimesCommon, NewTraceProbe(KProbe, "utimes_common", "trace_utimes_common"))
+	Probes.Add("core", ProbeDoTruncate, NewTraceProbe(KProbe, "do_truncate", "trace_do_truncate"))
+	Probes.Add("core", ProbeFileUpdateTime, NewTraceProbe(KProbe, "file_update_time", "trace_file_update_time"))
+	Probes.Add("core", ProbeFileUpdateTimeRet, NewTraceProbe(KretProbe, "file_update_time", "trace_ret_file_update_time"))
+	Probes.Add("core", ProbeFileModified, NewTraceProbe(KProbe, "file_modified", "trace_file_modified"))
+	Probes.Add("core", ProbeFileModifiedRet, NewTraceProbe(KretProbe, "file_modified", "trace_ret_file_modified"))
+	Probes.Add("core", ProbeFdInstall, NewTraceProbe(KProbe, "fd_install", "trace_fd_install"))
+	Probes.Add("core", ProbeFilpClose, NewTraceProbe(KProbe, "filp_close", "trace_filp_close"))
+	Probes.Add("core", ProbeInotifyFindInode, NewTraceProbe(KProbe, "inotify_find_inode", "trace_inotify_find_inode"))
+	Probes.Add("core", ProbeInotifyFindInodeRet, NewTraceProbe(KretProbe, "inotify_find_inode", "trace_ret_inotify_find_inode"))
+	Probes.Add("core", ProbeBpfCheck, NewTraceProbe(KProbe, "bpf_check", "trace_bpf_check"))
+	Probes.Add("core", ProbeExecBinprm, NewTraceProbe(KProbe, "exec_binprm", "trace_exec_binprm"))
+	Probes.Add("core", ProbeExecBinprmRet, NewTraceProbe(KretProbe, "exec_binprm", "trace_ret_exec_binprm"))
+	Probes.Add("core", ProbeTpProbeRegPrioMayExist, NewTraceProbe(KProbe, "tracepoint_probe_register_prio_may_exist", "trace_tracepoint_probe_register_prio_may_exist"))
+	Probes.Add("core", ProbeModuleLoad, NewTraceProbe(RawTracepoint, "module:module_load", "tracepoint__module__module_load"))
+	Probes.Add("core", ProbeModuleFree, NewTraceProbe(RawTracepoint, "module:module_free", "tracepoint__module__module_free"))
+	Probes.Add("core", ProbeLayoutAndAllocate, NewTraceProbe(KretProbe, "layout_and_allocate", "trace_ret_layout_and_allocate"))
+	Probes.Add("core", ProbeSignalCgroupMkdir, NewTraceProbe(RawTracepoint, "cgroup:cgroup_mkdir", "cgroup_mkdir_signal"))
+	Probes.Add("core", ProbeSignalCgroupRmdir, NewTraceProbe(RawTracepoint, "cgroup:cgroup_rmdir", "cgroup_rmdir_signal"))
+	Probes.Add("core", ProbeSignalSchedProcessFork, NewTraceProbe(RawTracepoint, "sched:sched_process_fork", "sched_process_fork_signal"))
+	Probes.Add("core", ProbeSignalSchedProcessExec, NewTraceProbe(RawTracepoint, "sched:sched_process_exec", "sched_process_exec_signal"))
+	Probes.Add("core", ProbeSignalSchedProcessExit, NewTraceProbe(RawTracepoint, "sched:sched_process_exit", "sched_process_exit_signal"))
 }
 
-var CoreEvents = map[ID]Definition{
+var CoreEvents = map[int]Definition{
 	//
 	// Begin of Syscalls
 	//
@@ -199,9 +412,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "count"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Read)}},
@@ -224,9 +437,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "count"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Write)}},
@@ -249,9 +462,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "mode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Open)}},
@@ -272,9 +485,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "fd"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Close)}},
@@ -296,9 +509,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct stat*", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stat)}},
@@ -320,9 +533,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct stat*", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstat)}},
@@ -344,9 +557,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct stat*", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lstat)}},
@@ -369,9 +582,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "timeout"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Poll)}},
@@ -394,9 +607,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "whence"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lseek)}},
@@ -422,9 +635,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "off_t", Name: "off"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mmap)}},
@@ -447,9 +660,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "prot"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mprotect)}},
@@ -471,9 +684,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "length"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Munmap)}},
@@ -494,9 +707,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "void*", Name: "addr"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Brk)}},
@@ -520,9 +733,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigaction)}},
@@ -546,9 +759,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigprocmask)}},
@@ -567,9 +780,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "signals"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigreturn)}},
@@ -592,9 +805,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "arg"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ioctl)}},
@@ -618,9 +831,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "off_t", Name: "offset"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pread64)}},
@@ -644,9 +857,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "off_t", Name: "offset"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pwrite64)}},
@@ -669,9 +882,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "iovcnt"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readv)}},
@@ -694,9 +907,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "iovcnt"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Writev)}},
@@ -718,9 +931,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "mode"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Access)}},
@@ -741,9 +954,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int[2]", Name: "pipefd"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pipe)}},
@@ -768,9 +981,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct timeval*", Name: "timeout"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Select)}},
@@ -789,9 +1002,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_sched"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedYield)}},
@@ -816,9 +1029,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "void*", Name: "new_address"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mremap)}},
@@ -841,9 +1054,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msync)}},
@@ -866,9 +1079,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned char*", Name: "vec"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mincore)}},
@@ -891,9 +1104,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "advice"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Madvise)}},
@@ -916,9 +1129,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "shmflg"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmget)}},
@@ -941,9 +1154,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "shmflg"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmat)}},
@@ -966,9 +1179,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct shmid_ds*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmctl)}},
@@ -989,9 +1202,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "oldfd"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Dup)}},
@@ -1013,9 +1226,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "newfd"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Dup2)}},
@@ -1034,9 +1247,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "signals"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pause)}},
@@ -1058,9 +1271,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct timespec*", Name: "rem"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Nanosleep)}},
@@ -1082,9 +1295,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct itimerval*", Name: "curr_value"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getitimer)}},
@@ -1105,9 +1318,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "seconds"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Alarm)}},
@@ -1130,9 +1343,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct itimerval*", Name: "old_value"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setitimer)}},
@@ -1151,9 +1364,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpid)}},
@@ -1177,9 +1390,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "count"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendfile)}},
@@ -1202,9 +1415,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "protocol"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Socket)}},
@@ -1227,9 +1440,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "addrlen"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Connect)}},
@@ -1252,9 +1465,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int*", Name: "addrlen"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Accept)}},
@@ -1280,9 +1493,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "addrlen"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendto)}},
@@ -1308,9 +1521,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int*", Name: "addrlen"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Recvfrom)}},
@@ -1333,9 +1546,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendmsg)}},
@@ -1358,9 +1571,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Recvmsg)}},
@@ -1382,9 +1595,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "how"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shutdown)}},
@@ -1407,9 +1620,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "addrlen"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Bind)}},
@@ -1431,9 +1644,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "backlog"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Listen)}},
@@ -1456,9 +1669,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int*", Name: "addrlen"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getsockname)}},
@@ -1481,9 +1694,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int*", Name: "addrlen"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpeername)}},
@@ -1507,9 +1720,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int[2]", Name: "sv"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Socketpair)}},
@@ -1534,9 +1747,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "optlen"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setsockopt)}},
@@ -1561,9 +1774,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int*", Name: "optlen"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getsockopt)}},
@@ -1588,9 +1801,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "tls"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Clone)}},
@@ -1609,9 +1822,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_life"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fork)}},
@@ -1630,9 +1843,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_life"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vfork)}},
@@ -1655,9 +1868,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*const*", Name: "envp"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_tails", "syscall__execve", []uint32{uint32(Execve)}},
@@ -1679,9 +1892,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "status"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Exit)}},
@@ -1705,9 +1918,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct rusage*", Name: "rusage"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Wait4)}},
@@ -1729,9 +1942,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "sig"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Kill)}},
@@ -1752,9 +1965,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct utsname*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Uname)}},
@@ -1777,9 +1990,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "semflg"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semget)}},
@@ -1802,9 +2015,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "nsops"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semop)}},
@@ -1828,9 +2041,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "arg"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semctl)}},
@@ -1851,9 +2064,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const void*", Name: "shmaddr"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Shmdt)}},
@@ -1875,9 +2088,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "msgflg"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgget)}},
@@ -1901,9 +2114,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "msgflg"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgsnd)}},
@@ -1928,9 +2141,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "msgflg"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgrcv)}},
@@ -1953,9 +2166,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct msqid_ds*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Msgctl)}},
@@ -1978,9 +2191,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "arg"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fcntl)}},
@@ -2002,9 +2215,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "operation"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Flock)}},
@@ -2025,9 +2238,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "fd"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsync)}},
@@ -2048,9 +2261,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "fd"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fdatasync)}},
@@ -2072,9 +2285,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "off_t", Name: "length"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Truncate)}},
@@ -2096,9 +2309,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "off_t", Name: "length"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ftruncate)}},
@@ -2121,9 +2334,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "count"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getdents)}},
@@ -2145,9 +2358,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "size"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getcwd)}},
@@ -2168,9 +2381,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "path"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chdir)}},
@@ -2191,9 +2404,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "fd"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchdir)}},
@@ -2215,9 +2428,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "newpath"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Rename)}},
@@ -2239,9 +2452,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "mode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mkdir)}},
@@ -2262,9 +2475,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "pathname"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Rmdir)}},
@@ -2286,9 +2499,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "mode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Creat)}},
@@ -2310,9 +2523,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "newpath"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Link)}},
@@ -2333,9 +2546,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "pathname"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Unlink)}},
@@ -2357,9 +2570,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "linkpath"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Symlink)}},
@@ -2382,9 +2595,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "bufsiz"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readlink)}},
@@ -2406,9 +2619,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "mode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chmod)}},
@@ -2430,9 +2643,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "mode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchmod)}},
@@ -2455,9 +2668,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "gid_t", Name: "group"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chown)}},
@@ -2480,9 +2693,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "gid_t", Name: "group"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchown)}},
@@ -2505,9 +2718,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "gid_t", Name: "group"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lchown)}},
@@ -2528,9 +2741,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "mode_t", Name: "mask"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Umask)}},
@@ -2552,9 +2765,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct timezone*", Name: "tz"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Gettimeofday)}},
@@ -2576,9 +2789,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct rlimit*", Name: "rlim"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getrlimit)}},
@@ -2600,9 +2813,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct rusage*", Name: "usage"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getrusage)}},
@@ -2623,9 +2836,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct sysinfo*", Name: "info"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sysinfo)}},
@@ -2646,9 +2859,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct tms*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Times)}},
@@ -2672,9 +2885,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "void*", Name: "data"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ptrace)}},
@@ -2693,9 +2906,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getuid)}},
@@ -2718,9 +2931,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "len"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Syslog)}},
@@ -2739,9 +2952,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgid)}},
@@ -2762,9 +2975,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "uid_t", Name: "uid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setuid)}},
@@ -2785,9 +2998,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "gid_t", Name: "gid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgid)}},
@@ -2806,9 +3019,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Geteuid)}},
@@ -2827,9 +3040,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getegid)}},
@@ -2851,9 +3064,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "pid_t", Name: "pgid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setpgid)}},
@@ -2872,9 +3085,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getppid)}},
@@ -2893,9 +3106,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpgrp)}},
@@ -2914,9 +3127,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"default", "syscalls", "proc", "proc_ids"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setsid)}},
@@ -2938,9 +3151,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "uid_t", Name: "euid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setreuid)}},
@@ -2962,9 +3175,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "gid_t", Name: "egid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setregid)}},
@@ -2986,9 +3199,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "gid_t*", Name: "list"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgroups)}},
@@ -3010,9 +3223,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "gid_t*", Name: "list"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgroups)}},
@@ -3035,9 +3248,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "uid_t", Name: "suid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresuid)}},
@@ -3060,9 +3273,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "uid_t*", Name: "suid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresuid)}},
@@ -3085,9 +3298,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "gid_t", Name: "sgid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresgid)}},
@@ -3110,9 +3323,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "gid_t*", Name: "sgid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresgid)}},
@@ -3133,9 +3346,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "pid_t", Name: "pid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpgid)}},
@@ -3156,9 +3369,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "uid_t", Name: "fsuid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsuid)}},
@@ -3179,9 +3392,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "gid_t", Name: "fsgid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsgid)}},
@@ -3202,9 +3415,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "pid_t", Name: "pid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getsid)}},
@@ -3226,9 +3439,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "cap_user_data_t", Name: "datap"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Capget)}},
@@ -3250,9 +3463,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const cap_user_data_t", Name: "datap"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Capset)}},
@@ -3274,9 +3487,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigpending)}},
@@ -3300,9 +3513,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigtimedwait)}},
@@ -3325,9 +3538,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "siginfo_t*", Name: "info"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigqueueinfo)}},
@@ -3349,9 +3562,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigsuspend)}},
@@ -3373,9 +3586,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "stack_t*", Name: "old_ss"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigaltstack)}},
@@ -3397,9 +3610,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const struct utimbuf*", Name: "times"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Utime)}},
@@ -3422,9 +3635,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "dev_t", Name: "dev"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mknod)}},
@@ -3445,9 +3658,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "library"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Uselib)}},
@@ -3468,9 +3681,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "persona"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Personality)}},
@@ -3492,9 +3705,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct ustat*", Name: "ubuf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ustat)}},
@@ -3516,9 +3729,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct statfs*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Statfs)}},
@@ -3540,9 +3753,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct statfs*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstatfs)}},
@@ -3563,9 +3776,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "option"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sysfs)}},
@@ -3587,9 +3800,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "who"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpriority)}},
@@ -3612,9 +3825,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "prio"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setpriority)}},
@@ -3636,9 +3849,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct sched_param*", Name: "param"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetparam)}},
@@ -3660,9 +3873,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct sched_param*", Name: "param"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetparam)}},
@@ -3685,9 +3898,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct sched_param*", Name: "param"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetscheduler)}},
@@ -3708,9 +3921,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "pid_t", Name: "pid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetscheduler)}},
@@ -3731,9 +3944,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "policy"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetPriorityMax)}},
@@ -3754,9 +3967,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "policy"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetPriorityMin)}},
@@ -3778,9 +3991,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct timespec*", Name: "tp"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedRrGetInterval)}},
@@ -3802,9 +4015,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "len"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mlock)}},
@@ -3826,9 +4039,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "len"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Munlock)}},
@@ -3849,9 +4062,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mlockall)}},
@@ -3870,9 +4083,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_mem"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Munlockall)}},
@@ -3891,9 +4104,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "system"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vhangup)}},
@@ -3916,9 +4129,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "bytecount"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ModifyLdt)}},
@@ -3940,9 +4153,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "put_old"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PivotRoot)}},
@@ -3963,9 +4176,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct __sysctl_args*", Name: "args"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sysctl)}},
@@ -3990,9 +4203,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "arg5"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Prctl)}},
@@ -4014,9 +4227,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "addr"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ArchPrctl)}},
@@ -4037,9 +4250,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct timex*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Adjtimex)}},
@@ -4061,9 +4274,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const struct rlimit*", Name: "rlim"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setrlimit)}},
@@ -4084,9 +4297,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "path"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chroot)}},
@@ -4105,9 +4318,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_sync"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sync)}},
@@ -4128,9 +4341,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "filename"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Acct)}},
@@ -4152,9 +4365,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const struct timezone*", Name: "tz"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Settimeofday)}},
@@ -4179,9 +4392,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const void*", Name: "data"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mount)}},
@@ -4203,9 +4416,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Umount2)}},
@@ -4227,9 +4440,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "swapflags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Swapon)}},
@@ -4250,9 +4463,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "path"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Swapoff)}},
@@ -4276,9 +4489,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "void*", Name: "arg"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Reboot)}},
@@ -4300,9 +4513,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "len"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sethostname)}},
@@ -4324,9 +4537,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "len"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setdomainname)}},
@@ -4347,9 +4560,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "level"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Iopl)}},
@@ -4372,9 +4585,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "turn_on"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ioperm)}},
@@ -4393,9 +4606,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "system", "system_module"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(CreateModule)}},
@@ -4418,9 +4631,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "param_values"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InitModule)}},
@@ -4442,9 +4655,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(DeleteModule)}},
@@ -4463,9 +4676,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "system", "system_module"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetKernelSyms)}},
@@ -4484,9 +4697,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "system", "system_module"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(QueryModule)}},
@@ -4510,9 +4723,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "void*", Name: "addr"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Quotactl)}},
@@ -4531,9 +4744,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Nfsservctl)}},
@@ -4552,9 +4765,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getpmsg)}},
@@ -4573,9 +4786,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Putpmsg)}},
@@ -4594,9 +4807,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Afs)}},
@@ -4615,9 +4828,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tuxcall)}},
@@ -4636,9 +4849,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Security)}},
@@ -4657,9 +4870,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "proc", "proc_ids"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Gettid)}},
@@ -4682,9 +4895,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "count"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readahead)}},
@@ -4709,9 +4922,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setxattr)}},
@@ -4736,9 +4949,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lsetxattr)}},
@@ -4763,9 +4976,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsetxattr)}},
@@ -4789,9 +5002,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "size"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getxattr)}},
@@ -4815,9 +5028,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "size"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lgetxattr)}},
@@ -4841,9 +5054,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "size"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fgetxattr)}},
@@ -4866,9 +5079,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "size"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Listxattr)}},
@@ -4891,9 +5104,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "size"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Llistxattr)}},
@@ -4916,9 +5129,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "size"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Flistxattr)}},
@@ -4940,9 +5153,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "name"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Removexattr)}},
@@ -4964,9 +5177,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "name"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lremovexattr)}},
@@ -4988,9 +5201,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "name"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fremovexattr)}},
@@ -5012,9 +5225,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "sig"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tkill)}},
@@ -5035,9 +5248,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "time_t*", Name: "tloc"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Time)}},
@@ -5063,9 +5276,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "val3"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Futex)}},
@@ -5088,9 +5301,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long*", Name: "mask"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetaffinity)}},
@@ -5113,9 +5326,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long*", Name: "mask"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetaffinity)}},
@@ -5136,9 +5349,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct user_desc*", Name: "u_info"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetThreadArea)}},
@@ -5160,9 +5373,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "io_context_t*", Name: "ctx_idp"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoSetup)}},
@@ -5183,9 +5396,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "io_context_t", Name: "ctx_id"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoDestroy)}},
@@ -5210,9 +5423,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct timespec*", Name: "timeout"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoGetevents)}},
@@ -5235,9 +5448,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct iocb**", Name: "iocbpp"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoSubmit)}},
@@ -5260,9 +5473,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct io_event*", Name: "result"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoCancel)}},
@@ -5283,9 +5496,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct user_desc*", Name: "u_info"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetThreadArea)}},
@@ -5308,9 +5521,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "len"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LookupDcookie)}},
@@ -5331,9 +5544,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "size"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCreate)}},
@@ -5352,9 +5565,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCtlOld)}},
@@ -5373,9 +5586,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollWaitOld)}},
@@ -5400,9 +5613,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RemapFilePages)}},
@@ -5425,9 +5638,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "count"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getdents64)}},
@@ -5448,9 +5661,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int*", Name: "tidptr"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetTidAddress)}},
@@ -5469,9 +5682,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "signals"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RestartSyscall)}},
@@ -5495,9 +5708,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const struct timespec*", Name: "timeout"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Semtimedop)}},
@@ -5521,9 +5734,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "advice"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fadvise64)}},
@@ -5546,9 +5759,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "timer_t*", Name: "timer_id"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerCreate)}},
@@ -5572,9 +5785,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct itimerspec*", Name: "old_value"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerSettime)}},
@@ -5596,9 +5809,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct itimerspec*", Name: "curr_value"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerGettime)}},
@@ -5619,9 +5832,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "timer_t", Name: "timer_id"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerGetoverrun)}},
@@ -5642,9 +5855,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "timer_t", Name: "timer_id"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerDelete)}},
@@ -5666,9 +5879,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const struct timespec*", Name: "tp"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockSettime)}},
@@ -5690,9 +5903,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct timespec*", Name: "tp"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGettime)}},
@@ -5714,9 +5927,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct timespec*", Name: "res"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGetres)}},
@@ -5740,9 +5953,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct timespec*", Name: "remain"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockNanosleep)}},
@@ -5763,9 +5976,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "status"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ExitGroup)}},
@@ -5789,9 +6002,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "timeout"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollWait)}},
@@ -5815,9 +6028,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct epoll_event*", Name: "event"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCtl)}},
@@ -5840,9 +6053,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "sig"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tgkill)}},
@@ -5864,9 +6077,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct timeval*", Name: "times"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Utimes)}},
@@ -5885,9 +6098,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vserver)}},
@@ -5913,9 +6126,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mbind)}},
@@ -5938,9 +6151,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "maxnode"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetMempolicy)}},
@@ -5965,9 +6178,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetMempolicy)}},
@@ -5991,9 +6204,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct mq_attr*", Name: "attr"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqOpen)}},
@@ -6014,9 +6227,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "name"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqUnlink)}},
@@ -6041,9 +6254,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const struct timespec*", Name: "abs_timeout"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedsend)}},
@@ -6068,9 +6281,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const struct timespec*", Name: "abs_timeout"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedreceive)}},
@@ -6092,9 +6305,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const struct sigevent*", Name: "sevp"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqNotify)}},
@@ -6117,9 +6330,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct mq_attr*", Name: "oldattr"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqGetsetattr)}},
@@ -6143,9 +6356,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(KexecLoad)}},
@@ -6170,9 +6383,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct rusage*", Name: "rusage"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Waitid)}},
@@ -6197,9 +6410,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "key_serial_t", Name: "keyring"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(AddKey)}},
@@ -6223,9 +6436,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "key_serial_t", Name: "dest_keyring"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RequestKey)}},
@@ -6250,9 +6463,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "arg5"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Keyctl)}},
@@ -6275,9 +6488,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "ioprio"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoprioSet)}},
@@ -6299,9 +6512,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "who"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoprioGet)}},
@@ -6320,9 +6533,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "fs", "fs_monitor"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyInit)}},
@@ -6345,9 +6558,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "u32", Name: "mask"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyAddWatch)}},
@@ -6369,9 +6582,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "wd"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyRmWatch)}},
@@ -6395,9 +6608,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const unsigned long*", Name: "new_nodes"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MigratePages)}},
@@ -6421,9 +6634,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "mode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Openat)}},
@@ -6446,9 +6659,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "mode_t", Name: "mode"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mkdirat)}},
@@ -6472,9 +6685,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "dev_t", Name: "dev"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mknodat)}},
@@ -6499,9 +6712,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchownat)}},
@@ -6524,9 +6737,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct timeval*", Name: "times"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Futimesat)}},
@@ -6550,9 +6763,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Newfstatat)}},
@@ -6575,9 +6788,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Unlinkat)}},
@@ -6601,9 +6814,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "newpath"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Renameat)}},
@@ -6628,9 +6841,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Linkat)}},
@@ -6653,9 +6866,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "linkpath"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Symlinkat)}},
@@ -6679,9 +6892,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "bufsiz"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readlinkat)}},
@@ -6705,9 +6918,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchmodat)}},
@@ -6731,9 +6944,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Faccessat)}},
@@ -6759,9 +6972,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "void*", Name: "sigmask"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pselect6)}},
@@ -6786,9 +6999,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ppoll)}},
@@ -6809,9 +7022,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Unshare)}},
@@ -6833,9 +7046,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "len"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetRobustList)}},
@@ -6858,9 +7071,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t*", Name: "len_ptr"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(GetRobustList)}},
@@ -6886,9 +7099,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Splice)}},
@@ -6912,9 +7125,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Tee)}},
@@ -6938,9 +7151,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SyncFileRange)}},
@@ -6964,9 +7177,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vmsplice)}},
@@ -6992,9 +7205,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MovePages)}},
@@ -7018,9 +7231,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Utimensat)}},
@@ -7046,9 +7259,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollPwait)}},
@@ -7071,9 +7284,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Signalfd)}},
@@ -7095,9 +7308,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdCreate)}},
@@ -7119,9 +7332,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Eventfd)}},
@@ -7145,9 +7358,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "off_t", Name: "len"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fallocate)}},
@@ -7171,9 +7384,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct itimerspec*", Name: "old_value"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdSettime)}},
@@ -7195,9 +7408,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct itimerspec*", Name: "curr_value"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdGettime)}},
@@ -7221,9 +7434,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Accept4)}},
@@ -7247,9 +7460,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Signalfd4)}},
@@ -7271,9 +7484,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Eventfd2)}},
@@ -7294,9 +7507,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollCreate1)}},
@@ -7319,9 +7532,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Dup3)}},
@@ -7343,9 +7556,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pipe2)}},
@@ -7366,9 +7579,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(InotifyInit1)}},
@@ -7393,9 +7606,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "pos_h"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Preadv)}},
@@ -7420,9 +7633,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "pos_h"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pwritev)}},
@@ -7446,9 +7659,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "siginfo_t*", Name: "info"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtTgsigqueueinfo)}},
@@ -7473,9 +7686,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PerfEventOpen)}},
@@ -7500,9 +7713,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct timespec*", Name: "timeout"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Recvmmsg)}},
@@ -7524,9 +7737,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "event_f_flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FanotifyInit)}},
@@ -7551,9 +7764,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "pathname"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FanotifyMark)}},
@@ -7577,9 +7790,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct rlimit64*", Name: "old_limit"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Prlimit64)}},
@@ -7604,9 +7817,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(NameToHandleAt)}},
@@ -7629,9 +7842,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OpenByHandleAt)}},
@@ -7653,9 +7866,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct timex*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockAdjtime)}},
@@ -7676,9 +7889,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "fd"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Syncfs)}},
@@ -7702,9 +7915,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendmmsg)}},
@@ -7726,9 +7939,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "nstype"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setns)}},
@@ -7751,9 +7964,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct getcpu_cache*", Name: "tcache"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getcpu)}},
@@ -7779,9 +7992,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ProcessVmReadv)}},
@@ -7807,9 +8020,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ProcessVmWritev)}},
@@ -7834,9 +8047,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "idx2"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Kcmp)}},
@@ -7859,9 +8072,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FinitModule)}},
@@ -7884,9 +8097,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedSetattr)}},
@@ -7910,9 +8123,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedGetattr)}},
@@ -7937,9 +8150,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Renameat2)}},
@@ -7962,9 +8175,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const void*", Name: "args"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Seccomp)}},
@@ -7987,9 +8200,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getrandom)}},
@@ -8011,9 +8224,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MemfdCreate)}},
@@ -8038,9 +8251,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(KexecFileLoad)}},
@@ -8063,9 +8276,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "size"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Bpf)}},
@@ -8090,9 +8303,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Execveat)}},
@@ -8114,9 +8327,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Userfaultfd)}},
@@ -8138,9 +8351,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Membarrier)}},
@@ -8163,9 +8376,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mlock2)}},
@@ -8191,9 +8404,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(CopyFileRange)}},
@@ -8219,9 +8432,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Preadv2)}},
@@ -8247,9 +8460,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pwritev2)}},
@@ -8273,9 +8486,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "pkey"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PkeyMprotect)}},
@@ -8297,9 +8510,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "access_rights"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PkeyAlloc)}},
@@ -8320,9 +8533,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "pkey"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PkeyFree)}},
@@ -8347,9 +8560,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct statx*", Name: "statxbuf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Statx)}},
@@ -8375,9 +8588,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const struct __aio_sigset*", Name: "usig"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoPgetevents)}},
@@ -8401,9 +8614,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "u32", Name: "sig"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Rseq)}},
@@ -8427,9 +8640,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PidfdSendSignal)}},
@@ -8451,9 +8664,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct io_uring_params*", Name: "p"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoUringSetup)}},
@@ -8478,9 +8691,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "sigset_t*", Name: "sig"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoUringEnter)}},
@@ -8504,9 +8717,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "nr_args"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoUringRegister)}},
@@ -8529,9 +8742,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OpenTree)}},
@@ -8556,9 +8769,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MoveMount)}},
@@ -8580,9 +8793,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsopen)}},
@@ -8607,9 +8820,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "aux"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsconfig)}},
@@ -8632,9 +8845,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "ms_flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fsmount)}},
@@ -8657,9 +8870,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fspick)}},
@@ -8681,9 +8894,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PidfdOpen)}},
@@ -8705,9 +8918,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "size"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Clone3)}},
@@ -8729,9 +8942,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "last"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(CloseRange)}},
@@ -8755,9 +8968,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "size"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Openat2)}},
@@ -8780,9 +8993,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PidfdGetfd)}},
@@ -8806,9 +9019,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flag"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Faccessat2)}},
@@ -8833,9 +9046,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ProcessMadvise)}},
@@ -8860,9 +9073,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const sigset_t*", Name: "sigset"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(EpollPwait2)}},
@@ -8887,9 +9100,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "usize"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MountSetattr)}},
@@ -8913,9 +9126,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "void *", Name: "addr"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(QuotactlFd)}},
@@ -8938,9 +9151,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "u32", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LandlockCreateRuleset)}},
@@ -8964,9 +9177,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "u32", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LandlockAddRule)}},
@@ -8988,9 +9201,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "u32", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LandlockRestrictSelf)}},
@@ -9011,9 +9224,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MemfdSecret)}},
@@ -9035,9 +9248,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ProcessMrelease)}},
@@ -9060,9 +9273,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "options"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Waitpid)}},
@@ -9081,9 +9294,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldfstat)}},
@@ -9102,9 +9315,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Break)}},
@@ -9126,9 +9339,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct __old_kernel_stat*", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldstat)}},
@@ -9149,9 +9362,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "target"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Umount)}},
@@ -9172,9 +9385,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const time_t*", Name: "t"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stime)}},
@@ -9193,9 +9406,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stty)}},
@@ -9214,9 +9427,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Gtty)}},
@@ -9237,9 +9450,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "inc"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Nice)}},
@@ -9258,9 +9471,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ftime)}},
@@ -9279,9 +9492,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Prof)}},
@@ -9303,9 +9516,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "sighandler_t", Name: "handler"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Signal)}},
@@ -9324,9 +9537,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lock)}},
@@ -9345,9 +9558,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mpx)}},
@@ -9366,9 +9579,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ulimit)}},
@@ -9389,9 +9602,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct oldold_utsname*", Name: "name"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldolduname)}},
@@ -9414,9 +9627,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct sigaction*", Name: "oact"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigaction)}},
@@ -9435,9 +9648,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sgetmask)}},
@@ -9458,9 +9671,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "long", Name: "newmask"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ssetmask)}},
@@ -9481,9 +9694,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const sigset_t*", Name: "mask"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigsuspend)}},
@@ -9504,9 +9717,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "sigset_t*", Name: "set"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigpending)}},
@@ -9528,9 +9741,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct stat*", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Oldlstat)}},
@@ -9553,9 +9766,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "count"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Readdir)}},
@@ -9574,9 +9787,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Profil)}},
@@ -9598,9 +9811,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long*", Name: "args"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Socketcall)}},
@@ -9621,9 +9834,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct utsname*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Olduname)}},
@@ -9642,9 +9855,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Idle)}},
@@ -9665,9 +9878,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct vm86_struct*", Name: "info"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vm86old)}},
@@ -9693,9 +9906,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "long", Name: "fifth"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ipc)}},
@@ -9714,9 +9927,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigreturn)}},
@@ -9739,9 +9952,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "sigset_t *restrict", Name: "oldset"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sigprocmask)}},
@@ -9760,9 +9973,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Bdflush)}},
@@ -9781,9 +9994,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Afs_syscall)}},
@@ -9808,9 +10021,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned int", Name: "whence"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Llseek)}},
@@ -9835,9 +10048,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct timeval*", Name: "timeout"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OldSelect)}},
@@ -9859,9 +10072,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct vm86plus_struct*", Name: "v86"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Vm86)}},
@@ -9883,9 +10096,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct rlimit*", Name: "rlim"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OldGetrlimit)}},
@@ -9911,9 +10124,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "pgoffset"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mmap2)}},
@@ -9935,9 +10148,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "off_t", Name: "length"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Truncate64)}},
@@ -9959,9 +10172,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "off_t", Name: "length"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Ftruncate64)}},
@@ -9983,9 +10196,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct stat64*", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Stat64)}},
@@ -10007,9 +10220,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct stat64*", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lstat64)}},
@@ -10031,9 +10244,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct stat64*", Name: "statbuf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstat64)}},
@@ -10056,9 +10269,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "old_gid_t", Name: "group"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Lchown16)}},
@@ -10077,9 +10290,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getuid16)}},
@@ -10098,9 +10311,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgid16)}},
@@ -10119,9 +10332,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Geteuid16)}},
@@ -10140,9 +10353,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getegid16)}},
@@ -10164,9 +10377,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "old_uid_t", Name: "euid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setreuid16)}},
@@ -10188,9 +10401,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "old_gid_t", Name: "egid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setregid16)}},
@@ -10212,9 +10425,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "old_gid_t*", Name: "list"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getgroups16)}},
@@ -10236,9 +10449,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const gid_t*", Name: "list"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgroups16)}},
@@ -10261,9 +10474,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "old_gid_t", Name: "group"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchown16)}},
@@ -10286,9 +10499,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "old_uid_t", Name: "suid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresuid16)}},
@@ -10311,9 +10524,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "old_uid_t*", Name: "suid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresuid16)}},
@@ -10336,9 +10549,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "old_uid_t", Name: "suid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setresgid16)}},
@@ -10361,9 +10574,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "old_gid_t*", Name: "sgid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getresgid16)}},
@@ -10386,9 +10599,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "old_gid_t", Name: "group"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Chown16)}},
@@ -10409,9 +10622,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "old_old_uid_t", Name: "uid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setuid16)}},
@@ -10432,9 +10645,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "old_gid_t", Name: "gid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setgid16)}},
@@ -10455,9 +10668,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "old_uid_t", Name: "fsuid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsuid16)}},
@@ -10478,9 +10691,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "old_gid_t", Name: "fsgid"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setfsgid16)}},
@@ -10503,9 +10716,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "arg"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fcntl64)}},
@@ -10529,9 +10742,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "count"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Sendfile32)}},
@@ -10554,9 +10767,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct statfs64*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Statfs64)}},
@@ -10579,9 +10792,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct statfs64*", Name: "buf"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fstatfs64)}},
@@ -10605,9 +10818,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "advice"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fadvise64_64)}},
@@ -10629,9 +10842,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct old_timespec32*", Name: "tp"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGettime32)}},
@@ -10653,9 +10866,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct old_timespec32*", Name: "tp"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockSettime32)}},
@@ -10674,9 +10887,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockAdjtime64)}},
@@ -10698,9 +10911,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct old_timespec32*", Name: "tp"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockGetresTime32)}},
@@ -10724,9 +10937,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct old_timespec32*", Name: "rmtp"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(ClockNanosleepTime32)}},
@@ -10748,9 +10961,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct old_itimerspec32*", Name: "setting"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerGettime32)}},
@@ -10774,9 +10987,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct old_itimerspec32*", Name: "old"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerSettime32)}},
@@ -10798,9 +11011,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct old_itimerspec32*", Name: "otmr"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdGettime32)}},
@@ -10824,9 +11037,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct old_itimerspec32*", Name: "otmr"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(TimerfdSettime32)}},
@@ -10850,9 +11063,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "flags"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(UtimensatTime32)}},
@@ -10878,9 +11091,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "void*", Name: "sig"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Pselect6Time32)}},
@@ -10905,9 +11118,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(PpollTime32)}},
@@ -10926,9 +11139,9 @@ var CoreEvents = map[ID]Definition{
 		sets:    []string{"syscalls", "32bit_unique"},
 		params:  []trace.ArgMeta{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(IoPgeteventsTime32)}},
@@ -10953,9 +11166,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct old_timespec32*", Name: "timeout"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RecvmmsgTime32)}},
@@ -10980,9 +11193,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct old_timespec32*", Name: "u_abs_timeout"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedsendTime32)}},
@@ -11007,9 +11220,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct old_timespec32*", Name: "u_abs_timeout"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MqTimedreceiveTime32)}},
@@ -11033,9 +11246,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "size_t", Name: "sigsetsize"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RtSigtimedwaitTime32)}},
@@ -11061,9 +11274,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "u32", Name: "val3"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FutexTime32)}},
@@ -11085,9 +11298,9 @@ var CoreEvents = map[ID]Definition{
 			{Type: "struct old_timespec32*", Name: "interval"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SchedRrGetInterval32)}},
@@ -11106,8 +11319,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "sys_enter",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SysEnter, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSysEnter, required: true},
 			},
 		},
 		sets: []string{},
@@ -11121,8 +11334,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "sys_exit",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SysExit, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSysExit, required: true},
 			},
 		},
 		sets: []string{},
@@ -11136,8 +11349,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "sched_process_fork",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SchedProcessFork, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSchedProcessFork, required: true},
 			},
 		},
 		sets: []string{},
@@ -11176,9 +11389,9 @@ var CoreEvents = map[ID]Definition{
 		name:    "sched_process_exec",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SchedProcessExec, required: true},
-				{handle: probes.LoadElfPhdrs, required: false},
+			probes: []ProbeDep{
+				{handle: ProbeSchedProcessExec, required: true},
+				{handle: ProbeLoadElfPhdrs, required: false},
 			},
 			tailCalls: []TailCall{
 				{
@@ -11187,7 +11400,7 @@ var CoreEvents = map[ID]Definition{
 					[]uint32{TailSchedProcessExecEventSubmit},
 				},
 			},
-			capabilities: Capabilities{
+			capabilities: CapsDep{
 				base: []cap.Value{
 					// 1. set by processSchedProcessFork IF CalcHashes enabled
 					// 2. set by processSchedProcessExec by CaptureExec if needed
@@ -11221,9 +11434,9 @@ var CoreEvents = map[ID]Definition{
 		name:    "sched_process_exit",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SchedProcessExit, required: true},
-				{handle: probes.SchedProcessFree, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSchedProcessExit, required: true},
+				{handle: ProbeSchedProcessFree, required: true},
 			},
 		},
 		sets: []string{"proc", "proc_life"},
@@ -11241,8 +11454,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "sched_switch",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SchedSwitch, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSchedSwitch, required: true},
 			},
 		},
 		sets: []string{},
@@ -11260,7 +11473,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "do_exit",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{{handle: probes.DoExit, required: true}},
+			probes: []ProbeDep{{handle: ProbeDoExit, required: true}},
 		},
 		sets:   []string{"proc", "proc_life"},
 		params: []trace.ArgMeta{},
@@ -11271,8 +11484,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "cap_capable",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.CapCapable, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeCapCapable, required: true},
 			},
 		},
 		sets: []string{},
@@ -11286,9 +11499,9 @@ var CoreEvents = map[ID]Definition{
 		name:    "vfs_write",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.VfsWrite, required: true},
-				{handle: probes.VfsWriteRet, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeVfsWrite, required: true},
+				{handle: ProbeVfsWriteRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -11306,9 +11519,9 @@ var CoreEvents = map[ID]Definition{
 		name:    "vfs_writev",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.VfsWriteV, required: true},
-				{handle: probes.VfsWriteVRet, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeVfsWriteV, required: true},
+				{handle: ProbeVfsWriteVRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -11326,10 +11539,10 @@ var CoreEvents = map[ID]Definition{
 		name:    "mem_prot_alert",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityMmapAddr, required: true},
-				{handle: probes.SecurityFileMProtect, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecurityMmapAddr, required: true},
+				{handle: ProbeSecurityFileMProtect, required: true},
+				{handle: ProbeSyscallEnter__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{
@@ -11358,8 +11571,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "commit_creds",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.CommitCreds, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeCommitCreds, required: true},
 			},
 		},
 		sets: []string{},
@@ -11374,8 +11587,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "switch_task_ns",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SwitchTaskNS, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSwitchTaskNS, required: true},
 			},
 		},
 		sets: []string{},
@@ -11396,13 +11609,13 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		docPath: "security_alerts/magic_write.md",
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.VfsWrite, required: true},
-				{handle: probes.VfsWriteRet, required: true},
-				{handle: probes.VfsWriteV, required: false},
-				{handle: probes.VfsWriteVRet, required: false},
-				{handle: probes.KernelWrite, required: false},
-				{handle: probes.KernelWriteRet, required: false},
+			probes: []ProbeDep{
+				{handle: ProbeVfsWrite, required: true},
+				{handle: ProbeVfsWriteRet, required: true},
+				{handle: ProbeVfsWriteV, required: false},
+				{handle: ProbeVfsWriteVRet, required: false},
+				{handle: ProbeKernelWrite, required: false},
+				{handle: ProbeKernelWriteRet, required: false},
 			},
 		},
 		sets: []string{},
@@ -11419,8 +11632,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "cgroup_attach_task",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.CgroupAttachTask, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeCgroupAttachTask, required: true},
 			},
 		},
 		sets: []string{},
@@ -11436,8 +11649,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "cgroup_mkdir",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.CgroupMkdir, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeCgroupMkdir, required: true},
 			},
 		},
 		sets: []string{},
@@ -11453,8 +11666,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "cgroup_rmdir",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.CgroupRmdir, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeCgroupRmdir, required: true},
 			},
 		},
 		sets: []string{},
@@ -11470,9 +11683,9 @@ var CoreEvents = map[ID]Definition{
 		name:    "security_bprm_check",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityBPRMCheck, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecurityBPRMCheck, required: true},
+				{handle: ProbeSyscallEnter__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{
@@ -11499,9 +11712,9 @@ var CoreEvents = map[ID]Definition{
 		name:    "security_file_open",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityFileOpen, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecurityFileOpen, required: true},
+				{handle: ProbeSyscallEnter__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{
@@ -11531,8 +11744,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "security_inode_unlink",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityInodeUnlink, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecurityInodeUnlink, required: true},
 			},
 		},
 		sets: []string{"default", "lsm_hooks", "fs", "fs_file_ops"},
@@ -11549,8 +11762,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "security_socket_create",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecuritySocketCreate, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecuritySocketCreate, required: true},
 			},
 		},
 		sets: []string{"lsm_hooks", "net", "net_sock"},
@@ -11567,9 +11780,9 @@ var CoreEvents = map[ID]Definition{
 		name:    "security_socket_listen",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecuritySocketListen, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecuritySocketListen, required: true},
+				{handle: ProbeSyscallEnter__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Listen)}},
@@ -11588,9 +11801,9 @@ var CoreEvents = map[ID]Definition{
 		name:    "security_socket_connect",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecuritySocketConnect, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecuritySocketConnect, required: true},
+				{handle: ProbeSyscallEnter__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Connect)}},
@@ -11609,7 +11822,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "net_tcp_connect",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				SecuritySocketConnect,
 			},
 		},
@@ -11626,9 +11839,9 @@ var CoreEvents = map[ID]Definition{
 		name:    "security_socket_accept",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecuritySocketAccept, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecuritySocketAccept, required: true},
+				{handle: ProbeSyscallEnter__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Accept), uint32(Accept4)}},
@@ -11647,9 +11860,9 @@ var CoreEvents = map[ID]Definition{
 		name:    "security_socket_bind",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecuritySocketBind, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecuritySocketBind, required: true},
+				{handle: ProbeSyscallEnter__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Bind)}},
@@ -11668,9 +11881,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		docPath: "lsm_hooks/security_socket_setsockopt.md",
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecuritySocketSetsockopt, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecuritySocketSetsockopt, required: true},
+				{handle: ProbeSyscallEnter__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setsockopt)}},
@@ -11690,8 +11903,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "security_sb_mount",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecuritySbMount, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecuritySbMount, required: true},
 			},
 		},
 		sets: []string{"default", "lsm_hooks", "fs"},
@@ -11708,8 +11921,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "security_bpf",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityBPF, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecurityBPF, required: true},
 			},
 		},
 		sets: []string{"lsm_hooks"},
@@ -11723,8 +11936,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "security_bpf_map",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityBPFMap, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecurityBPFMap, required: true},
 			},
 		},
 		sets: []string{"lsm_hooks"},
@@ -11739,8 +11952,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "security_kernel_read_file",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityKernelReadFile, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecurityKernelReadFile, required: true},
 			},
 		},
 		sets: []string{"lsm_hooks"},
@@ -11758,8 +11971,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "security_kernel_post_read_file",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityKernelPostReadFile, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecurityKernelPostReadFile, required: true},
 			},
 		},
 		sets: []string{"lsm_hooks"},
@@ -11775,8 +11988,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "security_inode_mknod",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityInodeMknod, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecurityInodeMknod, required: true},
 			},
 		},
 		sets: []string{"lsm_hooks"},
@@ -11792,8 +12005,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "security_inode_symlink",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityInodeSymlink, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecurityInodeSymlink, required: true},
 			},
 		},
 		sets: []string{"lsm_hooks", "fs", "fs_file_ops"},
@@ -11808,8 +12021,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "security_mmap_file",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityMmapFile, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecurityMmapFile, required: true},
 			},
 		},
 		sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
@@ -11829,9 +12042,9 @@ var CoreEvents = map[ID]Definition{
 		name:    "do_mmap",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.DoMmap, required: true},
-				{handle: probes.DoMmapRet, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeDoMmap, required: true},
+				{handle: ProbeDoMmapRet, required: true},
 			},
 		},
 		sets: []string{"fs", "fs_file_ops", "proc", "proc_mem"},
@@ -11855,9 +12068,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		docPath: "lsm_hooks/security_file_mprotect.md",
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityFileMProtect, required: true},
-				{handle: probes.SyscallEnter__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecurityFileMProtect, required: true},
+				{handle: ProbeSyscallEnter__Internal, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mprotect), uint32(PkeyMprotect)}},
@@ -11881,7 +12094,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		sets:    []string{},
 		dependencies: Dependencies{
-			capabilities: Capabilities{
+			capabilities: CapsDep{
 				base: []cap.Value{
 					cap.SYS_PTRACE,
 				},
@@ -11925,8 +12138,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "hidden_inodes",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.Filldir64, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeFilldir64, required: true},
 			},
 		},
 		sets: []string{},
@@ -11940,9 +12153,9 @@ var CoreEvents = map[ID]Definition{
 		name:    "__kernel_write",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.KernelWrite, required: true},
-				{handle: probes.KernelWriteRet, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeKernelWrite, required: true},
+				{handle: ProbeKernelWriteRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -11961,11 +12174,11 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		sets:    []string{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.DoSplice, required: true},
-				{handle: probes.DoSpliceRet, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeDoSplice, required: true},
+				{handle: ProbeDoSpliceRet, required: true},
 			},
-			kSymbols: []KSymbol{
+			kSymbols: []KSymDep{
 				{symbol: "pipe_write", required: true},
 			},
 		},
@@ -11985,7 +12198,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "container_create",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			ids: []ID{CgroupMkdir},
+			ids: []int{CgroupMkdir},
 		},
 		sets: []string{"default", "containers"},
 		params: []trace.ArgMeta{
@@ -12007,7 +12220,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "container_remove",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			ids: []ID{CgroupRmdir},
+			ids: []int{CgroupRmdir},
 		},
 		sets: []string{"default", "containers"},
 		params: []trace.ArgMeta{
@@ -12040,8 +12253,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "proc_create",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.ProcCreate, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeProcCreate, required: true},
 			},
 		},
 		sets: []string{},
@@ -12056,9 +12269,9 @@ var CoreEvents = map[ID]Definition{
 		name:    "kprobe_attach",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.RegisterKprobe, required: true},
-				{handle: probes.RegisterKprobeRet, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeRegisterKprobe, required: true},
+				{handle: ProbeRegisterKprobeRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -12074,8 +12287,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "call_usermodehelper",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.CallUsermodeHelper, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeCallUsermodeHelper, required: true},
 			},
 		},
 		sets: []string{},
@@ -12092,8 +12305,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "debugfs_create_file",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.DebugfsCreateFile, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeDebugfsCreateFile, required: true},
 			},
 		},
 		sets: []string{},
@@ -12111,10 +12324,10 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallTableCheck, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallTableCheck, required: true},
 			},
-			kSymbols: []KSymbol{
+			kSymbols: []KSymDep{
 				{symbol: "sys_call_table", required: true},
 			},
 		},
@@ -12130,7 +12343,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "hidden_kernel_module",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				HiddenKernelModuleSeeker,
 			},
 		},
@@ -12148,16 +12361,16 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.HiddenKernelModuleSeeker, required: true},
-				{handle: probes.HiddenKernelModuleVerifier, required: true},
-				{handle: probes.ModuleLoad, required: true},
-				{handle: probes.ModuleFree, required: true},
-				{handle: probes.DoInitModule, required: true},
-				{handle: probes.DoInitModuleRet, required: true},
-				{handle: probes.LayoutAndAllocate, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeHiddenKernelModuleSeeker, required: true},
+				{handle: ProbeHiddenKernelModuleVerifier, required: true},
+				{handle: ProbeModuleLoad, required: true},
+				{handle: ProbeModuleFree, required: true},
+				{handle: ProbeDoInitModule, required: true},
+				{handle: ProbeDoInitModuleRet, required: true},
+				{handle: ProbeLayoutAndAllocate, required: true},
 			},
-			kSymbols: []KSymbol{
+			kSymbols: []KSymDep{
 				{symbol: "modules", required: true},
 				{symbol: "module_kset", required: true},
 				{symbol: "mod_tree", required: true},
@@ -12183,7 +12396,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "hooked_syscall",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				SyscallTableCheck,
 				DoInitModule,
 			},
@@ -12202,8 +12415,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "debugfs_create_dir",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.DebugfsCreateDir, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeDebugfsCreateDir, required: true},
 			},
 		},
 		sets: []string{},
@@ -12218,8 +12431,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "device_add",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.DeviceAdd, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeDeviceAdd, required: true},
 			},
 		},
 		sets: []string{},
@@ -12234,9 +12447,9 @@ var CoreEvents = map[ID]Definition{
 		name:    "register_chrdev",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.RegisterChrdev, required: true},
-				{handle: probes.RegisterChrdevRet, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeRegisterChrdev, required: true},
+				{handle: ProbeRegisterChrdevRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -12253,10 +12466,10 @@ var CoreEvents = map[ID]Definition{
 		name:    "shared_object_loaded",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityMmapFile, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecurityMmapFile, required: true},
 			},
-			capabilities: Capabilities{
+			capabilities: CapsDep{
 				base: []cap.Value{
 					cap.SYS_PTRACE, // loadSharedObjectDynamicSymbols()
 				},
@@ -12278,7 +12491,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		docPath: "security_alerts/symbols_load.md",
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				SharedObjectLoaded,
 				SchedProcessExec, // Used to get mount namespace cache
 			},
@@ -12297,7 +12510,7 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		docPath: "security_alerts/symbols_collision.md",
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				SharedObjectLoaded,
 				SchedProcessExec, // Used to get mount namespace cache
 			},
@@ -12316,14 +12529,14 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.VfsWrite, required: true},
-				{handle: probes.VfsWriteRet, required: true},
-				{handle: probes.VfsWriteV, required: false},
-				{handle: probes.VfsWriteVRet, required: false},
-				{handle: probes.KernelWrite, required: false},
-				{handle: probes.KernelWriteRet, required: false},
-				{handle: probes.SecurityInodeUnlink, required: false}, // Used for ELF filter
+			probes: []ProbeDep{
+				{handle: ProbeVfsWrite, required: true},
+				{handle: ProbeVfsWriteRet, required: true},
+				{handle: ProbeVfsWriteV, required: false},
+				{handle: ProbeVfsWriteVRet, required: false},
+				{handle: ProbeKernelWrite, required: false},
+				{handle: ProbeKernelWriteRet, required: false},
+				{handle: ProbeSecurityInodeUnlink, required: false}, // Used for ELF filter
 			},
 			tailCalls: []TailCall{
 				{"prog_array", "trace_ret_vfs_write_tail", []uint32{TailVfsWrite}},
@@ -12331,7 +12544,7 @@ var CoreEvents = map[ID]Definition{
 				{"prog_array", "trace_ret_kernel_write_tail", []uint32{TailKernelWrite}},
 				{"prog_array", "send_bin", []uint32{TailSendBin}},
 			},
-			kSymbols: []KSymbol{
+			kSymbols: []KSymDep{
 				{symbol: "pipe_write", required: true},
 			},
 		},
@@ -12343,19 +12556,19 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.VfsRead, required: true},
-				{handle: probes.VfsReadRet, required: true},
-				{handle: probes.VfsReadV, required: false},
-				{handle: probes.VfsReadVRet, required: false},
-				{handle: probes.SecurityInodeUnlink, required: false}, // Used for ELF filter
+			probes: []ProbeDep{
+				{handle: ProbeVfsRead, required: true},
+				{handle: ProbeVfsReadRet, required: true},
+				{handle: ProbeVfsReadV, required: false},
+				{handle: ProbeVfsReadVRet, required: false},
+				{handle: ProbeSecurityInodeUnlink, required: false}, // Used for ELF filter
 			},
 			tailCalls: []TailCall{
 				{"prog_array", "trace_ret_vfs_read_tail", []uint32{TailVfsRead}},
 				{"prog_array", "trace_ret_vfs_readv_tail", []uint32{TailVfsReadv}},
 				{"prog_array", "send_bin", []uint32{TailSendBin}},
 			},
-			kSymbols: []KSymbol{
+			kSymbols: []KSymDep{
 				{symbol: "pipe_write", required: true},
 			},
 		},
@@ -12367,10 +12580,10 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				SchedProcessExec,
 			},
-			capabilities: Capabilities{
+			capabilities: CapsDep{
 				base: []cap.Value{
 					cap.SYS_PTRACE, // processSchedProcessExec() performance
 				},
@@ -12384,12 +12597,12 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
-				{handle: probes.SecurityKernelPostReadFile, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
+				{handle: ProbeSecurityKernelPostReadFile, required: true},
 			},
-			ids: []ID{
+			ids: []int{
 				SchedProcessExec,
 			},
 			tailCalls: []TailCall{
@@ -12418,8 +12631,8 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityBPF, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecurityBPF, required: true},
 			},
 			tailCalls: []TailCall{
 				{"prog_array", "send_bin", []uint32{TailSendBin}},
@@ -12432,9 +12645,9 @@ var CoreEvents = map[ID]Definition{
 		name:    "do_init_module",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.DoInitModule, required: true},
-				{handle: probes.DoInitModuleRet, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeDoInitModule, required: true},
+				{handle: ProbeDoInitModuleRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -12450,8 +12663,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "module_load",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.ModuleLoad, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeModuleLoad, required: true},
 			},
 		},
 		sets: []string{},
@@ -12467,8 +12680,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "module_free",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.ModuleFree, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeModuleFree, required: true},
 			},
 		},
 		sets: []string{},
@@ -12485,11 +12698,11 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		internal: false,
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SyscallEnter__Internal, required: true},
-				{handle: probes.SyscallExit__Internal, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSyscallEnter__Internal, required: true},
+				{handle: ProbeSyscallExit__Internal, required: true},
 			},
-			ids: []ID{
+			ids: []int{
 				SecuritySocketAccept,
 			},
 			tailCalls: []TailCall{
@@ -12509,8 +12722,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "load_elf_phdrs",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.LoadElfPhdrs, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeLoadElfPhdrs, required: true},
 			},
 		},
 		sets: []string{"proc"},
@@ -12526,17 +12739,17 @@ var CoreEvents = map[ID]Definition{
 		name:    "hooked_proc_fops",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityFilePermission, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecurityFilePermission, required: true},
 			},
-			kSymbols: []KSymbol{
+			kSymbols: []KSymDep{
 				{symbol: "_stext", required: true},
 				{symbol: "_etext", required: true},
 			},
-			ids: []ID{
+			ids: []int{
 				DoInitModule,
 			},
-			capabilities: Capabilities{
+			capabilities: CapsDep{
 				base: []cap.Value{
 					cap.SYSLOG, // read /proc/kallsyms
 				},
@@ -12553,10 +12766,10 @@ var CoreEvents = map[ID]Definition{
 		name:    "print_net_seq_ops",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.PrintNetSeqOps, required: true},
+			probes: []ProbeDep{
+				{handle: ProbePrintNetSeqOps, required: true},
 			},
-			kSymbols: []KSymbol{
+			kSymbols: []KSymDep{
 				{symbol: "tcp4_seq_ops", required: true},
 				{symbol: "tcp6_seq_ops", required: true},
 				{symbol: "udp_seq_ops", required: true},
@@ -12578,15 +12791,15 @@ var CoreEvents = map[ID]Definition{
 		name:    "hooked_seq_ops",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			kSymbols: []KSymbol{
+			kSymbols: []KSymDep{
 				{symbol: "_stext", required: true},
 				{symbol: "_etext", required: true},
 			},
-			ids: []ID{
+			ids: []int{
 				PrintNetSeqOps,
 				DoInitModule,
 			},
-			capabilities: Capabilities{
+			capabilities: CapsDep{
 				base: []cap.Value{
 					cap.SYSLOG, // read /proc/kallsyms
 				},
@@ -12603,8 +12816,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "task_rename",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.TaskRename, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeTaskRename, required: true},
 			},
 		},
 		sets: []string{"proc"},
@@ -12619,8 +12832,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "security_inode_rename",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityInodeRename, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSecurityInodeRename, required: true},
 			},
 		},
 		sets: []string{},
@@ -12635,8 +12848,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "do_sigaction",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.DoSigaction, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeDoSigaction, required: true},
 			},
 		},
 		sets: []string{"proc"},
@@ -12661,13 +12874,13 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		docPath: "docs/events/builtin/extra/bpf_attach.md",
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityFileIoctl, required: true},
-				{handle: probes.SecurityBpfProg, required: true},
-				{handle: probes.SecurityBPF, required: true},
-				{handle: probes.TpProbeRegPrioMayExist, required: true},
-				{handle: probes.CheckHelperCall, required: false},
-				{handle: probes.CheckMapFuncCompatibility, required: false},
+			probes: []ProbeDep{
+				{handle: ProbeSecurityFileIoctl, required: true},
+				{handle: ProbeSecurityBpfProg, required: true},
+				{handle: ProbeSecurityBPF, required: true},
+				{handle: ProbeTpProbeRegPrioMayExist, required: true},
+				{handle: ProbeCheckHelperCall, required: false},
+				{handle: ProbeCheckMapFuncCompatibility, required: false},
 			},
 		},
 		sets: []string{},
@@ -12688,9 +12901,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		docPath: "kprobes/kallsyms_lookup_name.md",
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.KallsymsLookupName, required: true},
-				{handle: probes.KallsymsLookupNameRet, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeKallsymsLookupName, required: true},
+				{handle: ProbeKallsymsLookupNameRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -12706,20 +12919,20 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		sets:    []string{},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.PrintMemDump, required: true},
+			probes: []ProbeDep{
+				{handle: ProbePrintMemDump, required: true},
 			},
-			ids: []ID{
+			ids: []int{
 				DoInitModule,
 			},
-			kSymbols: []KSymbol{
+			kSymbols: []KSymDep{
 				// Special case for this event: Single symbol, common to all kernel versions. Placed
 				// here so the ksymbols engine is always enabled, during tracee startup. The symbols
 				// are resolved dynamically, during runtime depending on the arguments passed to
 				// the event.
 				{symbol: "_stext", required: true},
 			},
-			capabilities: Capabilities{
+			capabilities: CapsDep{
 				base: []cap.Value{
 					cap.SYSLOG, // read /proc/kallsyms
 				},
@@ -12741,9 +12954,9 @@ var CoreEvents = map[ID]Definition{
 		name:    "vfs_read",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.VfsRead, required: true},
-				{handle: probes.VfsReadRet, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeVfsRead, required: true},
+				{handle: ProbeVfsReadRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -12761,9 +12974,9 @@ var CoreEvents = map[ID]Definition{
 		name:    "vfs_readv",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.VfsReadV, required: true},
-				{handle: probes.VfsReadVRet, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeVfsReadV, required: true},
+				{handle: ProbeVfsReadVRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -12781,9 +12994,9 @@ var CoreEvents = map[ID]Definition{
 		name:    "vfs_utimes",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.VfsUtimes, required: false},    // this probe exits in kernels >= 5.9
-				{handle: probes.UtimesCommon, required: false}, // this probe exits in kernels < 5.9
+			probes: []ProbeDep{
+				{handle: ProbeVfsUtimes, required: false},    // this probe exits in kernels >= 5.9
+				{handle: ProbeUtimesCommon, required: false}, // this probe exits in kernels < 5.9
 			},
 		},
 		sets: []string{},
@@ -12801,8 +13014,8 @@ var CoreEvents = map[ID]Definition{
 		name:    "do_truncate",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.DoTruncate, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeDoTruncate, required: true},
 			},
 		},
 		sets: []string{},
@@ -12828,13 +13041,13 @@ var CoreEvents = map[ID]Definition{
 			{Type: "unsigned long", Name: "new_ctime"},
 		},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.FdInstall, required: true},
-				{handle: probes.FilpClose, required: true},
-				{handle: probes.FileUpdateTime, required: true},
-				{handle: probes.FileUpdateTimeRet, required: true},
-				{handle: probes.FileModified, required: false},    // not required because doesn't ...
-				{handle: probes.FileModifiedRet, required: false}, // ... exist in kernels < 5.3
+			probes: []ProbeDep{
+				{handle: ProbeFdInstall, required: true},
+				{handle: ProbeFilpClose, required: true},
+				{handle: ProbeFileUpdateTime, required: true},
+				{handle: ProbeFileUpdateTimeRet, required: true},
+				{handle: ProbeFileModified, required: false},    // not required because doesn't ...
+				{handle: ProbeFileModifiedRet, required: false}, // ... exist in kernels < 5.3
 			},
 		},
 	},
@@ -12844,9 +13057,9 @@ var CoreEvents = map[ID]Definition{
 		name:    "inotify_watch",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.InotifyFindInode, required: true},
-				{handle: probes.InotifyFindInodeRet, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeInotifyFindInode, required: true},
+				{handle: ProbeInotifyFindInodeRet, required: true},
 			},
 		},
 		sets: []string{},
@@ -12863,11 +13076,11 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		docPath: "docs/events/builtin/extra/security_bpf_prog.md",
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SecurityBpfProg, required: true},
-				{handle: probes.BpfCheck, required: true},
-				{handle: probes.CheckHelperCall, required: false},
-				{handle: probes.CheckMapFuncCompatibility, required: false},
+			probes: []ProbeDep{
+				{handle: ProbeSecurityBpfProg, required: true},
+				{handle: ProbeBpfCheck, required: true},
+				{handle: ProbeCheckHelperCall, required: false},
+				{handle: ProbeCheckMapFuncCompatibility, required: false},
 			},
 		},
 		sets: []string{},
@@ -12886,9 +13099,9 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		sets:    []string{"proc"},
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.ExecBinprm, required: true},
-				{handle: probes.ExecBinprmRet, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeExecBinprm, required: true},
+				{handle: ProbeExecBinprmRet, required: true},
 			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Execve), uint32(Execveat)}},
@@ -12935,8 +13148,8 @@ var CoreEvents = map[ID]Definition{
 		name:     "signal_cgroup_mkdir",
 		internal: true,
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SignalCgroupMkdir, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSignalCgroupMkdir, required: true},
 			},
 		},
 		sets: []string{"signal"},
@@ -12952,8 +13165,8 @@ var CoreEvents = map[ID]Definition{
 		name:     "signal_cgroup_rmdir",
 		internal: true,
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SignalCgroupRmdir, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSignalCgroupRmdir, required: true},
 			},
 		},
 		sets: []string{"signal"},
@@ -12969,8 +13182,8 @@ var CoreEvents = map[ID]Definition{
 		name:     "signal_sched_process_fork",
 		internal: true,
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SignalSchedProcessFork, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSignalSchedProcessFork, required: true},
 			},
 		},
 		sets: []string{"signal"},
@@ -13008,11 +13221,11 @@ var CoreEvents = map[ID]Definition{
 		name:     "signal_sched_process_exec",
 		internal: true,
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SignalSchedProcessExec, required: true},
-				{handle: probes.SchedProcessFork, required: true}, // proc_info_map
-				{handle: probes.SchedProcessFree, required: true}, // proc_info_map
-				{handle: probes.LoadElfPhdrs, required: false},    // interpreter info
+			probes: []ProbeDep{
+				{handle: ProbeSignalSchedProcessExec, required: true},
+				{handle: ProbeSchedProcessFork, required: true}, // proc_info_map
+				{handle: ProbeSchedProcessFree, required: true}, // proc_info_map
+				{handle: ProbeLoadElfPhdrs, required: false},    // interpreter info
 			},
 		},
 		sets: []string{"signal"},
@@ -13047,8 +13260,8 @@ var CoreEvents = map[ID]Definition{
 		name:     "signal_sched_process_exit",
 		internal: true,
 		dependencies: Dependencies{
-			probes: []Probe{
-				{handle: probes.SignalSchedProcessExit, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeSignalSchedProcessExit, required: true},
 			},
 		},
 		sets: []string{"signal"},
@@ -13071,20 +13284,20 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		dependencies: Dependencies{
-			capabilities: Capabilities{
+			capabilities: CapsDep{
 				ebpf: []cap.Value{
 					cap.NET_ADMIN, // needed for BPF_PROG_TYPE_CGROUP_SKB
 				},
 			},
-			probes: []Probe{
-				{handle: probes.CgroupSKBIngress, required: true},
-				{handle: probes.CgroupSKBEgress, required: true},
-				{handle: probes.SockAllocFile, required: true},
-				{handle: probes.SockAllocFileRet, required: true},
-				{handle: probes.CgroupBPFRunFilterSKB, required: true},
-				{handle: probes.SecuritySocketRecvmsg, required: true},
-				{handle: probes.SecuritySocketSendmsg, required: true},
-				{handle: probes.SecuritySkClone, required: true},
+			probes: []ProbeDep{
+				{handle: ProbeCgroupSKBIngress, required: true},
+				{handle: ProbeCgroupSKBEgress, required: true},
+				{handle: ProbeSockAllocFile, required: true},
+				{handle: ProbeSockAllocFileRet, required: true},
+				{handle: ProbeCgroupBPFRunFilterSKB, required: true},
+				{handle: ProbeSecuritySocketRecvmsg, required: true},
+				{handle: ProbeSecuritySocketSendmsg, required: true},
+				{handle: ProbeSecuritySkClone, required: true},
 			},
 		},
 		sets:   []string{"network_events"},
@@ -13097,7 +13310,7 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketBase,
 			},
 		},
@@ -13112,7 +13325,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "net_packet_ipv4",
 		version: NewVersion(1, 1, 0),
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketIPBase,
 			},
 		},
@@ -13130,7 +13343,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "net_packet_ipv6",
 		version: NewVersion(1, 1, 0),
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketIPBase,
 			},
 		},
@@ -13149,7 +13362,7 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketBase,
 			},
 		},
@@ -13164,7 +13377,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "net_packet_tcp",
 		version: NewVersion(1, 1, 0),
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketTCPBase,
 			},
 		},
@@ -13185,7 +13398,7 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketBase,
 			},
 		},
@@ -13200,7 +13413,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "net_packet_udp",
 		version: NewVersion(1, 1, 0),
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketUDPBase,
 			},
 		},
@@ -13220,7 +13433,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "net_packet_icmp_base",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketBase,
 			},
 		},
@@ -13236,7 +13449,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "net_packet_icmp",
 		version: NewVersion(1, 1, 0),
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketICMPBase,
 			},
 		},
@@ -13255,7 +13468,7 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketBase,
 			},
 		},
@@ -13270,7 +13483,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "net_packet_icmpv6",
 		version: NewVersion(1, 1, 0),
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketICMPv6Base,
 			},
 		},
@@ -13289,7 +13502,7 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketBase,
 			},
 		},
@@ -13304,7 +13517,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "net_packet_dns", // preferred event to write signatures
 		version: NewVersion(1, 1, 0),
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketDNSBase,
 			},
 		},
@@ -13324,7 +13537,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "net_packet_dns_request", // simple dns event compatible dns_request (deprecated)
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketDNSBase,
 			},
 		},
@@ -13340,7 +13553,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "net_packet_dns_response", // simple dns event compatible dns_response (deprecated)
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketDNSBase,
 			},
 		},
@@ -13357,7 +13570,7 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketBase,
 			},
 		},
@@ -13372,7 +13585,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "net_packet_http", // preferred event to write signatures
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketHTTPBase,
 			},
 		},
@@ -13392,7 +13605,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "net_packet_http_request",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketHTTPBase,
 			},
 		},
@@ -13408,7 +13621,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "net_packet_http_response",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketHTTPBase,
 			},
 		},
@@ -13425,7 +13638,7 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketBase,
 			},
 		},
@@ -13440,7 +13653,7 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketCapture,
 			},
 		},
@@ -13452,7 +13665,7 @@ var CoreEvents = map[ID]Definition{
 		version:  NewVersion(1, 0, 0),
 		internal: true,
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketBase,
 			},
 		},
@@ -13467,7 +13680,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "net_flow_tcp_begin",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketFlow,
 			},
 		},
@@ -13488,7 +13701,7 @@ var CoreEvents = map[ID]Definition{
 		name:    "net_flow_tcp_end",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
-			ids: []ID{
+			ids: []int{
 				NetPacketFlow,
 			},
 		},

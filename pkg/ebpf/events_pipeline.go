@@ -159,7 +159,7 @@ func (t *Tracee) queueEvents(ctx context.Context, in <-chan *trace.Event) (chan 
 func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-chan *trace.Event, <-chan error) {
 	out := make(chan *trace.Event, 10000)
 	errc := make(chan error, 1)
-	sysCompatTranslation := events.Core.IDs32ToIDs()
+	sysCompatTranslation := extensions.Definitions.IDs32ToIDs("core")
 	go func() {
 		defer close(out)
 		defer close(errc)
@@ -175,12 +175,12 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				t.handleError(err)
 				continue
 			}
-			eventId := events.ID(eCtx.EventID)
-			if !events.Core.IsDefined(eventId) {
+			eventId := int(eCtx.EventID)
+			if !extensions.Definitions.IsDefined("core", eventId) {
 				t.handleError(errfmt.Errorf("failed to get configuration of event %d", eventId))
 				continue
 			}
-			eventDefinition := events.Core.GetDefinitionByID(eventId)
+			eventDefinition := extensions.Definitions.GetDefinitionByID("core", eventId)
 			args := make([]trace.Argument, len(eventDefinition.GetParams()))
 			err := ebpfMsgDecoder.DecodeArguments(args, int(argnum), eventDefinition, eventId)
 			if err != nil {
@@ -288,7 +288,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 // (so the event is "filtered" for that policy). This may be called in different stages of the
 // pipeline (decode, derive, engine).
 func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
-	eventID := events.ID(event.EventID)
+	eventID := int(event.EventID)
 	bitmap := event.MatchedPoliciesKernel
 
 	policies, err := policy.Snapshots().Get(event.PoliciesVersion)
@@ -405,22 +405,22 @@ func parseContextFlags(containerId string, flags uint32) trace.ContextFlags {
 // parseSyscallID returns the syscall name from its ID, taking into account architecture
 // and 32bit/64bit modes. It also returns an error if the syscall ID is not found in the
 // events definition.
-func parseSyscallID(syscallID int, isCompat bool, compatTranslationMap map[events.ID]events.ID) (string, error) {
-	id := events.ID(syscallID)
+func parseSyscallID(syscallID int, isCompat bool, compatTranslationMap map[int]int) (string, error) {
+	id := int(syscallID)
 	if !isCompat {
-		if !events.Core.IsDefined(id) {
+		if !extensions.Definitions.IsDefined("core", id) {
 			return "", errfmt.Errorf("no syscall event with syscall id %d", syscallID)
 		}
-		return events.Core.GetDefinitionByID(id).GetName(), nil
+		return extensions.Definitions.GetDefinitionByID("core", id).GetName(), nil
 	}
-	if id, ok := compatTranslationMap[events.ID(syscallID)]; ok {
+	if id, ok := compatTranslationMap[int(syscallID)]; ok {
 		// should never happen (map should be initialized from events definition)
-		if !events.Core.IsDefined(id) {
+		if !extensions.Definitions.IsDefined("core", id) {
 			return "", errfmt.Errorf(
 				"no syscall event with compat syscall id %d, translated to ID %d", syscallID, id,
 			)
 		}
-		return events.Core.GetDefinitionByID(id).GetName(), nil
+		return extensions.Definitions.GetDefinitionByID("core", id).GetName(), nil
 	}
 	return "", errfmt.Errorf("no syscall event with compat syscall id %d", syscallID)
 }
@@ -477,10 +477,10 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 			// cgroup_mkdir or cgroup_rmdir.
 
 			if policiesWithContainerFilter > 0 && event.Container.ID == "" {
-				eventId := events.ID(event.EventID)
+				eventId := int(event.EventID)
 
 				// never skip cgroup_{mkdir,rmdir}: container_{create,remove} events need it
-				if eventId == events.CgroupMkdir || eventId == events.CgroupRmdir {
+				if eventId == extensions.CgroupMkdir || eventId == extensions.CgroupRmdir {
 					goto sendEvent
 				}
 
@@ -555,10 +555,10 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 
 					// Skip events that dont work with filtering due to missing types
 					// being handled (https://github.com/aquasecurity/tracee/issues/2486)
-					switch events.ID(derivatives[i].EventID) {
-					case events.SymbolsLoaded:
-					case events.SharedObjectLoaded:
-					case events.PrintMemDump:
+					switch int(derivatives[i].EventID) {
+					case extensions.SymbolsLoaded:
+					case extensions.SharedObjectLoaded:
+					case extensions.PrintMemDump:
 					default:
 						// Derived events might need filtering as well
 						if t.matchPolicies(event) == 0 {
@@ -595,7 +595,7 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 			}
 
 			// Is the event enabled for the policies or globally?
-			if !t.policyManager.IsEnabled(event.MatchedPoliciesUser, events.ID(event.EventID)) {
+			if !t.policyManager.IsEnabled(event.MatchedPoliciesUser, int(event.EventID)) {
 				// TODO: create metrics from dropped events
 				t.eventsPool.Put(event)
 				continue

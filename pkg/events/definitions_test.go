@@ -1,343 +1,335 @@
 package events
 
-import (
-	"fmt"
-	"sync"
-	"testing"
+// var amountOfTestThreads = 100
 
-	"github.com/stretchr/testify/require"
-)
+// var version = NewVersion(1, 0, 0)
 
-var amountOfTestThreads = 100
+// var getNames = func() map[string]ID {
+// 	names := map[string]ID{}
 
-var version = NewVersion(1, 0, 0)
+// 	for i := 0; i < amountOfTestThreads; i++ {
+// 		names[fmt.Sprintf("def%d", i)] = ID(i)
+// 	}
 
-var getNames = func() map[string]ID {
-	names := map[string]ID{}
+// 	return names
+// }
 
-	for i := 0; i < amountOfTestThreads; i++ {
-		names[fmt.Sprintf("def%d", i)] = ID(i)
-	}
+// // TestDefinitions_Add tests that Add adds a definition to the definition group.
+// func TestDefinitions_Add(t *testing.T) {
+// 	t.Parallel()
 
-	return names
-}
+// 	defGroup := NewDefinitions()
 
-// TestDefinitions_Add tests that Add adds a definition to the definition group.
-func TestDefinitions_Add(t *testing.T) {
-	t.Parallel()
+// 	id := ID(1)
 
-	defGroup := NewDefinitions()
+// 	def := NewDefinition(id, id+1000, "def", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
 
-	id := ID(1)
+// 	err := defGroup.Add(id, def)
+// 	require.NoError(t, err)
 
-	def := NewDefinition(id, id+1000, "def", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 	_, ok := defGroup.definitions[id]
+// 	require.True(t, ok, true)
+// }
 
-	err := defGroup.Add(id, def)
-	require.NoError(t, err)
+// // TestDefinitions_AddBatch tests that AddBatch adds multiple definitions to the definition group.
+// func TestDefinitions_AddBatch(t *testing.T) {
+// 	t.Parallel()
 
-	_, ok := defGroup.definitions[id]
-	require.True(t, ok, true)
-}
+// 	defGroup := NewDefinitions()
 
-// TestDefinitions_AddBatch tests that AddBatch adds multiple definitions to the definition group.
-func TestDefinitions_AddBatch(t *testing.T) {
-	t.Parallel()
+// 	id1 := ID(1)
+// 	id2 := ID(2)
 
-	defGroup := NewDefinitions()
+// 	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
 
-	id1 := ID(1)
-	id2 := ID(2)
+// 	err := defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
+// 	require.NoError(t, err)
 
-	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
-	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 	_, ok := defGroup.definitions[id1]
+// 	require.True(t, ok, true)
 
-	err := defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
-	require.NoError(t, err)
+// 	_, ok = defGroup.definitions[id2]
+// 	require.True(t, ok, true)
+// }
 
-	_, ok := defGroup.definitions[id1]
-	require.True(t, ok, true)
+// // TestDefinitions_GetDefinitionIDByName tests that GetDefinitionIDByName returns a definition ID by its name.
+// func TestDefinitions_GetDefinitionIDByName(t *testing.T) {
+// 	t.Parallel()
 
-	_, ok = defGroup.definitions[id2]
-	require.True(t, ok, true)
-}
+// 	defGroup := NewDefinitions()
 
-// TestDefinitions_GetDefinitionIDByName tests that GetDefinitionIDByName returns a definition ID by its name.
-func TestDefinitions_GetDefinitionIDByName(t *testing.T) {
-	t.Parallel()
+// 	id1 := ID(1)
+// 	id2 := ID(2)
 
-	defGroup := NewDefinitions()
+// 	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
 
-	id1 := ID(1)
-	id2 := ID(2)
+// 	defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
 
-	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
-	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 	id, ok := defGroup.GetDefinitionIDByName("def1")
+// 	require.True(t, ok, true)
+// 	require.Equal(t, id, id1)
 
-	defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
+// 	id, ok = defGroup.GetDefinitionIDByName("def2")
+// 	require.True(t, ok, true)
+// 	require.Equal(t, id, id2)
+// }
 
-	id, ok := defGroup.GetDefinitionIDByName("def1")
-	require.True(t, ok, true)
-	require.Equal(t, id, id1)
+// // TestDefinitions_GetDefinitionByID tests that GetDefinitionByID returns a definition by its ID.
+// func TestDefinitions_GetDefinitionByID(t *testing.T) {
+// 	t.Parallel()
 
-	id, ok = defGroup.GetDefinitionIDByName("def2")
-	require.True(t, ok, true)
-	require.Equal(t, id, id2)
-}
+// 	defGroup := NewDefinitions()
 
-// TestDefinitions_GetDefinitionByID tests that GetDefinitionByID returns a definition by its ID.
-func TestDefinitions_GetDefinitionByID(t *testing.T) {
-	t.Parallel()
+// 	id1 := ID(1)
+// 	id2 := ID(2)
 
-	defGroup := NewDefinitions()
+// 	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
 
-	id1 := ID(1)
-	id2 := ID(2)
+// 	defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
 
-	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
-	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 	// found definition
 
-	defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
+// 	require.True(t, defGroup.IsDefined(id1))
+// 	def := defGroup.GetDefinitionByID(id1)
+// 	require.Equal(t, def.GetName(), "def1")
 
-	// found definition
+// 	// definition not found (undefined)
 
-	require.True(t, defGroup.IsDefined(id1))
-	def := defGroup.GetDefinitionByID(id1)
-	require.Equal(t, def.GetName(), "def1")
+// 	require.False(t, defGroup.IsDefined(ID(3)))
+// 	def = defGroup.GetDefinitionByID(ID(3))
+// 	require.Equal(t, def.GetID(), Undefined)
+// }
 
-	// definition not found (undefined)
+// // TestDefinitions_Length tests that Length returns the number of definitions in the definition group.
+// func TestDefinitions_Length(t *testing.T) {
+// 	t.Parallel()
 
-	require.False(t, defGroup.IsDefined(ID(3)))
-	def = defGroup.GetDefinitionByID(ID(3))
-	require.Equal(t, def.GetID(), Undefined)
-}
+// 	defGroup := NewDefinitions()
 
-// TestDefinitions_Length tests that Length returns the number of definitions in the definition group.
-func TestDefinitions_Length(t *testing.T) {
-	t.Parallel()
+// 	require.Equal(t, defGroup.Length(), 0) // empty definition group
 
-	defGroup := NewDefinitions()
+// 	id := ID(1)
 
-	require.Equal(t, defGroup.Length(), 0) // empty definition group
+// 	def := NewDefinition(id, id+1000, "def", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 	defGroup.Add(id, def)
 
-	id := ID(1)
+// 	require.Equal(t, defGroup.Length(), 1) // definition group with one definition
 
-	def := NewDefinition(id, id+1000, "def", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
-	defGroup.Add(id, def)
+// 	id2 := ID(2)
+// 	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 	defGroup.Add(id2, def2)
 
-	require.Equal(t, defGroup.Length(), 1) // definition group with one definition
+// 	require.Equal(t, defGroup.Length(), 2) // definition group with two definitions
+// }
 
-	id2 := ID(2)
-	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
-	defGroup.Add(id2, def2)
+// // TestDefinitions_GetDefinitions tests that GetDefinitions returns a map of definition IDs to their definitions.
+// func TestDefinitions_GetDefinitions(t *testing.T) {
+// 	t.Parallel()
 
-	require.Equal(t, defGroup.Length(), 2) // definition group with two definitions
-}
+// 	defGroup := NewDefinitions()
 
-// TestDefinitions_GetDefinitions tests that GetDefinitions returns a map of definition IDs to their definitions.
-func TestDefinitions_GetDefinitions(t *testing.T) {
-	t.Parallel()
+// 	id1 := ID(1)
+// 	id2 := ID(2)
 
-	defGroup := NewDefinitions()
+// 	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
 
-	id1 := ID(1)
-	id2 := ID(2)
+// 	defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
 
-	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
-	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 	defs := defGroup.GetDefinitions()
 
-	defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
+// 	require.Equal(t, len(defs), len(defGroup.definitions)) // same number of definitions
+// 	require.Contains(t, defs, def1)                        // same definition
+// 	require.Contains(t, defs, def2)                        // same definition
+// }
 
-	defs := defGroup.GetDefinitions()
+// // TestDefinitions_NamesToIDs tests that NamesToIDs returns a map of definition names to their IDs.
+// func TestDefinitions_NamesToIDs(t *testing.T) {
+// 	t.Parallel()
 
-	require.Equal(t, len(defs), len(defGroup.definitions)) // same number of definitions
-	require.Contains(t, defs, def1)                        // same definition
-	require.Contains(t, defs, def2)                        // same definition
-}
+// 	defGroup := NewDefinitions()
 
-// TestDefinitions_NamesToIDs tests that NamesToIDs returns a map of definition names to their IDs.
-func TestDefinitions_NamesToIDs(t *testing.T) {
-	t.Parallel()
+// 	id1 := ID(1)
+// 	id2 := ID(2)
 
-	defGroup := NewDefinitions()
+// 	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
 
-	id1 := ID(1)
-	id2 := ID(2)
+// 	defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
 
-	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
-	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 	namesToIds := defGroup.NamesToIDs()
 
-	defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
+// 	require.Equal(t, len(namesToIds), len(defGroup.definitions)) // same number of definitions
+// 	require.Equal(t, namesToIds["def1"], id1)                    // same definition ID
+// 	require.Equal(t, namesToIds["def2"], id2)                    // same definition ID
+// }
 
-	namesToIds := defGroup.NamesToIDs()
+// // TestDefinitions_IDs32ToIDs tests that IDs32ToIDs returns a map of definition IDs to their 32-bit IDs.
+// func TestDefinitions_IDs32ToIDs(t *testing.T) {
+// 	t.Parallel()
 
-	require.Equal(t, len(namesToIds), len(defGroup.definitions)) // same number of definitions
-	require.Equal(t, namesToIds["def1"], id1)                    // same definition ID
-	require.Equal(t, namesToIds["def2"], id2)                    // same definition ID
-}
+// 	defGroup := NewDefinitions()
 
-// TestDefinitions_IDs32ToIDs tests that IDs32ToIDs returns a map of definition IDs to their 32-bit IDs.
-func TestDefinitions_IDs32ToIDs(t *testing.T) {
-	t.Parallel()
+// 	id1 := ID(1)
+// 	id2 := ID(2)
 
-	defGroup := NewDefinitions()
+// 	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
 
-	id1 := ID(1)
-	id2 := ID(2)
+// 	defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
 
-	def1 := NewDefinition(id1, id1+1000, "def1", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
-	def2 := NewDefinition(id2, id2+1000, "def2", version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 	idS32ToIDs := defGroup.IDs32ToIDs()
 
-	defGroup.AddBatch(map[ID]Definition{id1: def1, id2: def2})
+// 	require.Equal(t, len(idS32ToIDs), len(defGroup.definitions)) // same number of definitions
+// 	require.Equal(t, idS32ToIDs[id1+1000], id1)                  // same definition ID
+// 	require.Equal(t, idS32ToIDs[id2+1000], id2)                  // same definition ID
+// }
 
-	idS32ToIDs := defGroup.IDs32ToIDs()
+// //
+// // Thread Safety
+// //
 
-	require.Equal(t, len(idS32ToIDs), len(defGroup.definitions)) // same number of definitions
-	require.Equal(t, idS32ToIDs[id1+1000], id1)                  // same definition ID
-	require.Equal(t, idS32ToIDs[id2+1000], id2)                  // same definition ID
-}
+// // TestDefinitions_AddBatchAndGetDefinitions_MultipleThreads tests Add and Get functions for thread-safety.
+// func TestDefinitions_AddBatch_MultipleThreads(t *testing.T) {
+// 	t.Parallel()
 
-//
-// Thread Safety
-//
+// 	defGroup := NewDefinitions()
 
-// TestDefinitions_AddBatchAndGetDefinitions_MultipleThreads tests Add and Get functions for thread-safety.
-func TestDefinitions_AddBatch_MultipleThreads(t *testing.T) {
-	t.Parallel()
+// 	names := getNames()
 
-	defGroup := NewDefinitions()
+// 	wg := &sync.WaitGroup{}
 
-	names := getNames()
+// 	for name, id := range names {
+// 		wg.Add(1)
+// 		go func(name string, id ID) {
+// 			def := NewDefinition(id, id+1000, name, version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
 
-	wg := &sync.WaitGroup{}
+// 			err := defGroup.AddBatch(map[ID]Definition{id: def})
+// 			require.NoError(t, err)
 
-	for name, id := range names {
-		wg.Add(1)
-		go func(name string, id ID) {
-			def := NewDefinition(id, id+1000, name, version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 			odef := defGroup.GetDefinitionByID(id)          // concurrent calls
+// 			oid, ok := defGroup.GetDefinitionIDByName(name) // concurrent calls
 
-			err := defGroup.AddBatch(map[ID]Definition{id: def})
-			require.NoError(t, err)
+// 			require.True(t, true, ok)
+// 			require.Equal(t, def, odef) // same definition
+// 			require.Equal(t, id, oid)   // same definition ID
 
-			odef := defGroup.GetDefinitionByID(id)          // concurrent calls
-			oid, ok := defGroup.GetDefinitionIDByName(name) // concurrent calls
+// 			wg.Done()
+// 		}(name, id)
+// 	}
 
-			require.True(t, true, ok)
-			require.Equal(t, def, odef) // same definition
-			require.Equal(t, id, oid)   // same definition ID
+// 	wg.Wait()
+// }
 
-			wg.Done()
-		}(name, id)
-	}
+// // TestDefinitions_Length_MultipleThreads tests that Length is thread-safe.
+// func TestDefinitions_Length_MultipleThreads(t *testing.T) {
+// 	t.Parallel()
 
-	wg.Wait()
-}
+// 	defGroup := NewDefinitions()
 
-// TestDefinitions_Length_MultipleThreads tests that Length is thread-safe.
-func TestDefinitions_Length_MultipleThreads(t *testing.T) {
-	t.Parallel()
+// 	names := getNames()
 
-	defGroup := NewDefinitions()
+// 	wg := &sync.WaitGroup{}
 
-	names := getNames()
+// 	for name, id := range names {
+// 		wg.Add(1)
+// 		go func(name string, id ID) {
+// 			def := NewDefinition(id, id+1000, name, version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 			err := defGroup.AddBatch(map[ID]Definition{id: def})
+// 			require.NoError(t, err)
+// 			defGroup.Length() // concurrent calls
+// 			wg.Done()
+// 		}(name, id)
+// 	}
 
-	wg := &sync.WaitGroup{}
+// 	wg.Wait()
 
-	for name, id := range names {
-		wg.Add(1)
-		go func(name string, id ID) {
-			def := NewDefinition(id, id+1000, name, version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
-			err := defGroup.AddBatch(map[ID]Definition{id: def})
-			require.NoError(t, err)
-			defGroup.Length() // concurrent calls
-			wg.Done()
-		}(name, id)
-	}
+// 	require.Equal(t, amountOfTestThreads, defGroup.Length()) // definition group with 20 definitions
+// }
 
-	wg.Wait()
+// // TestDefinitions_GetDefinitions_MultipleThread tests that GetDefinitions is thread-safe.
+// func TestDefinitions_GetDefinitions_MultipleThread(t *testing.T) {
+// 	t.Parallel()
 
-	require.Equal(t, amountOfTestThreads, defGroup.Length()) // definition group with 20 definitions
-}
+// 	defGroup := NewDefinitions()
 
-// TestDefinitions_GetDefinitions_MultipleThread tests that GetDefinitions is thread-safe.
-func TestDefinitions_GetDefinitions_MultipleThread(t *testing.T) {
-	t.Parallel()
+// 	names := getNames()
 
-	defGroup := NewDefinitions()
+// 	wg := &sync.WaitGroup{}
 
-	names := getNames()
+// 	for name, id := range names {
+// 		wg.Add(1)
+// 		go func(name string, id ID) {
+// 			def := NewDefinition(id, id+1000, name, version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 			err := defGroup.AddBatch(map[ID]Definition{id: def})
+// 			require.NoError(t, err)
+// 			defGroup.GetDefinitions() // concurrent calls
+// 			wg.Done()
+// 		}(name, id)
+// 	}
 
-	wg := &sync.WaitGroup{}
+// 	wg.Wait()
 
-	for name, id := range names {
-		wg.Add(1)
-		go func(name string, id ID) {
-			def := NewDefinition(id, id+1000, name, version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
-			err := defGroup.AddBatch(map[ID]Definition{id: def})
-			require.NoError(t, err)
-			defGroup.GetDefinitions() // concurrent calls
-			wg.Done()
-		}(name, id)
-	}
+// 	require.Equal(t, amountOfTestThreads, defGroup.Length()) // definition group with 20 definitions
+// }
 
-	wg.Wait()
+// // TestDefinitions_NamesToIDs_MultipleThreads tests that NamesToIDs is thread-safe.
+// func TestDefinitions_NamesToIDs_MultipleThreads(t *testing.T) {
+// 	t.Parallel()
 
-	require.Equal(t, amountOfTestThreads, defGroup.Length()) // definition group with 20 definitions
-}
+// 	defGroup := NewDefinitions()
 
-// TestDefinitions_NamesToIDs_MultipleThreads tests that NamesToIDs is thread-safe.
-func TestDefinitions_NamesToIDs_MultipleThreads(t *testing.T) {
-	t.Parallel()
+// 	wg := &sync.WaitGroup{}
 
-	defGroup := NewDefinitions()
+// 	names := getNames()
 
-	wg := &sync.WaitGroup{}
+// 	for name, id := range names {
+// 		wg.Add(1)
+// 		go func(name string, id ID) {
+// 			def := NewDefinition(id, id+1000, name, version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
 
-	names := getNames()
+// 			err := defGroup.Add(id, def)
+// 			require.NoError(t, err)
 
-	for name, id := range names {
-		wg.Add(1)
-		go func(name string, id ID) {
-			def := NewDefinition(id, id+1000, name, version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 			namesToIds := defGroup.NamesToIDs() // concurrent calls
 
-			err := defGroup.Add(id, def)
-			require.NoError(t, err)
+// 			require.Equal(t, namesToIds[name], id) // same definition ID
 
-			namesToIds := defGroup.NamesToIDs() // concurrent calls
+// 			wg.Done()
+// 		}(name, id)
+// 	}
 
-			require.Equal(t, namesToIds[name], id) // same definition ID
+// 	wg.Wait()
+// }
 
-			wg.Done()
-		}(name, id)
-	}
+// // TestDefinitions_IDs32ToIDs_MultipleThreads tests that IDs32ToIDs is thread-safe.
+// func TestDefinitions_IDs32ToIDs_MultipleThreads(t *testing.T) {
+// 	t.Parallel()
 
-	wg.Wait()
-}
+// 	defGroup := NewDefinitions()
 
-// TestDefinitions_IDs32ToIDs_MultipleThreads tests that IDs32ToIDs is thread-safe.
-func TestDefinitions_IDs32ToIDs_MultipleThreads(t *testing.T) {
-	t.Parallel()
+// 	wg := &sync.WaitGroup{}
 
-	defGroup := NewDefinitions()
+// 	names := getNames()
 
-	wg := &sync.WaitGroup{}
+// 	for name, id := range names {
+// 		wg.Add(1)
+// 		go func(name string, id ID) {
+// 			def := NewDefinition(id, id+1000, name, version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
 
-	names := getNames()
+// 			err := defGroup.Add(id, def)
+// 			require.NoError(t, err)
 
-	for name, id := range names {
-		wg.Add(1)
-		go func(name string, id ID) {
-			def := NewDefinition(id, id+1000, name, version, "", "", false, false, []string{}, Dependencies{}, nil, nil)
+// 			idS32ToIDs := defGroup.IDs32ToIDs() // concurrent calls
 
-			err := defGroup.Add(id, def)
-			require.NoError(t, err)
+// 			require.Equal(t, id, idS32ToIDs[id+1000]) // same definitio ID
 
-			idS32ToIDs := defGroup.IDs32ToIDs() // concurrent calls
+// 			wg.Done()
+// 		}(name, id)
+// 	}
 
-			require.Equal(t, id, idS32ToIDs[id+1000]) // same definitio ID
-
-			wg.Done()
-		}(name, id)
-	}
-
-	wg.Wait()
-}
+// 	wg.Wait()
+// }

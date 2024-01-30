@@ -6,8 +6,8 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/global"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -28,7 +28,7 @@ func InitHookedSyscall() error {
 }
 
 func DetectHookedSyscall() DeriveFunction {
-	return deriveSingleEvent(events.HookedSyscall, deriveDetectHookedSyscallArgs())
+	return deriveSingleEvent(extensions.HookedSyscall, deriveDetectHookedSyscallArgs())
 }
 
 func deriveDetectHookedSyscallArgs() deriveArgsFunction {
@@ -66,7 +66,7 @@ func deriveDetectHookedSyscallArgs() deriveArgsFunction {
 }
 
 func convertToSyscallName(syscallId int32) string {
-	definition, ok := events.CoreEvents[events.ID(syscallId)]
+	definition, ok := extensions.CoreEvents[int(syscallId)]
 	if !ok {
 		return ""
 	}

@@ -1,7 +1,7 @@
 package derive
 
 import (
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -13,15 +13,15 @@ type DeriveFunction func(trace.Event) ([]trace.Event, []error)
 
 // Table defines a table between events and events they can be derived into corresponding to a deriveFunction
 // The Enabled flag is used in order to skip derivation of unneeded events.
-type Table map[events.ID]map[events.ID]struct {
+type Table map[int]map[int]struct {
 	DeriveFunction DeriveFunction
 	Enabled        func() bool
 }
 
 // Register registers a new derivation handler
-func (t Table) Register(deriveFrom, deriveTo events.ID, deriveCondition func() bool, deriveLogic DeriveFunction) error {
+func (t Table) Register(deriveFrom, deriveTo int, deriveCondition func() bool, deriveLogic DeriveFunction) error {
 	if t[deriveFrom] == nil {
-		t[deriveFrom] = make(map[events.ID]struct {
+		t[deriveFrom] = make(map[int]struct {
 			DeriveFunction DeriveFunction
 			Enabled        func() bool
 		})
@@ -44,7 +44,7 @@ func (t Table) Register(deriveFrom, deriveTo events.ID, deriveCondition func() b
 func (t Table) DeriveEvent(event trace.Event) ([]trace.Event, []error) {
 	derivatives := []trace.Event{}
 	errors := []error{}
-	deriveFns := t[events.ID(event.EventID)]
+	deriveFns := t[int(event.EventID)]
 	for id, deriveFn := range deriveFns {
 		if deriveFn.Enabled() {
 			derivative, errs := deriveFn.DeriveFunction(event)
@@ -84,7 +84,7 @@ type multiDeriveArgsFunction func(event trace.Event) ([][]interface{}, []error)
 // If the returned arguments are nil - no event will be derived.
 // This function is an envelope for the deriveMultipleEvents function, to make it easier to create single event
 // derivation function.
-func deriveSingleEvent(id events.ID, deriveArgs deriveArgsFunction) DeriveFunction {
+func deriveSingleEvent(id int, deriveArgs deriveArgsFunction) DeriveFunction {
 	singleDerive := func(event trace.Event) ([][]interface{}, []error) {
 		var multiArgs [][]interface{}
 		var errs []error
@@ -105,7 +105,7 @@ func deriveSingleEvent(id events.ID, deriveArgs deriveArgsFunction) DeriveFuncti
 // The order of the arguments given will match the order in the event definition, so make sure the order match
 // the order of the params in the events.event struct of the event under events.Definitions.
 // If the arguments given is nil, then no event will be derived.
-func deriveMultipleEvents(id events.ID, multiDeriveArgsFunc multiDeriveArgsFunction) DeriveFunction {
+func deriveMultipleEvents(id int, multiDeriveArgsFunc multiDeriveArgsFunction) DeriveFunction {
 	skeleton := makeDeriveBase(id)
 	return func(event trace.Event) ([]trace.Event, []error) {
 		multiArgs, errs := multiDeriveArgsFunc(event)
@@ -146,10 +146,10 @@ func buildDerivedEvent(baseEvent *trace.Event, skeleton deriveBase, argsValues [
 }
 
 // store as static variable for mocking in tests
-var getEventDefinition = events.Core.GetDefinitionByID
+var getEventDefinition = extensions.Definitions.GetDefinitionByID
 
-func makeDeriveBase(eventID events.ID) deriveBase {
-	def := getEventDefinition(eventID)
+func makeDeriveBase(eventID int) deriveBase {
+	def := getEventDefinition("core", eventID)
 	return deriveBase{
 		Name:   def.GetName(),
 		ID:     int(eventID),

@@ -13,7 +13,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -358,7 +357,7 @@ func (ps *Policies) createNewFilterMapsVersion() error {
 
 // createNewEventsMapVersion creates a new version of the events map.
 func (ps *Policies) createNewEventsMapVersion(
-	eventsParams map[events.ID][]bufferdecoder.ArgType,
+	eventsParams map[int][]bufferdecoder.ArgType,
 ) error {
 	polsVersion := ps.Version()
 	innerMapName := "events_map"
@@ -384,7 +383,7 @@ func (ps *Policies) createNewEventsMapVersion(
 		eventConfigVal := make([]byte, 16)
 
 		evtIDU32 := uint32(id)
-		evtID := events.ID(id)
+		evtID := int(id)
 		evtState := extensions.States.Get("core", id)
 		evtStateSubmit = evtState.GetSubmitCopy()
 
@@ -668,7 +667,7 @@ func populateProcInfoMap(binEqualities map[filters.NSBinary]equality) error {
 // updateProcTree indicates whether the process tree map should be updated or not.
 func (ps *Policies) UpdateBPF(
 	cts *containers.Containers,
-	eventsParams map[events.ID][]bufferdecoder.ArgType,
+	eventsParams map[int][]bufferdecoder.ArgType,
 	createNewMaps bool,
 	updateProcTree bool,
 ) (*PoliciesConfig, error) {

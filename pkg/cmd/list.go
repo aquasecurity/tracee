@@ -7,7 +7,7 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -21,7 +21,7 @@ func PrintEventList(includeSigs bool, wideOutput bool) {
 		return strings.Join(strSlice, ", ")
 	}
 
-	allDefinitions := events.Core.GetDefinitions()
+	allDefinitions := extensions.Definitions.GetDefinitions("core")
 
 	// Use tablewriter to print events in a table
 	newTable := func() *tablewriter.Table {
@@ -46,7 +46,7 @@ func PrintEventList(includeSigs bool, wideOutput bool) {
 		return newTable()
 	}
 
-	getRow := func(evtDef events.Definition) []string {
+	getRow := func(evtDef extensions.Definition) []string {
 		return []string{
 			evtDef.GetName(),
 			strings.Join(evtDef.GetSets(), ", "),

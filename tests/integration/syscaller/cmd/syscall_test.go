@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 )
 
 var newComm = "test-comm"
@@ -31,7 +31,7 @@ func init() {
 func Test_callsys(t *testing.T) {
 	// SYS_READ and SYS_CLOSE are syscalls that, considering this environment,
 	// should not return an error when called with zeroed arguments
-	syscalls := []events.ID{events.Read, events.Close}
+	syscalls := []int{extensions.Read, extensions.Close}
 	errs := callsys(syscalls)
 	for _, err := range errs {
 		assert.Equal(t, syscall.Errno(0), err)
@@ -39,7 +39,7 @@ func Test_callsys(t *testing.T) {
 
 	// SYS_WRITE is a syscall that, considering this environment,
 	// should return an error when called with zeroed arguments
-	syscalls = []events.ID{events.Write}
+	syscalls = []int{extensions.Write}
 	err := callsys(syscalls)[0]
 	assert.Equal(t, syscall.EBADF, err)
 }

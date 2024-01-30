@@ -2,7 +2,7 @@ package ebpf
 
 import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -16,7 +16,7 @@ func FindingToEvent(f *detect.Finding) (*trace.Event, error) {
 		return nil, errfmt.Errorf("error converting finding to event: %s", f.SigMetadata.ID)
 	}
 
-	eventDefID, found := events.Core.GetDefinitionIDByName(f.SigMetadata.EventName)
+	eventDefID, found := extensions.Definitions.GetDefinitionIDByName("core", f.SigMetadata.EventName)
 	if !found {
 		return nil, errfmt.Errorf("error finding event not found: %s", f.SigMetadata.EventName)
 	}

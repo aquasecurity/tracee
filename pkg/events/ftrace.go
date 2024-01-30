@@ -11,6 +11,7 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 
 	"github.com/aquasecurity/tracee/pkg/counter"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -48,8 +49,8 @@ func init() {
 func GetFtraceBaseEvent() *trace.Event {
 	ftraceHookBaseEvent := &trace.Event{
 		ProcessName: "tracee",
-		EventID:     int(FtraceHook),
-		EventName:   Core.GetDefinitionByID(FtraceHook).GetName(),
+		EventID:     int(extensions.FtraceHook),
+		EventName:   extensions.Definitions.GetDefinitionByID("core", extensions.FtraceHook).GetName(),
 	}
 
 	return ftraceHookBaseEvent
@@ -62,7 +63,7 @@ func FtraceHookEvent(eventsCounter counter.Counter, out chan *trace.Event, baseE
 		return
 	}
 
-	def := Core.GetDefinitionByID(FtraceHook)
+	def := extensions.Definitions.GetDefinitionByID("core", extensions.FtraceHook)
 
 	for {
 		err := checkFtraceHooks(eventsCounter, out, baseEvent, &def, selfLoadedProgs)
@@ -110,7 +111,13 @@ func initFtraceArgs(params []trace.ArgMeta) []trace.Argument {
 }
 
 // checkFtraceHooks checks for ftrace hooks
-func checkFtraceHooks(eventsCounter counter.Counter, out chan *trace.Event, baseEvent *trace.Event, ftraceDef *Definition, selfLoadedProgs map[string]int) error {
+func checkFtraceHooks(
+	eventsCounter counter.Counter,
+	out chan *trace.Event,
+	baseEvent *trace.Event,
+	ftraceDef *extensions.Definition,
+	selfLoadedProgs map[string]int,
+) error {
 	ftraceHooksBytes, err := getFtraceHooksData()
 	if err != nil {
 		return err

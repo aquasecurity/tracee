@@ -7,17 +7,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func Test_DeriveEvent(t *testing.T) {
 	t.Parallel()
 
-	testEventID := events.ID(1)
-	failEventID := events.ID(11)
-	deriveEventID := events.ID(12)
-	noDerivationEventID := events.ID(13)
+	testEventID := int(1)
+	failEventID := int(11)
+	deriveEventID := int(12)
+	noDerivationEventID := int(13)
 	alwaysDeriveError := func() DeriveFunction {
 		return func(e trace.Event) ([]trace.Event, []error) {
 			return []trace.Event{}, []error{fmt.Errorf("derive error")}
@@ -82,19 +82,19 @@ func Test_DeriveEvent(t *testing.T) {
 }
 
 func Test_DeriveSingleEvent(t *testing.T) {
-	testEventID := events.ID(0)
+	testEventID := int(0)
 
-	eventDefinition := events.NewDefinition(
-		testEventID,                // ID
-		events.Sys32Undefined,      // ID32Bit
-		"test_event",               // Name
-		events.NewVersion(1, 0, 0), // Version
-		"description",              // Description
-		"test_event",               // DocPath
-		false,                      // Internal
-		false,                      // Syscall
-		[]string{},                 // Sets
-		events.Dependencies{},      // Dependencies
+	eventDefinition := extensions.NewDefinition(
+		testEventID,                    // ID
+		extensions.Sys32Undefined,      // ID32Bit
+		"test_event",                   // Name
+		extensions.NewVersion(1, 0, 0), // Version
+		"description",                  // Description
+		"test_event",                   // DocPath
+		false,                          // Internal
+		false,                          // Syscall
+		[]string{},                     // Sets
+		extensions.Dependencies{},      // Dependencies
 		[]trace.ArgMeta{
 			{
 				Name: "arg1",
@@ -116,7 +116,7 @@ func Test_DeriveSingleEvent(t *testing.T) {
 	}()
 
 	// mock the getEventDefinition function
-	getEventDefinition = func(id events.ID) events.Definition {
+	getEventDefinition = func(ext string, id int) extensions.Definition {
 		return eventDefinition
 	}
 
@@ -181,19 +181,19 @@ func Test_DeriveSingleEvent(t *testing.T) {
 }
 
 func TestDeriveMultipleEvents(t *testing.T) {
-	testEventID := events.ID(0)
+	testEventID := int(0)
 
-	eventDefinition := events.NewDefinition(
-		testEventID,                // ID
-		events.Sys32Undefined,      // ID32Bit
-		"test_event",               // Name
-		events.NewVersion(1, 0, 0), // Version
-		"description",              // Description
-		"test_event",               // DocPath
-		false,                      // Internal
-		false,                      // Syscall
-		[]string{},                 // Sets
-		events.Dependencies{},      // Dependencies
+	eventDefinition := extensions.NewDefinition(
+		testEventID,                    // ID
+		extensions.Sys32Undefined,      // ID32Bit
+		"test_event",                   // Name
+		extensions.NewVersion(1, 0, 0), // Version
+		"description",                  // Description
+		"test_event",                   // DocPath
+		false,                          // Internal
+		false,                          // Syscall
+		[]string{},                     // Sets
+		extensions.Dependencies{},      // Dependencies
 		[]trace.ArgMeta{
 			{
 				Name: "arg1",
@@ -211,7 +211,7 @@ func TestDeriveMultipleEvents(t *testing.T) {
 	defer func() {
 		getEventDefinition = savedEventDefFunc
 	}()
-	getEventDefinition = func(id events.ID) events.Definition {
+	getEventDefinition = func(ext string, id int) extensions.Definition {
 		return eventDefinition
 	}
 

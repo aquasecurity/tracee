@@ -4,7 +4,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 )
 
 // sysArgs is a struct containing the arguments to be passed to a syscall
@@ -20,10 +20,10 @@ type sysArgs struct {
 // syscallMap is a map of syscall numbers to the arguments they should be
 // called with. If the syscall number is not found in the map, the syscall
 // is called with arguments set to 0
-// Some events.ID are internal to tracee and are not syscall numbers, so they
+// Some int are internal to tracee and are not syscall numbers, so they
 // need further processing before being passed to the syscall
-var syscallMap = map[events.ID]sysArgs{
-	events.Read: {0, 0, 0, 0, 0, 0},
+var syscallMap = map[int]sysArgs{
+	extensions.Read: {0, 0, 0, 0, 0, 0},
 }
 
 // changeOwnComm changes the comm of the current process to the given string
@@ -41,8 +41,8 @@ func changeOwnComm(newComm string) error {
 	return nil
 }
 
-// callsys calls the given events.IDs as syscalls
-func callsys(syscalls []events.ID) []error {
+// callsys calls the given ints as syscalls
+func callsys(syscalls []int) []error {
 	errs := make([]error, 0)
 	for _, sysNum := range syscalls {
 		var errno syscall.Errno

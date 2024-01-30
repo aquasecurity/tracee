@@ -6,7 +6,7 @@ import (
 
 	"gotest.tools/assert"
 
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -14,28 +14,28 @@ import (
 func TestPolicyValidate(t *testing.T) {
 	t.Parallel()
 
-	fakeSigEventDefinition := events.NewDefinition(
+	fakeSigEventDefinition := extensions.NewDefinition(
 		0,
-		events.Sys32Undefined,
+		extensions.Sys32Undefined,
 		"fake_signature",
-		events.NewVersion(1, 0, 0), // Version
+		extensions.NewVersion(1, 0, 0), // Version
 		"fake_description",
 		"",
 		false,
 		false,
 		[]string{"signatures", "default"},
-		events.NewDependencies(
-			[]events.ID{},
-			[]events.KSymbol{},
-			[]events.Probe{},
-			[]events.TailCall{},
-			events.Capabilities{},
+		extensions.NewDependencies(
+			[]int{},
+			[]extensions.KSymDep{},
+			[]extensions.ProbeDep{},
+			[]extensions.TailCall{},
+			extensions.CapsDep{},
 		),
 		[]trace.ArgMeta{},
 		nil,
 	)
 
-	err := events.Core.Add(9000, fakeSigEventDefinition)
+	err := extensions.Definitions.Add("core", 9000, fakeSigEventDefinition)
 	assert.NilError(t, err)
 
 	tests := []struct {

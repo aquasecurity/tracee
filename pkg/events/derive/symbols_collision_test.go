@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 )
@@ -470,10 +470,10 @@ func TestSymbolsCollision(t *testing.T) {
 			// Prepare mocked filters for the existing test cases
 
 			filterName := "symbols_collision.args.symbols"
-			eventsNameToID := map[string]events.ID{"symbols_collision": events.SymbolsCollision}
+			eventsNameToID := map[string]int{"symbols_collision": extensions.SymbolsCollision}
 
 			p := policy.NewPolicy()
-			p.EventsToTrace = map[events.ID]string{events.SymbolsCollision: "symbols_collision"}
+			p.EventsToTrace = map[int]string{extensions.SymbolsCollision: "symbols_collision"}
 
 			if len(testCase.blackList) > 0 {
 				operAndValsBlack := fmt.Sprintf("!=%s", strings.Join(testCase.blackList, ","))

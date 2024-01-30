@@ -4,7 +4,6 @@ import (
 	gocontext "context"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
 	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -31,7 +30,7 @@ const throttleSecs = 2 // Seconds
 // techniques is used to find hidden modules - each of them is triggered by
 // using a tailcall.
 func (t *Tracee) lkmSeekerRoutine(ctx gocontext.Context) {
-	state, ok := extensions.States.GetOk("core", int(events.HiddenKernelModule))
+	state, ok := extensions.States.GetOk("core", int(extensions.HiddenKernelModule))
 	if !ok {
 		return
 	}

@@ -4,15 +4,15 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cgroup"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // ContainerCreate receives a containers as a closure argument to track it's containers.
 // If it receives a cgroup_mkdir event, it can derive a container_create event from it.
 func ContainerCreate(cts *containers.Containers) DeriveFunction {
-	return deriveSingleEvent(events.ContainerCreate, deriveContainerCreateArgs(cts))
+	return deriveSingleEvent(extensions.ContainerCreate, deriveContainerCreateArgs(cts))
 }
 
 func deriveContainerCreateArgs(cts *containers.Containers) func(event trace.Event) ([]interface{}, error) {

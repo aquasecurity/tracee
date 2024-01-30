@@ -10,7 +10,7 @@ import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -51,7 +51,7 @@ const (
 
 // readArgFromBuff read the next argument from the buffer.
 // Return the index of the argument and the parsed argument.
-func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta,
+func readArgFromBuff(id int, ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta,
 ) (
 	uint, trace.Argument, error,
 ) {
@@ -159,7 +159,7 @@ func readArgFromBuff(id events.ID, ebpfMsgDecoder *EbpfDecoder, params []trace.A
 			return uint(argIdx), arg, errfmt.Errorf("error reading byte array size: %v", err)
 		}
 		// error if byte buffer is too big (and not a network event)
-		if size > 4096 && (id < events.NetPacketBase || id > events.MaxNetID) {
+		if size > 4096 && (id < extensions.NetPacketBase || id > extensions.MaxNetID) {
 			return uint(argIdx), arg, errfmt.Errorf("byte array size too big: %d", size)
 		}
 		res, err = ReadByteSliceFromBuff(ebpfMsgDecoder, int(size))

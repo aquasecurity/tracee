@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -649,9 +649,9 @@ func Test_getEventData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			id := int(events.CommitCreds)
+			id := extensions.CommitCreds
 			if tt.syscall {
-				id = int(events.Ptrace)
+				id = extensions.Ptrace
 			}
 
 			eventData, err := getEventData(trace.Event{EventID: id, Args: tt.args, ReturnValue: tt.returnValue})
@@ -733,7 +733,7 @@ func TestEventTrigger(t *testing.T) {
 					Type: "unknown",
 				},
 				Value: map[string]interface{}{
-					"id":   int(events.Ptrace),
+					"id":   extensions.Ptrace,
 					"name": "ptrace",
 					"args": []trace.Argument{
 						{

@@ -6,14 +6,14 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 )
 
 func TestArgsFilterClone(t *testing.T) {
 	t.Parallel()
 
 	filter := NewArgFilter()
-	err := filter.Parse("read.args.fd", "=argval", events.Core.NamesToIDs())
+	err := filter.Parse("read.args.fd", "=argval", extensions.Definitions.NamesToIDs("core"))
 	require.NoError(t, err)
 
 	copy := filter.Clone().(*ArgFilter)
@@ -23,7 +23,7 @@ func TestArgsFilterClone(t *testing.T) {
 	}
 
 	// ensure that changes to the copy do not affect the original
-	err = copy.Parse("read.args.buf", "=argval", events.Core.NamesToIDs())
+	err = copy.Parse("read.args.buf", "=argval", extensions.Definitions.NamesToIDs("core"))
 	require.NoError(t, err)
 	if reflect.DeepEqual(filter, copy) {
 		t.Errorf("Changes to copied filter affected the original")

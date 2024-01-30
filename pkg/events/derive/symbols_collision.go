@@ -5,7 +5,7 @@ import (
 	"golang.org/x/exp/maps"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/policy"
@@ -30,7 +30,7 @@ func SymbolsCollision(soLoader sharedobjs.DynamicSymbolsLoader, policies *policy
 
 	// pick white and black lists from the filters (TODO: change this)
 	for policies := range policies.Map() {
-		f := policies.ArgFilter.GetEventFilters(events.SymbolsCollision)
+		f := policies.ArgFilter.GetEventFilters(extensions.SymbolsCollision)
 		maps.Copy(symbolsCollisionFilters, f)
 	}
 
@@ -45,7 +45,7 @@ func SymbolsCollision(soLoader sharedobjs.DynamicSymbolsLoader, policies *policy
 
 	gen := initSOCollisionsEventGenerator(soLoader, symbolsBlacklist, symbolsWhitelist)
 
-	return deriveMultipleEvents(events.SymbolsCollision, gen.deriveArgs)
+	return deriveMultipleEvents(extensions.SymbolsCollision, gen.deriveArgs)
 }
 
 //
@@ -94,10 +94,10 @@ func initSOCollisionsEventGenerator(
 
 // deriveArgs calls the appropriate derivation handler depending on the event type.
 func (gen *SymbolsCollisionArgsGenerator) deriveArgs(event trace.Event) ([][]interface{}, []error) {
-	switch events.ID(event.EventID) {
-	case events.SharedObjectLoaded:
+	switch int(event.EventID) {
+	case extensions.SharedObjectLoaded:
 		return gen.handleShObjLoaded(event) // manages symbol collisions caches and generate events
-	case events.SchedProcessExec:
+	case extensions.SchedProcessExec:
 		return gen.handleExec(event) // evicts saved data (loaded shared objects) for the process
 	}
 

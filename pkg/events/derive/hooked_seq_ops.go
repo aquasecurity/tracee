@@ -2,9 +2,8 @@ package derive
 
 import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
-	"github.com/aquasecurity/tracee/pkg/global"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -27,7 +26,7 @@ var NetSeqOpsFuncs = [4]string{
 }
 
 func HookedSeqOps() DeriveFunction {
-	return deriveSingleEvent(events.HookedSeqOps, deriveHookedSeqOpsArgs())
+	return deriveSingleEvent(extensions.HookedSeqOps, deriveHookedSeqOpsArgs())
 }
 
 func deriveHookedSeqOpsArgs() deriveArgsFunction {
@@ -42,7 +41,7 @@ func deriveHookedSeqOpsArgs() deriveArgsFunction {
 			if addr == 0 {
 				continue
 			}
-			hookingFunction := global.ParseKSymbol(addr)
+			hookingFunction := extensions.ParseKSymbol(addr)
 			seqOpsStruct := NetSeqOps[i/4]
 			seqOpsFunc := NetSeqOpsFuncs[i%4]
 			hookedSeqOps[seqOpsStruct+"_"+seqOpsFunc] =

@@ -11,7 +11,7 @@ import (
 	"errors"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -73,7 +73,7 @@ func (decoder *EbpfDecoder) DecodeContext(eCtx *EventContext) error {
 	eCtx.ParentStartTime = binary.LittleEndian.Uint64(decoder.buffer[offset+104 : offset+112])
 	// task_context end
 
-	eCtx.EventID = events.ID(int32(binary.LittleEndian.Uint32(decoder.buffer[offset+112 : offset+116])))
+	eCtx.EventID = int32(binary.LittleEndian.Uint32(decoder.buffer[offset+112 : offset+116]))
 	eCtx.Syscall = int32(binary.LittleEndian.Uint32(decoder.buffer[offset+116 : offset+120]))
 	eCtx.Retval = int64(binary.LittleEndian.Uint64(decoder.buffer[offset+120 : offset+128]))
 	eCtx.StackID = binary.LittleEndian.Uint32(decoder.buffer[offset+128 : offset+132])
@@ -90,7 +90,7 @@ func (decoder *EbpfDecoder) DecodeContext(eCtx *EventContext) error {
 // It should be called last, and after decoding the argnum with DecodeUint8.
 //
 // Argument array passed should be initialized with the size of len(eventDefinition.Params).
-func (decoder *EbpfDecoder) DecodeArguments(args []trace.Argument, argnum int, evtDef events.Definition, eventId events.ID) error {
+func (decoder *EbpfDecoder) DecodeArguments(args []trace.Argument, argnum int, evtDef extensions.Definition, eventId int) error {
 	for i := 0; i < argnum; i++ {
 		idx, arg, err := readArgFromBuff(
 			eventId,
