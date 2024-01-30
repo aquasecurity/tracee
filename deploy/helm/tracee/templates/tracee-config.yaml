@@ -30,8 +30,8 @@ data:
         level: {{ .Values.config.log.level }}
     output:
         {{ .Values.config.output.format }}:
-          files:
-            - stdout
+            files:
+                - stdout
         options:
             parse-arguments: {{ .Values.config.output.options.parseArguments }}
             stack-addresses: {{ .Values.config.output.options.stackAddresses }}
@@ -39,6 +39,16 @@ data:
             relative-time: {{ .Values.config.output.options.relativeTime }}
             exec-hash: {{ .Values.config.output.options.execHash }}
             sort-events: {{ .Values.config.output.options.sortEvents }}
+        {{- with .Values.config.output.webhook }}
+        webhook:
+            - {{ .name | default "webhook1" }}:
+                protocol: {{ .protocol | default "http" }}
+                host: {{ .host | default "localhost" }}
+                port: {{ .port | default "8080" }}
+                timeout: {{ .timeout | default "3s" }}
+                gotemplate: {{ .goTemplate }}
+                content-type: {{ .contentType | default "application/json" }}
+        {{- end }}
     {{- if .Values.config.blobPerfBufferSize }}
     blob-perf-buffer-size: {{ .Values.config.blobPerfBufferSize}}
     {{- end }}
