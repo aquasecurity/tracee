@@ -196,32 +196,32 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	// Initialize events state with mandatory events
 
-	extensions.States.GetOrCreate("core", int(extensions.SchedProcessFork))
-	extensions.States.GetOrCreate("core", int(extensions.SchedProcessExec))
-	extensions.States.GetOrCreate("core", int(extensions.SchedProcessExit))
+	extensions.States.GetOrCreate("core", extensions.SchedProcessFork)
+	extensions.States.GetOrCreate("core", extensions.SchedProcessExec)
+	extensions.States.GetOrCreate("core", extensions.SchedProcessExit)
 
 	// Control Plane Events
 
-	extensions.States.GetOrCreate("core", int(extensions.SignalCgroupMkdir)).SetSubmitAll()
-	extensions.States.GetOrCreate("core", int(extensions.SignalCgroupRmdir)).SetSubmitAll()
+	extensions.States.GetOrCreate("core", extensions.SignalCgroupMkdir).SetSubmitAll()
+	extensions.States.GetOrCreate("core", extensions.SignalCgroupRmdir).SetSubmitAll()
 
 	// Control Plane Process Tree Events
 
 	pipeEvts := func() {
-		extensions.States.GetOrCreate("core", int(extensions.SchedProcessFork)).SetSubmitAll()
-		extensions.States.GetOrCreate("core", int(extensions.SchedProcessExec)).SetSubmitAll()
-		extensions.States.GetOrCreate("core", int(extensions.SchedProcessExit)).SetSubmitAll()
+		extensions.States.GetOrCreate("core", extensions.SchedProcessFork).SetSubmitAll()
+		extensions.States.GetOrCreate("core", extensions.SchedProcessExec).SetSubmitAll()
+		extensions.States.GetOrCreate("core", extensions.SchedProcessExit).SetSubmitAll()
 	}
 	signalEvts := func() {
-		extensions.States.GetOrCreate("core", int(extensions.SignalSchedProcessFork)).SetSubmitAll()
-		extensions.States.GetOrCreate("core", int(extensions.SignalSchedProcessExec)).SetSubmitAll()
-		extensions.States.GetOrCreate("core", int(extensions.SignalSchedProcessExit)).SetSubmitAll()
+		extensions.States.GetOrCreate("core", extensions.SignalSchedProcessFork).SetSubmitAll()
+		extensions.States.GetOrCreate("core", extensions.SignalSchedProcessExec).SetSubmitAll()
+		extensions.States.GetOrCreate("core", extensions.SignalSchedProcessExit).SetSubmitAll()
 	}
 
-	// DNS Cache events
+	// DNS Cache events (netpacket extension)
 
 	if t.config.DNSCacheConfig.Enable {
-		extensions.States.GetOrCreate("core", int(extensions.NetPacketDNS)).SetSubmitAll()
+		extensions.States.GetOrCreate("netpacket", extensions.NetPacketDNS).SetSubmitAll()
 	}
 
 	switch t.config.ProcTree.Source {
@@ -238,19 +238,19 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	switch {
 	case cfg.Capture.Exec:
-		extensions.States.GetOrCreate("core", int(extensions.CaptureExec)).SetSubmitAll()
+		extensions.States.GetOrCreate("core", extensions.CaptureExec).SetSubmitAll()
 	case cfg.Capture.FileWrite.Capture:
-		extensions.States.GetOrCreate("core", int(extensions.CaptureFileWrite)).SetSubmitAll()
+		extensions.States.GetOrCreate("core", extensions.CaptureFileWrite).SetSubmitAll()
 	case cfg.Capture.FileRead.Capture:
-		extensions.States.GetOrCreate("core", int(extensions.CaptureFileRead)).SetSubmitAll()
+		extensions.States.GetOrCreate("core", extensions.CaptureFileRead).SetSubmitAll()
 	case cfg.Capture.Module:
-		extensions.States.GetOrCreate("core", int(extensions.CaptureModule)).SetSubmitAll()
+		extensions.States.GetOrCreate("core", extensions.CaptureModule).SetSubmitAll()
 	case cfg.Capture.Mem:
-		extensions.States.GetOrCreate("core", int(extensions.CaptureMem)).SetSubmitAll()
+		extensions.States.GetOrCreate("core", extensions.CaptureMem).SetSubmitAll()
 	case cfg.Capture.Bpf:
-		extensions.States.GetOrCreate("core", int(extensions.CaptureBpf)).SetSubmitAll()
+		extensions.States.GetOrCreate("core", extensions.CaptureBpf).SetSubmitAll()
 	case pcaps.PcapsEnabled(cfg.Capture.Net):
-		extensions.States.GetOrCreate("core", int(extensions.CaptureNetPacket)).SetSubmitAll()
+		extensions.States.GetOrCreate("netpacket", extensions.CaptureNetPacket).SetSubmitAll()
 	}
 
 	// Events chosen by the user
@@ -1227,7 +1227,10 @@ func (t *Tracee) Close() {
 	// for _, ext := range extensions.Definitions.GetExtensions() {
 	// 	extensions.Modules.Get(ext).Close()
 	// }
-	extensions.Modules.Get("core").Close()
+	bpfModule := extensions.Modules.Get("core")
+	if bpfModule != nil {
+		bpfModule.Close()
+	}
 	// Close container module.
 	if t.containers != nil {
 		err := t.containers.Close()
