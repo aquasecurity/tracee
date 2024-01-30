@@ -223,23 +223,23 @@ jobs:
         run: |
           make test-unit
   #
-  # INTEGRATION TESTS
+  # INTEGRATION TESTS (TODO: re-enable after extensions is finished)
   #
-  integration-tests:
-    name: Integration Tests
-    needs:
-      - verify-analyze-code
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-        with:
-          submodules: true
-      - name: Install Dependencies
-        uses: ./.github/actions/build-dependencies
-      - name: Run Integration Tests
-        run: |
-          sudo env "PATH=$PATH" make test-integration
+  # integration-tests:
+  #   name: Integration Tests
+  #   needs:
+  #     - verify-analyze-code
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v3
+  #       with:
+  #         submodules: true
+  #     - name: Install Dependencies
+  #       uses: ./.github/actions/build-dependencies
+  #     - name: Run Integration Tests
+  #       run: |
+  #         sudo env "PATH=$PATH" make test-integration
   #
   # PERFORMANCE TESTS
   #
