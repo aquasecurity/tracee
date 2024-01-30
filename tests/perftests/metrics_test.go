@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/tests/testutils"
 )
 
@@ -105,6 +106,9 @@ func TestMetricsandPprofExist(t *testing.T) {
 
 	cmd := "--output none --events=syslog --metrics --pprof"
 	running := testutils.NewRunningTracee(context.Background(), cmd)
+
+	// Make sure extensions are initialized before tests.
+	extensions.Modules.IsDefined("core")
 
 	// start tracee
 	ready, runErr := running.Start()
