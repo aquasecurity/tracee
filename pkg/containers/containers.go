@@ -205,19 +205,19 @@ func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetada
 
 	// if there is no cgroup anymore for some reason, return early
 	if !ok {
-		return metadata, errfmt.Errorf("no cgroup to enrich")
+		return metadata, errfmt.Errorf("cgroup %d not found, won't enrich", cgroupId)
 	}
 
 	containerId := info.Container.ContainerId
 	runtime := info.Runtime
 
 	if containerId == "" {
-		return metadata, errfmt.Errorf("no containerId")
+		return metadata, errfmt.Errorf("cgroup %d: no containerId (path %s)", cgroupId, info.Path)
 	}
 
 	isMikubeOrKind := k8s.IsMinkube() || k8s.IsKind()
 	if info.Dead && !isMikubeOrKind {
-		return metadata, errfmt.Errorf("container already deleted")
+		return metadata, errfmt.Errorf("container %s already deleted in path %s", containerId, info.Path)
 	}
 
 	if info.Container.Image != "" {

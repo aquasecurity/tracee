@@ -6,6 +6,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -26,6 +27,7 @@ func deriveContainerCreateArgs(cts *containers.Containers) func(event trace.Even
 			return nil, errfmt.WrapError(err)
 		}
 		if info := cts.GetCgroupInfo(cgroupId); info.ContainerRoot {
+			logger.Debugw("derive container_create from cgroup", "cgroup_id", cgroupId, "container_id", info.Container.ContainerId)
 			args := []interface{}{
 				info.Runtime.String(),
 				info.Container.ContainerId,
@@ -44,7 +46,7 @@ func deriveContainerCreateArgs(cts *containers.Containers) func(event trace.Even
 	}
 }
 
-// isCgroupEventInHid checks if cgroup event is relevant for deriving container event in it's hierarchy id.
+// isCgroupEventInHid checks if cgroup event is relevant for deriving container event in its hierarchy id.
 // in tracee we only care about containers inside the cpuset controller, as such other hierarchy ids will lead
 // to a failed query.
 func isCgroupEventInHid(event *trace.Event, cts *containers.Containers) (bool, error) {

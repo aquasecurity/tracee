@@ -52,7 +52,9 @@ func (ctrl *Controller) processCgroupMkdir(args []trace.Argument) error {
 		go func() {
 			_, err := ctrl.cgroupManager.EnrichCgroupInfo(cgroupId)
 			if err != nil {
-				logger.Errorw("error triggering container enrich in control plane", "error", err)
+				logger.Errorw("error enriching container in control plane", "error", err, "cgroup_id", cgroupId)
+			} else {
+				logger.Debugw("enriched cgroup_id in control plane", "cgroup_id", cgroupId)
 			}
 		}()
 	}
