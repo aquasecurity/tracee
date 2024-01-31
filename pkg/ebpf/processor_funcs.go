@@ -331,6 +331,12 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 // normalizeEventCtxTimes normalizes the event context timings to be relative to tracee start time
 // or current time in nanoseconds.
 func (t *Tracee) normalizeEventCtxTimes(event *trace.Event) error {
+	eventId := events.ID(event.EventID)
+	if eventId > events.MaxCommonID && eventId < events.MaxUserSpace {
+		// derived events are normalized from their base event, skip the processing
+		return nil
+	}
+
 	//
 	// Currently, the timestamp received from the bpf code is of the monotonic clock.
 	//
