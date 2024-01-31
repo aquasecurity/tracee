@@ -6,7 +6,7 @@ when Vagrant::Util::Platform.linux?
   "Linux"
 when Vagrant::Util::Platform.darwin?
   "Darwin"
-else  
+else
   puts "ERROR: Host OS is not supported."
   abort
 end
@@ -41,8 +41,8 @@ Vagrant.configure("2") do |config|
   when "Linux"
     config.vm.provider "virtualbox" do |vb|
       vb.name = vm_name
-      vb.cpus = "4"
-      vb.memory = "2048"
+      vb.cpus = "8"
+      vb.memory = "4096"
       vb.gui = false
     end
   when "Darwin"
@@ -144,7 +144,7 @@ Vagrant.configure("2") do |config|
     #
     # docker
     #
-    
+
     apt-get install --yes docker.io
     usermod -aG docker vagrant
 
