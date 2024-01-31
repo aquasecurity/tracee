@@ -1094,9 +1094,10 @@ func (t *Tracee) attachProbes() error {
 			for _, evtID := range evtID {
 				evtName := events.Core.GetDefinitionByID(evtID).GetName()
 				if probe.IsRequired() {
-					logger.Errorw(
+					logger.Warnw(
 						"Cancelling event and its dependencies because of missing probe",
 						"missing probe", probe.GetHandle(), "event", evtName,
+						"error", err,
 					)
 					t.cancelEventFromEventState(evtID) // cancel event recursively
 				} else {
