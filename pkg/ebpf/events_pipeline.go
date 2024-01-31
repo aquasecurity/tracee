@@ -165,10 +165,13 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 		for dataRaw := range sourceChan {
 			ebpfMsgDecoder := bufferdecoder.New(dataRaw)
 			var eCtx bufferdecoder.EventContext
+			endTimeKernel := uint64(utils.GetMonotonicTime())
 			if err := ebpfMsgDecoder.DecodeContext(&eCtx); err != nil {
 				t.handleError(err)
 				continue
 			}
+			startTimeKernel := eCtx.Ts
+			_ = t.stats.AvgTimeInKernel.Add(endTimeKernel - startTimeKernel)
 			var argnum uint8
 			if err := ebpfMsgDecoder.DecodeUint8(&argnum); err != nil {
 				t.handleError(err)
@@ -631,8 +634,10 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 			case <-ctx.Done():
 				return
 			default:
+				startTime := uint64(t.getOrigEvtTimestamp(event)) // convert back to monotonic
 				t.streamsManager.Publish(ctx, *event)
-				_ = t.stats.EventCount.Increment()
+				endTime := uint64(utils.GetMonotonicTime())
+				_ = t.stats.AvgTimeInPipeline.Add(endTime - startTime)
 				t.eventsPool.Put(event)
 			}
 		}
