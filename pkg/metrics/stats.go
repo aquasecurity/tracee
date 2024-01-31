@@ -9,15 +9,33 @@ import (
 
 // When updating this struct, please make sure to update the relevant exporting functions
 type Stats struct {
-	EventCount       counter.Counter
-	EventsFiltered   counter.Counter
-	NetCapCount      counter.Counter // network capture events
-	BPFLogsCount     counter.Counter
-	ErrorCount       counter.Counter
-	LostEvCount      counter.Counter
-	LostWrCount      counter.Counter
-	LostNtCapCount   counter.Counter // lost network capture events
-	LostBPFLogsCount counter.Counter
+	EventCount        counter.Counter
+	EventsFiltered    counter.Counter
+	NetCapCount       counter.Counter // network capture events
+	BPFLogsCount      counter.Counter
+	ErrorCount        counter.Counter
+	LostEvCount       counter.Counter
+	LostWrCount       counter.Counter
+	LostNtCapCount    counter.Counter // lost network capture events
+	LostBPFLogsCount  counter.Counter
+	AvgTimeInPipeline counter.Average
+	AvgTimeInKernel   counter.Average
+}
+
+func NewStats() Stats {
+	return Stats{
+		EventCount:        counter.NewCounter(0),
+		EventsFiltered:    counter.NewCounter(0),
+		NetCapCount:       counter.NewCounter(0),
+		BPFLogsCount:      counter.NewCounter(0),
+		ErrorCount:        counter.NewCounter(0),
+		LostEvCount:       counter.NewCounter(0),
+		LostWrCount:       counter.NewCounter(0),
+		LostNtCapCount:    counter.NewCounter(0),
+		LostBPFLogsCount:  counter.NewCounter(0),
+		AvgTimeInPipeline: counter.NewAverage(),
+		AvgTimeInKernel:   counter.NewAverage(),
+	}
 }
 
 // Register Stats to prometheus metrics exporter
@@ -98,5 +116,39 @@ func (stats *Stats) RegisterPrometheus() error {
 		Help:      "errors accumulated by tracee-ebpf",
 	}, func() float64 { return float64(stats.ErrorCount.Get()) }))
 
-	return errfmt.WrapError(err)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	err = prometheus.Register(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Namespace: "tracee_ebpf",
+			Name:      "avg_pipeline_time",
+			Help:      "average time (in milliseconds) an event spends from creation in kernel until publishing",
+		},
+		func() float64 {
+			return stats.AvgTimeInPipeline.Read() / 1e6
+		},
+	))
+
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	err = prometheus.Register(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Namespace: "tracee_ebpf",
+			Name:      "avg_pipeline_kernel_time",
+			Help:      "average time (in milliseconds) an event spend from creation in kernel until decoding",
+		},
+		func() float64 {
+			return stats.AvgTimeInKernel.Read() / 1e6
+		},
+	))
+
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	return nil
 }

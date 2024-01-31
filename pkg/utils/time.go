@@ -75,8 +75,8 @@ func getBootTimeInJiffies() int64 {
 // Boot time functions
 //
 
-// GetStartTimeNS returns the system start time in nanoseconds (using CLOCK_MONOTONIC).
-func GetStartTimeNS() int64 {
+// GetMonotonicTime returns the current CLOCK_MONOTONIC system time.
+func GetMonotonicTime() int64 {
 	var ts unix.Timespec
 
 	// Tracee bpf code uses monotonic clock as event timestamp. Get current
@@ -87,6 +87,13 @@ func GetStartTimeNS() int64 {
 		return 0
 	}
 	return ts.Nano()
+}
+
+// GetStartTimeNS returns the system start time in nanoseconds (using CLOCK_MONOTONIC).
+func GetStartTimeNS() int64 {
+	return sync.OnceValue[int64](func() int64 {
+		return GetMonotonicTime()
+	})()
 }
 
 // GetBootTimeNS returns the boot time of the system in nanoseconds.
