@@ -105,6 +105,8 @@ const (
 	HiddenKernelModuleSeeker
 	ModuleLoad
 	ModuleFree
+	ExecuteFinished
+	SecurityBprmCredsForExec
 	MaxCommonID
 )
 
@@ -12878,6 +12880,54 @@ var CoreEvents = map[ID]Definition{
 			{Type: "bool", Name: "load"},
 		},
 	},
+	ExecuteFinished: {
+		id:       ExecuteFinished,
+		id32Bit:  Sys32Undefined,
+		name:     "execute_finished",
+		version:  NewVersion(1, 0, 0),
+		sets:     []string{"proc"},
+		internal: true,
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SyscallExit__Internal, required: true},
+			},
+			tailCalls: []TailCall{
+				{"sys_exit_init_tail", "execute_finished", []uint32{uint32(Execve), uint32(Execveat)}},
+			},
+		},
+	},
+	SecurityBprmCredsForExec: {
+		id:       SecurityBprmCredsForExec,
+		id32Bit:  Sys32Undefined,
+		name:     "security_bprm_creds_for_exec",
+		version:  NewVersion(1, 0, 0),
+		sets:     []string{"proc"},
+		internal: true,
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SecurityBprmCredsForExec, required: true,
+					relevantKernels: []KernelDependency{{version: "5.8", comparison: NewerEquals}}},
+			},
+			tailCalls: []TailCall{
+				{"prog_array", "trace_security_bprm_creds_for_exec1", []uint32{TailSecurityBprmCredsForExec1}},
+				{"prog_array", "trace_security_bprm_creds_for_exec2", []uint32{TailSecurityBprmCredsForExec2}},
+			},
+		},
+		params: []trace.ArgMeta{
+			{Type: "const char*", Name: "path"},
+			{Type: "const char*", Name: "binary.path"},
+			{Type: "dev_t", Name: "binary.device_id"},
+			{Type: "unsigned long", Name: "binary.inode_number"},
+			{Type: "unsigned long", Name: "binary.ctime"},
+			{Type: "umode_t", Name: "binary.inode_mode"},
+			{Type: "const char*", Name: "interpreter_path"},
+			{Type: "umode_t", Name: "stdin_type"},
+			{Type: "char*", Name: "stdin_path"},
+			{Type: "int", Name: "kernel_invoked"},
+			{Type: "const char*const*", Name: "binary.arguments"},
+			{Type: "const char*const*", Name: "environment"},
+		},
+	},
 	ProcessExecuteFailed: {
 		id:      ProcessExecuteFailed,
 		id32Bit: Sys32Undefined,
@@ -12885,14 +12935,16 @@ var CoreEvents = map[ID]Definition{
 		version: NewVersion(1, 0, 0),
 		sets:    []string{"proc"},
 		dependencies: Dependencies{
+			ids: []ID{ExecuteFinished, SecurityBprmCredsForExec}, // For kernel version >= 5.8
 			probes: []Probe{
-				{handle: probes.ExecBinprm, required: true},
-				{handle: probes.ExecBinprmRet, required: true},
+				{handle: probes.ExecBinprm, required: false,
+					relevantKernels: []KernelDependency{{version: "5.8", comparison: Older}}},
+				{handle: probes.ExecBinprmRet, required: false,
+					relevantKernels: []KernelDependency{{version: "5.8", comparison: Older}}},
 			},
 			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Execve), uint32(Execveat)}},
-				{"prog_array", "trace_ret_exec_binprm1", []uint32{TailExecBinprm1}},
-				{"prog_array", "trace_ret_exec_binprm2", []uint32{TailExecBinprm2}},
+				{"prog_array", "trace_execute_failed1", []uint32{TailExecBinprm1}},
+				{"prog_array", "trace_execute_failed2", []uint32{TailExecBinprm2}},
 			},
 		},
 		params: []trace.ArgMeta{

@@ -612,6 +612,12 @@ func (t *Tracee) initDerivationTable() error {
 	}
 	symbolsCollisions := derive.SymbolsCollision(t.contSymbolsLoader, t.config.Policies)
 
+	executeFailedGen, err := derive.InitProcessExecuteFailedGenerator()
+	if err != nil {
+		logger.Errorw("failed to init derive function for ProcessExecuteFiled", "error", err)
+		return nil
+	}
+
 	t.eventDerivations = derive.Table{
 		events.CgroupMkdir: {
 			events.ContainerCreate: {
@@ -668,6 +674,18 @@ func (t *Tracee) initDerivationTable() error {
 				DeriveFunction: derive.NetTCPConnect(
 					t.dnsCache,
 				),
+			},
+		},
+		events.ExecuteFinished: {
+			events.ProcessExecuteFailed: {
+				Enabled:        shouldSubmit(events.ProcessExecuteFailed),
+				DeriveFunction: executeFailedGen.ProcessExecuteFailed(),
+			},
+		},
+		events.SecurityBprmCredsForExec: {
+			events.ProcessExecuteFailed: {
+				Enabled:        shouldSubmit(events.ProcessExecuteFailed),
+				DeriveFunction: executeFailedGen.ProcessExecuteFailed(),
 			},
 		},
 		//
@@ -1078,7 +1096,7 @@ func (t *Tracee) attachProbes() error {
 		}
 		eventDefinition := events.Core.GetDefinitionByID(id)
 		for _, probeDep := range eventDefinition.GetDependencies().GetProbes() {
-			isRelevant, err := probeDep.IsRelevant(t.config.OSInfo)
+			isRelevant, err := probeDep.IsOsCompatible(t.config.OSInfo)
 			if err != nil {
 				logger.Errorw("Event's probe relevance check failed, assuming not relevant",
 					"event", eventDefinition.GetName(), "probe", probeDep.GetHandle(),

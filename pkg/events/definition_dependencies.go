@@ -2,6 +2,7 @@ package events
 
 import (
 	"fmt"
+
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
@@ -138,8 +139,8 @@ func (p Probe) IsRequired() bool {
 // attempt to attach it won't be initiated in the first place.
 func (p Probe) IsOsCompatible(osInfo *helpers.OSInfo) (bool, error) {
 	for _, kernelDep := range p.relevantKernels {
-		compatibility, err := kernelDep.isKernelCompatible(osInfo)
-		if err != nil || compatibility == false {
+		isCompatible, err := kernelDep.isKernelCompatible(osInfo)
+		if err != nil || !isCompatible {
 			return false, err
 		}
 	}
@@ -199,6 +200,8 @@ const (
 	TailHiddenKernelModuleKset
 	TailHiddenKernelModuleModTree
 	TailHiddenKernelModuleNewModOnly
+	TailSecurityBprmCredsForExec1
+	TailSecurityBprmCredsForExec2
 	MaxTail
 )
 

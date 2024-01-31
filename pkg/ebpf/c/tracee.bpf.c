@@ -1484,7 +1484,7 @@ int BPF_KPROBE(trace_filldir64)
     if (!init_program_data(&p, ctx))
         return 0;
 
-    if (!should_trace((&p)))
+    if (!should_trace(&p))
         return 0;
 
     if (!should_submit(HIDDEN_INODES, p.event))
@@ -5011,19 +5011,8 @@ int BPF_KPROBE(trace_ret_inotify_find_inode)
     return events_perf_submit(&p, INOTIFY_WATCH, 0);
 }
 
-SEC("kprobe/exec_binprm")
-TRACE_ENT_FUNC(exec_binprm, EXEC_BINPRM);
-
-SEC("kretprobe/exec_binprm")
-int BPF_KPROBE(trace_ret_exec_binprm)
+statfunc int execute_failed_tail0(struct pt_regs *ctx, u32 tail_call_id)
 {
-    args_t saved_args;
-    if (load_args(&saved_args, EXEC_BINPRM) != 0) {
-        // missed entry or not traced
-        return 0;
-    }
-    del_args(EXEC_BINPRM);
-
     program_data_t p = {};
     if (!init_program_data(&p, ctx))
         return 0;
@@ -5034,11 +5023,7 @@ int BPF_KPROBE(trace_ret_exec_binprm)
     if (!should_submit(PROCESS_EXECUTION_FAILED, p.event))
         return 0;
 
-    int ret_val = PT_REGS_RC(ctx);
-    if (ret_val == 0)
-        return 0; // not interested of successful execution - for that we have sched_process_exec
-
-    struct linux_binprm *bprm = (struct linux_binprm *) saved_args.args[0];
+    struct linux_binprm *bprm = (struct linux_binprm *) PT_REGS_PARM1(ctx);
     if (bprm == NULL) {
         return -1;
     }
@@ -5066,12 +5051,11 @@ int BPF_KPROBE(trace_ret_exec_binprm)
     const char *interpreter_path = get_binprm_interp(bprm);
     save_str_to_buf(&p.event->args_buf, (void *) interpreter_path, 6);
 
-    bpf_tail_call(ctx, &prog_array, TAIL_EXEC_BINPRM1);
+    bpf_tail_call(ctx, &prog_array, tail_call_id);
     return -1;
 }
 
-SEC("kretprobe/trace_ret_exec_binprm1")
-int BPF_KPROBE(trace_ret_exec_binprm1)
+statfunc int execute_failed_tail1(struct pt_regs *ctx, u32 tail_call_id)
 {
     program_data_t p = {};
     if (!init_tailcall_program_data(&p, ctx))
@@ -5089,12 +5073,11 @@ int BPF_KPROBE(trace_ret_exec_binprm1)
     int kernel_invoked = (get_task_parent_flags(task) & PF_KTHREAD) ? 1 : 0;
     save_to_submit_buf(&p.event->args_buf, &kernel_invoked, sizeof(int), 9);
 
-    bpf_tail_call(ctx, &prog_array, TAIL_EXEC_BINPRM2);
+    bpf_tail_call(ctx, &prog_array, tail_call_id);
     return -1;
 }
 
-SEC("kretprobe/trace_ret_exec_binprm2")
-int BPF_KPROBE(trace_ret_exec_binprm2)
+statfunc int execute_failed_tail2(struct pt_regs *ctx, u32 event_id)
 {
     program_data_t p = {};
     if (!init_tailcall_program_data(&p, ctx))
@@ -5110,8 +5093,73 @@ int BPF_KPROBE(trace_ret_exec_binprm2)
     }
 
     int ret = PT_REGS_RC(ctx); // needs to be int
+    return events_perf_submit(&p, event_id, ret);
+}
 
-    return events_perf_submit(&p, PROCESS_EXECUTION_FAILED, ret);
+SEC("kprobe/exec_binprm")
+TRACE_ENT_FUNC(exec_binprm, EXEC_BINPRM);
+
+SEC("kretprobe/exec_binprm")
+int BPF_KPROBE(trace_ret_exec_binprm)
+{
+    args_t saved_args;
+    if (load_args(&saved_args, EXEC_BINPRM) != 0) {
+        // missed entry or not traced
+        return 0;
+    }
+    del_args(EXEC_BINPRM);
+
+    int ret_val = PT_REGS_RC(ctx);
+    if (ret_val == 0)
+        return 0; // not interested of successful execution - for that we have sched_process_exec
+    return execute_failed_tail0(ctx, TAIL_EXEC_BINPRM1);
+}
+
+SEC("kretprobe/trace_execute_failed1")
+int BPF_KPROBE(trace_execute_failed1)
+{
+    return execute_failed_tail1(ctx, TAIL_EXEC_BINPRM2);
+}
+
+SEC("kretprobe/trace_execute_failed2")
+int BPF_KPROBE(trace_execute_failed2)
+{
+    return execute_failed_tail2(ctx, PROCESS_EXECUTION_FAILED);
+}
+
+SEC("kprobe/security_bprm_creds_for_exec")
+int BPF_KPROBE(trace_security_bprm_creds_for_exec)
+{
+    return execute_failed_tail0(ctx, TAIL_SECURITY_BPRM_CREDS_FOR_EXEC1);
+}
+
+SEC("kretprobe/trace_security_bprm_creds_for_exec1")
+int BPF_KPROBE(trace_security_bprm_creds_for_exec1)
+{
+    return execute_failed_tail1(ctx, TAIL_SECURITY_BPRM_CREDS_FOR_EXEC2);
+}
+
+SEC("kretprobe/trace_security_bprm_creds_for_exec2")
+int BPF_KPROBE(trace_security_bprm_creds_for_exec2)
+{
+    return execute_failed_tail2(ctx, SECURITY_BPRM_CREDS_FOR_EXEC);
+}
+
+SEC("raw_tracepoint/execute_finished")
+int execute_finished(struct bpf_raw_tracepoint_args *ctx)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return -1;
+
+    if (!should_trace(&p))
+        return 0;
+
+    if (!should_submit(PROCESS_EXECUTION_FAILED, p.event))
+        return 0;
+
+    long exec_ret = ctx->args[1];
+    return events_perf_submit(&p, EXECUTE_FINISHED, exec_ret);
 }
 
 // clang-format off
