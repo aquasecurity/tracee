@@ -56,6 +56,16 @@ struct args_map {
 
 typedef struct args_map args_map_t;
 
+// map process to its binprm struct upon execution
+struct bprm_map {
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(max_entries, 16);
+    __type(key, u64);
+    __type(value, struct linux_binprm *);
+} bprm_map SEC(".maps");
+
+typedef struct bprm_map bprm_map_t;
+
 // map 32bit to 64bit syscalls
 struct sys_32_to_64_map {
     __uint(type, BPF_MAP_TYPE_HASH);

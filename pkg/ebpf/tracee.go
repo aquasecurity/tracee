@@ -675,6 +675,18 @@ func (t *Tracee) initDerivationTable() error {
 				),
 			},
 		},
+		events.ExecuteFinished: {
+			events.ProcessExecuteFailed: {
+				Enabled:        shouldSubmit(events.ProcessExecuteFailed),
+				DeriveFunction: derive.ProcessExecuteFailed(),
+			},
+		},
+		events.SecurityBprmCredsForExec: {
+			events.ProcessExecuteFailed: {
+				Enabled:        shouldSubmit(events.ProcessExecuteFailed),
+				DeriveFunction: derive.ProcessExecuteFailed(),
+			},
+		},
 		//
 		// Network Packet Derivations
 		//

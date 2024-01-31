@@ -119,8 +119,7 @@ const (
 	InotifyFindInode
 	InotifyFindInodeRet
 	BpfCheck
-	ExecBinprm
-	ExecBinprmRet
+	SecurityBprmCredsForExec
 	HiddenKernelModuleSeeker
 	TpProbeRegPrioMayExist
 	HiddenKernelModuleVerifier
