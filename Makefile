@@ -366,7 +366,7 @@ $(OUTPUT_DIR)/tracee.bpf.o: \
 		-I ./3rdparty/include \
 		-target bpf \
 		-O2 -g \
-		-march=bpf -mcpu=$(BPF_VCPU) \
+		-mcpu=$(BPF_VCPU) \
 		-c $(TRACEE_EBPF_OBJ_SRC) \
 		-o $@
 
