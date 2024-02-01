@@ -4,23 +4,22 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 type RetFilter struct {
-	filters map[events.ID]*IntFilter[int64]
+	filters map[int]*IntFilter[int64]
 	enabled bool
 }
 
 func NewRetFilter() *RetFilter {
 	return &RetFilter{
-		filters: map[events.ID]*IntFilter[int64]{},
+		filters: map[int]*IntFilter[int64]{},
 		enabled: false,
 	}
 }
 
-func (filter *RetFilter) Filter(eventID events.ID, retVal int64) bool {
+func (filter *RetFilter) Filter(eventID int, retVal int64) bool {
 	if !filter.Enabled() {
 		return true
 	}
@@ -48,7 +47,7 @@ func (filter *RetFilter) Enabled() bool {
 	return filter.enabled
 }
 
-func (filter *RetFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]events.ID) error {
+func (filter *RetFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]int) error {
 	// Ret filter has the following format: "event.retval=val"
 	// filterName have the format event.retval, and operatorAndValues have the format "=val"
 	splitFilter := strings.Split(filterName, ".")

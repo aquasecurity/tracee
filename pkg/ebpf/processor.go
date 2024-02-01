@@ -6,7 +6,7 @@ import (
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -25,8 +25,8 @@ func init() {
 func (t *Tracee) processEvent(event *trace.Event) []error {
 	var errs []error
 
-	processors := t.eventProcessor[events.ID(event.EventID)]         // this event processors
-	processors = append(processors, t.eventProcessor[events.All]...) // all events processors
+	processors := t.eventProcessor[int(event.EventID)]                   // this event processors
+	processors = append(processors, t.eventProcessor[extensions.All]...) // all events processors
 
 	for _, processor := range processors {
 		err := processor(event)
@@ -67,9 +67,9 @@ func (t *Tracee) processLostEvents() {
 }
 
 // RegisterEventProcessor registers a new event processor for a specific event id.
-func (t *Tracee) RegisterEventProcessor(id events.ID, proc func(evt *trace.Event) error) {
+func (t *Tracee) RegisterEventProcessor(id int, proc func(evt *trace.Event) error) {
 	if t.eventProcessor == nil {
-		t.eventProcessor = make(map[events.ID][]func(evt *trace.Event) error)
+		t.eventProcessor = make(map[int][]func(evt *trace.Event) error)
 	}
 	if t.eventProcessor[id] == nil {
 		t.eventProcessor[id] = make([]func(evt *trace.Event) error, 0)
@@ -86,16 +86,16 @@ func (t *Tracee) registerEventProcessors() {
 	// Processors registered when proctree source "events" is enabled.
 	switch t.config.ProcTree.Source {
 	case proctree.SourceEvents, proctree.SourceBoth:
-		t.RegisterEventProcessor(events.SchedProcessFork, t.procTreeForkProcessor)
-		t.RegisterEventProcessor(events.SchedProcessExec, t.procTreeExecProcessor)
-		t.RegisterEventProcessor(events.SchedProcessExit, t.procTreeExitProcessor)
+		t.RegisterEventProcessor(extensions.SchedProcessFork, t.procTreeForkProcessor)
+		t.RegisterEventProcessor(extensions.SchedProcessExec, t.procTreeExecProcessor)
+		t.RegisterEventProcessor(extensions.SchedProcessExit, t.procTreeExitProcessor)
 	}
-	// Processors enriching process tree with regular pipeline events.
+	// Processors enriching process tree with regular pipeline extensions.
 	if t.config.ProcTree.Source != proctree.SourceNone {
-		t.RegisterEventProcessor(events.All, t.procTreeAddBinInfo)
+		t.RegisterEventProcessor(extensions.All, t.procTreeAddBinInfo)
 	}
 	// Processors regitered even if process tree source is disabled.
-	t.RegisterEventProcessor(events.SchedProcessFork, t.procTreeForkRemoveArgs)
+	t.RegisterEventProcessor(extensions.SchedProcessFork, t.procTreeForkRemoveArgs)
 
 	//
 	// DNS Cache Processors
@@ -103,25 +103,25 @@ func (t *Tracee) registerEventProcessors() {
 
 	if t.config.DNSCacheConfig.Enable {
 		// TODO(nadav): Migrate to control plane signals?
-		t.RegisterEventProcessor(events.NetPacketDNS, t.populateDnsCache)
+		t.RegisterEventProcessor(extensions.NetPacketDNS, t.populateDnsCache)
 	}
 
 	//
 	// Regular Pipeline Processors
 	//
 
-	t.RegisterEventProcessor(events.VfsWrite, t.processWriteEvent)
-	t.RegisterEventProcessor(events.VfsWritev, t.processWriteEvent)
-	t.RegisterEventProcessor(events.KernelWrite, t.processWriteEvent)
-	t.RegisterEventProcessor(events.SecurityKernelReadFile, processKernelReadFile)
-	t.RegisterEventProcessor(events.SecurityPostReadFile, processKernelReadFile)
-	t.RegisterEventProcessor(events.SchedProcessExec, t.processSchedProcessExec)
-	t.RegisterEventProcessor(events.DoInitModule, t.processDoInitModule)
-	t.RegisterEventProcessor(events.HookedProcFops, t.processHookedProcFops)
-	t.RegisterEventProcessor(events.PrintNetSeqOps, t.processTriggeredEvent)
-	t.RegisterEventProcessor(events.PrintMemDump, t.processTriggeredEvent)
-	t.RegisterEventProcessor(events.PrintMemDump, t.processPrintMemDump)
-	t.RegisterEventProcessor(events.SharedObjectLoaded, t.processSharedObjectLoaded)
+	t.RegisterEventProcessor(extensions.VfsWrite, t.processWriteEvent)
+	t.RegisterEventProcessor(extensions.VfsWritev, t.processWriteEvent)
+	t.RegisterEventProcessor(extensions.KernelWrite, t.processWriteEvent)
+	t.RegisterEventProcessor(extensions.SecurityKernelReadFile, processKernelReadFile)
+	t.RegisterEventProcessor(extensions.SecurityPostReadFile, processKernelReadFile)
+	t.RegisterEventProcessor(extensions.SchedProcessExec, t.processSchedProcessExec)
+	t.RegisterEventProcessor(extensions.DoInitModule, t.processDoInitModule)
+	t.RegisterEventProcessor(extensions.HookedProcFops, t.processHookedProcFops)
+	t.RegisterEventProcessor(extensions.PrintNetSeqOps, t.processTriggeredEvent)
+	t.RegisterEventProcessor(extensions.PrintMemDump, t.processTriggeredEvent)
+	t.RegisterEventProcessor(extensions.PrintMemDump, t.processPrintMemDump)
+	t.RegisterEventProcessor(extensions.SharedObjectLoaded, t.processSharedObjectLoaded)
 
 	//
 	// Event Timestamps Normalization Processors
@@ -129,8 +129,8 @@ func (t *Tracee) registerEventProcessors() {
 
 	// Convert all time relate args to nanoseconds since epoch.
 	// NOTE: Make sure to convert time related args (of your event) in here.
-	t.RegisterEventProcessor(events.SchedProcessFork, t.processSchedProcessFork)
-	t.RegisterEventProcessor(events.All, t.normalizeEventCtxTimes)
+	t.RegisterEventProcessor(extensions.SchedProcessFork, t.processSchedProcessFork)
+	t.RegisterEventProcessor(extensions.All, t.normalizeEventCtxTimes)
 }
 
 func initKernelReadFileTypes() {

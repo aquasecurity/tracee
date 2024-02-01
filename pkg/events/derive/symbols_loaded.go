@@ -8,8 +8,8 @@ import (
 	"golang.org/x/exp/maps"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/policy"
@@ -24,7 +24,7 @@ func SymbolsLoaded(
 	symbolsLoadedFilters := map[string]filters.Filter{}
 
 	for p := range policies.Map() {
-		f := p.ArgFilter.GetEventFilters(events.SymbolsLoaded)
+		f := p.ArgFilter.GetEventFilters(extensions.SymbolsLoaded)
 		maps.Copy(symbolsLoadedFilters, f)
 	}
 
@@ -44,7 +44,7 @@ func SymbolsLoaded(
 
 	gen := initSymbolsLoadedEventGenerator(soLoader, loadWatchedSymbols, loadWhitelistedLibs)
 
-	return deriveSingleEvent(events.SymbolsLoaded, gen.deriveArgs)
+	return deriveSingleEvent(extensions.SymbolsLoaded, gen.deriveArgs)
 }
 
 // Most specific paths should be at the top, to prevent bugs with iterations over the list

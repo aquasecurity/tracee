@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -102,10 +102,10 @@ func PrepareFilterMapsFromPolicies(policies []k8s.PolicyInterface) (PolicyScopeM
 
 // CreatePolicies creates a Policies object from the scope and events maps.
 func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMap, newBinary bool) (*policy.Policies, error) {
-	eventsNameToID := events.Core.NamesToIDs()
+	eventsNameToID := extensions.Definitions.NamesToIDsFromAllExts()
 	// remove internal events since they shouldn't be accessible by users
 	for event, id := range eventsNameToID {
-		if events.Core.GetDefinitionByID(id).IsInternal() {
+		if extensions.Definitions.GetByIDFromAny(id).IsInternal() {
 			delete(eventsNameToID, event)
 		}
 	}

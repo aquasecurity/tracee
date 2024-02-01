@@ -10,6 +10,7 @@ import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -32,8 +33,8 @@ func ParseArgs(event *trace.Event) error {
 		}
 	}
 
-	switch ID(event.EventID) {
-	case MemProtAlert:
+	switch event.EventID {
+	case extensions.MemProtAlert:
 		if alertArg := GetArg(event, "alert"); alertArg != nil {
 			if alert, isUint32 := alertArg.Value.(uint32); isUint32 {
 				alertArg.Value = trace.MemProtAlert(alert).String()
@@ -52,11 +53,12 @@ func ParseArgs(event *trace.Event) error {
 				parseOrEmptyString(prevProtArg, mmapProtArgument, nil)
 			}
 		}
-	case SysEnter, SysExit:
+	case extensions.SysEnter,
+		extensions.SysExit:
 		if syscallArg := GetArg(event, "syscall"); syscallArg != nil {
 			if id, isInt32 := syscallArg.Value.(int32); isInt32 {
-				if Core.IsDefined(ID(id)) {
-					eventDefinition := Core.GetDefinitionByID(ID(id))
+				if extensions.Definitions.IsDefinedInAny(int(id)) {
+					eventDefinition := extensions.Definitions.GetByIDFromAny(int(id))
 					if eventDefinition.IsSyscall() {
 						syscallArg.Value = eventDefinition.GetName()
 						syscallArg.Type = "string"
@@ -64,28 +66,31 @@ func ParseArgs(event *trace.Event) error {
 				}
 			}
 		}
-	case CapCapable:
+	case extensions.CapCapable:
 		if capArg := GetArg(event, "cap"); capArg != nil {
 			if capability, isInt32 := capArg.Value.(int32); isInt32 {
 				capabilityFlagArgument, err := helpers.ParseCapability(uint64(capability))
 				parseOrEmptyString(capArg, capabilityFlagArgument, err)
 			}
 		}
-	case SecurityMmapFile, DoMmap:
+	case extensions.SecurityMmapFile,
+		extensions.DoMmap:
 		if protArg := GetArg(event, "prot"); protArg != nil {
 			if prot, isUint64 := protArg.Value.(uint64); isUint64 {
 				mmapProtArgument := helpers.ParseMmapProt(prot)
 				parseOrEmptyString(protArg, mmapProtArgument, nil)
 			}
 		}
-	case Mmap, Mprotect, PkeyMprotect:
+	case extensions.Mmap,
+		extensions.Mprotect,
+		extensions.PkeyMprotect:
 		if protArg := GetArg(event, "prot"); protArg != nil {
 			if prot, isInt32 := protArg.Value.(int32); isInt32 {
 				mmapProtArgument := helpers.ParseMmapProt(uint64(prot))
 				parseOrEmptyString(protArg, mmapProtArgument, nil)
 			}
 		}
-	case SecurityFileMprotect:
+	case extensions.SecurityFileMprotect:
 		if protArg := GetArg(event, "prot"); protArg != nil {
 			if prot, isInt32 := protArg.Value.(int32); isInt32 {
 				mmapProtArgument := helpers.ParseMmapProt(uint64(prot))
@@ -98,28 +103,28 @@ func ParseArgs(event *trace.Event) error {
 				parseOrEmptyString(prevProtArg, mmapProtArgument, nil)
 			}
 		}
-	case Ptrace:
+	case extensions.Ptrace:
 		if reqArg := GetArg(event, "request"); reqArg != nil {
 			if req, isInt64 := reqArg.Value.(int64); isInt64 {
 				ptraceRequestArgument, err := helpers.ParsePtraceRequestArgument(uint64(req))
 				parseOrEmptyString(reqArg, ptraceRequestArgument, err)
 			}
 		}
-	case Prctl:
+	case extensions.Prctl:
 		if optArg := GetArg(event, "option"); optArg != nil {
 			if opt, isInt32 := optArg.Value.(int32); isInt32 {
 				prctlOptionArgument, err := helpers.ParsePrctlOption(uint64(opt))
 				parseOrEmptyString(optArg, prctlOptionArgument, err)
 			}
 		}
-	case Socketcall:
+	case extensions.Socketcall:
 		if callArg := GetArg(event, "call"); callArg != nil {
 			if call, isInt32 := callArg.Value.(int32); isInt32 {
 				socketcallArgument, err := helpers.ParseSocketcallCall(uint64(call))
 				parseOrEmptyString(callArg, socketcallArgument, err)
 			}
 		}
-	case Socket:
+	case extensions.Socket:
 		if domArg := GetArg(event, "domain"); domArg != nil {
 			if dom, isInt32 := domArg.Value.(int32); isInt32 {
 				socketDomainArgument, err := helpers.ParseSocketDomainArgument(uint64(dom))
@@ -132,7 +137,8 @@ func ParseArgs(event *trace.Event) error {
 				parseOrEmptyString(typeArg, socketTypeArgument, err)
 			}
 		}
-	case SecuritySocketCreate, SecuritySocketConnect:
+	case extensions.SecuritySocketCreate,
+		extensions.SecuritySocketConnect:
 		if domArg := GetArg(event, "family"); domArg != nil {
 			if dom, isInt32 := domArg.Value.(int32); isInt32 {
 				socketDomainArgument, err := helpers.ParseSocketDomainArgument(uint64(dom))
@@ -145,77 +151,88 @@ func ParseArgs(event *trace.Event) error {
 				parseOrEmptyString(typeArg, socketTypeArgument, err)
 			}
 		}
-	case Access, Faccessat:
+	case extensions.Access,
+		extensions.Faccessat:
 		if modeArg := GetArg(event, "mode"); modeArg != nil {
 			if mode, isInt32 := modeArg.Value.(int32); isInt32 {
 				accessModeArgument, err := helpers.ParseAccessMode(uint64(mode))
 				parseOrEmptyString(modeArg, accessModeArgument, err)
 			}
 		}
-	case Execveat:
+	case extensions.Execveat:
 		if flagsArg := GetArg(event, "flags"); flagsArg != nil {
 			if flags, isInt32 := flagsArg.Value.(int32); isInt32 {
 				execFlagArgument, err := helpers.ParseExecFlag(uint64(flags))
 				parseOrEmptyString(flagsArg, execFlagArgument, err)
 			}
 		}
-	case Open, Openat, SecurityFileOpen:
+	case extensions.Open,
+		extensions.Openat,
+		extensions.SecurityFileOpen:
 		if flagsArg := GetArg(event, "flags"); flagsArg != nil {
 			if flags, isInt32 := flagsArg.Value.(int32); isInt32 {
 				openFlagArgument, err := helpers.ParseOpenFlagArgument(uint64(flags))
 				parseOrEmptyString(flagsArg, openFlagArgument, err)
 			}
 		}
-	case Mknod, Mknodat, Chmod, Fchmod, Fchmodat:
+	case extensions.Mknod,
+		extensions.Mknodat,
+		extensions.Chmod,
+		extensions.Fchmod,
+		extensions.Fchmodat:
 		if modeArg := GetArg(event, "mode"); modeArg != nil {
 			if mode, isUint32 := modeArg.Value.(uint32); isUint32 {
 				inodeModeArgument, err := helpers.ParseInodeMode(uint64(mode))
 				parseOrEmptyString(modeArg, inodeModeArgument, err)
 			}
 		}
-	case SecurityInodeMknod:
+	case extensions.SecurityInodeMknod:
 		if modeArg := GetArg(event, "mode"); modeArg != nil {
 			if mode, isUint16 := modeArg.Value.(uint16); isUint16 {
 				inodeModeArgument, err := helpers.ParseInodeMode(uint64(mode))
 				parseOrEmptyString(modeArg, inodeModeArgument, err)
 			}
 		}
-	case Clone:
+	case extensions.Clone:
 		if flagsArg := GetArg(event, "flags"); flagsArg != nil {
 			if flags, isUint64 := flagsArg.Value.(uint64); isUint64 {
 				cloneFlagArgument, err := helpers.ParseCloneFlags(uint64(flags))
 				parseOrEmptyString(flagsArg, cloneFlagArgument, err)
 			}
 		}
-	case Bpf, SecurityBPF:
+	case extensions.Bpf,
+		extensions.SecurityBPF:
 		if cmdArg := GetArg(event, "cmd"); cmdArg != nil {
 			if cmd, isInt32 := cmdArg.Value.(int32); isInt32 {
 				bpfCommandArgument, err := helpers.ParseBPFCmd(uint64(cmd))
 				parseOrEmptyString(cmdArg, bpfCommandArgument, err)
 			}
 		}
-	case SecurityKernelReadFile, SecurityPostReadFile:
+	case extensions.SecurityKernelReadFile,
+		extensions.SecurityPostReadFile:
 		if typeArg := GetArg(event, "type"); typeArg != nil {
 			if readFileId, isInt32 := typeArg.Value.(trace.KernelReadType); isInt32 {
 				emptyString(typeArg)
 				typeArg.Value = readFileId.String()
 			}
 		}
-	case SchedProcessExec:
+	case extensions.SchedProcessExec:
 		if modeArg := GetArg(event, "stdin_type"); modeArg != nil {
 			if mode, isUint16 := modeArg.Value.(uint16); isUint16 {
 				inodeModeArgument, err := helpers.ParseInodeMode(uint64(mode))
 				parseOrEmptyString(modeArg, inodeModeArgument, err)
 			}
 		}
-	case DirtyPipeSplice:
+	case extensions.DirtyPipeSplice:
 		if modeArg := GetArg(event, "in_file_type"); modeArg != nil {
 			if mode, isUint16 := modeArg.Value.(uint16); isUint16 {
 				inodeModeArgument, err := helpers.ParseInodeMode(uint64(mode))
 				parseOrEmptyString(modeArg, inodeModeArgument, err)
 			}
 		}
-	case SecuritySocketSetsockopt, Setsockopt, Getsockopt:
+	case extensions.SecuritySocketSetsockopt,
+		extensions.Setsockopt,
+		extensions.Getsockopt:
 		if levelArg := GetArg(event, "level"); levelArg != nil {
 			if level, isInt := levelArg.Value.(int32); isInt {
 				levelArgument, err := helpers.ParseSocketLevel(uint64(level))
@@ -226,7 +243,7 @@ func ParseArgs(event *trace.Event) error {
 			if opt, isInt := optionNameArg.Value.(int32); isInt {
 				var optionNameArgument helpers.SocketOptionArgument
 				var err error
-				if ID(event.EventID) == Getsockopt {
+				if event.EventID == extensions.Getsockopt {
 					optionNameArgument, err = helpers.ParseGetSocketOption(uint64(opt))
 				} else {
 					optionNameArgument, err = helpers.ParseSetSocketOption(uint64(opt))
@@ -234,7 +251,7 @@ func ParseArgs(event *trace.Event) error {
 				parseOrEmptyString(optionNameArg, optionNameArgument, err)
 			}
 		}
-	case BpfAttach:
+	case extensions.BpfAttach:
 		if progTypeArg := GetArg(event, "prog_type"); progTypeArg != nil {
 			if progType, isInt := progTypeArg.Value.(int32); isInt {
 				progTypeArgument, err := helpers.ParseBPFProgType(uint64(progType))
@@ -260,7 +277,7 @@ func ParseArgs(event *trace.Event) error {
 				}
 			}
 		}
-	case SecurityBpfProg:
+	case extensions.SecurityBpfProg:
 		if progTypeArg := GetArg(event, "type"); progTypeArg != nil {
 			if progType, isInt := progTypeArg.Value.(int32); isInt {
 				progTypeArgument, err := helpers.ParseBPFProgType(uint64(progType))

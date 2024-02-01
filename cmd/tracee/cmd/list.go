@@ -8,7 +8,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/cmd"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 )
@@ -53,7 +53,7 @@ var listCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		initialize.CreateEventsFromSignatures(events.StartSignatureID, sigs)
+		initialize.CreateEventsFromSignatures(extensions.StartSignatureID, sigs)
 
 		includeSigs := true
 		wideOutput := c.Flags().Lookup("wide").Value.String() == "true"

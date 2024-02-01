@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"gotest.tools/assert"
 
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -113,7 +113,7 @@ func TestContext_Apply(t *testing.T) {
 		{
 			name: "happy path - successful apply",
 			invokingEvent: trace.Event{
-				EventID:     int(events.Open),
+				EventID:     extensions.Open,
 				EventName:   "open",
 				Timestamp:   123,
 				ProcessID:   5,
@@ -122,7 +122,7 @@ func TestContext_Apply(t *testing.T) {
 				ReturnValue: 2,
 			},
 			inputEvent: trace.Event{
-				EventID:     int(events.PrintNetSeqOps),
+				EventID:     extensions.PrintNetSeqOps,
 				EventName:   "print_net_seq_ops",
 				Timestamp:   187,
 				ProcessID:   0,
@@ -154,7 +154,7 @@ func TestContext_Apply(t *testing.T) {
 				},
 			},
 			expectedEvent: trace.Event{
-				EventID:     int(events.PrintNetSeqOps),
+				EventID:     extensions.PrintNetSeqOps,
 				EventName:   "print_net_seq_ops",
 				Timestamp:   123,
 				ProcessID:   5,
@@ -190,14 +190,14 @@ func TestContext_Apply(t *testing.T) {
 		{
 			name: "error path - wrong context id argument",
 			invokingEvent: trace.Event{
-				EventID:     int(events.Open),
+				EventID:     extensions.Open,
 				EventName:   "open",
 				Timestamp:   123,
 				ProcessID:   5,
 				ReturnValue: 2,
 			},
 			inputEvent: trace.Event{
-				EventID:   int(events.PrintNetSeqOps),
+				EventID:   extensions.PrintNetSeqOps,
 				EventName: "print_net_seq_ops",
 				Timestamp: 187,
 				ProcessID: 0,

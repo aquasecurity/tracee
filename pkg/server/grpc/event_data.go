@@ -11,7 +11,7 @@ import (
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -59,7 +59,7 @@ func getEventData(e trace.Event) ([]*pb.EventValue, error) {
 		data = append(data, eventValue)
 	}
 
-	if events.Core.GetDefinitionByID(events.ID(e.EventID)).IsSyscall() {
+	if extensions.Definitions.GetByIDFromAny(e.EventID).IsSyscall() {
 		data = append(data, &pb.EventValue{
 			Name: "returnValue",
 			Value: &pb.EventValue_Int64{
@@ -461,7 +461,7 @@ func getTriggerBy(triggeredByArg trace.Argument) (*pb.TriggeredBy, error) {
 		data = append(data, eventValue)
 	}
 
-	if events.Core.GetDefinitionByID(events.ID(id)).IsSyscall() {
+	if extensions.Definitions.GetByIDFromAny(id).IsSyscall() {
 		data = append(data, &pb.EventValue{
 			Name: "returnValue",
 			Value: &pb.EventValue_Int64{

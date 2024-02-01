@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/policy"
 )
 
@@ -19,21 +19,21 @@ func TestPolicyManagerEnableRule(t *testing.T) {
 	policy2Mached := uint64(0b100)
 	policy1And2Mached := uint64(0b110)
 
-	assert.False(t, policyManager.IsRuleEnabled(policy1Mached, events.SecurityBPF))
-	assert.False(t, policyManager.IsRuleEnabled(policy2Mached, events.SecurityBPF))
-	assert.False(t, policyManager.IsRuleEnabled(policy1And2Mached, events.SecurityBPF))
+	assert.False(t, policyManager.IsRuleEnabled(policy1Mached, extensions.SecurityBPF))
+	assert.False(t, policyManager.IsRuleEnabled(policy2Mached, extensions.SecurityBPF))
+	assert.False(t, policyManager.IsRuleEnabled(policy1And2Mached, extensions.SecurityBPF))
 
-	policyManager.EnableRule(1, events.SecurityBPF)
+	policyManager.EnableRule(1, extensions.SecurityBPF)
 
-	assert.True(t, policyManager.IsRuleEnabled(policy1Mached, events.SecurityBPF))
-	assert.False(t, policyManager.IsRuleEnabled(policy2Mached, events.SecurityBPF))
-	assert.True(t, policyManager.IsRuleEnabled(policy1And2Mached, events.SecurityBPF))
+	assert.True(t, policyManager.IsRuleEnabled(policy1Mached, extensions.SecurityBPF))
+	assert.False(t, policyManager.IsRuleEnabled(policy2Mached, extensions.SecurityBPF))
+	assert.True(t, policyManager.IsRuleEnabled(policy1And2Mached, extensions.SecurityBPF))
 
-	policyManager.EnableRule(2, events.SecurityBPF)
+	policyManager.EnableRule(2, extensions.SecurityBPF)
 
-	assert.True(t, policyManager.IsRuleEnabled(policy1Mached, events.SecurityBPF))
-	assert.True(t, policyManager.IsRuleEnabled(policy2Mached, events.SecurityBPF))
-	assert.True(t, policyManager.IsRuleEnabled(policy1And2Mached, events.SecurityBPF))
+	assert.True(t, policyManager.IsRuleEnabled(policy1Mached, extensions.SecurityBPF))
+	assert.True(t, policyManager.IsRuleEnabled(policy2Mached, extensions.SecurityBPF))
+	assert.True(t, policyManager.IsRuleEnabled(policy1And2Mached, extensions.SecurityBPF))
 }
 
 func TestPolicyManagerDisableRule(t *testing.T) {
@@ -45,36 +45,36 @@ func TestPolicyManagerDisableRule(t *testing.T) {
 	policy2Mached := uint64(0b100)
 	policy1And2Mached := uint64(0b110)
 
-	policyManager.EnableRule(1, events.SecurityBPF)
+	policyManager.EnableRule(1, extensions.SecurityBPF)
 
-	assert.True(t, policyManager.IsRuleEnabled(policy1Mached, events.SecurityBPF))
-	assert.False(t, policyManager.IsRuleEnabled(policy2Mached, events.SecurityBPF))
-	assert.True(t, policyManager.IsRuleEnabled(policy1And2Mached, events.SecurityBPF))
+	assert.True(t, policyManager.IsRuleEnabled(policy1Mached, extensions.SecurityBPF))
+	assert.False(t, policyManager.IsRuleEnabled(policy2Mached, extensions.SecurityBPF))
+	assert.True(t, policyManager.IsRuleEnabled(policy1And2Mached, extensions.SecurityBPF))
 
-	policyManager.DisableRule(1, events.SecurityBPF)
+	policyManager.DisableRule(1, extensions.SecurityBPF)
 
-	assert.False(t, policyManager.IsRuleEnabled(policy1Mached, events.SecurityBPF))
-	assert.False(t, policyManager.IsRuleEnabled(policy2Mached, events.SecurityBPF))
-	assert.False(t, policyManager.IsRuleEnabled(policy1And2Mached, events.SecurityBPF))
+	assert.False(t, policyManager.IsRuleEnabled(policy1Mached, extensions.SecurityBPF))
+	assert.False(t, policyManager.IsRuleEnabled(policy2Mached, extensions.SecurityBPF))
+	assert.False(t, policyManager.IsRuleEnabled(policy1And2Mached, extensions.SecurityBPF))
 }
 
 func TestPolicyManagerEnableAndDisableRuleConcurrent(t *testing.T) {
 	t.Parallel()
 
-	eventsToEnable := []events.ID{
-		events.SecurityBPF,
-		events.SchedGetPriorityMax,
-		events.SchedProcessExec,
-		events.SchedProcessExit,
-		events.Ptrace,
+	eventsToEnable := []int{
+		extensions.SecurityBPF,
+		extensions.SchedGetPriorityMax,
+		extensions.SchedProcessExec,
+		extensions.SchedProcessExit,
+		extensions.Ptrace,
 	}
 
-	eventsToDisable := []events.ID{
-		events.SecurityBPFMap,
-		events.Openat2,
-		events.SchedProcessFork,
-		events.MagicWrite,
-		events.FileModification,
+	eventsToDisable := []int{
+		extensions.SecurityBPFMap,
+		extensions.Openat2,
+		extensions.SchedProcessFork,
+		extensions.MagicWrite,
+		extensions.FileModification,
 	}
 
 	policyManager := newPolicyManager()
@@ -118,17 +118,17 @@ func TestPolicyManagerEnableEvent(t *testing.T) {
 
 	policyManager := newPolicyManager()
 
-	assert.False(t, policyManager.isEventEnabled(events.SecurityBPF))
-	assert.False(t, policyManager.isEventEnabled(events.SecurityFileOpen))
-	assert.False(t, policyManager.isEventEnabled(events.SecuritySocketAccept))
+	assert.False(t, policyManager.isEventEnabled(extensions.SecurityBPF))
+	assert.False(t, policyManager.isEventEnabled(extensions.SecurityFileOpen))
+	assert.False(t, policyManager.isEventEnabled(extensions.SecuritySocketAccept))
 
-	policyManager.EnableEvent(events.SecurityBPF)
-	policyManager.EnableEvent(events.SecurityFileOpen)
-	policyManager.EnableEvent(events.SecuritySocketAccept)
+	policyManager.EnableEvent(extensions.SecurityBPF)
+	policyManager.EnableEvent(extensions.SecurityFileOpen)
+	policyManager.EnableEvent(extensions.SecuritySocketAccept)
 
-	assert.True(t, policyManager.isEventEnabled(events.SecurityBPF))
-	assert.True(t, policyManager.isEventEnabled(events.SecurityFileOpen))
-	assert.True(t, policyManager.isEventEnabled(events.SecuritySocketAccept))
+	assert.True(t, policyManager.isEventEnabled(extensions.SecurityBPF))
+	assert.True(t, policyManager.isEventEnabled(extensions.SecurityFileOpen))
+	assert.True(t, policyManager.isEventEnabled(extensions.SecuritySocketAccept))
 }
 
 func TestPolicyManagerDisableEvent(t *testing.T) {
@@ -136,39 +136,39 @@ func TestPolicyManagerDisableEvent(t *testing.T) {
 
 	policyManager := newPolicyManager()
 
-	policyManager.EnableEvent(events.SecurityBPF)
-	policyManager.EnableEvent(events.SecurityFileOpen)
-	policyManager.EnableEvent(events.SecuritySocketAccept)
+	policyManager.EnableEvent(extensions.SecurityBPF)
+	policyManager.EnableEvent(extensions.SecurityFileOpen)
+	policyManager.EnableEvent(extensions.SecuritySocketAccept)
 
-	assert.True(t, policyManager.IsEventEnabled(events.SecurityBPF))
-	assert.True(t, policyManager.IsEventEnabled(events.SecurityFileOpen))
-	assert.True(t, policyManager.IsEventEnabled(events.SecuritySocketAccept))
+	assert.True(t, policyManager.IsEventEnabled(extensions.SecurityBPF))
+	assert.True(t, policyManager.IsEventEnabled(extensions.SecurityFileOpen))
+	assert.True(t, policyManager.IsEventEnabled(extensions.SecuritySocketAccept))
 
-	policyManager.DisableEvent(events.SecurityBPF)
-	policyManager.DisableEvent(events.SecurityFileOpen)
+	policyManager.DisableEvent(extensions.SecurityBPF)
+	policyManager.DisableEvent(extensions.SecurityFileOpen)
 
-	assert.False(t, policyManager.IsEventEnabled(events.SecurityBPF))
-	assert.False(t, policyManager.IsEventEnabled(events.SecurityFileOpen))
-	assert.True(t, policyManager.IsEventEnabled(events.SecuritySocketAccept))
+	assert.False(t, policyManager.IsEventEnabled(extensions.SecurityBPF))
+	assert.False(t, policyManager.IsEventEnabled(extensions.SecurityFileOpen))
+	assert.True(t, policyManager.IsEventEnabled(extensions.SecuritySocketAccept))
 }
 
 func TestPolicyManagerEnableAndDisableEventConcurrent(t *testing.T) {
 	t.Parallel()
 
-	eventsToEnable := []events.ID{
-		events.SecurityBPF,
-		events.SchedGetPriorityMax,
-		events.SchedProcessExec,
-		events.SchedProcessExit,
-		events.Ptrace,
+	eventsToEnable := []int{
+		extensions.SecurityBPF,
+		extensions.SchedGetPriorityMax,
+		extensions.SchedProcessExec,
+		extensions.SchedProcessExit,
+		extensions.Ptrace,
 	}
 
-	eventsToDisable := []events.ID{
-		events.SecurityBPFMap,
-		events.Openat2,
-		events.SchedProcessFork,
-		events.MagicWrite,
-		events.FileModification,
+	eventsToDisable := []int{
+		extensions.SecurityBPFMap,
+		extensions.Openat2,
+		extensions.SchedProcessFork,
+		extensions.MagicWrite,
+		extensions.FileModification,
 	}
 
 	policyManager := newPolicyManager()
@@ -217,11 +217,11 @@ func TestEnableRuleAlsoEnableEvent(t *testing.T) {
 
 	policyManager := newPolicyManager()
 
-	assert.False(t, policyManager.IsEventEnabled(events.SecurityBPF))
+	assert.False(t, policyManager.IsEventEnabled(extensions.SecurityBPF))
 
-	policyManager.EnableRule(1, events.SecurityBPF)
+	policyManager.EnableRule(1, extensions.SecurityBPF)
 
-	assert.True(t, policyManager.IsEventEnabled(events.SecurityBPF))
+	assert.True(t, policyManager.IsEventEnabled(extensions.SecurityBPF))
 }
 
 func TestDisableRuleAlsoEnableEvent(t *testing.T) {
@@ -229,11 +229,11 @@ func TestDisableRuleAlsoEnableEvent(t *testing.T) {
 
 	policyManager := newPolicyManager()
 
-	assert.False(t, policyManager.IsEventEnabled(events.SecurityFileOpen))
+	assert.False(t, policyManager.IsEventEnabled(extensions.SecurityFileOpen))
 
-	policyManager.DisableRule(1, events.SecurityFileOpen)
+	policyManager.DisableRule(1, extensions.SecurityFileOpen)
 
-	assert.True(t, policyManager.IsEventEnabled(events.SecurityFileOpen))
+	assert.True(t, policyManager.IsEventEnabled(extensions.SecurityFileOpen))
 }
 
 func TestPolicyManagerIsEnabled(t *testing.T) {
@@ -245,31 +245,31 @@ func TestPolicyManagerIsEnabled(t *testing.T) {
 	policy2Mached := uint64(0b100)
 	policy1And2Mached := uint64(0b110)
 
-	assert.False(t, policyManager.IsEnabled(policy1Mached, events.SecurityBPF))
-	assert.False(t, policyManager.IsEnabled(policy2Mached, events.SecurityBPF))
-	assert.False(t, policyManager.IsEnabled(policy1And2Mached, events.SecurityBPF))
+	assert.False(t, policyManager.IsEnabled(policy1Mached, extensions.SecurityBPF))
+	assert.False(t, policyManager.IsEnabled(policy2Mached, extensions.SecurityBPF))
+	assert.False(t, policyManager.IsEnabled(policy1And2Mached, extensions.SecurityBPF))
 
-	policyManager.EnableRule(1, events.SecurityBPF)
+	policyManager.EnableRule(1, extensions.SecurityBPF)
 
-	assert.True(t, policyManager.IsEnabled(policy1Mached, events.SecurityBPF))
-	assert.False(t, policyManager.IsEnabled(policy2Mached, events.SecurityBPF))
-	assert.True(t, policyManager.IsEnabled(policy1And2Mached, events.SecurityBPF))
+	assert.True(t, policyManager.IsEnabled(policy1Mached, extensions.SecurityBPF))
+	assert.False(t, policyManager.IsEnabled(policy2Mached, extensions.SecurityBPF))
+	assert.True(t, policyManager.IsEnabled(policy1And2Mached, extensions.SecurityBPF))
 
-	policyManager.EnableRule(2, events.SecurityBPF)
+	policyManager.EnableRule(2, extensions.SecurityBPF)
 
-	assert.True(t, policyManager.IsEnabled(policy1Mached, events.SecurityBPF))
-	assert.True(t, policyManager.IsEnabled(policy2Mached, events.SecurityBPF))
-	assert.True(t, policyManager.IsEnabled(policy1And2Mached, events.SecurityBPF))
+	assert.True(t, policyManager.IsEnabled(policy1Mached, extensions.SecurityBPF))
+	assert.True(t, policyManager.IsEnabled(policy2Mached, extensions.SecurityBPF))
+	assert.True(t, policyManager.IsEnabled(policy1And2Mached, extensions.SecurityBPF))
 
-	policyManager.DisableEvent(events.SecurityBPF)
+	policyManager.DisableEvent(extensions.SecurityBPF)
 
-	assert.False(t, policyManager.IsEnabled(policy1Mached, events.SecurityBPF))
-	assert.False(t, policyManager.IsEnabled(policy2Mached, events.SecurityBPF))
-	assert.False(t, policyManager.IsEnabled(policy1And2Mached, events.SecurityBPF))
+	assert.False(t, policyManager.IsEnabled(policy1Mached, extensions.SecurityBPF))
+	assert.False(t, policyManager.IsEnabled(policy2Mached, extensions.SecurityBPF))
+	assert.False(t, policyManager.IsEnabled(policy1And2Mached, extensions.SecurityBPF))
 
-	policyManager.EnableEvent(events.SecurityBPF)
+	policyManager.EnableEvent(extensions.SecurityBPF)
 
-	assert.True(t, policyManager.IsEnabled(policy1Mached, events.SecurityBPF))
-	assert.True(t, policyManager.IsEnabled(policy2Mached, events.SecurityBPF))
-	assert.True(t, policyManager.IsEnabled(policy1And2Mached, events.SecurityBPF))
+	assert.True(t, policyManager.IsEnabled(policy1Mached, extensions.SecurityBPF))
+	assert.True(t, policyManager.IsEnabled(policy2Mached, extensions.SecurityBPF))
+	assert.True(t, policyManager.IsEnabled(policy1And2Mached, extensions.SecurityBPF))
 }

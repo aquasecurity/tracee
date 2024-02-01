@@ -4,19 +4,19 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type ContextFilter struct {
-	filters map[events.ID]*eventCtxFilter
+	filters map[int]*eventCtxFilter
 	enabled bool
 }
 
 func NewContextFilter() *ContextFilter {
 	return &ContextFilter{
-		filters: make(map[events.ID]*eventCtxFilter),
+		filters: make(map[int]*eventCtxFilter),
 		enabled: false,
 	}
 }
@@ -44,7 +44,7 @@ func (filter *ContextFilter) Filter(event trace.Event) bool {
 		return true
 	}
 
-	if filter, ok := filter.filters[events.ID(event.EventID)]; ok {
+	if filter, ok := filter.filters[int(event.EventID)]; ok {
 		if !filter.Filter(event) {
 			return false
 		}
@@ -64,12 +64,12 @@ func (filter *ContextFilter) Parse(filterName string, operatorAndValues string) 
 	eventName := parts[0]
 	eventField := parts[2]
 
-	eventDefID, ok := events.Core.GetDefinitionIDByName(eventName)
+	id, ok := extensions.Definitions.GetIDByNameFromAny(eventName)
 	if !ok {
 		return InvalidEventName(eventName)
 	}
 
-	eventFilter := filter.filters[eventDefID]
+	eventFilter := filter.filters[id]
 	if eventFilter == nil {
 		eventFilter = &eventCtxFilter{
 			enabled:                    filter.enabled,
@@ -98,7 +98,7 @@ func (filter *ContextFilter) Parse(filterName string, operatorAndValues string) 
 			podSandboxFilter:           NewBoolFilter(),
 			syscallFilter:              NewStringFilter(),
 		}
-		filter.filters[eventDefID] = eventFilter
+		filter.filters[id] = eventFilter
 	}
 
 	err := eventFilter.Parse(eventField, operatorAndValues)

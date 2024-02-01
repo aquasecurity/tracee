@@ -3,7 +3,6 @@ package policy
 import (
 	"golang.org/x/exp/maps"
 
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
@@ -11,7 +10,7 @@ import (
 type Policy struct {
 	ID                int
 	Name              string
-	EventsToTrace     map[events.ID]string
+	EventsToTrace     map[int]string
 	UIDFilter         *filters.UIntFilter[uint32]
 	PIDFilter         *filters.UIntFilter[uint32]
 	NewPidFilter      *filters.BoolFilter
@@ -34,7 +33,7 @@ func NewPolicy() *Policy {
 	return &Policy{
 		ID:                0,
 		Name:              "",
-		EventsToTrace:     map[events.ID]string{},
+		EventsToTrace:     map[int]string{},
 		UIDFilter:         filters.NewUInt32Filter(),
 		PIDFilter:         filters.NewUInt32Filter(),
 		NewPidFilter:      filters.NewBoolFilter(),

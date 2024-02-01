@@ -15,10 +15,15 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/config"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	uproc "github.com/aquasecurity/tracee/pkg/utils/proc"
 	"github.com/aquasecurity/tracee/types/trace"
 )
+
+func init() {
+	extensions.Modules.IsDefined("core") // make sure the extensions are initialized
+}
 
 // eventBuffer is a thread-safe buffer for tracee events
 type eventBuffer struct {

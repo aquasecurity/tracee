@@ -1,12 +1,9 @@
 package derive
 
 import (
-	"github.com/aquasecurity/libbpfgo/helpers"
-
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
-	"github.com/aquasecurity/tracee/pkg/utils"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -28,11 +25,11 @@ var NetSeqOpsFuncs = [4]string{
 	"stop",
 }
 
-func HookedSeqOps(kernelSymbols *helpers.KernelSymbolTable) DeriveFunction {
-	return deriveSingleEvent(events.HookedSeqOps, deriveHookedSeqOpsArgs(kernelSymbols))
+func HookedSeqOps() DeriveFunction {
+	return deriveSingleEvent(extensions.HookedSeqOps, deriveHookedSeqOpsArgs())
 }
 
-func deriveHookedSeqOpsArgs(kernelSymbols *helpers.KernelSymbolTable) deriveArgsFunction {
+func deriveHookedSeqOpsArgs() deriveArgsFunction {
 	return func(event trace.Event) ([]interface{}, error) {
 		seqOpsArr, err := parse.ArgVal[[]uint64](event.Args, "net_seq_ops")
 		if err != nil || len(seqOpsArr) < 1 {
@@ -44,11 +41,14 @@ func deriveHookedSeqOpsArgs(kernelSymbols *helpers.KernelSymbolTable) deriveArgs
 			if addr == 0 {
 				continue
 			}
-			hookingFunction := utils.ParseSymbol(addr, kernelSymbols)
+			hookingFunction := extensions.ParseKSymbol(addr)
 			seqOpsStruct := NetSeqOps[i/4]
 			seqOpsFunc := NetSeqOpsFuncs[i%4]
 			hookedSeqOps[seqOpsStruct+"_"+seqOpsFunc] =
-				trace.HookedSymbolData{SymbolName: hookingFunction.Name, ModuleOwner: hookingFunction.Owner}
+				trace.HookedSymbolData{
+					SymbolName:  hookingFunction.Name,
+					ModuleOwner: hookingFunction.Owner,
+				}
 		}
 		return []interface{}{hookedSeqOps}, nil
 	}

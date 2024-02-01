@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -16,13 +16,13 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		startId    events.ID
+		startId    int
 		signatures []detect.Signature
-		expected   []events.Definition
+		expected   []extensions.Definition
 	}{
 		{
 			name:    "fake_event_0",
-			startId: events.ID(6001),
+			startId: int(6001),
 			signatures: []detect.Signature{
 				newFakeSignature(
 					"fake_event_0",
@@ -31,23 +31,23 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					},
 				),
 			},
-			expected: []events.Definition{
-				events.NewDefinition(
-					events.ID(6001),                   // id,
-					events.Sys32Undefined,             // id32
+			expected: []extensions.Definition{
+				extensions.NewDefinition(
+					int(6001),                         // id,
+					extensions.Sys32Undefined,         // id32
 					"fake_event_0",                    // eventName
-					events.NewVersion(1, 0, 0),        // version
+					extensions.NewVersion(1, 0, 0),    // version
 					"fake_description",                // description
 					"",                                // docPath
 					false,                             // internal
 					false,                             // syscall
 					[]string{"signatures", "default"}, // sets
-					events.NewDependencies(
-						[]events.ID{events.HookedSyscall},
-						[]events.KSymbol{},
-						[]events.Probe{},
-						[]events.TailCall{},
-						events.Capabilities{},
+					extensions.NewDependencies(
+						[]int{extensions.HookedSyscall},
+						[]extensions.KSymDep{},
+						[]extensions.ProbeDep{},
+						[]extensions.TailCall{},
+						extensions.CapsDep{},
 					),
 					[]trace.ArgMeta{},
 					nil,
@@ -56,7 +56,7 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 		},
 		{
 			name:    "fake_event_1/2",
-			startId: events.ID(6010),
+			startId: int(6010),
 			signatures: []detect.Signature{
 				newFakeSignature(
 					"fake_event_1",
@@ -67,46 +67,46 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					[]string{"security_file_open", "security_inode_rename"},
 				),
 			},
-			expected: []events.Definition{
-				events.NewDefinition(
-					events.ID(6010),                   // id,
-					events.Sys32Undefined,             // id32
+			expected: []extensions.Definition{
+				extensions.NewDefinition(
+					int(6010),                         // id,
+					extensions.Sys32Undefined,         // id32
 					"fake_event_1",                    // eventName
-					events.NewVersion(1, 0, 0),        // version
+					extensions.NewVersion(1, 0, 0),    // version
 					"fake_description",                // description
 					"",                                // docPath
 					false,                             // internal
 					false,                             // syscall
 					[]string{"signatures", "default"}, // sets
-					events.NewDependencies(
-						[]events.ID{events.Ptrace},
-						[]events.KSymbol{},
-						[]events.Probe{},
-						[]events.TailCall{},
-						events.Capabilities{},
+					extensions.NewDependencies(
+						[]int{extensions.Ptrace},
+						[]extensions.KSymDep{},
+						[]extensions.ProbeDep{},
+						[]extensions.TailCall{},
+						extensions.CapsDep{},
 					),
 					[]trace.ArgMeta{},
 					nil,
 				),
-				events.NewDefinition(
-					events.ID(6011),                   // id,
-					events.Sys32Undefined,             // id32
+				extensions.NewDefinition(
+					int(6011),                         // id,
+					extensions.Sys32Undefined,         // id32
 					"fake_event_2",                    // eventName
-					events.NewVersion(1, 0, 0),        // version
+					extensions.NewVersion(1, 0, 0),    // version
 					"fake_description",                // description
 					"",                                // docPath
 					false,                             // internal
 					false,                             // syscall
 					[]string{"signatures", "default"}, // sets
-					events.NewDependencies(
-						[]events.ID{
-							events.SecurityFileOpen,
-							events.SecurityInodeRename,
+					extensions.NewDependencies(
+						[]int{
+							extensions.SecurityFileOpen,
+							extensions.SecurityInodeRename,
 						},
-						[]events.KSymbol{},
-						[]events.Probe{},
-						[]events.TailCall{},
-						events.Capabilities{},
+						[]extensions.KSymDep{},
+						[]extensions.ProbeDep{},
+						[]extensions.TailCall{},
+						extensions.CapsDep{},
 					),
 					[]trace.ArgMeta{},
 					nil,
@@ -115,7 +115,7 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 		},
 		{
 			name:    "fake_event_3",
-			startId: events.ID(6100),
+			startId: int(6100),
 			signatures: []detect.Signature{
 				newFakeSignature(
 					"fake_event_3",
@@ -125,26 +125,26 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 					},
 				),
 			},
-			expected: []events.Definition{
-				events.NewDefinition(
-					events.ID(6100),                   // id,
-					events.Sys32Undefined,             // id32
+			expected: []extensions.Definition{
+				extensions.NewDefinition(
+					int(6100),                         // id,
+					extensions.Sys32Undefined,         // id32
 					"fake_event_3",                    // eventName
-					events.NewVersion(1, 0, 0),        // version
+					extensions.NewVersion(1, 0, 0),    // version
 					"fake_description",                // description
 					"",                                // docPath
 					false,                             // internal
 					false,                             // syscall
 					[]string{"signatures", "default"}, // sets
-					events.NewDependencies(
-						[]events.ID{
-							events.SchedProcessExec,
-							events.SecuritySocketConnect,
+					extensions.NewDependencies(
+						[]int{
+							extensions.SchedProcessExec,
+							extensions.SecuritySocketConnect,
 						},
-						[]events.KSymbol{},
-						[]events.Probe{},
-						[]events.TailCall{},
-						events.Capabilities{},
+						[]extensions.KSymDep{},
+						[]extensions.ProbeDep{},
+						[]extensions.TailCall{},
+						extensions.CapsDep{},
 					),
 					[]trace.ArgMeta{},
 					nil,
@@ -162,9 +162,9 @@ func Test_CreateEventsFromSigs(t *testing.T) {
 			CreateEventsFromSignatures(test.startId, test.signatures)
 
 			for _, expected := range test.expected {
-				eventDefID, ok := events.Core.GetDefinitionIDByName(expected.GetName())
+				eventDefID, ok := extensions.Definitions.GetIDByNameFromAny(expected.GetName())
 				assert.True(t, ok)
-				eventDefinition := events.Core.GetDefinitionByID(eventDefID)
+				eventDefinition := extensions.Definitions.GetByIDFromAny(eventDefID)
 
 				assert.Equal(t, expected.GetID(), eventDefinition.GetID())
 				assert.Equal(t, expected.GetID32Bit(), eventDefinition.GetID32Bit())

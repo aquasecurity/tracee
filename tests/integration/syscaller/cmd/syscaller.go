@@ -6,7 +6,6 @@ import (
 	"runtime"
 	"strconv"
 
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/tests/testutils"
 )
 
@@ -25,14 +24,14 @@ func main() {
 	}
 
 	callerComm := os.Args[1]
-	syscallsToCall := make([]events.ID, 0)
+	syscallsToCall := make([]int, 0)
 	for _, arg := range os.Args[2:] {
 		syscallNum, err := strconv.Atoi(arg)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "invalid syscall number: %s\n", arg)
 			os.Exit(1)
 		}
-		syscallsToCall = append(syscallsToCall, events.ID(syscallNum))
+		syscallsToCall = append(syscallsToCall, int(syscallNum))
 	}
 
 	err = changeOwnComm(callerComm)

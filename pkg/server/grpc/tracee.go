@@ -12,7 +12,7 @@ import (
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/streams"
 	"github.com/aquasecurity/tracee/pkg/version"
@@ -100,20 +100,20 @@ func (s *TraceeService) GetVersion(ctx context.Context, in *pb.GetVersionRequest
 	return &pb.GetVersionResponse{Version: version.GetVersion()}, nil
 }
 
-func getDefinitions(in *pb.GetEventDefinitionRequest) ([]events.Definition, error) {
+func getDefinitions(in *pb.GetEventDefinitionRequest) ([]extensions.Definition, error) {
 	if in.Name == "" {
-		return events.Core.GetDefinitions(), nil
+		return extensions.Definitions.GetAllFromAllExts(), nil
 	}
 
-	id, ok := events.Core.GetDefinitionIDByName(in.Name)
+	id, ok := extensions.Definitions.GetIDByNameFromAny(in.Name)
 	if !ok {
 		return nil, fmt.Errorf("event %s not found", in.Name)
 	}
 
-	return []events.Definition{events.Core.GetDefinitionByID(id)}, nil
+	return []extensions.Definition{extensions.Definitions.GetByIDFromAny(id)}, nil
 }
 
-func convertDefinitionToProto(d events.Definition) *pb.EventDefinition {
+func convertDefinitionToProto(d extensions.Definition) *pb.EventDefinition {
 	v := &pb.Version{
 		Major: d.GetVersion().Major(),
 		Minor: d.GetVersion().Minor(),

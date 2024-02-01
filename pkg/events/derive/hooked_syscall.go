@@ -5,11 +5,10 @@ import (
 
 	lru "github.com/hashicorp/golang-lru/v2"
 
-	"github.com/aquasecurity/libbpfgo/helpers"
-
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/extensions"
+	"github.com/aquasecurity/tracee/pkg/global"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -28,11 +27,11 @@ func InitHookedSyscall() error {
 	return err
 }
 
-func DetectHookedSyscall(kernelSymbols *helpers.KernelSymbolTable) DeriveFunction {
-	return deriveSingleEvent(events.HookedSyscall, deriveDetectHookedSyscallArgs(kernelSymbols))
+func DetectHookedSyscall() DeriveFunction {
+	return deriveSingleEvent(extensions.HookedSyscall, deriveDetectHookedSyscallArgs())
 }
 
-func deriveDetectHookedSyscallArgs(kernelSymbols *helpers.KernelSymbolTable) deriveArgsFunction {
+func deriveDetectHookedSyscallArgs() deriveArgsFunction {
 	return func(event trace.Event) ([]interface{}, error) {
 		syscallId, err := parse.ArgVal[int32](event.Args, "syscall_id")
 		if err != nil {
@@ -53,7 +52,7 @@ func deriveDetectHookedSyscallArgs(kernelSymbols *helpers.KernelSymbolTable) der
 
 		hookedFuncName := ""
 		hookedOwner := ""
-		hookedFuncSymbol, err := kernelSymbols.GetSymbolByAddr(address)
+		hookedFuncSymbol, err := global.KSymbols.GetSymbolByAddr(address)
 		if err == nil {
 			hookedFuncName = hookedFuncSymbol[0].Name
 			hookedOwner = hookedFuncSymbol[0].Owner
@@ -67,7 +66,7 @@ func deriveDetectHookedSyscallArgs(kernelSymbols *helpers.KernelSymbolTable) der
 }
 
 func convertToSyscallName(syscallId int32) string {
-	definition, ok := events.CoreEvents[events.ID(syscallId)]
+	definition, ok := extensions.CoreEvents[int(syscallId)]
 	if !ok {
 		return ""
 	}

@@ -5,30 +5,30 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type ArgFilter struct {
-	filters map[events.ID]map[string]Filter
+	filters map[int]map[string]Filter
 	enabled bool
 }
 
 func NewArgFilter() *ArgFilter {
 	return &ArgFilter{
-		filters: map[events.ID]map[string]Filter{},
+		filters: map[int]map[string]Filter{},
 		enabled: false,
 	}
 }
 
 // GetEventFilters returns the argument filters map for a specific event
 // writing to the map may have unintentional consequences, avoid doing so
-func (filter *ArgFilter) GetEventFilters(eventID events.ID) map[string]Filter {
+func (filter *ArgFilter) GetEventFilters(eventID int) map[string]Filter {
 	return filter.filters[eventID]
 }
 
-func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
+func (filter *ArgFilter) Filter(eventID int, args []trace.Argument) bool {
 	if !filter.Enabled() {
 		return true
 	}
@@ -38,7 +38,7 @@ func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
 	// events.PrintMemDump bypass was added due to issue #2546
 	// because it uses usermode applied filters as parameters for the event,
 	// which occurs after filtering
-	if eventID == events.PrintMemDump {
+	if eventID == extensions.PrintMemDump {
 		return true
 	}
 
@@ -68,7 +68,7 @@ func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
 	return true
 }
 
-func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]events.ID) error {
+func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]int) error {
 	// Event argument filter has the following format: "event.args.argname=argval"
 	// filterName have the format event.argname, and operatorAndValues have the format "=argval"
 	parts := strings.Split(filterName, ".")
@@ -91,10 +91,10 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 		return InvalidEventName(eventName)
 	}
 
-	if !events.Core.IsDefined(id) {
+	if !extensions.Definitions.IsDefinedInAny(id) {
 		return InvalidEventName(eventName)
 	}
-	eventDefinition := events.Core.GetDefinitionByID(id)
+	eventDefinition := extensions.Definitions.GetByIDFromAny(id)
 	eventParams := eventDefinition.GetParams()
 
 	// check if argument name exists for this event
@@ -126,7 +126,7 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 
 // parseFilter adds an argument filter with the relevant filterConstructor
 // The user must responsibly supply a reliable Filter object.
-func (filter *ArgFilter) parseFilter(id events.ID, argName string, operatorAndValues string, filterConstructor func() Filter) error {
+func (filter *ArgFilter) parseFilter(id int, argName string, operatorAndValues string, filterConstructor func() Filter) error {
 	if _, ok := filter.filters[id]; !ok {
 		filter.filters[id] = map[string]Filter{}
 	}

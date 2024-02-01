@@ -13,7 +13,7 @@ import (
 	gogpt "github.com/sashabaranov/go-gpt3"
 	"gopkg.in/yaml.v2"
 
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
@@ -48,7 +48,7 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 		return fmt.Errorf("error reading events template: %v", err)
 	}
 
-	evtChannel := make(chan events.Definition, 1)
+	evtChannel := make(chan extensions.Definition, 1)
 	retChannel := make(chan WorkRet, 1)
 	wrkChannel := make(chan string, 1)
 
@@ -106,14 +106,14 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 
 	// Pick all events
 
-	var evt events.Definition
+	var evt extensions.Definition
 
-	eventDefinitions := events.Core.GetDefinitions()
+	eventDefinitions := extensions.Definitions.GetAllFromAllExts()
 
 	// Check if the given events exist
 
 	for _, given := range r.GivenEvents {
-		_, ok := events.Core.GetDefinitionIDByName(given)
+		_, ok := extensions.Definitions.GetIDByNameFromAny(given)
 		if !ok {
 			logger.Errorw("Event definition not found", "event", given)
 		}
@@ -172,7 +172,7 @@ func (r GPTDocsRunner) Run(ctx context.Context) error {
 }
 
 func (r GPTDocsRunner) GenerateSyscall(
-	ctx context.Context, template []byte, evt events.Definition,
+	ctx context.Context, template []byte, evt extensions.Definition,
 ) (
 	string, error,
 ) {

@@ -15,7 +15,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
@@ -123,7 +123,7 @@ tracee analyze --events anti_debugging events.json`,
 
 		fmt.Printf("Loading %d signature events\n", len(sigs))
 
-		_ = initialize.CreateEventsFromSignatures(events.StartSignatureID, sigs)
+		_ = initialize.CreateEventsFromSignatures(extensions.StartSignatureID, sigs)
 
 		engineConfig := engine.Config{
 			Signatures:          sigs,

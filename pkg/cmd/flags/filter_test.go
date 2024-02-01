@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 )
 
 func TestFilter_prepareEventsToTrace(t *testing.T) {
@@ -15,7 +15,7 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 	testCases := []struct {
 		name        string
 		eventFilter eventFilter
-		expected    map[events.ID]string
+		expected    map[int]string
 		expectedErr error
 	}{
 		{
@@ -23,9 +23,9 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 			eventFilter: eventFilter{
 				Equal: []string{"ptrace", "openat"},
 			},
-			expected: map[events.ID]string{
-				events.Ptrace: "ptrace",
-				events.Openat: "openat",
+			expected: map[int]string{
+				extensions.Ptrace: "ptrace",
+				extensions.Openat: "openat",
 			},
 		},
 		{
@@ -33,11 +33,11 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 			eventFilter: eventFilter{
 				Equal: []string{"sched_proc*", "openat"},
 			},
-			expected: map[events.ID]string{
-				events.SchedProcessExec: "sched_process_exec",
-				events.SchedProcessExit: "sched_process_exit",
-				events.SchedProcessFork: "sched_process_fork",
-				events.Openat:           "openat",
+			expected: map[int]string{
+				extensions.SchedProcessExec: "sched_process_exec",
+				extensions.SchedProcessExit: "sched_process_exit",
+				extensions.SchedProcessFork: "sched_process_fork",
+				extensions.Openat:           "openat",
 			},
 		},
 		{
@@ -46,10 +46,10 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 				Equal:    []string{"sched_proc*", "openat"},
 				NotEqual: []string{"sched_process_exec"},
 			},
-			expected: map[events.ID]string{
-				events.SchedProcessExit: "sched_process_exit",
-				events.SchedProcessFork: "sched_process_fork",
-				events.Openat:           "openat",
+			expected: map[int]string{
+				extensions.SchedProcessExit: "sched_process_exit",
+				extensions.SchedProcessFork: "sched_process_fork",
+				extensions.Openat:           "openat",
 			},
 		},
 		{
@@ -74,10 +74,10 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 			expectedErr: InvalidEventError("*blah"),
 		},
 	}
-	eventsNameToID := events.Core.NamesToIDs()
+	eventsNameToID := extensions.Definitions.NamesToIDsFromAllExts()
 	// remove internal events since they shouldn't be accessible by users
 	for event, id := range eventsNameToID {
-		if events.Core.GetDefinitionByID(id).IsInternal() {
+		if extensions.Definitions.GetByIDFromAny(id).IsInternal() {
 			delete(eventsNameToID, event)
 		}
 	}

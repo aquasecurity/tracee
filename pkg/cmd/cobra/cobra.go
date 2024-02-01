@@ -15,7 +15,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/k8s"
 	"github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -68,7 +68,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
-	sigNameToEventId := initialize.CreateEventsFromSignatures(events.StartSignatureID, sigs)
+	sigNameToEventId := initialize.CreateEventsFromSignatures(extensions.StartSignatureID, sigs)
 
 	// Initialize a tracee config structure
 

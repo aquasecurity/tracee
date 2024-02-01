@@ -53,7 +53,7 @@ enum event_id_e
     NET_FLOW_BASE,
     MAX_NET_EVENT_ID,
     // Common event IDs
-    RAW_SYS_ENTER,
+    RAW_SYS_ENTER = 750, // TODO: split ranges for extensions
     RAW_SYS_EXIT,
     SCHED_PROCESS_FORK,
     SCHED_PROCESS_EXEC,

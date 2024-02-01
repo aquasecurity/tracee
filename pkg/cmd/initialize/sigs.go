@@ -3,14 +3,14 @@ package initialize
 import (
 	"strconv"
 
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils/set"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) map[string]int32 {
+func CreateEventsFromSignatures(startId int, sigs []detect.Signature) map[string]int32 {
 	newEventDefID := startId
 	res := make(map[string]int32)
 	for _, s := range sigs {
@@ -26,7 +26,7 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) map[
 			continue
 		}
 
-		evtDependency := make([]events.ID, 0)
+		evtDependency := make([]int, 0)
 
 		for _, s := range selectedEvents {
 			if s.Source != "tracee" {
@@ -36,7 +36,7 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) map[
 				// As such, actual event dependencies should only be sourced from "tracee" selectors.
 				continue
 			}
-			eventDefID, found := events.Core.GetDefinitionIDByName(s.Name)
+			eventDefID, found := extensions.Definitions.GetIDByNameFromAny(s.Name)
 			if !found {
 				logger.Errorw("Failed to load event dependency", "event", s.Name)
 				continue
@@ -47,7 +47,7 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) map[
 
 		tags := set.New[string](append([]string{"signatures", "default"}, m.Tags...)...)
 
-		version, err := events.NewVersionFromString(m.Version)
+		version, err := extensions.NewVersionFromString(m.Version)
 		// if the version is not valid semver, set it to 1.0.X,
 		// where X is either 0 or the version number from the signature
 		if err != nil {
@@ -59,7 +59,7 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) map[
 				x = uint64(n)
 			}
 
-			version = events.NewVersion(1, 0, x)
+			version = extensions.NewVersion(1, 0, x)
 		}
 
 		properties := map[string]interface{}{
@@ -71,28 +71,28 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) map[
 			properties[k] = v
 		}
 
-		newEventDef := events.NewDefinition(
-			newEventDefID,         // id,
-			events.Sys32Undefined, // id32
-			m.EventName,           // eventName
-			version,               // version
-			m.Description,         // description
-			"",                    // docPath
-			false,                 // internal
-			false,                 // syscall
-			tags.Items(),          // tags
-			events.NewDependencies(
+		newEventDef := extensions.NewDefinition(
+			newEventDefID,             // id,
+			extensions.Sys32Undefined, // id32
+			m.EventName,               // eventName
+			version,                   // version
+			m.Description,             // description
+			"",                        // docPath
+			false,                     // internal
+			false,                     // syscall
+			tags.Items(),              // tags
+			extensions.NewDependencies(
 				evtDependency,
-				[]events.KSymbol{},
-				[]events.Probe{},
-				[]events.TailCall{},
-				events.Capabilities{},
+				[]extensions.KSymDep{},
+				[]extensions.ProbeDep{},
+				[]extensions.TailCall{},
+				extensions.CapsDep{},
 			),
 			[]trace.ArgMeta{},
 			properties,
 		)
 
-		err = events.Core.Add(newEventDefID, newEventDef)
+		err = extensions.Definitions.Add("core", newEventDefID, newEventDef)
 		if err != nil {
 			logger.Errorw("Failed to add event definition", "error", err)
 			continue

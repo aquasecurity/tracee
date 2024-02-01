@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -16,7 +16,7 @@ func TestFindingToEvent(t *testing.T) {
 	t.Parallel()
 
 	expected := &trace.Event{
-		EventID:             int(events.StartSignatureID),
+		EventID:             int(extensions.StartSignatureID),
 		EventName:           "fake_signature_event",
 		ProcessorID:         1,
 		ProcessID:           2,
@@ -66,7 +66,7 @@ func TestFindingToEvent(t *testing.T) {
 					Type: "unknown",
 				},
 				Value: map[string]interface{}{
-					"id":   int(events.Ptrace),
+					"id":   int(extensions.Ptrace),
 					"name": "ptrace",
 					"args": []trace.Argument{
 						{
@@ -114,28 +114,28 @@ func TestFindingToEvent(t *testing.T) {
 func createFakeEventAndFinding() detect.Finding {
 	eventName := "fake_signature_event"
 
-	eventDefinition := events.NewDefinition(
-		0,                          // id
-		events.Sys32Undefined,      // id32
-		eventName,                  // eventName
-		events.NewVersion(1, 0, 0), // Version
-		"fake_description",         // description
-		"",                         // docPath
-		false,                      // internal
-		false,                      // syscall
-		[]string{"signatures"},     // sets
-		events.NewDependencies(
-			[]events.ID{events.Ptrace},
-			[]events.KSymbol{},
-			[]events.Probe{},
-			[]events.TailCall{},
-			events.Capabilities{},
+	eventDefinition := extensions.NewDefinition(
+		0,                              // id
+		extensions.Sys32Undefined,      // id32
+		eventName,                      // eventName
+		extensions.NewVersion(1, 0, 0), // Version
+		"fake_description",             // description
+		"",                             // docPath
+		false,                          // internal
+		false,                          // syscall
+		[]string{"signatures"},         // sets
+		extensions.NewDependencies(
+			[]int{extensions.Ptrace},
+			[]extensions.KSymDep{},
+			[]extensions.ProbeDep{},
+			[]extensions.TailCall{},
+			extensions.CapsDep{},
 		),
 		[]trace.ArgMeta{},
 		nil,
 	)
 
-	events.Core.Add(events.StartSignatureID, eventDefinition)
+	extensions.Definitions.Add("core", extensions.StartSignatureID, eventDefinition)
 
 	return detect.Finding{
 		SigMetadata: detect.SignatureMetadata{
@@ -162,7 +162,7 @@ func createFakeEventAndFinding() detect.Finding {
 		Event: protocol.Event{
 			Headers: protocol.EventHeaders{},
 			Payload: trace.Event{
-				EventID:             int(events.Ptrace),
+				EventID:             int(extensions.Ptrace),
 				EventName:           "ptrace",
 				ProcessorID:         1,
 				ProcessID:           2,

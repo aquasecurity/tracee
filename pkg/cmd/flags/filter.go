@@ -3,7 +3,7 @@ package flags
 import (
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 )
 
 func filterHelp() string {
@@ -94,17 +94,17 @@ type eventFilter struct {
 	NotEqual []string
 }
 
-func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]events.ID) (map[events.ID]string, error) {
+func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]int) (map[int]string, error) {
 	eventsToTrace := eventFilter.Equal
 	excludeEvents := eventFilter.NotEqual
 	var setsToTrace []string
 
-	var idToName map[events.ID]string
-	setsToEvents := make(map[string][]events.ID)
-	isExcluded := make(map[events.ID]bool)
+	var idToName map[int]string
+	setsToEvents := make(map[string][]int)
+	isExcluded := make(map[int]bool)
 
 	// build a map: k:set, v:eventID
-	for _, eventDefinition := range events.Core.GetDefinitions() {
+	for _, eventDefinition := range extensions.Definitions.GetAllFromAllExts() {
 		for _, set := range eventDefinition.GetSets() {
 			setsToEvents[set] = append(setsToEvents[set], eventDefinition.GetID())
 		}
@@ -139,7 +139,7 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]eve
 	}
 
 	// build a map: k:eventID, v:eventName with all events to trace
-	idToName = make(map[events.ID]string, events.Core.Length())
+	idToName = make(map[int]string, extensions.Definitions.LengthAllExts())
 	for _, name := range eventsToTrace {
 		if strings.HasSuffix(name, "*") { // handle event prefixes with wildcards
 			found := false
@@ -172,7 +172,7 @@ func prepareEventsToTrace(eventFilter eventFilter, eventsNameToID map[string]eve
 		setEvents := setsToEvents[set]
 		for _, id := range setEvents {
 			if !isExcluded[id] {
-				idToName[id] = events.Core.GetDefinitionByID(id).GetName()
+				idToName[id] = extensions.Definitions.GetByIDFromAny(id).GetName()
 			}
 		}
 	}

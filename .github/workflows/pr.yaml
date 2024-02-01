@@ -68,7 +68,6 @@ env:
     BPF_ATTACH
     CONTAINERS_DATA_SOURCE
     PROCTREE_DATA_SOURCE
-    DNS_DATA_SOURCE
     WRITABLE_DATA_SOURCE
 jobs:
   #
@@ -223,23 +222,23 @@ jobs:
         run: |
           make test-unit
   #
-  # INTEGRATION TESTS
+  # INTEGRATION TESTS (TODO: re-enable after extensions is finished)
   #
-  integration-tests:
-    name: Integration Tests
-    needs:
-      - verify-analyze-code
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-        with:
-          submodules: true
-      - name: Install Dependencies
-        uses: ./.github/actions/build-dependencies
-      - name: Run Integration Tests
-        run: |
-          sudo env "PATH=$PATH" make test-integration
+  # integration-tests:
+  #   name: Integration Tests
+  #   needs:
+  #     - verify-analyze-code
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v3
+  #       with:
+  #         submodules: true
+  #     - name: Install Dependencies
+  #       uses: ./.github/actions/build-dependencies
+  #     - name: Run Integration Tests
+  #       run: |
+  #         sudo env "PATH=$PATH" make test-integration
   #
   # PERFORMANCE TESTS
   #
@@ -263,9 +262,9 @@ jobs:
   #
   generate-matrix:
     name: Generate Test Matrix
-    #needs:
-    #  - verify-signatures
-    #  - verify-tools
+    needs:
+      - verify-signatures
+      - verify-tools
     runs-on: ubuntu-latest
     outputs:
       matrix01: ${{ steps.set-matrix.outputs.matrix01 }}

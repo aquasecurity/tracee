@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 )
 
@@ -244,7 +244,7 @@ func validateEvent(policyName, eventName string) error {
 		return errfmt.Errorf("policy %s, event cannot be empty", policyName)
 	}
 
-	_, ok := events.Core.GetDefinitionIDByName(eventName)
+	_, ok := extensions.Definitions.GetIDByNameFromAny(eventName)
 	if !ok {
 		return errfmt.Errorf("policy %s, event %s is not valid", policyName, eventName)
 	}
@@ -268,19 +268,19 @@ func validateEventArg(policyName, eventName, argName string) error {
 
 	argName = s[0]
 
-	eventDefID, ok := events.Core.GetDefinitionIDByName(eventName)
+	eventDefID, ok := extensions.Definitions.GetIDByNameFromAny(eventName)
 	if !ok {
 		return errfmt.Errorf("policy %s, event %s is not valid", policyName, eventName)
 	}
 
-	eventDefinition := events.Core.GetDefinitionByID(eventDefID)
+	definition := extensions.Definitions.GetByIDFromAny(eventDefID)
 
-	for _, set := range eventDefinition.GetSets() {
+	for _, set := range definition.GetSets() {
 		if set == "signatures" { // no sig event validation (arguments are dynamic)
 			return nil
 		}
 	}
-	for _, p := range eventDefinition.GetParams() {
+	for _, p := range definition.GetParams() {
 		if p.Name == argName {
 			return nil
 		}

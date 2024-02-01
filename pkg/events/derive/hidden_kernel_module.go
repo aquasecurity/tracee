@@ -16,8 +16,8 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -47,7 +47,7 @@ type ScanRequest struct {
 }
 
 func HiddenKernelModule() DeriveFunction {
-	return deriveSingleEvent(events.HiddenKernelModule, deriveHiddenKernelModulesArgs())
+	return deriveSingleEvent(extensions.HiddenKernelModule, deriveHiddenKernelModulesArgs())
 }
 
 func deriveHiddenKernelModulesArgs() deriveArgsFunction {

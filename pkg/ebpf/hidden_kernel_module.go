@@ -4,8 +4,8 @@ import (
 	gocontext "context"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
@@ -30,32 +30,35 @@ const throttleSecs = 2 // Seconds
 // techniques is used to find hidden modules - each of them is triggered by
 // using a tailcall.
 func (t *Tracee) lkmSeekerRoutine(ctx gocontext.Context) {
+	state, ok := extensions.States.GetFromAnyOk(int(extensions.HiddenKernelModule))
+	if !ok {
+		return
+	}
+	if !ok || !state.AnyEnabled() {
+		return
+	}
+
 	logger.Debugw("Starting lkmSeekerRoutine goroutine")
 	defer logger.Debugw("Stopped lkmSeekerRoutine goroutine")
 
-	if t.eventsState[events.HiddenKernelModule].Emit == 0 {
-		return
-	}
+	coreModule := extensions.Modules.Get("core")
 
-	modsMap, err := t.bpfModule.GetMap("modules_map")
+	modsMap, err := coreModule.GetMap("modules_map")
 	if err != nil {
 		logger.Errorw("Error occurred GetMap: " + err.Error())
 		return
 	}
-
-	newModMap, err := t.bpfModule.GetMap("new_module_map")
+	newModMap, err := coreModule.GetMap("new_module_map")
 	if err != nil {
 		logger.Errorw("Error occurred GetMap: " + err.Error())
 		return
 	}
-
-	deletedModMap, err := t.bpfModule.GetMap("recent_deleted_module_map")
+	deletedModMap, err := coreModule.GetMap("recent_deleted_module_map")
 	if err != nil {
 		logger.Errorw("Error occurred GetMap: " + err.Error())
 		return
 	}
-
-	insertedModMap, err := t.bpfModule.GetMap("recent_inserted_module_map")
+	insertedModMap, err := coreModule.GetMap("recent_inserted_module_map")
 	if err != nil {
 		logger.Errorw("Error occurred GetMap: " + err.Error())
 		return

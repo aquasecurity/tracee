@@ -25,6 +25,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -34,13 +35,13 @@ const InitProcNsDir = "/proc/1/ns"
 // InitNamespacesEvent collect the init process namespaces and create event from
 // them.
 func InitNamespacesEvent() trace.Event {
-	initNamespacesDef := Core.GetDefinitionByID(InitNamespaces)
+	initNamespacesDef := extensions.Definitions.GetByIDFromAny(extensions.InitNamespaces)
 	initNamespacesArgs := getInitNamespaceArguments()
 
 	initNamespacesEvent := trace.Event{
 		Timestamp:   int(time.Now().UnixNano()),
 		ProcessName: "tracee-ebpf",
-		EventID:     int(InitNamespaces),
+		EventID:     int(extensions.InitNamespaces),
 		EventName:   initNamespacesDef.GetName(),
 		ArgsNum:     len(initNamespacesArgs),
 		Args:        initNamespacesArgs,
@@ -53,7 +54,7 @@ func InitNamespacesEvent() trace.Event {
 // parse them into event arguments.
 func getInitNamespaceArguments() []trace.Argument {
 	initNamespaces := fetchInitNamespaces()
-	eventDefinition := Core.GetDefinitionByID(InitNamespaces)
+	eventDefinition := extensions.Definitions.GetByIDFromAny(extensions.InitNamespaces)
 	initNamespacesArgs := make([]trace.Argument, len(eventDefinition.GetParams()))
 
 	params := eventDefinition.GetParams()
@@ -94,7 +95,7 @@ func fetchInitNamespaces() map[string]uint32 {
 func ExistingContainersEvents(cts *containers.Containers, enrichDisabled bool) []trace.Event {
 	var events []trace.Event
 
-	def := Core.GetDefinitionByID(ExistingContainer)
+	def := extensions.Definitions.GetByIDFromAny(extensions.ExistingContainer)
 
 	for id, info := range cts.GetContainers() {
 		container := runtime.ContainerMetadata{}
@@ -117,7 +118,7 @@ func ExistingContainersEvents(cts *containers.Containers, enrichDisabled bool) [
 		existingContainerEvent := trace.Event{
 			Timestamp:   int(time.Now().UnixNano()),
 			ProcessName: "tracee-ebpf",
-			EventID:     int(ExistingContainer),
+			EventID:     int(extensions.ExistingContainer),
 			EventName:   def.GetName(),
 			ArgsNum:     len(args),
 			Args:        args,

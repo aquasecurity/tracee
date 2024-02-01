@@ -8,6 +8,7 @@ import (
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -108,7 +109,7 @@ func TestParseArgs(t *testing.T) {
 				t.Parallel()
 
 				event := trace.Event{
-					EventID: int(Setsockopt),
+					EventID: extensions.Setsockopt,
 					Args:    testCase.args,
 				}
 				err := ParseArgs(&event)
@@ -194,7 +195,7 @@ func TestParseArgs(t *testing.T) {
 				t.Parallel()
 
 				event := &trace.Event{
-					EventID: int(Getsockopt),
+					EventID: extensions.Getsockopt,
 					Args:    testCase.args,
 				}
 				err := ParseArgs(event)

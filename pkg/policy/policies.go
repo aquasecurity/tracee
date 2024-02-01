@@ -6,7 +6,6 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -16,10 +15,6 @@ const (
 	MaxPolicies   int = 64
 	AllPoliciesOn     = ^uint64(0)
 )
-
-var AlwaysSubmit = events.EventState{
-	Submit: AllPoliciesOn,
-}
 
 // TODO: refactor filterEnabledPoliciesMap and filterUserlandPoliciesMap
 // maps to use int (Policy id) as key instead of *Policy.

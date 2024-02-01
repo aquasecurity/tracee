@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -36,7 +36,7 @@ func BenchmarkGetEventFromPool(b *testing.B) {
 	eCtx := bufferdecoder.EventContext{}
 	containerData := trace.Container{}
 	kubernetesData := trace.Kubernetes{}
-	eventDefinition := events.Definition{}
+	eventDefinition := extensions.Definition{}
 	args := []trace.Argument{}
 	stackAddresses := []uint64{}
 	flags := trace.ContextFlags{}
@@ -193,7 +193,7 @@ func BenchmarkNewEventObject(b *testing.B) {
 	eCtx := bufferdecoder.EventContext{}
 	containerData := trace.Container{}
 	kubernetesData := trace.Kubernetes{}
-	eventDefinition := events.Definition{}
+	eventDefinition := extensions.Definition{}
 	args := []trace.Argument{}
 	stackAddresses := []uint64{}
 	flags := trace.ContextFlags{}

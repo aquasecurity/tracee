@@ -2,7 +2,7 @@ package derive
 
 import (
 	"github.com/aquasecurity/tracee/pkg/dnscache"
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -13,7 +13,7 @@ const (
 )
 
 func NetFlowTCPBegin(cache *dnscache.DNSCache) DeriveFunction {
-	return deriveSingleEvent(events.NetFlowTCPBegin,
+	return deriveSingleEvent(extensions.NetFlowTCPBegin,
 		func(event trace.Event) ([]interface{}, error) {
 			tcpBegin := event.ReturnValue&flowTCPBegin == flowTCPBegin
 			ingress := event.ReturnValue&packetIngress == packetIngress
@@ -80,7 +80,7 @@ func NetFlowTCPBegin(cache *dnscache.DNSCache) DeriveFunction {
 }
 
 func NetFlowTCPEnd(cache *dnscache.DNSCache) DeriveFunction {
-	return deriveSingleEvent(events.NetFlowTCPEnd,
+	return deriveSingleEvent(extensions.NetFlowTCPEnd,
 		func(event trace.Event) ([]interface{}, error) {
 			tcpEnd := event.ReturnValue&flowTCPEnd == flowTCPEnd
 			ingress := event.ReturnValue&packetIngress == packetIngress
@@ -149,7 +149,7 @@ func NetFlowTCPEnd(cache *dnscache.DNSCache) DeriveFunction {
 }
 
 // func NetFlowUDPBegin(cache *dnscache.DNSCache) DeriveFunction {
-// 	return deriveSingleEvent(events.NetFlowUDPBegin,
+// 	return deriveSingleEvent(extensions.NetFlowUDPBegin,
 // 		func(event trace.Event) ([]interface{}, error) {
 // 			return nil, nil
 // 		},
@@ -157,7 +157,7 @@ func NetFlowTCPEnd(cache *dnscache.DNSCache) DeriveFunction {
 // }
 
 // func NetFlowUDPEnd(cache *dnscache.DNSCache) DeriveFunction {
-// 	return deriveSingleEvent(events.NetFlowUDPBegin,
+// 	return deriveSingleEvent(extensions.NetFlowUDPBegin,
 // 		func(event trace.Event) ([]interface{}, error) {
 // 			return nil, nil
 // 		},

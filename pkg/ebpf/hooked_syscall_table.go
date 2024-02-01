@@ -11,23 +11,28 @@ import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
+	"github.com/aquasecurity/tracee/pkg/extensions"
+	"github.com/aquasecurity/tracee/pkg/global"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 var expectedSyscallTableInit = false
 
-// hookedSyscallTableRoutine the main routine that checks if there's a hooked syscall in the syscall table.
-// It runs on tracee's startup and from time to time.
+// hookedSyscallTableRoutine the main routine that checks if there's a hooked syscall in
+// the syscall table. It runs on tracee's startup and from time to time.
 func (t *Tracee) hookedSyscallTableRoutine(ctx gocontext.Context) {
-	logger.Debugw("Starting hookedSyscallTable goroutine")
-	defer logger.Debugw("Stopped hookedSyscallTable goroutine")
-
-	if t.eventsState[events.HookedSyscall].Submit == 0 {
+	state, ok := extensions.States.GetFromAnyOk(int(extensions.HookedSyscall))
+	if !ok {
 		return
 	}
+	if !ok || !state.AnyEnabled() {
+		return
+	}
+
+	logger.Debugw("Starting hookedSyscallTable goroutine")
+	defer logger.Debugw("Stopped hookedSyscallTable goroutine")
 
 	if runtime.GOARCH != "amd64" && runtime.GOARCH != "arm64" {
 		logger.Debugw("hooked syscall table: unsupported architecture")
@@ -40,7 +45,7 @@ func (t *Tracee) hookedSyscallTableRoutine(ctx gocontext.Context) {
 		return
 	}
 
-	expectedSyscallTableMap, err := t.bpfModule.GetMap("expected_sys_call_table")
+	expectedSyscallTableMap, err := extensions.Modules.Get("core").GetMap("expected_sys_call_table")
 	if err != nil {
 		logger.Errorw("Error occurred GetMap: " + err.Error())
 		return
@@ -103,7 +108,7 @@ func (t *Tracee) isBelowSatisfied(belowRequirement string) (bool, error) {
 // in comparison with the current running kernel.
 // 'below' requirement is exclusive, 'above' is inclusive.
 // For example, for running kernel 6.2, 'below'==6.2 is NOT a match, whereas 'above'==6.2 is a match.
-func (t *Tracee) getSyscallNameByKerVer(restrictions []events.KernelRestrictions) string {
+func (t *Tracee) getSyscallNameByKerVer(restrictions []extensions.KernelRestrictions) string {
 	for _, restriction := range restrictions {
 		below := restriction.Below
 		above := restriction.Above
@@ -159,11 +164,11 @@ func (t *Tracee) getSyscallNameByKerVer(restrictions []events.KernelRestrictions
 // populateExpectedSyscallTableArray fills the expected values of the syscall table
 func (t *Tracee) populateExpectedSyscallTableArray(tableMap *bpf.BPFMap) error {
 	// Get address to the function that defines the not implemented sys call
-	niSyscallSymbol, err := t.kernelSymbols.GetSymbolByOwnerAndName("system", events.SyscallPrefix+"ni_syscall")
+	niSyscallSymbol, err := global.KSymbols.GetSymbolByOwnerAndName("system", extensions.SyscallPrefix+"ni_syscall")
 	if err != nil {
 		e := err
 		// RHEL 8.x uses sys_ni_syscall instead of __arch_ni_syscall
-		niSyscallSymbol, err = t.kernelSymbols.GetSymbolByOwnerAndName("system", "sys_ni_syscall")
+		niSyscallSymbol, err = global.KSymbols.GetSymbolByOwnerAndName("system", "sys_ni_syscall")
 		if err != nil {
 			logger.Debugw("hooked_syscall: syscall symbol not found", "name", "sys_ni_syscall")
 			return e
@@ -171,7 +176,7 @@ func (t *Tracee) populateExpectedSyscallTableArray(tableMap *bpf.BPFMap) error {
 	}
 	niSyscallAddress := niSyscallSymbol[0].Address
 
-	for i, kernelRestrictionArr := range events.SyscallSymbolNames {
+	for i, kernelRestrictionArr := range extensions.SyscallSymbolNames {
 		syscallName := t.getSyscallNameByKerVer(kernelRestrictionArr)
 		if syscallName == "" {
 			logger.Debugw("hooked_syscall: skipping syscall", "index", i)
@@ -179,7 +184,7 @@ func (t *Tracee) populateExpectedSyscallTableArray(tableMap *bpf.BPFMap) error {
 		}
 		var index = uint32(i)
 
-		if strings.HasPrefix(syscallName, events.SyscallNotImplemented) {
+		if strings.HasPrefix(syscallName, extensions.SyscallNotImplemented) {
 			err = tableMap.Update(unsafe.Pointer(&index), unsafe.Pointer(&niSyscallAddress))
 			if err != nil {
 				return err
@@ -187,7 +192,7 @@ func (t *Tracee) populateExpectedSyscallTableArray(tableMap *bpf.BPFMap) error {
 			continue
 		}
 
-		kernelSymbol, err := t.kernelSymbols.GetSymbolByOwnerAndName("system", events.SyscallPrefix+syscallName)
+		kernelSymbol, err := global.KSymbols.GetSymbolByOwnerAndName("system", extensions.SyscallPrefix+syscallName)
 		if err != nil {
 			logger.Errorw("hooked_syscall: syscall symbol not found", "id", index)
 			return err

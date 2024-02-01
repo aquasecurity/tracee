@@ -16,7 +16,9 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/extensions"
 	"github.com/aquasecurity/tracee/pkg/filehash"
+	"github.com/aquasecurity/tracee/pkg/global"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -214,10 +216,11 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 // processDoFinitModule handles a do_finit_module event and triggers other hooking detection logic.
 func (t *Tracee) processDoInitModule(event *trace.Event) error {
 	// Check if related events are being traced.
-	_, okSyscalls := t.eventsState[events.HookedSyscall]
-	_, okSeqOps := t.eventsState[events.HookedSeqOps]
-	_, okProcFops := t.eventsState[events.HookedProcFops]
-	_, okMemDump := t.eventsState[events.PrintMemDump]
+
+	_, okSyscalls := extensions.States.GetFromAnyOk(int(extensions.HookedSyscall))
+	_, okSeqOps := extensions.States.GetFromAnyOk(int(extensions.HookedSeqOps))
+	_, okProcFops := extensions.States.GetFromAnyOk(int(extensions.HookedProcFops))
+	_, okMemDump := extensions.States.GetFromAnyOk(int(extensions.PrintMemDump))
 
 	if !okSyscalls && !okSeqOps && !okProcFops && !okMemDump {
 		return nil
@@ -225,11 +228,11 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 
 	err := capabilities.GetInstance().EBPF(
 		func() error {
-			err := t.kernelSymbols.Refresh()
+			err := global.KSymbols.Refresh()
 			if err != nil {
 				return errfmt.WrapError(err)
 			}
-			return t.UpdateKallsyms()
+			return extensions.UpdateKallsyms()
 		},
 	)
 	if err != nil {
@@ -269,7 +272,7 @@ func (t *Tracee) processHookedProcFops(event *trace.Event) error {
 		if addr == 0 { // address is in text segment, marked as 0
 			continue
 		}
-		hookingFunction := utils.ParseSymbol(addr, t.kernelSymbols)
+		hookingFunction := extensions.ParseKSymbol(addr)
 		if hookingFunction.Owner == "system" {
 			continue
 		}
@@ -311,7 +314,7 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 	}
 
 	addressUint64 := uint64(address)
-	symbol := utils.ParseSymbol(addressUint64, t.kernelSymbols)
+	symbol := extensions.ParseKSymbol(addressUint64)
 	var utsName unix.Utsname
 	arch := ""
 	if err := unix.Uname(&utsName); err != nil {
