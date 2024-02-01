@@ -116,37 +116,6 @@ func TestPrepareOutput(t *testing.T) {
 			},
 		},
 		{
-			testName:    "gob to stdout",
-			outputSlice: []string{"gob"},
-			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "gob", OutPath: "stdout"},
-				},
-				TraceeConfig: &config.OutputConfig{},
-			},
-		},
-		{
-			testName:    "gob to stdout",
-			outputSlice: []string{"gob"},
-			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "gob", OutPath: "stdout"},
-				},
-				TraceeConfig: &config.OutputConfig{},
-			},
-		},
-		{
-			testName:    "gob to /tmp/gob1,/tmp/gob2",
-			outputSlice: []string{"gob:/tmp/gob1,/tmp/gob2"},
-			expectedOutput: PrepareOutputResult{
-				PrinterConfigs: []config.PrinterConfig{
-					{Kind: "gob", OutPath: "/tmp/gob1"},
-					{Kind: "gob", OutPath: "/tmp/gob2"},
-				},
-				TraceeConfig: &config.OutputConfig{},
-			},
-		},
-		{
 			testName:    "table-verbose to stdout",
 			outputSlice: []string{"table-verbose"},
 			expectedOutput: PrepareOutputResult{
@@ -182,7 +151,6 @@ func TestPrepareOutput(t *testing.T) {
 			outputSlice: []string{
 				"table",
 				"json:/tmp/json,/tmp/json2",
-				"gob:/tmp/gob1",
 				"gotemplate=template.tmpl:/tmp/gotemplate1",
 			},
 			expectedOutput: PrepareOutputResult{
@@ -190,7 +158,6 @@ func TestPrepareOutput(t *testing.T) {
 					{Kind: "table", OutPath: "stdout"},
 					{Kind: "json", OutPath: "/tmp/json"},
 					{Kind: "json", OutPath: "/tmp/json2"},
-					{Kind: "gob", OutPath: "/tmp/gob1"},
 					{Kind: "gotemplate=template.tmpl", OutPath: "/tmp/gotemplate1"},
 				},
 				TraceeConfig: &config.OutputConfig{

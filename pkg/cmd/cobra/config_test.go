@@ -327,7 +327,6 @@ output:
     json:
         files:
             - /path/to/json1.out
-    gob: # this won't be present since it does not have any files
     gotemplate:
         template: template1
         files:
@@ -376,7 +375,6 @@ output:
 				"table:file1",
 				"table-verbose:stdout",
 				"json:/path/to/json1.out",
-				// gob is not present since it does not have any files
 				"gotemplate=template1:file3,file4",
 				"forward:tcp://user:pass@127.0.0.1:24224?tag=tracee1",
 				"forward:udp://user:pass@127.0.0.1:24225?tag=tracee2",

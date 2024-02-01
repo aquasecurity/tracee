@@ -45,7 +45,7 @@ func PrepareOutput(outputSlice []string, newBinary bool) (PrepareOutputResult, e
 				return outConfig, errors.New("none output does not support path. Use '--output help' for more info")
 			}
 			printerMap["stdout"] = "ignore"
-		case "table", "table-verbose", "json", "gob":
+		case "table", "table-verbose", "json":
 			err := parseFormat(outputParts, printerMap, newBinary)
 			if err != nil {
 				return outConfig, err
