@@ -125,14 +125,3 @@ output:
     #         - /path/to/output1.out
     #         - /path/to/output2.out
 ```
-
-### GOB
-
-This outputs events in gob format. The default path to file is stdout.
-
-```
-output:
-    gob:
-        files:
-            - /path/to/gob1.out
-```

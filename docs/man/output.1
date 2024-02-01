@@ -46,10 +46,6 @@ Multiple file paths can be specified, separated by commas.
 The default path to the file is stdout.
 Multiple file paths can be specified, separated by commas.
 .IP \[bu] 2
-\f[B]gob[:/path/to/file,\&...]\f[R]: Output events in gob format.
-The default path to the file is stdout.
-Multiple file paths can be specified, separated by commas.
-.IP \[bu] 2
 \f[B]gotemplate=/path/to/template[:/path/to/file,\&...]\f[R]: Output
 events formatted using a given Go template file.
 The default path to the file is stdout.
@@ -153,28 +149,6 @@ following flag:
 .nf
 \f[C]
 --output gotemplate=/path/to/my.tmpl
-\f[R]
-.fi
-.RE
-.IP \[bu] 2
-To output events in gob format to \f[V]/my/out\f[R], use the following
-flag:
-.RS 2
-.IP
-.nf
-\f[C]
---output gob:/my/out
-\f[R]
-.fi
-.RE
-.IP \[bu] 2
-To output events as JSON to stdout and as gob to \f[V]/my/out\f[R], use
-the following flag:
-.RS 2
-.IP
-.nf
-\f[C]
---output json --output gob:/my/out
 \f[R]
 .fi
 .RE

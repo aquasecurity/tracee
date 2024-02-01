@@ -26,8 +26,6 @@ Format options:
 
 - **json[:/path/to/file,...]**: Output events in JSON format. The default path to the file is stdout. Multiple file paths can be specified, separated by commas.
 
-- **gob[:/path/to/file,...]**: Output events in gob format. The default path to the file is stdout. Multiple file paths can be specified, separated by commas.
-
 - **gotemplate=/path/to/template[:/path/to/file,...]**: Output events formatted using a given Go template file. The default path to the file is stdout. Multiple file paths can be specified, separated by commas.
 
 - **none**: Ignore the stream of events output. This is usually used with the **\-\-capture** flag.
@@ -74,18 +72,6 @@ Other options:
 
   ```console
   --output gotemplate=/path/to/my.tmpl
-  ```
-
-- To output events in gob format to `/my/out`, use the following flag:
-
-  ```console
-  --output gob:/my/out
-  ```
-
-- To output events as JSON to stdout and as gob to `/my/out`, use the following flag:
-
-  ```console
-  --output json --output gob:/my/out
   ```
 
 - To output events as JSON to both `/my/out` and `/my/out2`, use the following flag:

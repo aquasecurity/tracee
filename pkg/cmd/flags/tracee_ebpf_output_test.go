@@ -22,7 +22,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 			testName:    "invalid output option",
 			outputSlice: []string{"foo"},
 			// it's not the preparer job to validate input. in this case foo is considered an implicit output format.
-			expectedError: errors.New("unrecognized output format: foo. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info"),
+			expectedError: errors.New("unrecognized output format: foo. Valid format values: 'table', 'table-verbose', 'json', or 'gotemplate='. Use '--output help' for more info"),
 		},
 		{
 			testName:      "invalid output option",
@@ -37,7 +37,7 @@ func TestPrepareTraceeEbpfOutput(t *testing.T) {
 		{
 			testName:      "empty val",
 			outputSlice:   []string{"out-file"},
-			expectedError: errors.New("unrecognized output format: out-file. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info"),
+			expectedError: errors.New("unrecognized output format: out-file. Valid format values: 'table', 'table-verbose', 'json', or 'gotemplate='. Use '--output help' for more info"),
 		},
 		{
 			testName:    "default format",

@@ -14,7 +14,6 @@ Possible options:
 [format:]table                                     output events in table format (default)
 [format:]table-verbose                             output events in table format with extra fields per event
 [format:]json                                      output events in json format
-[format:]gob                                       output events in gob format
 [format:]gotemplate=/path/to/template              output events formatted using a given gotemplate file
 out-file:/path/to/file                             write the output to a specified file. create/trim the file if exists (default: stdout)
 none                                               ignore stream of events output, usually used with --capture
@@ -114,9 +113,8 @@ func validateFormat(printerKind string) error {
 	if printerKind != "table" &&
 		printerKind != "table-verbose" &&
 		printerKind != "json" &&
-		printerKind != "gob" &&
 		!strings.HasPrefix(printerKind, "gotemplate=") {
-		return errfmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info", printerKind)
+		return errfmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', or 'gotemplate='. Use '--output help' for more info", printerKind)
 	}
 
 	return nil

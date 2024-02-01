@@ -79,10 +79,6 @@ output:
     #     files:
     #         - stdout
 
-    # gob:
-    #     files:
-    #     - /path/to/gob1.out
-
     # gotemplate:
     #     template: /path/to/my_template1.tmpl
     #     files:

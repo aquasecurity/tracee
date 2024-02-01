@@ -2,11 +2,7 @@ package benchmark
 
 import (
 	_ "embed"
-	"encoding/gob"
-	"fmt"
-	"io"
 	"math/rand"
-	"os"
 
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -174,37 +170,4 @@ func ProduceEventsInMemoryRandom(n int, seed ...trace.Event) engine.EventSources
 	return engine.EventSources{
 		Tracee: eventsCh,
 	}
-}
-
-func ProduceEventsFromGobFile(n int, path string) (engine.EventSources, error) {
-	inputFile, err := os.Open(path)
-	if err != nil {
-		return engine.EventSources{}, fmt.Errorf("opening file: %v", err)
-	}
-	defer inputFile.Close()
-
-	dec := gob.NewDecoder(inputFile)
-	gob.Register(trace.Event{})
-	gob.Register(trace.SlimCred{})
-	gob.Register(make(map[string]string))
-
-	eventsCh := make(chan protocol.Event, n)
-
-	for {
-		var event trace.Event
-		err := dec.Decode(&event)
-		if err != nil {
-			if err != io.EOF {
-				return engine.EventSources{}, fmt.Errorf("decoding event: %v", err)
-			}
-			break
-		}
-		e := event.ToProtocol()
-		eventsCh <- e
-	}
-
-	close(eventsCh)
-	return engine.EventSources{
-		Tracee: eventsCh,
-	}, nil
 }
