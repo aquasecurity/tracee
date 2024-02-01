@@ -126,6 +126,7 @@ func (t *Tracee) procTreeForkRemoveArgs(event *trace.Event) error {
 	for _, arg := range m {
 		event.Args = append(event.Args, arg)
 	}
+	event.ArgsNum = len(event.Args)
 
 	return nil
 }
