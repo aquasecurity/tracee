@@ -21,6 +21,7 @@ func (sig *e2eIPv4) Init(ctx detect.SignatureContext) error {
 func (sig *e2eIPv4) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
 		ID:          "IPv4",
+		EventName:   "IPv4",
 		Version:     "0.1.0",
 		Name:        "Network IPv4 Test",
 		Description: "Network E2E Tests: IPv4",
