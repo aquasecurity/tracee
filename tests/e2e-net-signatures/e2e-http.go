@@ -29,6 +29,7 @@ func (sig *e2eHTTP) Init(ctx detect.SignatureContext) error {
 func (sig *e2eHTTP) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
 		ID:          "HTTP",
+		EventName:   "HTTP",
 		Version:     "0.1.0",
 		Name:        "Network HTTP Test",
 		Description: "Network E2E Tests: HTTP",

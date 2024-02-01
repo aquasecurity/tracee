@@ -36,6 +36,7 @@ func (sig *e2eDNS) Init(ctx detect.SignatureContext) error {
 func (sig *e2eDNS) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
 		ID:          "DNS",
+		EventName:   "DNS",
 		Version:     "0.1.0",
 		Name:        "Network DNS Test",
 		Description: "Network E2E Tests: DNS",

@@ -21,6 +21,7 @@ func (sig *e2eTCP) Init(ctx detect.SignatureContext) error {
 func (sig *e2eTCP) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
 		ID:          "TCP",
+		EventName:   "TCP",
 		Version:     "0.1.0",
 		Name:        "Network TCP Test",
 		Description: "Network E2E Tests: TCP",

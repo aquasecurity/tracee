@@ -21,6 +21,7 @@ func (sig *e2eUDP) Init(ctx detect.SignatureContext) error {
 func (sig *e2eUDP) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
 		ID:          "UDP",
+		EventName:   "UDP",
 		Version:     "0.1.0",
 		Name:        "Network UDP Test",
 		Description: "Network E2E Tests: UDP",
