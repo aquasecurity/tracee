@@ -71,7 +71,7 @@ set -e
 make -j$(nproc) all
 make e2e-net-signatures
 set +e
-if [[ ! -x ./dist/tracee-ebpf || ! -x ./dist/tracee-rules ]]; then
+if [[ ! -x ./dist/tracee ]]; then
     error_exit "could not find tracee executables"
 fi
 
@@ -86,28 +86,17 @@ for TEST in $TESTS; do
     info
 
     rm -f $SCRIPT_TMP_DIR/build-$$
-    rm -f $SCRIPT_TMP_DIR/ebpf-$$
 
-    events=$(./dist/tracee-rules --allcaps --rules-dir ./dist/e2e-net-signatures/ --rules $TEST --list-events)
-
-    ./dist/tracee-ebpf \
+    ./dist/tracee \
         --install-path $TRACEE_TMP_DIR \
         --cache cache-type=mem \
         --cache mem-cache-size=512 \
-        --output format:json \
-        --output option:parse-arguments \
+        --output json \
         --scope comm=ping,nc,nslookup,isc-net-0000,isc-worker0000,curl \
-        --events $events \
-        2>$SCRIPT_TMP_DIR/ebpf-$$ |
-        ./dist/tracee-rules \
-            --rules-dir ./dist/e2e-net-signatures/ \
-            --input-tracee=file:stdin \
-            --input-tracee format:json \
-            --rules $TEST \
-            --allcaps 2>&1 |
+        --signatures-dir ./dist/e2e-net-signatures/ 2>&1 |
         tee $SCRIPT_TMP_DIR/build-$$ 2>&1 &
 
-    # wait tracee-ebpf to be started (30 sec most)
+    # wait tracee to be started (30 sec most)
     times=0
     timedout=0
     while true; do
@@ -126,12 +115,12 @@ for TEST in $TESTS; do
         fi
     done
 
-    # tracee-ebpf could not start for some reason, check stderr
+    # tracee could not start for some reason, check stderr
     if [[ $timedout -eq 1 ]]; then
         info
         info "$TEST: FAILED. ERRORS:"
         info
-        cat $SCRIPT_TMP_DIR/ebpf-$$
+        cat $SCRIPT_TMP_DIR/build-$$
 
         anyerror="${anyerror}$TEST,"
         continue
@@ -150,34 +139,30 @@ for TEST in $TESTS; do
     ## cleanup at EXIT
 
     found=0
-    cat $SCRIPT_TMP_DIR/build-$$ | grep "Signature ID: $TEST" -B2 | head -3 | grep -q "\*\*\* Detection" && found=1
+    cat $SCRIPT_TMP_DIR/build-$$ | grep "\"signatureID\":\"$TEST\"" -B2 && found=1
     info
     if [[ $found -eq 1 ]]; then
         info "$TEST: SUCCESS"
     else
         anyerror="${anyerror}$TEST,"
-        info "$TEST: FAILED, stderr from tracee-ebpf:"
-        cat $SCRIPT_TMP_DIR/ebpf-$$
+        info "$TEST: FAILED, stderr from tracee:"
+        cat $SCRIPT_TMP_DIR/build-$$
         info
     fi
     info
 
     rm -f $SCRIPT_TMP_DIR/build-$$
-    rm -f $SCRIPT_TMP_DIR/ebpf-$$
 
     # make sure we exit both to start them again
 
-    pid_rules=$(pidof tracee-rules)
-    pid_ebpf=$(pidof tracee-ebpf)
+    pid_tracee=$(pidof tracee)
 
-    kill -2 $pid_rules
-    kill -2 $pid_ebpf
+    kill -2 $pid_tracee
 
     sleep $TRACEE_SHUTDOWN_TIMEOUT
 
     # make sure tracee is exited with SIGKILL
-    kill -9 $pid_rules >/dev/null 2>&1
-    kill -9 $pid_ebpf >/dev/null 2>&1
+    kill -9 $pid_tracee >/dev/null 2>&1
 
     # give a little break for OS noise to reduce
     sleep 3
