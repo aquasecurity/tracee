@@ -152,7 +152,7 @@ func checkFtraceHooks(eventsCounter counter.Counter, out chan *trace.Event, base
 
 		reportedFtraceHooks.Add(symbol, args) // Mark that we're reporting this hook, so we won't report it multiple times
 
-		event := *baseEvent
+		event := *baseEvent // shallow copy
 		event.Timestamp = int(time.Now().UnixNano())
 		event.Args = args
 		event.ArgsNum = len(args)
