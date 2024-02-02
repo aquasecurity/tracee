@@ -371,7 +371,7 @@ func NetPacketHTTP() DeriveFunction {
 				dstIP,
 				srcPort,
 				dstPort,
-				&trace.PacketMetadata{
+				trace.PacketMetadata{
 					Direction: getPacketDirection(&event),
 				},
 				*proto,
