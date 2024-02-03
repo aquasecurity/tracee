@@ -61,7 +61,7 @@ info
 set -e
 make -j$(nproc) all
 set +e
-if [[ ! -x ./dist/tracee-ebpf || ! -x ./dist/tracee-rules ]]; then
+if [[ ! -x ./dist/tracee ]]; then
     error_exit "could not find tracee executables"
 fi
 
@@ -76,26 +76,16 @@ for TEST in $TESTS; do
     info
 
     rm -f $SCRIPT_TMP_DIR/build-$$
-    rm -f $SCRIPT_TMP_DIR/ebpf-$$
 
-    events=$(./dist/tracee-rules --rules $TEST --list-events)
-
-    ./dist/tracee-ebpf \
+    ./dist/tracee \
         --install-path $TRACEE_TMP_DIR \
         --cache cache-type=mem \
         --cache mem-cache-size=512 \
-        --output format:gob \
-        --output option:parse-arguments \
-        --scope container=new \
-        --events $events \
-        2>$SCRIPT_TMP_DIR/ebpf-$$ |
-        ./dist/tracee-rules \
-            --input-tracee=file:stdin \
-            --input-tracee format:gob \
-            --rules $TEST 2>&1 |
+        --output json \
+        --scope container=new 2>&1 |
         tee $SCRIPT_TMP_DIR/build-$$ 2>&1 &
 
-    # wait tracee-ebpf to be started (30 sec most)
+    # wait tracee to be started (30 sec most)
     times=0
     timedout=0
     while true; do
@@ -119,7 +109,7 @@ for TEST in $TESTS; do
         info
         info "$TEST: FAILED. ERRORS:"
         info
-        cat $SCRIPT_TMP_DIR/ebpf-$$
+        cat $SCRIPT_TMP_DIR/build-$$
 
         anyerror="${anyerror}$TEST,"
         continue
@@ -148,32 +138,28 @@ for TEST in $TESTS; do
     ## cleanup at EXIT
 
     found=0
-    cat $SCRIPT_TMP_DIR/build-$$ | grep "Signature ID: $TEST" -B2 | head -3 | grep -q "\*\*\* Detection" && found=1
+    cat $SCRIPT_TMP_DIR/build-$$ | grep "\"signatureID\":\"$TEST\"" -B2 && found=1
     info
     if [[ $found -eq 1 ]]; then
         info "$TEST: SUCCESS"
     else
         anyerror="${anyerror}$TEST,"
-        info "$TEST: FAILED, stderr from tracee-ebpf:"
-        cat $SCRIPT_TMP_DIR/ebpf-$$
+        info "$TEST: FAILED, stderr from tracee:"
+        cat $SCRIPT_TMP_DIR/build-$$
         info
     fi
     info
 
     rm -f $SCRIPT_TMP_DIR/build-$$
-    rm -f $SCRIPT_TMP_DIR/ebpf-$$
 
-    rules_pid=$(pidof tracee-rules)
-    tracee_pid=$(pidof tracee-ebpf)
+    tracee_pid=$(pidof tracee)
 
     # cleanup tracee with SIGINT
-    kill -2 $rules_pid
     kill -2 $tracee_pid
 
     sleep $TRACEE_SHUTDOWN_TIMEOUT
 
     # make sure tracee is exited with SIGKILL
-    kill -9 $rules_pid >/dev/null 2>&1
     kill -9 $tracee_pid >/dev/null 2>&1
 
     # give a little break for OS noise to reduce
