@@ -63,7 +63,7 @@ kubectl logs -f daemonset/tracee -n tracee
     Tracee can produce a very high volume of events which could overwhelm kubectl's log collection command. If run in a busy cluster or with a verbose policy, this command might be slow or unresponsive.
 
 In production scenario you would probably want to collect and ship events logs into a persistent storage that you can query.   
-You can use any log collection solution of your choosing. We have a tutorial on how to do this using the open source Graphana Stack [here](../../tutorials/deploy-grafana-dashboard.md).
+You can use any log collection solution of your choosing. We have a tutorial on how to do this using the open source Grafana Stack [here](../../tutorials/deploy-grafana-dashboard.md).
 
 ## Applying Policies
 
