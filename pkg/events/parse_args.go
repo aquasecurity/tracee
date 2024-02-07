@@ -14,9 +14,12 @@ import (
 )
 
 func ParseArgs(event *trace.Event) error {
-	for i := range event.Args {
-		if ptr, isUintptr := event.Args[i].Value.(uintptr); isUintptr {
-			event.Args[i].Value = "0x" + strconv.FormatUint(uint64(ptr), 16)
+	for _, arg := range event.Args {
+		if ptr, isUintptr := arg.Value.(uintptr); isUintptr {
+			err := SetArgValue(event, arg.Name, "0x"+strconv.FormatUint(uint64(ptr), 16))
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -305,6 +308,15 @@ func GetArg(event *trace.Event, argName string) *trace.Argument {
 			return &event.Args[i]
 		}
 	}
+	return nil
+}
+
+func SetArgValue(event *trace.Event, argName string, value any) error {
+	arg := GetArg(event, argName)
+	if arg == nil {
+		return fmt.Errorf("event %s has no argument named %s", event.EventName, argName)
+	}
+	arg.Value = value
 	return nil
 }
 

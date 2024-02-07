@@ -260,7 +260,8 @@ const (
 
 // processHookedProcFops processes a hooked_proc_fops event.
 func (t *Tracee) processHookedProcFops(event *trace.Event) error {
-	fopsAddresses, err := parse.ArgVal[[]uint64](event.Args, "hooked_fops_pointers")
+	const hookedFopsPointersArgName = "hooked_fops_pointers"
+	fopsAddresses, err := parse.ArgVal[[]uint64](event.Args, hookedFopsPointersArgName)
 	if err != nil || fopsAddresses == nil {
 		return errfmt.Errorf("error parsing hooked_proc_fops args: %v", err)
 	}
@@ -282,7 +283,10 @@ func (t *Tracee) processHookedProcFops(event *trace.Event) error {
 		}
 		hookedFops = append(hookedFops, trace.HookedSymbolData{SymbolName: functionName, ModuleOwner: hookingFunction.Owner})
 	}
-	event.Args[0].Value = hookedFops
+	err = events.SetArgValue(event, hookedFopsPointersArgName, hookedFops)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -318,9 +322,18 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 		return errfmt.WrapError(err)
 	}
 	arch = string(bytes.TrimRight(utsName.Machine[:], "\x00"))
-	event.Args[4].Value = arch
-	event.Args[5].Value = symbol.Name
-	event.Args[6].Value = symbol.Owner
+	err = events.SetArgValue(event, "arch", arch)
+	if err != nil {
+		return err
+	}
+	err = events.SetArgValue(event, "symbol_name", symbol.Name)
+	if err != nil {
+		return err
+	}
+	err = events.SetArgValue(event, "symbol_owner", symbol.Owner)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
