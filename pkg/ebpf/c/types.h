@@ -404,6 +404,9 @@ enum bpf_log_id
     BPF_LOG_ID_GET_CURRENT_COMM,
     BPF_LOG_ID_TAIL_CALL,
     BPF_LOG_ID_MEM_READ,
+
+    // hidden kernel module functions
+    BPF_LOG_ID_HID_KER_MOD,
 };
 
 typedef struct bpf_log {

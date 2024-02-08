@@ -28,6 +28,9 @@ const (
 	BPFLogIDGetCurrentComm // BPF_LOG_ID_GET_CURRENT_COMM
 	BPFLogIDTailCall       // BPF_LOG_ID_TAIL_CALL
 	BPFLogIDMemRead        // BPF_LOG_ID_MEM_READ
+
+	// hidden kernel module functions
+	BPFLogIDHidKerMod
 )
 
 var stringMap = map[BPFLogType]string{
@@ -43,6 +46,9 @@ var stringMap = map[BPFLogType]string{
 	BPFLogIDGetCurrentComm: "BPF_LOG_ID_GET_CURRENT_COMM",
 	BPFLogIDTailCall:       "BPF_LOG_ID_TAIL_CALL",
 	BPFLogIDMemRead:        "BPF_LOG_ID_MEM_READ",
+
+	// hidden kernel module functions
+	BPFLogIDHidKerMod: "BPF_LOG_ID_HID_KER_MOD",
 }
 
 var errorMap = map[BPFLogType]string{
@@ -58,6 +64,9 @@ var errorMap = map[BPFLogType]string{
 	BPFLogIDGetCurrentComm: "Failed to get current command",
 	BPFLogIDTailCall:       "Failed to tail call",
 	BPFLogIDMemRead:        "Failed to read memory",
+
+	// hidden kernel module functions
+	BPFLogIDHidKerMod: "Failure in hidden kernel module seeker logic",
 }
 
 func (b BPFLogType) String() string {

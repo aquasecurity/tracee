@@ -12155,7 +12155,6 @@ var CoreEvents = map[ID]Definition{
 				{handle: probes.ModuleFree, required: true},
 				{handle: probes.DoInitModule, required: true},
 				{handle: probes.DoInitModuleRet, required: true},
-				{handle: probes.LayoutAndAllocate, required: true},
 			},
 			kSymbols: []KSymbol{
 				{symbol: "modules", required: true},
