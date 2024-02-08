@@ -72,7 +72,7 @@ make -j$(nproc) all
 make e2e-net-signatures
 set +e
 if [[ ! -x ./dist/tracee ]]; then
-    error_exit "could not find tracee executables"
+    error_exit "could not find tracee executable"
 fi
 
 # if any test has failed
@@ -93,8 +93,8 @@ for TEST in $TESTS; do
         --cache mem-cache-size=512 \
         --output json \
         --scope comm=ping,nc,nslookup,isc-net-0000,isc-worker0000,curl \
-        --signatures-dir ./dist/e2e-net-signatures/ 2>&1 |
-        tee $SCRIPT_TMP_DIR/build-$$ 2>&1 &
+        --signatures-dir ./dist/e2e-net-signatures/ 2>&1 \
+        | tee "$SCRIPT_TMP_DIR/build-$$" &
 
     # wait tracee to be started (30 sec most)
     times=0

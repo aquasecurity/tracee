@@ -62,7 +62,7 @@ set -e
 make -j$(nproc) all
 set +e
 if [[ ! -x ./dist/tracee ]]; then
-    error_exit "could not find tracee executables"
+    error_exit "could not find tracee executable"
 fi
 
 # if any test has failed
@@ -82,8 +82,8 @@ for TEST in $TESTS; do
         --cache cache-type=mem \
         --cache mem-cache-size=512 \
         --output json \
-        --scope container=new 2>&1 |
-        tee $SCRIPT_TMP_DIR/build-$$ 2>&1 &
+        --scope container=new 2>&1 \
+        | tee "$SCRIPT_TMP_DIR/build-$$" &
 
     # wait tracee to be started (30 sec most)
     times=0
