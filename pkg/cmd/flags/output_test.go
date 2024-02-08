@@ -325,6 +325,19 @@ func TestPrepareOutput(t *testing.T) {
 			},
 		},
 		{
+			testName:    "option exec-hash",
+			outputSlice: []string{"option:exec-hash"},
+			expectedOutput: PrepareOutputResult{
+				PrinterConfigs: []config.PrinterConfig{
+					{Kind: "table", OutPath: "stdout"},
+				},
+				TraceeConfig: &config.OutputConfig{
+					CalcHashes:     config.CalcHashesDevInode,
+					ParseArguments: true,
+				},
+			},
+		},
+		{
 			testName:    "option exec-hash=inode",
 			outputSlice: []string{"option:exec-hash=inode"},
 			expectedOutput: PrepareOutputResult{
@@ -341,6 +354,11 @@ func TestPrepareOutput(t *testing.T) {
 			testName:      "option exec-hash invalid",
 			outputSlice:   []string{"option:exec-hash=notvalid"},
 			expectedError: errors.New("invalid output option: exec-hash=notvalid, use '--output help' for more info"),
+		},
+		{
+			testName:      "option exec-hash invalid",
+			outputSlice:   []string{"option:exec-hasha"},
+			expectedError: errors.New("invalid output option: exec-hasha, use '--output help' for more info"),
 		},
 		{
 			testName:    "option parse-arguments",
