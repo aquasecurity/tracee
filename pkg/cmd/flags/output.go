@@ -111,10 +111,15 @@ func setOption(cfg *config.OutputConfig, option string, newBinary bool) error {
 	case "sort-events":
 		cfg.EventsSorting = true
 	default:
-		if strings.HasPrefix(option, "exec-hash=") {
+		if strings.HasPrefix(option, "exec-hash") {
 			hashExecParts := strings.Split(option, "=")
-
-			if len(hashExecParts) == 2 {
+			if len(hashExecParts) == 1 {
+				if option != "exec-hash" {
+					goto invalidOption
+				}
+				// default
+				cfg.CalcHashes = config.CalcHashesDevInode
+			} else if len(hashExecParts) == 2 {
 				hashExecOpt := hashExecParts[1]
 				switch hashExecOpt {
 				case "none":
@@ -128,6 +133,8 @@ func setOption(cfg *config.OutputConfig, option string, newBinary bool) error {
 				default:
 					goto invalidOption
 				}
+			} else {
+				goto invalidOption
 			}
 
 			return nil

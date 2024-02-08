@@ -35,7 +35,7 @@ type Cache struct {
 //   - inode: recalculates the file hash if the inode's creation time (ctime) differs. The option is performant, but not necessarily correct.
 //   - dev-inode: generally offers better performance compared to the inode option, as it bypasses the need
 //     for recalculation by associating the creation time (ctime) with the device (dev) and inode pair. It's recommended if correctnes
-//     is preffered over performance without container enrichment.
+//     is preferred over performance without container enrichment.
 //   - digest-inode: is the most efficient, as it keys the hash to a pair consisting of the container image digest and inode.
 //     This approach, however, necessitates container enrichment.
 func NewCache(mode config.CalcHashesOption, resolver pathResolver) (*Cache, error) {
