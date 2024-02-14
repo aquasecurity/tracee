@@ -35,7 +35,7 @@ message EventValue {
         DNS dns = 24;
         DnsQuestions dns_questions = 25;
         DnsResponses dns_responses = 26;
-        PktMeta packet_metadata = 27;
+        PacketMetadata packet_metadata = 27;
         HTTP http = 28;
         HTTPRequest http_request = 29;
         HTTPResponse http_response = 30;
@@ -345,7 +345,13 @@ message HttpHeader {
     repeated string header = 1;
 }
 
-message PktMeta {
+enum PacketDirection {
+	INVALID = 0;
+	INGRESS = 1;
+	EGRESS = 3;
+}
+
+message PacketMetadata {
 	string src_ip = 1;
 	string dst_ip = 2;
 	uint32 src_port = 3;
@@ -353,6 +359,7 @@ message PktMeta {
 	uint32 protocol = 5;
 	uint32 packet_len = 6;
 	string iface = 7;
+	PacketDirection direction = 8;
 }
 
 message DnsQueryData {

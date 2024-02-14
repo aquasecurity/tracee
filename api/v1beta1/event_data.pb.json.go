@@ -504,7 +504,7 @@ func (msg *HttpHeader) UnmarshalJSON(b []byte) error {
 }
 
 // MarshalJSON implements json.Marshaler
-func (msg *PktMeta) MarshalJSON() ([]byte, error) {
+func (msg *PacketMetadata) MarshalJSON() ([]byte, error) {
 	return protojson.MarshalOptions{
 		UseEnumNumbers:  false,
 		EmitUnpopulated: false,
@@ -513,7 +513,7 @@ func (msg *PktMeta) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements json.Unmarshaler
-func (msg *PktMeta) UnmarshalJSON(b []byte) error {
+func (msg *PacketMetadata) UnmarshalJSON(b []byte) error {
 	return protojson.UnmarshalOptions{
 		DiscardUnknown: false,
 	}.Unmarshal(b, msg)
