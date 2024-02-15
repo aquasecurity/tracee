@@ -312,7 +312,7 @@ jobs:
                   output+="{\"job_name\": \"$job\", \"arch\": \"$arch\", \"ami\": \"$ami\", \"sufix\": \"$num\"}"
               done
             output+="]"
-            echo "::set-output name=matrix$num::$output"
+            echo "matrix$num=$output" >> $GITHUB_OUTPUT
             echo "matrix$num=$output"
           done
         shell: bash
