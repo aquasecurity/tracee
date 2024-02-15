@@ -22,6 +22,12 @@ To learn more about Tracee, check out the [documentation](https://aquasecurity.g
 To quickly try Tracee use one of the following snippets. For a more complete installation guide, check out the [Installation section][installation].  
 Tracee should run on most common Linux distributions and kernels. For compatibility information see the [Prerequisites][prereqs] page.  Mac users, please read [this FAQ][macfaq].
 
+### Using script to run Tracee Docker image
+
+```shell
+bash <(wget -qO- http://tinyurl.com/tracee-docker)
+```
+
 ### Using Docker
 
 ```shell
