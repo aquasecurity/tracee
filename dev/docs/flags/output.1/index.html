@@ -17579,9 +17579,6 @@
 <p><strong>json[:/path/to/file,...]</strong>: Output events in JSON format. The default path to the file is stdout. Multiple file paths can be specified, separated by commas.</p>
 </li>
 <li>
-<p><strong>gob[:/path/to/file,...]</strong>: Output events in gob format. The default path to the file is stdout. Multiple file paths can be specified, separated by commas.</p>
-</li>
-<li>
 <p><strong>gotemplate=/path/to/template[:/path/to/file,...]</strong>: Output events formatted using a given Go template file. The default path to the file is stdout. Multiple file paths can be specified, separated by commas.</p>
 </li>
 <li>
@@ -17632,16 +17629,6 @@
 <li>To output events as the provided Go template to stdout, use the following flag:</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="go">--output gotemplate=/path/to/my.tmpl</span>
-</code></pre></div>
-<ul>
-<li>To output events in gob format to <code>/my/out</code>, use the following flag:</li>
-</ul>
-<div class="highlight"><pre><span></span><code><span class="go">--output gob:/my/out</span>
-</code></pre></div>
-<ul>
-<li>To output events as JSON to stdout and as gob to <code>/my/out</code>, use the following flag:</li>
-</ul>
-<div class="highlight"><pre><span></span><code><span class="go">--output json --output gob:/my/out</span>
 </code></pre></div>
 <ul>
 <li>To output events as JSON to both <code>/my/out</code> and <code>/my/out2</code>, use the following flag:</li>
