@@ -253,6 +253,10 @@ func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
 		return convertPktMeta(&v)
 	case *trace.PktMeta:
 		return convertPktMeta(v)
+	case trace.PacketMetadata:
+		return convertPacketMetadata(&v)
+	case *trace.PacketMetadata:
+		return convertPacketMetadata(v)
 	case trace.ProtoHTTP:
 		return converProtoHttp(&v)
 	case *trace.ProtoHTTP:
@@ -727,7 +731,7 @@ func convertDns(v *trace.ProtoDNS) (*pb.EventValue, error) {
 func convertPktMeta(v *trace.PktMeta) (*pb.EventValue, error) {
 	return &pb.EventValue{
 		Value: &pb.EventValue_PacketMetadata{
-			PacketMetadata: &pb.PktMeta{
+			PacketMetadata: &pb.PacketMetadata{
 				SrcIp:     v.SrcIP,
 				DstIp:     v.DstIP,
 				SrcPort:   uint32(v.SrcPort),
@@ -735,6 +739,15 @@ func convertPktMeta(v *trace.PktMeta) (*pb.EventValue, error) {
 				Protocol:  uint32(v.Protocol),
 				PacketLen: v.PacketLen,
 				Iface:     v.Iface,
+			},
+		}}, nil
+}
+
+func convertPacketMetadata(v *trace.PacketMetadata) (*pb.EventValue, error) {
+	return &pb.EventValue{
+		Value: &pb.EventValue_PacketMetadata{
+			PacketMetadata: &pb.PacketMetadata{
+				Direction: pb.PacketDirection(v.Direction),
 			},
 		}}, nil
 }
