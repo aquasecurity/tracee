@@ -66,7 +66,7 @@ runs:
       shell: bash
     - name: Install OPA
       run: |
-        sudo curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.56.0/opa_linux_amd64_static
+        sudo curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.61.0/opa_linux_amd64_static
         sudo chmod 755 /usr/bin/opa
       shell: bash
     - name: Install staticchecker
