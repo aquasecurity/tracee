@@ -157,12 +157,12 @@ for TEST in $TESTS; do
 
     pid_tracee=$(pidof tracee)
 
-    kill -2 $pid_tracee
+    kill -SIGINT $pid_tracee
 
     sleep $TRACEE_SHUTDOWN_TIMEOUT
 
     # make sure tracee is exited with SIGKILL
-    kill -9 $pid_tracee >/dev/null 2>&1
+    kill -SIGKILL $pid_tracee >/dev/null 2>&1
 
     # give a little break for OS noise to reduce
     sleep 3
