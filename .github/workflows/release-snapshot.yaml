@@ -14,7 +14,9 @@ on:
 jobs:
   release-snapshot-x86_64:
     name: Release Snapshot (x86_64)
-    runs-on: [ "github-self-hosted_ami-0f4881c8d69684001_${{ github.event.number }}-${{ github.run_id }}" ]
+    runs-on: 
+      - graas_ami-0f4881c8d69684001_${{ github.event.number }}-${{ github.run_id }}
+      - EXECUTION_TYPE=LONG
     permissions:
       contents: read
       packages: write
@@ -56,7 +58,9 @@ jobs:
   release-snapshot-aarch64:
     name: Release Snapshot (aarch64)
     needs: [ release-snapshot-x86_64 ]
-    runs-on: [ "github-self-hosted_ami-03217ce7c37572c4d_${{ github.event.number }}-${{ github.run_id }}" ]
+    runs-on: 
+      - graas_ami-03217ce7c37572c4d_${{ github.event.number }}-${{ github.run_id }}
+      - EXECUTION_TYPE=LONG
     permissions:
       contents: read
       packages: write
