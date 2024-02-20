@@ -325,7 +325,9 @@ jobs:
     name: ${{ matrix.job_name }}
     needs:
       - generate-matrix
-    runs-on: "github-self-hosted_ami-${{ matrix.ami }}_${{ github.event.number }}-${{ github.run_id }}_${{ matrix.sufix }}"
+    runs-on: 
+      - graas_ami-${{ matrix.ami }}_${{ github.event.number }}-${{ github.run_id }}_${{ matrix.sufix }}
+      - EXECUTION_TYPE=LONG
     strategy:
       matrix:
         include: ${{fromJson(needs.generate-matrix.outputs.matrix01)}}
