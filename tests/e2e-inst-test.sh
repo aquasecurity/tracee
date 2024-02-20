@@ -219,9 +219,9 @@ for TEST in $TESTS; do
     # Make sure we exit tracee to start it again
 
     pid_tracee=$(pidof tracee | cut -d' ' -f1)
-    kill -2 "$pid_tracee"
+    kill -SIGINT "$pid_tracee"
     sleep $TRACEE_SHUTDOWN_TIMEOUT
-    kill -9 "$pid_tracee" >/dev/null 2>&1
+    kill -SIGKILL "$pid_tracee" >/dev/null 2>&1
     sleep 3
 
     # Cleanup leftovers

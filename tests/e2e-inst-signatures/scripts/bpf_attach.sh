@@ -55,12 +55,12 @@ fi
 sleep $TRACEE_RUN_TIMEOUT # stay alive for sometime (proforma)
 
 # try a clean exit
-kill -2 "$pid"
+kill -SIGINT "$pid"
 
 # wait tracee to shutdown (might take sometime, detaching is slow >= v6.x)
 sleep $TRACEE_SHUTDOWN_TIMEOUT
 
 # make sure tracee is exited with SIGKILL
-kill -9 "$pid" >/dev/null 2>&1
+kill -SIGKILL "$pid" >/dev/null 2>&1
 
 exit 0
