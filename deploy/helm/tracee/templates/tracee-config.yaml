@@ -46,7 +46,9 @@ data:
                 host: {{ .host | default "localhost" }}
                 port: {{ .port | default "8080" }}
                 timeout: {{ .timeout | default "3s" }}
+                {{- if .goTemplate }}
                 gotemplate: {{ .goTemplate }}
+                {{- end }}
                 content-type: {{ .contentType | default "application/json" }}
         {{- end }}
     {{- if .Values.config.blobPerfBufferSize }}
