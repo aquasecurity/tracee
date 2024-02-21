@@ -2,7 +2,9 @@ package grpc
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -48,6 +50,12 @@ func (s *TraceeService) StreamEvents(in *pb.StreamEventsRequest, grpcStream pb.T
 			logger.Errorw("error can't create event proto: " + err.Error())
 			continue
 		}
+
+		lala, err := json.Marshal(eventProto)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(string(lala))
 
 		mask.Filter(eventProto)
 

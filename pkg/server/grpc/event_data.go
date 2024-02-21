@@ -145,10 +145,18 @@ func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
 			},
 		}, nil
 	case []string:
+
+		array := make([]*pb.EventValue, 0, len(v))
+		for _, s := range v {
+			array = append(array, &pb.EventValue{
+				Value: &pb.EventValue_Str{Str: s},
+			})
+		}
+
 		return &pb.EventValue{
-			Value: &pb.EventValue_StrArray{
-				StrArray: &pb.StringArray{
-					Value: v,
+			Value: &pb.EventValue_Array{
+				Array: &pb.Array{
+					Value: array,
 				},
 			},
 		}, nil
@@ -165,16 +173,17 @@ func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
 			},
 		}, nil
 	case [2]int32:
-		intArray := make([]int32, 0, len(v))
-
+		array := make([]*pb.EventValue, 0, len(v))
 		for _, i := range v {
-			intArray = append(intArray, i)
+			array = append(array, &pb.EventValue{
+				Value: &pb.EventValue_Int32{Int32: i},
+			})
 		}
 
 		return &pb.EventValue{
-			Value: &pb.EventValue_Int32Array{
-				Int32Array: &pb.Int32Array{
-					Value: intArray,
+			Value: &pb.EventValue_Array{
+				Array: &pb.Array{
+					Value: array,
 				},
 			},
 		}, nil
@@ -200,10 +209,18 @@ func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
 				},
 			}}, nil
 	case []uint64:
+
+		array := make([]*pb.EventValue, 0, len(v))
+		for _, u := range v {
+			array = append(array, &pb.EventValue{
+				Value: &pb.EventValue_UInt64{UInt64: u},
+			})
+		}
+
 		return &pb.EventValue{
-			Value: &pb.EventValue_UInt64Array{
-				UInt64Array: &pb.UInt64Array{
-					Value: v,
+			Value: &pb.EventValue_Array{
+				Array: &pb.Array{
+					Value: array,
 				},
 			},
 		}, nil
