@@ -1,6 +1,14 @@
 #
 # area
 #
+# area/grpc
+area/grpc:
+  - pkg/server/grpc/**
+  - pkg/server/grpc/**/*
+# area/api
+area/api:
+  - api/**
+  - api/**/*
 # area/arm64:
 area/build:
   - builder/**
