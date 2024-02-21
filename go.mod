@@ -186,3 +186,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	kernel.org/pub/linux/libs/security/libcap/psx v1.2.68 // indirect
 )
+
+replace github.com/aquasecurity/tracee/api v0.0.0-20240219122500-ea2c242dcd60 => github.com/josedonizetti/tracee/api v0.0.0-20240221223137-6fab47307a0f
