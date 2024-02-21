@@ -17,9 +17,6 @@ message EventValue {
         string str = 6; // strT
         bytes bytes = 7; // bytesT
         bool bool = 8; // boolT
-        StringArray str_array = 9; // strArrT, argsArrT
-        Int32Array int32_array = 10; // intArr2T
-        UInt64Array u_int64_array = 11; // uint64ArrT
         SockAddr sockaddr = 12; // sockaddrT
         Credentials credentials = 13; // credT
         Timespec timespec = 14; // timespecT
@@ -40,25 +37,21 @@ message EventValue {
         HTTPRequest http_request = 29;
         HTTPResponse http_response = 30;
         google.protobuf.Struct struct = 31;
+        Array array = 32;
     }
+}
+
+// strArrT, argsArrT
+// intArr2T
+// uint64ArrT
+message Array {
+	repeated EventValue value = 3;
 }
 
 message TriggeredBy {
     uint32 id = 1;
     string name = 2;
     repeated EventValue data = 3;
-}
-
-message StringArray {
-    repeated string value = 1;
-}
-
-message Int32Array {
-    repeated int32 value = 1;
-}
-
-message UInt64Array {
-    repeated uint64 value = 1;
 }
 
 message Credentials {
