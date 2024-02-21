@@ -54,8 +54,6 @@ tolerations:
 
 affinity: {}
 
-webhook: ""
-
 # extraWebhookTemplates is a list of additional webhook templates that can be used by
 # the configFile or config.output.webhook fields
 # in the example below, the goTemplate content will be mounted as /tracee/templates/template1.tmpl
