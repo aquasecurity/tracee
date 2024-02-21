@@ -25,13 +25,13 @@ You can use `kubectl` to interact with it:
 View:
 
 ```shell
-kubectl get cm tracee -n tracee
+kubectl get cm tracee-config -n tracee
 ```
 
 Edit:
 
 ```shell
-kubectl edit cm tracee -n tracee
+kubectl edit cm tracee-config -n tracee
 ```
 
 ## Helm
