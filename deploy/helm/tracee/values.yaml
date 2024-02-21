@@ -54,8 +54,6 @@ tolerations:
 
 affinity: {}
 
-webhook: ""
-
 traceeConfig: {}
 
 config:
