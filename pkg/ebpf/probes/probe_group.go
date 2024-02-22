@@ -217,7 +217,6 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, kSyms *helpers.Ke
 		TpProbeRegPrioMayExist:     NewTraceProbe(KProbe, "tracepoint_probe_register_prio_may_exist", "trace_tracepoint_probe_register_prio_may_exist"),
 		ModuleLoad:                 NewTraceProbe(RawTracepoint, "module:module_load", "tracepoint__module__module_load"),
 		ModuleFree:                 NewTraceProbe(RawTracepoint, "module:module_free", "tracepoint__module__module_free"),
-		LayoutAndAllocate:          NewTraceProbe(KretProbe, "layout_and_allocate", "trace_ret_layout_and_allocate"),
 		SignalCgroupMkdir:          NewTraceProbe(RawTracepoint, "cgroup:cgroup_mkdir", "cgroup_mkdir_signal"),
 		SignalCgroupRmdir:          NewTraceProbe(RawTracepoint, "cgroup:cgroup_rmdir", "cgroup_rmdir_signal"),
 		SignalSchedProcessFork:     NewTraceProbe(RawTracepoint, "sched:sched_process_fork", "sched_process_fork_signal"),

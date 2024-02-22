@@ -27,7 +27,6 @@ var (
 	allModsMap               *bpf.BPFMap
 	newModuleOnlyMap         *bpf.BPFMap
 	recentDeletedModulesMap  *bpf.BPFMap
-	recentInsertedModulesMap *bpf.BPFMap
 	wakeupChannel            = make(chan ScanRequest)
 )
 
@@ -180,16 +179,10 @@ func newModsCheckForHidden(startScanTime uint64, flags uint32) error {
 }
 
 // InitHiddenKernelModules initializes the module components
-func InitHiddenKernelModules(
-	modsMap *bpf.BPFMap,
-	newModMap *bpf.BPFMap,
-	deletedModMap *bpf.BPFMap,
-	insertedModMap *bpf.BPFMap,
-) error {
+func InitHiddenKernelModules(modsMap *bpf.BPFMap, newModMap *bpf.BPFMap, deletedModMap *bpf.BPFMap) error {
 	allModsMap = modsMap
 	newModuleOnlyMap = newModMap
 	recentDeletedModulesMap = deletedModMap
-	recentInsertedModulesMap = insertedModMap
 
 	var err error
 	foundHiddenKernModsCache, err = lru.New[uint64, struct{}](2048)
@@ -228,8 +221,7 @@ func ClearModulesState() error {
 	return capabilities.GetInstance().EBPF(
 		func() error {
 			_ = clearMap(allModsMap)
-			_ = clearMap(recentDeletedModulesMap)  // only care for modules deleted in the midst of a scan.
-			_ = clearMap(recentInsertedModulesMap) // only care for modules inserted in the midst of a scan.
+			_ = clearMap(recentDeletedModulesMap) // only care for modules deleted in the midst of a scan.
 			return nil
 		},
 	)

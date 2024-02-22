@@ -692,14 +692,14 @@ struct recent_deleted_module_map {
 
 typedef struct recent_deleted_module_map recent_deleted_module_map_t;
 
-struct recent_inserted_module_map {
-    __uint(type, BPF_MAP_TYPE_LRU_HASH);
-    __uint(max_entries, 50); // likewise for module insertion
-    __type(key, u64);
-    __type(value, kernel_new_mod_t);
-} recent_inserted_module_map SEC(".maps");
-
-typedef struct recent_inserted_module_map recent_inserted_module_map_t;
+u64 start_scan_time_init_shown_mods = 0;
+u64 last_module_insert_time = 0;
+bool hidden_old_mod_scan_done = false;
+static const int HID_MOD_RACE_CONDITION = -1;
+static const int HID_MOD_UNCOMPLETED_ITERATIONS = -2;
+static const int HID_MOD_MEM_ZEROED = -3;
+static const int MOD_HIDDEN = 1;
+static const int MOD_NOT_HIDDEN = 0;
 
 void __always_inline lkm_seeker_send_to_userspace(struct module *mod, u32 *flags, program_data_t *p)
 {
@@ -729,7 +729,7 @@ void __always_inline lkm_seeker_send_to_userspace(struct module *mod, u32 *flags
 // modules list and populate the map. It gets clean in userspace before every run.
 // Since this mechanism is suppose to be triggered every once in a while,
 // this should be ok.
-statfunc bool init_shown_modules()
+statfunc int init_shown_modules()
 {
     char modules_sym[8] = "modules";
     struct list_head *head = (struct list_head *) get_symbol_addr(modules_sym);
@@ -746,23 +746,19 @@ statfunc bool init_shown_modules()
         n = list_next_entry_ebpf(n, list);
 
         if (&pos->list == head) {
-            iterated_all_modules = true;
-            break;
+            return 0;
         }
 
         bpf_map_update_elem(&modules_map, &pos, &ker_mod, BPF_ANY);
     }
 
-    return !iterated_all_modules; // False is valid value
+    return HID_MOD_UNCOMPLETED_ITERATIONS;
 }
 
-static u64 start_scan_time_init_shown_mods = 0;
-static u64 last_module_insert_time = 0;
-
-statfunc bool is_hidden(u64 mod)
+statfunc int is_hidden(u64 mod)
 {
     if (bpf_map_lookup_elem(&modules_map, &mod) != NULL) {
-        return false;
+        return MOD_NOT_HIDDEN;
     }
 
     // Verify that this module wasn't removed after we initialized modules_map
@@ -770,22 +766,24 @@ statfunc bool is_hidden(u64 mod)
     if (deleted_mod && deleted_mod->deleted_time > start_scan_time_init_shown_mods) {
         // This module got deleted after the start of the scan time.. So there
         // was a valid remove, and it's not hidden.
-        return false;
+        return MOD_NOT_HIDDEN;
     }
 
-    // Verify that this module wasn't inserted after we initialized modules_map
-    kernel_new_mod_t *recent_insert_mod = bpf_map_lookup_elem(&recent_inserted_module_map, &mod);
-    if (!recent_insert_mod ||
-        (recent_insert_mod->insert_time != 0 && // If insert_time is 0, it means the module is
-                                                // currently being inserted - it's not hidden.
-         recent_insert_mod->insert_time <= start_scan_time_init_shown_mods)) {
-        return true;
+    // Check if some module was inserted after we started scanning.
+    // If that's the case, then if the module got inserted to the modules list after we walked on
+    // the list, it'll be missing from our eBPF map. If it got inserted to other places (kset for
+    // example), then it will appear as if the module is hidden (in kset but not in module's list),
+    // but in fact it only got added in the midst of our scan. Thus, we need to monitor for this
+    // situation.
+    if (start_scan_time_init_shown_mods < last_module_insert_time) {
+        // No point of checking other modules in this scan... abort
+        return HID_MOD_RACE_CONDITION;
     }
 
-    return false;
+    return MOD_HIDDEN;
 }
 
-statfunc bool find_modules_from_module_kset_list(program_data_t *p)
+statfunc int find_modules_from_module_kset_list(program_data_t *p)
 {
     char module_kset_sym[12] = "module_kset";
     struct module *first_mod = NULL;
@@ -793,7 +791,6 @@ statfunc bool find_modules_from_module_kset_list(program_data_t *p)
     struct list_head *head = &(mod_kset->list);
     struct kobject *pos = list_first_entry_ebpf(head, typeof(*pos), entry);
     struct kobject *n = list_next_entry_ebpf(pos, entry);
-    bool finished_iterating = false;
     u32 flags = KSET | HIDDEN_MODULE;
 
 #pragma unroll
@@ -801,8 +798,7 @@ statfunc bool find_modules_from_module_kset_list(program_data_t *p)
         if (BPF_CORE_READ(n, name) ==
             NULL) { // Without this the list seems infinite. Also, using pos
                     // here seems incorrect as it starts from a weird member
-            finished_iterating = true;
-            break;
+            return 0;
         }
 
         struct module_kobject *mod_kobj =
@@ -813,12 +809,13 @@ statfunc bool find_modules_from_module_kset_list(program_data_t *p)
                 if (first_mod == NULL) {
                     first_mod = mod;
                 } else if (first_mod == mod) { // Iterated over all modules - stop.
-                    finished_iterating = true;
-                    break;
+                    return 0;
                 }
-
-                if (is_hidden((u64) mod)) {
+                int ret = is_hidden((u64) mod);
+                if (ret == MOD_HIDDEN) {
                     lkm_seeker_send_to_userspace(mod, &flags, p);
+                } else if (ret == HID_MOD_RACE_CONDITION) {
+                    return ret;
                 }
             }
         }
@@ -827,7 +824,7 @@ statfunc bool find_modules_from_module_kset_list(program_data_t *p)
         n = list_next_entry_ebpf(n, entry);
     }
 
-    return !finished_iterating;
+    return HID_MOD_UNCOMPLETED_ITERATIONS;
 }
 
 struct walk_mod_tree_queue {
@@ -843,11 +840,10 @@ statfunc struct latch_tree_node *__lt_from_rb(struct rb_node *node, int idx)
     return container_of(node, struct latch_tree_node, node[idx]);
 }
 
-statfunc bool walk_mod_tree(program_data_t *p, struct rb_node *root, int idx)
+statfunc int walk_mod_tree(program_data_t *p, struct rb_node *root, int idx)
 {
     struct latch_tree_node *ltn;
     struct module *mod;
-    bool finished_iterating = false;
     struct rb_node *curr = root;
     u32 flags = MOD_TREE | HIDDEN_MODULE;
 
@@ -861,15 +857,17 @@ statfunc bool walk_mod_tree(program_data_t *p, struct rb_node *root, int idx)
         } else {
             rb_node_t rb_nod;
             if (bpf_map_pop_elem(&walk_mod_tree_queue, &rb_nod) != 0) {
-                finished_iterating = true;
-                break;
+                return 0; // Finished iterating
             } else {
                 curr = rb_nod.node;
                 ltn = __lt_from_rb(curr, idx);
                 mod = BPF_CORE_READ(container_of(ltn, struct mod_tree_node, node), mod);
 
-                if (is_hidden((u64) mod)) {
+                int ret = is_hidden((u64) mod);
+                if (ret == MOD_HIDDEN) {
                     lkm_seeker_send_to_userspace(mod, &flags, p);
+                } else if (ret == HID_MOD_RACE_CONDITION) {
+                    return ret;
                 }
 
                 /* We have visited the node and its left subtree.
@@ -879,14 +877,14 @@ statfunc bool walk_mod_tree(program_data_t *p, struct rb_node *root, int idx)
         }
     }
 
-    return !finished_iterating;
+    return HID_MOD_UNCOMPLETED_ITERATIONS;
 }
 
 struct mod_tree_root {
     struct latch_tree_root root;
 };
 
-statfunc bool find_modules_from_mod_tree(program_data_t *p)
+statfunc int find_modules_from_mod_tree(program_data_t *p)
 {
     char mod_tree_sym[9] = "mod_tree";
     struct mod_tree_root *m_tree = (struct mod_tree_root *) get_symbol_addr(mod_tree_sym);
@@ -936,7 +934,6 @@ static __always_inline u64 check_new_mods_only(program_data_t *p)
 statfunc int check_is_proc_modules_hooked(program_data_t *p)
 {
     struct module *pos, *n;
-    int ret = 2;
     u64 mod_base_addr;
     char modules_sym[8] = "modules";
     struct list_head *head = (struct list_head *) get_symbol_addr(modules_sym);
@@ -950,8 +947,7 @@ statfunc int check_is_proc_modules_hooked(program_data_t *p)
         pos = n;
         n = list_next_entry_ebpf(n, list);
         if (&pos->list == head) {
-            ret = 0;
-            break;
+            return 0;
         }
 
         // Check with the address being the start of the memory area, since
@@ -964,8 +960,7 @@ statfunc int check_is_proc_modules_hooked(program_data_t *p)
         }
 
         if (unlikely(mod_base_addr == 0)) { // Module memory was possibly tampered.. submit an error
-            ret = 7;
-            break;
+            return HID_MOD_MEM_ZEROED;
         } else if (bpf_map_lookup_elem(&modules_map, &mod_base_addr) == NULL) {
             // Was there any recent insertion of a module since we populated
             // modules_list? if so, don't report as there's possible race
@@ -979,7 +974,7 @@ statfunc int check_is_proc_modules_hooked(program_data_t *p)
             // filled (userspace) - so assume it happened max 2 seconds prior to
             // that.
             if (start_scan_time_init_shown_mods - (2 * 1000000000) < last_module_insert_time) {
-                continue;
+                return 0;
             }
 
             // Module was not seen in proc modules and there was no recent insertion, report.
@@ -987,7 +982,7 @@ statfunc int check_is_proc_modules_hooked(program_data_t *p)
         }
     }
 
-    return ret;
+    return HID_MOD_UNCOMPLETED_ITERATIONS;
 }
 
 statfunc bool kern_ver_below_min_lkm(struct pt_regs *ctx)
@@ -1050,6 +1045,11 @@ int uprobe_lkm_seeker_submitter(struct pt_regs *ctx)
     return 0;
 }
 
+// There are 2 types of scans:
+// - Scan of modules that were loaded prior tracee started: this is only done once at the start of
+// tracee
+// - Scan of modules that were loaded after tracee started: runs periodically and on each new module
+// insertion
 SEC("uprobe/lkm_seeker")
 int uprobe_lkm_seeker(struct pt_regs *ctx)
 {
@@ -1072,36 +1072,20 @@ int uprobe_lkm_seeker(struct pt_regs *ctx)
     }
 
     start_scan_time_init_shown_mods = bpf_ktime_get_ns();
-
-    if (init_shown_modules() != 0) {
-        tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_UNSPEC, 1);
+    int ret = init_shown_modules();
+    if (ret != 0) {
+        tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_HID_KER_MOD, ret);
         return 1;
+    }
+
+    // On first run, do a scan only relevant for modules that were inserted prior tracee started.
+    if (unlikely(!hidden_old_mod_scan_done)) {
+        hidden_old_mod_scan_done = true;
+        bpf_tail_call(ctx, &prog_array, TAIL_HIDDEN_KERNEL_MODULE_KSET);
+        return -1;
     }
 
     bpf_tail_call(ctx, &prog_array, TAIL_HIDDEN_KERNEL_MODULE_PROC);
-
-    return -1;
-}
-
-SEC("uprobe/lkm_seeker_proc_tail")
-int lkm_seeker_proc_tail(struct pt_regs *ctx)
-{
-    // This check is to satisfy the verifier for kernels older than 5.2
-    // as in runtime we'll never get here (the tail call doesn't happen)
-    if (kern_ver_below_min_lkm(ctx))
-        return 0;
-
-    program_data_t p = {};
-    if (!init_tailcall_program_data(&p, ctx))
-        return -1;
-
-    int ret = check_is_proc_modules_hooked(&p);
-    if (ret != 0) {
-        tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_UNSPEC, ret);
-        return 1;
-    }
-
-    bpf_tail_call(ctx, &prog_array, TAIL_HIDDEN_KERNEL_MODULE_KSET);
 
     return -1;
 }
@@ -1118,9 +1102,10 @@ int lkm_seeker_kset_tail(struct pt_regs *ctx)
     if (!init_tailcall_program_data(&p, ctx))
         return -1;
 
-    if (find_modules_from_module_kset_list(&p) != 0) {
-        tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_UNSPEC, 3);
-        return 1;
+    int ret = find_modules_from_module_kset_list(&p);
+    if (ret < 0) {
+        tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_HID_KER_MOD, ret);
+        return -1;
     }
 
     bpf_tail_call(ctx, &prog_array, TAIL_HIDDEN_KERNEL_MODULE_MOD_TREE);
@@ -1142,9 +1127,33 @@ int lkm_seeker_mod_tree_tail(struct pt_regs *ctx)
 
     // This method is efficient only when the kernel is compiled with
     // CONFIG_MODULES_TREE_LOOKUP=y
-    if (find_modules_from_mod_tree(&p) != 0) {
-        tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_UNSPEC, 4);
-        return 1;
+    int ret = find_modules_from_mod_tree(&p);
+    if (ret < 0) {
+        tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_HID_KER_MOD, ret);
+        return -1;
+    }
+
+    bpf_tail_call(ctx, &prog_array, TAIL_HIDDEN_KERNEL_MODULE_PROC);
+
+    return -1;
+}
+
+SEC("uprobe/lkm_seeker_proc_tail")
+int lkm_seeker_proc_tail(struct pt_regs *ctx)
+{
+    // This check is to satisfy the verifier for kernels older than 5.2
+    // as in runtime we'll never get here (the tail call doesn't happen)
+    if (kern_ver_below_min_lkm(ctx))
+        return 0;
+
+    program_data_t p = {};
+    if (!init_tailcall_program_data(&p, ctx))
+        return -1;
+
+    int ret = check_is_proc_modules_hooked(&p);
+    if (ret < 0) {
+        tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_HID_KER_MOD, ret);
+        return -1;
     }
 
     bpf_tail_call(ctx, &prog_array, TAIL_HIDDEN_KERNEL_MODULE_NEW_MOD_ONLY);
@@ -1152,7 +1161,7 @@ int lkm_seeker_mod_tree_tail(struct pt_regs *ctx)
     return -1;
 }
 
-// We maintain a map of newly loaded modules. Periodically, we verify that this module appears in
+// We maintain a map of newly loaded modules. At times, we verify that this module appears in
 // modules list. If it is not (and there was no valid deletion), then it's hidden.
 SEC("uprobe/lkm_seeker_new_mod_only_tail")
 int lkm_seeker_new_mod_only_tail(struct pt_regs *ctx)
@@ -1168,8 +1177,8 @@ int lkm_seeker_new_mod_only_tail(struct pt_regs *ctx)
 
     u64 start_scan_time = check_new_mods_only(&p);
     if (start_scan_time == 0) {
-        tracee_log(ctx, BPF_LOG_LVL_ERROR, BPF_LOG_ID_UNSPEC, 6);
-        return 1;
+        tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_HID_KER_MOD, HID_MOD_UNCOMPLETED_ITERATIONS);
+        return -1;
     }
 
     struct module *mod =
@@ -4252,32 +4261,6 @@ int BPF_KPROBE(trace_ret_do_splice)
     return events_perf_submit(&p, DIRTY_PIPE_SPLICE, 0);
 }
 
-// layout_and_allocate is just before the kernel's module insertion to the modules list.
-// add_unformed_module is a more appropriate candidate - unfortunately, in kernel 5.4 it can't be
-// kprobed.
-SEC("kretprobe/layout_and_allocate")
-int BPF_KPROBE(trace_ret_layout_and_allocate)
-{
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
-        return 0;
-
-    if (!should_trace((&p)))
-        return 0;
-
-    if (!should_submit(HIDDEN_KERNEL_MODULE_SEEKER, p.event))
-        return 0;
-
-    u64 mod_addr = (u64) PT_REGS_RC(ctx);
-    kernel_new_mod_t new_mod = {0};
-
-    // Put an entry in the map to state that this module is in the process of being inserted.
-    // To indicate that, the insert time will be 0 (insert yet finished but started).
-    bpf_map_update_elem(&recent_inserted_module_map, &mod_addr, &new_mod, BPF_ANY);
-
-    return 0;
-}
-
 SEC("raw_tracepoint/module_load")
 int tracepoint__module__module_load(struct bpf_raw_tracepoint_args *ctx)
 {
@@ -4302,8 +4285,6 @@ int tracepoint__module__module_load(struct bpf_raw_tracepoint_args *ctx)
         // new_module_map - must be after the module is added to modules list,
         // otherwise there's a risk for race condition
         bpf_map_update_elem(&new_module_map, &mod_addr, &new_mod, BPF_ANY);
-        bpf_map_update_elem(
-            &recent_inserted_module_map, &mod_addr, &new_mod, BPF_ANY); // Update the insert time
 
         last_module_insert_time = insert_time;
 

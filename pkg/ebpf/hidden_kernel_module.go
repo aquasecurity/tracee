@@ -55,13 +55,7 @@ func (t *Tracee) lkmSeekerRoutine(ctx gocontext.Context) {
 		return
 	}
 
-	insertedModMap, err := t.bpfModule.GetMap("recent_inserted_module_map")
-	if err != nil {
-		logger.Errorw("Error occurred GetMap: " + err.Error())
-		return
-	}
-
-	err = derive.InitHiddenKernelModules(modsMap, newModMap, deletedModMap, insertedModMap)
+	err = derive.InitHiddenKernelModules(modsMap, newModMap, deletedModMap)
 	if err != nil {
 		return
 	}

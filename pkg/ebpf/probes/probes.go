@@ -126,7 +126,6 @@ const (
 	HiddenKernelModuleVerifier
 	ModuleLoad
 	ModuleFree
-	LayoutAndAllocate
 	SignalCgroupMkdir
 	SignalCgroupRmdir
 	SignalSchedProcessFork
