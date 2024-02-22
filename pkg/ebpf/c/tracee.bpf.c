@@ -3002,28 +3002,6 @@ int send_bin_tp(void *ctx)
     return send_bin_helper(ctx, &prog_array_tp, TAIL_SEND_BIN_TP);
 }
 
-statfunc int
-submit_magic_write(program_data_t *p, file_info_t *file_info, io_data_t io_data, u32 bytes_written)
-{
-    u32 header_bytes = FILE_MAGIC_HDR_SIZE;
-    if (header_bytes > bytes_written)
-        header_bytes = bytes_written;
-
-    u8 header[FILE_MAGIC_HDR_SIZE];
-    __builtin_memset(&header, 0, sizeof(header));
-
-    save_str_to_buf(&(p->event->args_buf), file_info->pathname_p, 0);
-
-    fill_file_header(header, io_data);
-
-    save_bytes_to_buf(&(p->event->args_buf), header, header_bytes, 1);
-    save_to_submit_buf(&(p->event->args_buf), &file_info->id.device, sizeof(dev_t), 2);
-    save_to_submit_buf(&(p->event->args_buf), &file_info->id.inode, sizeof(unsigned long), 3);
-
-    // Submit magic_write event
-    return events_perf_submit(p, MAGIC_WRITE, bytes_written);
-}
-
 statfunc bool should_submit_io_event(u32 event_id, program_data_t *p)
 {
     return ((event_id == VFS_READ || event_id == VFS_READV || event_id == VFS_WRITE ||
@@ -3054,10 +3032,7 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
         return 0;
     }
 
-    bool should_submit_magic_write = should_submit(MAGIC_WRITE, p.event);
-    bool should_submit_io = should_submit_io_event(event_id, &p);
-
-    if (!should_submit_io && !should_submit_magic_write) {
+    if (!should_submit_io_event(event_id, &p)) {
         bpf_tail_call(ctx, &prog_array, tail_call_id);
         del_args(event_id);
         return 0;
@@ -3080,29 +3055,20 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
     file_info.id.inode = get_inode_nr_from_file(file);
     bpf_probe_read(&start_pos, sizeof(off_t), pos);
 
-    bool char_dev = (start_pos == 0);
     u32 io_bytes_amount = PT_REGS_RC(ctx);
 
     // Calculate write start offset
     if (start_pos != 0)
         start_pos -= io_bytes_amount;
 
-    if (should_submit_io) {
-        save_str_to_buf(&p.event->args_buf, file_info.pathname_p, 0);
-        save_to_submit_buf(&p.event->args_buf, &file_info.id.device, sizeof(dev_t), 1);
-        save_to_submit_buf(&p.event->args_buf, &file_info.id.inode, sizeof(unsigned long), 2);
-        save_to_submit_buf(&p.event->args_buf, &io_data.len, sizeof(unsigned long), 3);
-        save_to_submit_buf(&p.event->args_buf, &start_pos, sizeof(off_t), 4);
+    save_str_to_buf(&p.event->args_buf, file_info.pathname_p, 0);
+    save_to_submit_buf(&p.event->args_buf, &file_info.id.device, sizeof(dev_t), 1);
+    save_to_submit_buf(&p.event->args_buf, &file_info.id.inode, sizeof(unsigned long), 2);
+    save_to_submit_buf(&p.event->args_buf, &io_data.len, sizeof(unsigned long), 3);
+    save_to_submit_buf(&p.event->args_buf, &start_pos, sizeof(off_t), 4);
 
-        // Submit io event
-        events_perf_submit(&p, event_id, PT_REGS_RC(ctx));
-    }
-
-    // magic_write event checks if the header of some file is changed
-    if (!is_read && should_submit_magic_write && !char_dev && (start_pos == 0)) {
-        reset_event_args(&p);
-        submit_magic_write(&p, &file_info, io_data, io_bytes_amount);
-    }
+    // Submit io event
+    events_perf_submit(&p, event_id, PT_REGS_RC(ctx));
 
     bpf_tail_call(ctx, &prog_array, tail_call_id);
     del_args(event_id);
@@ -3326,6 +3292,130 @@ SEC("kretprobe/vfs_readv_tail")
 int BPF_KPROBE(trace_ret_vfs_readv_tail)
 {
     return capture_file_read(ctx, VFS_READV, false);
+}
+
+statfunc int do_vfs_write_magic_enter(struct pt_regs *ctx)
+{
+    loff_t start_pos;
+    loff_t *pos = (loff_t *) PT_REGS_PARM4(ctx);
+    bpf_probe_read(&start_pos, sizeof(off_t), pos);
+    if (start_pos != 0)
+        return 0;
+
+    struct file *file = (struct file *) PT_REGS_PARM1(ctx);
+    unsigned short i_mode = get_inode_mode_from_file(file);
+    if ((i_mode & S_IFMT) != S_IFREG) {
+        return 0;
+    }
+
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    if (!should_trace(&p))
+        return 0;
+
+    args_t args = {};
+    args.args[0] = PT_REGS_PARM1(ctx);
+    args.args[1] = PT_REGS_PARM2(ctx);
+    args.args[2] = PT_REGS_PARM3(ctx);
+    args.args[3] = PT_REGS_PARM4(ctx);
+    args.args[4] = PT_REGS_PARM5(ctx);
+    args.args[5] = PT_REGS_PARM6(ctx);
+
+    return save_args(&args, MAGIC_WRITE);
+}
+
+statfunc int do_vfs_write_magic_return(struct pt_regs *ctx, bool is_buf)
+{
+    args_t saved_args;
+    if (load_args(&saved_args, MAGIC_WRITE) != 0) {
+        // missed entry or not traced
+        return 0;
+    }
+
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx)) {
+        del_args(MAGIC_WRITE);
+        return 0;
+    }
+
+    if (!should_submit(MAGIC_WRITE, p.event)) {
+        del_args(MAGIC_WRITE);
+        return 0;
+    }
+
+    io_data_t io_data;
+    file_info_t file_info;
+
+    struct file *file = (struct file *) saved_args.args[0];
+    file_info.pathname_p = get_path_str_cached(file);
+
+    io_data.is_buf = is_buf;
+    io_data.ptr = (void *) saved_args.args[1];
+    io_data.len = (unsigned long) saved_args.args[2];
+
+    // Extract device id, inode number, and pos (offset)
+    file_info.id.device = get_dev_from_file(file);
+    file_info.id.inode = get_inode_nr_from_file(file);
+
+    u32 bytes_written = PT_REGS_RC(ctx);
+
+    u32 header_bytes = FILE_MAGIC_HDR_SIZE;
+    if (header_bytes > bytes_written)
+        header_bytes = bytes_written;
+
+    u8 header[FILE_MAGIC_HDR_SIZE];
+    __builtin_memset(&header, 0, sizeof(header));
+
+    save_str_to_buf(&(p.event->args_buf), file_info.pathname_p, 0);
+
+    fill_file_header(header, io_data);
+
+    save_bytes_to_buf(&(p.event->args_buf), header, header_bytes, 1);
+    save_to_submit_buf(&(p.event->args_buf), &file_info.id.device, sizeof(dev_t), 2);
+    save_to_submit_buf(&(p.event->args_buf), &file_info.id.inode, sizeof(unsigned long), 3);
+
+    del_args(MAGIC_WRITE);
+
+    // Submit magic_write event
+    return events_perf_submit(&p, MAGIC_WRITE, bytes_written);
+}
+
+SEC("kprobe/vfs_write")
+int BPF_KPROBE(vfs_write_magic_enter)
+{
+    return do_vfs_write_magic_enter(ctx);
+}
+
+SEC("kprobe/vfs_writev")
+int BPF_KPROBE(vfs_writev_magic_enter)
+{
+    return do_vfs_write_magic_enter(ctx);
+}
+
+SEC("kprobe/__kernel_write")
+int BPF_KPROBE(kernel_write_magic_enter)
+{
+    return do_vfs_write_magic_enter(ctx);
+}
+
+SEC("kretprobe/vfs_write")
+int BPF_KPROBE(vfs_write_magic_return)
+{
+    return do_vfs_write_magic_return(ctx, true);
+}
+
+SEC("kretprobe/vfs_writev")
+int BPF_KPROBE(vfs_writev_magic_return)
+{
+    return do_vfs_write_magic_return(ctx, false);
+}
+
+SEC("kretprobe/__kernel_write")
+int BPF_KPROBE(kernel_write_magic_return)
+{
+    return do_vfs_write_magic_return(ctx, true);
 }
 
 // Used macro because of problem with verifier in NONCORE kinetic519
