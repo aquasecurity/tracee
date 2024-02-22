@@ -1587,11 +1587,27 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 		return nil
 	}
 
-	errs := []error{}
+	var errs []error
 
-	// TODO: consider to iterate over given policies when policies are changed
-	for it := t.config.Policies.CreateAllIterator(); it.HasNext(); {
+	// We want to use the policies of relevant to the triggering event
+	policies, err := policy.Snapshots().Get(event.PoliciesVersion)
+	if err != nil {
+		logger.Errorw("Error getting policies for print_mem_dump event", "error", err)
+		// For fallback, try to use latest polcies
+		policies, err = policy.Snapshots().GetLast()
+		if err != nil {
+			logger.Errorw("Error getting last snapshots policies for print_mem_dump event", "error", err)
+			// Last resort is to use the policies from the config
+			policies = t.config.Policies
+		}
+	}
+	for it := policies.CreateAllIterator(); it.HasNext(); {
 		p := it.Next()
+		// This might break in the future if PrintMemDump will become a dependency of another event.
+		_, isChosen := p.EventsToTrace[events.PrintMemDump]
+		if !isChosen {
+			continue
+		}
 		printMemDumpFilters := p.ArgFilter.GetEventFilters(events.PrintMemDump)
 		if len(printMemDumpFilters) == 0 {
 			errs = append(errs, errfmt.Errorf("policy %d: no address or symbols were provided to print_mem_dump event. "+
