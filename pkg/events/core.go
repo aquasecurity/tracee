@@ -11397,12 +11397,12 @@ var CoreEvents = map[ID]Definition{
 		docPath: "security_alerts/magic_write.md",
 		dependencies: Dependencies{
 			probes: []Probe{
-				{handle: probes.VfsWrite, required: true},
-				{handle: probes.VfsWriteRet, required: true},
-				{handle: probes.VfsWriteV, required: false},
-				{handle: probes.VfsWriteVRet, required: false},
-				{handle: probes.KernelWrite, required: false},
-				{handle: probes.KernelWriteRet, required: false},
+				{handle: probes.VfsWriteMagic, required: true},
+				{handle: probes.VfsWriteMagicRet, required: true},
+				{handle: probes.VfsWriteVMagic, required: false},
+				{handle: probes.VfsWriteVMagicRet, required: false},
+				{handle: probes.KernelWriteMagic, required: false},
+				{handle: probes.KernelWriteMagicRet, required: false},
 			},
 		},
 		sets: []string{},

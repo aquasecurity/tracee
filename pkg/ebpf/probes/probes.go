@@ -39,13 +39,19 @@ const (
 	VfsWriteRet
 	VfsWriteV
 	VfsWriteVRet
+	KernelWrite
+	KernelWriteRet
+	VfsWriteMagic
+	VfsWriteMagicRet
+	VfsWriteVMagic
+	VfsWriteVMagicRet
+	KernelWriteMagic
+	KernelWriteMagicRet
 	SecurityMmapAddr
 	SecurityMmapFile
 	SecurityFileMProtect
 	CommitCreds
 	SwitchTaskNS
-	KernelWrite
-	KernelWriteRet
 	CgroupAttachTask
 	CgroupMkdir
 	CgroupRmdir
