@@ -11,27 +11,29 @@ import (
 )
 
 type StringFilter struct {
-	equal       map[string]struct{}
-	notEqual    map[string]struct{}
-	prefixes    sets.PrefixSet
-	suffixes    sets.SuffixSet
-	contains    map[string]struct{}
-	notPrefixes sets.PrefixSet
-	notSuffixes sets.SuffixSet
-	notContains map[string]struct{}
-	enabled     bool
+	valueHandler func(string) (string, error)
+	equal        map[string]struct{}
+	notEqual     map[string]struct{}
+	prefixes     sets.PrefixSet
+	suffixes     sets.SuffixSet
+	contains     map[string]struct{}
+	notPrefixes  sets.PrefixSet
+	notSuffixes  sets.SuffixSet
+	notContains  map[string]struct{}
+	enabled      bool
 }
 
-func NewStringFilter() *StringFilter {
+func NewStringFilter(valueHandler func(string) (string, error)) *StringFilter {
 	return &StringFilter{
-		equal:       map[string]struct{}{},
-		notEqual:    map[string]struct{}{},
-		prefixes:    sets.NewPrefixSet(),
-		suffixes:    sets.NewSuffixSet(),
-		notPrefixes: sets.NewPrefixSet(),
-		notSuffixes: sets.NewSuffixSet(),
-		contains:    map[string]struct{}{},
-		notContains: map[string]struct{}{},
+		valueHandler: valueHandler,
+		equal:        map[string]struct{}{},
+		notEqual:     map[string]struct{}{},
+		prefixes:     sets.NewPrefixSet(),
+		suffixes:     sets.NewSuffixSet(),
+		notPrefixes:  sets.NewPrefixSet(),
+		notSuffixes:  sets.NewSuffixSet(),
+		contains:     map[string]struct{}{},
+		notContains:  map[string]struct{}{},
 	}
 }
 
@@ -110,8 +112,19 @@ func (f *StringFilter) Parse(operatorAndValues string) error {
 
 	values := strings.Split(valuesString, ",")
 
-	for _, val := range values {
-		err := f.add(val, stringToOperator(operatorString))
+	var (
+		val string
+		err error
+	)
+	for _, val = range values {
+		if f.valueHandler != nil {
+			val, err = f.valueHandler(val)
+			if err != nil {
+				return errfmt.WrapError(err)
+			}
+		}
+
+		err = f.add(val, stringToOperator(operatorString))
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -242,7 +255,7 @@ func (f *StringFilter) Clone() utils.Cloner {
 		return nil
 	}
 
-	n := NewStringFilter()
+	n := NewStringFilter(f.valueHandler)
 
 	maps.Copy(n.equal, f.equal)
 	maps.Copy(n.notEqual, f.notEqual)
