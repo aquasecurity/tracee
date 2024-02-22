@@ -610,6 +610,7 @@ func (t *Tracee) initDerivationTable() error {
 	shouldSubmit := func(id events.ID) func() bool {
 		return func() bool { return t.eventsState[id].Submit > 0 }
 	}
+	symbolsCollisions := derive.SymbolsCollision(t.contSymbolsLoader, t.config.Policies)
 
 	t.eventDerivations = derive.Table{
 		events.CgroupMkdir: {
@@ -651,20 +652,14 @@ func (t *Tracee) initDerivationTable() error {
 				),
 			},
 			events.SymbolsCollision: {
-				Enabled: shouldSubmit(events.SymbolsCollision),
-				DeriveFunction: derive.SymbolsCollision(
-					t.contSymbolsLoader,
-					t.config.Policies,
-				),
+				Enabled:        shouldSubmit(events.SymbolsCollision),
+				DeriveFunction: symbolsCollisions,
 			},
 		},
 		events.SchedProcessExec: {
 			events.SymbolsCollision: {
-				Enabled: shouldSubmit(events.SymbolsCollision),
-				DeriveFunction: derive.SymbolsCollision(
-					t.contSymbolsLoader,
-					t.config.Policies,
-				),
+				Enabled:        shouldSubmit(events.SymbolsCollision),
+				DeriveFunction: symbolsCollisions,
 			},
 		},
 		events.SecuritySocketConnect: {
