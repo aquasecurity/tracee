@@ -18,7 +18,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
-	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/pkg/utils/proc"
 )
 
@@ -83,209 +82,6 @@ var (
 		PoliciesConfigMap: PoliciesConfigVersion,
 	}
 )
-
-// equality mirrors the C struct equality (eq_t).
-// Check it for more info.
-type equality struct {
-	equalInPolicies       uint64
-	equalitySetInPolicies uint64
-}
-
-const (
-	// 8 bytes for equalInPolicies and 8 bytes for equalitySetInPolicies
-	equalityValueSize = 16
-)
-
-// filtersEqualities stores the equalities for each filter in the policies
-type filtersEqualities struct {
-	uidEqualities      map[uint64]equality
-	pidEqualities      map[uint64]equality
-	mntNSEqualities    map[uint64]equality
-	pidNSEqualities    map[uint64]equality
-	cgroupIdEqualities map[uint64]equality
-	utsEqualities      map[string]equality
-	commEqualities     map[string]equality
-	binaryEqualities   map[filters.NSBinary]equality
-}
-
-func (ps *Policies) computeProcTreeEqualities(eqs map[uint64]equality) {
-	for p := range ps.filterEnabledPoliciesMap {
-		policyID := uint(p.ID)
-
-		// ProcessTreeFilters equalities
-		procTreeEqualities := p.ProcessTreeFilter.Equalities()
-		for pid := range procTreeEqualities.NotEqual {
-			eq := eqs[uint64(pid)]
-			// NotEqual == 0, so clear n bitmap bit
-			utils.ClearBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			eqs[uint64(pid)] = eq
-		}
-		for pid := range procTreeEqualities.Equal {
-			eq := eqs[uint64(pid)]
-			// Equal == 1, so set n bitmap bit
-			utils.SetBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			eqs[uint64(pid)] = eq
-		}
-	}
-}
-
-// computeFilterEqualities computes the equalities for each filter in the policies
-// updating the provided filtersEqualities struct
-// TODO: refactor this method deduplicating code
-func (ps *Policies) computeFilterEqualities(fEqs *filtersEqualities, cts *containers.Containers) error {
-	for p := range ps.filterEnabledPoliciesMap {
-		policyID := uint(p.ID)
-
-		// UIDFilters equalities
-		uidEqualities := p.UIDFilter.Equalities()
-		for uid := range uidEqualities.NotEqual {
-			eq := fEqs.uidEqualities[uid]
-			// NotEqual == 0, so clear n bitmap bit
-			utils.ClearBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			fEqs.uidEqualities[uid] = eq
-		}
-		for uid := range uidEqualities.Equal {
-			eq := fEqs.uidEqualities[uid]
-			// Equal == 1, so set n bitmap bit
-			utils.SetBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			fEqs.uidEqualities[uid] = eq
-		}
-
-		// PIDFilters equalities
-		pidEqualities := p.PIDFilter.Equalities()
-		for pid := range pidEqualities.NotEqual {
-			eq := fEqs.pidEqualities[pid]
-			// NotEqual == 0, so clear n bitmap bit
-			utils.ClearBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			fEqs.pidEqualities[pid] = eq
-		}
-		for pid := range pidEqualities.Equal {
-			eq := fEqs.pidEqualities[pid]
-			// Equal == 1, so set n bitmap bit
-			utils.SetBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			fEqs.pidEqualities[pid] = eq
-		}
-
-		// MntNSFilters equalities
-		mntNSEqualities := p.MntNSFilter.Equalities()
-		for mntNS := range mntNSEqualities.NotEqual {
-			eq := fEqs.mntNSEqualities[mntNS]
-			// NotEqual == 0, so clear n bitmap bit
-			utils.ClearBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			fEqs.mntNSEqualities[mntNS] = eq
-		}
-		for mntNS := range mntNSEqualities.Equal {
-			eq := fEqs.mntNSEqualities[mntNS]
-			// Equal == 1, so set n bitmap bit
-			utils.SetBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			fEqs.mntNSEqualities[mntNS] = eq
-		}
-
-		// PidNSFilters equalities
-		pidNSEqualities := p.PidNSFilter.Equalities()
-		for pidNS := range pidNSEqualities.NotEqual {
-			eq := fEqs.pidNSEqualities[pidNS]
-			// NotEqual == 0, so clear n bitmap bit
-			utils.ClearBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			fEqs.pidNSEqualities[pidNS] = eq
-		}
-		for pidNS := range pidNSEqualities.Equal {
-			eq := fEqs.pidNSEqualities[pidNS]
-			// Equal == 1, so set n bitmap bit
-			utils.SetBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			fEqs.pidNSEqualities[pidNS] = eq
-		}
-
-		// ContIDFilters equalities
-		contIDEqualities := p.ContIDFilter.Equalities()
-		for contID := range contIDEqualities.NotEqual {
-			cgroupIDs, err := cts.FindContainerCgroupID32LSB(contID)
-			if err != nil {
-				return err
-			}
-
-			eq := fEqs.cgroupIdEqualities[uint64(cgroupIDs[0])]
-			// NotEqual == 0, so clear n bitmap bit
-			utils.ClearBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			fEqs.cgroupIdEqualities[uint64(cgroupIDs[0])] = eq
-		}
-		for contID := range contIDEqualities.Equal {
-			cgroupIDs, err := cts.FindContainerCgroupID32LSB(contID)
-			if err != nil {
-				return err
-			}
-
-			eq := fEqs.cgroupIdEqualities[uint64(cgroupIDs[0])]
-			// Equal == 1, so set n bitmap bit
-			utils.SetBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			fEqs.cgroupIdEqualities[uint64(cgroupIDs[0])] = eq
-		}
-
-		// UTSFilters equalities
-		utsEqualities := p.UTSFilter.Equalities()
-		for uts := range utsEqualities.NotEqual {
-			eq := fEqs.utsEqualities[uts]
-			// NotEqual == 0, so clear n bitmap bit
-			utils.ClearBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			fEqs.utsEqualities[uts] = eq
-		}
-		for uts := range utsEqualities.Equal {
-			eq := fEqs.utsEqualities[uts]
-			// Equal == 1, so set n bitmap bit
-			utils.SetBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			fEqs.utsEqualities[uts] = eq
-		}
-
-		// CommFilters equalities
-		commEqualities := p.CommFilter.Equalities()
-		for comm := range commEqualities.NotEqual {
-			eq := fEqs.commEqualities[comm]
-			// NotEqual == 0, so clear n bitmap bit
-			utils.ClearBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			fEqs.commEqualities[comm] = eq
-		}
-		for comm := range commEqualities.Equal {
-			eq := fEqs.commEqualities[comm]
-			// Equal == 1, so set n bitmap bit
-			utils.SetBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			fEqs.commEqualities[comm] = eq
-		}
-		// BinaryFilters equalities
-		binaryEqualities := p.BinaryFilter.Equalities()
-		for binaryNS := range binaryEqualities.NotEqual {
-			eq := fEqs.binaryEqualities[binaryNS]
-			// NotEqual == 0, so clear n bitmap bit
-			utils.ClearBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			fEqs.binaryEqualities[binaryNS] = eq
-		}
-		for binaryNS := range binaryEqualities.Equal {
-			eq := fEqs.binaryEqualities[binaryNS]
-			// Equal == 1, so set n bitmap bit
-			utils.SetBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			fEqs.binaryEqualities[binaryNS] = eq
-		}
-	}
-
-	return nil
-}
 
 // createNewInnerMap creates a new map for the given map name and version.
 func createNewInnerMap(m *bpf.Module, mapName string, mapVersion uint16) (*bpf.BPFMapLow, error) {
@@ -554,7 +350,7 @@ func (ps *Policies) populateStringFilterBPF(strEqualities map[string]equality, i
 }
 
 // populateProcTreeFilterBPF updates the BPF maps for the given process tree equalities.
-func (ps *Policies) populateProcTreeFilterBPF(procTreeEqualities map[uint64]equality, innerMapName string) error {
+func (ps *Policies) populateProcTreeFilterBPF(procTreeEqualities map[uint32]equality, innerMapName string) error {
 	// ProcessTree equality
 	// 1. process_tree_filter  u32, eq_t
 
@@ -581,7 +377,7 @@ func (ps *Policies) populateProcTreeFilterBPF(procTreeEqualities map[uint64]equa
 
 	// First, update BPF for provided pids equalities
 	for pid, eq := range procTreeEqualities {
-		if err := updateBPF(uint32(pid), eq); err != nil {
+		if err := updateBPF(pid, eq); err != nil {
 			return err
 		}
 	}
@@ -628,7 +424,7 @@ func (ps *Policies) populateProcTreeFilterBPF(procTreeEqualities map[uint64]equa
 			}
 
 			// if the parent pid is in the provided pids, update BPF with its child pid
-			if eq, ok := procTreeEqualities[uint64(ppid)]; ok {
+			if eq, ok := procTreeEqualities[uint32(ppid)]; ok {
 				_ = updateBPF(uint32(pid), eq)
 				return
 			}
@@ -745,7 +541,7 @@ func (ps *Policies) PopulateProcessTreeBPF() error {
 	defer ps.rwmu.Unlock()
 
 	// ProcessTreeFilters equalities
-	procTreeEqualities := make(map[uint64]equality)
+	procTreeEqualities := make(map[uint32]equality)
 	ps.computeProcTreeEqualities(procTreeEqualities)
 
 	// Update ProcessTree equalities filter map
