@@ -3345,6 +3345,12 @@ statfunc int do_vfs_write_magic_return(struct pt_regs *ctx, bool is_buf)
         return 0;
     }
 
+    u32 bytes_written = PT_REGS_RC(ctx);
+    if (bytes_written == 0) {
+        del_args(MAGIC_WRITE);
+        return 0;
+    }
+
     io_data_t io_data;
     file_info_t file_info;
 
@@ -3358,8 +3364,6 @@ statfunc int do_vfs_write_magic_return(struct pt_regs *ctx, bool is_buf)
     // Extract device id, inode number, and pos (offset)
     file_info.id.device = get_dev_from_file(file);
     file_info.id.inode = get_inode_nr_from_file(file);
-
-    u32 bytes_written = PT_REGS_RC(ctx);
 
     u32 header_bytes = FILE_MAGIC_HDR_SIZE;
     if (header_bytes > bytes_written)
