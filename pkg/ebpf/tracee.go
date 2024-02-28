@@ -1474,7 +1474,7 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 // userland process itself, and not from the kernel. These events usually serve as informational
 // events for the signatures engine/logic.
 func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
-	var emit uint64
+	var matchedPolicies uint64
 
 	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64, pols *policy.Policies) {
 		event.PoliciesVersion = pols.Version()
@@ -1483,24 +1483,28 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		event.MatchedPolicies = pols.MatchedNames(matchedPolicies)
 	}
 
+	policiesMatch := func(state events.EventState) uint64 {
+		return state.Emit | state.Submit
+	}
+
 	// Initial namespace events
 
-	emit = t.eventsState[events.InitNamespaces].Emit
-	if emit > 0 {
+	matchedPolicies = policiesMatch(t.eventsState[events.InitNamespaces])
+	if matchedPolicies > 0 {
 		systemInfoEvent := events.InitNamespacesEvent()
-		setMatchedPolicies(&systemInfoEvent, emit, t.config.Policies)
+		setMatchedPolicies(&systemInfoEvent, matchedPolicies, t.config.Policies)
 		out <- &systemInfoEvent
 		_ = t.stats.EventCount.Increment()
 	}
 
 	// Initial existing containers events (1 event per container)
 
-	emit = t.eventsState[events.ExistingContainer].Emit
-	if emit > 0 {
+	matchedPolicies = policiesMatch(t.eventsState[events.ExistingContainer])
+	if matchedPolicies > 0 {
 		existingContainerEvents := events.ExistingContainersEvents(t.containers, t.config.NoContainersEnrich)
 		for i := range existingContainerEvents {
 			event := &(existingContainerEvents[i])
-			setMatchedPolicies(event, emit, t.config.Policies)
+			setMatchedPolicies(event, matchedPolicies, t.config.Policies)
 			out <- event
 			_ = t.stats.EventCount.Increment()
 		}
@@ -1508,10 +1512,10 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 
 	// Ftrace hook event
 
-	emit = t.eventsState[events.FtraceHook].Emit
-	if emit > 0 {
+	matchedPolicies = policiesMatch(t.eventsState[events.FtraceHook])
+	if matchedPolicies > 0 {
 		ftraceBaseEvent := events.GetFtraceBaseEvent()
-		setMatchedPolicies(ftraceBaseEvent, emit, t.config.Policies)
+		setMatchedPolicies(ftraceBaseEvent, matchedPolicies, t.config.Policies)
 		logger.Debugw("started ftraceHook goroutine")
 
 		// TODO: Ideally, this should be inside the goroutine and be computed before each run,
