@@ -77,6 +77,13 @@ int sys_enter_init(struct bpf_raw_tracepoint_args *ctx)
         task_info = init_task_info(tid, 0);
         if (unlikely(task_info == NULL))
             return 0;
+
+        int zero = 0;
+        config_entry_t *config = bpf_map_lookup_elem(&config_map, &zero);
+        if (unlikely(config == NULL))
+            return 0;
+
+        init_task_context(&task_info->context, task, config->options);
     }
 
     syscall_data_t *sys = &(task_info->syscall_data);
@@ -210,6 +217,13 @@ int sys_exit_init(struct bpf_raw_tracepoint_args *ctx)
         task_info = init_task_info(tid, 0);
         if (unlikely(task_info == NULL))
             return 0;
+
+        int zero = 0;
+        config_entry_t *config = bpf_map_lookup_elem(&config_map, &zero);
+        if (unlikely(config == NULL))
+            return 0;
+
+        init_task_context(&task_info->context, task, config->options);
     }
 
     // check if syscall is being traced and mark that it finished
@@ -349,7 +363,7 @@ SEC("raw_tracepoint/sys_execve")
 int syscall__execve(void *ctx)
 {
     program_data_t p = {};
-    if (!init_program_data(&p, ctx))
+    if (!init_tailcall_program_data(&p, ctx))
         return 0;
 
     if (!p.task_info->syscall_traced)
@@ -360,6 +374,7 @@ int syscall__execve(void *ctx)
     if (!should_submit(SYSCALL_EXECVE, p.event))
         return 0;
 
+    reset_event_args(&p);
     save_str_to_buf(&p.event->args_buf, (void *) sys->args.args[0] /*filename*/, 0);
     save_str_arr_to_buf(&p.event->args_buf, (const char *const *) sys->args.args[1] /*argv*/, 1);
     if (p.config->options & OPT_EXEC_ENV) {
@@ -374,7 +389,7 @@ SEC("raw_tracepoint/sys_execveat")
 int syscall__execveat(void *ctx)
 {
     program_data_t p = {};
-    if (!init_program_data(&p, ctx))
+    if (!init_tailcall_program_data(&p, ctx))
         return 0;
 
     if (!p.task_info->syscall_traced)
@@ -385,6 +400,7 @@ int syscall__execveat(void *ctx)
     if (!should_submit(SYSCALL_EXECVEAT, p.event))
         return 0;
 
+    reset_event_args(&p);
     save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0] /*dirfd*/, sizeof(int), 0);
     save_str_to_buf(&p.event->args_buf, (void *) sys->args.args[1] /*pathname*/, 1);
     save_str_arr_to_buf(&p.event->args_buf, (const char *const *) sys->args.args[2] /*argv*/, 2);
@@ -413,6 +429,7 @@ statfunc int send_socket_dup(program_data_t *p, u64 oldfd, u64 newfd)
 
     // this is a socket - submit the SOCKET_DUP event
 
+    reset_event_args(p);
     save_to_submit_buf(&(p->event->args_buf), &oldfd, sizeof(u32), 0);
     save_to_submit_buf(&(p->event->args_buf), &newfd, sizeof(u32), 1);
 
@@ -458,7 +475,7 @@ SEC("raw_tracepoint/sys_dup")
 int sys_dup_exit_tail(void *ctx)
 {
     program_data_t p = {};
-    if (!init_program_data(&p, ctx))
+    if (!init_tailcall_program_data(&p, ctx))
         return 0;
 
     syscall_data_t *sys = &p.task_info->syscall_data;
@@ -516,7 +533,6 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         return 0;
     }
 
-    task->recompute_scope = true;
     task->context.tid = child_ns_tid;
     task->context.host_tid = child_tid;
     task->context.start_time = child_start_time;
@@ -570,7 +586,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         return 0;
 
     // Always follow every pid that passed the should_trace() checks (follow filter)
-    c_proc_info->follow_in_scopes = p.task_info->matched_scopes;
+    c_proc_info->follow_in_scopes = p.event->context.matched_policies;
 
     // Submit the event
 
@@ -640,7 +656,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 }
 
 // number of iterations - value that the verifier was seen to cope with - the higher, the better
-#define MAX_NUM_MODULES 600
+#define MAX_NUM_MODULES 450
 
 enum
 {
@@ -1028,7 +1044,6 @@ int uprobe_lkm_seeker_submitter(struct pt_regs *ctx)
 
     // Uprobes are not triggered by syscalls, so we need to override the false value.
     p.event->context.syscall = NO_SYSCALL;
-    p.event->context.matched_policies = ULLONG_MAX;
 
     u32 trigger_pid = bpf_get_current_pid_tgid() >> 32;
     // Uprobe was triggered from other tracee instance
@@ -1060,7 +1075,6 @@ int uprobe_lkm_seeker(struct pt_regs *ctx)
 
     // Uprobes are not triggered by syscalls, so we need to override the false value.
     p.event->context.syscall = NO_SYSCALL;
-    p.event->context.matched_policies = ULLONG_MAX;
 
     // uprobe was triggered from other tracee instance
     if (p.config->tracee_pid != p.task_info->context.pid &&
@@ -1214,8 +1228,6 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
         }
     }
 
-    p.task_info->recompute_scope = true; // a new task should always have the scope recomputed
-
     struct linux_binprm *bprm = (struct linux_binprm *) ctx->args[2];
     if (bprm == NULL)
         return -1;
@@ -1234,7 +1246,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     if (!should_trace(&p))
         return 0;
 
-    proc_info->follow_in_scopes = p.task_info->matched_scopes; // follow task for matched scopes
+    proc_info->follow_in_scopes = p.event->context.matched_policies; // follow task for matched scopes
 
     if (!should_submit(SCHED_PROCESS_EXEC, p.event) &&
         (p.config->options & OPT_PROCESS_INFO) != OPT_PROCESS_INFO)
@@ -1417,7 +1429,7 @@ int syscall__accept4(void *ctx)
     del_args(SOCKET_ACCEPT);
 
     program_data_t p = {};
-    if (!init_program_data(&p, ctx))
+    if (!init_tailcall_program_data(&p, ctx))
         return 0;
 
     struct socket *old_sock = (struct socket *) saved_args.args[0];
@@ -1431,6 +1443,7 @@ int syscall__accept4(void *ctx)
         return -1;
     }
 
+    reset_event_args(&p);
     save_to_submit_buf(&p.event->args_buf, (void *) &sockfd, sizeof(u32), 0);
     save_sockaddr_to_buf(&p.event->args_buf, old_sock, 1);
     save_sockaddr_to_buf(&p.event->args_buf, new_sock, 2);
@@ -1578,7 +1591,6 @@ int uprobe_syscall_table_check(struct pt_regs *ctx)
 
     // Uprobes are not triggered by syscalls, so we need to override the false value.
     p.event->context.syscall = NO_SYSCALL;
-    p.event->context.matched_policies = ULLONG_MAX;
 
     syscall_table_check(&p);
 
@@ -1614,7 +1626,6 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
 
     // Uprobes are not triggered by syscalls, so we need to override the false value.
     p.event->context.syscall = NO_SYSCALL;
-    p.event->context.matched_policies = ULLONG_MAX;
 
     // uprobe was triggered from other tracee instance
     if (p.config->tracee_pid != p.task_info->context.pid &&
@@ -1695,7 +1706,6 @@ int uprobe_mem_dump_trigger(struct pt_regs *ctx)
 
     // Uprobes are not triggered by syscalls, so we need to override the false value.
     p.event->context.syscall = NO_SYSCALL;
-    p.event->context.matched_policies = ULLONG_MAX;
 
     // uprobe was triggered from other tracee instance
     if (p.config->tracee_pid != p.task_info->context.pid &&
@@ -3018,6 +3028,9 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
     if (!init_program_data(&p, ctx))
         return 0;
 
+    if (!should_trace(&p))
+        return 0;
+
     if (!should_submit_io_event(event_id, &p)) {
         bpf_tail_call(ctx, &prog_array, tail_call_id);
         return 0;
@@ -3656,7 +3669,7 @@ SEC("raw_tracepoint/sys_init_module")
 int syscall__init_module(void *ctx)
 {
     program_data_t p = {};
-    if (!init_program_data(&p, ctx))
+    if (!init_tailcall_program_data(&p, ctx))
         return 0;
 
     syscall_data_t *sys = &p.task_info->syscall_data;
@@ -5531,25 +5544,15 @@ int BPF_KPROBE(trace_sock_alloc_file)
     if (!is_socket_supported(sock))
         return 0;
 
-    // initialize program data
-
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
-        return 0;
-
-    if (!should_trace(&p))
-        return 0;
-
     struct entry entry = {0};
 
     // save args for retprobe
     entry.args[0] = PT_REGS_PARM1(ctx); // struct socket *sock
-
     entry.args[1] = PT_REGS_PARM2(ctx); // int flags
     entry.args[2] = PT_REGS_PARM2(ctx); // char *dname
 
     // prepare for kretprobe using entrymap
-    u32 host_tid = p.event->context.task.host_tid;
+    u32 host_tid = bpf_get_current_pid_tgid();
     bpf_map_update_elem(&entrymap, &host_tid, &entry, BPF_ANY);
 
     return 0;
@@ -5563,6 +5566,9 @@ int BPF_KRETPROBE(trace_ret_sock_alloc_file)
 
     program_data_t p = {};
     if (!init_program_data(&p, ctx))
+        return 0;
+
+    if (!should_trace(&p))
         return 0;
 
     // pick from entry from entrymap
@@ -5788,6 +5794,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
 
     program_data_t p = {};
     p.scratch_idx = 1;
+    p.event = e;
     if (!init_program_data(&p, ctx))
         return 0;
 
