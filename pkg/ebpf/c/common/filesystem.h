@@ -252,7 +252,7 @@ statfunc void *get_path_str(struct path *path)
         return NULL;
 
     size_t buf_off = get_path_str_buf(path, string_p);
-    return &string_p->buf[buf_off];
+    return &string_p->buf[buf_off & ((MAX_PERCPU_BUFSIZE >> 1) - 1)];
 }
 
 statfunc file_id_t get_file_id(struct file *file)
@@ -279,7 +279,7 @@ statfunc void *get_path_str_cached(struct file *file)
 
         size_t buf_off = get_path_str_buf(__builtin_preserve_access_index(&file->f_path), string_p);
         if (likely(sizeof(string_p->buf) > buf_off + sizeof(path_buf_t))) {
-            path = (path_buf_t *) (&string_p->buf[0] + buf_off);
+            path = (path_buf_t *) (&string_p->buf[buf_off & ((MAX_PERCPU_BUFSIZE >> 1) - 1)]);
             bpf_map_update_elem(&io_file_path_cache_map, &file_id, path, BPF_ANY);
         } else {
             return NULL;

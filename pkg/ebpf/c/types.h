@@ -210,11 +210,8 @@ enum container_state_e
 typedef struct task_info {
     task_context_t context;
     syscall_data_t syscall_data;
-    bool syscall_traced;  // indicates that syscall_data is valid
-    bool recompute_scope; // recompute matched_scopes (new task/context changed/policy changed)
-    u16 policies_version; // version of policies used to match this task
-    u64 matched_scopes;   // cached bitmap of scopes this task matched
-    u8 container_state;   // the state of the container the task resides in
+    bool syscall_traced; // indicates that syscall_data is valid
+    u8 container_state;  // the state of the container the task resides in
 } task_info_t;
 
 typedef struct file_id {

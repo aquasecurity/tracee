@@ -5,6 +5,7 @@
 
 #include <maps.h>
 #include <common/logging.h>
+#include <common/task.h>
 #include <common/common.h>
 
 // PROTOTYPES
@@ -189,7 +190,7 @@ statfunc u64 bool_filter_matches(u64 filter_out_scopes, bool val)
 
 statfunc u64 compute_scopes(program_data_t *p)
 {
-    task_context_t *context = &p->task_info->context;
+    task_context_t *context = &p->event->context.task;
 
     // Don't monitor self
     if (p->config->tracee_pid == context->host_pid)
@@ -254,6 +255,7 @@ statfunc u64 compute_scopes(program_data_t *p)
     }
 
     if (policies_cfg->uid_filter_enabled_scopes) {
+        context->uid = bpf_get_current_uid_gid();
         u64 filter_out_scopes = policies_cfg->uid_filter_out_scopes;
         u64 mask = ~policies_cfg->uid_filter_enabled_scopes;
         u64 max = policies_cfg->uid_max;
@@ -265,24 +267,27 @@ statfunc u64 compute_scopes(program_data_t *p)
     }
 
     if (policies_cfg->mnt_ns_filter_enabled_scopes) {
+        context->mnt_id = get_task_mnt_ns_id(p->event->task);
         u64 filter_out_scopes = policies_cfg->mnt_ns_filter_out_scopes;
         u64 mask = ~policies_cfg->mnt_ns_filter_enabled_scopes;
-        u64 mnt_id = context->mnt_id;
 
         filter_map = get_filter_map(&mnt_ns_filter_version, version);
-        res &= equality_filter_matches(filter_out_scopes, filter_map, &mnt_id) | mask;
+        res &= equality_filter_matches(filter_out_scopes, filter_map, &context->mnt_id) | mask;
     }
 
     if (policies_cfg->pid_ns_filter_enabled_scopes) {
+        context->pid_id = get_task_pid_ns_id(p->event->task);
         u64 filter_out_scopes = policies_cfg->pid_ns_filter_out_scopes;
         u64 mask = ~policies_cfg->pid_ns_filter_enabled_scopes;
-        u64 pid_id = context->pid_id;
 
         filter_map = get_filter_map(&pid_ns_filter_version, version);
-        res &= equality_filter_matches(filter_out_scopes, filter_map, &pid_id) | mask;
+        res &= equality_filter_matches(filter_out_scopes, filter_map, &context->pid_id) | mask;
     }
 
     if (policies_cfg->uts_ns_filter_enabled_scopes) {
+        char *uts_name = get_task_uts_name(p->event->task);
+        if (uts_name)
+            bpf_probe_read_kernel_str(&context->uts_name, TASK_COMM_LEN, uts_name);
         u64 filter_out_scopes = policies_cfg->uts_ns_filter_out_scopes;
         u64 mask = ~policies_cfg->uts_ns_filter_enabled_scopes;
 
@@ -291,6 +296,7 @@ statfunc u64 compute_scopes(program_data_t *p)
     }
 
     if (policies_cfg->comm_filter_enabled_scopes) {
+        bpf_get_current_comm(&context->comm, sizeof(context->comm));
         u64 filter_out_scopes = policies_cfg->comm_filter_out_scopes;
         u64 mask = ~policies_cfg->comm_filter_enabled_scopes;
 
@@ -299,9 +305,9 @@ statfunc u64 compute_scopes(program_data_t *p)
     }
 
     if (policies_cfg->cgroup_id_filter_enabled_scopes) {
+        u32 cgroup_id_lsb = context->cgroup_id;
         u64 filter_out_scopes = policies_cfg->cgroup_id_filter_out_scopes;
         u64 mask = ~policies_cfg->cgroup_id_filter_enabled_scopes;
-        u32 cgroup_id_lsb = context->cgroup_id;
 
         filter_map = get_filter_map(&cgroup_id_filter_version, version);
         res &= equality_filter_matches(filter_out_scopes, filter_map, &cgroup_id_lsb) | mask;
@@ -310,10 +316,9 @@ statfunc u64 compute_scopes(program_data_t *p)
     if (policies_cfg->proc_tree_filter_enabled_scopes) {
         u64 filter_out_scopes = policies_cfg->proc_tree_filter_out_scopes;
         u64 mask = ~policies_cfg->proc_tree_filter_enabled_scopes;
-        u32 host_pid = context->host_pid;
 
         filter_map = get_filter_map(&process_tree_map_version, version);
-        res &= equality_filter_matches(filter_out_scopes, filter_map, &host_pid) | mask;
+        res &= equality_filter_matches(filter_out_scopes, filter_map, &context->host_pid) | mask;
     }
 
     if (policies_cfg->bin_path_filter_enabled_scopes) {
@@ -339,15 +344,8 @@ statfunc u64 compute_scopes(program_data_t *p)
 
 statfunc u64 should_trace(program_data_t *p)
 {
-    // use cache whenever possible
-    if (p->task_info->recompute_scope) {
-        p->task_info->matched_scopes = compute_scopes(p);
-        p->task_info->recompute_scope = false;
-    }
-
-    p->event->context.matched_policies = p->task_info->matched_scopes;
-
-    return p->task_info->matched_scopes;
+    p->event->context.matched_policies = compute_scopes(p);
+    return p->event->context.matched_policies;
 }
 
 statfunc u64 should_submit(u32 event_id, event_data_t *event)
