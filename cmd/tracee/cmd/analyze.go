@@ -142,6 +142,12 @@ tracee analyze --events anti_debugging events.json`,
 		if err != nil {
 			logger.Fatalw("Failed to create engine", "err", err)
 		}
+
+		err = sigEngine.Init()
+		if err != nil {
+			logger.Fatalw("failed to initialize signature engine", "err", err)
+		}
+
 		go sigEngine.Start(ctx)
 
 		// producer
