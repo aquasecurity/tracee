@@ -113,6 +113,7 @@ statfunc proc_info_t *init_proc_info(u32 pid, u32 scratch_idx)
 statfunc void init_task_info_scratch(u32 tid, scratch_t *scratch)
 {
     scratch->task_info.syscall_traced = false;
+    scratch->task_info.policies_version = 0;
     scratch->task_info.recompute_scope = true;
     scratch->task_info.container_state = CONTAINER_UNKNOWN;
     bpf_map_update_elem(&task_info_map, &tid, &scratch->task_info, BPF_NOEXIST);
@@ -192,7 +193,6 @@ statfunc int init_program_data(program_data_t *p, void *ctx)
     // in some places we don't call should_trace() (e.g. sys_exit) which also initializes
     // matched_policies. Use previously found scopes then to initialize it.
     p->event->context.matched_policies = p->task_info->matched_scopes;
-    p->event->context.policies_version = p->config->policies_version;
 
     // check if we need to recompute scope due to context change
     if (context_changed(&p->task_info->context, &p->event->context.task))
@@ -209,6 +209,20 @@ statfunc int init_program_data(program_data_t *p, void *ctx)
     }
 
 out:
+    if (unlikely(p->event->context.policies_version != p->config->policies_version)) {
+        // copy policies_config to event data
+        long ret = bpf_probe_read_kernel(
+            &p->event->policies_config, sizeof(policies_config_t), &p->config->policies_config);
+        if (unlikely(ret != 0))
+            return 0;
+
+        p->event->context.policies_version = p->config->policies_version;
+    }
+    if (p->task_info->policies_version != p->event->context.policies_version) {
+        p->task_info->policies_version = p->event->context.policies_version;
+        p->task_info->recompute_scope = true;
+    }
+
     if (container_lookup_required) {
         u32 cgroup_id_lsb = p->event->context.task.cgroup_id;
         u8 *state = bpf_map_lookup_elem(&containers_map, &cgroup_id_lsb);
