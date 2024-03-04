@@ -12915,7 +12915,12 @@ var CoreEvents = map[ID]Definition{
 		id:      FtraceHook,
 		id32Bit: Sys32Undefined,
 		name:    "ftrace_hook",
-		sets:    []string{},
+		dependencies: Dependencies{
+			ids: []ID{
+				DoInitModule,
+			},
+		},
+		sets: []string{},
 		params: []trace.ArgMeta{
 			{Type: "const char*", Name: "symbol"},
 			{Type: "const char*", Name: "trampoline"},
