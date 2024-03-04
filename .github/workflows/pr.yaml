@@ -326,7 +326,7 @@ jobs:
     needs:
       - generate-matrix
     runs-on: 
-      - graas_ami-${{ matrix.ami }}_${{ github.event.number }}-${{ github.run_id }}_${{ matrix.sufix }}
+      - graas_ami-${{ matrix.ami }}_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ matrix.sufix }}
       - EXECUTION_TYPE=LONG
     strategy:
       matrix:
