@@ -406,6 +406,68 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	t.startTime = uint64(utils.GetStartTimeNS())
 	t.bootTime = uint64(utils.GetBootTimeNS())
 
+	// Decoupled initialization of Policies eBPF
+	err = capabilities.GetInstance().EBPF(
+		func() error {
+			evtsFlags := policies.EventsFlags()
+
+			// Update the kallsyms eBPF map with all symbols from the kallsyms file
+
+			err = t.UpdateKallsyms(evtsFlags)
+			if err != nil {
+				return err
+			}
+
+			// Populate the eBPF maps with the current policies
+
+			polCfg, err := policies.PopulateBPF(
+				t.bpfModule,
+				t.containers,
+				t.eventsParamTypes,
+			)
+			if err != nil {
+				return errfmt.WrapError(err)
+			}
+
+			// Create a new Config with updated policies and update its BPF map
+
+			cfg := t.newConfig(polCfg, policies.Version())
+			if err := cfg.UpdateBPF(t.bpfModule); err != nil {
+				return errfmt.WrapError(err)
+			}
+
+			// Initialize tail call dependencies
+
+			tailCalls := events.Core.GetTailCalls(evtsFlags)
+			for _, tailCall := range tailCalls {
+				err := t.initTailCall(tailCall)
+				if err != nil {
+					return errfmt.Errorf("failed to initialize tail call: %v", err)
+				}
+			}
+
+			// Attach eBPF programs to selected event's probes
+
+			err = policies.AttachProbes(t.probes, t.cgroups)
+			if err != nil {
+				return err
+			}
+
+			// UpdateProcessTreeBPF must be called after AttachProbes.
+			// For more information, see UpdateProcessTreeBPF documentation.
+
+			err = policies.PopulateProcessTreeBPF()
+			if err != nil {
+				return errfmt.WrapError(err)
+			}
+
+			return nil
+		},
+	)
+	if err != nil {
+		logger.Errorw("error initializing Policies eBPF", "error", err)
+	}
+
 	return nil
 }
 
@@ -687,7 +749,7 @@ func (t *Tracee) newConfig(cfg *policy.PoliciesConfig, version uint16) *Config {
 	}
 }
 
-func (t *Tracee) populateBPFMaps(policies *policy.Policies) error {
+func (t *Tracee) populateBPFMaps() error {
 	// Prepare 32bit to 64bit syscall number mapping
 	sys32to64BPFMap, err := t.bpfModule.GetMap("sys_32_to_64_map") // u32, u32
 	if err != nil {
@@ -700,14 +762,6 @@ func (t *Tracee) populateBPFMaps(policies *policy.Policies) error {
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
-	}
-
-	evtsFlags := policies.EventsFlags()
-
-	// Update the kallsyms eBPF map with all symbols from the kallsyms file.
-	err = t.UpdateKallsyms(evtsFlags)
-	if err != nil {
-		return errfmt.WrapError(err)
 	}
 
 	// Initialize kconfig ebpf map with values from the kernel config file.
@@ -746,12 +800,6 @@ func (t *Tracee) populateBPFMaps(policies *policy.Policies) error {
 		if err != nil {
 			return errfmt.Errorf("error updating net config eBPF map: %v", err)
 		}
-	}
-
-	// Initialize config and filter maps
-	err = t.populateFilterMaps(policies, false)
-	if err != nil {
-		return errfmt.WrapError(err)
 	}
 
 	// Populate containers map with existing containers
@@ -808,38 +856,6 @@ func (t *Tracee) populateBPFMaps(policies *policy.Policies) error {
 		return errfmt.WrapError(err)
 	}
 
-	// Initialize tail call dependencies
-	tailCalls := events.Core.GetTailCalls(evtsFlags)
-	for _, tailCall := range tailCalls {
-		err := t.initTailCall(tailCall)
-		if err != nil {
-			return errfmt.Errorf("failed to initialize tail call: %v", err)
-		}
-	}
-
-	return nil
-}
-
-// populateFilterMaps populates the eBPF maps with the given policies
-func (t *Tracee) populateFilterMaps(newPolicies *policy.Policies, updateProcTree bool) error {
-	polCfg, err := newPolicies.UpdateBPF(
-		t.bpfModule,
-		t.containers,
-		t.eventsParamTypes,
-		true,
-		updateProcTree,
-	)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	// Create new config with updated policies and update eBPF map
-
-	cfg := t.newConfig(polCfg, newPolicies.Version())
-	if err := cfg.UpdateBPF(t.bpfModule); err != nil {
-		return errfmt.WrapError(err)
-	}
-
 	return nil
 }
 
@@ -879,7 +895,7 @@ func (t *Tracee) initBPF(policies *policy.Policies) error {
 
 	// Populate eBPF maps with initial data
 
-	err = t.populateBPFMaps(policies)
+	err = t.populateBPFMaps()
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -892,23 +908,6 @@ func (t *Tracee) initBPF(policies *policy.Policies) error {
 		t.config.NoContainersEnrich,
 		t.processTree,
 	)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	// Attach eBPF programs to selected event's probes
-
-	err = policies.AttachProbes(t.probes, t.cgroups)
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	// Update all ProcessTreeFilters after probes are attached: reduce the
-	// possible race window between the bpf programs updating the maps and
-	// userland reading procfs and also dealing with same maps.
-
-	// returned PoliciesConfig is not used here, therefore it's discarded
-	_, err = policies.UpdateBPF(t.bpfModule, t.containers, t.eventsParamTypes, false, true)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

@@ -34,10 +34,10 @@ type Policies struct {
 	rwmu sync.RWMutex
 
 	config                   config.PoliciesConfig
-	version                  uint32                    // updated on snapshot store
-	bpfInnerMaps             map[string]*bpf.BPFMapLow // BPF inner maps
+	version                  uint16                    // updated on snapshot store
+	versionBPFMaps           map[string]*bpf.BPFMapLow // string: inner map name, *bpf.BPFMapLow: map
 	policiesArray            [PolicyMax]*Policy        // underlying filter policies array
-	filterEnabledPoliciesMap map[*Policy]int           // stores only enabled policies
+	filterEnabledPoliciesMap map[*Policy]int           // stores enabled policies
 
 	// computed values
 	evtsFlags                 *eventsFlags
@@ -57,7 +57,7 @@ func NewPolicies(cfg config.PoliciesConfig) *Policies {
 		rwmu:                      sync.RWMutex{},
 		config:                    cfg,
 		version:                   0,
-		bpfInnerMaps:              map[string]*bpf.BPFMapLow{},
+		versionBPFMaps:            map[string]*bpf.BPFMapLow{},
 		policiesArray:             [PolicyMax]*Policy{},
 		filterEnabledPoliciesMap:  map[*Policy]int{},
 		evtsFlags:                 newEventsFlags(),
@@ -98,7 +98,7 @@ func (ps *Policies) Version() uint16 {
 	ps.rwmu.RLock()
 	defer ps.rwmu.RUnlock()
 
-	return uint16(ps.version)
+	return ps.version
 }
 
 // WithContainerFilterEnabled returns a bitmap of policies representing the
@@ -195,7 +195,7 @@ func (ps *Policies) LookupByName(name string) (*Policy, error) {
 	ps.rwmu.RLock()
 	defer ps.rwmu.RUnlock()
 
-	for p := range ps.Map() {
+	for p := range ps.filterEnabledPoliciesMap {
 		if p.Name == name {
 			return p, nil
 		}
@@ -211,7 +211,7 @@ func (ps *Policies) MatchedNames(matched uint64) []string {
 
 	names := []string{}
 
-	for p := range ps.Map() {
+	for p := range ps.filterEnabledPoliciesMap {
 		if utils.HasBit(matched, uint(p.ID)) {
 			names = append(names, p.Name)
 		}
@@ -291,11 +291,6 @@ func (ps *Policies) set(id int, p *Policy) error {
 	ps.compute()
 
 	return nil
-}
-
-// SetVersion sets the version of Policies.
-func (ps *Policies) SetVersion(version uint16) {
-	ps.version = uint32(version)
 }
 
 // isIDInRange returns true if the given ID is in the range of policies.

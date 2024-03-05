@@ -3,9 +3,11 @@ package policy
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
+	"syscall"
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
@@ -21,7 +23,11 @@ import (
 )
 
 const (
+	//
 	// outer maps
+	//
+
+	// filter maps
 	UIDFilterMapVersion         = "uid_filter_version"
 	PIDFilterMapVersion         = "pid_filter_version"
 	MntNSFilterMapVersion       = "mnt_ns_filter_version"
@@ -31,9 +37,15 @@ const (
 	CgroupIdFilterVersion       = "cgroup_id_filter_version"
 	ProcessTreeFilterMapVersion = "process_tree_map_version"
 	BinaryFilterMapVersion      = "binary_filter_version"
-	PoliciesConfigVersion       = "policies_config_version"
 
+	EventsMapVersion      = "events_map_version"
+	PoliciesConfigVersion = "policies_config_version"
+
+	//
 	// inner maps
+	//
+
+	// filter maps
 	UIDFilterMap         = "uid_filter"
 	PIDFilterMap         = "pid_filter"
 	MntNSFilterMap       = "mnt_ns_filter"
@@ -43,9 +55,33 @@ const (
 	CgroupIdFilterMap    = "cgroup_id_filter"
 	ProcessTreeFilterMap = "process_tree_map"
 	BinaryFilterMap      = "binary_filter"
-	PoliciesConfigMap    = "policies_config_map"
+
+	EventsMap         = "events_map"
+	PoliciesConfigMap = "policies_config_map"
+
+	//
+	// other maps
+	//
 
 	ProcInfoMap = "proc_info_map"
+)
+
+var (
+	mapsVersionNames = map[string]string{ // inner map name: outer map name
+		// filter maps
+		UIDFilterMap:         UIDFilterMapVersion,
+		PIDFilterMap:         PIDFilterMapVersion,
+		MntNSFilterMap:       MntNSFilterMapVersion,
+		PidNSFilterMap:       PidNSFilterMapVersion,
+		UTSFilterMap:         UTSFilterMapVersion,
+		CommFilterMap:        CommFilterMapVersion,
+		CgroupIdFilterMap:    CgroupIdFilterVersion,
+		ProcessTreeFilterMap: ProcessTreeFilterMapVersion,
+		BinaryFilterMap:      BinaryFilterMapVersion,
+
+		EventsMap:         EventsMapVersion,
+		PoliciesConfigMap: PoliciesConfigVersion,
+	}
 )
 
 // equality mirrors the C struct equality (eq_t).
@@ -69,15 +105,37 @@ type filtersEqualities struct {
 	cgroupIdEqualities map[uint64]equality
 	utsEqualities      map[string]equality
 	commEqualities     map[string]equality
-	procTreeEqualities map[uint64]equality
 	binaryEqualities   map[filters.NSBinary]equality
+}
+
+func (ps *Policies) computeProcTreeEqualities(eqs map[uint64]equality) {
+	for p := range ps.filterEnabledPoliciesMap {
+		policyID := uint(p.ID)
+
+		// ProcessTreeFilters equalities
+		procTreeEqualities := p.ProcessTreeFilter.Equalities()
+		for pid := range procTreeEqualities.NotEqual {
+			eq := eqs[uint64(pid)]
+			// NotEqual == 0, so clear n bitmap bit
+			utils.ClearBit(&eq.equalInPolicies, policyID)
+			utils.SetBit(&eq.equalitySetInPolicies, policyID)
+			eqs[uint64(pid)] = eq
+		}
+		for pid := range procTreeEqualities.Equal {
+			eq := eqs[uint64(pid)]
+			// Equal == 1, so set n bitmap bit
+			utils.SetBit(&eq.equalInPolicies, policyID)
+			utils.SetBit(&eq.equalitySetInPolicies, policyID)
+			eqs[uint64(pid)] = eq
+		}
+	}
 }
 
 // computeFilterEqualities computes the equalities for each filter in the policies
 // updating the provided filtersEqualities struct
 // TODO: refactor this method deduplicating code
 func (ps *Policies) computeFilterEqualities(fEqs *filtersEqualities, cts *containers.Containers) error {
-	for p := range ps.Map() {
+	for p := range ps.filterEnabledPoliciesMap {
 		policyID := uint(p.ID)
 
 		// UIDFilters equalities
@@ -208,24 +266,6 @@ func (ps *Policies) computeFilterEqualities(fEqs *filtersEqualities, cts *contai
 			utils.SetBit(&eq.equalitySetInPolicies, policyID)
 			fEqs.commEqualities[comm] = eq
 		}
-
-		// ProcessTreeFilters equalities
-		procTreeEqualities := p.ProcessTreeFilter.Equalities()
-		for pid := range procTreeEqualities.NotEqual {
-			eq := fEqs.procTreeEqualities[uint64(pid)]
-			// NotEqual == 0, so clear n bitmap bit
-			utils.ClearBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			fEqs.procTreeEqualities[uint64(pid)] = eq
-		}
-		for pid := range procTreeEqualities.Equal {
-			eq := fEqs.procTreeEqualities[uint64(pid)]
-			// Equal == 1, so set n bitmap bit
-			utils.SetBit(&eq.equalInPolicies, policyID)
-			utils.SetBit(&eq.equalitySetInPolicies, policyID)
-			fEqs.procTreeEqualities[uint64(pid)] = eq
-		}
-
 		// BinaryFilters equalities
 		binaryEqualities := p.BinaryFilter.Equalities()
 		for binaryNS := range binaryEqualities.NotEqual {
@@ -301,7 +341,7 @@ func updateOuterMap(m *bpf.Module, mapName string, mapVersion uint16, innerMap *
 	innerMapFD := uint32(innerMap.FileDescriptor())
 	valuePointer := unsafe.Pointer(&innerMapFD)
 
-	// update version filter map
+	// update the outer map with the new inner map version
 	// - key is the map version
 	// - value is the related filter map FD.
 	if err := outerMap.Update(keyPointer, valuePointer); err != nil {
@@ -311,28 +351,78 @@ func updateOuterMap(m *bpf.Module, mapName string, mapVersion uint16, innerMap *
 	return nil
 }
 
-// createNewFilterMapsVersion creates a new version of the filter maps.
-func (ps *Policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
-	mapsNames := map[string]string{ // inner map name: outer map name
-		UIDFilterMap:         UIDFilterMapVersion,
-		PIDFilterMap:         PIDFilterMapVersion,
-		MntNSFilterMap:       MntNSFilterMapVersion,
-		PidNSFilterMap:       PidNSFilterMapVersion,
-		UTSFilterMap:         UTSFilterMapVersion,
-		CommFilterMap:        CommFilterMapVersion,
-		CgroupIdFilterMap:    CgroupIdFilterVersion,
-		ProcessTreeFilterMap: ProcessTreeFilterMapVersion,
-		BinaryFilterMap:      BinaryFilterMapVersion,
+// deleteMapFromOuterMap deletes the given map version from the outer map.
+func deleteMapFromOuterMap(m *bpf.Module, mapName string, mapVersion uint16) error {
+	outerMap, err := m.GetMap(mapName)
+	if err != nil {
+		return errfmt.WrapError(err)
 	}
 
-	polsVersion := uint16(ps.version)
-	for innerMapName, outerMapName := range mapsNames {
-		// TODO: This only spawns new inner filter maps. Their termination must
-		// be tackled by the versioning mechanism.
-		newInnerMap, err := createNewInnerMap(bpfModule, innerMapName, polsVersion)
+	u16Key := mapVersion
+	keyPointer := unsafe.Pointer(&u16Key)
+
+	// delete the map version from the outer map
+	// - key is the map version
+	if err := outerMap.DeleteKey(keyPointer); err != nil {
+		var errno syscall.Errno
+		if errors.As(err, &errno) && errno == syscall.ENOENT {
+			return nil
+		}
+
+		return errfmt.WrapError(err)
+	}
+
+	return nil
+}
+
+// pruneBPFMaps closes the version BPF maps and deletes the version from the outer maps.
+// It also resets the versionBPFMaps map.
+func (ps *Policies) pruneBPFMaps(m *bpf.Module) {
+	for innerMapName, bm := range ps.versionBPFMaps {
+		outerMapName, ok := mapsVersionNames[innerMapName]
+		if !ok {
+			logger.Errorw(
+				"Outer map name not found for inner map",
+				"inner_map", innerMapName,
+			)
+			continue
+		}
+		if err := deleteMapFromOuterMap(m, outerMapName, ps.version); err != nil {
+			logger.Errorw(
+				"Deleting inner BPF map",
+				"outer_map", outerMapName,
+				"version", ps.version,
+				"error", err,
+			)
+		}
+
+		fd := bm.FileDescriptor()
+		if err := syscall.Close(int(fd)); err != nil {
+			logger.Errorw(
+				"Closing BPF map",
+				"map", bm.Name(),
+				"error", err,
+			)
+		}
+	}
+
+	ps.versionBPFMaps = make(map[string]*bpf.BPFMapLow) // reset the inner maps
+}
+
+// createNewMapsVersionBPF creates a new version of the maps and updates the outer
+// maps with the new inner.
+func (ps *Policies) createNewMapsVersionBPF(
+	bpfModule *bpf.Module,
+	versionNames map[string]string,
+) error {
+	for innerMapName, outerMapName := range versionNames {
+		newInnerMap, err := createNewInnerMap(bpfModule, innerMapName, ps.version)
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
+
+		// store the new filter map version
+		ps.versionBPFMaps[innerMapName] = newInnerMap
 
 		// outerMap maps:
 		// 1. uid_filter_version           u16, uid_filter
@@ -344,39 +434,21 @@ func (ps *Policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
 		// 7. comm_filter_version          u16, comm_filter
 		// 8. process_tree_filter_version  u16, process_tree_filter
 		// 9. binary_filter_version        u16, binary_filter
-		if err := updateOuterMap(bpfModule, outerMapName, polsVersion, newInnerMap); err != nil {
+		// 10. events_map_version          u16, events_map
+		// 11. policies_config_version     u16, policies_config_map
+		if err := updateOuterMap(bpfModule, outerMapName, ps.version, newInnerMap); err != nil {
 			return errfmt.WrapError(err)
 		}
-
-		// store pointer to the new inner map version
-		ps.bpfInnerMaps[innerMapName] = newInnerMap
 	}
 
 	return nil
 }
 
-// createNewEventsMapVersion creates a new version of the events map.
-func (ps *Policies) createNewEventsMapVersion(
-	bpfModule *bpf.Module,
-	eventsParams map[events.ID][]bufferdecoder.ArgType,
-) error {
-	polsVersion := uint16(ps.version)
-	innerMapName := "events_map"
-	outerMapName := "events_map_version"
-
-	// TODO: This only spawns a new inner event map. Their termination must
-	// be tackled by the versioning mechanism.
-	newInnerMap, err := createNewInnerMap(bpfModule, innerMapName, polsVersion)
-	if err != nil {
-		return errfmt.WrapError(err)
+func (ps *Policies) populateEventsMapBPF(eventsParamTypes map[events.ID][]bufferdecoder.ArgType) error {
+	bm, ok := ps.versionBPFMaps[EventsMap]
+	if !ok {
+		return errfmt.Errorf("bpf map not found: %s", EventsMap)
 	}
-
-	if err := updateOuterMap(bpfModule, outerMapName, polsVersion, newInnerMap); err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	// store pointer to the new inner map version
-	ps.bpfInnerMaps[innerMapName] = newInnerMap
 
 	for id, ecfg := range ps.eventsFlags().getAll() {
 		eventConfigVal := make([]byte, 16)
@@ -386,13 +458,13 @@ func (ps *Policies) createNewEventsMapVersion(
 
 		// encoded event's parameter types
 		var paramTypes uint64
-		params := eventsParams[id]
+		params := eventsParamTypes[id]
 		for n, paramType := range params {
 			paramTypes = paramTypes | (uint64(paramType) << (8 * n))
 		}
 		binary.LittleEndian.PutUint64(eventConfigVal[8:16], paramTypes)
 
-		err := newInnerMap.Update(unsafe.Pointer(&id), unsafe.Pointer(&eventConfigVal[0]))
+		err := bm.Update(unsafe.Pointer(&id), unsafe.Pointer(&eventConfigVal[0]))
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -401,8 +473,8 @@ func (ps *Policies) createNewEventsMapVersion(
 	return nil
 }
 
-// updateUIntFilterBPF updates the BPF maps for the given uint equalities.
-func (ps *Policies) updateUIntFilterBPF(uintEqualities map[uint64]equality, innerMapName string) error {
+// populateUIntFilterBPF updates the BPF maps for the given uint equalities.
+func (ps *Policies) populateUIntFilterBPF(uintEqualities map[uint64]equality, innerMapName string) error {
 	// UInt equalities
 	// 1. uid_filter        u32, eq_t
 	// 2. pid_filter        u32, eq_t
@@ -410,17 +482,27 @@ func (ps *Policies) updateUIntFilterBPF(uintEqualities map[uint64]equality, inne
 	// 4. pid_ns_filter     u64, eq_t
 	// 5. cgroup_id_filter  u32, eq_t
 
+	bm, ok := ps.versionBPFMaps[innerMapName]
+	if !ok {
+		return errfmt.Errorf("bpf map not found: %s", innerMapName)
+	}
+
 	for k, v := range uintEqualities {
-		u32Key := uint32(k)
-		u64Key := uint64(k)
-		var keyPointer unsafe.Pointer
+		var (
+			u32Value   uint32
+			u64Value   uint64
+			keyPointer unsafe.Pointer
+		)
+
 		switch innerMapName {
 		case UIDFilterMap, PIDFilterMap, CgroupIdFilterMap:
 			// key is uint32
-			keyPointer = unsafe.Pointer(&u32Key)
+			u32Value = uint32(k)
+			keyPointer = unsafe.Pointer(&u32Value)
 		case MntNSFilterMap, PidNSFilterMap:
 			// key is uint64
-			keyPointer = unsafe.Pointer(&u64Key)
+			u64Value = uint64(k)
+			keyPointer = unsafe.Pointer(&u64Value)
 		}
 
 		eqVal := make([]byte, equalityValueSize)
@@ -429,11 +511,7 @@ func (ps *Policies) updateUIntFilterBPF(uintEqualities map[uint64]equality, inne
 		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalInPolicies)
 		binary.LittleEndian.PutUint64(eqVal[8:16], v.equalitySetInPolicies)
 
-		bpfMap, ok := ps.bpfInnerMaps[innerMapName]
-		if !ok {
-			return errfmt.Errorf("bpf map not found: %s", innerMapName)
-		}
-		if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
+		if err := bm.Update(keyPointer, valuePointer); err != nil {
 			return errfmt.WrapError(err)
 		}
 	}
@@ -445,11 +523,16 @@ const (
 	maxBpfStrFilterSize = 256 // should be at least as big as the bpf map value size
 )
 
-// updateStringFilterBPF updates the BPF maps for the given string equalities.
-func (ps *Policies) updateStringFilterBPF(strEqualities map[string]equality, innerMapName string) error {
+// populateStringFilterBPF updates the BPF maps for the given string equalities.
+func (ps *Policies) populateStringFilterBPF(strEqualities map[string]equality, innerMapName string) error {
 	// String equalities
 	// 1. uts_ns_filter  string_filter_t, eq_t
 	// 2. comm_filter    string_filter_t, eq_t
+
+	bm, ok := ps.versionBPFMaps[innerMapName]
+	if !ok {
+		return errfmt.Errorf("bpf map not found: %s", innerMapName)
+	}
 
 	for k, v := range strEqualities {
 		byteStr := make([]byte, maxBpfStrFilterSize)
@@ -462,11 +545,7 @@ func (ps *Policies) updateStringFilterBPF(strEqualities map[string]equality, inn
 		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalInPolicies)
 		binary.LittleEndian.PutUint64(eqVal[8:16], v.equalitySetInPolicies)
 
-		bpfMap, ok := ps.bpfInnerMaps[innerMapName]
-		if !ok {
-			return errfmt.Errorf("bpf map not found: %s", innerMapName)
-		}
-		if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
+		if err := bm.Update(keyPointer, valuePointer); err != nil {
 			return errfmt.WrapError(err)
 		}
 	}
@@ -474,8 +553,8 @@ func (ps *Policies) updateStringFilterBPF(strEqualities map[string]equality, inn
 	return nil
 }
 
-// updateProcTreeFilterBPF updates the BPF maps for the given process tree equalities.
-func (ps *Policies) updateProcTreeFilterBPF(procTreeEqualities map[uint64]equality, innerMapName string) error {
+// populateProcTreeFilterBPF updates the BPF maps for the given process tree equalities.
+func (ps *Policies) populateProcTreeFilterBPF(procTreeEqualities map[uint64]equality, innerMapName string) error {
 	// ProcessTree equality
 	// 1. process_tree_filter  u32, eq_t
 
@@ -489,11 +568,11 @@ func (ps *Policies) updateProcTreeFilterBPF(procTreeEqualities map[uint64]equali
 		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalInPolicies)
 		binary.LittleEndian.PutUint64(eqVal[8:16], v.equalitySetInPolicies)
 
-		bpfMap, ok := ps.bpfInnerMaps[innerMapName]
+		bm, ok := ps.versionBPFMaps[innerMapName]
 		if !ok {
 			return errfmt.Errorf("bpf map not found: %s", innerMapName)
 		}
-		if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
+		if err := bm.Update(keyPointer, valuePointer); err != nil {
 			return errfmt.WrapError(err)
 		}
 
@@ -568,10 +647,16 @@ const (
 	bpfBinFilterSize  = 264 // the key size of the BPF binary filter map entry
 )
 
-// updateBinaryFilterBPF updates the BPF maps for the given binary equalities.
-func (ps *Policies) updateBinaryFilterBPF(binEqualities map[filters.NSBinary]equality, innerMapName string) error {
+// populateBinaryFilterBPF updates the BPF maps for the given binary equalities.
+func (ps *Policies) populateBinaryFilterBPF(binEqualities map[filters.NSBinary]equality) error {
 	// BinaryNS equality
 	// 1. binary_filter  binary_t, eq_t
+
+	innerMapName := BinaryFilterMap
+	bm, ok := ps.versionBPFMaps[innerMapName]
+	if !ok {
+		return errfmt.Errorf("bpf map not found: %s", innerMapName)
+	}
 
 	for k, v := range binEqualities {
 		if len(k.Path) > maxBpfBinPathSize {
@@ -594,11 +679,7 @@ func (ps *Policies) updateBinaryFilterBPF(binEqualities map[filters.NSBinary]equ
 		binary.LittleEndian.PutUint64(eqVal[0:8], v.equalInPolicies)
 		binary.LittleEndian.PutUint64(eqVal[8:16], v.equalitySetInPolicies)
 
-		bpfMap, ok := ps.bpfInnerMaps[innerMapName]
-		if !ok {
-			return errfmt.Errorf("bpf map not found: %s", innerMapName)
-		}
-		if err := bpfMap.Update(keyPointer, valuePointer); err != nil {
+		if err := bm.Update(keyPointer, valuePointer); err != nil {
 			return errfmt.WrapError(err)
 		}
 	}
@@ -614,10 +695,13 @@ type procInfo struct {
 	binNoMnt       uint32
 }
 
-// populateProcInfoMap populates the ProcInfoMap with the binaries to track.
-// TODO: Should ProcInfoMap be cleared when a Policies new version is created?
-// Or should it be versioned too?
-func populateProcInfoMap(bpfModule *bpf.Module, binEqualities map[filters.NSBinary]equality) error {
+// populateProcInfoMapBPF populates the ProcInfoMap with the binaries to track.
+func populateProcInfoMapBPF(
+	bpfModule *bpf.Module,
+	binEqualities map[filters.NSBinary]equality,
+	newProc bool,
+	followPolicies uint64,
+) error {
 	procInfoMap, err := bpfModule.GetMap(ProcInfoMap)
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -634,11 +718,9 @@ func populateProcInfoMap(bpfModule *bpf.Module, binEqualities map[filters.NSBina
 			binBytes := make([]byte, maxBpfBinPathSize)
 			copy(binBytes, bin.Path)
 			binBytesCopy := (*[maxBpfBinPathSize]byte)(binBytes)
-			// TODO: Default values for newProc and followPolicies are 0 are safe only in
-			// init phase. As Policies are updated at runtime, this is not true anymore.
 			procInfo := procInfo{
-				newProc:        false,
-				followPolicies: 0,
+				newProc:        newProc,
+				followPolicies: followPolicies,
 				mntNS:          bin.MntNS,
 				binaryBytes:    *binBytesCopy,
 				binNoMnt:       0, // always 0, see bin_no_mnt in tracee.bpf.c
@@ -652,126 +734,151 @@ func populateProcInfoMap(bpfModule *bpf.Module, binEqualities map[filters.NSBina
 	return nil
 }
 
-// UpdateBPF updates the BPF maps with the policies filters.
-// createNewMaps indicates whether new maps should be created or not.
-// updateProcTree indicates whether the process tree map should be updated or not.
-func (ps *Policies) UpdateBPF(
-	bpfModule *bpf.Module,
+// PopulateProcessTreeBPF populates the BPF maps with the policies process tree filters.
+//
+// This logic is separated from PopulateBPF because updating the process tree filters
+// needs to occur after the probes are attached. This approach minimizes the potential
+// for race conditions between the BPF programs that are updating the maps and the
+// user space processes that are reading procfs and interacting with the same maps.
+func (ps *Policies) PopulateProcessTreeBPF() error {
+	ps.rwmu.Lock()
+	defer ps.rwmu.Unlock()
+
+	// ProcessTreeFilters equalities
+	procTreeEqualities := make(map[uint64]equality)
+	ps.computeProcTreeEqualities(procTreeEqualities)
+
+	// Update ProcessTree equalities filter map
+	if err := ps.populateProcTreeFilterBPF(procTreeEqualities, ProcessTreeFilterMap); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	return nil
+}
+
+// PopulateBPF creates and populates the current policies version related BPF maps.
+// It must be called only once per policies version change.
+func (ps *Policies) PopulateBPF(
+	m *bpf.Module,
 	cts *containers.Containers,
-	eventsParams map[events.ID][]bufferdecoder.ArgType,
-	createNewMaps bool,
-	updateProcTree bool,
+	eventsParamTypes map[events.ID][]bufferdecoder.ArgType,
 ) (*PoliciesConfig, error) {
 	ps.rwmu.Lock()
 	defer ps.rwmu.Unlock()
 
-	if createNewMaps {
-		// Create new events map version
-		if err := ps.createNewEventsMapVersion(bpfModule, eventsParams); err != nil {
-			return nil, errfmt.WrapError(err)
+	if len(ps.versionBPFMaps) > 0 {
+		return nil, errfmt.Errorf("BPF maps already populated")
+	}
+
+	var (
+		fEqs = &filtersEqualities{
+			uidEqualities:      make(map[uint64]equality),
+			pidEqualities:      make(map[uint64]equality),
+			mntNSEqualities:    make(map[uint64]equality),
+			pidNSEqualities:    make(map[uint64]equality),
+			cgroupIdEqualities: make(map[uint64]equality),
+			utsEqualities:      make(map[string]equality),
+			commEqualities:     make(map[string]equality),
+			binaryEqualities:   make(map[filters.NSBinary]equality),
 		}
-	}
+		pCfgVersion *PoliciesConfig
+		bm          *bpf.BPFMapLow
+		ok          bool
+		err         error
+	)
 
-	fEqs := &filtersEqualities{
-		uidEqualities:      make(map[uint64]equality),
-		pidEqualities:      make(map[uint64]equality),
-		mntNSEqualities:    make(map[uint64]equality),
-		pidNSEqualities:    make(map[uint64]equality),
-		cgroupIdEqualities: make(map[uint64]equality),
-		utsEqualities:      make(map[string]equality),
-		commEqualities:     make(map[string]equality),
-		procTreeEqualities: make(map[uint64]equality),
-		binaryEqualities:   make(map[filters.NSBinary]equality),
-	}
+	//
+	// Create new maps version
+	//
 
-	if err := ps.computeFilterEqualities(fEqs, cts); err != nil {
-		return nil, errfmt.WrapError(err)
-	}
-
-	if createNewMaps {
-		// Create new filter maps version
-		if err := ps.createNewFilterMapsVersion(bpfModule); err != nil {
-			return nil, errfmt.WrapError(err)
-		}
-	}
-
-	// Update UInt equalities filter maps
-	if err := ps.updateUIntFilterBPF(fEqs.uidEqualities, UIDFilterMap); err != nil {
-		return nil, errfmt.WrapError(err)
-	}
-	if err := ps.updateUIntFilterBPF(fEqs.pidEqualities, PIDFilterMap); err != nil {
-		return nil, errfmt.WrapError(err)
-	}
-	if err := ps.updateUIntFilterBPF(fEqs.mntNSEqualities, MntNSFilterMap); err != nil {
-		return nil, errfmt.WrapError(err)
-	}
-	if err := ps.updateUIntFilterBPF(fEqs.pidNSEqualities, PidNSFilterMap); err != nil {
-		return nil, errfmt.WrapError(err)
-	}
-	if err := ps.updateUIntFilterBPF(fEqs.cgroupIdEqualities, CgroupIdFilterMap); err != nil {
-		return nil, errfmt.WrapError(err)
-	}
-
-	// Update String equalities filter maps
-	if err := ps.updateStringFilterBPF(fEqs.utsEqualities, UTSFilterMap); err != nil {
-		return nil, errfmt.WrapError(err)
-	}
-	if err := ps.updateStringFilterBPF(fEqs.commEqualities, CommFilterMap); err != nil {
-		return nil, errfmt.WrapError(err)
-	}
-
-	if updateProcTree {
-		// Update ProcessTree equalities filter map
-		if err := ps.updateProcTreeFilterBPF(fEqs.procTreeEqualities, ProcessTreeFilterMap); err != nil {
-			return nil, errfmt.WrapError(err)
-		}
-	}
-
-	// Update Binary equalities filter map
-	if err := ps.updateBinaryFilterBPF(fEqs.binaryEqualities, BinaryFilterMap); err != nil {
-		return nil, errfmt.WrapError(err)
-	}
-	// Update ProcInfo map (required for binary filters)
-	if err := populateProcInfoMap(bpfModule, fEqs.binaryEqualities); err != nil {
-		return nil, errfmt.WrapError(err)
-	}
-
-	if createNewMaps {
-		// Create the policies config map version
-		//
-		// This must be done after the filter maps have been updated, as the
-		// policies config map contains the filter config computed from the
-		// policies filters.
-		if err := ps.createNewPoliciesConfigMap(bpfModule); err != nil {
-			return nil, errfmt.WrapError(err)
-		}
-	}
-
-	// Update policies config map version
-	pCfg := ps.computePoliciesConfig()
-	if err := pCfg.UpdateBPF(ps.bpfInnerMaps[PoliciesConfigMap]); err != nil {
-		return nil, errfmt.WrapError(err)
-	}
-
-	return pCfg, nil
-}
-
-// createNewPoliciesConfigMap creates a new version of the policies config map
-func (ps *Policies) createNewPoliciesConfigMap(bpfModule *bpf.Module) error {
-	version := uint16(ps.version)
-	newInnerMap, err := createNewInnerMap(bpfModule, PoliciesConfigMap, version)
+	// Create new maps version, including ProcessTreeFilterMapVersion which
+	// is not populated here. It must be populated after the probes are attached by
+	// calling PopulateProcessTreeBPF.
+	err = ps.createNewMapsVersionBPF(m, mapsVersionNames)
 	if err != nil {
-		return errfmt.WrapError(err)
+		goto bailout
 	}
 
-	// policies_config_version  u16, policies_config_map
-	if err := updateOuterMap(bpfModule, PoliciesConfigVersion, version, newInnerMap); err != nil {
-		return errfmt.WrapError(err)
+	//
+	// Populate filter maps
+	//
+
+	// EventsMap (versioned)
+	err = ps.populateEventsMapBPF(eventsParamTypes)
+	if err != nil {
+		goto bailout
 	}
 
-	ps.bpfInnerMaps[PoliciesConfigMap] = newInnerMap
+	err = ps.computeFilterEqualities(fEqs, cts)
+	if err != nil {
+		goto bailout
+	}
 
-	return nil
+	// UInt equalities filter maps (versioned)
+	err = ps.populateUIntFilterBPF(fEqs.uidEqualities, UIDFilterMap)
+	if err != nil {
+		goto bailout
+	}
+	err = ps.populateUIntFilterBPF(fEqs.pidEqualities, PIDFilterMap)
+	if err != nil {
+		goto bailout
+	}
+	err = ps.populateUIntFilterBPF(fEqs.mntNSEqualities, MntNSFilterMap)
+	if err != nil {
+		goto bailout
+	}
+	err = ps.populateUIntFilterBPF(fEqs.pidNSEqualities, PidNSFilterMap)
+	if err != nil {
+		goto bailout
+	}
+	err = ps.populateUIntFilterBPF(fEqs.cgroupIdEqualities, CgroupIdFilterMap)
+	if err != nil {
+		goto bailout
+	}
+
+	// String equalities filter maps (versioned)
+	err = ps.populateStringFilterBPF(fEqs.utsEqualities, UTSFilterMap)
+	if err != nil {
+		goto bailout
+	}
+	err = ps.populateStringFilterBPF(fEqs.commEqualities, CommFilterMap)
+	if err != nil {
+		goto bailout
+	}
+
+	// Binary equalities filter map (versioned)
+	err = ps.populateBinaryFilterBPF(fEqs.binaryEqualities)
+	if err != nil {
+		goto bailout
+	}
+	// Populate ProcInfoMap (required by binary filter map)
+	// NOTE: this must be populated after the binary filter map
+	err = populateProcInfoMapBPF(m, fEqs.binaryEqualities, false, PolicyNone)
+	if err != nil {
+		goto bailout
+	}
+
+	//
+	// Populate policies config map (final step)
+	//
+
+	// PoliciesConfigMap (versioned)
+	bm, ok = ps.versionBPFMaps[PoliciesConfigMap]
+	if !ok {
+		err = errfmt.Errorf("bpf map not found: %s", PoliciesConfigMap)
+		goto bailout
+	}
+	pCfgVersion = ps.computePoliciesConfig()
+	err = pCfgVersion.populateBPF(bm)
+	if err != nil {
+		goto bailout
+	}
+
+	return pCfgVersion, nil
+
+bailout:
+	ps.pruneBPFMaps(m)
+	return nil, errfmt.WrapError(err)
 }
 
 // PoliciesConfig mirrors the C struct policies_config (policies_config_t).
@@ -813,7 +920,7 @@ type PoliciesConfig struct {
 	PidMin uint64
 }
 
-func (pc *PoliciesConfig) UpdateBPF(bpfConfigMap *bpf.BPFMapLow) error {
+func (pc *PoliciesConfig) populateBPF(bpfConfigMap *bpf.BPFMapLow) error {
 	if bpfConfigMap == nil {
 		return errfmt.Errorf("bpfConfigMap is nil")
 	}
@@ -830,7 +937,7 @@ func (pc *PoliciesConfig) UpdateBPF(bpfConfigMap *bpf.BPFMapLow) error {
 func (ps *Policies) computePoliciesConfig() *PoliciesConfig {
 	cfg := &PoliciesConfig{}
 
-	for p := range ps.Map() {
+	for p := range ps.filterEnabledPoliciesMap {
 		offset := p.ID
 
 		// filter enabled policies bitmap

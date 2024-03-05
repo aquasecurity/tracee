@@ -41,7 +41,7 @@ func (ps *Policies) calculateGlobalMinMax() {
 		pidMaxFilterableInUserland bool
 	)
 
-	for p := range ps.Map() {
+	for p := range ps.filterEnabledPoliciesMap {
 		policyCount++
 
 		if p.UIDFilter.Enabled() {

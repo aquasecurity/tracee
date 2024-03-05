@@ -78,7 +78,7 @@ func (s *snapshots) Store(ps *Policies) {
 		s.lastVersion++
 	}
 
-	ps.SetVersion(s.lastVersion)
+	ps.version = s.lastVersion
 
 	snap := &snapshot{
 		time:     time.Now(),
