@@ -15,7 +15,11 @@ import (
 var maxKsymNameLen = 64 // Most match the constant in the bpf code
 var globalSymbolOwner = "system"
 
-func (t *Tracee) UpdateKallsyms() error {
+// TODO: If it depends on events states, "ksymbols_map" could probably be versioned
+// and reside in the `policy` package.
+// Other change would be to make `UpdateKallsyms` receiving a list of symbols to load
+// instead of the events states.
+func (t *Tracee) UpdateKallsyms(evtsFlags events.EventsFlags) error {
 	// NOTE: Make sure to refresh the kernel symbols table before updating the eBPF map.
 
 	// Find the eBPF map.
@@ -29,12 +33,12 @@ func (t *Tracee) UpdateKallsyms() error {
 		return events.Core.GetDefinitionByID(id).GetDependencies().GetKSymbols()
 	}
 
-	// Get the symbols all events being traced require (t.eventsState already
+	// Get the symbols all events being traced require (evtsFlags already
 	// includes dependent events, no need to recurse again).
 
 	var allReqSymbols []string
 
-	for evtID := range t.eventsState {
+	for evtID := range evtsFlags.GetAll() {
 		for _, symDep := range evtDefSymDeps(evtID) {
 			allReqSymbols = append(allReqSymbols, symDep.GetSymbolName())
 		}

@@ -107,33 +107,6 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	}
 	cfg.Capabilities = &capsCfg
 
-	// Filter command line flags
-
-	var policyScopeMap flags.PolicyScopeMap
-	var policyEventsMap flags.PolicyEventMap
-
-	policyScopeMap, err = flags.PrepareScopeMapFromFlags(c.StringSlice("scope"))
-	if err != nil {
-		return runner, err
-	}
-
-	policyEventsMap, err = flags.PrepareEventMapFromFlags(c.StringSlice("events"))
-	if err != nil {
-		return runner, err
-	}
-
-	policies, err := flags.CreatePolicies(policyScopeMap, policyEventsMap, false)
-	if err != nil {
-		return runner, err
-	}
-	cfg.Policies = policies
-	policy.Snapshots().Store(cfg.Policies)
-
-	broadcast, err := printer.NewBroadcast(output.PrinterConfigs, cmd.GetContainerMode(cfg))
-	if err != nil {
-		return runner, err
-	}
-
 	// Check kernel lockdown
 
 	lockdown, err := helpers.Lockdown()
@@ -185,8 +158,44 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 
 	runner.HTTPServer = httpServer
 	runner.TraceeConfig = cfg
-	runner.Printer = broadcast
 	runner.InstallPath = traceeInstallPath
+
+	// Prepare initial policies
+
+	policiesCfg := config.NewPoliciesConfig(cfg)
+
+	// Filter command line flags
+	var policyScopeMap flags.PolicyScopeMap
+	var policyEventsMap flags.PolicyEventMap
+
+	policyScopeMap, err = flags.PrepareScopeMapFromFlags(c.StringSlice("scope"))
+	if err != nil {
+		return runner, err
+	}
+
+	policyEventsMap, err = flags.PrepareEventMapFromFlags(c.StringSlice("events"))
+	if err != nil {
+		return runner, err
+	}
+
+	policies, err := flags.CreatePolicies(policiesCfg, policyScopeMap, policyEventsMap, false)
+	if err != nil {
+		return runner, err
+	}
+
+	policy.Snapshots().Store(policies) // store initial policies snapshot
+
+	// Create broadcast printer
+
+	p, err := printer.NewBroadcast(
+		output.PrinterConfigs,
+		cmd.GetContainerMode(policies.ContainerFilterEnabled(), cfg.NoContainersEnrich),
+	)
+	if err != nil {
+		return runner, err
+	}
+
+	runner.Printer = p
 
 	return runner, nil
 }

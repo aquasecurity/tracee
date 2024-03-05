@@ -83,7 +83,7 @@ func TestPolicyManagerEnableAndDisableRuleConcurrent(t *testing.T) {
 
 	wg.Add(1)
 	go func() {
-		for i := 0; i < policy.MaxPolicies; i++ {
+		for i := 0; i < policy.PolicyMax; i++ {
 			for _, e := range eventsToEnable {
 				policyManager.EnableRule(i, e)
 			}
@@ -93,7 +93,7 @@ func TestPolicyManagerEnableAndDisableRuleConcurrent(t *testing.T) {
 
 	wg.Add(1)
 	go func() {
-		for i := 0; i < policy.MaxPolicies; i++ {
+		for i := 0; i < policy.PolicyMax; i++ {
 			for _, e := range eventsToDisable {
 				policyManager.DisableRule(i, e)
 			}
@@ -103,12 +103,12 @@ func TestPolicyManagerEnableAndDisableRuleConcurrent(t *testing.T) {
 
 	wg.Wait()
 
-	for i := 0; i < policy.MaxPolicies; i++ {
+	for i := 0; i < policy.PolicyMax; i++ {
 		for _, e := range eventsToEnable {
-			assert.True(t, policyManager.IsRuleEnabled(policy.AllPoliciesOn, e))
+			assert.True(t, policyManager.IsRuleEnabled(policy.PolicyAll, e))
 		}
 		for _, e := range eventsToDisable {
-			assert.False(t, policyManager.IsRuleEnabled(policy.AllPoliciesOn, e))
+			assert.False(t, policyManager.IsRuleEnabled(policy.PolicyAll, e))
 		}
 	}
 }
@@ -182,7 +182,7 @@ func TestPolicyManagerEnableAndDisableEventConcurrent(t *testing.T) {
 
 	wg.Add(1)
 	go func() {
-		for i := 0; i < policy.MaxPolicies; i++ {
+		for i := 0; i < policy.PolicyMax; i++ {
 			for _, e := range eventsToEnable {
 				policyManager.EnableEvent(e)
 			}
@@ -192,7 +192,7 @@ func TestPolicyManagerEnableAndDisableEventConcurrent(t *testing.T) {
 
 	wg.Add(1)
 	go func() {
-		for i := 0; i < policy.MaxPolicies; i++ {
+		for i := 0; i < policy.PolicyMax; i++ {
 			for _, e := range eventsToDisable {
 				policyManager.DisableEvent(e)
 			}
@@ -202,7 +202,7 @@ func TestPolicyManagerEnableAndDisableEventConcurrent(t *testing.T) {
 
 	wg.Wait()
 
-	for i := 0; i < policy.MaxPolicies; i++ {
+	for i := 0; i < policy.PolicyMax; i++ {
 		for _, e := range eventsToEnable {
 			assert.True(t, policyManager.IsEventEnabled(e))
 		}

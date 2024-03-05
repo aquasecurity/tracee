@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
@@ -21,8 +22,8 @@ func PrepareFilterMapsFromPolicies(policies []k8s.PolicyInterface) (PolicyScopeM
 		return nil, nil, errfmt.Errorf("no policies provided")
 	}
 
-	if len(policies) > policy.MaxPolicies {
-		return nil, nil, errfmt.Errorf("too many policies provided, there is a limit of %d policies", policy.MaxPolicies)
+	if len(policies) > policy.PolicyMax {
+		return nil, nil, errfmt.Errorf("too many policies provided, there is a limit of %d policies", policy.PolicyMax)
 	}
 
 	policyNames := make(map[string]bool)
@@ -101,7 +102,7 @@ func PrepareFilterMapsFromPolicies(policies []k8s.PolicyInterface) (PolicyScopeM
 }
 
 // CreatePolicies creates a Policies object from the scope and events maps.
-func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMap, newBinary bool) (*policy.Policies, error) {
+func CreatePolicies(cfg config.PoliciesConfig, policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMap, newBinary bool) (*policy.Policies, error) {
 	eventsNameToID := events.Core.NamesToIDs()
 	// remove internal events since they shouldn't be accessible by users
 	for event, id := range eventsNameToID {
@@ -110,7 +111,7 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 		}
 	}
 
-	policies := policy.NewPolicies()
+	policies := policy.NewPolicies(cfg)
 	for policyIdx, policyScopeFilters := range policyScopeMap {
 		p := policy.NewPolicy()
 		p.ID = policyIdx

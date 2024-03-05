@@ -1711,18 +1711,25 @@ func Test_EventFilters(t *testing.T) {
 			coolDown(t, tc.coolDown)
 
 			// prepare tracee config
-			config := config.Config{
+			cfg := config.Config{
 				Capabilities: &config.CapabilitiesConfig{
 					BypassCaps: true,
 				},
+				Capture: &config.CaptureConfig{
+					FileWrite: config.FileCaptureConfig{},
+					FileRead:  config.FileCaptureConfig{},
+				},
 			}
-			config.Policies = newPolicies(tc.policyFiles)
-			policy.Snapshots().Store(config.Policies)
+
+			// Prepare policies
+
+			policies := newPolicies(cfg, tc.policyFiles)
+			policy.Snapshots().Store(policies)
 
 			ctx, cancel := context.WithCancel(context.Background())
 
 			// start tracee
-			trc, err := startTracee(ctx, t, config, nil, nil)
+			trc, err := startTracee(ctx, t, cfg, nil, nil)
 			if err != nil {
 				cancel()
 				t.Fatal(err)
@@ -1820,7 +1827,7 @@ func newCmdEvents(runCmd string, waitFor, timeout time.Duration, evts []trace.Ev
 }
 
 // newPolicies creates a new policies object with the given policies files with IDs.
-func newPolicies(polsFilesID []policyFileWithID) *policy.Policies {
+func newPolicies(cfg config.Config, polsFilesID []policyFileWithID) *policy.Policies {
 	var polsFiles []k8s.PolicyInterface
 
 	for _, polFile := range polsFilesID {
@@ -1832,12 +1839,12 @@ func newPolicies(polsFilesID []policyFileWithID) *policy.Policies {
 		panic(err)
 	}
 
-	policies, err := flags.CreatePolicies(policyScopeMap, policyEventMap, true)
+	policies, err := flags.CreatePolicies(config.NewPoliciesConfig(cfg), policyScopeMap, policyEventMap, true)
 	if err != nil {
 		panic(err)
 	}
 
-	policiesWithIDSet := policy.NewPolicies()
+	policiesWithIDSet := policy.NewPolicies(config.NewPoliciesConfig(cfg))
 	for pol := range policies.Map() {
 		pol.ID = polsFilesID[pol.ID].id - 1
 		policiesWithIDSet.Set(pol)

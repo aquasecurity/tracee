@@ -8,13 +8,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
-// TODO: add states to the EventGroup struct (to keep states of events from that group)
-
-type EventState struct {
-	Submit uint64 // should be submitted to userspace (by policies bitmap)
-	Emit   uint64 // should be emitted to the user (by policies bitmap)
-}
-
 // ATTENTION: the definition group is instantiable (all the rest is immutable)
 
 type ByID []Definition
@@ -181,14 +174,14 @@ func (d *DefinitionGroup) IDs32ToIDs() map[ID]ID {
 }
 
 // GetTailCalls returns a list of tailcalls of all definitions in the group (for initialization).
-func (d *DefinitionGroup) GetTailCalls(state map[ID]EventState) []TailCall {
+func (d *DefinitionGroup) GetTailCalls(evtsFlags EventsFlags) []TailCall {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
 	var tailCalls []TailCall
 
 	for evtDefID, evtDef := range d.definitions {
-		if state[evtDefID].Submit > 0 { // only traced events to provide their tailcalls
+		if evtsFlags.Get(evtDefID).ShouldSubmit() { // only traced events to provide their tailcalls
 			tailCalls = append(tailCalls, evtDef.GetDependencies().GetTailCalls()...)
 		}
 	}

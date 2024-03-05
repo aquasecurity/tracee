@@ -205,35 +205,6 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, errors.New("policy and event flags cannot be used together")
 	}
 
-	// Try to get policies from kubernetes CRD, policy files and CLI in that order
-
-	var k8sPolicies []v1beta1.PolicyInterface
-	var policies *policy.Policies
-
-	k8sClient, err := k8s.New()
-	if err == nil {
-		k8sPolicies, err = k8sClient.GetPolicy(c.Context())
-	}
-	if err != nil {
-		logger.Debugw("kubernetes cluster", "error", err)
-	}
-	if len(k8sPolicies) > 0 {
-		logger.Debugw("using policies from kubernetes crd")
-		policies, err = createPoliciesFromK8SPolicy(k8sPolicies)
-	} else if len(policyFlags) > 0 {
-		logger.Debugw("using policies from --policy flag")
-		policies, err = createPoliciesFromPolicyFiles(policyFlags)
-	} else {
-		logger.Debugw("using policies from --scope and --events flag")
-		policies, err = createPoliciesFromCLIFlags(scopeFlags, eventFlags)
-	}
-	if err != nil {
-		return runner, err
-	}
-
-	cfg.Policies = policies
-	policy.Snapshots().Store(cfg.Policies)
-
 	// Output command line flags
 
 	outputFlags, err := GetFlagsFromViper("output")
@@ -246,18 +217,6 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 	cfg.Output = output.TraceeConfig
-
-	if err != nil {
-		return runner, err
-	}
-	cfg.Output = output.TraceeConfig
-
-	// Create printer
-
-	p, err := printer.NewBroadcast(output.PrinterConfigs, cmd.GetContainerMode(cfg))
-	if err != nil {
-		return runner, err
-	}
 
 	// Check kernel lockdown
 
@@ -317,7 +276,6 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	runner.HTTPServer = httpServer
 	runner.GRPCServer = grpcServer
 	runner.TraceeConfig = cfg
-	runner.Printer = p
 	runner.InstallPath = traceeInstallPath
 
 	// parse arguments must be enabled if the rule engine is part of the pipeline
@@ -332,6 +290,49 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		SignatureBufferSize: 1000,
 		DataSources:         dataSources,
 	}
+
+	// Prepare initial policies
+
+	policiesCfg := config.NewPoliciesConfig(cfg)
+
+	// Try to get policies from kubernetes CRD, policy files and CLI in that order
+	var k8sPolicies []v1beta1.PolicyInterface
+	var policies *policy.Policies
+
+	k8sClient, err := k8s.New()
+	if err == nil {
+		k8sPolicies, err = k8sClient.GetPolicy(c.Context())
+	}
+	if err != nil {
+		logger.Debugw("kubernetes cluster", "error", err)
+	}
+	if len(k8sPolicies) > 0 {
+		logger.Debugw("using policies from kubernetes crd")
+		policies, err = createPoliciesFromK8SPolicy(policiesCfg, k8sPolicies)
+	} else if len(policyFlags) > 0 {
+		logger.Debugw("using policies from --policy flag")
+		policies, err = createPoliciesFromPolicyFiles(policiesCfg, policyFlags)
+	} else {
+		logger.Debugw("using policies from --scope and --events flag")
+		policies, err = createPoliciesFromCLIFlags(policiesCfg, scopeFlags, eventFlags)
+	}
+	if err != nil {
+		return runner, err
+	}
+
+	policy.Snapshots().Store(policies) // store initial policies snapshot
+
+	// Create broadcast printer
+
+	p, err := printer.NewBroadcast(
+		output.PrinterConfigs,
+		cmd.GetContainerMode(policies.ContainerFilterEnabled(), cfg.NoContainersEnrich),
+	)
+	if err != nil {
+		return runner, err
+	}
+
+	runner.Printer = p
 
 	return runner, nil
 }

@@ -325,7 +325,7 @@ func (ps *Policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
 		BinaryFilterMap:      BinaryFilterMapVersion,
 	}
 
-	polsVersion := ps.Version()
+	polsVersion := uint16(ps.version)
 	for innerMapName, outerMapName := range mapsNames {
 		// TODO: This only spawns new inner filter maps. Their termination must
 		// be tackled by the versioning mechanism.
@@ -358,10 +358,9 @@ func (ps *Policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
 // createNewEventsMapVersion creates a new version of the events map.
 func (ps *Policies) createNewEventsMapVersion(
 	bpfModule *bpf.Module,
-	eventsState map[events.ID]events.EventState,
 	eventsParams map[events.ID][]bufferdecoder.ArgType,
 ) error {
-	polsVersion := ps.Version()
+	polsVersion := uint16(ps.version)
 	innerMapName := "events_map"
 	outerMapName := "events_map_version"
 
@@ -379,11 +378,11 @@ func (ps *Policies) createNewEventsMapVersion(
 	// store pointer to the new inner map version
 	ps.bpfInnerMaps[innerMapName] = newInnerMap
 
-	for id, ecfg := range eventsState {
+	for id, ecfg := range ps.eventsFlags().getAll() {
 		eventConfigVal := make([]byte, 16)
 
 		// bitmap of policies that require this event to be submitted
-		binary.LittleEndian.PutUint64(eventConfigVal[0:8], ecfg.Submit)
+		binary.LittleEndian.PutUint64(eventConfigVal[0:8], ecfg.GetSubmit())
 
 		// encoded event's parameter types
 		var paramTypes uint64
@@ -659,7 +658,6 @@ func populateProcInfoMap(bpfModule *bpf.Module, binEqualities map[filters.NSBina
 func (ps *Policies) UpdateBPF(
 	bpfModule *bpf.Module,
 	cts *containers.Containers,
-	eventsState map[events.ID]events.EventState,
 	eventsParams map[events.ID][]bufferdecoder.ArgType,
 	createNewMaps bool,
 	updateProcTree bool,
@@ -669,7 +667,7 @@ func (ps *Policies) UpdateBPF(
 
 	if createNewMaps {
 		// Create new events map version
-		if err := ps.createNewEventsMapVersion(bpfModule, eventsState, eventsParams); err != nil {
+		if err := ps.createNewEventsMapVersion(bpfModule, eventsParams); err != nil {
 			return nil, errfmt.WrapError(err)
 		}
 	}
@@ -760,7 +758,7 @@ func (ps *Policies) UpdateBPF(
 
 // createNewPoliciesConfigMap creates a new version of the policies config map
 func (ps *Policies) createNewPoliciesConfigMap(bpfModule *bpf.Module) error {
-	version := ps.Version()
+	version := uint16(ps.version)
 	newInnerMap, err := createNewInnerMap(bpfModule, PoliciesConfigMap, version)
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -917,10 +915,10 @@ func (ps *Policies) computePoliciesConfig() *PoliciesConfig {
 		cfg.EnabledScopes |= 1 << offset
 	}
 
-	cfg.UidMax = ps.UIDFilterMax()
-	cfg.UidMin = ps.UIDFilterMin()
-	cfg.PidMax = ps.PIDFilterMax()
-	cfg.PidMin = ps.PIDFilterMin()
+	cfg.UidMax = ps.uidFilterMax
+	cfg.UidMin = ps.uidFilterMin
+	cfg.PidMax = ps.pidFilterMax
+	cfg.PidMin = ps.pidFilterMin
 
 	return cfg
 }
