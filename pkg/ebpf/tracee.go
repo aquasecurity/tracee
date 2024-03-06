@@ -114,7 +114,7 @@ type Tracee struct {
 	// Streams
 	streamsManager *streams.StreamsManager
 	// policyManager manages policy state
-	policyManager *policyManager
+	policyManager *policy.PolicyManager
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -133,7 +133,7 @@ func New(cfg config.Config) (*Tracee, error) {
 		return nil, errfmt.Errorf("validation error: %v", err)
 	}
 
-	policyManager := newPolicyManager()
+	policyManager := policy.NewPolicyManager()
 
 	// Create Tracee
 
