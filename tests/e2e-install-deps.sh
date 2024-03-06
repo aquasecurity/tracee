@@ -19,15 +19,47 @@ ARCH=$(uname -m)
 disable_unattended_upgrades() {
     # This is a pain point. Make sure to always disable anything touching the
     # dpkg database, otherwise it will fail with locking errors.
+    systemctl stop unattended-upgrades || true
     systemctl disable --now unattended-upgrades || true
     apt-get remove -y --purge unattended-upgrades || true
     apt-get remove -y --purge ubuntu-advantage-tools || true
-    sleep 5 # wait for dpkg lock to be released
-    pkill -SIGQUIT -f unattended-upgrades || true
-    pkill -SIGKILL -f unattended-upgrades || true
-    pkill -SIGQUIT dpkg || true
-    pkill -SIGKILL dpkg || true
 }
+
+wait_for_apt_locks() {
+    local lock_frontend="/var/lib/dpkg/lock-frontend"
+    local lock_lists="/var/lib/apt/lists/lock"
+    local lock_archives="/var/cache/apt/archives/lock"
+    local timeout=20
+    local wait_interval=2
+    local elapsed=0
+
+    while : ; do
+        if ! fuser $lock_frontend >/dev/null 2>&1 &&
+           ! fuser $lock_lists >/dev/null 2>&1 &&
+           ! fuser $lock_archives >/dev/null 2>&1; then
+            echo "All apt locks are free."
+            break
+        fi
+
+        if (( elapsed >= timeout )); then
+            echo "Timed out waiting for apt locks to be released. Attempting to kill locking processes."
+            fuser -k -SIGQUIT $lock_frontend >/dev/null 2>&1 || true
+            fuser -k -SIGQUIT $lock_lists >/dev/null 2>&1 || true
+            fuser -k -SIGQUIT $lock_archives >/dev/null 2>&1 || true
+            sleep 2 # Give some time for processes to terminate gracefully
+            fuser -k -SIGKILL $lock_frontend >/dev/null 2>&1 || true
+            fuser -k -SIGKILL $lock_lists >/dev/null 2>&1 || true
+            fuser -k -SIGKILL $lock_archives >/dev/null 2>&1 || true
+            echo "Forced removal of processes locking apt. System may be in an inconsistent state."
+            break
+        fi
+
+        echo "Waiting for other software managers to finish..."
+        sleep $wait_interval
+        ((elapsed += wait_interval))
+    done
+}
+
 
 remove_llvm_alternatives() {
     update-alternatives --remove-all cc || true
@@ -207,6 +239,7 @@ if [[ $ID == "ubuntu" ]]; then
     export DEBIAN_FRONTEND=noninteractive
 
     disable_unattended_upgrades
+    wait_for_apt_locks
 
     apt-get update
     # apt-get dist-upgrade -y
