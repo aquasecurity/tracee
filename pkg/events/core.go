@@ -11906,6 +11906,10 @@ var CoreEvents = map[ID]Definition{
 		name:    "socket_dup",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SyscallEnter__Internal, required: true},
+				{handle: probes.SyscallExit__Internal, required: true},
+			},
 			tailCalls: []TailCall{
 				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)}},
 				{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)}},

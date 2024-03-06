@@ -403,6 +403,9 @@ int syscall__execveat(void *ctx)
 
 statfunc int send_socket_dup(program_data_t *p, u64 oldfd, u64 newfd)
 {
+    if (!should_trace(p))
+        return 0;
+
     if (!should_submit(SOCKET_DUP, p->event))
         return 0;
 
