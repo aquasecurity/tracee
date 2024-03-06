@@ -31,7 +31,7 @@ jobs:
   alma418:
     if: ${{ github.event.inputs.distro == 'alma418' }}
     runs-on:
-      - graas_ami-0763bdb83bba5e638_${{ github.event.number }}-${{ github.run_id }}_x64c
+      - graas_ami-0763bdb83bba5e638_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_x64c
       - EXECUTION_TYPE=LONG
     timeout-minutes: 50400
     steps:
@@ -44,7 +44,7 @@ jobs:
   alma418-arm64:
     if: ${{ github.event.inputs.distro == 'alma418-arm64' }}
     runs-on:
-      - graas_ami-06152079b6b8d1f26_${{ github.event.number }}-${{ github.run_id }}_arm64c
+      - graas_ami-06152079b6b8d1f26_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_arm64c
       - EXECUTION_TYPE=LONG
     timeout-minutes: 50400
     steps:
@@ -57,7 +57,7 @@ jobs:
   amzn2510:
     if: ${{ github.event.inputs.distro == 'amzn2510' }}
     runs-on:
-      - graas_ami-0b9c1568cd5551408_${{ github.event.number }}-${{ github.run_id }}_x64c
+      - graas_ami-0b9c1568cd5551408_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_x64c
       - EXECUTION_TYPE=LONG
     timeout-minutes: 50400
     steps:
@@ -70,7 +70,7 @@ jobs:
   amzn2510-arm64:
     if: ${{ github.event.inputs.distro == 'amzn2510-arm64' }}
     runs-on:
-      - graas_ami-071a53e3ad06e6a7e_${{ github.event.number }}-${{ github.run_id }}_arm64c
+      - graas_ami-071a53e3ad06e6a7e_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_arm64c
       - EXECUTION_TYPE=LONG
     timeout-minutes: 50400
     steps:
@@ -83,7 +83,7 @@ jobs:
   gke54:
     if: ${{ github.event.inputs.distro == 'gke54' }}
     runs-on:
-      - graas_ami-07803dec079f9dab8_${{ github.event.number }}-${{ github.run_id }}_x64c
+      - graas_ami-07803dec079f9dab8_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_x64c
       - EXECUTION_TYPE=LONG
     timeout-minutes: 50400
     steps:
@@ -96,7 +96,7 @@ jobs:
   gke510:
     if: ${{ github.event.inputs.distro == 'gke510' }}
     runs-on:
-      - graas_ami-03ca8e4a64be4e6e2_${{ github.event.number }}-${{ github.run_id }}_x64c
+      - graas_ami-03ca8e4a64be4e6e2_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_x64c
       - EXECUTION_TYPE=LONG
     timeout-minutes: 50400
     steps:
@@ -109,7 +109,7 @@ jobs:
   gke515:
     if: ${{ github.event.inputs.distro == 'gke515' }}
     runs-on:
-      - graas_ami-0e71c360809862bd7_${{ github.event.number }}-${{ github.run_id }}_x64c
+      - graas_ami-0e71c360809862bd7_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_x64c
       - EXECUTION_TYPE=LONG
     timeout-minutes: 50400
     steps:
@@ -122,7 +122,7 @@ jobs:
   gke515-arm64:
     if: ${{ github.event.inputs.distro == 'gke515-arm64' }}
     runs-on:
-      - graas_ami-0b66222a60f8f97be_${{ github.event.number }}-${{ github.run_id }}_arm64c
+      - graas_ami-0b66222a60f8f97be_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_arm64c
       - EXECUTION_TYPE=LONG
     timeout-minutes: 50400
     steps:
@@ -135,7 +135,7 @@ jobs:
   focal54:
     if: ${{ github.event.inputs.distro == 'focal54' }}
     runs-on:
-      - graas_ami-0d9d35323406a6cad_${{ github.event.number }}-${{ github.run_id }}_x64c
+      - graas_ami-0d9d35323406a6cad_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_x64c
       - EXECUTION_TYPE=LONG
     timeout-minutes: 50400
     steps:
@@ -148,7 +148,7 @@ jobs:
   focal54-arm64:
     if: ${{ github.event.inputs.distro == 'focal54-arm64' }}
     runs-on:
-      - graas_ami-0a241eeae02842052_${{ github.event.number }}-${{ github.run_id }}_arm64c
+      - graas_ami-0a241eeae02842052_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_arm64c
       - EXECUTION_TYPE=LONG
     timeout-minutes: 50400
     steps:
@@ -161,7 +161,7 @@ jobs:
   focal513:
     if: ${{ github.event.inputs.distro == 'focal513' }}
     runs-on:
-      - graas_ami-0c86a42b0f61bd86e_${{ github.event.number }}-${{ github.run_id }}_x64c
+      - graas_ami-0c86a42b0f61bd86e_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_x64c
       - EXECUTION_TYPE=LONG
     timeout-minutes: 50400
     steps:
@@ -174,7 +174,7 @@ jobs:
   focal513-arm64:
     if: ${{ github.event.inputs.distro == 'focal513-arm64' }}
     runs-on:
-      - graas_ami-07de8512322c4a33a_${{ github.event.number }}-${{ github.run_id }}_arm64c
+      - graas_ami-07de8512322c4a33a_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_arm64c
       - EXECUTION_TYPE=LONG
     timeout-minutes: 50400
     steps:
@@ -187,7 +187,7 @@ jobs:
   jammy515:
     if: ${{ github.event.inputs.distro == 'jammy515' }}
     runs-on:
-      - graas_ami-02f0ed24d636fa1a7_${{ github.event.number }}-${{ github.run_id }}_x64c
+      - graas_ami-02f0ed24d636fa1a7_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_x64c
       - EXECUTION_TYPE=LONG
     timeout-minutes: 50400
     steps:
@@ -200,7 +200,7 @@ jobs:
   jammy515-arm64:
     if: ${{ github.event.inputs.distro == 'jammy515-arm64' }}
     runs-on:
-      - graas_ami-0b6d16ce9f5576b40_${{ github.event.number }}-${{ github.run_id }}_arm64c
+      - graas_ami-0b6d16ce9f5576b40_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_arm64c
       - EXECUTION_TYPE=LONG
     timeout-minutes: 50400
     steps:
@@ -213,7 +213,7 @@ jobs:
   jammy519:
     if: ${{ github.event.inputs.distro == 'jammy519' }}
     runs-on:
-      - graas_ami-02ce72d6cd652cbbd_${{ github.event.number }}-${{ github.run_id }}_x64c
+      - graas_ami-02ce72d6cd652cbbd_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_x64c
       - EXECUTION_TYPE=LONG
     timeout-minutes: 50400
     steps:
@@ -226,7 +226,7 @@ jobs:
   jammy519-arm64:
     if: ${{ github.event.inputs.distro == 'jammy519-arm64' }}
     runs-on:
-      - graas_ami-07271263d87a0e883_${{ github.event.number }}-${{ github.run_id }}_arm64c
+      - graas_ami-07271263d87a0e883_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_arm64c
       - EXECUTION_TYPE=LONG
     timeout-minutes: 50400
     steps:
@@ -239,7 +239,7 @@ jobs:
   jammy6127:
     if: ${{ github.event.inputs.distro == 'jammy6127' }}
     runs-on:
-      - graas_ami-0469948ef83c039e9_${{ github.event.number }}-${{ github.run_id }}_x64c
+      - graas_ami-0469948ef83c039e9_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_x64c
       - EXECUTION_TYPE=LONG
     steps:
       - name: "Checkout"
@@ -251,7 +251,7 @@ jobs:
   jammy6301:
     if: ${{ github.event.inputs.distro == 'jammy6301' }}
     runs-on:
-      - graas_ami-05bc39f8670e0c226_${{ github.event.number }}-${{ github.run_id }}_x64c
+      - graas_ami-05bc39f8670e0c226_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_x64c
       - EXECUTION_TYPE=LONG
     steps:
       - name: "Checkout"
