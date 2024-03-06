@@ -9,7 +9,9 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
+	"kernel.org/pub/linux/libs/security/libcap/cap"
 
+	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/counter"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -33,6 +35,7 @@ const (
 
 var (
 	reportedFtraceHooks *lru.Cache[string, []trace.Argument]
+	FtraceWakeupChan    = make(chan struct{})
 )
 
 func init() {
@@ -64,13 +67,17 @@ func FtraceHookEvent(eventsCounter counter.Counter, out chan *trace.Event, baseE
 
 	def := Core.GetDefinitionByID(FtraceHook)
 
+	// Trigger from time to time or on demand
 	for {
 		err := checkFtraceHooks(eventsCounter, out, baseEvent, &def, selfLoadedProgs)
 		if err != nil {
 			logger.Errorw("error occurred checking ftrace hooks", "error", err)
 		}
 
-		time.Sleep(utils.GenerateRandomDuration(10, 300))
+		select {
+		case <-FtraceWakeupChan:
+		case <-time.After(utils.GenerateRandomDuration(10, 300)):
+		}
 	}
 }
 
@@ -78,12 +85,24 @@ func FtraceHookEvent(eventsCounter counter.Counter, out chan *trace.Event, baseE
 // the path with /sys/kernel/debug for older kernels.
 // Assumes debugfs is mounted under /sys/kernel/debug
 func readSysKernelFile(path string) ([]byte, error) {
-	data, err := os.ReadFile(sysKernelPrefix + path)
+	var data []byte
+	err := capabilities.GetInstance().Specific(
+		func() error {
+			var innerErr error
+			data, innerErr = os.ReadFile(sysKernelPrefix + path)
+			if innerErr != nil {
+				data, innerErr = os.ReadFile(sysKernelDebugPrefix + path)
+				if innerErr != nil {
+					return innerErr
+				}
+			}
+			return nil
+		},
+		cap.SYSLOG,
+	)
+
 	if err != nil {
-		data, err = os.ReadFile(sysKernelDebugPrefix + path)
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 
 	return data, nil
@@ -116,8 +135,15 @@ func checkFtraceHooks(eventsCounter counter.Counter, out chan *trace.Event, base
 		return err
 	}
 
+	directArg := false // Direct arg flag
+
 	for _, ftraceLine := range strings.Split(string(ftraceHooksBytes), "\n") {
 		if len(ftraceLine) == 0 {
+			continue
+		}
+
+		if directArg && strings.HasPrefix(ftraceLine, "\tdirect-->") {
+			directArg = false // Turn off flag
 			continue
 		}
 
@@ -126,6 +152,11 @@ func checkFtraceHooks(eventsCounter counter.Counter, out chan *trace.Event, base
 		err = parseEventArgs(ftraceLine, args) // Fill args
 		if err != nil {
 			return err
+		}
+
+		if strings.Contains(args[flagsIndex].Value.(string), "D") {
+			// On some kernels, a line follows after a hook with D (direct) parameter. Prepare to skip it.
+			directArg = true // To be used in the next line (next iteration)
 		}
 
 		causedByTracee, newCount, err := isCausedBySelfLoadedProg(selfLoadedProgs, args[symbolIndex].Value.(string), args[countIndex].Value.(int))
@@ -195,7 +226,7 @@ func parseEventArgs(ftraceLine string, args []trace.Argument) error {
 	ftraceParts := strings.Split(ftraceLine, " ")
 
 	if len(ftraceParts) < 4 {
-		return errors.New("ftrace: unexpected format of file")
+		return errors.New("ftrace: unexpected format of file... " + ftraceLine)
 	}
 
 	args[symbolIndex].Value = ftraceParts[0]
@@ -217,6 +248,11 @@ func parseEventArgs(ftraceLine string, args []trace.Argument) error {
 	return nil
 }
 
+type dupSymbolEntry struct {
+	name     string
+	hookType string
+}
+
 // numKprobesOnSymbol checks if there are multiple kprobes that are ftrace based on the ftrace symbol.
 // The kprobe list file may have the following formats:
 // c015d71a  k  vfs_read+0x0
@@ -229,12 +265,21 @@ func numKprobesOnSymbol(ftracedSymbol string) (int, error) {
 
 	numKprobesOnSymbol := 0
 
+	// There may be multiple symbols in different addresses in the kernel.
+	// When attaching a hook on such symbol, the kernel will attach multiple kprobes at those locations:
+	// ffffffff9fd44d20  k  load_elf_phdrs+0x0    [FTRACE]
+	// ffffffff9fd47b60  k  load_elf_phdrs+0x0    [FTRACE]
+	// so we need to address this situation and not mark it as 2 or more different probes
+	dupSymbolMap := map[dupSymbolEntry]string{}
+
 	for _, kprobeLine := range strings.Split(string(data), "\n") {
 		if len(kprobeLine) == 0 {
 			continue
 		}
 
 		lineSplit := strings.Fields(kprobeLine)
+		addr := lineSplit[0]
+		hookType := lineSplit[1]
 
 		// Verify the current kprobe is on our ftrace symbol
 		kprobedSymbol := lineSplit[2][:strings.Index(lineSplit[2], "+")]
@@ -249,7 +294,23 @@ func numKprobesOnSymbol(ftracedSymbol string) (int, error) {
 
 		for _, status := range lineSplit[3:] {
 			if status == "[FTRACE]" {
-				numKprobesOnSymbol++
+				key := dupSymbolEntry{
+					name:     kprobedSymbol,
+					hookType: hookType,
+				}
+
+				countedSymbolAddr, found := dupSymbolMap[key]
+				if !found {
+					// Not found - inc and add to map
+					numKprobesOnSymbol++
+					dupSymbolMap[key] = addr
+				} else {
+					// Same address - multiple hooks on same symbol - increment counter
+					if addr == countedSymbolAddr {
+						numKprobesOnSymbol++
+					}
+				}
+				break
 			}
 		}
 	}
@@ -338,6 +399,10 @@ func getFtraceFlags(ftraceParts []string, index *int) string {
 	flags := ""
 	for ; *index < len(ftraceParts); *index++ {
 		flag := strings.TrimSpace(ftraceParts[*index])
+		if flag == "" {
+			continue
+		}
+
 		if flag != "R" && flag != "I" && flag != "D" && flag != "O" && flag != "M" {
 			// Assumes we've reached the end of flags section
 			break

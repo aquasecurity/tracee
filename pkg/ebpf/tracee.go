@@ -1417,6 +1417,23 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 		logger.Debugw("self loaded program", "event", event, "program", program)
 	}
 
+	type probeMapKey struct {
+		programName string
+		probeType   probes.ProbeType
+	}
+	// We need to count how many ftrace based hooks will be placed on each symbol.
+	// eventsState may contain duplicate events due to dependencies.
+	// To get the real count, we consider the program name and the prob type.
+	// For example:
+	// event state may contain the following entries:
+	// eventName: do_init_module, programName: trace_do_init_module, probtype: 0, definitionID: 778
+	// eventName: do_init_module, programName: trace_ret_do_init_module, probtype: 1, definitionID: 778
+	// eventName: do_init_module, programName: trace_do_init_module, probtype: 0, definitionID: 760
+	// eventName: do_init_module, programName: trace_ret_do_init_module, probtype: 1, definitionID: 760
+	// Even though there are 4 entries, we can see that only 2 hooks are going to be placed in practice.
+	// The symbol is do_init_module: kprobe with the program trace_do_init_module, kretprobe with the program trace_ret_do_init_module
+	uniqueHooksMap := map[probeMapKey]struct{}{}
+
 	for tr := range t.eventsState {
 		if !events.Core.IsDefined(tr) {
 			continue
@@ -1426,7 +1443,6 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 
 		for _, depProbes := range definition.GetDependencies().GetProbes() {
 			currProbe := t.probes.GetProbeByHandle(depProbes.GetHandle())
-
 			name := ""
 			switch p := currProbe.(type) {
 			case *probes.TraceProbe:
@@ -1438,6 +1454,18 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 						continue
 					}
 				}
+				key := probeMapKey{
+					programName: p.GetProgramName(),
+					probeType:   p.GetProbeType(),
+				}
+
+				_, found := uniqueHooksMap[key]
+				if found { // Already counted this hook
+					continue
+				}
+
+				uniqueHooksMap[key] = struct{}{}
+
 				log(definition.GetName(), p.GetProgramName())
 				name = p.GetEventName()
 			case *probes.Uprobe:
@@ -1445,6 +1473,8 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 				continue
 			case *probes.CgroupProbe:
 				log(definition.GetName(), p.GetProgramName())
+				continue
+			default:
 				continue
 			}
 

@@ -218,8 +218,9 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 	_, okSeqOps := t.eventsState[events.HookedSeqOps]
 	_, okProcFops := t.eventsState[events.HookedProcFops]
 	_, okMemDump := t.eventsState[events.PrintMemDump]
+	_, okFtrace := t.eventsState[events.FtraceHook]
 
-	if !okSyscalls && !okSeqOps && !okProcFops && !okMemDump {
+	if !okSyscalls && !okSeqOps && !okProcFops && !okMemDump && !okFtrace {
 		return nil
 	}
 
@@ -248,6 +249,9 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 		for _, err := range errs {
 			logger.Warnw("Memory dump", "error", err)
 		}
+	}
+	if okFtrace {
+		events.FtraceWakeupChan <- struct{}{}
 	}
 
 	return nil
