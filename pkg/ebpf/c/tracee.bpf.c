@@ -3283,13 +3283,6 @@ statfunc int do_vfs_write_magic_enter(struct pt_regs *ctx)
         return 0;
     }
 
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
-        return 0;
-
-    if (!should_trace(&p))
-        return 0;
-
     args_t args = {};
     args.args[0] = PT_REGS_PARM1(ctx);
     args.args[1] = PT_REGS_PARM2(ctx);
@@ -3312,6 +3305,9 @@ statfunc int do_vfs_write_magic_return(struct pt_regs *ctx, bool is_buf)
 
     program_data_t p = {};
     if (!init_program_data(&p, ctx))
+        return 0;
+
+    if (!should_trace(&p))
         return 0;
 
     if (!should_submit(MAGIC_WRITE, p.event))
