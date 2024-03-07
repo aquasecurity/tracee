@@ -122,8 +122,7 @@ const (
 	FileModifiedRet
 	FdInstall
 	FilpClose
-	InotifyFindInode
-	InotifyFindInodeRet
+	SecurityPathNotify
 	BpfCheck
 	ExecBinprm
 	ExecBinprmRet

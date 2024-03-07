@@ -4981,34 +4981,29 @@ int BPF_KPROBE(trace_ret_file_modified)
     return 0;
 }
 
-SEC("kprobe/inotify_find_inode")
-TRACE_ENT_FUNC(inotify_find_inode, INOTIFY_WATCH);
-
-SEC("kretprobe/inotify_find_inode")
-int BPF_KPROBE(trace_ret_inotify_find_inode)
+SEC("kprobe/security_path_notify")
+int BPF_KPROBE(security_path_notify)
 {
     program_data_t p = {};
     if (!init_program_data(&p, ctx))
         return 0;
 
-    args_t saved_args;
-    if (load_args(&saved_args, INOTIFY_WATCH) != 0)
-        return 0;
-    del_args(INOTIFY_WATCH);
-
-    struct path *path = (struct path *) saved_args.args[1];
-
+    struct path *path = (struct path *)PT_REGS_PARM1(ctx);
     void *path_str = get_path_str(path);
-
     struct dentry *dentry = BPF_CORE_READ(path, dentry);
     u64 inode_nr = get_inode_nr_from_dentry(dentry);
     dev_t dev = get_dev_from_dentry(dentry);
 
+    u64 mask = PT_REGS_PARM2(ctx);
+    unsigned int obj_type = PT_REGS_PARM3(ctx);
+
     save_str_to_buf(&p.event->args_buf, path_str, 0);
     save_to_submit_buf(&p.event->args_buf, &inode_nr, sizeof(unsigned long), 1);
     save_to_submit_buf(&p.event->args_buf, &dev, sizeof(dev_t), 2);
+    save_to_submit_buf(&p.event->args_buf, &mask, sizeof(u64), 3);
+    save_to_submit_buf(&p.event->args_buf, &obj_type, sizeof(unsigned int), 4);
 
-    return events_perf_submit(&p, INOTIFY_WATCH, 0);
+    return events_perf_submit(&p, SECURITY_PATH_NOTIFY, 0);
 }
 
 SEC("kprobe/exec_binprm")

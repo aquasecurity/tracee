@@ -99,7 +99,7 @@ const (
 	VfsUtimes
 	DoTruncate
 	FileModification
-	InotifyWatch
+	SecurityPathNotify
 	SecurityBpfProg
 	ProcessExecuteFailed
 	HiddenKernelModuleSeeker
@@ -12837,22 +12837,23 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 	},
-	InotifyWatch: {
-		id:      InotifyWatch,
+	SecurityPathNotify: {
+		id:      SecurityPathNotify,
 		id32Bit: Sys32Undefined,
-		name:    "inotify_watch",
+		name:    "security_path_notify",
 		version: NewVersion(1, 0, 0),
 		dependencies: Dependencies{
 			probes: []Probe{
-				{handle: probes.InotifyFindInode, required: true},
-				{handle: probes.InotifyFindInodeRet, required: true},
+				{handle: probes.SecurityPathNotify, required: true},
 			},
 		},
-		sets: []string{},
+		sets: []string{"lsm_hooks", "fs_monitor"},
 		params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "unsigned long", Name: "inode"},
 			{Type: "dev_t", Name: "dev"},
+			{Type: "u64", Name: "mask"},
+			{Type: "unsigned int", Name: "obj_type"},
 		},
 	},
 	SecurityBpfProg: {
