@@ -3012,16 +3012,14 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
         // missed entry or not traced
         return 0;
     }
+    del_args(event_id);
 
     program_data_t p = {};
-    if (!init_program_data(&p, ctx)) {
-        del_args(event_id);
+    if (!init_program_data(&p, ctx))
         return 0;
-    }
 
     if (!should_submit_io_event(event_id, &p)) {
         bpf_tail_call(ctx, &prog_array, tail_call_id);
-        del_args(event_id);
         return 0;
     }
 
@@ -3058,7 +3056,7 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
     events_perf_submit(&p, event_id, PT_REGS_RC(ctx));
 
     bpf_tail_call(ctx, &prog_array, tail_call_id);
-    del_args(event_id);
+
     return 0;
 }
 
@@ -3095,23 +3093,19 @@ filter_file_write_capture(program_data_t *p, struct file *file, io_data_t io_dat
 // 2. File matches the filters given
 statfunc int capture_file_write(struct pt_regs *ctx, u32 event_id, bool is_buf)
 {
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx)) {
-        del_args(event_id);
-        return 0;
-    }
-
-    if ((p.config->options & OPT_CAPTURE_FILES_WRITE) == 0) {
-        del_args(event_id);
-        return 0;
-    }
-
     args_t saved_args;
     io_data_t io_data;
 
     if (load_args(&saved_args, event_id) != 0)
         return 0;
     del_args(event_id);
+
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    if ((p.config->options & OPT_CAPTURE_FILES_WRITE) == 0)
+        return 0;
 
     extract_vfs_ret_io_data(ctx, &saved_args, &io_data, is_buf);
     struct file *file = (struct file *) saved_args.args[0];
@@ -3126,7 +3120,6 @@ statfunc int capture_file_write(struct pt_regs *ctx, u32 event_id, bool is_buf)
 
     if (filter_file_write_capture(&p, file, io_data, start_pos)) {
         // There is a filter, but no match
-        del_args(event_id);
         return 0;
     }
     // No filter was given, or filter match - continue
@@ -3161,23 +3154,19 @@ filter_file_read_capture(program_data_t *p, struct file *file, io_data_t io_data
 
 statfunc int capture_file_read(struct pt_regs *ctx, u32 event_id, bool is_buf)
 {
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx)) {
-        del_args(event_id);
-        return 0;
-    }
-
-    if ((p.config->options & OPT_CAPTURE_FILES_READ) == 0) {
-        del_args(event_id);
-        return 0;
-    }
-
     args_t saved_args;
     io_data_t io_data;
 
     if (load_args(&saved_args, event_id) != 0)
         return 0;
     del_args(event_id);
+
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    if ((p.config->options & OPT_CAPTURE_FILES_READ) == 0)
+        return 0;
 
     extract_vfs_ret_io_data(ctx, &saved_args, &io_data, is_buf);
     struct file *file = (struct file *) saved_args.args[0];
@@ -3192,7 +3181,6 @@ statfunc int capture_file_read(struct pt_regs *ctx, u32 event_id, bool is_buf)
 
     if (filter_file_read_capture(&p, file, io_data, start_pos)) {
         // There is a filter, but no match
-        del_args(event_id);
         return 0;
     }
     // No filter was given, or filter match - continue
@@ -3320,23 +3308,18 @@ statfunc int do_vfs_write_magic_return(struct pt_regs *ctx, bool is_buf)
         // missed entry or not traced
         return 0;
     }
+    del_args(MAGIC_WRITE);
 
     program_data_t p = {};
-    if (!init_program_data(&p, ctx)) {
-        del_args(MAGIC_WRITE);
+    if (!init_program_data(&p, ctx))
         return 0;
-    }
 
-    if (!should_submit(MAGIC_WRITE, p.event)) {
-        del_args(MAGIC_WRITE);
+    if (!should_submit(MAGIC_WRITE, p.event))
         return 0;
-    }
 
     u32 bytes_written = PT_REGS_RC(ctx);
-    if (bytes_written == 0) {
-        del_args(MAGIC_WRITE);
+    if (bytes_written == 0)
         return 0;
-    }
 
     io_data_t io_data;
     file_info_t file_info;
@@ -3366,8 +3349,6 @@ statfunc int do_vfs_write_magic_return(struct pt_regs *ctx, bool is_buf)
     save_bytes_to_buf(&(p.event->args_buf), header, header_bytes, 1);
     save_to_submit_buf(&(p.event->args_buf), &file_info.id.device, sizeof(dev_t), 2);
     save_to_submit_buf(&(p.event->args_buf), &file_info.id.inode, sizeof(unsigned long), 3);
-
-    del_args(MAGIC_WRITE);
 
     // Submit magic_write event
     return events_perf_submit(&p, MAGIC_WRITE, bytes_written);
@@ -3468,18 +3449,21 @@ TRACE_ENT_FUNC(do_mmap, DO_MMAP)
 SEC("kretprobe/do_mmap")
 int BPF_KPROBE(trace_ret_do_mmap)
 {
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
-        return 0;
-
-    if (!should_submit(DO_MMAP, p.event))
-        return 0;
-
     args_t saved_args;
     if (load_args(&saved_args, DO_MMAP) != 0) {
         // missed entry or not traced
         return 0;
     }
+
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    if (!should_trace(&p))
+        return 0;
+
+    if (!should_submit(DO_MMAP, p.event))
+        return 0;
 
     dev_t s_dev;
     unsigned long inode_nr;
@@ -4426,18 +4410,24 @@ TRACE_ENT_FUNC(do_init_module, DO_INIT_MODULE);
 SEC("kretprobe/do_init_module")
 int BPF_KPROBE(trace_ret_do_init_module)
 {
+    args_t saved_args;
+    if (load_args(&saved_args, DO_INIT_MODULE) != 0) {
+        // missed entry or not traced
+        return 0;
+    }
+    del_args(DO_INIT_MODULE);
+
     program_data_t p = {};
     if (!init_program_data(&p, ctx))
         return 0;
+
+    if (!should_trace(&p))
+        return 0;
+
     bool should_submit_do_init_module = should_submit(DO_INIT_MODULE, p.event);
     bool should_submit_hidden_module = should_submit(HIDDEN_KERNEL_MODULE_SEEKER, p.event);
     if (!(should_submit_do_init_module || should_submit_hidden_module))
         return 0;
-
-    args_t saved_args;
-    if (load_args(&saved_args, DO_INIT_MODULE) != 0)
-        return 0;
-    del_args(DO_INIT_MODULE);
 
     struct module *mod = (struct module *) saved_args.args[0];
 
@@ -4618,17 +4608,17 @@ TRACE_ENT_FUNC(kallsyms_lookup_name, KALLSYMS_LOOKUP_NAME);
 SEC("kretprobe/kallsyms_lookup_name")
 int BPF_KPROBE(trace_ret_kallsyms_lookup_name)
 {
+    args_t saved_args;
+    if (load_args(&saved_args, KALLSYMS_LOOKUP_NAME) != 0)
+        return 0;
+    del_args(KALLSYMS_LOOKUP_NAME);
+
     program_data_t p = {};
     if (!init_program_data(&p, ctx))
         return 0;
 
     if (!should_trace(&p))
         return 0;
-
-    args_t saved_args;
-    if (load_args(&saved_args, KALLSYMS_LOOKUP_NAME) != 0)
-        return 0;
-    del_args(KALLSYMS_LOOKUP_NAME);
 
     if (!should_submit(KALLSYMS_LOOKUP_NAME, p.event))
         return 0;
@@ -4851,16 +4841,6 @@ int BPF_KPROBE(trace_filp_close)
 
 statfunc int common_file_modification_ent(struct pt_regs *ctx)
 {
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
-        return 0;
-
-    if (!should_trace(&p))
-        return 0;
-
-    if (!should_submit(FILE_MODIFICATION, p.event))
-        return 0;
-
     struct file *file = (struct file *) PT_REGS_PARM1(ctx);
 
     // check if regular file. otherwise don't output the event.
@@ -4881,14 +4861,20 @@ statfunc int common_file_modification_ent(struct pt_regs *ctx)
 
 statfunc int common_file_modification_ret(struct pt_regs *ctx)
 {
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
-        return 0;
-
     args_t saved_args;
     if (load_args(&saved_args, FILE_MODIFICATION) != 0)
         return 0;
     del_args(FILE_MODIFICATION);
+
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    if (!should_trace(&p))
+        return 0;
+
+    if (!should_submit(FILE_MODIFICATION, p.event))
+        return 0;
 
     struct file *file = (struct file *) saved_args.args[0];
     u64 old_ctime = saved_args.args[1];
@@ -4969,14 +4955,20 @@ TRACE_ENT_FUNC(inotify_find_inode, INOTIFY_WATCH);
 SEC("kretprobe/inotify_find_inode")
 int BPF_KPROBE(trace_ret_inotify_find_inode)
 {
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
-        return 0;
-
     args_t saved_args;
     if (load_args(&saved_args, INOTIFY_WATCH) != 0)
         return 0;
     del_args(INOTIFY_WATCH);
+
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    if (!should_trace(&p))
+        return 0;
+
+    if (!should_submit(INOTIFY_WATCH, p.event))
+        return 0;
 
     struct path *path = (struct path *) saved_args.args[1];
 
