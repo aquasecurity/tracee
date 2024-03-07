@@ -102,7 +102,7 @@ func PrepareFilterMapsFromPolicies(policies []k8s.PolicyInterface) (PolicyScopeM
 }
 
 // CreatePolicies creates a Policies object from the scope and events maps.
-func CreatePolicies(cfg config.PoliciesConfig, policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMap, newBinary bool) (*policy.Policies, error) {
+func CreatePolicies(cfg config.PoliciesConfig, policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMap, newBinary bool) (policy.PoliciesBuilder, error) {
 	eventsNameToID := events.Core.NamesToIDs()
 	// remove internal events since they shouldn't be accessible by users
 	for event, id := range eventsNameToID {
@@ -111,18 +111,16 @@ func CreatePolicies(cfg config.PoliciesConfig, policyScopeMap PolicyScopeMap, po
 		}
 	}
 
-	policies := policy.NewPolicies(cfg)
+	policies := policy.NewPoliciesBuilder(cfg)
 	for policyIdx, policyScopeFilters := range policyScopeMap {
-		p := policy.NewPolicy()
-		p.ID = policyIdx
-		p.Name = policyScopeFilters.policyName
+		p := policy.NewPolicyBuilder(policyIdx, policyScopeFilters.policyName)
 
 		for _, scopeFlag := range policyScopeFilters.scopeFlags {
 			// The filters which are more common (container, event, pid, set, uid) can be given using a prefix of them.
 			// Other filters should be given using their full name.
 			// To avoid collisions between filters that share the same prefix, put the filters which should have an exact match first!
 			if scopeFlag.scopeName == "comm" {
-				err := p.CommFilter.Parse(scopeFlag.operatorAndValues)
+				err := p.CommFilter().Parse(scopeFlag.operatorAndValues)
 				if err != nil {
 					return nil, err
 				}
@@ -132,7 +130,7 @@ func CreatePolicies(cfg config.PoliciesConfig, policyScopeMap PolicyScopeMap, po
 			if scopeFlag.scopeName == "exec" || scopeFlag.scopeName == "executable" ||
 				scopeFlag.scopeName == "bin" || scopeFlag.scopeName == "binary" {
 				// TODO: Rename BinaryFilter to ExecutableFilter
-				err := p.BinaryFilter.Parse(scopeFlag.operatorAndValues)
+				err := p.BinaryFilter().Parse(scopeFlag.operatorAndValues)
 				if err != nil {
 					return nil, err
 				}
@@ -141,39 +139,39 @@ func CreatePolicies(cfg config.PoliciesConfig, policyScopeMap PolicyScopeMap, po
 
 			if scopeFlag.scopeName == "container" {
 				if scopeFlag.operator == "not" {
-					err := p.ContFilter.Parse(scopeFlag.full)
+					err := p.ContFilter().Parse(scopeFlag.full)
 					if err != nil {
 						return nil, err
 					}
 					continue
 				}
 				if scopeFlag.operatorAndValues == "=new" {
-					err := p.NewContFilter.Parse("new")
+					err := p.NewContFilter().Parse("new")
 					if err != nil {
 						return nil, err
 					}
 					continue
 				}
 				if scopeFlag.operatorAndValues == "!=new" {
-					err := p.ContFilter.Parse(scopeFlag.scopeName)
+					err := p.ContFilter().Parse(scopeFlag.scopeName)
 					if err != nil {
 						return nil, err
 					}
-					err = p.NewContFilter.Parse("!new")
+					err = p.NewContFilter().Parse("!new")
 					if err != nil {
 						return nil, err
 					}
 					continue
 				}
 				if scopeFlag.operator == "=" {
-					err := p.ContIDFilter.Parse(scopeFlag.operatorAndValues)
+					err := p.ContIDFilter().Parse(scopeFlag.operatorAndValues)
 					if err != nil {
 						return nil, err
 					}
 					continue
 				}
 
-				err := p.ContFilter.Parse(scopeFlag.scopeName)
+				err := p.ContFilter().Parse(scopeFlag.scopeName)
 				if err != nil {
 					return nil, err
 				}
@@ -184,7 +182,7 @@ func CreatePolicies(cfg config.PoliciesConfig, policyScopeMap PolicyScopeMap, po
 				if strings.ContainsAny(scopeFlag.operator, "<>") {
 					return nil, filters.InvalidExpression(scopeFlag.operatorAndValues)
 				}
-				err := p.MntNSFilter.Parse(scopeFlag.operatorAndValues)
+				err := p.MntNSFilter().Parse(scopeFlag.operatorAndValues)
 				if err != nil {
 					return nil, err
 				}
@@ -195,7 +193,7 @@ func CreatePolicies(cfg config.PoliciesConfig, policyScopeMap PolicyScopeMap, po
 				if strings.ContainsAny(scopeFlag.operator, "<>") {
 					return nil, filters.InvalidExpression(scopeFlag.operatorAndValues)
 				}
-				err := p.PidNSFilter.Parse(scopeFlag.operatorAndValues)
+				err := p.PidNSFilter().Parse(scopeFlag.operatorAndValues)
 				if err != nil {
 					return nil, err
 				}
@@ -203,7 +201,7 @@ func CreatePolicies(cfg config.PoliciesConfig, policyScopeMap PolicyScopeMap, po
 			}
 
 			if scopeFlag.scopeName == "tree" {
-				err := p.ProcessTreeFilter.Parse(scopeFlag.operatorAndValues)
+				err := p.ProcessTreeFilter().Parse(scopeFlag.operatorAndValues)
 				if err != nil {
 					return nil, err
 				}
@@ -212,18 +210,18 @@ func CreatePolicies(cfg config.PoliciesConfig, policyScopeMap PolicyScopeMap, po
 
 			if scopeFlag.scopeName == "pid" {
 				if scopeFlag.operatorAndValues == "=new" {
-					if err := p.NewPidFilter.Parse("new"); err != nil {
+					if err := p.NewPidFilter().Parse("new"); err != nil {
 						return nil, err
 					}
 					continue
 				}
 				if scopeFlag.operatorAndValues == "!=new" {
-					if err := p.NewPidFilter.Parse("!new"); err != nil {
+					if err := p.NewPidFilter().Parse("!new"); err != nil {
 						return nil, err
 					}
 					continue
 				}
-				err := p.PIDFilter.Parse(scopeFlag.operatorAndValues)
+				err := p.PIDFilter().Parse(scopeFlag.operatorAndValues)
 				if err != nil {
 					return nil, err
 				}
@@ -231,7 +229,7 @@ func CreatePolicies(cfg config.PoliciesConfig, policyScopeMap PolicyScopeMap, po
 			}
 
 			if scopeFlag.scopeName == "uts" {
-				err := p.UTSFilter.Parse(scopeFlag.operatorAndValues)
+				err := p.UTSFilter().Parse(scopeFlag.operatorAndValues)
 				if err != nil {
 					return nil, err
 				}
@@ -239,7 +237,7 @@ func CreatePolicies(cfg config.PoliciesConfig, policyScopeMap PolicyScopeMap, po
 			}
 
 			if scopeFlag.scopeName == "uid" {
-				err := p.UIDFilter.Parse(scopeFlag.operatorAndValues)
+				err := p.UIDFilter().Parse(scopeFlag.operatorAndValues)
 				if err != nil {
 					return nil, err
 				}
@@ -247,7 +245,7 @@ func CreatePolicies(cfg config.PoliciesConfig, policyScopeMap PolicyScopeMap, po
 			}
 
 			if scopeFlag.scopeName == "follow" {
-				p.Follow = true
+				p.SetFollow(true)
 				continue
 			}
 
@@ -283,7 +281,7 @@ func CreatePolicies(cfg config.PoliciesConfig, policyScopeMap PolicyScopeMap, po
 			operatorAndValues := evtFlag.operatorAndValues
 
 			if evtFlag.eventOptionType == "retval" {
-				err := p.RetFilter.Parse(evtFilter, operatorAndValues, eventsNameToID)
+				err := p.RetFilter().Parse(evtFilter, operatorAndValues, eventsNameToID)
 				if err != nil {
 					return nil, err
 				}
@@ -291,7 +289,7 @@ func CreatePolicies(cfg config.PoliciesConfig, policyScopeMap PolicyScopeMap, po
 			}
 
 			if evtFlag.eventOptionType == "context" {
-				err := p.ContextFilter.Parse(evtFilter, operatorAndValues)
+				err := p.ContextFilter().Parse(evtFilter, operatorAndValues)
 				if err != nil {
 					return nil, err
 				}
@@ -299,7 +297,7 @@ func CreatePolicies(cfg config.PoliciesConfig, policyScopeMap PolicyScopeMap, po
 			}
 
 			if evtFlag.eventOptionType == "args" {
-				err := p.ArgFilter.Parse(evtFilter, operatorAndValues, eventsNameToID)
+				err := p.ArgFilter().Parse(evtFilter, operatorAndValues, eventsNameToID)
 				if err != nil {
 					return nil, err
 				}
@@ -310,12 +308,15 @@ func CreatePolicies(cfg config.PoliciesConfig, policyScopeMap PolicyScopeMap, po
 		}
 
 		var err error
-		p.EventsToTrace, err = prepareEventsToTrace(eventFilter, eventsNameToID)
+		evtsToTrace, err := prepareEventsToTrace(eventFilter, eventsNameToID)
 		if err != nil {
 			return nil, err
 		}
+		for id, name := range evtsToTrace {
+			p.SetEventToTrace(id, name)
+		}
 
-		err = policies.Set(p)
+		err = policies.Add(p)
 		if err != nil {
 			logger.Warnw("Setting policy", "error", err)
 		}

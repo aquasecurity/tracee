@@ -5,12 +5,13 @@ import (
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 // TODO: This is a temporary solution to allow refactoring.
-// PolicyManager should be the best place, for now, to hold kernelSymTable.
+// kernelSymbolsInstance should be a singleton outside of the policy package.
 
 // ksyms is a singleton that holds the kernel symbols table
 // in the policy package.
@@ -57,23 +58,28 @@ func getKsyms() *helpers.KernelSymbolTable {
 // ValidateKallsymsDependencies load all symbols required by events dependencies
 // from the kallsyms file to check for missing symbols. If some symbols are
 // missing, it will cancel their event with informative error message.
-func (ps *Policies) ValidateKallsymsDependencies() {
-	ps.rwmu.Lock()
-	defer ps.rwmu.Unlock()
+func (pm *PolicyManager) ValidateKallsymsDependencies(ps PoliciesBuilder) error {
+	pm.mutex.Lock()
+	defer pm.mutex.Unlock()
+
+	pols, ok := ps.(*policies)
+	if !ok {
+		return errfmt.Errorf("invalid policies type")
+	}
 
 	depsToCancel := make(map[events.ID]string)
 
 	// Cancel events with unavailable symbols dependencies
-	for eventToCancel, missingDepSyms := range getUnavKsymsPerEvtID(ps.evtsFlags) {
+	for eventToCancel, missingDepSyms := range getUnavKsymsPerEvtID(pols.evtsFlags) {
 		eventNameToCancel := events.Core.GetDefinitionByID(eventToCancel).GetName()
 		logger.Debugw(
 			"Event cancelled because of missing kernel symbol dependency",
 			"missing symbols", missingDepSyms, "event", eventNameToCancel,
 		)
-		ps.eventsFlags().cancelEvent(eventToCancel)
+		pols.eventsFlags().cancelEvent(eventToCancel)
 
 		// Find all events that depend on eventToCancel
-		for eventID := range ps.eventsFlags().getAll() {
+		for eventID := range pols.eventsFlags().getAll() {
 			depsIDs := events.Core.GetDefinitionByID(eventID).GetDependencies().GetIDs()
 			for _, depID := range depsIDs {
 				if depID == eventToCancel {
@@ -89,9 +95,11 @@ func (ps *Policies) ValidateKallsymsDependencies() {
 				"event", events.Core.GetDefinitionByID(eventID).GetName(),
 				"dependency", depEventName,
 			)
-			ps.eventsFlags().cancelEvent(eventID)
+			pols.eventsFlags().cancelEvent(eventID)
 		}
 	}
+
+	return nil
 }
 
 // getUnavKsymsPerEvtID returns event IDs and symbols that are unavailable to them.

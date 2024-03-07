@@ -13,6 +13,12 @@ type Cloner interface {
 	Clone() Cloner
 }
 
+// Iterator is a generic interface for iterators
+type Iterator[T any] interface {
+	HasNext() bool
+	GetNext() T
+}
+
 func ParseSymbol(address uint64, table *helpers.KernelSymbolTable) helpers.KernelSymbol {
 	var hookingFunction helpers.KernelSymbol
 

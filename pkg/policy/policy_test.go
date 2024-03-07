@@ -8,7 +8,7 @@ import (
 )
 
 func TestPolicyClone(t *testing.T) {
-	policy := NewPolicy()
+	policy := NewPolicyBuilder(1, "policy")
 	err := policy.PIDFilter.Parse("=1")
 	require.NoError(t, err)
 

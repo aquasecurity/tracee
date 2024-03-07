@@ -8,7 +8,7 @@ import (
 )
 
 // computeEventsFlags computes the events flags based on the policies and its configuration.
-func (ps *Policies) computeEventsFlags() {
+func (ps *policies) computeEventsFlags() {
 	evtsFlags := newEventsFlags()
 
 	// Initialize events flags with mandatory events (TODO: review this need for sched exec)
@@ -60,14 +60,16 @@ func (ps *Policies) computeEventsFlags() {
 	// Events chosen by the user
 
 	for p := range ps.filterEnabledPoliciesMap {
-		for e := range p.EventsToTrace {
+		it := p.CreateEventsToTraceIterator()
+		for it.HasNext() {
+			e := it.GetNext()
 			var submit, emit uint64
 			if evtFlags, ok := evtsFlags.GetOk(e); ok {
 				submit = evtFlags.GetSubmit()
 				emit = evtFlags.GetEmit()
 			}
-			utils.SetBit(&submit, uint(p.ID))
-			utils.SetBit(&emit, uint(p.ID))
+			utils.SetBit(&submit, uint(p.GetID()))
+			utils.SetBit(&emit, uint(p.GetID()))
 			evtsFlags.set(
 				e,
 				newEventFlags(
@@ -118,7 +120,7 @@ func handleEventsDependencies(
 }
 
 // getCaptureEventsList sets events used to capture data.
-func (ps *Policies) getCaptureEventsList() *eventsFlags {
+func (ps *policies) getCaptureEventsList() *eventsFlags {
 	captureEvents := newEventsFlags()
 
 	// INFO: All capture events should be placed, at least for now, to all matched policies, or else

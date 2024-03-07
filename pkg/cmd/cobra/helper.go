@@ -8,7 +8,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/policy/v1beta1"
 )
 
-func createPoliciesFromK8SPolicy(cfg config.PoliciesConfig, policies []k8s.PolicyInterface) (*policy.Policies, error) {
+func createPoliciesFromK8SPolicy(cfg config.PoliciesConfig, policies []k8s.PolicyInterface) (policy.PoliciesBuilder, error) {
 	policyScopeMap, policyEventsMap, err := flags.PrepareFilterMapsFromPolicies(policies)
 	if err != nil {
 		return nil, err
@@ -17,7 +17,7 @@ func createPoliciesFromK8SPolicy(cfg config.PoliciesConfig, policies []k8s.Polic
 	return flags.CreatePolicies(cfg, policyScopeMap, policyEventsMap, true)
 }
 
-func createPoliciesFromPolicyFiles(cfg config.PoliciesConfig, policyFlags []string) (*policy.Policies, error) {
+func createPoliciesFromPolicyFiles(cfg config.PoliciesConfig, policyFlags []string) (policy.PoliciesBuilder, error) {
 	policyFiles, err := v1beta1.PoliciesFromPaths(policyFlags)
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func createPoliciesFromPolicyFiles(cfg config.PoliciesConfig, policyFlags []stri
 	return flags.CreatePolicies(cfg, policyScopeMap, policyEventsMap, true)
 }
 
-func createPoliciesFromCLIFlags(cfg config.PoliciesConfig, scopeFlags, eventFlags []string) (*policy.Policies, error) {
+func createPoliciesFromCLIFlags(cfg config.PoliciesConfig, scopeFlags, eventFlags []string) (policy.PoliciesBuilder, error) {
 	policyScopeMap, err := flags.PrepareScopeMapFromFlags(scopeFlags)
 	if err != nil {
 		return nil, err

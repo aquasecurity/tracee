@@ -473,8 +473,8 @@ func TestSymbolsCollision(t *testing.T) {
 			filterName := "symbols_collision.args.symbols"
 			eventsNameToID := map[string]events.ID{"symbols_collision": events.SymbolsCollision}
 
-			p := policy.NewPolicy()
-			p.EventsToTrace = map[events.ID]string{events.SymbolsCollision: "symbols_collision"}
+			p := policy.NewPolicyBuilder(0, "test")
+			p.SetEventToTrace(events.SymbolsCollision, "symbols_collision")
 
 			if len(testCase.blackList) > 0 {
 				operAndValsBlack := fmt.Sprintf("!=%s", strings.Join(testCase.blackList, ","))
@@ -493,7 +493,7 @@ func TestSymbolsCollision(t *testing.T) {
 				},
 			)
 
-			policies := policy.NewPolicies(policiesCfg)
+			policies := policy.NewPoliciesBuilder(policiesCfg)
 			err := policies.Set(p)
 			require.NoError(t, err)
 

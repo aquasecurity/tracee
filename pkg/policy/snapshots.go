@@ -16,7 +16,7 @@ const (
 type snapshot struct {
 	time     time.Time
 	version  uint16
-	policies *Policies
+	policies Policies
 }
 
 // snapshots is a circular buffer of snapshots.
@@ -27,7 +27,7 @@ type snapshots struct {
 	nextIdx     int
 	lastIdx     int
 	storedCnt   int
-	prune       func(*Policies) []error
+	prune       func(Policies) []error
 }
 
 // newSnapshots creates a new snapshot.
@@ -47,7 +47,7 @@ func newSnapshots() *snapshots {
 // public and pass the prune function as a parameter.
 // SetPruneFunc sets the prune function to be called by PruneSnapshotsOlderThan
 // and Store (when overwriting a snapshot).
-func (s *snapshots) SetPruneFunc(prune func(*Policies) []error) {
+func (s *snapshots) SetPruneFunc(prune func(Policies) []error) {
 	s.murw.Lock()
 	defer s.murw.Unlock()
 
@@ -55,9 +55,11 @@ func (s *snapshots) SetPruneFunc(prune func(*Policies) []error) {
 }
 
 // Store stores a snapshot of the Policies.
-func (s *snapshots) Store(ps *Policies) {
+func (s *snapshots) Store(pb PoliciesBuilder) {
 	s.murw.Lock()
 	defer s.murw.Unlock()
+
+	ps := pb.(*policies)
 
 	s.lastVersion++ // new version
 	if s.lastVersion == 0 {
@@ -65,7 +67,7 @@ func (s *snapshots) Store(ps *Policies) {
 		s.lastVersion++
 	}
 
-	ps.version = s.lastVersion
+	ps.version = s.lastVersion // set version in the policies
 
 	snap := &snapshot{
 		time:     time.Now(),
@@ -94,7 +96,7 @@ func (s *snapshots) Store(ps *Policies) {
 }
 
 // Get returns a snapshot of the Policies at a given version.
-func (s *snapshots) Get(polsVersion uint16) (*Policies, error) {
+func (s *snapshots) Get(polsVersion uint16) (Policies, error) {
 	s.murw.RLock()
 	defer s.murw.RUnlock()
 
@@ -116,7 +118,7 @@ func (s *snapshots) Get(polsVersion uint16) (*Policies, error) {
 }
 
 // GetLast returns the most recent snapshot of the Policies.
-func (s *snapshots) GetLast() (*Policies, error) {
+func (s *snapshots) GetLast() (Policies, error) {
 	s.murw.RLock()
 	defer s.murw.RUnlock()
 

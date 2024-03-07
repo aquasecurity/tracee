@@ -1724,12 +1724,13 @@ func Test_EventFilters(t *testing.T) {
 			// Prepare policies
 
 			policies := newPolicies(cfg, tc.policyFiles)
+			// TODO: remove this Store() when entire logic is moved to PolicyManager
 			policy.Manager().Snapshots().Store(policies)
 
 			ctx, cancel := context.WithCancel(context.Background())
 
 			// start tracee
-			trc, err := startTracee(ctx, t, cfg, nil, nil)
+			trc, err := startTracee(ctx, t, cfg, nil, nil, policies)
 			if err != nil {
 				cancel()
 				t.Fatal(err)
@@ -1827,7 +1828,7 @@ func newCmdEvents(runCmd string, waitFor, timeout time.Duration, evts []trace.Ev
 }
 
 // newPolicies creates a new policies object with the given policies files with IDs.
-func newPolicies(cfg config.Config, polsFilesID []policyFileWithID) *policy.Policies {
+func newPolicies(cfg config.Config, polsFilesID []policyFileWithID) policy.PoliciesBuilder {
 	var polsFiles []k8s.PolicyInterface
 
 	for _, polFile := range polsFilesID {
@@ -1844,10 +1845,11 @@ func newPolicies(cfg config.Config, polsFilesID []policyFileWithID) *policy.Poli
 		panic(err)
 	}
 
-	policiesWithIDSet := policy.NewPolicies(config.NewPoliciesConfig(cfg))
+	policiesWithIDSet := policy.NewPoliciesBuilder(config.NewPoliciesConfig(cfg))
 	for pol := range policies.Map() {
-		pol.ID = polsFilesID[pol.ID].id - 1
-		policiesWithIDSet.Set(pol)
+		// fix the policy ID to match the one in the test
+		correctedID := polsFilesID[pol.GetID()].id - 1
+		policiesWithIDSet.Set(correctedID, pol)
 	}
 
 	return policiesWithIDSet

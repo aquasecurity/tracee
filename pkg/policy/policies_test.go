@@ -18,19 +18,19 @@ func TestPoliciesClone(t *testing.T) {
 		},
 	)
 
-	policies := NewPolicies(policiesCfg)
+	policies := NewPoliciesBuilder(policiesCfg)
 
-	p1 := NewPolicy()
-	err := p1.PIDFilter.Parse("=1")
+	p0 := NewPolicyBuilder(0, "p0")
+	err := p0.PIDFilter.Parse("=1")
 	require.NoError(t, err)
 
-	p2 := NewPolicy()
-	err = p2.UIDFilter.Parse("=2")
+	p1 := NewPolicyBuilder(1, "p1")
+	err = p1.UIDFilter.Parse("=2")
 	require.NoError(t, err)
 
+	err = policies.Add(p0)
+	require.NoError(t, err)
 	err = policies.Add(p1)
-	require.NoError(t, err)
-	err = policies.Add(p2)
 	require.NoError(t, err)
 
 	copy := policies.Clone().(*Policies)
@@ -40,10 +40,10 @@ func TestPoliciesClone(t *testing.T) {
 	}
 
 	// ensure that changes to the copy do not affect the original
-	p3 := NewPolicy()
-	err = p3.CommFilter.Parse("=comm")
+	p2 := NewPolicyBuilder(2, "p2")
+	err = p2.CommFilter.Parse("=comm")
 	require.NoError(t, err)
-	err = copy.Add(p3)
+	err = copy.Add(p2)
 	require.NoError(t, err)
 
 	if arePoliciesEqual(policies, copy) {

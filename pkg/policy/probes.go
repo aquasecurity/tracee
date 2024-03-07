@@ -3,13 +3,19 @@ package policy
 import (
 	"github.com/aquasecurity/tracee/pkg/cgroup"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
+	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 // AttachProbes attaches selected events probes to their respective eBPF progs
-func (ps *Policies) AttachProbes(probeGroup *probes.ProbeGroup, cgroups *cgroup.Cgroups) error {
+func (pm *PolicyManager) AttachProbes(ps PoliciesBuilder, probeGroup *probes.ProbeGroup, cgroups *cgroup.Cgroups) error {
 	var err error
+
+	pols, ok := ps.(*policies)
+	if !ok {
+		return errfmt.Errorf("invalid policies type")
+	}
 
 	// TODO: On Snapshot pruning, we should check which probes are not used for
 	// any snapshot and detach them.
@@ -19,12 +25,12 @@ func (ps *Policies) AttachProbes(probeGroup *probes.ProbeGroup, cgroups *cgroup.
 		return events.Core.GetDefinitionByID(id).GetDependencies().GetProbes()
 	}
 
-	ps.rwmu.Lock()
-	defer ps.rwmu.Unlock()
+	pm.mutex.Lock()
+	defer pm.mutex.Unlock()
 
 	// Get the list of probes to attach for each event being traced.
 	probesToEvents := make(map[events.Probe][]events.ID)
-	for id := range ps.eventsFlags().getAll() {
+	for id := range pols.eventsFlags().getAll() {
 		if !events.Core.IsDefined(id) {
 			continue
 		}
@@ -45,7 +51,7 @@ func (ps *Policies) AttachProbes(probeGroup *probes.ProbeGroup, cgroups *cgroup.
 						"missing probe", probe.GetHandle(), "event", evtName,
 						"error", err,
 					)
-					ps.eventsFlags().cancelEventAndAllDeps(evtID)
+					pols.eventsFlags().cancelEventAndAllDeps(evtID)
 				} else {
 					logger.Debugw(
 						"Failed to attach non-required probe for event",

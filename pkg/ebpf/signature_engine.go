@@ -33,7 +33,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 		// Getting the last policies since here we haven't consumed the event yet to know the policies version.
 		// So it is not synced with the event processing (possible mismatch).
 		// However, this will be deprecated in the future. Check ShouldDispatchEvent comment in Config (engine.go).
-		policies, err := policy.Manager().Snapshots().GetLast()
+		policies, err := policy.Manager().GetCurrent()
 		if err != nil {
 			logger.Errorw("Failed to get policies", "error", err)
 			return false
@@ -72,7 +72,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 
 		id := events.ID(event.EventID)
 
-		policies, err := policy.Manager().Snapshots().Get(event.PoliciesVersion)
+		policies, err := policy.Manager().GetVersion(event.PoliciesVersion)
 		if err != nil {
 			t.handleError(err)
 			return
@@ -136,7 +136,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 					continue
 				}
 
-				policies, err := policy.Manager().Snapshots().Get(event.PoliciesVersion)
+				policies, err := policy.Manager().GetVersion(event.PoliciesVersion)
 				if err != nil {
 					t.handleError(err)
 					continue

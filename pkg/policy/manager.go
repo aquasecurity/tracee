@@ -42,9 +42,45 @@ func Manager() *PolicyManager {
 	return manager
 }
 
+func (pm *PolicyManager) GetPolicyBuilder(p Policy) PolicyBuilder {
+	if p == nil {
+		return nil
+	}
+
+	new := p.Clone().(PolicyBuilder)
+
+	return new
+}
+
 // Snapshots returns the Policies snapshots
+// TODO: remove this publicizer method when entire logic is moved to PolicyManager
 func (pm *PolicyManager) Snapshots() *snapshots {
 	return pm.snapshots
+}
+
+func (pm *PolicyManager) GetCurrent() (Policies, error) {
+	ps, err := pm.snapshots.GetLast()
+	if err != nil {
+		return nil, err
+	}
+
+	return ps, nil
+}
+
+func (pm *PolicyManager) GetVersion(version uint16) (Policies, error) {
+	ps, err := pm.snapshots.Get(version)
+	if err != nil {
+		return nil, err
+	}
+
+	return ps, nil
+}
+
+func (pm *PolicyManager) ApplyPolicies(ps *Policies) (*Policies, error) {
+	pm.mutex.Lock()
+	defer pm.mutex.Unlock()
+
+	return ps, nil
 }
 
 // IsEnabled tests if a event, or a policy per event is enabled (in the future it will also check if a policy is enabled)
@@ -111,13 +147,15 @@ func (pm *PolicyManager) enableRule(policyId int, ruleId events.ID) {
 }
 
 // EnableRules enables all rules for a given collection of policies
-func (pm *PolicyManager) EnableRules(policies *Policies) {
+func (pm *PolicyManager) EnableRules(policies Policies) {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
 
 	for p := range policies.Map() {
-		for e := range p.EventsToTrace {
-			pm.enableRule(p.ID, e)
+		it := p.CreateEventsToTraceIterator()
+		for it.HasNext() {
+			e := it.GetNext()
+			pm.enableRule(p.GetID(), e)
 		}
 	}
 }

@@ -15,8 +15,9 @@ import (
 )
 
 func setPruneFunc(snaps *snapshots) {
-	snaps.SetPruneFunc(func(ps *Policies) []error {
+	snaps.SetPruneFunc(func(policies Policies) []error {
 		errs := []error{}
+		ps := policies.(*Policies)
 		for _, bpfMap := range ps.versionBPFMaps {
 			err := syscall.Close(bpfMap.FileDescriptor())
 			if err != nil {
@@ -184,13 +185,15 @@ func TestConcurrentSnapshots(t *testing.T) {
 
 	// get the last stored snapshot
 	lastSnapshot, err := snaps.GetLast()
+	last := lastSnapshot.(*Policies)
 	assert.NoError(t, err)
-	assert.Equal(t, uint16(numStoreRoutines), uint16(lastSnapshot.version))
+	assert.Equal(t, uint16(numStoreRoutines), uint16(last.version))
 
 	// get the numStoreRoutines-10th snapshot
 	snapshot, err := snaps.Get(uint16(numStoreRoutines - 10))
+	nSnap := snapshot.(*Policies)
 	assert.NoError(t, err)
-	assert.Equal(t, uint16(numStoreRoutines-10), uint16(snapshot.version))
+	assert.Equal(t, uint16(numStoreRoutines-10), uint16(nSnap.version))
 
 	// post-check to ensure storedCnt is as expected, given the concurrency
 	assert.True(t, snaps.storedCnt <= maxSnapshots, "Stored count should never exceed maxSnapshots")

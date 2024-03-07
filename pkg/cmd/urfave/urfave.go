@@ -183,6 +183,8 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
+	runner.InitialPolicies = policies
+	// TODO: remove this Store() when entire logic is moved to PolicyManager
 	policy.Manager().Snapshots().Store(policies) // store initial policies snapshot
 
 	// Create broadcast printer

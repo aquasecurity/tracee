@@ -297,7 +297,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Try to get policies from kubernetes CRD, policy files and CLI in that order
 	var k8sPolicies []v1beta1.PolicyInterface
-	var policies *policy.Policies
+	var policies policy.PoliciesBuilder
 
 	k8sClient, err := k8s.New()
 	if err == nil {
@@ -320,6 +320,8 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
+	runner.InitialPolicies = policies
+	// TODO: remove this Store() when entire logic is moved to PolicyManager
 	policy.Manager().Snapshots().Store(policies) // store initial policies snapshot
 
 	// Create broadcast printer

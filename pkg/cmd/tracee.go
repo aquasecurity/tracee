@@ -11,17 +11,19 @@ import (
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/server/grpc"
 	"github.com/aquasecurity/tracee/pkg/server/http"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 type Runner struct {
-	TraceeConfig config.Config
-	Printer      printer.EventPrinter
-	InstallPath  string
-	HTTPServer   *http.Server
-	GRPCServer   *grpc.Server
+	TraceeConfig    config.Config
+	InitialPolicies policy.PoliciesBuilder
+	Printer         printer.EventPrinter
+	InstallPath     string
+	HTTPServer      *http.Server
+	GRPCServer      *grpc.Server
 }
 
 func (r Runner) Run(ctx context.Context) error {
@@ -55,7 +57,7 @@ func (r Runner) Run(ctx context.Context) error {
 
 	// Initialize tracee
 
-	err = t.Init(ctx)
+	err = t.Init(ctx, r.InitialPolicies)
 	if err != nil {
 		return errfmt.Errorf("error initializing Tracee: %v", err)
 	}

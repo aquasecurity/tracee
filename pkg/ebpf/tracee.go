@@ -150,7 +150,7 @@ func New(cfg config.Config) (*Tracee, error) {
 	}
 	caps := capabilities.GetInstance()
 
-	policies, err := policy.Manager().Snapshots().GetLast()
+	policies, err := policy.Manager().GetCurrent()
 	if err != nil {
 		return t, errfmt.WrapError(err)
 	}
@@ -159,7 +159,7 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	// Update capabilities rings with all events dependencies
 
-	err = policies.UpdateCapabilitiesRings()
+	err = policy.Manager().UpdateCapabilitiesRings(policies)
 	if err != nil {
 		return t, errfmt.WrapError(err)
 	}
@@ -199,13 +199,14 @@ func New(cfg config.Config) (*Tracee, error) {
 // performing external system operations to initialize them. NOTE: any
 // initialization logic, especially one that causes side effects, should go
 // here and not New().
-func (t *Tracee) Init(ctx gocontext.Context) error {
+func (t *Tracee) Init(ctx gocontext.Context, initialPolicies policy.PoliciesBuilder) error {
 	var err error
 
 	// Init kernel symbols map
 
 	err = capabilities.GetInstance().Specific(
 		func() error {
+			// TODO: turn kernelSymbols a singleton
 			t.kernelSymbols, err = helpers.NewKernelSymbolTable()
 			return err
 		},
@@ -214,14 +215,6 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-	policy.SetKsyms(t.kernelSymbols)
-
-	policies, err := policy.Manager().Snapshots().GetLast()
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
-
-	policies.ValidateKallsymsDependencies() // disable events w/ missing ksyms dependencies
 
 	// Initialize buckets cache
 
@@ -298,7 +291,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// TODO: initDerivationTable should be rethinked and moved to policy package.
 	// But it's not possible to do it now because derive imports policy (circular dependency).
-	err = t.initDerivationTable(policies)
+	err = t.initDerivationTable(initialPolicies.(policy.Policies))
 	if err != nil {
 		return errfmt.Errorf("error initializing event derivation map: %v", err)
 	}
@@ -317,7 +310,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	err = capabilities.GetInstance().EBPF(
 		func() error {
-			return t.initBPF(policies)
+			return t.initBPF(initialPolicies.EventsFlags())
 		},
 	)
 	if err != nil {
@@ -395,9 +388,22 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	t.bootTime = uint64(utils.GetBootTimeNS())
 
 	// Decoupled initialization of Policies eBPF
+
+	//
+	// TODO: HERE IS THE RIGHT PLACE TO CALL
+	//
+	// policy.Manager().ApplyPolicies(initialPolicies)
+
+	// disable events w/ missing ksyms dependencies
+	policy.SetKsyms(t.kernelSymbols)
+	err = policy.Manager().ValidateKallsymsDependencies(initialPolicies)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
 	err = capabilities.GetInstance().EBPF(
 		func() error {
-			evtsFlags := policies.EventsFlags()
+			evtsFlags := initialPolicies.EventsFlags()
 
 			// Update the kallsyms eBPF map with all symbols from the kallsyms file
 
@@ -408,7 +414,8 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 			// Populate the eBPF maps with the current policies
 
-			polCfg, err := policies.PopulateBPF(
+			polCfg, err := policy.Manager().PopulateBPF(
+				initialPolicies,
 				t.bpfModule,
 				t.containers,
 				t.eventsParamTypes,
@@ -419,7 +426,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 			// Create a new Config with updated policies and update its BPF map
 
-			cfg := t.newConfig(polCfg, policies.Version())
+			cfg := t.newConfig(polCfg, initialPolicies.Version())
 			if err := cfg.UpdateBPF(t.bpfModule); err != nil {
 				return errfmt.WrapError(err)
 			}
@@ -436,7 +443,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 			// Attach eBPF programs to selected event's probes
 
-			err = policies.AttachProbes(t.probes, t.cgroups)
+			err = policy.Manager().AttachProbes(initialPolicies, t.probes, t.cgroups)
 			if err != nil {
 				return err
 			}
@@ -444,7 +451,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 			// UpdateProcessTreeBPF must be called after AttachProbes.
 			// For more information, see UpdateProcessTreeBPF documentation.
 
-			err = policies.PopulateProcessTreeBPF()
+			err = policy.Manager().PopulateProcessTreeBPF(initialPolicies)
 			if err != nil {
 				return errfmt.WrapError(err)
 			}
@@ -520,7 +527,7 @@ func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 // initDerivationTable initializes tracee's events.DerivationTable. For each
 // event, represented through its ID, we declare to which other events it can be
 // derived and the corresponding function to derive into that Event.
-func (t *Tracee) initDerivationTable(ps *policy.Policies) error {
+func (t *Tracee) initDerivationTable(ps policy.Policies) error {
 	shouldSubmit := func(id events.ID) func() bool {
 		return func() bool { return ps.EventsFlags().Get(id).ShouldSubmit() }
 	}
@@ -847,7 +854,7 @@ func (t *Tracee) populateBPFMaps() error {
 	return nil
 }
 
-func (t *Tracee) initBPF(policies *policy.Policies) error {
+func (t *Tracee) initBPF(evtsFlags events.EventsFlags) error {
 	var err error
 
 	// Execute code with higher privileges: ring1 (required)
@@ -864,8 +871,6 @@ func (t *Tracee) initBPF(policies *policy.Policies) error {
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-
-	evtsFlags := policies.EventsFlags()
 
 	// Initialize probes
 
@@ -970,7 +975,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	// If the events below are able to be defined for upcoming or previous versions
 	// and expected to be triggered by them, then the entire related logic must be changed.
 	// The main place to look is the policy package.
-	policies, err := policy.Manager().Snapshots().GetLast()
+	policies, err := policy.Manager().GetCurrent()
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1240,14 +1245,14 @@ func (t *Tracee) getSelfLoadedPrograms(evtsFlags events.EventsFlags, kprobesOnly
 func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	var emit uint64
 
-	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64, pols *policy.Policies) {
+	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64, pols policy.Policies) {
 		event.PoliciesVersion = pols.Version()
 		event.MatchedPoliciesKernel = matchedPolicies
 		event.MatchedPoliciesUser = matchedPolicies
 		event.MatchedPolicies = pols.MatchedNames(matchedPolicies)
 	}
 
-	policies, err := policy.Manager().Snapshots().GetLast()
+	policies, err := policy.Manager().GetCurrent()
 	if err != nil {
 		logger.Errorw("failed to get policies", "error", err)
 		return
@@ -1341,17 +1346,17 @@ func (t *Tracee) triggerSeqOpsIntegrityCheckCall(
 
 // triggerMemDump is used by a Uprobe to trigger an eBPF program
 // that prints the first bytes of requested symbols or addresses
-func (t *Tracee) triggerMemDump(policies *policy.Policies, event trace.Event) []error {
+func (t *Tracee) triggerMemDump(policies policy.Policies, event trace.Event) []error {
 	errs := []error{}
 
 	// TODO: consider to iterate over given policies when policies are changed
 	for p := range policies.Map() {
-		printMemDumpFilters := p.ArgFilter.GetEventFilters(events.PrintMemDump)
+		printMemDumpFilters := p.ArgFilter().GetEventFilters(events.PrintMemDump)
 		if len(printMemDumpFilters) == 0 {
 			errs = append(errs, errfmt.Errorf("policy %d: no address or symbols were provided to print_mem_dump event. "+
 				"please provide it via -e print_mem_dump.args.address=<hex address>"+
 				", -e print_mem_dump.args.symbol_name=<owner>:<symbol> or "+
-				"-e print_mem_dump.args.symbol_name=<symbol> if specifying a system owned symbol", p.ID))
+				"-e print_mem_dump.args.symbol_name=<symbol> if specifying a system owned symbol", p.GetID()))
 
 			continue
 		}
@@ -1366,7 +1371,7 @@ func (t *Tracee) triggerMemDump(policies *policy.Policies, event trace.Event) []
 			field := lengthFilter.Equal()[0]
 			length, err = strconv.ParseUint(field, 10, 64)
 			if err != nil {
-				errs = append(errs, errfmt.Errorf("policy %d: invalid length provided to print_mem_dump event: %v", p.ID, err))
+				errs = append(errs, errfmt.Errorf("policy %d: invalid length provided to print_mem_dump event: %v", p.GetID(), err))
 
 				continue
 			}
@@ -1377,7 +1382,7 @@ func (t *Tracee) triggerMemDump(policies *policy.Policies, event trace.Event) []
 			for _, field := range addressFilter.Equal() {
 				address, err := strconv.ParseUint(field, 16, 64)
 				if err != nil {
-					errs[p.ID] = errfmt.Errorf("policy %d: invalid address provided to print_mem_dump event: %v", p.ID, err)
+					errs[p.GetID()] = errfmt.Errorf("policy %d: invalid address provided to print_mem_dump event: %v", p.GetID(), err)
 
 					continue
 				}
@@ -1400,14 +1405,14 @@ func (t *Tracee) triggerMemDump(policies *policy.Policies, event trace.Event) []
 					owner = symbolSlice[0]
 					name = symbolSlice[1]
 				} else {
-					errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s - more than one ':' provided", p.ID, field))
+					errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s - more than one ':' provided", p.GetID(), field))
 
 					continue
 				}
 				symbol, err := t.kernelSymbols.GetSymbolByOwnerAndName(owner, name)
 				if err != nil {
 					if owner != "system" {
-						errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s - %v", p.ID, field, err))
+						errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s - %v", p.GetID(), field, err))
 
 						continue
 					}
@@ -1434,7 +1439,7 @@ func (t *Tracee) triggerMemDump(policies *policy.Policies, event trace.Event) []
 							values[i] = v
 						}
 						attemptedSymbols := fmt.Sprintf("{%s,%s,%s,%s}%s", values...)
-						errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s", p.ID, attemptedSymbols))
+						errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s", p.GetID(), attemptedSymbols))
 
 						continue
 					}
@@ -1476,7 +1481,7 @@ func (t *Tracee) SubscribeAll() *streams.Stream {
 func (t *Tracee) Subscribe(policyNames []string) (*streams.Stream, error) {
 	var policyMask uint64
 
-	policies, err := policy.Manager().Snapshots().GetLast()
+	policies, err := policy.Manager().GetCurrent()
 	if err != nil {
 		return nil, err
 	}
@@ -1486,7 +1491,7 @@ func (t *Tracee) Subscribe(policyNames []string) (*streams.Stream, error) {
 		if err != nil {
 			return nil, err
 		}
-		utils.SetBit(&policyMask, uint(p.ID))
+		utils.SetBit(&policyMask, uint(p.GetID()))
 	}
 
 	return t.subscribe(policyMask), nil
@@ -1532,7 +1537,7 @@ func (t *Tracee) EnableRule(policyNames []string, ruleId string) error {
 		return errfmt.Errorf("error rule not found: %s", ruleId)
 	}
 
-	policies, err := policy.Manager().Snapshots().GetLast()
+	policies, err := policy.Manager().GetCurrent()
 	if err != nil {
 		return err
 	}
@@ -1543,7 +1548,7 @@ func (t *Tracee) EnableRule(policyNames []string, ruleId string) error {
 			return err
 		}
 
-		policy.Manager().EnableRule(p.ID, eventID)
+		policy.Manager().EnableRule(p.GetID(), eventID)
 	}
 
 	return nil
@@ -1556,7 +1561,7 @@ func (t *Tracee) DisableRule(policyNames []string, ruleId string) error {
 		return errfmt.Errorf("error rule not found: %s", ruleId)
 	}
 
-	policies, err := policy.Manager().Snapshots().GetLast()
+	policies, err := policy.Manager().GetCurrent()
 	if err != nil {
 		return err
 	}
@@ -1567,7 +1572,7 @@ func (t *Tracee) DisableRule(policyNames []string, ruleId string) error {
 			return err
 		}
 
-		policy.Manager().DisableRule(p.ID, eventID)
+		policy.Manager().DisableRule(p.GetID(), eventID)
 	}
 
 	return nil

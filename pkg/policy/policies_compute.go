@@ -10,7 +10,7 @@ import (
 // It also computes the events states.
 //
 // It must be called at initialization and at every runtime policies changes.
-func (ps *Policies) compute() {
+func (ps *policies) compute() {
 	ps.calculateGlobalMinMax()
 	ps.updateContainerFilterEnabled()
 	ps.updateFilterableInUserland()
@@ -25,7 +25,7 @@ func (ps *Policies) compute() {
 //
 // The context filter types relevant for this function are just UIDFilter and
 // PIDFilter.
-func (ps *Policies) calculateGlobalMinMax() {
+func (ps *policies) calculateGlobalMinMax() {
 	var (
 		uidMinFilterCount int
 		uidMaxFilterCount int
@@ -44,23 +44,23 @@ func (ps *Policies) calculateGlobalMinMax() {
 	for p := range ps.filterEnabledPoliciesMap {
 		policyCount++
 
-		if p.UIDFilter.Enabled() {
+		if p.UIDFilter().Enabled() {
 			uidFilterCount++
 
-			if p.UIDFilter.Minimum() != filters.MinNotSetUInt {
+			if p.UIDFilter().Minimum() != filters.MinNotSetUInt {
 				uidMinFilterCount++
 			}
-			if p.UIDFilter.Maximum() != filters.MaxNotSetUInt {
+			if p.UIDFilter().Maximum() != filters.MaxNotSetUInt {
 				uidMaxFilterCount++
 			}
 		}
-		if p.PIDFilter.Enabled() {
+		if p.PIDFilter().Enabled() {
 			pidFilterCount++
 
-			if p.PIDFilter.Minimum() != filters.MinNotSetUInt {
+			if p.PIDFilter().Minimum() != filters.MinNotSetUInt {
 				pidMinFilterCount++
 			}
-			if p.PIDFilter.Maximum() != filters.MaxNotSetUInt {
+			if p.PIDFilter().Maximum() != filters.MaxNotSetUInt {
 				pidMaxFilterCount++
 			}
 		}
@@ -89,51 +89,51 @@ func (ps *Policies) calculateGlobalMinMax() {
 
 	// set a reduced range of uint values to be filtered in ebpf
 	for p := range ps.filterEnabledPoliciesMap {
-		if p.UIDFilter.Enabled() {
+		if p.UIDFilter().Enabled() {
 			if !uidMinFilterableInUserland {
-				ps.uidFilterMin = utils.Min(ps.uidFilterMin, p.UIDFilter.Minimum())
+				ps.uidFilterMin = utils.Min(ps.uidFilterMin, p.UIDFilter().Minimum())
 			}
 			if !uidMaxFilterableInUserland {
-				ps.uidFilterMax = utils.Max(ps.uidFilterMax, p.UIDFilter.Maximum())
+				ps.uidFilterMax = utils.Max(ps.uidFilterMax, p.UIDFilter().Maximum())
 			}
 		}
-		if p.PIDFilter.Enabled() {
+		if p.PIDFilter().Enabled() {
 			if !pidMinFilterableInUserland {
-				ps.pidFilterMin = utils.Min(ps.pidFilterMin, p.PIDFilter.Minimum())
+				ps.pidFilterMin = utils.Min(ps.pidFilterMin, p.PIDFilter().Minimum())
 			}
 			if !pidMaxFilterableInUserland {
-				ps.pidFilterMax = utils.Max(ps.pidFilterMax, p.PIDFilter.Maximum())
+				ps.pidFilterMax = utils.Max(ps.pidFilterMax, p.PIDFilter().Maximum())
 			}
 		}
 	}
 }
 
 // updateContainerFilterEnabled sets the containerFiltersEnabled bitmap.
-func (ps *Policies) updateContainerFilterEnabled() {
+func (ps *policies) updateContainerFilterEnabled() {
 	ps.containerFiltersEnabled = 0
 
 	for p := range ps.filterEnabledPoliciesMap {
 		if p.ContainerFilterEnabled() {
-			utils.SetBit(&ps.containerFiltersEnabled, uint(p.ID))
+			utils.SetBit(&ps.containerFiltersEnabled, uint(p.GetID()))
 		}
 	}
 }
 
 // updateFilterableInUserland sets the filterableInUserland bitmap and the
 // filterUserlandPoliciesMap.
-func (ps *Policies) updateFilterableInUserland() {
+func (ps *policies) updateFilterableInUserland() {
 	ps.filterableInUserland = 0
 
-	userlandMap := make(map[*Policy]int)
+	userlandMap := make(map[*policy]int)
 	for p := range ps.filterEnabledPoliciesMap {
-		if p.ArgFilter.Enabled() ||
-			p.RetFilter.Enabled() ||
-			p.ContextFilter.Enabled() ||
-			(p.UIDFilter.Enabled() && ps.uidFilterableInUserland) ||
-			(p.PIDFilter.Enabled() && ps.pidFilterableInUserland) {
+		if p.ArgFilter().Enabled() ||
+			p.RetFilter().Enabled() ||
+			p.ContextFilter().Enabled() ||
+			(p.UIDFilter().Enabled() && ps.uidFilterableInUserland) ||
+			(p.PIDFilter().Enabled() && ps.pidFilterableInUserland) {
 			// add policy and set the related bit
-			userlandMap[p] = p.ID
-			utils.SetBit(&ps.filterableInUserland, uint(p.ID))
+			userlandMap[p] = p.GetID()
+			utils.SetBit(&ps.filterableInUserland, uint(p.GetID()))
 		}
 	}
 
