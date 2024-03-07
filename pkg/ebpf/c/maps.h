@@ -49,7 +49,7 @@ typedef struct containers_map containers_map_t;
 // persist args between function entry and return
 struct args_map {
     __uint(type, BPF_MAP_TYPE_HASH);
-    __uint(max_entries, 1024);
+    __uint(max_entries, 10240);
     __type(key, u64);
     __type(value, args_t);
 } args_map SEC(".maps");

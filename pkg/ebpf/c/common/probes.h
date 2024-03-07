@@ -13,13 +13,6 @@
 #define TRACE_ENT_FUNC(name, id)                                                                   \
     int trace_##name(struct pt_regs *ctx)                                                          \
     {                                                                                              \
-        program_data_t p = {};                                                                     \
-        if (!init_program_data(&p, ctx))                                                           \
-            return 0;                                                                              \
-                                                                                                   \
-        if (!should_trace(&p))                                                                     \
-            return 0;                                                                              \
-                                                                                                   \
         args_t args = {};                                                                          \
         args.args[0] = PT_REGS_PARM1(ctx);                                                         \
         args.args[1] = PT_REGS_PARM2(ctx);                                                         \
@@ -41,6 +34,9 @@
                                                                                                    \
         program_data_t p = {};                                                                     \
         if (!init_program_data(&p, ctx))                                                           \
+            return 0;                                                                              \
+                                                                                                   \
+        if (!should_trace(&p))                                                                     \
             return 0;                                                                              \
                                                                                                    \
         if (!should_submit(id, p.event))                                                           \
