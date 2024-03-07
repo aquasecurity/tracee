@@ -14,14 +14,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
-// resetSnapshots resets the snapshots global variable.
-func resetSnapshots() {
-	_ = Snapshots() // ensure the singleton is initialized
-	snaps = newSnapshots()
-}
-
-func setPruneFunc() {
-	Snapshots().SetPruneFunc(func(ps *Policies) []error {
+func setPruneFunc(snaps *snapshots) {
+	snaps.SetPruneFunc(func(ps *Policies) []error {
 		errs := []error{}
 		for _, bpfMap := range ps.versionBPFMaps {
 			err := syscall.Close(bpfMap.FileDescriptor())
@@ -35,88 +29,88 @@ func setPruneFunc() {
 }
 
 func TestStoreSnapshot(t *testing.T) {
-	resetSnapshots()
+	snaps := newSnapshots()
 
 	ps := &Policies{}
-	Snapshots().Store(ps)
+	snaps.Store(ps)
 	assert.Equal(t, uint16(1), uint16(ps.version))
 
 	// after storing the snapshot, there should be one snapshot available
-	lastSnapshot, err := Snapshots().GetLast()
+	lastSnapshot, err := snaps.GetLast()
 	assert.NoError(t, err)
 	assert.Equal(t, ps, lastSnapshot)
 }
 
 func TestGetSnapshot(t *testing.T) {
-	resetSnapshots()
+	snaps := newSnapshots()
 
 	ps := &Policies{}
-	Snapshots().Store(ps)
+	snaps.Store(ps)
 
 	// get the snapshot for the version just stored
-	snapshot, err := Snapshots().Get(1) // since our lastVersion starts at 0 and increments on StoreSnapshot
+	snapshot, err := snaps.Get(1) // since our lastVersion starts at 0 and increments on StoreSnapshot
 	assert.NoError(t, err)
 	assert.Equal(t, ps, snapshot)
 
 	// try getting a snapshot for a version that does not exist
-	_, err = Snapshots().Get(1000)
+	_, err = snaps.Get(1000)
 	assert.Error(t, err)
 }
 
 func TestGetLastSnapshot(t *testing.T) {
-	resetSnapshots()
+	snaps := newSnapshots()
 
 	ps1 := &Policies{}
-	Snapshots().Store(ps1)
+	snaps.Store(ps1)
 
 	ps2 := &Policies{}
-	Snapshots().Store(ps2)
+	snaps.Store(ps2)
 
 	// after storing two snapshots, the last one should be ps2
-	lastSnapshot, err := Snapshots().GetLast()
+	lastSnapshot, err := snaps.GetLast()
 	assert.NoError(t, err)
 	assert.Equal(t, ps2, lastSnapshot)
 }
 
 func TestCircularBufferOverwrite(t *testing.T) {
-	resetSnapshots()
-	setPruneFunc()
+	snaps := newSnapshots()
+	setPruneFunc(snaps)
 
 	// create and store maxSnapshots
 	for i := 0; i < maxSnapshots; i++ {
 		ps := &Policies{}
-		Snapshots().Store(ps)
+		snaps.Store(ps)
 		assert.Equal(t, uint16(i+1), uint16(ps.version))
 	}
 
 	// the last stored snapshot is for version maxSnapshots
-	lastSnapshotBeforeOverwrite, err := Snapshots().GetLast()
+	lastSnapshotBeforeOverwrite, err := snaps.GetLast()
 	assert.NoError(t, err)
 
 	// store one more snapshot to overwrite the first snapshot in the buffer
 	psOverwrite := &Policies{}
-	Snapshots().Store(psOverwrite)
+	snaps.Store(psOverwrite)
 	assert.Equal(t, uint16(maxSnapshots+1), psOverwrite.version)
 
 	// check if the oldest snapshot (version 1) has been overwritten
-	_, err = Snapshots().Get(1)
+	_, err = snaps.Get(1)
 	assert.Error(t, err, "expected error when retrieving overwritten snapshot")
 
 	// check the last snapshot is the one just stored
-	lastSnapshotAfterOverwrite, err := Snapshots().GetLast()
+	lastSnapshotAfterOverwrite, err := snaps.GetLast()
 	assert.NoError(t, err)
 	assert.Equal(t, psOverwrite, lastSnapshotAfterOverwrite)
 
 	// ensure the previous last snapshot is still retrievable
 	previousVersion := uint16(maxSnapshots)
-	snapshot, err := Snapshots().Get(previousVersion)
+	snapshot, err := snaps.Get(previousVersion)
 	assert.NoError(t, err)
 	assert.Equal(t, lastSnapshotBeforeOverwrite, snapshot, "the last snapshot before overwrite should still be retrievable")
 }
 
 func TestConcurrentSnapshots(t *testing.T) {
-	resetSnapshots()
-	setPruneFunc()
+	snaps := newSnapshots()
+	setPruneFunc(snaps)
 
 	const (
 		numStoreRoutines    = 300
@@ -150,7 +144,7 @@ func TestConcurrentSnapshots(t *testing.T) {
 
 				// store a snapshot
 				ps := &Policies{}
-				Snapshots().Store(ps)
+				snaps.Store(ps)
 
 				if atomic.CompareAndSwapInt32(&readyForRetrieve, 0, 1) {
 					firstStoreDone.Done() // signal the retrieving goroutines to start
@@ -173,7 +167,7 @@ func TestConcurrentSnapshots(t *testing.T) {
 				firstStoreDone.Wait()
 
 				// retrieve the last snapshot
-				_, err := Snapshots().GetLast()
+				_, err := snaps.GetLast()
 				assert.NoError(t, err)
 			}()
 		}
@@ -189,12 +183,12 @@ func TestConcurrentSnapshots(t *testing.T) {
 	innerWG.Wait()
 
 	// get the last stored snapshot
-	lastSnapshot, err := Snapshots().GetLast()
+	lastSnapshot, err := snaps.GetLast()
 	assert.NoError(t, err)
 	assert.Equal(t, uint16(numStoreRoutines), uint16(lastSnapshot.version))
 
 	// get the numStoreRoutines-10th snapshot
-	snapshot, err := Snapshots().Get(uint16(numStoreRoutines - 10))
+	snapshot, err := snaps.Get(uint16(numStoreRoutines - 10))
 	assert.NoError(t, err)
 	assert.Equal(t, uint16(numStoreRoutines-10), uint16(snapshot.version))
 
@@ -203,29 +197,29 @@ func TestConcurrentSnapshots(t *testing.T) {
 }
 
 func TestWrapAround(t *testing.T) {
-	resetSnapshots()
+	snaps := newSnapshots()
 
 	// set the lastVersion to its maximum value minus 1
 	snaps.lastVersion = math.MaxUint16 - 1
 
 	// store a snapshot, this should increase version to math.MaxUint16
 	ps1 := &Policies{}
-	Snapshots().Store(ps1)
+	snaps.Store(ps1)
 
 	// verify that the version is set to math.MaxUint16
 	assert.Equal(t, uint16(math.MaxUint16), uint16(ps1.version))
 
 	// store another snapshot, this should trigger the wrap-around and reset the version to 1
 	ps2 := &Policies{}
-	Snapshots().Store(ps2)
+	snaps.Store(ps2)
 
 	// verify that the wrap-around occurred
 	assert.Equal(t, uint16(1), uint16(ps2.version))
 }
 
 func TestPruneSnapshotsOlderThan(t *testing.T) {
-	resetSnapshots()
-	setPruneFunc()
+	snaps := newSnapshots()
+	setPruneFunc(snaps)
 
 	const (
 		timeToPrune  = 250 * time.Millisecond // 0.25 seconds
@@ -236,7 +230,7 @@ func TestPruneSnapshotsOlderThan(t *testing.T) {
 	storeSnapshots := func() {
 		for i := 0; i < numSnapshots; i++ {
 			ps := &Policies{}
-			Snapshots().Store(ps)
+			snaps.Store(ps)
 		}
 	}
 
@@ -247,7 +241,7 @@ func TestPruneSnapshotsOlderThan(t *testing.T) {
 		// Sleep for the desired prune time to ensure all snapshots are older than this duration
 		time.Sleep(timeToPrune)
 
-		errs := Snapshots().PruneSnapshotsOlderThan(timeToPrune)
+		errs := snaps.PruneSnapshotsOlderThan(timeToPrune)
 		assert.Empty(t, errs)
 
 		logger.Infow(

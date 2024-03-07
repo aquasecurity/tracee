@@ -113,8 +113,6 @@ type Tracee struct {
 	readyCallback   func(gocontext.Context)
 	// Streams
 	streamsManager *streams.StreamsManager
-	// policyManager manages policy state
-	policyManager *policy.PolicyManager
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -133,8 +131,6 @@ func New(cfg config.Config) (*Tracee, error) {
 		return nil, errfmt.Errorf("validation error: %v", err)
 	}
 
-	policyManager := policy.NewPolicyManager()
-
 	// Create Tracee
 
 	t := &Tracee{
@@ -144,7 +140,6 @@ func New(cfg config.Config) (*Tracee, error) {
 		readFiles:      make(map[string]string),
 		capturedFiles:  make(map[string]int64),
 		streamsManager: streams.NewStreamsManager(),
-		policyManager:  policyManager,
 	}
 
 	// Initialize capabilities rings soon
@@ -155,19 +150,12 @@ func New(cfg config.Config) (*Tracee, error) {
 	}
 	caps := capabilities.GetInstance()
 
-	policies, err := policy.Snapshots().GetLast()
+	policies, err := policy.Manager().Snapshots().GetLast()
 	if err != nil {
 		return t, errfmt.WrapError(err)
 	}
 
-	// TODO: This must be done in the policies package.
-	//       See https://github.com/aquasecurity/tracee/issues/3849
-	// Enable rules for all events to trace
-	for p := range policies.Map() {
-		for e := range p.EventsToTrace {
-			policyManager.EnableRule(p.ID, e)
-		}
-	}
+	policy.Manager().EnableRules(policies)
 
 	// Update capabilities rings with all events dependencies
 
@@ -228,7 +216,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	}
 	policy.SetKsyms(t.kernelSymbols)
 
-	policies, err := policy.Snapshots().GetLast()
+	policies, err := policy.Manager().Snapshots().GetLast()
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -982,7 +970,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	// If the events below are able to be defined for upcoming or previous versions
 	// and expected to be triggered by them, then the entire related logic must be changed.
 	// The main place to look is the policy package.
-	policies, err := policy.Snapshots().GetLast()
+	policies, err := policy.Manager().Snapshots().GetLast()
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1259,7 +1247,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		event.MatchedPolicies = pols.MatchedNames(matchedPolicies)
 	}
 
-	policies, err := policy.Snapshots().GetLast()
+	policies, err := policy.Manager().Snapshots().GetLast()
 	if err != nil {
 		logger.Errorw("failed to get policies", "error", err)
 		return
@@ -1488,7 +1476,7 @@ func (t *Tracee) SubscribeAll() *streams.Stream {
 func (t *Tracee) Subscribe(policyNames []string) (*streams.Stream, error) {
 	var policyMask uint64
 
-	policies, err := policy.Snapshots().GetLast()
+	policies, err := policy.Manager().Snapshots().GetLast()
 	if err != nil {
 		return nil, err
 	}
@@ -1521,7 +1509,7 @@ func (t *Tracee) EnableEvent(eventName string) error {
 		return errfmt.Errorf("error event not found: %s", eventName)
 	}
 
-	t.policyManager.EnableEvent(id)
+	policy.Manager().EnableEvent(id)
 
 	return nil
 }
@@ -1532,7 +1520,7 @@ func (t *Tracee) DisableEvent(eventName string) error {
 		return errfmt.Errorf("error event not found: %s", eventName)
 	}
 
-	t.policyManager.DisableEvent(id)
+	policy.Manager().DisableEvent(id)
 
 	return nil
 }
@@ -1544,7 +1532,7 @@ func (t *Tracee) EnableRule(policyNames []string, ruleId string) error {
 		return errfmt.Errorf("error rule not found: %s", ruleId)
 	}
 
-	policies, err := policy.Snapshots().GetLast()
+	policies, err := policy.Manager().Snapshots().GetLast()
 	if err != nil {
 		return err
 	}
@@ -1555,7 +1543,7 @@ func (t *Tracee) EnableRule(policyNames []string, ruleId string) error {
 			return err
 		}
 
-		t.policyManager.EnableRule(p.ID, eventID)
+		policy.Manager().EnableRule(p.ID, eventID)
 	}
 
 	return nil
@@ -1568,7 +1556,7 @@ func (t *Tracee) DisableRule(policyNames []string, ruleId string) error {
 		return errfmt.Errorf("error rule not found: %s", ruleId)
 	}
 
-	policies, err := policy.Snapshots().GetLast()
+	policies, err := policy.Manager().Snapshots().GetLast()
 	if err != nil {
 		return err
 	}
@@ -1579,7 +1567,7 @@ func (t *Tracee) DisableRule(policyNames []string, ruleId string) error {
 			return err
 		}
 
-		t.policyManager.DisableRule(p.ID, eventID)
+		policy.Manager().DisableRule(p.ID, eventID)
 	}
 
 	return nil

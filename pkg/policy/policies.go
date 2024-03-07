@@ -242,7 +242,7 @@ func (ps *Policies) FilterableInUserlandMap() map[*Policy]int {
 // TODO: Runtime API should encapsulate the following calls:
 //
 // 1. pols := policies.Clone() to get a clone before to apply changes
-// 2. policy.Snapshots().Store(pols) to get the new version snapshot stored
+// 2. policy.Manager().Snapshots().Store(pols) to get the new version snapshot stored
 // 3. tracee.populateFilterMaps(pols, true) to update the maps
 // 4. and possibly other steps in which we iterate over the policies map
 

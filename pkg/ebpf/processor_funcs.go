@@ -219,7 +219,7 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 	// If the events below are able to be defined for upcoming or previous versions
 	// and expected to be triggered by them, then the entire related logic must be changed.
 	// The main place to look is the policy package.
-	policies, err := policy.Snapshots().GetLast()
+	policies, err := policy.Manager().Snapshots().GetLast()
 	if err != nil {
 		return errfmt.WrapError(err)
 	}

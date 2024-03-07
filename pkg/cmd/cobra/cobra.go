@@ -320,7 +320,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
-	policy.Snapshots().Store(policies) // store initial policies snapshot
+	policy.Manager().Snapshots().Store(policies) // store initial policies snapshot
 
 	// Create broadcast printer
 

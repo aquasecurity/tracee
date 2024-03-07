@@ -256,7 +256,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.ProcessEntityId = utils.HashTaskID(eCtx.HostPid, eCtx.LeaderStartTime)
 			evt.ParentEntityId = utils.HashTaskID(eCtx.HostPpid, eCtx.ParentStartTime)
 
-			policies, err := policy.Snapshots().Get(evt.PoliciesVersion)
+			policies, err := policy.Manager().Snapshots().Get(evt.PoliciesVersion)
 			if err != nil {
 				t.handleError(err)
 				t.eventsPool.Put(evt)
@@ -459,7 +459,7 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 				continue
 			}
 
-			policies, err := policy.Snapshots().Get(event.PoliciesVersion)
+			policies, err := policy.Manager().Snapshots().Get(event.PoliciesVersion)
 			if err != nil {
 				t.handleError(err)
 				continue
@@ -562,7 +562,7 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					case events.PrintMemDump:
 					default:
 						// Derived events might need filtering as well
-						policies, err := policy.Snapshots().Get(event.PoliciesVersion)
+						policies, err := policy.Manager().Snapshots().Get(event.PoliciesVersion)
 						if err != nil {
 							t.handleError(err)
 							continue
@@ -601,8 +601,10 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 				continue // might happen during initialization (ctrl+c seg faults)
 			}
 
+			pManager := policy.Manager()
+
 			// Is the event enabled for the policies or globally?
-			if !t.policyManager.IsEnabled(event.MatchedPoliciesUser, events.ID(event.EventID)) {
+			if !pManager.IsEnabled(event.MatchedPoliciesUser, events.ID(event.EventID)) {
 				// TODO: create metrics from dropped events
 				t.eventsPool.Put(event)
 				continue
@@ -611,9 +613,10 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 			// Only emit events requested by the user and matched by at least one policy.
 			id := events.ID(event.EventID)
 
-			policies, err := policy.Snapshots().Get(event.PoliciesVersion)
+			policies, err := pManager.Snapshots().Get(event.PoliciesVersion)
 			if err != nil {
 				t.handleError(err)
+				t.eventsPool.Put(event)
 				continue
 			}
 

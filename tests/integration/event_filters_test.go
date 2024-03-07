@@ -1724,7 +1724,7 @@ func Test_EventFilters(t *testing.T) {
 			// Prepare policies
 
 			policies := newPolicies(cfg, tc.policyFiles)
-			policy.Snapshots().Store(policies)
+			policy.Manager().Snapshots().Store(policies)
 
 			ctx, cancel := context.WithCancel(context.Background())
 

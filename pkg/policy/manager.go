@@ -9,8 +9,9 @@ import (
 
 // PolicyManager is a thread-safe struct that manages the enabled policies for each rule
 type PolicyManager struct {
-	mutex sync.Mutex
-	rules map[events.ID]*eventState
+	mutex     sync.Mutex
+	rules     map[events.ID]*eventState
+	snapshots *snapshots
 }
 
 // eventState is a struct that holds the state of a given event
@@ -19,11 +20,31 @@ type eventState struct {
 	enabled    bool
 }
 
-func NewPolicyManager() *PolicyManager {
+func newPolicyManager() *PolicyManager {
 	return &PolicyManager{
-		mutex: sync.Mutex{},
-		rules: make(map[events.ID]*eventState),
+		mutex:     sync.Mutex{},
+		rules:     make(map[events.ID]*eventState),
+		snapshots: newSnapshots(),
 	}
+}
+
+var (
+	manager     *PolicyManager // singleton
+	managerOnce sync.Once
+)
+
+// Manager returns the singleton PolicyManager
+func Manager() *PolicyManager {
+	managerOnce.Do(func() {
+		manager = newPolicyManager()
+	})
+
+	return manager
+}
+
+// Snapshots returns the Policies snapshots
+func (pm *PolicyManager) Snapshots() *snapshots {
+	return pm.snapshots
 }
 
 // IsEnabled tests if a event, or a policy per event is enabled (in the future it will also check if a policy is enabled)
@@ -75,11 +96,8 @@ func (pm *PolicyManager) isEventEnabled(evenId events.ID) bool {
 	return state.enabled
 }
 
-// EnableRule enables a rule for a given event policy
-func (pm *PolicyManager) EnableRule(policyId int, ruleId events.ID) {
-	pm.mutex.Lock()
-	defer pm.mutex.Unlock()
-
+// not synchronized, use EnableRule instead
+func (pm *PolicyManager) enableRule(policyId int, ruleId events.ID) {
 	state, ok := pm.rules[ruleId]
 	if !ok {
 		// if you enabling/disabling a rule for an event that
@@ -90,6 +108,26 @@ func (pm *PolicyManager) EnableRule(policyId int, ruleId events.ID) {
 	utils.SetBit(&state.policyMask, uint(policyId))
 
 	pm.rules[ruleId] = state
+}
+
+// EnableRules enables all rules for a given collection of policies
+func (pm *PolicyManager) EnableRules(policies *Policies) {
+	pm.mutex.Lock()
+	defer pm.mutex.Unlock()
+
+	for p := range policies.Map() {
+		for e := range p.EventsToTrace {
+			pm.enableRule(p.ID, e)
+		}
+	}
+}
+
+// EnableRule enables a rule for a given event policy
+func (pm *PolicyManager) EnableRule(policyId int, ruleId events.ID) {
+	pm.mutex.Lock()
+	defer pm.mutex.Unlock()
+
+	pm.enableRule(policyId, ruleId)
 }
 
 // DisableRule disables a rule for a given event policy

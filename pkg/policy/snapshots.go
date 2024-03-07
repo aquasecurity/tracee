@@ -30,11 +30,6 @@ type snapshots struct {
 	prune       func(*Policies) []error
 }
 
-var (
-	snaps     *snapshots // singleton
-	snapsOnce sync.Once
-)
-
 // newSnapshots creates a new snapshot.
 func newSnapshots() *snapshots {
 	return &snapshots{
@@ -46,14 +41,6 @@ func newSnapshots() *snapshots {
 		storedCnt:   0,
 		prune:       nil,
 	}
-}
-
-func Snapshots() *snapshots {
-	snapsOnce.Do(func() {
-		snaps = newSnapshots()
-	})
-
-	return snaps
 }
 
 // TODO: This is a temporary solution to allow testing. We must make the constructor
