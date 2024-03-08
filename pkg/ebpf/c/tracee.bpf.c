@@ -506,15 +506,20 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 
     // Update the task_info map with the new task's info
 
-    task_info_t task = {};
-    __builtin_memcpy(&task, p.task_info, sizeof(task_info_t));
-    task.recompute_scope = true;
-    task.context.tid = child_ns_tid;
-    task.context.host_tid = child_tid;
-    task.context.start_time = child_start_time;
-    ret = bpf_map_update_elem(&task_info_map, &task.context.host_tid, &task, BPF_ANY);
+    ret = bpf_map_update_elem(&task_info_map, &child_tid, p.task_info, BPF_ANY);
     if (ret < 0)
         tracee_log(ctx, BPF_LOG_LVL_DEBUG, BPF_LOG_ID_MAP_UPDATE_ELEM, ret);
+    task_info_t *task = bpf_map_lookup_elem(&task_info_map, &child_tid);
+    if (unlikely(task == NULL)) {
+        // this should never happen - we just updated the map with this key
+        tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
+        return 0;
+    }
+
+    task->recompute_scope = true;
+    task->context.tid = child_ns_tid;
+    task->context.host_tid = child_tid;
+    task->context.start_time = child_start_time;
 
     // Update the proc_info_map with the new process's info (from parent)
 
