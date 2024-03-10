@@ -19,7 +19,7 @@
             unsigned long __reg;                                                                   \
             unsigned long *__sp = (unsigned long *) PT_REGS_SP(ctx);                               \
             bpf_core_read(&__reg, sizeof(unsigned long), __sp + 1);                                \
-            reg;                                                                                   \
+            __reg;                                                                                   \
         })
     #pragma GCC diagnostic pop
 

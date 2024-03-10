@@ -135,4 +135,5 @@ const (
 	GetUserPagesRemote
 	GetUserPagesRemoteRet
 	GenericAccessPhys
+	AccessRemoteVm
 )

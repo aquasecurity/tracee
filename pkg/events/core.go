@@ -11285,7 +11285,8 @@ var CoreEvents = map[ID]Definition{
 			probes: []Probe{
 				{handle: probes.GetUserPagesRemote, required: true, relevantKernels: []KernelDependency{{version: "6.4", comparison: OlderEquals}}},
 				{handle: probes.GetUserPagesRemoteRet, required: true, relevantKernels: []KernelDependency{{version: "6.4", comparison: OlderEquals}}},
-				{handle: probes.GenericAccessPhys, required: false}, // Exist if CONFIG_HAVE_IOREMAP_PROT
+				{handle: probes.GenericAccessPhys, required: false, relevantKernels: []KernelDependency{{version: "6.4", comparison: OlderEquals}}}, // Exist if CONFIG_HAVE_IOREMAP_PROT
+				{handle: probes.AccessRemoteVm, required: true, relevantKernels: []KernelDependency{{version: "6.4", comparison: Newer}}},
 			},
 			kSymbols: []KSymbol{
 				{symbol: "special_mapping_vmops", required: false},

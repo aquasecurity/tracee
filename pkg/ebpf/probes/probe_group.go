@@ -218,6 +218,7 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool) (*ProbeGroup, err
 		GetUserPagesRemote:         NewTraceProbe(KProbe, "get_user_pages_remote", "trace_get_user_pages_remote"),
 		GetUserPagesRemoteRet:      NewTraceProbe(KretProbe, "get_user_pages_remote", "trace_ret_get_user_pages_remote"),
 		GenericAccessPhys:          NewTraceProbe(KProbe, "generic_access_phys", "trace_generic_access_phys"),
+		AccessRemoteVm:             NewTraceProbe(KProbe, "access_remote_vm", "trace_access_remote_vm"),
 	}
 
 	if !netEnabled {

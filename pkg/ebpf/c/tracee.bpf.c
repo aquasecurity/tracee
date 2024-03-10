@@ -5092,6 +5092,40 @@ int BPF_KPROBE(trace_ret_get_user_pages_remote)
     return submit_access_remote_vm(&p, vma, (void *) address, gup_flags);
 }
 
+// Callback function for bpf_find_vma
+static long kprobe_vma_callback(struct task_struct *task, struct vm_area_struct *vma, void *callback_ctx) {
+    struct vm_area_struct **out_vma = (struct vm_area_struct **)callback_ctx;
+    if (vma)
+        *out_vma = vma;
+    return 0;
+}
+
+SEC("kprobe/get_user_pages_remote")
+int BPF_KPROBE(trace_access_remote_vm)
+{
+	program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+
+    if (!should_trace(&p))
+        return 0;
+	
+	if (!should_submit(ACCESS_REMOTE_VM, p.event))
+        return 0;
+	
+	struct vm_area_struct *vma;
+	struct mm_struct *mm = (struct mm_struct *)PT_REGS_PARM1(ctx);
+	struct task_struct *task = get_owner_task_from_mm(mm);
+	u64 addr = (u64)PT_REGS_PARM2(ctx);
+	unsigned int gup_flags = (unsigned int)PT_REGS_PARM5(ctx);
+
+	int ret = bpf_find_vma(task, addr, (void *)kprobe_vma_callback, (void *)&vma, 0);
+    if (ret != 0)
+        return 0;
+
+	return submit_access_remote_vm(&p, vma, (void *) addr, gup_flags);
+}
+
 // clang-format off
 
 // Network Packets (works from ~5.2 and beyond)
