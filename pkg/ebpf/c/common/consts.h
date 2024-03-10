@@ -20,6 +20,8 @@
 #define MAX_SYS_CALL_TABLE_SIZE 500
 #define MAX_MEM_DUMP_SIZE   127
 
+#define MAX_VMA_ITERATIONS 20
+
 
 #define MAX_STR_ARR_ELEM      38 // TODO: turn this into global variables set w/ libbpfgo
 #define MAX_ARGS_STR_ARR_ELEM 15
