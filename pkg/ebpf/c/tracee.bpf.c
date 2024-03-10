@@ -4982,7 +4982,7 @@ int BPF_KPROBE(trace_ret_file_modified)
 }
 
 SEC("kprobe/security_path_notify")
-int BPF_KPROBE(security_path_notify)
+int BPF_KPROBE(trace_security_path_notify)
 {
     program_data_t p = {};
     if (!init_program_data(&p, ctx))

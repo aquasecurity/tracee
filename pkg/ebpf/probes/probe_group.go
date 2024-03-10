@@ -215,7 +215,7 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, kSyms *helpers.Ke
 		FileModifiedRet:            NewTraceProbe(KretProbe, "file_modified", "trace_ret_file_modified"),
 		FdInstall:                  NewTraceProbe(KProbe, "fd_install", "trace_fd_install"),
 		FilpClose:                  NewTraceProbe(KProbe, "filp_close", "trace_filp_close"),
-		SecurityPathNotify:         NewTraceProbe(KProbe, "security_path_notify", "security_path_notify"),
+		SecurityPathNotify:         NewTraceProbe(KProbe, "security_path_notify", "trace_security_path_notify"),
 		BpfCheck:                   NewTraceProbe(KProbe, "bpf_check", "trace_bpf_check"),
 		ExecBinprm:                 NewTraceProbe(KProbe, "exec_binprm", "trace_exec_binprm"),
 		ExecBinprmRet:              NewTraceProbe(KretProbe, "exec_binprm", "trace_ret_exec_binprm"),
