@@ -10,15 +10,11 @@ import (
 	"strings"
 )
 
-func PrepareInput(inputOption string) (*config.ProducerConfig, error) {
-	var (
-		inputSourceOptions config.ProducerConfig
-		err                error
-	)
-
+func PrepareInput(inputOption string) (inputSourceOptions *config.ProducerConfig, err error) {
+	inputSourceOptions = &config.ProducerConfig{}
 	inParts := strings.SplitN(inputOption, ":", 2)
 
-	switch inParts[0] {
+	switch inputSourceOptions.Kind = inParts[0]; inputSourceOptions.Kind {
 	case "json", "rego":
 		inputSourceOptions.Kind = inParts[0]
 		var fileOpt string
@@ -28,22 +24,24 @@ func PrepareInput(inputOption string) (*config.ProducerConfig, error) {
 		case 2:
 			fileOpt = inParts[1]
 		default:
-			return &inputSourceOptions, fmt.Errorf(
+			err = fmt.Errorf(
 				"invalid input option: %s, use '--input help' for more info",
 				inputOption,
 			)
+			return
 		}
-		err = parseTraceeInputSource(&inputSourceOptions, fileOpt)
+		err = parseTraceeInputSource(inputSourceOptions, fileOpt)
 		if err != nil {
-			return &inputSourceOptions, err
+			return
 		}
 	default:
-		return &inputSourceOptions, fmt.Errorf(
-			"invalid output flag: %s, use '--help' for more info",
-			inputOption[0],
+		err = fmt.Errorf(
+			"invalid input flag: %s, use '--help' for more info",
+			inputSourceOptions.Kind,
 		)
+		return
 	}
-	return &inputSourceOptions, nil
+	return
 }
 
 func parseTraceeInputSource(option *config.ProducerConfig, fileOpt string) error {
