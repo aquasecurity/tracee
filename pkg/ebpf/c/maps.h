@@ -69,7 +69,7 @@ typedef struct sys_32_to_64_map sys_32_to_64_map_t;
 // holds data for every process
 struct proc_info_map {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
-    __uint(max_entries, 10240);
+    __uint(max_entries, 30720);
     __type(key, u32);
     __type(value, proc_info_t);
 } proc_info_map SEC(".maps");
