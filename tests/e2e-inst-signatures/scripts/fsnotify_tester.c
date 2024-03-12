@@ -13,13 +13,22 @@
 #define INOTIFY_PATH "inotify_test"
 #define FANOTIFY_PATH "fanotify_test"
 
+static void cleanup_and_exit(int exit_code)
+{
+    rmdir(DNOTIFY_PATH);
+    rmdir(INOTIFY_PATH);
+    rmdir(FANOTIFY_PATH);
+
+    exit(exit_code);
+}
+
 static void mkdir_exist_ok(const char *path)
 {
     errno = 0;
     int dir_result = mkdir(path, 0755);
     if (dir_result != 0 && errno != EEXIST) {
         perror("mkdir");
-        exit(EXIT_FAILURE);
+        cleanup_and_exit(EXIT_FAILURE);
     }
 }
 
@@ -40,17 +49,17 @@ static void dnotify_watch(const char *path)
     fd = open(path, O_RDONLY);
     if (fd < 0) {
         perror("open");
-        exit(EXIT_FAILURE);
+        cleanup_and_exit(EXIT_FAILURE);
     }
 
     if (fcntl(fd, F_SETSIG, NOTIFY_SIG) == -1) {
         perror("fcntl: F_SETSIG");
-        exit(EXIT_FAILURE);
+        cleanup_and_exit(EXIT_FAILURE);
     }
     
     if (fcntl(fd, F_NOTIFY, events) == -1) {
         perror("fcntl: F_NOTIFY");
-        exit(EXIT_FAILURE);
+        cleanup_and_exit(EXIT_FAILURE);
     }
     
     close(fd);
@@ -63,13 +72,13 @@ static void inotify_watch(const char *path)
     inotify_fd = inotify_init();
     if (inotify_fd < 0) {
         perror("inotify_init");
-        exit(EXIT_FAILURE);
+        cleanup_and_exit(EXIT_FAILURE);
     }
 
     watch_fd = inotify_add_watch(inotify_fd, path, IN_ALL_EVENTS);
     if (watch_fd < 0) {
         perror("inotify_add_watch");
-        exit(EXIT_FAILURE);
+        cleanup_and_exit(EXIT_FAILURE);
     }
 
     close(inotify_fd);
@@ -82,19 +91,19 @@ static void fanotify_watch(const char *path)
     fanotify_fd = fanotify_init(FAN_CLOEXEC, O_RDONLY | O_LARGEFILE);
     if (fanotify_fd < 0) {
         perror("fanotify_init");
-        exit(EXIT_FAILURE);
+        cleanup_and_exit(EXIT_FAILURE);
     }
 
     if (fanotify_mark(fanotify_fd, FAN_MARK_ADD,
             FAN_ALL_EVENTS, AT_FDCWD, path) < 0) {
         perror("fanotify_mark");
-        exit(EXIT_FAILURE);
+        cleanup_and_exit(EXIT_FAILURE);
     }
 
     close(fanotify_fd);
 }
 
-int main(void) {
+void main(void) {
     mkdir_exist_ok(DNOTIFY_PATH);
     dnotify_watch(DNOTIFY_PATH);
 
@@ -103,6 +112,6 @@ int main(void) {
 
     mkdir_exist_ok(FANOTIFY_PATH);
     fanotify_watch(FANOTIFY_PATH);
-    
-    return 0;
+
+    cleanup_and_exit(EXIT_SUCCESS);
 }
