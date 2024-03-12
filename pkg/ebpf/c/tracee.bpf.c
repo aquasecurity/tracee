@@ -527,12 +527,19 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         // It is a new process (not another thread): add it to proc_info_map.
         proc_info_t *p_proc_info = bpf_map_lookup_elem(&proc_info_map, &parent_pid);
         if (unlikely(p_proc_info == NULL)) {
-            // parent should exist in proc_info_map (init_program_data sets it)
-            tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
-            return 0;
+            // init_program_data should have created an entry in proc_info_map for this pid,
+            // but certainly it was removed by the LRU mechanism.
+
+            // Re-init the parent's proc_info
+            scratch_t *scratch = p.scratch;
+            p_proc_info = init_proc_info_entry(scratch, parent_pid);
+            if (unlikely(p_proc_info == NULL)) {
+                tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
+                return 0;
+            }
         }
 
-        // Copy the parent's proc_info to the child's enty.
+        // Copy the parent's proc_info to the child's entry.
         bpf_map_update_elem(&proc_info_map, &child_pid, p_proc_info, BPF_NOEXIST);
         c_proc_info = bpf_map_lookup_elem(&proc_info_map, &child_pid);
         if (unlikely(c_proc_info == NULL)) {
@@ -1227,11 +1234,19 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
 
     // Pick data about the process from proc_info_map
-    proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &p.event->context.task.host_pid);
+    u32 host_pid = p.event->context.task.host_pid;
+    proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &host_pid);
     if (proc_info == NULL) {
-        // init_program_data should have created an entry in proc_info_map for this pid
-        tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
-        return 0;
+        // init_program_data should have created an entry in proc_info_map for this pid,
+        // but certainly it was removed by the LRU mechanism.
+
+        // Re-init the proc_info
+        scratch_t *scratch = p.scratch;
+        proc_info = init_proc_info_entry(scratch, host_pid);
+        if (unlikely(proc_info == NULL)) {
+            tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
+            return 0;
+        }
     }
 
     proc_info->new_proc = true; // task has started after tracee started running
@@ -4487,11 +4502,19 @@ int BPF_KPROBE(trace_load_elf_phdrs)
     if (!should_trace((&p)))
         return 0;
 
-    proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &p.event->context.task.host_pid);
+    u32 host_pid = p.event->context.task.host_pid;
+    proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &host_pid);
     if (unlikely(proc_info == NULL)) {
-        // entry should exist in proc_map (init_program_data should have set it otherwise)
-        tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
-        return 0;
+        // init_program_data should have created an entry in proc_info_map for this pid,
+        // but certainly it was removed by the LRU mechanism.
+
+        // Re-init the proc_info
+        scratch_t *scratch = p.scratch;
+        proc_info = init_proc_info_entry(scratch, host_pid);
+        if (unlikely(proc_info == NULL)) {
+            tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
+            return 0;
+        }
     }
 
     struct file *loaded_elf = (struct file *) PT_REGS_PARM2(ctx);
@@ -6710,8 +6733,17 @@ int sched_process_exec_signal(struct bpf_raw_tracepoint_args *ctx)
     // Pick the interpreter path from the proc_info map, which is set by the "load_elf_phdrs".
     u32 host_pid = get_task_host_tgid(task);
     proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &host_pid);
-    if (proc_info == NULL)
-        return 0;
+    if (proc_info == NULL) {
+        // entry should exist in proc_map, but certainly its entry was removed by
+        // the LRU mechanism.
+
+        // Re-init the proc_info
+        proc_info = init_proc_info_entry(NULL, host_pid);
+        if (unlikely(proc_info == NULL)) {
+            tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
+            return 0;
+        }
+    }
 
     struct file *file = get_file_ptr_from_bprm(bprm);
     void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));

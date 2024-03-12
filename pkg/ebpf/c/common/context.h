@@ -10,7 +10,9 @@
 // PROTOTYPES
 
 statfunc int init_context(void *, event_context_t *, struct task_struct *, u32);
+statfunc int validate_scratch(scratch_t **);
 statfunc task_info_t *init_task_info(u32, u32, scratch_t *);
+statfunc proc_info_t *init_proc_info_entry(scratch_t *, u32);
 statfunc bool context_changed(task_context_t *, task_context_t *);
 statfunc int init_program_data(program_data_t *, void *);
 statfunc int init_tailcall_program_data(program_data_t *, void *);
@@ -90,25 +92,55 @@ init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 
     return 0;
 }
 
+// init_proc_info_entry initializes the proc_info_t entry for the given pid
+// into the proc_info_map.
+// It returns the pointer to the proc_info_t entry or NULL if the entry
+// could not be initialized.
+statfunc proc_info_t *init_proc_info_entry(scratch_t *scratch, u32 pid)
+{
+    if (!validate_scratch(&scratch))
+        return NULL;
+
+    proc_info_t *proc_info = &scratch->proc_info;
+
+    // reset scratch proc_info
+    __builtin_memset(proc_info, 0, sizeof(proc_info_t));
+    bpf_map_update_elem(&proc_info_map, &pid, proc_info, BPF_NOEXIST);
+    return bpf_map_lookup_elem(&proc_info_map, &pid);
+}
+
+// validate_scratch checks if the scratch pointer is valid and if not, tries to
+// retrieve a valid pointer from the scratch_map.
+// If successful, it updates the scratch pointer with the valid scratch pointer.
+// It returns 1 if the scratch pointer is valid and 0 otherwise.
+statfunc int validate_scratch(scratch_t **scratch)
+{
+    if (scratch == NULL)
+        return 0;
+
+    if (*scratch == NULL) {
+        u32 zero = 0;
+        *scratch = bpf_map_lookup_elem(&scratch_map, &zero);
+        if (unlikely(*scratch == NULL))
+            return 0;
+    }
+
+    return 1;
+}
+
 statfunc task_info_t *init_task_info(u32 tid, u32 pid, scratch_t *scratch)
 {
     int zero = 0;
 
     // allow caller to specify a stack/map based scratch_t pointer
-    if (scratch == NULL) {
-        scratch = bpf_map_lookup_elem(&scratch_map, &zero);
-        if (unlikely(scratch == NULL))
-            return NULL;
-    }
+    if (!validate_scratch(&scratch))
+        return NULL;
 
     proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &pid);
     if (proc_info == NULL) {
-        scratch->proc_info.new_proc = false;
-        scratch->proc_info.follow_in_scopes = 0;
-        scratch->proc_info.binary.mnt_id = 0;
-        scratch->proc_info.binary_no_mnt = 0;
-        __builtin_memset(scratch->proc_info.binary.path, 0, MAX_BIN_PATH_SIZE);
-        bpf_map_update_elem(&proc_info_map, &pid, &scratch->proc_info, BPF_NOEXIST);
+        proc_info = init_proc_info_entry(scratch, pid);
+        if (unlikely(proc_info == NULL))
+            return NULL;
     }
 
     scratch->task_info.syscall_traced = false;
