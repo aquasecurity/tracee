@@ -122,10 +122,12 @@ const (
 	FileModifiedRet
 	FdInstall
 	FilpClose
-	SecurityPathNotify
+	InotifyFindInode
+	InotifyFindInodeRet
 	BpfCheck
 	ExecBinprm
 	ExecBinprmRet
+	SecurityPathNotify
 	HiddenKernelModuleSeeker
 	TpProbeRegPrioMayExist
 	HiddenKernelModuleVerifier
