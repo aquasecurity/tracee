@@ -280,6 +280,19 @@ func ParseArgs(event *trace.Event) error {
 				helpersArg.Value = parsedHelpersList
 			}
 		}
+	case SecurityPathNotify:
+		if maskArg := GetArg(event, "mask"); maskArg != nil {
+			if mask, isUint64 := maskArg.Value.(uint64); isUint64 {
+				fsNotifyMaskArgument := helpers.ParseFsNotifyMask(mask)
+				parseOrEmptyString(maskArg, fsNotifyMaskArgument, nil)
+			}
+		}
+		if objTypeArg := GetArg(event, "obj_type"); objTypeArg != nil {
+			if objType, isUint := objTypeArg.Value.(uint32); isUint {
+				objTypeArgument, err := helpers.ParseFsNotifyObjType(uint64(objType))
+				parseOrEmptyString(objTypeArg, objTypeArgument, err)
+			}
+		}
 	}
 
 	return nil
