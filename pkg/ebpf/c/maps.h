@@ -331,7 +331,7 @@ typedef struct logs_count logs_count_t;
 // scratch space to avoid allocating stuff on the stack
 struct scratch_map {
     __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
-    __uint(max_entries, 1);
+    __uint(max_entries, 2);
     __type(key, u32);
     __type(value, scratch_t);
 } scratch_map SEC(".maps");
