@@ -5072,6 +5072,33 @@ int BPF_KPROBE(trace_security_path_notify)
     return events_perf_submit(&p, 0);
 }
 
+SEC("kprobe/set_fs_pwd")
+int BPF_KPROBE(trace_set_fs_pwd)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+    
+    if (!should_trace(&p))
+        return 0;
+
+    if (!should_submit(SET_FS_PWD, p.event))
+        return 0;
+    
+    syscall_data_t *sys = &p.task_info->syscall_data;
+
+    void *unresolved_path = NULL;
+    if (sys->id == SYSCALL_CHDIR)
+        unresolved_path = (void *)sys->args.args[0];
+
+    void *resolved_path = get_path_str((struct path *)PT_REGS_PARM2(ctx));
+
+    save_str_to_buf(&p.event->args_buf, unresolved_path, 0);
+    save_str_to_buf(&p.event->args_buf, resolved_path, 1);
+
+    return events_perf_submit(&p, SET_FS_PWD, 0);
+}
+
 // clang-format off
 
 // Network Packets (works from ~5.2 and beyond)
