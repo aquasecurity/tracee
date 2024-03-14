@@ -74,11 +74,9 @@ int sys_enter_init(struct bpf_raw_tracepoint_args *ctx)
     u32 tid = pid_tgid;
     task_info_t *task_info = bpf_map_lookup_elem(&task_info_map, &tid);
     if (unlikely(task_info == NULL)) {
-        u32 pid = pid_tgid >> 32;
-        task_info = init_task_info(tid, pid, 0);
-        if (unlikely(task_info == NULL)) {
+        task_info = init_task_info(tid, 0);
+        if (unlikely(task_info == NULL))
             return 0;
-        }
     }
 
     syscall_data_t *sys = &(task_info->syscall_data);
@@ -209,11 +207,9 @@ int sys_exit_init(struct bpf_raw_tracepoint_args *ctx)
     u32 tid = pid_tgid;
     task_info_t *task_info = bpf_map_lookup_elem(&task_info_map, &tid);
     if (unlikely(task_info == NULL)) {
-        u32 pid = pid_tgid >> 32;
-        task_info = init_task_info(tid, pid, 0);
-        if (unlikely(task_info == NULL)) {
+        task_info = init_task_info(tid, 0);
+        if (unlikely(task_info == NULL))
             return 0;
-        }
     }
 
     // check if syscall is being traced and mark that it finished
@@ -532,7 +528,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
             return 0;
         }
 
-        // Copy the parent's proc_info to the child's enty.
+        // Copy the parent's proc_info to the child's entry.
         bpf_map_update_elem(&proc_info_map, &child_pid, p_proc_info, BPF_NOEXIST);
         c_proc_info = bpf_map_lookup_elem(&proc_info_map, &child_pid);
         if (unlikely(c_proc_info == NULL)) {
@@ -1226,14 +1222,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     struct file *file = get_file_ptr_from_bprm(bprm);
     void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
 
-    // Pick data about the process from proc_info_map
-    proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &p.event->context.task.host_pid);
-    if (proc_info == NULL) {
-        // init_program_data should have created an entry in proc_info_map for this pid
-        tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
-        return 0;
-    }
-
+    proc_info_t *proc_info = p.proc_info;
     proc_info->new_proc = true; // task has started after tracee started running
 
     // Extract the binary name to be used in should_trace
@@ -4487,12 +4476,7 @@ int BPF_KPROBE(trace_load_elf_phdrs)
     if (!should_trace((&p)))
         return 0;
 
-    proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &p.event->context.task.host_pid);
-    if (unlikely(proc_info == NULL)) {
-        // entry should exist in proc_map (init_program_data should have set it otherwise)
-        tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
-        return 0;
-    }
+    proc_info_t *proc_info = p.proc_info;
 
     struct file *loaded_elf = (struct file *) PT_REGS_PARM2(ctx);
     const char *elf_pathname = (char *) get_path_str(__builtin_preserve_access_index(&loaded_elf->f_path));
@@ -6704,8 +6688,13 @@ int sched_process_exec_signal(struct bpf_raw_tracepoint_args *ctx)
     // Pick the interpreter path from the proc_info map, which is set by the "load_elf_phdrs".
     u32 host_pid = get_task_host_tgid(task);
     proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &host_pid);
-    if (proc_info == NULL)
-        return 0;
+    if (proc_info == NULL) {
+        proc_info = init_proc_info(host_pid, 0);
+        if (unlikely(proc_info == NULL)) {
+            tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
+            return 0;
+        }
+    }
 
     struct file *file = get_file_ptr_from_bprm(bprm);
     void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));

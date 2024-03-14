@@ -210,17 +210,10 @@ statfunc u64 compute_scopes(program_data_t *p)
     task_context_t *context = &p->task_info->context;
 
     // Don't monitor self
-    if (p->config->tracee_pid == context->host_pid) {
+    if (p->config->tracee_pid == context->host_pid)
         return 0;
-    }
 
-    proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &context->host_pid);
-    if (unlikely(proc_info == NULL)) {
-        // entry should exist in proc_map (init_program_data should have set it otherwise)
-        // disable logging as a workaround for instruction limit verifier error on kernel 4.19
-        // tracee_log(p->event->ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_MAP_LOOKUP_ELEM, 0);
-        return 0;
-    }
+    proc_info_t *proc_info = p->proc_info;
 
     policies_config_t *policies_cfg = get_policies_config(p);
     if (unlikely(policies_cfg == NULL)) {

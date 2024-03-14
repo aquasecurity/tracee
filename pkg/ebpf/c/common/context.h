@@ -10,7 +10,10 @@
 // PROTOTYPES
 
 statfunc int init_context(void *, event_context_t *, struct task_struct *, u32);
-statfunc task_info_t *init_task_info(u32, u32, u32);
+statfunc void init_proc_info_scratch(u32, scratch_t *);
+statfunc proc_info_t *init_proc_info(u32, u32);
+statfunc void init_task_info_scratch(u32, scratch_t *);
+statfunc task_info_t *init_task_info(u32, u32);
 statfunc bool context_changed(task_context_t *, task_context_t *);
 statfunc int init_program_data(program_data_t *, void *);
 statfunc int init_tailcall_program_data(program_data_t *, void *);
@@ -90,26 +93,38 @@ init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 
     return 0;
 }
 
-statfunc task_info_t *init_task_info(u32 tid, u32 pid, u32 scratch_idx)
+statfunc void init_proc_info_scratch(u32 pid, scratch_t *scratch)
+{
+    __builtin_memset(&scratch->proc_info, 0, sizeof(proc_info_t));
+    bpf_map_update_elem(&proc_info_map, &pid, &scratch->proc_info, BPF_NOEXIST);
+}
+
+statfunc proc_info_t *init_proc_info(u32 pid, u32 scratch_idx)
 {
     scratch_t *scratch = bpf_map_lookup_elem(&scratch_map, &scratch_idx);
     if (unlikely(scratch == NULL))
         return NULL;
 
-    proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &pid);
-    if (proc_info == NULL) {
-        scratch->proc_info.new_proc = false;
-        scratch->proc_info.follow_in_scopes = 0;
-        scratch->proc_info.binary.mnt_id = 0;
-        scratch->proc_info.binary_no_mnt = 0;
-        __builtin_memset(scratch->proc_info.binary.path, 0, MAX_BIN_PATH_SIZE);
-        bpf_map_update_elem(&proc_info_map, &pid, &scratch->proc_info, BPF_NOEXIST);
-    }
+    init_proc_info_scratch(pid, scratch);
 
+    return bpf_map_lookup_elem(&proc_info_map, &pid);
+}
+
+statfunc void init_task_info_scratch(u32 tid, scratch_t *scratch)
+{
     scratch->task_info.syscall_traced = false;
     scratch->task_info.recompute_scope = true;
     scratch->task_info.container_state = CONTAINER_UNKNOWN;
     bpf_map_update_elem(&task_info_map, &tid, &scratch->task_info, BPF_NOEXIST);
+}
+
+statfunc task_info_t *init_task_info(u32 tid, u32 scratch_idx)
+{
+    scratch_t *scratch = bpf_map_lookup_elem(&scratch_map, &scratch_idx);
+    if (unlikely(scratch == NULL))
+        return NULL;
+
+    init_task_info_scratch(tid, scratch);
 
     return bpf_map_lookup_elem(&task_info_map, &tid);
 }
@@ -155,16 +170,21 @@ statfunc int init_program_data(program_data_t *p, void *ctx)
 
     bool container_lookup_required = true;
 
-    p->task_info = bpf_map_lookup_elem(&task_info_map, &p->event->context.task.host_tid);
-    if (unlikely(p->task_info == NULL)) {
-        p->task_info = init_task_info(
-            p->event->context.task.host_tid,
-            p->event->context.task.host_pid,
-            p->scratch_idx
-        );
-        if (unlikely(p->task_info == NULL)) {
+    u32 host_pid = p->event->context.task.host_pid;
+    p->proc_info = bpf_map_lookup_elem(&proc_info_map, &host_pid);
+    if (unlikely(p->proc_info == NULL)) {
+        p->proc_info = init_proc_info(host_pid, p->scratch_idx);
+        if (unlikely(p->proc_info == NULL))
             return 0;
-        }
+    }
+
+    u32 host_tid = p->event->context.task.host_tid;
+    p->task_info = bpf_map_lookup_elem(&task_info_map, &host_tid);
+    if (unlikely(p->task_info == NULL)) {
+        p->task_info = init_task_info(host_tid, p->scratch_idx);
+        if (unlikely(p->task_info == NULL))
+            return 0;
+
         // just initialized task info: recompute_scope is already set to true
         goto out;
     }
