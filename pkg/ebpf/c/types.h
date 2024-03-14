@@ -438,6 +438,7 @@ typedef union scratch {
 typedef struct program_data {
     config_entry_t *config;
     task_info_t *task_info;
+    proc_info_t *proc_info;
     event_data_t *event;
     u32 scratch_idx;
     void *ctx;
