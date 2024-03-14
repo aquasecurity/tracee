@@ -10,7 +10,7 @@
 // PROTOTYPES
 
 statfunc int init_context(void *, event_context_t *, struct task_struct *, u32);
-statfunc task_info_t *init_task_info(u32, u32, scratch_t *);
+statfunc task_info_t *init_task_info(u32, u32, u32);
 statfunc bool context_changed(task_context_t *, task_context_t *);
 statfunc int init_program_data(program_data_t *, void *);
 statfunc int init_tailcall_program_data(program_data_t *, void *);
@@ -90,16 +90,11 @@ init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 
     return 0;
 }
 
-statfunc task_info_t *init_task_info(u32 tid, u32 pid, scratch_t *scratch)
+statfunc task_info_t *init_task_info(u32 tid, u32 pid, u32 scratch_idx)
 {
-    int zero = 0;
-
-    // allow caller to specify a stack/map based scratch_t pointer
-    if (scratch == NULL) {
-        scratch = bpf_map_lookup_elem(&scratch_map, &zero);
-        if (unlikely(scratch == NULL))
-            return NULL;
-    }
+    scratch_t *scratch = bpf_map_lookup_elem(&scratch_map, &scratch_idx);
+    if (unlikely(scratch == NULL))
+        return NULL;
 
     proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &pid);
     if (proc_info == NULL) {
@@ -165,7 +160,7 @@ statfunc int init_program_data(program_data_t *p, void *ctx)
         p->task_info = init_task_info(
             p->event->context.task.host_tid,
             p->event->context.task.host_pid,
-            p->scratch
+            p->scratch_idx
         );
         if (unlikely(p->task_info == NULL)) {
             return 0;

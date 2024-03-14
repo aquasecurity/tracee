@@ -75,7 +75,7 @@ int sys_enter_init(struct bpf_raw_tracepoint_args *ctx)
     task_info_t *task_info = bpf_map_lookup_elem(&task_info_map, &tid);
     if (unlikely(task_info == NULL)) {
         u32 pid = pid_tgid >> 32;
-        task_info = init_task_info(tid, pid, NULL);
+        task_info = init_task_info(tid, pid, 0);
         if (unlikely(task_info == NULL)) {
             return 0;
         }
@@ -210,7 +210,7 @@ int sys_exit_init(struct bpf_raw_tracepoint_args *ctx)
     task_info_t *task_info = bpf_map_lookup_elem(&task_info_map, &tid);
     if (unlikely(task_info == NULL)) {
         u32 pid = pid_tgid >> 32;
-        task_info = init_task_info(tid, pid, NULL);
+        task_info = init_task_info(tid, pid, 0);
         if (unlikely(task_info == NULL)) {
             return 0;
         }
@@ -5785,14 +5785,8 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     if (unlikely(e == NULL))
         return 0;
 
-    scratch_t *s = bpf_map_lookup_elem(&net_heap_scratch, &zero);
-    if (unlikely(s == NULL))
-        return 0;
-
-    program_data_t p = {
-        .event = e,
-        .scratch = s,
-    };
+    program_data_t p = {};
+    p.scratch_idx = 1;
     if (!init_program_data(&p, ctx))
         return 0;
 

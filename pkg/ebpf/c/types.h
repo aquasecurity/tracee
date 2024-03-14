@@ -439,7 +439,7 @@ typedef struct program_data {
     config_entry_t *config;
     task_info_t *task_info;
     event_data_t *event;
-    scratch_t *scratch;
+    u32 scratch_idx;
     void *ctx;
 } program_data_t;
 
