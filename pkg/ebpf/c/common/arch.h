@@ -111,6 +111,7 @@ statfunc struct pt_regs *get_task_pt_regs(struct task_struct *task)
     #define SYSCALL_FDATASYNC              75
     #define SYSCALL_FTRUNCATE              77
     #define SYSCALL_GETDENTS               78
+    #define SYSCALL_CHDIR                  80
     #define SYSCALL_FCHDIR                 81
     #define SYSCALL_FCHMOD                 91
     #define SYSCALL_FCHOWN                 93
@@ -221,6 +222,7 @@ statfunc struct pt_regs *get_task_pt_regs(struct task_struct *task)
     #define SYSCALL_FDATASYNC              83
     #define SYSCALL_FTRUNCATE              46
     #define SYSCALL_GETDENTS               UNDEFINED_SYSCALL
+    #define SYSCALL_CHDIR                  49
     #define SYSCALL_FCHDIR                 50
     #define SYSCALL_FCHMOD                 52
     #define SYSCALL_FCHOWN                 55
