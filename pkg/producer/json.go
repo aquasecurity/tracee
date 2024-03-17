@@ -13,15 +13,10 @@ type jsonEventProducer struct {
 	done chan struct{}
 }
 
-func newJsonEventProducer(input io.Reader) *jsonEventProducer {
+func initJsonEventProducer(input io.Reader) *jsonEventProducer {
 	scanner := bufio.NewScanner(input)
 	scanner.Split(bufio.ScanLines)
 	return &jsonEventProducer{in: scanner, done: make(chan struct{})}
-}
-
-func (j jsonEventProducer) Init() error {
-	// TODO implement me
-	panic("implement me")
 }
 
 func (j jsonEventProducer) Produce() (trace.Event, error) {
