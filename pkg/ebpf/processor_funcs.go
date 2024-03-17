@@ -379,9 +379,9 @@ func (t *Tracee) normalizeEventArgTime(event *trace.Event, argName string) error
 	return nil
 }
 
-// processInitNamespacesEvent processes the init_namespaces event to get system info
+// processInitTraceeDataEvent processes the init_tracee_data event to get system info
 // This processing function is must for analyze mode to work well
-func (t *Tracee) processInitNamespacesEvent(event *trace.Event) error {
+func (t *Tracee) processInitTraceeDataEvent(event *trace.Event) error {
 	t.bootTime = uint64(event.ThreadStartTime)
 	return nil
 }
