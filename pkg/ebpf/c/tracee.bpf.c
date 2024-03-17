@@ -547,9 +547,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 
     // Update the process tree map (filter related) if the parent has an entry.
 
-    policies_config_t *policies_cfg = get_policies_config(&p);
-    if (unlikely(policies_cfg == NULL))
-        return 0;
+    policies_config_t *policies_cfg = &p.event->policies_config;
 
     if (policies_cfg->proc_tree_filter_enabled_scopes) {
         u16 version = p.event->context.policies_version;
@@ -1030,7 +1028,6 @@ int uprobe_lkm_seeker_submitter(struct pt_regs *ctx)
 
     // Uprobes are not triggered by syscalls, so we need to override the false value.
     p.event->context.syscall = NO_SYSCALL;
-    p.event->context.policies_version = p.config->policies_version;
     p.event->context.matched_policies = ULLONG_MAX;
 
     u32 trigger_pid = bpf_get_current_pid_tgid() >> 32;
@@ -1063,7 +1060,6 @@ int uprobe_lkm_seeker(struct pt_regs *ctx)
 
     // Uprobes are not triggered by syscalls, so we need to override the false value.
     p.event->context.syscall = NO_SYSCALL;
-    p.event->context.policies_version = p.config->policies_version;
     p.event->context.matched_policies = ULLONG_MAX;
 
     // uprobe was triggered from other tracee instance
@@ -1582,7 +1578,6 @@ int uprobe_syscall_table_check(struct pt_regs *ctx)
 
     // Uprobes are not triggered by syscalls, so we need to override the false value.
     p.event->context.syscall = NO_SYSCALL;
-    p.event->context.policies_version = p.config->policies_version;
     p.event->context.matched_policies = ULLONG_MAX;
 
     syscall_table_check(&p);
@@ -1619,7 +1614,6 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
 
     // Uprobes are not triggered by syscalls, so we need to override the false value.
     p.event->context.syscall = NO_SYSCALL;
-    p.event->context.policies_version = p.config->policies_version;
     p.event->context.matched_policies = ULLONG_MAX;
 
     // uprobe was triggered from other tracee instance
@@ -1701,7 +1695,6 @@ int uprobe_mem_dump_trigger(struct pt_regs *ctx)
 
     // Uprobes are not triggered by syscalls, so we need to override the false value.
     p.event->context.syscall = NO_SYSCALL;
-    p.event->context.policies_version = p.config->policies_version;
     p.event->context.matched_policies = ULLONG_MAX;
 
     // uprobe was triggered from other tracee instance

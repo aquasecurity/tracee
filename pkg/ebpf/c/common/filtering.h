@@ -9,7 +9,6 @@
 
 // PROTOTYPES
 
-statfunc policies_config_t *get_policies_config(program_data_t *);
 statfunc void *get_filter_map(void *, u16);
 statfunc u64 uint_filter_range_matches(u64, void *, u64, u64, u64);
 statfunc u64 binary_filter_matches(u64, void *, proc_info_t *);
@@ -51,23 +50,6 @@ statfunc u64 should_submit(u32, event_data_t *);
 #define FILTER_MIN_NOT_SET ULLONG_MAX
 
 // FUNCTIONS
-
-statfunc policies_config_t *get_policies_config(program_data_t *p)
-{
-    u16 version = p->event->context.policies_version;
-
-    if (likely(version == p->config->policies_version)) {
-        return &p->config->policies_config;
-    } else {
-        policies_config_map_t *policies_config_map;
-        policies_config_map = bpf_map_lookup_elem(&policies_config_version, &version);
-        if (unlikely(policies_config_map == NULL))
-            return NULL;
-
-        u32 zero = 0;
-        return bpf_map_lookup_elem(policies_config_map, &zero);
-    }
-}
 
 // get_filter_map returns the filter map for the given version and outer map
 statfunc void *get_filter_map(void *outer_map, u16 version)
@@ -214,13 +196,7 @@ statfunc u64 compute_scopes(program_data_t *p)
         return 0;
 
     proc_info_t *proc_info = p->proc_info;
-
-    policies_config_t *policies_cfg = get_policies_config(p);
-    if (unlikely(policies_cfg == NULL)) {
-        // policies_config should be set by userland
-        return 0;
-    }
-
+    policies_config_t *policies_cfg = &p->event->policies_config;
     u64 res = ~0ULL;
 
     //
