@@ -144,6 +144,7 @@ const (
 	SymbolsCollision
 	HiddenKernelModule
 	FtraceHook
+	TraceeInfo
 	MaxUserSpace
 )
 
@@ -11914,6 +11915,19 @@ var CoreEvents = map[ID]Definition{
 			{Type: "u32", Name: "time_for_children"},
 			{Type: "u32", Name: "user"},
 			{Type: "u32", Name: "uts"},
+		},
+	},
+	TraceeInfo: {
+		id:           TraceeInfo,
+		id32Bit:      Sys32Undefined,
+		name:         "tracee_info",
+		version:      NewVersion(1, 0, 0),
+		sets:         []string{},
+		dependencies: Dependencies{},
+		params: []trace.ArgMeta{
+			{Type: "u64", Name: "boot_time"},
+			{Type: "u64", Name: "start_time"},
+			{Type: "const char*", Name: "version"},
 		},
 	},
 	SocketDup: {
