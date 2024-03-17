@@ -1674,6 +1674,14 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		event.MatchedPolicies = t.config.Policies.MatchedNames(matchedPolicies)
 	}
 
+	emit = t.eventsState[events.InitTraceeData].Emit
+	if emit > 0 {
+		traceeDataEvent := events.InitTraceeDataEvent(t.bootTime, t.startTime)
+		setMatchedPolicies(&traceeDataEvent, emit)
+		out <- &traceeDataEvent
+		_ = t.stats.EventCount.Increment()
+	}
+
 	emit = t.eventsState[events.InitNamespaces].Emit
 	if emit > 0 {
 		systemInfoEvent := events.InitNamespacesEvent()
