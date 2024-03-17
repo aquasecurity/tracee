@@ -24,14 +24,15 @@ func New(cfg *config.ProducerConfig) (EventsProducer, error) {
 		return res, errfmt.Errorf("input source is not set")
 	}
 
+	var inputProducer EventsProducer
 	switch kind {
 	case "json":
-		return newJsonEventProducer(cfg.InputSource), nil
+		inputProducer = initJsonEventProducer(cfg.InputSource)
 	case "ebpf":
 		return nil, nil
 	case "rego":
 	default:
 		return nil, fmt.Errorf("unsupported producer kind - %s", cfg.Kind)
 	}
-	return nil, fmt.Errorf("unsupported producer kind - %s", cfg.Kind)
+	return InitTimeFixerProducer(inputProducer), nil
 }
