@@ -9352,7 +9352,7 @@ var CoreEvents = map[ID]Definition{
 				{handle: probes.SchedProcessFork, required: true},
 			},
 		},
-		sets: []string{},
+		sets: []string{"analyze_essentials"},
 		params: []trace.ArgMeta{
 			// Real Parent
 			{Type: "int", Name: "parent_tid"},
@@ -9406,7 +9406,7 @@ var CoreEvents = map[ID]Definition{
 				},
 			},
 		},
-		sets: []string{"default", "proc"},
+		sets: []string{"default", "proc", "analyze_essentials"},
 		params: []trace.ArgMeta{
 			{Type: "const char*", Name: "cmdpath"},
 			{Type: "const char*", Name: "pathname"},
@@ -9456,7 +9456,7 @@ var CoreEvents = map[ID]Definition{
 				{handle: probes.SchedSwitch, required: true},
 			},
 		},
-		sets: []string{},
+		sets: []string{"analyze_essentials"},
 		params: []trace.ArgMeta{
 			{Type: "int", Name: "cpu"},
 			{Type: "int", Name: "prev_tid"},
@@ -10097,7 +10097,7 @@ var CoreEvents = map[ID]Definition{
 		id32Bit:      Sys32Undefined,
 		name:         "init_tracee_info",
 		version:      NewVersion(1, 0, 0),
-		sets:         []string{},
+		sets:         []string{"analyze_essentials"},
 		dependencies: Dependencies{},
 		params: []trace.ArgMeta{
 			{Type: "u64", Name: "boot_time"},

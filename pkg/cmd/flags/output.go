@@ -116,8 +116,6 @@ func setOption(cfg *config.OutputConfig, option string, newBinary bool) error {
 		cfg.ParseArguments = true // no point in parsing file descriptor args only
 	case "sort-events":
 		cfg.EventsSorting = true
-	case "export-analyze":
-		cfg.ExportAnalyze = true
 	default:
 		if newBinary {
 			// TODO: build man page

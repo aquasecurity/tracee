@@ -252,19 +252,6 @@ func New(cfg config.Config) (*Tracee, error) {
 		pipeEvts()
 	}
 
-	if t.config.Output.ExportAnalyze {
-		exportPolicy := policy.NewPolicy()
-		exportPolicy.Name = "Analyze Export Policy"
-		for _, id := range processTreeEvents {
-			exportPolicy.EventsToTrace[id] = ""
-		}
-		exportPolicy.EventsToTrace[events.InitNamespaces] = ""
-		err := t.config.Policies.Add(exportPolicy)
-		if err != nil {
-			logger.Errorw("Failed to create analyze export policy", "err", err)
-		}
-	}
-
 	// Pseudo events added by capture (if enabled by the user)
 
 	for eventID, eCfg := range GetCaptureEventsList(cfg) {
@@ -795,7 +782,6 @@ const (
 	optTranslateFDFilePath
 	optCaptureBpf
 	optCaptureFileRead
-	optForkProcTree
 )
 
 func (t *Tracee) getOptionsConfig() uint32 {
@@ -828,14 +814,6 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	}
 	if t.config.Output.ParseArgumentsFDs {
 		cOptVal = cOptVal | optTranslateFDFilePath
-	}
-	switch t.config.ProcTree.Source {
-	case proctree.SourceBoth, proctree.SourceEvents:
-		cOptVal = cOptVal | optForkProcTree // tell sched_process_fork to be prolix
-	}
-
-	if t.config.Output.ExportAnalyze {
-		cOptVal = cOptVal | optForkProcTree // need full event for building proctree in analyze
 	}
 
 	return cOptVal

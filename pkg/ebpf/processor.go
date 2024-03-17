@@ -117,9 +117,7 @@ func (t *Tracee) registerEventProcessors() {
 		// NOTE: Make sure to convert time related args (of your event) in here.
 		t.RegisterEventProcessor(events.SchedProcessFork, t.processSchedProcessFork)
 	}
-	if !t.config.Output.ExportAnalyze {
-		t.RegisterEventProcessor(events.All, t.normalizeEventCtxTimes)
-	}
+	t.RegisterEventProcessor(events.All, t.normalizeEventCtxTimes)
 }
 
 func initKernelReadFileTypes() {
