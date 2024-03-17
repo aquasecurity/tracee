@@ -98,39 +98,6 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 	)
 }
 
-// procTreeForkRemoveArgs removes arguments needed for the process tree only (when source is events).
-func (t *Tracee) procTreeForkRemoveArgs(event *trace.Event) error {
-	argsToRemove := []string{
-		"up_parent_tid",
-		"up_parent_ns_tid",
-		"up_parent_pid",
-		"up_parent_ns_pid",
-		"up_parent_start_time",
-		"leader_tid",
-		"leader_ns_tid",
-		"leader_pid",
-		"leader_ns_pid",
-		"leader_start_time",
-	}
-
-	m := make(map[string]trace.Argument)
-	for _, arg := range event.Args {
-		m[arg.Name] = arg
-	}
-
-	for _, argName := range argsToRemove {
-		delete(m, argName)
-	}
-
-	event.Args = make([]trace.Argument, 0, len(m))
-	for _, arg := range m {
-		event.Args = append(event.Args, arg)
-	}
-	event.ArgsNum = len(event.Args)
-
-	return nil
-}
-
 // procTreeExecProcessor handles process exec events.
 func (t *Tracee) procTreeExecProcessor(event *trace.Event) error {
 	var errs []error
