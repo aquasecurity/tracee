@@ -11172,13 +11172,12 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "child_ns_pid"},
 			{Type: "unsigned long", Name: "start_time"}, // child_start_time
 			// Arguments set by OPT_PROCESS_FORK (when process tree source is enabled for fork events).
-			// These arguments are always removed after process tree processing.
-			// Up Parent (Up in hierarchy until parent is a process and not a lwp)
-			{Type: "int", Name: "up_parent_tid"},
-			{Type: "int", Name: "up_parent_ns_tid"},
-			{Type: "int", Name: "up_parent_pid"},
-			{Type: "int", Name: "up_parent_ns_pid"},
-			{Type: "unsigned long", Name: "up_parent_start_time"},
+			// Parent Process (Go up in hierarchy until parent is a process and not a lwp)
+			{Type: "int", Name: "parent_process_tid"},
+			{Type: "int", Name: "parent_process_ns_tid"},
+			{Type: "int", Name: "parent_process_pid"},
+			{Type: "int", Name: "parent_process_ns_pid"},
+			{Type: "unsigned long", Name: "parent_process_start_time"},
 			// Thread Group Leader
 			{Type: "int", Name: "leader_tid"},
 			{Type: "int", Name: "leader_ns_tid"},
@@ -13149,12 +13148,12 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "child_pid"},
 			{Type: "int", Name: "child_ns_pid"},
 			{Type: "unsigned long", Name: "start_time"}, // child_start_time
-			// Up Parent (Up in hierarchy until parent is a process and not a lwp)
-			{Type: "int", Name: "up_parent_tid"},
-			{Type: "int", Name: "up_parent_ns_tid"},
-			{Type: "int", Name: "up_parent_pid"},
-			{Type: "int", Name: "up_parent_ns_pid"},
-			{Type: "unsigned long", Name: "up_parent_start_time"},
+			// Parent Process (Go up in hierarchy until parent is a process and not a lwp)
+			{Type: "int", Name: "parent_process_tid"},
+			{Type: "int", Name: "parent_process_ns_tid"},
+			{Type: "int", Name: "parent_process_pid"},
+			{Type: "int", Name: "parent_process_ns_pid"},
+			{Type: "unsigned long", Name: "parent_process_start_time"},
 			// Thread Group Leader
 			{Type: "int", Name: "leader_tid"},
 			{Type: "int", Name: "leader_ns_tid"},

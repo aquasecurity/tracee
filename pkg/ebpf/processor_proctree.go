@@ -25,16 +25,16 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 
 	// NOTE: The "parent" related arguments can be ignored for process tree purposes.
 
-	// Up Parent (Up in hierarchy until parent is a process and not a lwp)
-	parentTid, err := parse.ArgVal[int32](event.Args, "up_parent_tid")
+	// Parent Process (Go up in hierarchy until parent is a process and not a lwp)
+	parentTid, err := parse.ArgVal[int32](event.Args, "parent_process_tid")
 	errs = append(errs, err)
-	parentNsTid, err := parse.ArgVal[int32](event.Args, "up_parent_ns_tid")
+	parentNsTid, err := parse.ArgVal[int32](event.Args, "parent_process_ns_tid")
 	errs = append(errs, err)
-	parentPid, err := parse.ArgVal[int32](event.Args, "up_parent_pid")
+	parentPid, err := parse.ArgVal[int32](event.Args, "parent_process_pid")
 	errs = append(errs, err)
-	parentNsPid, err := parse.ArgVal[int32](event.Args, "up_parent_ns_pid")
+	parentNsPid, err := parse.ArgVal[int32](event.Args, "parent_process_ns_pid")
 	errs = append(errs, err)
-	parentStartTime, err := parse.ArgVal[uint64](event.Args, "up_parent_start_time")
+	parentStartTime, err := parse.ArgVal[uint64](event.Args, "parent_process_start_time")
 	errs = append(errs, err)
 
 	// Thread Group Leader (might be the same as the "child", if "child" is a process)
@@ -96,39 +96,6 @@ func (t *Tracee) procTreeForkProcessor(event *trace.Event) error {
 			ChildStartTime:  childStartTime,
 		},
 	)
-}
-
-// procTreeForkRemoveArgs removes arguments needed for the process tree only (when source is events).
-func (t *Tracee) procTreeForkRemoveArgs(event *trace.Event) error {
-	argsToRemove := []string{
-		"up_parent_tid",
-		"up_parent_ns_tid",
-		"up_parent_pid",
-		"up_parent_ns_pid",
-		"up_parent_start_time",
-		"leader_tid",
-		"leader_ns_tid",
-		"leader_pid",
-		"leader_ns_pid",
-		"leader_start_time",
-	}
-
-	m := make(map[string]trace.Argument)
-	for _, arg := range event.Args {
-		m[arg.Name] = arg
-	}
-
-	for _, argName := range argsToRemove {
-		delete(m, argName)
-	}
-
-	event.Args = make([]trace.Argument, 0, len(m))
-	for _, arg := range m {
-		event.Args = append(event.Args, arg)
-	}
-	event.ArgsNum = len(event.Args)
-
-	return nil
 }
 
 // procTreeExecProcessor handles process exec events.

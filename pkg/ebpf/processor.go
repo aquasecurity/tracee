@@ -93,8 +93,6 @@ func (t *Tracee) registerEventProcessors() {
 	if t.config.ProcTree.Source != proctree.SourceNone {
 		t.RegisterEventProcessor(events.All, t.procTreeAddBinInfo)
 	}
-	// Processors regitered even if process tree source is disabled.
-	t.RegisterEventProcessor(events.SchedProcessFork, t.procTreeForkRemoveArgs)
 
 	//
 	// DNS Cache Processors
