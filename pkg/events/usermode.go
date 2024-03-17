@@ -49,6 +49,27 @@ func InitNamespacesEvent() trace.Event {
 	return initNamespacesEvent
 }
 
+// InitTraceeDataEvent exports data related to Tracee's initialization
+func InitTraceeDataEvent(bootTime uint64, startTime uint64) trace.Event {
+	def := Core.GetDefinitionByID(InitTraceeData)
+	params := def.GetParams()
+	args := []trace.Argument{
+		{ArgMeta: params[0], Value: bootTime},
+		{ArgMeta: params[1], Value: startTime},
+	}
+
+	initTraceeDataEvent := trace.Event{
+		Timestamp:   int(time.Now().UnixNano()),
+		ProcessName: "tracee-ebpf",
+		EventID:     int(def.GetID()),
+		EventName:   def.GetName(),
+		ArgsNum:     len(args),
+		Args:        args,
+	}
+
+	return initTraceeDataEvent
+}
+
 // getInitNamespaceArguments fetches the namespaces of the init process and
 // parse them into event arguments.
 func getInitNamespaceArguments() []trace.Argument {
