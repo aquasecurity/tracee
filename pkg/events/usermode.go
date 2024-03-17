@@ -26,6 +26,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	traceeversion "github.com/aquasecurity/tracee/pkg/version"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -47,6 +48,28 @@ func InitNamespacesEvent() trace.Event {
 	}
 
 	return initNamespacesEvent
+}
+
+// TraceeInfoEvent exports data related to Tracee's initialization
+func TraceeInfoEvent(bootTime uint64, startTime uint64) trace.Event {
+	def := Core.GetDefinitionByID(TraceeInfo)
+	params := def.GetParams()
+	args := []trace.Argument{
+		{ArgMeta: params[0], Value: bootTime},
+		{ArgMeta: params[1], Value: startTime},
+		{ArgMeta: params[2], Value: traceeversion.GetVersion()},
+	}
+
+	traceeInfoEvent := trace.Event{
+		Timestamp:   int(time.Now().UnixNano()),
+		ProcessName: "tracee",
+		EventID:     int(def.GetID()),
+		EventName:   def.GetName(),
+		ArgsNum:     len(args),
+		Args:        args,
+	}
+
+	return traceeInfoEvent
 }
 
 // getInitNamespaceArguments fetches the namespaces of the init process and
