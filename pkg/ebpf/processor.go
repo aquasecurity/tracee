@@ -94,10 +94,6 @@ func (t *Tracee) registerEventProcessors() {
 	default: // Register processors for whenever proc tree is enabled
 		t.RegisterEventProcessor(events.All, t.procTreeAddBinInfo)
 	}
-	if !t.config.Output.ExportAnalyze {
-		// Processors related to proctree that runs even when proctree is disabled
-		t.RegisterEventProcessor(events.SchedProcessFork, t.procTreeForkRemoveArgs)
-	}
 
 	// Process events from the regular pipeline.
 	// NOTE: Your processor goes very likely here.

@@ -9367,7 +9367,6 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "child_ns_pid"},
 			{Type: "unsigned long", Name: "start_time"}, // child_start_time
 			// Arguments set by OPT_PROCESS_FORK (when process tree source is enabled for fork events).
-			// These arguments are always removed after process tree processing.
 			// Up Parent (Up in hierarchy until parent is a process and not a lwp)
 			{Type: "int", Name: "up_parent_tid"},
 			{Type: "int", Name: "up_parent_ns_tid"},
