@@ -28,13 +28,30 @@ while providing as much as possible the arguments as used by the kernel.
 #### Type
 kprobe
 #### Purpose
-Fetch the arguments of exec_binprm
+To retrieve the arguments of exec_binprm.
+Used for kernels older than 5.8.
 
 ### exec_binprm
 #### Type
 kretprobe
 #### Purpose
-Fetch the return value of exec_binprm
+To retrieve the return value of exec_binprm and generate the event.
+Used for kernels older than 5.8.
+
+### security_bprm_creds_for_exec
+#### Type
+kprobe
+#### Purpose
+To retrieve the arguments for the event.
+Relevant from kernel version 5.8 onwards, as the function was added in that kernel.
+
+### sys_enter
+#### Type
+tracepoint
+#### Purpose
+To obtain the return code of the execution, determining whether to generate the event.
+For a failed execution, an event will be generated using the information from the `security_bprm_creds_for_exec` hook.
+Relevant from kernel version 5.8 onwards, matching the `security_bprm_creds_for_exec` hook.
 
 ## Example Use Case
 
@@ -43,7 +60,8 @@ Fetch the return value of exec_binprm
 ```
 
 ## Issues
-Currently, only covers failed executions that are happening within exec_binprm. Other failures may occur at an earlier stage.
+The `exec_binprm` symbol is not available in some systems, potentially resulting in the failure to load the event in kernels older than 5.8.
+For kernels older than 5.8, the event only encompasses failed executions occurring within `exec_binprm`. Other failures may occur at an earlier stage. Newer versions do not account for failures before `security_bprm_creds_for_exec`, which precedes `exec_binprm`.
 
 ## Related Events
 execve,execveat,bprm_check,sched_process_exec

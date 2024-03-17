@@ -127,6 +127,7 @@ const (
 	BpfCheck
 	ExecBinprm
 	ExecBinprmRet
+	SecurityBprmCredsForExec
 	HiddenKernelModuleSeeker
 	TpProbeRegPrioMayExist
 	HiddenKernelModuleVerifier

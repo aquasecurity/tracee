@@ -612,6 +612,12 @@ func (t *Tracee) initDerivationTable() error {
 	}
 	symbolsCollisions := derive.SymbolsCollision(t.contSymbolsLoader, t.config.Policies)
 
+	executeFailedGen, err := derive.InitProcessExecuteFailedGenerator()
+	if err != nil {
+		logger.Errorw("failed to init derive function for ProcessExecuteFiled", "error", err)
+		return nil
+	}
+
 	t.eventDerivations = derive.Table{
 		events.CgroupMkdir: {
 			events.ContainerCreate: {
@@ -668,6 +674,18 @@ func (t *Tracee) initDerivationTable() error {
 				DeriveFunction: derive.NetTCPConnect(
 					t.dnsCache,
 				),
+			},
+		},
+		events.ExecuteFinished: {
+			events.ProcessExecuteFailed: {
+				Enabled:        shouldSubmit(events.ProcessExecuteFailed),
+				DeriveFunction: executeFailedGen.ProcessExecuteFailed(),
+			},
+		},
+		events.SecurityBprmCredsForExec: {
+			events.ProcessExecuteFailed: {
+				Enabled:        shouldSubmit(events.ProcessExecuteFailed),
+				DeriveFunction: executeFailedGen.ProcessExecuteFailed(),
 			},
 		},
 		//
@@ -1065,41 +1083,52 @@ func (t *Tracee) cancelEventFromEventState(evtID events.ID) {
 // attachProbes attaches selected events probes to their respective eBPF progs
 func (t *Tracee) attachProbes() error {
 	var err error
-
-	// Get probe dependencies for a given event ID
-	getProbeDeps := func(id events.ID) []events.Probe {
-		return events.Core.GetDefinitionByID(id).GetDependencies().GetProbes()
+	type eventProbe struct {
+		event events.ID
+		probe events.Probe
 	}
 
 	// Get the list of probes to attach for each event being traced.
-	probesToEvents := make(map[events.Probe][]events.ID)
+	probesToEvents := make(map[probes.Handle][]eventProbe)
 	for id := range t.eventsState {
 		if !events.Core.IsDefined(id) {
 			continue
 		}
-		for _, probeDep := range getProbeDeps(id) {
-			probesToEvents[probeDep] = append(probesToEvents[probeDep], id)
+		eventDefinition := events.Core.GetDefinitionByID(id)
+		for _, probeDep := range eventDefinition.GetDependencies().GetProbes() {
+			isRelevant, err := probeDep.IsOsCompatible(t.config.OSInfo)
+			if err != nil {
+				logger.Errorw("Event's probe relevance check failed, assuming not relevant",
+					"event", eventDefinition.GetName(), "probe", probeDep.GetHandle(),
+					"error", err)
+				continue
+			}
+			if isRelevant {
+				handle := probeDep.GetHandle()
+				eprobe := eventProbe{probe: probeDep, event: id}
+				probesToEvents[handle] = append(probesToEvents[handle], eprobe)
+			}
 		}
 	}
 
 	// Attach probes to their respective eBPF programs or cancel events if a required probe is missing.
-	for probe, evtID := range probesToEvents {
-		err = t.probes.Attach(probe.GetHandle(), t.cgroups) // attach bpf program to probe
+	for handle, eventsProbes := range probesToEvents {
+		err = t.probes.Attach(handle, t.cgroups) // attach bpf program to probe
 		if err != nil {
-			for _, evtID := range evtID {
-				evtName := events.Core.GetDefinitionByID(evtID).GetName()
-				if probe.IsRequired() {
+			for _, evProbe := range eventsProbes {
+				evtName := events.Core.GetDefinitionByID(evProbe.event).GetName()
+				if evProbe.probe.IsRequired() {
 					logger.Warnw(
 						"Cancelling event and its dependencies because of missing probe",
-						"missing probe", probe.GetHandle(), "event", evtName,
+						"missing probe", handle, "event", evtName,
 						"error", err,
 					)
-					t.cancelEventFromEventState(evtID) // cancel event recursively
+					t.cancelEventFromEventState(evProbe.event) // cancel event recursively
 				} else {
 					logger.Debugw(
 						"Failed to attach non-required probe for event",
 						"event", evtName,
-						"probe", probe.GetHandle(), "error", err,
+						"probe", handle, "error", err,
 					)
 				}
 			}
@@ -1489,7 +1518,7 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 // userland process itself, and not from the kernel. These events usually serve as informational
 // events for the signatures engine/logic.
 func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
-	var emit uint64
+	var matchedPolicies uint64
 
 	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64, pols *policy.Policies) {
 		event.PoliciesVersion = pols.Version()
@@ -1498,24 +1527,28 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		event.MatchedPolicies = pols.MatchedNames(matchedPolicies)
 	}
 
+	policiesMatch := func(state events.EventState) uint64 {
+		return state.Emit | state.Submit
+	}
+
 	// Initial namespace events
 
-	emit = t.eventsState[events.InitNamespaces].Emit
-	if emit > 0 {
+	matchedPolicies = policiesMatch(t.eventsState[events.InitNamespaces])
+	if matchedPolicies > 0 {
 		systemInfoEvent := events.InitNamespacesEvent()
-		setMatchedPolicies(&systemInfoEvent, emit, t.config.Policies)
+		setMatchedPolicies(&systemInfoEvent, matchedPolicies, t.config.Policies)
 		out <- &systemInfoEvent
 		_ = t.stats.EventCount.Increment()
 	}
 
 	// Initial existing containers events (1 event per container)
 
-	emit = t.eventsState[events.ExistingContainer].Emit
-	if emit > 0 {
+	matchedPolicies = policiesMatch(t.eventsState[events.ExistingContainer])
+	if matchedPolicies > 0 {
 		existingContainerEvents := events.ExistingContainersEvents(t.containers, t.config.NoContainersEnrich)
 		for i := range existingContainerEvents {
 			event := &(existingContainerEvents[i])
-			setMatchedPolicies(event, emit, t.config.Policies)
+			setMatchedPolicies(event, matchedPolicies, t.config.Policies)
 			out <- event
 			_ = t.stats.EventCount.Increment()
 		}
@@ -1523,10 +1556,10 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 
 	// Ftrace hook event
 
-	emit = t.eventsState[events.FtraceHook].Emit
-	if emit > 0 {
+	matchedPolicies = policiesMatch(t.eventsState[events.FtraceHook])
+	if matchedPolicies > 0 {
 		ftraceBaseEvent := events.GetFtraceBaseEvent()
-		setMatchedPolicies(ftraceBaseEvent, emit, t.config.Policies)
+		setMatchedPolicies(ftraceBaseEvent, matchedPolicies, t.config.Policies)
 		logger.Debugw("started ftraceHook goroutine")
 
 		// TODO: Ideally, this should be inside the goroutine and be computed before each run,
