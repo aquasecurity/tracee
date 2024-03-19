@@ -279,9 +279,9 @@ int sys_exit_submit(struct bpf_raw_tracepoint_args *ctx)
     if (!should_submit(sys->id, p.event))
         goto out;
 
-    // We can't use saved args after execve syscall, as pointers are invalid.
-    // To avoid showing execve event both on entry and exit, we only output failed execs.
-    if ((sys->id == SYSCALL_EXECVE || sys->id == SYSCALL_EXECVEAT) && (ret == 0))
+    // exec syscalls are different since the pointers are invalid after a successful exec.
+    // we use a special handler (tail called) to only handle failed execs on syscall exit.
+    if (sys->id == SYSCALL_EXECVE || sys->id == SYSCALL_EXECVEAT)
         goto out;
 
     save_args_to_submit_buf(p.event, &sys->args);
@@ -360,7 +360,7 @@ int trace_sys_exit(struct bpf_raw_tracepoint_args *ctx)
 }
 
 SEC("raw_tracepoint/sys_execve")
-int syscall__execve(void *ctx)
+int syscall__execve_enter(void *ctx)
 {
     program_data_t p = {};
     if (!init_tailcall_program_data(&p, ctx))
@@ -385,8 +385,36 @@ int syscall__execve(void *ctx)
     return events_perf_submit(&p, SYSCALL_EXECVE, 0);
 }
 
+SEC("raw_tracepoint/sys_execve")
+int syscall__execve_exit(void *ctx)
+{
+    program_data_t p = {};
+    if (!init_tailcall_program_data(&p, ctx))
+        return 0;
+
+    syscall_data_t *sys = &p.task_info->syscall_data;
+    // To avoid showing execve event both on entry and exit, we only output failed execs.
+    if (!sys->ret)
+        return -1;
+
+    p.event->context.ts = sys->ts;
+
+    if (!should_submit(SYSCALL_EXECVE, p.event))
+        return 0;
+
+    reset_event_args(&p);
+    save_str_to_buf(&p.event->args_buf, (void *) sys->args.args[0] /*filename*/, 0);
+    save_str_arr_to_buf(&p.event->args_buf, (const char *const *) sys->args.args[1] /*argv*/, 1);
+    if (p.config->options & OPT_EXEC_ENV) {
+        save_str_arr_to_buf(
+            &p.event->args_buf, (const char *const *) sys->args.args[2] /*envp*/, 2);
+    }
+
+    return events_perf_submit(&p, SYSCALL_EXECVE, sys->ret);
+}
+
 SEC("raw_tracepoint/sys_execveat")
-int syscall__execveat(void *ctx)
+int syscall__execveat_enter(void *ctx)
 {
     program_data_t p = {};
     if (!init_tailcall_program_data(&p, ctx))
@@ -411,6 +439,36 @@ int syscall__execveat(void *ctx)
     save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[4] /*flags*/, sizeof(int), 4);
 
     return events_perf_submit(&p, SYSCALL_EXECVEAT, 0);
+}
+
+SEC("raw_tracepoint/sys_execveat")
+int syscall__execveat_exit(void *ctx)
+{
+    program_data_t p = {};
+    if (!init_tailcall_program_data(&p, ctx))
+        return 0;
+
+    syscall_data_t *sys = &p.task_info->syscall_data;
+    // To avoid showing execve event both on entry and exit, we only output failed execs.
+    if (!sys->ret)
+        return -1;
+
+    p.event->context.ts = sys->ts;
+
+    if (!should_submit(SYSCALL_EXECVEAT, p.event))
+        return 0;
+
+    reset_event_args(&p);
+    save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0] /*dirfd*/, sizeof(int), 0);
+    save_str_to_buf(&p.event->args_buf, (void *) sys->args.args[1] /*pathname*/, 1);
+    save_str_arr_to_buf(&p.event->args_buf, (const char *const *) sys->args.args[2] /*argv*/, 2);
+    if (p.config->options & OPT_EXEC_ENV) {
+        save_str_arr_to_buf(
+            &p.event->args_buf, (const char *const *) sys->args.args[3] /*envp*/, 3);
+    }
+    save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[4] /*flags*/, sizeof(int), 4);
+
+    return events_perf_submit(&p, SYSCALL_EXECVEAT, sys->ret);
 }
 
 statfunc int send_socket_dup(program_data_t *p, u64 oldfd, u64 newfd)
