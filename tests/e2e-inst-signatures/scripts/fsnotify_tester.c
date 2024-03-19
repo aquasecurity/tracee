@@ -32,11 +32,6 @@ static void mkdir_exist_ok(const char *path)
     }
 }
 
-static void handle_dnotify_event(int sig, siginfo_t *si, void *ucontext)
-{
-    return;
-}
-
 static void dnotify_watch(const char *path)
 {
     int fd;

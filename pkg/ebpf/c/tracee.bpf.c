@@ -5121,6 +5121,12 @@ int BPF_KPROBE(trace_security_path_notify)
     if (!init_program_data(&p, ctx))
         return 0;
 
+    if (!should_trace(&p))
+        return 0;
+
+    if (!should_submit(SECURITY_PATH_NOTIFY, p.event))
+        return 0;
+
     struct path *path = (struct path *) PT_REGS_PARM1(ctx);
     void *path_str = get_path_str(path);
     struct dentry *dentry = BPF_CORE_READ(path, dentry);
