@@ -263,6 +263,14 @@ statfunc int init_tailcall_program_data(program_data_t *p, void *ctx)
         return 0;
     }
 
+    p->proc_info = bpf_map_lookup_elem(&proc_info_map, &p->event->context.task.host_pid);
+    if (unlikely(p->proc_info == NULL)) {
+        return 0;
+    }
+
+    p->event->args_buf.offset = 0;
+    p->event->args_buf.argnum = 0;
+
     return 1;
 }
 
