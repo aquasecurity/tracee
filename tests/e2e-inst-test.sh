@@ -129,7 +129,7 @@ for TEST in $TESTS; do
         --output option:parse-arguments \
         --log file:$SCRIPT_TMP_DIR/tracee-log-$$ \
         --signatures-dir "$SIG_DIR" \
-        --scope comm=echo,mv,ls,tracee,proctreetester,ping,ds_writer \
+        --scope comm=echo,mv,ls,tracee,proctreetester,ping,ds_writer,fsnotify_tester \
         --dnscache enable \
         --grpc-listen-addr unix:/tmp/tracee.sock \
         --events "$TEST" &

@@ -102,6 +102,7 @@ const (
 	InotifyWatch
 	SecurityBpfProg
 	ProcessExecuteFailed
+	SecurityPathNotify
 	HiddenKernelModuleSeeker
 	ModuleLoad
 	ModuleFree
@@ -12928,6 +12929,25 @@ var CoreEvents = map[ID]Definition{
 			{Type: "const char*", Name: "callback_owner"},
 			{Type: "const char*", Name: "flags"},
 			{Type: "unsigned long", Name: "count"},
+		},
+	},
+	SecurityPathNotify: {
+		id:      SecurityPathNotify,
+		id32Bit: Sys32Undefined,
+		name:    "security_path_notify",
+		version: NewVersion(1, 0, 0),
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SecurityPathNotify, required: true},
+			},
+		},
+		sets: []string{"lsm_hooks", "fs_monitor"},
+		params: []trace.ArgMeta{
+			{Type: "const char*", Name: "pathname"},
+			{Type: "unsigned long", Name: "inode"},
+			{Type: "dev_t", Name: "dev"},
+			{Type: "u64", Name: "mask"},
+			{Type: "unsigned int", Name: "obj_type"},
 		},
 	},
 	//
