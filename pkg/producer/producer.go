@@ -2,6 +2,7 @@ package producer
 
 import (
 	"fmt"
+
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -29,7 +30,7 @@ func New(cfg *config.ProducerConfig) (EventsProducer, error) {
 		inputProducer = initJsonEventProducer(cfg.InputSource)
 	case "rego":
 	default:
-		return nil, fmt.Errorf("unsuupported producer kind - %s", cfg.Kind)
+		return nil, fmt.Errorf("unsupported producer kind - %s", cfg.Kind)
 	}
-	return initTimeFixerProducer(inputProducer)
+	return InitTimeFixerProducer(inputProducer), nil
 }

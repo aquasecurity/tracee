@@ -382,6 +382,7 @@ func (t *Tracee) normalizeEventArgTime(event *trace.Event, argName string) error
 // processInitTraceeDataEvent processes the init_tracee_data event to get system info
 // This processing function is must for analyze mode to work well
 func (t *Tracee) processInitTraceeDataEvent(event *trace.Event) error {
-	t.bootTime = parse.ArgVal[uint64](event.Args, "boot_time")
-	return nil
+	var err error
+	t.bootTime, err = parse.ArgVal[uint64](event.Args, "boot_time")
+	return err
 }

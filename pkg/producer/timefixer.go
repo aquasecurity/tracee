@@ -1,28 +1,39 @@
 package producer
 
+import (
+	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/types/trace"
+)
+
 // A decorator producer that is responsible to fix events timestamps so they
 // will match the ones received from the kernel.
 // In practice, it means changing all times from being since epoch to monotonic
 // times (since boot).
 type TimeFixerProducer struct {
 	internalProducer EventsProducer
-	bootTime         uint64
+	bootTime         int
 }
 
-func initTimeFixerProducer(producer EventsProducer) *TimeFixerProducer {
+func InitTimeFixerProducer(producer EventsProducer) *TimeFixerProducer {
 	return &TimeFixerProducer{
-		internalProdcer: producer,
+		internalProducer: producer,
 	}
 }
 
 func (tfixer *TimeFixerProducer) Produce() (trace.Event, error) {
-	event, err := internalProducer.Produce()
+	event, err := tfixer.internalProducer.Produce()
 	if err != nil {
 		return trace.Event{}, nil
 	}
-	switch event.ID {
+	switch events.ID(event.EventID) {
 	case events.InitTraceeData:
-		tfixer.bootTime = parse.ArgVal[uint64](event.Args, "boot_time")
+		bootTime, err := parse.ArgVal[uint64](event.Args, "boot_time")
+		if err != nil {
+			return event, err
+		}
+		tfixer.bootTime = int(bootTime)
+		fallthrough
 	default:
 		event.Timestamp -= tfixer.bootTime
 	}
