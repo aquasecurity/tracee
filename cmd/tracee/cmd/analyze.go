@@ -182,6 +182,9 @@ tracee analyze --events anti_debugging events.json`,
 }
 
 func produce(ctx context.Context, inputFile *os.File, engineInput chan protocol.Event) {
+	// ensure the engineInput channel will be closed
+	defer close(engineInput)
+
 	scanner := bufio.NewScanner(inputFile)
 	scanner.Split(bufio.ScanLines)
 	for {
@@ -190,7 +193,6 @@ func produce(ctx context.Context, inputFile *os.File, engineInput chan protocol.
 			return
 		default:
 			if !scanner.Scan() { // if EOF or error close the done channel and return
-				close(engineInput)
 				return
 			}
 
