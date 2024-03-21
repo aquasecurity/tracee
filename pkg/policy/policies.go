@@ -27,6 +27,7 @@ var AlwaysSubmit = events.EventState{
 type Policies struct {
 	rwmu sync.RWMutex
 
+	config                   config.PoliciesConfig
 	version                  uint32                    // updated on snapshot store
 	bpfInnerMaps             map[string]*bpf.BPFMapLow // BPF inner maps
 	policiesArray            [MaxPolicies]*Policy      // underlying filter policies array
@@ -44,9 +45,10 @@ type Policies struct {
 	containerFiltersEnabled   uint64 // bitmap of policies that have at least one container filter type enabled
 }
 
-func NewPolicies() *Policies {
+func NewPolicies(cfg config.PoliciesConfig) *Policies {
 	return &Policies{
 		rwmu:                      sync.RWMutex{},
+		config:                    cfg,
 		version:                   0,
 		bpfInnerMaps:              map[string]*bpf.BPFMapLow{},
 		policiesArray:             [MaxPolicies]*Policy{},
@@ -283,7 +285,7 @@ func (ps *Policies) Clone() utils.Cloner {
 		return nil
 	}
 
-	nPols := NewPolicies()
+	nPols := NewPolicies(ps.config)
 
 	// Deep copy of all policies
 	ps.rwmu.RLock()

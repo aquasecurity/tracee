@@ -203,3 +203,28 @@ type PrinterConfig struct {
 	ContainerMode ContainerMode
 	RelativeTS    bool
 }
+
+// PoliciesConfig holds the Tracee configuration required by the Policies computation.
+type PoliciesConfig struct {
+	DNSCacheConfig bool
+	ProcTreeSource proctree.SourceType
+	Capture        CaptureConfig
+}
+
+// NewPoliciesConfig returns a new PoliciesConfig based on the given Tracee configuration.
+func NewPoliciesConfig(cfg Config) PoliciesConfig {
+	return PoliciesConfig{
+		DNSCacheConfig: cfg.DNSCacheConfig.Enable,
+		ProcTreeSource: cfg.ProcTree.Source,
+		Capture: CaptureConfig{
+			OutputPath: cfg.Capture.OutputPath,
+			FileWrite:  cfg.Capture.FileWrite,
+			FileRead:   cfg.Capture.FileRead,
+			Module:     cfg.Capture.Module,
+			Exec:       cfg.Capture.Exec,
+			Mem:        cfg.Capture.Mem,
+			Bpf:        cfg.Capture.Bpf,
+			Net:        cfg.Capture.Net,
+		},
+	}
+}
