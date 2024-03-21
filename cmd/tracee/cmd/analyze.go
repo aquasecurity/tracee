@@ -135,35 +135,43 @@ tracee analyze --events anti_debugging events.json`,
 
 		engineOutput := make(chan *detect.Finding)
 		engineInput := make(chan protocol.Event)
-		producerFinished := make(chan interface{})
 
 		source := engine.EventSources{Tracee: engineInput}
 		sigEngine, err := engine.NewEngine(engineConfig, source, engineOutput)
 		if err != nil {
 			logger.Fatalw("Failed to create engine", "err", err)
 		}
+
+		err = sigEngine.Init()
+		if err != nil {
+			logger.Fatalw("failed to initialize signature engine", "err", err)
+		}
+
 		go sigEngine.Start(ctx)
 
 		// producer
-		go produce(ctx, producerFinished, inputFile, engineInput)
+		go produce(ctx, inputFile, engineInput)
 
 		// consumer
 		for {
 			select {
-			case finding := <-engineOutput:
+			case finding, ok := <-engineOutput:
+				if !ok {
+					return
+				}
 				process(finding)
-			case <-producerFinished:
-				goto drain // producer finished, drain and process all remaining events
 			case <-ctx.Done():
 				goto drain
 			}
 		}
-
 	drain:
 		// drain
 		for {
 			select {
-			case finding := <-engineOutput:
+			case finding, ok := <-engineOutput:
+				if !ok {
+					return
+				}
 				process(finding)
 			default:
 				return
@@ -173,7 +181,10 @@ tracee analyze --events anti_debugging events.json`,
 	DisableFlagsInUseLine: true,
 }
 
-func produce(ctx context.Context, done chan interface{}, inputFile *os.File, engineInput chan protocol.Event) {
+func produce(ctx context.Context, inputFile *os.File, engineInput chan protocol.Event) {
+	// ensure the engineInput channel will be closed
+	defer close(engineInput)
+
 	scanner := bufio.NewScanner(inputFile)
 	scanner.Split(bufio.ScanLines)
 	for {
@@ -182,7 +193,6 @@ func produce(ctx context.Context, done chan interface{}, inputFile *os.File, eng
 			return
 		default:
 			if !scanner.Scan() { // if EOF or error close the done channel and return
-				close(done)
 				return
 			}
 
