@@ -196,6 +196,7 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	t := &Tracee{
 		config:          cfg,
+		stats:           metrics.NewStats(),
 		done:            make(chan struct{}),
 		writtenFiles:    make(map[string]string),
 		readFiles:       make(map[string]string),
