@@ -1,0 +1,12 @@
+apiVersion: aquasecurity.github.io/v1beta1
+kind: TraceePolicy
+metadata:
+  name: bpf-attach
+  annotations:
+    # https://aquasecurity.github.io/tracee/v0.17/docs/events/builtin/extra/bpf_attach/
+    description: traces whether a BPF program was attached to a probe in the system
+spec:
+  scope: 
+    - global
+  rules:
+    - event: bpf_attach
