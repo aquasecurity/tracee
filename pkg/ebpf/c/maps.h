@@ -246,6 +246,14 @@ struct sys_exit_init_tail {
 
 typedef struct sys_exit_init_tail sys_exit_init_tail_t;
 
+// store program for performing syscall checking logic
+struct check_syscall_source_tail {
+    __uint(type, BPF_MAP_TYPE_PROG_ARRAY);
+    __uint(max_entries, MAX_EVENT_ID);
+    __type(key, u32);
+    __type(value, u32);
+} check_syscall_source_tail SEC(".maps");
+
 // store stack traces
 #define MAX_STACK_ADDRESSES 1024 // max amount of diff stack trace addrs to buffer
 

@@ -284,7 +284,20 @@ struct signal_struct {
     atomic_t live;
 };
 
+struct rb_node {
+    struct rb_node *rb_right;
+    struct rb_node *rb_left;
+} __attribute__((aligned(sizeof(long))));
+
 struct vm_area_struct {
+    union {
+        struct {
+            unsigned long vm_start;
+            unsigned long vm_end;
+        };
+    };
+    struct rb_node vm_rb;
+    struct mm_struct *vm_mm;
     long unsigned int vm_flags;
     struct file *vm_file;
 };
@@ -634,8 +647,17 @@ struct super_block {
     unsigned long s_magic;
 };
 
+struct rb_root {
+    struct rb_node *rb_node;
+};
+
 struct mm_struct {
     struct {
+        struct rb_root mm_rb;
+        long unsigned int stack_vm;
+        long unsigned int start_brk;
+        long unsigned int brk;
+        long unsigned int start_stack;
         long unsigned int arg_start;
         long unsigned int arg_end;
         long unsigned int env_start;
@@ -677,6 +699,7 @@ enum bpf_func_id
     BPF_FUNC_sk_storage_get = 107,
     BPF_FUNC_copy_from_user = 148,
     BPF_FUNC_for_each_map_elem = 164,
+    BPF_FUNC_find_vma = 180,
 };
 
 #define MODULE_NAME_LEN (64 - sizeof(unsigned long))
@@ -717,17 +740,8 @@ struct module {
     struct module_memory mem[MOD_MEM_NUM_TYPES]; // kernel versions >= 6.4
 };
 
-struct rb_node {
-    struct rb_node *rb_right;
-    struct rb_node *rb_left;
-} __attribute__((aligned(sizeof(long))));
-
 struct latch_tree_node {
     struct rb_node node[2];
-};
-
-struct rb_root {
-    struct rb_node *rb_node;
 };
 
 typedef struct seqcount {

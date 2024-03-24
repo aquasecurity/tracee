@@ -105,6 +105,7 @@ const (
 	ProcessExecuteFailed
 	SecurityPathNotify
 	SetFsPwd
+	CheckSyscallSource
 	HiddenKernelModuleSeeker
 	ModuleLoad
 	ModuleFree
@@ -13070,6 +13071,28 @@ var CoreEvents = map[ID]Definition{
 			{Type: "int", Name: "resource"},
 			{Type: "u64", Name: "new_rlim_cur"},
 			{Type: "u64", Name: "new_rlim_max"},
+		},
+	},
+	CheckSyscallSource: {
+		id:      CheckSyscallSource,
+		id32Bit: Sys32Undefined,
+		name:    "check_syscall_source",
+		dependencies: Dependencies{
+			probes: []Probe{
+				{handle: probes.SyscallEnter__Internal, required: true},
+			},
+			tailCalls: []TailCall{
+				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Execve)}},
+				{"check_syscall_source_tail", "check_syscall_source", []uint32{uint32(Execve)}},
+			},
+		},
+		sets: []string{},
+		params: []trace.ArgMeta{
+			{Type: "int", Name: "syscall"},
+			{Type: "void*", Name: "pc"},
+			{Type: "bool", Name: "is_stack"},
+			{Type: "bool", Name: "is_heap"},
+			{Type: "bool", Name: "is_anon_vma"},
 		},
 	},
 	//
