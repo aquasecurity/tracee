@@ -230,7 +230,7 @@ helm repo add aqua https://aquasecurity.github.io/helm-charts
 helm install tracee ./deploy/helm/tracee \
   --namespace tracee-system \
   --set hostPID=true \
-  --set webhook=http://postee-svc:8082
+  --set config.output.webhook.host=postee-svc --set config.output.webhook.port=8082
 ```
 
 !!! tip
