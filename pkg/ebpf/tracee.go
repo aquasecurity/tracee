@@ -1597,6 +1597,11 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 
 	// TODO: consider to iterate over given policies when policies are changed
 	for p := range t.config.Policies.Map() {
+		// This might break in the future if PrintMemDump will become a dependency of another event.
+		_, isChosen := p.EventsToTrace[events.PrintMemDump]
+		if !isChosen {
+			continue
+		}
 		printMemDumpFilters := p.ArgFilter.GetEventFilters(events.PrintMemDump)
 		if len(printMemDumpFilters) == 0 {
 			errs = append(errs, errfmt.Errorf("policy %d: no address or symbols were provided to print_mem_dump event. "+
