@@ -129,6 +129,9 @@ int sys_enter_init(struct bpf_raw_tracepoint_args *ctx)
         task_info->syscall_traced = true;
     }
 
+    // call syscall checker if relevant
+    bpf_tail_call(ctx, &check_syscall_source_tail, sys->id);
+
     // if id is irrelevant continue to next tail call
     bpf_tail_call(ctx, &sys_enter_submit_tail, sys->id);
 
@@ -5179,6 +5182,98 @@ int BPF_KPROBE(trace_chmod_common)
     save_to_submit_buf(&p.event->args_buf, &mode, sizeof(umode_t), 1);
 
     return events_perf_submit(&p, 0);
+}
+
+enum vma_type
+{
+    VMA_STACK,
+    VMA_HEAP,
+    VMA_ANON,
+    VMA_OTHER
+};
+
+statfunc enum vma_type get_vma_type(struct vm_area_struct *vma)
+{
+    if (vma_is_stack(vma))
+        return VMA_STACK;
+    
+    if (vma_is_heap(vma))
+        return VMA_HEAP;
+    
+    if (vma_is_anon(vma))
+        return VMA_ANON;
+    
+    return VMA_OTHER;
+}
+
+static long find_vma_callback(struct task_struct *task, struct vm_area_struct *vma, void *ctx)
+{
+    struct vm_area_struct **pvma = (struct vm_area_struct **)ctx;
+    *pvma = vma;
+    return 0;
+}
+
+SEC("raw_tracepoint/check_syscall_source")
+int check_syscall_source(struct bpf_raw_tracepoint_args *ctx)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx))
+        return 0;
+    
+    syscall_data_t *sys = &p.task_info->syscall_data;
+    
+    if (!should_trace(&p))
+        goto out;
+    
+    if (!should_submit(CHECK_SYSCALL_SOURCE, p.event))
+        goto out;
+
+    struct task_struct *task = bpf_get_current_task_btf();
+    if (task == NULL)
+        goto out;
+
+    // TODO
+    // The only supported architectures (x86 and arm) always have ARCH_HAS_SYSCALL_WRAPPER.
+    // This shouldn't actually change anything for raw tracepoints - even without this config
+    // (a case that wasn't tested before) the registers should be accessible in the same way.
+    // This would mean that the argument extraction logic in sys_enter_init is wrong.
+    struct pt_regs *regs;
+    if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER))
+        regs = (struct pt_regs *) ctx->args[0];
+    else
+        // this is probably wrong
+        regs = (struct pt_regs *) ctx;
+    u64 ip = BPF_CORE_READ(regs, ip);
+    
+    struct vm_area_struct *vma = NULL;
+    find_vma(task, ip, find_vma_callback, &vma);
+    if (vma == NULL)
+        goto out;
+    
+    enum vma_type vma_type = get_vma_type(vma);
+    if (vma_type == VMA_OTHER)
+        goto out;
+    
+    p.event->context.ts = sys->ts;
+
+    bool is_stack = vma_type == VMA_STACK;
+    bool is_heap = vma_type == VMA_HEAP;
+    bool is_anon = vma_type == VMA_ANON;
+
+    save_to_submit_buf(&p.event->args_buf, &sys->id, sizeof(sys->id), 0);
+    save_to_submit_buf(&p.event->args_buf, &ip, sizeof(ip), 1);
+    save_to_submit_buf(&p.event->args_buf, &is_stack, sizeof(is_stack), 2);
+    save_to_submit_buf(&p.event->args_buf, &is_heap, sizeof(is_heap), 3);
+    save_to_submit_buf(&p.event->args_buf, &is_anon, sizeof(is_anon), 4);
+
+    events_perf_submit(&p, CHECK_SYSCALL_SOURCE, 0);
+
+out:
+    // call remaining tails from sys_enter_init
+    bpf_tail_call(ctx, &sys_enter_submit_tail, sys->id);
+    bpf_tail_call(ctx, &sys_enter_tails, sys->id);
+
+    return 0;
 }
 
 // clang-format off
