@@ -13,6 +13,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
+	"github.com/aquasecurity/tracee/pkg/ksymbols"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
@@ -158,12 +159,17 @@ func (t *Tracee) getSyscallNameByKerVer(restrictions []events.KernelRestrictions
 
 // populateExpectedSyscallTableArray fills the expected values of the syscall table
 func (t *Tracee) populateExpectedSyscallTableArray(tableMap *bpf.BPFMap) error {
+	ksyms, err := ksymbols.GetInstance()
+	if err != nil {
+		return err
+	}
+
 	// Get address to the function that defines the not implemented sys call
-	niSyscallSymbol, err := t.kernelSymbols.GetSymbolByOwnerAndName("system", events.SyscallPrefix+"ni_syscall")
+	niSyscallSymbol, err := ksyms.GetSymbolByOwnerAndName("system", events.SyscallPrefix+"ni_syscall")
 	if err != nil {
 		e := err
 		// RHEL 8.x uses sys_ni_syscall instead of __arch_ni_syscall
-		niSyscallSymbol, err = t.kernelSymbols.GetSymbolByOwnerAndName("system", "sys_ni_syscall")
+		niSyscallSymbol, err = ksyms.GetSymbolByOwnerAndName("system", "sys_ni_syscall")
 		if err != nil {
 			logger.Debugw("hooked_syscall: syscall symbol not found", "name", "sys_ni_syscall")
 			return e
@@ -187,7 +193,7 @@ func (t *Tracee) populateExpectedSyscallTableArray(tableMap *bpf.BPFMap) error {
 			continue
 		}
 
-		kernelSymbol, err := t.kernelSymbols.GetSymbolByOwnerAndName("system", events.SyscallPrefix+syscallName)
+		kernelSymbol, err := ksyms.GetSymbolByOwnerAndName("system", events.SyscallPrefix+syscallName)
 		if err != nil {
 			logger.Errorw("hooked_syscall: syscall symbol not found", "id", index)
 			return err

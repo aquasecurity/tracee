@@ -5,6 +5,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/ksymbols"
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
@@ -40,10 +41,15 @@ func (t *Tracee) UpdateKallsyms() error {
 		}
 	}
 
+	ksyms, err := ksymbols.GetInstance()
+	if err != nil {
+		return err
+	}
+
 	// For every ksymbol required by tracee ...
 	for _, required := range allReqSymbols {
 		// ... get the symbol address from the kallsyms file ...
-		symbol, err := t.kernelSymbols.GetSymbolByOwnerAndName(globalSymbolOwner, required)
+		symbol, err := ksyms.GetSymbolByOwnerAndName(globalSymbolOwner, required)
 		if err != nil {
 			logger.Debugw("failed to get symbol", "symbol", required, "error", err)
 			continue

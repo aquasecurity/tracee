@@ -14,7 +14,6 @@ import (
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	bpf "github.com/aquasecurity/libbpfgo"
-	"github.com/aquasecurity/libbpfgo/helpers"
 
 	"github.com/aquasecurity/tracee/pkg/bucketscache"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
@@ -33,6 +32,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
 	"github.com/aquasecurity/tracee/pkg/filehash"
 	"github.com/aquasecurity/tracee/pkg/filters"
+	"github.com/aquasecurity/tracee/pkg/ksymbols"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
@@ -76,9 +76,8 @@ type Tracee struct {
 	writtenFiles   map[string]string
 	netCapturePcap *pcaps.Pcaps
 	// Internal Data
-	readFiles     map[string]string
-	pidsInMntns   bucketscache.BucketsCache // first n PIDs in each mountns
-	kernelSymbols *helpers.KernelSymbolTable
+	readFiles   map[string]string
+	pidsInMntns bucketscache.BucketsCache // first n PIDs in each mountns
 	// eBPF
 	bpfModule *bpf.Module
 	probes    *probes.ProbeGroup
@@ -346,13 +345,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Init kernel symbols map
 
-	err = capabilities.GetInstance().Specific(
-		func() error {
-			t.kernelSymbols, err = helpers.NewKernelSymbolTable()
-			return err
-		},
-		cap.SYSLOG,
-	)
+	_, err = ksymbols.GetInstance()
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -624,6 +617,11 @@ func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 // event, represented through its ID, we declare to which other events it can be
 // derived and the corresponding function to derive into that Event.
 func (t *Tracee) initDerivationTable() error {
+	ksyms, err := ksymbols.GetInstance()
+	if err != nil {
+		return err
+	}
+
 	shouldSubmit := func(id events.ID) func() bool {
 		return func() bool { return t.eventsState[id].Submit > 0 }
 	}
@@ -645,13 +643,13 @@ func (t *Tracee) initDerivationTable() error {
 		events.SyscallTableCheck: {
 			events.HookedSyscall: {
 				Enabled:        shouldSubmit(events.SyscallTableCheck),
-				DeriveFunction: derive.DetectHookedSyscall(t.kernelSymbols),
+				DeriveFunction: derive.DetectHookedSyscall(ksyms),
 			},
 		},
 		events.PrintNetSeqOps: {
 			events.HookedSeqOps: {
 				Enabled:        shouldSubmit(events.HookedSeqOps),
-				DeriveFunction: derive.HookedSeqOps(t.kernelSymbols),
+				DeriveFunction: derive.HookedSeqOps(ksyms),
 			},
 		},
 		events.HiddenKernelModuleSeeker: {
@@ -1143,10 +1141,14 @@ func (t *Tracee) initBPF() error {
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
+	ksyms, err := ksymbols.GetInstance()
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
 
 	// Initialize probes
 
-	t.probes, err = probes.NewDefaultProbeGroup(t.bpfModule, t.netEnabled(), t.kernelSymbols)
+	t.probes, err = probes.NewDefaultProbeGroup(t.bpfModule, t.netEnabled(evtsStates), ksyms)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1577,13 +1579,15 @@ func (t *Tracee) netEnabled() bool {
 // triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program
 // that prints the seq ops pointers
 func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
-	_, ok := t.eventsState[events.HookedSeqOps]
-	if !ok {
+	ksyms, err := ksymbols.GetInstance()
+	if err != nil {
+		logger.Errorw("failed to get ksyms", "error", err)
 		return
 	}
+
 	var seqOpsPointers [len(derive.NetSeqOps)]uint64
 	for i, seqName := range derive.NetSeqOps {
-		seqOpsStruct, err := t.kernelSymbols.GetSymbolByOwnerAndName("system", seqName)
+		seqOpsStruct, err := ksyms.GetSymbolByOwnerAndName("system", seqName)
 		if err != nil {
 			continue
 		}
@@ -1611,6 +1615,10 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 	}
 
 	errs := []error{}
+	ksyms, err := ksymbols.GetInstance()
+	if err != nil {
+		return append(errs, errfmt.WrapError(err))
+	}
 
 	// TODO: consider to iterate over given policies when policies are changed
 	for p := range t.config.Policies.Map() {
@@ -1672,7 +1680,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 
 					continue
 				}
-				symbol, err := t.kernelSymbols.GetSymbolByOwnerAndName(owner, name)
+				symbol, err := ksyms.GetSymbolByOwnerAndName(owner, name)
 				if err != nil {
 					if owner != "system" {
 						errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s - %v", p.ID, field, err))
@@ -1684,7 +1692,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 					prefixes := []string{"sys_", "__x64_sys_", "__arm64_sys_"}
 					var errSyscall error
 					for _, prefix := range prefixes {
-						symbol, errSyscall = t.kernelSymbols.GetSymbolByOwnerAndName(owner, prefix+name)
+						symbol, errSyscall = ksyms.GetSymbolByOwnerAndName(owner, prefix+name)
 						if errSyscall == nil {
 							err = nil
 							break
