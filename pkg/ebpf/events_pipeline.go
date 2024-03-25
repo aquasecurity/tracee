@@ -262,9 +262,9 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			// thus the need to continue with those within the pipeline.
 			if t.matchPolicies(evt) == 0 {
 				_, hasDerivation := t.eventDerivations[eventId]
-				_, hasSignature := t.eventSignatures[eventId]
+				ep := t.eventProperties[eventId]
 
-				if !hasDerivation && !hasSignature {
+				if !hasDerivation && !ep.RequiredBySignature() {
 					_ = t.stats.EventsFiltered.Increment()
 					t.eventsPool.Put(evt)
 					continue

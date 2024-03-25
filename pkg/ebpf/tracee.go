@@ -69,7 +69,7 @@ type Tracee struct {
 	eventsParamTypes map[events.ID][]bufferdecoder.ArgType
 	eventProcessor   map[events.ID][]func(evt *trace.Event) error
 	eventDerivations derive.Table
-	eventSignatures  map[events.ID]bool
+	eventProperties  map[events.ID]*events.Properties
 	// Artifacts
 	fileHashes     *filehash.Cache
 	capturedFiles  map[string]int64
@@ -201,7 +201,7 @@ func New(cfg config.Config) (*Tracee, error) {
 		readFiles:       make(map[string]string),
 		capturedFiles:   make(map[string]int64),
 		eventsState:     make(map[events.ID]events.EventState),
-		eventSignatures: make(map[events.ID]bool),
+		eventProperties: make(map[events.ID]*events.Properties),
 		streamsManager:  streams.NewStreamsManager(),
 		policyManager:   policyManager,
 	}
@@ -429,6 +429,23 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	t.contPathResolver = containers.InitContainerPathResolver(&t.pidsInMntns)
 	t.contSymbolsLoader = sharedobjs.InitContainersSymbolsLoader(t.contPathResolver, 1024)
+
+	// Initialize event flags
+
+	for _, def := range events.Core.GetDefinitions() {
+		defID := def.GetID()
+		eProperties := &events.Properties{}
+
+		// Set event flags based on its dependencies
+		for depID := range events.GetAllEventsDependencies(defID) {
+			if events.Core.GetDefinitionByID(depID).IsSignature() {
+				eProperties.SetRequiredBySignature(true)
+				break
+			}
+		}
+
+		t.eventProperties[defID] = eProperties
+	}
 
 	// Initialize event derivation logic
 
