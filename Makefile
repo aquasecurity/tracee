@@ -892,12 +892,16 @@ check-pr: \
 	@echo
 	@echo
 
-	@output=$$(git rev-list $(LOGFROM)..HEAD | while read commit; do \
-		if [[ "$$(git show --no-patch --format=%b $$commit)" ]]; then \
+	@output=$$($(CMD_GIT) rev-list $(LOGFROM)..HEAD | while read commit; do \
+		body="$$($(CMD_GIT) show --no-patch --format=%b $$commit | sed ':a;N;$$!ba;s/\n$$//')"; \
+		if [ -n "$$body" ]; then \
 			$(CMD_GIT) \
 				show -s $$commit \
 				--color=always \
-				--format='%C(auto,yellow)%h%Creset **%C(auto,red)%s%Creset**%n%n```%n%b%n```%n'; \
+				--format='%C(auto,yellow)%h%Creset **%C(auto,red)%s%Creset**%n'; \
+			echo '```'; \
+			echo "$$body"; \
+			echo '```'; \
 			echo; \
 		fi; \
 	done); \
