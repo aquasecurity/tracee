@@ -562,4 +562,12 @@ struct sys_exit_tracepoint_args {
     long ret;
 };
 
+// key for the syscall source map
+typedef struct {
+    uint syscall;
+    u32 tgid;
+    u64 tgid_start_time;
+    u64 vma_addr;
+} syscall_source_key_t;
+
 #endif

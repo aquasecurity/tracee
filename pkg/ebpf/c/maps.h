@@ -254,6 +254,14 @@ struct check_syscall_source_tail {
     __type(value, u32);
 } check_syscall_source_tail SEC(".maps");
 
+// store syscalls with abnormal source per VMA per process
+struct {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 4096);
+    __type(key, syscall_source_key_t);
+    __type(value, bool);
+} syscall_source_map SEC(".maps"); 
+
 // store stack traces
 #define MAX_STACK_ADDRESSES 1024 // max amount of diff stack trace addrs to buffer
 
