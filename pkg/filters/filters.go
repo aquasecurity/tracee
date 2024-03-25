@@ -56,7 +56,7 @@ type Filter interface {
 	utils.Cloner
 
 	Filter(val interface{}) bool
-	Parse(string) error
+	Parse(operatorAndValues string) error
 	Enable()
 	Disable()
 	Enabled() bool

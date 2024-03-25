@@ -4,8 +4,11 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/pkg/filters/sets"
 )
 
 func TestStringFilterParse(t *testing.T) {
@@ -130,7 +133,7 @@ func TestStringFilterParse(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			filter := NewStringFilter()
+			filter := NewStringFilter(nil)
 			for _, expr := range tc.expressions {
 				err := filter.Parse(expr)
 				if tc.expectedErr != nil {
@@ -151,7 +154,7 @@ func TestStringFilterParse(t *testing.T) {
 func TestStringFilterFilterOut(t *testing.T) {
 	t.Parallel()
 
-	sf1 := NewStringFilter()
+	sf1 := NewStringFilter(nil)
 
 	err := sf1.Parse("=some")
 	require.NoError(t, err)
@@ -162,7 +165,7 @@ func TestStringFilterFilterOut(t *testing.T) {
 
 	assert.False(t, sf1.FilterOut())
 
-	sf2 := NewStringFilter()
+	sf2 := NewStringFilter(nil)
 
 	err = sf2.Parse("=some")
 	require.NoError(t, err)
@@ -173,7 +176,7 @@ func TestStringFilterFilterOut(t *testing.T) {
 
 	assert.True(t, sf2.FilterOut())
 
-	sf3 := NewStringFilter()
+	sf3 := NewStringFilter(nil)
 
 	err = sf3.Parse("!=some")
 	require.NoError(t, err)
@@ -184,7 +187,7 @@ func TestStringFilterFilterOut(t *testing.T) {
 
 	assert.True(t, sf3.FilterOut())
 
-	sf4 := NewStringFilter()
+	sf4 := NewStringFilter(nil)
 
 	err = sf4.Parse("!=some")
 	require.NoError(t, err)
@@ -199,7 +202,11 @@ func TestStringFilterFilterOut(t *testing.T) {
 func TestStringFilterClone(t *testing.T) {
 	t.Parallel()
 
-	filter := NewStringFilter()
+	valueHandler := func(val string) (string, error) {
+		return val, nil
+	}
+
+	filter := NewStringFilter(valueHandler)
 	err := filter.Parse("=abc,abcd")
 	assert.NoError(t, err)
 	err = filter.Parse("!=abc")
@@ -207,7 +214,18 @@ func TestStringFilterClone(t *testing.T) {
 
 	copy := filter.Clone().(*StringFilter)
 
-	if !reflect.DeepEqual(filter, copy) {
+	opt1 := cmp.AllowUnexported(
+		StringFilter{},
+		sets.PrefixSet{},
+		sets.SuffixSet{},
+	)
+	opt2 := cmp.FilterPath(func(p cmp.Path) bool {
+		// ignore the valueHandler function
+		// https://cs.opensource.google/go/go/+/refs/tags/go1.22.0:src/reflect/deepequal.go;l=187
+		return p.Last().String() == ".valueHandler"
+	}, cmp.Ignore())
+
+	if !cmp.Equal(filter, copy, opt1, opt2) {
 		t.Errorf("Clone did not produce an identical copy")
 	}
 
