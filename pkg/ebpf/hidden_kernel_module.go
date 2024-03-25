@@ -4,7 +4,6 @@ import (
 	gocontext "context"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -32,10 +31,6 @@ const throttleSecs = 2 // Seconds
 func (t *Tracee) lkmSeekerRoutine(ctx gocontext.Context) {
 	logger.Debugw("Starting lkmSeekerRoutine goroutine")
 	defer logger.Debugw("Stopped lkmSeekerRoutine goroutine")
-
-	if t.eventsState[events.HiddenKernelModule].Emit == 0 {
-		return
-	}
 
 	modsMap, err := t.bpfModule.GetMap("modules_map")
 	if err != nil {

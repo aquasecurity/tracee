@@ -37,6 +37,7 @@ type Policies struct {
 	filterEnabledPoliciesMap map[*Policy]int           // stores only enabled policies
 
 	// computed values
+	evtsStates                *eventsStates
 	filterUserlandPoliciesMap map[*Policy]int // stores a reduced map with only userland filterable policies
 	uidFilterMin              uint64
 	uidFilterMax              uint64
@@ -56,6 +57,7 @@ func NewPolicies(cfg config.PoliciesConfig) *Policies {
 		bpfInnerMaps:              map[string]*bpf.BPFMapLow{},
 		policiesArray:             [PolicyMax]*Policy{},
 		filterEnabledPoliciesMap:  map[*Policy]int{},
+		evtsStates:                newEventsStates(),
 		filterUserlandPoliciesMap: map[*Policy]int{},
 		uidFilterMin:              filters.MinNotSetUInt,
 		uidFilterMax:              filters.MaxNotSetUInt,
@@ -66,6 +68,19 @@ func NewPolicies(cfg config.PoliciesConfig) *Policies {
 		filterableInUserland:      PolicyNone,
 		containerFiltersEnabled:   PolicyNone,
 	}
+}
+
+// eventsStates returns the events states of Policies.
+func (ps *Policies) eventsStates() *eventsStates {
+	return ps.evtsStates
+}
+
+// EventsStates returns the events states of Policies.
+func (ps *Policies) EventsStates() EventsStates {
+	ps.rwmu.RLock()
+	defer ps.rwmu.RUnlock()
+
+	return ps.eventsStates()
 }
 
 func (ps *Policies) Count() int {

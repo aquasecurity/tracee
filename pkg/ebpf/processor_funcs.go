@@ -19,6 +19,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/filehash"
 	"github.com/aquasecurity/tracee/pkg/ksymbols"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -214,18 +215,25 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 
 // processDoFinitModule handles a do_finit_module event and triggers other hooking detection logic.
 func (t *Tracee) processDoInitModule(event *trace.Event) error {
+	policies, err := policy.Snapshots().Get(event.PoliciesVersion)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	evtsStates := policies.EventsStates()
+
 	// Check if related events are being traced.
-	_, okSyscalls := t.eventsState[events.HookedSyscall]
-	_, okSeqOps := t.eventsState[events.HookedSeqOps]
-	_, okProcFops := t.eventsState[events.HookedProcFops]
-	_, okMemDump := t.eventsState[events.PrintMemDump]
-	_, okFtrace := t.eventsState[events.FtraceHook]
+	_, okSyscalls := evtsStates.GetOk(events.HookedSyscall)
+	_, okSeqOps := evtsStates.GetOk(events.HookedSeqOps)
+	_, okProcFops := evtsStates.GetOk(events.HookedProcFops)
+	_, okMemDump := evtsStates.GetOk(events.PrintMemDump)
+	_, okFtrace := evtsStates.GetOk(events.FtraceHook)
 
 	if !okSyscalls && !okSeqOps && !okProcFops && !okMemDump && !okFtrace {
 		return nil
 	}
 
-	err := capabilities.GetInstance().EBPF(
+	err = capabilities.GetInstance().EBPF(
 		func() error {
 			ksyms, innerErr := ksymbols.GetInstance()
 			if innerErr != nil {
@@ -251,7 +259,7 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 		t.triggerSeqOpsIntegrityCheck(*event)
 	}
 	if okMemDump {
-		errs := t.triggerMemDump(*event)
+		errs := t.triggerMemDump(policies, *event)
 		for _, err := range errs {
 			logger.Warnw("Memory dump", "error", err)
 		}

@@ -8,16 +8,13 @@ import (
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/dnscache"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
-	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 )
 
 // Config is a struct containing user defined configuration of tracee
 type Config struct {
-	Policies           *policy.Policies
 	Capture            *CaptureConfig
 	Capabilities       *CapabilitiesConfig
 	Output             *OutputConfig
@@ -39,22 +36,6 @@ type Config struct {
 
 // Validate does static validation of the configuration
 func (c Config) Validate() error {
-	// Policies
-	for p := range c.Policies.Map() {
-		if p == nil {
-			return errfmt.Errorf("policy is nil")
-		}
-		if p.EventsToTrace == nil {
-			return errfmt.Errorf("policy [%d] has no events to trace", p.ID)
-		}
-
-		for e := range p.EventsToTrace {
-			if !events.Core.IsDefined(e) {
-				return errfmt.Errorf("invalid event [%d] to trace in policy [%d]", e, p.ID)
-			}
-		}
-	}
-
 	// Buffer sizes
 	if (c.PerfBufferSize & (c.PerfBufferSize - 1)) != 0 {
 		return errfmt.Errorf("invalid perf buffer size - must be a power of 2")

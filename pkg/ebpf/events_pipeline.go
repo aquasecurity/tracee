@@ -256,11 +256,18 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.ProcessEntityId = utils.HashTaskID(eCtx.HostPid, eCtx.LeaderStartTime)
 			evt.ParentEntityId = utils.HashTaskID(eCtx.HostPpid, eCtx.ParentStartTime)
 
+			policies, err := policy.Snapshots().Get(evt.PoliciesVersion)
+			if err != nil {
+				t.handleError(err)
+				t.eventsPool.Put(evt)
+				continue
+			}
+
 			// If there aren't any policies that need filtering in userland, tracee **may** skip
 			// this event, as long as there aren't any derivatives or signatures that depend on it.
 			// Some base events (derivative and signatures) might not have set related policy bit,
 			// thus the need to continue with those within the pipeline.
-			if t.matchPolicies(evt) == 0 {
+			if t.matchPolicies(policies, evt) == 0 {
 				_, hasDerivation := t.eventDerivations[eventId]
 				ep := t.eventProperties[eventId]
 
@@ -286,15 +293,9 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 // not match the event after userland filters are applied. In those cases, the policy bit is cleared
 // (so the event is "filtered" for that policy). This may be called in different stages of the
 // pipeline (decode, derive, engine).
-func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
+func (t *Tracee) matchPolicies(policies *policy.Policies, event *trace.Event) uint64 {
 	eventID := events.ID(event.EventID)
 	bitmap := event.MatchedPoliciesKernel
-
-	policies, err := policy.Snapshots().Get(event.PoliciesVersion)
-	if err != nil {
-		t.handleError(err)
-		return 0
-	}
 
 	// Short circuit if there are no policies in userland that need filtering.
 	if bitmap&policies.FilterableInUserland() == 0 {
@@ -560,7 +561,13 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 					case events.PrintMemDump:
 					default:
 						// Derived events might need filtering as well
-						if t.matchPolicies(event) == 0 {
+						policies, err := policy.Snapshots().Get(event.PoliciesVersion)
+						if err != nil {
+							t.handleError(err)
+							continue
+						}
+
+						if t.matchPolicies(policies, event) == 0 {
 							_ = t.stats.EventsFiltered.Increment()
 							continue
 						}
@@ -602,17 +609,26 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 
 			// Only emit events requested by the user and matched by at least one policy.
 			id := events.ID(event.EventID)
-			event.MatchedPoliciesUser &= t.eventsState[id].Emit
-			if event.MatchedPoliciesUser == 0 {
-				t.eventsPool.Put(event)
-				continue
-			}
 
 			policies, err := policy.Snapshots().Get(event.PoliciesVersion)
 			if err != nil {
 				t.handleError(err)
 				continue
 			}
+
+			evtStates, ok := policies.EventsStates().GetOk(id)
+			if !ok {
+				t.handleError(errfmt.Errorf("failed to get event state for event %d", id))
+				t.eventsPool.Put(event)
+				continue
+			}
+
+			event.MatchedPoliciesUser &= evtStates.GetEmit()
+			if event.MatchedPoliciesUser == 0 {
+				t.eventsPool.Put(event)
+				continue
+			}
+
 			// Populate the event with the names of the matched policies.
 			event.MatchedPolicies = policies.MatchedNames(event.MatchedPoliciesUser)
 

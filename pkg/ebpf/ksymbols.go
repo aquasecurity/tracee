@@ -7,6 +7,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/ksymbols"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/policy"
 )
 
 // TODO: Just like recent change in `KernelSymbolTable`, in kernel_symbols.go,
@@ -16,7 +17,10 @@ import (
 var maxKsymNameLen = 64 // Most match the constant in the bpf code
 var globalSymbolOwner = "system"
 
-func (t *Tracee) UpdateKallsyms() error {
+// TODO: `UpdateKallsyms` should receive a list of symbols to load instead of the events states.
+// And the event states used to get the symbols should be from the PolicyManager one (with
+// all the policies versions merged).
+func (t *Tracee) UpdateKallsyms(evtsStates policy.EventsStates) error {
 	// NOTE: Make sure to refresh the kernel symbols table before updating the eBPF map.
 
 	// Find the eBPF map.
@@ -26,16 +30,17 @@ func (t *Tracee) UpdateKallsyms() error {
 	}
 
 	// Wrap long method names.
+	// TODO: create GetAllSymbolsDependencies helper in events package to replace this.
 	evtDefSymDeps := func(id events.ID) []events.KSymbol {
 		return events.Core.GetDefinitionByID(id).GetDependencies().GetKSymbols()
 	}
 
-	// Get the symbols all events being traced require (t.eventsState already
+	// Get the symbols all events being traced require (evtsStates already
 	// includes dependent events, no need to recurse again).
 
 	var allReqSymbols []string
 
-	for evtID := range t.eventsState {
+	for evtID := range evtsStates.GetAll() {
 		for _, symDep := range evtDefSymDeps(evtID) {
 			allReqSymbols = append(allReqSymbols, symDep.GetSymbolName())
 		}
