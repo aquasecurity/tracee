@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"net/http/pprof"
 
+	"github.com/grafana/pyroscope-go"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/pyroscope-io/pyroscope/pkg/agent/profiler"
 
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
@@ -17,7 +17,7 @@ type Server struct {
 	hs             *http.Server
 	mux            *http.ServeMux // just an exposed copy of hs.Handler
 	metricsEnabled bool
-	pyroProfiler   *profiler.Profiler
+	pyroProfiler   *pyroscope.Profiler
 }
 
 // New creates a new server
@@ -90,8 +90,8 @@ func (s *Server) EnablePProfEndpoint() {
 // EnablePyroAgent enables pyroscope agent in golang push mode
 // TODO: make this configurable
 func (s *Server) EnablePyroAgent() error {
-	p, err := profiler.Start(
-		profiler.Config{
+	p, err := pyroscope.Start(
+		pyroscope.Config{
 			ApplicationName: "tracee",
 			ServerAddress:   "http://localhost:4040",
 		},
