@@ -15,6 +15,7 @@ statfunc unsigned long get_arg_end_from_mm(struct mm_struct *);
 statfunc unsigned long get_env_start_from_mm(struct mm_struct *);
 statfunc unsigned long get_env_end_from_mm(struct mm_struct *);
 statfunc unsigned long get_vma_flags(struct vm_area_struct *);
+statfunc unsigned long get_vma_start(struct vm_area_struct *);
 statfunc void find_vma(struct task_struct *task, u64 addr, vma_callback_fn cb_fn, void *cb_ctx);
 statfunc bool vma_is_stack(struct vm_area_struct *vma);
 statfunc bool vma_is_heap(struct vm_area_struct *vma);
@@ -54,6 +55,11 @@ statfunc unsigned long get_vma_flags(struct vm_area_struct *vma)
 statfunc struct mount *real_mount(struct vfsmount *mnt)
 {
     return container_of(mnt, struct mount, mnt);
+}
+
+statfunc unsigned long get_vma_start(struct vm_area_struct *vma)
+{
+    return BPF_CORE_READ(vma, vm_start);
 }
 
 /**

@@ -5254,6 +5254,21 @@ int check_syscall_source(struct bpf_raw_tracepoint_args *ctx)
     if (vma_type == VMA_OTHER)
         goto out;
     
+    // build a key that identifies the combination of syscall, source VMA and process
+    // so we don't submit it multiple times
+    syscall_source_key_t key = {
+        .syscall = sys->id,
+        .tgid = p.task_info->context.pid,
+        .tgid_start_time = p.task_info->context.leader_start_time,
+        .vma_addr = get_vma_start(vma)
+    };
+    bool val = true;
+
+    // try updating the map with the requirement that this key does not exist yet
+    if ((int)bpf_map_update_elem(&syscall_source_map, &key, &val, BPF_NOEXIST) == -17 /* EEXIST */)
+        // this key already exists, no need to submit the same syscall-vma-process combination again
+        goto out;
+    
     p.event->context.ts = sys->ts;
 
     bool is_stack = vma_type == VMA_STACK;
