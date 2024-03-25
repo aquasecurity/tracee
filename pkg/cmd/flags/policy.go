@@ -22,8 +22,8 @@ func PrepareFilterMapsFromPolicies(policies []k8s.PolicyInterface) (PolicyScopeM
 		return nil, nil, errfmt.Errorf("no policies provided")
 	}
 
-	if len(policies) > policy.MaxPolicies {
-		return nil, nil, errfmt.Errorf("too many policies provided, there is a limit of %d policies", policy.MaxPolicies)
+	if len(policies) > policy.PolicyMax {
+		return nil, nil, errfmt.Errorf("too many policies provided, there is a limit of %d policies", policy.PolicyMax)
 	}
 
 	policyNames := make(map[string]bool)

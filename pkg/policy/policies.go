@@ -6,20 +6,23 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 const (
-	MaxPolicies   int = 64
-	AllPoliciesOn     = ^uint64(0)
+	PolicyMax  = int(64)
+	PolicyAll  = ^uint64(0)
+	PolicyNone = uint64(0)
 )
 
-var AlwaysSubmit = events.EventState{
-	Submit: AllPoliciesOn,
-}
+var (
+	submitAllPolicies = newEventStates(
+		eventStatesWithSubmit(PolicyAll),
+	)
+)
 
 // TODO: refactor filterEnabledPoliciesMap and filterUserlandPoliciesMap
 // maps to use int (Policy id) as key instead of *Policy.
@@ -30,7 +33,7 @@ type Policies struct {
 	config                   config.PoliciesConfig
 	version                  uint32                    // updated on snapshot store
 	bpfInnerMaps             map[string]*bpf.BPFMapLow // BPF inner maps
-	policiesArray            [MaxPolicies]*Policy      // underlying filter policies array
+	policiesArray            [PolicyMax]*Policy        // underlying filter policies array
 	filterEnabledPoliciesMap map[*Policy]int           // stores only enabled policies
 
 	// computed values
@@ -51,7 +54,7 @@ func NewPolicies(cfg config.PoliciesConfig) *Policies {
 		config:                    cfg,
 		version:                   0,
 		bpfInnerMaps:              map[string]*bpf.BPFMapLow{},
-		policiesArray:             [MaxPolicies]*Policy{},
+		policiesArray:             [PolicyMax]*Policy{},
 		filterEnabledPoliciesMap:  map[*Policy]int{},
 		filterUserlandPoliciesMap: map[*Policy]int{},
 		uidFilterMin:              filters.MinNotSetUInt,
@@ -60,8 +63,8 @@ func NewPolicies(cfg config.PoliciesConfig) *Policies {
 		pidFilterMax:              filters.MaxNotSetUInt,
 		uidFilterableInUserland:   false,
 		pidFilterableInUserland:   false,
-		filterableInUserland:      0,
-		containerFiltersEnabled:   0,
+		filterableInUserland:      PolicyNone,
+		containerFiltersEnabled:   PolicyNone,
 	}
 }
 
@@ -166,7 +169,7 @@ func (ps *Policies) Add(p *Policy) error {
 	ps.rwmu.Lock()
 	defer ps.rwmu.Unlock()
 
-	if len(ps.filterEnabledPoliciesMap) == MaxPolicies {
+	if len(ps.filterEnabledPoliciesMap) == PolicyMax {
 		return PoliciesMaxExceededError()
 	}
 
@@ -407,5 +410,5 @@ func (ps *Policies) calculateGlobalMinMax() {
 }
 
 func isIDInRange(id int) bool {
-	return id >= 0 && id < MaxPolicies
+	return id >= 0 && id < PolicyMax
 }

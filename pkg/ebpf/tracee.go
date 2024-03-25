@@ -1737,7 +1737,7 @@ func (t *Tracee) triggerMemDumpCall(address uint64, length uint64, eventHandle u
 
 // SubscribeAll returns a stream subscribed to all policies
 func (t *Tracee) SubscribeAll() *streams.Stream {
-	return t.subscribe(policy.AllPoliciesOn)
+	return t.subscribe(policy.PolicyAll)
 }
 
 // Subscribe returns a stream subscribed to selected policies
