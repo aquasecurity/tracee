@@ -26,15 +26,35 @@ disable_unattended_upgrades() {
 }
 
 wait_for_apt_locks() {
+    local lock="/var/lib/dpkg/lock"
     local lock_frontend="/var/lib/dpkg/lock-frontend"
     local lock_lists="/var/lib/apt/lists/lock"
     local lock_archives="/var/cache/apt/archives/lock"
+
     local timeout=20
-    local wait_interval=2
     local elapsed=0
+    local wait_interval=2
+
+    echo "Checking for unattended-upgrades..."
+    while pgrep -f unattended-upgrades > /dev/null; do
+        if (( elapsed >= timeout )); then
+            echo "Timed out waiting for unattended-upgrades to finish. Attempting to kill..."
+            pkill -SIGQUIT -f unattended-upgrades || true
+            pkill -SIGKILL -f unattended-upgrades || true
+            break
+        fi
+
+        echo "unattended-upgrades is still running. Waiting..."
+        sleep $wait_interval
+        ((elapsed += wait_interval))
+    done
+
+    timeout=5 # reduce timeout for apt locks
+    elapsed=0 # reset timer
 
     while : ; do
-        if ! fuser $lock_frontend >/dev/null 2>&1 &&
+        if ! fuser $lock >/dev/null 2>&1 &&
+           ! fuser $lock_frontend >/dev/null 2>&1 &&
            ! fuser $lock_lists >/dev/null 2>&1 &&
            ! fuser $lock_archives >/dev/null 2>&1; then
             echo "All apt locks are free."
@@ -43,13 +63,22 @@ wait_for_apt_locks() {
 
         if (( elapsed >= timeout )); then
             echo "Timed out waiting for apt locks to be released. Attempting to kill locking processes."
+            fuser -k -SIGQUIT $lock >/dev/null 2>&1 || true
             fuser -k -SIGQUIT $lock_frontend >/dev/null 2>&1 || true
             fuser -k -SIGQUIT $lock_lists >/dev/null 2>&1 || true
             fuser -k -SIGQUIT $lock_archives >/dev/null 2>&1 || true
-            sleep 2 # Give some time for processes to terminate gracefully
+
+            # Give some time for processes to terminate gracefully
+            sleep 2
+
+            fuser -k -SIGKILL $lock >/dev/null 2>&1 || true
             fuser -k -SIGKILL $lock_frontend >/dev/null 2>&1 || true
             fuser -k -SIGKILL $lock_lists >/dev/null 2>&1 || true
             fuser -k -SIGKILL $lock_archives >/dev/null 2>&1 || true
+
+            # Delete lock files if they still exist
+            rm -f $lock $lock_frontend $lock_lists $lock_archives
+
             echo "Forced removal of processes locking apt. System may be in an inconsistent state."
             break
         fi
