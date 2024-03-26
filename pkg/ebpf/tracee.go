@@ -173,8 +173,8 @@ func New(cfg config.Config) (*Tracee, error) {
 	// Update capabilities rings with all events dependencies
 
 	err = policies.UpdateCapabilitiesRings()
-		if err != nil {
-			return t, errfmt.WrapError(err)
+	if err != nil {
+		return t, errfmt.WrapError(err)
 	}
 
 	// Add/Drop capabilities to/from the Base ring (always effective)
@@ -424,20 +424,6 @@ type InitValues struct {
 	Kallsyms bool
 }
 
-func (t *Tracee) generateInitValues() (InitValues, error) {
-	initVals := InitValues{}
-	for evt := range t.eventsState {
-		if !events.Core.IsDefined(evt) {
-			return initVals, errfmt.Errorf("event %d is undefined", evt)
-		}
-		for range events.Core.GetDefinitionByID(evt).GetDependencies().GetKSymbols() {
-			initVals.Kallsyms = true // only if length > 0
-		}
-	}
-
-	return initVals, nil
-}
-
 // initTailCall initializes a given tailcall.
 func (t *Tracee) initTailCall(tailCall events.TailCall) error {
 	tailCallMapName := tailCall.GetMapName()
@@ -649,15 +635,6 @@ func (t *Tracee) initDerivationTable(ps *policy.Policies) error {
 	}
 
 	return nil
-}
-
-// RegisterEventDerivation registers an event derivation handler for tracee to use in the event pipeline
-func (t *Tracee) RegisterEventDerivation(deriveFrom events.ID, deriveTo events.ID, deriveCondition func() bool, deriveLogic derive.DeriveFunction) error {
-	if t.eventDerivations == nil {
-		return errfmt.Errorf("tracee not initialized yet")
-	}
-
-	return t.eventDerivations.Register(deriveFrom, deriveTo, deriveCondition, deriveLogic)
 }
 
 // options config should match defined values in ebpf code
@@ -1037,7 +1014,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	// HookedSeqOps event
 	// check if event is defined even if it's not enabled (emit/submit)
 	if _, ok := evtsStates.GetOk(events.HookedSeqOps); ok {
-	t.triggerSeqOpsIntegrityCheck(trace.Event{})
+		t.triggerSeqOpsIntegrityCheck(trace.Event{})
 	}
 
 	// HookedSyscall event
@@ -1049,14 +1026,14 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	// check if event is defined even if it's not enabled (emit/submit)
 	if _, ok := evtsStates.GetOk(events.PrintMemDump); ok {
 		errs := t.triggerMemDump(policies, trace.Event{})
-	for _, err := range errs {
-		logger.Warnw("Memory dump", "error", err)
+		for _, err := range errs {
+			logger.Warnw("Memory dump", "error", err)
 		}
 	}
 
 	// HiddenKernelModule event
 	if evtsStates.Get(events.HiddenKernelModule).ShouldEmit() {
-	go t.lkmSeekerRoutine(ctx)
+		go t.lkmSeekerRoutine(ctx)
 	}
 
 	// Start control plane

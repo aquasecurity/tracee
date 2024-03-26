@@ -90,26 +90,6 @@ func (ps *Policies) Count() int {
 	return len(ps.filterEnabledPoliciesMap)
 }
 
-func (ps *Policies) UIDFilterMin() uint64 {
-	return atomic.LoadUint64(&ps.uidFilterMin)
-}
-
-func (ps *Policies) UIDFilterMax() uint64 {
-	return atomic.LoadUint64(&ps.uidFilterMax)
-}
-
-func (ps *Policies) PIDFilterMin() uint64 {
-	return atomic.LoadUint64(&ps.pidFilterMin)
-}
-
-func (ps *Policies) PIDFilterMax() uint64 {
-	return atomic.LoadUint64(&ps.pidFilterMax)
-}
-
-func (ps *Policies) SetVersion(version uint16) {
-	atomic.StoreUint32(&ps.version, uint32(version))
-}
-
 func (ps *Policies) Version() uint16 {
 	return uint16(atomic.LoadUint32(&ps.version))
 }
