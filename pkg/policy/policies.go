@@ -132,57 +132,6 @@ func (ps *Policies) FilterableInUserland() uint64 {
 	return atomic.LoadUint64(&ps.filterableInUserland)
 }
 
-// compute recalculates values, updates flags, fills the reduced userland map,
-// and sets the related bitmap that is used to prevent the iteration of the entire map.
-//
-// It must be called at initialization and at every runtime policies changes.
-func (ps *Policies) compute() {
-	// update global min and max
-	ps.calculateGlobalMinMax()
-
-	// update enabled container filter flag
-	ps.updateContainerFilterEnabled()
-
-	userlandMap := make(map[*Policy]int)
-	ps.filterableInUserland = 0
-	for p := range ps.filterEnabledPoliciesMap {
-		if p.ArgFilter.Enabled() ||
-			p.RetFilter.Enabled() ||
-			p.ContextFilter.Enabled() ||
-			(p.UIDFilter.Enabled() && ps.uidFilterableInUserland) ||
-			(p.PIDFilter.Enabled() && ps.pidFilterableInUserland) {
-			// add policy and set the related bit
-			userlandMap[p] = p.ID
-			utils.SetBit(&ps.filterableInUserland, uint(p.ID))
-		}
-	}
-
-	ps.filterUserlandPoliciesMap = userlandMap
-}
-
-// set, if not err, always reassign values
-func (ps *Policies) set(id int, p *Policy) error {
-	if p == nil {
-		return PolicyNilError()
-	}
-	if !isIDInRange(id) {
-		return PoliciesOutOfRangeError(id)
-	}
-	if _, found := ps.filterEnabledPoliciesMap[p]; found {
-		if p.ID != id {
-			return PolicyAlreadyExists(p, id)
-		}
-	}
-
-	p.ID = id
-	ps.policiesArray[id] = p
-	ps.filterEnabledPoliciesMap[p] = id
-
-	ps.compute()
-
-	return nil
-}
-
 // Add adds a policy to Policies.
 // Its ID (index) is set to the first room found.
 // Returns nil if policy is already inserted.
@@ -324,112 +273,38 @@ func (ps *Policies) Clone() utils.Cloner {
 		}
 	}
 
-	nPols.compute()
-
 	return nPols
 }
 
-func (ps *Policies) updateContainerFilterEnabled() {
-	ps.containerFiltersEnabled = 0
-
-	for p := range ps.Map() {
-		if p.ContainerFilterEnabled() {
-			utils.SetBit(&ps.containerFiltersEnabled, uint(p.ID))
+// set, if not err, always reassign values
+func (ps *Policies) set(id int, p *Policy) error {
+	if p == nil {
+		return PolicyNilError()
+	}
+	if !isIDInRange(id) {
+		return PoliciesOutOfRangeError(id)
+	}
+	if _, found := ps.filterEnabledPoliciesMap[p]; found {
+		if p.ID != id {
+			return PolicyAlreadyExists(p, id)
 		}
 	}
+
+	p.ID = id
+	ps.policiesArray[id] = p
+	ps.filterEnabledPoliciesMap[p] = id
+
+	ps.compute()
+
+	return nil
 }
 
-// calculateGlobalMinMax sets the global min and max, to be checked in kernel,
-// of the Minimum and Maximum enabled filters only if context filter types
-// (e.g. BPFUIDFilter) from all policies have both Minimum and Maximum values set.
-//
-// Policies userland filter flags are also set (e.g. uidFilterableInUserland).
-//
-// The context filter types relevant for this function are just UIDFilter and
-// PIDFilter.
-func (ps *Policies) calculateGlobalMinMax() {
-	var (
-		uidMinFilterCount int
-		uidMaxFilterCount int
-		uidFilterCount    int
-		pidMinFilterCount int
-		pidMaxFilterCount int
-		pidFilterCount    int
-		policyCount       int
-
-		uidMinFilterableInUserland bool
-		uidMaxFilterableInUserland bool
-		pidMinFilterableInUserland bool
-		pidMaxFilterableInUserland bool
-	)
-
-	for p := range ps.Map() {
-		policyCount++
-
-		if p.UIDFilter.Enabled() {
-			uidFilterCount++
-
-			if p.UIDFilter.Minimum() != filters.MinNotSetUInt {
-				uidMinFilterCount++
+// SetVersion sets the version of Policies.
+func (ps *Policies) SetVersion(version uint16) {
+	ps.version = uint32(version)
 			}
-			if p.UIDFilter.Maximum() != filters.MaxNotSetUInt {
-				uidMaxFilterCount++
-			}
-		}
-		if p.PIDFilter.Enabled() {
-			pidFilterCount++
 
-			if p.PIDFilter.Minimum() != filters.MinNotSetUInt {
-				pidMinFilterCount++
-			}
-			if p.PIDFilter.Maximum() != filters.MaxNotSetUInt {
-				pidMaxFilterCount++
-			}
-		}
-	}
-
-	uidMinFilterableInUserland = policyCount > 1 && (uidMinFilterCount != uidFilterCount)
-	uidMaxFilterableInUserland = policyCount > 1 && (uidMaxFilterCount != uidFilterCount)
-	pidMinFilterableInUserland = policyCount > 1 && (pidMinFilterCount != pidFilterCount)
-	pidMaxFilterableInUserland = policyCount > 1 && (pidMaxFilterCount != pidFilterCount)
-
-	// reset global min max
-	ps.uidFilterMax = filters.MaxNotSetUInt
-	ps.uidFilterMin = filters.MinNotSetUInt
-	ps.pidFilterMax = filters.MaxNotSetUInt
-	ps.pidFilterMin = filters.MinNotSetUInt
-
-	ps.uidFilterableInUserland = uidMinFilterableInUserland || uidMaxFilterableInUserland
-	ps.pidFilterableInUserland = pidMinFilterableInUserland || pidMaxFilterableInUserland
-
-	if ps.uidFilterableInUserland && ps.pidFilterableInUserland {
-		// there's no need to iterate filter policies again since
-		// all uint events will be submitted from ebpf with no regards
-
-		return
-	}
-
-	// set a reduced range of uint values to be filtered in ebpf
-	for p := range ps.filterEnabledPoliciesMap {
-		if p.UIDFilter.Enabled() {
-			if !uidMinFilterableInUserland {
-				ps.uidFilterMin = utils.Min(ps.uidFilterMin, p.UIDFilter.Minimum())
-			}
-			if !uidMaxFilterableInUserland {
-				ps.uidFilterMax = utils.Max(ps.uidFilterMax, p.UIDFilter.Maximum())
-			}
-		}
-		if p.PIDFilter.Enabled() {
-			if !pidMinFilterableInUserland {
-				ps.pidFilterMin = utils.Min(ps.pidFilterMin, p.PIDFilter.Minimum())
-			}
-			if !pidMaxFilterableInUserland {
-				ps.pidFilterMax = utils.Max(ps.pidFilterMax, p.PIDFilter.Maximum())
-			}
-		}
-	}
-}
-
+// isIDInRange returns true if the given ID is in the range of policies.
 func isIDInRange(id int) bool {
 	return id >= 0 && id < PolicyMax
 }

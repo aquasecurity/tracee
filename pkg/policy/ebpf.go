@@ -325,7 +325,7 @@ func (ps *Policies) createNewFilterMapsVersion(bpfModule *bpf.Module) error {
 		BinaryFilterMap:      BinaryFilterMapVersion,
 	}
 
-	polsVersion := ps.Version()
+	polsVersion := uint16(ps.version)
 	for innerMapName, outerMapName := range mapsNames {
 		// TODO: This only spawns new inner filter maps. Their termination must
 		// be tackled by the versioning mechanism.
@@ -360,7 +360,7 @@ func (ps *Policies) createNewEventsMapVersion(
 	bpfModule *bpf.Module,
 	eventsParams map[events.ID][]bufferdecoder.ArgType,
 ) error {
-	polsVersion := ps.Version()
+	polsVersion := uint16(ps.version)
 	innerMapName := "events_map"
 	outerMapName := "events_map_version"
 
@@ -758,7 +758,7 @@ func (ps *Policies) UpdateBPF(
 
 // createNewPoliciesConfigMap creates a new version of the policies config map
 func (ps *Policies) createNewPoliciesConfigMap(bpfModule *bpf.Module) error {
-	version := ps.Version()
+	version := uint16(ps.version)
 	newInnerMap, err := createNewInnerMap(bpfModule, PoliciesConfigMap, version)
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -915,10 +915,10 @@ func (ps *Policies) computePoliciesConfig() *PoliciesConfig {
 		cfg.EnabledScopes |= 1 << offset
 	}
 
-	cfg.UidMax = ps.UIDFilterMax()
-	cfg.UidMin = ps.UIDFilterMin()
-	cfg.PidMax = ps.PIDFilterMax()
-	cfg.PidMin = ps.PIDFilterMin()
+	cfg.UidMax = ps.uidFilterMax
+	cfg.UidMin = ps.uidFilterMin
+	cfg.PidMax = ps.pidFilterMax
+	cfg.PidMin = ps.pidFilterMin
 
 	return cfg
 }

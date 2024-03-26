@@ -125,60 +125,6 @@ func (t *Tracee) Engine() *engine.Engine {
 	return t.sigEngine
 }
 
-// GetCaptureEventsList sets events used to capture data.
-func GetCaptureEventsList(cfg config.Config) map[events.ID]events.EventState {
-	captureEvents := make(map[events.ID]events.EventState)
-
-	// INFO: All capture events should be placed, at least for now, to all matched policies, or else
-	// the event won't be set to matched policy in eBPF and should_submit() won't submit the capture
-	// event to userland.
-
-	if cfg.Capture.Exec {
-		captureEvents[events.CaptureExec] = policy.AlwaysSubmit
-	}
-	if cfg.Capture.FileWrite.Capture {
-		captureEvents[events.CaptureFileWrite] = policy.AlwaysSubmit
-	}
-	if cfg.Capture.FileRead.Capture {
-		captureEvents[events.CaptureFileRead] = policy.AlwaysSubmit
-	}
-	if cfg.Capture.Module {
-		captureEvents[events.CaptureModule] = policy.AlwaysSubmit
-	}
-	if cfg.Capture.Mem {
-		captureEvents[events.CaptureMem] = policy.AlwaysSubmit
-	}
-	if cfg.Capture.Bpf {
-		captureEvents[events.CaptureBpf] = policy.AlwaysSubmit
-	}
-	if pcaps.PcapsEnabled(cfg.Capture.Net) {
-		captureEvents[events.CaptureNetPacket] = policy.AlwaysSubmit
-	}
-
-	return captureEvents
-}
-
-// handleEventsDependencies handles all events dependencies recursively.
-func (t *Tracee) handleEventsDependencies(givenEvtId events.ID, givenEvtState events.EventState) {
-	givenEventDefinition := events.Core.GetDefinitionByID(givenEvtId)
-	for _, depEventId := range givenEventDefinition.GetDependencies().GetIDs() {
-		depEventState, ok := t.eventsState[depEventId]
-		if !ok {
-			depEventState = events.EventState{}
-			t.handleEventsDependencies(depEventId, givenEvtState)
-		}
-
-		// Make sure dependencies are submitted if the given event is submitted.
-		depEventState.Submit |= givenEvtState.Submit
-		t.eventsState[depEventId] = depEventState
-
-		// If the given event is a signature, mark all dependencies as signatures.
-		if events.Core.GetDefinitionByID(givenEvtId).IsSignature() {
-			t.eventSignatures[depEventId] = true
-		}
-	}
-}
-
 // New creates a new Tracee instance based on a given valid Config. It is expected that it won't
 // cause external system side effects (reads, writes, etc).
 func New(cfg config.Config) (*Tracee, error) {
@@ -220,25 +166,8 @@ func New(cfg config.Config) (*Tracee, error) {
 	// Enable rules for all events to trace
 	for p := range policies.Map() {
 		for e := range p.EventsToTrace {
-			var submit, emit uint64
-			if _, ok := t.eventsState[e]; ok {
-				submit = t.eventsState[e].Submit
-				emit = t.eventsState[e].Emit
-			}
-			utils.SetBit(&submit, uint(p.ID))
-			utils.SetBit(&emit, uint(p.ID))
-			t.eventsState[e] = events.EventState{Submit: submit, Emit: emit}
-
 			policyManager.EnableRule(p.ID, e)
 		}
-	}
-
-	// Handle all essential events dependencies
-
-	// TODO: extract this to a function to be called from here and from
-	// policies changes.
-	for id, state := range t.eventsState {
-		t.handleEventsDependencies(id, state)
 	}
 
 	// Update capabilities rings with all events dependencies
