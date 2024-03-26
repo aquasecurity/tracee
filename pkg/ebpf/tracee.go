@@ -953,62 +953,6 @@ func (t *Tracee) populateFilterMaps(newPolicies *policy.Policies, updateProcTree
 	return nil
 }
 
-// cancelEventFromEventState cancels an event and all its dependencies from the eventsState map.
-func (t *Tracee) cancelEventFromEventState(evtID events.ID) {
-	delete(t.eventsState, evtID)
-	evtDef := events.Core.GetDefinitionByID(evtID)
-	for _, evtDeps := range evtDef.GetDependencies().GetIDs() {
-		t.cancelEventFromEventState(evtDeps)
-	}
-}
-
-// attachProbes attaches selected events probes to their respective eBPF progs
-func (t *Tracee) attachProbes() error {
-	var err error
-
-	// Get probe dependencies for a given event ID
-	getProbeDeps := func(id events.ID) []events.Probe {
-		return events.Core.GetDefinitionByID(id).GetDependencies().GetProbes()
-	}
-
-	// Get the list of probes to attach for each event being traced.
-	probesToEvents := make(map[events.Probe][]events.ID)
-	for id := range t.eventsState {
-		if !events.Core.IsDefined(id) {
-			continue
-		}
-		for _, probeDep := range getProbeDeps(id) {
-			probesToEvents[probeDep] = append(probesToEvents[probeDep], id)
-		}
-	}
-
-	// Attach probes to their respective eBPF programs or cancel events if a required probe is missing.
-	for probe, evtID := range probesToEvents {
-		err = t.probes.Attach(probe.GetHandle(), t.cgroups) // attach bpf program to probe
-		if err != nil {
-			for _, evtID := range evtID {
-				evtName := events.Core.GetDefinitionByID(evtID).GetName()
-				if probe.IsRequired() {
-					logger.Warnw(
-						"Cancelling event and its dependencies because of missing probe",
-						"missing probe", probe.GetHandle(), "event", evtName,
-						"error", err,
-					)
-					t.cancelEventFromEventState(evtID) // cancel event recursively
-				} else {
-					logger.Debugw(
-						"Failed to attach non-required probe for event",
-						"event", evtName,
-						"probe", probe.GetHandle(), "error", err,
-					)
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
 func (t *Tracee) initBPF(policies *policy.Policies) error {
 	var err error
 
@@ -1069,7 +1013,7 @@ func (t *Tracee) initBPF(policies *policy.Policies) error {
 
 	// Attach eBPF programs to selected event's probes
 
-	err = t.attachProbes()
+	err = policies.AttachProbes(t.probes, t.cgroups)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
