@@ -243,21 +243,9 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	// Update capabilities rings with all events dependencies
 
-	// TODO: extract this to a function to be called from here and from
-	// policies changes.
-	for id := range t.eventsState {
-		if !events.Core.IsDefined(id) {
-			return t, errfmt.Errorf("event %d is not defined", id)
-		}
-		evtCaps := events.Core.GetDefinitionByID(id).GetDependencies().GetCapabilities()
-		err = caps.BaseRingAdd(evtCaps.GetBase()...)
+	err = policies.UpdateCapabilitiesRings()
 		if err != nil {
 			return t, errfmt.WrapError(err)
-		}
-		err = caps.BaseRingAdd(evtCaps.GetEBPF()...)
-		if err != nil {
-			return t, errfmt.WrapError(err)
-		}
 	}
 
 	// Add/Drop capabilities to/from the Base ring (always effective)
