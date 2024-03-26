@@ -24,10 +24,18 @@ var (
 	)
 )
 
+// TODO: create {Policy,Policies} interface to be the only way to interact with Policies
+// after its creation. It should be read-only and used by the PolicyManager API.
+// TODO: create {Policy,Policies}Builder interface to create new instances of {Policy,Policies}.
 // TODO: refactor filterEnabledPoliciesMap and filterUserlandPoliciesMap
 // maps to use int (Policy id) as key instead of *Policy.
 // TODO: create a new map with policy name as key to speed up LookupByName()
 type Policies struct {
+	// TODO: this type is not thread-safe and shouldn't be.
+	// The optimal solution would be to have a read-only interface to access this value,
+	// from a snapshot which pointer should be used exclusively for this purpose.
+	// Snapshot/PolicyManager should be improved to provide a cloned Policies instance for use in new versions.
+	// TODO: remove rwmu and atomic operations from this type based on the above.
 	rwmu sync.RWMutex
 
 	config                   config.PoliciesConfig
@@ -282,7 +290,7 @@ func (ps *Policies) set(id int, p *Policy) error {
 // SetVersion sets the version of Policies.
 func (ps *Policies) SetVersion(version uint16) {
 	ps.version = uint32(version)
-			}
+}
 
 // isIDInRange returns true if the given ID is in the range of policies.
 func isIDInRange(id int) bool {
