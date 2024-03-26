@@ -5,12 +5,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/pkg/config"
 )
 
 func TestPoliciesClone(t *testing.T) {
 	t.Parallel()
 
-	policies := NewPolicies()
+	policiesCfg := config.NewPoliciesConfig(
+		config.Config{
+			Capture: &config.CaptureConfig{},
+		},
+	)
+
+	policies := NewPolicies(policiesCfg)
 
 	p1 := NewPolicy()
 	err := p1.PIDFilter.Parse("=1")

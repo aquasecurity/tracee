@@ -68,7 +68,13 @@ func (b *eventBuffer) getCopy() []trace.Event {
 }
 
 // load tracee into memory with args
-func startTracee(ctx context.Context, t *testing.T, cfg config.Config, output *config.OutputConfig, capture *config.CaptureConfig) (*tracee.Tracee, error) {
+func startTracee(
+	ctx context.Context,
+	t *testing.T,
+	cfg config.Config,
+	output *config.OutputConfig,
+	capture *config.CaptureConfig,
+) (*tracee.Tracee, error) {
 	initialize.SetLibbpfgoCallbacks()
 
 	kernelConfig, err := initialize.KernelConfig()

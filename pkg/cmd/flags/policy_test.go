@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/policy/v1beta1"
@@ -2076,7 +2077,11 @@ func TestCreatePolicies(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			_, err = CreatePolicies(policyScopeMap, policyEventsMap, false)
+			policiesCfg := config.NewPoliciesConfig(config.Config{
+				Capture: &config.CaptureConfig{},
+			})
+
+			_, err = CreatePolicies(policiesCfg, policyScopeMap, policyEventsMap, false)
 			if tc.expectPolicyErr != nil {
 				assert.ErrorContains(t, err, tc.expectPolicyErr.Error())
 			} else {
