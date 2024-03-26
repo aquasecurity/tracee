@@ -44,4 +44,3 @@ func GetInstance() (*helpers.KernelSymbolTable, error) {
 
 	return instance, instanceErr
 }
-

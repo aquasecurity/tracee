@@ -298,6 +298,8 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.WrapError(err)
 	}
 
+	policies.ValidateKallsymsDependencies() // disable events w/ missing ksyms dependencies
+
 	// Initialize buckets cache
 
 	var mntNSProcs map[int]int
@@ -792,72 +794,6 @@ func (t *Tracee) newConfig(cfg *policy.PoliciesConfig, version uint16) *Config {
 		CgroupV1Hid:     uint32(t.cgroups.GetDefaultCgroupHierarchyID()),
 		PoliciesVersion: version,
 		PoliciesConfig:  *cfg,
-	}
-}
-
-// getUnavKsymsPerEvtID returns event IDs and symbols that are unavailable to them.
-func (t *Tracee) getUnavKsymsPerEvtID() map[events.ID][]string {
-	unavSymsPerEvtID := map[events.ID][]string{}
-
-	evtDefSymDeps := func(id events.ID) []events.KSymbol {
-		return events.Core.GetDefinitionByID(id).GetDependencies().GetKSymbols()
-	}
-
-	for evtID := range t.eventsState {
-		for _, symDep := range evtDefSymDeps(evtID) {
-			sym, err := t.kernelSymbols.GetSymbolByName(symDep.GetSymbolName())
-			symName := symDep.GetSymbolName()
-			if err != nil {
-				// If the symbol is not found, it means it's unavailable.
-				unavSymsPerEvtID[evtID] = append(unavSymsPerEvtID[evtID], symName)
-				continue
-			}
-			for _, s := range sym {
-				if s.Address == 0 {
-					// Same if the symbol is found but its address is 0.
-					unavSymsPerEvtID[evtID] = append(unavSymsPerEvtID[evtID], symName)
-				}
-			}
-		}
-	}
-
-	return unavSymsPerEvtID
-}
-
-// validateKallsymsDependencies load all symbols required by events dependencies
-// from the kallsyms file to check for missing symbols. If some symbols are
-// missing, it will cancel their event with informative error message.
-func (t *Tracee) validateKallsymsDependencies() {
-	depsToCancel := make(map[events.ID]string)
-
-	// Cancel events with unavailable symbols dependencies
-	for eventToCancel, missingDepSyms := range t.getUnavKsymsPerEvtID() {
-		eventNameToCancel := events.Core.GetDefinitionByID(eventToCancel).GetName()
-		logger.Debugw(
-			"Event canceled because of missing kernel symbol dependency",
-			"missing symbols", missingDepSyms, "event", eventNameToCancel,
-		)
-		delete(t.eventsState, eventToCancel)
-
-		// Find all events that depend on eventToCancel
-		for eventID := range t.eventsState {
-			depsIDs := events.Core.GetDefinitionByID(eventID).GetDependencies().GetIDs()
-			for _, depID := range depsIDs {
-				if depID == eventToCancel {
-					depsToCancel[eventID] = eventNameToCancel
-				}
-			}
-		}
-
-		// Cancel all events that require eventToCancel
-		for eventID, depEventName := range depsToCancel {
-			logger.Debugw(
-				"Event canceled because it depends on an previously canceled event",
-				"event", events.Core.GetDefinitionByID(eventID).GetName(),
-				"dependency", depEventName,
-			)
-			delete(t.eventsState, eventID)
-		}
 	}
 }
 
