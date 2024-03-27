@@ -15,9 +15,10 @@ statfunc u64 uint_filter_range_matches(u64, void *, u64, u64, u64);
 statfunc u64 binary_filter_matches(u64, void *, proc_info_t *);
 statfunc u64 equality_filter_matches(u64, void *, void *);
 statfunc u64 bool_filter_matches(u64, bool);
-statfunc u64 compute_scopes(program_data_t *);
-statfunc u64 should_trace(program_data_t *);
-statfunc u64 should_submit(u32, event_data_t *);
+statfunc u64 match_scope_filters(program_data_t *);
+statfunc bool evaluate_scope_filters(program_data_t *);
+statfunc bool event_is_selected(u32, u16);
+statfunc bool policies_matched(event_data_t *);
 
 // CONSTANTS
 
@@ -188,7 +189,7 @@ statfunc u64 bool_filter_matches(u64 filter_out_scopes, bool val)
     return filter_out_scopes ^ (val ? ~0ULL : 0);
 }
 
-statfunc u64 compute_scopes(program_data_t *p)
+statfunc u64 match_scope_filters(program_data_t *p)
 {
     task_context_t *context = &p->event->context.task;
 
@@ -342,31 +343,34 @@ statfunc u64 compute_scopes(program_data_t *p)
     return res & policies_cfg->enabled_scopes;
 }
 
-statfunc u64 should_trace(program_data_t *p)
+statfunc bool evaluate_scope_filters(program_data_t *p)
 {
-    p->event->context.matched_policies = compute_scopes(p);
-    return p->event->context.matched_policies;
+    u64 matched_scopes = match_scope_filters(p);
+    p->event->context.matched_policies &= matched_scopes;
+    return p->event->context.matched_policies != 0;
 }
 
-statfunc u64 should_submit(u32 event_id, event_data_t *event)
+statfunc bool policies_matched(event_data_t *event)
 {
-    u16 version = event->context.policies_version;
-    void *inner_events_map = bpf_map_lookup_elem(&events_map_version, &version);
+    return event->context.matched_policies != 0;
+}
+
+statfunc bool event_is_selected(u32 event_id, u16 policies_version)
+{
+    void *inner_events_map = bpf_map_lookup_elem(&events_map_version, &policies_version);
     if (inner_events_map == NULL)
         return 0;
 
     event_config_t *event_config = bpf_map_lookup_elem(inner_events_map, &event_id);
-    // if event config not set, don't submit
     if (event_config == NULL)
         return 0;
 
-    // align with previously matched policies
-    event->context.matched_policies &= event_config->submit_for_policies;
+    return event_config->submit_for_policies != 0;
+}
 
-    // save event's param types
-    event->param_types = event_config->param_types;
-
-    return event->context.matched_policies;
+statfunc u64 get_scopes_to_follow(program_data_t *p)
+{
+    return match_scope_filters(p);
 }
 
 #endif

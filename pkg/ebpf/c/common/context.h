@@ -14,10 +14,11 @@ statfunc void init_proc_info_scratch(u32, scratch_t *);
 statfunc proc_info_t *init_proc_info(u32, u32);
 statfunc void init_task_info_scratch(u32, scratch_t *);
 statfunc task_info_t *init_task_info(u32, u32);
-statfunc bool context_changed(task_context_t *, task_context_t *);
-statfunc int init_program_data(program_data_t *, void *);
+statfunc event_config_t *get_event_config(u32, u16);
+statfunc int init_program_data(program_data_t *, void *, u32);
 statfunc int init_tailcall_program_data(program_data_t *, void *);
-statfunc void reset_event_args(program_data_t *);
+statfunc bool reset_event(event_data_t *, u32);
+statfunc void reset_event_args_buf(event_data_t *);
 
 // FUNCTIONS
 
@@ -96,8 +97,18 @@ statfunc task_info_t *init_task_info(u32 tid, u32 scratch_idx)
     return bpf_map_lookup_elem(&task_info_map, &tid);
 }
 
+statfunc event_config_t *get_event_config(u32 event_id, u16 policies_version)
+{
+    // TODO: we can remove this extra lookup by moving to per event rules_version
+    void *inner_events_map = bpf_map_lookup_elem(&events_map_version, &policies_version);
+    if (inner_events_map == NULL)
+        return NULL;
+
+    return bpf_map_lookup_elem(inner_events_map, &event_id);
+}
+
 // clang-format off
-statfunc int init_program_data(program_data_t *p, void *ctx)
+statfunc int init_program_data(program_data_t *p, void *ctx, u32 event_id)
 {
     int zero = 0;
 
@@ -125,6 +136,7 @@ statfunc int init_program_data(program_data_t *p, void *ctx)
     u64 id = bpf_get_current_pid_tgid();
     p->event->context.task.host_tid = id;
     p->event->context.task.host_pid = id >> 32;
+    p->event->context.eventid = event_id;
     p->event->context.ts = bpf_ktime_get_ns();
     p->event->context.processor_id = (u16) bpf_get_smp_processor_id();
     p->event->context.syscall = get_task_syscall_id(p->event->task);
@@ -147,16 +159,6 @@ statfunc int init_program_data(program_data_t *p, void *ctx)
         init_task_context(&p->task_info->context, p->event->task, p->config->options);
     }
 
-    if (unlikely(p->event->context.policies_version != p->config->policies_version)) {
-        // copy policies_config to event data
-        long ret = bpf_probe_read_kernel(
-            &p->event->policies_config, sizeof(policies_config_t), &p->config->policies_config);
-        if (unlikely(ret != 0))
-            return 0;
-
-        p->event->context.policies_version = p->config->policies_version;
-    }
-
     if (p->config->options & OPT_CGROUP_V1) {
         p->event->context.task.cgroup_id = get_cgroup_v1_subsys0_id(p->event->task);
     } else {
@@ -174,8 +176,29 @@ statfunc int init_program_data(program_data_t *p, void *ctx)
         }
     }
 
-    // initialize matched_policies to all policies match
-    p->event->context.matched_policies = ~0ULL;
+    if (unlikely(p->event->context.policies_version != p->config->policies_version)) {
+        // copy policies_config to event data
+        long ret = bpf_probe_read_kernel(
+            &p->event->policies_config, sizeof(policies_config_t), &p->config->policies_config);
+        if (unlikely(ret != 0))
+            return 0;
+
+        p->event->context.policies_version = p->config->policies_version;
+    }
+
+    // default to match all policies until an event is selected
+    p->event->config.submit_for_policies = ~0ULL;
+
+    if (event_id != NO_EVENT_SUBMIT) {
+        event_config_t *event_config = get_event_config(event_id, p->event->context.policies_version);
+        if (event_config != NULL) {
+            p->event->config.param_types = event_config->param_types;
+            p->event->config.submit_for_policies = event_config->submit_for_policies;
+        }
+    }
+
+    // initialize matched_policies to the policies that actually requested this event
+    p->event->context.matched_policies = p->event->config.submit_for_policies;
 
     return 1;
 }
@@ -208,11 +231,29 @@ statfunc int init_tailcall_program_data(program_data_t *p, void *ctx)
     return 1;
 }
 
-// use this function for programs that send more than one event
-statfunc void reset_event_args(program_data_t *p)
+// use this function in programs that send the same event more than once
+statfunc void reset_event_args_buf(event_data_t *event)
 {
-    p->event->args_buf.offset = 0;
-    p->event->args_buf.argnum = 0;
+    event->args_buf.offset = 0;
+    event->args_buf.argnum = 0;
+}
+
+// use this function in programs that send more than one event
+statfunc bool reset_event(event_data_t *event, u32 event_id)
+{
+    event->context.eventid = event_id;
+    reset_event_args_buf(event);
+    event->config.submit_for_policies = ~0ULL;
+
+    event_config_t *event_config = get_event_config(event_id, event->context.policies_version);
+    if (event_config == NULL)
+        return false;
+
+    event->config.param_types = event_config->param_types;
+    event->config.submit_for_policies = event_config->submit_for_policies;
+    event->context.matched_policies = event_config->submit_for_policies;
+
+    return true;
 }
 
 #endif
