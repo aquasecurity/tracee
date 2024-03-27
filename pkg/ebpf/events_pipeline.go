@@ -241,7 +241,6 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.Kubernetes = kubernetesData
 			evt.EventID = int(eCtx.EventID)
 			evt.EventName = eventDefinition.GetName()
-			evt.PoliciesVersion = eCtx.PoliciesVersion
 			evt.MatchedPoliciesKernel = eCtx.MatchedPolicies
 			evt.MatchedPoliciesUser = 0
 			evt.MatchedPolicies = []string{}
@@ -255,6 +254,14 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.ThreadEntityId = utils.HashTaskID(eCtx.HostTid, eCtx.StartTime)
 			evt.ProcessEntityId = utils.HashTaskID(eCtx.HostPid, eCtx.LeaderStartTime)
 			evt.ParentEntityId = utils.HashTaskID(eCtx.HostPpid, eCtx.ParentStartTime)
+
+			policies, err := policy.Snapshots().Get(eCtx.PoliciesVersion)
+			if err != nil {
+				t.handleError(err)
+				t.eventsPool.Put(evt)
+				continue
+			}
+			evt.Policies = unsafe.Pointer(policies)
 
 			// If there aren't any policies that need filtering in userland, tracee **may** skip
 			// this event, as long as there aren't any derivatives or signatures that depend on it.
@@ -290,11 +297,7 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 	eventID := events.ID(event.EventID)
 	bitmap := event.MatchedPoliciesKernel
 
-	policies, err := policy.Snapshots().Get(event.PoliciesVersion)
-	if err != nil {
-		t.handleError(err)
-		return 0
-	}
+	policies := (*policy.Policies)(event.Policies)
 
 	// Short circuit if there are no policies in userland that need filtering.
 	if bitmap&policies.FilterableInUserland() == 0 {
@@ -457,11 +460,7 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 				continue
 			}
 
-			policies, err := policy.Snapshots().Get(event.PoliciesVersion)
-			if err != nil {
-				t.handleError(err)
-				continue
-			}
+			policies := (*policy.Policies)(event.Policies)
 
 			// Get a bitmap with all policies containing container filters
 			policiesWithContainerFilter := policies.ContainerFilterEnabled()
@@ -608,11 +607,8 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 				continue
 			}
 
-			policies, err := policy.Snapshots().Get(event.PoliciesVersion)
-			if err != nil {
-				t.handleError(err)
-				continue
-			}
+			policies := (*policy.Policies)(event.Policies)
+
 			// Populate the event with the names of the matched policies.
 			event.MatchedPolicies = policies.MatchedNames(event.MatchedPoliciesUser)
 
