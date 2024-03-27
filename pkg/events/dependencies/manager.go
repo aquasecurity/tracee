@@ -2,123 +2,121 @@ package dependencies
 
 import "github.com/aquasecurity/tracee/pkg/events"
 
-// Manager is a management tree for current dependencies of events
-// As events can depend on one another, it manages their connection to one
-// another in the form of a tree.
-// The tree support watcher functions for indirect add and remove of nodes.
+// Manager is a management tree for the current dependencies of events.
+// As events can depend on one another, it manages their connection in the form of a tree.
+// The tree supports watcher functions for adding and removing nodes.
+// The manager is *not* thread-safe.
 type Manager struct {
-	nodes              map[events.ID]*Node
-	onIndirectAdd      []func(events.ID)
-	onIndirectRemove   []func(events.ID)
+	nodes              map[events.ID]*EventNode
+	onAdd              []func(*EventNode)
+	onRemove           []func(*EventNode)
 	dependenciesGetter func(events.ID) events.Dependencies
 }
 
 func NewDependenciesManager(dependenciesGetter func(events.ID) events.Dependencies) *Manager {
 	return &Manager{
-		nodes:              make(map[events.ID]*Node),
+		nodes:              make(map[events.ID]*EventNode),
 		dependenciesGetter: dependenciesGetter,
 	}
 }
 
-// SubscribeIndirectAdd add a watcher function called upon addition of an event which is a dependency
-// of another event
-// This is done so because direct add can be handled by the adding function.
-func (t *Manager) SubscribeIndirectAdd(onAdd func(events.ID)) {
-	t.onIndirectAdd = append(t.onIndirectAdd, onAdd)
+// SubscribeAdd adds a watcher function called upon the addition of an event to the tree.
+func (t *Manager) SubscribeAdd(onAdd func(*EventNode)) {
+	t.onAdd = append(t.onAdd, onAdd)
 }
 
-// SubscribeIndirectRemove add a watcher function called upon remove of an event which is a dependency
-// of another event.
-// This is done so because direct remove can be handled by the removing function.
-func (t *Manager) SubscribeIndirectRemove(onRemove func(events.ID)) {
-	t.onIndirectRemove = append(t.onIndirectRemove, onRemove)
+// SubscribeRemove adds a watcher function called upon the removal of an event from the tree.
+func (t *Manager) SubscribeRemove(onRemove func(*EventNode)) {
+	t.onRemove = append(t.onRemove, onRemove)
 }
 
-// GetEvent return the dependencies of given event
-func (t *Manager) GetEvent(id events.ID) (events.Dependencies, bool) {
-	node := t.getNode(id)
-	if node == nil {
-		return events.Dependencies{}, false
-	}
-	return node.GetDependencies(), true
-}
-
-// GetDependantEvents return all the events that depend on current event
-func (t *Manager) GetDependantEvents(id events.ID) ([]events.ID, bool) {
+// GetEvent returns the dependencies of the given event.
+func (t *Manager) GetEvent(id events.ID) (*EventNode, bool) {
 	node := t.getNode(id)
 	if node == nil {
 		return nil, false
 	}
-	return node.GetDependents(), true
+	return node, true
 }
 
-// AddEvent add given event to the management tree with default dependencies.
-// It will also add to the tree all the dependency events of the given event.
+// SelectEvent adds the given event to the management tree with default dependencies
+// and marks it as explicitly selected.
+// It also adds all the dependency events of the given event to the tree.
 // This function has no effect if the event is already added.
-func (t *Manager) AddEvent(id events.ID) events.Dependencies {
-	return t.buildEvent(id, nil).GetDependencies()
+func (t *Manager) SelectEvent(id events.ID) *EventNode {
+	return t.buildEvent(id, nil)
+}
+
+// UnselectEvent marks the event as not explicitly selected.
+// If the event is not a dependency of another event, it will be removed
+// from the tree, and its dependencies will be cleaned if they are not referenced or explicitly selected.
+// Returns whether it was removed.
+func (t *Manager) UnselectEvent(id events.ID) bool {
+	node := t.getNode(id)
+	node.unmarkAsExplicitlySelected()
+	return t.cleanUnreferencedNode(node)
 }
 
 // RemoveEvent removes the given event from the management tree.
-// It will remove its reference from events that it depends on. If these events
-// were added to the tree only as dependencies, it will remove them as well if
-// they are not referenced by any other event anymore.
-// It will also remove all events that depend on given event.
+// It removes its reference from events that depend on it. If these events
+// were added to the tree only as dependencies, they will be removed as well if
+// they are not referenced by any other event anymore and not explicitly selected.
+// It also removes all events that depend on the given event.
 func (t *Manager) RemoveEvent(id events.ID) {
 	node := t.getNode(id)
+	t.removeNode(node.GetID())
 	t.removeNodeFromDependencies(node)
-	t.removeNode(id)
 	t.removeDependants(node)
 }
 
-func (t *Manager) getNode(id events.ID) *Node {
+func (t *Manager) getNode(id events.ID) *EventNode {
 	return t.nodes[id]
 }
 
-func (t *Manager) removeNode(id events.ID) {
-	delete(t.nodes, id)
+// Nodes are added either because they are explicitly selected or because they are a dependency
+// of another event.
+// We want the watchers to have access to the cause of the node addition, so we add the dependants
+// before we call the watchers.
+func (t *Manager) addNode(node *EventNode, dependantEvents []events.ID) {
+	t.nodes[node.GetID()] = node
+	for _, dependant := range dependantEvents {
+		node.addDependant(dependant)
+	}
+	for _, onAdd := range t.onAdd {
+		onAdd(node)
+	}
 }
 
-// buildEvent add a new node for the given event if it does not exist in the tree.
-// It will be created with default dependencies.
-// All dependencies events will be also created recursively with it.
-// If the event exist in the tree, will only update its chosenDirectly value if
-// it's true.
-func (t *Manager) buildEvent(id events.ID, dependantEvents []events.ID) *Node {
-	chosenDirectly := len(dependantEvents) == 0
+// buildEvent adds a new node for the given event if it does not exist in the tree.
+// It is created with default dependencies.
+// All dependency events will also be created recursively with it.
+// If the event exists in the tree, it will only update its explicitlySelected value if
+// it is built without dependants.
+func (t *Manager) buildEvent(id events.ID, dependantEvents []events.ID) *EventNode {
+	explicitlySelected := len(dependantEvents) == 0
 	node := t.getNode(id)
 	if node != nil {
-		if chosenDirectly {
-			node.markAsChosenDirectly()
+		if explicitlySelected {
+			node.markAsExplicitlySelected()
 		}
 		return node
 	}
 	// Create node for the given ID and dependencies
 	dependencies := t.dependenciesGetter(id)
-	node = newDependenciesNode(id, dependencies, chosenDirectly)
-	t.nodes[id] = node
-
-	for _, dependant := range dependantEvents {
-		node.addDependent(dependant)
-	}
-
-	if !node.isChosenDirectly() {
-		for _, onAdd := range t.onIndirectAdd {
-			onAdd(node.GetID())
-		}
-	}
+	node = newDependenciesNode(id, dependencies, explicitlySelected)
+	t.addNode(node, dependantEvents)
 
 	t.buildNode(node)
 	return node
 }
 
-// buildNode add all dependencies nodes of current node to the tree and create
+// buildNode adds all dependency nodes of the current node to the tree and creates
 // all needed references.
-func (t *Manager) buildNode(node *Node) *Node {
-	// Get the dependencies events IDs
+func (t *Manager) buildNode(node *EventNode) *EventNode {
+	// Get the dependency event IDs
 	dependenciesIDs := node.GetDependencies().GetIDs()
 
-	// Create nodes for all dependencies events and their dependencies recursively
+	// Create nodes for all dependency events and their dependencies recursively
 	for _, dependencyID := range dependenciesIDs {
 		dependencyNode := t.getNode(dependencyID)
 		if dependencyNode == nil {
@@ -131,32 +129,47 @@ func (t *Manager) buildNode(node *Node) *Node {
 	return node
 }
 
-// removeNodeFromDependencies remove the reference to given node from its dependencies.
-// It will remove the dependencies from the tree if they are not chosen directly
+func (t *Manager) removeNode(id events.ID) {
+	node := t.getNode(id)
+	delete(t.nodes, id)
+	for _, onRemove := range t.onRemove {
+		onRemove(node)
+	}
+}
+
+// cleanUnreferencedNode removes the node from the tree if it's not required anymore.
+// It also removes all of its dependencies if they are not required anymore without it.
+// Returns whether it was removed or not.
+func (t *Manager) cleanUnreferencedNode(node *EventNode) bool {
+	if len(node.GetDependants()) > 0 || node.isExplicitlySelected() {
+		return false
+	}
+	t.removeNode(node.GetID())
+	t.removeNodeFromDependencies(node)
+	return true
+}
+
+// removeNodeFromDependencies removes the reference to the given node from its dependencies.
+// It removes the dependencies from the tree if they are not chosen directly
 // and no longer have any dependant event.
-func (t *Manager) removeNodeFromDependencies(node *Node) {
+func (t *Manager) removeNodeFromDependencies(node *EventNode) {
 	for _, dependencyEvent := range node.GetDependencies().GetIDs() {
 		dependencyNode := t.getNode(dependencyEvent)
 		if dependencyNode == nil {
 			continue
 		}
-		dependencyNode.removeDependent(node.GetID())
-		// We want to remove nodes that are added as dependencies by the current node if they
-		// are note dependencies of other nodes
-		if len(dependencyNode.GetDependents()) == 0 && !dependencyNode.isChosenDirectly() {
-			t.RemoveEvent(dependencyEvent)
-			for _, onRemove := range t.onIndirectRemove {
-				onRemove(dependencyEvent)
+		dependencyNode.removeDependant(node.GetID())
+		if t.cleanUnreferencedNode(dependencyNode) {
+			for _, onRemove := range t.onRemove {
+				onRemove(dependencyNode)
 			}
 		}
 	}
 }
 
-func (t *Manager) removeDependants(node *Node) {
-	for _, dependantEvent := range node.GetDependents() {
+// removeDependants removes all dependant events from the tree
+func (t *Manager) removeDependants(node *EventNode) {
+	for _, dependantEvent := range node.GetDependants() {
 		t.RemoveEvent(dependantEvent)
-		for _, onRemove := range t.onIndirectRemove {
-			onRemove(dependantEvent)
-		}
 	}
 }

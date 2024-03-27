@@ -173,16 +173,12 @@ func (t *Tracee) addEventState(eventID events.ID, chosenState events.EventState)
 
 func (t *Tracee) chooseEvent(eventID events.ID, chosenState events.EventState) {
 	t.addEventState(eventID, chosenState)
-	t.eventsDependencies.AddEvent(eventID)
+	t.eventsDependencies.SelectEvent(eventID)
 }
 
-// addDependencyEventToState adds to tracee's state an event that is a dependency of other event
-// The difference from chosen events is that it should not be emitted
-func (t *Tracee) addDependencyEventToState(evtID events.ID) {
-	dependantEvts, ok := t.eventsDependencies.GetDependantEvents(evtID)
-	if !ok {
-		logger.Errorw("adding dependency event to state", "error", "event is missing upon add watcher")
-	}
+// addDependencyEventToState adds to tracee's state an event that is a dependency of other events.
+// The difference from chosen events is that it doesn't affect its eviction.
+func (t *Tracee) addDependencyEventToState(evtID events.ID, dependantEvts []events.ID) {
 	newState := events.EventState{}
 	for _, dependantEvent := range dependantEvts {
 		newState.Submit |= t.eventsState[dependantEvent].Submit
@@ -226,8 +222,14 @@ func New(cfg config.Config) (*Tracee, error) {
 			}),
 	}
 
-	t.eventsDependencies.SubscribeIndirectAdd(t.addDependencyEventToState)
-	t.eventsDependencies.SubscribeIndirectRemove(t.removeEventFromState)
+	t.eventsDependencies.SubscribeAdd(
+		func(node *dependencies.EventNode) {
+			t.addDependencyEventToState(node.GetID(), node.GetDependants())
+		})
+	t.eventsDependencies.SubscribeRemove(
+		func(node *dependencies.EventNode) {
+			t.removeEventFromState(node.GetID())
+		})
 
 	// Initialize capabilities rings soon
 
@@ -310,8 +312,9 @@ func New(cfg config.Config) (*Tracee, error) {
 		if !events.Core.IsDefined(id) {
 			return t, errfmt.Errorf("event %d is not defined", id)
 		}
-		deps, ok := t.eventsDependencies.GetEvent(id)
+		depsNode, ok := t.eventsDependencies.GetEvent(id)
 		if ok {
+			deps := depsNode.GetDependencies()
 			evtCaps := deps.GetCapabilities()
 			err = caps.BaseRingAdd(evtCaps.GetBase()...)
 			if err != nil {
@@ -837,7 +840,8 @@ func (t *Tracee) getUnavKsymsPerEvtID() map[events.ID][]string {
 	unavSymsPerEvtID := map[events.ID][]string{}
 
 	evtDefSymDeps := func(id events.ID) []events.KSymbol {
-		deps, _ := t.eventsDependencies.GetEvent(id)
+		depsNode, _ := t.eventsDependencies.GetEvent(id)
+		deps := depsNode.GetDependencies()
 		return deps.GetKSymbols()
 	}
 
@@ -879,7 +883,8 @@ func (t *Tracee) validateKallsymsDependencies() {
 
 		// Find all events that depend on eventToCancel
 		for eventID := range t.eventsState {
-			deps, _ := t.eventsDependencies.GetEvent(eventID)
+			depsNode, _ := t.eventsDependencies.GetEvent(eventID)
+			deps := depsNode.GetDependencies()
 			depsIDs := deps.GetIDs()
 			for _, depID := range depsIDs {
 				if depID == eventToCancel {
@@ -1061,7 +1066,8 @@ func (t *Tracee) attachProbes() error {
 
 	// Get probe dependencies for a given event ID
 	getProbeDeps := func(id events.ID) []events.Probe {
-		deps, _ := t.eventsDependencies.GetEvent(id)
+		depsNode, _ := t.eventsDependencies.GetEvent(id)
+		deps := depsNode.GetDependencies()
 		return deps.GetProbes()
 	}
 
@@ -1084,7 +1090,6 @@ func (t *Tracee) attachProbes() error {
 				evtName := events.Core.GetDefinitionByID(evtID).GetName()
 				if probe.IsRequired() {
 					t.eventsDependencies.RemoveEvent(evtID)
-					t.removeEventFromState(evtID)
 					logger.Warnw(
 						"Cancelling event and its dependencies because of missing probe",
 						"missing probe", probe.GetHandle(), "event", evtName,
