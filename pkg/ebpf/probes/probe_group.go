@@ -33,12 +33,12 @@ func NewProbeGroup(m *bpf.Module, p map[Handle]Probe) *ProbeGroup {
 }
 
 // GetProbe returns a probe type by its handle.
-func (p *ProbeGroup) GetProbeType(handle Handle) string {
-	p.probesLock.Lock()
-	defer p.probesLock.Unlock()
+func (pg *ProbeGroup) GetProbeType(handle Handle) string {
+	pg.probesLock.Lock()
+	defer pg.probesLock.Unlock()
 
-	if r, ok := p.probes[handle]; ok {
-		if probe, ok := r.(*TraceProbe); ok {
+	if p, ok := pg.probes[handle]; ok {
+		if probe, ok := p.(*TraceProbe); ok {
 			switch probe.probeType {
 			case KProbe:
 				return "kprobe"
@@ -55,37 +55,53 @@ func (p *ProbeGroup) GetProbeType(handle Handle) string {
 	return ""
 }
 
-// Attach attaches a probe's program to its hook, by given handle.
-func (p *ProbeGroup) Attach(handle Handle, args ...interface{}) error {
-	p.probesLock.Lock()
-	defer p.probesLock.Unlock()
+func (pg *ProbeGroup) IsProbeAvailable(handle Handle) bool {
+	pg.probesLock.Lock()
+	defer pg.probesLock.Unlock()
 
-	if _, ok := p.probes[handle]; !ok {
+	p, ok := pg.probes[handle]
+	if !ok {
+		return false
+	}
+
+	if _, err := pg.module.GetProgram(p.GetProgramName()); err == nil {
+		return true
+	}
+
+	return false
+}
+
+// Attach attaches a probe's program to its hook, by given handle.
+func (pg *ProbeGroup) Attach(handle Handle, args ...interface{}) error {
+	pg.probesLock.Lock()
+	defer pg.probesLock.Unlock()
+
+	if _, ok := pg.probes[handle]; !ok {
 		return errfmt.Errorf("probe handle (%d) does not exist", handle)
 	}
 
-	return p.probes[handle].attach(p.module, args...)
+	return pg.probes[handle].attach(pg.module, args...)
 }
 
 // Detach detaches a probe's program from its hook, by given handle.
-func (p *ProbeGroup) Detach(handle Handle, args ...interface{}) error {
-	p.probesLock.Lock()
-	defer p.probesLock.Unlock()
+func (pg *ProbeGroup) Detach(handle Handle, args ...interface{}) error {
+	pg.probesLock.Lock()
+	defer pg.probesLock.Unlock()
 
-	if _, ok := p.probes[handle]; !ok {
+	if _, ok := pg.probes[handle]; !ok {
 		return errfmt.Errorf("probe handle (%d) does not exist", handle)
 	}
 
-	return p.probes[handle].detach(args...)
+	return pg.probes[handle].detach(args...)
 }
 
 // DetachAll detaches all existing probes programs from their hooks.
-func (p *ProbeGroup) DetachAll() error {
-	p.probesLock.Lock()
-	defer p.probesLock.Unlock()
+func (pg *ProbeGroup) DetachAll() error {
+	pg.probesLock.Lock()
+	defer pg.probesLock.Unlock()
 
-	for _, pr := range p.probes {
-		err := pr.detach()
+	for _, p := range pg.probes {
+		err := p.detach()
 		if err != nil {
 			return errfmt.WrapError(err)
 		}
@@ -95,14 +111,14 @@ func (p *ProbeGroup) DetachAll() error {
 }
 
 // Autoload disables autoload feature for a given handle's program.
-func (p *ProbeGroup) Autoload(handle Handle, autoload bool) error {
-	p.probesLock.Lock()
-	defer p.probesLock.Unlock()
-	return p.probes[handle].autoload(p.module, autoload)
+func (pg *ProbeGroup) Autoload(handle Handle, autoload bool) error {
+	pg.probesLock.Lock()
+	defer pg.probesLock.Unlock()
+	return pg.probes[handle].autoload(pg.module, autoload)
 }
 
-func (p *ProbeGroup) GetProbeByHandle(handle Handle) Probe {
-	return p.probes[handle]
+func (pg *ProbeGroup) GetProbeByHandle(handle Handle) Probe {
+	return pg.probes[handle]
 }
 
 // NewDefaultProbeGroup initializes the default ProbeGroup (TODO: extensions will use probe groups)

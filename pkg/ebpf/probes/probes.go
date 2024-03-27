@@ -15,6 +15,9 @@ type Probe interface {
 	detach(...interface{}) error
 	// autoload sets the probe's ebpf program automatic attaching to its hook.
 	autoload(module *bpf.Module, autoload bool) error
+
+	// GetProgramName returns the name of the probe's ebpf program.
+	GetProgramName() string
 }
 
 //

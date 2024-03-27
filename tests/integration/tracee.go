@@ -15,6 +15,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/config"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	uproc "github.com/aquasecurity/tracee/pkg/utils/proc"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -68,7 +69,14 @@ func (b *eventBuffer) getCopy() []trace.Event {
 }
 
 // load tracee into memory with args
-func startTracee(ctx context.Context, t *testing.T, cfg config.Config, output *config.OutputConfig, capture *config.CaptureConfig) (*tracee.Tracee, error) {
+func startTracee(
+	ctx context.Context,
+	t *testing.T,
+	cfg config.Config,
+	output *config.OutputConfig,
+	capture *config.CaptureConfig,
+	initialPolicies policy.PoliciesBuilder,
+) (*tracee.Tracee, error) {
 	initialize.SetLibbpfgoCallbacks()
 
 	kernelConfig, err := initialize.KernelConfig()
@@ -130,7 +138,7 @@ func startTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 		return nil, err
 	}
 
-	err = trc.Init(ctx)
+	err = trc.Init(ctx, initialPolicies)
 	if err != nil {
 		return nil, err
 	}

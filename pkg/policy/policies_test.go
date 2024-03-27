@@ -5,24 +5,32 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/pkg/config"
 )
 
 func TestPoliciesClone(t *testing.T) {
 	t.Parallel()
 
-	policies := NewPolicies()
+	policiesCfg := config.NewPoliciesConfig(
+		config.Config{
+			Capture: &config.CaptureConfig{},
+		},
+	)
 
-	p1 := NewPolicy()
-	err := p1.PIDFilter.Parse("=1")
+	policies := NewPoliciesBuilder(policiesCfg)
+
+	p0 := NewPolicyBuilder(0, "p0")
+	err := p0.PIDFilter.Parse("=1")
 	require.NoError(t, err)
 
-	p2 := NewPolicy()
-	err = p2.UIDFilter.Parse("=2")
+	p1 := NewPolicyBuilder(1, "p1")
+	err = p1.UIDFilter.Parse("=2")
 	require.NoError(t, err)
 
+	err = policies.Add(p0)
+	require.NoError(t, err)
 	err = policies.Add(p1)
-	require.NoError(t, err)
-	err = policies.Add(p2)
 	require.NoError(t, err)
 
 	copy := policies.Clone().(*Policies)
@@ -32,10 +40,10 @@ func TestPoliciesClone(t *testing.T) {
 	}
 
 	// ensure that changes to the copy do not affect the original
-	p3 := NewPolicy()
-	err = p3.CommFilter.Parse("=comm")
+	p2 := NewPolicyBuilder(2, "p2")
+	err = p2.CommFilter.Parse("=comm")
 	require.NoError(t, err)
-	err = copy.Add(p3)
+	err = copy.Add(p2)
 	require.NoError(t, err)
 
 	if arePoliciesEqual(policies, copy) {
@@ -80,7 +88,7 @@ func areMapsEqual(map1, map2 map[*Policy]int) bool {
 
 func areNonPointerFieldsEqual(p1, p2 *Policies) bool {
 	return p1.version == p2.version &&
-		reflect.DeepEqual(p1.bpfInnerMaps, p2.bpfInnerMaps) &&
+		reflect.DeepEqual(p1.versionBPFMaps, p2.versionBPFMaps) &&
 		reflect.DeepEqual(p1.policiesArray, p2.policiesArray) &&
 		p1.uidFilterMin == p2.uidFilterMin &&
 		p1.uidFilterMax == p2.uidFilterMax &&

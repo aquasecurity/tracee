@@ -1,4 +1,4 @@
-package ebpf
+package policy
 
 import (
 	"sync"
@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/policy"
 )
 
 func TestPolicyManagerEnableRule(t *testing.T) {
@@ -83,7 +82,7 @@ func TestPolicyManagerEnableAndDisableRuleConcurrent(t *testing.T) {
 
 	wg.Add(1)
 	go func() {
-		for i := 0; i < policy.MaxPolicies; i++ {
+		for i := 0; i < PolicyMax; i++ {
 			for _, e := range eventsToEnable {
 				policyManager.EnableRule(i, e)
 			}
@@ -93,7 +92,7 @@ func TestPolicyManagerEnableAndDisableRuleConcurrent(t *testing.T) {
 
 	wg.Add(1)
 	go func() {
-		for i := 0; i < policy.MaxPolicies; i++ {
+		for i := 0; i < PolicyMax; i++ {
 			for _, e := range eventsToDisable {
 				policyManager.DisableRule(i, e)
 			}
@@ -103,12 +102,12 @@ func TestPolicyManagerEnableAndDisableRuleConcurrent(t *testing.T) {
 
 	wg.Wait()
 
-	for i := 0; i < policy.MaxPolicies; i++ {
+	for i := 0; i < PolicyMax; i++ {
 		for _, e := range eventsToEnable {
-			assert.True(t, policyManager.IsRuleEnabled(policy.AllPoliciesOn, e))
+			assert.True(t, policyManager.IsRuleEnabled(PolicyAll, e))
 		}
 		for _, e := range eventsToDisable {
-			assert.False(t, policyManager.IsRuleEnabled(policy.AllPoliciesOn, e))
+			assert.False(t, policyManager.IsRuleEnabled(PolicyAll, e))
 		}
 	}
 }
@@ -182,7 +181,7 @@ func TestPolicyManagerEnableAndDisableEventConcurrent(t *testing.T) {
 
 	wg.Add(1)
 	go func() {
-		for i := 0; i < policy.MaxPolicies; i++ {
+		for i := 0; i < PolicyMax; i++ {
 			for _, e := range eventsToEnable {
 				policyManager.EnableEvent(e)
 			}
@@ -192,7 +191,7 @@ func TestPolicyManagerEnableAndDisableEventConcurrent(t *testing.T) {
 
 	wg.Add(1)
 	go func() {
-		for i := 0; i < policy.MaxPolicies; i++ {
+		for i := 0; i < PolicyMax; i++ {
 			for _, e := range eventsToDisable {
 				policyManager.DisableEvent(e)
 			}
@@ -202,7 +201,7 @@ func TestPolicyManagerEnableAndDisableEventConcurrent(t *testing.T) {
 
 	wg.Wait()
 
-	for i := 0; i < policy.MaxPolicies; i++ {
+	for i := 0; i < PolicyMax; i++ {
 		for _, e := range eventsToEnable {
 			assert.True(t, policyManager.IsEventEnabled(e))
 		}

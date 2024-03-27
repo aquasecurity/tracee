@@ -19,12 +19,12 @@ import (
 
 func SymbolsLoaded(
 	soLoader sharedobjs.DynamicSymbolsLoader,
-	policies *policy.Policies,
+	policies policy.Policies,
 ) DeriveFunction {
 	symbolsLoadedFilters := map[string]filters.Filter{}
 
 	for p := range policies.Map() {
-		f := p.ArgFilter.GetEventFilters(events.SymbolsLoaded)
+		f := p.ArgFilter().GetEventFilters(events.SymbolsLoaded)
 		maps.Copy(symbolsLoadedFilters, f)
 	}
 

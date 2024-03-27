@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/policy"
@@ -472,8 +473,8 @@ func TestSymbolsCollision(t *testing.T) {
 			filterName := "symbols_collision.args.symbols"
 			eventsNameToID := map[string]events.ID{"symbols_collision": events.SymbolsCollision}
 
-			p := policy.NewPolicy()
-			p.EventsToTrace = map[events.ID]string{events.SymbolsCollision: "symbols_collision"}
+			p := policy.NewPolicyBuilder(0, "test")
+			p.SetEventToTrace(events.SymbolsCollision, "symbols_collision")
 
 			if len(testCase.blackList) > 0 {
 				operAndValsBlack := fmt.Sprintf("!=%s", strings.Join(testCase.blackList, ","))
@@ -486,13 +487,18 @@ func TestSymbolsCollision(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			ps := policy.NewPolicies()
-			policy.Snapshots().Store(ps)
-			err := ps.Set(p)
+			policiesCfg := config.NewPoliciesConfig(
+				config.Config{
+					Capture: &config.CaptureConfig{},
+				},
+			)
+
+			policies := policy.NewPoliciesBuilder(policiesCfg)
+			err := policies.Set(p)
 			require.NoError(t, err)
 
 			// Pick derive function from mocked tests
-			deriveFunc := SymbolsCollision(mockLoader, ps)
+			deriveFunc := SymbolsCollision(mockLoader, policies)
 
 			mockLoader.addSOSymbols(
 				testSOInstance{
