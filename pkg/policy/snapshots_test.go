@@ -23,7 +23,7 @@ func resetSnapshots() {
 func setPruneFunc() {
 	Snapshots().SetPruneFunc(func(ps *Policies) []error {
 		errs := []error{}
-		for _, bpfMap := range ps.bpfInnerMaps {
+		for _, bpfMap := range ps.versionBPFMaps {
 			err := syscall.Close(bpfMap.FileDescriptor())
 			if err != nil {
 				errs = append(errs, err)
@@ -96,7 +96,7 @@ func TestCircularBufferOverwrite(t *testing.T) {
 	// store one more snapshot to overwrite the first snapshot in the buffer
 	psOverwrite := &Policies{}
 	Snapshots().Store(psOverwrite)
-	assert.Equal(t, uint32(maxSnapshots+1), psOverwrite.version)
+	assert.Equal(t, uint16(maxSnapshots+1), psOverwrite.version)
 
 	// check if the oldest snapshot (version 1) has been overwritten
 	_, err = Snapshots().Get(1)

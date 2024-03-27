@@ -7,6 +7,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/dnscache"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/types/detect"
@@ -27,9 +28,19 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 	// Prepare built in data sources
 	t.config.EngineConfig.DataSources = append(t.config.EngineConfig.DataSources, t.PrepareBuiltinDataSources()...)
 
-	// Share event states (by reference)
+	// Share event flags (by reference)
 	t.config.EngineConfig.ShouldDispatchEvent = func(eventIdInt32 int32) bool {
-		_, ok := t.eventsState[events.ID(eventIdInt32)]
+		// Getting the last policies since here we haven't consumed the event yet to know the policies version.
+		// So it is not synced with the event processing (possible mismatch).
+		// However, this will be deprecated in the future. Check ShouldDispatchEvent comment in Config (engine.go).
+		policies, err := policy.Snapshots().GetLast()
+		if err != nil {
+			logger.Errorw("Failed to get policies", "error", err)
+			return false
+		}
+
+		_, ok := policies.EventsFlags().GetOk(events.ID(eventIdInt32))
+
 		return ok
 	}
 
@@ -61,8 +72,15 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 
 		id := events.ID(event.EventID)
 
+		policies, err := policy.Snapshots().Get(event.PoliciesVersion)
+		if err != nil {
+			t.handleError(err)
+			return
+		}
+
 		// if the event is marked as submit, we pass it to the engine
-		if t.eventsState[id].Submit > 0 {
+		evtFlags := policies.EventsFlags().Get(id)
+		if evtFlags.ShouldSubmit() {
 			err := t.parseArguments(event)
 			if err != nil {
 				t.handleError(err)
@@ -118,7 +136,13 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 					continue
 				}
 
-				if t.matchPolicies(event) == 0 {
+				policies, err := policy.Snapshots().Get(event.PoliciesVersion)
+				if err != nil {
+					t.handleError(err)
+					continue
+				}
+
+				if t.matchPolicies(policies, event) == 0 {
 					_ = t.stats.EventsFiltered.Increment()
 					continue
 				}

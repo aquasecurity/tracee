@@ -18,6 +18,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/filehash"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -214,23 +215,34 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 // processDoFinitModule handles a do_finit_module event and triggers other hooking detection logic.
 func (t *Tracee) processDoInitModule(event *trace.Event) error {
 	// Check if related events are being traced.
-	_, okSyscalls := t.eventsState[events.HookedSyscall]
-	_, okSeqOps := t.eventsState[events.HookedSeqOps]
-	_, okProcFops := t.eventsState[events.HookedProcFops]
-	_, okMemDump := t.eventsState[events.PrintMemDump]
-	_, okFtrace := t.eventsState[events.FtraceHook]
+	// NOTE: GetLast is being used here to get the last policy version.
+	// If the events below are able to be defined for upcoming or previous versions
+	// and expected to be triggered by them, then the entire related logic must be changed.
+	// The main place to look is the policy package.
+	policies, err := policy.Snapshots().GetLast()
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	evtsFlags := policies.EventsFlags()
+
+	_, okSyscalls := evtsFlags.GetOk(events.HookedSyscall)
+	_, okSeqOps := evtsFlags.GetOk(events.HookedSeqOps)
+	_, okProcFops := evtsFlags.GetOk(events.HookedProcFops)
+	_, okMemDump := evtsFlags.GetOk(events.PrintMemDump)
+	_, okFtrace := evtsFlags.GetOk(events.FtraceHook)
 
 	if !okSyscalls && !okSeqOps && !okProcFops && !okMemDump && !okFtrace {
 		return nil
 	}
 
-	err := capabilities.GetInstance().EBPF(
+	err = capabilities.GetInstance().EBPF(
 		func() error {
 			err := t.kernelSymbols.Refresh()
 			if err != nil {
 				return errfmt.WrapError(err)
 			}
-			return t.UpdateKallsyms()
+			return t.UpdateKallsyms(evtsFlags)
 		},
 	)
 	if err != nil {
@@ -245,7 +257,7 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 		t.triggerSeqOpsIntegrityCheck(*event)
 	}
 	if okMemDump {
-		errs := t.triggerMemDump(*event)
+		errs := t.triggerMemDump(policies, *event)
 		for _, err := range errs {
 			logger.Warnw("Memory dump", "error", err)
 		}

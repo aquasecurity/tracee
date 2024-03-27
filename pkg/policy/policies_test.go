@@ -5,12 +5,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/pkg/config"
 )
 
 func TestPoliciesClone(t *testing.T) {
 	t.Parallel()
 
-	policies := NewPolicies()
+	policiesCfg := config.NewPoliciesConfig(
+		config.Config{
+			Capture: &config.CaptureConfig{},
+		},
+	)
+
+	policies := NewPolicies(policiesCfg)
 
 	p1 := NewPolicy()
 	err := p1.PIDFilter.Parse("=1")
@@ -80,7 +88,7 @@ func areMapsEqual(map1, map2 map[*Policy]int) bool {
 
 func areNonPointerFieldsEqual(p1, p2 *Policies) bool {
 	return p1.version == p2.version &&
-		reflect.DeepEqual(p1.bpfInnerMaps, p2.bpfInnerMaps) &&
+		reflect.DeepEqual(p1.versionBPFMaps, p2.versionBPFMaps) &&
 		reflect.DeepEqual(p1.policiesArray, p2.policiesArray) &&
 		p1.uidFilterMin == p2.uidFilterMin &&
 		p1.uidFilterMax == p2.uidFilterMax &&

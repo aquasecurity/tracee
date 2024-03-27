@@ -25,10 +25,6 @@ func (t *Tracee) hookedSyscallTableRoutine(ctx gocontext.Context) {
 	logger.Debugw("Starting hookedSyscallTable goroutine")
 	defer logger.Debugw("Stopped hookedSyscallTable goroutine")
 
-	if t.eventsState[events.HookedSyscall].Submit == 0 {
-		return
-	}
-
 	if runtime.GOARCH != "amd64" && runtime.GOARCH != "arm64" {
 		logger.Debugw("hooked syscall table: unsupported architecture")
 		return

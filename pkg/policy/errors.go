@@ -17,11 +17,11 @@ func PolicyNotFoundByNameError(name string) error {
 }
 
 func PoliciesMaxExceededError() error {
-	return fmt.Errorf("policies maximum exceeded [%d]", MaxPolicies)
+	return fmt.Errorf("policies maximum exceeded [%d]", PolicyMax)
 }
 
 func PoliciesOutOfRangeError(idx int) error {
-	return fmt.Errorf("policies index [%d] out-of-range [0-%d]", idx, MaxPolicies-1)
+	return fmt.Errorf("policies index [%d] out-of-range [0-%d]", idx, PolicyMax-1)
 }
 
 func PolicyAlreadyExists(policy *Policy, id int) error {
