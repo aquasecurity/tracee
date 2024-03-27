@@ -2,10 +2,8 @@ package main
 
 import (
 	"bufio"
-	"encoding/gob"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
@@ -25,7 +23,6 @@ type inputFormat uint8
 const (
 	invalidInputFormat inputFormat = iota
 	jsonInputFormat
-	gobInputFormat
 )
 
 type traceeInputOptions struct {
@@ -38,75 +35,7 @@ func setupTraceeInputSource(opts *traceeInputOptions) (chan protocol.Event, erro
 		return setupTraceeJSONInputSource(opts)
 	}
 
-	if opts.inputFormat == gobInputFormat {
-		return setupTraceeGobInputSource(opts)
-	}
-
 	return nil, errfmt.Errorf("could not set up input source")
-}
-
-func setupTraceeGobInputSource(opts *traceeInputOptions) (chan protocol.Event, error) {
-	dec := gob.NewDecoder(opts.inputFile)
-
-	// Event Types
-
-	gob.Register(trace.Event{})
-	gob.Register(trace.SlimCred{})
-	gob.Register(make(map[string]string))
-	gob.Register(trace.PktMeta{})
-	gob.Register([]trace.HookedSymbolData{})
-	gob.Register(map[string]trace.HookedSymbolData{})
-	gob.Register([]trace.DnsQueryData{})
-	gob.Register([]trace.DnsResponseData{})
-
-	// Network Protocol Event Types
-
-	// IPv4
-	gob.Register(trace.ProtoIPv4{})
-	// IPv6
-	gob.Register(trace.ProtoIPv6{})
-	// TCP
-	gob.Register(trace.ProtoTCP{})
-	// UDP
-	gob.Register(trace.ProtoUDP{})
-	// ICMP
-	gob.Register(trace.ProtoICMP{})
-	// ICMPv6
-	gob.Register(trace.ProtoICMPv6{})
-	// DNS
-	gob.Register(trace.ProtoDNS{})
-	gob.Register(trace.ProtoDNSQuestion{})
-	gob.Register(trace.ProtoDNSResourceRecord{})
-	gob.Register(trace.ProtoDNSSOA{})
-	gob.Register(trace.ProtoDNSSRV{})
-	gob.Register(trace.ProtoDNSMX{})
-	gob.Register(trace.ProtoDNSURI{})
-	gob.Register(trace.ProtoDNSOPT{})
-	// HTTP
-	gob.Register(trace.ProtoHTTP{})
-	gob.Register(trace.ProtoHTTPRequest{})
-	gob.Register(trace.ProtoHTTPResponse{})
-
-	res := make(chan protocol.Event)
-	go func() {
-		for {
-			var event trace.Event
-			err := dec.Decode(&event)
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
-				logger.Errorw("Decoding event: " + err.Error())
-			} else {
-				res <- event.ToProtocol()
-			}
-		}
-		if err := opts.inputFile.Close(); err != nil {
-			logger.Errorw("Closing file", "error", err)
-		}
-		close(res)
-	}()
-	return res, nil
 }
 
 func setupTraceeJSONInputSource(opts *traceeInputOptions) (chan protocol.Event, error) {
@@ -202,14 +131,14 @@ func parseTraceeInputFile(option *traceeInputOptions, fileOpt string) error {
 func parseTraceeInputFormat(option *traceeInputOptions, formatString string) error {
 	formatString = strings.ToUpper(formatString)
 
-	if formatString == "JSON" {
+	switch formatString {
+	case "JSON":
 		option.inputFormat = jsonInputFormat
-	} else if formatString == "GOB" {
-		option.inputFormat = gobInputFormat
-	} else {
+	default:
 		option.inputFormat = invalidInputFormat
 		return errfmt.Errorf("invalid tracee input format specified: %s", formatString)
 	}
+
 	return nil
 }
 
@@ -220,13 +149,12 @@ tracee-rules --input-tracee <key:value>,<key:value> --input-tracee <key:value>
 Specify various key value pairs for input options tracee-ebpf. The following key options are available:
 
 'file'   - Input file source. You can specify a relative or absolute path. You may also specify 'stdin' for standard input.
-'format' - Input format. Options currently include 'JSON' and 'GOB'. Both can be specified as output formats from tracee-ebpf.
+'format' - Input format. The only supported format is 'json' at the moment.
 
 Examples:
 
 'tracee-rules --input-tracee file:./events.json --input-tracee format:json'
-'tracee-rules --input-tracee file:./events.gob --input-tracee format:gob'
-'sudo tracee-ebpf -o format:gob | tracee-rules --input-tracee file:stdin --input-tracee format:gob'
+'sudo tracee-ebpf -o format:json | tracee-rules --input-tracee file:stdin --input-tracee format:json'
 `
 
 	fmt.Println(traceeInputHelp)
