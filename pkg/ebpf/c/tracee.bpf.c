@@ -656,7 +656,8 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 }
 
 // number of iterations - value that the verifier was seen to cope with - the higher, the better
-#define MAX_NUM_MODULES 450
+#define MAX_NUM_MODULES       450
+#define MAX_NUM_LOOPS_MODULES 100000
 
 enum
 {
@@ -763,7 +764,6 @@ statfunc int init_shown_modules()
         if (&pos->list == head) {
             return 0;
         }
-
         bpf_map_update_elem(&modules_map, &pos, &ker_mod, BPF_ANY);
     }
 
@@ -855,12 +855,74 @@ statfunc struct latch_tree_node *__lt_from_rb(struct rb_node *node, int idx)
     return container_of(node, struct latch_tree_node, node[idx]);
 }
 
-statfunc int walk_mod_tree(program_data_t *p, struct rb_node *root, int idx)
+struct walk_mod_tree_ctx {
+    struct pt_regs *tracee_context;
+    struct rb_node *curr;
+    program_data_t *prog_data;
+    int idx;
+    u32 flags;
+};
+
+statfunc long walk_mod_tree_callback(u32 index, void *ctx)
+{
+    struct walk_mod_tree_ctx *loop_ctx = (struct walk_mod_tree_ctx *) ctx;
+    struct rb_node *curr = loop_ctx->curr;
+
+    if (curr != NULL) {
+        rb_node_t rb_node = {.node = curr};
+        bpf_map_push_elem(&walk_mod_tree_queue, &rb_node, BPF_EXIST);
+
+        loop_ctx->curr = BPF_CORE_READ(curr, rb_left); // Move left
+    } else {
+        rb_node_t rb_node;
+        if (bpf_map_pop_elem(&walk_mod_tree_queue, &rb_node) != 0) {
+            return 1; // Finished iterating
+        } else {
+            curr = rb_node.node;
+            struct latch_tree_node *ltn = __lt_from_rb(curr, loop_ctx->idx);
+            struct module *mod = BPF_CORE_READ(container_of(ltn, struct mod_tree_node, node), mod);
+
+            int ret = is_hidden((u64) mod);
+            if (ret == MOD_HIDDEN) {
+                lkm_seeker_send_to_userspace(mod, &loop_ctx->flags, loop_ctx->prog_data);
+            } else if (ret == HID_MOD_RACE_CONDITION) {
+                tracee_log(loop_ctx->tracee_context, BPF_LOG_LVL_WARN, BPF_LOG_ID_HID_KER_MOD, ret);
+                return 1;
+            }
+
+            /* We have visited the node and its left subtree.
+            Now, it's right subtree's turn */
+            loop_ctx->curr = BPF_CORE_READ(curr, rb_right);
+        }
+    }
+
+    return 0;
+}
+
+statfunc int
+walk_mod_tree_loop(program_data_t *p, struct pt_regs *ctx, struct rb_node *root, int idx, u32 flags)
+{
+    struct walk_mod_tree_ctx walk_mod_ctx = {
+        .prog_data = p, .curr = root, .idx = idx, .flags = flags, .tracee_context = ctx};
+
+    long num_loops_done = bpf_loop(MAX_NUM_LOOPS_MODULES, walk_mod_tree_callback, &walk_mod_ctx, 0);
+    if (num_loops_done == MAX_NUM_LOOPS_MODULES) {
+        return HID_MOD_UNCOMPLETED_ITERATIONS;
+    }
+
+    return 0;
+}
+
+statfunc int walk_mod_tree(program_data_t *p, struct pt_regs *ctx, struct rb_node *root, int idx)
 {
     struct latch_tree_node *ltn;
     struct module *mod;
     struct rb_node *curr = root;
     u32 flags = MOD_TREE | HIDDEN_MODULE;
+
+    if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_loop)) {
+        return walk_mod_tree_loop(p, ctx, curr, idx, flags);
+    }
 
 #pragma unroll
     for (int i = 0; i < MAX_NUM_MODULES; i++) {
@@ -899,7 +961,7 @@ struct mod_tree_root {
     struct latch_tree_root root;
 };
 
-statfunc int find_modules_from_mod_tree(program_data_t *p)
+statfunc int find_modules_from_mod_tree(program_data_t *p, struct pt_regs *ctx)
 {
     char mod_tree_sym[9] = "mod_tree";
     struct mod_tree_root *m_tree = (struct mod_tree_root *) get_symbol_addr(mod_tree_sym);
@@ -913,7 +975,7 @@ statfunc int find_modules_from_mod_tree(program_data_t *p)
 
     struct rb_node *node = BPF_CORE_READ(m_tree, root.tree[seq & 1].rb_node);
 
-    return walk_mod_tree(p, node, seq & 1);
+    return walk_mod_tree(p, ctx, node, seq & 1);
 }
 
 static __always_inline u64 check_new_mods_only(program_data_t *p)
@@ -1138,7 +1200,7 @@ int lkm_seeker_mod_tree_tail(struct pt_regs *ctx)
 
     // This method is efficient only when the kernel is compiled with
     // CONFIG_MODULES_TREE_LOOKUP=y
-    int ret = find_modules_from_mod_tree(&p);
+    int ret = find_modules_from_mod_tree(&p, ctx);
     if (ret < 0) {
         tracee_log(ctx, BPF_LOG_LVL_WARN, BPF_LOG_ID_HID_KER_MOD, ret);
         return -1;
