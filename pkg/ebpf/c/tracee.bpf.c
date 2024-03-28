@@ -5235,17 +5235,7 @@ int check_syscall_source(struct bpf_raw_tracepoint_args *ctx)
     if (task == NULL)
         goto out;
 
-    // TODO
-    // The only supported architectures (x86 and arm) always have ARCH_HAS_SYSCALL_WRAPPER.
-    // This shouldn't actually change anything for raw tracepoints - even without this config
-    // (a case that wasn't tested before) the registers should be accessible in the same way.
-    // This would mean that the argument extraction logic in sys_enter_init is wrong.
-    struct pt_regs *regs;
-    if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER))
-        regs = (struct pt_regs *) ctx->args[0];
-    else
-        // this is probably wrong
-        regs = (struct pt_regs *) ctx;
+    struct pt_regs *regs = (struct pt_regs *) ctx->args[0];
     u64 ip = BPF_CORE_READ(regs, ip);
     
     struct vm_area_struct *vma = NULL;
