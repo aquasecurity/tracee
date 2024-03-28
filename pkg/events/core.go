@@ -13082,14 +13082,13 @@ var CoreEvents = map[ID]Definition{
 				{handle: probes.SyscallEnter__Internal, required: true},
 			},
 			tailCalls: []TailCall{
-				{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Execve)}},
 				{"check_syscall_source_tail", "check_syscall_source", []uint32{uint32(Execve)}},
 			},
 		},
 		sets: []string{},
 		params: []trace.ArgMeta{
 			{Type: "int", Name: "syscall"},
-			{Type: "void*", Name: "pc"},
+			{Type: "void*", Name: "ip"},
 			{Type: "bool", Name: "is_stack"},
 			{Type: "bool", Name: "is_heap"},
 			{Type: "bool", Name: "is_anon_vma"},
