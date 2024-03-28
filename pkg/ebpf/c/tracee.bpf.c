@@ -56,6 +56,11 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
 
         id = *id_64;
     }
+
+    // Call syscall checker if registered for this syscall.
+    // If so, it will make sure the following tail is called.
+    bpf_tail_call(ctx, &check_syscall_source_tail, id);
+
     bpf_tail_call(ctx, &sys_enter_init_tail, id);
     return 0;
 }
@@ -128,9 +133,6 @@ int sys_enter_init(struct bpf_raw_tracepoint_args *ctx)
         sys->ts = get_current_time_in_ns();
         task_info->syscall_traced = true;
     }
-
-    // call syscall checker if relevant
-    bpf_tail_call(ctx, &check_syscall_source_tail, sys->id);
 
     // if id is irrelevant continue to next tail call
     bpf_tail_call(ctx, &sys_enter_submit_tail, sys->id);
@@ -5223,7 +5225,16 @@ int check_syscall_source(struct bpf_raw_tracepoint_args *ctx)
     if (!init_program_data(&p, ctx))
         return 0;
     
-    syscall_data_t *sys = &p.task_info->syscall_data;
+    // Get syscall ID
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task();
+    u32 id = ctx->args[1];
+    if (is_compat(task)) {
+        // Translate 32bit syscalls to 64bit syscalls, so we can send to the correct handler
+        u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &id);
+        if (id_64 == 0)
+            return 0;
+        id = *id_64;
+    }
     
     if (!should_trace(&p))
         goto out;
@@ -5231,44 +5242,49 @@ int check_syscall_source(struct bpf_raw_tracepoint_args *ctx)
     if (!should_submit(CHECK_SYSCALL_SOURCE, p.event))
         goto out;
 
-    struct task_struct *task = bpf_get_current_task_btf();
-    if (task == NULL)
+    struct task_struct *task_btf = bpf_get_current_task_btf();
+    if (task_btf == NULL)
         goto out;
 
+    // Get instruction pointer
     struct pt_regs *regs = (struct pt_regs *) ctx->args[0];
+#if defined(bpf_target_x86)
     u64 ip = BPF_CORE_READ(regs, ip);
+#elif defined(bpf_target_arm64)
+    u64 ip = BPF_CORE_READ(regs, pc);
+#endif
     
+    // Find VMA which contains the instruction pointer
     struct vm_area_struct *vma = NULL;
-    find_vma(task, ip, find_vma_callback, &vma);
+    find_vma(task_btf, ip, find_vma_callback, &vma);
     if (vma == NULL)
         goto out;
     
+    // Get VMA type and make sure it's abnormal (stack/heap/anonymous VMA)
     enum vma_type vma_type = get_vma_type(vma);
     if (vma_type == VMA_OTHER)
         goto out;
     
-    // build a key that identifies the combination of syscall, source VMA and process
-    // so we don't submit it multiple times
+    // Build a key that identifies the combination of syscall,
+    // source VMA and process so we don't submit it multiple times
     syscall_source_key_t key = {
-        .syscall = sys->id,
+        .syscall = id,
         .tgid = p.task_info->context.pid,
         .tgid_start_time = p.task_info->context.leader_start_time,
         .vma_addr = get_vma_start(vma)
     };
     bool val = true;
 
-    // try updating the map with the requirement that this key does not exist yet
+    // Try updating the map with the requirement that this key does not exist yet
     if ((int)bpf_map_update_elem(&syscall_source_map, &key, &val, BPF_NOEXIST) == -17 /* EEXIST */)
-        // this key already exists, no need to submit the same syscall-vma-process combination again
+        // This key already exists, no need to submit the same syscall-vma-process combination again
         goto out;
-    
-    p.event->context.ts = sys->ts;
 
     bool is_stack = vma_type == VMA_STACK;
     bool is_heap = vma_type == VMA_HEAP;
     bool is_anon = vma_type == VMA_ANON;
 
-    save_to_submit_buf(&p.event->args_buf, &sys->id, sizeof(sys->id), 0);
+    save_to_submit_buf(&p.event->args_buf, &id, sizeof(id), 0);
     save_to_submit_buf(&p.event->args_buf, &ip, sizeof(ip), 1);
     save_to_submit_buf(&p.event->args_buf, &is_stack, sizeof(is_stack), 2);
     save_to_submit_buf(&p.event->args_buf, &is_heap, sizeof(is_heap), 3);
@@ -5277,9 +5293,8 @@ int check_syscall_source(struct bpf_raw_tracepoint_args *ctx)
     events_perf_submit(&p, CHECK_SYSCALL_SOURCE, 0);
 
 out:
-    // call remaining tails from sys_enter_init
-    bpf_tail_call(ctx, &sys_enter_submit_tail, sys->id);
-    bpf_tail_call(ctx, &sys_enter_tails, sys->id);
+    // Call sys_enter_init_tail which we preceded
+    bpf_tail_call(ctx, &sys_enter_init_tail, id);
 
     return 0;
 }
