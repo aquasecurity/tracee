@@ -1492,7 +1492,6 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	var emit uint64
 
 	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64, pols *policy.Policies) {
-		event.PoliciesVersion = pols.Version()
 		event.MatchedPoliciesKernel = matchedPolicies
 		event.MatchedPoliciesUser = matchedPolicies
 		event.MatchedPolicies = pols.MatchedNames(matchedPolicies)
