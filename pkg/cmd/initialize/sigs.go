@@ -11,12 +11,18 @@ import (
 )
 
 func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) map[string]int32 {
-	newEventDefID := startId
-	res := make(map[string]int32)
+	namesToIds := allocateEventIdsForSigs(startId, sigs)
+
 	for _, s := range sigs {
 		m, err := s.GetMetadata()
 		if err != nil {
 			logger.Errorw("Failed to load event", "error", err)
+			continue
+		}
+
+		givenEvtId, ok := namesToIds[m.EventName]
+		if !ok {
+			logger.Errorw("Failed to load event", "error", "failed to alloc event ID for signature")
 			continue
 		}
 
@@ -38,8 +44,13 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) map[
 			}
 			eventDefID, found := events.Core.GetDefinitionIDByName(s.Name)
 			if !found {
-				logger.Errorw("Failed to load event dependency", "event", s.Name)
-				continue
+				// Check if the event is part of the new signatures events
+				sigId, found := namesToIds[s.Name]
+				if !found {
+					logger.Errorw("Failed to load event dependency", "event", s.Name)
+					continue
+				}
+				eventDefID = events.ID(sigId)
 			}
 
 			evtDependency = append(evtDependency, eventDefID)
@@ -72,7 +83,7 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) map[
 		}
 
 		newEventDef := events.NewDefinition(
-			newEventDefID,         // id,
+			events.ID(givenEvtId), // id,
 			events.Sys32Undefined, // id32
 			m.EventName,           // eventName
 			version,               // version
@@ -92,14 +103,30 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) map[
 			properties,
 		)
 
-		err = events.Core.Add(newEventDefID, newEventDef)
+		err = events.Core.Add(events.ID(givenEvtId), newEventDef)
 		if err != nil {
 			logger.Errorw("Failed to add event definition", "error", err)
 			continue
 		}
+	}
+	return namesToIds
+}
 
-		res[m.EventName] = int32(newEventDefID)
+// allocateEventIdsForSigs give each signature an event ID, and return the matching between
+// the signatures events names to IDs given this way.
+func allocateEventIdsForSigs(startId events.ID, sigs []detect.Signature) map[string]int32 {
+	namesToIds := make(map[string]int32)
+	newEventDefID := startId
+	// First allocate event IDs to all signatures
+	for _, s := range sigs {
+		m, err := s.GetMetadata()
+		if err != nil {
+			logger.Warnw("Failed to allocate id for signature", "error", err)
+			continue
+		}
+
+		namesToIds[m.EventName] = int32(newEventDefID)
 		newEventDefID++
 	}
-	return res
+	return namesToIds
 }
