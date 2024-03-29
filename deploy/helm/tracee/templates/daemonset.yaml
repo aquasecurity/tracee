@@ -75,6 +75,12 @@ spec:
               readOnly: true
               mountPath: /tracee/config.yaml
               subPath: config.yaml
+            {{- range .Values.extraWebhookTemplates }}
+            - name: tracee-templates
+              readonly: true
+              mountPath: "/tracee/templates/{{ .name }}"
+              subPath: {{ .name }}
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
@@ -111,3 +117,8 @@ spec:
         - name: tracee-config
           configMap:
             name: tracee-config
+        {{- if .Values.extraWebhookTemplates }}
+        - name: "tracee-templates"
+          configMap:
+            name: tracee-templates
+        {{- end }}
