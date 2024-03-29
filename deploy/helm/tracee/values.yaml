@@ -101,3 +101,6 @@ operator:
   serviceAccount:
     name: "tracee-operator"
   healthProbeBindAddress: :8081
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
