@@ -454,15 +454,18 @@ func (c *OutputConfig) flags() []string {
 	// webhook
 	for webhookName, webhook := range c.Webhooks {
 		_ = webhookName
+		delim := "?"
 		url := fmt.Sprintf("%s://%s:%d", webhook.Protocol, webhook.Host, webhook.Port)
 		if webhook.Timeout != "" {
-			url += fmt.Sprintf("?timeout=%s", webhook.Timeout)
+			url += fmt.Sprintf("%stimeout=%s", delim, webhook.Timeout)
+			delim = "&"
 		}
 		if webhook.GoTemplate != "" {
-			url += fmt.Sprintf("?gotemplate=%s", webhook.GoTemplate)
+			url += fmt.Sprintf("%sgotemplate=%s", delim, webhook.GoTemplate)
+			delim = "&"
 		}
 		if webhook.ContentType != "" {
-			url += fmt.Sprintf("?contentType=%s", webhook.ContentType)
+			url += fmt.Sprintf("%scontentType=%s", delim, webhook.ContentType)
 		}
 
 		flags = append(flags, fmt.Sprintf("webhook:%s", url))

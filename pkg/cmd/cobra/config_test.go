@@ -378,8 +378,8 @@ output:
 				"gotemplate=template1:file3,file4",
 				"forward:tcp://user:pass@127.0.0.1:24224?tag=tracee1",
 				"forward:udp://user:pass@127.0.0.1:24225?tag=tracee2",
-				"webhook:http://localhost:8000?timeout=5s?gotemplate=/path/to/template1?contentType=application/json",
-				"webhook:http://localhost:9000?timeout=3s?gotemplate=/path/to/template2?contentType=application/ld+json",
+				"webhook:http://localhost:8000?timeout=5s&gotemplate=/path/to/template1&contentType=application/json",
+				"webhook:http://localhost:9000?timeout=3s&gotemplate=/path/to/template2&contentType=application/ld+json",
 			},
 		},
 	}
@@ -1079,7 +1079,7 @@ func TestOutputConfigFlags(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"webhook:http://webhook.com:9090?timeout=5s?gotemplate=/path/to/template1?contentType=application/json",
+				"webhook:http://webhook.com:9090?timeout=5s&gotemplate=/path/to/template1&contentType=application/json",
 			},
 		},
 		{
