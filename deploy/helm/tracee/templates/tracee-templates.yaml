@@ -1,0 +1,13 @@
+{{- if .Values.extraWebhookTemplates }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tracee-templates
+  labels:
+    {{- include "tracee.labels" . | nindent 4 }}
+data:
+  {{- range .Values.extraWebhookTemplates }}
+  {{ .name }}: | {{ .goTemplate | nindent 4 }}
+  {{- end }}
+{{- end }}
