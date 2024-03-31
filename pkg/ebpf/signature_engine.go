@@ -141,8 +141,8 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 func (t *Tracee) PrepareBuiltinDataSources() []detect.DataSource {
 	datasources := []detect.DataSource{}
 
-	if t.config.Analyze {
-		// Containers Data Source
+	// Containers Data Source
+	if t.containers != nil {
 		datasources = append(datasources, containers.NewDataSource(t.containers))
 	}
 

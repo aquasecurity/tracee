@@ -34,7 +34,7 @@ func (t *Tracee) handleEvents(ctx context.Context) {
 	var eventsChan <-chan *trace.Event
 	var errc <-chan error
 
-	if t.config.Analyze {
+	if t.producer != nil {
 		// Produce stage: events are produced from input file
 
 		eventsChan, errc = t.produceEvents(ctx)
@@ -66,12 +66,12 @@ func (t *Tracee) handleEvents(ctx context.Context) {
 
 	// Enrichment stage: container events are enriched with additional runtime data.
 
-	if !t.config.NoContainersEnrich && !t.config.Analyze { // TODO: remove safe-guard soon.
+	if !t.config.NoContainersEnrich && t.producer == nil { // TODO: remove safe-guard soon.
 		eventsChan, errc = t.enrichContainerEvents(ctx, eventsChan)
 		errcList = append(errcList, errc)
 	}
 
-	if !t.config.Analyze { // TODO: Figure how to maybe derive events in analyze mode without conflicts
+	if t.producer == nil { // TODO: Figure how to maybe derive events in analyze mode without conflicts
 		// Derive events stage: events go through a derivation function.
 
 		eventsChan, errc = t.deriveEvents(ctx, eventsChan)

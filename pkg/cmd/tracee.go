@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"context"
-	"github.com/aquasecurity/tracee/pkg/producer"
 	"os"
 	"strconv"
 	"syscall"
+
+	"github.com/aquasecurity/tracee/pkg/producer"
 
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
@@ -61,18 +62,16 @@ func (r Runner) Run(ctx context.Context) error {
 		return errfmt.Errorf("error initializing Tracee: %v", err)
 	}
 
-	if !r.TraceeConfig.Analyze {
-		// Manage PID file
+	// Manage PID file
 
-		if err := writePidFile(t.OutDir); err != nil {
-			return errfmt.WrapError(err)
-		}
-		defer func() {
-			if err := removePidFile(t.OutDir); err != nil {
-				logger.Warnw("error removing pid file", "error", err)
-			}
-		}()
+	if err := writePidFile(t.OutDir); err != nil {
+		return errfmt.WrapError(err)
 	}
+	defer func() {
+		if err := removePidFile(t.OutDir); err != nil {
+			logger.Warnw("error removing pid file", "error", err)
+		}
+	}()
 
 	stream := t.SubscribeAll()
 	defer t.Unsubscribe(stream)

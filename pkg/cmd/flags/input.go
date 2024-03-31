@@ -2,17 +2,22 @@ package flags
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	cap2 "kernel.org/pub/linux/libs/security/libcap/cap"
-	"os"
-	"strings"
 )
 
 func PrepareInput(inputOption string) (inputSourceOptions *config.ProducerConfig, err error) {
 	inputSourceOptions = &config.ProducerConfig{}
 	inParts := strings.SplitN(inputOption, ":", 2)
+
+	if inParts[0] == "" {
+		inParts = []string{"ebpf"}
+	}
 
 	switch inputSourceOptions.Kind = inParts[0]; inputSourceOptions.Kind {
 	case "json", "rego":
@@ -34,6 +39,8 @@ func PrepareInput(inputOption string) (inputSourceOptions *config.ProducerConfig
 		if err != nil {
 			return
 		}
+	case "ebpf":
+		inputSourceOptions.Kind = inParts[0]
 	default:
 		err = fmt.Errorf(
 			"invalid input flag: %s, use '--help' for more info",

@@ -33,7 +33,6 @@ type Config struct {
 	NoContainersEnrich bool
 	EngineConfig       engine.Config
 	MetricsEnabled     bool
-	Analyze            bool
 }
 
 // Validate does static validation of the configuration
@@ -54,42 +53,35 @@ func (c Config) Validate() error {
 		}
 	}
 
-	if !c.Analyze {
-		// Buffer sizes
-		if (c.PerfBufferSize & (c.PerfBufferSize - 1)) != 0 {
-			return errfmt.Errorf("invalid perf buffer size - must be a power of 2")
-		}
-		if (c.BlobPerfBufferSize & (c.BlobPerfBufferSize - 1)) != 0 {
-			return errfmt.Errorf("invalid perf buffer size - must be a power of 2")
-		}
+	// Buffer sizes
+	if (c.PerfBufferSize & (c.PerfBufferSize - 1)) != 0 {
+		return errfmt.Errorf("invalid perf buffer size - must be a power of 2")
+	}
+	if (c.BlobPerfBufferSize & (c.BlobPerfBufferSize - 1)) != 0 {
+		return errfmt.Errorf("invalid perf buffer size - must be a power of 2")
+	}
 
-		// Capture
-		if len(c.Capture.FileWrite.PathFilter) > 3 {
-			return errfmt.Errorf("too many file-write path filters given")
+	// Capture
+	if len(c.Capture.FileWrite.PathFilter) > 3 {
+		return errfmt.Errorf("too many file-write path filters given")
+	}
+	for _, filter := range c.Capture.FileWrite.PathFilter {
+		if len(filter) > 50 {
+			return errfmt.Errorf(
+				"the length of a path filter is limited to 50 characters: %s",
+				filter,
+			)
 		}
-		for _, filter := range c.Capture.FileWrite.PathFilter {
-			if len(filter) > 50 {
-				return errfmt.Errorf(
-					"the length of a path filter is limited to 50 characters: %s",
-					filter,
-				)
-			}
-		}
-		if len(c.Capture.FileRead.PathFilter) > 3 {
-			return errfmt.Errorf("too many file-read path filters given")
-		}
-		for _, filter := range c.Capture.FileWrite.PathFilter {
-			if len(filter) > 50 {
-				return errfmt.Errorf(
-					"the length of a path filter is limited to 50 characters: %s",
-					filter,
-				)
-			}
-		}
-
-		// BPF
-		if c.BPFObjBytes == nil {
-			return errfmt.Errorf("nil bpf object in memory")
+	}
+	if len(c.Capture.FileRead.PathFilter) > 3 {
+		return errfmt.Errorf("too many file-read path filters given")
+	}
+	for _, filter := range c.Capture.FileWrite.PathFilter {
+		if len(filter) > 50 {
+			return errfmt.Errorf(
+				"the length of a path filter is limited to 50 characters: %s",
+				filter,
+			)
 		}
 	}
 
@@ -188,6 +180,6 @@ type PrinterConfig struct {
 }
 
 type ProducerConfig struct {
-	InputSource io.Reader
 	Kind        string
+	InputSource io.Reader
 }

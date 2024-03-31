@@ -110,9 +110,8 @@ func (t *Tracee) registerEventProcessors() {
 	t.RegisterEventProcessor(events.PrintMemDump, t.processTriggeredEvent)
 	t.RegisterEventProcessor(events.PrintMemDump, t.processPrintMemDump)
 
-	if t.config.Analyze {
-		t.RegisterEventProcessor(events.InitTraceeData, t.processInitTraceeDataEvent)
-	} else {
+	t.RegisterEventProcessor(events.InitTraceeData, t.processInitTraceeDataEvent)
+	if t.producer == nil { // TODO: Remove this check once producer is able to revert arguments timestamps normalization
 		// Convert all time relate args to nanoseconds since epoch.
 		// NOTE: Make sure to convert time related args (of your event) in here.
 		t.RegisterEventProcessor(events.SchedProcessFork, t.processSchedProcessFork)

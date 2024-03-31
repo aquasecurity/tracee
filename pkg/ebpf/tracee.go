@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/aquasecurity/tracee/pkg/producer"
 	"io"
 	"os"
 	"strconv"
@@ -14,6 +13,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"unsafe"
+
+	"github.com/aquasecurity/tracee/pkg/producer"
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
@@ -209,14 +210,6 @@ func New(cfg config.Config) (*Tracee, error) {
 		policyManager:   policyManager,
 	}
 
-	// Initialize capabilities rings soon
-
-	err = capabilities.Initialize(t.config.Capabilities.BypassCaps)
-	if err != nil {
-		return t, errfmt.WrapError(err)
-	}
-	caps := capabilities.GetInstance()
-
 	// Initialize events state with mandatory events (TODO: review this need for sched exec)
 
 	t.eventsState[events.SchedProcessFork] = events.EventState{}
@@ -275,51 +268,6 @@ func New(cfg config.Config) (*Tracee, error) {
 		}
 	}
 
-	// Handle all essential events dependencies
-
-	for id, state := range t.eventsState {
-		t.handleEventsDependencies(id, state)
-	}
-
-	if !t.config.Analyze {
-		// Update capabilities rings with all events dependencies
-
-		for id := range t.eventsState {
-			if !events.Core.IsDefined(id) {
-				return t, errfmt.Errorf("event %d is not defined", id)
-			}
-			evtCaps := events.Core.GetDefinitionByID(id).GetDependencies().GetCapabilities()
-			err = caps.BaseRingAdd(evtCaps.GetBase()...)
-			if err != nil {
-				return t, errfmt.WrapError(err)
-			}
-			err = caps.BaseRingAdd(evtCaps.GetEBPF()...)
-			if err != nil {
-				return t, errfmt.WrapError(err)
-			}
-		}
-	}
-
-	// Add/Drop capabilities to/from the Base ring (always effective)
-
-	capsToAdd, err := capabilities.ReqByString(t.config.Capabilities.AddCaps...)
-	if err != nil {
-		return t, errfmt.WrapError(err)
-	}
-	err = caps.BaseRingAdd(capsToAdd...)
-	if err != nil {
-		return t, errfmt.WrapError(err)
-	}
-
-	capsToDrop, err := capabilities.ReqByString(t.config.Capabilities.DropCaps...)
-	if err != nil {
-		return t, errfmt.WrapError(err)
-	}
-	err = caps.BaseRingRemove(capsToDrop...)
-	if err != nil {
-		return t, errfmt.WrapError(err)
-	}
-
 	// Register default event processors
 
 	t.registerEventProcessors()
@@ -340,11 +288,111 @@ func New(cfg config.Config) (*Tracee, error) {
 // initialization logic, especially one that causes side effects, should go
 // here and not New().
 func (t *Tracee) Init(ctx gocontext.Context) error {
+	// In this stage we expect to either have a producer or an eBPF object to load
+	if t.producer == nil && t.config.BPFObjBytes == nil {
+		return errfmt.Errorf("nil bpf object in memory")
+	}
+
 	// Initialize needed values
 
-	if t.config.Analyze {
-		return t.analyzeInit(ctx)
+	// Initialize capabilities rings soon
+
+	err := capabilities.Initialize(t.config.Capabilities.BypassCaps)
+	if err != nil {
+		return errfmt.WrapError(err)
 	}
+	caps := capabilities.GetInstance()
+
+	// Handle all essential events dependencies
+
+	for id, state := range t.eventsState {
+		t.handleEventsDependencies(id, state)
+	}
+
+	// We need to update capabilities only for events produced using eBPF
+	if t.producer == nil {
+		// Update capabilities rings with all events dependencies
+
+		for id := range t.eventsState {
+			if !events.Core.IsDefined(id) {
+				return errfmt.Errorf("event %d is not defined", id)
+			}
+			evtCaps := events.Core.GetDefinitionByID(id).GetDependencies().GetCapabilities()
+			err := caps.BaseRingAdd(evtCaps.GetBase()...)
+			if err != nil {
+				return errfmt.WrapError(err)
+			}
+			err = caps.BaseRingAdd(evtCaps.GetEBPF()...)
+			if err != nil {
+				return errfmt.WrapError(err)
+			}
+		}
+	}
+
+	// Add/Drop capabilities to/from the Base ring (always effective)
+
+	capsToAdd, err := capabilities.ReqByString(t.config.Capabilities.AddCaps...)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+	err = caps.BaseRingAdd(capsToAdd...)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	capsToDrop, err := capabilities.ReqByString(t.config.Capabilities.DropCaps...)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+	err = caps.BaseRingRemove(capsToDrop...)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Initialize the pids per mount ns to cache
+
+	t.pidsInMntns.Init(t.config.MaxPidsCache)
+
+	// Initialize events pool
+
+	t.eventsPool = &sync.Pool{
+		New: func() interface{} {
+			return &trace.Event{}
+		},
+	}
+
+	// Initialize events sorting (pipeline step)
+
+	if t.config.Output.EventsSorting {
+		t.eventsSorter, err = sorting.InitEventSorter()
+		if err != nil {
+			return errfmt.WrapError(err)
+		}
+	}
+
+	// Initialize Process Tree (if enabled)
+
+	if t.config.ProcTree.Source != proctree.SourceNone {
+		t.processTree, err = proctree.NewProcessTree(ctx, t.config.ProcTree)
+		if err != nil {
+			return errfmt.WrapError(err)
+		}
+	}
+
+	if t.producer == nil {
+		err = t.initBPFProducing(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// initBPFProducing includes all the initializations needed when producing events through eBPF.
+// Not all the things are related directly to the eBPF, as they also affect the pipeline and environment.
+func (t *Tracee) initBPFProducing(ctx gocontext.Context) error {
+	var err error
 
 	initReq, err := t.generateInitValues()
 	if err != nil {
@@ -367,10 +415,6 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	t.validateKallsymsDependencies() // Canceling events missing kernel symbols
 
-	// Initialize buckets cache
-
-	t.pidsInMntns.Init(t.config.MaxPidsCache)
-
 	var mntNSProcs map[int]int
 
 	err = capabilities.GetInstance().Specific(
@@ -387,15 +431,6 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		}
 	} else {
 		logger.Debugw("Initializing buckets cache", "error", errfmt.WrapError(err))
-	}
-
-	// Initialize Process Tree (if enabled)
-
-	if t.config.ProcTree.Source != proctree.SourceNone {
-		t.processTree, err = proctree.NewProcessTree(ctx, t.config.ProcTree)
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
 	}
 
 	// Initialize cgroups filesystems
@@ -491,65 +526,10 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	}
 	t.FDArgPathMap = fdArgPathMap
 
-	// Initialize events sorting (pipeline step)
-
-	if t.config.Output.EventsSorting {
-		t.eventsSorter, err = sorting.InitEventSorter()
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	// Initialize events pool
-
-	t.eventsPool = &sync.Pool{
-		New: func() interface{} {
-			return &trace.Event{}
-		},
-	}
-
 	// Initialize times
 
 	t.startTime = uint64(utils.GetStartTimeNS())
 	t.bootTime = uint64(utils.GetBootTimeNS())
-
-	return nil
-}
-
-// analyzeInit is a reduced version of the Init method.
-// The difference between the two is that it contains only non-runtime objects initialization.
-// All initializations which don't depend on runtime environment should be added here in addition
-// to the Init method.
-func (t *Tracee) analyzeInit(ctx gocontext.Context) error {
-	var err error
-
-	t.pidsInMntns.Init(t.config.MaxPidsCache)
-
-	// Initialize events pool
-
-	t.eventsPool = &sync.Pool{
-		New: func() interface{} {
-			return &trace.Event{}
-		},
-	}
-
-	// Initialize events sorting (pipeline step)
-
-	if t.config.Output.EventsSorting {
-		t.eventsSorter, err = sorting.InitEventSorter()
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	// Initialize Process Tree (if enabled)
-
-	if t.config.ProcTree.Source != proctree.SourceNone {
-		t.processTree, err = proctree.NewProcessTree(ctx, t.config.ProcTree)
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
 
 	return nil
 }
@@ -1394,53 +1374,52 @@ const pollTimeout int = 300
 
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
-	if t.config.Analyze {
-		return t.runAnalyze(ctx)
+	// eBPF initialization used when eBPF producer is used
+	if t.producer == nil {
+		// Some events need initialization before the perf buffers are polled
+
+		err := t.triggerSyscallsIntegrityCheck(trace.Event{})
+		if err != nil {
+			logger.Warnw("hooked_syscalls returned an error", "error", err)
+		}
+		t.triggerSeqOpsIntegrityCheck(trace.Event{})
+		errs := t.triggerMemDump(trace.Event{})
+		for _, err := range errs {
+			logger.Warnw("Memory dump", "error", err)
+		}
+
+		go t.lkmSeekerRoutine(ctx)
+
+		// Start control plane
+		t.controlPlane.Start()
+		go t.controlPlane.Run(ctx)
+
+		// Main event loop (polling events perf buffer)
+
+		t.eventsPerfMap.Poll(pollTimeout)
+
+		go t.processLostEvents() // termination signaled by closing t.done
+		go t.handleEvents(ctx)
+
+		// Parallel perf buffer with file writes events
+
+		if t.config.BlobPerfBufferSize > 0 {
+			t.fileWrPerfMap.Poll(pollTimeout)
+			go t.processFileCaptures(ctx)
+		}
+
+		// Network capture perf buffer (similar to regular pipeline)
+
+		if pcaps.PcapsEnabled(t.config.Capture.Net) {
+			t.netCapPerfMap.Poll(pollTimeout)
+			go t.processNetCaptureEvents(ctx)
+		}
+
+		// Logging perf buffer
+
+		t.bpfLogsPerfMap.Poll(pollTimeout)
+		go t.processBPFLogs(ctx)
 	}
-
-	// Some events need initialization before the perf buffers are polled
-
-	err := t.triggerSyscallsIntegrityCheck(trace.Event{})
-	if err != nil {
-		logger.Warnw("hooked_syscalls returned an error", "error", err)
-	}
-	t.triggerSeqOpsIntegrityCheck(trace.Event{})
-	errs := t.triggerMemDump(trace.Event{})
-	for _, err := range errs {
-		logger.Warnw("Memory dump", "error", err)
-	}
-
-	go t.lkmSeekerRoutine(ctx)
-
-	// Start control plane
-	t.controlPlane.Start()
-	go t.controlPlane.Run(ctx)
-
-	// Main event loop (polling events perf buffer)
-
-	t.eventsPerfMap.Poll(pollTimeout)
-
-	go t.processLostEvents() // termination signaled by closing t.done
-	go t.handleEvents(ctx)
-
-	// Parallel perf buffer with file writes events
-
-	if t.config.BlobPerfBufferSize > 0 {
-		t.fileWrPerfMap.Poll(pollTimeout)
-		go t.processFileCaptures(ctx)
-	}
-
-	// Network capture perf buffer (similar to regular pipeline)
-
-	if pcaps.PcapsEnabled(t.config.Capture.Net) {
-		t.netCapPerfMap.Poll(pollTimeout)
-		go t.processNetCaptureEvents(ctx)
-	}
-
-	// Logging perf buffer
-
-	t.bpfLogsPerfMap.Poll(pollTimeout)
-	go t.processBPFLogs(ctx)
 
 	// Management
 
@@ -1448,54 +1427,36 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.ready(ctx)          // executes ready callback, non blocking
 	<-ctx.Done()          // block until ctx is cancelled elsewhere
 
-	// Close perf buffers
+	// eBPF closure should only occur with eBPF producer
+	if t.producer == nil {
+		// Close perf buffers
 
-	t.eventsPerfMap.Close()
-	if t.config.BlobPerfBufferSize > 0 {
-		t.fileWrPerfMap.Close()
-	}
-	if pcaps.PcapsEnabled(t.config.Capture.Net) {
-		t.netCapPerfMap.Close()
-	}
-	t.bpfLogsPerfMap.Close()
-
-	// TODO: move logic below somewhere else (related to file writes)
-
-	// record index of written files
-	if t.config.Capture.FileWrite.Capture {
-		err := updateCaptureMapFile(t.OutDir, "written_files", t.writtenFiles, t.config.Capture.FileWrite)
-		if err != nil {
-			return err
+		t.eventsPerfMap.Close()
+		if t.config.BlobPerfBufferSize > 0 {
+			t.fileWrPerfMap.Close()
 		}
-	}
-
-	// record index of read files
-	if t.config.Capture.FileRead.Capture {
-		err := updateCaptureMapFile(t.OutDir, "read_files", t.readFiles, t.config.Capture.FileRead)
-		if err != nil {
-			return err
+		if pcaps.PcapsEnabled(t.config.Capture.Net) {
+			t.netCapPerfMap.Close()
 		}
-	}
+		t.bpfLogsPerfMap.Close()
 
-	t.Close() // close Tracee
+		// TODO: move logic below somewhere else (related to file writes)
 
-	return nil
-}
+		// record index of written files
+		if t.config.Capture.FileWrite.Capture {
+			err := updateCaptureMapFile(t.OutDir, "written_files", t.writtenFiles, t.config.Capture.FileWrite)
+			if err != nil {
+				return err
+			}
+		}
 
-// runAnalyze is the version of the Run method for the Analyze mode
-func (t *Tracee) runAnalyze(ctx gocontext.Context) error {
-	pipelineDone := make(chan struct{})
-	go func() {
-		t.handleEvents(ctx)
-		close(pipelineDone)
-	}()
-
-	t.running.Store(true) // set running state after writing pid file
-	t.ready(ctx)          // executes ready callback, non blocking
-	select {
-	case <-ctx.Done(): // block until ctx is cancelled elsewhere
-	case <-pipelineDone:
-		break
+		// record index of read files
+		if t.config.Capture.FileRead.Capture {
+			err := updateCaptureMapFile(t.OutDir, "read_files", t.readFiles, t.config.Capture.FileRead)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	t.Close() // close Tracee

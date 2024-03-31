@@ -23,11 +23,11 @@ func OpenExistingDir(p string) (*os.File, error) {
 
 // OpenAt is a wrapper function to the `openat` syscall using golang types.
 func OpenAt(dir *os.File, relativePath string, flags int, perm fs.FileMode) (*os.File, error) {
-	pidFileFD, err := unix.Openat(int(dir.Fd()), relativePath, flags, uint32(perm))
+	fd, err := unix.Openat(int(dir.Fd()), relativePath, flags, uint32(perm))
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	return os.NewFile(uintptr(pidFileFD), path.Join(dir.Name(), relativePath)), nil
+	return os.NewFile(uintptr(fd), path.Join(dir.Name(), relativePath)), nil
 }
 
 // RemoveAt is a wrapper function to the `unlinkat` syscall using golang types.
