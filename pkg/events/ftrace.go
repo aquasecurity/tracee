@@ -158,7 +158,6 @@ func checkFtraceHooks(eventsCounter counter.Counter, out chan *trace.Event, base
 		event.ArgsNum = len(args)
 
 		out <- &event
-		_ = eventsCounter.Increment()
 	}
 
 	return nil
