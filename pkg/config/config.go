@@ -62,26 +62,28 @@ func (c Config) Validate() error {
 	}
 
 	// Capture
-	if len(c.Capture.FileWrite.PathFilter) > 3 {
-		return errfmt.Errorf("too many file-write path filters given")
-	}
-	for _, filter := range c.Capture.FileWrite.PathFilter {
-		if len(filter) > 50 {
-			return errfmt.Errorf(
-				"the length of a path filter is limited to 50 characters: %s",
-				filter,
-			)
+	if c.Capture != nil {
+		if len(c.Capture.FileWrite.PathFilter) > 3 {
+			return errfmt.Errorf("too many file-write path filters given")
 		}
-	}
-	if len(c.Capture.FileRead.PathFilter) > 3 {
-		return errfmt.Errorf("too many file-read path filters given")
-	}
-	for _, filter := range c.Capture.FileWrite.PathFilter {
-		if len(filter) > 50 {
-			return errfmt.Errorf(
-				"the length of a path filter is limited to 50 characters: %s",
-				filter,
-			)
+		for _, filter := range c.Capture.FileWrite.PathFilter {
+			if len(filter) > 50 {
+				return errfmt.Errorf(
+					"the length of a path filter is limited to 50 characters: %s",
+					filter,
+				)
+			}
+		}
+		if len(c.Capture.FileRead.PathFilter) > 3 {
+			return errfmt.Errorf("too many file-read path filters given")
+		}
+		for _, filter := range c.Capture.FileWrite.PathFilter {
+			if len(filter) > 50 {
+				return errfmt.Errorf(
+					"the length of a path filter is limited to 50 characters: %s",
+					filter,
+				)
+			}
 		}
 	}
 

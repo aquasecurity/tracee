@@ -120,7 +120,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 		t.pidsInMntns.AddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
 	}
 	// capture executed files
-	if t.config.Capture.Exec || t.config.Output.ExecHash {
+	if t.config.Capture != nil && t.config.Capture.Exec || t.config.Output.ExecHash {
 		filePath, err := parse.ArgVal[string](event.Args, "pathname")
 		if err != nil {
 			return errfmt.Errorf("error parsing sched_process_exec args: %v", err)

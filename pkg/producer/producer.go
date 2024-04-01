@@ -28,6 +28,8 @@ func New(cfg *config.ProducerConfig) (EventsProducer, error) {
 	switch kind {
 	case "json":
 		inputProducer = initJsonEventProducer(cfg.InputSource)
+	case "ebpf":
+		return nil, nil
 	case "rego":
 	default:
 		return nil, fmt.Errorf("unsupported producer kind - %s", cfg.Kind)

@@ -246,9 +246,10 @@ func New(cfg config.Config) (*Tracee, error) {
 	}
 
 	// Pseudo events added by capture (if enabled by the user)
-
-	for eventID, eCfg := range GetCaptureEventsList(cfg) {
-		t.eventsState[eventID] = eCfg
+	if t.config.Capture != nil {
+		for eventID, eCfg := range GetCaptureEventsList(cfg) {
+			t.eventsState[eventID] = eCfg
+		}
 	}
 
 	// Events chosen by the user
@@ -267,10 +268,6 @@ func New(cfg config.Config) (*Tracee, error) {
 			policyManager.EnableRule(p.ID, e)
 		}
 	}
-
-	// Register default event processors
-
-	t.registerEventProcessors()
 
 	// Start event triggering logic context
 
@@ -348,6 +345,10 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
+
+	// Register default event processors
+
+	t.registerEventProcessors()
 
 	// Initialize the pids per mount ns to cache
 
@@ -1399,8 +1400,15 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 		t.eventsPerfMap.Poll(pollTimeout)
 
 		go t.processLostEvents() // termination signaled by closing t.done
-		go t.handleEvents(ctx)
+	}
 
+	pipelineDone := make(chan struct{})
+	go func() {
+		t.handleEvents(ctx)
+		close(pipelineDone)
+	}()
+
+	if t.producer == nil {
 		// Parallel perf buffer with file writes events
 
 		if t.config.BlobPerfBufferSize > 0 {
@@ -1425,7 +1433,11 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 	t.running.Store(true) // set running state after writing pid file
 	t.ready(ctx)          // executes ready callback, non blocking
-	<-ctx.Done()          // block until ctx is cancelled elsewhere
+	select {
+	case <-ctx.Done(): // block until ctx is cancelled elsewhere
+	case <-pipelineDone:
+		break
+	}
 
 	// eBPF closure should only occur with eBPF producer
 	if t.producer == nil {

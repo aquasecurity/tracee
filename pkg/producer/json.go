@@ -4,8 +4,9 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/aquasecurity/tracee/types/trace"
 	"io"
+
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type jsonEventProducer struct {

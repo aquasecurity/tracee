@@ -68,6 +68,7 @@ access to hundreds of events that help you understand how your system behaves.`,
 			bindViperFlag(cmd, "install-path")
 			bindViperFlag(cmd, "log")
 			bindViperFlag(cmd, server.MetricsEndpointFlag)
+			bindViperFlag(cmd, "input")
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			initialize.SetLibbpfgoCallbacks()
@@ -276,6 +277,13 @@ func initCmd() error {
 		"l",
 		[]string{"info"},
 		"[debug|info|warn...]\t\tLogger options",
+	)
+
+	rootCmd.Flags().StringP(
+		"input",
+		"i",
+		"json",
+		"[json|rego]\t\t\tControl how and where input events stream is received",
 	)
 
 	rootCmd.Flags().SortFlags = false

@@ -635,6 +635,7 @@ func (t *Tracee) produceEvents(ctx context.Context) (
 		for {
 			select {
 			case <-ctx.Done():
+			case <-t.producer.Done():
 				return
 			default:
 				e, err := t.producer.Produce()

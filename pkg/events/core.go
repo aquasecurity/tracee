@@ -9437,7 +9437,7 @@ var CoreEvents = map[ID]Definition{
 				{handle: probes.SchedProcessFree, required: true},
 			},
 		},
-		sets: []string{"proc", "proc_life"},
+		sets: []string{"proc", "proc_life", "analyze_essentials"},
 		params: []trace.ArgMeta{
 			{Type: "long", Name: "exit_code"},
 			// The field value represents that all threads exited at the event time.
@@ -9456,7 +9456,7 @@ var CoreEvents = map[ID]Definition{
 				{handle: probes.SchedSwitch, required: true},
 			},
 		},
-		sets: []string{"analyze_essentials"},
+		sets: []string{},
 		params: []trace.ArgMeta{
 			{Type: "int", Name: "cpu"},
 			{Type: "int", Name: "prev_tid"},
