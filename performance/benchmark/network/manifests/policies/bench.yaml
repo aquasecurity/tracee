@@ -1,0 +1,27 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: benchmark-policy
+  annotations:
+    description: traces performance critical events for benchmarking
+spec:
+  scope:
+    - global
+  rules:
+    - event: magic_write
+    - event: sched_process_exec
+    - event: sched_process_fork
+    - event: sched_process_exit
+    - event: security_file_open
+    - event: security_inode_unlink
+    - event: security_socket_setsockopt
+    - event: security_socket_create
+    - event: security_socket_connect
+    - event: security_socket_accept
+    - event: hooked_proc_fops
+    - event: hooked_seq_ops
+    - event: hidden_inodes
+    - event: net_packet_dns
+    - event: net_packet_http
+    - event: container_create
+    - event: container_remove

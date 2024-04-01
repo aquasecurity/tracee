@@ -1,0 +1,265 @@
+---
+# Source: tracee/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tracee
+  labels:
+    helm.sh/chart: tracee-0.20.0
+    app.kubernetes.io/name: tracee
+    app.kubernetes.io/instance: tracee
+    app.kubernetes.io/version: "0.20.0"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: tracee/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tracee-operator
+  labels:
+    helm.sh/chart: tracee-0.20.0
+    app.kubernetes.io/name: tracee
+    app.kubernetes.io/instance: tracee
+    app.kubernetes.io/version: "0.20.0"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: tracee/templates/tracee-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tracee-config
+  labels:
+    helm.sh/chart: tracee-0.20.0
+    app.kubernetes.io/name: tracee
+    app.kubernetes.io/instance: tracee
+    app.kubernetes.io/version: "0.20.0"
+    app.kubernetes.io/managed-by: Helm
+data:
+  config.yaml: |-
+    cache:
+        type: mem
+        size: 512
+    perf-buffer-size: 1024
+    healthz: true
+    metrics: true
+    pprof: false
+    pyroscope: false
+    listen-addr: :3366
+    log:
+        level: info
+    output:
+        json:
+          files:
+            - stdout
+        options:
+            parse-arguments: true
+            stack-addresses: false
+            exec-env: false
+            exec-hash: dev-inode
+            sort-events: false
+---
+# Source: tracee/templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tracee
+rules:
+- apiGroups:
+  - apps
+  resources:
+  - daemonsets
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - tracee.aquasec.com
+  resources:
+  - policies
+  verbs:
+  - get
+  - list
+  - watch
+---
+# Source: tracee/templates/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tracee
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tracee
+subjects:
+  - kind: ServiceAccount
+    name: tracee
+    namespace: default
+---
+# Source: tracee/templates/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tracee-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tracee
+subjects:
+  - kind: ServiceAccount
+    name: tracee-operator
+    namespace: default
+---
+# Source: tracee/templates/daemonset.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: tracee
+  labels:
+    helm.sh/chart: tracee-0.20.0
+    app.kubernetes.io/name: tracee
+    app.kubernetes.io/instance: tracee
+    app.kubernetes.io/version: "0.20.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tracee
+      app.kubernetes.io/instance: tracee
+      type: bench
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tracee
+        app.kubernetes.io/instance: tracee
+        type: bench
+    spec:
+      nodeSelector:
+        type: bench
+      serviceAccountName: tracee
+      hostPID: true
+      securityContext:
+        {}
+      containers:
+        - name: tracee
+          image: "docker.io/aquasec/tracee:0.20.0"
+          imagePullPolicy: Always
+          command:
+            - /tracee/tracee
+          args:
+            - --config
+            - /tracee/config.yaml
+          env:
+            - name: LIBBPFGO_OSRELEASE_FILE
+              value: /etc/os-release-host
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          securityContext:
+            privileged: true
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3366
+          volumeMounts:
+            - name: tmp-tracee
+              mountPath: /tmp/tracee
+            - name: etc-os-release
+              mountPath: /etc/os-release-host
+              readOnly: true
+            - mountPath: /var/run/containerd/containerd.sock
+              name: containerd-sock
+              readOnly: true
+            - mountPath: /var/run/crio/crio.sock
+              name: crio-sock
+              readOnly: true
+            - mountPath: /var/run/docker.sock
+              name: docker-sock
+              readOnly: true
+            - mountPath: /var/run/podman/podman.sock
+              name: podman-sock
+              readOnly: true
+            - name: tracee-config
+              readOnly: true
+              mountPath: /tracee/config.yaml
+              subPath: config.yaml
+          resources:
+            {}
+      tolerations:
+        - effect: NoSchedule
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
+      volumes:
+        - name: tmp-tracee
+          hostPath:
+            path: /tmp/tracee
+        - name: etc-os-release
+          hostPath:
+            path: /etc/os-release
+        - name: containerd-sock
+          hostPath:
+            path: /var/run/containerd/containerd.sock
+        - name: crio-sock
+          hostPath:
+            path: /var/run/crio/crio.sock
+        - name: podman-sock
+          hostPath:
+            path: /var/run/podman/podman.sock
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+        - name: tracee-config
+          configMap:
+            name: tracee-config
+---
+# Source: tracee/templates/deploy.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tracee-operator
+  labels:
+    helm.sh/chart: tracee-0.20.0
+    app.kubernetes.io/name: tracee
+    app.kubernetes.io/instance: tracee
+    app.kubernetes.io/version: "0.20.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tracee-operator
+      type: base
+  template:
+    metadata:
+      labels:
+        app: tracee-operator
+        type: base
+    spec:
+      nodeSelector:
+        type: base
+      serviceAccountName: tracee-operator
+      securityContext:
+        {}
+      containers:
+      - name: tracee-operator
+        image: "docker.io/aquasec/tracee:0.20.0"
+        imagePullPolicy: Always
+        command:
+          - /tracee/tracee-operator
+        args:
+          - --health-probe-bind-address
+          - :8081
+        env:
+          - name: TRACEE_NAME
+            value: tracee
+          - name: TRACEE_NAMESPACE
+            value: default
+        securityContext:
+            privileged: true
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081

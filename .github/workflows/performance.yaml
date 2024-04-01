@@ -1,0 +1,83 @@
+#
+# When a PR is opened or updated which touches eBPF: run performance pipeline
+#
+name: Performance Pipeline
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "pkg/ebpf/c/**.c"
+      - "pkg/ebpf/c/**.h"
+      - "**/performance.yaml"
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  publish-pr-image:
+    name: Publish PR Image
+    runs-on: [self-hosted, perf]
+    steps:
+      - name: AWS Authentication
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        env:
+          AWS_PROFILE: ${{ secrets.AWS_PROFILE }}
+        with:
+          aws-region: ${{ secrets.AWS_REGION}}
+          role-to-assume: ${{ secrets.AWS_RUNNER_ROLE_ARN }}
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Build Image and Publish
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          REPO_USER: ${{ secrets.AWS_PR_IMAGE_ECR_REPO_USER }} 
+          REPO: ${{ secrets.AWS_ECR_NAME }}
+          PR_REPO: ${{ secrets.AWS_PR_IMAGE_ECR_REPO }}
+        run: |
+          make -f builder/Makefile.tracee-container build-tracee
+          aws ecr get-login-password --region $AWS_REGION | sudo docker login --username $REPO_USER --password-stdin $REPO
+          docker tag tracee:latest $PR_REPO:$GITHUB_SHA
+          docker push $PR_REPO:$GITHUB_SHA
+  network-benchmark:
+    name: Network Performance Gate
+    runs-on: [self-hosted, perf]
+    steps:
+      - name: AWS Authentication
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        env:
+          AWS_PROFILE: ${{ secrets.AWS_PROFILE }}
+        with:
+          aws-region: ${{ secrets.AWS_REGION}}
+          role-to-assume: ${{ secrets.AWS_RUNNER_ROLE_ARN }}
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Run Benchmark
+        env:
+          PR_REPO: ${{ secrets.AWS_PR_IMAGE_ECR_REPO }}
+        run: |
+          ./performance/benchmark/network/bench.sh $PR_REPO:$GITHUB_SHA
+      # Download previous benchmark result from cache (if exists)
+      - name: Download previous benchmark data
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: ./cache
+          key: ${{ runner.os }}-benchmark
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@1846227a307d8c0149b960b986d46f8f4c95db0c #v1.20.1
+        with:
+          # What benchmark tool the output.txt came from
+          tool: 'smallerIsBetter'
+          # Where the output from the benchmark tool is stored
+          output-file-path: bench_output.json
+          # Where the previous data file is stored
+          external-data-json-path: ./cache/benchmark-data.json
+          # Workflow will fail when an alert happens
+          fail-on-alert: true
+          # Tag user when alerted
+          alert-comment-cc-users: '@aquasecurity/tracee'
+          # Percentage threshold to trigger an alert. For example, if our last result was 1.4, 
+          # if the next result exceeds X% of 1.4, there will be an alert.
+          alert-threshold: '10%'
+      - name: Cleanup Benchmark Result
+        run: |
+          rm bench_output.json
