@@ -11148,7 +11148,7 @@ var CoreEvents = map[ID]Definition{
 				{handle: probes.SchedProcessFork, required: true},
 			},
 		},
-		sets: []string{},
+		sets: []string{"analyze_essentials"},
 		params: []trace.ArgMeta{
 			// Real Parent
 			{Type: "int", Name: "parent_tid"},
@@ -11202,7 +11202,7 @@ var CoreEvents = map[ID]Definition{
 				},
 			},
 		},
-		sets: []string{"default", "proc"},
+		sets: []string{"default", "proc", "analyze_essentials"},
 		params: []trace.ArgMeta{
 			{Type: "const char*", Name: "cmdpath"},
 			{Type: "const char*", Name: "pathname"},
@@ -11233,7 +11233,7 @@ var CoreEvents = map[ID]Definition{
 				{handle: probes.SchedProcessFree, required: true},
 			},
 		},
-		sets: []string{"proc", "proc_life"},
+		sets: []string{"proc", "proc_life", "analyze_essentials"},
 		params: []trace.ArgMeta{
 			{Type: "long", Name: "exit_code"},
 			// The field value represents that all threads exited at the event time.
@@ -11912,7 +11912,7 @@ var CoreEvents = map[ID]Definition{
 		id32Bit:      Sys32Undefined,
 		name:         "init_tracee_info",
 		version:      NewVersion(1, 0, 0),
-		sets:         []string{},
+		sets:         []string{"analyze_essentials"},
 		dependencies: Dependencies{},
 		params: []trace.ArgMeta{
 			{Type: "u64", Name: "boot_time"},

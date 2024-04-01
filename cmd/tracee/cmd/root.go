@@ -29,6 +29,9 @@ var (
 		Long: `Tracee uses eBPF technology to tap into your system and give you
 access to hundreds of events that help you understand how your system behaves.`,
 		DisableFlagParsing: true, // in order to have fine grained control over flags parsing
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			logger.Init(logger.NewDefaultLoggingConfig())
+		},
 		PreRun: func(cmd *cobra.Command, args []string) {
 			if len(args) > 0 {
 				// parse all flags
@@ -47,9 +50,28 @@ access to hundreds of events that help you understand how your system behaves.`,
 				}
 				checkConfigFlag()
 			}
+			bindViperFlag(cmd, "output")
+			bindViperFlag(cmd, "no-containers")
+			bindViperFlag(cmd, "cri")
+			bindViperFlag(cmd, "signatures-dir")
+			bindViperFlag(cmd, "rego")
+			bindViperFlag(cmd, "perf-buffer-size")
+			bindViperFlag(cmd, "blob-perf-buffer-size")
+			bindViperFlag(cmd, "cache")
+			bindViperFlag(cmd, "proctree")
+			bindViperFlag(cmd, server.HealthzEndpointFlag)
+			bindViperFlag(cmd, server.PProfEndpointFlag)
+			bindViperFlag(cmd, server.PyroscopeAgentFlag)
+			bindViperFlag(cmd, server.HTTPListenEndpointFlag)
+			bindViperFlag(cmd, server.GRPCListenEndpointFlag)
+			bindViperFlag(cmd, "capabilities")
+			bindViperFlag(cmd, "install-path")
+			bindViperFlag(cmd, "log")
+			bindViperFlag(cmd, server.MetricsEndpointFlag)
+			bindViperFlag(cmd, "input")
+			bindViperFlag(cmd, "dnscache")
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			logger.Init(logger.NewDefaultLoggingConfig())
 			initialize.SetLibbpfgoCallbacks()
 
 			runner, err := cmdcobra.GetTraceeRunner(cmd, version.GetVersion())
@@ -122,10 +144,6 @@ func initCmd() error {
 		[]string{"table"},
 		"[json|none|webhook...]\t\tControl how and where output is printed",
 	)
-	err := viper.BindPFlag("output", rootCmd.Flags().Lookup("output"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
 
 	// capture is not bound to viper
 	rootCmd.Flags().StringArrayP(
@@ -152,20 +170,12 @@ func initCmd() error {
 		false,
 		"\t\t\t\t\tDisable container info enrichment to events. Safeguard option.",
 	)
-	err = viper.BindPFlag("no-containers", rootCmd.Flags().Lookup("no-containers"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
 
 	rootCmd.Flags().StringArray(
 		"cri",
 		[]string{},
 		"<runtime:socket>\t\t\tDefine connected container runtimes",
 	)
-	err = viper.BindPFlag("cri", rootCmd.Flags().Lookup("cri"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
 
 	// Signature flags
 
@@ -174,20 +184,12 @@ func initCmd() error {
 		[]string{},
 		"<dir>\t\t\t\tDirectories where to search for signatures in OPA (.rego) and Go plugin (.so) formats",
 	)
-	err = viper.BindPFlag("signatures-dir", rootCmd.Flags().Lookup("signatures-dir"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
 
 	rootCmd.Flags().StringArray(
 		"rego",
 		[]string{},
 		"[partial-eval|aio]\t\t\tControl event rego settings",
 	)
-	err = viper.BindPFlag("rego", rootCmd.Flags().Lookup("rego"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
 
 	// Buffer/Cache flags
 
@@ -197,20 +199,12 @@ func initCmd() error {
 		1024, // 4 MB of contiguous pages
 		"<size>\t\t\t\tSize, in pages, of the internal perf ring buffer used to submit events from the kernel",
 	)
-	err = viper.BindPFlag("perf-buffer-size", rootCmd.Flags().Lookup("perf-buffer-size"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
 
 	rootCmd.Flags().Int(
 		"blob-perf-buffer-size",
 		1024, // 4 MB of contiguous pages
 		"<size>\t\t\t\tSize, in pages, of the internal perf ring buffer used to send blobs from the kernel",
 	)
-	err = viper.BindPFlag("blob-perf-buffer-size", rootCmd.Flags().Lookup("blob-perf-buffer-size"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
 
 	rootCmd.Flags().StringArrayP(
 		"cache",
@@ -218,10 +212,6 @@ func initCmd() error {
 		[]string{"none"},
 		"[type|mem-cache-size]\t\tControl event caching queues",
 	)
-	err = viper.BindPFlag("cache", rootCmd.Flags().Lookup("cache"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
 
 	// Process Tree flags
 
@@ -231,10 +221,6 @@ func initCmd() error {
 		[]string{"none"},
 		"[process|thread]\t\t\tControl process tree options",
 	)
-	err = viper.BindPFlag("proctree", rootCmd.Flags().Lookup("proctree"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
 
 	// DNS Cache flags
 
@@ -243,10 +229,6 @@ func initCmd() error {
 		[]string{"none"},
 		"\t\t\t\t\tEnable DNS Cache",
 	)
-	err = viper.BindPFlag("dnscache", rootCmd.Flags().Lookup("dnscache"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
 
 	// Server flags
 
@@ -255,60 +237,36 @@ func initCmd() error {
 		false,
 		"\t\t\t\t\tEnable metrics endpoint",
 	)
-	err = viper.BindPFlag(server.MetricsEndpointFlag, rootCmd.Flags().Lookup(server.MetricsEndpointFlag))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
 
 	rootCmd.Flags().Bool(
 		server.HealthzEndpointFlag,
 		false,
 		"\t\t\t\t\tEnable healthz endpoint",
 	)
-	err = viper.BindPFlag(server.HealthzEndpointFlag, rootCmd.Flags().Lookup(server.HealthzEndpointFlag))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
 
 	rootCmd.Flags().Bool(
 		server.PProfEndpointFlag,
 		false,
 		"\t\t\t\t\tEnable pprof endpoints",
 	)
-	err = viper.BindPFlag(server.PProfEndpointFlag, rootCmd.Flags().Lookup(server.PProfEndpointFlag))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
 
 	rootCmd.Flags().Bool(
 		server.PyroscopeAgentFlag,
 		false,
 		"\t\t\t\t\tEnable pyroscope agent",
 	)
-	err = viper.BindPFlag(server.PyroscopeAgentFlag, rootCmd.Flags().Lookup(server.PyroscopeAgentFlag))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
 
 	rootCmd.Flags().String(
 		server.HTTPListenEndpointFlag,
 		":3366",
 		"<url:port>\t\t\t\tListening address of the metrics endpoint server",
 	)
-	err = viper.BindPFlag(server.HTTPListenEndpointFlag, rootCmd.Flags().Lookup(server.HTTPListenEndpointFlag))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
 
 	rootCmd.Flags().String(
 		server.GRPCListenEndpointFlag,
 		"", // disabled by default
 		"<protocol:addr>\t\t\tListening address of the grpc server eg: tcp:4466, unix:/tmp/tracee.sock (default: disabled)",
 	)
-	err = viper.BindPFlag(server.GRPCListenEndpointFlag, rootCmd.Flags().Lookup(server.GRPCListenEndpointFlag))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
 
 	// Other flags
 
@@ -318,20 +276,12 @@ func initCmd() error {
 		[]string{},
 		"[bypass|add|drop]\t\t\tDefine capabilities for tracee to run with",
 	)
-	err = viper.BindPFlag("capabilities", rootCmd.Flags().Lookup("capabilities"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
 
 	rootCmd.Flags().String(
 		"install-path",
 		"/tmp/tracee",
 		"<dir>\t\t\t\tPath where tracee will install or lookup it's resources",
 	)
-	err = viper.BindPFlag("install-path", rootCmd.Flags().Lookup("install-path"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
 
 	rootCmd.Flags().StringArrayP(
 		"log",
@@ -339,10 +289,13 @@ func initCmd() error {
 		[]string{"info"},
 		"[debug|info|warn...]\t\tLogger options",
 	)
-	err = viper.BindPFlag("log", rootCmd.Flags().Lookup("log"))
-	if err != nil {
-		return errfmt.WrapError(err)
-	}
+
+	rootCmd.Flags().StringP(
+		"input",
+		"i",
+		"ebpf",
+		"[json|rego]\t\t\tControl how and where input events stream is received",
+	)
 
 	rootCmd.Flags().SortFlags = false
 
@@ -379,4 +332,11 @@ func Execute() error {
 	}
 
 	return rootCmd.Execute()
+}
+
+func bindViperFlag(cmd *cobra.Command, flag string) {
+	err := viper.BindPFlag(flag, cmd.Flags().Lookup(flag))
+	if err != nil {
+		logger.Fatalw("Error binding viper flag", "flag", flag, "error", err)
+	}
 }

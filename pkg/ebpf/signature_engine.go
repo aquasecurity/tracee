@@ -2,6 +2,7 @@ package ebpf
 
 import (
 	"context"
+	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/dnscache"
@@ -53,6 +54,10 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 
 	go t.sigEngine.Start(ctx)
 
+	// Use wait group to close output channels only upon the end of both internal goroutines
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
 	// Create a function for feeding the engine with an event
 	feedFunc := func(event *trace.Event) {
 		if event == nil {
@@ -91,6 +96,7 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 		defer close(errc)
 		defer close(engineInput)
 		defer close(engineOutput)
+		defer wg.Done()
 
 		for {
 			select {
@@ -105,10 +111,11 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 	}()
 
 	go func() {
+		defer wg.Done()
 		for {
 			select {
-			case finding := <-engineOutput:
-				if finding == nil {
+			case finding, ok := <-engineOutput:
+				if !ok || finding == nil{
 					return // channel is closed
 				}
 				if finding.Event.Payload == nil {
@@ -133,6 +140,12 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 		}
 	}()
 
+	go func() {
+		wg.Wait()
+		close(out)
+		close(errc)
+	}()
+
 	return out, errc
 }
 
@@ -141,7 +154,9 @@ func (t *Tracee) PrepareBuiltinDataSources() []detect.DataSource {
 	datasources := []detect.DataSource{}
 
 	// Containers Data Source
-	datasources = append(datasources, containers.NewDataSource(t.containers))
+	if t.containers != nil {
+		datasources = append(datasources, containers.NewDataSource(t.containers))
+	}
 
 	// DNS Data Source
 	if t.config.DNSCacheConfig.Enable {

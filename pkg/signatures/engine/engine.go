@@ -129,6 +129,7 @@ func (engine *Engine) Start(ctx context.Context) {
 	}
 	engine.signaturesMutex.RUnlock()
 	engine.consumeSources(ctx)
+	close(engine.output)
 }
 
 func (engine *Engine) unloadAllSignatures() {

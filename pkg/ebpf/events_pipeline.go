@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"io"
 	"strconv"
 	"sync"
 	"unsafe"
@@ -31,17 +32,25 @@ func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}) 
 	defer logger.Debugw("Stopped handleEvents goroutine")
 
 	var errcList []<-chan error
+	var eventsChan <-chan *trace.Event
+	var errc <-chan error
 
-	// Decode stage: events are read from the perf buffer and decoded into trace.Event type.
+	if t.producer != nil {
+		// Produce stage: events are produced from input file
 
-	eventsChan, errc := t.decodeEvents(ctx, t.eventsChannel)
-	errcList = append(errcList, errc)
+		eventsChan, errc = t.produceEvents(ctx)
+	} else {
+		// Decode stage: events are read from the perf buffer and decoded into trace.Event type.
 
-	// Cache stage: events go through a caching function.
-
-	if t.config.Cache != nil {
-		eventsChan, errc = t.queueEvents(ctx, eventsChan)
+		eventsChan, errc = t.decodeEvents(ctx, t.eventsChannel)
 		errcList = append(errcList, errc)
+
+		// Cache stage: events go through a caching function.
+
+		if t.config.Cache != nil {
+			eventsChan, errc = t.queueEvents(ctx, eventsChan)
+			errcList = append(errcList, errc)
+		}
 	}
 
 	// Sort stage: events go through a sorting function.
@@ -56,17 +65,19 @@ func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}) 
 	eventsChan, errc = t.processEvents(ctx, eventsChan)
 	errcList = append(errcList, errc)
 
-	// Enrichment stage: container events are enriched with additional runtime data.
+	if t.producer == nil {
+		// Enrichment stage: container events are enriched with additional runtime data.
+		if !t.config.NoContainersEnrich { // TODO: remove safe-guard soon.
+			eventsChan, errc = t.enrichContainerEvents(ctx, eventsChan)
+			errcList = append(errcList, errc)
+		}
 
-	if !t.config.NoContainersEnrich { // TODO: remove safe-guard soon.
-		eventsChan, errc = t.enrichContainerEvents(ctx, eventsChan)
+		// Derive events stage: events go through a derivation function.
+		// TODO: Figure how to maybe derive events in analyze mode without conflicts
+
+		eventsChan, errc = t.deriveEvents(ctx, eventsChan)
 		errcList = append(errcList, errc)
 	}
-
-	// Derive events stage: events go through a derivation function.
-
-	eventsChan, errc = t.deriveEvents(ctx, eventsChan)
-	errcList = append(errcList, errc)
 
 	// Engine events stage: events go through the signatures engine for detection.
 
@@ -643,6 +654,52 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *trace.Event) <-chan 
 	}()
 
 	return errc
+}
+
+func (t *Tracee) produceEvents(ctx context.Context) (
+	<-chan *trace.Event, <-chan error,
+) {
+	out := make(chan *trace.Event)
+	errc := make(chan error, 1)
+
+	go func() {
+		defer close(out)
+		defer close(errc)
+
+		for {
+			select {
+			case <-ctx.Done():
+			case <-t.producer.Done():
+				return
+			default:
+				e, err := t.producer.Produce()
+				if err != nil {
+					if err == io.EOF {
+						// TODO: Signal context done
+						return
+					}
+					logger.Fatalw("Error with events producer", "err", err)
+				}
+				e.MatchedPoliciesKernel = 0xFFFFFFFF
+				// If there aren't any policies that need filtering in userland, tracee **may** skip
+				// this event, as long as there aren't any derivatives or signatures that depend on it.
+				// Some base events (derivative and signatures) might not have set related policy bit,
+				// thus the need to continue with those within the pipeline.
+				if t.matchPolicies(&e) == 0 {
+					_, hasDerivation := t.eventDerivations[events.ID(e.EventID)]
+					_, hasSignature := t.eventSignatures[events.ID(e.EventID)]
+
+					if !hasDerivation && !hasSignature {
+						_ = t.stats.EventsFiltered.Increment()
+						continue
+					}
+				}
+				out <- &e
+			}
+		}
+	}()
+
+	return out, errc
 }
 
 // getStackAddresses returns the stack addresses for a given StackID

@@ -38,6 +38,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/proctree"
+	"github.com/aquasecurity/tracee/pkg/producer"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/streams"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -121,6 +122,8 @@ type Tracee struct {
 	policyManager *policyManager
 	// The dependencies of events used by Tracee
 	eventsDependencies *dependencies.Manager
+	// producer produce events in analyze mode instead of eBPF programs
+	producer producer.EventsProducer
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -249,14 +252,6 @@ func New(cfg config.Config) (*Tracee, error) {
 			t.removeEventFromState(node.GetID())
 		})
 
-	// Initialize capabilities rings soon
-
-	err = capabilities.Initialize(t.config.Capabilities.BypassCaps)
-	if err != nil {
-		return t, errfmt.WrapError(err)
-	}
-	caps := capabilities.GetInstance()
-
 	// Initialize events state with mandatory events (TODO: review this need for sched exec)
 
 	t.chooseEvent(events.SchedProcessFork, events.EventState{})
@@ -270,10 +265,11 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	// Control Plane Process Tree Events
 
+	processTreeEvents := []events.ID{events.SchedProcessFork, events.SchedProcessExec, events.SchedProcessExit}
 	pipeEvts := func() {
-		t.chooseEvent(events.SchedProcessFork, policy.AlwaysSubmit)
-		t.chooseEvent(events.SchedProcessExec, policy.AlwaysSubmit)
-		t.chooseEvent(events.SchedProcessExit, policy.AlwaysSubmit)
+		for _, id := range processTreeEvents {
+			t.chooseEvent(id, policy.AlwaysSubmit)
+		}
 	}
 	signalEvts := func() {
 		t.chooseEvent(events.SignalSchedProcessFork, policy.AlwaysSubmit)
@@ -298,9 +294,10 @@ func New(cfg config.Config) (*Tracee, error) {
 	}
 
 	// Pseudo events added by capture (if enabled by the user)
-
-	for eventID, eCfg := range GetCaptureEventsList(cfg) {
-		t.chooseEvent(eventID, eCfg)
+	if t.config.Capture != nil {
+		for eventID, eCfg := range GetCaptureEventsList(cfg) {
+			t.chooseEvent(eventID, eCfg)
+		}
 	}
 
 	// Events chosen by the user
@@ -323,56 +320,24 @@ func New(cfg config.Config) (*Tracee, error) {
 		}
 	}
 
-	// Update capabilities rings with all events dependencies
-
-	// TODO: extract this to a function to be called from here and from
-	// policies changes.
-	for id := range t.eventsState {
-		if !events.Core.IsDefined(id) {
-			return t, errfmt.Errorf("event %d is not defined", id)
-		}
-		depsNode, ok := t.eventsDependencies.GetEvent(id)
-		if ok {
-			deps := depsNode.GetDependencies()
-			evtCaps := deps.GetCapabilities()
-			err = caps.BaseRingAdd(evtCaps.GetBase()...)
-			if err != nil {
-				return t, errfmt.WrapError(err)
-			}
-			err = caps.BaseRingAdd(evtCaps.GetEBPF()...)
-			if err != nil {
-				return t, errfmt.WrapError(err)
-			}
-		}
-	}
-
-	// Add/Drop capabilities to/from the Base ring (always effective)
-
-	capsToAdd, err := capabilities.ReqByString(t.config.Capabilities.AddCaps...)
-	if err != nil {
-		return t, errfmt.WrapError(err)
-	}
-	err = caps.BaseRingAdd(capsToAdd...)
-	if err != nil {
-		return t, errfmt.WrapError(err)
-	}
-
-	capsToDrop, err := capabilities.ReqByString(t.config.Capabilities.DropCaps...)
-	if err != nil {
-		return t, errfmt.WrapError(err)
-	}
-	err = caps.BaseRingRemove(capsToDrop...)
-	if err != nil {
-		return t, errfmt.WrapError(err)
-	}
-
-	// Register default event processors
-
-	t.registerEventProcessors()
-
 	// Start event triggering logic context
 
 	t.triggerContexts = trigger.NewContext()
+
+	if t.config.MaxPidsCache == 0 {
+		t.config.MaxPidsCache = 5 // TODO: configure this ? never set, default = 5
+	}
+
+	return t, nil
+
+	// Update capabilities rings with all events dependencies
+	// Start event triggering logic context
+
+	t.triggerContexts = trigger.NewContext()
+
+	if t.config.MaxPidsCache == 0 {
+		t.config.MaxPidsCache = 5 // TODO: configure this ? never set, default = 5
+	}
 
 	return t, nil
 }
@@ -382,7 +347,132 @@ func New(cfg config.Config) (*Tracee, error) {
 // initialization logic, especially one that causes side effects, should go
 // here and not New().
 func (t *Tracee) Init(ctx gocontext.Context) error {
+	// In this stage we expect to either have a producer or an eBPF object to load
+	if t.producer == nil && t.config.BPFObjBytes == nil {
+		return errfmt.Errorf("nil bpf object in memory")
+	}
+
+	// Initialize needed values
+
+	// Initialize capabilities rings soon
+
+	err := capabilities.Initialize(t.config.Capabilities.BypassCaps)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+	caps := capabilities.GetInstance()
+
+	// Handle all essential events dependencies
+
+	// We need to update capabilities only for events produced using eBPF
+	if t.producer == nil {
+		// Update capabilities rings with all events dependencies
+
+		// TODO: extract this to a function to be called from here and from
+		// policies changes.
+		for id := range t.eventsState {
+			if !events.Core.IsDefined(id) {
+				return errfmt.Errorf("event %d is not defined", id)
+			}
+			depsNode, ok := t.eventsDependencies.GetEvent(id)
+			if ok {
+				deps := depsNode.GetDependencies()
+				evtCaps := deps.GetCapabilities()
+				err := caps.BaseRingAdd(evtCaps.GetBase()...)
+				if err != nil {
+					return errfmt.WrapError(err)
+				}
+				err = caps.BaseRingAdd(evtCaps.GetEBPF()...)
+				if err != nil {
+					return errfmt.WrapError(err)
+				}
+			}
+		}
+	}
+
+	// Add/Drop capabilities to/from the Base ring (always effective)
+
+	capsToAdd, err := capabilities.ReqByString(t.config.Capabilities.AddCaps...)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+	err = caps.BaseRingAdd(capsToAdd...)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	capsToDrop, err := capabilities.ReqByString(t.config.Capabilities.DropCaps...)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+	err = caps.BaseRingRemove(capsToDrop...)
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Register default event processors
+
+	t.registerEventProcessors()
+
+	// Initialize the pids per mount ns to cache
+
+	t.pidsInMntns.Init(t.config.MaxPidsCache)
+
+	// Initialize events pool
+
+	t.eventsPool = &sync.Pool{
+		New: func() interface{} {
+			return &trace.Event{}
+		},
+	}
+
+	// Initialize events sorting (pipeline step)
+
+	if t.config.Output.EventsSorting {
+		t.eventsSorter, err = sorting.InitEventSorter()
+		if err != nil {
+			return errfmt.WrapError(err)
+		}
+	}
+
+	// Initialize events parameter types map
+	t.eventsParamTypes = make(map[events.ID][]bufferdecoder.ArgType)
+	for _, eventDefinition := range events.Core.GetDefinitions() {
+		id := eventDefinition.GetID()
+		params := eventDefinition.GetParams()
+		for _, param := range params {
+			t.eventsParamTypes[id] = append(t.eventsParamTypes[id], bufferdecoder.GetParamType(param.Type))
+		}
+	}
+
+	// Initialize Process Tree (if enabled)
+
+	if t.config.ProcTree.Source != proctree.SourceNone {
+		t.processTree, err = proctree.NewProcessTree(ctx, t.config.ProcTree)
+		if err != nil {
+			return errfmt.WrapError(err)
+		}
+	}
+
+	if t.producer == nil {
+		err = t.initBPFProducing(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// initBPFProducing includes all the initializations needed when producing events through eBPF.
+// Not all the things are related directly to the eBPF, as they also affect the pipeline and environment.
+func (t *Tracee) initBPFProducing(ctx gocontext.Context) error {
 	var err error
+
+	initReq, err := t.generateInitValues()
+	if err != nil {
+		return errfmt.Errorf("failed to generate required init values: %s", err)
+	}
 
 	// Init kernel symbols map
 
@@ -399,15 +489,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	t.validateKallsymsDependencies() // disable events w/ missing ksyms dependencies
 
-	// Initialize buckets cache
-
 	var mntNSProcs map[int]int
-
-	if t.config.MaxPidsCache == 0 {
-		t.config.MaxPidsCache = 5 // TODO: configure this ? never set, default = 5
-	}
-
-	t.pidsInMntns.Init(t.config.MaxPidsCache)
 
 	err = capabilities.GetInstance().Specific(
 		func() error {
@@ -423,15 +505,6 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		}
 	} else {
 		logger.Debugw("Initializing buckets cache", "error", errfmt.WrapError(err))
-	}
-
-	// Initialize Process Tree (if enabled)
-
-	if t.config.ProcTree.Source != proctree.SourceNone {
-		t.processTree, err = proctree.NewProcessTree(ctx, t.config.ProcTree)
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
 	}
 
 	// Initialize cgroups filesystems
@@ -475,16 +548,6 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	err = t.initDerivationTable()
 	if err != nil {
 		return errfmt.Errorf("error initializing event derivation map: %v", err)
-	}
-
-	// Initialize events parameter types map
-	t.eventsParamTypes = make(map[events.ID][]bufferdecoder.ArgType)
-	for _, eventDefinition := range events.Core.GetDefinitions() {
-		id := eventDefinition.GetID()
-		params := eventDefinition.GetParams()
-		for _, param := range params {
-			t.eventsParamTypes[id] = append(t.eventsParamTypes[id], bufferdecoder.GetParamType(param.Type))
-		}
 	}
 
 	// Initialize eBPF programs and maps
@@ -545,23 +608,6 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.Errorf("error getting access to 'fd_arg_path_map' eBPF Map %v", err)
 	}
 	t.FDArgPathMap = fdArgPathMap
-
-	// Initialize events sorting (pipeline step)
-
-	if t.config.Output.EventsSorting {
-		t.eventsSorter, err = sorting.InitEventSorter()
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	// Initialize events pool
-
-	t.eventsPool = &sync.Pool{
-		New: func() interface{} {
-			return &trace.Event{}
-		},
-	}
 
 	// Initialize times
 
@@ -808,7 +854,6 @@ const (
 	optTranslateFDFilePath
 	optCaptureBpf
 	optCaptureFileRead
-	optForkProcTree
 )
 
 func (t *Tracee) getOptionsConfig() uint32 {
@@ -841,10 +886,6 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	}
 	if t.config.Output.ParseArgumentsFDs {
 		cOptVal = cOptVal | optTranslateFDFilePath
-	}
-	switch t.config.ProcTree.Source {
-	case proctree.SourceBoth, proctree.SourceEvents:
-		cOptVal = cOptVal | optForkProcTree // tell sched_process_fork to be prolix
 	}
 
 	return cOptVal
@@ -1244,82 +1285,99 @@ const pollTimeout int = 300
 
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
-	// Some events need initialization before the perf buffers are polled
+	// eBPF initialization used when eBPF producer is used
+	if t.producer == nil {
+		// Some events need initialization before the perf buffers are polled
 
-	go t.hookedSyscallTableRoutine(ctx)
+		go t.hookedSyscallTableRoutine(ctx)
 
-	t.triggerSeqOpsIntegrityCheck(trace.Event{})
-	errs := t.triggerMemDump(trace.Event{})
-	for _, err := range errs {
-		logger.Warnw("Memory dump", "error", err)
+		t.triggerSeqOpsIntegrityCheck(trace.Event{})
+		errs := t.triggerMemDump(trace.Event{})
+		for _, err := range errs {
+			logger.Warnw("Memory dump", "error", err)
+		}
+
+		go t.lkmSeekerRoutine(ctx)
+
+		// Start control plane
+		t.controlPlane.Start()
+		go t.controlPlane.Run(ctx)
+
+		// Main event loop (polling events perf buffer)
+
+		t.eventsPerfMap.Poll(pollTimeout)
+
+		go t.processLostEvents() // termination signaled by closing t.done
 	}
-
-	go t.lkmSeekerRoutine(ctx)
-
-	// Start control plane
-	t.controlPlane.Start()
-	go t.controlPlane.Run(ctx)
-
-	// Main event loop (polling events perf buffer)
-
-	t.eventsPerfMap.Poll(pollTimeout)
 
 	pipelineReady := make(chan struct{}, 1)
-	go t.processLostEvents() // termination signaled by closing t.done
-	go t.handleEvents(ctx, pipelineReady)
+	pipelineDone := make(chan struct{})
+	go func() {
+		t.handleEvents(ctx, pipelineReady)
+		close(pipelineDone)
+	}()
 
-	// Parallel perf buffer with file writes events
+	if t.producer == nil {
+		// Parallel perf buffer with file writes events
 
-	if t.config.BlobPerfBufferSize > 0 {
-		t.fileWrPerfMap.Poll(pollTimeout)
-		go t.handleFileCaptures(ctx)
+		if t.config.BlobPerfBufferSize > 0 {
+			t.fileWrPerfMap.Poll(pollTimeout)
+			go t.handleFileCaptures(ctx)
+		}
+
+		// Network capture perf buffer (similar to regular pipeline)
+
+		if pcaps.PcapsEnabled(t.config.Capture.Net) {
+			t.netCapPerfMap.Poll(pollTimeout)
+			go t.handleNetCaptureEvents(ctx)
+		}
+
+		// Logging perf buffer
+
+		t.bpfLogsPerfMap.Poll(pollTimeout)
+		go t.processBPFLogs(ctx)
 	}
-
-	// Network capture perf buffer (similar to regular pipeline)
-
-	if pcaps.PcapsEnabled(t.config.Capture.Net) {
-		t.netCapPerfMap.Poll(pollTimeout)
-		go t.handleNetCaptureEvents(ctx)
-	}
-
-	// Logging perf buffer
-
-	t.bpfLogsPerfMap.Poll(pollTimeout)
-	go t.processBPFLogs(ctx)
 
 	// Management
 
 	<-pipelineReady
 	t.running.Store(true) // set running state after writing pid file
 	t.ready(ctx)          // executes ready callback, non blocking
-	<-ctx.Done()          // block until ctx is cancelled elsewhere
-
-	// Close perf buffers
-
-	t.eventsPerfMap.Close()
-	if t.config.BlobPerfBufferSize > 0 {
-		t.fileWrPerfMap.Close()
+	select {
+	case <-ctx.Done(): // block until ctx is cancelled elsewhere
+	case <-pipelineDone:
+		break
 	}
-	if pcaps.PcapsEnabled(t.config.Capture.Net) {
-		t.netCapPerfMap.Close()
-	}
-	t.bpfLogsPerfMap.Close()
 
-	// TODO: move logic below somewhere else (related to file writes)
+	// eBPF closure should only occur with eBPF producer
+	if t.producer == nil {
+		// Close perf buffers
 
-	// record index of written files
-	if t.config.Capture.FileWrite.Capture {
-		err := updateCaptureMapFile(t.OutDir, "written_files", t.writtenFiles, t.config.Capture.FileWrite)
-		if err != nil {
-			return err
+		t.eventsPerfMap.Close()
+		if t.config.BlobPerfBufferSize > 0 {
+			t.fileWrPerfMap.Close()
 		}
-	}
+		if pcaps.PcapsEnabled(t.config.Capture.Net) {
+			t.netCapPerfMap.Close()
+		}
+		t.bpfLogsPerfMap.Close()
 
-	// record index of read files
-	if t.config.Capture.FileRead.Capture {
-		err := updateCaptureMapFile(t.OutDir, "read_files", t.readFiles, t.config.Capture.FileRead)
-		if err != nil {
-			return err
+		// TODO: move logic below somewhere else (related to file writes)
+
+		// record index of written files
+		if t.config.Capture.FileWrite.Capture {
+			err := updateCaptureMapFile(t.OutDir, "written_files", t.writtenFiles, t.config.Capture.FileWrite)
+			if err != nil {
+				return err
+			}
+		}
+
+		// record index of read files
+		if t.config.Capture.FileRead.Capture {
+			err := updateCaptureMapFile(t.OutDir, "read_files", t.readFiles, t.config.Capture.FileRead)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -1385,8 +1443,10 @@ func (t *Tracee) Close() {
 			logger.Errorw("failed to clean containers module when closing tracee", "err", err)
 		}
 	}
-	if err := t.cgroups.Destroy(); err != nil {
-		logger.Errorw("Cgroups destroy", "error", err)
+	if t.cgroups != nil {
+		if err := t.cgroups.Destroy(); err != nil {
+			logger.Errorw("Cgroups destroy", "error", err)
+		}
 	}
 
 	// set 'running' to false and close 'done' channel only after attempting to close all resources
@@ -1510,9 +1570,8 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	matchedPolicies = policiesMatch(t.eventsState[events.InitTraceeData])
 	if matchedPolicies > 0 {
 		traceeDataEvent := events.InitTraceeDataEvent(t.bootTime, t.startTime)
-		setMatchedPolicies(&traceeDataEvent, matchedPolicies,  t.config.Policies)
+		setMatchedPolicies(&traceeDataEvent, matchedPolicies, t.config.Policies)
 		out <- &traceeDataEvent
-		_ = t.stats.EventCount.Increment()
 	}
 
 	matchedPolicies = policiesMatch(t.eventsState[events.InitNamespaces])
@@ -1520,7 +1579,6 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		systemInfoEvent := events.InitNamespacesEvent()
 		setMatchedPolicies(&systemInfoEvent, matchedPolicies, t.config.Policies)
 		out <- &systemInfoEvent
-		_ = t.stats.EventCount.Increment()
 	}
 
 	// Initial existing containers events (1 event per container)
@@ -1532,7 +1590,6 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 			event := &(existingContainerEvents[i])
 			setMatchedPolicies(event, matchedPolicies, t.config.Policies)
 			out <- event
-			_ = t.stats.EventCount.Increment()
 		}
 	}
 
@@ -1778,6 +1835,10 @@ func (t *Tracee) subscribe(policyMask uint64) *streams.Stream {
 // Unsubscribe unsubscribes stream
 func (t *Tracee) Unsubscribe(s *streams.Stream) {
 	t.streamsManager.Unsubscribe(s)
+}
+
+func (t *Tracee) SetProducer(eventsProducer producer.EventsProducer) {
+	t.producer = eventsProducer
 }
 
 func (t *Tracee) EnableEvent(eventName string) error {

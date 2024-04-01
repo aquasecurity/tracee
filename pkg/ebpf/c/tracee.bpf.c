@@ -671,42 +671,36 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     save_to_submit_buf(&p.event->args_buf, (void *) &child_ns_pid, sizeof(int), 8);
     save_to_submit_buf(&p.event->args_buf, (void *) &child_start_time, sizeof(u64), 9);
 
-    // Process tree information (if needed).
-    if (p.config->options & OPT_FORK_PROCTREE) {
-        // Both, the thread group leader and the "up_parent" (the first process, not lwp, found
-        // as a parent of the child in the hierarchy), are needed by the userland process tree.
-        // The userland process tree default source of events is the signal events, but there is
-        // an option to use regular event for maintaining it as well (and it is needed for some
-        // situatins). These arguments will always be removed by userland event processors.
-        struct task_struct *leader = get_leader_task(child);
-        struct task_struct *up_parent = get_leader_task(get_parent_task(leader));
+    struct task_struct *leader = get_leader_task(child);
+    // "up_parent" is the first process, not lwp, found
+    // as a parent of the child in the hierarchy.
+    struct task_struct *up_parent = get_leader_task(get_parent_task(leader));
 
-        // Up Parent information: Go up in hierarchy until parent is process.
-        u64 up_parent_start_time = get_task_start_time(up_parent);
-        int up_parent_pid = get_task_host_tgid(up_parent);
-        int up_parent_tid = get_task_host_pid(up_parent);
-        int up_parent_ns_pid = get_task_ns_tgid(up_parent);
-        int up_parent_ns_tid = get_task_ns_pid(up_parent);
-        // Leader information.
-        u64 leader_start_time = get_task_start_time(leader);
-        int leader_pid = get_task_host_tgid(leader);
-        int leader_tid = get_task_host_pid(leader);
-        int leader_ns_pid = get_task_ns_tgid(leader);
-        int leader_ns_tid = get_task_ns_pid(leader);
+    // Up Parent information: Go up in hierarchy until parent is process.
+    u64 up_parent_start_time = get_task_start_time(up_parent);
+    int up_parent_pid = get_task_host_tgid(up_parent);
+    int up_parent_tid = get_task_host_pid(up_parent);
+    int up_parent_ns_pid = get_task_ns_tgid(up_parent);
+    int up_parent_ns_tid = get_task_ns_pid(up_parent);
+    // Leader information.
+    u64 leader_start_time = get_task_start_time(leader);
+    int leader_pid = get_task_host_tgid(leader);
+    int leader_tid = get_task_host_pid(leader);
+    int leader_ns_pid = get_task_ns_tgid(leader);
+    int leader_ns_tid = get_task_ns_pid(leader);
 
-        // Up Parent: always a process (might be the same as Parent if parent is a process).
-        save_to_submit_buf(&p.event->args_buf, (void *) &up_parent_tid, sizeof(int), 10);
-        save_to_submit_buf(&p.event->args_buf, (void *) &up_parent_ns_tid, sizeof(int), 11);
-        save_to_submit_buf(&p.event->args_buf, (void *) &up_parent_pid, sizeof(int), 12);
-        save_to_submit_buf(&p.event->args_buf, (void *) &up_parent_ns_pid, sizeof(int), 13);
-        save_to_submit_buf(&p.event->args_buf, (void *) &up_parent_start_time, sizeof(u64), 14);
-        // Leader: always a process (might be the same as the Child if child is a process).
-        save_to_submit_buf(&p.event->args_buf, (void *) &leader_tid, sizeof(int), 15);
-        save_to_submit_buf(&p.event->args_buf, (void *) &leader_ns_tid, sizeof(int), 16);
-        save_to_submit_buf(&p.event->args_buf, (void *) &leader_pid, sizeof(int), 17);
-        save_to_submit_buf(&p.event->args_buf, (void *) &leader_ns_pid, sizeof(int), 18);
-        save_to_submit_buf(&p.event->args_buf, (void *) &leader_start_time, sizeof(u64), 19);
-    }
+    // Up Parent: always a process (might be the same as Parent if parent is a process).
+    save_to_submit_buf(&p.event->args_buf, (void *) &up_parent_tid, sizeof(int), 10);
+    save_to_submit_buf(&p.event->args_buf, (void *) &up_parent_ns_tid, sizeof(int), 11);
+    save_to_submit_buf(&p.event->args_buf, (void *) &up_parent_pid, sizeof(int), 12);
+    save_to_submit_buf(&p.event->args_buf, (void *) &up_parent_ns_pid, sizeof(int), 13);
+    save_to_submit_buf(&p.event->args_buf, (void *) &up_parent_start_time, sizeof(u64), 14);
+    // Leader: always a process (might be the same as the Child if child is a process).
+    save_to_submit_buf(&p.event->args_buf, (void *) &leader_tid, sizeof(int), 15);
+    save_to_submit_buf(&p.event->args_buf, (void *) &leader_ns_tid, sizeof(int), 16);
+    save_to_submit_buf(&p.event->args_buf, (void *) &leader_pid, sizeof(int), 17);
+    save_to_submit_buf(&p.event->args_buf, (void *) &leader_ns_pid, sizeof(int), 18);
+    save_to_submit_buf(&p.event->args_buf, (void *) &leader_start_time, sizeof(u64), 19);
 
     // Submit
     events_perf_submit(&p, 0);

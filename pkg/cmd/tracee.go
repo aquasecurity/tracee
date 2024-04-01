@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"syscall"
 
+	"github.com/aquasecurity/tracee/pkg/producer"
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
@@ -19,6 +20,7 @@ import (
 type Runner struct {
 	TraceeConfig config.Config
 	Printer      printer.EventPrinter
+	Producer     producer.EventsProducer
 	InstallPath  string
 	HTTPServer   *http.Server
 	GRPCServer   *grpc.Server
@@ -31,6 +33,8 @@ func (r Runner) Run(ctx context.Context) error {
 	if err != nil {
 		return errfmt.Errorf("error creating Tracee: %v", err)
 	}
+
+	t.SetProducer(r.Producer)
 
 	// Readiness Callback: Tracee is ready to receive events
 	t.AddReadyCallback(

@@ -18,9 +18,11 @@ const (
 	PolicyNone = uint64(0)
 )
 
-var AlwaysSubmit = events.EventState{
-	Submit: PolicyAll,
-}
+var (
+	AlwaysSubmit        = events.EventState{Submit: PolicyAll}
+	AlwaysEmit          = events.EventState{Emit: PolicyAll}
+	AlwaysSubmitAndEmit = events.EventState{Submit: PolicyAll, Emit: PolicyAll}
+)
 
 type Policies struct {
 	rwmu sync.RWMutex

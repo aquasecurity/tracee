@@ -78,7 +78,7 @@ type ProcessTree struct {
 	procfsOnce  *sync.Once                   // busy loop debug message throttling
 	ctx         context.Context              // context for the process tree
 	mutex       *sync.RWMutex                // mutex for the process tree
-	procfsQuery bool
+	procfsQuery bool                         // should use procfs queries
 }
 
 // NewProcessTree creates a new process tree.

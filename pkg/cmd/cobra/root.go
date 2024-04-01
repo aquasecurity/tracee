@@ -18,6 +18,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/policy"
+	"github.com/aquasecurity/tracee/pkg/producer"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
@@ -93,35 +94,114 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	cfg.OSInfo = osInfo
 
-	// Container Runtime command line flags
+	// Input command line flags
+	input, err := flags.PrepareInput(viper.GetString("input"))
 
-	if !cfg.NoContainersEnrich {
-		criFlags, err := GetFlagsFromViper("cri")
+	if err != nil {
+		return runner, err
+	}
+
+	var inputProducer producer.EventsProducer
+	if input.Kind != "ebpf" {
+		inputProducer, err = producer.New(input)
+		if err != nil {
+			return runner, err
+		}
+	} else { // Init all eBPF related values
+		// Container Runtime command line flags
+
+		if !cfg.NoContainersEnrich {
+			criFlags, err := GetFlagsFromViper("cri")
 		if err != nil {
 			return runner, err
 		}
 
 		sockets, err := flags.PrepareContainers(criFlags)
+			if err != nil {
+				return runner, err
+			}
+			cfg.Sockets = sockets
+		}
+
+		// Cache command line flags
+
+		cacheFlags, err := GetFlagsFromViper("cache")
 		if err != nil {
 			return runner, err
 		}
-		cfg.Sockets = sockets
-	}
 
-	// Cache command line flags
+		cache, err := flags.PrepareCache(cacheFlags)
+		if err != nil {
+			return runner, err
+		}
+		cfg.Cache = cache
+		if cfg.Cache != nil {
+			logger.Debugw("Cache", "type", cfg.Cache.String())
+		}
 
-	cacheFlags, err := GetFlagsFromViper("cache")
-	if err != nil {
-		return runner, err
-	}
+		// DNS Cache command line flags
 
-	cache, err := flags.PrepareCache(cacheFlags)
-	if err != nil {
-		return runner, err
-	}
-	cfg.Cache = cache
-	if cfg.Cache != nil {
-		logger.Debugw("Cache", "type", cfg.Cache.String())
+		dnsCacheFlags, err := GetFlagsFromViper("dnscache")
+		if err != nil {
+			return runner, err
+		}
+
+		dnsCache, err := flags.PrepareDnsCache(dnsCacheFlags)
+		if err != nil {
+			return runner, err
+		}
+
+		cfg.DNSCacheConfig = dnsCache
+
+		// Capture command line flags - via cobra flag
+
+		captureFlags, err := c.Flags().GetStringArray("capture")
+		if err != nil {
+			return runner, err
+		}
+
+		capture, err := flags.PrepareCapture(captureFlags, true)
+		if err != nil {
+			return runner, err
+		}
+		cfg.Capture = &capture
+
+		// Check kernel lockdown
+
+		lockdown, err := environment.Lockdown()
+		if err != nil {
+			logger.Debugw("OSInfo", "lockdown", err)
+		}
+		if err == nil && lockdown == environment.CONFIDENTIALITY {
+			return runner, errfmt.Errorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
+		}
+
+		logger.Debugw("OSInfo", "security_lockdown", lockdown)
+
+		// Check if ftrace is enabled
+
+		enabled, err := environment.FtraceEnabled()
+		if err != nil {
+			return runner, err
+		}
+		if !enabled {
+			logger.Errorw("ftrace_enabled: ftrace is not enabled, kernel events won't be caught, make sure to enable it by executing echo 1 | sudo tee /proc/sys/kernel/ftrace_enabled")
+		}
+
+		// Pick OS information
+
+		kernelConfig, err := initialize.KernelConfig()
+		if err != nil {
+			return runner, err
+		}
+
+		// Decide BTF & BPF files to use (based in the kconfig, release & environment info)
+
+		traceeInstallPath := viper.GetString("install-path")
+		err = initialize.BpfObject(&cfg, kernelConfig, osInfo, traceeInstallPath, version)
+		if err != nil {
+			return runner, errfmt.Errorf("failed preparing BPF object: %v", err)
+		}
 	}
 
 	// Process Tree command line flags
@@ -136,33 +216,6 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 	cfg.ProcTree = procTree
-
-	// DNS Cache command line flags
-
-	dnsCacheFlags, err := GetFlagsFromViper("dnscache")
-	if err != nil {
-		return runner, err
-	}
-
-	dnsCache, err := flags.PrepareDnsCache(dnsCacheFlags)
-	if err != nil {
-		return runner, err
-	}
-
-	cfg.DNSCacheConfig = dnsCache
-
-	// Capture command line flags - via cobra flag
-
-	captureFlags, err := c.Flags().GetStringArray("capture")
-	if err != nil {
-		return runner, err
-	}
-
-	capture, err := flags.PrepareCapture(captureFlags, true)
-	if err != nil {
-		return runner, err
-	}
-	cfg.Capture = &capture
 
 	// Capabilities command line flags
 
@@ -256,43 +309,6 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
-	// Check kernel lockdown
-
-	lockdown, err := environment.Lockdown()
-	if err != nil {
-		logger.Debugw("OSInfo", "lockdown", err)
-	}
-	if err == nil && lockdown == environment.CONFIDENTIALITY {
-		return runner, errfmt.Errorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
-	}
-
-	logger.Debugw("OSInfo", "security_lockdown", lockdown)
-
-	// Check if ftrace is enabled
-
-	enabled, err := environment.FtraceEnabled()
-	if err != nil {
-		return runner, err
-	}
-	if !enabled {
-		logger.Errorw("ftrace_enabled: ftrace is not enabled, kernel events won't be caught, make sure to enable it by executing echo 1 | sudo tee /proc/sys/kernel/ftrace_enabled")
-	}
-
-	// Pick OS information
-
-	kernelConfig, err := initialize.KernelConfig()
-	if err != nil {
-		return runner, err
-	}
-
-	// Decide BTF & BPF files to use (based in the kconfig, release & environment info)
-
-	traceeInstallPath := viper.GetString("install-path")
-	err = initialize.BpfObject(&cfg, kernelConfig, osInfo, traceeInstallPath, version)
-	if err != nil {
-		return runner, errfmt.Errorf("failed preparing BPF object: %v", err)
-	}
-
 	// Prepare the server
 
 	httpServer, err := server.PrepareHTTPServer(
@@ -315,6 +331,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	runner.GRPCServer = grpcServer
 	runner.TraceeConfig = cfg
 	runner.Printer = p
+	runner.Producer = inputProducer
 	runner.InstallPath = traceeInstallPath
 
 	// parse arguments must be enabled if the rule engine is part of the pipeline

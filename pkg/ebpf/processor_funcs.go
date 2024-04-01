@@ -125,7 +125,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 	}
 
 	// capture executed files
-	if t.config.Capture.Exec || t.config.Output.CalcHashes != config.CalcHashesNone {
+	if t.config.Capture != nil && t.config.Capture.Exec || t.config.Output.CalcHashes != config.CalcHashesNone {
 		filePath, err := parse.ArgVal[string](event.Args, "pathname")
 		if err != nil {
 			return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
@@ -410,6 +410,16 @@ func (t *Tracee) normalizeEventArgTime(event *trace.Event, argName string) error
 		arg.Value = argTime + t.bootTime
 	}
 	return nil
+}
+
+// processInitTraceeDataEvent processes the init_tracee_data event to get system info
+// This processing function is must for analyze mode to work well
+func (t *Tracee) processInitTraceeDataEvent(event *trace.Event) error {
+	var err error
+	if t.bootTime == 0 {
+		t.bootTime, err = parse.ArgVal[uint64](event.Args, "boot_time")
+	}
+	return err
 }
 
 // addHashArg calculate file hash (in a best-effort efficiency manner) and add it as an argument
