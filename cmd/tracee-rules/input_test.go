@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/gob"
 	"encoding/json"
 	"errors"
-	"io"
 	"os"
 	"testing"
 
@@ -150,89 +148,6 @@ func TestSetupTraceeJSONInputSource(t *testing.T) {
 			// Set up reading from the file
 			opts := &traceeInputOptions{inputFile: f, inputFormat: jsonInputFormat}
 			eventsChan, err := setupTraceeJSONInputSource(opts)
-			assert.Equal(t, testCase.expectedError, err)
-
-			readEvents := []trace.Event{}
-
-			for e := range eventsChan {
-				traceeEvt, ok := e.Payload.(trace.Event)
-				require.True(t, ok)
-				readEvents = append(readEvents, traceeEvt)
-			}
-
-			assert.Equal(t, testCase.events, readEvents)
-		})
-	}
-}
-
-func TestSetupTraceeGobInputSource(t *testing.T) {
-	testCases := []struct {
-		testName      string
-		events        []trace.Event
-		expectedError error
-	}{
-		{
-			testName: "one event",
-			events: []trace.Event{
-				{
-					EventName: "Yankees are the best team in baseball",
-				},
-			},
-			expectedError: nil,
-		},
-		{
-			testName: "two events",
-			events: []trace.Event{
-				{
-					EventName: "Yankees are the best team in baseball",
-				},
-				{
-					EventName: "I hate the Red Sox so much",
-				},
-			},
-			expectedError: nil,
-		},
-		{
-			testName: "three events",
-			events: []trace.Event{
-				{
-					EventName: "Yankees are the best team in baseball",
-				},
-				{
-					EventName: "I hate the Red Sox so much",
-				},
-				{
-					EventName: "Aaron Judge is my idol",
-				},
-			},
-			expectedError: nil,
-		},
-	}
-
-	for _, testCase := range testCases {
-		t.Run(testCase.testName, func(t *testing.T) {
-			// Setup temp file that tracee-rules reads from
-			f, err := os.CreateTemp("", "TestSetupTraceeGobInputSource-")
-			if err != nil {
-				t.Error(err)
-			}
-			defer func() {
-				_ = f.Close()
-				_ = os.RemoveAll(f.Name())
-			}()
-
-			encoder := gob.NewEncoder(f)
-			for _, ev := range testCase.events {
-				err = encoder.Encode(ev)
-				if err != nil {
-					t.Error(err)
-				}
-			}
-			f.Seek(0, io.SeekStart)
-
-			// Set up reading from the file
-			opts := &traceeInputOptions{inputFile: f, inputFormat: gobInputFormat}
-			eventsChan, err := setupTraceeGobInputSource(opts)
 			assert.Equal(t, testCase.expectedError, err)
 
 			readEvents := []trace.Event{}
