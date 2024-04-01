@@ -10,6 +10,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/pipeline"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -49,7 +50,7 @@ func (t *Tracee) handleNetCaptureEvents(ctx context.Context) {
 	}
 }
 
-func (t *Tracee) processNetCapEvents(ctx context.Context, in <-chan *trace.Event) <-chan error {
+func (t *Tracee) processNetCapEvents(ctx context.Context, in <-chan *pipeline.Data) <-chan error {
 	errc := make(chan error, 1)
 
 	go func() {
@@ -57,17 +58,17 @@ func (t *Tracee) processNetCapEvents(ctx context.Context, in <-chan *trace.Event
 
 		for {
 			select {
-			case event := <-in:
+			case data := <-in:
 				// TODO: Support captures pipeline in t.processEvent
-				err := t.normalizeEventCtxTimes(event)
+				err := t.normalizeEventCtxTimes(data.Event)
 				if err != nil {
 					t.handleError(err)
-					t.eventsPool.Put(event)
+					t.eventsPool.Put(data)
 					continue
 				}
-				t.processNetCapEvent(event)
+				t.processNetCapEvent(data.Event)
 				_ = t.stats.NetCapCount.Increment()
-				t.eventsPool.Put(event)
+				t.eventsPool.Put(data)
 
 			case lost := <-t.lostNetCapChannel:
 				if err := t.stats.LostNtCapCount.Increment(lost); err != nil {

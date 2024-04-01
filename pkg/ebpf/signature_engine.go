@@ -7,21 +7,20 @@ import (
 	"github.com/aquasecurity/tracee/pkg/dnscache"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/pipeline"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/types/detect"
-	"github.com/aquasecurity/tracee/types/protocol"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // engineEvents stage in the pipeline allows signatures detection to be executed in the pipeline
-func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-chan *trace.Event, <-chan error) {
-	out := make(chan *trace.Event)
+func (t *Tracee) engineEvents(ctx context.Context, in <-chan *pipeline.Data) (<-chan *pipeline.Data, <-chan error) {
+	out := make(chan *pipeline.Data)
 	errc := make(chan error, 1)
 
-	engineOutput := make(chan *detect.Finding, 10000)
-	engineInput := make(chan protocol.Event, 10000)
-	engineOutputEvents := make(chan *trace.Event, 10000)
+	engineOutput := make(chan *pipeline.Finding, 10000)
+	engineInput := make(chan pipeline.Protocol, 10000)
+	engineOutputEvents := make(chan *pipeline.Data, 10000)
 	source := engine.EventSources{Tracee: engineInput}
 
 	// Prepare built in data sources
@@ -54,11 +53,12 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 	go t.sigEngine.Start(ctx)
 
 	// Create a function for feeding the engine with an event
-	feedFunc := func(event *trace.Event) {
-		if event == nil {
+	feedFunc := func(data *pipeline.Data) {
+		if data == nil {
 			return // might happen during initialization (ctrl+c seg faults)
 		}
 
+		event := data.Event
 		id := events.ID(event.EventID)
 
 		// if the event is marked as submit, we pass it to the engine
@@ -72,13 +72,20 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 			// Get a copy of our event before sending it down the pipeline.
 			// This is needed because a later modification of the event (in
 			// particular of the matched policies) can affect engine stage.
-			eventCopy := *event
+			dataCopy := data.Clone()
 			// pass the event to the sink stage, if the event is also marked as emit
 			// it will be sent to print by the sink stage
-			out <- event
+			out <- data
+
+			event := pipeline.Protocol{
+				Event:                 dataCopy.Event.ToProtocol(),
+				Policies:              dataCopy.Policies,
+				MatchedPoliciesKernel: dataCopy.MatchedPoliciesKernel,
+				MatchedPoliciesUser:   dataCopy.MatchedPoliciesUser,
+			}
 
 			// send the event to the rule event
-			engineInput <- eventCopy.ToProtocol()
+			engineInput <- event
 		}
 	}
 
@@ -94,10 +101,10 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 
 		for {
 			select {
-			case event := <-in:
-				feedFunc(event)
-			case event := <-engineOutputEvents:
-				feedFunc(event)
+			case data := <-in:
+				feedFunc(data)
+			case data := <-engineOutputEvents:
+				feedFunc(data)
 			case <-ctx.Done():
 				return
 			}

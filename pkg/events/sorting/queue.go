@@ -4,26 +4,26 @@ import (
 	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/errfmt"
-	"github.com/aquasecurity/tracee/types/trace"
+	"github.com/aquasecurity/tracee/pkg/pipeline"
 )
 
-type eventNode struct {
-	event       *trace.Event
-	previous    *eventNode
-	next        *eventNode
+type dataNode struct {
+	data        *pipeline.Data
+	previous    *dataNode
+	next        *dataNode
 	isAllocated bool
 }
 
 // A double linked list used to store events in LIFO order
-type eventsQueue struct {
-	pool  eventsPool
-	tail  *eventNode
-	head  *eventNode
+type dataQueue struct {
+	pool  dataPool
+	tail  *dataNode
+	head  *dataNode
 	mutex sync.Mutex
 }
 
 // Put insert new event to the double linked list
-func (eq *eventsQueue) Put(newEvent *trace.Event) error {
+func (eq *dataQueue) Put(newEvent *pipeline.Data) error {
 	newNode, err := eq.pool.Alloc(newEvent)
 	if err != nil {
 		eq.pool.Reset()
@@ -37,7 +37,7 @@ func (eq *eventsQueue) Put(newEvent *trace.Event) error {
 // Get remove the node at the head of the queue and return it
 // Might return error with a valid event in case of internal pool error, for the user to know that an error occurred
 // but was contained
-func (eq *eventsQueue) Get() (*trace.Event, error) {
+func (eq *dataQueue) Get() (*pipeline.Data, error) {
 	eq.mutex.Lock()
 	defer eq.mutex.Unlock()
 	if eq.head == nil {
@@ -65,7 +65,7 @@ func (eq *eventsQueue) Get() (*trace.Event, error) {
 	}
 	headNode.previous = nil
 	headNode.next = nil
-	extractedEvent := headNode.event
+	extractedEvent := headNode.data
 	err := eq.pool.Free(headNode)
 	if err != nil {
 		eq.pool.Reset()
@@ -74,25 +74,25 @@ func (eq *eventsQueue) Get() (*trace.Event, error) {
 	return extractedEvent, nil
 }
 
-func (eq *eventsQueue) PeekHead() *trace.Event {
+func (eq *dataQueue) PeekHead() *pipeline.Data {
 	eq.mutex.Lock()
 	defer eq.mutex.Unlock()
 	if eq.head == nil {
 		return nil
 	}
-	return eq.head.event
+	return eq.head.data
 }
 
-func (eq *eventsQueue) PeekTail() *trace.Event {
+func (eq *dataQueue) PeekTail() *pipeline.Data {
 	eq.mutex.Lock()
 	defer eq.mutex.Unlock()
 	if eq.tail == nil {
 		return nil
 	}
-	return eq.tail.event
+	return eq.tail.data
 }
 
-func (eq *eventsQueue) Empty() {
+func (eq *dataQueue) Empty() {
 	eq.mutex.Lock()
 	defer eq.mutex.Unlock()
 	eq.head = nil
@@ -100,7 +100,7 @@ func (eq *eventsQueue) Empty() {
 }
 
 // Put insert new event to the double linked list
-func (eq *eventsQueue) put(newNode *eventNode) {
+func (eq *dataQueue) put(newNode *dataNode) {
 	if eq.tail != nil {
 		newNode.next = eq.tail
 		eq.tail.previous = newNode

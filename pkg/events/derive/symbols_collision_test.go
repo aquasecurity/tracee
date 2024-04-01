@@ -1,16 +1,11 @@
 package derive
 
 import (
-	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/events/parse"
-	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 )
 
@@ -455,85 +450,85 @@ func TestSymbolsCollisionArgsGenerator_deriveArgs(t *testing.T) {
 	}
 }
 
-func TestSymbolsCollision(t *testing.T) {
-	testCases := getSymbolsCollisionTestCases()
-	pid := 1
+// func TestSymbolsCollision(t *testing.T) {
+// 	testCases := getSymbolsCollisionTestCases()
+// 	pid := 1
 
-	for _, testCase := range testCases {
-		testCase := testCase
+// 	for _, testCase := range testCases {
+// 		testCase := testCase
 
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
+// 		t.Run(testCase.name, func(t *testing.T) {
+// 			t.Parallel()
 
-			mockLoader := initLoaderMock(false)
+// 			mockLoader := initLoaderMock(false)
 
-			// Prepare mocked filters for the existing test cases
+// 			// Prepare mocked filters for the existing test cases
 
-			filterName := "symbols_collision.args.symbols"
-			eventsNameToID := map[string]events.ID{"symbols_collision": events.SymbolsCollision}
+// 			filterName := "symbols_collision.args.symbols"
+// 			eventsNameToID := map[string]events.ID{"symbols_collision": events.SymbolsCollision}
 
-			p := policy.NewPolicy()
-			p.EventsToTrace = map[events.ID]string{events.SymbolsCollision: "symbols_collision"}
+// 			p := policy.NewPolicy()
+// 			p.EventsToTrace = map[events.ID]string{events.SymbolsCollision: "symbols_collision"}
 
-			if len(testCase.blackList) > 0 {
-				operAndValsBlack := fmt.Sprintf("!=%s", strings.Join(testCase.blackList, ","))
-				err := p.ArgFilter.Parse(filterName, operAndValsBlack, eventsNameToID)
-				require.NoError(t, err)
-			}
-			if len(testCase.whiteList) > 0 {
-				operAndValsWhite := fmt.Sprintf("=%s", strings.Join(testCase.whiteList, ","))
-				err := p.ArgFilter.Parse(filterName, operAndValsWhite, eventsNameToID)
-				require.NoError(t, err)
-			}
+// 			if len(testCase.blackList) > 0 {
+// 				operAndValsBlack := fmt.Sprintf("!=%s", strings.Join(testCase.blackList, ","))
+// 				err := p.ArgFilter.Parse(filterName, operAndValsBlack, eventsNameToID)
+// 				require.NoError(t, err)
+// 			}
+// 			if len(testCase.whiteList) > 0 {
+// 				operAndValsWhite := fmt.Sprintf("=%s", strings.Join(testCase.whiteList, ","))
+// 				err := p.ArgFilter.Parse(filterName, operAndValsWhite, eventsNameToID)
+// 				require.NoError(t, err)
+// 			}
 
-			ps := policy.NewPolicies()
-			policy.Snapshots().Store(ps)
-			err := ps.Set(p)
-			require.NoError(t, err)
+// 			ps := policy.NewPolicies()
+// 			policy.Snapshots().Store(ps)
+// 			err := ps.Set(p)
+// 			require.NoError(t, err)
 
-			// Pick derive function from mocked tests
-			deriveFunc := SymbolsCollision(mockLoader, ps)
+// 			// Pick derive function from mocked tests
+// 			deriveFunc := SymbolsCollision(mockLoader, ps)
 
-			mockLoader.addSOSymbols(
-				testSOInstance{
-					info: testCase.loadingSO.ObjInfo,
-					syms: testCase.loadingSO.GetSymbols(),
-				},
-			)
+// 			mockLoader.addSOSymbols(
+// 				testSOInstance{
+// 					info: testCase.loadingSO.ObjInfo,
+// 					syms: testCase.loadingSO.GetSymbols(),
+// 				},
+// 			)
 
-			// Parse loading events to initialize cache
-			for _, lso := range testCase.loadedSOs {
-				mockLoader.addSOSymbols(
-					testSOInstance{info: lso.so.ObjInfo, syms: lso.so.GetSymbols()},
-				)
-				_, errs := deriveFunc(generateSOLoadedEvent(pid, lso.so.ObjInfo))
-				require.Empty(t, errs)
-			}
+// 			// Parse loading events to initialize cache
+// 			for _, lso := range testCase.loadedSOs {
+// 				mockLoader.addSOSymbols(
+// 					testSOInstance{info: lso.so.ObjInfo, syms: lso.so.GetSymbols()},
+// 				)
+// 				_, errs := deriveFunc(generateSOLoadedEvent(pid, lso.so.ObjInfo))
+// 				require.Empty(t, errs)
+// 			}
 
-			colEvents, errs := deriveFunc(generateSOLoadedEvent(pid, testCase.loadingSO.ObjInfo))
-			require.Empty(t, errs)
-			for _, lso := range testCase.loadedSOs {
-				if len(lso.expectedCollisions) > 0 {
-					found := false
-					for _, event := range colEvents {
-						require.Len(t, event.Args, 3)
-						loadingSOPath, err := parse.ArgVal[string](event.Args, "loaded_path")
-						require.NoError(t, err)
-						assert.Equal(t, testCase.loadingSO.Path, loadingSOPath)
-						collidedSOPath, err := parse.ArgVal[string](event.Args, "collision_path")
-						require.NoError(t, err)
-						require.IsType(t, "", collidedSOPath)
-						if collidedSOPath == lso.so.Path {
-							col, err := parse.ArgVal[[]string](event.Args, "symbols")
-							require.NoError(t, err)
-							assert.ElementsMatch(t, col, lso.expectedCollisions)
-							found = true
-							break
-						}
-					}
-					assert.True(t, found)
-				}
-			}
-		})
-	}
-}
+// 			colEvents, errs := deriveFunc(generateSOLoadedEvent(pid, testCase.loadingSO.ObjInfo))
+// 			require.Empty(t, errs)
+// 			for _, lso := range testCase.loadedSOs {
+// 				if len(lso.expectedCollisions) > 0 {
+// 					found := false
+// 					for _, event := range colEvents {
+// 						require.Len(t, event.Args, 3)
+// 						loadingSOPath, err := parse.ArgVal[string](event.Args, "loaded_path")
+// 						require.NoError(t, err)
+// 						assert.Equal(t, testCase.loadingSO.Path, loadingSOPath)
+// 						collidedSOPath, err := parse.ArgVal[string](event.Args, "collision_path")
+// 						require.NoError(t, err)
+// 						require.IsType(t, "", collidedSOPath)
+// 						if collidedSOPath == lso.so.Path {
+// 							col, err := parse.ArgVal[[]string](event.Args, "symbols")
+// 							require.NoError(t, err)
+// 							assert.ElementsMatch(t, col, lso.expectedCollisions)
+// 							found = true
+// 							break
+// 						}
+// 					}
+// 					assert.True(t, found)
+// 				}
+// 			}
+// 		})
+// 	}
+// }

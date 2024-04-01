@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/aquasecurity/tracee/types/trace"
+	"github.com/aquasecurity/tracee/pkg/pipeline"
 )
 
 // this usecase implements EventQueue interface with a memory stored queue (FIFO)
@@ -41,22 +41,22 @@ func (q *eventQueueMem) setup() {
 }
 
 // Enqueue pushes an event into the queue (may block until queue is available)
-func (q *eventQueueMem) Enqueue(evt *trace.Event) {
+func (q *eventQueueMem) Enqueue(data *pipeline.Data) {
 	q.cond.L.Lock()
 	// enqueue waits for de-queuing if cache is full (using >= instead of == to be in the safe side...)
 	for q.cache.Len() >= q.maxAmountOfEvents {
 		q.cond.Wait()
 	}
 
-	q.cache.PushBack(*evt)
+	q.cache.PushBack(*data)
 	q.cond.L.Unlock()
 	q.cond.Signal() // unblock dequeue if needed
 
-	evt = nil
+	data = nil
 }
 
 // Dequeue pops an event from the queue
-func (q *eventQueueMem) Dequeue() *trace.Event {
+func (q *eventQueueMem) Dequeue() *pipeline.Data {
 	q.cond.L.Lock()
 
 	// dequeue waits for en-queueing if cache is empty
@@ -65,7 +65,7 @@ func (q *eventQueueMem) Dequeue() *trace.Event {
 	}
 
 	e := q.cache.Front()
-	event, ok := e.Value.(trace.Event)
+	data, ok := e.Value.(pipeline.Data)
 	if !ok {
 		q.cond.L.Unlock()
 		return nil
@@ -74,7 +74,7 @@ func (q *eventQueueMem) Dequeue() *trace.Event {
 	q.cond.L.Unlock()
 	q.cond.Signal() // unblock enqueue if needed
 
-	return &event
+	return &data
 }
 
 // getQueueSizeInEvents returns size of the fifo queue, in # of events, based on

@@ -6,9 +6,9 @@ import (
 	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/pipeline"
 	"github.com/aquasecurity/tracee/pkg/signatures/metrics"
 	"github.com/aquasecurity/tracee/types/detect"
-	"github.com/aquasecurity/tracee/types/protocol"
 )
 
 const ALL_EVENT_ORIGINS = "*"
@@ -37,11 +37,11 @@ type Config struct {
 
 // Engine is a signatures-engine that can process events coming from a set of input sources against a set of loaded signatures, and report the signatures' findings
 type Engine struct {
-	signatures       map[detect.Signature]chan protocol.Event
+	signatures       map[detect.Signature]chan pipeline.Protocol
 	signaturesIndex  map[detect.SignatureEventSelector][]detect.Signature
 	signaturesMutex  sync.RWMutex
 	inputs           EventSources
-	output           chan *detect.Finding
+	output           chan *pipeline.Finding
 	waitGroup        sync.WaitGroup
 	config           Config
 	stats            metrics.Stats
@@ -51,7 +51,7 @@ type Engine struct {
 
 // EventSources is a bundle of input sources used to configure the Engine
 type EventSources struct {
-	Tracee chan protocol.Event
+	Tracee chan pipeline.Protocol
 }
 
 func (engine *Engine) Stats() *metrics.Stats {
@@ -61,7 +61,7 @@ func (engine *Engine) Stats() *metrics.Stats {
 // NewEngine creates a new signatures-engine with the given arguments
 // inputs and outputs are given as channels created by the consumer
 // Signatures are not loaded at this point, Init must be called to perform config side effects.
-func NewEngine(config Config, sources EventSources, output chan *detect.Finding) (*Engine, error) {
+func NewEngine(config Config, sources EventSources, output chan *pipeline.Finding) (*Engine, error) {
 	if sources.Tracee == nil || output == nil {
 		return nil, fmt.Errorf("nil input received")
 	}
@@ -73,7 +73,7 @@ func NewEngine(config Config, sources EventSources, output chan *detect.Finding)
 	engine.config = config
 
 	engine.signaturesMutex.Lock()
-	engine.signatures = make(map[detect.Signature]chan protocol.Event)
+	engine.signatures = make(map[detect.Signature]chan pipeline.Protocol)
 	engine.signaturesIndex = make(map[detect.SignatureEventSelector][]detect.Signature)
 	engine.signaturesMutex.Unlock()
 
@@ -85,9 +85,9 @@ func NewEngine(config Config, sources EventSources, output chan *detect.Finding)
 }
 
 // signatureStart is the signature handling business logics.
-func signatureStart(signature detect.Signature, c chan protocol.Event, wg *sync.WaitGroup) {
+func signatureStart(signature detect.Signature, c chan pipeline.Protocol, wg *sync.WaitGroup) {
 	for e := range c {
-		if err := signature.OnEvent(e); err != nil {
+		if err := signature.OnEvent(e.Event); err != nil {
 			meta, _ := signature.GetMetadata()
 			logger.Errorw("Handling event by signature " + meta.Name + ": " + err.Error())
 		}
@@ -159,14 +159,14 @@ func (engine *Engine) checkCompletion() bool {
 	return false
 }
 
-func (engine *Engine) processEvent(event protocol.Event) {
+func (engine *Engine) processEvent(proto pipeline.Protocol) {
 	engine.signaturesMutex.RLock()
 	defer engine.signaturesMutex.RUnlock()
 
 	signatureSelector := detect.SignatureEventSelector{
-		Source: event.Headers.Selector.Source,
-		Name:   event.Headers.Selector.Name,
-		Origin: event.Headers.Selector.Origin,
+		Source: proto.Event.Headers.Selector.Source,
+		Name:   proto.Event.Headers.Selector.Name,
+		Origin: proto.Event.Headers.Selector.Origin,
 	}
 	_ = engine.stats.Events.Increment()
 
@@ -174,7 +174,7 @@ func (engine *Engine) processEvent(event protocol.Event) {
 
 	// Match full selector
 	for _, s := range engine.signaturesIndex[signatureSelector] {
-		engine.dispatchEvent(s, event)
+		engine.dispatchEvent(s, proto)
 	}
 
 	// Match partial selector, select for all origins
@@ -184,7 +184,7 @@ func (engine *Engine) processEvent(event protocol.Event) {
 		Origin: ALL_EVENT_ORIGINS,
 	}
 	for _, s := range engine.signaturesIndex[partialSigEvtSelector] {
-		engine.dispatchEvent(s, event)
+		engine.dispatchEvent(s, proto)
 	}
 
 	// Match partial selector, select for event names
@@ -194,7 +194,7 @@ func (engine *Engine) processEvent(event protocol.Event) {
 		Origin: signatureSelector.Origin,
 	}
 	for _, s := range engine.signaturesIndex[partialSigEvtSelector] {
-		engine.dispatchEvent(s, event)
+		engine.dispatchEvent(s, proto)
 	}
 
 	// Match partial selector, select for all origins and event names
@@ -204,7 +204,7 @@ func (engine *Engine) processEvent(event protocol.Event) {
 		Origin: ALL_EVENT_ORIGINS,
 	}
 	for _, s := range engine.signaturesIndex[partialSigEvtSelector] {
-		engine.dispatchEvent(s, event)
+		engine.dispatchEvent(s, proto)
 	}
 }
 
@@ -213,7 +213,7 @@ func (engine *Engine) processEvent(event protocol.Event) {
 func (engine *Engine) consumeSources(ctx context.Context) {
 	for {
 		select {
-		case event, ok := <-engine.inputs.Tracee:
+		case proto, ok := <-engine.inputs.Tracee:
 			if !ok {
 				engine.signaturesMutex.RLock()
 				for sig := range engine.signatures {
@@ -238,7 +238,7 @@ func (engine *Engine) consumeSources(ctx context.Context) {
 
 				continue
 			}
-			engine.processEvent(event)
+			engine.processEvent(proto)
 
 		case <-ctx.Done():
 			goto drain
@@ -258,7 +258,7 @@ drain:
 	}
 }
 
-func (engine *Engine) dispatchEvent(s detect.Signature, event protocol.Event) {
+func (engine *Engine) dispatchEvent(s detect.Signature, event pipeline.Protocol) {
 	if engine.config.Enabled {
 		// Do this test only if engine runs as part of the event pipeline
 		if ok := engine.filterDispatchInPipeline(s, event); !ok {
@@ -269,7 +269,8 @@ func (engine *Engine) dispatchEvent(s detect.Signature, event protocol.Event) {
 	engine.signatures[s] <- event
 }
 
-func (engine *Engine) filterDispatchInPipeline(s detect.Signature, event protocol.Event) bool {
+func (engine *Engine) filterDispatchInPipeline(s detect.Signature, proto pipeline.Protocol) bool {
+	event := proto.Event
 	md, err := s.GetMetadata()
 	if err != nil {
 		logger.Warnw(fmt.Sprintf("event %s not dispatched to signature: no metadata", event.Selector().Name))
@@ -331,7 +332,7 @@ func (engine *Engine) loadSignature(signature detect.Signature) (string, error) 
 		// failed to initialize
 		return "", fmt.Errorf("error initializing signature %s: %w", metadata.Name, err)
 	}
-	c := make(chan protocol.Event, engine.config.SignatureBufferSize)
+	c := make(chan pipeline.Protocol, engine.config.SignatureBufferSize)
 	engine.signaturesMutex.Lock()
 	engine.signatures[signature] = c
 	engine.signaturesMutex.Unlock()

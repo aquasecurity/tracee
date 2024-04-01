@@ -14,6 +14,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/counter"
 	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/pipeline"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -60,7 +61,12 @@ func GetFtraceBaseEvent() *trace.Event {
 
 // FtraceHookEvent check for ftrace hooks periodically and reports them.
 // It wakes up every random time to check if there was a change in the hooks.
-func FtraceHookEvent(eventsCounter counter.Counter, out chan *trace.Event, baseEvent *trace.Event, selfLoadedProgs map[string]int) {
+func FtraceHookEvent(
+	eventsCounter counter.Counter,
+	out chan *pipeline.Data,
+	baseData *pipeline.Data,
+	selfLoadedProgs map[string]int,
+) {
 	if reportedFtraceHooks == nil { // Failed allocating cache - no point in running
 		return
 	}
@@ -69,7 +75,7 @@ func FtraceHookEvent(eventsCounter counter.Counter, out chan *trace.Event, baseE
 
 	// Trigger from time to time or on demand
 	for {
-		err := checkFtraceHooks(eventsCounter, out, baseEvent, &def, selfLoadedProgs)
+		err := checkFtraceHooks(eventsCounter, out, baseData, &def, selfLoadedProgs)
 		if err != nil {
 			logger.Errorw("error occurred checking ftrace hooks", "error", err)
 		}
@@ -129,7 +135,13 @@ func initFtraceArgs(params []trace.ArgMeta) []trace.Argument {
 }
 
 // checkFtraceHooks checks for ftrace hooks
-func checkFtraceHooks(eventsCounter counter.Counter, out chan *trace.Event, baseEvent *trace.Event, ftraceDef *Definition, selfLoadedProgs map[string]int) error {
+func checkFtraceHooks(
+	eventsCounter counter.Counter,
+	out chan *pipeline.Data,
+	baseData *pipeline.Data,
+	ftraceDef *Definition,
+	selfLoadedProgs map[string]int,
+) error {
 	ftraceHooksBytes, err := getFtraceHooksData()
 	if err != nil {
 		return err
@@ -183,12 +195,12 @@ func checkFtraceHooks(eventsCounter counter.Counter, out chan *trace.Event, base
 
 		reportedFtraceHooks.Add(symbol, args) // Mark that we're reporting this hook, so we won't report it multiple times
 
-		event := *baseEvent // shallow copy
-		event.Timestamp = int(time.Now().UnixNano())
-		event.Args = args
-		event.ArgsNum = len(args)
+		data := baseData.Clone()
+		data.Event.Timestamp = int(time.Now().UnixNano())
+		data.Event.Args = args
+		data.Event.ArgsNum = len(args)
 
-		out <- &event
+		out <- data
 		_ = eventsCounter.Increment()
 	}
 

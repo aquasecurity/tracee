@@ -44,7 +44,8 @@ func (s *Stream) publish(ctx context.Context, event trace.Event) {
 
 // shouldIgnorePolicy checks if the stream should ignore the event
 func (s *Stream) shouldIgnorePolicy(event trace.Event) bool {
-	return s.policyMask&event.MatchedPoliciesUser == 0
+	// return s.policyMask&event.MatchedPoliciesUser == 0
+	return false
 }
 
 // close closes the stream

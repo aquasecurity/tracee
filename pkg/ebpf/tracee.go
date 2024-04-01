@@ -36,6 +36,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
+	"github.com/aquasecurity/tracee/pkg/pipeline"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/proctree"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
@@ -64,7 +65,7 @@ type Tracee struct {
 	// Events States
 	eventsState map[events.ID]events.EventState
 	// Events
-	eventsSorter     *sorting.EventsChronologicalSorter
+	eventsSorter     *sorting.DataChronologicalSorter
 	eventsPool       *sync.Pool
 	eventsParamTypes map[events.ID][]bufferdecoder.ArgType
 	eventProcessor   map[events.ID][]func(evt *trace.Event) error
@@ -1488,22 +1489,25 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 // invokeInitEvents emits Tracee events, called Initialization Events, that are generated from the
 // userland process itself, and not from the kernel. These events usually serve as informational
 // events for the signatures engine/logic.
-func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
+func (t *Tracee) invokeInitEvents(out chan *pipeline.Data) {
 	var emit uint64
 
-	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64, pols *policy.Policies) {
-		event.MatchedPoliciesKernel = matchedPolicies
-		event.MatchedPoliciesUser = matchedPolicies
-		event.MatchedPolicies = pols.MatchedNames(matchedPolicies)
+	setMatchedPolicies := func(data *pipeline.Data, event *trace.Event, matchedPolicies uint64, pols *policy.Policies) {
+		data.Event = event
+		data.Event.MatchedPolicies = pols.MatchedNames(matchedPolicies)
+		data.MatchedPoliciesKernel = matchedPolicies
+		data.MatchedPoliciesUser = matchedPolicies
+		data.Policies = unsafe.Pointer(pols)
 	}
 
 	// Initial namespace events
 
 	emit = t.eventsState[events.InitNamespaces].Emit
 	if emit > 0 {
+		data := &pipeline.Data{}
 		systemInfoEvent := events.InitNamespacesEvent()
-		setMatchedPolicies(&systemInfoEvent, emit, t.config.Policies)
-		out <- &systemInfoEvent
+		setMatchedPolicies(data, &systemInfoEvent, emit, t.config.Policies)
+		out <- data
 		_ = t.stats.EventCount.Increment()
 	}
 
@@ -1513,9 +1517,9 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 	if emit > 0 {
 		existingContainerEvents := events.ExistingContainersEvents(t.containers, t.config.NoContainersEnrich)
 		for i := range existingContainerEvents {
-			event := &(existingContainerEvents[i])
-			setMatchedPolicies(event, emit, t.config.Policies)
-			out <- event
+			data := &pipeline.Data{}
+			setMatchedPolicies(data, &(existingContainerEvents[i]), emit, t.config.Policies)
+			out <- data
 			_ = t.stats.EventCount.Increment()
 		}
 	}
@@ -1524,8 +1528,9 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 
 	emit = t.eventsState[events.FtraceHook].Emit
 	if emit > 0 {
+		data := &pipeline.Data{}
 		ftraceBaseEvent := events.GetFtraceBaseEvent()
-		setMatchedPolicies(ftraceBaseEvent, emit, t.config.Policies)
+		setMatchedPolicies(data, ftraceBaseEvent, emit, t.config.Policies)
 		logger.Debugw("started ftraceHook goroutine")
 
 		// TODO: Ideally, this should be inside the goroutine and be computed before each run,
@@ -1536,7 +1541,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		// once that happens.
 		selfLoadedFtraceProgs := t.getSelfLoadedPrograms(true)
 
-		go events.FtraceHookEvent(t.stats.EventCount, out, ftraceBaseEvent, selfLoadedFtraceProgs)
+		go events.FtraceHookEvent(t.stats.EventCount, out, data, selfLoadedFtraceProgs)
 	}
 }
 
