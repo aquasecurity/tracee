@@ -13070,7 +13070,7 @@ var CoreEvents = map[ID]Definition{
 				{handle: probes.SyscallEnter__Internal, required: true},
 			},
 			tailCalls: []TailCall{
-				{"check_syscall_source_tail", "check_syscall_source", []uint32{uint32(Execve)}},
+				{"check_syscall_source_tail", "check_syscall_source", []uint32{ /* Map will be populated at runtime according to event filter */ }},
 			},
 		},
 		sets: []string{},
