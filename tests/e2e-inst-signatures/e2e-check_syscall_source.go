@@ -65,7 +65,7 @@ func (sig *e2eCheckSyscallSource) OnEvent(event protocol.Event) error {
 
 		// check expected values from test for detection
 
-		if syscall != "execve" {
+		if syscall != "exit" {
 			return nil
 		}
 
