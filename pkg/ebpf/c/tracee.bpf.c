@@ -5229,7 +5229,7 @@ int check_syscall_source(struct bpf_raw_tracepoint_args *ctx)
     struct task_struct *task = (struct task_struct *) bpf_get_current_task();
     u32 id = ctx->args[1];
     if (is_compat(task)) {
-        // Translate 32bit syscalls to 64bit syscalls, so we can send to the correct handler
+        // Translate 32bit syscalls to 64bit syscalls
         u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &id);
         if (id_64 == 0)
             return 0;
@@ -5269,8 +5269,8 @@ int check_syscall_source(struct bpf_raw_tracepoint_args *ctx)
     // source VMA and process so we don't submit it multiple times
     syscall_source_key_t key = {
         .syscall = id,
-        .tgid = p.task_info->context.pid,
-        .tgid_start_time = p.task_info->context.leader_start_time,
+        .tgid = get_task_ns_tgid(task),
+        .tgid_start_time = get_task_start_time(get_leader_task(task)),
         .vma_addr = get_vma_start(vma)
     };
     bool val = true;
