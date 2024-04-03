@@ -71,7 +71,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", privileged: true, inline: <<-SHELL
     VAGRANT_HOME="/home/vagrant"
     GO_VERSION="1.21.6"
-    OPA_VERSION="v0.61.0"
+    OPA_VERSION="v0.63.0"
 
     # silence 'dpkg-preconfigure: unable to re-open stdin: No such file or directory'
     export DEBIAN_FRONTEND=noninteractive

@@ -55,7 +55,7 @@ RUN apk --no-cache update && \
 # install OPA
 
 RUN altarch=$(uname -m | sed 's:x86_64:amd64:g' | sed 's:aarch64:arm64:g') && \
-    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.61.0/opa_linux_${altarch}_static && \
+    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.63.0/opa_linux_${altarch}_static && \
     chmod 755 /usr/bin/opa
 
 # extra tools for testing things
