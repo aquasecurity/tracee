@@ -13,10 +13,12 @@ func TestPoliciesClone(t *testing.T) {
 	policies := NewPolicies()
 
 	p1 := NewPolicy()
+	p1.Name = "p1"
 	err := p1.PIDFilter.Parse("=1")
 	require.NoError(t, err)
 
 	p2 := NewPolicy()
+	p2.Name = "p2"
 	err = p2.UIDFilter.Parse("=2")
 	require.NoError(t, err)
 
@@ -33,6 +35,7 @@ func TestPoliciesClone(t *testing.T) {
 
 	// ensure that changes to the copy do not affect the original
 	p3 := NewPolicy()
+	p3.Name = "p3"
 	err = p3.CommFilter.Parse("=comm")
 	require.NoError(t, err)
 	err = copy.Add(p3)
