@@ -1,6 +1,8 @@
 package dependencies
 
-import "github.com/aquasecurity/tracee/pkg/events"
+import (
+	"github.com/aquasecurity/tracee/pkg/events"
+)
 
 // Manager is a management tree for the current dependencies of events.
 // As events can depend on one another, it manages their connection in the form of a tree.
@@ -53,6 +55,9 @@ func (m *Manager) SelectEvent(id events.ID) *EventNode {
 // Returns whether it was removed.
 func (m *Manager) UnselectEvent(id events.ID) bool {
 	node := m.getNode(id)
+	if node == nil {
+		return false
+	}
 	node.unmarkAsExplicitlySelected()
 	return m.cleanUnreferencedNode(node)
 }
@@ -63,11 +68,16 @@ func (m *Manager) UnselectEvent(id events.ID) bool {
 // they are not referenced by any other event anymore and not explicitly selected.
 // It also removes all the events that depend on the given event (as their dependencies are
 // no longer valid).
-func (m *Manager) RemoveEvent(id events.ID) {
+// It returns if managed to remove the event, as it might not be present in the tree.
+func (m *Manager) RemoveEvent(id events.ID) bool {
 	node := m.getNode(id)
-	m.removeNode(node.GetID())
+	if node == nil {
+		return false
+	}
+	m.removeNode(node)
 	m.removeNodeFromDependencies(node)
 	m.removeDependants(node)
+	return true
 }
 
 func (m *Manager) getNode(id events.ID) *EventNode {
@@ -130,12 +140,13 @@ func (m *Manager) buildNode(node *EventNode) *EventNode {
 	return node
 }
 
-func (m *Manager) removeNode(id events.ID) {
-	node := m.getNode(id)
-	delete(m.nodes, id)
+// removeNode removes the node from the tree.
+func (m *Manager) removeNode(node *EventNode) bool {
+	delete(m.nodes, node.GetID())
 	for _, onRemove := range m.onRemove {
 		onRemove(node)
 	}
+	return true
 }
 
 // cleanUnreferencedNode removes the node from the tree if it's not required anymore.
@@ -145,7 +156,7 @@ func (m *Manager) cleanUnreferencedNode(node *EventNode) bool {
 	if len(node.GetDependants()) > 0 || node.isExplicitlySelected() {
 		return false
 	}
-	m.removeNode(node.GetID())
+	m.removeNode(node)
 	m.removeNodeFromDependencies(node)
 	return true
 }

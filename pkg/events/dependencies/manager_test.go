@@ -76,24 +76,27 @@ func TestManager_AddEvent(t *testing.T) {
 						eventsAdditions = append(eventsAdditions, newEvtNode.GetID())
 					})
 
-				m.SelectEvent(testCase.eventToAdd)
+				// Check that multiple selects are not causing any issues
+				for i := 0; i < 3; i++ {
+					m.SelectEvent(testCase.eventToAdd)
 
-				for id, expDep := range testCase.deps {
-					evtNode, ok := m.GetEvent(id)
-					assert.True(t, ok)
-					dep := evtNode.GetDependencies()
-					assert.ElementsMatch(t, expDep.GetIDs(), dep.GetIDs())
-
-					// Test dependencies building
-					for _, dependency := range dep.GetIDs() {
-						dependencyNode, ok := m.GetEvent(dependency)
+					for id, expDep := range testCase.deps {
+						evtNode, ok := m.GetEvent(id)
 						assert.True(t, ok)
-						dependants := dependencyNode.GetDependants()
-						assert.Contains(t, dependants, id)
-					}
+						dep := evtNode.GetDependencies()
+						assert.ElementsMatch(t, expDep.GetIDs(), dep.GetIDs())
 
-					// Test addition watcher logic
-					assert.Contains(t, eventsAdditions, id)
+						// Test dependencies building
+						for _, dependency := range dep.GetIDs() {
+							dependencyNode, ok := m.GetEvent(dependency)
+							assert.True(t, ok)
+							dependants := dependencyNode.GetDependants()
+							assert.Contains(t, dependants, id)
+						}
+
+						// Test addition watcher logic
+						assert.Contains(t, eventsAdditions, id)
+					}
 				}
 			})
 	}
@@ -231,14 +234,17 @@ func TestManager_RemoveEvent(t *testing.T) {
 
 				m.SelectEvent(testCase.eventToAdd)
 
-				m.RemoveEvent(testCase.eventToAdd)
+				// Check that multiple removes are not causing any issues
+				for i := 0; i < 3; i++ {
+					m.RemoveEvent(testCase.eventToAdd)
 
-				for _, id := range testCase.expectedRemovedEvents {
-					_, ok := m.GetEvent(id)
-					assert.False(t, ok)
+					for _, id := range testCase.expectedRemovedEvents {
+						_, ok := m.GetEvent(id)
+						assert.False(t, ok)
 
-					// Test indirect addition watcher logic
-					assert.Contains(t, eventsRemoved, id)
+						// Test indirect addition watcher logic
+						assert.Contains(t, eventsRemoved, id)
+					}
 				}
 			})
 	}
@@ -376,14 +382,17 @@ func TestManager_UnselectEvent(t *testing.T) {
 
 				m.SelectEvent(testCase.eventToAdd)
 
-				m.UnselectEvent(testCase.eventToAdd)
+				// Check that multiple unselects are not causing any issues
+				for i := 0; i < 3; i++ {
+					m.UnselectEvent(testCase.eventToAdd)
 
-				for _, id := range testCase.expectedRemovedEvents {
-					_, ok := m.GetEvent(id)
-					assert.False(t, ok)
+					for _, id := range testCase.expectedRemovedEvents {
+						_, ok := m.GetEvent(id)
+						assert.False(t, ok)
 
-					// Test indirect addition watcher logic
-					assert.Contains(t, eventsRemoved, id)
+						// Test indirect addition watcher logic
+						assert.Contains(t, eventsRemoved, id)
+					}
 				}
 			})
 	}
