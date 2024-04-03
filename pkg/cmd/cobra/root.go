@@ -92,6 +92,8 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		logger.Debugw("OSInfo", osInfoSlice...)
 	}
 
+	traceeInstallPath := viper.GetString("install-path")
+
 	cfg.OSInfo = osInfo
 
 	// Input command line flags
@@ -112,11 +114,11 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 		if !cfg.NoContainersEnrich {
 			criFlags, err := GetFlagsFromViper("cri")
-		if err != nil {
-			return runner, err
-		}
+			if err != nil {
+				return runner, err
+			}
 
-		sockets, err := flags.PrepareContainers(criFlags)
+			sockets, err := flags.PrepareContainers(criFlags)
 			if err != nil {
 				return runner, err
 			}
@@ -197,7 +199,6 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 		// Decide BTF & BPF files to use (based in the kconfig, release & environment info)
 
-		traceeInstallPath := viper.GetString("install-path")
 		err = initialize.BpfObject(&cfg, kernelConfig, osInfo, traceeInstallPath, version)
 		if err != nil {
 			return runner, errfmt.Errorf("failed preparing BPF object: %v", err)

@@ -469,11 +469,6 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 func (t *Tracee) initBPFProducing(ctx gocontext.Context) error {
 	var err error
 
-	initReq, err := t.generateInitValues()
-	if err != nil {
-		return errfmt.Errorf("failed to generate required init values: %s", err)
-	}
-
 	// Init kernel symbols map
 
 	err = capabilities.GetInstance().Specific(
