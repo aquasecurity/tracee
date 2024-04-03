@@ -260,7 +260,7 @@ struct {
     __uint(max_entries, 4096);
     __type(key, syscall_source_key_t);
     __type(value, bool);
-} syscall_source_map SEC(".maps"); 
+} syscall_source_map SEC(".maps");
 
 // store stack traces
 #define MAX_STACK_ADDRESSES 1024 // max amount of diff stack trace addrs to buffer

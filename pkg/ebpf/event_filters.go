@@ -6,6 +6,7 @@ import (
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
@@ -23,20 +24,20 @@ func (t *Tracee) populateEventFilterMaps() error {
 	// Iterate through registerd event filter handlers
 	for eventID, handler := range eventFilterHandlers {
 		// Construct filters for this event
-		filters := map[string]filters.Filter{}
+		eventFilters := map[string]filters.Filter{}
 		for p := range t.config.Policies.Map() {
 			f := p.ArgFilter.GetEventFilters(eventID)
 			if len(f) == 0 {
 				continue
 			}
-			maps.Copy(filters, f)
+			maps.Copy(eventFilters, f)
 		}
-		if len(filters) == 0 {
+		if len(eventFilters) == 0 {
 			continue
 		}
 
 		// Call handler
-		err := handler(filters, t.bpfModule)
+		err := handler(eventFilters, t.bpfModule)
 		if err != nil {
 			logger.Errorw("Failed to handle event filter for event " + events.Core.GetDefinitionByID(eventID).GetName() + ", err: " + err.Error())
 			t.cancelEventFromEventState(eventID)
