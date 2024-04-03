@@ -7,6 +7,25 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
+func ArgVal[T any](args []trace.Argument, argName string) (T, error) {
+	for _, arg := range args {
+		if arg.Name == argName {
+			val, ok := arg.Value.(T)
+			if !ok {
+				zeroVal := *new(T)
+				return zeroVal, fmt.Errorf(
+					"argument %s is not of type %T, is of type %T",
+					argName,
+					zeroVal,
+					arg.Value,
+				)
+			}
+			return val, nil
+		}
+	}
+	return *new(T), fmt.Errorf("argument %s not found", argName)
+}
+
 // GetArgOps represents options for arguments getters
 type GetArgOps struct {
 	DefaultArgs bool // Receive default args value (value equals 'nil'). If set to false, will return error if arg not initialized.
