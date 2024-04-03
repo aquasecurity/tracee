@@ -190,6 +190,7 @@ func (t *Tracee) addDependencyEventToState(evtID events.ID, dependantEvts []even
 }
 
 func (t *Tracee) removeEventFromState(evtID events.ID) {
+	logger.Debugw("Cancel event", "event", events.Core.GetDefinitionByID(evtID).GetName())
 	delete(t.eventsState, evtID)
 	delete(t.eventSignatures, evtID)
 }
@@ -870,8 +871,6 @@ func (t *Tracee) getUnavKsymsPerEvtID() map[events.ID][]string {
 // from the kallsyms file to check for missing symbols. If some symbols are
 // missing, it will cancel their event with informative error message.
 func (t *Tracee) validateKallsymsDependencies() {
-	depsToCancel := make(map[events.ID]string)
-
 	// Cancel events with unavailable symbols dependencies
 	for eventToCancel, missingDepSyms := range t.getUnavKsymsPerEvtID() {
 		eventNameToCancel := events.Core.GetDefinitionByID(eventToCancel).GetName()
@@ -879,29 +878,8 @@ func (t *Tracee) validateKallsymsDependencies() {
 			"Event canceled because of missing kernel symbol dependency",
 			"missing symbols", missingDepSyms, "event", eventNameToCancel,
 		)
-		delete(t.eventsState, eventToCancel)
-
-		// Find all events that depend on eventToCancel
-		for eventID := range t.eventsState {
-			depsNode, _ := t.eventsDependencies.GetEvent(eventID)
-			deps := depsNode.GetDependencies()
-			depsIDs := deps.GetIDs()
-			for _, depID := range depsIDs {
-				if depID == eventToCancel {
-					depsToCancel[eventID] = eventNameToCancel
-				}
-			}
-		}
-
-		// Cancel all events that require eventToCancel
-		for eventID, depEventName := range depsToCancel {
-			logger.Debugw(
-				"Event canceled because it depends on an previously canceled event",
-				"event", events.Core.GetDefinitionByID(eventID).GetName(),
-				"dependency", depEventName,
-			)
-			delete(t.eventsState, eventID)
-		}
+		// Cancel the event, it depencies and its dependant events
+		t.eventsDependencies.RemoveEvent(eventToCancel)
 	}
 }
 
