@@ -320,9 +320,6 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	runner.Printer = p
 	runner.InstallPath = traceeInstallPath
 
-	// parse arguments must be enabled if the rule engine is part of the pipeline
-	runner.TraceeConfig.Output.ParseArguments = true
-
 	runner.TraceeConfig.EngineConfig = engine.Config{
 		Enabled:          true,
 		SigNameToEventID: sigNameToEventId,
