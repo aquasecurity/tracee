@@ -17,12 +17,7 @@ statfunc const u64 get_cgroup_v1_subsys0_id(struct task_struct *);
 
 statfunc const char *get_cgroup_dirname(struct cgroup *cgrp)
 {
-    struct kernfs_node *kn = BPF_CORE_READ(cgrp, kn);
-
-    if (kn == NULL)
-        return NULL;
-
-    return BPF_CORE_READ(kn, name);
+    return BPF_CORE_READ(cgrp, kn, name);
 }
 
 statfunc const u64 get_cgroup_id(struct cgroup *cgrp)
@@ -59,15 +54,12 @@ statfunc const u64 get_cgroup_id(struct cgroup *cgrp)
 
 statfunc const u32 get_cgroup_hierarchy_id(struct cgroup *cgrp)
 {
-    struct cgroup_root *root = BPF_CORE_READ(cgrp, root);
-    return BPF_CORE_READ(root, hierarchy_id);
+    return BPF_CORE_READ(cgrp, root, hierarchy_id);
 }
 
 statfunc const u64 get_cgroup_v1_subsys0_id(struct task_struct *task)
 {
-    struct css_set *cgroups = BPF_CORE_READ(task, cgroups);
-    struct cgroup_subsys_state *subsys0 = BPF_CORE_READ(cgroups, subsys[0]);
-    struct cgroup *cgroup = BPF_CORE_READ(subsys0, cgroup);
+    struct cgroup *cgroup = BPF_CORE_READ(task, cgroups, subsys[0], cgroup);
     return get_cgroup_id(cgroup);
 }
 
