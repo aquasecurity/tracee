@@ -352,7 +352,7 @@ statfunc struct in6_addr get_sock_v6_daddr(struct sock *sock)
 statfunc volatile unsigned char get_sock_state(struct sock *sock)
 {
     volatile unsigned char sk_state_own_impl;
-    bpf_probe_read(
+    bpf_core_read(
         (void *) &sk_state_own_impl, sizeof(sk_state_own_impl), (const void *) &sock->sk_state);
     return sk_state_own_impl;
 }
@@ -360,7 +360,7 @@ statfunc volatile unsigned char get_sock_state(struct sock *sock)
 statfunc struct ipv6_pinfo *get_inet_pinet6(struct inet_sock *inet)
 {
     struct ipv6_pinfo *pinet6_own_impl;
-    bpf_probe_read(&pinet6_own_impl, sizeof(pinet6_own_impl), &inet->pinet6);
+    bpf_core_read(&pinet6_own_impl, sizeof(pinet6_own_impl), &inet->pinet6);
     return pinet6_own_impl;
 }
 

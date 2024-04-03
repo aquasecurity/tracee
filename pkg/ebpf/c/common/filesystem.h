@@ -171,14 +171,14 @@ statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
     }
 
     struct path f_path;
-    bpf_probe_read(&f_path, sizeof(struct path), path);
+    bpf_probe_read_kernel(&f_path, sizeof(struct path), path);
     char slash = '/';
     int zero = 0;
     struct dentry *dentry = f_path.dentry;
     struct vfsmount *vfsmnt = f_path.mnt;
     struct mount *mnt_parent_p;
     struct mount *mnt_p = real_mount(vfsmnt);
-    bpf_probe_read(&mnt_parent_p, sizeof(struct mount *), &mnt_p->mnt_parent);
+    bpf_core_read(&mnt_parent_p, sizeof(struct mount *), &mnt_p->mnt_parent);
     u32 buf_off = (MAX_PERCPU_BUFSIZE >> 1);
     struct dentry *mnt_root;
     struct dentry *d_parent;
@@ -198,9 +198,9 @@ statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
             }
             if (mnt_p != mnt_parent_p) {
                 // We reached root, but not global root - continue with mount point path
-                bpf_probe_read(&dentry, sizeof(struct dentry *), &mnt_p->mnt_mountpoint);
-                bpf_probe_read(&mnt_p, sizeof(struct mount *), &mnt_p->mnt_parent);
-                bpf_probe_read(&mnt_parent_p, sizeof(struct mount *), &mnt_p->mnt_parent);
+                bpf_core_read(&dentry, sizeof(struct dentry *), &mnt_p->mnt_mountpoint);
+                bpf_core_read(&mnt_p, sizeof(struct mount *), &mnt_p->mnt_parent);
+                bpf_core_read(&mnt_parent_p, sizeof(struct mount *), &mnt_p->mnt_parent);
                 vfsmnt = &mnt_p->mnt;
                 continue;
             }
@@ -215,13 +215,13 @@ statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
         sz = 0;
         if (off <= buf_off) { // verify no wrap occurred
             len = len & ((MAX_PERCPU_BUFSIZE >> 1) - 1);
-            sz = bpf_probe_read_str(
+            sz = bpf_probe_read_kernel_str(
                 &(out_buf->buf[off & ((MAX_PERCPU_BUFSIZE >> 1) - 1)]), len, (void *) d_name.name);
         } else
             break;
         if (sz > 1) {
             buf_off -= 1; // remove null byte termination with slash sign
-            bpf_probe_read(&(out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
+            bpf_probe_read_kernel(&(out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
             buf_off -= sz - 1;
         } else {
             // If sz is 0 or 1 we have an error (path can't be null nor an empty string)
@@ -233,13 +233,13 @@ statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
         // memfd files have no path in the filesystem -> extract their name
         buf_off = 0;
         d_name = get_d_name_from_dentry(dentry);
-        bpf_probe_read_str(&(out_buf->buf[0]), MAX_STRING_SIZE, (void *) d_name.name);
+        bpf_probe_read_kernel_str(&(out_buf->buf[0]), MAX_STRING_SIZE, (void *) d_name.name);
     } else {
         // Add leading slash
         buf_off -= 1;
-        bpf_probe_read(&(out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
+        bpf_probe_read_kernel(&(out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
         // Null terminate the path string
-        bpf_probe_read(&(out_buf->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
+        bpf_probe_read_kernel(&(out_buf->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
     }
     return buf_off;
 }
@@ -314,13 +314,13 @@ statfunc void *get_dentry_path_str(struct dentry *dentry)
         int sz = 0;
         if (off <= buf_off) { // verify no wrap occurred
             len = len & ((MAX_PERCPU_BUFSIZE >> 1) - 1);
-            sz = bpf_probe_read_str(
+            sz = bpf_probe_read_kernel_str(
                 &(string_p->buf[off & ((MAX_PERCPU_BUFSIZE >> 1) - 1)]), len, (void *) d_name.name);
         } else
             break;
         if (sz > 1) {
             buf_off -= 1; // remove null byte termination with slash sign
-            bpf_probe_read(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
+            bpf_probe_read_kernel(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
             buf_off -= sz - 1;
         } else {
             // If sz is 0 or 1 we have an error (path can't be null nor an empty string)
@@ -333,13 +333,13 @@ statfunc void *get_dentry_path_str(struct dentry *dentry)
         // memfd files have no path in the filesystem -> extract their name
         buf_off = 0;
         struct qstr d_name = get_d_name_from_dentry(dentry);
-        bpf_probe_read_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *) d_name.name);
+        bpf_probe_read_kernel_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *) d_name.name);
     } else {
         // Add leading slash
         buf_off -= 1;
-        bpf_probe_read(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
+        bpf_probe_read_kernel(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
         // Null terminate the path string
-        bpf_probe_read(&(string_p->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
+        bpf_probe_read_kernel(&(string_p->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
     }
 
     return &string_p->buf[buf_off];
@@ -410,10 +410,10 @@ statfunc void fill_vfs_file_metadata(struct file *file, u32 pid, u8 *metadata)
     unsigned long inode_nr = get_inode_nr_from_file(file);
     unsigned short i_mode = get_inode_mode_from_file(file);
 
-    bpf_probe_read(metadata, 4, &s_dev);
-    bpf_probe_read(metadata + 4, 8, &inode_nr);
-    bpf_probe_read(metadata + 12, 4, &i_mode);
-    bpf_probe_read(metadata + 16, 4, &pid);
+    bpf_probe_read_kernel(metadata, 4, &s_dev);
+    bpf_probe_read_kernel(metadata + 4, 8, &inode_nr);
+    bpf_probe_read_kernel(metadata + 12, 4, &i_mode);
+    bpf_probe_read_kernel(metadata + 16, 4, &pid);
 }
 
 statfunc void fill_vfs_file_bin_args_io_data(io_data_t io_data, bin_args_t *bin_args)
@@ -427,7 +427,7 @@ statfunc void fill_vfs_file_bin_args_io_data(io_data_t io_data, bin_args_t *bin_
         bin_args->iov_len = io_data.len;
         bin_args->iov_idx = 0;
         struct iovec io_vec;
-        bpf_probe_read(&io_vec, sizeof(struct iovec), &bin_args->vec[0]);
+        bpf_probe_read_kernel(&io_vec, sizeof(struct iovec), &bin_args->vec[0]);
         bin_args->ptr = io_vec.iov_base;
         bin_args->full_size = io_vec.iov_len;
     }
@@ -444,7 +444,7 @@ statfunc void fill_vfs_file_bin_args(u32 type,
 {
     off_t start_pos;
 
-    bpf_probe_read(&start_pos, sizeof(off_t), pos);
+    bpf_probe_read_kernel(&start_pos, sizeof(off_t), pos);
 
     // Calculate write start offset
     if (start_pos != 0)

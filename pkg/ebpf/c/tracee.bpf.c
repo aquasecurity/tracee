@@ -164,7 +164,7 @@ int sys_enter_submit(struct bpf_raw_tracepoint_args *ctx)
             fd_arg_path_t fd_arg_path = {};
             void *file_path = get_path_str(__builtin_preserve_access_index(&f->f_path));
 
-            bpf_probe_read_str(&fd_arg_path.path, sizeof(fd_arg_path.path), file_path);
+            bpf_probe_read_kernel_str(&fd_arg_path.path, sizeof(fd_arg_path.path), file_path);
             bpf_map_update_elem(&fd_arg_path_map, &ts, &fd_arg_path, BPF_ANY);
         }
     }
@@ -1240,7 +1240,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 
     // Extract the binary name to be used in should_trace
     __builtin_memset(proc_info->binary.path, 0, MAX_BIN_PATH_SIZE);
-    bpf_probe_read_str(proc_info->binary.path, MAX_BIN_PATH_SIZE, file_path);
+    bpf_probe_read_kernel_str(proc_info->binary.path, MAX_BIN_PATH_SIZE, file_path);
     proc_info->binary.mnt_id = p.event->context.task.mnt_id;
 
     if (!should_trace(&p))
@@ -1564,7 +1564,7 @@ statfunc void syscall_table_check(program_data_t *p)
         }
 
         u64 effective_address;
-        bpf_probe_read(&effective_address, sizeof(u64), sys_call_table + index);
+        bpf_probe_read_kernel(&effective_address, sizeof(u64), sys_call_table + index);
 
         if (expected_entry->address != effective_address) {
             reset_event_args(p);
@@ -1644,7 +1644,7 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
 
 #pragma unroll
     for (int i = 0; i < NET_SEQ_OPS_TYPES; i++) {
-        bpf_probe_read(&struct_address, 8, (address_array + i));
+        bpf_probe_read_user(&struct_address, 8, (address_array + i));
         struct seq_operations *seq_ops = (struct seq_operations *) struct_address;
 
         u64 show_addr = (u64) BPF_CORE_READ(seq_ops, show);
@@ -1784,7 +1784,7 @@ statfunc int send_bpf_attach(
     struct bpf_prog_aux *prog_aux = BPF_CORE_READ(prog, aux);
     u32 prog_id = BPF_CORE_READ(prog_aux, id);
     char prog_name[BPF_OBJ_NAME_LEN];
-    bpf_probe_read_str(&prog_name, BPF_OBJ_NAME_LEN, prog_aux->name);
+    bpf_probe_read_kernel_str(&prog_name, BPF_OBJ_NAME_LEN, prog_aux->name);
 
     // get usage of helpers
     bpf_used_helpers_t *val = bpf_map_lookup_elem(&bpf_attach_map, &prog_id);
@@ -1851,7 +1851,8 @@ send_bpf_perf_attach(program_data_t *p, struct file *bpf_prog_file, struct file 
     bool is_syscall_tracepoint = false;
     struct trace_event_class *tp_class = BPF_CORE_READ(tp_event, class);
     char class_system[REQUIRED_SYSTEM_LENGTH];
-    bpf_probe_read_str(&class_system, REQUIRED_SYSTEM_LENGTH, BPF_CORE_READ(tp_class, system));
+    bpf_probe_read_kernel_str(
+        &class_system, REQUIRED_SYSTEM_LENGTH, BPF_CORE_READ(tp_class, system));
     class_system[REQUIRED_SYSTEM_LENGTH - 1] = '\0';
     if (has_prefix("syscalls", class_system, REQUIRED_SYSTEM_LENGTH)) {
         is_syscall_tracepoint = true;
@@ -1861,12 +1862,12 @@ send_bpf_perf_attach(program_data_t *p, struct file *bpf_prog_file, struct file 
 
         perf_type = PERF_TRACEPOINT;
         struct tracepoint *tp = BPF_CORE_READ(tp_event, tp);
-        bpf_probe_read_str(&event_name, MAX_KSYM_NAME_SIZE, BPF_CORE_READ(tp, name));
+        bpf_probe_read_kernel_str(&event_name, MAX_KSYM_NAME_SIZE, BPF_CORE_READ(tp, name));
 
     } else if (is_syscall_tracepoint) { // event is syscall tracepoint
 
         perf_type = PERF_TRACEPOINT;
-        bpf_probe_read_str(&event_name, MAX_KSYM_NAME_SIZE, BPF_CORE_READ(tp_event, name));
+        bpf_probe_read_kernel_str(&event_name, MAX_KSYM_NAME_SIZE, BPF_CORE_READ(tp_event, name));
 
     } else {
         bool is_ret_probe = false;
@@ -1888,7 +1889,8 @@ send_bpf_perf_attach(program_data_t *p, struct file *bpf_prog_file, struct file 
                 perf_type = PERF_KPROBE;
 
             // get symbol name
-            bpf_probe_read_str(&event_name, MAX_KSYM_NAME_SIZE, BPF_CORE_READ(tracekp, symbol));
+            bpf_probe_read_kernel_str(
+                &event_name, MAX_KSYM_NAME_SIZE, BPF_CORE_READ(tracekp, symbol));
 
             // get symbol address
             if (!event_name[0])
@@ -1910,7 +1912,8 @@ send_bpf_perf_attach(program_data_t *p, struct file *bpf_prog_file, struct file 
                 perf_type = PERF_UPROBE;
 
             // get binary path
-            bpf_probe_read_str(&event_name, MAX_PATH_PREF_SIZE, BPF_CORE_READ(traceup, filename));
+            bpf_probe_read_kernel_str(
+                &event_name, MAX_PATH_PREF_SIZE, BPF_CORE_READ(traceup, filename));
 
             // get symbol offset
             probe_addr = BPF_CORE_READ(traceup, offset);
@@ -1963,7 +1966,7 @@ int BPF_KPROBE(trace_tracepoint_probe_register_prio_may_exist)
     struct bpf_prog *prog = (struct bpf_prog *) PT_REGS_PARM3(ctx);
 
     char event_name[MAX_PERF_EVENT_NAME];
-    bpf_probe_read_str(&event_name, MAX_KSYM_NAME_SIZE, BPF_CORE_READ(tp, name));
+    bpf_probe_read_kernel_str(&event_name, MAX_KSYM_NAME_SIZE, BPF_CORE_READ(tp, name));
 
     int perf_type = BPF_RAW_TRACEPOINT;
     u64 probe_addr = 0;
@@ -2855,7 +2858,7 @@ enum bin_type_e
 statfunc u32 tail_call_send_bin(void *ctx, program_data_t *p, bin_args_t *bin_args, int tail_call)
 {
     if (p->event->args_buf.offset < ARGS_BUF_SIZE - sizeof(bin_args_t)) {
-        bpf_probe_read(
+        bpf_probe_read_kernel(
             &(p->event->args_buf.args[p->event->args_buf.offset]), sizeof(bin_args_t), bin_args);
         if (tail_call == TAIL_SEND_BIN)
             bpf_tail_call(ctx, &prog_array, tail_call);
@@ -2914,17 +2917,19 @@ statfunc u32 send_bin_helper(void *ctx, void *prog_array, int tail_call)
 #define F_CHUNK_OFF  (F_POS_OFF + sizeof(off_t))
 #define F_CHUNK_SIZE (MAX_PERCPU_BUFSIZE >> 1)
 
-    bpf_probe_read((void **) &(file_buf_p->buf[F_SEND_TYPE]), sizeof(u8), &bin_args->type);
+    bpf_probe_read_kernel((void **) &(file_buf_p->buf[F_SEND_TYPE]), sizeof(u8), &bin_args->type);
 
     u64 cgroup_id = event->context.task.cgroup_id;
-    bpf_probe_read((void **) &(file_buf_p->buf[F_CGROUP_ID]), sizeof(u64), &cgroup_id);
+    bpf_probe_read_kernel((void **) &(file_buf_p->buf[F_CGROUP_ID]), sizeof(u64), &cgroup_id);
 
     // Save metadata to be used in filename
-    bpf_probe_read((void **) &(file_buf_p->buf[F_META_OFF]), SEND_META_SIZE, bin_args->metadata);
+    bpf_probe_read_kernel(
+        (void **) &(file_buf_p->buf[F_META_OFF]), SEND_META_SIZE, bin_args->metadata);
 
     // Save number of written bytes. Set this to CHUNK_SIZE for full chunks
     chunk_size = F_CHUNK_SIZE;
-    bpf_probe_read((void **) &(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
+    bpf_probe_read_kernel(
+        (void **) &(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
 
     unsigned int full_chunk_num = bin_args->full_size / F_CHUNK_SIZE;
     void *data = file_buf_p->buf;
@@ -2939,9 +2944,10 @@ statfunc u32 send_bin_helper(void *ctx, void *prog_array, int tail_call)
             break;
 
         // Save binary chunk and file position of write
-        bpf_probe_read(
+        bpf_probe_read_kernel(
             (void **) &(file_buf_p->buf[F_POS_OFF]), sizeof(off_t), &bin_args->start_off);
-        bpf_probe_read((void **) &(file_buf_p->buf[F_CHUNK_OFF]), F_CHUNK_SIZE, bin_args->ptr);
+        bpf_probe_read_kernel(
+            (void **) &(file_buf_p->buf[F_CHUNK_OFF]), F_CHUNK_SIZE, bin_args->ptr);
         bin_args->ptr += F_CHUNK_SIZE;
         bin_args->start_off += F_CHUNK_SIZE;
 
@@ -2961,9 +2967,10 @@ statfunc u32 send_bin_helper(void *ctx, void *prog_array, int tail_call)
     if (chunk_size) {
         // Save last chunk
         chunk_size = chunk_size & ((MAX_PERCPU_BUFSIZE >> 1) - 1);
-        bpf_probe_read((void **) &(file_buf_p->buf[F_CHUNK_OFF]), chunk_size, bin_args->ptr);
-        bpf_probe_read((void **) &(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
-        bpf_probe_read(
+        bpf_probe_read_kernel((void **) &(file_buf_p->buf[F_CHUNK_OFF]), chunk_size, bin_args->ptr);
+        bpf_probe_read_kernel(
+            (void **) &(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
+        bpf_probe_read_kernel(
             (void **) &(file_buf_p->buf[F_POS_OFF]), sizeof(off_t), &bin_args->start_off);
 
         // Satisfy validator by setting buffer bounds
@@ -3050,7 +3057,7 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
     // Extract device id, inode number, and pos (offset)
     file_info.id.device = get_dev_from_file(file);
     file_info.id.inode = get_inode_nr_from_file(file);
-    bpf_probe_read(&start_pos, sizeof(off_t), pos);
+    bpf_probe_read_kernel(&start_pos, sizeof(off_t), pos);
 
     u32 io_bytes_amount = PT_REGS_RC(ctx);
 
@@ -3125,7 +3132,7 @@ statfunc int capture_file_write(struct pt_regs *ctx, u32 event_id, bool is_buf)
     size_t written_bytes = PT_REGS_RC(ctx);
 
     off_t start_pos;
-    bpf_probe_read(&start_pos, sizeof(off_t), pos);
+    bpf_probe_read_kernel(&start_pos, sizeof(off_t), pos);
     // Calculate write start offset
     if (start_pos != 0)
         start_pos -= written_bytes;
@@ -3186,7 +3193,7 @@ statfunc int capture_file_read(struct pt_regs *ctx, u32 event_id, bool is_buf)
     size_t read_bytes = PT_REGS_RC(ctx);
 
     off_t start_pos;
-    bpf_probe_read(&start_pos, sizeof(off_t), pos);
+    bpf_probe_read_kernel(&start_pos, sizeof(off_t), pos);
     // Calculate write start offset
     if (start_pos != 0)
         start_pos -= read_bytes;
@@ -3285,7 +3292,7 @@ statfunc int do_vfs_write_magic_enter(struct pt_regs *ctx)
 {
     loff_t start_pos;
     loff_t *pos = (loff_t *) PT_REGS_PARM4(ctx);
-    bpf_probe_read(&start_pos, sizeof(off_t), pos);
+    bpf_probe_read_kernel(&start_pos, sizeof(off_t), pos);
     if (start_pos != 0)
         return 0;
 
@@ -3651,8 +3658,8 @@ int BPF_KPROBE(trace_security_file_mprotect)
         if (should_extract_code) {
             u32 pid = p.event->context.task.host_pid;
             bin_args.type = SEND_MPROTECT;
-            bpf_probe_read(bin_args.metadata, sizeof(u64), &p.event->context.ts);
-            bpf_probe_read(&bin_args.metadata[8], 4, &pid);
+            bpf_probe_read_kernel(bin_args.metadata, sizeof(u64), &p.event->context.ts);
+            bpf_probe_read_kernel(&bin_args.metadata[8], 4, &pid);
             bin_args.ptr = (char *) addr;
             bin_args.start_off = 0;
             bin_args.full_size = len;
@@ -3684,10 +3691,10 @@ int syscall__init_module(void *ctx)
 
     if (p.config->options & OPT_CAPTURE_MODULES) {
         bin_args.type = SEND_KERNEL_MODULE;
-        bpf_probe_read(bin_args.metadata, 4, &dummy);
-        bpf_probe_read(&bin_args.metadata[4], 8, &dummy);
-        bpf_probe_read(&bin_args.metadata[12], 4, &pid);
-        bpf_probe_read(&bin_args.metadata[16], 8, &len);
+        bpf_probe_read_kernel(bin_args.metadata, 4, &dummy);
+        bpf_probe_read_kernel(&bin_args.metadata[4], 8, &dummy);
+        bpf_probe_read_kernel(&bin_args.metadata[12], 4, &pid);
+        bpf_probe_read_kernel(&bin_args.metadata[16], 8, &len);
         bin_args.ptr = (char *) addr;
         bin_args.start_off = 0;
         bin_args.full_size = (unsigned int) len;
@@ -3757,15 +3764,15 @@ int BPF_KPROBE(trace_security_bpf)
 
         bin_args.type = SEND_BPF_OBJECT;
         char prog_name[16] = {0};
-        long sz = bpf_probe_read_str(prog_name, 16, attr->prog_name);
+        long sz = bpf_probe_read_kernel_str(prog_name, 16, attr->prog_name);
         if (sz > 0) {
-            sz = bpf_probe_read_str(bin_args.metadata, sz, prog_name);
+            sz = bpf_probe_read_kernel_str(bin_args.metadata, sz, prog_name);
         }
 
         u32 rand = bpf_get_prandom_u32();
-        bpf_probe_read(&bin_args.metadata[16], 4, &rand);
-        bpf_probe_read(&bin_args.metadata[20], 4, &pid);
-        bpf_probe_read(&bin_args.metadata[24], 4, &insn_size);
+        bpf_probe_read_kernel(&bin_args.metadata[16], 4, &rand);
+        bpf_probe_read_kernel(&bin_args.metadata[20], 4, &pid);
+        bpf_probe_read_kernel(&bin_args.metadata[24], 4, &insn_size);
         bin_args.ptr = (char *) insns;
         bin_args.start_off = 0;
         bin_args.full_size = insn_size;
@@ -3898,7 +3905,7 @@ int BPF_KPROBE(trace_security_bpf_prog)
     int prog_type = BPF_CORE_READ(prog, type);
 
     char prog_name[BPF_OBJ_NAME_LEN];
-    bpf_probe_read_str(&prog_name, BPF_OBJ_NAME_LEN, prog_aux->name);
+    bpf_probe_read_kernel_str(&prog_name, BPF_OBJ_NAME_LEN, prog_aux->name);
 
     save_to_submit_buf(&p.event->args_buf, &prog_type, sizeof(int), 0);
     save_str_to_buf(&p.event->args_buf, (void *) &prog_name, 1);
@@ -4092,10 +4099,10 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
         u32 pid = p.event->context.task.host_pid;
 
         bin_args.type = SEND_KERNEL_MODULE;
-        bpf_probe_read(bin_args.metadata, 4, &s_dev);
-        bpf_probe_read(&bin_args.metadata[4], 8, &inode_nr);
-        bpf_probe_read(&bin_args.metadata[12], 4, &pid);
-        bpf_probe_read(&bin_args.metadata[16], 4, &size);
+        bpf_probe_read_kernel(bin_args.metadata, 4, &s_dev);
+        bpf_probe_read_kernel(&bin_args.metadata[4], 8, &inode_nr);
+        bpf_probe_read_kernel(&bin_args.metadata[12], 4, &pid);
+        bpf_probe_read_kernel(&bin_args.metadata[16], 4, &size);
         bin_args.start_off = 0;
         bin_args.ptr = buf;
         bin_args.full_size = size;
@@ -4482,7 +4489,7 @@ int BPF_KPROBE(trace_load_elf_phdrs)
     // value of the executed binary should be overridden by the interpreter.
 
     size_t sz = sizeof(proc_info->interpreter.pathname);
-    bpf_probe_read_str(proc_info->interpreter.pathname, sz, elf_pathname);
+    bpf_probe_read_kernel_str(proc_info->interpreter.pathname, sz, elf_pathname);
     proc_info->interpreter.id.device = get_dev_from_file(loaded_elf);
     proc_info->interpreter.id.inode = get_inode_nr_from_file(loaded_elf);
     proc_info->interpreter.id.ctime = get_ctime_nanosec_from_file(loaded_elf);
@@ -4578,7 +4585,7 @@ int tracepoint__task__task_rename(struct bpf_raw_tracepoint_args *ctx)
 
     struct task_struct *tsk = (struct task_struct *) ctx->args[0];
     char old_name[TASK_COMM_LEN];
-    bpf_probe_read_str(&old_name, TASK_COMM_LEN, tsk->comm);
+    bpf_probe_read_kernel_str(&old_name, TASK_COMM_LEN, tsk->comm);
     const char *new_name = (const char *) ctx->args[1];
 
     save_str_to_buf(&p.event->args_buf, (void *) old_name, 0);
