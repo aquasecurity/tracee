@@ -40,7 +40,7 @@ type Config struct {
 // Validate does static validation of the configuration
 func (c Config) Validate() error {
 	// Policies
-	for p := range c.Policies.Map() {
+	for _, p := range c.Policies.Map() {
 		if p == nil {
 			return errfmt.Errorf("policy is nil")
 		}

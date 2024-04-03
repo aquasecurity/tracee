@@ -264,7 +264,7 @@ func New(cfg config.Config) (*Tracee, error) {
 
 	// TODO: extract this to a function to be called from here and from
 	// policies changes.
-	for p := range t.config.Policies.Map() {
+	for _, p := range t.config.Policies.Map() {
 		for e := range p.EventsToTrace {
 			var submit, emit uint64
 			if _, ok := t.eventsState[e]; ok {
@@ -1596,7 +1596,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 	errs := []error{}
 
 	// TODO: consider to iterate over given policies when policies are changed
-	for p := range t.config.Policies.Map() {
+	for _, p := range t.config.Policies.Map() {
 		printMemDumpFilters := p.ArgFilter.GetEventFilters(events.PrintMemDump)
 		if len(printMemDumpFilters) == 0 {
 			errs = append(errs, errfmt.Errorf("policy %d: no address or symbols were provided to print_mem_dump event. "+

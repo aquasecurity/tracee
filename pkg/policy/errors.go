@@ -23,7 +23,3 @@ func PoliciesMaxExceededError() error {
 func PoliciesOutOfRangeError(idx int) error {
 	return fmt.Errorf("policies index [%d] out-of-range [0-%d]", idx, MaxPolicies-1)
 }
-
-func PolicyAlreadyExists(policy *Policy, id int) error {
-	return fmt.Errorf("policy [%+v] already set with different id [%d]", policy, id)
-}

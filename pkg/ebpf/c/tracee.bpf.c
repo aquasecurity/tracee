@@ -2612,9 +2612,8 @@ int BPF_KPROBE(trace_security_socket_connect)
     void *args_buf = &p.event->args_buf;
     void *to = (void *) &sys->args.args[0];
 
-#if defined(bpf_target_x86) // only i386 binaries uses socketcall
-    to = (void *) sys->args.args[1];
-#endif
+    if (is_x86_compat(p.event->task)) // only i386 binaries uses socketcall
+        to = (void *) sys->args.args[1];
 
     // Save the socket fd, depending on the syscall.
     switch (sys->id) {
