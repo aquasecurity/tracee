@@ -9,6 +9,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
+	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
 type eventFilterHandler func(eventFilters map[string]filters.Filter, bpfModule *bpf.Module) error
@@ -37,7 +38,8 @@ func (t *Tracee) populateEventFilterMaps() error {
 		// Call handler
 		err := handler(filters, t.bpfModule)
 		if err != nil {
-			return err
+			logger.Errorw("Failed to handle event filter for event " + events.Core.GetDefinitionByID(eventID).GetName() + ", err: " + err.Error())
+			t.cancelEventFromEventState(eventID)
 		}
 	}
 	return nil
