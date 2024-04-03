@@ -5201,19 +5201,19 @@ statfunc enum vma_type get_vma_type(struct vm_area_struct *vma)
 {
     if (vma_is_stack(vma))
         return VMA_STACK;
-    
+
     if (vma_is_heap(vma))
         return VMA_HEAP;
-    
+
     if (vma_is_anon(vma))
         return VMA_ANON;
-    
+
     return VMA_OTHER;
 }
 
 static long find_vma_callback(struct task_struct *task, struct vm_area_struct *vma, void *ctx)
 {
-    struct vm_area_struct **pvma = (struct vm_area_struct **)ctx;
+    struct vm_area_struct **pvma = (struct vm_area_struct **) ctx;
     *pvma = vma;
     return 0;
 }
@@ -5224,7 +5224,7 @@ int check_syscall_source(struct bpf_raw_tracepoint_args *ctx)
     program_data_t p = {};
     if (!init_program_data(&p, ctx))
         return 0;
-    
+
     // Get syscall ID
     struct task_struct *task = (struct task_struct *) bpf_get_current_task();
     u32 id = ctx->args[1];
@@ -5235,10 +5235,10 @@ int check_syscall_source(struct bpf_raw_tracepoint_args *ctx)
             return 0;
         id = *id_64;
     }
-    
+
     if (!should_trace(&p))
         goto out;
-    
+
     if (!should_submit(CHECK_SYSCALL_SOURCE, p.event))
         goto out;
 
@@ -5253,30 +5253,28 @@ int check_syscall_source(struct bpf_raw_tracepoint_args *ctx)
 #elif defined(bpf_target_arm64)
     u64 ip = BPF_CORE_READ(regs, pc);
 #endif
-    
+
     // Find VMA which contains the instruction pointer
     struct vm_area_struct *vma = NULL;
     find_vma(task_btf, ip, find_vma_callback, &vma);
     if (vma == NULL)
         goto out;
-    
+
     // Get VMA type and make sure it's abnormal (stack/heap/anonymous VMA)
     enum vma_type vma_type = get_vma_type(vma);
     if (vma_type == VMA_OTHER)
         goto out;
-    
+
     // Build a key that identifies the combination of syscall,
     // source VMA and process so we don't submit it multiple times
-    syscall_source_key_t key = {
-        .syscall = id,
-        .tgid = get_task_ns_tgid(task),
-        .tgid_start_time = get_task_start_time(get_leader_task(task)),
-        .vma_addr = get_vma_start(vma)
-    };
+    syscall_source_key_t key = {.syscall = id,
+                                .tgid = get_task_ns_tgid(task),
+                                .tgid_start_time = get_task_start_time(get_leader_task(task)),
+                                .vma_addr = get_vma_start(vma)};
     bool val = true;
 
     // Try updating the map with the requirement that this key does not exist yet
-    if ((int)bpf_map_update_elem(&syscall_source_map, &key, &val, BPF_NOEXIST) == -17 /* EEXIST */)
+    if ((int) bpf_map_update_elem(&syscall_source_map, &key, &val, BPF_NOEXIST) == -17 /* EEXIST */)
         // This key already exists, no need to submit the same syscall-vma-process combination again
         goto out;
 
