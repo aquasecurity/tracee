@@ -302,7 +302,7 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		return bitmap
 	}
 
-	for p := range policies.FilterableInUserlandMap() { // range through each userland filterable policy
+	for _, p := range policies.FilterableInUserlandMap() { // range through each userland filterable policy
 		// Policy ID is the bit offset in the bitmap.
 		bitOffset := uint(p.ID)
 
