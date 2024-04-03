@@ -233,7 +233,6 @@ func (engine *Engine) consumeSources(ctx context.Context) {
 				engine.signaturesMutex.RUnlock()
 				engine.inputs.Tracee = nil
 				if engine.checkCompletion() {
-					close(engine.output)
 					return
 				}
 

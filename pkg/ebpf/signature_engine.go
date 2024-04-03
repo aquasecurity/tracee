@@ -92,15 +92,15 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 	// and converting detect.Finding into trace.Event
 
 	go func() {
-		defer close(out)
-		defer close(errc)
 		defer close(engineInput)
-		defer close(engineOutput)
 		defer wg.Done()
 
 		for {
 			select {
-			case event := <-in:
+			case event, ok := <-in:
+				if !ok {
+					return
+				}
 				feedFunc(event)
 			case event := <-engineOutputEvents:
 				feedFunc(event)
