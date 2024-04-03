@@ -171,9 +171,26 @@ func (t *Tracee) addEventState(eventID events.ID, chosenState events.EventState)
 	t.eventsState[eventID] = currentState
 }
 
+func (t *Tracee) addDependenciesToStateRecursive(eventNode *dependencies.EventNode) {
+	eventID := eventNode.GetID()
+	for _, dependencyEventID := range eventNode.GetDependencies().GetIDs() {
+		t.addDependencyEventToState(dependencyEventID, []events.ID{eventID})
+		dependencyNode, ok := t.eventsDependencies.GetEvent(dependencyEventID)
+		if ok {
+			t.addDependenciesToStateRecursive(dependencyNode)
+		}
+	}
+}
+
 func (t *Tracee) chooseEvent(eventID events.ID, chosenState events.EventState) {
 	t.addEventState(eventID, chosenState)
 	t.eventsDependencies.SelectEvent(eventID)
+	eventNode, ok := t.eventsDependencies.GetEvent(eventID)
+	if !ok {
+		logger.Errorw("Event is missing from dependency right after being selected")
+		return
+	}
+	t.addDependenciesToStateRecursive(eventNode)
 }
 
 // addDependencyEventToState adds to tracee's state an event that is a dependency of other events.
