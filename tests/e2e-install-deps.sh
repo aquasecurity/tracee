@@ -1,4 +1,7 @@
-#!/bin/bash -e
+#!/bin/bash
+
+set -e
+set -x # for debugging
 
 # This script installs the dependencies for compiling tracee and running the e2e
 # tests. Note that for llvm, binaries might be installed from the OS package
