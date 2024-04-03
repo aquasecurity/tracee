@@ -7,7 +7,9 @@
 
 // PROTOTYPES
 
-typedef long (*vma_callback_fn)(struct task_struct *task, struct vm_area_struct *vma, void *callback_ctx);
+typedef long (*vma_callback_fn)(struct task_struct *task,
+                                struct vm_area_struct *vma,
+                                void *callback_ctx);
 
 statfunc struct mm_struct *get_mm_from_task(struct task_struct *);
 statfunc unsigned long get_arg_start_from_mm(struct mm_struct *);
@@ -79,13 +81,13 @@ statfunc unsigned long get_vma_start(struct vm_area_struct *vma)
  * and the specified context.
  * A callback function is required becuase this function potentially uses
  * bpf_find_vma(), which requires a callback function.
- * 
+ *
  * A generic callback function which receives a `struct vm_area_struct **`
  * as its context and saves the found VMA to it is available in the main
  * eBPF source file (tracee.bpf.c:find_vma_callback).
- * 
+ *
  * See the check_syscall_source function for a usage example.
- * 
+ *
  * DISCLAIMER: on systems with no MMU, multiple VMAs may contain the same address.
  * Be aware that this function will call the callback only for the first VMA it finds.
  */
@@ -116,7 +118,7 @@ statfunc void find_vma(struct task_struct *task, u64 addr, vma_callback_fn cb_fn
 
         if (rb_node == NULL)
             break;
-        
+
         struct vm_area_struct *tmp = container_of(rb_node, struct vm_area_struct, vm_rb);
         unsigned long vm_start = BPF_CORE_READ(tmp, vm_start);
         unsigned long vm_end = BPF_CORE_READ(tmp, vm_end);
@@ -126,8 +128,7 @@ statfunc void find_vma(struct task_struct *task, u64 addr, vma_callback_fn cb_fn
             if (vm_start <= addr)
                 break;
             rb_node = BPF_CORE_READ(rb_node, rb_left);
-        }
-        else
+        } else
             rb_node = BPF_CORE_READ(rb_node, rb_right);
     }
 
@@ -140,7 +141,7 @@ statfunc bool vma_is_stack(struct vm_area_struct *vma)
     struct mm_struct *vm_mm = BPF_CORE_READ(vma, vm_mm);
     if (vm_mm == NULL)
         return false;
-    
+
     u64 vm_start = BPF_CORE_READ(vma, vm_start);
     u64 vm_end = BPF_CORE_READ(vma, vm_end);
     u64 start_stack = BPF_CORE_READ(vm_mm, start_stack);
@@ -148,7 +149,7 @@ statfunc bool vma_is_stack(struct vm_area_struct *vma)
     // logic taken from include/linux/mm.h (vma_is_initial_stack)
     if (vm_start <= start_stack && start_stack <= vm_end)
         return true;
-    
+
     return false;
 }
 
@@ -157,7 +158,7 @@ statfunc bool vma_is_heap(struct vm_area_struct *vma)
     struct mm_struct *vm_mm = BPF_CORE_READ(vma, vm_mm);
     if (vm_mm == NULL)
         return false;
-    
+
     u64 vm_start = BPF_CORE_READ(vma, vm_start);
     u64 vm_end = BPF_CORE_READ(vma, vm_end);
     u64 start_brk = BPF_CORE_READ(vm_mm, start_brk);
@@ -166,7 +167,7 @@ statfunc bool vma_is_heap(struct vm_area_struct *vma)
     // logic taken from include/linux/mm.h (vma_is_initial_heap)
     if (vm_start < brk && start_brk < vm_end)
         return true;
-    
+
     return false;
 }
 

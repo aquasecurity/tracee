@@ -6,6 +6,7 @@ import (
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
@@ -35,9 +36,9 @@ func (t *Tracee) populateEventFilterMaps() error {
 			if len(f) == 0 {
 				continue
 			}
-			maps.Copy(filters, f)
+			maps.Copy(eventFilters, f)
 		}
-		if len(filters) == 0 {
+		if len(eventFilters) == 0 {
 			continue
 		}
 
