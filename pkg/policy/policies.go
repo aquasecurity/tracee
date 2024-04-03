@@ -140,11 +140,6 @@ func (ps *Policies) set(id int, p *Policy) error {
 	if !isIDInRange(id) {
 		return PoliciesOutOfRangeError(id)
 	}
-	if _, found := ps.filterEnabledPoliciesMap[p]; found {
-		if p.ID != id {
-			return PolicyAlreadyExists(p, id)
-		}
-	}
 
 	p.ID = id
 	ps.policiesArray[id] = p
