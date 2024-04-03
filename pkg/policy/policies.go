@@ -21,8 +21,6 @@ var AlwaysSubmit = events.EventState{
 	Submit: AllPoliciesOn,
 }
 
-// TODO: refactor filterEnabledPoliciesMap and filterUserlandPoliciesMap
-// maps to use int (Policy id) as key instead of *Policy.
 // TODO: create a new map with policy name as key to speed up LookupByName()
 type Policies struct {
 	rwmu sync.RWMutex
@@ -30,10 +28,10 @@ type Policies struct {
 	version                  uint32                    // updated on snapshot store
 	bpfInnerMaps             map[string]*bpf.BPFMapLow // BPF inner maps
 	policiesArray            [MaxPolicies]*Policy      // underlying filter policies array
-	filterEnabledPoliciesMap map[*Policy]int           // stores only enabled policies
+	filterEnabledPoliciesMap map[int]*Policy           // stores only enabled policies
 
 	// computed values
-	filterUserlandPoliciesMap map[*Policy]int // stores a reduced map with only userland filterable policies
+	filterUserlandPoliciesMap map[int]*Policy // stores a reduced map with only userland filterable policies
 	uidFilterMin              uint64
 	uidFilterMax              uint64
 	pidFilterMin              uint64
@@ -50,8 +48,8 @@ func NewPolicies() *Policies {
 		version:                   0,
 		bpfInnerMaps:              map[string]*bpf.BPFMapLow{},
 		policiesArray:             [MaxPolicies]*Policy{},
-		filterEnabledPoliciesMap:  map[*Policy]int{},
-		filterUserlandPoliciesMap: map[*Policy]int{},
+		filterEnabledPoliciesMap:  map[int]*Policy{},
+		filterUserlandPoliciesMap: map[int]*Policy{},
 		uidFilterMin:              filters.MinNotSetUInt,
 		uidFilterMax:              filters.MaxNotSetUInt,
 		pidFilterMin:              filters.MinNotSetUInt,
@@ -117,16 +115,16 @@ func (ps *Policies) compute() {
 	// update enabled container filter flag
 	ps.updateContainerFilterEnabled()
 
-	userlandMap := make(map[*Policy]int)
+	userlandMap := make(map[int]*Policy)
 	ps.filterableInUserland = 0
-	for p := range ps.filterEnabledPoliciesMap {
+	for _, p := range ps.filterEnabledPoliciesMap {
 		if p.ArgFilter.Enabled() ||
 			p.RetFilter.Enabled() ||
 			p.ContextFilter.Enabled() ||
 			(p.UIDFilter.Enabled() && ps.uidFilterableInUserland) ||
 			(p.PIDFilter.Enabled() && ps.pidFilterableInUserland) {
 			// add policy and set the related bit
-			userlandMap[p] = p.ID
+			userlandMap[p.ID] = p
 			utils.SetBit(&ps.filterableInUserland, uint(p.ID))
 		}
 	}
@@ -150,7 +148,7 @@ func (ps *Policies) set(id int, p *Policy) error {
 
 	p.ID = id
 	ps.policiesArray[id] = p
-	ps.filterEnabledPoliciesMap[p] = id
+	ps.filterEnabledPoliciesMap[id] = p
 
 	ps.compute()
 
@@ -159,7 +157,6 @@ func (ps *Policies) set(id int, p *Policy) error {
 
 // Add adds a policy to Policies.
 // Its ID (index) is set to the first room found.
-// Returns nil if policy is already inserted.
 func (ps *Policies) Add(p *Policy) error {
 	ps.rwmu.Lock()
 	defer ps.rwmu.Unlock()
@@ -196,8 +193,8 @@ func (ps *Policies) Delete(id int) error {
 		return nil
 	}
 
-	delete(ps.filterEnabledPoliciesMap, ps.policiesArray[id])
-	delete(ps.filterUserlandPoliciesMap, ps.policiesArray[id])
+	delete(ps.filterEnabledPoliciesMap, id)
+	delete(ps.filterUserlandPoliciesMap, id)
 	ps.policiesArray[id] = nil
 
 	ps.compute()
@@ -226,7 +223,7 @@ func (ps *Policies) LookupByName(name string) (*Policy, error) {
 	ps.rwmu.RLock()
 	defer ps.rwmu.RUnlock()
 
-	for p := range ps.Map() {
+	for _, p := range ps.Map() {
 		if p.Name == name {
 			return p, nil
 		}
@@ -242,7 +239,7 @@ func (ps *Policies) MatchedNames(matched uint64) []string {
 
 	names := []string{}
 
-	for p := range ps.Map() {
+	for _, p := range ps.Map() {
 		if utils.HasBit(matched, uint(p.ID)) {
 			names = append(names, p.Name)
 		}
@@ -256,7 +253,7 @@ func (ps *Policies) MatchedNames(matched uint64) []string {
 // It does not return a copy of the map, so it must be used only for iteration and
 // after its snapshot has been stored, otherwise it may be in the initial state and
 // not contain all policies computed.
-func (ps *Policies) Map() map[*Policy]int {
+func (ps *Policies) Map() map[int]*Policy {
 	return ps.filterEnabledPoliciesMap
 }
 
@@ -266,7 +263,7 @@ func (ps *Policies) Map() map[*Policy]int {
 // It does not return a copy of the map, so it must be used only for iteration and
 // after its snapshot has been stored, otherwise it may be in the initial state and
 // not contain all policies computed.
-func (ps *Policies) FilterableInUserlandMap() map[*Policy]int {
+func (ps *Policies) FilterableInUserlandMap() map[int]*Policy {
 	return ps.filterUserlandPoliciesMap
 }
 
@@ -306,7 +303,7 @@ func (ps *Policies) Clone() utils.Cloner {
 func (ps *Policies) updateContainerFilterEnabled() {
 	ps.containerFiltersEnabled = 0
 
-	for p := range ps.Map() {
+	for _, p := range ps.Map() {
 		if p.ContainerFilterEnabled() {
 			utils.SetBit(&ps.containerFiltersEnabled, uint(p.ID))
 		}
@@ -337,7 +334,7 @@ func (ps *Policies) calculateGlobalMinMax() {
 		pidMaxFilterableInUserland bool
 	)
 
-	for p := range ps.Map() {
+	for _, p := range ps.Map() {
 		policyCount++
 
 		if p.UIDFilter.Enabled() {
@@ -384,7 +381,7 @@ func (ps *Policies) calculateGlobalMinMax() {
 	}
 
 	// set a reduced range of uint values to be filtered in ebpf
-	for p := range ps.filterEnabledPoliciesMap {
+	for _, p := range ps.filterEnabledPoliciesMap {
 		if p.UIDFilter.Enabled() {
 			if !uidMinFilterableInUserland {
 				ps.uidFilterMin = utils.Min(ps.uidFilterMin, p.UIDFilter.Minimum())

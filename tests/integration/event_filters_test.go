@@ -1838,7 +1838,7 @@ func newPolicies(polsFilesID []policyFileWithID) *policy.Policies {
 	}
 
 	policiesWithIDSet := policy.NewPolicies()
-	for pol := range policies.Map() {
+	for _, pol := range policies.Map() {
 		pol.ID = polsFilesID[pol.ID].id - 1
 		policiesWithIDSet.Set(pol)
 	}
