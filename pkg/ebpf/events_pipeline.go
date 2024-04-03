@@ -680,7 +680,15 @@ func (t *Tracee) produceEvents(ctx context.Context) (
 					}
 					logger.Fatalw("Error with events producer", "err", err)
 				}
-				e.MatchedPoliciesKernel = 0xFFFFFFFF
+				e.MatchedPoliciesKernel = policy.PolicyAll
+				policiesVersion := uint16(1) // Use default policies min value
+				currentPolicies, err := policy.Snapshots().GetLast()
+				if err != nil {
+					logger.Errorw("Error getting last policy snapshot", "err", err)
+				} else {
+					policiesVersion = currentPolicies.Version()
+				}
+				e.PoliciesVersion = policiesVersion
 				// If there aren't any policies that need filtering in userland, tracee **may** skip
 				// this event, as long as there aren't any derivatives or signatures that depend on it.
 				// Some base events (derivative and signatures) might not have set related policy bit,
