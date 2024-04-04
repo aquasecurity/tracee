@@ -57,7 +57,6 @@ jobs:
       #   shell: bash
   release-snapshot-aarch64:
     name: Release Snapshot (aarch64)
-    needs: [ release-snapshot-x86_64 ]
     runs-on: 
       - graas_ami-03217ce7c37572c4d_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}
       - EXECUTION_TYPE=LONG
