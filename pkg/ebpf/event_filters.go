@@ -40,7 +40,7 @@ func (t *Tracee) populateEventFilterMaps() error {
 		err := handler(eventFilters, t.bpfModule)
 		if err != nil {
 			logger.Errorw("Failed to handle event filter for event " + events.Core.GetDefinitionByID(eventID).GetName() + ", err: " + err.Error())
-			t.cancelEventFromEventState(eventID)
+			t.eventsDependencies.RemoveEvent(eventID)
 		}
 	}
 	return nil

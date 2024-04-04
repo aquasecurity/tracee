@@ -4,12 +4,9 @@
 #include <vmlinux.h>
 
 #include <common/common.h>
+#include <common/kconfig.h>
 
 // PROTOTYPES
-
-typedef long (*vma_callback_fn)(struct task_struct *task,
-                                struct vm_area_struct *vma,
-                                void *callback_ctx);
 
 statfunc struct mm_struct *get_mm_from_task(struct task_struct *);
 statfunc unsigned long get_arg_start_from_mm(struct mm_struct *);
@@ -18,7 +15,7 @@ statfunc unsigned long get_env_start_from_mm(struct mm_struct *);
 statfunc unsigned long get_env_end_from_mm(struct mm_struct *);
 statfunc unsigned long get_vma_flags(struct vm_area_struct *);
 statfunc unsigned long get_vma_start(struct vm_area_struct *);
-statfunc void find_vma(struct task_struct *task, u64 addr, vma_callback_fn cb_fn, void *cb_ctx);
+statfunc struct vm_area_struct *find_vma(struct task_struct *task, u64 addr);
 statfunc bool vma_is_stack(struct vm_area_struct *vma);
 statfunc bool vma_is_heap(struct vm_area_struct *vma);
 
@@ -75,42 +72,26 @@ statfunc unsigned long get_vma_start(struct vm_area_struct *vma)
  */
 #define MAX_VMA_RB_TREE_DEPTH 25
 
-/**
- * Given a task, find the first VMA which contains the given address,
- * and call the specified callback function with the found VMA
- * and the specified context.
- * A callback function is required becuase this function potentially uses
- * bpf_find_vma(), which requires a callback function.
- *
- * A generic callback function which receives a `struct vm_area_struct **`
- * as its context and saves the found VMA to it is available in the main
- * eBPF source file (tracee.bpf.c:find_vma_callback).
- *
- * See the check_syscall_source function for a usage example.
- *
- * DISCLAIMER: on systems with no MMU, multiple VMAs may contain the same address.
- * Be aware that this function will call the callback only for the first VMA it finds.
- */
-statfunc void find_vma(struct task_struct *task, u64 addr, vma_callback_fn cb_fn, void *cb_ctx)
+// Given a task, find the first VMA which contains the given address.
+statfunc struct vm_area_struct *find_vma(struct task_struct *task, u64 addr)
 {
     /**
-     * From kernel version 6.1, the data structure with which VMAs
+     * TODO: from kernel version 6.1, the data structure with which VMAs
      * are managed changed from an RB tree to a maple tree.
-     * In version 5.17 the "bpf_find_vma" helper was added.
-     * This means that if the helper does not exist, we can assume
-     * that the RB tree structure is used.
+     * We currently don't support finding VMAs on such systems.
      */
+    struct mm_struct *mm = BPF_CORE_READ(task, mm);
+    if (!bpf_core_field_exists(mm->mm_rb))
+        return NULL;
 
-    if (bpf_core_enum_value_exists(enum bpf_func_id, BPF_FUNC_find_vma)) {
-        bpf_find_vma(task, addr, cb_fn, cb_ctx, 0);
-        return;
+    // TODO: we don't support NOMMU systems yet (looking up VMAs on them requires walking the VMA
+    // linked list)
+    if (!get_kconfig(MMU)) {
+        return NULL;
     }
 
-    // bpf_find_vma doesn't exist, we can assume the VMAs are stored in an RB tree.
-    // This logic is based on the find_vma() function in mm/mmap.c
-
     struct vm_area_struct *vma = NULL;
-    struct rb_node *rb_node = BPF_CORE_READ(task, mm->mm_rb.rb_node);
+    struct rb_node *rb_node = BPF_CORE_READ(mm, mm_rb.rb_node);
 
 #pragma unroll
     for (int i = 0; i < MAX_VMA_RB_TREE_DEPTH; i++) {
@@ -132,8 +113,7 @@ statfunc void find_vma(struct task_struct *task, u64 addr, vma_callback_fn cb_fn
             rb_node = BPF_CORE_READ(rb_node, rb_right);
     }
 
-    if (vma != NULL)
-        cb_fn(task, vma, cb_ctx);
+    return vma;
 }
 
 statfunc bool vma_is_stack(struct vm_area_struct *vma)

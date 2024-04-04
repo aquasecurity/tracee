@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 
+	libbfgo "github.com/aquasecurity/libbpfgo/helpers"
+
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -11,6 +13,7 @@ import (
 
 type e2eCheckSyscallSource struct {
 	cb           detect.SignatureHandler
+	hasMapleTree bool
 	foundStack   bool
 	foundHeap    bool
 	foundAnonVma bool
@@ -18,6 +21,20 @@ type e2eCheckSyscallSource struct {
 
 func (sig *e2eCheckSyscallSource) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
+
+	// Find if this system uses maple trees to manage VMAs.
+	// If so we don't expect any check_syscall_source event to be submitted.
+	ksyms, err := libbfgo.NewKernelSymbolTable()
+	if err != nil {
+		return err
+	}
+	_, err = ksyms.GetSymbolByName("mt_find")
+	if err != nil {
+		sig.hasMapleTree = false
+	} else {
+		sig.hasMapleTree = true
+	}
+
 	return nil
 }
 
@@ -35,6 +52,7 @@ func (sig *e2eCheckSyscallSource) GetMetadata() (detect.SignatureMetadata, error
 func (sig *e2eCheckSyscallSource) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
 	return []detect.SignatureEventSelector{
 		{Source: "tracee", Name: "check_syscall_source"},
+		{Source: "tracee", Name: "init_namespaces"}, // This event always happens so we can pass the test on unsupported kernels
 	}, nil
 }
 
@@ -45,6 +63,19 @@ func (sig *e2eCheckSyscallSource) OnEvent(event protocol.Event) error {
 	}
 
 	switch eventObj.EventName {
+	case "init_namespaces":
+		// If the system uses maple trees we won't get any check_syscall_source events, pass the test
+		if sig.hasMapleTree {
+			m, _ := sig.GetMetadata()
+
+			sig.cb(&detect.Finding{
+				SigMetadata: m,
+				Event:       event,
+				Data:        map[string]interface{}{},
+			})
+
+			return nil
+		}
 	case "check_syscall_source":
 		syscall, err := helpers.GetTraceeStringArgumentByName(eventObj, "syscall")
 		if err != nil {
