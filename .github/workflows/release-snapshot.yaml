@@ -129,6 +129,12 @@ jobs:
             aquasec/tracee:x86_64-dev \
             aquasec/tracee:aarch64-dev
           docker manifest push aquasec/tracee:dev
+
+          timestamp=$(date +%Y%m%d-%H%M%S%Z)
+          docker manifest create aquasec/tracee:dev-$timestamp \
+            aquasec/tracee:x86_64-dev \
+            aquasec/tracee:aarch64-dev
+          docker manifest push aquasec/tracee:dev-$timestamp
         shell: bash
       # Disabled to avoid generating too many sigstore cosign signatures
       # - name: Sign Docker image
