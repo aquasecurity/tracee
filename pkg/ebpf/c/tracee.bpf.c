@@ -5076,13 +5076,10 @@ SEC("kprobe/set_fs_pwd")
 int BPF_KPROBE(trace_set_fs_pwd)
 {
     program_data_t p = {};
-    if (!init_program_data(&p, ctx))
+    if (!init_program_data(&p, ctx, SET_FS_PWD))
         return 0;
 
-    if (!should_trace(&p))
-        return 0;
-
-    if (!should_submit(SET_FS_PWD, p.event))
+    if (!evaluate_scope_filters(&p))
         return 0;
 
     syscall_data_t *sys = &p.task_info->syscall_data;
@@ -5096,7 +5093,7 @@ int BPF_KPROBE(trace_set_fs_pwd)
     save_str_to_buf(&p.event->args_buf, unresolved_path, 0);
     save_str_to_buf(&p.event->args_buf, resolved_path, 1);
 
-    return events_perf_submit(&p, SET_FS_PWD, 0);
+    return events_perf_submit(&p, 0);
 }
 
 // clang-format off

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	libbfgo "github.com/aquasecurity/libbpfgo/helpers"
+
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -11,11 +13,26 @@ import (
 )
 
 type e2eSetFsPwd struct {
-	cb detect.SignatureHandler
+	cb          detect.SignatureHandler
+	hasReadUser bool
 }
 
 func (sig *e2eSetFsPwd) Init(ctx detect.SignatureContext) error {
 	sig.cb = ctx.Callback
+
+	// Find if this system has the bpf_probe_read_user_str helper.
+	// If it doesn't we won't expect the unresolved path to contain anything
+	ksyms, err := libbfgo.NewKernelSymbolTable()
+	if err != nil {
+		return err
+	}
+	_, err = ksyms.GetSymbolByName("bpf_probe_read_user_str")
+	if err != nil {
+		sig.hasReadUser = false
+	} else {
+		sig.hasReadUser = true
+	}
+
 	return nil
 }
 
@@ -45,7 +62,7 @@ func (sig *e2eSetFsPwd) OnEvent(event protocol.Event) error {
 	switch eventObj.EventName {
 	case "set_fs_pwd":
 		unresolvedPath, err := helpers.GetTraceeStringArgumentByName(eventObj, "unresolved_path")
-		if err != nil {
+		if sig.hasReadUser && err != nil {
 			return err
 		}
 
@@ -56,7 +73,7 @@ func (sig *e2eSetFsPwd) OnEvent(event protocol.Event) error {
 
 		// check expected values from test for detection
 
-		if !strings.HasSuffix(unresolvedPath, "/test_link") || !strings.HasSuffix(resolvedPath, "/test_dir") {
+		if (sig.hasReadUser && !strings.HasSuffix(unresolvedPath, "/test_link")) || !strings.HasSuffix(resolvedPath, "/test_dir") {
 			return nil
 		}
 
