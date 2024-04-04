@@ -5208,13 +5208,6 @@ statfunc enum vma_type get_vma_type(struct vm_area_struct *vma)
     return VMA_OTHER;
 }
 
-static long find_vma_callback(struct task_struct *task, struct vm_area_struct *vma, void *ctx)
-{
-    struct vm_area_struct **pvma = (struct vm_area_struct **) ctx;
-    *pvma = vma;
-    return 0;
-}
-
 SEC("raw_tracepoint/check_syscall_source")
 int check_syscall_source(struct bpf_raw_tracepoint_args *ctx)
 {
@@ -5239,10 +5232,6 @@ int check_syscall_source(struct bpf_raw_tracepoint_args *ctx)
     if (!should_submit(CHECK_SYSCALL_SOURCE, p.event))
         goto out;
 
-    struct task_struct *task_btf = bpf_get_current_task_btf();
-    if (task_btf == NULL)
-        goto out;
-
     // Get instruction pointer
     struct pt_regs *regs = (struct pt_regs *) ctx->args[0];
 #if defined(bpf_target_x86)
@@ -5252,8 +5241,7 @@ int check_syscall_source(struct bpf_raw_tracepoint_args *ctx)
 #endif
 
     // Find VMA which contains the instruction pointer
-    struct vm_area_struct *vma = NULL;
-    find_vma(task_btf, ip, find_vma_callback, &vma);
+    struct vm_area_struct *vma = find_vma(task, ip);
     if (vma == NULL)
         goto out;
 
