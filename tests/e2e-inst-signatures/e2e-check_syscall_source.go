@@ -50,15 +50,15 @@ func (sig *e2eCheckSyscallSource) OnEvent(event protocol.Event) error {
 		if err != nil {
 			return err
 		}
-		isStack, err := helpers.GetTraceeBoolArgumentByName(eventObj, "is_stack")
+		isStack, err := helpers.ArgVal[bool](eventObj.Args, "is_stack")
 		if err != nil {
 			return err
 		}
-		isHeap, err := helpers.GetTraceeBoolArgumentByName(eventObj, "is_heap")
+		isHeap, err := helpers.ArgVal[bool](eventObj.Args, "is_heap")
 		if err != nil {
 			return err
 		}
-		isAnonVma, err := helpers.GetTraceeBoolArgumentByName(eventObj, "is_anon_vma")
+		isAnonVma, err := helpers.ArgVal[bool](eventObj.Args, "is_anon_vma")
 		if err != nil {
 			return err
 		}

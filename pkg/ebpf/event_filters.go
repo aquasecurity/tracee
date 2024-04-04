@@ -25,7 +25,7 @@ func (t *Tracee) populateEventFilterMaps() error {
 	for eventID, handler := range eventFilterHandlers {
 		// Construct filters for this event
 		eventFilters := map[string]filters.Filter{}
-		for p := range t.config.Policies.Map() {
+		for _, p := range t.config.Policies.Map() {
 			f := p.ArgFilter.GetEventFilters(eventID)
 			if len(f) == 0 {
 				continue
