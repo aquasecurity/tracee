@@ -21,51 +21,56 @@ var AlwaysSubmit = events.EventState{
 	Submit: AllPoliciesOn,
 }
 
-// TODO: create a new map with policy name as key to speed up LookupByName()
 type Policies struct {
 	rwmu sync.RWMutex
 
-	version                  uint32                    // updated on snapshot store
-	bpfInnerMaps             map[string]*bpf.BPFMapLow // BPF inner maps
-	policiesArray            [MaxPolicies]*Policy      // underlying filter policies array
-	filterEnabledPoliciesMap map[int]*Policy           // stores only enabled policies
+	version           uint32                    // updated on snapshot store
+	bpfInnerMaps      map[string]*bpf.BPFMapLow // BPF inner maps
+	policiesArray     [MaxPolicies]*Policy      // underlying policies array for fast access of empty slots
+	policiesMapByID   map[int]*Policy           // stores all policies by ID
+	policiesMapByName map[string]*Policy        // stores all policies by name
 
 	// computed values
-	filterUserlandPoliciesMap map[int]*Policy // stores a reduced map with only userland filterable policies
-	uidFilterMin              uint64
-	uidFilterMax              uint64
-	pidFilterMin              uint64
-	pidFilterMax              uint64
-	uidFilterableInUserland   bool
-	pidFilterableInUserland   bool
-	filterableInUserland      uint64 // bitmap of policies that must be filtered in userland
-	containerFiltersEnabled   uint64 // bitmap of policies that have at least one container filter type enabled
+	userlandPoliciesMap     map[int]*Policy // stores a reduced map with only userland filterable policies
+	uidFilterMin            uint64
+	uidFilterMax            uint64
+	pidFilterMin            uint64
+	pidFilterMax            uint64
+	uidFilterableInUserland bool
+	pidFilterableInUserland bool
+	filterableInUserland    uint64 // bitmap of policies that must be filtered in userland
+	containerFiltersEnabled uint64 // bitmap of policies that have at least one container filter type enabled
 }
 
 func NewPolicies() *Policies {
 	return &Policies{
-		rwmu:                      sync.RWMutex{},
-		version:                   0,
-		bpfInnerMaps:              map[string]*bpf.BPFMapLow{},
-		policiesArray:             [MaxPolicies]*Policy{},
-		filterEnabledPoliciesMap:  map[int]*Policy{},
-		filterUserlandPoliciesMap: map[int]*Policy{},
-		uidFilterMin:              filters.MinNotSetUInt,
-		uidFilterMax:              filters.MaxNotSetUInt,
-		pidFilterMin:              filters.MinNotSetUInt,
-		pidFilterMax:              filters.MaxNotSetUInt,
-		uidFilterableInUserland:   false,
-		pidFilterableInUserland:   false,
-		filterableInUserland:      0,
-		containerFiltersEnabled:   0,
+		rwmu:                    sync.RWMutex{},
+		version:                 0,
+		bpfInnerMaps:            map[string]*bpf.BPFMapLow{},
+		policiesArray:           [MaxPolicies]*Policy{},
+		policiesMapByID:         map[int]*Policy{},
+		policiesMapByName:       map[string]*Policy{},
+		userlandPoliciesMap:     map[int]*Policy{},
+		uidFilterMin:            filters.MinNotSetUInt,
+		uidFilterMax:            filters.MaxNotSetUInt,
+		pidFilterMin:            filters.MinNotSetUInt,
+		pidFilterMax:            filters.MaxNotSetUInt,
+		uidFilterableInUserland: false,
+		pidFilterableInUserland: false,
+		filterableInUserland:    0,
+		containerFiltersEnabled: 0,
 	}
+}
+
+func (ps *Policies) count() int {
+	return len(ps.policiesMapByID)
 }
 
 func (ps *Policies) Count() int {
 	ps.rwmu.RLock()
 	defer ps.rwmu.RUnlock()
 
-	return len(ps.filterEnabledPoliciesMap)
+	return ps.count()
 }
 
 func (ps *Policies) UIDFilterMin() uint64 {
@@ -117,7 +122,7 @@ func (ps *Policies) compute() {
 
 	userlandMap := make(map[int]*Policy)
 	ps.filterableInUserland = 0
-	for _, p := range ps.filterEnabledPoliciesMap {
+	for _, p := range ps.policiesMapByID {
 		if p.ArgFilter.Enabled() ||
 			p.RetFilter.Enabled() ||
 			p.ContextFilter.Enabled() ||
@@ -129,37 +134,38 @@ func (ps *Policies) compute() {
 		}
 	}
 
-	ps.filterUserlandPoliciesMap = userlandMap
+	ps.userlandPoliciesMap = userlandMap
 }
 
-// set, if not err, always reassign values
+// set sets a policy at the given ID (index).
 func (ps *Policies) set(id int, p *Policy) error {
-	if p == nil {
-		return PolicyNilError()
-	}
-	if !isIDInRange(id) {
-		return PoliciesOutOfRangeError(id)
-	}
-
 	p.ID = id
 	ps.policiesArray[id] = p
-	ps.filterEnabledPoliciesMap[id] = p
+	ps.policiesMapByID[id] = p
+	ps.policiesMapByName[p.Name] = p
 
 	ps.compute()
 
 	return nil
 }
 
-// Add adds a policy to Policies.
-// Its ID (index) is set to the first room found.
+// Add adds a policy.
+// The policy ID (index) is automatically assigned to the first empty slot.
 func (ps *Policies) Add(p *Policy) error {
 	ps.rwmu.Lock()
 	defer ps.rwmu.Unlock()
 
-	if len(ps.filterEnabledPoliciesMap) == MaxPolicies {
+	if p == nil {
+		return PolicyNilError()
+	}
+	if ps.count() == MaxPolicies {
 		return PoliciesMaxExceededError()
 	}
+	if existing, ok := ps.policiesMapByName[p.Name]; ok {
+		return PolicyAlreadyExistsError(existing.Name, existing.ID)
+	}
 
+	// search for the first empty slot
 	for id := range ps.policiesArray {
 		if ps.policiesArray[id] == nil {
 			return ps.set(id, p)
@@ -169,27 +175,44 @@ func (ps *Policies) Add(p *Policy) error {
 	return nil
 }
 
+// Set sets a policy.
+// A policy overwrite is allowed only if the policy that is going to be overwritten
+// has the same ID and name.
 func (ps *Policies) Set(p *Policy) error {
 	ps.rwmu.Lock()
 	defer ps.rwmu.Unlock()
 
-	return ps.set(p.ID, p)
-}
+	if p == nil {
+		return PolicyNilError()
+	}
 
-// Delete deletes a policy from Policies.
-func (ps *Policies) Delete(id int) error {
-	ps.rwmu.Lock()
-	defer ps.rwmu.Unlock()
-
+	id := p.ID
 	if !isIDInRange(id) {
 		return PoliciesOutOfRangeError(id)
 	}
-	if len(ps.filterEnabledPoliciesMap) == 0 {
-		return nil
+
+	existing, ok := ps.policiesMapByName[p.Name]
+	if ok && existing.ID != id { // name already exists with a different ID
+		return PolicyAlreadyExistsError(existing.Name, existing.ID)
 	}
 
-	delete(ps.filterEnabledPoliciesMap, id)
-	delete(ps.filterUserlandPoliciesMap, id)
+	return ps.set(id, p)
+}
+
+// Remove removes a policy by name.
+func (ps *Policies) Remove(name string) error {
+	ps.rwmu.Lock()
+	defer ps.rwmu.Unlock()
+
+	p, ok := ps.policiesMapByName[name]
+	if !ok {
+		return PolicyNotFoundByNameError(name)
+	}
+
+	id := p.ID
+	delete(ps.policiesMapByID, id)
+	delete(ps.userlandPoliciesMap, id)
+	delete(ps.policiesMapByName, p.Name)
 	ps.policiesArray[id] = nil
 
 	ps.compute()
@@ -218,11 +241,10 @@ func (ps *Policies) LookupByName(name string) (*Policy, error) {
 	ps.rwmu.RLock()
 	defer ps.rwmu.RUnlock()
 
-	for _, p := range ps.Map() {
-		if p.Name == name {
-			return p, nil
-		}
+	if p, ok := ps.policiesMapByName[name]; ok {
+		return p, nil
 	}
+
 	return nil, PolicyNotFoundByNameError(name)
 }
 
@@ -249,7 +271,7 @@ func (ps *Policies) MatchedNames(matched uint64) []string {
 // after its snapshot has been stored, otherwise it may be in the initial state and
 // not contain all policies computed.
 func (ps *Policies) Map() map[int]*Policy {
-	return ps.filterEnabledPoliciesMap
+	return ps.policiesMapByID
 }
 
 // FilterableInUserlandMap returns a reduced policies map which must be filtered in
@@ -259,7 +281,7 @@ func (ps *Policies) Map() map[int]*Policy {
 // after its snapshot has been stored, otherwise it may be in the initial state and
 // not contain all policies computed.
 func (ps *Policies) FilterableInUserlandMap() map[int]*Policy {
-	return ps.filterUserlandPoliciesMap
+	return ps.userlandPoliciesMap
 }
 
 // TODO: Runtime API should encapsulate the following calls:
@@ -376,7 +398,7 @@ func (ps *Policies) calculateGlobalMinMax() {
 	}
 
 	// set a reduced range of uint values to be filtered in ebpf
-	for _, p := range ps.filterEnabledPoliciesMap {
+	for _, p := range ps.policiesMapByID {
 		if p.UIDFilter.Enabled() {
 			if !uidMinFilterableInUserland {
 				ps.uidFilterMin = utils.Min(ps.uidFilterMin, p.UIDFilter.Minimum())
