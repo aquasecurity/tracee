@@ -27,11 +27,12 @@ type Policies struct {
 	version           uint32                    // updated on snapshot store
 	bpfInnerMaps      map[string]*bpf.BPFMapLow // BPF inner maps
 	policiesArray     [MaxPolicies]*Policy      // underlying policies array for fast access of empty slots
-	policiesMapByID   map[int]*Policy           // stores all policies by ID
-	policiesMapByName map[string]*Policy        // stores all policies by name
+	policiesMapByID   map[int]*Policy           // all policies map by ID
+	policiesMapByName map[string]*Policy        // all policies map by name
 
 	// computed values
-	userlandPoliciesMap     map[int]*Policy // stores a reduced map with only userland filterable policies
+
+	userlandPolicies        []*Policy // reduced list with userland filterable policies (read in a hot path)
 	uidFilterMin            uint64
 	uidFilterMax            uint64
 	pidFilterMin            uint64
@@ -50,7 +51,7 @@ func NewPolicies() *Policies {
 		policiesArray:           [MaxPolicies]*Policy{},
 		policiesMapByID:         map[int]*Policy{},
 		policiesMapByName:       map[string]*Policy{},
-		userlandPoliciesMap:     map[int]*Policy{},
+		userlandPolicies:        []*Policy{},
 		uidFilterMin:            filters.MinNotSetUInt,
 		uidFilterMax:            filters.MaxNotSetUInt,
 		pidFilterMin:            filters.MinNotSetUInt,
@@ -120,7 +121,7 @@ func (ps *Policies) compute() {
 	// update enabled container filter flag
 	ps.updateContainerFilterEnabled()
 
-	userlandMap := make(map[int]*Policy)
+	userlandList := []*Policy{}
 	ps.filterableInUserland = 0
 	for _, p := range ps.policiesMapByID {
 		if p.ArgFilter.Enabled() ||
@@ -129,12 +130,12 @@ func (ps *Policies) compute() {
 			(p.UIDFilter.Enabled() && ps.uidFilterableInUserland) ||
 			(p.PIDFilter.Enabled() && ps.pidFilterableInUserland) {
 			// add policy and set the related bit
-			userlandMap[p.ID] = p
+			userlandList = append(userlandList, p)
 			utils.SetBit(&ps.filterableInUserland, uint(p.ID))
 		}
 	}
 
-	ps.userlandPoliciesMap = userlandMap
+	ps.userlandPolicies = userlandList
 }
 
 // set sets a policy at the given ID (index).
@@ -211,7 +212,6 @@ func (ps *Policies) Remove(name string) error {
 
 	id := p.ID
 	delete(ps.policiesMapByID, id)
-	delete(ps.userlandPoliciesMap, id)
 	delete(ps.policiesMapByName, p.Name)
 	ps.policiesArray[id] = nil
 
@@ -272,16 +272,6 @@ func (ps *Policies) MatchedNames(matched uint64) []string {
 // not contain all policies computed.
 func (ps *Policies) Map() map[int]*Policy {
 	return ps.policiesMapByID
-}
-
-// FilterableInUserlandMap returns a reduced policies map which must be filtered in
-// userland (ArgFilter, RetFilter, ContextFilter, UIDFilter and PIDFilter).
-//
-// It does not return a copy of the map, so it must be used only for iteration and
-// after its snapshot has been stored, otherwise it may be in the initial state and
-// not contain all policies computed.
-func (ps *Policies) FilterableInUserlandMap() map[int]*Policy {
-	return ps.userlandPoliciesMap
 }
 
 // TODO: Runtime API should encapsulate the following calls:
