@@ -23,7 +23,8 @@ func SymbolsLoaded(
 ) DeriveFunction {
 	symbolsLoadedFilters := map[string]filters.Filter{}
 
-	for _, p := range policies.Map() {
+	for it := policies.CreateAllIterator(); it.HasNext(); {
+		p := it.Next()
 		f := p.ArgFilter.GetEventFilters(events.SymbolsLoaded)
 		maps.Copy(symbolsLoadedFilters, f)
 	}

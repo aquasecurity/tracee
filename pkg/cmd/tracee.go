@@ -123,7 +123,8 @@ func (r Runner) Run(ctx context.Context) error {
 func GetContainerMode(cfg config.Config) config.ContainerMode {
 	containerMode := config.ContainerModeDisabled
 
-	for _, p := range cfg.Policies.Map() {
+	for it := cfg.Policies.CreateAllIterator(); it.HasNext(); {
+		p := it.Next()
 		if p.ContainerFilterEnabled() {
 			// Container Enrichment is enabled by default ...
 			containerMode = config.ContainerModeEnriched
