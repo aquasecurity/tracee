@@ -29,6 +29,7 @@ type Policies struct {
 	policiesArray     [MaxPolicies]*Policy      // underlying policies array for fast access of empty slots
 	policiesMapByID   map[int]*Policy           // all policies map by ID
 	policiesMapByName map[string]*Policy        // all policies map by name
+	policiesList      []*Policy                 // all policies list
 
 	// computed values
 
@@ -51,6 +52,7 @@ func NewPolicies() *Policies {
 		policiesArray:           [MaxPolicies]*Policy{},
 		policiesMapByID:         map[int]*Policy{},
 		policiesMapByName:       map[string]*Policy{},
+		policiesList:            []*Policy{},
 		userlandPolicies:        []*Policy{},
 		uidFilterMin:            filters.MinNotSetUInt,
 		uidFilterMax:            filters.MaxNotSetUInt,
@@ -144,6 +146,7 @@ func (ps *Policies) set(id int, p *Policy) error {
 	ps.policiesArray[id] = p
 	ps.policiesMapByID[id] = p
 	ps.policiesMapByName[p.Name] = p
+	ps.policiesList = append(ps.policiesList, p)
 
 	ps.compute()
 
@@ -211,6 +214,7 @@ func (ps *Policies) Remove(name string) error {
 	}
 
 	id := p.ID
+	ps.policiesList = append(ps.policiesList[:id], ps.policiesList[id+1:]...)
 	delete(ps.policiesMapByID, id)
 	delete(ps.policiesMapByName, p.Name)
 	ps.policiesArray[id] = nil
@@ -256,7 +260,7 @@ func (ps *Policies) MatchedNames(matched uint64) []string {
 
 	names := []string{}
 
-	for _, p := range ps.Map() {
+	for _, p := range ps.all() {
 		if utils.HasBit(matched, uint(p.ID)) {
 			names = append(names, p.Name)
 		}
@@ -265,12 +269,8 @@ func (ps *Policies) MatchedNames(matched uint64) []string {
 	return names
 }
 
-// Map returns map with all policies.
-//
-// It does not return a copy of the map, so it must be used only for iteration and
-// after its snapshot has been stored, otherwise it may be in the initial state and
-// not contain all policies computed.
-func (ps *Policies) Map() map[int]*Policy {
+// all returns a map of all policies by ID.
+func (ps *Policies) all() map[int]*Policy {
 	return ps.policiesMapByID
 }
 
@@ -310,7 +310,7 @@ func (ps *Policies) Clone() utils.Cloner {
 func (ps *Policies) updateContainerFilterEnabled() {
 	ps.containerFiltersEnabled = 0
 
-	for _, p := range ps.Map() {
+	for _, p := range ps.all() {
 		if p.ContainerFilterEnabled() {
 			utils.SetBit(&ps.containerFiltersEnabled, uint(p.ID))
 		}
@@ -341,7 +341,7 @@ func (ps *Policies) calculateGlobalMinMax() {
 		pidMaxFilterableInUserland bool
 	)
 
-	for _, p := range ps.Map() {
+	for _, p := range ps.all() {
 		policyCount++
 
 		if p.UIDFilter.Enabled() {

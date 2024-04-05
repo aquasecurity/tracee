@@ -34,3 +34,11 @@ func (ps *Policies) CreateUserlandIterator() utils.Iterator[*Policy] {
 		index:    0,
 	}
 }
+
+// CreateAllIterator returns a new iterator for all policies.
+func (ps *Policies) CreateAllIterator() utils.Iterator[*Policy] {
+	return &PoliciesIterator{
+		policies: ps.policiesList,
+		index:    0,
+	}
+}
