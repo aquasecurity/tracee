@@ -1,5 +1,7 @@
 package policy
 
+import "github.com/aquasecurity/tracee/pkg/utils"
+
 // PoliciesIterator is an iterator for Policies.
 type PoliciesIterator struct {
 	policies []*Policy
@@ -21,4 +23,14 @@ func (i *PoliciesIterator) Next() *Policy {
 	i.index++
 
 	return p
+}
+
+// CreateUserlandIterator returns a new iterator for a reduced list of policies
+// which must be filtered in userland (ArgFilter, RetFilter, ContextFilter,
+// UIDFilter and PIDFilter).
+func (ps *Policies) CreateUserlandIterator() utils.Iterator[*Policy] {
+	return &PoliciesIterator{
+		policies: ps.userlandPolicies,
+		index:    0,
+	}
 }
