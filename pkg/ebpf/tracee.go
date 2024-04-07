@@ -1736,6 +1736,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 		systemInfoEvent := events.InitNamespacesEvent()
 		setMatchedPolicies(&systemInfoEvent, matchedPolicies, t.config.Policies)
 		out <- &systemInfoEvent
+		_ = t.stats.EventCount.Increment()
 	}
 
 	// Initial existing containers events (1 event per container)
@@ -1747,6 +1748,7 @@ func (t *Tracee) invokeInitEvents(out chan *trace.Event) {
 			event := &(existingContainerEvents[i])
 			setMatchedPolicies(event, matchedPolicies, t.config.Policies)
 			out <- event
+			_ = t.stats.EventCount.Increment()
 		}
 	}
 
