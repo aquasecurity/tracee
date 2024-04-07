@@ -211,6 +211,33 @@ func (t *Tracee) addDependencyEventToState(evtID events.ID, dependentEvts []even
 	}
 }
 
+// updateDependenciesStateRecursive change all dependencies submit states to match
+// their submit states, and current submit state of their dependents.
+// This should be called in the case of a fallback dependencies, as the events
+// dependencies change, on the older dependencies.
+// This should make sure that their submit will match their new dependents and
+// emit state.
+func (t *Tracee) updateDependenciesStateRecursive(eventNode *dependencies.EventNode) {
+	for _, dependencyEventID := range eventNode.GetDependencies().GetIDs() {
+		dependencyNode, err := t.eventsDependencies.GetEvent(dependencyEventID)
+		if err != nil { // event does not exist anymore in dependencies
+			t.removeEventFromState(dependencyEventID)
+			continue
+		}
+		dependencyState := t.eventsState[dependencyEventID]
+		newState := events.EventState{
+			Emit:   dependencyState.Emit,
+			Submit: dependencyState.Emit,
+		}
+		for _, dependantID := range dependencyNode.GetDependents() {
+			dependantState := t.eventsState[dependantID]
+			newState.Submit |= dependantState.Submit
+		}
+		t.eventsState[dependencyEventID] = newState
+		t.updateDependenciesStateRecursive(dependencyNode)
+	}
+}
+
 func (t *Tracee) removeEventFromState(evtID events.ID) {
 	logger.Debugw("Remove event from state", "event", events.Core.GetDefinitionByID(evtID).GetName())
 	delete(t.eventsState, evtID)
@@ -268,6 +295,23 @@ func New(cfg config.Config) (*Tracee, error) {
 				return nil
 			}
 			t.removeEventFromState(eventNode.GetID())
+			return nil
+		})
+	t.eventsDependencies.SubscribeChange(
+		dependencies.EventNodeType,
+		func(oldNode interface{}, newNode interface{}) []dependencies.Action {
+			oldEventNode, ok := oldNode.(*dependencies.EventNode)
+			if !ok {
+				logger.Errorw("Got node from type not requested")
+				return nil
+			}
+			newEventNode, ok := newNode.(*dependencies.EventNode)
+			if !ok {
+				logger.Errorw("Got node from type not requested")
+				return nil
+			}
+			t.updateDependenciesStateRecursive(oldEventNode)
+			t.addDependenciesToStateRecursive(newEventNode)
 			return nil
 		})
 
