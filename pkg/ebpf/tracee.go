@@ -365,6 +365,18 @@ func New(cfg config.Config) (*Tracee, error) {
 			if err != nil {
 				return t, errfmt.WrapError(err)
 			}
+			// Also add all capabilities required by fallbacks
+			for _, fallback := range deps.GetFallbacks() {
+				fallbackCaps := fallback.GetDependencies().GetCapabilities()
+				err = caps.BaseRingAdd(fallbackCaps.GetBase()...)
+				if err != nil {
+					return t, errfmt.WrapError(err)
+				}
+				err = caps.BaseRingAdd(fallbackCaps.GetEBPF()...)
+				if err != nil {
+					return t, errfmt.WrapError(err)
+				}
+			}
 		}
 	}
 
