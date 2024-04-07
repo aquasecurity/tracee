@@ -1076,7 +1076,7 @@ func (t *Tracee) validateKallsymsDependencies() {
 	for eventId := range t.eventsState {
 		if !validateEvent(eventId) {
 			// Cancel the event, its dependencies and its dependent events
-			err := t.eventsDependencies.RemoveEvent(eventId)
+			_, err := t.eventsDependencies.FailEvent(eventId)
 			if err != nil {
 				logger.Warnw("Failed to remove event from dependencies manager", "remove reason", "missing ksymbols", "error", err)
 			}
@@ -1312,7 +1312,7 @@ func (t *Tracee) attachProbes() error {
 	for eventID := range t.eventsState {
 		err := t.attachEvent(eventID)
 		if err != nil {
-			err := t.eventsDependencies.RemoveEvent(eventID)
+			_, err = t.eventsDependencies.FailEvent(eventID)
 			if err != nil {
 				logger.Warnw("Failed to remove event from dependencies manager", "remove reason", "failed probes attachment", "error", err)
 			}

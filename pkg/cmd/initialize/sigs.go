@@ -98,6 +98,7 @@ func CreateEventsFromSignatures(startId events.ID, sigs []detect.Signature) map[
 				[]events.Probe{},
 				[]events.TailCall{},
 				events.Capabilities{},
+				[]events.DependenciesFallback{},
 			),
 			[]trace.ArgMeta{},
 			properties,

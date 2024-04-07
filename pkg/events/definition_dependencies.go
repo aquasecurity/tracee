@@ -13,6 +13,7 @@ type Dependencies struct {
 	probes       []Probe
 	tailCalls    []TailCall
 	capabilities Capabilities
+	fallbacks    []DependenciesFallback
 }
 
 func NewDependencies(
@@ -21,6 +22,7 @@ func NewDependencies(
 	givenProbes []Probe,
 	givenTailCalls []TailCall,
 	givenCapabilities Capabilities,
+	fallbacks []DependenciesFallback,
 ) Dependencies {
 	return Dependencies{
 		ids:          givenIDs,
@@ -28,6 +30,7 @@ func NewDependencies(
 		probes:       givenProbes,
 		tailCalls:    givenTailCalls,
 		capabilities: givenCapabilities,
+		fallbacks:    fallbacks,
 	}
 }
 
@@ -71,6 +74,13 @@ func (d Dependencies) GetTailCalls() []TailCall {
 
 func (d Dependencies) GetCapabilities() Capabilities {
 	return d.capabilities
+}
+
+func (d Dependencies) GetFallbacks() []DependenciesFallback {
+	if d.fallbacks == nil {
+		return []DependenciesFallback{}
+	}
+	return d.fallbacks
 }
 
 // Probe
@@ -175,4 +185,22 @@ func (tc TailCall) GetMapName() string {
 
 func (tc TailCall) GetProgName() string {
 	return tc.progName
+}
+
+// DependenciesFallback is a struct representing a set of fallback dependencies
+// to be utilized in case of issues with the event's primary dependencies.
+// This struct envelopes the dependencies, providing the flexibility to incorporate
+// future logic for determining whether to employ the fallback or not
+type DependenciesFallback struct {
+	dependencies Dependencies
+}
+
+func NewDependenciesFallback(dependencies Dependencies) DependenciesFallback {
+	return DependenciesFallback{
+		dependencies: dependencies,
+	}
+}
+
+func (df DependenciesFallback) GetDependencies() Dependencies {
+	return df.dependencies
 }

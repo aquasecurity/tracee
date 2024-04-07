@@ -14,7 +14,8 @@ type EventNode struct {
 	dependencies       events.Dependencies
 	// There won't be more than a couple of dependents, so a slice is better for
 	// both performance and supporting efficient thread-safe operation in the future
-	dependents []events.ID
+	dependents      []events.ID
+	currentFallback int // The index of current fallback dependencies
 }
 
 func newDependenciesNode(id events.ID, dependencies events.Dependencies, chosenDirectly bool) *EventNode {
@@ -23,6 +24,7 @@ func newDependenciesNode(id events.ID, dependencies events.Dependencies, chosenD
 		explicitlySelected: chosenDirectly,
 		dependencies:       dependencies,
 		dependents:         make([]events.ID, 0),
+		currentFallback:    -1,
 	}
 }
 
@@ -31,7 +33,11 @@ func (en *EventNode) GetID() events.ID {
 }
 
 func (en *EventNode) GetDependencies() events.Dependencies {
-	return en.dependencies
+	if en.currentFallback < 0 {
+		return en.dependencies
+	}
+	fallbacks := en.dependencies.GetFallbacks()
+	return fallbacks[en.currentFallback].GetDependencies()
 }
 
 func (en *EventNode) GetDependents() []events.ID {
@@ -70,4 +76,23 @@ func (en *EventNode) removeDependent(dependent events.ID) {
 			break
 		}
 	}
+}
+
+func (en *EventNode) fallback() bool {
+	fallbacks := en.dependencies.GetFallbacks()
+	if (en.currentFallback + 1) >= len(fallbacks) {
+		return false
+	}
+	en.currentFallback += 1
+	return true
+}
+
+func (en *EventNode) clone() *EventNode {
+	clone := &EventNode{
+		id:                 en.id,
+		explicitlySelected: en.explicitlySelected,
+		dependencies:       en.dependencies,
+		dependents:         slices.Clone[[]events.ID](en.dependents),
+	}
+	return clone
 }
