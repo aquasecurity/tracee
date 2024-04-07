@@ -13,7 +13,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/logger"
 )
 
-type eventFilterHandler func(eventFilters map[string]filters.Filter, bpfModule *bpf.Module) error
+type eventFilterHandler func(eventFilters map[string]filters.Filter[*filters.StringFilter], bpfModule *bpf.Module) error
 
 var eventFilterHandlers = map[events.ID]eventFilterHandler{
 	events.CheckSyscallSource: populateMapsCheckSyscallSource,
@@ -55,7 +55,7 @@ func (t *Tracee) populateEventFilterMaps() error {
 	return nil
 }
 
-func populateMapsCheckSyscallSource(eventFilters map[string]filters.Filter, bpfModule *bpf.Module) error {
+func populateMapsCheckSyscallSource(eventFilters map[string]filters.Filter[*filters.StringFilter], bpfModule *bpf.Module) error {
 	// Get syscalls to trace
 	syscallsFilter, ok := eventFilters["syscall"].(*filters.StringFilter)
 	if !ok {

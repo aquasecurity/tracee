@@ -5211,11 +5211,9 @@ statfunc enum vma_type get_vma_type(struct vm_area_struct *vma)
 SEC("raw_tracepoint/check_syscall_source")
 int check_syscall_source(struct bpf_raw_tracepoint_args *ctx)
 {
-    program_data_t p = {};
-    if (!init_program_data(&p, ctx))
-        return 0;
-
-    // Get syscall ID
+    // Get syscall ID.
+    // NOTE: this must happen first before any logic that may fail,
+    // because we must know the syscall ID for the tail call we preceded.
     struct task_struct *task = (struct task_struct *) bpf_get_current_task();
     u32 id = ctx->args[1];
     if (is_compat(task)) {
@@ -5226,10 +5224,11 @@ int check_syscall_source(struct bpf_raw_tracepoint_args *ctx)
         id = *id_64;
     }
 
-    if (!should_trace(&p))
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, CHECK_SYSCALL_SOURCE))
         goto out;
 
-    if (!should_submit(CHECK_SYSCALL_SOURCE, p.event))
+    if (!evaluate_scope_filters(&p))
         goto out;
 
     // Get instruction pointer
@@ -5273,7 +5272,7 @@ int check_syscall_source(struct bpf_raw_tracepoint_args *ctx)
     save_to_submit_buf(&p.event->args_buf, &is_heap, sizeof(is_heap), 3);
     save_to_submit_buf(&p.event->args_buf, &is_anon, sizeof(is_anon), 4);
 
-    events_perf_submit(&p, CHECK_SYSCALL_SOURCE, 0);
+    events_perf_submit(&p, 0);
 
 out:
     // Call sys_enter_init_tail which we preceded
