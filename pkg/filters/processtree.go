@@ -16,6 +16,9 @@ type ProcessTreeFilter struct {
 	enabled  bool
 }
 
+// Compile-time check to ensure that ProcessTreeFilter implements the Cloner interface
+var _ utils.Cloner[*ProcessTreeFilter] = &ProcessTreeFilter{}
+
 func NewProcessTreeFilter() *ProcessTreeFilter {
 	return &ProcessTreeFilter{
 		equal:    map[uint32]struct{}{},
@@ -104,7 +107,7 @@ func (f *ProcessTreeFilter) Equalities() ProcessTreeFilterEqualities {
 	}
 }
 
-func (f *ProcessTreeFilter) Clone() utils.Cloner {
+func (f *ProcessTreeFilter) Clone() *ProcessTreeFilter {
 	if f == nil {
 		return nil
 	}

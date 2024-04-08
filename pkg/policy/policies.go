@@ -65,6 +65,9 @@ func NewPolicies() *Policies {
 	}
 }
 
+// Compile-time check to ensure that Policies implements the Cloner interface
+var _ utils.Cloner[*Policies] = &Policies{}
+
 func (ps *Policies) count() int {
 	return len(ps.policiesMapByID)
 }
@@ -282,7 +285,7 @@ func (ps *Policies) all() map[int]*Policy {
 // 4. and possibly other steps in which we iterate over the policies map
 
 // Clone returns a deep copy of Policies.
-func (ps *Policies) Clone() utils.Cloner {
+func (ps *Policies) Clone() *Policies {
 	if ps == nil {
 		return nil
 	}
@@ -296,7 +299,7 @@ func (ps *Policies) Clone() utils.Cloner {
 		if p == nil {
 			continue
 		}
-		if err := nPols.Add(p.Clone().(*Policy)); err != nil {
+		if err := nPols.Add(p.Clone()); err != nil {
 			logger.Errorw("Cloning policy %s: %v", p.Name, err)
 			return nil
 		}

@@ -8,9 +8,9 @@ import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 )
 
-// Cloner is an interface for objects that can be cloned
-type Cloner interface {
-	Clone() Cloner
+// Cloner is a generic interface for objects that can clone themselves.
+type Cloner[T any] interface {
+	Clone() T
 }
 
 // Iterator is a generic interface for iterators.

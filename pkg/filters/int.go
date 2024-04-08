@@ -27,6 +27,9 @@ type IntFilter[T constraints.Signed] struct {
 	enabled  bool
 }
 
+// Compile-time check to ensure that IntFilter implements the Cloner interface
+var _ utils.Cloner[*IntFilter[int32]] = &IntFilter[int32]{}
+
 // TODO: Add int16 and int8 filters?
 
 func NewIntFilter() *IntFilter[int64] {
@@ -191,7 +194,7 @@ func (f *IntFilter[T]) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (f *IntFilter[T]) Clone() utils.Cloner {
+func (f *IntFilter[T]) Clone() *IntFilter[T] {
 	if f == nil {
 		return nil
 	}

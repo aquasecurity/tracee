@@ -27,7 +27,7 @@ func TestPoliciesClone(t *testing.T) {
 	err = policies.Add(p2)
 	require.NoError(t, err)
 
-	copy := policies.Clone().(*Policies)
+	copy := policies.Clone()
 
 	if !reflect.DeepEqual(policies, copy) {
 		t.Errorf("Clone did not produce an identical copy")

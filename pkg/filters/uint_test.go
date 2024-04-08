@@ -81,7 +81,7 @@ func TestUIntFilterClone(t *testing.T) {
 	err := filter64.Parse("=50,8")
 	require.NoError(t, err)
 
-	copy64 := filter64.Clone().(*UIntFilter[uint64])
+	copy64 := filter64.Clone()
 
 	if !reflect.DeepEqual(filter64, copy64) {
 		t.Errorf("Clone did not produce an identical copy")
@@ -97,7 +97,7 @@ func TestUIntFilterClone(t *testing.T) {
 	err = filter32.Parse("=50,8")
 	require.NoError(t, err)
 
-	copy32 := filter32.Clone().(*UIntFilter[uint32])
+	copy32 := filter32.Clone()
 
 	if !reflect.DeepEqual(filter32, copy32) {
 		t.Errorf("Clone did not produce an identical copy")

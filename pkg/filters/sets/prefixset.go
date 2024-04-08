@@ -5,6 +5,8 @@ import (
 	"sort"
 
 	"golang.org/x/exp/maps"
+
+	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 type PrefixSet struct {
@@ -13,6 +15,9 @@ type PrefixSet struct {
 	lengths   []int
 	minLen    int
 }
+
+// Compile-time check to ensure that PrefixSet implements the Cloner interface
+var _ utils.Cloner[*PrefixSet] = &PrefixSet{}
 
 func NewPrefixSet() PrefixSet {
 	return PrefixSet{

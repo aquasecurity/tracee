@@ -5,6 +5,8 @@ import (
 	"sort"
 
 	"golang.org/x/exp/maps"
+
+	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 type SuffixSet struct {
@@ -13,6 +15,9 @@ type SuffixSet struct {
 	lengths   []int
 	minLen    int
 }
+
+// Compile-time check to ensure that SuffixSet implements the Cloner interface
+var _ utils.Cloner[*SuffixSet] = &SuffixSet{}
 
 func NewSuffixSet() SuffixSet {
 	return SuffixSet{

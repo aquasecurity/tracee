@@ -12,7 +12,7 @@ func TestPolicyClone(t *testing.T) {
 	err := policy.PIDFilter.Parse("=1")
 	require.NoError(t, err)
 
-	copy := policy.Clone().(*Policy)
+	copy := policy.Clone()
 
 	if !reflect.DeepEqual(policy, copy) {
 		t.Errorf("Clone did not produce an identical copy")
