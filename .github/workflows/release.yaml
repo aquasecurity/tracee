@@ -57,7 +57,6 @@ jobs:
     name: Release (aarch64)
     env:
       GH_TOKEN: ${{ github.token }}
-    needs: [ release-x86_64 ]
     runs-on: [ "github-self-hosted_ami-03217ce7c37572c4d_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}" ]
     permissions:
       contents: write
