@@ -16,13 +16,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
           persist-credentials: true
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
         with:
-          python-version: 3.x
+          python-version: 3.12.3
       - name: Install dependencies
         run: |
           pip install git+https://${GH_TOKEN}@github.com/squidfunk/mkdocs-material-insiders.git

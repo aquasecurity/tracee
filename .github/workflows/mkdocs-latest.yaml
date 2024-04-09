@@ -14,19 +14,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ github.event.inputs.ref }}
           fetch-depth: 0
           persist-credentials: true
       - name: Login to docker.io registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
         with:
-          python-version: 3.x
+          python-version: 3.12.3
       - name: Install dependencies
         run: |
           pip install git+https://${GH_TOKEN}@github.com/squidfunk/mkdocs-material-insiders.git
