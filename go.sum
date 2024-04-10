@@ -23,8 +23,8 @@ github.com/OneOfOne/xxhash v1.2.8 h1:31czK/TI9sNkxIKfaUfGlU47BAxQ0ztGgd9vPyqimf8
 github.com/OneOfOne/xxhash v1.2.8/go.mod h1:eZbhyaAYD41SGSSsnmcpxVoRiQ/MPUTjUdIIOT9Um7Q=
 github.com/agnivade/levenshtein v1.1.1 h1:QY8M92nrzkmr798gCo3kmMyqXFzdQVpxLlGPRBij0P8=
 github.com/agnivade/levenshtein v1.1.1/go.mod h1:veldBMzWxcCG2ZvUTKD2kJNRdCk5hVbJomOvKkmgYbo=
-github.com/aquasecurity/libbpfgo v0.6.0-libbpf-1.3.0.20240313150344-0080df4914d9 h1:FjlYDJAbY0UnltKWJMT2vCc+rOQsvQG1VhVDjiMfGco=
-github.com/aquasecurity/libbpfgo v0.6.0-libbpf-1.3.0.20240313150344-0080df4914d9/go.mod h1:c6CRqUmWih4qPo6h5YiUCG6augR6rjjwEHX2FspNVhs=
+github.com/aquasecurity/libbpfgo v0.7.0-libbpf-1.4 h1:rQ94U12Xlz2tncE8Rxnw3vpp/9hgUIEu3/Lv0/XQM0Q=
+github.com/aquasecurity/libbpfgo v0.7.0-libbpf-1.4/go.mod h1:iI7QCIZ3kXG0MR+FHsDZck6cYs1y1HyZP3sMObBg0sk=
 github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20240313150344-0080df4914d9 h1:BMnpLW1ouA1xjEIQUVx6g/orqgVkTixdfRIJk+vYlFE=
 github.com/aquasecurity/libbpfgo/helpers v0.4.6-0.20240313150344-0080df4914d9/go.mod h1:JIFvPdLaEVJ6cS2lt52lcyUia9LkpxtTVijOaYesi5Q=
 github.com/aquasecurity/tracee/api v0.0.0-20240219122500-ea2c242dcd60 h1:8f4SC/qwZaOQGxnbtsYUwD15AN5MfYl77Et/fHDpx2k=
