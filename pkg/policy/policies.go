@@ -299,13 +299,11 @@ func (ps *Policies) Clone() *Policies {
 		if p == nil {
 			continue
 		}
-		if err := nPols.Add(p.Clone()); err != nil {
+		if err := nPols.Set(p.Clone()); err != nil {
 			logger.Errorw("Cloning policy %s: %v", p.Name, err)
 			return nil
 		}
 	}
-
-	nPols.compute()
 
 	return nPols
 }
