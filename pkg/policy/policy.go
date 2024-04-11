@@ -57,7 +57,7 @@ func NewPolicy() *Policy {
 	}
 }
 
-// ContainerFilterEnabled returns true when the policy has at least one container filter type enabled
+// ContainerFilterEnabled returns true if the policy has at least one container filter type enabled.
 func (p *Policy) ContainerFilterEnabled() bool {
 	return (p.ContFilter.Enabled() && p.ContFilter.Value()) ||
 		(p.NewContFilter.Enabled() && p.NewContFilter.Value()) ||

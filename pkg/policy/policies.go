@@ -103,10 +103,14 @@ func (ps *Policies) Version() uint16 {
 	return uint16(atomic.LoadUint32(&ps.version))
 }
 
-// ContainerFilterEnabled returns a bitmap of policies that have at least
-// one container filter type enabled.
-func (ps *Policies) ContainerFilterEnabled() uint64 {
-	return atomic.LoadUint64(&ps.containerFiltersEnabled)
+// WithContainerFilterEnabled returns a bitmap of policies that have at least one container filter type enabled.
+func (ps *Policies) WithContainerFilterEnabled() uint64 {
+	return ps.containerFiltersEnabled
+}
+
+// ContainerFilterEnabled returns true if at least one policy has a container filter type enabled.
+func (ps *Policies) ContainerFilterEnabled() bool {
+	return ps.WithContainerFilterEnabled() > 0
 }
 
 // FilterableInUserland returns a bitmap of policies that must be filtered in userland
