@@ -3028,19 +3028,17 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
         // missed entry or not traced
         return 0;
     }
-    del_args(event_id);
+    // We shouldn't call del_args(event_id) here as the arguments are also used by the tail call
 
     program_data_t p = {};
     if (!init_program_data(&p, ctx))
-        return 0;
+        goto out;
 
     if (!should_trace(&p))
-        return 0;
+        goto out;
 
-    if (!should_submit_io_event(event_id, &p)) {
-        bpf_tail_call(ctx, &prog_array, tail_call_id);
-        return 0;
-    }
+    if (!should_submit_io_event(event_id, &p))
+        goto tail;
 
     loff_t start_pos;
     io_data_t io_data;
@@ -3074,7 +3072,10 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
     // Submit io event
     events_perf_submit(&p, event_id, PT_REGS_RC(ctx));
 
+tail:
     bpf_tail_call(ctx, &prog_array, tail_call_id);
+out:
+    del_args(event_id);
 
     return 0;
 }
