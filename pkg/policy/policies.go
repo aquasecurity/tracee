@@ -24,7 +24,7 @@ var AlwaysSubmit = events.EventState{
 type Policies struct {
 	rwmu sync.RWMutex
 
-	version           uint32                    // updated on snapshot store
+	version           uint16                    // updated on snapshot store
 	bpfInnerMaps      map[string]*bpf.BPFMapLow // BPF inner maps
 	policiesArray     [MaxPolicies]*Policy      // underlying policies array for fast access of empty slots
 	policiesMapByID   map[int]*Policy           // all policies map by ID
@@ -79,12 +79,8 @@ func (ps *Policies) Count() int {
 	return ps.count()
 }
 
-func (ps *Policies) SetVersion(version uint16) {
-	atomic.StoreUint32(&ps.version, uint32(version))
-}
-
 func (ps *Policies) Version() uint16 {
-	return uint16(atomic.LoadUint32(&ps.version))
+	return ps.version
 }
 
 // ContainerFilterEnabled returns a bitmap of policies that have at least
