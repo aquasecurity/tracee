@@ -13,12 +13,13 @@ import (
 )
 
 const (
-	MaxPolicies   int = 64
-	AllPoliciesOn     = ^uint64(0)
+	PolicyMax  = int(64)
+	PolicyAll  = ^uint64(0)
+	PolicyNone = uint64(0)
 )
 
 var AlwaysSubmit = events.EventState{
-	Submit: AllPoliciesOn,
+	Submit: PolicyAll,
 }
 
 type Policies struct {
@@ -26,7 +27,7 @@ type Policies struct {
 
 	version           uint16                    // updated on snapshot store
 	bpfInnerMaps      map[string]*bpf.BPFMapLow // BPF inner maps
-	policiesArray     [MaxPolicies]*Policy      // underlying policies array for fast access of empty slots
+	policiesArray     [PolicyMax]*Policy        // underlying policies array for fast access of empty slots
 	policiesMapByID   map[int]*Policy           // all policies map by ID
 	policiesMapByName map[string]*Policy        // all policies map by name
 	policiesList      []*Policy                 // all policies list
@@ -49,7 +50,7 @@ func NewPolicies() *Policies {
 		rwmu:                    sync.RWMutex{},
 		version:                 0,
 		bpfInnerMaps:            map[string]*bpf.BPFMapLow{},
-		policiesArray:           [MaxPolicies]*Policy{},
+		policiesArray:           [PolicyMax]*Policy{},
 		policiesMapByID:         map[int]*Policy{},
 		policiesMapByName:       map[string]*Policy{},
 		policiesList:            []*Policy{},
@@ -149,7 +150,7 @@ func (ps *Policies) Add(p *Policy) error {
 	if p == nil {
 		return PolicyNilError()
 	}
-	if ps.count() == MaxPolicies {
+	if ps.count() == PolicyMax {
 		return PoliciesMaxExceededError()
 	}
 	if existing, ok := ps.policiesMapByName[p.Name]; ok {
@@ -401,5 +402,5 @@ func (ps *Policies) calculateGlobalMinMax() {
 }
 
 func isIDInRange(id int) bool {
-	return id >= 0 && id < MaxPolicies
+	return id >= 0 && id < PolicyMax
 }
