@@ -466,7 +466,7 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 			}
 
 			// Get a bitmap with all policies containing container filters
-			policiesWithContainerFilter := policies.ContainerFilterEnabled()
+			policiesWithContainerFilter := policies.WithContainerFilterEnabled()
 
 			// Filter out events that don't have a container ID from all the policies that
 			// have container filters. This will guarantee that any of those policies
