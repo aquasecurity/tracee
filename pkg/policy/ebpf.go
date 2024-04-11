@@ -711,10 +711,10 @@ func (ps *Policies) computePoliciesConfig() *PoliciesConfig {
 		cfg.EnabledScopes |= 1 << offset
 	}
 
-	cfg.UidMax = ps.UIDFilterMax()
-	cfg.UidMin = ps.UIDFilterMin()
-	cfg.PidMax = ps.PIDFilterMax()
-	cfg.PidMin = ps.PIDFilterMin()
+	cfg.UidMax = ps.uidFilterMax
+	cfg.UidMin = ps.uidFilterMin
+	cfg.PidMax = ps.pidFilterMax
+	cfg.PidMin = ps.pidFilterMin
 
 	return cfg
 }
