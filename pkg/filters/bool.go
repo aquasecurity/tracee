@@ -13,6 +13,9 @@ type BoolFilter struct {
 	enabled      bool
 }
 
+// Compile-time check to ensure that BoolFilter implements the Cloner interface
+var _ utils.Cloner[*BoolFilter] = &BoolFilter{}
+
 func NewBoolFilter() *BoolFilter {
 	return &BoolFilter{}
 }
@@ -145,7 +148,7 @@ func (f *BoolFilter) FilterOut() bool {
 	return !f.Value()
 }
 
-func (f *BoolFilter) Clone() utils.Cloner {
+func (f *BoolFilter) Clone() *BoolFilter {
 	if f == nil {
 		return nil
 	}

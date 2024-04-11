@@ -23,6 +23,9 @@ type StringFilter struct {
 	enabled      bool
 }
 
+// Compile-time check to ensure that StringFilter implements the Cloner interface
+var _ utils.Cloner[*StringFilter] = &StringFilter{}
+
 func NewStringFilter(valueHandler func(string) (string, error)) *StringFilter {
 	return &StringFilter{
 		valueHandler: valueHandler,
@@ -250,7 +253,7 @@ func (f *StringFilter) Equalities() StringFilterEqualities {
 	}
 }
 
-func (f *StringFilter) Clone() utils.Cloner {
+func (f *StringFilter) Clone() *StringFilter {
 	if f == nil {
 		return nil
 	}

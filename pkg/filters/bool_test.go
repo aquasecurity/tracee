@@ -115,7 +115,7 @@ func TestBoolFilterClone(t *testing.T) {
 	err := filter.Parse("=false")
 	require.NoError(t, err)
 
-	copy := filter.Clone().(*BoolFilter)
+	copy := filter.Clone()
 
 	if !reflect.DeepEqual(filter, copy) {
 		t.Errorf("Clone did not produce an identical copy")

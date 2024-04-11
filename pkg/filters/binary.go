@@ -22,6 +22,9 @@ type BinaryFilter struct {
 	enabled  bool
 }
 
+// Compile-time check to ensure that BinaryFilter implements the Cloner interface
+var _ utils.Cloner[*BinaryFilter] = &BinaryFilter{}
+
 func getHostMntNS() (uint32, error) {
 	var ns int
 	var err error
@@ -153,7 +156,7 @@ func (f *BinaryFilter) Equalities() BinaryFilterEqualities {
 	}
 }
 
-func (f *BinaryFilter) Clone() utils.Cloner {
+func (f *BinaryFilter) Clone() *BinaryFilter {
 	if f == nil {
 		return nil
 	}

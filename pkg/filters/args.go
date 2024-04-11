@@ -12,20 +12,23 @@ import (
 )
 
 type ArgFilter struct {
-	filters map[events.ID]map[string]Filter
+	filters map[events.ID]map[string]Filter[*StringFilter]
 	enabled bool
 }
 
+// Compile-time check to ensure that ArgFilter implements the Cloner interface
+var _ utils.Cloner[*ArgFilter] = &ArgFilter{}
+
 func NewArgFilter() *ArgFilter {
 	return &ArgFilter{
-		filters: map[events.ID]map[string]Filter{},
+		filters: map[events.ID]map[string]Filter[*StringFilter]{},
 		enabled: false,
 	}
 }
 
 // GetEventFilters returns the argument filters map for a specific event
 // writing to the map may have unintentional consequences, avoid doing so
-func (af *ArgFilter) GetEventFilters(eventID events.ID) map[string]Filter {
+func (af *ArgFilter) GetEventFilters(eventID events.ID) map[string]Filter[*StringFilter] {
 	return af.filters[eventID]
 }
 
@@ -144,7 +147,7 @@ func (af *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNa
 	}
 
 	err := af.parseFilter(id, argName, operatorAndValues,
-		func() Filter {
+		func() Filter[*StringFilter] {
 			// TODO: map argument type to an appropriate filter constructor
 			return NewStringFilter(valueHandler)
 		})
@@ -159,9 +162,9 @@ func (af *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNa
 
 // parseFilter adds an argument filter with the relevant filterConstructor
 // The user must responsibly supply a reliable Filter object.
-func (af *ArgFilter) parseFilter(id events.ID, argName string, operatorAndValues string, filterConstructor func() Filter) error {
+func (af *ArgFilter) parseFilter(id events.ID, argName string, operatorAndValues string, filterConstructor func() Filter[*StringFilter]) error {
 	if _, ok := af.filters[id]; !ok {
-		af.filters[id] = map[string]Filter{}
+		af.filters[id] = map[string]Filter[*StringFilter]{}
 	}
 
 	if _, ok := af.filters[id][argName]; !ok {
@@ -205,7 +208,7 @@ func (af *ArgFilter) Enabled() bool {
 	return af.enabled
 }
 
-func (af *ArgFilter) Clone() utils.Cloner {
+func (af *ArgFilter) Clone() *ArgFilter {
 	if af == nil {
 		return nil
 	}
@@ -213,9 +216,9 @@ func (af *ArgFilter) Clone() utils.Cloner {
 	n := NewArgFilter()
 
 	for eventID, filterMap := range af.filters {
-		n.filters[eventID] = map[string]Filter{}
+		n.filters[eventID] = map[string]Filter[*StringFilter]{}
 		for argName, f := range filterMap {
-			n.filters[eventID][argName] = f.Clone().(Filter)
+			n.filters[eventID][argName] = f.Clone()
 		}
 	}
 

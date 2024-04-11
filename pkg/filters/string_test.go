@@ -212,7 +212,7 @@ func TestStringFilterClone(t *testing.T) {
 	err = filter.Parse("!=abc")
 	assert.NoError(t, err)
 
-	copy := filter.Clone().(*StringFilter)
+	copy := filter.Clone()
 
 	opt1 := cmp.AllowUnexported(
 		StringFilter{},

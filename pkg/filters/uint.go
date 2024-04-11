@@ -27,6 +27,9 @@ type UIntFilter[T constraints.Unsigned] struct {
 	enabled  bool
 }
 
+// Compile-time check to ensure that UIntFilter implements the Cloner interface
+var _ utils.Cloner[*UIntFilter[uint32]] = &UIntFilter[uint32]{}
+
 // TODO: Add uint16 and uint8 filters?
 
 func NewUIntFilter() *UIntFilter[uint64] {
@@ -235,7 +238,7 @@ func (f *UIntFilter[T]) Equalities() UIntFilterEqualities {
 	}
 }
 
-func (f *UIntFilter[T]) Clone() utils.Cloner {
+func (f *UIntFilter[T]) Clone() *UIntFilter[T] {
 	if f == nil {
 		return nil
 	}

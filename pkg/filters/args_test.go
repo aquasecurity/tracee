@@ -19,7 +19,7 @@ func TestArgsFilterClone(t *testing.T) {
 	err := filter.Parse("read.args.fd", "=argval", events.Core.NamesToIDs())
 	require.NoError(t, err)
 
-	copy := filter.Clone().(*ArgFilter)
+	copy := filter.Clone()
 
 	opt1 := cmp.AllowUnexported(
 		ArgFilter{},

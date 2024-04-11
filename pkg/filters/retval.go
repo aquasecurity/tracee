@@ -13,6 +13,9 @@ type RetFilter struct {
 	enabled bool
 }
 
+// Compile-time check to ensure that RetFilter implements the Cloner interface
+var _ utils.Cloner[*RetFilter] = &RetFilter{}
+
 func NewRetFilter() *RetFilter {
 	return &RetFilter{
 		filters: map[events.ID]*IntFilter[int64]{},
@@ -85,7 +88,7 @@ func (filter *RetFilter) Parse(filterName string, operatorAndValues string, even
 	return nil
 }
 
-func (filter *RetFilter) Clone() utils.Cloner {
+func (filter *RetFilter) Clone() *RetFilter {
 	if filter == nil {
 		return nil
 	}
@@ -93,7 +96,7 @@ func (filter *RetFilter) Clone() utils.Cloner {
 	n := NewRetFilter()
 
 	for k, v := range filter.filters {
-		n.filters[k] = v.Clone().(*IntFilter[int64])
+		n.filters[k] = v.Clone()
 	}
 	n.enabled = filter.enabled
 
