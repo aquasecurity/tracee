@@ -77,7 +77,7 @@ type filtersEqualities struct {
 // updating the provided filtersEqualities struct
 // TODO: refactor this method deduplicating code
 func (ps *Policies) computeFilterEqualities(fEqs *filtersEqualities, cts *containers.Containers) error {
-	for _, p := range ps.all() {
+	for _, p := range ps.allFromMap() {
 		policyID := uint(p.ID)
 
 		// UIDFilters equalities
@@ -832,7 +832,7 @@ func (pc *PoliciesConfig) UpdateBPF(bpfConfigMap *bpf.BPFMapLow) error {
 func (ps *Policies) computePoliciesConfig() *PoliciesConfig {
 	cfg := &PoliciesConfig{}
 
-	for _, p := range ps.all() {
+	for _, p := range ps.allFromMap() {
 		offset := p.ID
 
 		// filter enabled policies bitmap

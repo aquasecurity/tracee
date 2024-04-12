@@ -128,7 +128,7 @@ func (ps *Policies) compute() {
 
 	userlandList := []*Policy{}
 	ps.filterableInUserland = 0
-	for _, p := range ps.policiesArray {
+	for _, p := range ps.allFromArray() {
 		if p == nil {
 			continue
 		}
@@ -177,8 +177,8 @@ func (ps *Policies) Add(p *Policy) error {
 	}
 
 	// search for the first empty slot
-	for id := range ps.policiesArray {
-		if ps.policiesArray[id] == nil {
+	for id, slot := range ps.allFromArray() {
+		if slot == nil {
 			return ps.set(id, p)
 		}
 	}
@@ -267,7 +267,7 @@ func (ps *Policies) MatchedNames(matched uint64) []string {
 
 	names := []string{}
 
-	for _, p := range ps.all() {
+	for _, p := range ps.allFromMap() {
 		if utils.HasBit(matched, uint(p.ID)) {
 			names = append(names, p.Name)
 		}
@@ -276,9 +276,16 @@ func (ps *Policies) MatchedNames(matched uint64) []string {
 	return names
 }
 
-// all returns a map of all policies by ID.
-func (ps *Policies) all() map[int]*Policy {
+// allFromMap returns a map of allFromMap policies by ID.
+// When iterating, the order is not guaranteed.
+func (ps *Policies) allFromMap() map[int]*Policy {
 	return ps.policiesMapByID
+}
+
+// allFromArray returns an slice of the underlying policies array.
+// When iterating, the order is guaranteed.
+func (ps *Policies) allFromArray() []*Policy {
+	return ps.policiesArray[:]
 }
 
 // TODO: Runtime API should encapsulate the following calls:
@@ -299,7 +306,7 @@ func (ps *Policies) Clone() *Policies {
 	// Deep copy of all policies
 	ps.rwmu.RLock()
 	defer ps.rwmu.RUnlock()
-	for _, p := range ps.policiesArray {
+	for _, p := range ps.allFromArray() {
 		if p == nil {
 			continue
 		}
@@ -315,7 +322,7 @@ func (ps *Policies) Clone() *Policies {
 func (ps *Policies) updateContainerFilterEnabled() {
 	ps.containerFiltersEnabled = 0
 
-	for _, p := range ps.all() {
+	for _, p := range ps.allFromMap() {
 		if p.ContainerFilterEnabled() {
 			utils.SetBit(&ps.containerFiltersEnabled, uint(p.ID))
 		}
@@ -346,7 +353,7 @@ func (ps *Policies) calculateGlobalMinMax() {
 		pidMaxFilterableInUserland bool
 	)
 
-	for _, p := range ps.all() {
+	for _, p := range ps.allFromMap() {
 		policyCount++
 
 		if p.UIDFilter.Enabled() {
@@ -393,7 +400,7 @@ func (ps *Policies) calculateGlobalMinMax() {
 	}
 
 	// set a reduced range of uint values to be filtered in ebpf
-	for _, p := range ps.policiesMapByID {
+	for _, p := range ps.allFromMap() {
 		if p.UIDFilter.Enabled() {
 			if !uidMinFilterableInUserland {
 				ps.uidFilterMin = utils.Min(ps.uidFilterMin, p.UIDFilter.Minimum())
