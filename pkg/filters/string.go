@@ -10,8 +10,11 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
+// ValueHandler is a function that can be passed to StringFilter to handle values when they are parsed
+type ValueHandler func(string) (string, error)
+
 type StringFilter struct {
-	valueHandler func(string) (string, error)
+	valueHandler ValueHandler
 	equal        map[string]struct{}
 	notEqual     map[string]struct{}
 	prefixes     sets.PrefixSet
@@ -26,9 +29,9 @@ type StringFilter struct {
 // Compile-time check to ensure that StringFilter implements the Cloner interface
 var _ utils.Cloner[*StringFilter] = &StringFilter{}
 
-func NewStringFilter(valueHandler func(string) (string, error)) *StringFilter {
+func NewStringFilter(valHandler ValueHandler) *StringFilter {
 	return &StringFilter{
-		valueHandler: valueHandler,
+		valueHandler: valHandler,
 		equal:        map[string]struct{}{},
 		notEqual:     map[string]struct{}{},
 		prefixes:     sets.NewPrefixSet(),
@@ -262,7 +265,6 @@ func (f *StringFilter) Clone() *StringFilter {
 
 	maps.Copy(n.equal, f.equal)
 	maps.Copy(n.notEqual, f.notEqual)
-	f.prefixes.Clone()
 	n.prefixes = *f.prefixes.Clone()
 	n.suffixes = *f.suffixes.Clone()
 	maps.Copy(n.contains, f.contains)
