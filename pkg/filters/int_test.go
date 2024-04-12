@@ -1,9 +1,9 @@
 package filters
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -75,14 +75,18 @@ func TestIntFilterClone(t *testing.T) {
 
 	copy64 := filter64.Clone()
 
-	if !reflect.DeepEqual(filter64, copy64) {
-		t.Errorf("Clone did not produce an identical copy")
+	opt1 := cmp.AllowUnexported(
+		IntFilter[int64]{},
+	)
+	if !cmp.Equal(filter64, copy64, opt1) {
+		diff := cmp.Diff(filter64, copy64, opt1)
+		t.Errorf("Clone did not produce an identical copy\ndiff: %s", diff)
 	}
 
 	// ensure that changes to the copy do not affect the original
 	err = copy64.Parse("=51")
 	require.NoError(t, err)
-	if reflect.DeepEqual(filter64, copy64) {
+	if cmp.Equal(filter64, copy64, opt1) {
 		t.Errorf("Changes to copied filter affected the original")
 	}
 
@@ -92,14 +96,18 @@ func TestIntFilterClone(t *testing.T) {
 
 	copy32 := filter32.Clone()
 
-	if !reflect.DeepEqual(filter32, copy32) {
-		t.Errorf("Clone did not produce an identical copy")
+	opt1 = cmp.AllowUnexported(
+		IntFilter[int32]{},
+	)
+	if !cmp.Equal(filter32, copy32, opt1) {
+		diff := cmp.Diff(filter32, copy32, opt1)
+		t.Errorf("Clone did not produce an identical copy\ndiff: %s", diff)
 	}
 
 	// ensure that changes to the copy do not affect the original
 	err = copy32.Parse("=51")
 	require.NoError(t, err)
-	if reflect.DeepEqual(filter32, copy32) {
+	if cmp.Equal(filter32, copy32, opt1) {
 		t.Errorf("Changes to copied filter affected the original")
 	}
 }

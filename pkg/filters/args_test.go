@@ -27,21 +27,25 @@ func TestArgsFilterClone(t *testing.T) {
 		sets.PrefixSet{},
 		sets.SuffixSet{},
 	)
-	opt2 := cmp.FilterPath(func(p cmp.Path) bool {
-		// ignore the valueHandler function
-		// https://cs.opensource.google/go/go/+/refs/tags/go1.22.0:src/reflect/deepequal.go;l=187
-		return p.Last().String() == ".valueHandler"
-	}, cmp.Ignore())
+	opt2 := cmp.FilterPath(
+		func(p cmp.Path) bool {
+			// ignore the function field
+			// https://cs.opensource.google/go/go/+/refs/tags/go1.22.0:src/reflect/deepequal.go;l=187
+			return p.Last().Type().Kind() == reflect.Func
+		},
+		cmp.Ignore(),
+	)
 
 	if !cmp.Equal(filter, copy, opt1, opt2) {
-		t.Errorf("Clone did not produce an identical copy")
+		diff := cmp.Diff(filter, copy, opt1, opt2)
+		t.Errorf("Clone did not produce an identical copy\ndiff: %s", diff)
 	}
 
 	// ensure that changes to the copy do not affect the original
 	err = copy.Parse("read.args.buf", "=argval", events.Core.NamesToIDs())
 	require.NoError(t, err)
-	if reflect.DeepEqual(filter, copy) {
-		t.Errorf("Changes to copied filter affected the original")
+	if cmp.Equal(filter, copy, opt1, opt2) {
+		t.Errorf("Changes to copied filter affected the original %+v", filter)
 	}
 }
 

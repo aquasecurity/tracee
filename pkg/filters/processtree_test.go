@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -151,14 +152,19 @@ func TestProcessTreeFilterClone(t *testing.T) {
 
 	copy := filter.Clone()
 
-	if !reflect.DeepEqual(copy, filter) {
-		t.Errorf("Clone did not produce an identical copy")
+	opt1 := cmp.AllowUnexported(
+		ProcessTreeFilter{},
+	)
+
+	if !cmp.Equal(filter, copy, opt1) {
+		diff := cmp.Diff(filter, copy, opt1)
+		t.Errorf("Clone did not produce an identical copy\ndiff: %s", diff)
 	}
 
 	// ensure that changes to the copy do not affect the original
 	err = filter.Parse("=2")
 	require.NoError(t, err)
-	if reflect.DeepEqual(copy, filter) {
+	if cmp.Equal(filter, copy, opt1) {
 		t.Errorf("Changes to copied filter affected the original")
 	}
 }

@@ -1,9 +1,9 @@
 package sets
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -71,15 +71,19 @@ func TestPrefixSetClone(t *testing.T) {
 	set := NewPrefixSet()
 	set.Put("/tmp")
 
-	copy := set.Clone()
+	copy := *set.Clone()
 
-	if !reflect.DeepEqual(&set, copy) {
-		t.Errorf("Clone did not produce an identical copy")
+	opt1 := cmp.AllowUnexported(
+		PrefixSet{},
+	)
+	if !cmp.Equal(set, copy, opt1) {
+		diff := cmp.Diff(set, copy, opt1)
+		t.Errorf("Clone did not produce an identical copy\ndiff: %s", diff)
 	}
 
 	// ensure that changes to the copy do not affect the original
 	copy.Put("/home")
-	if reflect.DeepEqual(&set, copy) {
+	if cmp.Equal(set, copy, opt1) {
 		t.Errorf("Changes to copied filter affected the original")
 	}
 }
@@ -90,15 +94,19 @@ func TestSuffixSetClone(t *testing.T) {
 	set := NewSuffixSet()
 	set.Put(".git")
 
-	copy := set.Clone()
+	copy := *set.Clone()
 
-	if !reflect.DeepEqual(&set, copy) {
-		t.Errorf("Clone did not produce an identical copy")
+	opt1 := cmp.AllowUnexported(
+		SuffixSet{},
+	)
+	if !cmp.Equal(set, copy, opt1) {
+		diff := cmp.Diff(set, copy, opt1)
+		t.Errorf("Clone did not produce an identical copy\ndiff: %s", diff)
 	}
 
 	// ensure that changes to the copy do not affect the original
 	copy.Put(".ssh")
-	if reflect.DeepEqual(&set, copy) {
+	if cmp.Equal(set, copy, opt1) {
 		t.Errorf("Changes to copied filter affected the original")
 	}
 }
