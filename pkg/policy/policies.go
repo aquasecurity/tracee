@@ -128,7 +128,11 @@ func (ps *Policies) compute() {
 
 	userlandList := []*Policy{}
 	ps.filterableInUserland = 0
-	for _, p := range ps.policiesMapByID {
+	for _, p := range ps.policiesArray {
+		if p == nil {
+			continue
+		}
+
 		if p.ArgFilter.Enabled() ||
 			p.RetFilter.Enabled() ||
 			p.ContextFilter.Enabled() ||
