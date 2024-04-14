@@ -36,11 +36,10 @@
 #define OPT_CAPTURE_STACK_TRACES  (1 << 3)
 #define OPT_CAPTURE_MODULES       (1 << 4)
 #define OPT_CGROUP_V1             (1 << 5)
-#define OPT_PROCESS_INFO          (1 << 6)
-#define OPT_TRANSLATE_FD_FILEPATH (1 << 7)
-#define OPT_CAPTURE_BPF           (1 << 8)
-#define OPT_CAPTURE_FILES_READ    (1 << 9)
-#define OPT_FORK_PROCTREE         (1 << 10)
+#define OPT_TRANSLATE_FD_FILEPATH (1 << 6)
+#define OPT_CAPTURE_BPF           (1 << 7)
+#define OPT_CAPTURE_FILES_READ    (1 << 8)
+#define OPT_FORK_PROCTREE         (1 << 9)
 
 #define STDIN  0
 #define STDOUT 1

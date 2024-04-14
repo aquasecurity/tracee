@@ -590,7 +590,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 
     // Submit the event
 
-    if (should_submit(SCHED_PROCESS_FORK, p.event) || p.config->options & OPT_PROCESS_INFO) {
+    if (should_submit(SCHED_PROCESS_FORK, p.event)) {
         // Parent information.
         u64 parent_start_time = get_task_start_time(parent);
         int parent_tid = get_task_host_pid(parent);
@@ -1248,8 +1248,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 
     proc_info->follow_in_scopes = p.event->context.matched_policies; // follow task for matched scopes
 
-    if (!should_submit(SCHED_PROCESS_EXEC, p.event) &&
-        (p.config->options & OPT_PROCESS_INFO) != OPT_PROCESS_INFO)
+    if (!should_submit(SCHED_PROCESS_EXEC, p.event))
         return 0;
 
     // Note: From v5.9+, there are two interesting fields in bprm that could be added:
@@ -1373,7 +1372,7 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 
     long exit_code = get_task_exit_code(p.event->task);
 
-    if (should_submit(SCHED_PROCESS_EXIT, p.event) || p.config->options & OPT_PROCESS_INFO) {
+    if (should_submit(SCHED_PROCESS_EXIT, p.event)) {
         save_to_submit_buf(&p.event->args_buf, (void *) &exit_code, sizeof(long), 0);
         save_to_submit_buf(&p.event->args_buf, (void *) &group_dead, sizeof(bool), 1);
 
