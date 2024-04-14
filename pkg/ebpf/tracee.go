@@ -796,7 +796,6 @@ const (
 	optStackAddresses
 	optCaptureModules
 	optCgroupV1
-	optProcessInfo
 	optTranslateFDFilePath
 	optCaptureBpf
 	optCaptureFileRead
