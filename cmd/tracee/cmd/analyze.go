@@ -122,7 +122,11 @@ tracee analyze --events anti_debugging events.json`,
 			logger.Fatalw("No signature event loaded")
 		}
 
-		fmt.Printf("Loading %d signature events\n", len(sigs))
+		logger.Infow(
+			"Signatures loaded",
+			"total", len(sigs),
+			"signatures", getSigsNames(sigs),
+		)
 
 		_ = initialize.CreateEventsFromSignatures(events.StartSignatureID, sigs)
 
@@ -226,4 +230,17 @@ func bindViperFlag(cmd *cobra.Command, flag string) {
 	if err != nil {
 		logger.Fatalw("Error binding viper flag", "flag", flag, "error", err)
 	}
+}
+
+func getSigsNames(sigs []detect.Signature) []string {
+	var sigsNames []string
+	for _, sig := range sigs {
+		sigMeta, err := sig.GetMetadata()
+		if err != nil {
+			logger.Warnw("Failed to get signature metadata", "err", err)
+			continue
+		}
+		sigsNames = append(sigsNames, sigMeta.Name)
+	}
+	return sigsNames
 }
