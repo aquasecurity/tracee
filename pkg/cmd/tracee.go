@@ -120,24 +120,18 @@ func (r Runner) Run(ctx context.Context) error {
 	return err
 }
 
-func GetContainerMode(cfg config.Config) config.ContainerMode {
-	containerMode := config.ContainerModeDisabled
-
-	for it := cfg.Policies.CreateAllIterator(); it.HasNext(); {
-		p := it.Next()
-		if p.ContainerFilterEnabled() {
-			// Container Enrichment is enabled by default ...
-			containerMode = config.ContainerModeEnriched
-			if cfg.NoContainersEnrich {
-				// ... but might be disabled as a safeguard measure.
-				containerMode = config.ContainerModeEnabled
-			}
-
-			break
-		}
+func GetContainerMode(containerFilterEnabled, noContainersEnrich bool) config.ContainerMode {
+	if !containerFilterEnabled {
+		return config.ContainerModeDisabled
 	}
 
-	return containerMode
+	// If "no-containers" enrichment is set, return just enabled mode ...
+	if noContainersEnrich {
+		return config.ContainerModeEnabled
+	}
+
+	// ... otherwise return enriched mode as default.
+	return config.ContainerModeEnriched
 }
 
 const pidFileName = "tracee.pid"
