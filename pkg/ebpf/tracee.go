@@ -779,15 +779,6 @@ func (t *Tracee) initDerivationTable() error {
 	return nil
 }
 
-// RegisterEventDerivation registers an event derivation handler for tracee to use in the event pipeline
-func (t *Tracee) RegisterEventDerivation(deriveFrom events.ID, deriveTo events.ID, deriveCondition func() bool, deriveLogic derive.DeriveFunction) error {
-	if t.eventDerivations == nil {
-		return errfmt.Errorf("tracee not initialized yet")
-	}
-
-	return t.eventDerivations.Register(deriveFrom, deriveTo, deriveCondition, deriveLogic)
-}
-
 // options config should match defined values in ebpf code
 const (
 	optExecEnv uint32 = 1 << iota
