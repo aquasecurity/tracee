@@ -249,7 +249,10 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Create printer
 
-	p, err := printer.NewBroadcast(output.PrinterConfigs, cmd.GetContainerMode(cfg))
+	p, err := printer.NewBroadcast(
+		output.PrinterConfigs,
+		cmd.GetContainerMode(policies.ContainerFilterEnabled(), cfg.NoContainersEnrich),
+	)
 	if err != nil {
 		return runner, err
 	}
