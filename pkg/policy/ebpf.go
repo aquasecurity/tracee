@@ -407,22 +407,13 @@ func (ps *Policies) updateUIntFilterBPF(uintEqualities map[uint64]equality, inne
 	// UInt equalities
 	// 1. uid_filter        u32, eq_t
 	// 2. pid_filter        u32, eq_t
-	// 3. mnt_ns_filter     u64, eq_t
-	// 4. pid_ns_filter     u64, eq_t
+	// 3. mnt_ns_filter     u32, eq_t
+	// 4. pid_ns_filter     u32, eq_t
 	// 5. cgroup_id_filter  u32, eq_t
 
 	for k, v := range uintEqualities {
 		u32Key := uint32(k)
-		u64Key := uint64(k)
-		var keyPointer unsafe.Pointer
-		switch innerMapName {
-		case UIDFilterMap, PIDFilterMap, CgroupIdFilterMap:
-			// key is uint32
-			keyPointer = unsafe.Pointer(&u32Key)
-		case MntNSFilterMap, PidNSFilterMap:
-			// key is uint64
-			keyPointer = unsafe.Pointer(&u64Key)
-		}
+		keyPointer := unsafe.Pointer(&u32Key)
 
 		eqVal := make([]byte, equalityValueSize)
 		valuePointer := unsafe.Pointer(&eqVal[0])
