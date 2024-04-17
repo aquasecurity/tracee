@@ -36,7 +36,8 @@ spec:
             - --config
             - /tracee/config.yaml
           {{- if .Values.webhook }}
-            - --output webhook:{{ .Values.webhook }}
+            - --output
+            - webhook:{{ .Values.webhook }}
           {{- end }}
           env:
             - name: LIBBPFGO_OSRELEASE_FILE
