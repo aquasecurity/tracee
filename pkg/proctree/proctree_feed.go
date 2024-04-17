@@ -63,7 +63,9 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 			},
 			utils.NsSinceBootTimeToTime(feed.TimeStamp),
 		)
-		pt.FeedFromProcFSAsync(int(feed.ParentPid)) // try to enrich ppid and name from procfs
+		if pt.procfsQuery {
+			pt.FeedFromProcFSAsync(int(feed.ParentPid)) // try to enrich ppid and name from procfs
+		}
 	}
 
 	parent, found := pt.GetProcessByHash(feed.ParentHash) // always a real process
@@ -99,7 +101,9 @@ func (pt *ProcessTree) FeedFromFork(feed ForkFeed) error {
 			},
 			utils.NsSinceBootTimeToTime(feed.TimeStamp),
 		)
-		pt.FeedFromProcFSAsync(int(feed.LeaderPid)) // try to enrich name from procfs if needed
+		if pt.procfsQuery {
+			pt.FeedFromProcFSAsync(int(feed.LeaderPid)) // try to enrich name from procfs if needed
+		}
 	}
 
 	leader, found := pt.GetProcessByHash(feed.LeaderHash)
