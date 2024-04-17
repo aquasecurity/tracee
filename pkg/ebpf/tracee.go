@@ -1592,15 +1592,14 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 	// We want to use the policies of relevant to the triggering event
 	policies, err := policy.Snapshots().Get(event.PoliciesVersion)
 	if err != nil {
-		logger.Errorw("Error getting policies for print_mem_dump event", "error", err)
-		// For fallback, try to use latest polcies
+		logger.Debugw("Error getting policies for print_mem_dump event", "error", err)
+		// For fallback, try to use latest policies
 		policies, err = policy.Snapshots().GetLast()
 		if err != nil {
-			logger.Errorw("Error getting last snapshots policies for print_mem_dump event", "error", err)
-			// Last resort is to use the policies from the config
-			policies = t.config.Policies
+			return []error{err}
 		}
 	}
+
 	for it := policies.CreateAllIterator(); it.HasNext(); {
 		p := it.Next()
 		// This might break in the future if PrintMemDump will become a dependency of another event.
