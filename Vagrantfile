@@ -155,7 +155,7 @@ Vagrant.configure("2") do |config|
     # opa
     #
 
-    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/$OPA_VERSION/opa_linux_#{arch}
+    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/$OPA_VERSION/opa_linux_#{arch}_static
     chmod 755 /usr/bin/opa
   SHELL
 end
