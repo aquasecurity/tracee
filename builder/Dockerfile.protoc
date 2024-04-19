@@ -1,11 +1,14 @@
 FROM golang:1.21
 
-RUN apt update -y && apt install -y unzip 
-RUN wget https://github.com/protocolbuffers/protobuf/releases/download/v23.4/protoc-23.4-linux-x86_64.zip && \
-	unzip protoc-23.4-linux-x86_64.zip -d /usr/local
+ARG PROTOC_VERSION="23.4"
+ARG PROTOC_ZIP="protoc-${PROTOC_VERSION}-linux-x86_64.zip"
 
-RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28 && \
-	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2 && \
-	go install github.com/mitchellh/protoc-gen-go-json@master
+RUN apt update -y && apt install -y unzip 
+RUN wget https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/${PROTOC_ZIP} && \
+	unzip ${PROTOC_ZIP} -d /usr/local
+
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@6875c3d7242d1a3db910ce8a504f124cb840c23a # v1.28.1
+RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@c285fc70e095eccc98d79b9a133e1e328141aefd # protoc-gen-go-grpc v1.2.0
+RUN go install github.com/mitchellh/protoc-gen-go-json@49905733154f04e47d685de62c2cc2b72613b69e # master
 
 WORKDIR /tracee
