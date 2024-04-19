@@ -108,6 +108,9 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 		for {
 			select {
 			case finding := <-engineOutput:
+				if finding == nil {
+					return // channel is closed
+				}
 				if finding.Event.Payload == nil {
 					continue // might happen during initialization (ctrl+c seg faults)
 				}
