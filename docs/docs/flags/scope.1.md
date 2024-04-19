@@ -2,7 +2,7 @@
 title: TRACEE-SCOPE
 section: 1
 header: Tracee Scope Flag Manual
-date: 2023/10
+date: 2024/06
 ...
 
 ## NAME

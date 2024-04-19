@@ -2,7 +2,7 @@
 title: TRACEE-CAPABILITIES
 section: 1
 header: Tracee Capabilities Flag Manual
-date: 2023/10
+date: 2024/06
 ...
 
 ## NAME

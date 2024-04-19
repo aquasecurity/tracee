@@ -2,7 +2,7 @@
 title: TRACEE-OUTPUT
 section: 1
 header: Tracee Output Flag Manual
-date: 2024/02
+date: 2024/06
 ...
 
 ## NAME
