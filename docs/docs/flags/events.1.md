@@ -11,7 +11,7 @@ tracee **\-\-events** - Select which events to trace
 
 ## SYNOPSIS
 
-tracee **\-\-events** [<event-name1(,[-]event-name2...)\> | <[-]event-name1(,set1...)\> | <set1(,[-]event-name1,[-]event-name2...)\> | <event1.args.arg-field[=|!=]value\> | <event1.retval[=|!=|<|\>|<=|\>=]value\> | <event1.context.context-field[=|!=|<|\>|<=|\>=]value\> | <event.context.container\>] ...
+tracee **\-\-events** [<event-name1(,[-]event-name2...)\> | <[-]event-name1(,set1...)\> | <set1(,[-]event-name1,[-]event-name2...)\> | <event1.args.arg-field[=|!=]value\> | <event1.retval[=|!=|<|\>|<=|\>=]value\> | <event1.scope.field[=|!=|<|\>|<=|\>=]value\> | <event.scope.container\>] ...
 
 ## DESCRIPTION
 
@@ -25,7 +25,7 @@ The **\-\-events** flag allows you to select which events to trace by defining f
 
 - Event return value: Filter events based on their return value using 'event-name.retval'. The event return value expression follows the syntax of a numerical expression.
 
-- Event context fields: Filter events based on the non-argument fields defined in the trace.Event struct using 'event-name.context.field'. Refer to the json tags in the trace.Event struct located in the types/trace package for the correct field names, and the event filtering section in the documentation for a full list.
+- Event scope fields: Filter events based on the non-argument fields defined in the trace.Event struct using 'event-name.scope.field'. Refer to the json tags in the trace.Event struct located in the types/trace package for the correct field names, and the event filtering section in the documentation for a full list.
 
 ## FILTER EXPRESSION
 
@@ -40,7 +40,7 @@ Multiple flags are combined with AND logic, while multiple values within a singl
 Available for:
 
 - return value
-- context fields
+- scope fields
 
 NOTE: Expressions containing '<' or '\>' tokens must be escaped!
 
@@ -52,7 +52,7 @@ Available for:
 
 - event arguments
 - return value
-- context fields
+- scope fields
 
 Strings can be compared as a prefix if ending with '\*', or as a suffix if starting with '\*'.
 
@@ -125,11 +125,11 @@ Available only for:
 - To trace only 'openat' events that have 'processName' equal to 'ls', use the following flag:
 
   ```console
-  --events openat.context.processName=ls
+  --events openat.scope.processName=ls
   ```
 
 - To trace only 'security_file_open' events coming from a container, use the following flag:
 
   ```console
-  --events security_file_open.context.container
+  --events security_file_open.scope.container
   ```

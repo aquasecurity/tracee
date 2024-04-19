@@ -81,13 +81,13 @@ func PrepareFilterMapsFromPolicies(policies []k8s.PolicyInterface) (PolicyScopeM
 					continue
 				}
 
-				// at this point we know the filter is an event context filter
-				// context filters are provided without "context." prefix so we need to add it
-				evtContextFlags, err := parseEventFlag(fmt.Sprintf("%s.context.%s", r.Event, f))
+				// at this point we know the filter is an event scope filter
+				// scope filters are provided without "scope." prefix so we need to add it
+				evtScopeFlags, err := parseEventFlag(fmt.Sprintf("%s.scope.%s", r.Event, f))
 				if err != nil {
 					return nil, nil, errfmt.WrapError(err)
 				}
-				eventFlags = append(eventFlags, evtContextFlags...)
+				eventFlags = append(eventFlags, evtScopeFlags...)
 			}
 		}
 
@@ -274,7 +274,7 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 				continue
 			}
 
-			// at this point, we can assume that event flag is an event option filter (args, retval, context),
+			// at this point, we can assume that event flag is an event option filter (args, retval, scope),
 			// so, as a sugar, we can add the event name to be filtered
 			eventFilter.Equal = append(eventFilter.Equal, evtFlag.eventName)
 
@@ -289,8 +289,8 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 				continue
 			}
 
-			if evtFlag.eventOptionType == "context" {
-				err := p.ContextFilter.Parse(evtFilter, operatorAndValues)
+			if evtFlag.eventOptionType == "scope" {
+				err := p.ScopeFilter.Parse(evtFilter, operatorAndValues)
 				if err != nil {
 					return nil, err
 				}

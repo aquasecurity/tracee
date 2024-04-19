@@ -9,17 +9,17 @@ import (
 	"github.com/aquasecurity/tracee/pkg/filters/sets"
 )
 
-func TestContextFilterClone(t *testing.T) {
+func TestScopeFilterClone(t *testing.T) {
 	t.Parallel()
 
-	filter := NewContextFilter()
-	err := filter.Parse("openat.context.processorId", "=0")
+	filter := NewScopeFilter()
+	err := filter.Parse("openat.scope.processorId", "=0")
 	require.NoError(t, err)
 
 	copy := filter.Clone()
 
 	opt1 := cmp.AllowUnexported(
-		ContextFilter{},
+		ScopeFilter{},
 		eventCtxFilter{},
 		IntFilter[int64]{},
 		UIntFilter[uint64]{},
@@ -34,7 +34,7 @@ func TestContextFilterClone(t *testing.T) {
 	}
 
 	// ensure that changes to the copy do not affect the original
-	err = copy.Parse("openat.context.pid", "=1")
+	err = copy.Parse("openat.scope.pid", "=1")
 	require.NoError(t, err)
 	if cmp.Equal(filter, copy, opt1) {
 		t.Errorf("Changes to copied filter affected the original")

@@ -6,7 +6,7 @@ Below are several examples on configuring events in the Tracee Policy.
 
 ## Events
 
-Every event that is specified within the `rules` section supports three types of filters: `context`, `arguments` and `return value`. 
+Every event that is specified within the `rules` section supports three types of filters: `scope`, `arguments` and `return value`. 
 
 ### Type of Events
 
@@ -64,17 +64,17 @@ spec:
 	    event: do_sigaction
 ```
 
-## Context filters
+## Scope filters
 
-Context is data which is collected along the event. They can be filtered like:
+Further refinement of the policy's scope is achievable through the application of scope filters:
 
 ```yaml
 apiVersion: tracee.aquasec.com/v1beta1
 kind: Policy
 metadata:
-	name: sample-context-filter
+	name: sample-scope-filter
 	annotations:
-		description: sample context filter
+		description: sample scope filter
 spec:
 	scope:
 	    - global
@@ -84,7 +84,7 @@ spec:
 		- pid=1000
 ```
 
-The context filters supported are:
+The scope filters supported are:
 
 #### p, pid, processId
 

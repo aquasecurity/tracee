@@ -95,7 +95,7 @@ func (ps *Policies) ContainerFilterEnabled() bool {
 }
 
 // FilterableInUserland returns a bitmap of policies that must be filtered in userland
-// (ArgFilter, RetFilter, ContextFilter, UIDFilter and PIDFilter).
+// (ArgFilter, RetFilter, ScopeFilter, UIDFilter and PIDFilter).
 func (ps *Policies) FilterableInUserland() uint64 {
 	return atomic.LoadUint64(&ps.filterableInUserland)
 }

@@ -50,7 +50,7 @@ func TestPoliciesClone(t *testing.T) {
 		filters.BoolFilter{},
 		filters.RetFilter{},
 		filters.ArgFilter{},
-		filters.ContextFilter{},
+		filters.ScopeFilter{},
 		filters.ProcessTreeFilter{},
 		filters.BinaryFilter{},
 		sets.PrefixSet{},

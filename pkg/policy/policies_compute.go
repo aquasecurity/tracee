@@ -16,12 +16,12 @@ func (ps *Policies) compute() {
 }
 
 // calculateGlobalMinMax sets the global min and max, to be checked in kernel,
-// of the Minimum and Maximum enabled filters only if context filter types
+// of the Minimum and Maximum enabled filters only if scope filter types
 // (e.g. BPFUIDFilter) from all policies have both Minimum and Maximum values set.
 //
 // Policies userland filter flags are also set (e.g. uidFilterableInUserland).
 //
-// The context filter types relevant for this function are just UIDFilter and
+// The scope filter types relevant for this function are just UIDFilter and
 // PIDFilter.
 func (ps *Policies) calculateGlobalMinMax() {
 	var (
@@ -128,7 +128,7 @@ func (ps *Policies) updateUserlandPolicies() {
 
 		if p.ArgFilter.Enabled() ||
 			p.RetFilter.Enabled() ||
-			p.ContextFilter.Enabled() ||
+			p.ScopeFilter.Enabled() ||
 			(p.UIDFilter.Enabled() && ps.uidFilterableInUserland) ||
 			(p.PIDFilter.Enabled() && ps.pidFilterableInUserland) {
 			// add policy to userland list and set the respective bit

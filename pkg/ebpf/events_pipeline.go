@@ -325,8 +325,8 @@ func (t *Tracee) matchPolicies(event *trace.Event) uint64 {
 		// Do the userland filtering
 		//
 
-		// 1. event context filters
-		if !p.ContextFilter.Filter(*event) {
+		// 1. event scope filters
+		if !p.ScopeFilter.Filter(*event) {
 			utils.ClearBit(&bitmap, bitOffset)
 			continue
 		}
