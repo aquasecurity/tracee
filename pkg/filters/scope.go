@@ -9,40 +9,40 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-type ContextFilter struct {
+type ScopeFilter struct {
 	filters map[events.ID]*eventCtxFilter
 	enabled bool
 }
 
-// Compile-time check to ensure that ContextFilter implements the Cloner interface
-var _ utils.Cloner[*ContextFilter] = &ContextFilter{}
+// Compile-time check to ensure that ScopeFilter implements the Cloner interface
+var _ utils.Cloner[*ScopeFilter] = &ScopeFilter{}
 
-func NewContextFilter() *ContextFilter {
-	return &ContextFilter{
+func NewScopeFilter() *ScopeFilter {
+	return &ScopeFilter{
 		filters: make(map[events.ID]*eventCtxFilter),
 		enabled: false,
 	}
 }
 
-func (filter *ContextFilter) Enable() {
+func (filter *ScopeFilter) Enable() {
 	filter.enabled = true
 	for _, f := range filter.filters {
 		f.Enable()
 	}
 }
 
-func (filter *ContextFilter) Disable() {
+func (filter *ScopeFilter) Disable() {
 	filter.enabled = false
 	for _, f := range filter.filters {
 		f.Disable()
 	}
 }
 
-func (filter *ContextFilter) Enabled() bool {
+func (filter *ScopeFilter) Enabled() bool {
 	return filter.enabled
 }
 
-func (filter *ContextFilter) Filter(event trace.Event) bool {
+func (filter *ScopeFilter) Filter(event trace.Event) bool {
 	if !filter.Enabled() {
 		return true
 	}
@@ -55,12 +55,12 @@ func (filter *ContextFilter) Filter(event trace.Event) bool {
 	return true
 }
 
-func (filter *ContextFilter) Parse(filterName string, operatorAndValues string) error {
+func (filter *ScopeFilter) Parse(filterName string, operatorAndValues string) error {
 	parts := strings.Split(filterName, ".")
 	if len(parts) != 3 {
 		return InvalidExpression(filterName + operatorAndValues)
 	}
-	if parts[1] != "context" {
+	if parts[1] != "scope" {
 		return InvalidExpression(filterName + operatorAndValues)
 	}
 
@@ -227,7 +227,7 @@ func (f *eventCtxFilter) Parse(field string, operatorAndValues string) error {
 	case "cgroupId":
 		filter := f.cgroupIDFilter
 		return filter.Parse(operatorAndValues)
-	// we reserve host for negating "container" context
+	// we reserve host for negating "container" scope
 	case "host":
 		filter := f.containerFilter
 		filter.Enable()
@@ -237,7 +237,7 @@ func (f *eventCtxFilter) Parse(field string, operatorAndValues string) error {
 		filter.Enable()
 		return filter.add(true, Equal)
 	// TODO: change this and below container filters to the format
-	// eventname.context.container.id and so on...
+	// eventname.scope.container.id and so on...
 	case "containerId":
 		filter := f.containerIDFilter
 		return addContainer[*StringFilter](f, filter, operatorAndValues)
@@ -251,7 +251,7 @@ func (f *eventCtxFilter) Parse(field string, operatorAndValues string) error {
 		filter := f.containerNameFilter
 		return addContainer[*StringFilter](f, filter, operatorAndValues)
 	// TODO: change this and below pod filters to the format
-	// eventname.context.kubernetes.podName and so on...
+	// eventname.scope.kubernetes.podName and so on...
 	case "podName":
 		filter := f.podNameFilter
 		return addContainer[*StringFilter](f, filter, operatorAndValues)
@@ -268,7 +268,7 @@ func (f *eventCtxFilter) Parse(field string, operatorAndValues string) error {
 		filter := f.syscallFilter
 		return filter.Parse(operatorAndValues)
 	}
-	return InvalidContextField(field)
+	return InvalidScopeField(field)
 }
 
 func addContainer[T any](f *eventCtxFilter, filter Filter[T], operatorAndValues string) error {
@@ -319,12 +319,12 @@ func (f *eventCtxFilter) Clone() *eventCtxFilter {
 	return n
 }
 
-func (filter *ContextFilter) Clone() *ContextFilter {
+func (filter *ScopeFilter) Clone() *ScopeFilter {
 	if filter == nil {
 		return nil
 	}
 
-	n := NewContextFilter()
+	n := NewScopeFilter()
 
 	for k, v := range filter.filters {
 		n.filters[k] = v.Clone()

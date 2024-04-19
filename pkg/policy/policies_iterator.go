@@ -26,7 +26,7 @@ func (i *PoliciesIterator) Next() *Policy {
 }
 
 // CreateUserlandIterator returns a new iterator for a reduced list of policies
-// which must be filtered in userland (ArgFilter, RetFilter, ContextFilter,
+// which must be filtered in userland (ArgFilter, RetFilter, ScopeFilter,
 // UIDFilter and PIDFilter).
 func (ps *Policies) CreateUserlandIterator() utils.Iterator[*Policy] {
 	return &PoliciesIterator{

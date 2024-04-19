@@ -61,7 +61,7 @@ func parseEventFlag(flag string) ([]eventFlag, error) {
 	//
 
 	if operatorIdx == -1 { // no operator, as a set flag
-		if strings.Contains(flag, ".") { // "openat.context.container" edge case
+		if strings.Contains(flag, ".") { // "openat.scope.container" edge case
 			evtParts, err := getEventFilterParts(flag, flag)
 			if err != nil {
 				return []eventFlag{}, errfmt.WrapError(err)

@@ -31,7 +31,7 @@ Strings can be compared as a prefix if ending with '*' or as suffix if starting 
 Event return value can be accessed using 'event_name.retval' and provide a way to filter an event by its return value.
 Event return value expression has the same syntax as a numerical expression.
 
-Event context fields can be accessed using 'event_name.context.field', this can be used to filter an event by the non arguments
+Event scope fields can be accessed using 'event_name.scope.field', this can be used to filter an event by the non arguments
 fields defined in the trace.Event struct.
 Refer to the json tags in the trace.Event struct located in the types/trace package for the correct field names, and the event filtering
 section in the documentation for a full list.
@@ -81,8 +81,8 @@ Event examples:
   --events openat.args.pathname='/tmp*'                         | only trace 'openat' events that have 'pathname' prefixed by /tmp
   --events openat.args.pathname='*shadow'                       | only trace 'openat' events that have 'pathname' suffixed by shadow
   --events openat.args.pathname!=/tmp/1,/bin/ls                 | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
-  --events openat.context.processName=ls                        | only trace 'openat' events that have 'processName' equal to 'ls'
-  --events security_file_open.context.container                 | only trace 'security_file_open' events coming from a container
+  --events openat.scope.processName=ls                          | only trace 'openat' events that have 'processName' equal to 'ls'
+  --events security_file_open.scope.container                   | only trace 'security_file_open' events coming from a container
 
 Note: some of the above operators have special meanings in different shells.
 To 'escape' those operators, please use single quotes, e.g.: 'uid>0', '/tmp*'

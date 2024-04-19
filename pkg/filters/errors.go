@@ -28,8 +28,8 @@ func InvalidEventArgument(argument string) error {
 	return fmt.Errorf("invalid filter event argument: %s", argument)
 }
 
-func InvalidContextField(field string) error {
-	return fmt.Errorf("invalid event context field: %s", field)
+func InvalidScopeField(field string) error {
+	return fmt.Errorf("invalid event scope field: %s", field)
 }
 
 func FailedToRetreiveHostNS() error {
