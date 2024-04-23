@@ -19,15 +19,6 @@ set -x # for debugging
 
 ARCH=$(uname -m)
 
-disable_unattended_upgrades() {
-    # This is a pain point. Make sure to always disable anything touching the
-    # dpkg database, otherwise it will fail with locking errors.
-    systemctl stop unattended-upgrades || true
-    systemctl disable --now unattended-upgrades || true
-    apt-get remove -y --purge unattended-upgrades || true
-    apt-get remove -y --purge ubuntu-advantage-tools || true
-}
-
 wait_for_apt_locks() {
     local lock="/var/lib/dpkg/lock"
     local lock_frontend="/var/lib/dpkg/lock-frontend"
@@ -92,6 +83,16 @@ wait_for_apt_locks() {
     done
 }
 
+disable_unattended_upgrades() {
+    # This is a pain point. Make sure to always disable anything touching the
+    # dpkg database, otherwise it will fail with locking errors.
+    systemctl stop unattended-upgrades || true
+    systemctl disable --now unattended-upgrades || true
+
+    wait_for_apt_locks
+    apt-get remove -y --purge unattended-upgrades || true
+    apt-get remove -y --purge ubuntu-advantage-tools || true
+}
 
 remove_llvm_alternatives() {
     update-alternatives --remove-all cc || true
@@ -234,19 +235,23 @@ install_golang_from_github() {
 }
 
 install_clang_os_packages() {
+    wait_for_apt_locks
     apt-get install -y llvm-14 clang-14 clangd-14 lld-14
     update_llvm_alternatives
 }
 
 install_gcc11_os_packages() {
+    wait_for_apt_locks
     apt-get install -y gcc-11
 }
 
 install_gcc12_os_packages() {
+    wait_for_apt_locks
     apt-get install -y gcc-12
 }
 
 remove_llvm_os_packages() {
+    wait_for_apt_locks
     apt-get remove -y clang-12 clangd-12 lld-12 llvm-12 || true
     apt-get remove -y clang-13 clangd-13 lld-13 llvm-13 || true
     apt-get remove -y clang-14 clangd-14 lld-14 llvm-14 || true
@@ -254,6 +259,7 @@ remove_llvm_os_packages() {
 }
 
 remove_golang_os_packages() {
+    wait_for_apt_locks
     apt-get remove -y golang golang-go
     apt-get --purge autoremove -y
 }
@@ -271,8 +277,8 @@ if [[ $ID == "ubuntu" ]]; then
     export DEBIAN_FRONTEND=noninteractive
 
     disable_unattended_upgrades
-    wait_for_apt_locks
 
+    wait_for_apt_locks
     apt-get update
     # apt-get dist-upgrade -y
     # apt-get --purge autoremove -y
