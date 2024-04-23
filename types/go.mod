@@ -1,6 +1,6 @@
 module github.com/aquasecurity/tracee/types
 
-go 1.21
+go 1.22.0
 
 require github.com/stretchr/testify v1.7.0
 
