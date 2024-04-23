@@ -70,7 +70,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "shell", privileged: true, inline: <<-SHELL
     VAGRANT_HOME="/home/vagrant"
-    GO_VERSION="1.21.6"
+    GO_VERSION="1.22.3"
     OPA_VERSION="v0.63.0"
     KUBECTL_VERSION="v1.29"
 

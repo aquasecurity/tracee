@@ -214,9 +214,9 @@ install_clang_from_github() {
 
 install_golang_from_github() {
     if [[ $ARCH == x86_64 ]]; then
-        GO_URL="https://go.dev/dl/go1.21.6.linux-amd64.tar.gz"
+        GO_URL="https://go.dev/dl/go1.22.3.linux-amd64.tar.gz"
     else
-        GO_URL="https://go.dev/dl/go1.21.6.linux-arm64.tar.gz"
+        GO_URL="https://go.dev/dl/go1.22.3.linux-arm64.tar.gz"
     fi
 
     GO_FILE=$(basename $GO_URL)
