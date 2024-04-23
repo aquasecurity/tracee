@@ -196,7 +196,7 @@ install_clang_from_github() {
     fi
 
     LLVM_FILE=$(basename $LLVM_URL)
-    LLVM_DIR=$(echo $LLVM_FILE | sed 's:.tar.xz::g')
+    LLVM_DIR="${LLVM_FILE%.tar.xz}"
 
     # Download
     rm -f "/tmp/$LLVM_FILE"
