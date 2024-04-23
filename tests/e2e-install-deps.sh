@@ -205,8 +205,8 @@ install_clang_from_github() {
     # Install
     cd /usr/local
     rm -rf ./clang
-    tar xfJ /tmp/$LLVM_FILE
-    mv $LLVM_DIR ./clang
+    tar xfJ /tmp/"$LLVM_FILE"
+    mv "$LLVM_DIR" ./clang
     cd -
 
     link_llvm_usr_local_clang
@@ -228,7 +228,7 @@ install_golang_from_github() {
     # Install
     cd /usr/local
     rm -rf ./go
-    tar xfz /tmp/$GO_FILE
+    tar xfz /tmp/"$GO_FILE"
     cd -
 
     link_golang_usr_local_go
