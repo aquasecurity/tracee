@@ -195,7 +195,7 @@ install_clang_from_github() {
         LLVM_URL=$LLVM_URL"clang+llvm-14.0.6-aarch64-linux-gnu.tar.xz"
     fi
 
-    LLVM_FILE=$(echo $(basename $LLVM_URL))
+    LLVM_FILE=$(basename $LLVM_URL)
     LLVM_DIR=$(echo $LLVM_FILE | sed 's:.tar.xz::g')
 
     # Download
@@ -219,7 +219,7 @@ install_golang_from_github() {
         GO_URL="https://go.dev/dl/go1.21.6.linux-arm64.tar.gz"
     fi
 
-    GO_FILE=$(echo $(basename $GO_URL))
+    GO_FILE=$(basename $GO_URL)
 
     # Download
     rm -f "/tmp/$GO_FILE"
