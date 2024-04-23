@@ -271,6 +271,8 @@ remove_golang_os_packages() {
 
 KERNEL=$(uname -r)
 
+# shellcheck source=/dev/null
+# See SC1091
 . /etc/os-release
 
 if [[ $ID == "ubuntu" ]]; then
