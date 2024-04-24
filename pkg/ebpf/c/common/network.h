@@ -360,7 +360,7 @@ statfunc volatile unsigned char get_sock_state(struct sock *sock)
 statfunc struct ipv6_pinfo *get_inet_pinet6(struct inet_sock *inet)
 {
     struct ipv6_pinfo *pinet6_own_impl;
-    bpf_core_read(&pinet6_own_impl, sizeof(pinet6_own_impl), &inet->pinet6);
+    bpf_core_read(&pinet6_own_impl, sizeof(struct ipv6_pinfo *), &inet->pinet6);
     return pinet6_own_impl;
 }
 
@@ -369,6 +369,7 @@ statfunc struct sockaddr_un get_unix_sock_addr(struct unix_sock *sock)
     struct unix_address *addr = BPF_CORE_READ(sock, addr);
     int len = BPF_CORE_READ(addr, len);
     struct sockaddr_un sockaddr = {};
+    // NOTE(nadav.str): stack allocated, so runtime core size check is avoided
     if (len <= sizeof(struct sockaddr_un)) {
         bpf_probe_read(&sockaddr, len, addr->name);
     }

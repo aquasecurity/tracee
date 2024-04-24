@@ -171,7 +171,7 @@ statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
     }
 
     struct path f_path;
-    bpf_probe_read_kernel(&f_path, sizeof(struct path), path);
+    bpf_probe_read_kernel(&f_path, bpf_core_type_size(struct path), path);
     char slash = '/';
     int zero = 0;
     struct dentry *dentry = f_path.dentry;
