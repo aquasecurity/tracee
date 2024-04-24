@@ -509,7 +509,8 @@ statfunc int send_socket_dup(program_data_t *p, u64 oldfd, u64 newfd)
         get_network_details_from_sock_v4(sk, &net_details, 0);
         get_remote_sockaddr_in_from_network_details(&remote, &net_details, family);
 
-        save_to_submit_buf(&(p->event->args_buf), &remote, sizeof(struct sockaddr_in), 2);
+        save_to_submit_buf(
+            &(p->event->args_buf), &remote, bpf_core_type_size(struct sockaddr_in), 2);
     } else if (family == AF_INET6) {
         net_conn_v6_t net_details = {};
         struct sockaddr_in6 remote;
@@ -517,12 +518,14 @@ statfunc int send_socket_dup(program_data_t *p, u64 oldfd, u64 newfd)
         get_network_details_from_sock_v6(sk, &net_details, 0);
         get_remote_sockaddr_in6_from_network_details(&remote, &net_details, family);
 
-        save_to_submit_buf(&(p->event->args_buf), &remote, sizeof(struct sockaddr_in6), 2);
+        save_to_submit_buf(
+            &(p->event->args_buf), &remote, bpf_core_type_size(struct sockaddr_in6), 2);
     } else if (family == AF_UNIX) {
         struct unix_sock *unix_sk = (struct unix_sock *) sk;
         struct sockaddr_un sockaddr = get_unix_sock_addr(unix_sk);
 
-        save_to_submit_buf(&(p->event->args_buf), &sockaddr, sizeof(struct sockaddr_un), 2);
+        save_to_submit_buf(
+            &(p->event->args_buf), &sockaddr, bpf_core_type_size(struct sockaddr_un), 2);
     }
 
     return events_perf_submit(p, 0);
@@ -2636,13 +2639,13 @@ int BPF_KPROBE(trace_security_socket_connect)
     size_t sockaddr_len = 0;
     switch (sa_fam) {
         case AF_INET:
-            sockaddr_len = sizeof(struct sockaddr_in);
+            sockaddr_len = bpf_core_type_size(struct sockaddr_in);
             break;
         case AF_INET6:
-            sockaddr_len = sizeof(struct sockaddr_in6);
+            sockaddr_len = bpf_core_type_size(struct sockaddr_in6);
             break;
         case AF_UNIX:
-            sockaddr_len = sizeof(struct sockaddr_un);
+            sockaddr_len = bpf_core_type_size(struct sockaddr_un);
             if (addr_len < sockaddr_len)
                 need_workaround = true;
 
@@ -2654,6 +2657,7 @@ int BPF_KPROBE(trace_security_socket_connect)
         // Workaround for sockaddr_un struct length (issue: #1129).
         struct sockaddr_un sockaddr = {0};
         bpf_probe_read(&sockaddr, (u32) addr_len, (void *) address);
+        // NOTE(nadav.str): stack allocated, so runtime core size check is avoided
         stsb(args_buf, (void *) &sockaddr, sizeof(struct sockaddr_un), 2);
     }
 #endif
@@ -2757,7 +2761,8 @@ int BPF_KPROBE(trace_security_socket_bind)
     connect_id.protocol = protocol;
 
     if (sa_fam == AF_INET) {
-        save_to_submit_buf(&p.event->args_buf, (void *) address, sizeof(struct sockaddr_in), 1);
+        save_to_submit_buf(
+            &p.event->args_buf, (void *) address, bpf_core_type_size(struct sockaddr_in), 1);
 
         struct sockaddr_in *addr = (struct sockaddr_in *) address;
 
@@ -2767,7 +2772,8 @@ int BPF_KPROBE(trace_security_socket_bind)
             connect_id.port = BPF_CORE_READ(addr, sin_port);
         }
     } else if (sa_fam == AF_INET6) {
-        save_to_submit_buf(&p.event->args_buf, (void *) address, sizeof(struct sockaddr_in6), 1);
+        save_to_submit_buf(
+            &p.event->args_buf, (void *) address, bpf_core_type_size(struct sockaddr_in6), 1);
 
         struct sockaddr_in6 *addr = (struct sockaddr_in6 *) address;
 
@@ -2779,12 +2785,14 @@ int BPF_KPROBE(trace_security_socket_bind)
 #if defined(__TARGET_ARCH_x86) // TODO: this is broken in arm64 (issue: #1129)
         if (addr_len <= sizeof(struct sockaddr_un)) {
             struct sockaddr_un sockaddr = {};
+            // NOTE(nadav.str): stack allocated, so runtime core size check is avoided
             bpf_probe_read(&sockaddr, addr_len, (void *) address);
             save_to_submit_buf(
                 &p.event->args_buf, (void *) &sockaddr, sizeof(struct sockaddr_un), 1);
         } else
 #endif
-            save_to_submit_buf(&p.event->args_buf, (void *) address, sizeof(struct sockaddr_un), 1);
+            save_to_submit_buf(
+                &p.event->args_buf, (void *) address, bpf_core_type_size(struct sockaddr_un), 1);
     }
 
     return events_perf_submit(&p, 0);
