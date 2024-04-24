@@ -5849,11 +5849,11 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     switch (family) {
         case PF_INET:
             eventctx->retval |= family_ipv4;
-            l3_size = get_type_size(struct iphdr);
+            l3_size = bpf_core_type_size(struct iphdr);
             break;
         case PF_INET6:
             eventctx->retval |= family_ipv6;
-            l3_size = get_type_size(struct ipv6hdr);
+            l3_size = bpf_core_type_size(struct ipv6hdr);
             break;
         default:
             return 1;
@@ -5880,7 +5880,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
                 return 1;
 
             if (nethdrs->iphdrs.iphdr.ihl > 5) { // re-read IP header if needed
-                l3_size -= get_type_size(struct iphdr);
+                l3_size -= bpf_core_type_size(struct iphdr);
                 l3_size += nethdrs->iphdrs.iphdr.ihl * 4;
                 bpf_core_read(nethdrs, l3_size, data_ptr);
             }
@@ -5978,11 +5978,11 @@ statfunc u32 cgroup_skb_generic(struct __sk_buff *ctx, void *cgrpctxmap)
     switch (family) {
         case PF_INET:
             dest = &nethdrs->iphdrs.iphdr;
-            size = get_type_size(struct iphdr);
+            size = bpf_core_type_size(struct iphdr);
             break;
         case PF_INET6:
             dest = &nethdrs->iphdrs.ipv6hdr;
-            size = get_type_size(struct ipv6hdr);
+            size = bpf_core_type_size(struct ipv6hdr);
             break;
         default:
             return 1; // verifier
@@ -6008,7 +6008,7 @@ statfunc u32 cgroup_skb_generic(struct __sk_buff *ctx, void *cgrpctxmap)
 
             ihl = nethdrs->iphdrs.iphdr.ihl;
             if (ihl > 5) { // re-read IPv4 header if needed
-                size -= get_type_size(struct iphdr);
+                size -= bpf_core_type_size(struct iphdr);
                 size += ihl * 4;
                 bpf_skb_load_bytes_relative(ctx, 0, dest, size, 1);
             }
@@ -6109,11 +6109,11 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
             switch (next_proto) {
                 case IPPROTO_TCP:
                     dest = &nethdrs->protohdrs.tcphdr;
-                    size = get_type_size(struct tcphdr);
+                    size = bpf_core_type_size(struct tcphdr);
                     break;
                 case IPPROTO_UDP:
                     dest = &nethdrs->protohdrs.udphdr;
-                    size = get_type_size(struct udphdr);
+                    size = bpf_core_type_size(struct udphdr);
                     break;
                 case IPPROTO_ICMP:
                     dest = &nethdrs->protohdrs.icmphdr;
@@ -6138,11 +6138,11 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
             switch (next_proto) {
                 case IPPROTO_TCP:
                     dest = &nethdrs->protohdrs.tcphdr;
-                    size = get_type_size(struct tcphdr);
+                    size = bpf_core_type_size(struct tcphdr);
                     break;
                 case IPPROTO_UDP:
                     dest = &nethdrs->protohdrs.udphdr;
-                    size = get_type_size(struct udphdr);
+                    size = bpf_core_type_size(struct udphdr);
                     break;
                 case IPPROTO_ICMPV6:
                     dest = &nethdrs->protohdrs.icmp6hdr;
@@ -6262,7 +6262,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp)
 
     if (nethdrs->protohdrs.tcphdr.doff > 5) { // offset flag set
         u32 doff = nethdrs->protohdrs.tcphdr.doff * (32 / 8);
-        neteventctx->md.header_size -= get_type_size(struct tcphdr);
+        neteventctx->md.header_size -= bpf_core_type_size(struct tcphdr);
         neteventctx->md.header_size += doff;
     }
 
