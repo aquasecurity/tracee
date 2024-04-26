@@ -78,7 +78,7 @@ func (s *TraceeService) DisableEvent(ctx context.Context, in *pb.DisableEventReq
 	return &pb.DisableEventResponse{}, nil
 }
 
-func (s *TraceeService) GetEventDefinition(ctx context.Context, in *pb.GetEventDefinitionRequest) (*pb.GetEventDefinitionResponse, error) {
+func (s *TraceeService) GetEventDefinitions(ctx context.Context, in *pb.GetEventDefinitionsRequest) (*pb.GetEventDefinitionsResponse, error) {
 	definitions, err := getDefinitions(in)
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func (s *TraceeService) GetEventDefinition(ctx context.Context, in *pb.GetEventD
 		out = append(out, ed)
 	}
 
-	return &pb.GetEventDefinitionResponse{
+	return &pb.GetEventDefinitionsResponse{
 		Definitions: out,
 	}, nil
 }
@@ -100,17 +100,24 @@ func (s *TraceeService) GetVersion(ctx context.Context, in *pb.GetVersionRequest
 	return &pb.GetVersionResponse{Version: version.GetVersion()}, nil
 }
 
-func getDefinitions(in *pb.GetEventDefinitionRequest) ([]events.Definition, error) {
-	if in.Name == "" {
+func getDefinitions(in *pb.GetEventDefinitionsRequest) ([]events.Definition, error) {
+	if len(in.EventNames) == 0 {
 		return events.Core.GetDefinitions(), nil
 	}
 
-	id, ok := events.Core.GetDefinitionIDByName(in.Name)
-	if !ok {
-		return nil, fmt.Errorf("event %s not found", in.Name)
+	definitions := make([]events.Definition, 0, len(in.EventNames))
+
+	for _, name := range in.EventNames {
+		id, ok := events.Core.GetDefinitionIDByName(name)
+		if !ok {
+			return nil, fmt.Errorf("event %s not found", name)
+		}
+
+		definition := events.Core.GetDefinitionByID(id)
+		definitions = append(definitions, definition)
 	}
 
-	return []events.Definition{events.Core.GetDefinitionByID(id)}, nil
+	return definitions, nil
 }
 
 func convertDefinitionToProto(d events.Definition) *pb.EventDefinition {
